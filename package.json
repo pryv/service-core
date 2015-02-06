@@ -1,0 +1,46 @@
+{
+  "name": "pryv-service-core",
+  "description": "Pryv core server app components",
+  "version": "0.8.1",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/pryv/service-core.git"
+  },
+  "scripts": {
+    "preinstall": "node bin/npm-components install",
+    "blanket": {
+      "pattern": [
+        "/components/"
+      ]
+    }
+  },
+  "dependencies": {
+    "async": "0.9.x",
+    "axon": "2.0.x",
+    "cron": "1.0.x",
+    "dependable": "git+ssh://git@github.com:attentif/dependable.git",
+    "express": "3.5.x",
+    "lodash": "2.4.x",
+    "mkdirp": "0.5.x",
+    "rimraf": "2.2.x",
+    "superagent": "0.18.x",
+    "unix-timestamp": "0.1.x"
+  },
+  "devDependencies": {
+    "blanket": "latest",
+    "colors": "^1.0.3",
+    "cookie": "latest",
+    "date-utils": "latest",
+    "deep-equal": "latest",
+    "execSync": "latest",
+    "mocha": "latest",
+    "nixt": "latest",
+    "nock": "latest",
+    "qs": "latest",
+    "should": "latest",
+    "socket.io-client": "0.9.x",
+    "temp": "latest",
+    "wrench": "latest"
+  }
+}

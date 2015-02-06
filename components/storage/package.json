@@ -1,0 +1,10 @@
+{
+  "name": "storage",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.js",
+  "dependencies": {
+    "cuid": "1.2.x",
+    "mongodb": "1.4.x"
+  }
+}

@@ -1,0 +1,11 @@
+.idea
+.project
+.settings
+.DS_Store
+**/node_modules/**
+!node_modules/components
+
+coverage.html
+profiling-output.txt
+service-core.iml
+v8.log

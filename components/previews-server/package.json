@@ -1,0 +1,10 @@
+{
+  "name": "previews-server",
+  "version": "0.3.15",
+  "private": true,
+  "dependencies": {
+    "xattr-async": "0.1.x",
+    "gm": "1.17.x",
+    "qs": "2.3.x"
+  }
+}

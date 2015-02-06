@@ -1,0 +1,11 @@
+{
+  "name": "utils",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.js",
+  "dependencies": {
+    "bcrypt": "0.8.x",
+    "nconf": "0.6.x",
+    "winston": "0.8.x"
+  }
+}
