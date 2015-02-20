@@ -1,0 +1,14 @@
+{
+  "http": {
+    "noSSL": true,
+    "port": 3000
+  },
+  "clients": {
+    "trustedApps": "pryv-test@http://test.pryv.local, *@https://*.rec.la*"
+  },
+  "logs": {
+    "console": {
+      "timestamp": false
+    }
+  }
+}

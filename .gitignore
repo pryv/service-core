@@ -3,9 +3,10 @@
 .settings
 .DS_Store
 **/node_modules/**
+**/coverage.html
+**/npm-debug.log
+**/profiling-output.txt
+**/v8.log
 !node_modules/components
 
-coverage.html
-profiling-output.txt
 service-core.iml
-v8.log
