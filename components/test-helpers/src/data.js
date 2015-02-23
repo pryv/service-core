@@ -3,9 +3,8 @@
  */
 
 var async = require('async'),
+    childProcess = require('child_process'),
     dependencies = require('./dependencies'),
-    exec = require('child_process').exec,
-    execSync = require('execSync').exec,
     mkdirp = require('mkdirp'),
     settings = dependencies.settings,
     storage = dependencies.storage,
@@ -128,9 +127,12 @@ exports.resetAttachments = function (done, user) {
 
 function copyAttachmentFn(attachmentInfo, user, eventId) {
   return function (callback) {
-    var tmpPath = '/tmp/' + attachmentInfo.filename,
-        execRes = execSync('cp "' + attachmentInfo.path + '" "' + tmpPath + '"');
-    if (execRes.code !== 0) { return callback(new Error(execRes.stdout)); }
+    var tmpPath = '/tmp/' + attachmentInfo.filename;
+    try {
+      childProcess.execSync('cp "' + attachmentInfo.path + '" "' + tmpPath + '"');
+    } catch (e) {
+      return callback(e);
+    }
     storage.user.eventFiles.saveAttachedFile(tmpPath, user, eventId, attachmentInfo.id, callback);
   };
 }
@@ -162,13 +164,13 @@ exports.dumpCurrent = function (mongoFolder, callback) {
     exports.resetEvents,
     exports.resetAttachments,
     rimraf.bind(null, outputFolder),
-    exec.bind(null, mongodump +
+    childProcess.exec.bind(null, mongodump +
         (settings.database.authUser ?
             ' -u ' + settings.database.authUser + ' -p ' + settings.database.authPassword : '') +
         ' --host ' + settings.database.host + ':' + settings.database.port +
         ' --db ' + settings.database.name +
         ' --out ' + getDumpDBSubfolder(outputFolder)),
-    exec.bind(null, 'tar -C ' + settings.eventFiles.attachmentsDirPath +
+    childProcess.exec.bind(null, 'tar -C ' + settings.eventFiles.attachmentsDirPath +
         ' -czf ' + getDumpFilesArchive(outputFolder) + ' .')
   ], function (err) {
     if (err) { return callback(err); }
@@ -197,13 +199,13 @@ exports.restoreFromDump = function (versionNum, mongoFolder, callback) {
 
   async.series([
     clearAllData,
-    exec.bind(null, mongorestore +
+    childProcess.exec.bind(null, mongorestore +
         (settings.database.authUser ?
             ' -u ' + settings.database.authUser + ' -p ' + settings.database.authPassword : '') +
         ' --host ' + settings.database.host + ':' + settings.database.port +
         ' ' + sourceDBFolder),
     mkdirp.bind(null, settings.eventFiles.attachmentsDirPath),
-    exec.bind(null, 'tar -xzf ' + sourceFilesArchive +
+    childProcess.exec.bind(null, 'tar -xzf ' + sourceFilesArchive +
         ' -C ' + settings.eventFiles.attachmentsDirPath)
   ], function (err) {
     if (err) { return callback(err); }

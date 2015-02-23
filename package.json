@@ -9,6 +9,11 @@
   },
   "scripts": {
     "preinstall": "node bin/npm-components install",
+
+    "test": "node bin/npm-components test",
+
+    "check-dependencies": "node bin/check-dependencies",
+
     "blanket": {
       "pattern": [
         "/components/"
@@ -33,8 +38,6 @@
     "cookie": "latest",
     "date-utils": "latest",
     "deep-equal": "latest",
-    "execSync": "latest",
-    "mocha": "latest",
     "nixt": "latest",
     "nock": "latest",
     "qs": "latest",
@@ -42,5 +45,8 @@
     "socket.io-client": "0.9.x",
     "temp": "latest",
     "wrench": "latest"
+  },
+  "engines": {
+    "node" : ">=0.12.0"
   }
 }

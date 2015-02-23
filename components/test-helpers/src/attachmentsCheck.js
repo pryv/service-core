@@ -2,7 +2,7 @@
  * Test helper functions for attached files.
  */
 
-var execSync = require('execSync').exec,
+var childProcess = require('child_process'),
     path = require('path'),
     testData = require('./data'),
     eventFilesStorage = require('./dependencies').storage.user.eventFiles;
@@ -26,5 +26,5 @@ exports.compareTestAndAttachedFiles = function (user, eventId, fileId, originalF
 };
 
 function cmp(filePathA, filePathB) {
-  return execSync('cmp "' + filePathA + '" "' + filePathB + '"').stdout;
+  return childProcess.execSync('cmp "' + filePathA + '" "' + filePathB + '"').toString();
 }
