@@ -26,14 +26,19 @@ Code is organized into local modules defined in the `components` folder, each wi
 
 ### Tests
 
-Prerequisite: MongoDB must be running on the default port; you can use `npm run start-database`.
+_Prerequisite:_ MongoDB must be running on the default port; you can use `npm run start-database`.
 
 `npm test` runs tests on each component. See individual components for things like detailed output and other options.
 
 
+### Coding conventions
+
+See the [Pryv guidelines](http://pryv.github.io/guidelines/).
+
+
 ### Deployment (Pryv-specific)
 
-**Preliminary**: setup Git remotes for production and staging targets (in `.git/config`):
+_Prerequisite:_ setup Git remotes for production and staging targets (in `.git/config`):
 
 ```
 [remote "staging"]
