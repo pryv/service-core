@@ -1,5 +1,5 @@
 {
-  "version": "0.2.5",
+  "version": "0.2.9",
   "types": {
     "activity/plain": {
       "description": "Plain activity event with no specific content; the activity is defined by the event's stream, time and duration, and possibly description and tags.",
@@ -121,7 +121,7 @@
       ]
     },
     "message/facebook": {
-      "description": "A Facebook post. See <a href=\"https://developers.facebook.com/docs/reference/api/post/\">Facebook's API doc</a> for reference. \n\n**map**: \n   fbPost.message -> pryvEvent.description\n   fbPost.created_time -> pryvEvent.time\n\n**optional** fields such as `link`, `source`, `privacy`.. are optional and can be saved on the object.\n\n**attached content**:  \nIf a picture is attached to this post, you may want to attach it to the \"Pryv\" Event.  \n \n - attach the picture and keep \"{filename}.png\" in the URL \n\n\n",
+      "description": "A Facebook post. See [Facebook's API docs](https://developers.facebook.com/docs/reference/api/post/) for reference. Facebook properties `message` and `created_time` map to event `description` and `time` respectively. Facebook attached pictures can be directly mapped to attachments. Other Facebook properties such as `link`, `source`, `privacy` are allowed.",
       "type": "object",
       "additionalProperties": true,
       "properties": {
@@ -171,15 +171,15 @@
         },
         "source": {
           "type": "string",
-          "description": "Either a fully qualified \"URL\" for an external source or a \"filename\" for a Flash Movie or Video attached to this event"
+          "description": "Either a fully qualified \"URL\" for an external source or a \"filename\" for a Flash Movie or Video attached to this event."
         },
         "properties": {
           "type": "string",
-          "description": "Relative to \"source\": A list of properties for an uploaded video, for example, the length of the video",
+          "description": "Relative to `source`: a list of properties for an uploaded video, for example, the length of the video.",
           "additionalProperties": true
         },
         "picture": {
-          "description": "Either a fully qualified \"URL\" for an external picture or a \"filename\" for a picture attached to this event",
+          "description": "Either a fully qualified \"URL\" for an external picture or a \"filename\" for a picture attached to this event.",
           "type": "string"
         },
         "status-type": {
@@ -193,7 +193,7 @@
       ]
     },
     "message/twitter": {
-      "description": "A Twitter post.  \n\n`Created_at` property should be used as the timestamp for the event.\n\nNot specified property that can be found in https://dev.twitter.com/docs/api/1.1/get/statuses/show/%3Aid\ncan be added to the event",
+      "description": "A Twitter post. Twitter property `created_at` maps to event `time`. Other Twitter properties (see [Twitter's API docs](https://dev.twitter.com/docs/api/1.1/get/statuses/show/%3Aid)) are allowed.",
       "type": "object",
       "additionalProperties": true,
       "properties": {
@@ -715,7 +715,7 @@
       "type": "number"
     },
     "mood/rating": {
-      "description": "Rating of mood (float value) 0:worst -> 1:best ",
+      "description": "Rating of mood (float value) 0:worst -> 1:best",
       "type": "number",
       "minimum": 0,
       "maximum": 1
@@ -725,7 +725,7 @@
       "type": "string"
     },
     "music/basic": {
-      "description": "Inspired from id3 key/pair ",
+      "description": "Inspired from id3 key/pair",
       "type": "object",
       "properties": {
         "title": {
@@ -749,8 +749,8 @@
       }
     },
     "music/soundcloud": {
-      "description": "See soundcloud track properties http://developers.soundcloud.com/docs/api/reference#tracks\nOnly the \"id\" is mandatory, other property depend of sound cloud specifications",
-      "type object": "Object",
+      "description": "See [Soundcloud track properties](http://developers.soundcloud.com/docs/api/reference#tracks).",
+      "type": "object",
       "additionalProperties": true,
       "properties": {
         "id": {
@@ -788,6 +788,17 @@
       "required": [
         "url"
       ]
+    },
+    "numset/*": {
+      "description": "The format key is freely defined.\n\nFor example, a heart measurement with type `numset/heart` and content:\n```\n{ \n  \"systolic\": { \"pressure/mmhg\": 105 },\n  \"diastolic\": { \"pressure/mmhg\": 64 },\n  \"rate\": { \"frequency/bpm\": 88 }\n}\n```\n\n ",
+      "type": "object",
+      "patternProperties": {
+        "^(/[^/]+)+$": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": "false",
+      "required": []
     },
     "picture/base64": {
       "description": "The picture is caried in base64 (utf-8) encoded in string",
@@ -874,6 +885,10 @@
         "value",
         "relativeTo"
       ]
+    },
+    "ratio/percent": {
+      "description": "A percentage value.",
+      "type": "number"
     },
     "url/http": {
       "description": "An HTTP or HTTPS resource.",
@@ -974,6 +989,10 @@
       "description": "Katal",
       "type": "number"
     },
+    "count/steps": {
+      "description": "Number of steps",
+      "type": "number"
+    },
     "count/generic": {
       "description": "For general items that demand no particular handling.",
       "type": "number"
@@ -982,7 +1001,7 @@
       "description": "Bytes",
       "type": "number"
     },
-    "data-quantity/bit": {
+    "data-quantity/bits": {
       "description": "Bits",
       "type": "number"
     },
@@ -990,7 +1009,7 @@
       "description": "Gigabytes",
       "type": "number"
     },
-    "data-quantity/gbit": {
+    "data-quantity/gbits": {
       "description": "Gigabits",
       "type": "number"
     },
@@ -998,7 +1017,7 @@
       "description": "Kilobytes",
       "type": "number"
     },
-    "data-quantity/kbit": {
+    "data-quantity/kbits": {
       "description": "Kilobits",
       "type": "number"
     },
@@ -1006,7 +1025,7 @@
       "description": "Megabytes",
       "type": "number"
     },
-    "data-quantity/mbit": {
+    "data-quantity/mbits": {
       "description": "Megabits",
       "type": "number"
     },
@@ -1014,8 +1033,20 @@
       "description": "Terabytes",
       "type": "number"
     },
+    "density/g-dl": {
+      "description": "Grams per deciliter",
+      "type": "number"
+    },
     "density/kg-m3": {
-      "description": "Kilogram per cubic meter",
+      "description": "Kilograms per cubic meter",
+      "type": "number"
+    },
+    "density/mmol-l": {
+      "description": "Millimoles per liter",
+      "type": "number"
+    },
+    "density/mg-dl": {
+      "description": "Milligrams per deciliter",
       "type": "number"
     },
     "dynamic-viscosity/pa-s": {
@@ -1235,7 +1266,7 @@
       "type": "number"
     },
     "mass/dr": {
-      "description": "Drams ",
+      "description": "Drams",
       "type": "number"
     },
     "mass/g": {
@@ -1243,7 +1274,7 @@
       "type": "number"
     },
     "mass/l-t": {
-      "description": "Long tons ",
+      "description": "Long tons",
       "type": "number"
     },
     "mass/lb": {
@@ -1363,7 +1394,7 @@
       "type": "number"
     },
     "temperature/c": {
-      "description": "Celsius ",
+      "description": "Celsius",
       "type": "number"
     },
     "temperature/k": {
@@ -1375,27 +1406,27 @@
       "type": "number"
     },
     "time/d": {
-      "description": "Day ",
+      "description": "Days",
       "type": "number"
     },
     "time/h": {
-      "description": "Hour",
+      "description": "Hours",
       "type": "number"
     },
     "time/min": {
-      "description": "Minute",
+      "description": "Minutes",
       "type": "number"
     },
     "time/ms": {
-      "description": "Millisecond",
+      "description": "Milliseconds",
       "type": "number"
     },
     "time/s": {
-      "description": "Second",
+      "description": "Seconds",
       "type": "number"
     },
     "time/y": {
-      "description": "Year",
+      "description": "Years",
       "type": "number"
     },
     "volume/l": {
