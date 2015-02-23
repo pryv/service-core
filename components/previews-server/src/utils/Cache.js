@@ -1,7 +1,7 @@
 var async = require('async'),
     fs = require('fs'),
     timestamp = require('unix-timestamp'),
-    xattr = require('xattr-async');
+    xattr = require('fs-xattr');
 
 module.exports = Cache;
 
@@ -36,6 +36,7 @@ Cache.prototype.cleanUp = function (callback) {
   var cutoffTime = timestamp.now() - this.settings.maxAge;
   var processFile = function (path, stepDone) {
     xattr.get(path, Cache.LastAccessedXattrKey, function (err, value) {
+      value = value.toString();
       if (! value || +value >= cutoffTime) {
         return stepDone();
       }

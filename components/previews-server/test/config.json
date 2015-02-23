@@ -1,0 +1,11 @@
+{
+  "http": {
+    "noSSL": true,
+    "port": 3001
+  },
+  "logs": {
+    "console": {
+      "timestamp": false
+    }
+  }
+}

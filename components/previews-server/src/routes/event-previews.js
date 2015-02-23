@@ -5,7 +5,7 @@ var async = require('async'),
     errors = require('components/errors').factory,
     gm = require('gm'),
     timestamp = require('unix-timestamp'),
-    xattr = require('xattr-async'),
+    xattr = require('fs-xattr'),
     _ = require('lodash');
 
 // constants
@@ -105,7 +105,7 @@ module.exports = function (expressApp, initContextMiddleware, userEventsStorage,
             // assume no cache
             return stepDone();
           }
-          cached = cacheModified === event.modified.toString();
+          cached = cacheModified.toString() === event.modified.toString();
           stepDone();
         });
       },

@@ -12,7 +12,7 @@ var helpers = require('./helpers'),
     testData = helpers.data,
     utils = require('components/utils'),
     timestamp = require('unix-timestamp'),
-    xattr = require('xattr-async');
+    xattr = require('fs-xattr');
 
 describe('event previews', function () {
 
@@ -56,7 +56,7 @@ describe('event previews', function () {
         res.header['content-type'].should.eql('image/jpeg');
         var cachedPath = storage.user.eventFiles.getPreviewFilePath(user, event.id, 256);
         xattr.get(cachedPath, 'user.pryv.eventModified', function (err, modified) {
-          modified.should.eql(event.modified.toString());
+          modified.toString().should.eql(event.modified.toString());
           done();
         });
       });
@@ -150,7 +150,7 @@ describe('event previews', function () {
             res.statusCode.should.eql(200);
             cachedPath = storage.user.eventFiles.getPreviewFilePath(user, event.id, 256);
             xattr.get(cachedPath, 'user.pryv.eventModified', function (err, modified) {
-              cachedFileModified = modified;
+              cachedFileModified = modified.toString();
               stepDone();
             });
           });
@@ -167,6 +167,7 @@ describe('event previews', function () {
           request.get(path(event.id), token).end(function (res) {
             res.statusCode.should.eql(200);
             xattr.get(cachedPath, 'user.pryv.eventModified', function (err, modified) {
+              modified = modified.toString();
               modified.should.not.eql(cachedFileModified);
               modified.should.eql(updatedEvent.modified.toString());
               stepDone();
