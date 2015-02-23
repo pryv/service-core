@@ -2,5 +2,9 @@
   "name": "test-helpers",
   "version": "1.0.0",
   "private": true,
-  "main": "./src/index.js"
+  "main": "./src/index.js",
+  "scripts": {
+    "dump-test-data": "node scripts/dump-test-data",
+    "restore-test-data": "node scripts/restore-test-data"
+  }
 }

@@ -9,16 +9,9 @@
   },
   "scripts": {
     "preinstall": "node bin/npm-components install",
-
-    "test": "node bin/npm-components test",
-
-    "check-dependencies": "node bin/check-dependencies",
-
-    "blanket": {
-      "pattern": [
-        "/components/"
-      ]
-    }
+    "start-database": "scripts/startdatabase.sh",
+    "test": "node scripts/npm-components test",
+    "check-dependencies": "node scripts/check-dependencies"
   },
   "dependencies": {
     "async": "0.9.x",

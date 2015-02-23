@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# TEMPORARY SCRIPT, kept as reference until the CLI handles account dump & restore
+
 DATAPATH=/var/pryv/data/api-server-files/
 DBNAME=pryv-node
 UIDLENGTH=24

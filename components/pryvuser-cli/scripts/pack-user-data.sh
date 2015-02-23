@@ -1,4 +1,7 @@
 #!/bin/sh
+
+# TEMPORARY SCRIPT, kept as reference until the CLI handles account dump & restore
+
 username=$1
 
 DATAPATH=/var/pryv/data/api-server-files/

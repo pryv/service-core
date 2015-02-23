@@ -1,87 +1,23 @@
-# Pryv API server common library
+# pryvuser CLI
 
-Common bits for use by both API server and browser server. (For now this is not a stand-alone lib with a dedicated issues list: issues are managed on the dependent repos.)
-
-
-## CLI for user management
-
-The lib registers a tiny command-line tool `pryvuser` to help manage users on Pryv nodes. Currently the only command implemented is `pryvuser delete <username>`.
-
-`pryvuser --help` gives usage details. The tool expects a config file either to be passed in via `--config [path]` or to be present in `<working directory>/api-server.config.json`.   
+Utility to locally manage user accounts.
 
 
 ## Usage
 
-```javascript
-var common = require('pryv-api-server-common');
-```
+Currently the only command implemented is `pryvuser delete <username>`.
 
-### Contents
-
-- `errors`
-  - `APIError`
-  - `errorHandling`
-  - `ErrorIds`
-  - `factory`
-- `middleware`
-  - `commonHeaders`
-  - `errors`
-  - `loadAccess`
-  - `loadUser`
-  - `override`
-  - `subdomainToPath`
-- `model`
-  - `accessLogic`
-  - `MethodContext`
-- `storage`
-  - `Database`
-  - `PasswordResetRequests`
-  - `Sessions`
-  - `Size`
-  - `Users`
-  - `Versions`
-  - `user`
-    - `Accesses`
-    - `EventFiles`
-    - `Events`
-    - `FollowedSlices`
-    - `Profile`
-    - `Streams`
-- `utils`
-  - `config`
-  - `encryption`
-  - `logging`
-  - `treeUtils`
-
-### Test helpers
-
-The following is also available if the `TEST` environment variable is set:
-
-- `testHelpers`
-  - `request`
-  - `attachmentsCheck`
-  - `data`
-  - `dependencies`
-  - `InstanceManager`
-
-And/or if `NODE_ENV` is set to `development`:
-
-- `testHelpers`
-  - `instanceTestSetup`
+`pryvuser --help` gives usage details. The tool expects a config file either to be passed in via `--config [path]` or to be present in `<working directory>/api-server.config.json`.
 
 
-## Contributing
+## Contribute
+
+Make sure to check the root README first.
 
 
-### Publishing
+### Tests
 
-Make sure to **tag** every version pushed on the master branch, as dependant apps rely on tag names to pull the correct version.
-
-For example:
-
-```bash
-# on master branch, package.json version set to 0.1.0, all changes committed
-git push
-git tag v0.1.0
-git push --tags
-```
+- `npm run test` (or `npm test`) for quiet output
+- `npm run test-detailed` for detailed test specs and debug log output
+- `npm run test-profile` for profiling the tested server instance and opening the processed output with `tick-processor`
+- `npm run test-debug` is similar as `npm run test-detailed` but in debug mode; it will wait for a debugger to be attached on port 5858

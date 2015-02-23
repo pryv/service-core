@@ -1,6 +1,10 @@
 var fs = require('fs'),
     path = require('path');
-require('colors');
+
+var colors = false;
+try {
+  colors = require('colors');
+} catch (e) {}
 
 var deps = {};
 
@@ -14,9 +18,9 @@ fs.readdirSync(componentsPath).forEach(function (name) {
   if (! fs.existsSync(packagePath)) {
     return;
   }
-  var package = require(packagePath);
-  checkDeps(package.dependencies, name);
-  checkDeps(package.devDependencies, name, 'dev');
+  var pkg = require(packagePath);
+  checkDeps(pkg.dependencies, name);
+  checkDeps(pkg.devDependencies, name, 'dev');
 });
 
 printDeps();
@@ -38,9 +42,15 @@ function checkDeps(dependenciesObj, requiringComponent, label) {
 
 function printDeps() {
   Object.keys(deps).sort().forEach(function (name) {
-    var warn = deps[name].length > 1;
-    console.log((warn ? name.yellow.bold : name.green.dim) +
-        (warn ? (' ∙ '.white + 'MULTIPLE DECLARATIONS'.yellow) : '') +
-        '\n  ' + deps[name].join('\n  ')[warn ? 'white' : 'grey']);
+    var warn = deps[name].length > 1,
+        pName = name,
+        pWarn = warn ? ' ∙ multiple declarations' : '',
+        pDeps = '\n  ' + deps[name].join('\n  ');
+    if (colors) {
+      pName = warn ? pName.yellow.bold : pName.green.dim;
+      pWarn = pWarn.yellow;
+      pDeps = warn ? pDeps : pDeps.grey;
+    }
+    console.log(pName + pWarn + pDeps);
   });
 }

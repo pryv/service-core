@@ -7,7 +7,7 @@
 SCRIPT_FOLDER=$(cd $(dirname "$0"); pwd)
 cd $SCRIPT_FOLDER/.. # root
 
-export NODE_VERSION=v0.10.23
+export NODE_VERSION=v0.12.0
 
 export DATA_FOLDER=$SCRIPT_FOLDER/../..
 export LOGS_FOLDER=${DATA_FOLDER}/logs
