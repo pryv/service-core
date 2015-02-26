@@ -2,7 +2,7 @@ var APIError = require('components/errors').APIError,
     ErrorIds = require('components/errors').ErrorIds,
     Paths = require('./Paths'),
     methodCallback = require('./methodCallback'),
-    contentType = require('../middleware/contentType'),
+    contentType = require('components/middleware').contentType,
 //    util = require('util'),
     _ = require('lodash');
 

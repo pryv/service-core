@@ -4,6 +4,7 @@ var errorHandling = require('components/errors').errorHandling;
 
 /**
  * Error route handling.
+ * TODO: (re)move that once something's been done about api-server's own errors middleware
  */
 module.exports = function (logging) {
   var logger = logging.getLogger('routes');

@@ -24,7 +24,7 @@ module.exports = function (express, commonHeadersMiddleware, errorsMiddleware,
   app.use(middleware.override);
   app.use(commonHeadersMiddleware);
   app.use(app.router);
-  app.use(require('./middleware/notFound'));
+  app.use(middleware.notFound);
   app.use(errorsMiddleware);
 
   // define init sequence utils

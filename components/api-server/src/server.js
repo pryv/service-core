@@ -53,7 +53,7 @@ dependencies.register({
   userStreamsStorage: new storage.user.Streams(database),
 
   // Express middleware
-  attachmentsAccessMiddleware: require('./middleware/attachmentsAccess'),
+  attachmentsAccessMiddleware: middleware.attachmentsAccess,
   commonHeadersMiddleware: middleware.commonHeaders,
   errorsMiddleware: require('./middleware/errors'),
   initContextMiddleware: middleware.initContext,
