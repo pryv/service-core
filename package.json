@@ -8,10 +8,10 @@
     "url": "git://github.com/pryv/service-core.git"
   },
   "scripts": {
-    "preinstall": "node bin/npm-components install",
-    "start-database": "scripts/startdatabase.sh",
-    "test": "node scripts/npm-components test",
-    "check-dependencies": "node scripts/check-dependencies"
+    "preinstall": "node scripts/components-npm install",
+    "start-database": "scripts/start-database.sh",
+    "test": "node scripts/components-npm test",
+    "check-dependencies": "node scripts/components-checkdeps"
   },
   "dependencies": {
     "async": "0.9.x",

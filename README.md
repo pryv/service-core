@@ -21,7 +21,7 @@ Code is organized into local modules defined in the `components` folder, each wi
 - Shared dependencies are defined in the root `package.json`
 - `npm run check-dependencies` lists declared dependencies (both shared and components'), highlighting those declared multiple times
 - `npm install` installs each component's dependencies and the shared ones
-- `scripts/npm-components.js` can be used to automatically run npm commands on every component. For example, `node scripts/npm-components outdated` outputs each component's outdated dependencies.
+- `scripts/components-npm.js` can be used to automatically run npm commands on every component. For example, `node scripts/components-npm outdated` outputs each component's outdated dependencies.
 
 
 ### Tests
