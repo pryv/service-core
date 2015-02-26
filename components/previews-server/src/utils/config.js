@@ -39,7 +39,7 @@ _.extend(exports.defaults, {
     },
     airbrake: {
       active: false,
-      key: 'b763d6590bbd73e8a62798a0ea3eff2b' // browser server key
+      key: 'test-airbrake-key'
     }
   },
   tcpMessaging: {

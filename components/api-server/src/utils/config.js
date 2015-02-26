@@ -62,7 +62,7 @@ _.extend(exports.defaults, {
     },
     email: {
       url: 'https://mandrillapp.com',
-      key: 'd5swZpSp1OhZPBXZFPA8NA', // Mandrill test API key
+      key: 'test-mandrill-key',
       sendMessagePath: '/api/1.0/messages/send-template.json',
       welcomeTemplate: 'welcome-email',
       resetPasswordTemplate: 'reset-password'
@@ -86,7 +86,7 @@ _.extend(exports.defaults, {
     },
     airbrake: {
       active: false,
-      key: 'b8c25b40b24ca7468b4f3b005d3a6622' // API server key
+      key: 'test-airbrake-key'
     }
   },
   tcpMessaging: {
