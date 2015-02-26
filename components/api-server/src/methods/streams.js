@@ -1,11 +1,11 @@
 var errors = require('components/errors').factory,
     async = require('async'),
-    commonFns = require('./commonFunctions'),
+    commonFns = require('./helpers/commonFunctions'),
     errorHandling = require('components/errors').errorHandling,
     methodsSchema = require('../schema/streamsMethods'),
     slugify = require('slug'),
     storage = require('components/storage'),
-    string = require('../utils/string'),
+    string = require('./helpers/string'),
     utils = require('components/utils'),
     treeUtils = utils.treeUtils,
     _ = require('lodash');

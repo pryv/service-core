@@ -1,6 +1,6 @@
 var errors = require('components/errors').factory,
     async = require('async'),
-    commonFns = require('./commonFunctions'),
+    commonFns = require('./helpers/commonFunctions'),
     methodsSchema = require('../schema/profileMethods');
 
 /**

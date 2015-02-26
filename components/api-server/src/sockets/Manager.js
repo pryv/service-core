@@ -1,5 +1,5 @@
 var errorHandling = require('components/errors').errorHandling,
-    setCommonMeta = require('../methods/setCommonMeta'),
+    setCommonMeta = require('../methods/helpers/setCommonMeta'),
     _ = require('lodash');
 
 /**

@@ -1,6 +1,6 @@
 var errorHandling = require('components/errors').errorHandling,
     errors = require('components/errors').factory,
-    string = require('../utils/string'),
+    string = require('./helpers/string'),
     timestamp = require('unix-timestamp');
 
 /**

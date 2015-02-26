@@ -3,11 +3,11 @@
  * Expects settings to be passed the same way as for the main server.
  */
 
-var Cache = require('./utils/Cache'),
+var Cache = require('./Cache'),
     errorHandling = require('components/errors').errorHandling,
     utils = require('components/utils');
 
-var settings = require('./utils/config').load(),
+var settings = require('./config').load(),
     logger = utils.logging(settings.logs).getLogger('previews-cache-worker');
 var cache = new Cache({
   rootPath: settings.eventFiles.previewsDirPath,

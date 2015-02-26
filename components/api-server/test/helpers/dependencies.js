@@ -5,7 +5,7 @@ var testHelpers = require('components/test-helpers'),
  * Overrides common test dependencies with server-specific config settings.
  */
 var deps = module.exports = testHelpers.dependencies;
-deps.settings = require('../../src/utils/config').load();
+deps.settings = require('../../src/config').load();
 deps.instanceManager = new InstanceManager({
   serverFilePath: __dirname + '/../../src/server.js',
   tcpMessaging: deps.settings.tcpMessaging,

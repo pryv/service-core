@@ -1,5 +1,5 @@
 var errors = require('components/errors').factory,
-    commonFns = require('./commonFunctions'),
+    commonFns = require('./helpers/commonFunctions'),
     encryption = require('components/utils').encryption,
     methodsSchema = require('../schema/accountMethods'),
     request = require('superagent'),

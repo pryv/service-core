@@ -1,9 +1,9 @@
 var errors = require('components/errors').factory,
-    commonFns = require('./commonFunctions'),
+    commonFns = require('./helpers/commonFunctions'),
     errorHandling = require('components/errors').errorHandling,
     methodsSchema = require('../schema/systemMethods'),
     request = require('superagent'),
-    string = require('../utils/string'),
+    string = require('./helpers/string'),
     util = require('util'),
     _ = require('lodash');
 

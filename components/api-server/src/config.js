@@ -14,7 +14,7 @@ _.extend(exports.defaults, {
    * Override common default settings.
    */
   eventFiles: {
-    attachmentsDirPath: path.join(__dirname, '../../../../../api-server-files/attachments')
+    attachmentsDirPath: path.join(__dirname, '../../../../api-server-files/attachments')
   },
   eventTypes: {
     sourceURL: 'http://pryv.github.io/event-types/flat.json'

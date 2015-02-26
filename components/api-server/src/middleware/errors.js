@@ -2,7 +2,7 @@ var errors = require('components/errors'),
     APIError = errors.APIError,
     ErrorIds = errors.ErrorIds,
     errorHandling = errors.errorHandling,
-    setCommonMeta = require('../methods/setCommonMeta');
+    setCommonMeta = require('../methods/helpers/setCommonMeta');
 
 /*jshint -W098*/
 

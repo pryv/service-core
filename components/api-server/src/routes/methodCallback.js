@@ -1,4 +1,4 @@
-var setCommonMeta = require('../methods/setCommonMeta');
+var setCommonMeta = require('../methods/helpers/setCommonMeta');
 
 /**
  * Helper function for handling method responses.

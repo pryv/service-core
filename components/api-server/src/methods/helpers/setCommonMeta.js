@@ -1,4 +1,4 @@
-var package = require('../../package.json'),
+var package = require('../../../package.json'),
     timestamp = require('unix-timestamp'),
     _ = require('lodash');
 

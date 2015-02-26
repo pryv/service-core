@@ -1,5 +1,5 @@
 var async = require('async'),
-    commonFns = require('./commonFunctions'),
+    commonFns = require('./helpers/commonFunctions'),
     errorHandling = require('components/errors').errorHandling,
     methodsSchema = require('../schema/generalMethods'),
     _ = require('lodash');

@@ -1,4 +1,4 @@
-var setCommonMeta = require('../methods/setCommonMeta'),
+var setCommonMeta = require('../methods/helpers/setCommonMeta'),
     methodCallback = require('./methodCallback'),
     Paths = require('./Paths'),
     _ = require('lodash');

@@ -1,5 +1,5 @@
 var async = require('async'),
-    Cache = require('../utils/Cache'),
+    Cache = require('../Cache'),
     childProcess = require('child_process'),
     CronJob = require('cron').CronJob,
     errors = require('components/errors').factory,

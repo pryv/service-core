@@ -5,10 +5,10 @@
 
 var async = require('async'),
     errorHandling = require('components/errors').errorHandling,
-    storage = require('components/storage');
+    storage = require('components/storage'),
     utils = require('components/utils');
 
-var settings = require('./utils/config').load(),
+var settings = require('./config').load(),
     logging = utils.logging(settings.logs),
     logger = logging.getLogger('nightly-worker'),
     database = new storage.Database(settings.database, logging),

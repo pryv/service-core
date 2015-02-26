@@ -6,7 +6,7 @@ var childProcess = require('child_process'),
     middleware = require('components/middleware'),
     storage = require('components/storage'),
     utils = require('components/utils'),
-    Notifications = require('./utils/notifications'),
+    Notifications = require('./Notifications'),
     API = require('./API');
 
 /**
@@ -15,7 +15,7 @@ var childProcess = require('child_process'),
  */
 
 // load config settings
-var settings = require('./utils/config').load();
+var settings = require('./config').load();
 
 // register base dependencies
 
