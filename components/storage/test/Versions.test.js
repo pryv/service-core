@@ -20,9 +20,9 @@ describe('Versions', function () {
 
   var mongoFolder = __dirname + '/../../../../mongodb-osx-x86_64-2.6.0';
 
-  // kept for documentation purposes (e.g. for writing new tests), not useful anymore
-  // (specific obsolete check on accesses migration commented out below to make test pass)
-  it('must handle data migration from v0.2.0 to v0.3.0 (obsolete, kept for ref.)', function (done) {
+  // older migration tests are skipped; they're kept for reference (e.g. when writing new tests)
+
+  it.skip('must handle data migration from v0.2.0 to v0.3.0 (skipped, obsolete)', function (done) {
     var versions = getVersions('0.2.0', '0.3.0'),
         user = {id: 'u_0'};
 
@@ -47,9 +47,9 @@ describe('Versions', function () {
     };
 
     var expected = {
-      //TODO: cleanup those paths
       accesses: require('../../test-helpers/src/data/migrated/0.3.0/accesses').slice(),
-      events: require('../../test-helpers/src/data/migrated/0.3.0/events').concat(extraEventMigrated),
+      events: require('../../test-helpers/src/data/migrated/0.3.0/events')
+          .concat(extraEventMigrated),
       streams: require('../../test-helpers/src/data/migrated/0.3.0/streams').slice(),
       attachments: require('../../test-helpers/src/data/migrated/0.3.0/attachments').slice()
     };
@@ -70,7 +70,7 @@ describe('Versions', function () {
 
       results.accesses.forEach(converters.getRenamePropertyFn('_id', 'token').bind(null, null));
       expected.accesses.sort(function (a, b) { return a.name.localeCompare(b.name); });
-      // commented (see reason at top of test case) results.accesses.should.eql(expected.accesses);
+      results.accesses.should.eql(expected.accesses);
 
       expected.streams.sort(function (a, b) { return a.name.localeCompare(b.name); });
       results.streams.should.eql(expected.streams);
@@ -92,7 +92,7 @@ describe('Versions', function () {
     });
   });
 
-  it('must handle data migration from v0.3.0 to v0.4.0', function (done) {
+  it.skip('must handle data migration from v0.3.0 to v0.4.0 (skipped, obsolete)', function (done) {
     var versions = getVersions('0.4.0'),
         user = {id: 'u_0'};
 
@@ -118,7 +118,7 @@ describe('Versions', function () {
     });
   });
 
-  it('must handle data migration from v0.4.0 to v0.5.0', function (done) {
+  it.skip('must handle data migration from v0.4.0 to v0.5.0 (skipped, obsolete)', function (done) {
     var versions = getVersions('0.5.0'),
         user = {id: 'u_0'};
 
