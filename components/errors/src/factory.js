@@ -1,37 +1,101 @@
-/**
- * Helper "factory" methods for common API errors (see error ids). Extend as needed.
- */
-
 var APIError = require('./APIError'),
-    ErrorIds = require('./ErrorIds');
+    ErrorIds = require('./ErrorIds'),
+    _ = require('lodash');
 
-exports.corruptedData = function (message, innerError) {
+/**
+ * Helper "factory" methods for API errors (see error ids).
+ */
+var factory = module.exports = {};
+
+factory.corruptedData = function (message, innerError) {
   return new APIError(ErrorIds.CorruptedData, message, {
     httpStatus: 422,
     innerError: innerError
   });
 };
 
-exports.forbidden = function (message) {
+factory.forbidden = function (message) {
   if (! message) {
     message = 'The given token\'s access permissions do not allow this operation.';
   }
   return new APIError(ErrorIds.Forbidden, message, {httpStatus: 403});
 };
 
-exports.invalidAccessToken = function (message, innerError) {
+factory.invalidAccessToken = function (message, innerError) {
   return new APIError(ErrorIds.InvalidAccessToken, message, {
     httpStatus: 401,
     innerError: innerError
   });
 };
 
-exports.missingHeader = function (headerName) {
+factory.invalidCredentials = function (message) {
+  return new APIError(ErrorIds.InvalidCredentials,
+      message || 'The given username/password pair is invalid.',
+      {httpStatus: 401});
+};
+
+factory.invalidItemId = function (message) {
+  return new APIError(ErrorIds.InvalidItemId, message, {httpStatus: 400});
+};
+
+factory.invalidMethod = function (methodId) {
+  return new APIError(ErrorIds.InvalidMethod, 'Invalid method id "' + methodId + '"',
+      {httpStatus: 404});
+};
+
+factory.invalidOperation = function (message, data, innerError) {
+  return new APIError(ErrorIds.InvalidOperation, message, {
+    httpStatus: 400,
+    data: data,
+    innerError: innerError
+  });
+};
+
+factory.invalidParametersFormat = function (message, data, innerError) {
+  return new APIError(ErrorIds.InvalidParametersFormat, message, {
+    httpStatus: 400,
+    data: data,
+    innerError: innerError
+  });
+};
+
+factory.invalidRequestStructure = function (message, data, innerError) {
+  return new APIError(ErrorIds.InvalidRequestStructure, message, {
+    httpStatus: 400,
+    data: data,
+    innerError: innerError
+  });
+};
+
+factory.itemAlreadyExists = function (resourceType, conflictingKeys, innerError) {
+  resourceType = resourceType || 'resource';
+  var article = _.contains(['a', 'e', 'i', 'o', 'u'], resourceType[0]) ? 'An ' : 'A ';
+  var keysDescription = Object.keys(conflictingKeys).map(function (k) {
+    return k + ' "' + conflictingKeys[k] + '"';
+  }).join(', ');
+  var message = article + resourceType + ' with ' + keysDescription +
+      ' already exists';
+  return new APIError(ErrorIds.ItemAlreadyExists, message, {
+    httpStatus: 400,
+    innerError: innerError,
+    data: conflictingKeys
+  });
+};
+
+factory.missingHeader = function (headerName) {
   return new APIError(ErrorIds.MissingHeader, 'Missing expected header "' + headerName + '"',
       {httpStatus: 400});
 };
 
-exports.unexpectedError = function (sourceError, message) {
+factory.periodsOverlap = function (message, data, innerError) {
+  return new APIError(ErrorIds.PeriodsOverlap, message, {
+    httpStatus: 400,
+    data: data,
+    innerError: innerError
+  });
+};
+
+factory.unexpectedError = function (sourceError, message) {
   return new APIError(ErrorIds.UnexpectedError,
       message || ('Unexpected error: ' + sourceError.message), {
     httpStatus: 500,
@@ -46,7 +110,7 @@ exports.unexpectedError = function (sourceError, message) {
  * @param {Error} innerError
  * @returns {APIError}
  */
-exports.unknownReferencedResource = function (resourceType, paramKey, value, innerError) {
+factory.unknownReferencedResource = function (resourceType, paramKey, value, innerError) {
   var message = 'Unknown referenced ' + (resourceType || 'resource(s)') + ' "' +
       (value.join ? value.join('", "') : value) + '"';
   var data = {};
@@ -58,10 +122,16 @@ exports.unknownReferencedResource = function (resourceType, paramKey, value, inn
   });
 };
 
-exports.unknownResource = function (resourceType, id, innerError) {
+factory.unknownResource = function (resourceType, id, innerError) {
   var message = 'Unknown ' + (resourceType || 'resource') + ' ' + (id ? '"' + id + '"' : '');
   return new APIError(ErrorIds.UnknownResource, message, {
     httpStatus: 404,
     innerError: innerError
   });
+};
+
+factory.unsupportedContentType = function (contentType) {
+  return new APIError(ErrorIds.UnsupportedContentType, 'We don\'t support "' + contentType +
+      '" as content type. If you think we should, please help us and report an issue!',
+      {httpStatus: 415});
 };

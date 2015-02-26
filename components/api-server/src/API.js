@@ -1,6 +1,6 @@
 var async = require('async'),
     APIError = require('components/errors').APIError,
-    errors = require('./errors/factory');
+    errors = require('components/errors').factory;
 
 module.exports = API;
 /**

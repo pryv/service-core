@@ -1,5 +1,5 @@
 var utils = require('components/utils'),
-    errors = require('../errors/factory'),
+    errors = require('components/errors').factory,
     async = require('async'),
     commonFns = require('./commonFunctions'),
     methodsSchema = require('../schema/eventsMethods'),

@@ -1,7 +1,7 @@
 var commonFns = require('./commonFunctions'),
     utils = require('components/utils'),
     encryption = utils.encryption,
-    errors = require('../errors/factory'),
+    errors = require('components/errors').factory,
     methodsSchema = require('../schema/authMethods'),
     _ = require('lodash');
 

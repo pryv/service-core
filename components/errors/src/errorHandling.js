@@ -5,6 +5,8 @@
 var APIError = require('./APIError'),
     ErrorIds = require('./ErrorIds');
 
+var errorHandling = module.exports = {};
+
 /**
  * Logs the given error.
  *
@@ -12,7 +14,7 @@ var APIError = require('./APIError'),
  * @param {Object} req The request context; expected properties: url, method, body
  * @param {Object} logger The logger object (expected methods: debug, info, warn, error)
  */
-exports.logError = function (error, req, logger) {
+errorHandling.logError = function (error, req, logger) {
   var metadata = {};
   if (req) {
     metadata.context = {
@@ -49,7 +51,7 @@ exports.logError = function (error, req, logger) {
  * @param {APIError} error
  * @return {Object}
  */
-exports.getPublicErrorData = function (error) {
+errorHandling.getPublicErrorData = function (error) {
   if (error instanceof APIError) {
     var publicError = {
       id: error.id,

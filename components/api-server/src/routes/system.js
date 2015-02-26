@@ -1,5 +1,5 @@
 var APIError = require('components/errors').APIError,
-    ErrorIds = require('../errors/ErrorIds'),
+    ErrorIds = require('components/errors').ErrorIds,
     Paths = require('./Paths'),
     methodCallback = require('./methodCallback'),
     contentType = require('../middleware/contentType'),

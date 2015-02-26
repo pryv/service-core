@@ -1,4 +1,4 @@
-var errors = require('../errors/factory'),
+var errors = require('components/errors').factory,
     validation = require('../schema/validation');
 
 exports.loadAccess = function loadAccess(context, params, result, next) {

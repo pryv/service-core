@@ -1,6 +1,6 @@
 var methodCallback = require('./methodCallback'),
     encryption = require('components/utils').encryption,
-    errors = require('../errors/factory'),
+    errors = require('components/errors').factory,
     express = require('express'),
     filesUploadSupport = require('../middleware/filesUploadSupport'),
     Paths = require('./Paths'),

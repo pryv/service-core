@@ -2,7 +2,7 @@
  * Helper stuff for validating objects against schemas.
  */
 
-var ErrorIds = require('../../src/errors/ErrorIds'),
+var ErrorIds = require('components/errors').ErrorIds,
     Action = require('../../src/schema/Action'),
     encryption = require('components/utils').encryption,
     Validator = require('z-schema'),

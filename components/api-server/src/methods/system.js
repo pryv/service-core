@@ -1,4 +1,4 @@
-var errors = require('../errors/factory'),
+var errors = require('components/errors').factory,
     commonFns = require('./commonFunctions'),
     errorHandling = require('components/errors').errorHandling,
     methodsSchema = require('../schema/systemMethods'),

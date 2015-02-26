@@ -1,6 +1,6 @@
 var async = require('async'),
     commonFns = require('./commonFunctions'),
-    errors = require('../errors/factory'),
+    errors = require('components/errors').factory,
     methodsSchema = require('../schema/followedSlicesMethods'),
     storage = require('components/storage');
 

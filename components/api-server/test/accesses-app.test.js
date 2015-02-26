@@ -1,7 +1,7 @@
 /*global describe, before, beforeEach, it */
 
 var helpers = require('./helpers'),
-    ErrorIds = require('../src/errors/ErrorIds'),
+    ErrorIds = require('components/errors').ErrorIds,
     server = helpers.dependencies.instanceManager,
     async = require('async'),
     validation = helpers.validation,

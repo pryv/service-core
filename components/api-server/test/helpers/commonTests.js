@@ -3,7 +3,7 @@
  */
 
 var validation = require('./validation'),
-    ErrorIds = require('../../src/errors/ErrorIds'),
+    ErrorIds = require('components/errors').ErrorIds,
     request = require('superagent'),
     url = require('url');
 

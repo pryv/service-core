@@ -3,7 +3,7 @@
 var helpers = require('./helpers'),
     async = require('async'),
     server = helpers.dependencies.instanceManager,
-    ErrorIds = require('../src/errors/ErrorIds'),
+    ErrorIds = require('components/errors').ErrorIds,
     should = require('should'), // explicit require to benefit from static functions
     methodsSchema = require('../src/schema/generalMethods'),
     url = require('url'),

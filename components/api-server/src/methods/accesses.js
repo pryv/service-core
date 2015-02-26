@@ -1,6 +1,6 @@
 var APIError = require('components/errors').APIError,
-    errors = require('../errors/factory'),
-    ErrorIds = require('../errors/ErrorIds'),
+    errors = require('components/errors').factory,
+    ErrorIds = require('components/errors').ErrorIds,
     async = require('async'),
     commonFns = require('./commonFunctions'),
     Database = require('components/storage').Database,

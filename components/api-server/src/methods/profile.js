@@ -1,4 +1,4 @@
-var errors = require('../errors/factory'),
+var errors = require('components/errors').factory,
     async = require('async'),
     commonFns = require('./commonFunctions'),
     methodsSchema = require('../schema/profileMethods');

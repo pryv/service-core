@@ -1,5 +1,5 @@
 var methodCallback = require('./methodCallback'),
-    errors = require('../errors/factory'),
+    errors = require('components/errors').factory,
     express = require('express'),
     Paths = require('./Paths');
 

@@ -4,7 +4,7 @@
  * regular pure JSON request (i.e. uploaded data in req.body).
  */
 
-var errors = require('../errors/factory');
+var errors = require('components/errors').factory;
 
 module.exports = function (req, res, next) {
   if (req.is('multipart/form-data')) {
