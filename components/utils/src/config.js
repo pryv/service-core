@@ -22,8 +22,8 @@ exports.defaults = {
     name: 'pryv-node'
   },
   eventFiles: {
-    attachmentsDirPath: path.join(__dirname, '../../../../api-server-files/attachments'),
-    previewsDirPath: path.join(__dirname, '../../../../api-server-files/previews')
+    attachmentsDirPath: path.join(__dirname, '../../../../service-core-files/attachments'),
+    previewsDirPath: path.join(__dirname, '../../../../service-core-files/previews')
   },
   auth: {
     /**

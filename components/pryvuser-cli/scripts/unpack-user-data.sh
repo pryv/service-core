@@ -2,7 +2,7 @@
 
 # TEMPORARY SCRIPT, kept as reference until the CLI handles account dump & restore
 
-DATAPATH=/var/pryv/data/api-server-files/
+DATAPATH=/var/pryv/data/service-core-files/
 DBNAME=pryv-node
 UIDLENGTH=24
 COLLECTIONS="accesses followedSlices events profile streams"

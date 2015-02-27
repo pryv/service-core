@@ -4,7 +4,7 @@
 
 username=$1
 
-DATAPATH=/var/pryv/data/api-server-files/
+DATAPATH=/var/pryv/data/service-core-files/
 DBNAME=pryv-node
 UIDLENGTH=24
 COLLECTIONS="accesses followedSlices events profile streams"

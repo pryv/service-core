@@ -16,8 +16,8 @@ _.extend(exports.defaults, {
     sessionMaxAge: 1000 * 60 * 60 * 24 * 14 // 2 weeks
   },
   eventFiles: {
-    attachmentsDirPath: path.join(__dirname, '../../../../api-server-files/attachments'),
-    previewsDirPath: path.join(__dirname, '../../../../api-server-files/previews'),
+    attachmentsDirPath: path.join(__dirname, '../../../../service-core-files/attachments'),
+    previewsDirPath: path.join(__dirname, '../../../../service-core-files/previews'),
     previewsCacheMaxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
     previewsCacheCleanUpCronTime: '00 00 2 * * *' // every day at 2:00:00AM
   },
