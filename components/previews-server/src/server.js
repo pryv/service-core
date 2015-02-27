@@ -1,5 +1,4 @@
 var dependencies = require('dependable').container({useFnAnnotations: true}),
-    fs = require('fs'),
     middleware = require('components/middleware'),
     storage = require('components/storage'),
     utils = require('components/utils');
@@ -61,18 +60,9 @@ dependencies.register({
 
 // setup HTTP
 
-var expressApp = dependencies.get('expressApp'),
-    server;
-if (! settings.http.noSSL) { // if SSL...
-  var serverOptions = {
-    key: fs.readFileSync(settings.http.certsPathAndKey + '-key.pem').toString(),
-    cert: fs.readFileSync(settings.http.certsPathAndKey + '-cert.crt').toString(),
-    ca: fs.readFileSync(settings.http.certsPathAndKey + '-ca.pem').toString()
-  };
-  server = require('https').createServer(serverOptions, expressApp);
-} else {
-  server = require('http').createServer(expressApp);
-}
+var expressApp = dependencies.get('expressApp');
+
+var server = require('http').createServer(expressApp);
 module.exports = server;
 
 // Go

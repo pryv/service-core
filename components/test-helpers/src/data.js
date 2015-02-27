@@ -49,8 +49,8 @@ exports.resetProfile = function (done, user) {
 
 // followed slices
 
-var followedSlicesURL = (settings.http.noSSL ? 'http' : 'https') + '://' + settings.http.ip + ':' +
-    settings.http.port + '/' + users[0].username;
+var followedSlicesURL = 'http://' + settings.http.ip + ':' + settings.http.port + '/' +
+    users[0].username;
 var followedSlices = exports.followedSlices = require('./data/followedSlices')(followedSlicesURL);
 
 exports.resetFollowedSlices = function (done, user) {

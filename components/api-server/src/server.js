@@ -1,7 +1,6 @@
 var childProcess = require('child_process'),
     CronJob = require('cron').CronJob,
     dependencies = require('dependable').container({useFnAnnotations: true}),
-    fs = require('fs'),
     errors = require('components/errors'),
     middleware = require('components/middleware'),
     storage = require('components/storage'),
@@ -107,17 +106,7 @@ utils.messaging.openPubSocket(settings.tcpMessaging, function (err, messagingSoc
 
   // setup HTTP and register server
 
-  var server;
-  if (! settings.http.noSSL) { // if SSL...
-    var serverOptions = {
-      key: fs.readFileSync(settings.http.certsPathAndKey + '-key.pem').toString(),
-      cert: fs.readFileSync(settings.http.certsPathAndKey + '-cert.crt').toString(),
-      ca: fs.readFileSync(settings.http.certsPathAndKey + '-ca.pem').toString()
-    };
-    server = require('https').createServer(serverOptions, expressApp);
-  } else {
-    server = require('http').createServer(expressApp);
-  }
+  var server = require('http').createServer(expressApp);
   module.exports = server;
   dependencies.register({server: server});
 

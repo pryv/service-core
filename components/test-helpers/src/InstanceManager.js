@@ -81,10 +81,7 @@ function InstanceManager(settings) {
     // adjust config settings for test instance
     serverSettings.tcpMessaging.pubConnectInsteadOfBind = true;
 
-    var protocol = serverSettings.http.noSSL ? 'http' : 'https',
-        ip = serverSettings.http.ip,
-        port = serverSettings.http.port;
-    this.url = protocol + '://' + ip + ':' + port;
+    this.url = 'http://' + serverSettings.http.ip + ':' + serverSettings.http.port;
   };
 
   /**

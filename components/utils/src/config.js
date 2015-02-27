@@ -9,9 +9,7 @@ var nconf = require('nconf'),
 exports.defaults = {
   http: {
     ip: '127.0.0.1',
-    port: 3443,
-    noSSL: false, // SSL is on by default,
-    certsPathAndKey: path.join(__dirname, '../../cert/rec.la') // will add file suffixes
+    port: 3443
   },
   database: {
     /**
