@@ -1,5 +1,5 @@
 var utils = require('components/utils'),
-    settings = utils.config.load(),
+    settings = utils.commonConfig.load(),
     logging = utils.logging(settings.logs),
     storage = require('components/storage'),
     database = new storage.Database(settings.database, logging),

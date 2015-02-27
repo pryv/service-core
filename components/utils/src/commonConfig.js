@@ -3,10 +3,12 @@ var nconf = require('nconf'),
     path = require('path'),
     toString = require('./toString');
 
+var commonConfig = module.exports = {};
+
 /**
  * Default settings. Extend at will.
  */
-exports.defaults = {
+commonConfig.defaults = {
   http: {
     ip: '127.0.0.1',
     port: 3443
@@ -72,7 +74,7 @@ exports.defaults = {
  * @param defaultFilePath An optional default config file path (using if not specified via --config)
  * @returns {Object} The loaded settings
  */
-exports.load = function (defaultFilePath) {
+commonConfig.load = function (defaultFilePath) {
   nconf.argv();
   // not used ATM and loads a lot of unwanted mess (that could be white/blacklisted)
   // nconf.env();

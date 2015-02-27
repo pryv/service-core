@@ -1,21 +1,13 @@
-/**
- * Extends common config with defaults and helpers.
- */
-
-var config = require('components/utils').config,
-    path = require('path'),
+var config = require('components/utils').commonConfig,
     _ = require('lodash');
 
-exports = module.exports = config;
+/**
+ * Extends common config.
+ */
+module.exports = config;
 
-_.extend(exports.defaults, {
+_.extend(config.defaults, {
   nightlyScriptCronTime: '00 15 2 * * *', // i.e. every day at 2:15 AM
-  /**
-   * Override common default settings.
-   */
-  eventFiles: {
-    attachmentsDirPath: path.join(__dirname, '../../../../service-core-files/attachments')
-  },
   eventTypes: {
     sourceURL: 'http://pryv.github.io/event-types/flat.json'
   },

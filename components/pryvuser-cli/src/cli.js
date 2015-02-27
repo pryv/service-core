@@ -16,7 +16,7 @@ program.version(require('../package.json').version)
     .option('--config [path]',
         'Config file path; the default is "api-server.config.json" in the working dir');
 
-var settings = utils.config.load(path.resolve(process.cwd(), 'api-server.config.json')),
+var settings = utils.commonConfig.load(path.resolve(process.cwd(), 'api-server.config.json')),
     logging = utils.logging(settings.logs),
     database = new storage.Database(settings.database, logging),
     usersStorage = new storage.Users(database),

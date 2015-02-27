@@ -1,14 +1,13 @@
-/**
- * Extends common config with defaults.
- */
-
-var config = require('components/utils').config,
+var config = require('components/utils').commonConfig,
     path = require('path'),
     _ = require('lodash');
 
-exports = module.exports = config;
+/**
+ * Extends common config.
+ */
+module.exports = config;
 
-_.extend(exports.defaults, {
+_.extend(config.defaults, {
   auth: {
     /**
      * The maximum age of a personal access token if unused.

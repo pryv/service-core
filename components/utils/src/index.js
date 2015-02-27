@@ -1,5 +1,5 @@
 module.exports = {
-  config: require('./config'),
+  commonConfig: require('./commonConfig'),
   encryption: require('./encryption'),
   logging: require('./logging'),
   messaging: require('./messaging'),
