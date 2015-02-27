@@ -3,6 +3,22 @@
 Node.js / Express server to manage user activity and user administration requests.
 
 
+## Usage
+
+### Running the server
+
+```bash
+node src/server [--config={JSON config path}]
+```
+
+You can also pass individual configuration settings as options, e.g. `--http.port=8000`. For the available configuration settings, [see the code](https://github.com/pryv/service-core/blob/master/components/api-server/src/config.js).
+
+
+### API
+
+See the [Pryv API reference documentation](https://pryv.github.io/reference/).
+
+
 ## Contribute
 
 Make sure to check the root README first.

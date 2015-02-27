@@ -3,7 +3,18 @@
 Node.js / Express server supporting client apps with event previews (which are outside the scope of the main Pryv API).
 
 
-## Quick API description
+## Usage
+
+### Running the server
+
+```bash
+node src/server [--config={JSON config path}]
+```
+
+You can also pass individual configuration settings as options, e.g. `--http.port=8000`. For the available configuration settings, [see the code](https://github.com/pryv/service-core/blob/master/components/previews-server/src/config.js).
+
+
+### API
 
 ### Event previews: `GET /events/{event-id}`
 
