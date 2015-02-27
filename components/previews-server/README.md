@@ -1,6 +1,6 @@
-# Pryv browser server
+# Pryv previews server
 
-Node.js / Express server supporting the browser client app, offering specific functionality outside the scope of the main Pryv API (e.g. event previews).
+Node.js / Express server supporting client apps with event previews (which are outside the scope of the main Pryv API).
 
 
 ## Quick API description
