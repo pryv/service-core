@@ -14,9 +14,11 @@ var program = require('commander'),
 program.version(require('../package.json').version)
     .description('Utility to manipulate Pryv user accounts')
     .option('--config [path]',
-        'Config file path; the default is "api-server.config.json" in the working dir');
+        'Config file path; the default is "api-server.config.json" in the working dir')
+    .option('--printConfig',
+        'Prints the configuration settings actually loaded (e.g. for debugging purposes)');
 
-var settings = utils.commonConfig.load(path.resolve(process.cwd(), 'api-server.config.json')),
+var settings = utils.config.load(path.resolve(process.cwd(), 'api-server.config.json')),
     logging = utils.logging(settings.logs),
     database = new storage.Database(settings.database, logging),
     usersStorage = new storage.Users(database),

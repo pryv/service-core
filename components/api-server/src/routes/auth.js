@@ -16,7 +16,7 @@ module.exports = function (expressApp, api, authSettings, httpSettings) {
       ssoCookieDomain = authSettings.ssoCookieDomain ||
           httpSettings.ip + ':' + httpSettings.port,
       ssoCookieSignSecret = authSettings.ssoCookieSignSecret || 'Hallowed Be Thy Name, O Node',
-      ssoCookieSecure = process.env.NODE_ENV !== 'development';
+      ssoCookieSecure = process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'test';
 
   expressApp.all(Paths.Auth + '/*', express.cookieParser(ssoCookieSignSecret));
 

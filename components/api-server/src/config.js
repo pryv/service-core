@@ -1,89 +1,97 @@
-var config = require('components/utils').commonConfig,
+/* jshint -W024 */
+var config = require('components/utils').config,
     _ = require('lodash');
 
 /**
- * Extends common config.
+ * Extends base config.
  */
 module.exports = config;
 
-_.extend(config.defaults, {
-  nightlyScriptCronTime: '00 15 2 * * *', // i.e. every day at 2:15 AM
+_.merge(config.schema, {
+  nightlyScriptCronTime: {
+    format: String,
+    default: '00 15 2 * * *' // i.e. every day at 2:15 AM
+  },
   eventTypes: {
-    sourceURL: 'http://pryv.github.io/event-types/flat.json'
+    sourceURL: {
+      format: 'url',
+      default: 'https://pryv.github.io/event-types/flat.json'
+    }
   },
   auth: {
-    /**
-     * For authorizing admin calls (e.g. user creation from registration server).
-     */
-    adminAccessKey: 'test admin key',
-    /**
-     * Comma-separated list of {trusted-app-id}@{origin} pairs
-     * (use via isTrustedApp() function below).
-     * Origins accept '*' wildcards.
-     * App ids can also equal '*', but obviously don't use that in production settings.
-     */
-    trustedApps: 'pryv-test@http://*.pryv.local*, *@https://*.rec.la*, *@http://pryv.github.io',
-    /**
-     * The maximum age of a personal access token if unused.
-     */
-    sessionMaxAge: 1000 * 60 * 60 * 24 * 14, // 2 weeks
-    /**
-     * The domain used to set the SSO cookie, *with* the leading dot if needed
-     * (e.g. ".pryv.io").
-     * If not defined (falsy value, i.e. for tests), the server's local IP is used.
-     */
-    ssoCookieDomain: '',
-    /**
-     * The secret used to sign the SSO cookie to prevent client-side tampering.
-     */
-    ssoCookieSignSecret: 'Hallowed Be Thy Name, O Test',
-    /**
-     * The secret used to compute tokens for authentifying read accesses of event attachements.
-     */
-    filesReadTokenSecret: 'test server secret',
-    /**
-     * The maximum age of a password reset request.
-     */
-    passwordResetRequestMaxAge: 1000 * 60 * 60, // one hour
-    passwordResetPageURL: 'https://sw.pryv.li/access/reset-password.html'
+    // TODO: rename to "systemAccessKey" for consistency
+    adminAccessKey: {
+      format: String,
+      default: 'OVERRIDE ME',
+      doc: 'For authorizing admin calls (e.g. user creation from registration server).'
+    },
+    trustedApps: {
+      // TODO: see for custom parsing with convict.addFormat()
+      format: String,
+      default: '*@http://*.pryv.local*, *@https://*.rec.la*, *@http://pryv.github.io',
+      doc: 'Comma-separated list of {trusted-app-id}@{origin} pairs. ' +
+           'Origins and app ids accept "*" wildcards, but never use wildcard app ids in production.'
+    },
+    sessionMaxAge: {
+      format: 'duration',
+      default: 1000 * 60 * 60 * 24 * 14, // 2 weeks
+      doc: 'The maximum age (in seconds) of a personal access token if unused.'
+    },
+    ssoCookieDomain: {
+      format: String,
+      default: '',
+      doc: 'The domain used to set the SSO cookie, *with* the leading dot if needed ' +
+           '(e.g. ".pryv.me"). If empty, the server IP is used.'
+    },
+    ssoCookieSignSecret: {
+      format: String,
+      default: 'OVERRIDE ME',
+      doc: 'The secret used to sign the SSO cookie to prevent client-side tampering.'
+    },
+    passwordResetRequestMaxAge: {
+      format: 'duration',
+      default: 1000 * 60 * 60, // one hour
+      doc: 'The maximum age (in seconds) of a password reset request.'
+    },
+    passwordResetPageURL: {
+      format: 'url',
+      // TODO: update when simplified env implemented
+      default: 'https://sw.pryv.li/access/reset-password.html'
+    }
   },
   services: {
     register: {
-      url: 'https://reg.pryv.in',
-      key: 'test-register-system-key'
+      url: {
+        format: 'url',
+        // TODO: update when simplified env implemented
+        default: 'https://reg.pryv.in'
+      },
+      key: {
+        format: String,
+        default: 'OVERRIDE ME'
+      }
     },
     email: {
-      url: 'https://mandrillapp.com',
-      key: 'test-mandrill-key',
-      sendMessagePath: '/api/1.0/messages/send-template.json',
-      welcomeTemplate: 'welcome-email',
-      resetPasswordTemplate: 'reset-password'
+      url: {
+        format: 'url',
+        default: 'https://mandrillapp.local'
+      },
+      key: {
+        format: String,
+        default: 'OVERRIDE ME'
+      },
+      sendMessagePath: {
+        format: String,
+        default: '/api/1.0/messages/send-template.json'
+      },
+      welcomeTemplate: {
+        format: String,
+        default: 'welcome-email'
+      },
+      resetPasswordTemplate: {
+        format: String,
+        default: 'reset-password'
+      }
     }
-  },
-  /**
-   * Override common default settings.
-   */
-  logs: {
-    console: {
-      active: true,
-      level: 'debug',
-      colorize: true
-    },
-    file: {
-      active: false,
-      level: 'error',
-      path: 'api-server.log',
-      maxFileBytes: 4096,
-      maxNbFiles: 20
-    },
-    airbrake: {
-      active: false,
-      key: 'test-airbrake-key'
-    }
-  },
-  tcpMessaging: {
-    host: 'localhost',
-    port: '2001',
-    pubConnectInsteadOfBind: false
   }
 });

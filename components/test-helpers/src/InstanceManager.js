@@ -120,7 +120,6 @@ function InstanceManager(settings) {
       stdio: 'inherit',
       env: process.env
     };
-    delete options.env.TEST;
     serverProcess = spawn(process.argv[0], args, options);
     serverProcess.on('exit', function (code/*, signal*/) {
       logger.debug('Server instance exited with code ' + code);

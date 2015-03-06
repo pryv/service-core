@@ -424,7 +424,7 @@ describe('account', function () {
           require('nock')(this.context.url).post(this.context.sendMessagePath)
               .reply(200, function (uri, requestBody) {
             var body = JSON.parse(requestBody);
-            var token = body.message.global_merge_vars[1].content; // HACK, expect fixed structure
+            var token = body.message.global_merge_vars[1].content; /* HACK, assume structure */
             this.context.messagingSocket.emit('password-reset-token', token);
           }.bind(this));
         }

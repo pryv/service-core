@@ -9,7 +9,9 @@ var dependencies = require('dependable').container({useFnAnnotations: true}),
  */
 
 // load config settings
-var settings = require('./config').load();
+var config = require('./config');
+config.printSchemaAndExitIfNeeded();
+var settings = config.load();
 
 // register base dependencies
 

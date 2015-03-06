@@ -4,15 +4,16 @@
   "private": true,
   "main": "./src/index.js",
   "scripts": {
-    "test": "npm run _test -- --logs.console.active=false",
+    "test": "npm run _test -- --logs:console:active=false",
     "test-detailed": "npm run _test -- --reporter=spec",
     "test-debug": "npm run _test -- --timeout 3600000 --reporter=spec --debug-brk",
-    "test-profile": "npm run _test -- --profile=true --logs.console.active=false && tick-processor > profiling-output.txt && open profiling-output.txt",
-    "_test": "NODE_ENV=development TEST=true mocha --timeout 10000 --reporter=dot test/*.js"
+    "test-profile": "npm run _test -- --profile=true --logs:console:active=false && tick-processor > profiling-output.txt && open profiling-output.txt",
+    "_test": "NODE_ENV=test mocha --timeout 10000 --reporter=dot test/*.js"
   },
   "dependencies": {
+    "airbrake": "^0.3.8",
     "bcrypt": "^0.8.1",
-    "nconf": "^0.7.1",
+    "convict": "^0.6.1",
     "winston": "^0.9.0"
   },
   "devDependencies": {

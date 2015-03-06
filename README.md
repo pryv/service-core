@@ -3,6 +3,27 @@
 Pryv core server app components, ie. what runs on each server node and handles user data.
 
 
+## Usage
+
+See individual component READMEs for specific instructions.
+
+
+### About configuration
+
+Components supporting configuration load their settings from (last takes precedence):
+
+1. Default values, as defined in the [base configuration](https://github.com/pryv/service-core/blob/master/components/utils/src/config.js#L20) or the component's own
+2. A JSON file specified by setting `config`, defaulting to `config/{env}.json` (`env` can be `production`, `development` or `test`); typically used for per-environment settings
+3. An additional "overrides" JSON file specified by setting 'configOverrides'; typically used for confidential settings (e.g. keys, secrets).
+4. Environment variables; default naming scheme: `PRYV_SETTING_KEY_PATH` (for example, `PRYV_DATABASE_HOST` for `database`→`host`)
+5. Command-line options as `--key=value`; default naming scheme: `setting:key:path` (for example, `database:host` for `database`→`host`)
+
+Those components also accept the following command line options:
+
+- `--help` displays all available configuration settings as a schema structure (and exits)
+- `--printConfig` prints the configuration settings actually loaded (e.g. for debugging purposes)
+
+
 ## Contribute
 
 ### Prerequisites

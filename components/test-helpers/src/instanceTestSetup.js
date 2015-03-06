@@ -39,7 +39,8 @@ exports.executeIfAny = function (settings, messagingSocket) {
 
 function stringify(obj) {
   return JSON.stringify(obj, function (key, value) {
-    return (typeof value === 'function') ? value.toString() : value;
+    // stringify functions with their source, stripping CR/LF
+    return (typeof value === 'function') ? value.toString().replace(/\r?\n|\r/g, ' ') : value;
   });
 }
 

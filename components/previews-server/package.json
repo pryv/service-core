@@ -3,11 +3,11 @@
   "version": "0.3.15",
   "private": true,
   "scripts": {
-    "test": "npm run _test -- --logs.console.active=false",
+    "test": "npm run _test -- --logs:console:active=false",
     "test-detailed": "npm run _test -- --reporter=spec",
     "test-debug": "npm run _test -- --timeout 3600000 --reporter=spec --debug-brk",
-    "test-profile": "npm run _test -- --profile=true --logs.console.active=false && tick-processor > profiling-output.txt && open profiling-output.txt",
-    "_test": "NODE_ENV=development TEST=true mocha --timeout 10000 --reporter=dot --config=test/config.json test/*.js"
+    "test-profile": "npm run _test -- --profile=true --logs:console:active=false && tick-processor > profiling-output.txt && open profiling-output.txt",
+    "_test": "NODE_ENV=test mocha --timeout 10000 --reporter=dot test/*.js"
   },
   "dependencies": {
     "fs-xattr": "^0.1.5",

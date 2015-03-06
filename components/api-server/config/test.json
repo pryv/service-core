@@ -1,9 +1,5 @@
 {
-  "http": {
-    "noSSL": true,
-    "port": 3000
-  },
-  "clients": {
+  "auth": {
     "trustedApps": "pryv-test@http://test.pryv.local, *@https://*.rec.la*"
   },
   "logs": {

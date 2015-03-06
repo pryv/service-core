@@ -8,10 +8,10 @@ Node.js / Express server supporting client apps with event previews (which are o
 ### Running the server
 
 ```bash
-node src/server [--config={JSON config path}]
+node src/server [options]
 ```
 
-You can also pass individual configuration settings as options, e.g. `--http.port=8000`. For the available configuration settings, [see the code](https://github.com/pryv/service-core/blob/master/components/previews-server/src/config.js).
+See [the root README](https://github.com/pryv/service-core/blob/master/README.md#about-configuration) to learn about configuration options.
 
 
 ### API

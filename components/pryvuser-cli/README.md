@@ -17,6 +17,8 @@ Make sure to check the root README first.
 
 ### Tests
 
+Prerequisite: install command locally with `npm link`.
+
 - `npm run test` (or `npm test`) for quiet output
 - `npm run test-detailed` for detailed test specs and debug log output
 - `npm run test-profile` for profiling the tested server instance and opening the processed output with `tick-processor`

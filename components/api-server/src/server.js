@@ -14,7 +14,9 @@ var childProcess = require('child_process'),
  */
 
 // load config settings
-var settings = require('./config').load();
+var config = require('./config');
+config.printSchemaAndExitIfNeeded();
+var settings = config.load();
 
 // register base dependencies
 
@@ -124,7 +126,7 @@ utils.messaging.openPubSocket(settings.tcpMessaging, function (err, messagingSoc
         ' [' + expressApp.settings.env + '] listening on ' + server.url);
 
     // TEST: execute test setup instructions if any
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === 'test') {
       try {
         require('components/test-helpers').instanceTestSetup.executeIfAny(settings,
             messagingSocket);
