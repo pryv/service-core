@@ -18,5 +18,5 @@ toString.property = function (propertyKey) {
 };
 
 toString.user = function (user) {
-  return '"' + user.username + '" (' + user.id + ')';
+  return '"' + user.username + '" (' + (user.id || user._id) + ')';
 };
