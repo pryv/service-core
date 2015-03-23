@@ -11,7 +11,7 @@ var componentsPath = path.resolve(__dirname, '../components'),
     args = process.argv.slice(2);
 
 if (args.length === 0) {
-  console.log('npm command (like "install") required');
+  console.error('npm command (like "install") required');
   process.exit(1);
 }
 

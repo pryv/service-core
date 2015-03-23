@@ -9,4 +9,5 @@
 **/v8.log
 !node_modules/components
 
+proxy/nginx.conf
 service-core.iml
