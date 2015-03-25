@@ -1,10 +1,17 @@
-user              <%= nginxUser %>;
-pid               <%= pidFile %>;
-worker_processes  <%= workerProcesses %>;
-error_log         <%= logsDir %>/error.log;
+<% if (vars.daemon === false) { %>
+daemon            off;
+<% } %>
+
+<% if (vars.nginxUser) { %>
+user              <%= vars.nginxUser %>;
+<% } %>
+
+pid               <%= vars.pidFile %>;
+worker_processes  <%= vars.workerProcesses %>;
+error_log         <%= vars.errorLog %>;
 
 events {
-  worker_connections <%= workerConnections %>;
+  worker_connections <%= vars.workerConnections %>;
   # multi_accept on;
 }
 
@@ -14,7 +21,7 @@ http {
   types_hash_max_size 2048;
   #include             /etc/nginx/mime.types;
 
-  access_log          <%= logsDir %>/access.log;
+  access_log          <%= vars.accessLog %>;
 
   sendfile            on;
   #tcp_nopush         on;
@@ -38,24 +45,24 @@ http {
   # upstream server groups
 
   upstream api_servers {
-    server 127.0.0.1:<%= api.port %>;
+    server 127.0.0.1:<%= vars.api.port %>;
   }
 
   upstream previews_servers {
-    server 127.0.0.1:<%= previews.port %>;
+    server 127.0.0.1:<%= vars.previews.port %>;
   }
 
   # routes
 
   server {
-    listen               <%= port %>;
-    server_name          <%= serverName %>;
+    listen               <%= vars.port %>;
+    server_name          <%= vars.serverName %>;
 
-    <% if (ssl.enabled) { %>
+    <% if (vars.ssl.enabled) { %>
       ssl                  on;
-      ssl_crl              <%= ssl.caFile %>-ca.pem;
-      ssl_certificate      <%= ssl.certFile %>-cert.crt;
-      ssl_certificate_key  <%= ssl.keyFile %>-key.pem;
+      ssl_crl              <%= vars.ssl.caFile %>-ca.pem;
+      ssl_certificate      <%= vars.ssl.certFile %>-cert.crt;
+      ssl_certificate_key  <%= vars.ssl.keyFile %>-key.pem;
     <% } %>
 
     keepalive_timeout    70;
@@ -73,7 +80,7 @@ http {
       proxy_set_header    Upgrade $http_upgrade;
       proxy_set_header    Connection "upgrade";
 
-      root        <%= api.root %>;
+      root        <%= vars.api.root %>;
       proxy_pass  http://api_servers;
     }
 
@@ -89,7 +96,7 @@ http {
       proxy_set_header    Upgrade $http_upgrade;
       proxy_set_header    Connection "upgrade";
 
-      root        <%= previews.root %>;
+      root        <%= vars.previews.root %>;
       proxy_pass  http://previews_servers;
     }
   }

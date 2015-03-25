@@ -5,10 +5,31 @@ Pryv core server app components, ie. what runs on each server node and handles u
 
 ## Usage
 
-See individual component READMEs for specific instructions.
+### Install
+
+_Prerequisites:_ Node v0.12+, Mongo DB v2.6+ (needs at least 4GB of free disk space for the initial database), Nginx (optional, skip if you don't need the proxy server).
+
+Then just `npm install`.
 
 
-### About configuration
+### Component-specific usage
+
+See individual component READMEs for instructions.
+
+
+### Quick, run the servers
+
+`npm run all` runs everything in a single console with `development` settings. To run processes individually:
+
+- `npm run database` runs Mongo DB from its expected location
+- `npm run api` runs the API server
+- `npm run previews` runs the previews server
+- `npm run proxy` compiles the Nginx config (see below) then runs Nginx
+
+
+### Configuration
+
+#### Components
 
 Components supporting configuration load their settings from (last takes precedence):
 
@@ -24,15 +45,16 @@ Those components also accept the following command line options:
 - `--printConfig` prints the configuration settings actually loaded (e.g. for debugging purposes)
 
 
+#### Nginx proxy
+
+The `proxy` folder contains a Nginx configuration template (`nginx.conf.template`) as well as corresponding variables for `development` and `production` environments (`vars.{environment}.js`). To manually generate a `nginx.conf`, do `node scripts/compile-proxy-config {environment}` (this is automatically done for development when running the proxy with `npm run proxy`).
+
+
 ## Contribute
 
-### Prerequisites
+### Setup the dev environment
 
-Node v0.12+ and MongoDB v2.6.0.
-
-`./scripts/setup-dev-env.bash` installs MongoDB in the parent folder and sets up your working copy with a JSHint commit hook and `npm install` if needed.
-
-Note: MongoDB needs at least 4GB of free disk space for its initial database.
+`./scripts/setup-dev-env.bash` installs MongoDB in the parent folder, sets up your working copy with a JSHint commit hook, and `npm install`s if needed.
 
 
 ### About code structure
@@ -47,7 +69,7 @@ Code is organized into local modules defined in the `components` folder, each wi
 
 ### Tests
 
-_Prerequisite:_ MongoDB must be running on the default port; you can use `npm run start-database`.
+_Prerequisite:_ MongoDB must be running on the default port; you can use `npm run database`.
 
 `npm test` runs tests on each component. See individual components for things like detailed output and other options.
 

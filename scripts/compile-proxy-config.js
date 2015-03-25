@@ -19,7 +19,7 @@ var dir = __dirname + '/../proxy',
 
 console.log('Compiling Nginx configuration for ' + env + ' into "' + outputFile + '"...');
 
-var output = _.template(fs.readFileSync(templateFile))(require(varsFile));
+var output = _.template(fs.readFileSync(templateFile))({vars: require(varsFile)});
 fs.writeFileSync(outputFile, output);
 
 console.log('Done.');

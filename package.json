@@ -9,7 +9,13 @@
   },
   "scripts": {
     "preinstall": "node scripts/components-npm install",
-    "start-database": "scripts/start-database.sh",
+
+    "all": "parallelshell 'npm run database' 'npm run api' 'npm run previews' 'npm run proxy'",
+    "database": "scripts/start-database.sh",
+    "api": "cd components/api-server && npm start",
+    "previews": "cd components/previews-server && npm start",
+    "proxy": "node scripts/compile-proxy-config development && nginx -c \"`pwd`/proxy/nginx.conf\"",
+
     "test": "node scripts/components-npm test",
     "check-dependencies": "node scripts/components-checkdeps"
   },
@@ -33,6 +39,7 @@
     "deep-equal": "latest",
     "nixt": "latest",
     "nock": "latest",
+    "parallelshell": "^1.1.1",
     "qs": "latest",
     "should": "latest",
     "socket.io-client": "0.9.x",
@@ -40,6 +47,6 @@
     "wrench": "latest"
   },
   "engines": {
-    "node" : ">=0.12.0"
+    "node": ">=0.12.0"
   }
 }

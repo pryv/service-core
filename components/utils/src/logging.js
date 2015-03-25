@@ -27,35 +27,35 @@ module.exports = function (logsSettings) {
 
   // (console transport is present by default)
   var console = winston['default'].transports.console;
-  console.silent = logsSettings.console &&
-      ! isTrue(logsSettings.console.active);
-  if (logsSettings.console && isTrue(logsSettings.console.active)) {
-    console.level = logsSettings.console.level || 'debug';
-    console.colorize = logsSettings.console.colorize || false;
-    console.timestamp = ! isFalse(logsSettings.console.timestamp);
+  console.silent = ! logsSettings.console.active;
+  if (logsSettings.console.active) {
+    console.level = logsSettings.console.level;
+    console.colorize = logsSettings.console.colorize;
+    console.timestamp = logsSettings.console.timestamp;
   }
   if (winston['default'].transports.file) {
     // in production env it seems winston already includes a file transport...
     winston.remove(winston.transports.File);
   }
-  if (logsSettings.file && isTrue(logsSettings.file.active)) {
+  if (logsSettings.file.active) {
     winston.add(winston.transports.File, {
-      level: logsSettings.file.level || 'error',
-      filename: logsSettings.file.path || 'api-server.log',
-      maxsize: logsSettings.file.maxFileBytes || 4096,
-      maxFiles: logsSettings.file.maxNbFiles || 20,
+      level: logsSettings.file.level,
+      filename: logsSettings.file.path,
+      maxsize: logsSettings.file.maxFileBytes,
+      maxFiles: logsSettings.file.maxNbFiles,
       timestamp: true,
       json: false
     });
   }
-  if (logsSettings.airbrake && isTrue(logsSettings.airbrake.active)) {
+  if (logsSettings.airbrake.active) {
     airbrake = require('airbrake').createClient(logsSettings.airbrake.key);
     airbrake.handleExceptions();
   }
 
   // return singleton
 
-  var loggers = {};
+  var loggers = {},
+      prefix = logsSettings.prefix;
   return {
     /**
      * Returns a logger for the given component.
@@ -64,33 +64,24 @@ module.exports = function (logsSettings) {
      * @param {String} componentName
      */
     getLogger: function (componentName) {
-      if (! loggers[componentName]) {
-        loggers[componentName] = new Logger(componentName);
+      var context = prefix + componentName;
+      if (! loggers[context]) {
+        loggers[context] = new Logger(context);
       }
-      return loggers[componentName];
+      return loggers[context];
     }
   };
 };
 module.exports.injectDependencies = true; // make it DI-friendly
 
 /**
- * Work around the lack of boolean parsing in command-line arguments.
- */
-function isTrue(settingValue) {
-  return settingValue === true || settingValue === 'true';
-}
-function isFalse(settingValue) {
-  return settingValue === false || settingValue === 'false';
-}
-
-/**
  * Creates a new logger for the given component.
  *
- * @param {String} componentName
+ * @param {String} context
  * @constructor
  */
-function Logger(componentName) {
-  this.messagePrefix = componentName ? '[' + componentName + '] ' : '';
+function Logger(context) {
+  this.messagePrefix = context ? '[' + context + '] ' : '';
 }
 
 // define logging methods

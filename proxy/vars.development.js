@@ -1,10 +1,12 @@
 module.exports = {
-  nginxUser: 'user',
+  daemon: false,
+
   pidFile: 'nginx.pid',
   workerProcesses: 1,
   workerConnections: 512,
 
-  logsDir: __dirname + '/../../service-core-files/nginx',
+  errorLog: '/dev/stderr',
+  accessLog: '/dev/stdout',
 
   port: 2000,
   serverName: 'localhost',

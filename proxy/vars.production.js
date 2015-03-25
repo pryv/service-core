@@ -4,7 +4,8 @@ module.exports = {
   workerProcesses: 1,
   workerConnections: 1024,
 
-  logsDir: '${PRYV_LOGSDIR}/nginx',
+  errorLog: '${PRYV_LOGSDIR}/nginx/error.log',
+  accessLog: '${PRYV_LOGSDIR}/nginx/access.log',
 
   port: 443,
   serverName: 'localhost',
