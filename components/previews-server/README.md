@@ -16,7 +16,7 @@ See [the root README](https://github.com/pryv/service-core/blob/master/README.md
 
 ### API
 
-### Event previews: `GET /events/{event-id}`
+#### Event previews: `GET /events/{event-id}`
 
 Returns a JPEG preview of the specified picture event. Authorization is the same as in the Pryv API (i.e. pass token in either `Authorization` header or `auth` query param). Accepted parameters:
 
