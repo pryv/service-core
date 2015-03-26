@@ -1,4 +1,5 @@
 module.exports = {
+  // daemon: true,
   nginxUser: 'www-data',
   pidFile: '/var/run/nginx.pid',
   workerProcesses: 1,
@@ -11,17 +12,18 @@ module.exports = {
   serverName: 'localhost',
   ssl: {
     enabled: true,
-    caFile: 'OVERRIDE ME',
-    certFile: 'OVERRIDE ME',
-    keyFile: 'OVERRIDE ME'
+    caFile: '${PRYV_CERTSDIR}/pryv.me-ca.pem',
+    certFile: '${PRYV_CERTSDIR}/pryv.me-cert.crt',
+    keyFile: '${PRYV_CERTSDIR}/pryv.me-key.pem'
   },
 
   api: {
-    port: 9000,
-    root: __dirname + '/../components/api-server'
+    port: 9000
   },
   previews: {
-    port: 10000,
-    root: __dirname + '/../components/previews-server'
+    port: 9001
+  },
+  static: {
+    root: '${PRYV_DIR}/static'
   }
 };

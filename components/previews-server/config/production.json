@@ -2,7 +2,7 @@
   "env": "production",
   "http": {
     "ip": "127.0.0.1",
-    "port": 10000
+    "port": 9001
   },
   "database": {
     "authUser": "previews-server",

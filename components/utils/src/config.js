@@ -151,7 +151,7 @@ config.schema = {
     },
     port: {
       format: 'port',
-      default: 2001
+      default: 4000
     },
     pubConnectInsteadOfBind: {
       format: Boolean,

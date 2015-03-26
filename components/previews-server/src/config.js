@@ -28,7 +28,7 @@ _.merge(config.schema, {
   tcpMessaging: {
     // override base default
     port: {
-      default: '2002'
+      default: '4001'
     }
   }
 });

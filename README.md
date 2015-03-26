@@ -26,6 +26,12 @@ See individual component READMEs for instructions.
 - `npm run previews` runs the previews server
 - `npm run proxy` compiles the Nginx config (see below) then runs Nginx
 
+The default setup:
+
+- `/api/{path}` proxies for `/{path}` on the API server
+- `/previews/{path}` proxies for `/{path}` on the previews server
+- `/{path}` serves files from `{static.root}` as defined in the Nginx config
+
 
 ### Configuration
 
