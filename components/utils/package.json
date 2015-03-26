@@ -1,6 +1,6 @@
 {
   "name": "utils",
-  "version": "1.0.0",
+  "version": "0.8.2",
   "private": true,
   "main": "./src/index.js",
   "scripts": {

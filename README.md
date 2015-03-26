@@ -85,6 +85,12 @@ _Prerequisite:_ MongoDB must be running on the default port; you can use `npm ru
 See the [Pryv guidelines](http://pryv.github.io/guidelines/).
 
 
+### Versioning
+
+We set all components' version to that of the root package for clarity.
+`npm run update-components-version` does that automatically.
+
+
 ### Deployment (Pryv-specific)
 
 _Prerequisite:_ setup Git remotes for production and staging targets (in `.git/config`):
