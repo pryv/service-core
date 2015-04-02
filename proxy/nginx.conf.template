@@ -59,17 +59,17 @@ http {
     server_name          <%= vars.serverName %>;
 
     <% if (vars.ssl.enabled) { %>
-      ssl                  on;
-      ssl_crl              <%= vars.ssl.caFile %>-ca.pem;
-      ssl_certificate      <%= vars.ssl.certFile %>-cert.crt;
-      ssl_certificate_key  <%= vars.ssl.keyFile %>-key.pem;
+    ssl                  on;
+    ssl_crl              <%= vars.ssl.caFile %>;
+    ssl_certificate      <%= vars.ssl.certFile %>;
+    ssl_certificate_key  <%= vars.ssl.keyFile %>;
     <% } %>
 
     keepalive_timeout    70;
     client_max_body_size 20M;
 
     location /api {
-      rewrite ^/api/?(.*) /$1 break;
+      rewrite           ^/api/?(.*) /$1 break;
       proxy_pass        http://api_servers;
 
       proxy_set_header  X-Real-IP  $remote_addr;
@@ -85,7 +85,7 @@ http {
     }
 
     location /previews {
-      rewrite ^/previews/?(.*) /$1 break;
+      rewrite           ^/previews/?(.*) /$1 break;
       proxy_pass        http://previews_servers;
 
       proxy_set_header  X-Real-IP  $remote_addr;

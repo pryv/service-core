@@ -11,10 +11,10 @@ module.exports = {
   port: 8080,
   serverName: 'localhost',
   ssl: {
-    enabled: false
-    // caFile: 'path/to/domain-ca.pem',
-    // certFile: 'path/to/domain-cert.crt',
-    // keyFile: 'path/to/domain-key.pem'
+    enabled: true,
+    caFile: __dirname + '/dev-cert/rec.la-ca.pem',
+    certFile: __dirname + '/dev-cert/rec.la-cert.crt',
+    keyFile: __dirname + '/dev-cert/rec.la-key.pem'
   },
 
   api: {

@@ -26,7 +26,7 @@ See individual component READMEs for instructions.
 - `npm run previews` runs the previews server
 - `npm run proxy` compiles the Nginx config (see below) then runs Nginx
 
-The default setup:
+The proxy runs on `https://{username}.rec.la:8080` (`{username}` can be anything; see [Nginx proxy config below](#nginx-proxy)) and is configured as follows:
 
 - `/api/{path}` proxies for `/{path}` on the API server
 - `/previews/{path}` proxies for `/{path}` on the previews server
@@ -55,6 +55,8 @@ Those components also accept the following command line options:
 
 The `proxy` folder contains a Nginx configuration template (`nginx.conf.template`) as well as corresponding variables for `development` and `production` environments (`vars.{environment}.js`). To manually generate a `nginx.conf`, do `node scripts/compile-proxy-config {environment}` (this is automatically done for development when running the proxy with `npm run proxy`).
 
+In development, Nginx runs on HTTPS with a "dev" SSL certificate on domain `*.rec.la` (where `*` is whatever Pryv username you like), whose DNS entry points to `127.0.0.1`. This little trick enables HTTPS connections to the local server via wildcard subdomains, without having to rely on additional tools like Dnsmasq.
+
 
 ## Contribute
 
@@ -73,6 +75,12 @@ Code is organized into local modules defined in the `components` folder, each wi
 - `scripts/components-npm.js` can be used to automatically run npm commands on every component. For example, `node scripts/components-npm outdated` outputs each component's outdated dependencies.
 
 
+#### Versioning
+
+We set all components' version to that of the root package for clarity.
+`npm run update-components-version` does that automatically.
+
+
 ### Tests
 
 _Prerequisite:_ MongoDB must be running on the default port; you can use `npm run database`.
@@ -83,12 +91,6 @@ _Prerequisite:_ MongoDB must be running on the default port; you can use `npm ru
 ### Coding conventions
 
 See the [Pryv guidelines](http://pryv.github.io/guidelines/).
-
-
-### Versioning
-
-We set all components' version to that of the root package for clarity.
-`npm run update-components-version` does that automatically.
 
 
 ### Deployment (Pryv-specific)
