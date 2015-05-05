@@ -169,7 +169,20 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   api.register('events.create',
       commonFns.getParamsValidation(methodsSchema.create.params),
-      createEvent);
+      cleanUpEvent,
+      validateParams,
+      validateContent,
+      checkExistingLaterPeriodIfNeeded.bind(this),
+      checkOverlappedPeriodsIfNeeded,
+      checkPermissions,
+      stopPreviousPeriodIfNeeded.bind(this),
+      insert,
+      attach,
+      notify);
+
+  /*api.register('events.create',
+    commonFns.getParamsValidation(methodsSchema.create.params),
+    createEvent);*/
 
   /**
    * Shorthand for `create` with `null` event duration.
@@ -184,15 +197,100 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     next();
   }
 
+  function cleanUpEvent(context, params, result, next) {
+    // default time is now
+    _.defaults(params, { time: timestamp.now() });
+    if (! params.tags) {
+      params.tags = [];
+    }
+    cleanupEventTags(params); // possible de sortir
+
+    var files = sanitizeRequestFiles(params.files); // possible de sortir
+    delete params.files;
+    params.files = files;
+
+    utils.tracking.initProperties(context.access.id, params);
+    next();
+  }
+
+  function validateParams(context, params, result, next) {
+    context.setStream(params.streamId);
+    if (! checkStream(context, params.streamId, next)) {
+      return;
+    }
+    next();
+  }
+
+  function validateContent(context, params, result, next) {
+    validateEventContent(params, function (err) {
+      if (err) {
+        return next(errors.invalidParametersFormat('The event content\'s format is ' +
+        'invalid.', err));
+      }
+      next();
+    });
+  }
+
+  // checkExistingLaterPeriodIfNeeded bind this
+  // checkOverlappedPeriodsIfNeeded
+
+  function checkPermissions(context, params, result, next) {
+    if (! context.canContributeToContext(params.streamId, params.tags)) {
+      return next(errors.forbidden());
+    }
+    next();
+  }
+
+  // stopPreviousPeriodIfNeeded bind this
+
+  function insert(context, params, result, next) {
+
+    userEventsStorage.insertOne(context.user, params, function (err, newEvent) {
+      if (err) {
+        return next(errors.unexpectedError(err));
+      }
+
+      result.event = newEvent;
+      next();
+    });
+  }
+
+  function attach(context, params, result, next) {
+    attachFiles(context, {id: result.event.id}, params.files, function (err, attachments) {
+      if (err) { return next(err); }
+
+      if (! attachments) {
+        return next();
+      }
+
+      result.event.attachments = attachments;
+      userEventsStorage.update(context.user, {id: result.event.id}, {attachments: attachments},
+        function (err) {
+          if (err) {
+            return next(errors.unexpectedError(err));
+          }
+
+          setFileReadToken(context.access, result.event);
+          next();
+        });
+    });
+  }
+
+  function notify(context, params, result, next) {
+    notifications.eventsChanged(context.user);
+    next();
+  }
+
+
   function createEvent(context, params, result, next) {
     // default time is now
     _.defaults(params, { time: timestamp.now() });
     if (! params.tags) {
       params.tags = [];
     }
-    cleanupEventTags(params);
+    cleanupEventTags(params); // possible de sortir
 
-    var files = sanitizeRequestFiles(params.files);
+    var files = sanitizeRequestFiles(params.files); // possible de sortir
     delete params.files;
 
     utils.tracking.initProperties(context.access.id, params);
