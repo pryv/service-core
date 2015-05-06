@@ -106,6 +106,15 @@ describe('auth', function () {
       });
     });
 
+    it('must accept "no origin" (i.e. not a CORS request) if authorized', function (done) {
+      var authDataNoCORS = _.defaults({appId: 'pryv-test-no-cors'}, authData);
+      request.post(path(authDataNoCORS.username))
+          .send(authDataNoCORS).end(function (res) {
+        res.statusCode.should.eql(200);
+        done();
+      });
+    });
+
     it('must not be case-sensitive for the username', function (done) {
       request.post(path(authData.username))
           .set('Origin', trustedOrigin)
