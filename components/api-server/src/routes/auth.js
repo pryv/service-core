@@ -37,7 +37,7 @@ module.exports = function (expressApp, api, authSettings, httpSettings) {
       username: req.body.username,
       password: req.body.password,
       appId: req.body.appId,
-      origin: req.headers.origin
+      origin: req.headers.origin || ''
     };
     api.call('auth.login', req.context, params, function (err, result) {
       if (err) { return next(err); }
