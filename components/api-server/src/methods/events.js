@@ -168,83 +168,76 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   // CREATION
 
   api.register('events.create',
-      commonFns.getParamsValidation(methodsSchema.create.params),
-      cleanUpEvent,
-      validateParams,
-      validateContent,
-      checkExistingLaterPeriodIfNeeded.bind(this),
-      checkOverlappedPeriodsIfNeeded,
-      checkPermissions,
-      stopPreviousPeriodIfNeeded.bind(this),
-      insert,
-      attach,
-      notify);
-
-  /*api.register('events.create',
     commonFns.getParamsValidation(methodsSchema.create.params),
-    createEvent);*/
+    cleanupInputAndCheckStream,
+    validateEventContentToReplace,
+    checkExistingLaterPeriodIfNeededToReplace,
+    checkOverlappedPeriodsIfNeeded,
+    verifyContext,
+    stopPreviousPeriodIfNeeded,
+    createEventLiterally,
+    saveAttachments,
+    notify);
 
   /**
    * Shorthand for `create` with `null` event duration.
    */
   api.register('events.start',
-      setDurationForStart,
-      commonFns.getParamsValidation(methodsSchema.create.params),
-      createEvent);
+    setDurationForStart,
+    commonFns.getParamsValidation(methodsSchema.create.params),
+    cleanupInputAndCheckStream,
+    validateEventContentToReplace,
+    checkExistingLaterPeriodIfNeededToReplace,
+    checkOverlappedPeriodsIfNeeded,
+    verifyContext,
+    stopPreviousPeriodIfNeeded,
+    createEventLiterally,
+    saveAttachments,
+    notify);
 
   function setDurationForStart(context, params, result, next) {
     params.duration = null;
     next();
   }
 
-  function cleanUpEvent(context, params, result, next) {
+  function cleanupInputAndCheckStream(context, params, result, next) {
     // default time is now
     _.defaults(params, { time: timestamp.now() });
     if (! params.tags) {
       params.tags = [];
     }
-    cleanupEventTags(params); // possible de sortir
+    cleanupEventTags(params);
 
-    var files = sanitizeRequestFiles(params.files); // possible de sortir
+    var files = sanitizeRequestFiles(params.files);
+    context.files = files;
     delete params.files;
-    params.files = files;
 
     utils.tracking.initProperties(context.access.id, params);
-    next();
-  }
 
-  function validateParams(context, params, result, next) {
     context.setStream(params.streamId);
     if (! checkStream(context, params.streamId, next)) {
       return;
     }
+    //console.log('beforeAsync finished');
     next();
   }
 
-  function validateContent(context, params, result, next) {
-    validateEventContent(params, function (err) {
-      if (err) {
-        return next(errors.invalidParametersFormat('The event content\'s format is ' +
-        'invalid.', err));
-      }
-      next();
-    });
+  function validateEventContentToReplace(context, params, result, next) {
+    validateEventContent(params, next);
   }
 
-  // checkExistingLaterPeriodIfNeeded bind this
-  // checkOverlappedPeriodsIfNeeded
+  function checkExistingLaterPeriodIfNeededToReplace(context, params, result, next) {
+    checkExistingLaterPeriodIfNeeded(context, params, next);
+  }
 
-  function checkPermissions(context, params, result, next) {
+  function verifyContext(context, params, result, next) {
     if (! context.canContributeToContext(params.streamId, params.tags)) {
       return next(errors.forbidden());
     }
     next();
   }
 
-  // stopPreviousPeriodIfNeeded bind this
-
-  function insert(context, params, result, next) {
-
+  function createEventLiterally(context, params, result, next) {
     userEventsStorage.insertOne(context.user, params, function (err, newEvent) {
       if (err) {
         return next(errors.unexpectedError(err));
@@ -255,10 +248,10 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     });
   }
 
-  function attach(context, params, result, next) {
-    attachFiles(context, {id: result.event.id}, params.files, function (err, attachments) {
-      if (err) { return next(err); }
-
+  function saveAttachments(context, params, result, next) {
+    attachFiles(context, {id: result.event.id}, context.files, function (err, attachments) {
+      if (err) {
+        return next(err); }
       if (! attachments) {
         return next();
       }
@@ -280,82 +273,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     notifications.eventsChanged(context.user);
     next();
   }
-
-
-  function createEvent(context, params, result, next) {
-    // default time is now
-    _.defaults(params, { time: timestamp.now() });
-    if (! params.tags) {
-      params.tags = [];
-    }
-    cleanupEventTags(params); // possible de sortir
-
-    var files = sanitizeRequestFiles(params.files); // possible de sortir
-    delete params.files;
-
-    utils.tracking.initProperties(context.access.id, params);
-
-    context.setStream(params.streamId);
-    if (! checkStream(context, params.streamId, next)) {
-      return;
-    }
-
-    async.series([
-      function validateContent(stepDone) {
-        validateEventContent(params, function (err) {
-          if (err) {
-            return stepDone(errors.invalidParametersFormat('The event content\'s format is ' +
-                'invalid.', err));
-          }
-          stepDone();
-        });
-      },
-      checkExistingLaterPeriodIfNeeded.bind(this, context, params),
-      checkOverlappedPeriodsIfNeeded.bind(this, context, params),
-      function checkPermissions(stepDone) {
-        if (! context.canContributeToContext(params.streamId, params.tags)) {
-          return stepDone(errors.forbidden());
-        }
-        stepDone();
-      },
-      stopPreviousPeriodIfNeeded.bind(this, context, params, result),
-      function insert(stepDone) {
-        userEventsStorage.insertOne(context.user, params, function (err, newEvent) {
-          if (err) {
-            return stepDone(errors.unexpectedError(err));
-          }
-
-          result.event = newEvent;
-          stepDone();
-        });
-      },
-      function attach(stepDone) {
-        attachFiles(context, {id: result.event.id}, files, function (err, attachments) {
-          if (err) { return stepDone(err); }
-
-          if (! attachments) {
-            return stepDone();
-          }
-
-          result.event.attachments = attachments;
-          userEventsStorage.update(context.user, {id: result.event.id}, {attachments: attachments},
-              function (err) {
-            if (err) {
-              return stepDone(errors.unexpectedError(err));
-            }
-
-            setFileReadToken(context.access, result.event);
-            stepDone();
-          });
-        });
-      },
-      function notify(stepDone) {
-        notifications.eventsChanged(context.user);
-        stepDone();
-      }
-    ], next);
-  }
-
+  
   // UPDATE
 
   api.register('events.update',
@@ -417,7 +335,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         if (! params.update.hasOwnProperty('time') && ! params.update.hasOwnProperty('duration')) {
           return stepDone();
         }
-        checkOverlappedPeriodsIfNeeded(context, updatedEvent, stepDone);
+        checkOverlappedPeriodsIfNeeded(context, updatedEvent, result, stepDone);
       },
       function (stepDone) {
         stopPreviousPeriodIfNeeded(context, updatedEvent, result, stepDone);
@@ -565,18 +483,18 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
    * Considers running events to have no duration.
    *
    * @param {Object} context
-   * @param {Object} event
-   * @param {Function} callback
+   * @param {Object} params
+   * @param {Function} next
    */
-  function checkOverlappedPeriodsIfNeeded(context, event, callback) {
+  function checkOverlappedPeriodsIfNeeded(context, params, result, next) {
     if (! context.stream.singleActivityRootId ||
-        ! isPeriod(event) ||
-        isRunning(event)) {
+        ! isPeriod(params) ||
+        isRunning(params)) {
       // marks (can be duration of zero) and *running* periods cannot overlap
-      return process.nextTick(callback);
+      return process.nextTick(next);
     }
 
-    var endTime = event.time + event.duration;
+    var endTime = params.time + params.duration;
     var query = {
       streamId: {$in: context.getSingleActivityExpandedIds()},
       $and: [
@@ -586,11 +504,11 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       $or: [
         // earlier periods
         {
-          time: {$lt: event.time},
-          endTime: { $gt: event.time, $lte: timestamp.now() }
+          time: {$lt: params.time},
+          endTime: { $gt: params.time, $lte: timestamp.now() }
         },
         // later periods
-        {time: { $gte: event.time, $lt: endTime }}
+        {time: { $gte: params.time, $lt: endTime }}
       ]
     };
     var options = {
@@ -599,47 +517,47 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     };
     userEventsStorage.find(context.user, query, options, function (err, periodEvents) {
       if (err) {
-        return callback(errors.unexpectedError(err));
+        return next(errors.unexpectedError(err));
       }
 
-      if (event.id) {
+      if (params.id) {
         // ignore self
         periodEvents = periodEvents.filter(function (e) {
-          return e.id !== event.id;
+          return e.id !== params.id;
         });
       }
 
       if (periodEvents.length > 0) {
         var msg = 'The event\'s period overlaps existing period events.';
-        return callback(errors.periodsOverlap(msg,
+        return next(errors.periodsOverlap(msg,
             {overlappedIds: periodEvents.map(function (e) { return e.id; })}));
       }
 
-      callback();
+      next();
     });
   }
 
-  function stopPreviousPeriodIfNeeded(context, event, result, callback) {
+  function stopPreviousPeriodIfNeeded(context, params, result, next) {
     if (! context.stream.singleActivityRootId ||
-        ! isPeriod(event)) {
+        ! isPeriod(params)) {
       // marks do not affect periods
-      return process.nextTick(callback);
+      return process.nextTick(next);
     }
 
     var stopParams = {
       singleActivity: true,
-      time: event.time
+      time: params.time
     };
     findLastRunning(context, stopParams, function (err, eventToStop) {
-      if (err) { return callback(errors.unexpectedError(err)); }
-      stopEvent(context, eventToStop, event.time, function (err, stoppedId) {
-        if (err) { return callback(err); }
+      if (err) { return next(errors.unexpectedError(err)); }
+      stopEvent(context, eventToStop, params.time, function (err, stoppedId) {
+        if (err) { return next(err); }
 
         if (stoppedId) {
           result.stoppedId = stoppedId;
         }
 
-        callback();
+        next();
       });
     });
   }
