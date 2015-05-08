@@ -223,7 +223,13 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   }
 
   function validateEventContentToReplace(context, params, result, next) {
-    validateEventContent(params, next);
+    validateEventContent(params, function (err) {
+      if (err) {
+        return next(errors.invalidParametersFormat('The event content\'s format is ' +
+        'invalid.', err));
+      }
+      next();
+    });
   }
 
   function checkExistingLaterPeriodIfNeededToReplace(context, params, result, next) {
@@ -273,7 +279,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     notifications.eventsChanged(context.user);
     next();
   }
-  
+
   // UPDATE
 
   api.register('events.update',
