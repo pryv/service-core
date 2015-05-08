@@ -9,7 +9,8 @@ module.exports = {
   accessLog: '${PRYV_LOGSDIR}/nginx/access.log',
 
   port: 443,
-  serverName: 'localhost',
+  serverName: 'web.me', //staging web.li | product web.me
+  serverNameLegacy: 'api.io', //staging api.in | product api.io
   ssl: {
     enabled: true,
     caFile: '${PRYV_CERTSDIR}/pryv.me-ca.pem',
