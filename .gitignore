@@ -2,6 +2,7 @@
 .project
 .settings
 .DS_Store
+analysis-output
 **/node_modules/**
 **/coverage.html
 **/npm-debug.log

@@ -88,6 +88,13 @@ _Prerequisite:_ MongoDB must be running on the default port; you can use `npm ru
 `npm test` runs tests on each component. See individual components for things like detailed output and other options.
 
 
+### Code analysis
+
+_Prerequisite:_ [Plato](https://www.npmjs.com/package/plato)
+
+`npm run analysis` produces and opens a report with various code stats and linting output.  
+
+
 ### Coding conventions
 
 See the [Pryv guidelines](http://pryv.github.io/guidelines/).

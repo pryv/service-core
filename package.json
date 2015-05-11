@@ -17,6 +17,7 @@
     "proxy": "node scripts/compile-proxy-config development && nginx -c \"`pwd`/proxy/nginx.conf\"",
 
     "test": "node scripts/components-npm test",
+    "analysis": "plato -t 'service-core code analysis' -l .jshintrc -r -x 'node_modules|reports|\\.json' -d analysis-output components && open analysis-output/index.html",
     "check-dependencies": "node scripts/components-checkdeps",
     "update-components-version": "node scripts/components-version"
   },
