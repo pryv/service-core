@@ -191,13 +191,14 @@ var checkObjectEquality = exports.checkObjectEquality = function (actual, expect
   }
   skippedProps.push('children');
 
+
   if (expected.attachments) {
     should.exist(actual.attachments);
     should.equal(actual.attachments.length, expected.attachments.length);
     var attachmentsNumber = actual.attachments.length;
-    _.forEach(expected.attachments, function (attachmentFromExpected) {
-      _.forEach(actual.attachments, function (attachmentFromActual) {
-        if (attachmentFromActual.fileName === attachmentFromExpected.fileName) {
+    expected.attachments.forEach( function (attachmentFromExpected) {
+      actual.attachments.forEach( function (attachmentFromActual) {
+        if (attachmentFromActual.id === attachmentFromExpected.id) {
           checkObjectEquality(attachmentFromActual, attachmentFromExpected);
           attachmentsNumber = attachmentsNumber - 1;
         }

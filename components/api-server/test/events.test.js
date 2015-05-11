@@ -1047,13 +1047,13 @@ describe('events', function () {
         validation.sanitizeEvent(updatedEvent);
 
           var updatedEventAttachments = {};
-          _.forEach(updatedEvent.attachments, function (attachment) {
+          updatedEvent.attachments.forEach( function (attachment) {
             updatedEventAttachments[attachment.fileName] = attachment;
           });
 
           var expected = {};
           expected.attachments = [];
-          _.forEach(updatedEvent.attachments, function (attachment) {
+          updatedEvent.attachments.forEach( function (attachment) {
             if (attachment.fileName === testData.attachments.image.filename) {
               expected.attachments.push(
                 {
