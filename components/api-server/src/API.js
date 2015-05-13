@@ -1,6 +1,7 @@
 var async = require('async'),
     APIError = require('components/errors').APIError,
-    errors = require('components/errors').factory;
+    errors = require('components/errors').factory,
+    _ = require('lodash');
 
 module.exports = API;
 /**
@@ -53,7 +54,19 @@ API.prototype.register = function (/* arguments: id, fn1, fn2, ... */) {
       this.applyMatchingFilters(id);
     }
     // append registered functions
-    this.map[id].push.apply(this.map[id], fns);
+    fns.forEach(function (fn) {
+        if (!_.isFunction(fn)) {
+          var fnId = fn;
+          if (! this.map[fnId]) {
+            throw new Error("trying to use undefined API method as shortcut");
+          }
+          this.map[id].push.apply(this.map[id], this.map[fnId]);
+        } else {
+          this.map[id].push(fn);
+        }
+      }.bind(this)
+    );
+
   } else {
     // filter (with wildcard)
     if (wildcardAt !== id.length - 1) {

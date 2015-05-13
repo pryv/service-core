@@ -184,16 +184,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
    */
   api.register('events.start',
     setDurationForStart,
-    commonFns.getParamsValidation(methodsSchema.create.params),
-    ApplyPrerequisiteForCreation,
-    validateEventContent,
-    checkExistingLaterPeriodIfNeeded,
-    checkOverlappedPeriodsIfNeeded,
-    verifyContext,
-    stopPreviousPeriodIfNeeded,
-    createEvent,
-    createAttachments,
-    notify);
+    'events.create');
 
   function setDurationForStart(context, params, result, next) {
     params.duration = null;
