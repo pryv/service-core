@@ -169,14 +169,14 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   api.register('events.create',
     commonFns.getParamsValidation(methodsSchema.create.params),
-    cleanupInputAndCheckStream,
+    ApplyPrerequisiteForCreation,
     validateEventContent,
     checkExistingLaterPeriodIfNeeded,
     checkOverlappedPeriodsIfNeeded,
     verifyContext,
     stopPreviousPeriodIfNeeded,
-    createEventLiterally,
-    saveAttachments,
+    createEvent,
+    createAttachments,
     notify);
 
   /**
@@ -185,14 +185,14 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   api.register('events.start',
     setDurationForStart,
     commonFns.getParamsValidation(methodsSchema.create.params),
-    cleanupInputAndCheckStream,
+    ApplyPrerequisiteForCreation,
     validateEventContent,
     checkExistingLaterPeriodIfNeeded,
     checkOverlappedPeriodsIfNeeded,
     verifyContext,
     stopPreviousPeriodIfNeeded,
-    createEventLiterally,
-    saveAttachments,
+    createEvent,
+    createAttachments,
     notify);
 
   function setDurationForStart(context, params, result, next) {
@@ -200,7 +200,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     next();
   }
 
-  function cleanupInputAndCheckStream(context, params, result, next) {
+  function ApplyPrerequisiteForCreation(context, params, result, next) {
     // default time is now
     _.defaults(params, { time: timestamp.now() });
     if (! params.tags) {
@@ -208,8 +208,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     }
     cleanupEventTags(params);
 
-    var files = sanitizeRequestFiles(params.files);
-    context.files = files;
+    context.files = sanitizeRequestFiles(params.files);
     delete params.files;
 
     utils.tracking.initProperties(context.access.id, params);
@@ -223,14 +222,14 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   }
 
   function verifyContext(context, params, result, next) {
-    if (! context.canContributeToContext(params.streamId, params.tags)) {
+    if (! context.canContributeToContext(context.content.streamId, context.content.tags)) {
       return next(errors.forbidden());
     }
     next();
   }
 
-  function createEventLiterally(context, params, result, next) {
-    userEventsStorage.insertOne(context.user, params, function (err, newEvent) {
+  function createEvent(context, params, result, next) {
+    userEventsStorage.insertOne(context.user, context.content, function (err, newEvent) {
       if (err) {
         return next(errors.unexpectedError(err));
       }
@@ -240,7 +239,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     });
   }
 
-  function saveAttachments(context, params, result, next) {
+  function createAttachments(context, params, result, next) {
     attachFiles(context, {id: result.event.id}, context.files, function (err, attachments) {
       if (err) {
         return next(err); }
@@ -265,17 +264,16 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   api.register('events.update',
       commonFns.getParamsValidation(methodsSchema.update.params),
-      cleanupUpdate,
-      checkExistingEvent,
+      applyPrerequisitesForUpdate,
       validateEventContent,
       checkExistingLaterPeriodIfNeeded,
       checkOverlappedPeriodsIfNeeded,
       stopPreviousPeriodIfNeeded,
       updateAttachments,
-      saveEventToDatabase,
+      updateEvent,
       notify);
 
-  function cleanupUpdate(context, params, result, next) {
+  function applyPrerequisitesForUpdate(context, params, result, next) {
     cleanupEventTags(params.update);
 
     // strip ignored properties if there (read-only)
@@ -284,10 +282,6 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
     utils.tracking.updateProperties(context.access.id, params.update);
 
-    next();
-  }
-
-  function checkExistingEvent(context, params, result, next) {
     userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
       if (err) {
         return next(errors.unexpectedError(err));
@@ -304,7 +298,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       context.content = _.extend(event, params.update);
 
       context.setStream(context.content.streamId);
-      if (params.update.streamId && ! checkStream(context, context.content.streamId, next)) {
+      if (context.content.streamId && ! checkStream(context, context.content.streamId, next)) {
         return;
       }
 
@@ -314,7 +308,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   function updateAttachments(context, params, result, next) {
     var eventInfo = {
-      id: params.id,
+      id: context.content.id,
       attachments: context.content.attachments || []
     };
     attachFiles(context, eventInfo, sanitizeRequestFiles(params.files),
@@ -322,15 +316,15 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         if (err) { return next(err); }
 
         if (attachments) {
-          params.update.attachments = attachments;
+          context.content.attachments = attachments;
         }
         next();
       });
   }
 
-  function saveEventToDatabase (context, params, result, next) {
+  function updateEvent (context, params, result, next) {
 
-    userEventsStorage.update(context.user, {id: params.id}, params.update,
+    userEventsStorage.update(context.user, {id: context.content.id}, context.content,
       function (err, updatedEvent) {
         if (err) {
           return next(errors.unexpectedError(err));
