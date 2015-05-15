@@ -31,8 +31,10 @@ function API() {
 var wildcard = '*';
 
 /**
- * Registers the given function(s) with the given method id.
+ * Registers the given function(s) or other registered method(s) with the given method id.
  * The given function(s) will be appended, in order, to the list of previously registered functions.
+ * A list of functions registered under a method id can be inserted by using its method id as
+ * argument.
  * The method id can end with a '*' wildcard, in which case the function(s) will apply to all method
  * ids that match.
  *
@@ -40,6 +42,7 @@ var wildcard = '*';
  *
  * - `api.register('resources.*', commonFn)`
  * - `api.register('resources.get', fn1, fn2, ...)`
+ * - `api.register('events.start', fn1, 'events.create', ...)`
  */
 API.prototype.register = function (/* arguments: id, fn1, fn2, ... */) {
   var id = arguments[0],
@@ -56,12 +59,14 @@ API.prototype.register = function (/* arguments: id, fn1, fn2, ... */) {
     // append registered functions
     fns.forEach(function (fn) {
         if (!_.isFunction(fn)) {
+          // registering functions of another method
           var fnId = fn;
           if (! this.map[fnId]) {
-            throw new Error("trying to use undefined API method as shortcut");
+            throw new Error('trying to use undefined API method as shortcut');
           }
           this.map[id].push.apply(this.map[id], this.map[fnId]);
         } else {
+          // registering a function
           this.map[id].push(fn);
         }
       }.bind(this)

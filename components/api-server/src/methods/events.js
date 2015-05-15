@@ -169,7 +169,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   api.register('events.create',
     commonFns.getParamsValidation(methodsSchema.create.params),
-    ApplyPrerequisiteForCreation,
+    applyPrerequisitesForCreation,
     validateEventContent,
     checkExistingLaterPeriodIfNeeded,
     checkOverlappedPeriodsIfNeeded,
@@ -191,7 +191,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     next();
   }
 
-  function ApplyPrerequisiteForCreation(context, params, result, next) {
+  function applyPrerequisitesForCreation(context, params, result, next) {
     // default time is now
     _.defaults(params, { time: timestamp.now() });
     if (! params.tags) {
