@@ -53,7 +53,7 @@ Those components also accept the following command line options:
 
 #### Nginx proxy
 
-The `proxy` folder contains a Nginx configuration template (`nginx.conf.template`) as well as corresponding variables for `development` and `production` environments (`vars.{environment}.js`). To manually generate a `nginx.conf`, do `node scripts/compile-proxy-config {environment}` (this is automatically done for development when running the proxy with `npm run proxy`).
+The `proxy` folder contains a Nginx configuration template (`nginx.conf.template`) as well as corresponding variables for `development` and `production` or `` (generic) environments (`vars.{environment}.js`). To manually generate a `nginx.conf`, do `node scripts/compile-proxy-config {environment}` (this is automatically done for development when running the proxy with `npm run proxy`).
 
 In development, Nginx runs on HTTPS with a "dev" SSL certificate on domain `*.rec.la` (where `*` is whatever Pryv username you like), whose DNS entry points to `127.0.0.1`. This little trick enables HTTPS connections to the local server via wildcard subdomains, without having to rely on additional tools like Dnsmasq.
 

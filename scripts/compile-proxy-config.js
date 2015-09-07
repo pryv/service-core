@@ -9,11 +9,13 @@ if (args.length < 1) {
 
 var env = args[0];
 if (env !== 'development' && env !== 'production') {
-  fail('Environment must be either "development" or "production"');
+  fail('Environment must be either "development" or "production" or ""');
 }
 
+if (env != '') env = '.' + env;
+
 var dir = __dirname + '/../proxy',
-    varsFile = path.resolve(dir, 'vars.' + env + '.js'),
+    varsFile = path.resolve(dir, 'vars' + env + '.js'),
     templateFile = path.resolve(dir, 'nginx.conf.template'),
     outputFile = path.resolve(dir, 'nginx.conf');
 
