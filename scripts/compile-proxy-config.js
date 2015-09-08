@@ -8,7 +8,7 @@ if (args.length < 1) {
 }
 
 var env = args[0];
-if (env !== 'development' && env !== 'production' env !== '') {
+if (env !== 'development' && env !== 'production' && env !== '') {
   fail('Environment must be either "development" or "production" or ""');
 }
 
