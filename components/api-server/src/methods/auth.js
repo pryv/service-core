@@ -77,12 +77,12 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
       // can't use Mongo upsert as we want control over the id
       if (access) {
         // update
-        utils.tracking.updateProperties('system', accessData);
+        context.updateTrackingProperties(accessData, 'system');
         userAccessesStorage.update(context.user, context.accessQuery, accessData, next);
       } else {
         // create
         _.extend(accessData, context.accessQuery);
-        utils.tracking.initProperties('system', accessData);
+        context.initTrackingProperties(accessData, 'system');
         userAccessesStorage.insertOne(context.user, accessData, next);
       }
     });

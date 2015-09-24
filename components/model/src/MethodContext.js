@@ -2,6 +2,7 @@ var accessLogic = require('./accessLogic'),
     APIError = require('components/errors').APIError,
     async = require('async'),
     errors = require('components/errors').factory,
+    timestamp = require('unix-timestamp'),
     treeUtils = require('components/utils').treeUtils,
     _ = require('lodash');
 
@@ -16,7 +17,7 @@ module.exports = MethodContext;
  */
 function MethodContext(username, accessToken, storage) {
   this.username = username;
-  this.accessToken = accessToken;
+  _.extend(this, parseAuth(accessToken));
 
   this.user = null;
   this.access = null;
@@ -25,6 +26,38 @@ function MethodContext(username, accessToken, storage) {
 
   this.storage = storage;
 }
+
+/**
+ * Extracts access token and optional caller id from the given auth string.
+ *
+ * @param {String} auth
+ * @returns {{accessToken: string, callerId: string}}
+ */
+function parseAuth(auth) {
+  var result = {
+    accessToken: ''
+  };
+
+  if (! auth) { return result; }
+
+  var parts = auth.split(MethodContext.AuthSeparator);
+  result.accessToken = parts[0];
+  if (parts.length === 2) {
+    result.callerId = parts[1];
+  }
+  return result;
+}
+
+// Shared members
+
+/**
+ * The string separating (if used) the different parts of the auth string.
+ *
+ * @type {string}
+ */
+MethodContext.AuthSeparator = ' ';
+
+// Instance methods
 
 /**
  * @param {Function} callback ({APIError} error)
@@ -218,6 +251,22 @@ MethodContext.prototype.canContributeToContext = function (streamId, tags) {
   return this.access.canContributeToStream(streamId) ||
       (this.access.canContributeToTag('*') ||
        _.any(tags || [], this.access.canContributeToTag.bind(this.access)));
+};
+
+MethodContext.prototype.initTrackingProperties = function (item, authorOverride) {
+  item.created = timestamp.now();
+  item.createdBy = authorOverride || this.getTrackingAuthorId();
+  return this.updateTrackingProperties(item, authorOverride);
+};
+
+MethodContext.prototype.updateTrackingProperties = function (updatedData, authorOverride) {
+  updatedData.modified = timestamp.now();
+  updatedData.modifiedBy = authorOverride || this.getTrackingAuthorId();
+  return updatedData;
+};
+
+MethodContext.prototype.getTrackingAuthorId = function () {
+  return this.access.id + (this.callerId ? MethodContext.AuthSeparator + this.callerId : '');
 };
 
 MethodContext.prototype.clone = function () {

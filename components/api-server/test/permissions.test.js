@@ -189,6 +189,25 @@ describe('Access permissions', function () {
       });
     });
 
+    //TODO: relocate in dedicated series of tests (custom auth)
+    it('must handle optional caller id in auth (in addition to token)', function (done) {
+      var sharedAccessIndex = 1,
+          callerId = 'test-caller-id',
+          auth = token(sharedAccessIndex) + ' ' + callerId;
+      var data = {
+        type: 'test/test',
+        streamId: testData.streams[1].id
+      };
+      request.post(basePath, auth).send(data).end(function (res) {
+        res.statusCode.should.eql(201);
+        var event = res.body.event,
+            expectedAuthor = testData.accesses[sharedAccessIndex].id + ' ' + callerId;
+        event.createdBy.should.eql(expectedAuthor);
+        event.modifiedBy.should.eql(expectedAuthor);
+        done();
+      });
+    });
+
     it('must allow creating events for \'contribute\' tags', function (done) {
       var data = {
         type: 'test/test',

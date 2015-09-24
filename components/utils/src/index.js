@@ -4,6 +4,5 @@ module.exports = {
   logging: require('./logging'),
   messaging: require('./messaging'),
   toString: require('./toString'),
-  tracking: require('./tracking'),
   treeUtils: require('./treeUtils')
 };

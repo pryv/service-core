@@ -7,7 +7,6 @@ var APIError = require('components/errors').APIError,
     methodsSchema = require('../schema/accessesMethods'),
     slugify = require('slug'),
     string = require('./helpers/string'),
-    tracking = require('components/utils').tracking,
     treeUtils = require('components/utils').treeUtils,
     _ = require('lodash');
 
@@ -101,7 +100,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
       params.token = userAccessesStorage.generateToken();
     }
 
-    tracking.initProperties(context.access.id, params);
+    context.initTrackingProperties(params);
     next();
   }
 
@@ -135,7 +134,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
           name: permission.defaultName,
           parentId: null
         };
-        tracking.initProperties(context.access.id, newStream);
+        context.initTrackingProperties(newStream);
         userStreamsStorage.insertOne(context.user, newStream, function (err) {
           if (err) {
             if (Database.isDuplicateError(err)) {
@@ -238,7 +237,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
   }
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
-    tracking.updateProperties(context.access.id, params.update);
+    context.updateTrackingProperties(params.update);
     next();
   }
 
