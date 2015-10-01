@@ -127,6 +127,4 @@ To deploy (`{target}` is either `staging` or `production`):
 ## TODO: more on deployment etc.
 
 This is a work in progress.
-Example manually triggered build process on head
-go to `/var/pryv/data/git/repos/static-web/hooks` and run:
-`sudo -u git sh -x ./post-receive`
+
