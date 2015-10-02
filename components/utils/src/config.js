@@ -90,6 +90,27 @@ config.schema = {
       doc: 'The secret used to compute tokens for authentifying read accesses of event attachments'
     }
   },
+  customExtensions: {
+    defaultFolder: {
+      format: String,
+      default: path.join(__dirname, '../../../custom-extensions'),
+      doc: 'The folder in which custom extension modules are searched for by default. Unless ' +
+      'defined by its specific setting (see other settings in `extensibility`), each module is ' +
+      'loaded from there by its default name (e.g. `customAuthStepFn.js`), or ignored if ' +
+      'missing. We recommend that you always use the specific setting to enable basic validation ' +
+      'of each of your custom modules.'
+    },
+    customAuthStepFn: {
+      format: 'function-module',
+      default: '',
+      doc: 'A Node module identifier (e.g. "/custom/auth/function.js") implementing a custom ' +
+      'auth step (such as authenticating the caller id against an external service). ' +
+      'The function is passed the method context, which it can alter, and a callback to be ' +
+      'called with either no argument (success) or an error (failure). ' +
+      'If this setting is not empty and the specified module cannot be loaded as a function, ' +
+      'server startup will fail.'
+    }
+  },
   logs: {
     prefix: {
       format: String,
@@ -160,6 +181,28 @@ config.schema = {
     }
   }
 };
+
+// Define custom configuration value format(s)
+convict.addFormat({
+  name: 'function-module',
+  validate: function (val) {
+    if (! val) { return; }
+
+    var fn;
+    try {
+      fn = require(val);
+    } catch (e) {
+      throw new Error('Cannot load function module "' + val + '": ' + e.message);
+    }
+    if (typeof fn !== 'function') {
+      throw new Error('Module is not a function');
+    }
+  },
+  coerce: function (val) {
+    if (! val) { return null; }
+    return require(val);
+  }
+});
 
 /**
  * Loads configuration settings from (last takes precedence):

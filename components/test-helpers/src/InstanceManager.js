@@ -52,7 +52,7 @@ function InstanceManager(settings) {
    * does nothing if the instance is already running with the same settings.
    *
    * @param {Object} settings
-   * @param {Function}callback
+   * @param {Function} callback
    */
   this.ensureStarted = function (settings, callback) {
     if (deepEqual(settings, serverSettings)) {
@@ -70,6 +70,22 @@ function InstanceManager(settings) {
       }
       serverSettings = settings;
       this.setup();
+    }
+    this.start(callback);
+  };
+
+  /**
+   * Just restarts the instance, leaving settings as they are.
+   *
+   * @param {Function} callback
+   */
+  this.restart = function (callback) {
+    if (isRunning()) {
+      try {
+        this.stop();
+      } catch (err) {
+        return callback(err);
+      }
     }
     this.start(callback);
   };
