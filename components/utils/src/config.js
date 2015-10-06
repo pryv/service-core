@@ -97,8 +97,7 @@ config.schema = {
       doc: 'The folder in which custom extension modules are searched for by default. Unless ' +
       'defined by its specific setting (see other settings in `extensibility`), each module is ' +
       'loaded from there by its default name (e.g. `customAuthStepFn.js`), or ignored if ' +
-      'missing. We recommend that you always use the specific setting to enable basic validation ' +
-      'of each of your custom modules.'
+      'missing.'
     },
     customAuthStepFn: {
       format: 'function-module',
@@ -183,25 +182,30 @@ config.schema = {
 };
 
 // Define custom configuration value format(s)
-convict.addFormat({
-  name: 'function-module',
-  validate: function (val) {
-    if (! val) { return; }
+var customFormats = {
+  'function-module': {
+    validate: function (val) {
+      if (! val) { return; }
 
-    var fn;
-    try {
-      fn = require(val);
-    } catch (e) {
-      throw new Error('Cannot load function module "' + val + '": ' + e.message);
+      var fn;
+      try {
+        fn = require(val);
+      } catch (e) {
+        throw new Error('Cannot load function module "' + val + '": ' + e.message);
+      }
+      if (typeof fn !== 'function') {
+        throw new Error('Module is not a function');
+      }
+    },
+    coerce: function (val) {
+      if (! val) { return null; }
+      return require(val);
     }
-    if (typeof fn !== 'function') {
-      throw new Error('Module is not a function');
-    }
-  },
-  coerce: function (val) {
-    if (! val) { return null; }
-    return require(val);
   }
+};
+Object.keys(customFormats).forEach(function (key) {
+  var format = customFormats[key];
+  convict.addFormat(key, format.validate, format.coerce);
 });
 
 /**
@@ -236,6 +240,8 @@ config.load = function (configDefault) {
   instance.validate();
 
   var settings = instance.get();
+
+  loadCustomExtensions(settings);
 
   if (settings.printConfig) {
     print('Configuration settings loaded', settings);
@@ -289,6 +295,25 @@ function getSettingEnvName(keyPath) {
 
 function getSettingArgName(keyPath) {
   return keyPath.join(':');
+}
+
+function loadCustomExtensions(settings) {
+  var extSettings = settings.customExtensions;
+  Object.keys(extSettings).forEach(function (key) {
+    if (key === 'defaultFolder') { return; }
+    if (! extSettings[key]) {
+      // not explicitly specified —> try to load from default folder
+      var defaultModulePath = path.join(extSettings.defaultFolder, key + '.js');
+      if (! fs.existsSync(defaultModulePath)) {
+        // ignore if missing
+        return;
+      }
+      // for now we assume all extensions are functions
+      var format = customFormats['function-module'];
+      format.validate(defaultModulePath);
+      extSettings[key] = format.coerce(defaultModulePath);
+    }
+  });
 }
 
 function print(title, data) {

@@ -137,11 +137,24 @@ function InstanceManager(settings) {
       env: process.env
     };
     serverProcess = spawn(process.argv[0], args, options);
+    var serverExited = false,
+        exitCode = null;
     serverProcess.on('exit', function (code/*, signal*/) {
       logger.debug('Server instance exited with code ' + code);
+      serverExited = true;
+      exitCode = code;
     });
 
-    async.until(isReady, function (next) { setTimeout(next, 100); }, callback);
+    async.until(isReadyOrExited, function (next) { setTimeout(next, 100); }, function () {
+      if (serverExited && exitCode > 0) {
+        return callback(new Error('Server failed (code ' + exitCode + ')'));
+      }
+      callback();
+    });
+
+    function isReadyOrExited() {
+      return serverReady || serverExited;
+    }
   };
 
   /**
@@ -151,7 +164,7 @@ function InstanceManager(settings) {
     if (! isRunning()) { return; }
     logger.debug('Killing server instance... ');
     if (! serverProcess.kill()) {
-      throw new Error('Failed to kill the server instance.');
+      logger.warn('Failed to kill the server instance (it may have exited already).');
     }
     serverProcess = null;
     serverReady = false;
@@ -161,14 +174,6 @@ function InstanceManager(settings) {
     return !! serverProcess;
   }
 
-  function isReady() {
-    return serverReady;
-  }
-
-  process.on('exit', function () {
-    if (! isRunning()) { return; }
-    logger.debug('Main process exiting, killing server instance... ');
-    serverProcess.kill();
-  });
+  process.on('exit', this.stop);
 }
 util.inherits(InstanceManager, EventEmitter);

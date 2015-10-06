@@ -5,6 +5,7 @@ var helpers = require('./helpers'),
     async = require('async'),
     fs = require('fs'),
     path = require('path'),
+    should = require('should'), // explicit require to benefit from static functions
     validation = helpers.validation,
     testData = helpers.data,
     timestamp = require('unix-timestamp'),
@@ -389,7 +390,7 @@ describe('Access permissions', function () {
 
       it('must be supported and deny access when failing', function (done) {
         request.post(basePath, auth).send(newEventData).end(function (res) {
-          validation.checkErrorForbidden(res, done);
+          validation.checkErrorInvalidAccess(res, done);
         });
       });
 
@@ -405,9 +406,31 @@ describe('Access permissions', function () {
         });
       });
 
-      it('must validate the custom function at startup time if explicitly configured');
+      it('must fail properly (i.e. not granting access) when the custom function crashes',
+          function (done) {
+        var crashAuth = token(sharedAccessIndex) + ' Please Crash';
+        request.post(basePath, crashAuth).send(newEventData).end(function (res) {
+          res.statusCode.should.eql(500);
+          done();
+        });
+      });
 
-      it('must fail properly (i.e. not granting access) when the custom function crashes');
+      it('must validate the custom function at startup time', function (done) {
+        async.series([
+          function setupCustomAuthStep(stepDone) {
+            var srcPath = path.join(__dirname, 'permissions.fixtures', 'customAuthStepFn.invalid');
+            fs.readFile(srcPath, function (err, data) {
+              fs.writeFile(destPath, data, stepDone);
+            });
+          },
+          server.restart.bind(server)
+        ], function (err) {
+          should.exist(err);
+          // basic validation; users are expected to check console output
+          err.message.should.match(/Server failed/);
+          done();
+        });
+      });
 
     });
 
