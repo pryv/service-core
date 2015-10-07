@@ -95,8 +95,8 @@ config.schema = {
       format: String,
       default: path.join(__dirname, '../../../custom-extensions'),
       doc: 'The folder in which custom extension modules are searched for by default. Unless ' +
-      'defined by its specific setting (see other settings in `extensibility`), each module is ' +
-      'loaded from there by its default name (e.g. `customAuthStepFn.js`), or ignored if ' +
+      'defined by its specific setting (see other settings in `customExtensions`), each module ' +
+      'is loaded from there by its default name (e.g. `customAuthStepFn.js`), or ignored if ' +
       'missing.'
     },
     customAuthStepFn: {

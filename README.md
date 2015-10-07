@@ -58,6 +58,27 @@ The `proxy` folder contains a Nginx configuration template (`nginx.conf.template
 In development, Nginx runs on HTTPS with a "dev" SSL certificate on domain `*.rec.la` (where `*` is whatever Pryv username you like), whose DNS entry points to `127.0.0.1`. This little trick enables HTTPS connections to the local server via wildcard subdomains, without having to rely on additional tools like Dnsmasq.
 
 
+#### Customizing server behaviour
+
+It is possible to extend the API and previews servers with your own code, via the configuration keys defined under `customExtensions`:
+
+- `defaultFolder`: The folder in which custom extension modules are searched for by default. Unless defined by its specific setting (see other settings in `customExtensions`), each module is loaded from there by its default name (e.g. `customAuthStepFn.js`), or ignored if missing. Defaults to `{repo root}/custom-extensions`.
+- `customAuthStepFn`: A Node module identifier (e.g. \"/custom/auth/function.js\") implementing a custom auth step (such as authenticating the caller id against an external service). The function is passed the method context, which it can alter, and a callback to be called with either no argument (success) or an error (failure). If this setting is not empty and the specified module cannot be loaded as a function, server startup will fail. Undefined by default.
+
+    ```
+    // Example of customAuthStepFn.js
+    module.exports = function (context, callback) {
+      // do whatever is needed here (check LDAP, custom DB, etc.)
+      doCustomParsingAndValidating(context, function (err, parsedCallerId) {
+        if (err) { return callback(err); }
+        context.originalCallerId = context.callerId;
+        context.callerId = parsedCallerId;
+        callback();
+      });
+    };
+    ```
+
+
 ## Contribute
 
 ### Setup the dev environment
