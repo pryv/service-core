@@ -62,8 +62,8 @@ In development, Nginx runs on HTTPS with a "dev" SSL certificate on domain `*.re
 
 It is possible to extend the API and previews servers with your own code, via the configuration keys defined under `customExtensions`:
 
-- `defaultFolder`: The folder in which custom extension modules are searched for by default. Unless defined by its specific setting (see other settings in `customExtensions`), each module is loaded from there by its default name (e.g. `customAuthStepFn.js`), or ignored if missing. Defaults to `{repo root}/custom-extensions`.
-- `customAuthStepFn`: A Node module identifier (e.g. \"/custom/auth/function.js\") implementing a custom auth step (such as authenticating the caller id against an external service). The function is passed the method context, which it can alter, and a callback to be called with either no argument (success) or an error (failure). If this setting is not empty and the specified module cannot be loaded as a function, server startup will fail. Undefined by default.
+- `defaultFolder`: The folder in which custom extension modules are searched for by default. Unless defined by its specific setting (see other settings in `customExtensions`), each module is loaded from there by its default name (e.g. `customAuthStepFn.js`), or ignored if missing. Defaults to `{app root}/custom-extensions`.
+- `customAuthStepFn`: A Node module identifier (e.g. `/custom/auth/function.js`) implementing a custom auth step (such as authenticating the caller id against an external service). The function is passed the method context, which it can alter, and a callback to be called with either no argument (success) or an error (failure). If this setting is not empty and the specified module cannot be loaded as a function, server startup will fail. Undefined by default.
 
     ```
     // Example of customAuthStepFn.js
@@ -77,6 +77,14 @@ It is possible to extend the API and previews servers with your own code, via th
       });
     };
     ```
+
+    Available context properties (as of now):
+    
+    - `username` (string)
+    - `user` (object): the user object (properties include `id`)
+    - `accessToken` (string): as read in the `Authorization` header or `auth` parameter
+    - `callerId` (string): optional additional id passed after `accessToken` in auth after a separating space (auth format is thus `<access-token>[ <caller-id>]`)
+    - `access` (object): the access object (see [API doc](https://api.pryv.com/reference/#access) for structure) 
 
 
 ## Contribute
