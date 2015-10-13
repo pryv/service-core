@@ -143,7 +143,6 @@ MethodContext.prototype.retrieveExpandedAccess = function (callback) {
       try {
         this.customAuthStepFn(this, function (err) {
           if (err) {
-            console.error(err);
             return stepDone(errors.invalidAccessToken('Custom auth step failed: ' + err.message),
                 err);
           }
