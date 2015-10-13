@@ -1,8 +1,11 @@
-/*global describe, before, beforeEach, it */
+/*global describe, before, beforeEach, after, it */
 
 var helpers = require('./helpers'),
     server = helpers.dependencies.instanceManager,
     async = require('async'),
+    fs = require('fs'),
+    path = require('path'),
+    should = require('should'), // explicit require to benefit from static functions
     validation = helpers.validation,
     testData = helpers.data,
     timestamp = require('unix-timestamp'),
@@ -40,7 +43,7 @@ describe('Access permissions', function () {
 
     var basePath = '/' + user.username + '/events';
 
-    function path(id) {
+    function reqPath(id) {
       return basePath + '/' + id;
     }
 
@@ -111,7 +114,7 @@ describe('Access permissions', function () {
     it('must forbid getting an attached file if permissions are insufficient', function (done) {
       var event = testData.events[0],
           attachment = event.attachments[0];
-      request.get(path(event.id) + '/' + attachment.id, token(3)).end(function (res) {
+      request.get(reqPath(event.id) + '/' + attachment.id, token(3)).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
@@ -139,13 +142,14 @@ describe('Access permissions', function () {
 
     it('must forbid updating events for \'read-only\' streams', function (done) {
       // also check recursive permissions
-      request.put(path(testData.events[0].id), token(1)).send({content: {}}).end(function (res) {
+      request.put(reqPath(testData.events[0].id), token(1)).send({content: {}}).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
     it('must forbid updating events for \'read-only\' tags', function (done) {
-      request.put(path(testData.events[11].id), token(5)).send({content: {}}).end(function (res) {
+      request.put(reqPath(testData.events[11].id), token(5)).send({content: {}})
+          .end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
@@ -165,13 +169,13 @@ describe('Access permissions', function () {
     });
 
     it('must forbid deleting events for \'read-only\' streams', function (done) {
-      request.del(path(testData.events[1].id), token(1)).end(function (res) {
+      request.del(reqPath(testData.events[1].id), token(1)).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
     it('must forbid deleting events for \'read-only\' tags', function (done) {
-      request.del(path(testData.events[11].id), token(5)).end(function (res) {
+      request.del(reqPath(testData.events[11].id), token(5)).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
@@ -211,7 +215,7 @@ describe('Access permissions', function () {
 
     var basePath = '/' + user.username + '/streams';
 
-    function path(id) {
+    function reqPath(id) {
       return basePath + '/' + id;
     }
 
@@ -251,20 +255,20 @@ describe('Access permissions', function () {
     });
 
     it('must forbid deleting child streams in \'contribute\' streams', function (done) {
-      request.del(path(testData.streams[1].children[0].id), token(1)).end(function (res) {
+      request.del(reqPath(testData.streams[1].children[0].id), token(1)).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
     it('must forbid updating \'contribute\' streams', function (done) {
-      request.put(path(testData.streams[1].id), token(1)).send({name: 'Ba Gua'})
+      request.put(reqPath(testData.streams[1].id), token(1)).send({name: 'Ba Gua'})
           .end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
     it('must forbid deleting \'contribute\' streams', function (done) {
-      request.del(path(testData.streams[1].id), token(1)).query({mergeEventsWithParent: true})
+      request.del(reqPath(testData.streams[1].id), token(1)).query({mergeEventsWithParent: true})
           .end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
@@ -283,14 +287,14 @@ describe('Access permissions', function () {
 
     it('must forbid moving streams into non-\'managed\' parent streams', function (done) {
       var update = {parentId: testData.streams[1].id};
-      request.put(path(testData.streams[2].children[0].id), token(1))
+      request.put(reqPath(testData.streams[2].children[0].id), token(1))
           .send(update).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
     it('must allow deleting child streams in \'managed\' streams', function (done) {
-      request.del(path(testData.streams[2].children[0].children[0].id), token(1))
+      request.del(reqPath(testData.streams[2].children[0].children[0].id), token(1))
       .end(function (res) {
         res.statusCode.should.eql(200); // trashed -> considered an update
         done();
@@ -328,6 +332,106 @@ describe('Access permissions', function () {
         res.body.streams.should.eql([_.omit(testData.streams[0], 'parentId')]);
         done();
       });
+    });
+
+  });
+
+  describe('Auth and change tracking', function () {
+
+    before(testData.resetStreams);
+
+    beforeEach(testData.resetEvents);
+
+    var basePath = '/' + user.username + '/events',
+        sharedAccessIndex = 1,
+        callerId = 'test-caller-id',
+        auth = token(sharedAccessIndex) + ' ' + callerId;
+    var newEventData = {
+      type: 'test/test',
+      streamId: testData.streams[1].id
+    };
+
+    it('must handle optional caller id in auth (in addition to token)', function (done) {
+      request.post(basePath, auth).send(newEventData).end(function (res) {
+        res.statusCode.should.eql(201);
+        var event = res.body.event,
+            expectedAuthor = testData.accesses[sharedAccessIndex].id + ' ' + callerId;
+        event.createdBy.should.eql(expectedAuthor);
+        event.modifiedBy.should.eql(expectedAuthor);
+        done();
+      });
+    });
+
+    describe('custom auth step (e.g. to validate/parse caller id)', function () {
+
+      var fileName = 'customAuthStepFn.js',
+          srcPath = path.join(__dirname, 'permissions.fixtures', fileName),
+          destPath = path.join(__dirname, '../../../custom-extensions', fileName);
+
+      before(function (done) {
+        async.series([
+          function setupCustomAuthStep(stepDone) {
+            fs.readFile(srcPath, function (err, data) {
+              fs.writeFile(destPath, data, stepDone);
+            });
+          },
+          server.restart.bind(server)
+        ], done);
+      });
+
+      after(function (done) {
+        async.series([
+          function teardownCustomAuthStep(stepDone) {
+            fs.unlink(destPath, stepDone);
+          },
+          server.restart.bind(server)
+        ], done);
+      });
+
+      it('must be supported and deny access when failing', function (done) {
+        request.post(basePath, auth).send(newEventData).end(function (res) {
+          validation.checkErrorInvalidAccess(res, done);
+        });
+      });
+
+      it('must allow access when successful', function (done) {
+        var successAuth = token(sharedAccessIndex) + ' Georges (unparsed)';
+        request.post(basePath, successAuth).send(newEventData).end(function (res) {
+          res.statusCode.should.eql(201);
+          var event = res.body.event,
+              expectedAuthor = testData.accesses[sharedAccessIndex].id + ' Georges (parsed)';
+          event.createdBy.should.eql(expectedAuthor);
+          event.modifiedBy.should.eql(expectedAuthor);
+          done();
+        });
+      });
+
+      it('must fail properly (i.e. not granting access) when the custom function crashes',
+          function (done) {
+        var crashAuth = token(sharedAccessIndex) + ' Please Crash';
+        request.post(basePath, crashAuth).send(newEventData).end(function (res) {
+          res.statusCode.should.eql(500);
+          done();
+        });
+      });
+
+      it('must validate the custom function at startup time', function (done) {
+        async.series([
+          function setupCustomAuthStep(stepDone) {
+            var srcPath = path.join(__dirname, 'permissions.fixtures', 'customAuthStepFn.invalid');
+            fs.readFile(srcPath, function (err, data) {
+              fs.writeFile(destPath, data, stepDone);
+            });
+          },
+          server.restart.bind(server)
+        ], function (err) {
+          should.exist(err);
+          // basic validation; users are expected to check console output
+          err.message.should.match(/Server failed/);
+          done();
+        });
+      });
+
     });
 
   });

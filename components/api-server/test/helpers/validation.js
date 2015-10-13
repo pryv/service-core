@@ -139,6 +139,18 @@ exports.checkErrorInvalidParams = function (res, done) {
 /**
  * Specific error check for convenience.
  */
+exports.checkErrorInvalidAccess = function (res, done) {
+  res.statusCode.should.eql(401);
+
+  checkJSON(res, schemas.errorResult);
+  res.body.error.id.should.eql(ErrorIds.InvalidAccessToken);
+
+  done();
+};
+
+/**
+ * Specific error check for convenience.
+ */
 exports.checkErrorForbidden = function (res, done) {
   res.statusCode.should.eql(403);
 

@@ -28,6 +28,7 @@ dependencies.register({
   httpSettings: settings.http,
   logsSettings: settings.logs,
   servicesSettings: settings.services,
+  customExtensionsSettings: settings.customExtensions,
 
   // misc utility
   serverInfo: require('../package.json'),

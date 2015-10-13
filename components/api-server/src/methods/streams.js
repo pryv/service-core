@@ -129,7 +129,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
       }
     }
 
-    utils.tracking.initProperties(context.access.id, params);
+    context.initTrackingProperties(params);
 
     next();
   }
@@ -183,7 +183,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 
-    utils.tracking.updateProperties(context.access.id, params.update);
+    context.updateTrackingProperties(params.update);
 
     next();
   }
@@ -242,7 +242,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
   function flagAsTrashed(context, params, result, next) {
     var updatedData = {trashed: true};
-    utils.tracking.updateProperties(context.access.id, updatedData);
+    context.updateTrackingProperties(updatedData);
 
     userStreamsStorage.update(context.user, {id: params.id}, updatedData,
         function (err, updatedStream) {

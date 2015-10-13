@@ -195,7 +195,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     var files = sanitizeRequestFiles(params.files);
     delete params.files;
 
-    utils.tracking.initProperties(context.access.id, params);
+    context.initTrackingProperties(params);
 
     context.setStream(params.streamId);
     if (! checkStream(context, params.streamId, next)) {
@@ -269,7 +269,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     delete params.update.id;
     delete params.update.attachments;
 
-    utils.tracking.updateProperties(context.access.id, params.update);
+    context.updateTrackingProperties(params.update);
 
     var updatedEvent = null;
 
@@ -680,7 +680,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       duration: stopTime - event.time
     };
 
-    utils.tracking.updateProperties(context.access.id, updatedData);
+    context.updateTrackingProperties(updatedData);
 
     userEventsStorage.update(context.user, {id: event.id}, updatedData, function (err) {
       if (err) {
@@ -711,7 +711,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   function flagAsTrashed(context, params, result, next) {
     var updatedData = {trashed: true};
-    utils.tracking.updateProperties(context.access.id, updatedData);
+    context.updateTrackingProperties(updatedData);
 
     userEventsStorage.update(context.user, {id: params.id}, updatedData,
         function (err, updatedEvent) {
@@ -778,7 +778,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         updatedEvent.attachments.splice(attIndex, 1);
 
         var updatedData = {attachments: updatedEvent.attachments};
-        utils.tracking.updateProperties(context.access.id, updatedData);
+        context.updateTrackingProperties(updatedData);
 
         userEventsStorage.update(context.user, {id: params.id}, updatedData,
             function (err, updatedEvent) {
