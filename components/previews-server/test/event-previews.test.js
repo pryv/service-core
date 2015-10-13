@@ -10,7 +10,6 @@ var helpers = require('./helpers'),
     should = require('should'), // explicit require to benefit from static functions
     storage = helpers.dependencies.storage,
     testData = helpers.data,
-    utils = require('components/utils'),
     timestamp = require('unix-timestamp'),
     xattr = require('fs-xattr');
 
@@ -156,8 +155,11 @@ describe('event previews', function () {
           });
         },
         function updateEvent(stepDone) {
-          var update = {description: 'Updated'};
-          utils.tracking.updateProperties(testData.accesses[2].id, update);
+          var update = {
+            description: 'Updated',
+            modified: timestamp.now(),
+            modifiedBy: testData.accesses[2].id
+          };
           storage.user.events.update(user, {id: event.id}, update, function (err, updatedEvt) {
             updatedEvent = updatedEvt;
             stepDone();

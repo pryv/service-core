@@ -31,7 +31,8 @@ socketIO.Manager.prototype.onClientMessage = function onClientMessage(id, packet
  * @param api
  */
 module.exports = function (server, usersStorage, userAccessesStorage, sessionsStorage,
-                           userStreamsStorage, notifications, api, logging) {
+                           userStreamsStorage, notifications, api, logging,
+                           customExtensionsSettings) {
 
   var io = socketIO.listen(server, {
     resource: Paths.SocketIO,
@@ -59,7 +60,7 @@ module.exports = function (server, usersStorage, userAccessesStorage, sessionsSt
         accesses: userAccessesStorage,
         sessions: sessionsStorage,
         streams: userStreamsStorage
-      });
+      }, customExtensionsSettings.customAuthStepFn);
       handshakeData.context = context;
 
       if (manager.namespaceExists(nsName)) {

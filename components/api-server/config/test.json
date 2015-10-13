@@ -1,6 +1,6 @@
 {
   "auth": {
-    "trustedApps": "pryv-test@http://test.pryv.local, *@https://*.rec.la*"
+    "trustedApps": "pryv-test@http://test.pryv.local, pryv-test-no-cors@*, *@https://*.rec.la*"
   },
   "logs": {
     "console": {

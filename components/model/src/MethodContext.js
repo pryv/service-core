@@ -2,6 +2,7 @@ var accessLogic = require('./accessLogic'),
     APIError = require('components/errors').APIError,
     async = require('async'),
     errors = require('components/errors').factory,
+    timestamp = require('unix-timestamp'),
     treeUtils = require('components/utils').treeUtils,
     _ = require('lodash');
 
@@ -10,13 +11,14 @@ module.exports = MethodContext;
  * Retrieves and holds contextual info for a given API method.
  *
  * @param {String} username
- * @param {String} accessToken
+ * @param {String} auth
  * @param {Object} storage Must have properties `users`, `accesses` and `streams`
  * @constructor
  */
-function MethodContext(username, accessToken, storage) {
+// TODO: refactor as stamp (see lib `stampit`) and put globals (storage, settings) in global closure
+function MethodContext(username, auth, storage, customAuthStepFn) {
   this.username = username;
-  this.accessToken = accessToken;
+  _.extend(this, parseAuth(auth));
 
   this.user = null;
   this.access = null;
@@ -24,7 +26,42 @@ function MethodContext(username, accessToken, storage) {
   this.streams = null;
 
   this.storage = storage;
+  this.customAuthStepFn = customAuthStepFn;
 }
+
+/**
+ * Extracts access token and optional caller id from the given auth string.
+ *
+ * @param {String} auth
+ * @returns {{accessToken: string, callerId: string}}
+ */
+function parseAuth(auth) {
+  var result = {
+    accessToken: ''
+  };
+
+  if (! auth) { return result; }
+
+  var sepIndex = auth.indexOf(MethodContext.AuthSeparator);
+  if (sepIndex <= 0) {
+    result.accessToken = auth;
+  } else {
+    result.accessToken = auth.substring(0, sepIndex);
+    result.callerId = auth.substring(sepIndex + 1);
+  }
+  return result;
+}
+
+// Shared members
+
+/**
+ * The string separating (if used) the different parts of the auth string.
+ *
+ * @type {string}
+ */
+MethodContext.AuthSeparator = ' ';
+
+// Instance methods
 
 /**
  * @param {Function} callback ({APIError} error)
@@ -52,6 +89,7 @@ MethodContext.prototype.retrieveUser = function (callback) {
  *
  * @param {Function} callback ({APIError} error)
  */
+//TODO: rename or split to match custom auth step
 MethodContext.prototype.retrieveExpandedAccess = function (callback) {
   if (! this.accessToken && ! this.access) {
     return callback(errors.invalidAccessToken('The access token is missing: expected an ' +
@@ -97,6 +135,23 @@ MethodContext.prototype.retrieveExpandedAccess = function (callback) {
       // keep alive
       this.storage.sessions.touch(this.access.token, function () {});
       stepDone();
+    }.bind(this),
+
+    function applyCustomAuthStep(stepDone) {
+      if (! this.customAuthStepFn) { return stepDone(); }
+
+      try {
+        this.customAuthStepFn(this, function (err) {
+          if (err) {
+            console.error(err);
+            return stepDone(errors.invalidAccessToken('Custom auth step failed: ' + err.message),
+                err);
+          }
+          stepDone();
+        });
+      } catch (e) {
+        stepDone(errors.unexpectedError('Custom auth step threw an error: ' + e.message, e));
+      }
     }.bind(this),
 
     function extendAccess1(stepDone) {
@@ -218,6 +273,22 @@ MethodContext.prototype.canContributeToContext = function (streamId, tags) {
   return this.access.canContributeToStream(streamId) ||
       (this.access.canContributeToTag('*') ||
        _.any(tags || [], this.access.canContributeToTag.bind(this.access)));
+};
+
+MethodContext.prototype.initTrackingProperties = function (item, authorOverride) {
+  item.created = timestamp.now();
+  item.createdBy = authorOverride || this.getTrackingAuthorId();
+  return this.updateTrackingProperties(item, authorOverride);
+};
+
+MethodContext.prototype.updateTrackingProperties = function (updatedData, authorOverride) {
+  updatedData.modified = timestamp.now();
+  updatedData.modifiedBy = authorOverride || this.getTrackingAuthorId();
+  return updatedData;
+};
+
+MethodContext.prototype.getTrackingAuthorId = function () {
+  return this.access.id + (this.callerId ? MethodContext.AuthSeparator + this.callerId : '');
 };
 
 MethodContext.prototype.clone = function () {
