@@ -1,6 +1,6 @@
 {
   "name": "storage",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "private": true,
   "main": "./src/index.js",
   "scripts": {
@@ -11,8 +11,8 @@
     "_test": "NODE_ENV=test mocha --timeout 10000 --reporter=dot test/*.js"
   },
   "dependencies": {
-    "cuid": "1.2.x",
-    "mongodb": "1.4.x"
+    "cuid": "^1.2.5",
+    "mongodb": "^1.4.39"
   },
   "devDependencies": {
     "mocha": "^2.1.0"
