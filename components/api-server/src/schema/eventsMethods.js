@@ -35,6 +35,19 @@ module.exports = {
     })
   },
 
+  getOne: {
+    params: object({
+      'id': string(),
+      'includePreviousVersions': string({ enum: ['keep-nothing', 'keep-history', 'keep-everything']})
+    }, {id: 'events.getOne'}),
+    result: object({
+      'event': event(Action.READ),
+      'history': array(event(Action.READ))
+    }, {
+      required: 'event'
+    })
+  },
+
   create: {
     params: event(Action.CREATE),
     result: object({
