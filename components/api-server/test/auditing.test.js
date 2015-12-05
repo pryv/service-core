@@ -74,7 +74,6 @@ describe('Auditing', function () {
         async.series([
           function update(stepDone) {
             request.put(path).send(data).end(function (res) {
-              console.log('res', res.body);
               validation.check(res, {
                 status: 200,
                 schema: methodsSchema.update.result
@@ -91,26 +90,62 @@ describe('Auditing', function () {
               stepDone();
             });
           },
-          function verifyStoredLog(stepDone) {
+          function verifyNoStoredLog(stepDone) {
             storage.database.findOne(storage.getCollectionInfo(user), {
               _headId: original.id}, {},
             function (err, dbEvent) {
-              should.exist(dbEvent);
-              should.exist(dbEvent.headId);
-              original.id.should.eql(dbEvent.headId);
+              should.not.exist(dbEvent);
               stepDone();
             });
-          }
+          }/*,
+          function makeGetOneRequestWithIncludePreviousVersions (stepDone) {
+            request.get(path + '/' + original.id +
+            '?=includePreviousVersions=true').end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.getOne.result
+              });
+              should.not.exist(res.history);
+              stepDone();
+            });
+          }*/
         ], done);
-
-        // fetch it with flag includePreviousVersions
-        // assert that nothing comes along although we just did a modification
       });
 
       it('must create a new log when deleting an event', function (done) {
         // delete an event
         // fetch it with flag includePreviousVersions
         // assert that nothing comes along although we just did a modification
+        async.series([
+          function deleteEvent(stepDone) {
+            request.del(path + '/' + original.id).end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.del.result
+              });
+              stepDone();
+            });
+          },
+          function verifyNoStoredLog(stepDone) {
+            storage.database.findOne(storage.getCollectionInfo(user), {
+                _headId: original.id}, {},
+              function (err, dbEvent) {
+                should.not.exist(dbEvent);
+                stepDone();
+              });
+          }/*,
+          function makeGetOneRequestWithIncludePreviousVersions (stepDone) {
+            request.get(path + '/' + original.id +
+            '?=includePreviousVersions=true').end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.getOne.result
+              });
+              should.not.exist(res.history);
+              stepDone();
+            });
+          }*/
+        ], done);
         done();
       });
 
@@ -135,6 +170,56 @@ describe('Auditing', function () {
         // modify an event
         // fetch it with flag includePreviousVersions
         // assert that we receive the previous version's history, i.e. {id, timestamp, modifiedBy}
+        var data = {
+          content: 'newContent'
+        };
+        async.series([
+          function update(stepDone) {
+            request.put(path).send(data).end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.update.result
+              });
+              stepDone();
+            });
+          },
+          function verifyStoredItem(stepDone) {
+            storage.database.findOne(storage.getCollectionInfo(user),
+              {_id: original.id}, {},
+              function (err, dbEvent) {
+                should.exist(dbEvent);
+                dbEvent.id.should.eql(original.id);
+                stepDone();
+              });
+          },
+          function verifyStoredLog(stepDone) {
+            storage.database.findOne(storage.getCollectionInfo(user), {
+                _headId: original.id}, {},
+              function (err, dbEvent) {
+                should.exist(dbEvent);
+                should.exist(dbEvent.modifiedBy);
+                should.exist(dbEvent.modified);
+                stepDone();
+              });
+          }/*,
+          function makeGetOneRequestWithIncludePreviousVersions (stepDone) {
+            request.get(path + '/' + original.id +
+            '?=includePreviousVersions=true').end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.getOne.result
+              });
+              should.exist(res.history);
+              res.history.length.should.eql(1);
+              var record = res.history[0];
+              should.exist(record.id);
+              should.exist(record.modified);
+              should.exist(record.modifiedBy);
+              record.headId.should.eql(original.id);
+              stepDone();
+            });
+          }*/
+        ], done);
         done();
       });
 
@@ -142,6 +227,42 @@ describe('Auditing', function () {
         // delete an event
         // fetch it with flag includePreviousVersions
         // assert that we receive the previous version's history, i.e. {id, timestamp, modifiedBy}
+        async.series([
+          function deleteEvent(stepDone) {
+            request.del(path + '/' + original.id).end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.del.result
+              });
+              stepDone();
+            });
+          },
+          function verifyStoredLog(stepDone) {
+            storage.database.findOne(storage.getCollectionInfo(user), {
+                _headId: original.id}, {},
+              function (err, dbEvent) {
+                should.exist(dbEvent);
+                stepDone();
+              });
+          }/*,
+          function makeGetOneRequestWithIncludePreviousVersions (stepDone) {
+            request.get(path + '/' + original.id +
+            '?=includePreviousVersions=true').end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.getOne.result
+              });
+              should.exist(res.history);
+              res.history.length.should.eql(1);
+              var record = res.history[0];
+              should.exist(record.id);
+              should.exist(record.modified);
+              should.exist(record.modifiedBy);
+              record.headId.should.eql(original.id);
+              stepDone();
+            });
+          }*/
+        ], done);
         done();
       });
 
@@ -165,6 +286,57 @@ describe('Auditing', function () {
         // modify an event
         // fetch it with flag includePreviousVersions
         // assert that we receive the previous version's full history, i.e. all fields
+        var data = {
+          content: 'newContent'
+        };
+        async.series([
+          function update(stepDone) {
+            request.put(path).send(data).end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.update.result
+              });
+              stepDone();
+            });
+          },
+          function verifyStoredItem(stepDone) {
+            storage.database.findOne(storage.getCollectionInfo(user),
+              {_id: original.id}, {},
+              function (err, dbEvent) {
+                should.exist(dbEvent);
+                dbEvent.id.should.eql(original.id);
+                stepDone();
+              });
+          },
+          function verifyStoredLog(stepDone) {
+            storage.database.findOne(storage.getCollectionInfo(user), {
+                _headId: original.id}, {},
+              function (err, dbEvent) {
+                should.exist(dbEvent);
+                should.exist(dbEvent.modifiedBy);
+                should.exist(dbEvent.modified);
+                should.exist(dbEvent);
+                stepDone();
+              });
+          }/*,
+          function makeGetOneRequestWithIncludePreviousVersions (stepDone) {
+            request.get(path + '/' + original.id +
+            '?=includePreviousVersions=true').end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.getOne.result
+              });
+              should.exist(res.history);
+              res.history.length.should.eql(1);
+              var record = res.history[0];
+              should.exist(record.id);
+              should.exist(record.modified);
+              should.exist(record.modifiedBy);
+              record.headId.should.eql(original.id);
+              stepDone();
+            });
+          }*/
+        ], done);
         done();
       });
 
@@ -172,6 +344,43 @@ describe('Auditing', function () {
         // delete an event
         // fetch it with flag includePreviousVersions
         // assert that we receive the previous version's full history, i.e. all fields
+        async.series([
+          function deleteEvent(stepDone) {
+            request.del(path + '/' + original.id).end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.del.result
+              });
+              stepDone();
+            });
+          },
+          function verifyStoredLog(stepDone) {
+            storage.database.findOne(storage.getCollectionInfo(user), {
+                _headId: original.id}, {},
+              function (err, dbEvent) {
+                should.exist(dbEvent);
+                stepDone();
+              });
+          }/*,
+
+          function makeGetOneRequestWithIncludePreviousVersions (stepDone) {
+            request.get(path + '/' + original.id +
+            '?=includePreviousVersions=true').end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.getOne.result
+              });
+              should.exist(res.history);
+              res.history.length.should.eql(1);
+              var record = res.history[0];
+              should.exist(record.id);
+              should.exist(record.modified);
+              should.exist(record.modifiedBy);
+              record.headId.should.eql(original.id);
+              stepDone();
+            });
+          }*/
+        ], done);
         done();
       });
 
