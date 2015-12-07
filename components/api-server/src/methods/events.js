@@ -260,6 +260,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       checkExistingLaterPeriodIfNeeded,
       checkOverlappedPeriodsIfNeeded,
       stopPreviousPeriodIfNeeded,
+      generateLogIfNeeded,
       updateAttachments,
       updateEvent,
       notify);
@@ -286,6 +287,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         return next(errors.forbidden());
       }
 
+      context.oldContent = _.cloneDeep(event);
       context.content = _.extend(event, params.update);
 
       context.setStream(context.content.streamId);
@@ -293,6 +295,35 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         return;
       }
 
+      next();
+    });
+  }
+
+  function generateLogIfNeeded(context, params, result, next) {
+
+    // TODO replace with real server setting
+    var forceKeepHistory = true;
+    var deletionSchema = 'keep-everything';
+
+    if (! forceKeepHistory || deletionSchema === 'keep-nothing') {
+      return next();
+    }
+
+    switch (deletionSchema) {
+      case 'keep-history':
+        context.oldContent = _.pick(context.oldContent, ['modified', 'modifiedBy']);
+        _.extend(context.oldContent, {id: 'bloblo', headId: context.content.id});
+        break;
+      case 'keep-everything':
+        _.extend(context.oldContent, {id: 'bloblo', headId: context.content.id});
+        break;
+    }
+
+    userEventsStorage.insertOne(context.user, context.oldContent, function (err) {
+      if (err) {
+        return next(errors.unexpectedError(err));
+      }
+      delete context.oldContent;
       next();
     });
   }
@@ -314,7 +345,6 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   }
 
   function updateEvent (context, params, result, next) {
-
     userEventsStorage.update(context.user, {id: context.content.id}, context.content,
       function (err, updatedEvent) {
         if (err) {
@@ -691,13 +721,44 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       if (err) { return next(err); }
 
       context.event = event;
-      if (! event.trashed) {
-        // move to trash
-        flagAsTrashed(context, params, result, next);
-      } else {
-        // actually delete
-        deleteWithData(context, params, result, next);
+      var oldEvent = _.cloneDeep(event);
+
+      // TODO encapsulate this piece of code somehow
+      // idea1: extact checkEventForWriting() in fn(context, params, result, next) format
+      // & make mini function that checks for trashed flag
+      // idea2: i have no idea
+      // TODO replace with real server setting
+      // TODO replace with real server setting
+      var forceKeepHistory = true;
+      var deletionSchema = 'keep-everything';
+
+      // TODO adapt this
+      if (! forceKeepHistory || deletionSchema === 'keep-nothing') {
+        return next();
       }
+
+      switch (deletionSchema) {
+        case 'keep-history':
+          oldEvent = _.pick(oldEvent, ['modified', 'modifiedBy']);
+          _.extend(oldEvent, {id: 'bloblo', headId: event.id});
+          break;
+        case 'keep-everything':
+          _.extend(oldEvent, {id: 'bloblo', headId: event.id});
+          break;
+      }
+
+      userEventsStorage.insertOne(context.user, oldEvent, function (err) {
+        if (err) {
+          return next(errors.unexpectedError(err));
+        }
+        if (! event.trashed) {
+          // move to trash
+          flagAsTrashed(context, params, result, next);
+        } else {
+          // actually delete
+          deleteWithData(context, params, result, next);
+        }
+      });
     });
   });
 
