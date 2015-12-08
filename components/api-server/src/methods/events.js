@@ -22,7 +22,7 @@ var utils = require('components/utils'),
  * @param notifications
  */
 module.exports = function (api, userEventsStorage, userEventFilesStorage, usersStorage,
-                           authSettings, eventTypes, notifications) {
+                           authSettings, auditSettings, eventTypes, notifications) {
 
   // COMMON
 
@@ -190,7 +190,9 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   }
 
   function includeHistoryIfRequested(context, params, result, next) {
-    if (params.includePreviousVersions && params.includePreviousVersions === true) {
+    if (params.includePreviousVersions && params.includePreviousVersions === true && (
+      auditSettings.forceKeepHistory && auditSettings.forceKeepHistory === true)
+        ) {
       userEventFilesStorage.find(context.user, {headId: params.id}, null, function (err, events) {
         if (err) {
           return next(errors.unexpectedError(err));
