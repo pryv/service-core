@@ -165,6 +165,47 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     });
   }
 
+  api.register('events.getOne',
+    commonFns.getParamsValidation(methodsSchema.getOne.params),
+    findEvent,
+    includeHistoryIfRequested
+  );
+
+  function findEvent(context, params, result, next) {
+    userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
+      if (err) {
+        return next(errors.unexpectedError(err));
+      }
+
+      if (! event) {
+        return next(errors.unknownResource('event', params.id));
+      }
+
+      if (! context.canContributeToContext(event.streamId, event.tags)) {
+        return next(errors.forbidden());
+      }
+      result.event = event;
+      next();
+    });
+  }
+
+  function includeHistoryIfRequested(context, params, result, next) {
+    if (params.includePreviousVersions && params.includePreviousVersions === true) {
+      userEventFilesStorage.find(context.user, {headId: params.id}, null, function (err, events) {
+        if (err) {
+          return next(errors.unexpectedError(err));
+        }
+
+        if (! events) {
+          return next();
+        }
+
+        result.history = events;
+        next();
+      });
+    }
+  }
+
   // CREATION
 
   api.register('events.create',
