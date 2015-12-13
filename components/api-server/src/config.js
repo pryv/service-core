@@ -18,6 +18,10 @@ _.merge(config.schema, {
       default: 'https://pryv.github.io/event-types/flat.json'
     }
   },
+  audit: {
+    forceKeepHistory: false,
+    deletionMode: 'keep-nothing'
+  },
   auth: {
     // TODO: rename to "systemAccessKey" for consistency
     adminAccessKey: {
