@@ -58,7 +58,7 @@ describe('Auditing', function () {
       eventWithNoHistory = testData.events[22];
 
 
-    it('must not return logged events when calling events.get', function (done) {
+    it('must not return history when calling events.get', function (done) {
 
       var queryParams = {limit: 100};
 
@@ -80,7 +80,7 @@ describe('Auditing', function () {
 
       beforeEach(testData.resetEvents);
 
-      it('must delete the event\'s history when deleting an event with deletionMode=keep-nothing',
+      it('must delete the event\'s history when deleting it with deletionMode=keep-nothing',
         function (done) {
           var settings = _.cloneDeep(helpers.dependencies.settings);
           settings.audit.deletionMode = 'keep-nothing';
@@ -111,7 +111,7 @@ describe('Auditing', function () {
             },
             function checkThatHistoryIsDeleted(stepDone) {
 
-              storage.findPreviousVersions(user, trashedEventWithHistory.id, null,
+              storage.findHistory(user, trashedEventWithHistory.id, null,
                 function (err, events) {
                   if (err) {
                     return stepDone(err);
@@ -123,7 +123,7 @@ describe('Auditing', function () {
           ], done);
         });
 
-      it('must minimize the history when deleting an event with deletionMode=keep-history',
+      it('must minimize the event\'s history when deleting it with deletionMode=keep-history',
         function (done) {
           var settings = _.cloneDeep(helpers.dependencies.settings);
           settings.audit.deletionMode = 'keep-history';
@@ -155,7 +155,7 @@ describe('Auditing', function () {
                 });
             },
             function checkThatHistoryIsMinimized(stepDone) {
-              storage.findPreviousVersions(user, trashedEventWithHistory.id, null,
+              storage.findHistory(user, trashedEventWithHistory.id, null,
                 function (err, events) {
                   if (err) {
                     return stepDone(err);
@@ -174,7 +174,7 @@ describe('Auditing', function () {
           ], done);
         });
 
-      it('must not modify the history when deleting an event with ' +
+      it('must not modify the event\'s history when deleting it with ' +
         'deletionMode=keep-everything',
         function (done) {
           var settings = _.cloneDeep(helpers.dependencies.settings);
@@ -203,7 +203,7 @@ describe('Auditing', function () {
                 });
             },
             function checkThatHistoryIsUnchanged(stepDone) {
-              storage.findPreviousVersions(user, trashedEventWithHistory.id, null,
+              storage.findHistory(user, trashedEventWithHistory.id, null,
                 function (err, events) {
                   if (err) {
                     return stepDone(err);
@@ -230,9 +230,9 @@ describe('Auditing', function () {
 
     describe('getOne', function () {
 
-      it('must not return history when calling getOne with includePreviousVersions flag off',
+      it('must not return an event\'s history when calling getOne with includeHistory flag off',
         function (done) {
-          request.get(pathToEvent(eventWithHistory.id)).query({includePreviousVersions: false}).end(
+          request.get(pathToEvent(eventWithHistory.id)).query({includeHistory: false}).end(
             function (res) {
               validation.check(res, {
                 status: 200,
@@ -245,9 +245,9 @@ describe('Auditing', function () {
           );
         });
 
-      it('must return history when calling getOne with includePreviousVersions flag on',
+      it('must return an event\'s history when calling getOne with includeHistory flag on',
         function (done) {
-          request.get(pathToEvent(eventWithHistory.id)).query({includePreviousVersions: true}).end(
+          request.get(pathToEvent(eventWithHistory.id)).query({includeHistory: true}).end(
             function (res) {
               validation.check(res, {
                 status: 200,
@@ -271,7 +271,7 @@ describe('Auditing', function () {
 
       beforeEach(testData.resetEvents);
 
-      it('must not generate a log when updating an event', function (done) {
+      it('must not generate history when updating an event', function (done) {
         var updateData = {
           content: 'updated content'
         };
@@ -287,7 +287,7 @@ describe('Auditing', function () {
           },
           function callGetOne(stepDone) {
             request.get(pathToEvent(eventWithNoHistory.id))
-              .query({includePreviousVersions: true}).end(
+              .query({includeHistory: true}).end(
               function (res) {
                 validation.check(res, {
                   status: 200,
@@ -301,7 +301,7 @@ describe('Auditing', function () {
         ], done);
       });
 
-      it.skip('must not create a log of the running event that was stopped ' +
+      it.skip('must not generate history of the running event that was stopped ' +
         'because of the start call on another event',
         function (done) {
           var data = {
@@ -360,7 +360,7 @@ describe('Auditing', function () {
           );
         });
 
-      it('must not create a log when no event was stopped in the procedure of the start call ' +
+      it('must not generate history when no event was stopped in the procedure of the start call ' +
         'on another event',
         function (done) {
           done();
@@ -385,7 +385,7 @@ describe('Auditing', function () {
         ], done);
       });
 
-      it('must create a new log when updating an event', function (done) {
+      it('must generate history when updating an event', function (done) {
         var updateData = {
           content: 'first updated content'
         };
@@ -411,7 +411,7 @@ describe('Auditing', function () {
           },
           function callGetOne(stepDone) {
             request.get(pathToEvent(eventWithNoHistory.id))
-              .query({includePreviousVersions: true}).end(
+              .query({includeHistory: true}).end(
               function (res) {
                 validation.check(res, {
                   status: 200,
@@ -439,20 +439,20 @@ describe('Auditing', function () {
         ], done);
       });
 
-      it('must create a log of the running event that was stopped because of the start call ' +
+      it('must generate history of the running event that was stopped because of the start call ' +
         'on another event',
         function (done) {
           done();
         });
 
 
-      it('must not create a log when no event was stopped in the procedure of the start call ' +
+      it('must not generate history when no event was stopped in the procedure of the start call ' +
         'on another event',
         function (done) {
           done();
         });
 
-      it('must create a log when calling stop on a running event', function (done) {
+      it('must generate history when calling stop on a running event', function (done) {
         done();
       });
 

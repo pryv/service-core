@@ -39,7 +39,7 @@ module.exports = function (expressApp, api, attachmentsAccessMiddleware, userAcc
   expressApp.get(Paths.Events + '/:id', function (req, res, next) {
     var params = _.extend({id: req.params.id}, req.query);
     tryCoerceStringValues(params, {
-      includePreviousVersions: 'boolean'
+      includeHistory: 'boolean'
     });
     api.call('events.getOne', req.context, params, methodCallback(res, next, 200));
   });

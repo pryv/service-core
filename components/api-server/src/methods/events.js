@@ -191,7 +191,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   }
 
   function includeHistoryIfRequested(context, params, result, next) {
-    if (!params.includePreviousVersions) {
+    if (!params.includeHistory) {
       return next();
     }
 
@@ -199,7 +199,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       sort: {modified: 1}
     };
 
-    userEventsStorage.findPreviousVersions(context.user, params.id, options,
+    userEventsStorage.findHistory(context.user, params.id, options,
       function (err, history) {
         if (err) {
           return next(errors.unexpectedError(err));

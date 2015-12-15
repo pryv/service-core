@@ -38,7 +38,7 @@ module.exports = {
   getOne: {
     params: object({
       'id': string(),
-      'includePreviousVersions': boolean()
+      'includeHistory': boolean()
     }, {id: 'events.getOne'}),
     result: object({
       'event': event(Action.READ),

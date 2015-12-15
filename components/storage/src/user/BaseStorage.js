@@ -83,7 +83,7 @@ BaseStorage.prototype.find = function (user, query, options, callback) {
   }.bind(this));
 };
 
-BaseStorage.prototype.findPreviousVersions = function (user, headId, options, callback) {
+BaseStorage.prototype.findHistory = function (user, headId, options, callback) {
   this.database.find(this.getCollectionInfo(user), this.applyQueryToDB({headId: headId}),
     this.applyOptionsToDB(options),
     function (err, dbItems) {
