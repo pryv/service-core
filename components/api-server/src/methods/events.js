@@ -813,7 +813,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         ], stepDone);
       },
       function keepOnlyHistoryIfSetAsSuch(stepDone) {
-        if (auditSettings.deletionMode !== 'keep-history') {
+        if (auditSettings.deletionMode !== 'keep-authors') {
           return stepDone();
         }
         async.series([

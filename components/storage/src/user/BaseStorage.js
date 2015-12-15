@@ -155,7 +155,7 @@ BaseStorage.prototype.update = function (user, query, updatedData, callback) {
 };
 
 /**
- * Minimizes an event's history according to the 'keep-history' deletionMode
+ * Minimizes an event's history according to the 'keep-authors' deletionMode
  *
  * @param user
  * @param query

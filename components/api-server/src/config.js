@@ -29,9 +29,9 @@ _.merge(config.schema, {
       default: 'keep-nothing',
       doc: 'Defines the behaviour of items deletion.\n' +
       '\'keep-nothing\': Delete history, keep head as itemDeletion as it is now by default.\n' +
-      '\'keep-history\': Keep fields \'headId\', \'id\', \'modified\', \'modifiedBy\'' +
+      '\'keep-authors\': Keep fields \'headId\', \'id\', \'modified\', \'modifiedBy\'' +
       ' in head and history.\n' +
-      '\'keep-history\': Add \'deleted\' field to head item, leave history as is.'
+      '\'keep-everything\': Add \'deleted\' field to head item, leave history as is.'
     }
   },
   auth: {

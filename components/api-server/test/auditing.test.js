@@ -123,10 +123,10 @@ describe('Auditing', function () {
           ], done);
         });
 
-      it('must minimize the event\'s history when deleting it with deletionMode=keep-history',
+      it('must minimize the event\'s history when deleting it with deletionMode=keep-authors',
         function (done) {
           var settings = _.cloneDeep(helpers.dependencies.settings);
-          settings.audit.deletionMode = 'keep-history';
+          settings.audit.deletionMode = 'keep-authors';
 
           async.series([
             server.ensureStarted.bind(server, settings),
@@ -477,7 +477,7 @@ describe('Auditing', function () {
 
     });
 
-    describe('deletionMode=\'keep-history\'', function () {
+    describe('deletionMode=\'keep-authors\'', function () {
 
       it('must not delete the events\' history when their stream is deleted with ' +
       ' mergeEventsWithParents=true', function (done) {
