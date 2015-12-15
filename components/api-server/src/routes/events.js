@@ -41,7 +41,7 @@ module.exports = function (expressApp, api, attachmentsAccessMiddleware, userAcc
     tryCoerceStringValues(params, {
       includePreviousVersions: 'boolean'
     });
-    api.call('event.getOne', req.context, params, methodCallback(res, next, 200));
+    api.call('events.getOne', req.context, params, methodCallback(res, next, 200));
   });
 
   /**

@@ -40,6 +40,7 @@ exports = module.exports = function (action) {
   // forbid 'id' on create
   if (action !== Action.CREATE) {
     schema.properties.id = string();
+    schema.properties.headId = string();
   }
 
   // only allow "files" (raw file data, internal stuff) on create

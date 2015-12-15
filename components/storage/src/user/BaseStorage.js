@@ -60,19 +60,22 @@ BaseStorage.prototype.countAll = function (user, callback) {
 };
 
 /**
- * Ignores item deletions (i.e. documents with `deleted` field).
+ * Ignores item deletions & history (i.e. documents with either `deleted` or `headId` field).
  */
 BaseStorage.prototype.count = function (user, query, callback) {
   query.deleted = null;
+  query.headId = null;
   this.database.count(this.getCollectionInfo(user), this.applyQueryToDB(query), callback);
 };
 
 /**
- * Ignores item deletions (i.e. documents with `deleted` field).
+ * Ignores item deletions (i.e. documents with `deleted` field) &
+ * history items (i.e. documents with `headId` field)
  * @see `findDeletions()`
  */
 BaseStorage.prototype.find = function (user, query, options, callback) {
   query.deleted = null;
+  query.headId = null;
   this.database.find(this.getCollectionInfo(user), this.applyQueryToDB(query),
       this.applyOptionsToDB(options), function (err, dbItems) {
     if (err) { return callback(err); }
@@ -80,8 +83,18 @@ BaseStorage.prototype.find = function (user, query, options, callback) {
   }.bind(this));
 };
 
+BaseStorage.prototype.findPreviousVersions = function (user, headId, options, callback) {
+  this.database.find(this.getCollectionInfo(user), this.applyQueryToDB({headId: headId}),
+    this.applyOptionsToDB(options),
+    function (err, dbItems) {
+      if (err) { return callback(err); }
+      callback(null, this.applyItemsFromDB(dbItems));
+    }.bind(this));
+};
+
 BaseStorage.prototype.findDeletions = function (user, deletedSince, options, callback) {
   var query = {deleted: {$gt: timestamp.toDate(deletedSince)}};
+  query.headId = null;
   this.database.find(this.getCollectionInfo(user), query, this.applyOptionsToDB(options),
       function (err, dbItems) {
     if (err) { return callback(err); }
@@ -139,6 +152,50 @@ BaseStorage.prototype.update = function (user, query, updatedData, callback) {
     if (err) { return callback(err); }
     callback(null, this.applyItemFromDB(dbItem));
   }.bind(this));
+};
+
+/**
+ * Minimizes an event's history according to the 'keep-history' deletionMode
+ *
+ * @param user
+ * @param query
+ * @param callback
+ */
+BaseStorage.prototype.minimizeHistory = function (user, headId, callback) {
+  var query = {
+    headId: headId
+  };
+
+  var update = {
+    $unset: {
+      streamId: 1,
+      time: 1,
+      duration: 1,
+      endTime: 1,
+      type: 1,
+      content: 1,
+      tags: 1,
+      description: 1,
+      attachments: 1,
+      clientData: 1,
+      trashed: 1,
+      created: 1,
+      createdBy: 1
+    }
+  };
+  this.database.update(this.getCollectionInfo(user), this.applyQueryToDB(query), update, callback);
+};
+
+/**
+ * Delete an item in DeletionMode='keep-everything', simply adds a 'deleted' field to the item.
+ *
+ * @param user
+ * @param id
+ * @param callback
+ */
+BaseStorage.prototype.deleteWhileKeepingEverything = function (user, id, callback) {
+  this.database.update(this.getCollectionInfo(user),
+    this.applyQueryToDB({id: id}), {$set: {deleted: new Date()}}, callback);
 };
 
 /**

@@ -38,13 +38,13 @@ module.exports = {
   getOne: {
     params: object({
       'id': string(),
-      'includePreviousVersions': string({ enum: ['keep-nothing', 'keep-history', 'keep-everything']})
+      'includePreviousVersions': boolean()
     }, {id: 'events.getOne'}),
     result: object({
       'event': event(Action.READ),
       'history': array(event(Action.READ))
     }, {
-      required: 'event'
+      required: [ 'event' ]
     })
   },
 

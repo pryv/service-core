@@ -44,18 +44,22 @@ describe('Auditing', function () {
 
   after(function (done) {
     var settings = _.cloneDeep(helpers.dependencies.settings);
-    settings.audit.forceKeepHistory = false;
+    settings.audit = {
+      forceKeepHistory: false,
+      deletionMode: 'keep-nothing'
+    };
     server.ensureStarted.call(server, settings, done);
   });
 
   describe('Events', function () {
 
-    var original = testData.events[16];
-    var trashedEvent = testData.events[19];
+    var eventWithHistory = testData.events[16],
+      trashedEventWithHistory = testData.events[19],
+      eventWithNoHistory = testData.events[22];
+
 
     it('must not return logged events when calling events.get', function (done) {
 
-      //var queryParams = {limit: 100, streams: [testData.streams[0].children[0].id]};
       var queryParams = {limit: 100};
 
       request.get(pathToEvent(null)).query(queryParams).end(function (res) {
@@ -72,11 +76,9 @@ describe('Auditing', function () {
       });
     });
 
-    describe.skip('deletionMode', function () {
+    describe('deletionMode', function () {
 
-      beforeEach(function (done) {
-        resetEvents(done);
-      });
+      beforeEach(testData.resetEvents);
 
       it('must delete the event\'s history when deleting an event with deletionMode=keep-nothing',
         function (done) {
@@ -86,43 +88,42 @@ describe('Auditing', function () {
           async.series([
             server.ensureStarted.bind(server, settings),
             function deleteEvent(stepDone) {
-              request.del(pathToEvent(trashedEvent.id)).end(function (res) {
+              request.del(pathToEvent(trashedEventWithHistory.id)).end(function (res) {
                 validation.check(res, {
                   status: 200,
                   schema: methodsSchema.del.result
                 });
-                res.body.eventDeletion.id.should.eql(trashedEvent.id);
+                res.body.eventDeletion.id.should.eql(trashedEventWithHistory.id);
                 stepDone();
               });
             },
             function findDeletionInStorage(stepDone) {
-              storage.findDeletion(user, {id: trashedEvent.id}, null, function (err, event) {
-                if (err) {
-                  return stepDone(err);
-                }
-                should.exist(event);
-                event.id.should.eql(trashedEvent.id);
-                should.exist(event.deleted);
-                stepDone();
-              });
+              storage.findDeletion(user, {id: trashedEventWithHistory.id}, null,
+                function (err, event) {
+                  if (err) {
+                    return stepDone(err);
+                  }
+                  should.exist(event);
+                  event.id.should.eql(trashedEventWithHistory.id);
+                  should.exist(event.deleted);
+                  stepDone();
+                });
             },
-            function checkThatHistoryIsDeleted (stepDone) {
-              var query = {
-                headId: trashedEvent.id
-              };
+            function checkThatHistoryIsDeleted(stepDone) {
 
-              storage.findPreviousVersions(user, query, null, function (err, events) {
-                if (err) {
-                  return stepDone(err);
-                }
-                (events.length).should.be.eql(0);
-                stepDone();
-              });
+              storage.findPreviousVersions(user, trashedEventWithHistory.id, null,
+                function (err, events) {
+                  if (err) {
+                    return stepDone(err);
+                  }
+                  (events.length).should.be.eql(0);
+                  stepDone();
+                });
             }
           ], done);
         });
 
-      it.skip('must minimize the history when deleting an event with deletionMode=keep-history',
+      it('must minimize the history when deleting an event with deletionMode=keep-history',
         function (done) {
           var settings = _.cloneDeep(helpers.dependencies.settings);
           settings.audit.deletionMode = 'keep-history';
@@ -130,7 +131,7 @@ describe('Auditing', function () {
           async.series([
             server.ensureStarted.bind(server, settings),
             function deleteEvent(stepDone) {
-              request.del(pathToEvent(original.id)).end(function (res) {
+              request.del(pathToEvent(trashedEventWithHistory.id)).end(function (res) {
                 validation.check(res, {
                   status: 200,
                   schema: methodsSchema.del.result
@@ -138,22 +139,42 @@ describe('Auditing', function () {
                 stepDone();
               });
             },
-            function callGetOne(stepDone) {
-              request.get(pathToEvent(original.id)).query({includePreviousVersions: true}).end(
-                function (res) {
-                  validation.check(res, {
-                    status: 200,
-                    schema: methodsSchema.getOne.result
+            function findDeletionInStorage(stepDone) {
+              storage.findDeletion(user, {id: trashedEventWithHistory.id}, null,
+                function (err, event) {
+                  if (err) {
+                    return stepDone(err);
+                  }
+                  should.exist(event);
+                  (Object.key(event).length).should.eql(4);
+                  event.id.should.eql(trashedEventWithHistory.id);
+                  should.exist(event.deleted);
+                  should.exist(event.modified);
+                  should.exist(event.modifiedBy);
+                  stepDone();
+                });
+            },
+            function checkThatHistoryIsMinimized(stepDone) {
+              storage.findPreviousVersions(user, trashedEventWithHistory.id, null,
+                function (err, events) {
+                  if (err) {
+                    return stepDone(err);
+                  }
+                  (events.length).should.be.eql(2);
+                  events.forEach(function (event) {
+                    (Object.keys(event).length).should.eql(4);
+                    should.exist(event.id);
+                    should.exist(event.headId);
+                    should.exist(event.modified);
+                    should.exist(event.modifiedBy);
                   });
-                  should.exist(res.body);
-                  should.not.exist(res.body.history);
                   stepDone();
                 });
             }
           ], done);
         });
 
-      it.skip('must not modify the history when deleting an event with ' +
+      it('must not modify the history when deleting an event with ' +
         'deletionMode=keep-everything',
         function (done) {
           var settings = _.cloneDeep(helpers.dependencies.settings);
@@ -162,7 +183,7 @@ describe('Auditing', function () {
           async.series([
             server.ensureStarted.bind(server, settings),
             function deleteEvent(stepDone) {
-              request.del(pathToEvent(original.id)).end(function (res) {
+              request.del(pathToEvent(trashedEventWithHistory.id)).end(function (res) {
                 validation.check(res, {
                   status: 200,
                   schema: methodsSchema.del.result
@@ -170,15 +191,36 @@ describe('Auditing', function () {
                 stepDone();
               });
             },
-            function callGetOne(stepDone) {
-              request.get(pathToEvent(original.id)).query({includePreviousVersions: true}).end(
-                function (res) {
-                  validation.check(res, {
-                    status: 200,
-                    schema: methodsSchema.getOne.result
+            function findDeletionInStorage(stepDone) {
+              storage.findDeletion(user, {id: trashedEventWithHistory.id}, null,
+                function (err, event) {
+                  if (err) {
+                    return stepDone(err);
+                  }
+                  should.exist(event);
+                  event.should.eql(_.extend(trashedEventWithHistory, {deleted: event.deleted}));
+                  stepDone();
+                });
+            },
+            function checkThatHistoryIsUnchanged(stepDone) {
+              storage.findPreviousVersions(user, trashedEventWithHistory.id, null,
+                function (err, events) {
+                  if (err) {
+                    return stepDone(err);
+                  }
+                  // TODO clean this test
+                  var checked = {first: false, second: false};
+                  (events.length).should.eql(2);
+                  events.forEach(function (event) {
+                    if (event.id === testData.events[20].id) {
+                      event.should.eql(testData.events[20]);
+                      checked.first = true;
+                    } else if (event.id === testData.events[21].id) {
+                      event.should.eql(testData.events[21]);
+                      checked.second = true;
+                    }
                   });
-                  should.exist(res.body);
-                  should.not.exist(res.body.history);
+                  checked.should.eql({first: true, second: true});
                   stepDone();
                 });
             }
@@ -186,11 +228,11 @@ describe('Auditing', function () {
         });
     });
 
-    describe.skip('getOne', function () {
+    describe('getOne', function () {
 
       it('must not return history when calling getOne with includePreviousVersions flag off',
         function (done) {
-          request.get(pathToEvent(original.id)).query({includePreviousVersions: false}).end(
+          request.get(pathToEvent(eventWithHistory.id)).query({includePreviousVersions: false}).end(
             function (res) {
               validation.check(res, {
                 status: 200,
@@ -205,21 +247,21 @@ describe('Auditing', function () {
 
       it('must return history when calling getOne with includePreviousVersions flag on',
         function (done) {
-          request.get(pathToEvent(original.id)).query({includePreviousVersions: true}).end(
+          request.get(pathToEvent(eventWithHistory.id)).query({includePreviousVersions: true}).end(
             function (res) {
               validation.check(res, {
                 status: 200,
                 schema: methodsSchema.getOne.result
               });
               should.exist(res.body);
-              should.not.exist(res.body.history);
+              should.exist(res.body.history);
               done();
             }
           );
         });
     });
 
-    describe.skip('forceKeepHistory is OFF', function () {
+    describe('forceKeepHistory is OFF', function () {
 
       before(function (done) {
         var settings = _.cloneDeep(helpers.dependencies.settings);
@@ -227,9 +269,7 @@ describe('Auditing', function () {
         server.ensureStarted.call(server, settings, done);
       });
 
-      beforeEach(function (done) {
-        resetEvents(done);
-      });
+      beforeEach(testData.resetEvents);
 
       it('must not generate a log when updating an event', function (done) {
         var updateData = {
@@ -237,7 +277,7 @@ describe('Auditing', function () {
         };
         async.series([
           function updateEvent(stepDone) {
-            request.put(pathToEvent(original.id)).send(updateData).end(function (res) {
+            request.put(pathToEvent(eventWithNoHistory.id)).send(updateData).end(function (res) {
               validation.check(res, {
                 status: 200,
                 schema: methodsSchema.update.result
@@ -246,7 +286,8 @@ describe('Auditing', function () {
             });
           },
           function callGetOne(stepDone) {
-            request.get(pathToEvent(original.id)).query({includePreviousVersions: true}).end(
+            request.get(pathToEvent(eventWithNoHistory.id))
+              .query({includePreviousVersions: true}).end(
               function (res) {
                 validation.check(res, {
                   status: 200,
@@ -284,7 +325,7 @@ describe('Auditing', function () {
                   stepDone();
                 });
               },
-              function fetchHistoryOfStoppedEvent (stepDone) {
+              function fetchHistoryOfStoppedEvent(stepDone) {
                 request.get(pathToEvent(testData.events[0].id)).end(function (res) {
                   validation.check(res, {
                     status: 201,
@@ -332,9 +373,9 @@ describe('Auditing', function () {
     });
 
 
-    describe.skip('forceKeepHistory is ON', function () {
+    describe('forceKeepHistory is ON', function () {
 
-      beforeEach(resetEvents);
+      beforeEach(testData.resetEvents);
 
       before(function (done) {
         var settings = _.cloneDeep(helpers.dependencies.settings);
@@ -350,7 +391,7 @@ describe('Auditing', function () {
         };
         async.series([
           function updateEventOnce(stepDone) {
-            request.put(pathToEvent(original.id)).send(updateData).end(function (res) {
+            request.put(pathToEvent(eventWithNoHistory.id)).send(updateData).end(function (res) {
               validation.check(res, {
                 status: 200,
                 schema: methodsSchema.update.result
@@ -360,7 +401,7 @@ describe('Auditing', function () {
           },
           function updateEventTwice(stepDone) {
             updateData.content = 'second updated content';
-            request.put(pathToEvent(original.id)).send(updateData).end(function (res) {
+            request.put(pathToEvent(eventWithNoHistory.id)).send(updateData).end(function (res) {
               validation.check(res, {
                 status: 200,
                 schema: methodsSchema.update.result
@@ -369,7 +410,8 @@ describe('Auditing', function () {
             });
           },
           function callGetOne(stepDone) {
-            request.get(pathToEvent(original.id)).query({includePreviousVersions: true}).end(
+            request.get(pathToEvent(eventWithNoHistory.id))
+              .query({includePreviousVersions: true}).end(
               function (res) {
                 validation.check(res, {
                   status: 200,
@@ -381,14 +423,15 @@ describe('Auditing', function () {
                 var logs = res.body.history;
                 var time = 0;
                 logs.forEach(function (log) {
-                  (log.headId).should.eql(original.id);
+                  (log.headId).should.eql(eventWithNoHistory.id);
                   // check sorted by modified field
                   if (time !== 0) {
                     (log.modified).should.be.above(time);
                   }
                   time = log.modified;
                   (_.omit(log, ['id', 'headId', 'modified', 'modifiedBy', 'content'])).should.eql(
-                    _.omit(original, ['id', 'headId', 'modified', 'modifiedBy', 'content']));
+                    _.omit(eventWithNoHistory,
+                      ['id', 'headId', 'modified', 'modifiedBy', 'content']));
                 });
                 stepDone();
               });
@@ -461,12 +504,5 @@ describe('Auditing', function () {
     });
 
   });
-
-  function resetEvents(done) {
-    async.series([
-      testData.resetEvents,
-      testData.resetAttachments
-    ], done);
-  }
 
 });

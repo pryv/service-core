@@ -18,6 +18,7 @@ var utils = require('components/utils'),
  * @param userEventFilesStorage
  * @param usersStorage
  * @param authSettings
+ * @param auditSettings
  * @param eventTypes
  * @param notifications
  */
@@ -190,22 +191,24 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   }
 
   function includeHistoryIfRequested(context, params, result, next) {
-    if (params.includePreviousVersions && params.includePreviousVersions === true && (
-      auditSettings.forceKeepHistory && auditSettings.forceKeepHistory === true)
-        ) {
-      userEventFilesStorage.find(context.user, {headId: params.id}, null, function (err, events) {
+    if (!params.includePreviousVersions) {
+      return next();
+    }
+
+    var options = {
+      sort: {modified: 1}
+    };
+
+    userEventsStorage.findPreviousVersions(context.user, params.id, options,
+      function (err, history) {
         if (err) {
           return next(errors.unexpectedError(err));
         }
-
-        if (! events) {
-          return next();
+        if (history.length > 0) {
+          result.history = history;
         }
-
-        result.history = events;
         next();
       });
-    }
   }
 
   // CREATION
@@ -343,24 +346,12 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   }
 
   function generateLogIfNeeded(context, params, result, next) {
-
-    // TODO replace with real server setting
-    var forceKeepHistory = true;
-    var deletionSchema = 'keep-everything';
-
-    if (! forceKeepHistory || deletionSchema === 'keep-nothing') {
+    if (!auditSettings.forceKeepHistory) {
       return next();
     }
 
-    switch (deletionSchema) {
-      case 'keep-history':
-        context.oldContent = _.pick(context.oldContent, ['modified', 'modifiedBy']);
-        _.extend(context.oldContent, {id: 'bloblo', headId: context.content.id});
-        break;
-      case 'keep-everything':
-        _.extend(context.oldContent, {id: 'bloblo', headId: context.content.id});
-        break;
-    }
+    context.oldContent = _.extend(context.oldContent, {headId: context.content.id});
+    delete context.oldContent.id;
 
     userEventsStorage.insertOne(context.user, context.oldContent, function (err) {
       if (err) {
@@ -758,43 +749,15 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   // DELETION
 
   api.register('events.delete',
-      commonFns.getParamsValidation(methodsSchema.del.params),
-      function (context, params, result, next) {
-    checkEventForWriting(context, params.id, function (err, event) {
-      if (err) { return next(err); }
-
-      context.event = event;
-      var oldEvent = _.cloneDeep(event);
-
-      // TODO encapsulate this piece of code somehow
-      // idea1: extact checkEventForWriting() in fn(context, params, result, next) format
-      // & make mini function that checks for trashed flag
-      // idea2: i have no idea
-      // TODO replace with real server setting
-      // TODO replace with real server setting
-      var forceKeepHistory = true;
-      var deletionSchema = 'keep-everything';
-
-      // TODO adapt this
-      if (! forceKeepHistory || deletionSchema === 'keep-nothing') {
-        return next();
-      }
-
-      switch (deletionSchema) {
-        case 'keep-history':
-          oldEvent = _.pick(oldEvent, ['modified', 'modifiedBy']);
-          _.extend(oldEvent, {id: 'bloblo', headId: event.id});
-          break;
-        case 'keep-everything':
-          _.extend(oldEvent, {id: 'bloblo', headId: event.id});
-          break;
-      }
-
-      userEventsStorage.insertOne(context.user, oldEvent, function (err) {
+    commonFns.getParamsValidation(methodsSchema.del.params),
+    function (context, params, result, next) {
+      checkEventForWriting(context, params.id, function (err, event) {
         if (err) {
-          return next(errors.unexpectedError(err));
+          return next(err);
         }
-        if (! event.trashed) {
+
+        context.event = event;
+        if (!event.trashed) {
           // move to trash
           flagAsTrashed(context, params, result, next);
         } else {
@@ -803,7 +766,6 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         }
       });
     });
-  });
 
   function flagAsTrashed(context, params, result, next) {
     var updatedData = {trashed: true};
@@ -822,15 +784,73 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   function deleteWithData(context, params, result, next) {
     async.series([
-      function (stepDone) {
-        /* jshint -W024 */
-        userEventsStorage.delete(context.user, {id: params.id}, function (err) {
-          if (err) { return stepDone(errors.unexpectedError(err)); }
+      function deleteHistoryIfKeepNothing(stepDone) {
+        if (auditSettings.deletionMode !== 'keep-nothing') {
+          return stepDone();
+        }
+        async.series([
+          function deleteHistoryCompletely(subStepDone) {
+            userEventsStorage.remove(context.user, {headId: params.id}, function (err) {
+              if (err) {
+                return subStepDone(errors.unexpectedError(err));
+              }
+              subStepDone();
+            });
+          },
+          function deleteEvent(subStepDone) {
+            /* jshint -W024 */
+            userEventsStorage.delete(context.user, {id: params.id}, function (err) {
+              if (err) {
+                return stepDone(errors.unexpectedError(err));
+              }
 
-          result.eventDeletion = {id: params.id};
-          notifications.eventsChanged(context.user);
-          stepDone();
-        });
+              result.eventDeletion = {id: params.id};
+              notifications.eventsChanged(context.user);
+
+              subStepDone();
+            });
+          }
+        ], stepDone);
+      },
+      function keepOnlyHistoryIfSetAsSuch(stepDone) {
+        if (auditSettings.deletionMode !== 'keep-history') {
+          return stepDone();
+        }
+        async.series([
+          function minimizeHistory(subStepDone) {
+            userEventsStorage.minimizeHistory(context.user, params.id, function (err) {
+              if (err) {
+                return subStepDone(errors.unexpectedError(err));
+              }
+              subStepDone();
+            });
+          },
+          function minimizeHeadWithDeletedField(subStepDone) {
+            userEventsStorage.delete(context.user, {id: params.id}, function (err) {
+              if (err) {
+                return subStepDone(errors.unexpectedError(err));
+              }
+
+              result.eventDeletion = {id: params.id};
+              notifications.eventsChanged(context.user);
+
+              subStepDone();
+            });
+          }
+        ], stepDone);
+      },
+      function keepEverything(stepDone) {
+        if (auditSettings.deletionMode !== 'keep-everything') {
+          return stepDone();
+        }
+        userEventsStorage.deleteWhileKeepingEverything(context.user, params.id, function (err) {
+            if (err) {
+              return stepDone(errors.unexpectedError(err));
+            }
+            result.eventDeletion = {id: params.id};
+            notifications.eventsChanged(context.user);
+            stepDone();
+          });
       },
       userEventFilesStorage.removeAllForEvent.bind(userEventFilesStorage, context.user, params.id),
       function (stepDone) {

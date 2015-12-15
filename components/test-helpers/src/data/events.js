@@ -198,6 +198,7 @@ module.exports = [
     modified: timestamp.now(),
     modifiedBy: 'test'
   },
+
   // deletions
   {
     id: 'e_13',
@@ -210,5 +211,97 @@ module.exports = [
   {
     id: 'e_15',
     deleted: timestamp.now('-2y') // to be cleaned up by Mongo TTL
+  },
+
+  // auditing
+  {
+    id: 'e_16',
+    streamId: streams[7].id,
+    time: timestamp.now('+32h'),
+    duration: timestamp.duration('1m'),
+    type: 'activity/pryv',
+    tags: ['super', 'cali', 'fragilistic', 'expiali', 'docious'],
+    description: 'top of the history array, most recent modified event',
+    created: timestamp.now('-9h'),
+    createdBy: 'test',
+    modified: timestamp.now('-3h'),
+    modifiedBy: 'test'
+  },
+  {
+    id: 'e_17',
+    headId: 'e_16',
+    streamId: streams[7].id,
+    time: timestamp.now('+32h'),
+    duration: timestamp.duration('1m'),
+    type: 'activity/pryv',
+    tags: ['super', 'cali', 'fragilistic', 'expiali', 'docious'],
+    description: 'bottom of the history, event upon creation.',
+    created: timestamp.now('-9h'),
+    createdBy: 'test',
+    modified: timestamp.now('-9h'),
+    modifiedBy: 'test'
+  },
+  {
+    id: 'e_18',
+    headId: 'e_16',
+    streamId: streams[7].id,
+    time: timestamp.now('+32h'),
+    duration: timestamp.duration('1m'),
+    type: 'activity/pryv',
+    tags: ['super', 'cali', 'fragilistic', 'expiali', 'docious'],
+    description: 'middle of the history, first modification',
+    created: timestamp.now('-9h'),
+    createdBy: 'test',
+    modified: timestamp.now('-6h'),
+    modifiedBy: 'test'
+  },
+  {
+    id: 'e_19',
+    streamId: streams[7].id,
+    time: timestamp.now('3h'),
+    type: 'activity/pryv',
+    description: 'trashed event used to simplify deletion tests.',
+    trashed: true,
+    created: timestamp.now('-2h'),
+    createdBy: 'test',
+    modified: timestamp.now(),
+    modifiedBy: 'test'
+  },
+  {
+    id: 'e_20',
+    headId: 'e_19',
+    streamId: streams[7].id,
+    time: timestamp.now('2h'),
+    type: 'activity/pryv',
+    description: 'trashed event used to simplify deletion tests.',
+    trashed: true,
+    created: timestamp.now('-2h'),
+    createdBy: 'test',
+    modified: timestamp.now('-1h'),
+    modifiedBy: 'test'
+  },
+  {
+    id: 'e_21',
+    headId: 'e_19',
+    streamId: streams[7].id,
+    time: timestamp.now('1h'),
+    type: 'activity/pryv',
+    description: 'trashed event used to simplify deletion tests.',
+    trashed: true,
+    created: timestamp.now('-2h'),
+    createdBy: 'test',
+    modified: timestamp.now('-2h'),
+    modifiedBy: 'test'
+  },
+  {
+    id: 'e_22',
+    streamId: streams[7].id,
+    time: timestamp.now('+32h'),
+    type: 'activity/pryv',
+    description: 'simple event with nothing special',
+    created: timestamp.now('-1h'),
+    createdBy: 'test',
+    modified: timestamp.now('-1h'),
+    modifiedBy: 'test'
   }
 ];

@@ -146,5 +146,25 @@ module.exports = [
   {
     id: 's_6',
     deleted: timestamp.now('-2y') // to be cleaned up by Mongo TTL
+  },
+  // auditing
+  {
+    id: 's_07',
+    name: 'Root Stream 7 - for auditing',
+    parentId: null,
+    created: timestamp.now(),
+    createdBy: 'test',
+    modified: timestamp.now(),
+    modifiedBy: 'test'
+  },
+  {
+    id: 's_08',
+    name: 'Root Stream 8 - for auditing',
+    parentId: null,
+    singleActivity: true,
+    created: timestamp.now(),
+    createdBy: 'test',
+    modified: timestamp.now(),
+    modifiedBy: 'test'
   }
 ];
