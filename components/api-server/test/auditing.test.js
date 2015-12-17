@@ -55,7 +55,12 @@ describe('Auditing', function () {
 
     var eventWithHistory = testData.events[16],
       trashedEventWithHistory = testData.events[19],
-      eventWithNoHistory = testData.events[22];
+      eventWithNoHistory = testData.events[22],
+      runningEventOnNormalStream = testData.events[23],
+      runningEventOnSingleActivityStream = testData.events[24];
+
+    var normalStream = testData.streams[7],
+        singleActivityStream = testData.streams[8];
 
 
     it('must not return history when calling events.get', function (done) {
@@ -238,7 +243,6 @@ describe('Auditing', function () {
                 status: 200,
                 schema: methodsSchema.getOne.result
               });
-              should.exist(res.body);
               should.not.exist(res.body.history);
               done();
             }
@@ -253,8 +257,8 @@ describe('Auditing', function () {
                 status: 200,
                 schema: methodsSchema.getOne.result
               });
-              should.exist(res.body);
               should.exist(res.body.history);
+
               done();
             }
           );
@@ -286,88 +290,131 @@ describe('Auditing', function () {
             });
           },
           function callGetOne(stepDone) {
-            request.get(pathToEvent(eventWithNoHistory.id))
-              .query({includeHistory: true}).end(
+            request.get(pathToEvent(eventWithNoHistory.id)).query({includeHistory: true}).end(
               function (res) {
                 validation.check(res, {
                   status: 200,
                   schema: methodsSchema.getOne.result
                 });
                 should.exist(res.body);
-                should.not.exist(res.body.history);
+                (res.body.history.length).should.eql(0);
                 stepDone();
               });
           }
         ], done);
       });
 
-      it.skip('must not generate history of the running event that was stopped ' +
+      it('must not generate history of the running event that was stopped ' +
         'because of the start call on another event',
         function (done) {
           var data = {
-            // 15 minutes ago to make sure the previous duration is set accordingly
-            time: timestamp.now('-15m'),
+            time: timestamp.now(''),
             type: 'activity/pryv',
-            streamId: testData.streams[0].id,
+            duration: null,
+            streamId: singleActivityStream.id,
             tags: ['houba']
           };
           var createdId;
 
           async.series([
-              function addNewEvent(stepDone) {
-                request.post(pathToEvent(null)).send(data).end(function (res) {
+              function startEvent(stepDone) {
+                request.post('/' + user.username + '/events/start').send(data).end(function (res) {
                   validation.check(res, {
                     status: 201,
                     schema: methodsSchema.create.result
                   });
                   createdId = res.body.event.id;
-                  res.body.stoppedId.should.eql(testData.events[9].id);
+                  res.body.stoppedId.should.eql(runningEventOnSingleActivityStream.id);
                   stepDone();
                 });
               },
               function fetchHistoryOfStoppedEvent(stepDone) {
-                request.get(pathToEvent(testData.events[0].id)).end(function (res) {
-                  validation.check(res, {
-                    status: 201,
-                    schema: methodsSchema.get.result
+                request.get(pathToEvent(runningEventOnSingleActivityStream.id))
+                  .query({includeHistory: true}).end(function (res) {
+                    validation.check(res, {
+                      status: 200,
+                      schema: methodsSchema.getOne.result
+                    });
+                    (res.body.event.id).should.eql(runningEventOnSingleActivityStream.id);
+                    var history = res.body.history;
+                    history.length.should.eql(0);
+                    stepDone();
                   });
-                  stepDone();
-                });
-              },
-              function verifyEventData(stepDone) {
-                storage.findAll(user, null, function (err, events) {
-                  var expected = _.clone(data);
-                  expected.id = createdId;
-                  expected.duration = null;
-                  var actual = _.find(events, function (event) {
-                    return event.id === createdId;
-                  });
-                  validation.checkStoredItem(actual, 'event');
-                  validation.checkObjectEquality(actual, expected);
-
-                  var previous = _.find(events, function (event) {
-                    return event.id === testData.events[9].id;
-                  });
-                  var expectedDuration = data.time - previous.time;
-                  // allow 1 second of lag
-                  previous.duration.should.be.within(expectedDuration - 1, expectedDuration);
-
-                  stepDone();
-                });
               }
-            ],
-            done
-          );
+            ], done);
         });
 
       it('must not generate history when no event was stopped in the procedure of the start call ' +
         'on another event',
         function (done) {
-          done();
+          var data = {
+            time: timestamp.now(''),
+            type: 'activity/pryv',
+            duration: null,
+            streamId: normalStream.id,
+            tags: ['houba']
+          };
+          var createdId;
+
+          async.series([
+              function startEvent(stepDone) {
+                request.post('/' + user.username + '/events/start').send(data).end(function (res) {
+                  validation.check(res, {
+                    status: 201,
+                    schema: methodsSchema.create.result
+                  });
+                  createdId = res.body.event.id;
+                  should.not.exist(res.body.stoppedId);
+                  stepDone();
+                });
+              },
+              function fetchHistoryOfEventThat(stepDone) {
+                request.get(pathToEvent(runningEventOnNormalStream.id))
+                  .query({includeHistory: true}).end(function (res) {
+                    validation.check(res, {
+                      status: 200,
+                      schema: methodsSchema.getOne.result
+                    });
+                    (res.body.event.id).should.eql(runningEventOnNormalStream.id);
+                    var history = res.body.history;
+                    history.length.should.eql(0);
+                    stepDone();
+                  });
+              }
+            ], done);
         });
 
-      it('must not create a log when calling stop on a running event', function (done) {
-        done();
+      it('must not generate history when calling stop on a running event', function (done) {
+        var data = {
+          streamId: normalStream.id,
+          id: runningEventOnNormalStream.id,
+          type: runningEventOnNormalStream.type
+        };
+        async.series([
+          function stopEvent(stepDone) {
+            request.post('/' + user.username + '/events/stop').send(data)
+              .end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.stop.result
+              });
+              res.body.stoppedId.should.eql(testData.events[23].id);
+              stepDone();
+            });
+          },
+          function checkThatStoppedEventHasNoHistory(stepDone) {
+            request.get(pathToEvent(runningEventOnNormalStream.id))
+              .query({includeHistory: true}).end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.getOne.result
+              });
+              (res.body.event.id).should.eql(runningEventOnNormalStream.id);
+              (res.body.history.length).should.eql(0);
+              stepDone();
+            });
+          }
+        ], done);
       });
 
     });
@@ -409,7 +456,7 @@ describe('Auditing', function () {
               stepDone();
             });
           },
-          function callGetOne(stepDone) {
+          function verifyThatHistoryIsIncludedAndSorted(stepDone) {
             request.get(pathToEvent(eventWithNoHistory.id))
               .query({includeHistory: true}).end(
               function (res) {
@@ -420,17 +467,17 @@ describe('Auditing', function () {
                 should.exist(res.body);
                 should.exist(res.body.history);
                 (res.body.history.length).should.eql(2);
-                var logs = res.body.history;
+                var history = res.body.history;
                 var time = 0;
-                logs.forEach(function (log) {
-                  (log.headId).should.eql(eventWithNoHistory.id);
+                history.forEach(function (previousVersion) {
+                  (previousVersion.headId).should.eql(eventWithNoHistory.id);
                   // check sorted by modified field
                   if (time !== 0) {
-                    (log.modified).should.be.above(time);
+                    (previousVersion.modified).should.be.above(time);
                   }
-                  time = log.modified;
-                  (_.omit(log, ['id', 'headId', 'modified', 'modifiedBy', 'content'])).should.eql(
-                    _.omit(eventWithNoHistory,
+                  time = previousVersion.modified;
+                  (_.omit(previousVersion, ['id', 'headId', 'modified', 'modifiedBy', 'content']))
+                    .should.eql(_.omit(eventWithNoHistory,
                       ['id', 'headId', 'modified', 'modifiedBy', 'content']));
                 });
                 stepDone();
@@ -442,18 +489,120 @@ describe('Auditing', function () {
       it('must generate history of the running event that was stopped because of the start call ' +
         'on another event',
         function (done) {
-          done();
+          var data = {
+            time: timestamp.now(''),
+            type: 'activity/pryv',
+            duration: null,
+            streamId: singleActivityStream.id,
+            tags: ['houba']
+          };
+          var createdId;
+
+          async.series([
+              function startEvent(stepDone) {
+                request.post('/' + user.username + '/events/start').send(data).end(function (res) {
+                  validation.check(res, {
+                    status: 201,
+                    schema: methodsSchema.create.result
+                  });
+                  createdId = res.body.event.id;
+                  res.body.stoppedId.should.eql(runningEventOnSingleActivityStream.id);
+                  stepDone();
+                });
+              },
+              function fetchHistoryOfStoppedEvent(stepDone) {
+                request.get(pathToEvent(runningEventOnSingleActivityStream.id))
+                  .query({includeHistory: true}).end(function (res) {
+                    validation.check(res, {
+                      status: 200,
+                      schema: methodsSchema.getOne.result
+                    });
+                    (res.body.event.id).should.eql(runningEventOnSingleActivityStream.id);
+                    var history = res.body.history;
+                    history.length.should.eql(1);
+                    var previousVersion = history[0];
+                    previousVersion.headId.should.eql(runningEventOnSingleActivityStream.id);
+                    stepDone();
+                  });
+              }
+            ], done);
         });
 
 
       it('must not generate history when no event was stopped in the procedure of the start call ' +
         'on another event',
         function (done) {
-          done();
+          var data = {
+            time: timestamp.now(''),
+            type: 'activity/pryv',
+            duration: null,
+            streamId: normalStream.id,
+            tags: ['houba']
+          };
+          var createdId;
+
+          async.series([
+            function startEvent(stepDone) {
+              request.post('/' + user.username + '/events/start').send(data).end(function (res) {
+                validation.check(res, {
+                  status: 201,
+                  schema: methodsSchema.create.result
+                });
+                createdId = res.body.event.id;
+                should.not.exist(res.body.stoppedId);
+                stepDone();
+              });
+            },
+            function fetchHistoryOfEventThat(stepDone) {
+              request.get(pathToEvent(runningEventOnNormalStream.id))
+                .query({includeHistory: true}).end(function (res) {
+                  validation.check(res, {
+                    status: 200,
+                    schema: methodsSchema.getOne.result
+                  });
+                  (res.body.event.id).should.eql(runningEventOnNormalStream.id);
+                  var history = res.body.history;
+                  history.length.should.eql(0);
+                  stepDone();
+                });
+            }
+          ], done);
         });
 
       it('must generate history when calling stop on a running event', function (done) {
-        done();
+        var data = {
+          streamId: normalStream.id,
+          id: runningEventOnNormalStream.id,
+          type: runningEventOnNormalStream.type
+        };
+        async.series([
+          function stopEvent(stepDone) {
+            request.post('/' + user.username + '/events/stop').send(data)
+              .end(function (res) {
+                validation.check(res, {
+                  status: 200,
+                  schema: methodsSchema.stop.result
+                });
+                res.body.stoppedId.should.eql(testData.events[23].id);
+                stepDone();
+              });
+          },
+          function checkThatStoppedEventHasNoHistory(stepDone) {
+            request.get(pathToEvent(runningEventOnNormalStream.id))
+              .query({includeHistory: true}).end(function (res) {
+                validation.check(res, {
+                  status: 200,
+                  schema: methodsSchema.getOne.result
+                });
+                (res.body.event.id).should.eql(runningEventOnNormalStream.id);
+                var history = res.body.history;
+                (history.length).should.eql(1);
+                var previousVersion = history[0];
+                previousVersion.headId.should.eql(runningEventOnNormalStream.id);
+                stepDone();
+              });
+          }
+        ], done);
       });
 
     });

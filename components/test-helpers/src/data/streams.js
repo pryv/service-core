@@ -152,9 +152,9 @@ module.exports = [
     id: 's_07',
     name: 'Root Stream 7 - for auditing',
     parentId: null,
-    created: timestamp.now(),
+    created: timestamp.now('-10h'),
     createdBy: 'test',
-    modified: timestamp.now(),
+    modified: timestamp.now('-10h'),
     modifiedBy: 'test'
   },
   {
@@ -162,9 +162,9 @@ module.exports = [
     name: 'Root Stream 8 - for auditing',
     parentId: null,
     singleActivity: true,
-    created: timestamp.now(),
+    created: timestamp.now('-10h'),
     createdBy: 'test',
-    modified: timestamp.now(),
+    modified: timestamp.now('-10h'),
     modifiedBy: 'test'
   }
 ];

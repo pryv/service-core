@@ -204,9 +204,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         if (err) {
           return next(errors.unexpectedError(err));
         }
-        if (history.length > 0) {
-          result.history = history;
-        }
+        result.history = history;
         next();
       });
   }
@@ -730,19 +728,40 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       return process.nextTick(callback.bind(null, errors.forbidden()));
     }
 
-    var updatedData = {
-      // always include time: needed by userEventsStorage to update the DB-only "endTime" field
-      time: event.time,
-      duration: stopTime - event.time
-    };
+    async.series([
+      function generateLogIfNeeded(stepDone) {
+        if (!auditSettings.forceKeepHistory) {
+          return stepDone();
+        }
+        var oldEvent = _.cloneDeep(event);
+        oldEvent = _.extend(oldEvent, {headId: oldEvent.id});
+        delete oldEvent.id;
 
-    context.updateTrackingProperties(updatedData);
+        userEventsStorage.insertOne(context.user, oldEvent, function (err) {
+          if (err) {
+            return stepDone(errors.unexpectedError(err));
+          }
+          stepDone();
+        });
+      },
+      function stopEvent(stepDone) {
+        var updatedData = {
+          // always include time: needed by userEventsStorage to update the DB-only "endTime" field
+          time: event.time,
+          duration: stopTime - event.time
+        };
 
-    userEventsStorage.update(context.user, {id: event.id}, updatedData, function (err) {
-      if (err) {
-        return callback(errors.unexpectedError(err));
+        context.updateTrackingProperties(updatedData);
+
+        userEventsStorage.update(context.user, {id: event.id}, updatedData, function (err) {
+          if (err) {
+            return stepDone(errors.unexpectedError(err));
+          }
+          stepDone(null, event.id);
+        });
       }
-      callback(null, event.id);
+    ], function(err, res) {
+      callback(err, res[1]);
     });
   }
 

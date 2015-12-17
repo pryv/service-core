@@ -303,5 +303,31 @@ module.exports = [
     createdBy: 'test',
     modified: timestamp.now('-1h'),
     modifiedBy: 'test'
+  },
+  {
+    id: 'e_23',
+    streamId: streams[7].id,
+    time: timestamp.now('-1h'),
+    duration: null, // running
+    type: 'activity/pryv',
+    tags: [],
+    description: 'event started one hour ago on a normal stream',
+    created: timestamp.now('-1h'),
+    createdBy: 'test',
+    modified: timestamp.now('-1h'),
+    modifiedBy: 'test'
+  },
+  {
+    id: 'e_24',
+    streamId: streams[8].id,
+    time: timestamp.now('-1h'),
+    duration: null, // running
+    type: 'activity/pryv',
+    tags: [],
+    description: 'event started one hour ago on a singleActivity stream',
+    created: timestamp.now('-1h'),
+    createdBy: 'test',
+    modified: timestamp.now('-1h'),
+    modifiedBy: 'test'
   }
 ];
