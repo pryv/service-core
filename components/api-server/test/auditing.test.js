@@ -139,14 +139,14 @@ describe('Auditing', function () {
                 stepDone();
               });
             },
-            function findDeletionInStorage(stepDone) {
+            function verifyDeletedHeadInStorage(stepDone) {
               storage.findDeletion(user, {id: trashedEventWithHistory.id}, null,
                 function (err, event) {
                   if (err) {
                     return stepDone(err);
                   }
                   should.exist(event);
-                  (Object.key(event).length).should.eql(4);
+                  (Object.keys(event).length).should.eql(4);
                   event.id.should.eql(trashedEventWithHistory.id);
                   should.exist(event.deleted);
                   should.exist(event.modified);
@@ -154,7 +154,7 @@ describe('Auditing', function () {
                   stepDone();
                 });
             },
-            function checkThatHistoryIsMinimized(stepDone) {
+            function verifyDeletedHistoryInStorage(stepDone) {
               storage.findHistory(user, trashedEventWithHistory.id, null,
                 function (err, events) {
                   if (err) {
@@ -191,7 +191,7 @@ describe('Auditing', function () {
                 stepDone();
               });
             },
-            function findDeletionInStorage(stepDone) {
+            function verifyDeletedHeadInStory(stepDone) {
               storage.findDeletion(user, {id: trashedEventWithHistory.id}, null,
                 function (err, event) {
                   if (err) {

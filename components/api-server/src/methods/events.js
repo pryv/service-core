@@ -784,66 +784,31 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   function deleteWithData(context, params, result, next) {
     async.series([
-      function deleteHistoryIfKeepNothing(stepDone) {
+      function deleteHistoryCompletely(stepDone) {
         if (auditSettings.deletionMode !== 'keep-nothing') {
           return stepDone();
         }
-        async.series([
-          function deleteHistoryCompletely(subStepDone) {
-            userEventsStorage.remove(context.user, {headId: params.id}, function (err) {
-              if (err) {
-                return subStepDone(errors.unexpectedError(err));
-              }
-              subStepDone();
-            });
-          },
-          function deleteEvent(subStepDone) {
-            /* jshint -W024 */
-            userEventsStorage.delete(context.user, {id: params.id}, function (err) {
-              if (err) {
-                return stepDone(errors.unexpectedError(err));
-              }
-
-              result.eventDeletion = {id: params.id};
-              notifications.eventsChanged(context.user);
-
-              subStepDone();
-            });
+        userEventsStorage.remove(context.user, {headId: params.id}, function (err) {
+          if (err) {
+            return stepDone(errors.unexpectedError(err));
           }
-        ], stepDone);
+          stepDone();
+        });
       },
-      function keepOnlyHistoryIfSetAsSuch(stepDone) {
+      function minimizeHistory(stepDone) {
         if (auditSettings.deletionMode !== 'keep-authors') {
           return stepDone();
         }
-        async.series([
-          function minimizeHistory(subStepDone) {
-            userEventsStorage.minimizeHistory(context.user, params.id, function (err) {
-              if (err) {
-                return subStepDone(errors.unexpectedError(err));
-              }
-              subStepDone();
-            });
-          },
-          function minimizeHeadWithDeletedField(subStepDone) {
-            userEventsStorage.delete(context.user, {id: params.id}, function (err) {
-              if (err) {
-                return subStepDone(errors.unexpectedError(err));
-              }
-
-              result.eventDeletion = {id: params.id};
-              notifications.eventsChanged(context.user);
-
-              subStepDone();
-            });
+        userEventsStorage.minimzeEventsHistory(context.user, params.id, function (err) {
+          if (err) {
+            return stepDone(errors.unexpectedError(err));
           }
-        ], stepDone);
+          stepDone();
+        });
       },
-      function keepEverything(stepDone) {
-        if (auditSettings.deletionMode !== 'keep-everything') {
-          return stepDone();
-        }
-        userEventsStorage.deleteWhileKeepingEverything(context.user, params.id, function (err) {
+      function deleteEvent(stepDone) {
+        userEventsStorage.delete(context.user, {id: params.id}, auditSettings.deletionMode,
+          function (err) {
             if (err) {
               return stepDone(errors.unexpectedError(err));
             }
@@ -857,7 +822,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         // approximately update account storage size
         context.user.storageUsed.attachedFiles -= getTotalAttachmentsSize(context.event);
         usersStorage.update({id: context.user.id}, {storageUsed: context.user.storageUsed},
-            stepDone);
+          stepDone);
       }
     ], next);
   }

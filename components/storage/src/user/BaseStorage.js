@@ -139,33 +139,13 @@ BaseStorage.prototype.insertOne = function (user, item, callback) {
 };
 
 /**
- * Updates the single document matching the given query, returning the updated document.
+ * Minimizes an event's history, used when in 'keep-authors' deletionMode
  *
  * @param user
- * @param query
- * @param updatedData
+ * @param headId
  * @param callback
  */
-BaseStorage.prototype.update = function (user, query, updatedData, callback) {
-  this.database.findAndModify(this.getCollectionInfo(user), this.applyQueryToDB(query),
-      this.applyUpdateToDB(updatedData), function (err, dbItem) {
-    if (err) { return callback(err); }
-    callback(null, this.applyItemFromDB(dbItem));
-  }.bind(this));
-};
-
-/**
- * Minimizes an event's history according to the 'keep-authors' deletionMode
- *
- * @param user
- * @param query
- * @param callback
- */
-BaseStorage.prototype.minimizeHistory = function (user, headId, callback) {
-  var query = {
-    headId: headId
-  };
-
+BaseStorage.prototype.minimzeEventsHistory = function (user, headId, callback) {
   var update = {
     $unset: {
       streamId: 1,
@@ -183,19 +163,24 @@ BaseStorage.prototype.minimizeHistory = function (user, headId, callback) {
       createdBy: 1
     }
   };
-  this.database.update(this.getCollectionInfo(user), this.applyQueryToDB(query), update, callback);
+  this.database.update(this.getCollectionInfo(user), this.applyQueryToDB({headId: headId}),
+    update, callback);
 };
 
 /**
- * Delete an item in DeletionMode='keep-everything', simply adds a 'deleted' field to the item.
+ * Updates the single document matching the given query, returning the updated document.
  *
  * @param user
- * @param id
+ * @param query
+ * @param updatedData
  * @param callback
  */
-BaseStorage.prototype.deleteWhileKeepingEverything = function (user, id, callback) {
-  this.database.update(this.getCollectionInfo(user),
-    this.applyQueryToDB({id: id}), {$set: {deleted: new Date()}}, callback);
+BaseStorage.prototype.update = function (user, query, updatedData, callback) {
+  this.database.findAndModify(this.getCollectionInfo(user), this.applyQueryToDB(query),
+      this.applyUpdateToDB(updatedData), function (err, dbItem) {
+    if (err) { return callback(err); }
+    callback(null, this.applyItemFromDB(dbItem));
+  }.bind(this));
 };
 
 /**
