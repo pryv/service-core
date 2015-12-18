@@ -149,16 +149,29 @@ module.exports = [
   },
   // auditing
   {
-    id: 's_07',
+    id: 's_7',
     name: 'Root Stream 7 - for auditing',
     parentId: null,
     created: timestamp.now('-10h'),
     createdBy: 'test',
     modified: timestamp.now('-10h'),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
+    children: [
+      {
+        id: 's_7_0',
+        name: 'Child Stream 7.0, event is trashed, used for merge on delete',
+        parentId: 's_7',
+        trashed: true,
+        created: timestamp.now(),
+        createdBy: 'test',
+        modified: timestamp.now(),
+        modifiedBy: 'test',
+        children: []
+      }
+    ]
   },
   {
-    id: 's_08',
+    id: 's_8',
     name: 'Root Stream 8 - for auditing',
     parentId: null,
     singleActivity: true,

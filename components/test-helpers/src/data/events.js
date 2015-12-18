@@ -329,5 +329,28 @@ module.exports = [
     createdBy: 'test',
     modified: timestamp.now('-1h'),
     modifiedBy: 'test'
+  },
+  {
+    id: 'e_25',
+    streamId: streams[7].children[0].id,
+    time: timestamp.now('+32h'),
+    type: 'activity/pryv',
+    description: 'simple event with nothing special',
+    created: timestamp.now('-1h'),
+    createdBy: 'test',
+    modified: timestamp.now('-30m'),
+    modifiedBy: 'test'
+  },
+  {
+    id: 'e_26',
+    headId: 'e_25',
+    streamId: streams[7].children[0].id,
+    time: timestamp.now('+32h'),
+    type: 'activity/pryv',
+    description: 'simple event with nothing special - original version',
+    created: timestamp.now('-1h'),
+    createdBy: 'test',
+    modified: timestamp.now('-1h'),
+    modifiedBy: 'test'
   }
 ];
