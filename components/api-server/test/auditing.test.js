@@ -664,6 +664,7 @@ describe('Auditing', function () {
               history.length.should.eql(2);
               history.forEach(function (previousVersion) {
                 previousVersion.headId.should.eql(eventOnChildStream.id);
+                previousVersion.streamId.should.eql(childStream.id);
               });
               stepDone();
             });
@@ -703,7 +704,6 @@ describe('Auditing', function () {
             });
         },
         function checkThatHistoryIsDeleted(stepDone) {
-
           storage.findHistory(user, eventOnChildStream.id, null,
             function (err, events) {
               if (err) {
@@ -756,7 +756,7 @@ describe('Auditing', function () {
               if (err) {
                 return stepDone(err);
               }
-              (events.length).should.be.eql(2);
+              (events.length).should.be.eql(1);
               events.forEach(function (event) {
                 (Object.keys(event).length).should.eql(4);
                 should.exist(event.id);
@@ -807,7 +807,7 @@ describe('Auditing', function () {
                 return stepDone(err);
               }
               var checked = false;
-              (events.length).should.eql(2);
+              (events.length).should.eql(1);
               events.forEach(function (event) {
                 event.headId.should.eql(eventOnChildStream.id);
                 if (event.id === testData.events[26].id) {
