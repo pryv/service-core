@@ -818,7 +818,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         if (auditSettings.deletionMode !== 'keep-authors') {
           return stepDone();
         }
-        userEventsStorage.minimzeEventsHistory(context.user, params.id, function (err) {
+        userEventsStorage.minimizeEventsHistory(context.user, params.id, function (err) {
           if (err) {
             return stepDone(errors.unexpectedError(err));
           }

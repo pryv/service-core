@@ -145,7 +145,7 @@ BaseStorage.prototype.insertOne = function (user, item, callback) {
  * @param headId
  * @param callback
  */
-BaseStorage.prototype.minimzeEventsHistory = function (user, headId, callback) {
+BaseStorage.prototype.minimizeEventsHistory = function (user, headId, callback) {
   var update = {
     $unset: {
       streamId: 1,
