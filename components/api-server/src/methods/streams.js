@@ -315,8 +315,6 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
       },
 
       function handleLinkedEvents(stepDone) {
-        console.log('launching handleLinkedEvent with mergeParam: ', params.mergeEventsWithParent,
-          ' linkedEventsIds: ', linkedEventIdsOrFulls);
         if (linkedEventIdsOrFulls.length === 0) {
           return stepDone();
         }
@@ -341,7 +339,6 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
             },
             function updateStreamIds(subStepDone) {
               linkedEventIdsOrFulls = _.pluck(linkedEventIdsOrFulls, 'id');
-              console.log('gonna change the streamid of', linkedEventIdsOrFulls, ' to ', parentId);
               userEventsStorage.updateMultiple(context.user, {id: {$in: linkedEventIdsOrFulls}},
                 {streamId: parentId}, function (err) {
                   if (err) {
@@ -354,15 +351,11 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
             }
           ], stepDone);
         } else {
-          console.log('mergeWithParent off - checking what to do with history, ids: ',
-            linkedEventIdsOrFulls);
           async.series([
             function deleteHistoryCompletely(subStepDone) {
               if (auditSettings.deletionMode !== 'keep-nothing') {
                 return subStepDone();
               }
-              console.log('in deletionMode keep nothing - gonna delete everything with headId ',
-                linkedEventIdsOrFulls);
               userEventsStorage.remove(context.user, {headId: linkedEventIdsOrFulls[0]},
                 function (err) {
                   if (err) {
@@ -375,8 +368,6 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
               if (auditSettings.deletionMode !== 'keep-authors') {
                 return subStepDone();
               }
-              console.log('in deletionMode keep authors - gonna minimize everything with headId ',
-                linkedEventIdsOrFulls);
               userEventsStorage.minimizeEventsHistory(context.user, linkedEventIdsOrFulls[0],
                 function (err) {
                   if (err) {
@@ -386,7 +377,6 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
                 });
             },
             function deleteEvent(subStepDone) {
-              console.log('gonna delete the event for real now with id: ', linkedEventIdsOrFulls);
               userEventsStorage.delete(context.user, {id: {$in: linkedEventIdsOrFulls}},
                 auditSettings.deletionMode, function (err) {
                   if (err) {
@@ -396,7 +386,6 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
                   // async delete attached files (if any) –
                   // don't wait for this, just log possible errors
                   linkedEventIdsOrFulls.forEach(function (evtId) {
-                    console.log('deleting event related stuff for eventId: ', evtId);
                     userEventFilesStorage.removeAllForEvent(context.user, evtId, function (err) {
                       if (err) {
                         errorHandling.logError(err, null, logger);
