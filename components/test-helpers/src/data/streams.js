@@ -178,6 +178,7 @@ module.exports = [
     created: timestamp.now('-10h'),
     createdBy: 'test',
     modified: timestamp.now('-10h'),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
+    children: []
   }
 ];

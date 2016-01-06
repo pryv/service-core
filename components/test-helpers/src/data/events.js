@@ -296,7 +296,7 @@ module.exports = [
   {
     id: 'e_22',
     streamId: streams[7].id,
-    time: timestamp.now('+32h'),
+    time: timestamp.now('+43h'),
     type: 'activity/pryv',
     description: 'simple event with nothing special',
     created: timestamp.now('-1h'),
@@ -307,7 +307,7 @@ module.exports = [
   {
     id: 'e_23',
     streamId: streams[7].id,
-    time: timestamp.now('-1h'),
+    time: timestamp.now('-5h'),
     duration: null, // running
     type: 'activity/pryv',
     tags: [],
@@ -320,7 +320,7 @@ module.exports = [
   {
     id: 'e_24',
     streamId: streams[8].id,
-    time: timestamp.now('-1h'),
+    time: timestamp.now('-6h'),
     duration: null, // running
     type: 'activity/pryv',
     tags: [],
@@ -333,7 +333,7 @@ module.exports = [
   {
     id: 'e_25',
     streamId: streams[7].children[0].id,
-    time: timestamp.now('+32h'),
+    time: timestamp.now('+41h'),
     type: 'activity/pryv',
     description: 'simple event with nothing special',
     created: timestamp.now('-1h'),
@@ -345,7 +345,7 @@ module.exports = [
     id: 'e_26',
     headId: 'e_25',
     streamId: streams[7].children[0].id,
-    time: timestamp.now('+32h'),
+    time: timestamp.now('+41h'),
     type: 'activity/pryv',
     description: 'simple event with nothing special - original version',
     created: timestamp.now('-1h'),
