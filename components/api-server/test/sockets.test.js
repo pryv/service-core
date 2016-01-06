@@ -128,7 +128,11 @@ describe('Socket.IO', function () {
       ioCons.con.emit('events.get', params, function (err, result) {
         validation.checkSchema(result, eventsMethodsSchema.get.result);
         validation.sanitizeEvents(result.events);
-        result.events.should.eql(validation.removeDeletions(testData.events));
+        result.events.should.eql(validation.removeDeletionsAndHistory(testData.events
+          .sort(function (a, b) {
+            return a.time - b.time;
+          }
+        )));
         validation.checkMeta(result);
         done();
       });
