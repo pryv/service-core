@@ -260,7 +260,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   function deleteWithData(context, params, result, next) {
     var itemAndDescendantIds,
       parentId,
-      linkedEventIdsOrFulls;
+      linkedEvents;
     async.series([
       function retrieveIdsToDelete(stepDone) {
         userStreamsStorage.find(context.user, {}, null, function (err, streams) {
@@ -277,45 +277,25 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         });
       },
       function retrieveLinkedEventIds(stepDone) {
-        if (auditSettings.forceKeepHistory) {
           userEventsStorage.find(context.user, {streamId: {$in: itemAndDescendantIds}},
-            null, function (err, linkedEvents) {
+            null, function (err, events) {
               if (err) {
                 return stepDone(errors.unexpectedError(err));
               }
 
-              linkedEventIdsOrFulls = linkedEvents;
+              linkedEvents = events;
 
-              if (linkedEventIdsOrFulls.length > 0 && params.mergeEventsWithParent === null) {
+              if (linkedEvents.length > 0 && params.mergeEventsWithParent === null) {
                 return stepDone(errors.invalidParametersFormat('There are events referring to ' +
                 'the deleted items and the `mergeEventsWithParent` parameter is missing.'));
               }
 
               stepDone();
             });
-
-        } else {
-          userEventsStorage.find(context.user, {streamId: {$in: itemAndDescendantIds}},
-            {fields: {id: 1}}, function (err, linkedEvents) {
-              if (err) {
-                return stepDone(errors.unexpectedError(err));
-              }
-
-              linkedEventIdsOrFulls = _.pluck(linkedEvents, 'id');
-
-              if (linkedEventIdsOrFulls.length > 0 && params.mergeEventsWithParent === null) {
-                return stepDone(errors.invalidParametersFormat('There are events referring to ' +
-                'the deleted items and the `mergeEventsWithParent` parameter is missing.'));
-              }
-
-              stepDone();
-
-            });
-        }
       },
 
       function handleLinkedEvents(stepDone) {
-        if (linkedEventIdsOrFulls.length === 0) {
+        if (linkedEvents.length === 0) {
           return stepDone();
         }
 
@@ -325,7 +305,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
               if (!auditSettings.forceKeepHistory) {
                 return subStepDone();
               }
-              var history = _.cloneDeep(linkedEventIdsOrFulls);
+              var history = _.cloneDeep(linkedEvents);
               history.forEach(function (event) {
                 event = _.extend(event, {headId: event.id});
                 delete event.id;
@@ -338,46 +318,43 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
               });
             },
             function updateStreamIds(subStepDone) {
-              linkedEventIdsOrFulls = _.pluck(linkedEventIdsOrFulls, 'id');
-              userEventsStorage.updateMultiple(context.user, {id: {$in: linkedEventIdsOrFulls}},
-                {streamId: parentId}, function (err) {
+              userEventsStorage.updateMultiple(context.user,
+                {id: {$in: _.pluck(linkedEvents, 'id')}}, {streamId: parentId}, function (err) {
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));
                   }
-
                   notifications.eventsChanged(context.user);
                   subStepDone();
                 });
             }
           ], stepDone);
         } else {
+          var linkedEventIds = _.pluck(linkedEvents, 'id');
           async.series([
-            function deleteHistoryCompletely(subStepDone) {
-              if (auditSettings.deletionMode !== 'keep-nothing') {
-                return subStepDone();
+            function handleDeletionMode(subStepDone) {
+              if (auditSettings.deletionMode === 'keep-nothing') {
+
+                userEventsStorage.remove(context.user, {headId: linkedEventIds[0]},
+                  function (err) {
+                    if (err) {
+                      return subStepDone(errors.unexpectedError(err));
+                    }
+                    subStepDone();
+                  });
+              } else if (auditSettings.deletionMode === 'keep-authors') {
+                userEventsStorage.minimizeEventsHistory(context.user, linkedEventIds[0],
+                  function (err) {
+                    if (err) {
+                      return subStepDone(errors.unexpectedError(err));
+                    }
+                    subStepDone();
+                  });
+              } else {
+                subStepDone();
               }
-              userEventsStorage.remove(context.user, {headId: linkedEventIdsOrFulls[0]},
-                function (err) {
-                  if (err) {
-                    return subStepDone(errors.unexpectedError(err));
-                  }
-                  subStepDone();
-                });
-            },
-            function minimizeHistory(subStepDone) {
-              if (auditSettings.deletionMode !== 'keep-authors') {
-                return subStepDone();
-              }
-              userEventsStorage.minimizeEventsHistory(context.user, linkedEventIdsOrFulls[0],
-                function (err) {
-                  if (err) {
-                    return subStepDone(errors.unexpectedError(err));
-                  }
-                  subStepDone();
-                });
             },
             function deleteEvent(subStepDone) {
-              userEventsStorage.delete(context.user, {id: {$in: linkedEventIdsOrFulls}},
+              userEventsStorage.delete(context.user, {id: {$in: linkedEventIds}},
                 auditSettings.deletionMode, function (err) {
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));
@@ -385,7 +362,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
                   // async delete attached files (if any) –
                   // don't wait for this, just log possible errors
-                  linkedEventIdsOrFulls.forEach(function (evtId) {
+                  linkedEventIds.forEach(function (evtId) {
                     userEventFilesStorage.removeAllForEvent(context.user, evtId, function (err) {
                       if (err) {
                         errorHandling.logError(err, null, logger);
