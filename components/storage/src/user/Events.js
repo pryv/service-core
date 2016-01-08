@@ -133,43 +133,43 @@ Events.prototype.delete = function (user, query, deletionMode, callback) {
     $set: {deleted: new Date()}
   };
 
-  switch(deletionMode) {
-    case 'keep-nothing':
-      update.$unset= {
-        streamId: 1,
-        time: 1,
-        duration: 1,
-        endTime: 1,
-        type: 1,
-        content: 1,
-        tags: 1,
-        description: 1,
-        attachments: 1,
-        clientData: 1,
-        trashed: 1,
-        created: 1,
-        createdBy: 1,
-        modified: 1,
-        modifiedBy: 1
-      };
-      break;
-    case 'keep-authors':
-      update.$unset= {
-        streamId: 1,
-        time: 1,
-        duration: 1,
-        endTime: 1,
-        type: 1,
-        content: 1,
-        tags: 1,
-        description: 1,
-        attachments: 1,
-        clientData: 1,
-        trashed: 1,
-        created: 1,
-        createdBy: 1
-      };
-      break;
+  switch (deletionMode) {
+  case 'keep-nothing':
+    update.$unset = {
+      streamId: 1,
+      time: 1,
+      duration: 1,
+      endTime: 1,
+      type: 1,
+      content: 1,
+      tags: 1,
+      description: 1,
+      attachments: 1,
+      clientData: 1,
+      trashed: 1,
+      created: 1,
+      createdBy: 1,
+      modified: 1,
+      modifiedBy: 1
+    };
+    break;
+  case 'keep-authors':
+    update.$unset = {
+      streamId: 1,
+      time: 1,
+      duration: 1,
+      endTime: 1,
+      type: 1,
+      content: 1,
+      tags: 1,
+      description: 1,
+      attachments: 1,
+      clientData: 1,
+      trashed: 1,
+      created: 1,
+      createdBy: 1
+    };
+    break;
   }
   this.database.update(this.getCollectionInfo(user), this.applyQueryToDB(query), update, callback);
 };
