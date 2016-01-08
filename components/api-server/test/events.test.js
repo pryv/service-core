@@ -336,7 +336,7 @@ describe('events', function () {
         modifiedSince: timestamp.now('-45m'),
         includeDeletions: true
       };
-      var events = (testData.events).sort(function (a, b) {
+      var events = _.clone(testData.events).sort(function (a, b) {
         return (b.time - a.time);
       });
       var eventDeletions = events.filter(function (e) {

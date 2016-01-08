@@ -213,7 +213,7 @@ describe('Auditing', function () {
                     return stepDone(err);
                   }
                   should.exist(event);
-                  event.should.eql(_.extend(trashedEventWithHistory, {deleted: event.deleted}));
+                  event.should.eql(_.extend({deleted: event.deleted}, trashedEventWithHistory));
                   stepDone();
                 });
             },
@@ -796,7 +796,7 @@ describe('Auditing', function () {
                 return stepDone(err);
               }
               should.exist(event);
-              event.should.eql(_.extend(eventOnChildStream, {deleted: event.deleted}));
+              event.should.eql(_.extend({deleted: event.deleted}, eventOnChildStream));
               stepDone();
             });
         },
