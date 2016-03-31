@@ -168,23 +168,30 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   // CREATION
 
   api.register('events.create',
-      commonFns.getParamsValidation(methodsSchema.create.params),
-      createEvent);
+    commonFns.getParamsValidation(methodsSchema.create.params),
+    applyPrerequisitesForCreation,
+    validateEventContent,
+    checkExistingLaterPeriodIfNeeded,
+    checkOverlappedPeriodsIfNeeded,
+    verifyContext,
+    stopPreviousPeriodIfNeeded,
+    createEvent,
+    createAttachments,
+    notify);
 
   /**
    * Shorthand for `create` with `null` event duration.
    */
   api.register('events.start',
-      setDurationForStart,
-      commonFns.getParamsValidation(methodsSchema.create.params),
-      createEvent);
+    setDurationForStart,
+    'events.create');
 
   function setDurationForStart(context, params, result, next) {
     params.duration = null;
     next();
   }
 
-  function createEvent(context, params, result, next) {
+  function applyPrerequisitesForCreation(context, params, result, next) {
     // default time is now
     _.defaults(params, { time: timestamp.now() });
     if (! params.tags) {
@@ -192,168 +199,138 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     }
     cleanupEventTags(params);
 
-    var files = sanitizeRequestFiles(params.files);
+    context.files = sanitizeRequestFiles(params.files);
     delete params.files;
 
-    utils.tracking.initProperties(context.access.id, params);
+    context.initTrackingProperties(params);
 
     context.setStream(params.streamId);
     if (! checkStream(context, params.streamId, next)) {
       return;
     }
+    context.content = params;
+    next();
+  }
 
-    async.series([
-      function validateContent(stepDone) {
-        validateEventContent(params, function (err) {
-          if (err) {
-            return stepDone(errors.invalidParametersFormat('The event content\'s format is ' +
-                'invalid.', err));
-          }
-          stepDone();
-        });
-      },
-      checkExistingLaterPeriodIfNeeded.bind(this, context, params),
-      checkOverlappedPeriodsIfNeeded.bind(this, context, params),
-      function checkPermissions(stepDone) {
-        if (! context.canContributeToContext(params.streamId, params.tags)) {
-          return stepDone(errors.forbidden());
-        }
-        stepDone();
-      },
-      stopPreviousPeriodIfNeeded.bind(this, context, params, result),
-      function insert(stepDone) {
-        userEventsStorage.insertOne(context.user, params, function (err, newEvent) {
-          if (err) {
-            return stepDone(errors.unexpectedError(err));
-          }
+  function verifyContext(context, params, result, next) {
+    if (! context.canContributeToContext(context.content.streamId, context.content.tags)) {
+      return next(errors.forbidden());
+    }
+    next();
+  }
 
-          result.event = newEvent;
-          stepDone();
-        });
-      },
-      function attach(stepDone) {
-        attachFiles(context, {id: result.event.id}, files, function (err, attachments) {
-          if (err) { return stepDone(err); }
-
-          if (! attachments) {
-            return stepDone();
-          }
-
-          result.event.attachments = attachments;
-          userEventsStorage.update(context.user, {id: result.event.id}, {attachments: attachments},
-              function (err) {
-            if (err) {
-              return stepDone(errors.unexpectedError(err));
-            }
-
-            setFileReadToken(context.access, result.event);
-            stepDone();
-          });
-        });
-      },
-      function notify(stepDone) {
-        notifications.eventsChanged(context.user);
-        stepDone();
+  function createEvent(context, params, result, next) {
+    userEventsStorage.insertOne(context.user, context.content, function (err, newEvent) {
+      if (err) {
+        return next(errors.unexpectedError(err));
       }
-    ], next);
+
+      result.event = newEvent;
+      next();
+    });
+  }
+
+  function createAttachments(context, params, result, next) {
+    attachFiles(context, {id: result.event.id}, context.files, function (err, attachments) {
+      if (err) {
+        return next(err); }
+      if (! attachments) {
+        return next();
+      }
+
+      result.event.attachments = attachments;
+      userEventsStorage.update(context.user, {id: result.event.id}, {attachments: attachments},
+        function (err) {
+          if (err) {
+            return next(errors.unexpectedError(err));
+          }
+
+          setFileReadToken(context.access, result.event);
+          next();
+        });
+    });
   }
 
   // UPDATE
 
   api.register('events.update',
       commonFns.getParamsValidation(methodsSchema.update.params),
-      function (context, params, result, next) {
+      applyPrerequisitesForUpdate,
+      validateEventContent,
+      checkExistingLaterPeriodIfNeeded,
+      checkOverlappedPeriodsIfNeeded,
+      stopPreviousPeriodIfNeeded,
+      updateAttachments,
+      updateEvent,
+      notify);
+
+  function applyPrerequisitesForUpdate(context, params, result, next) {
     cleanupEventTags(params.update);
 
     // strip ignored properties if there (read-only)
     delete params.update.id;
     delete params.update.attachments;
 
-    utils.tracking.updateProperties(context.access.id, params.update);
+    context.updateTrackingProperties(params.update);
 
-    var updatedEvent = null;
-
-    async.series([
-      function checkExistingEvent(stepDone) {
-        userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
-          if (err) {
-            return stepDone(errors.unexpectedError(err));
-          }
-
-          if (! event) {
-            return stepDone(errors.unknownResource('event', params.id));
-          }
-
-          if (! context.canContributeToContext(event.streamId, event.tags)) {
-            return stepDone(errors.forbidden());
-          }
-
-          updatedEvent = _.extend(event, params.update);
-
-          context.setStream(updatedEvent.streamId);
-          if (params.update.streamId && ! checkStream(context, updatedEvent.streamId, stepDone)) {
-            return;
-          }
-
-          stepDone();
-        });
-      },
-      function validateContent(stepDone) {
-        validateEventContent(updatedEvent, function (err) {
-          if (err) {
-            return stepDone(errors.invalidParametersFormat('The event content\'s format is ' +
-                'invalid.', err));
-          }
-          stepDone();
-        });
-      },
-      function (stepDone) {
-        if (! params.update.hasOwnProperty('time')) {
-          // always include time: needed by userEventsStorage to update the DB-only "endTime" field
-          params.update.time = updatedEvent.time;
-          return stepDone();
-        }
-        checkExistingLaterPeriodIfNeeded(context, updatedEvent, stepDone);
-      },
-      function (stepDone) {
-        if (! params.update.hasOwnProperty('time') && ! params.update.hasOwnProperty('duration')) {
-          return stepDone();
-        }
-        checkOverlappedPeriodsIfNeeded(context, updatedEvent, stepDone);
-      },
-      function (stepDone) {
-        stopPreviousPeriodIfNeeded(context, updatedEvent, result, stepDone);
-      },
-      function (stepDone) {
-        var eventInfo = {
-          id: params.id,
-          attachments: updatedEvent.attachments || []
-        };
-        attachFiles(context, eventInfo, sanitizeRequestFiles(params.files),
-            function (err, attachments) {
-          if (err) { return stepDone(err); }
-
-          if (attachments) {
-            params.update.attachments = attachments;
-          }
-          stepDone();
-        });
-      },
-      function update(stepDone) {
-        userEventsStorage.update(context.user, {id: params.id}, params.update,
-            function (err, updatedEvent) {
-          if (err) {
-            return stepDone(errors.unexpectedError(err));
-          }
-
-          result.event = updatedEvent;
-          setFileReadToken(context.access, result.event);
-          notifications.eventsChanged(context.user);
-          stepDone();
-        });
+    userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
+      if (err) {
+        return next(errors.unexpectedError(err));
       }
-    ], next);
-  });
+
+      if (! event) {
+        return next(errors.unknownResource('event', params.id));
+      }
+
+      if (! context.canContributeToContext(event.streamId, event.tags)) {
+        return next(errors.forbidden());
+      }
+
+      context.content = _.extend(event, params.update);
+
+      context.setStream(context.content.streamId);
+      if (context.content.streamId && ! checkStream(context, context.content.streamId, next)) {
+        return;
+      }
+
+      next();
+    });
+  }
+
+  function updateAttachments(context, params, result, next) {
+    var eventInfo = {
+      id: context.content.id,
+      attachments: context.content.attachments || []
+    };
+    attachFiles(context, eventInfo, sanitizeRequestFiles(params.files),
+      function (err, attachments) {
+        if (err) { return next(err); }
+
+        if (attachments) {
+          context.content.attachments = attachments;
+        }
+        next();
+      });
+  }
+
+  function updateEvent (context, params, result, next) {
+
+    userEventsStorage.update(context.user, {id: context.content.id}, context.content,
+      function (err, updatedEvent) {
+        if (err) {
+          return next(errors.unexpectedError(err));
+        }
+
+        result.event = updatedEvent;
+        setFileReadToken(context.access, result.event);
+        next();
+      });
+  }
+
+  function notify(context, params, result, next) {
+    notifications.eventsChanged(context.user);
+    next();
+  }
 
   /**
    * Fixes req.files structure for when attachments were sent without a filename, in which case
@@ -381,25 +358,33 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
    * Validates the event's content against its type (if known).
    * Will try casting string content to number if appropriate.
    *
-   * @param {Object} eventData
-   * @param {Function} callback
+   * @param {Object} context.content contains the event data
+   * @param {Object} params
+   * @param {Object} result
+   * @param {Function} next
    */
-  function validateEventContent(eventData, callback) {
-    var knownType = eventTypes.types[eventData.type];
+  function validateEventContent(context, params, result, next) {
+
+    var knownType = eventTypes.types[context.content.type];
     if (knownType) {
-      validation.validate(eventData.hasOwnProperty('content') ? eventData.content : null, knownType,
-          function (err) {
-        if (err && knownType.type === 'number' && typeof eventData.content === 'string') {
-          var castedToNum = +eventData.content;
-          if (! isNaN(castedToNum)) {
-            eventData.content = castedToNum;
-            return validation.validate(eventData.content, knownType, callback);
+      validation.validate(context.content.hasOwnProperty('content') ? context.content.content :
+          null, knownType,
+        function (err) {
+          if (err && knownType.type === 'number' && typeof context.content.content === 'string') {
+            var castedToNum = +context.content.content;
+            if (!isNaN(castedToNum)) {
+              context.content.content = castedToNum;
+              return validation.validate(context.content.content, knownType, next);
+            }
           }
-        }
-        callback(err || null);
-      });
+          if (err) {
+            return next(errors.invalidParametersFormat('The event content\'s format is ' +
+            'invalid.', err));
+          }
+          next(null);
+        });
     } else {
-      callback(null);
+      next(null);
     }
   }
 
@@ -431,17 +416,20 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     return true;
   }
 
-  function checkExistingLaterPeriodIfNeeded(context, event, callback) {
+  function checkExistingLaterPeriodIfNeeded(context, params, result, next) {
+    if (! context.content.hasOwnProperty('time')) {
+      return next();
+    }
     if (! context.stream.singleActivityRootId ||
-        ! isPeriod(event) ||
-        ! isRunning(event)) {
+        ! isPeriod(context.content) ||
+        ! isRunning(context.content)) {
       // marks and *finished* periods can be inserted before an existing period
-      return process.nextTick(callback);
+      return process.nextTick(next);
     }
 
     var query = {
       streamId: {$in: context.getSingleActivityExpandedIds()},
-      time: {'$gt': event.time},
+      time: {'$gt': context.content.time},
       $and: [
         {duration: {'$exists' : true}},
         {duration: {$ne: 0}}
@@ -452,14 +440,14 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       sort: {time: 1}
     };
     userEventsStorage.findOne(context.user, query, options, function (err, periodEvent) {
-      if (err) { return callback(errors.unexpectedError(err)); }
+      if (err) { return next(errors.unexpectedError(err)); }
 
       if (periodEvent) {
-        return callback(errors.invalidOperation('At least one period event ("' + periodEvent.id +
+        return next(errors.invalidOperation('At least one period event ("' + periodEvent.id +
             '") already exists at a later time', {conflictingEventId: periodEvent.id}));
       }
 
-      callback();
+      next();
     });
   }
 
@@ -467,18 +455,22 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
    * Considers running events to have no duration.
    *
    * @param {Object} context
-   * @param {Object} event
-   * @param {Function} callback
+   * @param {Object} params
+   * @param {Object} result
+   * @param {Function} next
    */
-  function checkOverlappedPeriodsIfNeeded(context, event, callback) {
+  function checkOverlappedPeriodsIfNeeded(context, params, result, next) {
+    if (! context.content.hasOwnProperty('time') && ! context.content.hasOwnProperty('duration')) {
+      return next();
+    }
     if (! context.stream.singleActivityRootId ||
-        ! isPeriod(event) ||
-        isRunning(event)) {
+        ! isPeriod(context.content) ||
+        isRunning(context.content)) {
       // marks (can be duration of zero) and *running* periods cannot overlap
-      return process.nextTick(callback);
+      return process.nextTick(next);
     }
 
-    var endTime = event.time + event.duration;
+    var endTime = context.content.time + context.content.duration;
     var query = {
       streamId: {$in: context.getSingleActivityExpandedIds()},
       $and: [
@@ -488,11 +480,11 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       $or: [
         // earlier periods
         {
-          time: {$lt: event.time},
-          endTime: { $gt: event.time, $lte: timestamp.now() }
+          time: {$lt: context.content.time},
+          endTime: { $gt: context.content.time, $lte: timestamp.now() }
         },
         // later periods
-        {time: { $gte: event.time, $lt: endTime }}
+        {time: { $gte: context.content.time, $lt: endTime }}
       ]
     };
     var options = {
@@ -501,47 +493,47 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     };
     userEventsStorage.find(context.user, query, options, function (err, periodEvents) {
       if (err) {
-        return callback(errors.unexpectedError(err));
+        return next(errors.unexpectedError(err));
       }
 
-      if (event.id) {
+      if (context.content.id) {
         // ignore self
         periodEvents = periodEvents.filter(function (e) {
-          return e.id !== event.id;
+          return e.id !== context.content.id;
         });
       }
 
       if (periodEvents.length > 0) {
         var msg = 'The event\'s period overlaps existing period events.';
-        return callback(errors.periodsOverlap(msg,
+        return next(errors.periodsOverlap(msg,
             {overlappedIds: periodEvents.map(function (e) { return e.id; })}));
       }
 
-      callback();
+      next();
     });
   }
 
-  function stopPreviousPeriodIfNeeded(context, event, result, callback) {
+  function stopPreviousPeriodIfNeeded(context, params, result, next) {
     if (! context.stream.singleActivityRootId ||
-        ! isPeriod(event)) {
+        ! isPeriod(context.content)) {
       // marks do not affect periods
-      return process.nextTick(callback);
+      return process.nextTick(next);
     }
 
     var stopParams = {
       singleActivity: true,
-      time: event.time
+      time: context.content.time
     };
     findLastRunning(context, stopParams, function (err, eventToStop) {
-      if (err) { return callback(errors.unexpectedError(err)); }
-      stopEvent(context, eventToStop, event.time, function (err, stoppedId) {
-        if (err) { return callback(err); }
+      if (err) { return next(errors.unexpectedError(err)); }
+      stopEvent(context, eventToStop, context.content.time, function (err, stoppedId) {
+        if (err) { return next(err); }
 
         if (stoppedId) {
           result.stoppedId = stoppedId;
         }
 
-        callback();
+        next();
       });
     });
   }
@@ -680,7 +672,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       duration: stopTime - event.time
     };
 
-    utils.tracking.updateProperties(context.access.id, updatedData);
+    context.updateTrackingProperties(updatedData);
 
     userEventsStorage.update(context.user, {id: event.id}, updatedData, function (err) {
       if (err) {
@@ -711,7 +703,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   function flagAsTrashed(context, params, result, next) {
     var updatedData = {trashed: true};
-    utils.tracking.updateProperties(context.access.id, updatedData);
+    context.updateTrackingProperties(updatedData);
 
     userEventsStorage.update(context.user, {id: params.id}, updatedData,
         function (err, updatedEvent) {
@@ -778,7 +770,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         updatedEvent.attachments.splice(attIndex, 1);
 
         var updatedData = {attachments: updatedEvent.attachments};
-        utils.tracking.updateProperties(context.access.id, updatedData);
+        context.updateTrackingProperties(updatedData);
 
         userEventsStorage.update(context.user, {id: params.id}, updatedData,
             function (err, updatedEvent) {

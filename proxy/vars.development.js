@@ -9,8 +9,7 @@ module.exports = {
   accessLog: '/dev/stdout',
 
   port: 8080,
-  serverName: 'web.li', //staging web.li | product web.me
-  serverNameLegacy: 'api.in', //staging api.in | product api.io
+  serverName: 'localhost',
   ssl: {
     enabled: true,
     caFile: __dirname + '/dev-cert/rec.la-ca.pem',

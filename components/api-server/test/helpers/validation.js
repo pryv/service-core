@@ -139,6 +139,18 @@ exports.checkErrorInvalidParams = function (res, done) {
 /**
  * Specific error check for convenience.
  */
+exports.checkErrorInvalidAccess = function (res, done) {
+  res.statusCode.should.eql(401);
+
+  checkJSON(res, schemas.errorResult);
+  res.body.error.id.should.eql(ErrorIds.InvalidAccessToken);
+
+  done();
+};
+
+/**
+ * Specific error check for convenience.
+ */
 exports.checkErrorForbidden = function (res, done) {
   res.statusCode.should.eql(403);
 
@@ -190,6 +202,23 @@ var checkObjectEquality = exports.checkObjectEquality = function (actual, expect
     }
   }
   skippedProps.push('children');
+
+
+  if (expected.attachments) {
+    should.exist(actual.attachments);
+    should.equal(actual.attachments.length, expected.attachments.length);
+    var attachmentsNumber = actual.attachments.length;
+    expected.attachments.forEach( function (attachmentFromExpected) {
+      actual.attachments.forEach( function (attachmentFromActual) {
+        if (attachmentFromActual.id === attachmentFromExpected.id) {
+          checkObjectEquality(attachmentFromActual, attachmentFromExpected);
+          attachmentsNumber = attachmentsNumber - 1;
+        }
+      });
+    });
+    should.equal(attachmentsNumber, 0);
+  }
+  skippedProps.push('attachments');
 
   _.omit(actual, skippedProps).should.eql(_.omit(expected, skippedProps));
 };

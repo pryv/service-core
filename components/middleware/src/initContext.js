@@ -13,7 +13,7 @@ var MethodContext = require('components/model').MethodContext;
  * @param {Object} userStreamsStorage
  */
 module.exports = function initContext(usersStorage, userAccessesStorage, sessionsStorage,
-                                      userStreamsStorage) {
+                                      userStreamsStorage, customExtensionsSettings) {
   var storage = {
     users: usersStorage,
     accesses: userAccessesStorage,
@@ -22,7 +22,8 @@ module.exports = function initContext(usersStorage, userAccessesStorage, session
   };
   return function (req, res, next) {
     req.context = new MethodContext(req.params.username,
-        req.headers.authorization || req.query.auth, storage);
+        req.headers.authorization || req.query.auth, storage,
+        customExtensionsSettings.customAuthStepFn);
     req.context.retrieveUser(next);
   };
 };

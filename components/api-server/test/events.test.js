@@ -1046,33 +1046,47 @@ describe('events', function () {
         validation.checkFilesReadToken(updatedEvent, access, filesReadTokenSecret);
         validation.sanitizeEvent(updatedEvent);
 
-        var expected = _.defaults({
-          attachments: [
-            {
-              id: updatedEvent.attachments[0].id,
-              fileName: testData.attachments.image.filename,
-              type: testData.attachments.image.type,
-              size: testData.attachments.image.size
-            },
-            {
-              id: updatedEvent.attachments[1].id,
-              fileName: testData.attachments.text.filename,
-              type: testData.attachments.text.type,
-              size: testData.attachments.text.size
+          var updatedEventAttachments = {};
+          updatedEvent.attachments.forEach( function (attachment) {
+            updatedEventAttachments[attachment.fileName] = attachment;
+          });
+
+          var expected = {};
+          expected.attachments = [];
+          updatedEvent.attachments.forEach( function (attachment) {
+            if (attachment.fileName === testData.attachments.image.filename) {
+              expected.attachments.push(
+                {
+                  id: attachment.id,
+                  fileName: testData.attachments.image.filename,
+                  type: testData.attachments.image.type,
+                  size: testData.attachments.image.size
+                }
+              );
             }
-          ],
-          modified: time,
-          modifiedBy: access.id
-        }, event);
+            if (attachment.fileName === testData.attachments.text.filename) {
+              expected.attachments.push(
+                {
+                  id: attachment.id,
+                  fileName: testData.attachments.text.filename,
+                  type: testData.attachments.text.type,
+                  size: testData.attachments.text.size
+                }
+              );
+            }
+          });
+          expected.modified = time;
+          expected.modifiedBy = access.id;
+          expected = _.defaults(expected, event);
 
         validation.checkObjectEquality(updatedEvent, expected);
 
         // check attached files
         attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
-            updatedEvent.attachments[0].id,
+          updatedEventAttachments[testData.attachments.image.filename].id,
             testData.attachments.image.filename).should.equal('');
         attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
-            updatedEvent.attachments[1].id,
+          updatedEventAttachments[testData.attachments.text.filename].id,
             testData.attachments.text.filename).should.equal('');
 
         eventsNotifCount.should.eql(1, 'events notifications');

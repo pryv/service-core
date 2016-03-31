@@ -90,6 +90,26 @@ config.schema = {
       doc: 'The secret used to compute tokens for authentifying read accesses of event attachments'
     }
   },
+  customExtensions: {
+    defaultFolder: {
+      format: String,
+      default: path.join(__dirname, '../../../custom-extensions'),
+      doc: 'The folder in which custom extension modules are searched for by default. Unless ' +
+      'defined by its specific setting (see other settings in `customExtensions`), each module ' +
+      'is loaded from there by its default name (e.g. `customAuthStepFn.js`), or ignored if ' +
+      'missing.'
+    },
+    customAuthStepFn: {
+      format: 'function-module',
+      default: '',
+      doc: 'A Node module identifier (e.g. "/custom/auth/function.js") implementing a custom ' +
+      'auth step (such as authenticating the caller id against an external service). ' +
+      'The function is passed the method context, which it can alter, and a callback to be ' +
+      'called with either no argument (success) or an error (failure). ' +
+      'If this setting is not empty and the specified module cannot be loaded as a function, ' +
+      'server startup will fail.'
+    }
+  },
   logs: {
     prefix: {
       format: String,
@@ -161,6 +181,33 @@ config.schema = {
   }
 };
 
+// Define custom configuration value format(s)
+var customFormats = {
+  'function-module': {
+    validate: function (val) {
+      if (! val) { return; }
+
+      var fn;
+      try {
+        fn = require(val);
+      } catch (e) {
+        throw new Error('Cannot load function module "' + val + '": ' + e.message);
+      }
+      if (typeof fn !== 'function') {
+        throw new Error('Module is not a function');
+      }
+    },
+    coerce: function (val) {
+      if (! val) { return null; }
+      return require(val);
+    }
+  }
+};
+Object.keys(customFormats).forEach(function (key) {
+  var format = customFormats[key];
+  convict.addFormat(key, format.validate, format.coerce);
+});
+
 /**
  * Loads configuration settings from (last takes precedence):
  *
@@ -193,6 +240,8 @@ config.load = function (configDefault) {
   instance.validate();
 
   var settings = instance.get();
+
+  loadCustomExtensions(settings);
 
   if (settings.printConfig) {
     print('Configuration settings loaded', settings);
@@ -246,6 +295,25 @@ function getSettingEnvName(keyPath) {
 
 function getSettingArgName(keyPath) {
   return keyPath.join(':');
+}
+
+function loadCustomExtensions(settings) {
+  var extSettings = settings.customExtensions;
+  Object.keys(extSettings).forEach(function (key) {
+    if (key === 'defaultFolder') { return; }
+    if (! extSettings[key]) {
+      // not explicitly specified —> try to load from default folder
+      var defaultModulePath = path.join(extSettings.defaultFolder, key + '.js');
+      if (! fs.existsSync(defaultModulePath)) {
+        // ignore if missing
+        return;
+      }
+      // for now we assume all extensions are functions
+      var format = customFormats['function-module'];
+      format.validate(defaultModulePath);
+      extSettings[key] = format.coerce(defaultModulePath);
+    }
+  });
 }
 
 function print(title, data) {

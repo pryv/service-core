@@ -4,22 +4,21 @@ var fs = require('fs'),
     args = process.argv.slice(2);
 
 if (args.length < 1) {
-  fail('Environment ("development" or "production") argument required');
+  fail('Please specify a variables file (.js) to compile from.');
 }
 
-var env = args[0];
-if (env !== 'development' && env !== 'production' && env !== '') {
-  fail('Environment must be either "development" or "production" or ""');
+var varsFile = path.resolve(args[0]);
+try {
+  fs.accessSync(varsFile);
+} catch (e) {
+  fail('Cannot find file "' + varsFile + '".');
 }
-
-if (env != '') env = '.' + env;
 
 var dir = __dirname + '/../proxy',
-    varsFile = path.resolve(dir, 'vars' + env + '.js'),
     templateFile = path.resolve(dir, 'nginx.conf.template'),
     outputFile = path.resolve(dir, 'nginx.conf');
 
-console.log('Compiling Nginx configuration for ' + env + ' into "' + outputFile + '"...');
+console.log('Compiling Nginx configuration from "' + varsFile + '" into "' + outputFile + '"...');
 
 var output = _.template(fs.readFileSync(templateFile))({vars: require(varsFile)});
 fs.writeFileSync(outputFile, output);

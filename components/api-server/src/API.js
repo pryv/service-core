@@ -1,6 +1,7 @@
 var async = require('async'),
     APIError = require('components/errors').APIError,
-    errors = require('components/errors').factory;
+    errors = require('components/errors').factory,
+    _ = require('lodash');
 
 module.exports = API;
 /**
@@ -30,8 +31,10 @@ function API() {
 var wildcard = '*';
 
 /**
- * Registers the given function(s) with the given method id.
+ * Registers the given function(s) or other registered method(s) with the given method id.
  * The given function(s) will be appended, in order, to the list of previously registered functions.
+ * A list of functions registered under a method id can be inserted by using its method id as
+ * argument.
  * The method id can end with a '*' wildcard, in which case the function(s) will apply to all method
  * ids that match.
  *
@@ -39,6 +42,7 @@ var wildcard = '*';
  *
  * - `api.register('resources.*', commonFn)`
  * - `api.register('resources.get', fn1, fn2, ...)`
+ * - `api.register('events.start', fn1, 'events.create', ...)`
  */
 API.prototype.register = function (/* arguments: id, fn1, fn2, ... */) {
   var id = arguments[0],
@@ -53,7 +57,21 @@ API.prototype.register = function (/* arguments: id, fn1, fn2, ... */) {
       this.applyMatchingFilters(id);
     }
     // append registered functions
-    this.map[id].push.apply(this.map[id], fns);
+    fns.forEach(function (fn) {
+        if (!_.isFunction(fn)) {
+          // registering functions of another method
+          var fnId = fn;
+          if (! this.map[fnId]) {
+            throw new Error('trying to use undefined API method as shortcut');
+          }
+          this.map[id].push.apply(this.map[id], this.map[fnId]);
+        } else {
+          // registering a function
+          this.map[id].push(fn);
+        }
+      }.bind(this)
+    );
+
   } else {
     // filter (with wildcard)
     if (wildcardAt !== id.length - 1) {

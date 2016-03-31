@@ -1,6 +1,6 @@
 {
   "name": "pryvuser-cli",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "private": true,
   "bin": {
     "pryvuser": "./src/cli.js"
@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "co-prompt": "^1.0.0",
-    "commander": "^2.6.0"
+    "commander": "^2.8.1"
   },
   "devDependencies": {
     "mocha": "^2.1.0"

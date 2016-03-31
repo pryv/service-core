@@ -1,7 +1,7 @@
 {
   "name": "pryv-service-core",
   "description": "Pryv core server app components",
-  "version": "0.8.2",
+  "version": "1.1.0",
   "private": true,
   "repository": {
     "type": "git",
@@ -9,29 +9,27 @@
   },
   "scripts": {
     "preinstall": "node scripts/components-npm install",
-
     "all": "parallelshell 'npm run database' 'npm run api' 'npm run previews' 'npm run proxy'",
     "database": "scripts/start-database.sh",
     "api": "cd components/api-server && npm start",
     "previews": "cd components/previews-server && npm start",
-    "proxy": "node scripts/compile-proxy-config development && nginx -c \"`pwd`/proxy/nginx.conf\"",
-
+    "proxy": "node scripts/compile-proxy-config proxy/vars.development.js && nginx -c \"`pwd`/proxy/nginx.conf\"",
     "test": "node scripts/components-npm test",
     "analysis": "plato -t 'service-core code analysis' -l .jshintrc -r -x 'node_modules|reports|\\.json' -d analysis-output components && open analysis-output/index.html",
     "check-dependencies": "node scripts/components-checkdeps",
     "update-components-version": "node scripts/components-version"
   },
   "dependencies": {
-    "async": "0.9.x",
+    "async": "^1.4.2",
     "axon": "2.0.x",
     "cron": "1.0.x",
     "dependable": "attentif/dependable",
     "express": "3.5.x",
     "lodash": "2.4.x",
     "mkdirp": "0.5.x",
-    "rimraf": "2.2.x",
-    "superagent": "0.18.x",
-    "unix-timestamp": "0.1.x"
+    "rimraf": "^2.4.3",
+    "superagent": "^0.18.0",
+    "unix-timestamp": "^0.2.0"
   },
   "devDependencies": {
     "blanket": "latest",
@@ -40,9 +38,9 @@
     "date-utils": "latest",
     "deep-equal": "latest",
     "nixt": "latest",
-    "nock": "latest",
-    "parallelshell": "^1.1.1",
-    "qs": "latest",
+    "nock": "^2.15.0",
+    "parallelshell": "^2.0.0",
+    "qs": "^5.2.0",
     "should": "latest",
     "socket.io-client": "0.9.x",
     "temp": "latest",

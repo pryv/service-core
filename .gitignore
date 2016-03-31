@@ -3,7 +3,8 @@
 .settings
 .DS_Store
 analysis-output
-**/node_modules/**
+node_modules/
+components/*/node_modules/
 **/coverage.html
 **/npm-debug.log
 **/profiling-output.txt

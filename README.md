@@ -53,9 +53,38 @@ Those components also accept the following command line options:
 
 #### Nginx proxy
 
-The `proxy` folder contains a Nginx configuration template (`nginx.conf.template`) as well as corresponding variables for `development` and `production` or `` (generic) environments (`vars.{environment}.js`). To manually generate a `nginx.conf`, do `node scripts/compile-proxy-config {environment}` (this is automatically done for development when running the proxy with `npm run proxy`).
+The `proxy` folder contains a Nginx configuration template (`nginx.conf.template`) as well as corresponding variables for `development` and `production` in `vars.{environment}.js`. To generate a `nginx.conf`, do `node scripts/compile-proxy-config {variables file}` (this is automatically done for development when running the proxy with `npm run proxy`).
 
 In development, Nginx runs on HTTPS with a "dev" SSL certificate on domain `*.rec.la` (where `*` is whatever Pryv username you like), whose DNS entry points to `127.0.0.1`. This little trick enables HTTPS connections to the local server via wildcard subdomains, without having to rely on additional tools like Dnsmasq.
+
+
+#### Customizing server behaviour
+
+It is possible to extend the API and previews servers with your own code, via the configuration keys defined under `customExtensions`:
+
+- `defaultFolder`: The folder in which custom extension modules are searched for by default. Unless defined by its specific setting (see other settings in `customExtensions`), each module is loaded from there by its default name (e.g. `customAuthStepFn.js`), or ignored if missing. Defaults to `{app root}/custom-extensions`.
+- `customAuthStepFn`: A Node module identifier (e.g. `/custom/auth/function.js`) implementing a custom auth step (such as authenticating the caller id against an external service). The function is passed the method context, which it can alter, and a callback to be called with either no argument (success) or an error (failure). If this setting is not empty and the specified module cannot be loaded as a function, server startup will fail. Undefined by default.
+
+    ```
+    // Example of customAuthStepFn.js
+    module.exports = function (context, callback) {
+      // do whatever is needed here (check LDAP, custom DB, etc.)
+      doCustomParsingAndValidating(context, function (err, parsedCallerId) {
+        if (err) { return callback(err); }
+        context.originalCallerId = context.callerId;
+        context.callerId = parsedCallerId;
+        callback();
+      });
+    };
+    ```
+
+    Available context properties (as of now):
+    
+    - `username` (string)
+    - `user` (object): the user object (properties include `id`)
+    - `accessToken` (string): as read in the `Authorization` header or `auth` parameter
+    - `callerId` (string): optional additional id passed after `accessToken` in auth after a separating space (auth format is thus `<access-token>[ <caller-id>]`)
+    - `access` (object): the access object (see [API doc](https://api.pryv.com/reference/#access) for structure) 
 
 
 ## Contribute
@@ -127,3 +156,4 @@ To deploy (`{target}` is either `staging` or `production`):
 ## TODO: more on deployment etc.
 
 This is a work in progress.
+
