@@ -310,6 +310,37 @@ describe('event previews', function () {
       ], done);
     });
 
+    it('must ignore files with no readable extended attribute', function (done) {
+      var event = testData.events[2],
+          cachedPath;
+      async.series([
+        function retrieveAPreview(stepDone) {
+          request.get(path(event.id), token).end(function (res) {
+            res.statusCode.should.eql(200);
+            cachedPath = storage.user.eventFiles.getPreviewFilePath(user, event.id, 256);
+            // add delay as the attribute is written after the response is sent
+            setTimeout(xattr.get.bind(xattr, cachedPath, 'user.pryv.lastAccessed',
+                function (err, lastAccessed) {
+              should.exist(lastAccessed);
+              stepDone();
+            }), 50);
+          });
+        },
+        function removeXAttr(stepDone) {
+          xattr.remove(cachedPath, 'user.pryv.lastAccessed', stepDone);
+        },
+        function cleanupCache(stepDone) {
+          request.post(basePath, token).end(function (res) {
+            res.statusCode.should.eql(200);
+            fs.stat(cachedPath, function (err, stat) {
+              should.exist(stat); // file exists
+              stepDone();
+            });
+          });
+        }
+      ], done);
+    });
+
   });
 
 });

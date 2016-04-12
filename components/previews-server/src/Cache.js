@@ -36,12 +36,18 @@ Cache.prototype.cleanUp = function (callback) {
   var cutoffTime = timestamp.now() - this.settings.maxAge;
   var processFile = function (path, stepDone) {
     xattr.get(path, Cache.LastAccessedXattrKey, function (err, value) {
+      if (err) {
+        // log and ignore file
+        this.settings.logger.warn('Could not read extended attribute on file "' + path + '": ' +
+            err);
+        return stepDone();
+      }
       value = value.toString();
       if (! value || +value >= cutoffTime) {
         return stepDone();
       }
       fs.unlink(path, stepDone);
-    });
+    }.bind(this));
   }.bind(this);
 
   var done = function (err) {
