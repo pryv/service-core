@@ -11,7 +11,8 @@ var settings = require('./config').load(),
     logger = utils.logging(settings.logs).getLogger('previews-cache-worker');
 var cache = new Cache({
   rootPath: settings.eventFiles.previewsDirPath,
-  maxAge: (settings.eventFiles.previewsCacheMaxAge / 1000 || 60 * 60 * 24 * 7) / 1000 // 1w
+  maxAge: (settings.eventFiles.previewsCacheMaxAge / 1000 || 60 * 60 * 24 * 7) / 1000, // 1w
+  logger: logger
 });
 
 logger.info('Starting clean-up in ' + settings.eventFiles.previewsDirPath);
