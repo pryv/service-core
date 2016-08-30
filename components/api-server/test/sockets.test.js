@@ -22,6 +22,7 @@ describe('Socket.IO', function () {
 
   var user = testData.users[0],
       otherUser = testData.users[1],
+      dashUser = testData.users[3],
       token = null,
       otherToken = null;
 
@@ -91,6 +92,28 @@ describe('Socket.IO', function () {
   });
 
   var namespace = '/' + user.username;
+
+  it('must connect to a user with a dash in the username', function (done) {
+    ioCons.con = connect('/' + dashUser.username);
+
+    ioCons.con.on('error', function (e) {
+      console.log('got error in dashuser: ', e);
+      if (e) {
+        done(e);
+      } else {
+        done('error with no msg');
+      }
+    });
+
+    ioCons.con.on('connect', function (e) {
+      console.log('got error in dashuser: ', e);
+      if (e) {
+        done(e);
+      } else {
+        done('error with no msg');
+      }
+    });
+  });
 
   it('must dynamically create a namespace for the user', function (done) {
     ioCons.con = connect(namespace, {auth: token});
