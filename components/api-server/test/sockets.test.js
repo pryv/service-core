@@ -50,7 +50,8 @@ describe('Socket.IO', function () {
 
   before(function (done) {
     var request = null,
-        otherRequest = null;
+        otherRequest = null,
+        dashRequest = null;
     async.series([
       testData.resetUsers,
       testData.resetAccesses,
@@ -66,6 +67,10 @@ describe('Socket.IO', function () {
       function (stepDone) {
         otherRequest = helpers.request(server.url);
         otherRequest.login(otherUser, stepDone);
+      },
+      function (stepDone) {
+        dashRequest = helpers.request(server.url);
+        dashRequest.login(dashUser, stepDone);
       }
     ], function (err) {
       if (err) { return done(err); }

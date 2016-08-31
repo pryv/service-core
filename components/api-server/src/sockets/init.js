@@ -39,6 +39,7 @@ module.exports = function (server, usersStorage, userAccessesStorage, sessionsSt
     logger: logging.getLogger('socket.io'),
     authorization: function (handshakeData, callback) {
       var nsName = handshakeData.query.resource;
+      console.log(nsName, '????????');
       if (! nsName) {
         return callback('Missing \'resource\' parameter.');
       }

@@ -13,6 +13,7 @@ module.exports = function Manager(io, notifications, api, logging) {
       logger = logging.getLogger('sockets');
 
   this.isValidNamespace = function (name) {
+    return true;
     return (/^\/\w+$/).test(name);
   };
 
@@ -29,6 +30,7 @@ module.exports = function Manager(io, notifications, api, logging) {
   };
 
   this.namespaceExists = function (name) {
+    console.log(name, '/////////');
     return nsContexts.hasOwnProperty(name);
   };
 
@@ -40,6 +42,7 @@ module.exports = function Manager(io, notifications, api, logging) {
    * Sets up the namespace with the given name and user, if not already present.
    */
   this.ensureInitNamespace = function (name, user) {
+    console.log(name, 'XXXXXXXXXX');
     if (nsContexts[name]) {
       return; // already initialized
     }
