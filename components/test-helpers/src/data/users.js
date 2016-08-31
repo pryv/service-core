@@ -29,6 +29,7 @@ module.exports = [
     id: 'u_3',
     username: 'user-three',
     password: 't3st-Thr33',
+    email: 'user-three@test.com',
     language: 'en'
   }
 ];
