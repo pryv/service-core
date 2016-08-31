@@ -107,7 +107,7 @@ describe('Socket.IO', function () {
       done(e);
     });
 
-    ioCons.con.on('connect', function (e) {
+    ioCons.con.on('connect', function () {
       console.log('XXXXX logged XXXXXXXX');
       done();
     });
@@ -139,7 +139,8 @@ describe('Socket.IO', function () {
 
   describe('calling API methods', function () {
 
-    it.skip('must properly route method call messages for events and return the results, including meta',
+    it.skip('must properly route method call messages for events and return the results, ' +
+      'including meta',
         function (done) {
       ioCons.con = connect(namespace, {auth: token});
       var params = {
