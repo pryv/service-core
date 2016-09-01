@@ -29,6 +29,7 @@ describe('Socket.IO', function () {
   function connect(namespace, queryParams) {
     var paramsWithNS = _.defaults({resource: namespace}, queryParams || {}),
         url = server.url + namespace + '?' + queryString.stringify(paramsWithNS);
+    console.log('****** Connected 0:', namespace);
     return io.connect(url, {'force new connection': true});
   }
 
@@ -38,8 +39,10 @@ describe('Socket.IO', function () {
   function whenAllConnectedDo(callback) {
     var conKeys = Object.keys(ioCons),
         conCount = 0;
+    console.log('****** Connected A:', key, e);
     conKeys.forEach(function (key) {
-      ioCons[key].on('connect', function () {
+      ioCons[key].on('connected', function (e) {
+        console.log('****** Connected:', key, e);
         conCount++;
         if (conCount === conKeys.length) {
           callback();
@@ -58,6 +61,10 @@ describe('Socket.IO', function () {
       function (stepDone) {
         // have some accesses ready for another account to check notifications
         testData.resetAccesses(stepDone, otherUser);
+      },
+      function (stepDone) {
+        // have some accesses ready for another account to check notifications
+        testData.resetAccesses(stepDone, dashUser);
       },
       server.ensureStarted.bind(server, helpers.dependencies.settings),
       function (stepDone) {
@@ -99,7 +106,7 @@ describe('Socket.IO', function () {
   var namespace = '/' + user.username;
 
   it('must connect to a user with a dash in the username', function (done) {
-    ioCons.con = connect('/' + dashUser.username);
+    ioCons.con = connect('/' + dashUser.username, {auth: testData.accesses[2].token});
 
     ioCons.con.on('error', function (e) {
       console.log('XXXXgot error in dashuser: ');
