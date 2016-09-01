@@ -5,6 +5,12 @@
 var _ = require('lodash');
 
 /**
+ * Define the regular expression to apply to check the validity of a username
+ * @type {Regexp}
+ */
+exports.usernameRegexp =
+
+/**
  * Gets the full core type URI for the given type name and action (read, create, etc.)
  *
  * @param {String} name
@@ -44,6 +50,7 @@ exports.string = getBaseSchema.bind(null, 'string');
 exports.email = getBaseSchema('string', {pattern: '^[^@]+@[a-zA-Z0-9._-]+\\.[a-zA-Z]+$'});
 
 exports.language = getBaseSchema('string', {pattern: '^[a-z]{2}$'});
+
 
 /**
  * Returns a 'number' schema definition.

@@ -1,6 +1,10 @@
 var errorHandling = require('components/errors').errorHandling,
     setCommonMeta = require('../methods/helpers/setCommonMeta'),
+    userNameSchema = require('../schema/user.js'),
     _ = require('lodash');
+
+
+console.log('@@@@@@@@', userNameSchema);
 
 /**
  * Singleton for managing sockets access:
@@ -13,8 +17,7 @@ module.exports = function Manager(io, notifications, api, logging) {
       logger = logging.getLogger('sockets');
 
   this.isValidNamespace = function (name) {
-    return true;
-    return (/^\/\w+$/).test(name);
+    return (/^\/[a-zA-Z0-9-]+$/).test(name);
   };
 
   // used by notifications (see below).

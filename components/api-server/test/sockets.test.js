@@ -29,7 +29,6 @@ describe('Socket.IO', function () {
   function connect(namespace, queryParams) {
     var paramsWithNS = _.defaults({resource: namespace}, queryParams || {}),
         url = server.url + namespace + '?' + queryString.stringify(paramsWithNS);
-    console.log('****** Connected 0:', namespace);
     return io.connect(url, {'force new connection': true});
   }
 
@@ -39,10 +38,8 @@ describe('Socket.IO', function () {
   function whenAllConnectedDo(callback) {
     var conKeys = Object.keys(ioCons),
         conCount = 0;
-    console.log('****** Connected A:', key, e);
     conKeys.forEach(function (key) {
       ioCons[key].on('connected', function (e) {
-        console.log('****** Connected:', key, e);
         conCount++;
         if (conCount === conKeys.length) {
           callback();
