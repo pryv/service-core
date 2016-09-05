@@ -51,7 +51,6 @@ module.exports = function (server, usersStorage, userAccessesStorage, sessionsSt
       var username = manager.getUsername(nsName);
 
       var accessToken = handshakeData.query.auth;
-
       if (! accessToken) {
         return callback('Missing \'auth\' parameter with a valid access token.');
       }
