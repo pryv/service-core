@@ -39,7 +39,6 @@ module.exports = function (server, usersStorage, userAccessesStorage, sessionsSt
     logger: logging.getLogger('socket.io'),
     authorization: function (handshakeData, callback) {
       var nsName = handshakeData.query.resource;
-      console.log(nsName, '????????');
       if (! nsName) {
         return callback('Missing \'resource\' parameter.');
       }
@@ -52,8 +51,6 @@ module.exports = function (server, usersStorage, userAccessesStorage, sessionsSt
       var username = manager.getUsername(nsName);
 
       var accessToken = handshakeData.query.auth;
-
-      console.log(handshakeData.query, '2 ????????');
 
       if (! accessToken) {
         return callback('Missing \'auth\' parameter with a valid access token.');

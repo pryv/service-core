@@ -5,12 +5,6 @@
 var _ = require('lodash');
 
 /**
- * Define the regular expression to apply to check the validity of a username
- * @type {Regexp}
- */
-exports.usernameRegexp =
-
-/**
  * Gets the full core type URI for the given type name and action (read, create, etc.)
  *
  * @param {String} name

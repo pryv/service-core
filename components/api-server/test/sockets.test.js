@@ -39,7 +39,7 @@ describe('Socket.IO', function () {
     var conKeys = Object.keys(ioCons),
         conCount = 0;
     conKeys.forEach(function (key) {
-      ioCons[key].on('connected', function (e) {
+      ioCons[key].on('connect', function () {
         conCount++;
         if (conCount === conKeys.length) {
           callback();
@@ -50,18 +50,13 @@ describe('Socket.IO', function () {
 
   before(function (done) {
     var request = null,
-        otherRequest = null,
-        dashRequest = null;
+        otherRequest = null;
     async.series([
       testData.resetUsers,
       testData.resetAccesses,
       function (stepDone) {
         // have some accesses ready for another account to check notifications
         testData.resetAccesses(stepDone, otherUser);
-      },
-      function (stepDone) {
-        // have some accesses ready for another account to check notifications
-        testData.resetAccesses(stepDone, dashUser);
       },
       server.ensureStarted.bind(server, helpers.dependencies.settings),
       function (stepDone) {
@@ -71,10 +66,6 @@ describe('Socket.IO', function () {
       function (stepDone) {
         otherRequest = helpers.request(server.url);
         otherRequest.login(otherUser, stepDone);
-      },
-      function (stepDone) {
-        dashRequest = helpers.request(server.url);
-        dashRequest.login(dashUser, stepDone);
       }
     ], function (err) {
       if (err) { return done(err); }
@@ -106,18 +97,16 @@ describe('Socket.IO', function () {
     ioCons.con = connect('/' + dashUser.username, {auth: testData.accesses[2].token});
 
     ioCons.con.on('error', function (e) {
-      console.log('XXXXgot error in dashuser: ');
-      console.log(e);
+      should.not.exist(e);
       done(e);
     });
 
     ioCons.con.on('connect', function () {
-      console.log('XXXXX logged XXXXXXXX');
       done();
     });
   });
 
-  it.skip('must dynamically create a namespace for the user', function (done) {
+  it('must dynamically create a namespace for the user', function (done) {
     ioCons.con = connect(namespace, {auth: token});
 
     ioCons.con.on('connect', function () {
@@ -128,7 +117,7 @@ describe('Socket.IO', function () {
     ioCons.con.on('error', function () { throw new Error('Connection failed.'); });
   });
 
-  it.skip('must refuse connection if no valid access token is provided', function (done) {
+  it('must refuse connection if no valid access token is provided', function (done) {
     ioCons.con = connect(namespace);
 
     ioCons.con.socket.on('error', function () {
@@ -143,7 +132,7 @@ describe('Socket.IO', function () {
 
   describe('calling API methods', function () {
 
-    it.skip('must properly route method call messages for events and return the results, ' +
+    it('must properly route method call messages for events and return the results, ' +
       'including meta',
         function (done) {
       ioCons.con = connect(namespace, {auth: token});
@@ -160,7 +149,7 @@ describe('Socket.IO', function () {
       });
     });
 
-    it.skip('must properly route method call messages for streams and return the results',
+    it('must properly route method call messages for streams and return the results',
         function (done) {
       ioCons.con = connect(namespace, {auth: token});
       ioCons.con.emit('streams.get', {state: 'all'}, function (err, result) {
@@ -170,7 +159,7 @@ describe('Socket.IO', function () {
       });
     });
 
-    it.skip('must fail if the called target does not exist', function (done) {
+    it('must fail if the called target does not exist', function (done) {
       ioCons.con = connect(namespace, {auth: token});
       ioCons.con.emit('badTarget.get', {}, function (err) {
         validation.checkSchema(err, validation.schemas.errorResult);
@@ -179,7 +168,7 @@ describe('Socket.IO', function () {
       });
     });
 
-    it.skip('must fail if the called method does not exist', function (done) {
+    it('must fail if the called method does not exist', function (done) {
       ioCons.con = connect(namespace, {auth: token});
       ioCons.con.emit('streams.badMethod', {}, function (err) {
         validation.checkSchema(err, validation.schemas.errorResult);
@@ -188,7 +177,7 @@ describe('Socket.IO', function () {
       });
     });
 
-    it.skip('must return API errors properly, including meta', function (done) {
+    it('must return API errors properly, including meta', function (done) {
       ioCons.con = connect(namespace, {auth: token});
       ioCons.con.emit('events.create', {badParam: 'bad-data'}, function (err/*, result*/) {
         validation.checkSchema(err, validation.schemas.errorResult);
@@ -197,7 +186,7 @@ describe('Socket.IO', function () {
       });
     });
 
-    it.skip('must notify other sockets for the same user about events changes', function (done) {
+    it('must notify other sockets for the same user about events changes', function (done) {
       ioCons.con1 = connect(namespace, {auth: token}); // personal access
       ioCons.con2 = connect(namespace, {auth: testData.accesses[2].token}); // "read all" access
 
@@ -226,7 +215,7 @@ describe('Socket.IO', function () {
       });
     });
 
-    it.skip('must notify other sockets for the same user (only) about streams changes',
+    it('must notify other sockets for the same user (only) about streams changes',
         function (done) {
       ioCons.con1 = connect(namespace, {auth: token}); // personal access
       ioCons.con2 = connect(namespace, {auth: testData.accesses[2].token}); // "read all" access
