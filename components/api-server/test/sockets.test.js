@@ -24,7 +24,8 @@ describe('Socket.IO', function () {
       otherUser = testData.users[1],
       dashUser = testData.users[3],
       token = null,
-      otherToken = null;
+      otherToken = null,
+      dashToken = null;
 
   function connect(namespace, queryParams) {
     var paramsWithNS = _.defaults({resource: namespace}, queryParams || {}),
@@ -50,13 +51,17 @@ describe('Socket.IO', function () {
 
   before(function (done) {
     var request = null,
-        otherRequest = null;
+        otherRequest = null,
+        dashRequest = null;
     async.series([
       testData.resetUsers,
       testData.resetAccesses,
       function (stepDone) {
         // have some accesses ready for another account to check notifications
         testData.resetAccesses(stepDone, otherUser);
+      },
+      function (stepDone) {
+        testData.resetAccesses(stepDone, dashUser);
       },
       server.ensureStarted.bind(server, helpers.dependencies.settings),
       function (stepDone) {
@@ -66,11 +71,16 @@ describe('Socket.IO', function () {
       function (stepDone) {
         otherRequest = helpers.request(server.url);
         otherRequest.login(otherUser, stepDone);
+      },
+      function (stepDone) {
+        dashRequest = helpers.request(server.url);
+        dashRequest.login(dashUser, stepDone);
       }
     ], function (err) {
       if (err) { return done(err); }
       token = request.token;
       otherToken = otherRequest.token;
+      dashToken = dashRequest.token;
       done();
     });
   });
@@ -93,19 +103,6 @@ describe('Socket.IO', function () {
 
   var namespace = '/' + user.username;
 
-  it('must connect to a user with a dash in the username', function (done) {
-    ioCons.con = connect('/' + dashUser.username, {auth: testData.accesses[2].token});
-
-    ioCons.con.on('error', function (e) {
-      should.not.exist(e);
-      done(e);
-    });
-
-    ioCons.con.on('connect', function () {
-      done();
-    });
-  });
-
   it('must dynamically create a namespace for the user', function (done) {
     ioCons.con = connect(namespace, {auth: token});
 
@@ -117,6 +114,20 @@ describe('Socket.IO', function () {
     ioCons.con.on('error', function () { throw new Error('Connection failed.'); });
   });
 
+  it('must connect to a user with a dash in the username', function (done) {
+    ioCons.con = connect('/' + dashUser.username, {auth: testData.accesses[2].token});
+
+    ioCons.con.on('error', function (e) {
+      should.not.exist(e);
+      done(e);
+    });
+
+    ioCons.con.on('connect', function () {
+      should.exist(ioCons.con);
+      done();
+    });
+  });
+  
   it('must refuse connection if no valid access token is provided', function (done) {
     ioCons.con = connect(namespace);
 
