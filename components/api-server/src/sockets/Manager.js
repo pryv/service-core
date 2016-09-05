@@ -13,7 +13,7 @@ module.exports = function Manager(io, notifications, api, logging) {
       logger = logging.getLogger('sockets');
 
   this.isValidNamespace = function (name) {
-    return (/^\/\w+$/).test(name);
+    return (/^\/[a-zA-Z0-9-]+$/).test(name);
   };
 
   // used by notifications (see below).
