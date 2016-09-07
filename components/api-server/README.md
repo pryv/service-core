@@ -42,3 +42,7 @@ in the meantime and if the online version is unavailable or corrupted.)
 - `npm run test-debug` is similar as `npm run test-detailed` but in debug mode; it will wait for debuggers to be attached on both ports 5858 (the test process) and 5959 (the tested server process)
 
 Note that acceptance tests covering the API methods use the HTTP API (that was implemented first); acceptance tests using Socket.IO only cover socket-specific functionality, not API commands.
+
+#### Run specific test(s)
+
+You can pass options to mocha using `--` in the following way `npm run test -- --grep="Socket"`
