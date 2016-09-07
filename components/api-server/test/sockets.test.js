@@ -22,10 +22,8 @@ describe('Socket.IO', function () {
 
   var user = testData.users[0],
       otherUser = testData.users[1],
-      dashUser = testData.users[3],
       token = null,
-      otherToken = null,
-      dashToken = null;
+      otherToken = null;
 
   function connect(namespace, queryParams) {
     var paramsWithNS = _.defaults({resource: namespace}, queryParams || {}),
@@ -51,17 +49,13 @@ describe('Socket.IO', function () {
 
   before(function (done) {
     var request = null,
-        otherRequest = null,
-        dashRequest = null;
+        otherRequest = null;
     async.series([
       testData.resetUsers,
       testData.resetAccesses,
       function (stepDone) {
         // have some accesses ready for another account to check notifications
         testData.resetAccesses(stepDone, otherUser);
-      },
-      function (stepDone) {
-        testData.resetAccesses(stepDone, dashUser);
       },
       server.ensureStarted.bind(server, helpers.dependencies.settings),
       function (stepDone) {
@@ -71,16 +65,11 @@ describe('Socket.IO', function () {
       function (stepDone) {
         otherRequest = helpers.request(server.url);
         otherRequest.login(otherUser, stepDone);
-      },
-      function (stepDone) {
-        dashRequest = helpers.request(server.url);
-        dashRequest.login(dashUser, stepDone);
       }
     ], function (err) {
       if (err) { return done(err); }
       token = request.token;
       otherToken = otherRequest.token;
-      dashToken = dashRequest.token;
       done();
     });
   });
@@ -115,15 +104,38 @@ describe('Socket.IO', function () {
   });
 
   it('must connect to a user with a dash in the username', function (done) {
-    ioCons.con = connect('/' + dashUser.username, {auth: testData.accesses[2].token});
 
-    ioCons.con.on('error', function (e) {
-      should.not.exist(e);
-      done(e);
-    });
+    var dashUser = testData.users[3],
+        dashRequest = null,
+        dashToken = null;
 
-    ioCons.con.on('connect', function () {
-      should.exist(ioCons.con);
+    async.series([
+      function (stepDone) {
+        testData.resetAccesses(stepDone, dashUser);
+      },
+      function (stepDone) {
+        dashRequest = helpers.request(server.url);
+        dashRequest.login(dashUser, stepDone);
+      },
+      function (stepDone) {
+        dashToken = dashRequest.token;
+        stepDone();
+      },
+      function (stepDone) {
+        ioCons.con = connect('/' + dashUser.username, {auth: testData.accesses[2].token});
+
+        ioCons.con.on('error', function (e) {
+          should.not.exist(e);
+          stepDone(e);
+        });
+
+        ioCons.con.on('connect', function () {
+          should.exist(ioCons.con);
+          stepDone();
+        });
+      }
+    ], function (err) {
+      if (err) { return done(err); }
       done();
     });
   });
