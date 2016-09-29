@@ -604,7 +604,12 @@ describe('streams', function () {
           function verifyLinkedEvents(stepDone) {
             eventsStorage.find(user, {streamId: parentStream.id}, null,
                 function (err, linkedEvents) {
-              _.pluck(linkedEvents, 'id').should.eql([ 'e_4', 'e_3', 'e_2', 'e_1' ]);
+              _.pluck(linkedEvents, 'id').should.eql([
+                testData.events[4].id,
+                testData.events[3].id,
+                testData.events[2].id,
+                testData.events[1].id
+              ]);
 
               stepDone();
             });

@@ -626,6 +626,51 @@ describe('events', function () {
       });
     });
 
+
+
+    it('must return a correct error if an event with the same id already exists', function (done) {
+      var data = {
+        id: testData.events[0].id,
+        streamId: testData.streams[2].id,
+        type: 'test/test'
+      };
+      request.post(basePath).send(data).end(function (res) {
+        validation.checkError(res, {
+          status: 400,
+          id: ErrorIds.ItemAlreadyExists,
+          data: {id: data.id}
+        }, done);
+      });
+    });
+
+    it('must not allow reuse of deleted ids (unlike streams)', function (done) {
+      var data = {
+        id: testData.events[13].id, // existing deletion
+        streamId: testData.streams[2].id,
+        type: 'test/test'
+      };
+      request.post(basePath).send(data).end(function (res) {
+        validation.checkError(res, {
+          status: 400,
+          id: ErrorIds.ItemAlreadyExists,
+          data: {id: data.id}
+        }, done);
+      });
+    });
+
+    it('must only allow ids that are formatted like cuids', function (done) {
+      var data = {
+        id: 'man, this is a baaad id',
+        streamId: testData.streams[2].id,
+        type: 'test/test'
+      };
+      request.post(basePath).send(data).end(function (res) {
+        validation.checkErrorInvalidParams(res, done);
+      });
+    });
+
+
+
     it('must fix the tags to an empty array if not set', function (done) {
       var data = { streamId: testData.streams[1].id, type: testType };
 

@@ -32,5 +32,13 @@ module.exports = [
     password: 't3st-tHr3e',
     email: 'auditor@test.com',
     language: 'en'
+  },
+  // websockets dash user
+  {
+    id: 'u_4',
+    username: 'user-four',
+    password: 't3st-f0uR',
+    email: 'user-three@test.com',
+    language: 'en'
   }
 ];

@@ -3,7 +3,7 @@ var streams = require('./streams'),
 
 module.exports = [
   {
-    id: 'e_0',
+    id: getTestEventId(0),
     streamId: streams[0].children[0].id,
     time: timestamp.now('-27h'),
     duration: timestamp.duration('1h'),
@@ -30,7 +30,7 @@ module.exports = [
     modifiedBy: 'test'
   },
   {
-    id: 'e_1',
+    id: getTestEventId(1),
     streamId: streams[0].children[1].id,
     time: timestamp.now('-26h'),
     duration: timestamp.duration('0h59m'),
@@ -46,7 +46,7 @@ module.exports = [
     modifiedBy: 'test'
   },
   {
-    id: 'e_2',
+    id: getTestEventId(2),
     streamId: streams[0].id,
     time: timestamp.now('-25h'),
     type: 'picture/attached',
@@ -67,7 +67,7 @@ module.exports = [
     modifiedBy: 'test'
   },
   {
-    id: 'e_3',
+    id: getTestEventId(3),
     streamId: streams[0].children[1].id,
     time: timestamp.now('-22h'),
     type: 'activity/pryv',
@@ -79,7 +79,7 @@ module.exports = [
     modifiedBy: 'test'
   },
   {
-    id: 'e_4',
+    id: getTestEventId(4),
     streamId: streams[0].children[1].id,
     time: timestamp.now('-21h'),
     type: 'note/webclip',
@@ -92,7 +92,7 @@ module.exports = [
     modifiedBy: 'test'
   },
   {
-    id: 'e_5',
+    id: getTestEventId(5),
     streamId: streams[1].id,
     time: timestamp.now('-20h29m'),
     duration: timestamp.duration('1h'),
@@ -104,7 +104,7 @@ module.exports = [
     modifiedBy: 'test'
   },
   {
-    id: 'e_6',
+    id: getTestEventId(6),
     streamId: streams[2].id,
     time: timestamp.now('-10h'),
     duration: timestamp.duration('2h'),
@@ -116,7 +116,7 @@ module.exports = [
     modifiedBy: 'test'
   },
   {
-    id: 'e_7',
+    id: getTestEventId(7),
     streamId: streams[2].id,
     time: timestamp.now('-9h'),
     type: 'activity/pryv',
@@ -127,7 +127,7 @@ module.exports = [
     modifiedBy: 'test'
   },
   {
-    id: 'e_8',
+    id: getTestEventId(8),
     streamId: streams[2].children[0].id,
     time: timestamp.now('-8h'),
     duration: timestamp.duration('1h'),
@@ -140,7 +140,7 @@ module.exports = [
     modifiedBy: 'test'
   },
   {
-    id: 'e_9',
+    id: getTestEventId(9),
     streamId: streams[0].children[0].id,
     time: timestamp.now('-1h'),
     duration: null, // running
@@ -153,7 +153,7 @@ module.exports = [
     modifiedBy: 'test'
   },
   {
-    id: 'e_10',
+    id: getTestEventId(10),
     streamId: streams[0].children[0].id,
     time: timestamp.now('-30m'),
     type: 'temperature/c',
@@ -167,7 +167,7 @@ module.exports = [
     modifiedBy: 'test'
   },
   {
-    id: 'e_11',
+    id: getTestEventId(11),
     streamId: streams[1].children[0].id,
     time: timestamp.now('-15m'),
     duration: null, // running
@@ -180,7 +180,7 @@ module.exports = [
     modifiedBy: 'test'
   },
   {
-    id: 'e_12',
+    id: getTestEventId(12),
     streamId: streams[3].id,
     time: timestamp.now(),
     type: 'picture/attached',
@@ -201,15 +201,15 @@ module.exports = [
 
   // deletions
   {
-    id: 'e_13',
+    id: getTestEventId(13),
     deleted: timestamp.now('-5m')
   },
   {
-    id: 'e_14',
+    id: getTestEventId(14),
     deleted: timestamp.now('-1d')
   },
   {
-    id: 'e_15',
+    id: getTestEventId(15),
     deleted: timestamp.now('-2y') // to be cleaned up by Mongo TTL
   },
 
@@ -354,3 +354,12 @@ module.exports = [
     modifiedBy: 'test'
   }
 ];
+
+/**
+ * Creates a cuid-like id (required event id format).
+ * @param n
+ */
+function getTestEventId(n) {
+  n = n + '';
+  return 'cthisistesteventno' + (n.length >= 7 ? n : new Array(7 - n.length + 1).join('0') + n);
+}

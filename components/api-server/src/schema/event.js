@@ -17,6 +17,7 @@ exports = module.exports = function (action) {
   if (action === Action.STORE) { action = Action.READ; } // read items === stored items
 
   var schema = object({
+    'id': string(),
     'time': number(),
     'duration': {
       type: ['number', 'null']
@@ -37,14 +38,15 @@ exports = module.exports = function (action) {
 
   helpers.addTrackingProperties(schema, action);
 
-  // forbid 'id' on create
   if (action !== Action.CREATE) {
     schema.properties.id = string();
     schema.properties.headId = string();
   }
 
-  // only allow "files" (raw file data, internal stuff) on create
   if (action === Action.CREATE) {
+    // only allow cuid-like strings for custom ids
+    schema.properties.id.pattern = '^c[a-z0-9-]{24}$';
+    // only allow "files" (raw file data, internal stuff) on create;
     // no further checks as it's created internally
     schema.properties.files = object({});
   }

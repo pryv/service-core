@@ -103,6 +103,43 @@ describe('Socket.IO', function () {
     ioCons.con.on('error', function () { throw new Error('Connection failed.'); });
   });
 
+  it('must connect to a user with a dash in the username', function (done) {
+
+    var dashUser = testData.users[4],
+        dashRequest = null,
+        dashToken = null;
+
+    async.series([
+      function (stepDone) {
+        testData.resetAccesses(stepDone, dashUser);
+      },
+      function (stepDone) {
+        dashRequest = helpers.request(server.url);
+        dashRequest.login(dashUser, stepDone);
+      },
+      function (stepDone) {
+        dashToken = dashRequest.token;
+        stepDone();
+      },
+      function (stepDone) {
+        ioCons.con = connect('/' + dashUser.username, {auth: testData.accesses[2].token});
+
+        ioCons.con.on('error', function (e) {
+          should.not.exist(e);
+          stepDone(e);
+        });
+
+        ioCons.con.on('connect', function () {
+          should.exist(ioCons.con);
+          stepDone();
+        });
+      }
+    ], function (err) {
+      if (err) { return done(err); }
+      done();
+    });
+  });
+  
   it('must refuse connection if no valid access token is provided', function (done) {
     ioCons.con = connect(namespace);
 
@@ -118,7 +155,8 @@ describe('Socket.IO', function () {
 
   describe('calling API methods', function () {
 
-    it('must properly route method call messages for events and return the results, including meta',
+    it('must properly route method call messages for events and return the results, ' +
+      'including meta',
         function (done) {
       ioCons.con = connect(namespace, {auth: token});
       var params = {
