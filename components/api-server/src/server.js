@@ -23,6 +23,7 @@ var settings = config.load();
 dependencies.register({
   // settings
   authSettings: settings.auth,
+  blockchainSettings: settings.blockchain,
   eventFilesSettings: settings.eventFiles,
   eventTypesSettings: settings.eventTypes,
   httpSettings: settings.http,

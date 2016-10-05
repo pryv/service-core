@@ -23,7 +23,7 @@ var utils = require('components/utils'),
  * @param notifications
  */
 module.exports = function (api, userEventsStorage, userEventFilesStorage, usersStorage,
-                           authSettings, eventTypes, notifications) {
+                           authSettings, blockchainSettings, eventTypes, notifications) {
 
   // COMMON
 
@@ -178,6 +178,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     stopPreviousPeriodIfNeeded,
     createEvent,
     createAttachments,
+    computeBlockchainIfNeeded,
     notify);
 
   /**
@@ -254,6 +255,18 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
           next();
         });
     });
+  }
+
+  function computeBlockchainIfNeeded(context, params, result, next) {
+    if (! blockchainSettings.events) {
+      return next();
+    }
+    if (context.files) {
+      // not supporting createWithAttachment yet because storage transaction atomicity not ensured
+      return next();
+    }
+    result.blockchain = 'salut, changez moi';
+    next();
   }
 
   // UPDATE

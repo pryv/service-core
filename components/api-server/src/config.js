@@ -18,6 +18,13 @@ _.merge(config.schema, {
       default: 'https://pryv.github.io/event-types/flat.json'
     }
   },
+  blockchain: {
+    events: {
+      format: Boolean,
+      default: false,
+      doc: 'When true, all events methods compute and return a blockchain value.'
+    }
+  },
   auth: {
     // TODO: rename to "systemAccessKey" for consistency
     adminAccessKey: {
