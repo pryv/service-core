@@ -265,7 +265,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       // not supporting createWithAttachment yet because storage transaction atomicity not ensured
       return next();
     }
-    result.blockchain = 'salut, changez moi';
+    result.blockchain = 'salut, changez moi' + JSON.stringify(result.event).length;
     next();
   }
 
