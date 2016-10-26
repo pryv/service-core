@@ -215,7 +215,7 @@ module.exports = [
 
   // auditing
   {
-    id: 'e_16',
+    id: getTestEventId(16),
     streamId: streams[7].id,
     time: timestamp.now('+32h'),
     duration: timestamp.duration('1m'),
@@ -228,8 +228,8 @@ module.exports = [
     modifiedBy: 'test'
   },
   {
-    id: 'e_17',
-    headId: 'e_16',
+    id: getTestEventId(17),
+    headId: getTestEventId(16),
     streamId: streams[7].id,
     time: timestamp.now('+32h'),
     duration: timestamp.duration('1m'),
@@ -242,8 +242,8 @@ module.exports = [
     modifiedBy: 'test'
   },
   {
-    id: 'e_18',
-    headId: 'e_16',
+    id: getTestEventId(18),
+    headId: getTestEventId(16),
     streamId: streams[7].id,
     time: timestamp.now('+32h'),
     duration: timestamp.duration('1m'),
@@ -256,7 +256,7 @@ module.exports = [
     modifiedBy: 'test'
   },
   {
-    id: 'e_19',
+    id: getTestEventId(19),
     streamId: streams[7].id,
     time: timestamp.now('3h'),
     type: 'activity/pryv',
@@ -268,8 +268,8 @@ module.exports = [
     modifiedBy: 'test'
   },
   {
-    id: 'e_20',
-    headId: 'e_19',
+    id: getTestEventId(20),
+    headId: getTestEventId(19),
     streamId: streams[7].id,
     time: timestamp.now('2h'),
     type: 'activity/pryv',
@@ -281,8 +281,8 @@ module.exports = [
     modifiedBy: 'test'
   },
   {
-    id: 'e_21',
-    headId: 'e_19',
+    id: getTestEventId(21),
+    headId: getTestEventId(19),
     streamId: streams[7].id,
     time: timestamp.now('1h'),
     type: 'activity/pryv',
@@ -294,7 +294,7 @@ module.exports = [
     modifiedBy: 'test'
   },
   {
-    id: 'e_22',
+    id: getTestEventId(22),
     streamId: streams[7].id,
     time: timestamp.now('+43h'),
     type: 'activity/pryv',
@@ -305,7 +305,7 @@ module.exports = [
     modifiedBy: 'test'
   },
   {
-    id: 'e_23',
+    id: getTestEventId(23),
     streamId: streams[7].id,
     time: timestamp.now('-5h'),
     duration: null, // running
@@ -318,7 +318,7 @@ module.exports = [
     modifiedBy: 'test'
   },
   {
-    id: 'e_24',
+    id: getTestEventId(24),
     streamId: streams[8].id,
     time: timestamp.now('-6h'),
     duration: null, // running
@@ -331,7 +331,7 @@ module.exports = [
     modifiedBy: 'test'
   },
   {
-    id: 'e_25',
+    id: getTestEventId(25),
     streamId: streams[7].children[0].id,
     time: timestamp.now('+41h'),
     type: 'activity/pryv',
@@ -342,8 +342,8 @@ module.exports = [
     modifiedBy: 'test'
   },
   {
-    id: 'e_26',
-    headId: 'e_25',
+    id: getTestEventId(26),
+    headId: getTestEventId(25),
     streamId: streams[7].children[0].id,
     time: timestamp.now('+41h'),
     type: 'activity/pryv',
