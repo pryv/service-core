@@ -14,6 +14,12 @@ module.exports = function registerDelete(program, logging, usersStorage, accesse
   function deleteAccount(username) {
     var user;
     async.series([
+      function checkConfig (stepDone) {
+        if(!eventFilesStorage.settings.attachmentsDirPath.includes('/var/pryv/data/api-server-files/attachments')) {
+          return stepDone('Attachments path is not as expected');
+        }
+        stepDone();
+      },
       function (stepDone) {
         usersStorage.findOne({username: username}, {}, function (err, u) {
           if (err) {
