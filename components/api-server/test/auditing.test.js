@@ -823,4 +823,23 @@ describe('Auditing', function () {
     });
   });
 
+  describe.skip('Nightly task', function () {
+
+    before(testData.resetEvents);
+
+    it('must delete history data from the storage', function (done) {
+      async.series([
+        function fetchHistoryEventsFromStorage(stepDone) {
+          stepDone();
+        },
+        function RunNightlyScript(stepDone) {
+          stepDone();
+        },
+        function verifyEventsEraseFromStorage(stepDone) {
+          stepDone();
+        }
+      ], done);
+    });
+  });
+
 });

@@ -361,6 +361,7 @@ describe('events', function () {
 
     it('must not keep event deletions past a certain time ' +
         '(cannot test because cannot force-run Mongo\'s TTL cleanup task)'
+      //TODO do this test when cleanup is delegated to nightlyTask
     /*, function (done) {
       var params = {
         state: 'all',

@@ -174,6 +174,15 @@ describe('Versions', function () {
     });
   });
 
+  it('must handle data migration from v0.7.0 to v0.8.0', function (done) {
+    /*var versions = getVersions('0.8.0'),
+        userId = 'u_0',
+        userStorage = helpers.dependencies.storage.users;
+    */
+
+    done();
+  });
+
   function getVersions(/* migration1Id, migration2Id, ... */) {
     var pickArgs = [].slice.call(arguments);
     pickArgs.unshift(migrations);
