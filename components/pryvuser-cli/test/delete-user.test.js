@@ -91,4 +91,15 @@ describe('"delete user" script', function () {
     ], done);
   });
 
+  it('should stop if the attachments path is not as expected', function (done) {
+    async.series([
+      function deleteUser(stepDone) {
+        nixt().run('pryvuser delete')
+            .code(1)
+            .stdout(/path is not as expected/)
+            .end(stepDone);
+      }
+    ], done);
+  });
+
 });
