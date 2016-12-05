@@ -8,6 +8,7 @@ var utils = require('components/utils'),
     timestamp = require('unix-timestamp'),
     treeUtils = utils.treeUtils,
     validation = require('../schema/validation'),
+    blockchain = require('components/blockchain'),
     _ = require('lodash');
 
 /**
@@ -261,12 +262,10 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     if (! blockchainSettings.events) {
       return next();
     }
-    if (context.files) {
-      // not supporting createWithAttachment yet because storage transaction atomicity not ensured
-      return next();
-    }
-    result.blockchain = 'salut, changez moi' + JSON.stringify(result.event).length;
-    next();
+    blockchain.event.add(context.username, result.event, function (err, fingerprint) {
+        result.blockchain = fingerprint;
+        next();
+      });
   }
 
   // UPDATE
