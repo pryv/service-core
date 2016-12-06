@@ -141,9 +141,20 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       if (err) {
         return next(errors.unexpectedError(err));
       }
-
       events.forEach(setFileReadToken.bind(null, context.access));
-      result.events = events;
+      var buf = '{ "events": [';
+      var first = true;
+      events.forEach(function (e) {
+        if (first) {
+          buf += JSON.stringify(e);
+          first = false;
+        } else {
+          buf += ',' + JSON.stringify(e);
+        }
+
+      });
+      buf += ']';
+      result.push(buf, true);
       next();
     });
   }
@@ -160,8 +171,22 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     userEventsStorage.findDeletions(context.user, params.modifiedSince, options,
         function (err, deletions) {
       if (err) { return next(errors.unexpectedError(err)); }
-
-      result.eventDeletions = deletions;
+          var buf = '';
+          if (result.buffer !== '') {
+            buf = ',';
+          }
+          buf += '"eventDeletions": [';
+          var first = true;
+          deletions.forEach(function (d) {
+            if (first) {
+              buf += JSON.stringify(d);
+              first = false;
+            } else {
+              buf += ',' + JSON.stringify(d);
+            }
+          });
+          buf += ']';
+          result.push(buf, true);
       next();
     });
   }

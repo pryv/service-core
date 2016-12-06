@@ -55,7 +55,7 @@ describe('events', function () {
     ], done);
   });
 
-  describe('GET /', function () {
+  describe('GETevents /', function () {
 
     before(resetEvents);
 
