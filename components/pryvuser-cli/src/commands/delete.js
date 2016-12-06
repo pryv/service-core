@@ -34,8 +34,9 @@ module.exports = function registerDelete(program, logging, usersStorage, accesse
         if (user.storageUsed.attachedFiles > 0) {
           fs.readdir(eventFilesStorage.settings.attachmentsDirPath, function (err, files) {
             if (err || !files || files.length <= 0) {
-              stepDone('Provided attachments path is not as expected');
+              return stepDone('Provided attachments path is not as expected');
             }
+            return stepDone();
           });
         }
         stepDone();
