@@ -6,7 +6,8 @@ var async = require('async'),
     nixt = require('nixt'),
     should = require('should'),
     storage = helpers.dependencies.storage,
-    _ = require('lodash');
+    _ = require('lodash'),
+  path = require('path');
 
 describe('"delete user" script', function () {
 
@@ -99,7 +100,7 @@ describe('"delete user" script', function () {
       helpers.data.resetEvents,
       helpers.data.resetAttachments,
       function deleteUser(stepDone) {
-        nixt().run('pryvuser delete ' + user.username + ' --config /config/invalidPaths.json')
+        nixt().run('pryvuser delete ' + user.username + ' --config ' + path.resolve(__dirname + '/config/invalidPaths.json'))
           .on(/Confirm username/).respond(user.username)
           .code(1)
           .stdout(/path is not as expected/)
