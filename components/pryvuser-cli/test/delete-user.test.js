@@ -91,4 +91,19 @@ describe('"delete user" script', function () {
     ], done);
   });
 
+  it('should stop if the attachments path is not as expected', function (done) {
+    var user = helpers.data.users[0];
+
+    async.series([
+      helpers.data.resetUsers,
+      helpers.data.resetEvents,
+      helpers.data.resetAttachments,
+      function deleteUser(stepDone) {
+        nixt().run('pryvuser delete ' + user.username + ' --config /config/invalidPaths.json')
+          .code(1)
+          .stdout(/path is not as expected/)
+          .end(stepDone);
+      }
+    ], done);
+  });
 });
