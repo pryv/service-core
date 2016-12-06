@@ -28,6 +28,14 @@ module.exports = function registerDelete(program, logging, usersStorage, accesse
           stepDone();
         });
       },
+      function confirm(stepDone) {
+        prompt('Confirm username: ')(function (err, confirmation) {
+          if (confirmation !== username) {
+            return stepDone('Username confirmation did not match');
+          }
+          stepDone();
+        });
+      },
       function checkAttachmentsPath(stepDone) {
         // If user's account contains attachments then the provided attachments path for this user
         // should exist and should not be empty
@@ -38,16 +46,9 @@ module.exports = function registerDelete(program, logging, usersStorage, accesse
             }
             return stepDone();
           });
-        }
-        stepDone();
-      },
-      function confirm(stepDone) {
-        prompt('Confirm username: ')(function (err, confirmation) {
-          if (confirmation !== username) {
-            return stepDone('Username confirmation did not match');
-          }
+        } else {
           stepDone();
-        });
+        }
       },
       function (stepDone) {
         usersStorage.remove({id: user.id}, function (err) {

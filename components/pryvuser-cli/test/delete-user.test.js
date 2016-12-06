@@ -100,6 +100,7 @@ describe('"delete user" script', function () {
       helpers.data.resetAttachments,
       function deleteUser(stepDone) {
         nixt().run('pryvuser delete ' + user.username + ' --config /config/invalidPaths.json')
+          .on(/Confirm username/).respond(user.username)
           .code(1)
           .stdout(/path is not as expected/)
           .end(stepDone);
