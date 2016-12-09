@@ -1,10 +1,10 @@
 /*global describe, it, before, after */
 
-var helpers = require('./helpers'),
+var helpers = require('../../api-server/test/helpers/'),
   server = helpers.dependencies.instanceManager,
   async = require('async'),
   validation = helpers.validation,
-  eventsMethodsSchema = require('../src/schema/eventsMethods'),
+  eventsMethodsSchema = require('../../api-server/src/schema/eventsMethods'),
   should = require('should'),
   _ = require('lodash'),
   //storage = helpers.dependencies.storage.user.events,

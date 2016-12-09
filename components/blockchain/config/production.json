@@ -1,0 +1,9 @@
+{
+  "logs": {
+    "console": {
+      "active": true,
+      "level": "info",
+      "colorize": false
+    }
+  }
+}
