@@ -73,6 +73,14 @@ config.schema = {
       default: 'pryv-node'
     }
   },
+  blockchainServer: {
+    db: { 
+      path: {
+        format: String,
+        default: path.join(__dirname, '../../../../service-core-files/blockchains')
+      }
+    }
+  },
   eventFiles: {
     attachmentsDirPath: {
       format: String,
