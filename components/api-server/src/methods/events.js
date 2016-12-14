@@ -152,8 +152,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         .pipe(new SetFileReadTokenStream(
           {
             access: context.access,
-            authSettings: authSettings,
-            utils: utils
+            authSettings: authSettings
           }))
         .pipe(new StringifyStream({prefix: '{ "events": ['}))
         .pipe(params.res);

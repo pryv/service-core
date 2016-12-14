@@ -7,18 +7,16 @@ var Transform = require('stream').Transform,
  * @param options
  * @constructor
  */
-function StringifyStream(options) {
+function StringifyStream(params) {
   Transform.call(this, {objectMode: true});
 
-  this.prefix = options.prefix;
+  this.prefix = params.prefix;
   this.isStart = true;
 }
 
 inherits(StringifyStream, Transform);
 
 StringifyStream.prototype._transform = function (event, encoding, callback) {
-  //array = [].concat(array);
-  console.log('StringifyStream: got', event);
   var buf = '';
   if (this.prefix && this.isStart) {
     buf += this.prefix;

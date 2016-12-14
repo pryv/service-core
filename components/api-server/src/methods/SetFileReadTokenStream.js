@@ -1,5 +1,6 @@
 var Transform = require('stream').Transform,
-    inherits = require('util').inherits;
+    inherits = require('util').inherits,
+    utils = require('components/utils');
 
 /**
  * Returns a stream that does setFileReadToken()
@@ -11,19 +12,19 @@ function SetFileReadTokenStream(params) {
 
   this.access = params.access;
   this.authSettings = params.authSettings;
-  this.utils = params.utils;
 }
 
 inherits(SetFileReadTokenStream, Transform);
 
-SetFileReadTokenStream.prototype._transform = function _transform(event, encoding, callback) {
-  console.log('SetFileReadTokenStream: got data', event);
+SetFileReadTokenStream.prototype._transform = function (event, encoding, callback) {
   if (! event.attachments) {
     this.push(event);
   } else {
+    // TODO replace this
+    var that = this;
     event.attachments.forEach(function (att) {
-      att.readToken = this.utils.encryption.fileReadToken(att.id, this.access,
-        this.authSettings.filesReadTokenSecret);
+      att.readToken = utils.encryption.fileReadToken(att.id, that.access,
+        that.authSettings.filesReadTokenSecret);
     });
     this.push(event);
   }

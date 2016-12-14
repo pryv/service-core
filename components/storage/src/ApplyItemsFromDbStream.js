@@ -11,12 +11,10 @@ function ApplyItemsFromDbStream() {
   this.trans = converters.getRenamePropertyFn('_id', 'id');
 }
 
-ApplyItemsFromDbStream.prototype._transform = function _transform(obj, encoding, callback) {
+ApplyItemsFromDbStream.prototype._transform = function (event, encoding, callback) {
   try {
-    console.log('itemsFromDBStream, got',obj);
-    obj = this.trans(obj);
-    console.log('itemsFromDBStream, outputing',obj);
-    this.push(obj);
+    event = this.trans(event);
+    this.push(event);
     callback();
   } catch(err) {
     this.push();
