@@ -78,6 +78,7 @@ describe('events', function () {
         storage.insertMany.bind(storage, user, additionalEvents),
         function getDefault(stepDone) {
           request.get(basePath).end(function (res) {
+            console.log('XXXXXX test received res.body:', res.body);
             var allEvents = additionalEvents.concat(validation.removeDeletions(testData.events))
                 .filter(function (e) {
                   return ! e.trashed && ! _.some(testData.streams, containsTrashedEventStream);

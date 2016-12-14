@@ -25,7 +25,8 @@ module.exports = function (expressApp, api, attachmentsAccessMiddleware, userAcc
   var attachmentsStatic = express.static(eventFilesSettings.attachmentsDirPath);
 
   expressApp.get(Paths.Events, function (req, res, next) {
-    var params = _.extend({}, req.query);
+    // TODO remove it
+    var params = _.extend({res: res}, req.query);
     tryCoerceStringValues(params, {
       fromTime: 'number',
       toTime: 'number',
@@ -67,7 +68,7 @@ module.exports = function (expressApp, api, attachmentsAccessMiddleware, userAcc
           return rBuffer.next(err instanceof require('components/errors').APIError ?
             err : errors.unexpectedError(err));
         }
-        rBuffer.end();
+        //rBuffer.end();
       });
     }
 

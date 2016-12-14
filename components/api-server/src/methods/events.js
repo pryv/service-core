@@ -8,7 +8,11 @@ var utils = require('components/utils'),
     timestamp = require('unix-timestamp'),
     treeUtils = utils.treeUtils,
     validation = require('../schema/validation'),
-    _ = require('lodash');
+    _ = require('lodash'),
+    SetFileReadTokenStream = require('./SetFileReadTokenStream'),
+    StringifyStream = require('./StringifyStream');
+
+
 
 /**
  * Events API methods implementations.
@@ -137,29 +141,31 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       limit: params.limit
     };
 
-    userEventsStorage.find(context.user, query, options, function (err, events) {
+
+
+    userEventsStorage.findStreamed(context.user, query, options, function (err, eventsStream) {
       if (err) {
         return next(errors.unexpectedError(err));
       }
-      events.forEach(setFileReadToken.bind(null, context.access));
-      var buf = '{ "events": [';
-      var first = true;
-      events.forEach(function (e) {
-        if (first) {
-          buf += JSON.stringify(e);
-          first = false;
-        } else {
-          buf += ',' + JSON.stringify(e);
-        }
 
-      });
-      buf += ']';
-      result.push(buf, true);
+      eventsStream
+        .pipe(new SetFileReadTokenStream(
+          {
+            access: context.access,
+            authSettings: authSettings,
+            utils: utils
+          }))
+        .pipe(new StringifyStream({prefix: '{ "events": ['}))
+        .pipe(params.res);
       next();
     });
   }
 
   function includeDeletionsIfRequested(context, params, result, next) {
+
+    // TODO remove this
+    params.includeDeletions = false;
+
     if (! params.modifiedSince || ! params.includeDeletions) { return next(); }
 
     var options = {
