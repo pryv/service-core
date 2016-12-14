@@ -4,19 +4,12 @@ var Transform = require('stream').Transform,
 
 module.exports = ApplyItemsFromDbStream;
 
-function ApplyItemsFromDbStream(options) {
-  if ( ! (this instanceof ApplyItemsFromDbStream)) {
-    return new ApplyItemsFromDbStream(options);
-  }
-  if (! options) {
-    options = {};
-  }
-  this.trans = converters.getRenamePropertyFn('id', '_id');
-  options.objectMode = true;
-  Transform.call(this, options);
-}
-
 inherits(ApplyItemsFromDbStream, Transform);
+
+function ApplyItemsFromDbStream() {
+  Transform.call(this, {objectMode: true});
+  this.trans = converters.getRenamePropertyFn('_id', 'id');
+}
 
 ApplyItemsFromDbStream.prototype._transform = function _transform(obj, encoding, callback) {
   try {

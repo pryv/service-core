@@ -6,15 +6,12 @@ var Transform = require('stream').Transform,
  *
  * @returns {SetFileReadTokenStream}
  */
-function SetFileReadTokenStream(options) {
-  if (! options) {
-    options = {};
-  }
-  options.objectMode = true;
-  this.access = options.access;
-  this.authSettings = options.authSettings;
-  this.utils = options.utils;
-  Transform.call(this, options);
+function SetFileReadTokenStream(params) {
+  Transform.call(this, {objectMode: true});
+
+  this.access = params.access;
+  this.authSettings = params.authSettings;
+  this.utils = params.utils;
 }
 
 inherits(SetFileReadTokenStream, Transform);
