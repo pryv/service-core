@@ -14,12 +14,14 @@ sock.connect(settings.blockchainServer.messages.port, settings.blockchainServer.
   function (err) {
     console.log('Messages connected', err);
     socket = sock;
-  });
-  sock.on('connect', function () {
 
-});
+    sock.on('connect', function () {
+      // TODO
+    });
+  }
+);
 
 
 module.exports = {
-  event: require('./event')(socket);
+  event: require('./event')(socket)
 };

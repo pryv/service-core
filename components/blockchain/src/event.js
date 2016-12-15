@@ -14,9 +14,10 @@ module.exports.add = function (username, event, callback) {
       payload: bcUtils.hash('123456712621')
     },
     function (res) {
-      should.exists(res.fingerPrint);
-      res.fingerPrint.length.should.equal(64);
-      done();
+      //res.fingerPrint.length.should.equal(64);
+
+        // Todo finish
+
     });
   callback(null, 'salut, changez moi' + JSON.stringify(event).length);
 };
