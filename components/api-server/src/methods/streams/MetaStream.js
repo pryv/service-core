@@ -11,14 +11,15 @@ function MetaStream() {
 }
 
 MetaStream.prototype._transform = function (event, encoding, callback) {
-  console.log('MetaStream: pushing', event);
+  console.log(event);
   this.push(event);
   callback();
 };
 
 MetaStream.prototype._flush = function (callback) {
-  var end = ',' + JSON.stringify(setCommonMeta({})) + '}';
-  console.log('MetaStream: pushing', end);
+  var end = ',"meta": ' + JSON.stringify(setCommonMeta({}).meta) + '}';
+  //console.log('MetaStream: pushing', end);
+  console.log(end);
   this.push(end);
   callback();
 };
