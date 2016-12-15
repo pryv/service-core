@@ -1,4 +1,4 @@
-//var setCommonMeta = require('../methods/helpers/setCommonMeta');
+var setCommonMeta = require('../methods/helpers/setCommonMeta');
 
 /**
  * Helper function for handling method responses.
@@ -9,12 +9,17 @@
  *                                      and returning a number
  * @returns {Function}
  */
-module.exports = function (res, next) { //, successCode) {
-  return function (err) { //, result) {
+module.exports = function (res, next, successCode) {
+  return function (err, result) {
     if (err) {
       return next(err);
     }
-    //res.json(setCommonMeta(result), successCode);
-    //res.json(setCommonMeta({}) + '}', successCode);
+    if (result.readableStream) {
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Transfer-Encoding', 'chunked');
+      result.readableStream.pipe(res);
+    } else {
+      res.json(setCommonMeta(result), successCode);
+    }
   };
 };

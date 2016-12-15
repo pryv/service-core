@@ -147,15 +147,14 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         return next(errors.unexpectedError(err));
       }
 
-      eventsStream
+      result.readableStream = eventsStream
         .pipe(new SetFileReadTokenStream(
           {
             access: context.access,
             authSettings: authSettings
           }))
         .pipe(new StringifyStream({prefix: '{ "events": ['}))
-        .pipe(new MetaStream())
-        .pipe(params.res);
+        .pipe(new MetaStream());
       next();
     });
   }
