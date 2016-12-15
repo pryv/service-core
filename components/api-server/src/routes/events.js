@@ -7,7 +7,6 @@ var methodCallback = require('./methodCallback'),
     tryCoerceStringValues = require('../schema/validation').tryCoerceStringValues,
     _ = require('lodash');
 
-
 /**
  * Events route handling.
  *
@@ -24,7 +23,6 @@ module.exports = function (expressApp, api, attachmentsAccessMiddleware, userAcc
   var attachmentsStatic = express.static(eventFilesSettings.attachmentsDirPath);
 
   expressApp.get(Paths.Events, function (req, res, next) {
-    // TODO remove it
     var params = _.extend({}, req.query);
     tryCoerceStringValues(params, {
       fromTime: 'number',
