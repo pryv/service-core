@@ -4,7 +4,7 @@ var Transform = require('stream').Transform,
 /**
  * Stream that sends the an array of data with a prefix
  *
- * @param options
+ * @param params
  * @constructor
  */
 function StringifyStream(params) {
