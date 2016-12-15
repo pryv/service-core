@@ -29,7 +29,6 @@ StringifyStream.prototype._transform = function (event, encoding, callback) {
     buf += ',' + JSON.stringify(event);
   }
 
-  console.log('StringifyStream: pushing', buf);
   this.push(buf);
   callback();
 };

@@ -9,10 +9,9 @@ var utils = require('components/utils'),
     treeUtils = utils.treeUtils,
     validation = require('../schema/validation'),
     _ = require('lodash'),
-    SetFileReadTokenStream = require('./SetFileReadTokenStream'),
-    StringifyStream = require('./StringifyStream');
-
-
+    SetFileReadTokenStream = require('./streams/SetFileReadTokenStream'),
+    StringifyStream = require('./streams/StringifyStream'),
+    MetaStream = require('./streams/MetaStream');
 
 /**
  * Events API methods implementations.
@@ -155,6 +154,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
             authSettings: authSettings
           }))
         .pipe(new StringifyStream({prefix: '{ "events": ['}))
+        .pipe(new MetaStream())
         .pipe(params.res);
       next();
     });
