@@ -140,8 +140,6 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       limit: params.limit
     };
 
-
-
     userEventsStorage.findStreamed(context.user, query, options, function (err, eventsStream) {
       if (err) {
         return next(errors.unexpectedError(err));

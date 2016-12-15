@@ -35,49 +35,8 @@ module.exports = function (expressApp, api, attachmentsAccessMiddleware, userAcc
       modifiedSince: 'number',
       includeDeletions: 'boolean'
     });
-    /*
-    api.call('events.get', req.context, params, new ResultBuffer({
-      res: res,
-      next: next,
-      successCode: 200
-    }));
-     */
+
      api.call('events.get', req.context, params, methodCallback(res, next, 200));
-
-
-    /*
-    function tempApiCall (id, context, params, rBuffer) {
-      var fns = api.map[id];
-      if (!fns) {
-        return rBuffer.next(errors.invalidMethod(id));
-      }
-
-      if (context) {
-        // add called method id to context for instrumentation
-        context.calledMethodId = id;
-      }
-
-      require('async').forEachSeries(fns, function (currentFn, next2) {
-        try {
-          currentFn(context, params, rBuffer, next2);
-        } catch (err) {
-          next2(err);
-        }
-      }, function (err) {
-        if (err) {
-          return rBuffer.next(err instanceof require('components/errors').APIError ?
-            err : errors.unexpectedError(err));
-        }
-        //rBuffer.end();
-      });
-    }
-
-    tempApiCall('events.get', req.context, params, new ResultBuffer({
-      res: res,
-      next: next,
-      successCode: 200
-    }));
-     */
   });
 
   /**

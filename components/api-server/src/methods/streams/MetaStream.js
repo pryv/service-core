@@ -18,7 +18,6 @@ MetaStream.prototype._transform = function (event, encoding, callback) {
 
 MetaStream.prototype._flush = function (callback) {
   var end = ',"meta": ' + JSON.stringify(setCommonMeta({}).meta) + '}';
-  //console.log('MetaStream: pushing', end);
   console.log(end);
   this.push(end);
   callback();
