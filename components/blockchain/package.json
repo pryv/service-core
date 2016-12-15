@@ -11,6 +11,9 @@
     "test-profile": "npm run _test -- --profile=true --logs:console:active=false && tick-processor > profiling-output.txt && open profiling-output.txt",
     "_test": "NODE_ENV=test mocha --timeout 10000 --reporter=dot test/*.js"
   },
+  "dependencies": {
+    "axon": "2.0.x"
+  },
   "devDependencies": {
     "mocha": "^2.1.0"
   }
