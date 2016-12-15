@@ -5,8 +5,7 @@ var methodCallback = require('./methodCallback'),
     filesUploadSupport = require('components/middleware').filesUploadSupport,
     Paths = require('./Paths'),
     tryCoerceStringValues = require('../schema/validation').tryCoerceStringValues,
-    _ = require('lodash'),
-    ResultBuffer = require('../methods/resultBuffer');
+    _ = require('lodash');
 
 
 /**
@@ -42,10 +41,11 @@ module.exports = function (expressApp, api, attachmentsAccessMiddleware, userAcc
       next: next,
       successCode: 200
     }));
+     */
      api.call('events.get', req.context, params, methodCallback(res, next, 200));
-    */
 
 
+    /*
     function tempApiCall (id, context, params, rBuffer) {
       var fns = api.map[id];
       if (!fns) {
@@ -77,6 +77,7 @@ module.exports = function (expressApp, api, attachmentsAccessMiddleware, userAcc
       next: next,
       successCode: 200
     }));
+     */
   });
 
   /**
