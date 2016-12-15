@@ -14,12 +14,8 @@ module.exports = function (res, next, successCode) {
     if (err) {
       return next(err);
     }
-    if (result.readableStream) {
-      res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Transfer-Encoding', 'chunked');
-      result.readableStream.pipe(res);
-    } else {
-      res.json(setCommonMeta(result), successCode);
-    }
+
+    result.commit(res, successCode);
+
   };
 };

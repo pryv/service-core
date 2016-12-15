@@ -10,8 +10,7 @@ var utils = require('components/utils'),
     validation = require('../schema/validation'),
     _ = require('lodash'),
     SetFileReadTokenStream = require('./streams/SetFileReadTokenStream'),
-    StringifyStream = require('./streams/StringifyStream'),
-    MetaStream = require('./streams/MetaStream');
+    StringifyStream = require('./streams/StringifyStream');
 
 /**
  * Events API methods implementations.
@@ -145,14 +144,14 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         return next(errors.unexpectedError(err));
       }
 
-      result.readableStream = eventsStream
+      result.pipeEntryStream('events',
+        eventsStream
         .pipe(new SetFileReadTokenStream(
           {
-            access: context.access,
-            authSettings: authSettings
-          }))
-        .pipe(new StringifyStream({prefix: '{ "events": ['}))
-        .pipe(new MetaStream());
+          access: context.access,
+          authSettings: authSettings
+        }))
+        .pipe(new StringifyStream()));
       next();
     });
   }

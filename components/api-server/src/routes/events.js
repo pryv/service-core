@@ -23,7 +23,7 @@ module.exports = function (expressApp, api, attachmentsAccessMiddleware, userAcc
   var attachmentsStatic = express.static(eventFilesSettings.attachmentsDirPath);
 
   expressApp.get(Paths.Events, function (req, res, next) {
-    var params = _.extend({}, req.query);
+    var params = _.extend({res: res}, req.query);
     tryCoerceStringValues(params, {
       fromTime: 'number',
       toTime: 'number',
