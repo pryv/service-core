@@ -192,7 +192,6 @@ Database.prototype.findStreamed = function (collectionInfo, query, options, call
       cursor = cursor.limit(options.limit);
     }
     callback(null, cursor.stream());
-    //cursor.toArray(callback);
   });
 };
 

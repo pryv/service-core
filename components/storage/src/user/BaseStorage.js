@@ -94,15 +94,6 @@ BaseStorage.prototype.findStreamed = function (user, query, options, callback) {
   this.database.findStreamed(this.getCollectionInfo(user), this.applyQueryToDB(query),
     this.applyOptionsToDB(options), function (err, dbStreamedItems) {
       if (err) { return callback(err); }
-      /*var that = this;
-      dbStreamedItems.on('data', function (dbItems) {
-        console.log('BaseStorage: got data', dbItems);
-        callback(null, that.applyItemsFromDB(dbItems));
-        //callback(null, this.applyItemsFromDB(dbItems));
-      });
-      dbStreamedItems.on('error', function (e) {
-        console.log('BaseStorage Error:', e);
-      });*/
       callback(null, dbStreamedItems.pipe(new ApplyItemsFromDbStream()));
     }.bind(this));
 };

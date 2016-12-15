@@ -25,7 +25,7 @@ module.exports = function (expressApp, api, attachmentsAccessMiddleware, userAcc
 
   expressApp.get(Paths.Events, function (req, res, next) {
     // TODO remove it
-    var params = _.extend({res: res}, req.query);
+    var params = _.extend({}, req.query);
     tryCoerceStringValues(params, {
       fromTime: 'number',
       toTime: 'number',
@@ -35,8 +35,7 @@ module.exports = function (expressApp, api, attachmentsAccessMiddleware, userAcc
       modifiedSince: 'number',
       includeDeletions: 'boolean'
     });
-
-     api.call('events.get', req.context, params, methodCallback(res, next, 200));
+    api.call('events.get', req.context, params, methodCallback(res, next, 200));
   });
 
   /**
