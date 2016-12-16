@@ -11,14 +11,13 @@ function MetaStream() {
 }
 
 MetaStream.prototype._transform = function (event, encoding, callback) {
-  console.log(event);
+  //console.log(event);
   this.push(event);
   callback();
 };
 
 MetaStream.prototype._flush = function (callback) {
-  var end = ',"meta": ' + JSON.stringify(setCommonMeta({}).meta) + '}';
-  console.log(end);
+  var end = ',"meta": ' + JSON.stringify(setCommonMeta({}).meta);
   this.push(end);
   callback();
 };

@@ -33,15 +33,12 @@ Result.prototype.pipeEntryStream = function (key, stream) {
 };
 
 Result.prototype.commit = function (res, successCode) {
-  res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Transfer-Encoding', 'chunked');
-  //this._private.res.write('{');
+  //res.setHeader('Content-Type', 'application/json');
   if (this._private.streamResult) {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Transfer-Encoding', 'chunked');
 
     this._private.streamResult
-      .pipe(new MetaStream())
       .pipe(res);
   } else {
     delete this._private;
@@ -94,15 +91,19 @@ ResultStream.prototype.pipeEntryStream = function(key, readableStream) {
 
 ResultStream.prototype._transform = function (data, encoding, callback) {
   if (this.NewPipe) {
-    if (! this.start) { this.push(','); }
-    this.push('"' + this.NewPipe + '"');
+    this.push(this.isStart ? '{' : ',');
+    this.push('"' + this.NewPipe + '": ');
     this.NewPipe = false;
   }
-  this.start = false;
+  this.isStart = false;
   this.push(data);
   callback();
 };
 
 ResultStream.prototype._flush = function (callback) {
+  if (! this.start) {
+    this.push(',');
+  }
+  this.push('"meta": ' + JSON.stringify(setCommonMeta({}).meta) + '}');
   callback();
-}
+};

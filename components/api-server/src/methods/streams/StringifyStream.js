@@ -15,19 +15,14 @@ function StringifyStream() {
 inherits(StringifyStream, Transform);
 
 StringifyStream.prototype._transform = function (event, encoding, callback) {
-  var buf = '[';
-  if (this.prefix && this.isStart) {
-    buf += this.prefix;
-  }
+
 
   if (this.isStart) {
-    buf += JSON.stringify(event);
+    this.push('[' + JSON.stringify(event));
     this.isStart = false;
   } else {
-    buf += ',' + JSON.stringify(event);
+    this.push(',' + JSON.stringify(event));
   }
-
-  this.push(buf);
   callback();
 };
 
