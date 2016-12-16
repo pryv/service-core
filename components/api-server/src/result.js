@@ -1,5 +1,4 @@
-var MetaStream = require('./methods/streams/MetaStream'),
-  setCommonMeta = require('./methods/helpers/setCommonMeta'),
+var setCommonMeta = require('./methods/helpers/setCommonMeta'),
   MultiStream = require('multistream');
 
 
