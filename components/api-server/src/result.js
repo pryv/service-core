@@ -33,6 +33,7 @@ Result.prototype.commit = function (res, successCode) {
   if (this._private.combinedStreams) {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Transfer-Encoding', 'chunked');
+    res.statusCode = successCode;
 
     if (this._private.combinedStreams.length === 1) {
       this._private.combinedStreams[0].pipe(new ResultStream(this)).pipe(res);
@@ -42,7 +43,7 @@ Result.prototype.commit = function (res, successCode) {
 
   } else {
     delete this._private;
-    res.json(setCommonMeta(this), successCode);
+    res.json(this, successCode);
   }
 };
 
@@ -56,11 +57,6 @@ function ResultStream(result) {
 }
 
 inherits(ResultStream, Transform);
-
-
-ResultStream.prototype.pipeEntryStream = function (readableStream) {
-  readableStream.pipe(this);
-};
 
 ResultStream.prototype._transform = function (data, encoding, callback) {
   if (this.isStart) {

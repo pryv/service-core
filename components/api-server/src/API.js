@@ -1,7 +1,7 @@
 var async = require('async'),
     APIError = require('components/errors').APIError,
     errors = require('components/errors').factory,
-    Result = require('./Result');
+    Result = require('./Result'),
     _ = require('lodash');
 
 module.exports = API;
@@ -138,7 +138,7 @@ API.prototype.call = function (id, context, params, callback) {
   }
 
 
-  var result = new Result(params.res);
+  var result = new Result();
   async.forEachSeries(fns, function (currentFn, next) {
     try {
       currentFn(context, params, result, next);
