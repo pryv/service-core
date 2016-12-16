@@ -107,6 +107,15 @@ BaseStorage.prototype.findDeletions = function (user, deletedSince, options, cal
   }.bind(this));
 };
 
+BaseStorage.prototype.findDeletionsStreamed = function (user, deletedSince, options, callback) {
+  var query = {deleted: {$gt: timestamp.toDate(deletedSince)}};
+  this.database.findStreamed(this.getCollectionInfo(user), query, this.applyOptionsToDB(options),
+    function (err, dbStreamedItems) {
+      if (err) { return callback(err); }
+      callback(null, dbStreamedItems.pipe(new ApplyItemsFromDbStream()));
+    }.bind(this));
+};
+
 BaseStorage.prototype.findOne = function (user, query, options, callback) {
   query.deleted = null;
   this.database.findOne(this.getCollectionInfo(user), this.applyQueryToDB(query),

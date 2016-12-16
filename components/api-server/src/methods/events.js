@@ -159,37 +159,27 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   function includeDeletionsIfRequested(context, params, result, next) {
 
     // TODO remove this
-    params.includeDeletions = false;
+    //params.includeDeletions = false;
 
-    if (! params.modifiedSince || ! params.includeDeletions) { return next(); }
+    if (!params.modifiedSince || !params.includeDeletions) {
+      return next();
+    }
 
     var options = {
-      sort: { deleted: params.sortAscending ? 1 : -1 },
+      sort: {deleted: params.sortAscending ? 1 : -1},
       skip: params.skip,
       limit: params.limit
     };
 
-    userEventsStorage.findDeletions(context.user, params.modifiedSince, options,
-        function (err, deletions) {
-      if (err) { return next(errors.unexpectedError(err)); }
-          var buf = '';
-          if (result.buffer !== '') {
-            buf = ',';
-          }
-          buf += '"eventDeletions": [';
-          var first = true;
-          deletions.forEach(function (d) {
-            if (first) {
-              buf += JSON.stringify(d);
-              first = false;
-            } else {
-              buf += ',' + JSON.stringify(d);
-            }
-          });
-          buf += ']';
-          result.push(buf, true);
-      next();
-    });
+    userEventsStorage.findDeletionsStreamed(context.user, params.modifiedSince, options,
+      function (err, deletionsStream) {
+        if (err) {
+          return next(errors.unexpectedError(err));
+        }
+
+        deletionsStream.pipe(new EntryArrayStream(result, 'eventDeletions'));
+        next();
+      });
   }
 
   // CREATION
