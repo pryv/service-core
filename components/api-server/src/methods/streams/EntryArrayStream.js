@@ -7,18 +7,18 @@ var Transform = require('stream').Transform,
  * @param params
  * @constructor
  */
-function StringifyStream() {
+function EntryArrayStream(result,  key) {
   Transform.call(this, {objectMode: true});
   this.isStart = true;
+  this.prefix = result.getPrefix(key);
+  result.addEntryStream(this);
 }
 
-inherits(StringifyStream, Transform);
+inherits(EntryArrayStream, Transform);
 
-StringifyStream.prototype._transform = function (event, encoding, callback) {
-
-
+EntryArrayStream.prototype._transform = function (event, encoding, callback) {
   if (this.isStart) {
-    this.push('[' + JSON.stringify(event));
+    this.push(this.prefix + '[' + JSON.stringify(event));
     this.isStart = false;
   } else {
     this.push(',' + JSON.stringify(event));
@@ -26,9 +26,9 @@ StringifyStream.prototype._transform = function (event, encoding, callback) {
   callback();
 };
 
-StringifyStream.prototype._flush = function (callback) {
+EntryArrayStream.prototype._flush = function (callback) {
   this.push(']');
   callback();
 };
 
-module.exports = StringifyStream;
+module.exports = EntryArrayStream;
