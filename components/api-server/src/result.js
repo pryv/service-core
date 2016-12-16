@@ -42,6 +42,7 @@ Result.prototype.commit = function (res, successCode) {
     }
 
   } else {
+    // TODO not done in batch call
     delete this._private;
     res.json(this, successCode);
   }
