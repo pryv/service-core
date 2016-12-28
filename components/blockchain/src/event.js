@@ -1,23 +1,22 @@
+var pyBlockchain = require('pryv-blockchain');
 
-var socket;
 
-module.exports = function(sock) {
-  socket = sock;
+
+var Event = function (sock) {
+  this.socket = sock;
 };
 
 
-module.exports.add = function (username, event, callback) {
-  socket.send('insert',
-    {
-      userid: username,
-      key: 'EVENT:' + Math.random() * 1000,
-      payload: bcUtils.hash('123456712621')
-    },
+
+Event.prototype.add = function (username, event, callback) {
+  var data = pyBlockchain.event.compute(event);
+  data.userid = username;
+  this.socket.send('insert', data,
     function (res) {
-      //res.fingerPrint.length.should.equal(64);
-
-        // Todo finish
-
-    });
-  callback(null, 'salut, changez moi' + JSON.stringify(event).length);
+      callback(null, res.fingerPrint);
+    }
+  );
 };
+
+
+module.exports = Event;

@@ -75,7 +75,6 @@ describe('Blockchain', function () {
             status: 201,
             schema: eventsMethodsSchema.create.result
           });
-          console.log('got: ', res.body);
           should.not.exist(res.body.blockchain);
           done();
         });
@@ -126,8 +125,8 @@ describe('Blockchain', function () {
             status: 201,
             schema: eventsMethodsSchema.create.result
           });
-          console.log('got: ', res.body);
           should.exist(res.body.blockchain);
+          res.body.blockchain.length.should.equal(64);
           done();
         });
       });

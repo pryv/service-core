@@ -6,22 +6,47 @@ var sock = axon.socket('req');
 
 var config = require('./config');
 var settings = config.load();
+var socket = null;
+
+var Event = require('./event.js');
+
+module.exports = {};
 
 
-var socket;
+module.exports.connect = function (done) {
+  if (! done) {  done = function () {}; }
 
-sock.connect(settings.blockchainServer.messages.port, settings.blockchainServer.messages.ip,
-  function (err) {
-    console.log('Messages connected', err);
-    socket = sock;
-
-    sock.on('connect', function () {
-      // TODO
-    });
+  if (socket) { 
+    return done();
   }
-);
+  sock.connect(settings.blockchainServer.messages.port, settings.blockchainServer.messages.ip,
+    function (err) {
+      socket = sock;
+
+      if (err) {
+        // TODO error management
+        console.error('Failed to connect to Blockchain server with AXON: ', err);
+        return done(err);
+      }
 
 
-module.exports = {
-  event: require('./event')(socket)
+
+      socket.on('connect', function () {
+        console.log('Connect event from AXON (blockchain)');
+      });
+
+      console.log('Connected to Blockchain server with AXON on ' +
+        settings.blockchainServer.messages.ip + ':' + settings.blockchainServer.messages.port);
+
+      module.exports.event = new Event(socket);
+
+      done();
+
+    }.bind(this)
+  );
+
 };
+
+
+
+

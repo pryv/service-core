@@ -8,8 +8,11 @@ var utils = require('components/utils'),
     timestamp = require('unix-timestamp'),
     treeUtils = utils.treeUtils,
     validation = require('../schema/validation'),
-    blockchain = require('components/blockchain'),
+    blockchain = null,
     _ = require('lodash');
+
+
+
 
 /**
  * Events API methods implementations.
@@ -26,6 +29,10 @@ var utils = require('components/utils'),
 module.exports = function (api, userEventsStorage, userEventFilesStorage, usersStorage,
                            authSettings, blockchainSettings, eventTypes, notifications) {
 
+  if (blockchainSettings.events) {
+    blockchain = require('components/blockchain');
+    blockchain.connect();
+  }
   // COMMON
 
   api.register('events.*',
@@ -94,7 +101,8 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
           _.intersection(params.tags, accessibleTags) : accessibleTags;
     }
 
-    next();
+
+
   }
 
   function findAccessibleEvents(context, params, result, next) {

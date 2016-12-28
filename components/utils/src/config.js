@@ -79,6 +79,22 @@ config.schema = {
         format: String,
         default: path.join(__dirname, '../../../../service-core-files/blockchains')
       }
+    },
+    http: {
+      ip: {
+        default: '127.0.0.1'
+      },
+      port: {
+        default: 9101
+      }
+    },
+    messages: {
+      ip: {
+        default: '127.0.0.1'
+      },
+      port: {
+        default: 9102
+      }
     }
   },
   eventFiles: {

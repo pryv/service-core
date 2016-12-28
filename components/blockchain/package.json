@@ -12,7 +12,8 @@
     "_test": "NODE_ENV=test mocha --timeout 10000 --reporter=dot test/*.js"
   },
   "dependencies": {
-    "axon": "2.0.x"
+    "axon": "2.0.x",
+    "pryv-blockchain": "git+https://github.com/pryv/lib-javascript-blockchain"
   },
   "devDependencies": {
     "mocha": "^2.1.0"
