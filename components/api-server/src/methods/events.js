@@ -248,7 +248,8 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   function createAttachments(context, params, result, next) {
     attachFiles(context, {id: result.event.id}, context.files, function (err, attachments) {
       if (err) {
-        return next(err); }
+        return next(err);
+      }
       if (! attachments) {
         return next();
       }
@@ -338,7 +339,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       });
   }
 
-  function updateEvent (context, params, result, next) {
+  function updateEvent(context, params, result, next) {
 
     userEventsStorage.update(context.user, {id: context.content.id}, context.content,
       function (err, updatedEvent) {
