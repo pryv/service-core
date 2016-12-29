@@ -4,7 +4,7 @@ var childProcess = require('child_process'),
     errors = require('components/errors'),
     middleware = require('components/middleware'),
     storage = require('components/storage'),
-    blockchain = require('components/blockchain'),
+    blockchainClient = require('components/blockchain-client'),
     utils = require('components/utils'),
     Notifications = require('./Notifications'),
     API = require('./API');
@@ -167,7 +167,7 @@ utils.messaging.openPubSocket(settings.tcpMessaging, function (err, messagingSoc
 
 
         // connect to blockchain if needed
-        blockchain.connectIfNeeded(function (err) {
+        blockchainClient.connectIfNeeded(function (err) {
           if (err) {
             errors.errorHandling.logError(err, null, logger);
             return;

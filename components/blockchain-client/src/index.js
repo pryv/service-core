@@ -6,7 +6,7 @@ var utils = require('components/utils');
 
 var errors = require('components/errors'),
     logging = utils.logging(settings.logs),
-    logger = logging.getLogger('blockchain');
+    logger = logging.getLogger('blockchain-client');
 
 var Event = require('./event.js');
 

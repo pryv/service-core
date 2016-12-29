@@ -69,6 +69,7 @@ describe('Blockchain', function () {
           type: 'note/txt',
           content: 'hi, delete me please'
         }).end(function (res) {
+          //console.log(res.text);
           validation.check(res, {
             status: 201,
             schema: eventsMethodsSchema.create.result

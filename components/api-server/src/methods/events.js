@@ -8,7 +8,7 @@ var utils = require('components/utils'),
     timestamp = require('unix-timestamp'),
     treeUtils = utils.treeUtils,
     validation = require('../schema/validation'),
-    blockchain = require('components/blockchain'),
+    blockchainClient = require('components/blockchain-client'),
     _ = require('lodash');
 
 
@@ -267,7 +267,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     if (! blockchainSettings.events) {
       return next();
     }
-    blockchain.event.add(context.username, result.event, function (err, fingerprint) {
+    blockchainClient.event.add(context.username, result.event, function (err, fingerprint) {
         result.blockchain = fingerprint;
         next();
       });
