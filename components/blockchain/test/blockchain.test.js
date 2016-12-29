@@ -7,8 +7,6 @@ var helpers = require('../../api-server/test/helpers/'),
   eventsMethodsSchema = require('../../api-server/src/schema/eventsMethods'),
   should = require('should'),
   _ = require('lodash'),
-  //storage = helpers.dependencies.storage.user.events,
-  //timestamp = require('unix-timestamp'),
   testData = helpers.data;
 
 
@@ -121,6 +119,7 @@ describe('Blockchain', function () {
           type: 'note/txt',
           content: 'hello, i am an event with blockchain return.'
         }).end(function (res) {
+          //console.log(res.text);
           validation.check(res, {
             status: 201,
             schema: eventsMethodsSchema.create.result

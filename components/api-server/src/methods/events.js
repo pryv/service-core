@@ -8,7 +8,7 @@ var utils = require('components/utils'),
     timestamp = require('unix-timestamp'),
     treeUtils = utils.treeUtils,
     validation = require('../schema/validation'),
-    blockchain = null,
+    blockchain = require('components/blockchain'),
     _ = require('lodash');
 
 
@@ -29,11 +29,7 @@ var utils = require('components/utils'),
 module.exports = function (api, userEventsStorage, userEventFilesStorage, usersStorage,
                            authSettings, blockchainSettings, eventTypes, notifications) {
 
-  if (blockchainSettings.events) {
-    blockchain = require('components/blockchain');
-    blockchain.connect();
-  }
-  // COMMON
+
 
   api.register('events.*',
       commonFns.loadAccess);
