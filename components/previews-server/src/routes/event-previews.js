@@ -83,7 +83,7 @@ module.exports = function (expressApp, initContextMiddleware, userEventsStorage,
           attachment.width = size.width;
           attachment.height = size.height;
 
-          userEventsStorage.update(req.context.user, {id: req.params.id},
+	  userEventsStorage.updateOne(req.context.user, {id: req.params.id},
               {attachments: event.attachments}, stepDone);
         });
       },

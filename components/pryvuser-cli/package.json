@@ -17,6 +17,6 @@
     "commander": "^2.8.1"
   },
   "devDependencies": {
-    "mocha": "^2.1.0"
+    "mocha": "^3.2.0"
   }
 }

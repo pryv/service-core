@@ -73,7 +73,7 @@ Versions.prototype.migrateIfNeeded = function (callback) {
       this.migrations[vNum].bind(null, context),
       function (stepDone) {
         var update = {$set: {migrationCompleted: timestamp.now()}};
-        this.database.update(collectionInfo, {_id: vNum}, update, stepDone);
+	this.database.updateOne(collectionInfo, {_id: vNum}, update, stepDone);
       }.bind(this)
     ], done);
   }
@@ -83,5 +83,5 @@ Versions.prototype.migrateIfNeeded = function (callback) {
  * For tests only.
  */
 Versions.prototype.removeAll = function (callback) {
-  this.database.remove(collectionInfo, {}, callback);
+  this.database.deleteMany(collectionInfo, {}, callback);
 };

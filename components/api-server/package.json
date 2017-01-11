@@ -12,11 +12,11 @@
     "update-event-types": "scripts/update-event-types.bash"
   },
   "dependencies": {
-    "slug": "0.8.x",
+    "slug": "^0.9.1",
     "socket.io": "^0.9.17",
     "z-schema": "^3.15.3"
   },
   "devDependencies": {
-    "mocha": "^2.1.0"
+    "mocha": "^3.2.0"
   }
 }

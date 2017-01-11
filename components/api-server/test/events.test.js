@@ -1587,7 +1587,7 @@ describe('events', function () {
           deletionTime;
 
       async.series([
-          storage.update.bind(storage, user, {id: id}, {trashed: true}),
+	  storage.updateOne.bind(storage, user, {id: id}, {trashed: true}),
           function deleteEvent(stepDone) {
             request.del(path(id)).end(function (res) {
               deletionTime = timestamp.now();

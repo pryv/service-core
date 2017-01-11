@@ -110,7 +110,7 @@ Sessions.prototype.generate = function (data, callback) {
  */
 Sessions.prototype.touch = function (id, callback) {
   var update = {$set: {expires: this.getNewExpirationDate()}};
-  this.database.update(collectionInfo, {_id: id}, update, callback);
+  this.database.updateOne(collectionInfo, {_id: id}, update, callback);
 };
 
 /**
@@ -120,7 +120,7 @@ Sessions.prototype.touch = function (id, callback) {
  * @param {Function} callback
  */
 Sessions.prototype.destroy = function (id, callback) {
-  this.database.remove(collectionInfo, {_id: id}, callback);
+  this.database.deleteOne(collectionInfo, {_id: id}, callback);
 };
 
 /**
@@ -129,7 +129,7 @@ Sessions.prototype.destroy = function (id, callback) {
  * @param {Function} callback
  */
 Sessions.prototype.clearAll = function (callback) {
-  this.database.remove(collectionInfo, {}, callback);
+  this.database.deleteMany(collectionInfo, {}, callback);
 };
 
 Sessions.prototype.getNewExpirationDate = function () {

@@ -156,7 +156,7 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
   }
 
   function updateAccount(context, params, result, next) {
-    usersStorage.update({id: context.user.id}, params.update, function (err, updatedUser) {
+    usersStorage.updateOne({id: context.user.id}, params.update, function (err, updatedUser) {
       if (err) { return next(errors.unexpectedError(err)); }
 
       sanitizeAccountDetails(updatedUser);

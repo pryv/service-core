@@ -29,7 +29,7 @@ Size.prototype.computeForUser = function (user, callback) {
     attachedFiles: computeCategory.bind(this, this.attachedFilesItems)
   }, function (err, storageUsed) {
     if (err) { return callback(err); }
-    this.usersStorage.update({id: user.id}, {storageUsed: storageUsed}, function (err) {
+    this.usersStorage.updateOne({id: user.id}, {storageUsed: storageUsed}, function (err) {
       if (err) { return callback(err); }
       callback(null, storageUsed);
     });
