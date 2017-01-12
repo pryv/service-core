@@ -91,7 +91,7 @@ describe('events', function () {
               schema: methodsSchema.get.result,
               sanitizeFn: validation.sanitizeEvents,
               sanitizeTarget: 'events',
-              body: {events: _.first(_.sortBy(allEvents, 'time').reverse(), 20)}
+	      body: {events: _.take(_.sortBy(allEvents, 'time').reverse(), 20)}
             }, stepDone);
           });
         },
@@ -1091,38 +1091,38 @@ describe('events', function () {
         validation.checkFilesReadToken(updatedEvent, access, filesReadTokenSecret);
         validation.sanitizeEvent(updatedEvent);
 
-          var updatedEventAttachments = {};
-          updatedEvent.attachments.forEach( function (attachment) {
-            updatedEventAttachments[attachment.fileName] = attachment;
-          });
+	var updatedEventAttachments = {};
+	updatedEvent.attachments.forEach(function (attachment) {
+	  updatedEventAttachments[attachment.fileName] = attachment;
+	});
 
-          var expected = {};
-          expected.attachments = [];
-          updatedEvent.attachments.forEach( function (attachment) {
-            if (attachment.fileName === testData.attachments.image.filename) {
-              expected.attachments.push(
-                {
-                  id: attachment.id,
-                  fileName: testData.attachments.image.filename,
-                  type: testData.attachments.image.type,
-                  size: testData.attachments.image.size
-                }
-              );
-            }
-            if (attachment.fileName === testData.attachments.text.filename) {
-              expected.attachments.push(
-                {
-                  id: attachment.id,
-                  fileName: testData.attachments.text.filename,
-                  type: testData.attachments.text.type,
-                  size: testData.attachments.text.size
-                }
-              );
-            }
-          });
-          expected.modified = time;
-          expected.modifiedBy = access.id;
-          expected = _.defaults(expected, event);
+	var expected = {};
+	expected.attachments = [];
+	updatedEvent.attachments.forEach(function (attachment) {
+	  if (attachment.fileName === testData.attachments.image.filename) {
+	    expected.attachments.push(
+	      {
+		id: attachment.id,
+		fileName: testData.attachments.image.filename,
+		type: testData.attachments.image.type,
+		size: testData.attachments.image.size
+	      }
+	    );
+	  }
+	  if (attachment.fileName === testData.attachments.text.filename) {
+	    expected.attachments.push(
+	      {
+		id: attachment.id,
+		fileName: testData.attachments.text.filename,
+		type: testData.attachments.text.type,
+		size: testData.attachments.text.size
+	      }
+	    );
+	  }
+	});
+	expected.modified = time;
+	expected.modifiedBy = access.id;
+	expected = _.defaults(expected, event);
 
         validation.checkObjectEquality(updatedEvent, expected);
 

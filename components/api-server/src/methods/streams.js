@@ -278,7 +278,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
             return stepDone(errors.unexpectedError(err));
           }
 
-          linkedEventIds = _.pluck(linkedEvents, 'id');
+	  linkedEventIds = _.map(linkedEvents, 'id');
 
           if (linkedEventIds.length > 0 && params.mergeEventsWithParent === null) {
             return stepDone(errors.invalidParametersFormat('There are events referring to the ' +
