@@ -1,0 +1,7 @@
+#!/bin/sh
+
+set -e
+
+cd /var/pryv/mongodb
+
+exec chpst -u mongodb bin/mongod -f mongodb.conf

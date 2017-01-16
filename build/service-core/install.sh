@@ -6,6 +6,10 @@ source /pd_build/buildconfig
 # should be done there. 
 run /pd_build/enable_repos.sh
 
+# Install prerequisites
+run /pd_build/install_mongodb.sh
+run /pd_build/python.sh
+
 # Install the service-register application.
 run /pd_build/release.sh
 

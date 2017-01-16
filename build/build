@@ -10,6 +10,7 @@ pushd ..
 tar cf build/service-core/release.tar \
   --exclude .git \
   --exclude node_modules \
+  --exclude */node_modules \
   --exclude build \
   .
 popd

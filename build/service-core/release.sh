@@ -15,9 +15,15 @@ cd $target_dir
 run run tar -x --owner app -f \
   /pd_build/release.tar .
 
-run npm install --production
+PYTHON=$(which python2.7) run npm run preinstall --production
+PYTHON=$(which python2.7) run npm install --production
 
-# run cp /pd_build/config/service-core.json $target_dir/production.json
+# Install the config file
+run cp /pd_build/config/service-core.json $target_dir/production.json
 
-# run mkdir /etc/service/$service_name
-# run cp /pd_build/runit/$service_name /etc/service/$service_name/run
+# Install the script that runs the nodejs service
+run mkdir /etc/service/$service_name
+run cp /pd_build/runit/$service_name /etc/service/$service_name/run
+
+# Have CRON run in this container
+run rm /etc/service/cron/down

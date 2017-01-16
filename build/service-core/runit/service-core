@@ -1,0 +1,8 @@
+#!/bin/sh
+
+set -e
+
+cd /var/pryv/service-core/components/api-server
+
+export NODE_ENV=production
+exec chpst -u app /usr/bin/node src/server --config production.json
