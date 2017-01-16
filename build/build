@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+set -e
+
+# Builds 'service-core' docker image with the version given below. 
+version="1.0.0"
+
+# Create a release.tar that contains all the code. 
+pushd ..
+tar cf build/service-core/release.tar \
+  --exclude .git \
+  --exclude node_modules \
+  --exclude build \
+  .
+popd
+
+# Build the docker image
+pushd service-core
+sudo docker build -f Dockerfile -t pryv/service-core:$version .
+popd
