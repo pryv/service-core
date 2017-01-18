@@ -2,12 +2,10 @@
   "env": "production",
   "nightlyScriptCronTime": "00 15 2 * * *",
   "http": {
-    "ip": "127.0.0.1",
-    "port": 9000
+    "ip": "0.0.0.0",
+    "port": "9000"
   },
   "database": {
-    "authUser": "api-server",
-    "authPassword": "OVERRIDE ME",
     "host": "localhost",
     "port": 27017,
     "name": "pryv-node"

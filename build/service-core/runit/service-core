@@ -2,8 +2,8 @@
 
 set -e
 
-cd /var/pryv/service-core/components/api-server
+cd /var/src/service-core/components/api-server
 
 export NODE_ENV=production
-export NODE_PATH=/var/pryv/service-core
-exec chpst -u app /usr/bin/node src/server --config production.json
+export NODE_PATH=/var/src/service-core
+exec chpst -u app /usr/bin/node src/server --config $APP_CONFIG

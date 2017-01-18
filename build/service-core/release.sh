@@ -3,7 +3,7 @@ set -e
 source /pd_build/buildconfig
 
 service_name="service-core"
-target_dir="/var/pryv/$service_name"
+target_dir="/var/src/$service_name"
 
 header "Install application from release.tar"
 
@@ -19,7 +19,7 @@ PYTHON=$(which python2.7) run npm run preinstall --production
 PYTHON=$(which python2.7) run npm install --production
 
 # Install the config file
-run cp /pd_build/config/service-core.json $target_dir/production.json
+run cp /pd_build/config/service-core.json $target_dir/default.json
 
 # Install the script that runs the nodejs service
 run mkdir /etc/service/$service_name
