@@ -16,3 +16,7 @@ EXPOSE 9000
 # Configuration file for service-core. Override this to /var/pryv/SOMETHING to
 # override the main configuration file. 
 ENV APP_CONFIG "/var/src/service-core/default.json"
+
+# Configuration file for previews. Override this to /var/pryv/SOMETHING to
+# override the main configuration file. 
+ENV PREVIEWS_CONFIG "/var/src/service-core/previews.json"

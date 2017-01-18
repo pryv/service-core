@@ -2,10 +2,11 @@
 set -e
 source /pd_build/buildconfig
 
-service_name="service-core"
-target_dir="/var/src/$service_name"
+target_dir="/var/src/"
 log_dir="/var/pryv/data/log"
-log_file="$log_dir/api-server.errors.log"
+
+api_log_file="$log_dir/api-server.errors.log"
+previews_log_file="$log_dir/previews-server.errors.log"
 
 header "Install application from release.tar"
 
@@ -22,14 +23,24 @@ PYTHON=$(which python2.7) run npm install --production
 
 # Install the config file
 run cp /pd_build/config/service-core.json $target_dir/default.json
+run cp /pd_build/config/previews.json $target_dir/previews.json
 
 # Create the log
-run mkdir -p $log_dir && touch $log_file && \
-  chown app:app $log_file
+run mkdir -p $log_dir
+run touch $api_log_file && chown app:app $api_log_file
+run touch $previews_log_file && chown app:app $previews_log_file
 
-# Install the script that runs the nodejs service
-run mkdir /etc/service/$service_name
-run cp /pd_build/runit/$service_name /etc/service/$service_name/run
+# Install the script that runs the api service
+run mkdir /etc/service/service-core
+run cp /pd_build/runit/service-core /etc/service/service-core/run
+
+# Install the script that runs the previews service
+run mkdir /etc/service/previews
+run cp /pd_build/runit/previews /etc/service/previews/run
+
+# Install the script that runs the api service
+run mkdir /etc/service/service-core
+run cp /pd_build/runit/service-core /etc/service/service-core/run
 
 # Have CRON run in this container
 run rm /etc/service/cron/down
