@@ -2,7 +2,7 @@
 set -e
 source /pd_build/buildconfig
 
-target_dir="/var/src/"
+target_dir="/var/src/service-core"
 log_dir="/var/pryv/data/log"
 
 api_log_file="$log_dir/api-server.errors.log"
@@ -37,10 +37,6 @@ run cp /pd_build/runit/service-core /etc/service/service-core/run
 # Install the script that runs the previews service
 run mkdir /etc/service/previews
 run cp /pd_build/runit/previews /etc/service/previews/run
-
-# Install the script that runs the api service
-run mkdir /etc/service/service-core
-run cp /pd_build/runit/service-core /etc/service/service-core/run
 
 # Have CRON run in this container
 run rm /etc/service/cron/down

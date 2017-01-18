@@ -5,8 +5,6 @@
     "port": 9001
   },
   "database": {
-    "authUser": "previews-server",
-    "authPassword": "OVERRIDE ME",
     "host": "localhost",
     "port": 27017,
     "name": "pryv-node"
