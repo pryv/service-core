@@ -47,7 +47,7 @@
     "console": {
       "active": true,
       "level": "info",
-      "colorize": false
+      "colorize": true
     },
     "file": {
       "active": true,
@@ -57,7 +57,7 @@
       "maxNbFiles": 20
     },
     "airbrake": {
-      "active": true,
+      "active": false,
       "key": "OVERRIDE ME"
     }
   }
