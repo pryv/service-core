@@ -28,3 +28,10 @@ sudo docker build -f Dockerfile -t pryv/core:$version .
 sudo docker tag pryv/core:$version pryv/core:latest
 popd
 
+echo "---------------------------- building preview ------------------------------"
+pushd preview
+cp ../release.tar .
+sudo docker build -f Dockerfile -t pryv/preview:$version .
+sudo docker tag pryv/preview:$version pryv/preview:latest
+popd
+

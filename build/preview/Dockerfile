@@ -5,7 +5,7 @@ ADD . /pd_build
 RUN /pd_build/install.sh
 
 # Ports:
-#   9000        core api
+#   9000        previews api
 #
 EXPOSE 9000
 
