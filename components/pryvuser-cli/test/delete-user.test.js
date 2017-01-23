@@ -2,6 +2,7 @@
 
 var async = require('async'),
     helpers = require('components/test-helpers'),
+    fs = require('fs'),
     nixt = require('nixt'),
     should = require('should'),
     storage = helpers.dependencies.storage,
@@ -29,6 +30,13 @@ describe('"delete user" script', function () {
           stepDone();
         });
       },
+      function checkInitialAttachments(stepDone) {
+        var p = storage.user.eventFiles.getAttachedFilePath(user);
+        fs.exists(p, function (exists) {
+          exists.should.eql(true);
+          stepDone();
+        });
+      },
       function deleteUser(stepDone) {
         nixt().run('pryvuser delete ' + user.username)
             .on(/Confirm username/).respond(user.username)
@@ -45,6 +53,13 @@ describe('"delete user" script', function () {
       function checkUserCollections(stepDone) {
         // TODO
         stepDone();
+      },
+      function checkAttachments(stepDone) {
+        var p = storage.user.eventFiles.getAttachedFilePath(user);
+        fs.exists(p, function (exists) {
+          exists.should.eql(false);
+          stepDone();
+        });
       }
     ], done);
   });

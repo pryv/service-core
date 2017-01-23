@@ -136,10 +136,10 @@ _Prerequisite:_ setup Git remotes for production and staging targets (in `.git/c
 ```
 [remote "staging"]
   fetch = +refs/heads/*:refs/remotes/stage/*
-  url = git@sthead.pryv.net:~/repos/api-server
+  url = git@sthead2.pryv.net:~/repos/service-core
 [remote "production"]
   fetch = +refs/heads/*:refs/remotes/prod/*
-  url = git@head.pryv.net:~/repos/api-server
+  url = git@head2.pryv.net:~/repos/service-core
 ```
 
 To deploy (`{target}` is either `staging` or `production`):
