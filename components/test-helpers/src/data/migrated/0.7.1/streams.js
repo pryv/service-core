@@ -6,7 +6,7 @@ module.exports = [
     createdBy: 'test',
     modified: 1390319367.968,
     modifiedBy: 'test',
-    id: 'validStream',
+    id: 'validStream'
   },
   {
     name: 'a not valid Stream',
@@ -15,6 +15,6 @@ module.exports = [
     createdBy: 'test',
     modified: 1390319367.968,
     modifiedBy: 'test',
-    id: 'empty-string-parentId-stream',
+    id: 'empty-string-parentId-stream'
   }
 ];

@@ -187,13 +187,16 @@ describe('Versions', function () {
     async.series({
       restore: testData.restoreFromDump.bind(null, '0.7.0', mongoFolder),
       migrate: versions.migrateIfNeeded.bind(versions),
-      accesses: storage.user.streams.findAll.bind(storage.user.streams, user, {}),
+      streams: storage.user.streams.findAll.bind(storage.user.streams, user, {}),
       version: versions.getCurrent.bind(versions)
     }, function (err, results) {
       should.not.exist(err);
 
+      // check all
       expected.streams.sort(function (a, b) { return a.name.localeCompare(b.name); });
-      results.streams.should.eql(expected.streams);
+      results.streams.forEach(function (stream) {
+        stream.parentId.should.not.eql('');
+      });
 
       results.version._id.should.eql('0.7.1');
       should.exist(results.version.migrationCompleted);
