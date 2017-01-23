@@ -151,7 +151,7 @@ describe('Versions', function () {
     });
   });
 
-  it('must handle data migration from v0.5.0 to v0.7.0', function (done) {
+  it.skip('must handle data migration from v0.5.0 to v0.7.0', function (done) {
     var versions = getVersions('0.7.0'),
         userId = 'u_0',
         usersStorage = helpers.dependencies.storage.users;
@@ -172,6 +172,35 @@ describe('Versions', function () {
 
       done();
     });
+  });
+
+  it('must handle data migration from v0.7.0 to v0.7.1', function (done) {
+    var versions = getVersions('0.7.1'),
+        user = {id: 'ciya1zox20000ebotsvzyl8cx'};
+
+    var expected = {
+      streams: require('../../test-helpers/src/data/migrated/0.7.1/streams').slice()
+    };
+
+    // find streams with parentId="", apply migration (->null), check
+
+    async.series({
+      restore: testData.restoreFromDump.bind(null, '0.7.0', mongoFolder),
+      migrate: versions.migrateIfNeeded.bind(versions),
+      accesses: storage.user.streams.findAll.bind(storage.user.streams, user, {}),
+      version: versions.getCurrent.bind(versions)
+    }, function (err, results) {
+      should.not.exist(err);
+
+      expected.streams.sort(function (a, b) { return a.name.localeCompare(b.name); });
+      results.streams.should.eql(expected.streams);
+
+      results.version._id.should.eql('0.7.1');
+      should.exist(results.version.migrationCompleted);
+
+      done();
+    });
+
   });
 
   function getVersions(/* migration1Id, migration2Id, ... */) {
