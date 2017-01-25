@@ -178,12 +178,6 @@ describe('Versions', function () {
     var versions = getVersions('0.7.1'),
         user = {id: 'ciya1zox20000ebotsvzyl8cx'};
 
-    var expected = {
-      streams: require('../../test-helpers/src/data/migrated/0.7.1/streams').slice()
-    };
-
-    // find streams with parentId="", apply migration (->null), check
-
     async.series({
       restore: testData.restoreFromDump.bind(null, '0.7.0', mongoFolder),
       migrate: versions.migrateIfNeeded.bind(versions),
@@ -192,15 +186,14 @@ describe('Versions', function () {
     }, function (err, results) {
       should.not.exist(err);
 
-      // check all
-      expected.streams.sort(function (a, b) { return a.name.localeCompare(b.name); });
       results.streams.forEach(function (stream) {
-        stream.parentId.should.not.eql('');
+        if (stream.parentId !== null) {
+          stream.parentId.should.not.eql('');
+        }
       });
 
       results.version._id.should.eql('0.7.1');
       should.exist(results.version.migrationCompleted);
-
       done();
     });
 
