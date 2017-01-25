@@ -17,7 +17,7 @@ var helpers = require('./helpers'),
     treeUtils = require('components/utils').treeUtils,
     _ = require('lodash');
 
-describe('yostreams', function () {
+describe('streams', function () {
 
   var user = testData.users[0],
       initialRootStreamId = testData.streams[0].id,
@@ -282,6 +282,21 @@ describe('yostreams', function () {
       );
     });
 
+    // Test added to verify fix of issue#29
+    it('must return an error if the given predefined stream\'s parentId ' +
+      'is the empty string ""', function (done) {
+      var data = {
+        name: 'zero-length parentId string Stream',
+        parentId: ''
+      };
+      request.post(basePath).send(data).end(function (res) {
+        validation.checkError(res, {
+          status: 400,
+          id: ErrorIds.InvalidParametersFormat
+        }, done);
+      });
+    });
+
     it('must slugify the new stream\'s predefined id', function (done) {
       var data = {
         id: 'pas encodé de bleu!',
@@ -336,21 +351,6 @@ describe('yostreams', function () {
         validation.checkError(res, {
           status: 400,
           id: ErrorIds.InvalidItemId
-        }, done);
-      });
-    });
-
-    // Test added to verify fix of issue#29
-    it('must return an error if the given predefined stream\'s parentId ' +
-        'is the empty string ""', function (done) {
-      var data = {
-        name: 'zero-length parentId string Stream',
-        parentId: ''
-      };
-      request.post(basePath).send(data).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidParametersFormat
         }, done);
       });
     });
