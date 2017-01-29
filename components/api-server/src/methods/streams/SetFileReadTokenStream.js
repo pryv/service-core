@@ -21,11 +21,11 @@ SetFileReadTokenStream.prototype._transform = function (event, encoding, callbac
     this.push(event);
   } else {
     // TODO replace this
-    var that = this;
+    //var that = this;
     event.attachments.forEach(function (att) {
-      att.readToken = utils.encryption.fileReadToken(att.id, that.access,
-        that.authSettings.filesReadTokenSecret);
-    });
+      att.readToken = utils.encryption.fileReadToken(att.id, this.access,
+        this.authSettings.filesReadTokenSecret);
+    }.bind(this));
     this.push(event);
   }
   callback();
