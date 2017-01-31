@@ -283,8 +283,8 @@ describe('streams', function () {
     });
 
     // Test added to verify fix of issue#29
-    it('must return an error if the given predefined stream\'s parentId ' +
-      'is the empty string ""', function (done) {
+    it('must return an error if the new stream\'s parentId ' +
+      'is the empty string', function (done) {
       var data = {
         name: 'zero-length parentId string Stream',
         parentId: ''
