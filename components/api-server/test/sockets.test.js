@@ -105,7 +105,7 @@ describe('Socket.IO', function () {
 
   it('must connect to a user with a dash in the username', function (done) {
 
-    var dashUser = testData.users[3],
+    var dashUser = testData.users[4],
         dashRequest = null,
         dashToken = null;
 
@@ -174,7 +174,11 @@ describe('Socket.IO', function () {
       ioCons.con.emit('events.get', params, function (err, result) {
         validation.checkSchema(result, eventsMethodsSchema.get.result);
         validation.sanitizeEvents(result.events);
-        result.events.should.eql(validation.removeDeletions(testData.events));
+        result.events.should.eql(validation.removeDeletionsAndHistory(_.clone(testData.events)
+          .sort(function (a, b) {
+            return a.time - b.time;
+          }
+        )));
         validation.checkMeta(result);
         done();
       });

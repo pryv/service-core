@@ -198,6 +198,7 @@ module.exports = [
     modified: timestamp.now(),
     modifiedBy: 'test'
   },
+
   // deletions
   {
     id: getTestEventId(13),
@@ -210,6 +211,147 @@ module.exports = [
   {
     id: getTestEventId(15),
     deleted: timestamp.now('-2y') // to be cleaned up by Mongo TTL
+  },
+
+  // auditing
+  {
+    id: getTestEventId(16),
+    streamId: streams[7].id,
+    time: timestamp.now('+32h'),
+    duration: timestamp.duration('1m'),
+    type: 'activity/pryv',
+    tags: ['super', 'cali', 'fragilistic', 'expiali', 'docious'],
+    description: 'top of the history array, most recent modified event',
+    created: timestamp.now('-9h'),
+    createdBy: 'test',
+    modified: timestamp.now('-3h'),
+    modifiedBy: 'test'
+  },
+  {
+    id: getTestEventId(17),
+    headId: getTestEventId(16),
+    streamId: streams[7].id,
+    time: timestamp.now('+32h'),
+    duration: timestamp.duration('1m'),
+    type: 'activity/pryv',
+    tags: ['super', 'cali', 'fragilistic', 'expiali', 'docious'],
+    description: 'bottom of the history, event upon creation.',
+    created: timestamp.now('-9h'),
+    createdBy: 'test',
+    modified: timestamp.now('-9h'),
+    modifiedBy: 'test'
+  },
+  {
+    id: getTestEventId(18),
+    headId: getTestEventId(16),
+    streamId: streams[7].id,
+    time: timestamp.now('+32h'),
+    duration: timestamp.duration('1m'),
+    type: 'activity/pryv',
+    tags: ['super', 'cali', 'fragilistic', 'expiali', 'docious'],
+    description: 'middle of the history, first modification',
+    created: timestamp.now('-9h'),
+    createdBy: 'test',
+    modified: timestamp.now('-6h'),
+    modifiedBy: 'test'
+  },
+  {
+    id: getTestEventId(19),
+    streamId: streams[7].id,
+    time: timestamp.now('3h'),
+    type: 'activity/pryv',
+    description: 'trashed event used to simplify deletion tests.',
+    trashed: true,
+    created: timestamp.now('-2h'),
+    createdBy: 'test',
+    modified: timestamp.now(),
+    modifiedBy: 'test'
+  },
+  {
+    id: getTestEventId(20),
+    headId: getTestEventId(19),
+    streamId: streams[7].id,
+    time: timestamp.now('2h'),
+    type: 'activity/pryv',
+    description: 'trashed event used to simplify deletion tests.',
+    trashed: true,
+    created: timestamp.now('-2h'),
+    createdBy: 'test',
+    modified: timestamp.now('-1h'),
+    modifiedBy: 'test'
+  },
+  {
+    id: getTestEventId(21),
+    headId: getTestEventId(19),
+    streamId: streams[7].id,
+    time: timestamp.now('1h'),
+    type: 'activity/pryv',
+    description: 'trashed event used to simplify deletion tests.',
+    trashed: true,
+    created: timestamp.now('-2h'),
+    createdBy: 'test',
+    modified: timestamp.now('-2h'),
+    modifiedBy: 'test'
+  },
+  {
+    id: getTestEventId(22),
+    streamId: streams[7].id,
+    time: timestamp.now('+43h'),
+    type: 'activity/pryv',
+    description: 'simple event with nothing special',
+    created: timestamp.now('-1h'),
+    createdBy: 'test',
+    modified: timestamp.now('-1h'),
+    modifiedBy: 'test'
+  },
+  {
+    id: getTestEventId(23),
+    streamId: streams[7].id,
+    time: timestamp.now('-5h'),
+    duration: null, // running
+    type: 'activity/pryv',
+    tags: [],
+    description: 'event started one hour ago on a normal stream',
+    created: timestamp.now('-1h'),
+    createdBy: 'test',
+    modified: timestamp.now('-1h'),
+    modifiedBy: 'test'
+  },
+  {
+    id: getTestEventId(24),
+    streamId: streams[8].id,
+    time: timestamp.now('-6h'),
+    duration: null, // running
+    type: 'activity/pryv',
+    tags: [],
+    description: 'event started one hour ago on a singleActivity stream',
+    created: timestamp.now('-1h'),
+    createdBy: 'test',
+    modified: timestamp.now('-1h'),
+    modifiedBy: 'test'
+  },
+  {
+    id: getTestEventId(25),
+    streamId: streams[7].children[0].id,
+    time: timestamp.now('+41h'),
+    type: 'activity/pryv',
+    description: 'simple event with nothing special',
+    created: timestamp.now('-1h'),
+    createdBy: 'test',
+    modified: timestamp.now('-30m'),
+    modifiedBy: 'test'
+  },
+  {
+    id: getTestEventId(26),
+    headId: getTestEventId(25),
+    streamId: streams[7].children[0].id,
+    time: timestamp.now('+41h'),
+    type: 'activity/pryv',
+    description: 'simple event with nothing special - original version',
+    created: timestamp.now('-1h'),
+    createdBy: 'test',
+    modified: timestamp.now('-1h'),
+    modifiedBy: 'test'
   }
 ];
 

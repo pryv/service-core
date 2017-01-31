@@ -38,6 +38,11 @@ exports = module.exports = function (action) {
 
   helpers.addTrackingProperties(schema, action);
 
+  if (action !== Action.CREATE) {
+    schema.properties.id = string();
+    schema.properties.headId = string();
+  }
+
   if (action === Action.CREATE) {
     // only allow cuid-like strings for custom ids
     schema.properties.id.pattern = '^c[a-z0-9-]{24}$';

@@ -62,9 +62,8 @@ describe('streams', function () {
     it('must return non-trashed streams (as a tree) by default', function (done) {
       request.get(basePath).end(function (res) {
         // manually filter out trashed items
-        var expected = validation.removeDeletions(testData.streams).slice(0, -1);
-        expected[2] = _.clone(expected[2]);
-        expected[2].children = expected[2].children.slice(1);
+        var expected = treeUtils.filterTree(validation.removeDeletionsAndHistory(testData.streams),
+          false, function (s) { return !s.trashed; });
         validation.check(res, {
           status: 200,
           schema: methodsSchema.get.result,
