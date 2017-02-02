@@ -12,6 +12,22 @@ if [ -e release_build ]; then
   echo "This is a release build, it will update 'latest' tags."
 fi
 
+function release {
+  local service_name=$1
+  local version=$2
+  
+  if [ -e ../release_build ]; then
+    sudo docker tag $service_name:$version $service_name:latest
+
+    # Publication to registry:
+    sudo docker tag $service_name:$version localhost:5000/$service_name:$version
+    sudo docker tag $service_name:$version localhost:5000/$service_name:latest
+    
+    sudo docker push localhost:5000/$service_name:$version
+    sudo docker push localhost:5000/$service_name:latest
+  fi
+}
+
 # Create a release.tar that contains all the code. 
 pushd ..
 tar cf build/release.tar \
@@ -26,26 +42,20 @@ echo "---------------------------- building service-core ----------------------"
 pushd service-core
 cp ../release.tar .
 sudo docker build -f Dockerfile -t pryv/service-core:$version .
-if [ -e ../release_build ]; then
-  sudo docker tag pryv/service-core:$version pryv/service-core:latest
-fi
+release "pryv/service-core" $version
 popd
 
 echo "---------------------------- building core ------------------------------"
 pushd core
 cp ../release.tar .
 sudo docker build -f Dockerfile -t pryv/core:$version .
-if [ -e ../release_build ]; then
-  sudo docker tag pryv/core:$version pryv/core:latest
-fi
+release "pryv/core" $version
 popd
 
 echo "---------------------------- building preview ---------------------------"
 pushd preview
 cp ../release.tar .
 sudo docker build -f Dockerfile -t pryv/preview:$version .
-if [ -e ../release_build ]; then
-  sudo docker tag pryv/preview:$version pryv/preview:latest
-fi
+release "pryv/preview" $version
 popd
 
