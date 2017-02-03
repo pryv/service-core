@@ -43,6 +43,5 @@ possible_release_branch = contains(['master', 'HEAD'], git_branch)
 
 if re.match('^\d{1,}\.\d{1,}\.\d{1,}$', git_describe) and possible_release_branch:
     write('release_build', '')
-    write('build_tag', git_describe)
-else: 
-    write('build_tag', git_branch + '-' + git_describe)
+
+write('build_tag', git_describe)
