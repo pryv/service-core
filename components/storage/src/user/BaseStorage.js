@@ -1,6 +1,7 @@
 var _ = require('lodash'),
     converters = require('./../converters'),
-    timestamp = require('unix-timestamp');
+    timestamp = require('unix-timestamp'),
+    ApplyItemsFromDbStream = require('./../ApplyItemsFromDbStream');
 
 module.exports = BaseStorage;
 /**
@@ -78,6 +79,23 @@ BaseStorage.prototype.find = function (user, query, options, callback) {
     if (err) { return callback(err); }
     callback(null, this.applyItemsFromDB(dbItems));
   }.bind(this));
+};
+
+/**
+ * Same as find(), but returns a readable stream
+ *
+ * @param user
+ * @param query
+ * @param options
+ * @param callback
+ */
+BaseStorage.prototype.findStreamed = function (user, query, options, callback) {
+  query.deleted = null;
+  this.database.findStreamed(this.getCollectionInfo(user), this.applyQueryToDB(query),
+    this.applyOptionsToDB(options), function (err, dbStreamedItems) {
+      if (err) { return callback(err); }
+      callback(null, dbStreamedItems.pipe(new ApplyItemsFromDbStream()));
+    }.bind(this));
 };
 
 BaseStorage.prototype.findDeletions = function (user, deletedSince, options, callback) {

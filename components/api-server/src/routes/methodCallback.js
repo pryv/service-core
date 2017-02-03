@@ -14,6 +14,8 @@ module.exports = function (res, next, successCode) {
     if (err) {
       return next(err);
     }
-    res.json(setCommonMeta(result), successCode);
+
+    result.commit(res, successCode);
+
   };
 };

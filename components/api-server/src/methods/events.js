@@ -8,7 +8,9 @@ var utils = require('components/utils'),
     timestamp = require('unix-timestamp'),
     treeUtils = utils.treeUtils,
     validation = require('../schema/validation'),
-    _ = require('lodash');
+    _ = require('lodash'),
+    SetFileReadTokenStream = require('./streams/SetFileReadTokenStream'),
+    EntryArrayStream = require('./streams/EntryArrayStream');
 
 /**
  * Events API methods implementations.
@@ -137,18 +139,28 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       limit: params.limit
     };
 
-    userEventsStorage.find(context.user, query, options, function (err, events) {
+    userEventsStorage.findStreamed(context.user, query, options, function (err, eventsStream) {
       if (err) {
         return next(errors.unexpectedError(err));
       }
 
-      events.forEach(setFileReadToken.bind(null, context.access));
-      result.events = events;
+
+        eventsStream
+        .pipe(new SetFileReadTokenStream(
+          {
+          access: context.access,
+          authSettings: authSettings
+        }))
+        .pipe(new EntryArrayStream(result, 'events'));
       next();
     });
   }
 
   function includeDeletionsIfRequested(context, params, result, next) {
+
+    // TODO remove this
+    params.includeDeletions = false;
+
     if (! params.modifiedSince || ! params.includeDeletions) { return next(); }
 
     var options = {
@@ -160,8 +172,22 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     userEventsStorage.findDeletions(context.user, params.modifiedSince, options,
         function (err, deletions) {
       if (err) { return next(errors.unexpectedError(err)); }
-
-      result.eventDeletions = deletions;
+          var buf = '';
+          if (result.buffer !== '') {
+            buf = ',';
+          }
+          buf += '"eventDeletions": [';
+          var first = true;
+          deletions.forEach(function (d) {
+            if (first) {
+              buf += JSON.stringify(d);
+              first = false;
+            } else {
+              buf += ',' + JSON.stringify(d);
+            }
+          });
+          buf += ']';
+          result.push(buf, true);
       next();
     });
   }
