@@ -1,5 +1,7 @@
 var async = require('async'),
-  toString = require('components/utils').toString;
+  toString = require('components/utils').toString,
+  _ = require('lodash'),
+  isDuplicateError = require('../Database').isDuplicateError;
 
 /**
  * v0.7.1:
@@ -35,7 +37,7 @@ module.exports = function (context, callback) {
           var streamsCursor = streamsCol.find(),
             completed = false;
           async.until(function () { return completed; }, migrateStreams,
-            context.stepCallbackFn('migrating events structure', stepDone));
+            context.stepCallbackFn('migrating streams structure', stepDone));
 
           function migrateStreams(streamDone) {
             streamsCursor.nextObject(function (err, stream) {
@@ -54,8 +56,17 @@ module.exports = function (context, callback) {
                   parentId: null
                 }
               };
+              streamsCol.update({_id: stream._id}, update, function (err) {
+                if (err) {
+                  if (isDuplicateError(err)) {
+                    return updateConflictingNameRecursively(streamsCol, stream, update, streamDone);
+                  } else {
+                    return streamDone(err);
+                  }
+                }
+                streamDone();
+              });
 
-              streamsCol.update({_id: stream._id}, update, streamDone);
             });
           }
         });
@@ -66,6 +77,23 @@ module.exports = function (context, callback) {
         return callback(err);
       }
       context.logInfo('Successfully migrated user ' + toString.user(user) + '.');
+      callback();
+    });
+  }
+
+  // Applies predefined update with a "-2" added to the name (recursively)
+  // as long as there exist duplicate siblings
+  function updateConflictingNameRecursively(streamsCol, stream, update, callback) {
+    stream.name = stream.name + '-2';
+    _.extend(update.$set, {name: stream.name});
+    streamsCol.update({_id: stream._id}, update, function (err) {
+      if (err) {
+        if (isDuplicateError(err)) {
+          return updateConflictingNameRecursively(streamsCol, stream, update, callback);
+        } else {
+          return callback(err);
+        }
+      }
       callback();
     });
   }

@@ -187,7 +187,7 @@ describe('Versions', function () {
       should.not.exist(err);
 
       results.streams.forEach(function (stream) {
-        if (stream.parentId !== null) {
+        if (stream.parentId !== null && ! stream.deleted) {
           stream.parentId.should.not.eql('');
         }
       });
