@@ -22,7 +22,7 @@
   },
   "auth": {
     "adminAccessKey": "OVERRIDE ME",
-    "trustedApps": "*@https://*.pryv.me*, *@http://pryv.github.io",
+    "trustedApps": "*@https://*.pryv.me*, *@http://pryv.github.io, *@https://*.rec.la",
     "sessionMaxAge": 1209600000,
     "ssoCookieDomain": ".pryv.io",
     "ssoCookieSignSecret": "OVERRIDE ME",
