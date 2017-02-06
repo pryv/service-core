@@ -13,6 +13,9 @@
     "attachmentsDirPath": "/app/data/attachments",
     "previewsDirPath": "/app/data/previews"
   },
+  "auth": {
+    "sessionMaxAge": 1209600000
+  },
   "logs": {
     "console": {
       "active": true,

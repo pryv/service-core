@@ -24,15 +24,15 @@
     "adminAccessKey": "OVERRIDE ME",
     "trustedApps": "*@https://*.pryv.me*, *@http://pryv.github.io, *@https://*.rec.la",
     "sessionMaxAge": 1209600000,
-    "ssoCookieDomain": ".pryv.io",
+    "ssoCookieDomain": ".rec.la",
     "ssoCookieSignSecret": "OVERRIDE ME",
     "filesReadTokenSecret": "OVERRIDE ME",
     "passwordResetRequestMaxAge": 3600000,
-    "passwordResetPageURL": "https://sw.pryv.me/access/reset-password.html"
+    "passwordResetPageURL": "https://sw.rec.la/access/reset-password.html"
   },
   "services": {
     "register": {
-      "url": "https://reg.pryv.io",
+      "url": "https://reg.rec.la",
       "key": "OVERRIDE ME"
     },
     "email": {
