@@ -38,13 +38,6 @@ tar cf build/release.tar \
   .
 popd
 
-echo "---------------------------- building service-core ----------------------"
-pushd service-core
-cp ../release.tar .
-sudo docker build -f Dockerfile -t pryv/service-core:$version .
-release "pryv/service-core" $version
-popd
-
 echo "---------------------------- building core ------------------------------"
 pushd core
 cp ../release.tar .

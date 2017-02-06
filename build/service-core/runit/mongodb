@@ -1,6 +1,0 @@
-#!/bin/sh
-
-set -e
-
-cd /var/src/mongodb
-exec chpst -u mongodb bin/mongod -f mongodb.conf
