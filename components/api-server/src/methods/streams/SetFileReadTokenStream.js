@@ -2,16 +2,22 @@ var Transform = require('stream').Transform,
     inherits = require('util').inherits,
     utils = require('components/utils');
 
+module.exports = SetFileReadTokenStream;
+
 /**
- * Returns a stream that does setFileReadToken()
+ * Sets the FileReadToken for each of the given event's attachments (if any) for the given
+ * access.
  *
- * @returns {SetFileReadTokenStream}
+ * @param params
+ *        params.access {Object} Access with which the API call was made
+ *        params.filesReadTokenSecret {String} available in authSettings
+ * @constructor
  */
 function SetFileReadTokenStream(params) {
   Transform.call(this, {objectMode: true});
 
   this.access = params.access;
-  this.authSettings = params.authSettings;
+  this.filesReadTokenSecret = params.filesReadTokenSecret;
 }
 
 inherits(SetFileReadTokenStream, Transform);
@@ -20,15 +26,12 @@ SetFileReadTokenStream.prototype._transform = function (event, encoding, callbac
   if (! event.attachments) {
     this.push(event);
   } else {
-    // TODO replace this
-    //var that = this;
     event.attachments.forEach(function (att) {
       att.readToken = utils.encryption.fileReadToken(att.id, this.access,
-        this.authSettings.filesReadTokenSecret);
+        this.filesReadTokenSecret);
     }.bind(this));
     this.push(event);
   }
   callback();
 };
 
-module.exports = SetFileReadTokenStream;

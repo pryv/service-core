@@ -5,52 +5,81 @@ var setCommonMeta = require('./methods/helpers/setCommonMeta'),
 var Transform = require('stream').Transform,
   inherits = require('util').inherits;
 
-var Result = module.exports = function () {
+module.exports = Result;
+
+/**
+ * Result object used to store API response while it is processed.
+ * In case of batch call, it works as a simple JS object.
+ * Otherwise, stores multiple streams in this.combinedStreams for serial sending to client.
+ * ie.: each Stream of data will be sent one after the other
+ * as they are stringified by ArrayStreams.
+ *
+ * @constructor
+ */
+function Result() {
   this._private = { init: false, first: true};
   this.meta = setCommonMeta({}).meta;
-};
+}
 
-
-
-Result.prototype.getPrefix = function (key) {
+/**
+ * Formats the prefix in the right way depending on whether it is the first data
+ * pushed on the result stream or not.
+ *
+ * @param prefix
+ * @returns {string}
+ */
+Result.prototype.formatPrefix = function (prefix) {
   if (this._private.first) {
     this._private.first = false;
-    return '"' + key + '":';
+    return '"' + prefix + '":';
   }
-  return ',"' + key + '":';
+  return ',"' + prefix + '":';
 };
 
-
-
-Result.prototype.addEntryStream = function (stream) {
-  if (! this._private.combinedStreams) {
-    this._private.combinedStreams = [];
+/**
+ * Pushes stream on the result stack, FIFO.
+ *
+ * @param stream
+ */
+Result.prototype.addStream = function (stream) {
+  if (! this._private.streamsArray) {
+    this._private.streamsArray = [];
   }
-  this._private.combinedStreams.push(stream);
+  this._private.streamsArray.push(stream);
 };
 
+/**
+ * Called when the output stream chain has been setup to start sending the response, or
+ * in case of batch call, simply sends the Result object.
+ *
+ * @param res {Object} Http.Response
+ * @param successCode {Number}
+ */
 Result.prototype.commit = function (res, successCode) {
-  if (this._private.combinedStreams) {
+  if (this._private.streamsArray) {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Transfer-Encoding', 'chunked');
     res.statusCode = successCode;
 
-    if (this._private.combinedStreams.length === 1) {
-      this._private.combinedStreams[0].pipe(new ResultStream(this)).pipe(res);
+    if (this._private.streamsArray.length === 1) {
+      this._private.streamsArray[0].pipe(new ResultStream(this)).pipe(res);
     } else {
-      new MultiStream(this._private.combinedStreams).pipe(new ResultStream(this)).pipe(res);
+      new MultiStream(this._private.streamsArray).pipe(new ResultStream(this)).pipe(res);
     }
 
   } else {
-    // TODO not done in batch call
     delete this._private;
     res.json(this, successCode);
   }
 };
 
 
-
-/// -----  Stream that wraps the all result
+/**
+ * Stream that wraps the whole result in JSON curly braces before being sent to Http.response
+ *
+ * @param result {Object} Result object
+ * @constructor
+ */
 function ResultStream(result) {
   Transform.call(this, {objectMode: true});
   this.isStart = true;
@@ -72,7 +101,7 @@ ResultStream.prototype._flush = function (callback) {
 
   Object.keys(this.result).forEach(function (key) {
     if (key !== '_private') {
-      this.push(this.result.getPrefix(key));
+      this.push(this.result.formatPrefix(key));
       this.push(JSON.stringify(this.result[key]));
     }
   }.bind(this));

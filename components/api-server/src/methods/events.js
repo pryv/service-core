@@ -10,7 +10,7 @@ var utils = require('components/utils'),
     validation = require('../schema/validation'),
     _ = require('lodash'),
     SetFileReadTokenStream = require('./streams/SetFileReadTokenStream'),
-    EntryArrayStream = require('./streams/EntryArrayStream');
+    ArrayStream = require('./streams/ArrayStream');
 
 /**
  * Events API methods implementations.
@@ -144,22 +144,18 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         return next(errors.unexpectedError(err));
       }
 
-
         eventsStream
         .pipe(new SetFileReadTokenStream(
           {
-          access: context.access,
-          authSettings: authSettings
+            access: context.access,
+            filesReadTokenSecret: authSettings.filesReadTokenSecret
         }))
-        .pipe(new EntryArrayStream(result, 'events'));
+        .pipe(new ArrayStream(result, 'events'));
       next();
     });
   }
 
   function includeDeletionsIfRequested(context, params, result, next) {
-
-    // TODO remove this
-    //params.includeDeletions = false;
 
     if (!params.modifiedSince || !params.includeDeletions) {
       return next();
@@ -177,7 +173,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
           return next(errors.unexpectedError(err));
         }
 
-        deletionsStream.pipe(new EntryArrayStream(result, 'eventDeletions'));
+        deletionsStream.pipe(new ArrayStream(result, 'eventDeletions'));
         next();
       });
   }

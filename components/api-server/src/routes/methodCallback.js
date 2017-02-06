@@ -1,5 +1,3 @@
-var setCommonMeta = require('../methods/helpers/setCommonMeta');
-
 /**
  * Helper function for handling method responses.
  *
@@ -16,6 +14,5 @@ module.exports = function (res, next, successCode) {
     }
 
     result.commit(res, successCode);
-
   };
 };
