@@ -5,6 +5,7 @@ source /pd_build/buildconfig
 target_dir="/app/bin"
 log_dir="/app/log"
 conf_dir="/app/conf"
+data_dir="/app/data"
 
 header "Install application from release.tar"
 
@@ -26,6 +27,10 @@ run mkdir -p $conf_dir && \
 # Create the log
 run mkdir -p $log_dir && \
   touch $log_dir/core.log && chown -R app:app $log_dir
+
+# Create the data space (attachments/previews)
+run mkdir -p $data_dir/attachments && mkdir -p $data_dir/previews && \
+  chown -R app:app $data_dir
 
 # Install the script that runs the api service
 run mkdir /etc/service/core
