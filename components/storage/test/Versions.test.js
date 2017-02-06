@@ -151,7 +151,7 @@ describe('Versions', function () {
     });
   });
 
-  it('must handle data migration from v0.5.0 to v0.7.0', function (done) {
+  it.skip('must handle data migration from v0.5.0 to v0.7.0', function (done) {
     var versions = getVersions('0.7.0'),
         userId = 'u_0',
         usersStorage = helpers.dependencies.storage.users;
@@ -172,6 +172,31 @@ describe('Versions', function () {
 
       done();
     });
+  });
+
+  it('must handle data migration from v0.7.0 to v0.7.1', function (done) {
+    var versions = getVersions('0.7.1'),
+        user = {id: 'ciya1zox20000ebotsvzyl8cx'};
+
+    async.series({
+      restore: testData.restoreFromDump.bind(null, '0.7.0', mongoFolder),
+      migrate: versions.migrateIfNeeded.bind(versions),
+      streams: storage.user.streams.findAll.bind(storage.user.streams, user, {}),
+      version: versions.getCurrent.bind(versions)
+    }, function (err, results) {
+      should.not.exist(err);
+
+      results.streams.forEach(function (stream) {
+        if (stream.parentId !== null && ! stream.deleted) {
+          stream.parentId.should.not.eql('');
+        }
+      });
+
+      results.version._id.should.eql('0.7.1');
+      should.exist(results.version.migrationCompleted);
+      done();
+    });
+
   });
 
   function getVersions(/* migration1Id, migration2Id, ... */) {
