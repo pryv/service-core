@@ -12,7 +12,7 @@ function Notifications(messagingSocket) {
   Notifications.super_.call(this);
   this.messagingSocket = messagingSocket;
 }
-util.inherits(Notifications, events.EventEmitter);
+util.inherits(Notifications, events);
 
 var Messages = {
   ServerReady: 'server-ready',
