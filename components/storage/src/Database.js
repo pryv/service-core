@@ -60,7 +60,7 @@ Database.prototype.waitForConnection = function (callback) {
  * @api private
  */
 Database.prototype.ensureConnect = function (callback) {
-  if (this.db && this.db._state === 'connected') {
+  if (this.db) {
     return callback();
   }
 
