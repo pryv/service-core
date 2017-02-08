@@ -4,9 +4,10 @@ var superagent = require('superagent'),
 /**
  * Helper for HTTP requests (with access token authentication).
  */
-module.exports = function (serverURL) {
+module.exports = request;
+function request(serverURL) {
   return new Request(serverURL);
-};
+}
 
 function Request(serverURL) {
   this.serverURL = serverURL;
@@ -47,12 +48,18 @@ Request.prototype.login = function (user, callback) {
   }.bind(this));
 };
 
+/**
+ * HACK: work around change in superagent lib to handle all non 2XX responses as errors.
+ * Easier for tests to keep old behaviour of always returning just a response with HTTP code.
+ */
+var originalEnd = superagent.Request.prototype.end;
+superagent.Request.prototype.end = function (callback) {
+  return originalEnd.call(this, function (err, res) {
+    callback(res);
+  });
+};
 
 /**
- * HACK: monkeypatch superagent to allow removing automatically set headers.
- * Must be called after send().
+ * Expose the patched superagent for tests that don't need the wrapper.
  */
-superagent.Request.prototype.unset = function (field) {
-  this.request().removeHeader(field);
-  return this;
-};
+request.superagent = superagent;

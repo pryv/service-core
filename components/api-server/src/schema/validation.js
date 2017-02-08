@@ -46,6 +46,9 @@ exports.tryCoerceStringValues = function (object, settings) {
         object[key] = parseInt(object[key], 10);
       } catch (e) { /* cannot coerce */ }
       break;
+    case 'array':
+      object[key] = [object[key]];
+      break;
     }
   });
 };

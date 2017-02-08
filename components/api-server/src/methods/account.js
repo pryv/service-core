@@ -114,7 +114,9 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
       }
     };
     request.post(sendMailURL).send(sendMailData).end(function (err, res) {
-      if (err || ! res.ok) {
+      // check if first argument is Error;
+      // for some reason superagent did return res as first argument on success
+      if (err instanceof Error || (res && ! res.ok)) {
         if (! err) { err = new Error(util.inspect(res.body)); }
         return next(errors.unexpectedError(err, 'Could not reach e-mail service.'));
       }
@@ -173,12 +175,15 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
     // email was changed, must notify registration server
     var regChangeEmailURL = registerSettings.url + '/users/' + context.user.username +
         '/change-email';
-    request.post(regChangeEmailURL).send({email: params.update.email})
+    request.post(regChangeEmailURL)
         .set('Authorization', registerSettings.key)
+	.send({email: params.update.email})
         .end(function (err, res) {
-      if (err || ! res.ok) {
+      // check if first argument is Error;
+      // for some reason superagent did return res as first argument on success
+      if (err instanceof Error || (res && ! res.ok)) {
         if (! err) { err = new Error(util.inspect(res.body)); }
-        return next(errors.unexpectedError(err, 'Could not reach e-mail service.'));
+	return next(errors.unexpectedError(err, 'Could not reach register service.'));
       }
 
       next();
