@@ -306,6 +306,21 @@ Database.prototype.findOneAndUpdate = function (collectionInfo, query, update, c
 };
 
 /**
+ * Inserts or update the document matching the query.
+ *
+ * @param {Object} collectionInfo
+ * @param {Object} query
+ * @param {Object} update
+ * @param {Function} callback
+ */
+Database.prototype.upsertOne = function (collectionInfo, query, update, callback) {
+  this.getCollection(collectionInfo, function (err, collection) {
+    if (err) { return callback(err); }
+    collection.updateOne(query, update, {w: 1, upsert: true}, callback);
+  });
+};
+
+/**
  * Deletes the document matching the given query.
  *
  * @param {Object} collectionInfo

@@ -68,12 +68,12 @@ Versions.prototype.migrateIfNeeded = function (callback) {
             migrationStarted: timestamp.now()
           }
         };
-        this.database.upsert(collectionInfo, {_id: vNum}, update, stepDone);
+        this.database.upsertOne(collectionInfo, {_id: vNum}, update, stepDone);
       }.bind(this),
       this.migrations[vNum].bind(null, context),
       function (stepDone) {
         var update = {$set: {migrationCompleted: timestamp.now()}};
-	this.database.updateOne(collectionInfo, {_id: vNum}, update, stepDone);
+        this.database.updateOne(collectionInfo, {_id: vNum}, update, stepDone);
       }.bind(this)
     ], done);
   }
