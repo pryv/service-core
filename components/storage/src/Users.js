@@ -78,8 +78,8 @@ Users.prototype.insertOne = function (user, callback) {
 /**
  * Override.
  */
-Users.prototype.update = function (query, updatedData, callback) {
-  Users.super_.prototype.update.call(this, null, query, updatedData, callback);
+Users.prototype.updateOne = function (query, updatedData, callback) {
+  Users.super_.prototype.updateOne.call(this, null, query, updatedData, callback);
 };
 
 /**
@@ -119,7 +119,7 @@ function encryptPassword(user, callback) {
  * Override.
  */
 Users.prototype.remove = function (query, callback) {
-  Users.super_.prototype.remove.call(this, null, query, callback);
+  Users.super_.prototype.removeMany.call(this, null, query, callback);
 };
 
 /**

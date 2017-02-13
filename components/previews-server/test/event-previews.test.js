@@ -160,7 +160,7 @@ describe('event previews', function () {
             modified: timestamp.now(),
             modifiedBy: testData.accesses[2].id
           };
-          storage.user.events.update(user, {id: event.id}, update, function (err, updatedEvt) {
+	  storage.user.events.updateOne(user, {id: event.id}, update, function (err, updatedEvt) {
             updatedEvent = updatedEvt;
             stepDone();
           });

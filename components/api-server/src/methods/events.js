@@ -244,7 +244,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       }
 
       result.event.attachments = attachments;
-      userEventsStorage.update(context.user, {id: result.event.id}, {attachments: attachments},
+      userEventsStorage.updateOne(context.user, {id: result.event.id}, {attachments: attachments},
         function (err) {
           if (err) {
             return next(errors.unexpectedError(err));
@@ -320,7 +320,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   function updateEvent (context, params, result, next) {
 
-    userEventsStorage.update(context.user, {id: context.content.id}, context.content,
+    userEventsStorage.updateOne(context.user, {id: context.content.id}, context.content,
       function (err, updatedEvent) {
         if (err) {
           return next(errors.unexpectedError(err));
@@ -581,7 +581,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
       // approximately update account storage size
       context.user.storageUsed.attachedFiles += sizeDelta;
-      usersStorage.update({id: context.user.id}, {storageUsed: context.user.storageUsed},
+      usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
           function (err) {
         if (err) { return callback(errors.unexpectedError(err)); }
         callback(null, attachments);
@@ -679,7 +679,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
     context.updateTrackingProperties(updatedData);
 
-    userEventsStorage.update(context.user, {id: event.id}, updatedData, function (err) {
+    userEventsStorage.updateOne(context.user, {id: event.id}, updatedData, function (err) {
       if (err) {
         return callback(errors.unexpectedError(err));
       }
@@ -710,7 +710,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     var updatedData = {trashed: true};
     context.updateTrackingProperties(updatedData);
 
-    userEventsStorage.update(context.user, {id: params.id}, updatedData,
+    userEventsStorage.updateOne(context.user, {id: params.id}, updatedData,
         function (err, updatedEvent) {
       if (err) { return next(errors.unexpectedError(err)); }
 
@@ -737,7 +737,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       function (stepDone) {
         // approximately update account storage size
         context.user.storageUsed.attachedFiles -= getTotalAttachmentsSize(context.event);
-        usersStorage.update({id: context.user.id}, {storageUsed: context.user.storageUsed},
+	usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
             stepDone);
       }
     ], next);
@@ -777,7 +777,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         var updatedData = {attachments: updatedEvent.attachments};
         context.updateTrackingProperties(updatedData);
 
-        userEventsStorage.update(context.user, {id: params.id}, updatedData,
+	userEventsStorage.updateOne(context.user, {id: params.id}, updatedData,
             function (err, updatedEvent) {
           if (err) { return stepDone(err); }
           result.event = updatedEvent;
@@ -791,7 +791,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       function (stepDone) {
         // approximately update account storage size
         context.user.storageUsed.attachedFiles -= deletedAtt.size;
-        usersStorage.update({id: context.user.id}, {storageUsed: context.user.storageUsed},
+	usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
             stepDone);
       },
       function (stepDone) {

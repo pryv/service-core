@@ -12,10 +12,9 @@
   },
   "dependencies": {
     "fs-xattr": "^0.1.11",
-    "gm": "^1.20.0",
-    "qs": "^2.4.2"
+    "gm": "^1.20.0"
   },
   "devDependencies": {
-    "mocha": "^2.1.0"
+    "mocha": "^3.2.0"
   }
 }

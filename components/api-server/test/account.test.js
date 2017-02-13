@@ -437,9 +437,10 @@ describe('account', function () {
       async.series([
         server.ensureStarted.bind(server, settings),
         function requestReset(stepDone) {
-          request.post(requestPath).send(authData)
+	  request.post(requestPath)
               .unset('authorization')
               .set('Origin', 'http://test.pryv.local')
+	      .send(authData)
               .end(function (res) {
             validation.check(res, {
               status: 200,
