@@ -38,7 +38,7 @@ describe('"delete user" script', function () {
         });
       },
       function deleteUser(stepDone) {
-        nixt().run('pryvuser delete ' + user.username)
+        nixt().run('node ./src/cli.js delete ' + user.username)
             .on(/Confirm username/).respond(user.username)
             .stdout(/Successfully deleted/)
             .end(stepDone);
@@ -70,7 +70,7 @@ describe('"delete user" script', function () {
     async.series([
       helpers.data.resetUsers,
       function deleteUser(stepDone) {
-        nixt().run('pryvuser delete ' + user.username)
+        nixt().run('node ./src/cli.js delete ' + user.username)
             .on(/Confirm username/).respond('bad-confirmation')
             .code(1)
             .stdout(/confirmation did not match/)
@@ -83,7 +83,7 @@ describe('"delete user" script', function () {
     async.series([
       helpers.data.resetUsers,
       function deleteUser(stepDone) {
-        nixt().run('pryvuser delete unknown-user')
+        nixt().run('node ./src/cli.js delete unknown-user')
             .code(1)
             .stdout(/not found/)
             .end(stepDone);
