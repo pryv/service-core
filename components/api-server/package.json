@@ -12,6 +12,7 @@
     "update-event-types": "scripts/update-event-types.bash"
   },
   "dependencies": {
+    "concat-stream": "^1.6.0",
     "multistream": "^2.1.0",
     "slug": "0.8.x",
     "socket.io": "^0.9.17",

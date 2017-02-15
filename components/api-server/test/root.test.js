@@ -1,4 +1,4 @@
-/*global describe, before, it */
+/*global describe, before, beforeEach, it */
 
 var helpers = require('./helpers'),
     async = require('async'),
@@ -13,7 +13,7 @@ var helpers = require('./helpers'),
     timestamp = require('unix-timestamp'),
     _ = require('lodash');
 
-describe('(root)', function () {
+describe('root', function () {
 
   var user = testData.users[0],
       // these must be set after server instance started
@@ -269,7 +269,7 @@ describe('(root)', function () {
 
   describe('POST / (i.e. batch call)', function () {
 
-    before(resetEvents);
+    beforeEach(resetEvents);
 
     var path = '/' + user.username,
         testType = 'test/test',
@@ -335,6 +335,29 @@ describe('(root)', function () {
         results[2].error.id.should.eql(ErrorIds.UnknownReferencedResource);
 
         eventsNotifCount.should.eql(2, 'events notifications');
+
+        done();
+      });
+    });
+
+    it('must execute the method calls containing events.get and ' +
+      'return the results', function (done) {
+      var calls = [
+        {
+          method: 'events.get',
+          params: {}
+        }
+      ];
+      request.post(path).send(calls).end(function (res) {
+        validation.check(res, {
+          status: 200,
+          schema: methodsSchema.callBatch.result
+        });
+
+        var results = res.body.results;
+
+        results.length.should.eql(calls.length, 'method call results');
+        should.exist(results[0].events);
 
         done();
       });

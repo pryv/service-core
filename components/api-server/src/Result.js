@@ -1,9 +1,12 @@
-var setCommonMeta = require('./methods/helpers/setCommonMeta'),
-  MultiStream = require('multistream');
+var addCommonMeta = require('./methods/helpers/setCommonMeta'),
+    MultiStream = require('multistream'),
+    concat = require('concat-stream'),
+    ArrayStream = require('./methods/streams/ArrayStream'),
+    async = require('async');
 
 
 var Transform = require('stream').Transform,
-  inherits = require('util').inherits;
+    inherits = require('util').inherits;
 
 module.exports = Result;
 
@@ -18,23 +21,7 @@ module.exports = Result;
  */
 function Result() {
   this._private = { init: false, first: true};
-  this.meta = setCommonMeta({}).meta;
 }
-
-/**
- * Formats the prefix in the right way depending on whether it is the first data
- * pushed on the result stream or not.
- *
- * @param prefix
- * @returns {string}
- */
-Result.prototype.formatPrefix = function (prefix) {
-  if (this._private.first) {
-    this._private.first = false;
-    return '"' + prefix + '":';
-  }
-  return ',"' + prefix + '":';
-};
 
 /**
  * Pushes stream on the result stack, FIFO.
@@ -55,21 +42,135 @@ Result.prototype.addStream = function (stream) {
  * @param res {Object} Http.Response
  * @param successCode {Number}
  */
-Result.prototype.commit = function (res, successCode) {
-  if (this._private.streamsArray) {
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Transfer-Encoding', 'chunked');
-    res.statusCode = successCode;
+Result.prototype.writeToHttpResponse = function (res, successCode) {
+  if (this.isStreamResult()) {
+   this.writeStreams(res, successCode);
+  } else {
+    this.writeSingle(res, successCode);
+  }
+};
 
+Result.prototype.isStreamResult = function() {
+  return this._private.streamsArray;
+};
+
+Result.prototype.writeStreams = function(res, successCode) {
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Transfer-Encoding', 'chunked');
+  res.statusCode = successCode;
+
+  var private = this._private;
+  var streamsArray = private.streamsArray;
+
+  if (streamsArray.length < 1) { throw 'error: streams array empty'; }
+
+  // Are we handling a single stream?
+  if (streamsArray.length === 1) {
+    var first = private.streamsArray[0];
+    return first.stream
+      .pipe(new ArrayStream(first.name, true))
+      .pipe(new ResultStream(this))
+      .pipe(res);
+  }
+
+  // assert: private.streamsArray.length > 1
+  var streams = [];
+  for (var i=0; i<streamsArray.length; i++) {
+    var s = streamsArray[i];
+    streams.push(s.stream.pipe(new ArrayStream(s.name, i === 0)));
+  }
+
+  new MultiStream(streams).pipe(new ResultStream(this)).pipe(res);
+};
+Result.prototype.writeSingle = function(res, successCode) {
+  delete this._private;
+  res.json(addCommonMeta(this), successCode);
+};
+
+
+
+Result.prototype.toObject = function (callback) {
+  if (this.isStreamResult()) {
+    this.toObjectStream(callback);
+  } else {
+    this.toObjectSingle(callback);
+  }
+};
+
+Result.prototype.toObjectStream = function (callback) {
+  var private = this._private;
+  var streamsArray = private.streamsArray;
+
+  var resultObj = {};
+  async.forEachOfSeries(streamsArray, function(elementDef, i, done) {
+    var drain = concat(function(list) {
+      resultObj[elementDef.name] = list;
+      done();
+    });
+
+    elementDef.stream.pipe(drain);
+  }, function() {
+    callback(resultObj);
+  });
+};
+
+Result.prototype.toObjectSingle = function (callback) {
+  delete this._private;
+  this._private = null;
+  callback(this);
+};
+
+/**
+ *
+ * @param params
+ *        params.maxSize {Number} size in bytes before throwing an error, default is 33MB
+ * @params callback {Function}
+ */
+Result.prototype.toString = function (params, callback) {
+  if (!params) {
+    params = {};
+  }
+
+  if (!params.maxsize) {
+    params = {
+      maxSize: 16000 // put in config
+    };
+  }
+  /*
+   callback (err, res)
+   */
+  if (this._private.streamsArray) {
+    var outputBuffer = new Buffer(params.maxSize);
+    outputBuffer.usedSize = 1;
+    outputBuffer.write('{');
+
+    var readable;
     if (this._private.streamsArray.length === 1) {
-      this._private.streamsArray[0].pipe(new ResultStream(this)).pipe(res);
+      readable = this._private.streamsArray[0];
     } else {
-      new MultiStream(this._private.streamsArray).pipe(new ResultStream(this)).pipe(res);
+      readable = new MultiStream(this._private.streamsArray);
     }
 
-  } else {
-    delete this._private;
-    res.json(this, successCode);
+    var isDone = false;
+
+    readable.on('data', function (chunk) {
+      outputBuffer.usedSize += chunk.length;
+      if (outputBuffer.usedSize > params.maxSize) {
+        readable.close();
+        if (! isDone) {
+          isDone =  true;
+          return callback(new Error('trop de data'));
+        }
+      }
+      outputBuffer.write(chunk, this.usedSize);
+    });
+    readable.on('finish', function () {
+      outputBuffer.write('}');
+      if (! isDone) {
+        isDone = true;
+        return callback(null, outputBuffer.toString());
+      }
+    });
   }
 };
 
@@ -98,14 +199,8 @@ ResultStream.prototype._transform = function (data, encoding, callback) {
 };
 
 ResultStream.prototype._flush = function (callback) {
-
-  Object.keys(this.result).forEach(function (key) {
-    if (key !== '_private') {
-      this.push(this.result.formatPrefix(key));
-      this.push(JSON.stringify(this.result[key]));
-    }
-  }.bind(this));
-  this.push('}');
+  var thing = ', "meta": ' + JSON.stringify(addCommonMeta({}).meta);
+  this.push(thing + '}');
 
   callback();
 };

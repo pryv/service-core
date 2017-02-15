@@ -4,27 +4,26 @@ var Transform = require('stream').Transform,
 module.exports = ArrayStream;
 
 /**
- * Stream that sends an array of data, stringified.
+ * Stream that encapsulates the items it receives in a stringified array.
  *
- * @param result    {Object} Result for the API request
+ * @param result    {Object} Result object for the API request
  * @param arrayName {String} array name that will prefix the array
  * @constructor
  */
-function ArrayStream(result,  arrayName) {
+function ArrayStream(arrayName, isFirst) {
   Transform.call(this, {objectMode: true});
   this.isStart = true;
-  this.prefix = result.formatPrefix(arrayName);
-  result.addStream(this);
+  this.prefix = formatPrefix(arrayName, isFirst);
 }
 
 inherits(ArrayStream, Transform);
 
-ArrayStream.prototype._transform = function (event, encoding, callback) {
+ArrayStream.prototype._transform = function (item, encoding, callback) {
   if (this.isStart) {
-    this.push(this.prefix + '[' + JSON.stringify(event));
+    this.push(this.prefix + '[' + JSON.stringify(item));
     this.isStart = false;
   } else {
-    this.push(',' + JSON.stringify(event));
+    this.push(',' + JSON.stringify(item));
   }
   callback();
 };
@@ -33,3 +32,19 @@ ArrayStream.prototype._flush = function (callback) {
   this.push(']');
   callback();
 };
+
+
+/**
+ * Formats the prefix in the right way depending on whether it is the first data
+ * pushed on the result stream or not.
+ *
+ * @param prefix
+ * @param isFirst
+ * @returns {string}
+ */
+function formatPrefix (prefix, isFirst) {
+  if (isFirst) {
+    return '"' + prefix + '":';
+  }
+  return ',"' + prefix + '":';
+}

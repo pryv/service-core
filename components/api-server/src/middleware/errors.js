@@ -8,7 +8,7 @@ var errors = require('components/errors'),
 
 /**
  * Error route handling.
- * TODO: move that elsewhere (e.g. errors component?), handling the setCommonMeta() dependency
+ * TODO: move that elsewhere (e.g. errors component?), handling the addCommonMeta() dependency
  */
 module.exports = function (logging) {
   var logger = logging.getLogger('routes');

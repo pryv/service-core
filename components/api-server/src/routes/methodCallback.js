@@ -13,6 +13,6 @@ module.exports = function (res, next, successCode) {
       return next(err);
     }
 
-    result.commit(res, successCode);
+    result.writeToHttpResponse(res, successCode);
   };
 };

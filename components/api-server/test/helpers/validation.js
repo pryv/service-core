@@ -46,6 +46,8 @@ var schemas = exports.schemas = {
 exports.check = function (response, expected, done) {
   response.statusCode.should.eql(expected.status);
 
+  checkMeta(response.body);
+
   // ignore common metadata
   var meta = response.body.meta;
   delete response.body.meta;
@@ -117,11 +119,12 @@ exports.checkStoredItem = function (item, schemaName) {
   checkSchema(item, schemas[schemaName](Action.STORE));
 };
 
-exports.checkMeta = function (parentObject) {
+function checkMeta(parentObject) {
   should.exist(parentObject.meta);
   parentObject.meta.apiVersion.should.eql(require('../../package.json').version);
   parentObject.meta.serverTime.should.match(/^\d+\.?\d*$/);
-};
+}
+exports.checkMeta = checkMeta;
 
 /**
  * Specific error check for convenience.

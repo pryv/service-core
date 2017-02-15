@@ -9,8 +9,7 @@ var utils = require('components/utils'),
     treeUtils = utils.treeUtils,
     validation = require('../schema/validation'),
     _ = require('lodash'),
-    SetFileReadTokenStream = require('./streams/SetFileReadTokenStream'),
-    ArrayStream = require('./streams/ArrayStream');
+    SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
 
 /**
  * Events API methods implementations.
@@ -144,13 +143,12 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         return next(errors.unexpectedError(err));
       }
 
-        eventsStream
+        result.addStream({name:'events', stream: eventsStream
         .pipe(new SetFileReadTokenStream(
           {
             access: context.access,
             filesReadTokenSecret: authSettings.filesReadTokenSecret
-        }))
-        .pipe(new ArrayStream(result, 'events'));
+        }))});
       next();
     });
   }
@@ -173,7 +171,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
           return next(errors.unexpectedError(err));
         }
 
-        deletionsStream.pipe(new ArrayStream(result, 'eventDeletions'));
+        result.addStream({name:'eventDeletions', stream:deletionsStream});
         next();
       });
   }
