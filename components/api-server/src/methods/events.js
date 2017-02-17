@@ -143,12 +143,12 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         return next(errors.unexpectedError(err));
       }
 
-        result.addStream({name:'events', stream: eventsStream
+      result.addStream('events', eventsStream
         .pipe(new SetFileReadTokenStream(
           {
             access: context.access,
             filesReadTokenSecret: authSettings.filesReadTokenSecret
-        }))});
+          })));
       next();
     });
   }
@@ -171,7 +171,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
           return next(errors.unexpectedError(err));
         }
 
-        result.addStream({name:'eventDeletions', stream:deletionsStream});
+        result.addStream('eventDeletions', deletionsStream);
         next();
       });
   }

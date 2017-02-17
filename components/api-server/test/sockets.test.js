@@ -161,11 +161,30 @@ describe('Socket.IO', function () {
       ioCons.con = connect(namespace, {auth: token});
       var params = {
         sortAscending: true,
-        state: 'all'
+        state: 'all',
+        includeDeletions: true,
+        modifiedSince: -10000
       };
       ioCons.con.emit('events.get', params, function (err, result) {
         validation.checkSchema(result, eventsMethodsSchema.get.result);
         validation.sanitizeEvents(result.events);
+
+        // check deletions
+        var deletions = testData.events.filter(function (e) {
+          return e.deleted;
+        });
+        var found = false;
+        deletions.forEach(function (d) {
+          result.eventDeletions.forEach(function (d2) {
+            if (d.id === d2.id && d.deleted === d2.deleted) {
+              found = true;
+            }
+          });
+          found.should.eql(true);
+          found = false;
+        });
+
+        // check untrashed
         result.events.should.eql(validation.removeDeletions(testData.events));
         validation.checkMeta(result);
         done();

@@ -97,7 +97,6 @@ module.exports = function Manager(io, notifications, api, logging) {
         id = callData.name,
         params = callData.args[0];
 
-    // Called here
     api.call(id, nsContext.socketMethodContexts[this.id], params, function (err, result) {
       if (err) {
         errorHandling.logError(err, {
@@ -110,6 +109,7 @@ module.exports = function Manager(io, notifications, api, logging) {
       result.toObject(function (object) {
         callback(null, object);
       });
+
     });
   }
 

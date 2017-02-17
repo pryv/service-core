@@ -342,10 +342,27 @@ describe('root', function () {
 
     it('must execute the method calls containing events.get and ' +
       'return the results', function (done) {
-      var calls = [
+      var streamId = 'batch-call-streamId',
+          calls = [
+        {
+          method: 'streams.create',
+          params: {
+            id: streamId,
+            name: 'batch call root stream'
+          }
+        },
+        {
+          method: 'events.create',
+          params: {
+            streamId: streamId,
+            type: 'note/txt',
+            content: 'Hi, i am an event in a batch call',
+            time: timestamp.now()
+          }
+        },
         {
           method: 'events.get',
-          params: {}
+          params: {modifiedSince: -1000000, includeDeletions: true}
         }
       ];
       request.post(path).send(calls).end(function (res) {
@@ -357,7 +374,20 @@ describe('root', function () {
         var results = res.body.results;
 
         results.length.should.eql(calls.length, 'method call results');
-        should.exist(results[0].events);
+
+        should.exist(results[0].stream);
+        validation.checkObjectEquality(results[0].stream, _.defaults({
+          parentId: null
+        }, calls[0].params));
+        should.exist(results[1].event);
+        validation.checkObjectEquality(results[1].event, _.defaults({
+          tags: [],
+          id: results[1].event.id
+        }, calls[1].params));
+
+        var getEventsResult = results[2];
+        should.exist(getEventsResult.events);
+        should.exist(getEventsResult.eventDeletions);
 
         done();
       });

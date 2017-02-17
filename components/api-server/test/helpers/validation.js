@@ -46,8 +46,6 @@ var schemas = exports.schemas = {
 exports.check = function (response, expected, done) {
   response.statusCode.should.eql(expected.status);
 
-  checkMeta(response.body);
-
   // ignore common metadata
   var meta = response.body.meta;
   delete response.body.meta;

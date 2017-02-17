@@ -11,11 +11,16 @@ var Transform = require('stream').Transform,
 module.exports = Result;
 
 /**
- * Result object used to store API response while it is processed.
- * In case of batch call, it works as a simple JS object.
- * Otherwise, stores multiple streams in this.combinedStreams for serial sending to client.
+ * Result object used to store API call response body while it is processed.
+ * In case of events.get call, it stores multiple streams in this.streamsArray.
  * ie.: each Stream of data will be sent one after the other
- * as they are stringified by ArrayStreams.
+ * Otherwise, it works as a simple JS object.
+ *
+ * The result can be sent back to the caller using writeToHttpResponse or
+ * recovered as a JS object through the toObject() function.
+ *
+ * TODO
+ * When using toObject() with a streamsArray, the size of the output object must be limited.
  *
  * @constructor
  */
@@ -23,21 +28,34 @@ function Result() {
   this._private = { init: false, first: true};
 }
 
+
 /**
- * Pushes stream on the result stack, FIFO.
+ * Pushes stream on the streamsArray stack, FIFO.
  *
- * @param stream
+ * @param stream {Object}
+ *        stream.name {String} data name
+ *        stream.stream {Stream} stream containing the data
  */
-Result.prototype.addStream = function (stream) {
+Result.prototype.addStream = function (arrayName, stream) {
   if (! this._private.streamsArray) {
     this._private.streamsArray = [];
   }
-  this._private.streamsArray.push(stream);
+  this._private.streamsArray.push({name: arrayName, stream: stream});
 };
 
+
 /**
- * Called when the output stream chain has been setup to start sending the response, or
- * in case of batch call, simply sends the Result object.
+ * Returns true if the Result holds any streams, false otherwise.
+ *
+ * @returns {Array}
+ */
+Result.prototype.isStreamResult = function() {
+  return this._private.streamsArray;
+};
+
+
+/**
+ * Sends the content of Result to the HttpResponse stream passed in parameters.
  *
  * @param res {Object} Http.Response
  * @param successCode {Number}
@@ -48,10 +66,6 @@ Result.prototype.writeToHttpResponse = function (res, successCode) {
   } else {
     this.writeSingle(res, successCode);
   }
-};
-
-Result.prototype.isStreamResult = function() {
-  return this._private.streamsArray;
 };
 
 Result.prototype.writeStreams = function(res, successCode) {
@@ -82,13 +96,19 @@ Result.prototype.writeStreams = function(res, successCode) {
 
   new MultiStream(streams).pipe(new ResultStream(this)).pipe(res);
 };
+
 Result.prototype.writeSingle = function(res, successCode) {
   delete this._private;
   res.json(addCommonMeta(this), successCode);
 };
 
 
-
+/**
+ * Returns the content of the Result object in a JS object.
+ * In case the Result contains a streamsArray, it will drain them in arrays.
+ *
+ * @param callback {Function}
+ */
 Result.prototype.toObject = function (callback) {
   if (this.isStreamResult()) {
     this.toObjectStream(callback);
@@ -110,81 +130,24 @@ Result.prototype.toObjectStream = function (callback) {
 
     elementDef.stream.pipe(drain);
   }, function() {
-    callback(resultObj);
+    callback(addCommonMeta(resultObj));
   });
 };
 
 Result.prototype.toObjectSingle = function (callback) {
   delete this._private;
-  this._private = null;
-  callback(this);
-};
-
-/**
- *
- * @param params
- *        params.maxSize {Number} size in bytes before throwing an error, default is 33MB
- * @params callback {Function}
- */
-Result.prototype.toString = function (params, callback) {
-  if (!params) {
-    params = {};
-  }
-
-  if (!params.maxsize) {
-    params = {
-      maxSize: 16000 // put in config
-    };
-  }
-  /*
-   callback (err, res)
-   */
-  if (this._private.streamsArray) {
-    var outputBuffer = new Buffer(params.maxSize);
-    outputBuffer.usedSize = 1;
-    outputBuffer.write('{');
-
-    var readable;
-    if (this._private.streamsArray.length === 1) {
-      readable = this._private.streamsArray[0];
-    } else {
-      readable = new MultiStream(this._private.streamsArray);
-    }
-
-    var isDone = false;
-
-    readable.on('data', function (chunk) {
-      outputBuffer.usedSize += chunk.length;
-      if (outputBuffer.usedSize > params.maxSize) {
-        readable.close();
-        if (! isDone) {
-          isDone =  true;
-          return callback(new Error('trop de data'));
-        }
-      }
-      outputBuffer.write(chunk, this.usedSize);
-    });
-    readable.on('finish', function () {
-      outputBuffer.write('}');
-      if (! isDone) {
-        isDone = true;
-        return callback(null, outputBuffer.toString());
-      }
-    });
-  }
+  callback(addCommonMeta(this));
 };
 
 
 /**
  * Stream that wraps the whole result in JSON curly braces before being sent to Http.response
  *
- * @param result {Object} Result object
  * @constructor
  */
-function ResultStream(result) {
+function ResultStream() {
   Transform.call(this, {objectMode: true});
   this.isStart = true;
-  this.result = result;
 }
 
 inherits(ResultStream, Transform);
