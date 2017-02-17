@@ -29,6 +29,7 @@
     "lodash": "^4.17.4",
     "middleware": "file:components/middleware",
     "mkdirp": "0.5.x",
+    "mocha": "^3.2.0",
     "model": "file:components/model",
     "previews-server": "file:components/previews-server",
     "pryvuser-cli": "file:components/pryvuser-cli",
@@ -49,7 +50,7 @@
     "nixt": "^0.5.0",
     "nock": "^9.0.2",
     "parallelshell": "^2.0.0",
-    "should": "latest",
+    "should": "^11.2.0",
     "socket.io-client": "0.9.x",
     "temp": "latest",
     "wrench": "latest"
