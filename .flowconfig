@@ -1,0 +1,5 @@
+[include]
+
+[ignore]
+scripts/
+node_modules/nixt/node_modules/changelog/examples/node.json
