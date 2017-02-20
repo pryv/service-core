@@ -371,6 +371,7 @@ describe('root', function () {
           schema: methodsSchema.callBatch.result
         });
 
+        validation.checkMeta(res.body);
         var results = res.body.results;
 
         results.length.should.eql(calls.length, 'method call results');
@@ -388,7 +389,7 @@ describe('root', function () {
         var getEventsResult = results[2];
         should.exist(getEventsResult.events);
         should.exist(getEventsResult.eventDeletions);
-
+        
         done();
       });
     });

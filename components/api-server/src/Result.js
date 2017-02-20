@@ -130,13 +130,13 @@ Result.prototype.toObjectStream = function (callback) {
 
     elementDef.stream.pipe(drain);
   }, function() {
-    callback(addCommonMeta(resultObj));
+    callback(resultObj);
   });
 };
 
 Result.prototype.toObjectSingle = function (callback) {
   delete this._private;
-  callback(addCommonMeta(this));
+  callback(this);
 };
 
 
