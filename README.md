@@ -89,7 +89,7 @@ It is possible to extend the API and previews servers with your own code, via th
 
 ### Setup the dev environment
 
-`./scripts/setup-dev-env.bash` installs MongoDB in the parent folder, sets up your working copy with a JSHint commit hook, and `npm install`s if needed.
+`./scripts/setup-dev-env.bash` installs MongoDB in the parent folder, sets up your working copy with a JSHint commit hook, and `yarn install`s if needed.
 
 
 ### About code structure
