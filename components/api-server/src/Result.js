@@ -1,6 +1,6 @@
 var addCommonMeta = require('./methods/helpers/setCommonMeta'),
     MultiStream = require('multistream'),
-    concat = require('concat-stream'),
+    DrainStream = require('./methods/streams/DrainStream'),
     ArrayStream = require('./methods/streams/ArrayStream'),
     async = require('async');
 
@@ -18,9 +18,6 @@ module.exports = Result;
  *
  * The result can be sent back to the caller using writeToHttpResponse or
  * recovered as a JS object through the toObject() function.
- *
- * TODO
- * When using toObject() with a streamsArray, the size of the output object must be limited.
  *
  * @constructor
  */
@@ -123,7 +120,10 @@ Result.prototype.toObjectStream = function (callback) {
 
   var resultObj = {};
   async.forEachOfSeries(streamsArray, function(elementDef, i, done) {
-    var drain = concat(function(list) {
+    var drain = new DrainStream(null, function(err, list) {
+      if (err) {
+        return done(err);
+      }
       resultObj[elementDef.name] = list;
       done();
     });
