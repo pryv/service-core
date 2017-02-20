@@ -7,15 +7,13 @@ Pryv core server app components, ie. what runs on each server node and handles u
 
 ### Install
 
-_Prerequisites:_ Node v0.12+, Mongo DB v2.6+ (needs at least 4GB of free disk space for the initial database), Nginx (optional, skip if you don't need the proxy server).
+_Prerequisites:_ Node v6.9.5, Mongo DB v2.6+ (needs at least 4GB of free disk space for the initial database), Nginx (optional, skip if you don't need the proxy server).
 
-Then just `npm install`.
-
+Then just `yarn install`.
 
 ### Component-specific usage
 
 See individual component READMEs for instructions.
-
 
 ### Quick, run the servers
 
@@ -91,7 +89,7 @@ It is possible to extend the API and previews servers with your own code, via th
 
 ### Setup the dev environment
 
-`./scripts/setup-dev-env.bash` installs MongoDB in the parent folder, sets up your working copy with a JSHint commit hook, and `npm install`s if needed.
+`./scripts/setup-dev-env.bash` installs MongoDB in the parent folder, sets up your working copy with a JSHint commit hook, and `yarn install`s if needed.
 
 
 ### About code structure
@@ -100,15 +98,8 @@ Code is organized into local modules defined in the `components` folder, each wi
 
 - Shared dependencies are defined in the root `package.json`
 - `npm run check-dependencies` lists declared dependencies (both shared and components'), highlighting those declared multiple times
-- `npm install` installs each component's dependencies and the shared ones
+- `yarn install` installs each component's dependencies and the shared ones
 - `scripts/components-npm.js` can be used to automatically run npm commands on every component. For example, `node scripts/components-npm outdated` outputs each component's outdated dependencies.
-
-
-#### Versioning
-
-We set all components' version to that of the root package for clarity.
-`npm run update-components-version` does that automatically.
-
 
 ### Tests
 
