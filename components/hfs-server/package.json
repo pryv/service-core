@@ -1,0 +1,9 @@
+{
+  "name": "hfs-server",
+  "version": "1.0.0",
+  "main": "src/server.js",
+  "repository": {},
+  "scripts": {
+    "test": "mocha test/**/*.test.js"
+  }
+}
