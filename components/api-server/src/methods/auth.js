@@ -78,7 +78,7 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
       if (access) {
         // update
         context.updateTrackingProperties(accessData, 'system');
-        userAccessesStorage.update(context.user, context.accessQuery, accessData, next);
+	userAccessesStorage.updateOne(context.user, context.accessQuery, accessData, next);
       } else {
         // create
         _.extend(accessData, context.accessQuery);

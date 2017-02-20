@@ -194,7 +194,7 @@ var customFormats = {
         throw new Error('Cannot load function module "' + val + '": ' + e.message);
       }
       if (typeof fn !== 'function') {
-        throw new Error('Module is not a function');
+        throw new Error('Module is not a function [' + val + ']');
       }
     },
     coerce: function (val) {

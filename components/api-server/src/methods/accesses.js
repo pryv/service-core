@@ -123,7 +123,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
         if (! existingStream.trashed) { return streamCallback(); }
 
         var update = {trashed: false};
-        userStreamsStorage.update(context.user, {id: existingStream.id}, update, function (err) {
+	userStreamsStorage.updateOne(context.user, {id: existingStream.id}, update, function (err) {
           if (err) { return streamCallback(errors.unexpectedError(err)); }
           streamCallback();
         });
@@ -165,8 +165,8 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
    */
   function isDBDuplicateId(dbError) {
     // HACK: relying on error text as nothing else available to differentiate
-    if (! dbError.err) { return false; }
-    return dbError.err.indexOf('_id_') > 0;
+    if (! dbError.message) { return false; }
+    return dbError.message.indexOf('_id_') > 0;
   }
 
   /**
@@ -177,8 +177,8 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
    */
   function isDBDuplicateToken(dbError) {
     // HACK: relying on error text as nothing else available to differentiate
-    if (! dbError.err) { return false; }
-    return dbError.err.indexOf('$token_') > 0;
+    if (! dbError.message) { return false; }
+    return dbError.message.indexOf('$token_') > 0;
   }
 
   /**
@@ -262,7 +262,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
   }
 
   function updateAccess(context, params, result, next) {
-    userAccessesStorage.update(context.user, {id: params.id}, params.update,
+    userAccessesStorage.updateOne(context.user, {id: params.id}, params.update,
         function (err, updatedAccess) {
       if (err) {
         if (Database.isDuplicateError(err)) {

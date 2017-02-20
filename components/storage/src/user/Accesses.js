@@ -78,7 +78,8 @@ Accesses.prototype.delete = function (user, query, callback) {
       deviceName: '_deviceName'
     }
   };
-  this.database.update(this.getCollectionInfo(user), this.applyQueryToDB(query), update, callback);
+  this.database.updateMany(this.getCollectionInfo(user), this.applyQueryToDB(query), update,
+      callback);
 };
 
 /**

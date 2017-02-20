@@ -131,7 +131,7 @@ module.exports = function (context, callback) {
                 },
                 $unset: { channelId: 1, hidden: 1 }
               };
-              streamsCol.update({_id: stream._id}, update, eventDone);
+	      streamsCol.updateOne({_id: stream._id}, update, eventDone);
             });
           }
         });
@@ -226,7 +226,7 @@ module.exports = function (context, callback) {
                 $unset: {channelId: 1, folderId: 1},
                 $rename: {value: 'content'}
               };
-              eventsCol.update({_id: event._id}, update, eventDone);
+	      eventsCol.updateOne({_id: event._id}, update, eventDone);
             });
           }
         });

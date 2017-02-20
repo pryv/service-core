@@ -9,7 +9,7 @@ var helpers = require('./helpers'),
     encryption = require('components/utils').encryption,
     should = require('should'),
     storage = helpers.dependencies.storage.users,
-    request = require('superagent'),
+    request = helpers.request.superagent,
     testData = helpers.data,
     timestamp = require('unix-timestamp'),
     url = require('url'),
@@ -31,6 +31,9 @@ describe('system (ex-register)', function () {
     ], done);
   });
 
+  // NOTE: because we mock the email sending service for user creation and to keep test code simple,
+  // test order is important. The first test configures the mock service in order to test email
+  // sending, the second one reconfigures it so that it just replies OK for subsequent tests.
   describe('POST /create-user', function () {
 
     function path() {
@@ -51,17 +54,6 @@ describe('system (ex-register)', function () {
       email: 'dupotager@test.com',
       language: 'fr'
     };
-
-    it('must support the old "/register" path for backwards-compatibility', function (done) {
-      request.post(url.resolve(server.url, '/register/create-user'))
-          .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
-          .send(newUserData)
-          .end(function (res) {
-        validation.check(res, {
-          status: 201
-        }, done);
-      });
-    });
 
     it('must create a new user with the sent data, sending a welcome email', function (done) {
       var originalCount,
@@ -130,9 +122,21 @@ describe('system (ex-register)', function () {
 
     it('must run the process but not save anything for test username "recla"', function (done) {
       var originalCount,
-          createdUserId;
+	  createdUserId,
+	  settings = _.clone(helpers.dependencies.settings);
+
+      // setup mail server mock, persisting over the next tests
+      helpers.instanceTestSetup.set(settings, {
+	context: settings.services.email,
+	execute: function () {
+	  require('nock')(this.context.url).persist()
+	      .post(this.context.sendMessagePath)
+	      .reply(200);
+	}
+      });
 
       async.series([
+	server.ensureStarted.bind(server, settings),
         function countInitialUsers(stepDone) {
           storage.countAll(function (err, count) {
             originalCount = count;
@@ -163,6 +167,17 @@ describe('system (ex-register)', function () {
           });
         }
       ], done);
+    });
+
+    it('must support the old "/register" path for backwards-compatibility', function (done) {
+      request.post(url.resolve(server.url, '/register/create-user'))
+	  .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
+	  .send(newUserData)
+	  .end(function (res) {
+	validation.check(res, {
+	  status: 201
+	}, done);
+      });
     });
 
     it('must return a correct 400 error if the sent data is badly formatted', function (done) {

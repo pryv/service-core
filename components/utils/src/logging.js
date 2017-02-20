@@ -3,10 +3,10 @@ var winston = require('winston'),
 
 // setup logging levels (match logging methods below)
 var levels = Object.freeze({
-  debug: 0,
-  info: 1,
-  warn: 2,
-  error: 3
+  debug: 3,
+  info: 2,
+  warn: 1,
+  error: 0
 });
 winston.setLevels(levels);
 winston.addColors({

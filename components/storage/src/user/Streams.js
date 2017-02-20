@@ -94,7 +94,7 @@ Streams.prototype.insertOne = function (user, stream, callback) {
       this.findDeletion(user, {id: stream.id}, null, function (err, deletion) {
         if (err) { return stepDone(err); }
         if (! deletion) { return stepDone(); }
-        this.remove(user, {id: stream.id}, stepDone);
+	this.removeOne(user, {id: stream.id}, stepDone);
       }.bind(this));
     }.bind(this),
     function checkParent(stepDone) {
@@ -107,7 +107,7 @@ Streams.prototype.insertOne = function (user, stream, callback) {
   }.bind(this));
 };
 
-Streams.prototype.update = function (user, query, updatedData, callback) {
+Streams.prototype.updateOne = function (user, query, updatedData, callback) {
   var self = this;
 
   if (! updatedData.parentId) {
@@ -120,7 +120,7 @@ Streams.prototype.update = function (user, query, updatedData, callback) {
   }
 
   function doUpdate() {
-    Streams.super_.prototype.update.call(self, user, query, updatedData, callback);
+    Streams.super_.prototype.updateOne.call(self, user, query, updatedData, callback);
   }
 };
 
@@ -157,6 +157,7 @@ Streams.prototype.delete = function (user, query, callback) {
       modifiedBy: 1
     }
   };
-  this.database.update(this.getCollectionInfo(user), this.applyQueryToDB(query), update, callback);
+  this.database.updateMany(this.getCollectionInfo(user), this.applyQueryToDB(query), update,
+      callback);
 };
 

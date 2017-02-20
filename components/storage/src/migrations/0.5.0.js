@@ -61,7 +61,7 @@ module.exports = function (context, callback) {
                   attachments: newAttachments
                 }
               };
-              eventsCol.update({_id: event._id}, update, eventDone);
+	      eventsCol.updateOne({_id: event._id}, update, eventDone);
             });
           }
         });

@@ -139,7 +139,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
       if (err) {
         if (storage.Database.isDuplicateError(err)) {
           // HACK: relying on error text as nothing else available to differentiate
-          var apiError = err.err.indexOf('_id_') > 0 ?
+	  var apiError = err.message.indexOf('_id_') > 0 ?
               errors.itemAlreadyExists('stream', {id: params.id}, err) :
               errors.itemAlreadyExists('sibling stream', {name: params.name}, err);
           return next(apiError);
@@ -189,7 +189,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   }
 
   function updateStream(context, params, result, next) {
-    userStreamsStorage.update(context.user, {id: params.id}, params.update,
+    userStreamsStorage.updateOne(context.user, {id: params.id}, params.update,
         function (err, updatedStream) {
       if (err) {
         if (storage.Database.isDuplicateError(err)) {
@@ -244,7 +244,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     var updatedData = {trashed: true};
     context.updateTrackingProperties(updatedData);
 
-    userStreamsStorage.update(context.user, {id: params.id}, updatedData,
+    userStreamsStorage.updateOne(context.user, {id: params.id}, updatedData,
         function (err, updatedStream) {
       if (err) { return next(errors.unexpectedError(err)); }
 
@@ -278,7 +278,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
             return stepDone(errors.unexpectedError(err));
           }
 
-          linkedEventIds = _.pluck(linkedEvents, 'id');
+	  linkedEventIds = _.map(linkedEvents, 'id');
 
           if (linkedEventIds.length > 0 && params.mergeEventsWithParent === null) {
             return stepDone(errors.invalidParametersFormat('There are events referring to the ' +
@@ -294,7 +294,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         }
 
         if (params.mergeEventsWithParent) {
-          userEventsStorage.updateMultiple(context.user, {id: {$in: linkedEventIds}},
+	  userEventsStorage.updateMany(context.user, {id: {$in: linkedEventIds}},
               {streamId: parentId}, function (err) {
             if (err) { return stepDone(errors.unexpectedError(err)); }
 
@@ -321,7 +321,8 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         }
       },
       function deleteStreams(stepDone) {
-        userStreamsStorage.delete(context.user, {id: {$in: itemAndDescendantIds}}, function (err) {
+	userStreamsStorage.delete(context.user, {id: {$in: itemAndDescendantIds}},
+	    function (err) {
           if (err) { return stepDone(errors.unexpectedError(err)); }
 
           result.streamDeletion = {id: params.id};
