@@ -3,16 +3,16 @@ var Transform = require('stream').Transform,
     converters = require('./converters'),
     timestamp = require('unix-timestamp');
 
-module.exports = ApplyItemsFromDbStream;
+module.exports = ApplyEventsFromDbStream;
 
-inherits(ApplyItemsFromDbStream, Transform);
+inherits(ApplyEventsFromDbStream, Transform);
 
-function ApplyItemsFromDbStream() {
+function ApplyEventsFromDbStream() {
   Transform.call(this, {objectMode: true});
   this.trans = converters.getRenamePropertyFn('_id', 'id');
 }
 
-ApplyItemsFromDbStream.prototype._transform = function (event, encoding, callback) {
+ApplyEventsFromDbStream.prototype._transform = function (event, encoding, callback) {
   try {
     event = this.trans(event);
     // from storage/src/user/Events.js
