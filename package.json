@@ -16,7 +16,7 @@
     "test": "node scripts/components-npm test",
     "analysis": "plato -t 'service-core code analysis' -l .jshintrc -r -x 'node_modules|reports|\\.json' -d analysis-output components && open analysis-output/index.html",
     "check-dependencies": "node scripts/components-checkdeps",
-    "update-components-version": "node scripts/components-version", 
+    "update-components-version": "node scripts/components-version",
     "flow": "flow; test $? -eq 0 -o $? -eq 2"
   },
   "dependencies": {
@@ -27,6 +27,7 @@
     "dependable": "attentif/dependable#0bb5c4a9ef2b32dded1b24d5d3c0ecccfb0bf7fd",
     "errors": "file:components/errors",
     "express": "3.5.x",
+    "hfs-server": "file:components/hfs-server",
     "lodash": "^4.17.4",
     "middleware": "file:components/middleware",
     "mkdirp": "0.5.x",
