@@ -178,7 +178,7 @@ utils.messaging.openPubSocket(settings.tcpMessaging, function (err, messagingSoc
 function setupNightlyScript(server) {
   var workerRunning = false;
   var cronJob = new CronJob({
-    cronTime: settings.nightlyScriptCronTime || '00 15 2 * * *',
+    cronTime: settings.nightlyScriptCronTime || '00 15 2 * * *',
     onTick: function () {
       if (workerRunning) {
         return;
