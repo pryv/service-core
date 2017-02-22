@@ -4,11 +4,14 @@
 /* global describe, it */
 const should = require('should');
 
-const Server = require('../../src/server');
+const Settings = require('../../src/Settings');
+const Server = require('../../src/Server');
 
 describe('Server', function() {
   it('can be constructed', function() {
-    var server = new Server(); 
+    const settings = new Settings(); 
+    var server = new Server(settings); 
+    
     should.exist(server);
   });
 }); 

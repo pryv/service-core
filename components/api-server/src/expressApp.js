@@ -5,8 +5,9 @@ var middleware = require('components/middleware'),
 /**
  * The Express app definition.
  */
-module.exports = function (express, commonHeadersMiddleware, errorsMiddleware,
-                           requestTraceMiddleware) {
+module.exports = function(
+  express, commonHeadersMiddleware, errorsMiddleware,
+  requestTraceMiddleware) {
   var app = express();
 
   // register common middleware

@@ -1,0 +1,12 @@
+#!/usr/bin/env node
+
+// Starts a HTTP server for high frequency series. Main entry point for the high
+// frequency series server. 
+
+const Settings = require('../src/Settings');
+const Server = require('../src/Server'); 
+
+const settings = Settings.load(); 
+
+var server = new Server(settings); 
+server.start(); 

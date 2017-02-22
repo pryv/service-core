@@ -4,6 +4,6 @@
   "main": "src/server.js",
   "repository": {},
   "scripts": {
-    "test": "mocha test/**/*.test.js"
+    "test": "../../node_modules/.bin/mocha --compilers js:babel-register test/**/*.test.js"
   }
 }

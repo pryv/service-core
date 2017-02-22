@@ -23,6 +23,7 @@
     "api-server": "file:components/api-server",
     "async": "^2.1.4",
     "axon": "2.0.x",
+    "babel-plugin-transform-flow-strip-types": "^6.22.0",
     "cron": "^1.2.1",
     "dependable": "attentif/dependable#0bb5c4a9ef2b32dded1b24d5d3c0ecccfb0bf7fd",
     "errors": "file:components/errors",
@@ -44,12 +45,15 @@
     "utils": "file:components/utils"
   },
   "devDependencies": {
+    "babel-eslint": "^7.1.1",
+    "babel-register": "^6.23.0",
     "blanket": "^1.2.3",
     "colors": "^1.0.3",
     "cookie": "latest",
     "date-utils": "latest",
     "deep-equal": "latest",
     "eslint": "^3.16.0",
+    "eslint-plugin-flowtype": "^2.30.0",
     "flow-bin": "^0.39.0",
     "nixt": "^0.5.0",
     "nock": "^9.0.2",

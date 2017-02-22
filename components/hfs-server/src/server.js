@@ -1,11 +1,16 @@
 'use strict';
 // @flow
 
-// Main entry point for the high frequency series server. 
+import type Settings from './Settings';
 
+/**
+ * HTTP server responsible for the REST api that the HFS server exposes. 
+ */
 class Server {
-  constructor() {
-    
+  settings: Settings;
+  
+  constructor(settings: Settings) {
+    this.settings = settings; 
   }
 }
 
