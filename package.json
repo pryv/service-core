@@ -39,7 +39,7 @@
     "qs": "^6.3.0",
     "rimraf": "^2.4.3",
     "storage": "file:components/storage",
-    "superagent": "^3.3.2",
+    "superagent": "^3.4.4",
     "test-helpers": "file:components/test-helpers",
     "unix-timestamp": "^0.2.0",
     "utils": "file:components/utils"
