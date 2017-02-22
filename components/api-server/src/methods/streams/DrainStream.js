@@ -9,7 +9,7 @@ module.exports = DrainStream;
  * array in the callback or an error if the limit of items is exceeded.
  *
  * @param params {Object}
- *        params.limit {Number} limit of objects to return, default is 100'000
+ *        params.limit {Number} limit of objects to return, default is 100'000 (defined in API.js)
  * @param callback {Function} called when all items have been drained in the internal array
  *                            or the limit was reached, generating an error
  * @constructor
@@ -17,7 +17,6 @@ module.exports = DrainStream;
 function DrainStream(params, callback) {
   Writable.call(this, { objectMode: true });
 
-  // TODO: put in config
   this.limit = 100000;
 
   if (params && (params.limit > 0)) {
@@ -42,7 +41,7 @@ DrainStream.prototype._write = function(object, enc, next) {
   this.size++;
 
   if (this.size > this.limit) {
-    next(errors.resultSizeExceeded(this.limit));
+    return next(errors.resultSizeExceeded(this.limit));
   }
   this.array.push(object);
   next();

@@ -6,7 +6,6 @@ var Result = require('../src/Result'),
     Transform = require('stream').Transform,
     inherits = require('util').inherits,
     R = require('ramda'),
-    _ = require('lodash'),
     should = require('should');
 
 
@@ -66,16 +65,12 @@ describe('Result', function () {
       res.toObject(expectation);
     });
 
-    it.skip('must return an error when storing piped streams', function (done) {
+    it('must return an error when storing piped streams', function (done) {
       var res = new Result({arrayLimit: 2}),
           arrayName1 = 'items',
           array1 = [{a: 'a'}, {b: 'b'}, {c: 'c'}],
-          s1 = new Source(array1),
-          arrayName2 = 'items2',
-          array2 = [{d: 'd'}, {e: 'e'}, {f: 'f'}],
-          s2 = new Source(array2);
-      var p1 = s1.pipe(new AddPropertyStream({k: 'k'})),
-          p2 = s2.pipe(new AddPropertyStream({l: 'l'}));
+          s1 = new Source(array1);
+      var p1 = s1.pipe(new SimpleTransformStream());
 
       function expectation(content) {
         should.exist(content);
@@ -83,9 +78,10 @@ describe('Result', function () {
       }
 
       res.addStream(arrayName1, p1);
-      res.addStream(arrayName2, p2);
       res.toObject(expectation);
+    });
 
+    it.skip('must return an error when the core pipeline crashes because of size', function () {
     });
 
   });
@@ -116,21 +112,19 @@ Source.prototype._read = function () {
 };
 
 /**
- * Stream that adds a property to each object
- *
- * @param prop
+ * Stream simply forwards what he receives. Used for pipe case.
  */
-function AddPropertyStream(prop) {
-  this.prop = prop;
+function SimpleTransformStream() {
+  Transform.call(this, {objectMode: true});
 }
 
-inherits(AddPropertyStream, Transform);
+inherits(SimpleTransformStream, Transform);
 
-AddPropertyStream.prototype._transform = function (item, encoding, callback) {
-  this.push(_.extend(item, this.prop));
+SimpleTransformStream.prototype._transform = function (item, encoding, callback) {
+  this.push(item);
   callback();
 };
 
-AddPropertyStream.prototype._flush = function (callback) {
+SimpleTransformStream.prototype._flush = function (callback) {
   callback();
 };

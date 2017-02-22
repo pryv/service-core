@@ -22,6 +22,12 @@ function API() {
   this.filters = [];
 }
 
+/**
+ * When storing full events.get request instead of streaming it, the maximum array size
+ * before returning an error.
+ */
+var RESULT_TO_OBJECT_MAX_ARRAY_SIZE = 100000;
+
 // REGISTRATION
 
 /**
@@ -137,8 +143,7 @@ API.prototype.call = function (id, context, params, callback) {
     context.calledMethodId = id;
   }
 
-  // TODO integrate this limit in config
-  var result = new Result({arrayLimit: 100000});
+  var result = new Result({arrayLimit: RESULT_TO_OBJECT_MAX_ARRAY_SIZE});
   async.forEachSeries(fns, function (currentFn, next) {
     try {
       currentFn(context, params, result, next);

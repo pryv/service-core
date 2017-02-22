@@ -20,7 +20,7 @@ module.exports = Result;
  * recovered as a JS object through the toObject() function.
  *
  * @param params {Object}
- *        params.arrayLimit {Number}
+ *        params.arrayLimit {Number} limit of objects to return with toObject()
  * @constructor
  */
 function Result(params) {
@@ -128,13 +128,11 @@ Result.prototype.toObjectStream = function (callback) {
   async.forEachOfSeries(streamsArray, function(elementDef, i, done) {
     var drain = new DrainStream({limit: private.arrayLimit}, function(err, list) {
       if (err) {
-        console.log('result: got err', err);
         return done(err);
       }
       resultObj[elementDef.name] = list;
       done();
     });
-
     elementDef.stream.pipe(drain);
   }, function(err) {
     if (err) {
