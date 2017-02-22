@@ -1,4 +1,5 @@
 'use strict';
+// @flow
 
 /* global describe, it */
 const should = require('should');

@@ -1,3 +1,5 @@
+// @flow
+
 var childProcess = require('child_process'),
     CronJob = require('cron').CronJob,
     dependencies = require('dependable').container({useFnAnnotations: true}),
@@ -88,18 +90,18 @@ utils.messaging.openPubSocket(settings.tcpMessaging, function (err, messagingSoc
   // register API methods
 
   [
-    './methods/system',
-    './methods/utility',
-    './methods/auth',
-    './methods/accesses',
-    './methods/account',
-    './methods/followedSlices',
-    './methods/profile',
-    './methods/streams',
-    './methods/events',
-    './methods/trackingFunctions'
-  ].forEach(function (methodDefs) {
-    dependencies.resolve(require(methodDefs));
+    require('./methods/system'),
+    require('./methods/utility'),
+    require('./methods/auth'),
+    require('./methods/accesses'),
+    require('./methods/account'),
+    require('./methods/followedSlices'),
+    require('./methods/profile'),
+    require('./methods/streams'),
+    require('./methods/events'),
+    require('./methods/trackingFunctions'),
+  ].forEach(function (moduleDef) {
+    dependencies.resolve(moduleDef);
   });
 
   // setup temp routes for handling requests during startup (incl. possible data migration)
@@ -148,17 +150,17 @@ utils.messaging.openPubSocket(settings.tcpMessaging, function (err, messagingSoc
         expressApp.clearTempRoutes();
 
         [
-          './routes/system',
-          './routes/root',
-          './routes/auth',
-          './routes/accesses',
-          './routes/account',
-          './routes/followed-slices',
-          './routes/profile',
-          './routes/streams',
-          './routes/events'
-        ].forEach(function (routeDefs) {
-          dependencies.resolve(require(routeDefs));
+          require('./routes/system'),
+          require('./routes/root'),
+          require('./routes/auth'),
+          require('./routes/accesses'),
+          require('./routes/account'),
+          require('./routes/followed-slices'),
+          require('./routes/profile'),
+          require('./routes/streams'),
+          require('./routes/events'),
+        ].forEach(function (moduleDef) {
+          dependencies.resolve(moduleDef);
         });
 
         // all right
@@ -197,14 +199,18 @@ function setupNightlyScript(server) {
    * @param {Function} callback Optional, will be passed an error on failure
    */
   function runScript(callback) {
-    callback = (typeof callback === 'function') ? callback : function () {};
-
     var worker = childProcess.fork(__dirname + '/runNightlyTasks.js', process.argv.slice(2));
     workerRunning = true;
     worker.on('exit', function (code) {
       workerRunning = false;
-      callback(code !== 0 ?
-          new Error('Nightly script unexpectedly failed (see logs for details)') : null);
+      
+      if (! callback) { return; }
+      if (code !== 0) {
+        return callback(
+          new Error('Nightly script unexpectedly failed (see logs for details)'));
+      }
+
+      callback();
     });
   }
 }
