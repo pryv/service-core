@@ -137,8 +137,8 @@ API.prototype.call = function (id, context, params, callback) {
     context.calledMethodId = id;
   }
 
-
-  var result = new Result();
+  // TODO integrate this limit in config
+  var result = new Result({arrayLimit: 100000});
   async.forEachSeries(fns, function (currentFn, next) {
     try {
       currentFn(context, params, result, next);

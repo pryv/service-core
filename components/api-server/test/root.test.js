@@ -389,7 +389,7 @@ describe('root', function () {
         var getEventsResult = results[2];
         should.exist(getEventsResult.events);
         should.exist(getEventsResult.eventDeletions);
-        
+
         done();
       });
     });

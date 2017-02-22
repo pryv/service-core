@@ -19,10 +19,16 @@ module.exports = Result;
  * The result can be sent back to the caller using writeToHttpResponse or
  * recovered as a JS object through the toObject() function.
  *
+ * @param params {Object}
+ *        params.arrayLimit {Number}
  * @constructor
  */
-function Result() {
+function Result(params) {
   this._private = { init: false, first: true};
+
+  if (params && params.arrayLimit > 0) {
+    this._private.arrayLimit = params.arrayLimit;
+  }
 }
 
 
@@ -120,8 +126,9 @@ Result.prototype.toObjectStream = function (callback) {
 
   var resultObj = {};
   async.forEachOfSeries(streamsArray, function(elementDef, i, done) {
-    var drain = new DrainStream(null, function(err, list) {
+    var drain = new DrainStream({limit: private.arrayLimit}, function(err, list) {
       if (err) {
+        console.log('result: got err', err);
         return done(err);
       }
       resultObj[elementDef.name] = list;
@@ -129,7 +136,10 @@ Result.prototype.toObjectStream = function (callback) {
     });
 
     elementDef.stream.pipe(drain);
-  }, function() {
+  }, function(err) {
+    if (err) {
+      return callback(err);
+    }
     callback(resultObj);
   });
 };

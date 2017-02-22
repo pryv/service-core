@@ -1,5 +1,6 @@
 var Writable = require('stream').Writable,
-    inherits = require('util').inherits;
+    inherits = require('util').inherits,
+    errors = require('components/errors').factory;
 
 module.exports = DrainStream;
 
@@ -41,7 +42,7 @@ DrainStream.prototype._write = function(object, enc, next) {
   this.size++;
 
   if (this.size > this.limit) {
-    next('error in DrainStream: limit exceeded');
+    next(errors.resultSizeExceeded(this.limit));
   }
   this.array.push(object);
   next();

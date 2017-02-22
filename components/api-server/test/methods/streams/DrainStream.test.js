@@ -7,7 +7,7 @@ var DrainStream = require('../../../src/methods/streams/DrainStream'),
 
 describe('DrainStream', function () {
 
-  it('should be fed objects and return them in the callback', function (done) {
+  it('must be fed objects and return them in the callback', function (done) {
 
     var input = [{a: 'a'}, {b: 'b'}, {c: 'c'}];
 
@@ -25,7 +25,7 @@ describe('DrainStream', function () {
     drain.end();
   });
 
-  it('should return an error when the provided limit is exceeded', function (done) {
+  it('must return an error when the provided limit is exceeded', function (done) {
 
     function expectation(err) {
       should.exist(err);
