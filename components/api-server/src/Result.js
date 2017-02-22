@@ -86,7 +86,7 @@ Result.prototype.writeStreams = function(res, successCode) {
     var first = private.streamsArray[0];
     return first.stream
       .pipe(new ArrayStream(first.name, true))
-      .pipe(new ResultStream(this))
+      .pipe(new ResultStream())
       .pipe(res);
   }
 
@@ -97,7 +97,7 @@ Result.prototype.writeStreams = function(res, successCode) {
     streams.push(s.stream.pipe(new ArrayStream(s.name, i === 0)));
   }
 
-  new MultiStream(streams).pipe(new ResultStream(this)).pipe(res);
+  new MultiStream(streams).pipe(new ResultStream()).pipe(res);
 };
 
 Result.prototype.writeSingle = function(res, successCode) {
