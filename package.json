@@ -37,6 +37,7 @@
     "previews-server": "file:components/previews-server",
     "pryvuser-cli": "file:components/pryvuser-cli",
     "qs": "^6.3.0",
+    "ramda": "^0.23.0",
     "rimraf": "^2.4.3",
     "storage": "file:components/storage",
     "superagent": "^3.4.4",
