@@ -3,24 +3,14 @@
 
 import type Settings from './Settings';
 
-// TODO Maybe this should be moved to the configuration file. 
-const logSettings = {
-  console: {
-    active: true, 
-  }, 
-  file: {
-    active: false, 
-  }, 
-  airbrake: {
-    active: false, 
-  }
-};
-
 const http = require('http');
 const express = require('express');
 const middleware = require('components/middleware');
 const logging = require('components/utils').logging;
 const promisify = require('./promisify');
+
+const KEY_IP = 'http.ip';
+const KEY_PORT = 'http.port';  
 
 /**
  * HTTP server responsible for the REST api that the HFS server exposes. 
@@ -40,15 +30,19 @@ class Server {
   
   // Logger used here.
   logger: typeof logging.Logger; 
-    
+  
   constructor(settings: Settings) {
-    this.logger = logging(logSettings).getLogger('hfs-server');
+    const logSettings = settings.get('logs').obj();
+    const logFactory = logging(logSettings);
+    
+    this.logger = logFactory.getLogger('hfs-server');
     this.settings = settings; 
         
     this.expressApp = this.setupExpress();
     
-    const http = settings.http; 
-    this.baseUrl = `http://${http.ip}:${http.port}/`;
+    const ip = settings.get(KEY_IP).str(); 
+    const port = settings.get(KEY_PORT).num(); 
+    this.baseUrl = `http://${ip}:${port}/`;
   }
   
   /**
@@ -58,12 +52,12 @@ class Server {
     const settings = this.settings;
     const app = this.expressApp;
     
-    const port = settings.http.port; 
-    const hostname = settings.http.ip; 
+    const ip = settings.get(KEY_IP).str(); 
+    const port = settings.get(KEY_PORT).num(); 
     
     var server = this.server = http.createServer(app);
     
-    return promisify(server.listen, server)(port, hostname);
+    return promisify(server.listen, server)(port, ip);
   }
   
   /** 
@@ -82,6 +76,9 @@ class Server {
    * @return express application.
    */
   setupExpress(): any {
+    const settings = this.settings;
+    const logSettings = settings.get('logs').obj();
+    
     var app = express(); 
     
     app.disable('x-powered-by');

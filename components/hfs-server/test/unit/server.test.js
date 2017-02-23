@@ -2,15 +2,13 @@
 // @flow
 
 /* global describe, it, beforeEach, afterEach */
-const should = require('should');
-const superagent = require('superagent');
+const { should, superagent, settings } = require('./test-helpers');
+
 const url = require('url');
 
-const Settings = require('../../src/Settings');
 const Server = require('../../src/Server');
 
 describe('Server', function() {
-  const settings = new Settings(); 
   const request = superagent;
 
   var server = new Server(settings); 
