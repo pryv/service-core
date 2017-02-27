@@ -14,22 +14,38 @@ function ArrayStream(arrayName, isFirst) {
   Transform.call(this, {objectMode: true});
   this.isStart = true;
   this.prefix = formatPrefix(arrayName, isFirst);
+  this.size = 1000;
+  this.count = 0;
+  this.stack = [];
 }
 
 inherits(ArrayStream, Transform);
 
 ArrayStream.prototype._transform = function (item, encoding, callback) {
-  if (this.isStart) {
-    this.push(this.prefix + '[' + JSON.stringify(item));
-    this.isStart = false;
-  } else {
-    this.push(',' + JSON.stringify(item));
+
+  this.stack.push(item);
+  this.count++;
+  if (this.count > this.size) {
+    this.count = 0;
+    if (this.isStart) {
+      this.isStart = false;
+      this.push((this.prefix + JSON.stringify(this.stack)).slice(0,-1));
+    } else {
+      this.push(',' + (JSON.stringify(this.stack)).slice(1,-1));
+    }
+    this.stack = [];
   }
   callback();
 };
 
 ArrayStream.prototype._flush = function (callback) {
-  this.push(']');
+  if ((this.stack.length > 0) && (this.isStart)) {
+    this.push(this.prefix + JSON.stringify(this.stack));
+  } else if (this.stack.length > 0 && (! this.isStart)) {
+    this.push(',' + (JSON.stringify(this.stack)).slice(1));
+  } else {
+    this.push(']');
+  }
   callback();
 };
 
