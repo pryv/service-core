@@ -13,3 +13,4 @@ components/*/node_modules/
 
 proxy/nginx.conf
 service-core.iml
+out

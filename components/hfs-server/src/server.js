@@ -47,6 +47,9 @@ class Server {
   
   /**
    * Starts the HTTP server. 
+   * 
+   * @return {Promise<true>} A promise that will resolve once the server is 
+   *    started and accepts connections.
    */
   start(): Promise<true> {
     const settings = this.settings;
@@ -62,6 +65,9 @@ class Server {
   
   /** 
    * Stops a running server instance. 
+   * 
+   * @return {Promise<true>} A promise that will resolve once the server has 
+   *    stopped. 
    */
   stop(): Promise<true> {
     const server = this.server;

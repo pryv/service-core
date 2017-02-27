@@ -3,10 +3,8 @@
 
 const convict = require('convict');
 
-/** 
- * Encapsulates values that are obtained from the configuration (file/...). 
- * This makes sure that all access to values from the configuration is type 
- * safe. 
+/** Encapsulates values that are obtained from the configuration (file/...) using
+ * a convict configuration for this project. 
  *
  * Example: 
  * 
@@ -73,7 +71,12 @@ class ConfigValue {
  * Handles loading and access to project settings. If you're looking for the 
  * configuration schema, please see {produceConfigInstance}. 
  * 
- * @see ConfigValue
+ * Uses convict internally to verify the configuration file and to handle 
+ * command line arguments. Once loaded, the main method you will use is 
+ * `#get(key)` which will return a {ConfigValue} to use in your code. 
+ *
+ * You should use either one of the static constructors: `.load()` for actual
+ * server instances and `.loadFromFile(path)` for loading a test configuration. 
  */
 class Settings {
   config: Object; // TODO can we narrow this down?
@@ -118,7 +121,11 @@ class Settings {
    * 
    *    settings.get('logs.console.active') //=> true
    *
-   * @see ConfigValue
+   * @return {ConfigValue} Returns the configuration value that corresponds to 
+   *    `key` given. 
+   * @throws {Error} If the key you're trying to access doesn't exist in the 
+   *    configuration. This is a hard error, since we have a schema that the 
+   *    configuration file corresponds to. 
    * 
    */
   get(key: string): ConfigValue {
