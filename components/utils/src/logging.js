@@ -1,3 +1,6 @@
+// @flow
+'use strict';
+
 var winston = require('winston'),
     airbrake = null;
 
@@ -22,7 +25,7 @@ winston.addColors({
  *
  * @param logsSettings
  */
-module.exports = function (logsSettings) {
+module.exports = function (logsSettings: Object) {
   // apply settings
 
   // (console transport is present by default)
@@ -58,12 +61,12 @@ module.exports = function (logsSettings) {
       prefix = logsSettings.prefix;
   return {
     /**
-     * Returns a logger for the given component.
-     * Keeps track of initialized loggers to only use one logger per component name.
+     * Returns a logger for the given component. Keeps track of initialized
+     * loggers to only use one logger per component name.
      *
      * @param {String} componentName
      */
-    getLogger: function (componentName) {
+    getLogger: function (componentName: string): Logger {
       var context = prefix + componentName;
       if (! loggers[context]) {
         loggers[context] = new Logger(context);
@@ -87,7 +90,7 @@ function Logger(context) {
 // define logging methods
 Object.keys(levels).forEach(function (level) {
   Logger.prototype[level] = function (message, metadata) {
-    return winston[level](this.messagePrefix + message, metadata || {});
+    return winston[level](this.messagePrefix + message, metadata || {});
   };
 });
 

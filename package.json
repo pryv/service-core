@@ -17,7 +17,8 @@
     "analysis": "plato -t 'service-core code analysis' -l .jshintrc -r -x 'node_modules|reports|\\.json' -d analysis-output components && open analysis-output/index.html",
     "check-dependencies": "node scripts/components-checkdeps",
     "update-components-version": "node scripts/components-version",
-    "flow": "flow; test $? -eq 0 -o $? -eq 2"
+    "flow": "flow; test $? -eq 0 -o $? -eq 2", 
+    "jsdoc": "node_modules/.bin/jsdoc -c jsdoc.json"
   },
   "dependencies": {
     "api-server": "file:components/api-server",
@@ -37,14 +38,16 @@
     "previews-server": "file:components/previews-server",
     "pryvuser-cli": "file:components/pryvuser-cli",
     "qs": "^6.3.0",
+    "ramda": "^0.23.0",
     "rimraf": "^2.4.3",
     "storage": "file:components/storage",
-    "superagent": "^3.3.2",
+    "superagent": "^3.4.4",
     "test-helpers": "file:components/test-helpers",
     "unix-timestamp": "^0.2.0",
     "utils": "file:components/utils"
   },
   "devDependencies": {
+    "babel-core": "^6.23.1",
     "babel-eslint": "^7.1.1",
     "babel-register": "^6.23.0",
     "blanket": "^1.2.3",
@@ -55,6 +58,8 @@
     "eslint": "^3.16.0",
     "eslint-plugin-flowtype": "^2.30.0",
     "flow-bin": "^0.39.0",
+    "jsdoc": "^3.4.3",
+    "jsdoc-babel": "^0.3.0",
     "nixt": "^0.5.0",
     "nock": "^9.0.2",
     "parallelshell": "^2.0.0",
