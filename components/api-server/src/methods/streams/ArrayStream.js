@@ -3,6 +3,8 @@ var Transform = require('stream').Transform,
 
 module.exports = ArrayStream;
 
+var SERIALIZATION_STACK_SIZE = 1000;
+
 /**
  * Stream that encapsulates the items it receives in a stringified array.
  *
@@ -14,7 +16,7 @@ function ArrayStream(arrayName, isFirst) {
   Transform.call(this, {objectMode: true});
   this.isStart = true;
   this.prefix = formatPrefix(arrayName, isFirst);
-  this.size = 1000;
+  this.size = SERIALIZATION_STACK_SIZE;
   this.count = 0;
   this.stack = [];
 }
@@ -26,7 +28,6 @@ ArrayStream.prototype._transform = function (item, encoding, callback) {
   this.stack.push(item);
   this.count++;
   if (this.count > this.size) {
-    this.count = 0;
     if (this.isStart) {
       this.isStart = false;
       this.push((this.prefix + JSON.stringify(this.stack)).slice(0,-1));
@@ -34,6 +35,7 @@ ArrayStream.prototype._transform = function (item, encoding, callback) {
       this.push(',' + (JSON.stringify(this.stack)).slice(1,-1));
     }
     this.stack = [];
+    this.count = 0;
   }
   callback();
 };

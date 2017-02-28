@@ -133,7 +133,7 @@ Events.prototype.findStreamed = function (user, query, options, callback) {
 };
 
 /**
- * Same as findDeletions, but returns a readable stream
+ * Implementation
  */
 Events.prototype.findDeletionsStreamed = function (user, deletedSince, options, callback) {
   var query = {deleted: {$gt: timestamp.toDate(deletedSince)}};
