@@ -41,12 +41,10 @@ ArrayStream.prototype._transform = function (item, encoding, callback) {
 };
 
 ArrayStream.prototype._flush = function (callback) {
-  if ((this.stack.length > 0) && (this.isStart)) {
+  if (this.isStart) {
     this.push(this.prefix + JSON.stringify(this.stack));
-  } else if (this.stack.length > 0 && (! this.isStart)) {
-    this.push(',' + (JSON.stringify(this.stack)).slice(1));
   } else {
-    this.push(']');
+    this.push(',' + (JSON.stringify(this.stack)).slice(1));
   }
   callback();
 };
