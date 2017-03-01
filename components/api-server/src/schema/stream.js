@@ -25,7 +25,8 @@ module.exports = function (action, ignoreChildren, refToStreamSchema) {
         minLength: 1
       },
       'parentId': {
-        type: ['string', 'null']
+        type: ['string', 'null'],
+        minLength: 1
       },
       'singleActivity': {
         type: 'boolean'

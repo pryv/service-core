@@ -93,6 +93,8 @@ module.exports = function Manager(io, notifications, api, logging) {
    * Requires that caller (`this`) is the socket.
    */
   function onSocketMethodCall(callData, callback) {
+    if (! callback) { callback = function () {}; }
+
     var nsContext = nsContexts[this.namespace.name],
         id = callData.name,
         params = callData.args[0];
