@@ -1,0 +1,9 @@
+#!/bin/sh
+
+set -e
+
+cd /app/bin/components/api-server
+
+export NODE_ENV=production
+export NODE_PATH=/app/bin/
+exec chpst -u app /usr/bin/node src/server --config /app/conf/core.json
