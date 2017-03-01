@@ -2,7 +2,8 @@ var BaseStorage = require('./BaseStorage'),
     converters = require('./../converters'),
     timestamp = require('unix-timestamp'),
     util = require('util'),
-    _ = require('lodash');
+    _ = require('lodash'),
+    ApplyEventsFromDbStream = require('./../ApplyEventsFromDbStream');
 
 module.exports = Events;
 /**
@@ -117,6 +118,30 @@ Events.prototype.getCollectionInfo = function (user) {
     name: user.id + '.events',
     indexes: indexes
   };
+};
+
+/**
+ * Implementation
+ */
+Events.prototype.findStreamed = function (user, query, options, callback) {
+  query.deleted = null;
+  this.database.findStreamed(this.getCollectionInfo(user), this.applyQueryToDB(query),
+    this.applyOptionsToDB(options), function (err, dbStreamedItems) {
+      if (err) { return callback(err); }
+      callback(null, dbStreamedItems.pipe(new ApplyEventsFromDbStream()));
+    }.bind(this));
+};
+
+/**
+ * Implementation
+ */
+Events.prototype.findDeletionsStreamed = function (user, deletedSince, options, callback) {
+  var query = {deleted: {$gt: timestamp.toDate(deletedSince)}};
+  this.database.findStreamed(this.getCollectionInfo(user), query, this.applyOptionsToDB(options),
+    function (err, dbStreamedItems) {
+      if (err) { return callback(err); }
+      callback(null, dbStreamedItems.pipe(new ApplyEventsFromDbStream()));
+    }.bind(this));
 };
 
 Events.prototype.countAll = function (user, callback) {

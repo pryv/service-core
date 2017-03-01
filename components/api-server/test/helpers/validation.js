@@ -117,11 +117,12 @@ exports.checkStoredItem = function (item, schemaName) {
   checkSchema(item, schemas[schemaName](Action.STORE));
 };
 
-exports.checkMeta = function (parentObject) {
+function checkMeta(parentObject) {
   should.exist(parentObject.meta);
   parentObject.meta.apiVersion.should.eql(require('../../package.json').version);
   parentObject.meta.serverTime.should.match(/^\d+\.?\d*$/);
-};
+}
+exports.checkMeta = checkMeta;
 
 /**
  * Specific error check for convenience.

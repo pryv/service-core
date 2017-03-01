@@ -108,7 +108,10 @@ module.exports = function Manager(io, notifications, api, logging) {
         }, logger);
         return callback(setCommonMeta({error: errorHandling.getPublicErrorData(err)}));
       }
-      callback(null, setCommonMeta(result));
+      result.toObject(function (object) {
+        callback(null, setCommonMeta(object));
+      });
+
     });
   }
 
