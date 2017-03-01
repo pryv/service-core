@@ -2,11 +2,10 @@
 'use strict';
 
 var Result = require('../src/Result'),
-    Readable = require('stream').Readable,
     Transform = require('stream').Transform,
     inherits = require('util').inherits,
-    R = require('ramda'),
-    should = require('should');
+    should = require('should'),
+    Source = require('./helpers').SourceStream;
 
 
 describe('Result', function () {
@@ -88,28 +87,7 @@ describe('Result', function () {
 });
 
 
-/**
- * Readable stream outputing the objects of the array passed in parameters
- *
- * @param array
- * @constructor
- */
-function Source(array) {
-  Readable.call(this, {objectMode: true});
-  this.array = R.clone(array); // shift changes in place
-}
 
-inherits(Source, Readable);
-
-Source.prototype._read = function () {
-  if (!this.array || this.array.length === 0) {
-    this.push(null);
-  }
-  else {
-    var reading = this.array.shift();
-    this.push(reading);
-  }
-};
 
 /**
  * Stream simply forwards what he receives. Used for pipe case.
