@@ -1,4 +1,4 @@
-var package = require('../../../package.json'),
+var packageJson = require('../../../package.json'),
     timestamp = require('unix-timestamp'),
     _ = require('lodash');
 
@@ -14,7 +14,7 @@ module.exports = function (result) {
     result.meta = {};
   }
   _.extend(result.meta, {
-    apiVersion: package.version,
+    apiVersion: packageJson.version,
     serverTime: timestamp.now()
   });
   return result;

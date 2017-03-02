@@ -108,6 +108,7 @@ function InstanceManager(settings) {
       throw new Error('Server is already running; stop it first.');
     }
 
+    console.log('starting server, yo');
     // write config to temp path
     fs.writeFileSync(tempConfigPath, JSON.stringify(serverSettings));
     var args = ['--config=' + tempConfigPath];
@@ -134,10 +135,11 @@ function InstanceManager(settings) {
     logger.debug('Starting server instance... ');
     var options = {
       // Remove comment here if you want to see server output
-      // stdio: 'inherit',    
+       stdio: 'inherit',
       env: process.env
     };
-    serverProcess = spawn(process.argv[0], args, options);
+    console.log('spawning with cmd', '/Users/iliakebets/.nvm/versions/node/v6.9.4/bin/babel-node')
+    serverProcess = spawn('/Users/iliakebets/.nvm/versions/node/v6.9.4/bin/babel-node', args, options);
     var serverExited = false,
         exitCode = null;
     serverProcess.on('exit', function (code/*, signal*/) {

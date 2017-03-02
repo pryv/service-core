@@ -1,18 +1,18 @@
 /*global describe, it, before*/
-var helpers = require(__dirname + '/../../components/api-server/test/helpers'),
+var helpers = require(__dirname + '/../../build/api-server/test/helpers'),
     testData = helpers.data,
     server = helpers.dependencies.instanceManager,
     timestamp = require('unix-timestamp'),
     _ = require('lodash'),
-    async = require('async');
-    //should = require('should');
+    async = require('async'),
+    nock = require('nock');
 
 
 describe('High-Frequency', function () {
 
   var user = testData.users[0],
       apiServerPath = '/' + user.username + '/events',
-      seriesServerPath = '/' + user.username + '/hf',
+      seriesServerPath = '/' + user.username + '/events',
       request = null; // must be set after server started
 
   before(function (done) {
@@ -38,33 +38,43 @@ describe('High-Frequency', function () {
       return Math.floor(80 * (40 * Math.random()));
     }
 
-    var seriesEvent = {
-      type: 'series:frequency/bpm',
-      time: timestamp.now(),
-      streamId: testData.streams[0].id
-    };
+    var type = 'frequency/bpm',
+        seriesEvent = {
+          type: 'series:' + type,
+          time: timestamp.now(),
+          streamId: testData.streams[0].id // content should be not allowed at creation, right?
+        };
 
     var points = [],
         baseTime = timestamp.now();
 
     for (var i=0; i<1000; i++) {
-      points.push([baseTime - i, getBpm()]);
+      points.push([baseTime + i, getBpm()]);
     }
 
-
+    var postSeries = nock(seriesServerPath)
+                      .post('/' + seriesEvent.id + '/series', points)
+                      .reply(201, {
+                        points: points
+                      });
     async.series([
-      function createSeriesEvent(stepDone) {
+      /*function createSeriesEvent(stepDone) {
         request.post(apiServerPath).send(seriesEvent).end(function (res) {
+          console.log('body', res.body);
           res.statusCode.should.eql(201);
           var event = res.body.event;
           event.should.exist();
+
           (_.isEqual(seriesEvent, _.pick(event, ['type', 'time', 'streamId']))).should.be.true();
+          event.duration.should.eql(0);
+          event.content.should.exist();
+
           seriesEvent = event;
           stepDone();
         });
-      },
+      },*/
       function createPoints(stepDone) {
-        request.post(seriesServerPath).send(points).end(function (res) {
+        request.post(seriesServerPath + '/' + seriesEvent.id + '/series').send(points).end(function (res) {
           res.statusCode.should.eql(201);
           res.body.points.should.exist();
           res.body.points.length.should.eql(1000);

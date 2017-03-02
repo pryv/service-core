@@ -33,7 +33,7 @@ dependencies.register({
   customExtensionsSettings: settings.customExtensions,
 
   // misc utility
-  serverInfo: require('../package.json'),
+  serverInfo: require(__dirname + '/../package.json'),
   logging: utils.logging
 });
 
