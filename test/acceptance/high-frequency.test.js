@@ -1,5 +1,5 @@
 /*global describe, it, before*/
-var helpers = require(__dirname + '/../../build/api-server/test/helpers'),
+var helpers = require(__dirname + '/../../components/api-server/test/helpers'),
     testData = helpers.data,
     server = helpers.dependencies.instanceManager,
     timestamp = require('unix-timestamp'),
