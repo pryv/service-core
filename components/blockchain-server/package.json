@@ -11,7 +11,7 @@
     "_test": "NODE_ENV=test mocha --timeout 10000 --reporter=dot test/*.js"
   },
   "dependencies": {
-    "service-core-blockchain": ""
+    "service-core-blockchain": "git+https://github.com/pryv/service-core-blockchain.git"
   },
   "devDependencies": {
     "mocha": "^2.1.0"
