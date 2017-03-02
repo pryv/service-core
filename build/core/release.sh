@@ -17,7 +17,11 @@ pushd $target_dir
 run run tar -x --owner app -f \
   /pd_build/release.tar .
 
-PYTHON=$(which python2.7) run yarn install --production
+PYTHON=$(which python2.7) run yarn install
+
+# Perform a release build of the source code. (-> lib)
+run npm run release
+rm -r components && mv lib components
 
 # Install the config file
 run mkdir -p $conf_dir && \
