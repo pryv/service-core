@@ -8,6 +8,7 @@ var errorHandling = require('components/errors').errorHandling,
  *
  * @param api
  * @param userAccessesStorage
+ * @param logging
  */
 module.exports = function (api, userAccessesStorage, logging) {
 
@@ -20,24 +21,34 @@ module.exports = function (api, userAccessesStorage, logging) {
     // don't make callers wait on this to get their reply
     next();
 
-    var access = context.access;
-    if (access) {
-      var calledMethodKey = string.toMongoKey(context.calledMethodId),
-          prevCallCount = (access.calls && access.calls[calledMethodKey]) ?
-              access.calls[calledMethodKey] : 0;
+    // handle own errors not to mess with "concurrent" code (because of next() above)
+    try {
+      var access = context.access;
+      if (access) {
+	var calledMethodKey = string.toMongoKey(context.calledMethodId),
+	    prevCallCount = (access.calls && access.calls[calledMethodKey]) ?
+		access.calls[calledMethodKey] : 0;
 
-      var update = {lastUsed: timestamp.now()};
-      update['calls.' + calledMethodKey] = prevCallCount + 1;
+	var update = {lastUsed: timestamp.now()};
+	update['calls.' + calledMethodKey] = prevCallCount + 1;
 
-      userAccessesStorage.update(context.user, {id: context.access.id}, update, function (err) {
-        if (err) {
-          errorHandling.logError(errors.unexpectedError(err), {
-            url: context.user.username,
-            method: 'updateAccessLastUsed',
-            body: params
-          }, logger);
-        }
-      });
+	userAccessesStorage.updateOne(context.user, {id: context.access.id}, update,
+	    function (err) {
+	  if (err) {
+	    errorHandling.logError(errors.unexpectedError(err), {
+	      url: context.user.username,
+	      method: 'updateAccessLastUsed',
+	      body: params
+	    }, logger);
+	  }
+	});
+      }
+    } catch (err) {
+      errorHandling.logError(errors.unexpectedError(err), {
+	url: context.user.username,
+	method: 'updateAccessLastUsed',
+	body: params
+      }, logger);
     }
   }
 

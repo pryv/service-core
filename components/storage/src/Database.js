@@ -60,7 +60,7 @@ Database.prototype.waitForConnection = function (callback) {
  * @api private
  */
 Database.prototype.ensureConnect = function (callback) {
-  if (this.db && this.db._state === 'connected') {
+  if (this.db) {
     return callback();
   }
 
@@ -237,7 +237,7 @@ Database.prototype.aggregate = function (collectionInfo, query, projectExpressio
 Database.prototype.insertOne = function (collectionInfo, item, callback) {
   this.getCollection(collectionInfo, function (err, collection) {
     if (err) { return callback(err); }
-    collection.insert(item, {safe: true}, callback);
+    collection.insertOne(item, {w: 1}, callback);
   });
 };
 
@@ -251,31 +251,44 @@ Database.prototype.insertOne = function (collectionInfo, item, callback) {
 Database.prototype.insertMany = function (collectionInfo, items, callback) {
   this.getCollection(collectionInfo, function (err, collection) {
     if (err) { return callback(err); }
-
-    collection.insert(items, function (err) {
-      if (err) { return callback(err); }
-      callback(null, items);
-    });
+    collection.insertMany(items, {w: 1}, callback);
   });
 };
 
 /**
- * Applies the given update to the document(s) matching the given query.
+ * Applies the given update to the document matching the given query.
+ * Does *not* return the document.
  *
  * @param {Object} collectionInfo
  * @param {Object} query
  * @param {Object} update
  * @param {Function} callback
  */
-Database.prototype.update = function (collectionInfo, query, update, callback) {
+Database.prototype.updateOne = function (collectionInfo, query, update, callback) {
   this.getCollection(collectionInfo, function (err, collection) {
     if (err) { return callback(err); }
-    collection.update(query, update, {safe: true, multi: true}, callback);
+    collection.updateOne(query, update, {w: 1}, callback);
   });
 };
 
 /**
- * Applies the given update to the document(s) matching the given query, returning the updated
+ * Applies the given update to the document(s) matching the given query.
+ * Does *not* return the document(s).
+ *
+ * @param {Object} collectionInfo
+ * @param {Object} query
+ * @param {Object} update
+ * @param {Function} callback
+ */
+Database.prototype.updateMany = function (collectionInfo, query, update, callback) {
+  this.getCollection(collectionInfo, function (err, collection) {
+    if (err) { return callback(err); }
+    collection.updateMany(query, update, {w: 1}, callback);
+  });
+};
+
+/**
+ * Applies the given update to the document matching the given query, returning the updated
  * document.
  *
  * @param {Object} collectionInfo
@@ -283,10 +296,12 @@ Database.prototype.update = function (collectionInfo, query, update, callback) {
  * @param {Object} update
  * @param {Function} callback
  */
-Database.prototype.findAndModify = function (collectionInfo, query, update, callback) {
+Database.prototype.findOneAndUpdate = function (collectionInfo, query, update, callback) {
   this.getCollection(collectionInfo, function (err, collection) {
     if (err) { return callback(err); }
-    collection.findAndModify(query, {}, update, {new: true}, callback);
+    collection.findOneAndUpdate(query, update, {returnOriginal: false}, function (err, r) {
+      callback(err, r ? r.value : null);
+    });
   });
 };
 
@@ -298,24 +313,38 @@ Database.prototype.findAndModify = function (collectionInfo, query, update, call
  * @param {Object} update
  * @param {Function} callback
  */
-Database.prototype.upsert = function (collectionInfo, query, update, callback) {
+Database.prototype.upsertOne = function (collectionInfo, query, update, callback) {
   this.getCollection(collectionInfo, function (err, collection) {
     if (err) { return callback(err); }
-    collection.update(query, update, {safe: true, upsert: true}, callback);
+    collection.updateOne(query, update, {w: 1, upsert: true}, callback);
   });
 };
 
 /**
- * Removes the document(s) matching the given query.
+ * Deletes the document matching the given query.
  *
  * @param {Object} collectionInfo
  * @param {Object} query
  * @param {Function} callback
  */
-Database.prototype.remove = function (collectionInfo, query, callback) {
+Database.prototype.deleteOne = function (collectionInfo, query, callback) {
   this.getCollection(collectionInfo, function (err, collection) {
     if (err) { return callback(err); }
-    collection.remove(query, callback);
+    collection.deleteOne(query, {w: 1}, callback);
+  });
+};
+
+/**
+ * Deletes the document(s) matching the given query.
+ *
+ * @param {Object} collectionInfo
+ * @param {Object} query
+ * @param {Function} callback
+ */
+Database.prototype.deleteMany = function (collectionInfo, query, callback) {
+  this.getCollection(collectionInfo, function (err, collection) {
+    if (err) { return callback(err); }
+    collection.deleteMany(query, {w: 1}, callback);
   });
 };
 

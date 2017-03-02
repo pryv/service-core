@@ -282,6 +282,21 @@ describe('streams', function () {
       );
     });
 
+    // Test added to verify fix of issue#29
+    it('must return an error if the new stream\'s parentId ' +
+      'is the empty string', function (done) {
+      var data = {
+        name: 'zero-length parentId string Stream',
+        parentId: ''
+      };
+      request.post(basePath).send(data).end(function (res) {
+        validation.checkError(res, {
+          status: 400,
+          id: ErrorIds.InvalidParametersFormat
+        }, done);
+      });
+    });
+
     it('must slugify the new stream\'s predefined id', function (done) {
       var data = {
         id: 'pas encodé de bleu!',
@@ -522,7 +537,7 @@ describe('streams', function () {
           expectedChildDeletion;
 
       async.series([
-          storage.update.bind(storage, user, {id: id}, {trashed: true}),
+	  storage.updateOne.bind(storage, user, {id: id}, {trashed: true}),
           function deleteStream(stepDone) {
             request.del(path(id)).end(function (res) {
               expectedDeletion = {
@@ -567,7 +582,7 @@ describe('streams', function () {
         'missing', function (done) {
       var id = testData.streams[0].id;
       async.series([
-          storage.update.bind(storage, user, {id: id}, {trashed: true}),
+	  storage.updateOne.bind(storage, user, {id: id}, {trashed: true}),
           function deleteStream(stepDone) {
             request.del(path(testData.streams[0].id)).end(function (res) {
               validation.checkError(res, {
@@ -587,7 +602,7 @@ describe('streams', function () {
           deletedStream = parentStream.children[1];
 
       async.series([
-          storage.update.bind(storage, user, {id: deletedStream.id}, {trashed: true}),
+	  storage.updateOne.bind(storage, user, {id: deletedStream.id}, {trashed: true}),
           function deleteStream(stepDone) {
             request.del(path(deletedStream.id)).query({mergeEventsWithParent: true})
                 .end(function (res) {
@@ -605,7 +620,7 @@ describe('streams', function () {
           function verifyLinkedEvents(stepDone) {
             eventsStorage.find(user, {streamId: parentStream.id}, null,
                 function (err, linkedEvents) {
-              _.pluck(linkedEvents, 'id').should.eql([
+	      _.map(linkedEvents, 'id').should.eql([
                 testData.events[4].id,
                 testData.events[3].id,
                 testData.events[2].id,
@@ -636,7 +651,7 @@ describe('streams', function () {
               stepDone();
             });
           },
-          storage.update.bind(storage, user, {id: id}, {trashed: true}),
+	  storage.updateOne.bind(storage, user, {id: id}, {trashed: true}),
           function deleteStream(stepDone) {
             request.del(path(id)).query({mergeEventsWithParent: false}).end(function (res) {
               deletionTime = timestamp.now();

@@ -133,8 +133,8 @@ BaseStorage.prototype.insertOne = function (user, item, callback) {
  * @param updatedData
  * @param callback
  */
-BaseStorage.prototype.update = function (user, query, updatedData, callback) {
-  this.database.findAndModify(this.getCollectionInfo(user), this.applyQueryToDB(query),
+BaseStorage.prototype.updateOne = function (user, query, updatedData, callback) {
+  this.database.findOneAndUpdate(this.getCollectionInfo(user), this.applyQueryToDB(query),
       this.applyUpdateToDB(updatedData), function (err, dbItem) {
     if (err) { return callback(err); }
     callback(null, this.applyItemFromDB(dbItem));
@@ -149,8 +149,8 @@ BaseStorage.prototype.update = function (user, query, updatedData, callback) {
  * @param updatedData
  * @param callback
  */
-BaseStorage.prototype.updateMultiple = function (user, query, updatedData, callback) {
-  this.database.update(this.getCollectionInfo(user), this.applyQueryToDB(query),
+BaseStorage.prototype.updateMany = function (user, query, updatedData, callback) {
+  this.database.updateMany(this.getCollectionInfo(user), this.applyQueryToDB(query),
       this.applyUpdateToDB(updatedData), callback);
 };
 
@@ -158,6 +158,9 @@ BaseStorage.prototype.updateMultiple = function (user, query, updatedData, callb
 /**
  * Deletes the document(s), replacing them with a deletion record (i.e. id and deletion date).
  * Returns the deletion.
+ *
+ * Pay attention to the change in semantics with the lower DB layer, where 'delete' means actual
+ * removal.
  *
  * @see `remove()`, which actually removes the document from the collection
  *
@@ -167,17 +170,21 @@ BaseStorage.prototype.updateMultiple = function (user, query, updatedData, callb
  */
 BaseStorage.prototype.delete = function (user, query, callback) {
   return new Error('Not implemented (user: ' + user + ')');
-  // this line should work when/if Mongo ever supports "replacement" update on multiple docs
+  // a line like this could work when/if Mongo ever supports "replacement" update on multiple docs:
   //this.database.update(this.getCollectionInfo(user), this.applyQueryToDB(query),
   //    {deleted: new Date()}, callback);
 };
 
-BaseStorage.prototype.remove = function (user, query, callback) {
-  this.database.remove(this.getCollectionInfo(user), this.applyQueryToDB(query), callback);
+BaseStorage.prototype.removeOne = function (user, query, callback) {
+  this.database.deleteOne(this.getCollectionInfo(user), this.applyQueryToDB(query), callback);
+};
+
+BaseStorage.prototype.removeMany = function (user, query, callback) {
+  this.database.deleteMany(this.getCollectionInfo(user), this.applyQueryToDB(query), callback);
 };
 
 BaseStorage.prototype.removeAll = function (user, callback) {
-  this.database.remove(this.getCollectionInfo(user), this.applyQueryToDB({}), callback);
+  this.database.deleteMany(this.getCollectionInfo(user), this.applyQueryToDB({}), callback);
 };
 
 BaseStorage.prototype.dropCollection = function (user, callback) {

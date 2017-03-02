@@ -69,7 +69,7 @@ factory.invalidRequestStructure = function (message, data, innerError) {
 
 factory.itemAlreadyExists = function (resourceType, conflictingKeys, innerError) {
   resourceType = resourceType || 'resource';
-  var article = _.contains(['a', 'e', 'i', 'o', 'u'], resourceType[0]) ? 'An ' : 'A ';
+  var article = _.includes(['a', 'e', 'i', 'o', 'u'], resourceType[0]) ? 'An ' : 'A ';
   var keysDescription = Object.keys(conflictingKeys).map(function (k) {
     return k + ' "' + conflictingKeys[k] + '"';
   }).join(', ');
