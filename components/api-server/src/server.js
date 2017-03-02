@@ -4,6 +4,7 @@ var childProcess = require('child_process'),
     errors = require('components/errors'),
     middleware = require('components/middleware'),
     storage = require('components/storage'),
+    blockchainClient = require('components/blockchain-client'),
     utils = require('components/utils'),
     Notifications = require('./Notifications'),
     API = require('./API');
@@ -23,6 +24,7 @@ var settings = config.load();
 dependencies.register({
   // settings
   authSettings: settings.auth,
+  blockchainSettings: settings.blockchain,
   eventFilesSettings: settings.eventFiles,
   eventTypesSettings: settings.eventTypes,
   httpSettings: settings.http,
@@ -37,7 +39,7 @@ dependencies.register({
 
 var logging = dependencies.get('logging'),
     logger = logging.getLogger('server'),
-    database = new storage.Database(settings.database, logging);
+  database = new storage.Database(settings.database, logging);
 
 dependencies.register({
   // storage
@@ -53,6 +55,8 @@ dependencies.register({
   userFollowedSlicesStorage: new storage.user.FollowedSlices(database),
   userProfileStorage: new storage.user.Profile(database),
   userStreamsStorage: new storage.user.Streams(database),
+
+
 
   // Express middleware
   attachmentsAccessMiddleware: middleware.attachmentsAccess,
@@ -161,12 +165,24 @@ utils.messaging.openPubSocket(settings.tcpMessaging, function (err, messagingSoc
           dependencies.resolve(require(routeDefs));
         });
 
-        // all right
 
-        logger.info('Server ready');
-        dependencies.get('notifications').serverReady();
+        // connect to blockchain if needed
+        blockchainClient.connectIfNeeded(function (err) {
+          if (err) {
+            errors.errorHandling.logError(err, null, logger);
+            return;
+          }
 
-        setupNightlyScript(server);
+          // all right
+
+          logger.info('Server ready');
+          dependencies.get('notifications').serverReady();
+
+          setupNightlyScript(server);
+
+        });
+
+
       });
     });
   });

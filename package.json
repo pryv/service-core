@@ -12,6 +12,7 @@
     "database": "scripts/start-database.sh",
     "api": "cd components/api-server && npm start",
     "previews": "cd components/previews-server && npm start",
+    "blockchain": "cd components/blockchain-server && npm start",
     "proxy": "node scripts/compile-proxy-config proxy/vars.development.js && nginx -c \"`pwd`/proxy/nginx.conf\"",
     "test": "node scripts/components-npm test",
     "analysis": "plato -t 'service-core code analysis' -l .jshintrc -r -x 'node_modules|reports|\\.json' -d analysis-output components && open analysis-output/index.html",

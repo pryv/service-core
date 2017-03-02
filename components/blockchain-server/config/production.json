@@ -1,0 +1,14 @@
+{
+  "logs": {
+    "console": {
+      "active": true,
+      "level": "info",
+      "colorize": false
+    }
+  },
+  "blockchainServer": {
+    "db": { 
+      "path": "${PRYV_DATAPATH}/service-core-files/blockchains"
+    }
+  }
+}

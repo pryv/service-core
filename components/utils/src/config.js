@@ -73,6 +73,30 @@ config.schema = {
       default: 'pryv-node'
     }
   },
+  blockchainServer: {
+    db: { 
+      path: {
+        format: String,
+        default: path.join(__dirname, '../../../../service-core-files/blockchains')
+      }
+    },
+    http: {
+      ip: {
+        default: '127.0.0.1'
+      },
+      port: {
+        default: 9101
+      }
+    },
+    messages: {
+      ip: {
+        default: '127.0.0.1'
+      },
+      port: {
+        default: 9102
+      }
+    }
+  },
   eventFiles: {
     attachmentsDirPath: {
       format: String,

@@ -8,7 +8,11 @@ var utils = require('components/utils'),
     timestamp = require('unix-timestamp'),
     treeUtils = utils.treeUtils,
     validation = require('../schema/validation'),
+    blockchainClient = require('components/blockchain-client'),
     _ = require('lodash');
+
+
+
 
 /**
  * Events API methods implementations.
@@ -23,9 +27,9 @@ var utils = require('components/utils'),
  * @param notifications
  */
 module.exports = function (api, userEventsStorage, userEventFilesStorage, usersStorage,
-                           authSettings, eventTypes, notifications) {
+                           authSettings, blockchainSettings, eventTypes, notifications) {
 
-  // COMMON
+
 
   api.register('events.*',
       commonFns.loadAccess);
@@ -93,7 +97,8 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
           _.intersection(params.tags, accessibleTags) : accessibleTags;
     }
 
-    next();
+
+
   }
 
   function findAccessibleEvents(context, params, result, next) {
@@ -178,6 +183,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     stopPreviousPeriodIfNeeded,
     createEvent,
     createAttachments,
+    computeBlockchainIfNeeded,
     notify);
 
   /**
@@ -238,7 +244,8 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   function createAttachments(context, params, result, next) {
     attachFiles(context, {id: result.event.id}, context.files, function (err, attachments) {
       if (err) {
-        return next(err); }
+        return next(err);
+      }
       if (! attachments) {
         return next();
       }
@@ -254,6 +261,16 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
           next();
         });
     });
+  }
+
+  function computeBlockchainIfNeeded(context, params, result, next) {
+    if (! blockchainSettings.events) {
+      return next();
+    }
+    blockchainClient.event.add(context.username, result.event, function (err, fingerprint) {
+        result.blockchain = fingerprint;
+        next();
+      });
   }
 
   // UPDATE
@@ -318,7 +335,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       });
   }
 
-  function updateEvent (context, params, result, next) {
+  function updateEvent(context, params, result, next) {
 
     userEventsStorage.updateOne(context.user, {id: context.content.id}, context.content,
       function (err, updatedEvent) {

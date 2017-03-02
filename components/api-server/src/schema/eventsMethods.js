@@ -39,7 +39,8 @@ module.exports = {
     params: event(Action.CREATE),
     result: object({
       'event': event(Action.READ),
-      'stoppedId': string()
+      'stoppedId': string(),
+      'blockchain': string()
     }, {
       required: [ 'event' ],
       additionalProperties: false
