@@ -20,7 +20,7 @@
     "flow": "flow; test $? -eq 0 -o $? -eq 2", 
     "jsdoc": "node_modules/.bin/jsdoc -c jsdoc.json",
     "test-root": "node_modules/mocha/bin/_mocha --compilers js:babel-register --timeout 10000 --reporter=dot test/**/*.test.js",
-    "babel": "babel --watch=./components --out-dir=./build"
+    "babel": "babel --watch=./components --out-dir=./build --copy-files"
   },
   "dependencies": {
     "api-server": "file:components/api-server",
