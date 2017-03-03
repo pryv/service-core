@@ -8,7 +8,8 @@ var utils = require('components/utils'),
     timestamp = require('unix-timestamp'),
     treeUtils = utils.treeUtils,
     validation = require('../schema/validation'),
-    _ = require('lodash');
+    _ = require('lodash'),
+    SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
 
 /**
  * Events API methods implementations.
@@ -137,33 +138,42 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       limit: params.limit
     };
 
-    userEventsStorage.find(context.user, query, options, function (err, events) {
+    userEventsStorage.findStreamed(context.user, query, options, function (err, eventsStream) {
       if (err) {
         return next(errors.unexpectedError(err));
       }
 
-      events.forEach(setFileReadToken.bind(null, context.access));
-      result.events = events;
+      result.addStream('events', eventsStream
+        .pipe(new SetFileReadTokenStream(
+          {
+            access: context.access,
+            filesReadTokenSecret: authSettings.filesReadTokenSecret
+          })));
       next();
     });
   }
 
   function includeDeletionsIfRequested(context, params, result, next) {
-    if (! params.modifiedSince || ! params.includeDeletions) { return next(); }
+
+    if (!params.modifiedSince || !params.includeDeletions) {
+      return next();
+    }
 
     var options = {
-      sort: { deleted: params.sortAscending ? 1 : -1 },
+      sort: {deleted: params.sortAscending ? 1 : -1},
       skip: params.skip,
       limit: params.limit
     };
 
-    userEventsStorage.findDeletions(context.user, params.modifiedSince, options,
-        function (err, deletions) {
-      if (err) { return next(errors.unexpectedError(err)); }
+    userEventsStorage.findDeletionsStreamed(context.user, params.modifiedSince, options,
+      function (err, deletionsStream) {
+        if (err) {
+          return next(errors.unexpectedError(err));
+        }
 
-      result.eventDeletions = deletions;
-      next();
-    });
+        result.addStream('eventDeletions', deletionsStream);
+        next();
+      });
   }
 
   // CREATION

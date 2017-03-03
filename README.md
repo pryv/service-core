@@ -7,7 +7,7 @@ Pryv core server app components, ie. what runs on each server node and handles u
 
 ### Install
 
-_Prerequisites:_ Node v6.9.5, Mongo DB v2.6+ (needs at least 4GB of free disk space for the initial database), Nginx (optional, skip if you don't need the proxy server).
+_Prerequisites:_ Node v6.9.5, Yarn v0.20.3, Mongo DB v2.6+ (needs at least 4GB of free disk space for the initial database), Nginx (optional, skip if you don't need the proxy server).
 
 Then just `yarn install`.
 
