@@ -1,6 +1,6 @@
 {
   "name": "api-server",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "private": true,
   "scripts": {
     "start": "NODE_ENV=development node src/server",
@@ -8,15 +8,14 @@
     "test-detailed": "npm run _test -- --reporter=spec",
     "test-debug": "npm run _test -- --timeout 3600000 --reporter=spec --debug-brk",
     "test-profile": "npm run _test -- --profile=true --logs:console:active=false && tick-processor > profiling-output.txt && open profiling-output.txt",
-    "_test": "NODE_ENV=test ../../node_modules/.bin/mocha --timeout 10000 --reporter=dot test/*.js",
+    "_test": "NODE_ENV=test ../../node_modules/.bin/mocha --timeout 10000 --reporter=dot test/**/*.test.js",
     "update-event-types": "scripts/update-event-types.bash"
   },
   "dependencies": {
     "slug": "^0.9.1",
+    "multistream": "^2.1.0",
+    "slug": "0.8.x",
     "socket.io": "^0.9.17",
     "z-schema": "^3.15.3"
-  },
-  "devDependencies": {
-    "mocha": "^3.2.0"
   }
 }
