@@ -17,9 +17,5 @@
     "slug": "0.8.x",
     "socket.io": "^0.9.17",
     "z-schema": "^3.15.3"
-  },
-  "devDependencies": {
-    "mocha": "^3.2.0",
-    "ramda": "^0.23.0"
   }
 }

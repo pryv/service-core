@@ -52,9 +52,10 @@ anymatch@^1.3.0:
     micromatch "^2.1.5"
 
 "api-server@file:components/api-server":
-  version "1.1.6"
+  version "1.1.7"
   dependencies:
-    slug "^0.9.1"
+    multistream "^2.1.0"
+    slug "0.8.x"
     socket.io "^0.9.17"
     z-schema "^3.15.3"
 
@@ -745,7 +746,7 @@ errorhandler@1.0.0:
   resolved "https://registry.yarnpkg.com/errorhandler/-/errorhandler-1.0.0.tgz#d74b37e8dc38c99afb3f5a79edcebaea022d042a"
 
 "errors@file:components/errors":
-  version "1.1.6"
+  version "1.1.7"
 
 es6-promise@3.2.1:
   version "3.2.1"
@@ -1358,7 +1359,7 @@ micromatch@^2.1.5:
     regex-cache "^0.4.2"
 
 "middleware@file:components/middleware":
-  version "1.1.6"
+  version "1.1.7"
 
 mime-db@~1.26.0:
   version "1.26.0"
@@ -1419,7 +1420,7 @@ mocha@^3.2.0:
     supports-color "3.1.2"
 
 "model@file:components/model":
-  version "1.1.6"
+  version "1.1.7"
 
 moment-timezone@^0.5.x:
   version "0.5.11"
@@ -1466,6 +1467,13 @@ multiparty@2.2.0:
   dependencies:
     readable-stream "~1.1.9"
     stream-counter "~0.2.0"
+
+multistream@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/multistream/-/multistream-2.1.0.tgz#625c267d5c44424ad6294788b5bb4da3dcb32f1d"
+  dependencies:
+    inherits "^2.0.1"
+    readable-stream "^2.0.5"
 
 nan@2.5.0, nan@^2.3.0, nan@^2.3.2:
   version "2.5.0"
@@ -1645,7 +1653,7 @@ preserve@^0.2.0:
   resolved "https://registry.yarnpkg.com/preserve/-/preserve-0.2.0.tgz#815ed1f6ebc65926f865b310c0713bcb3315ce4b"
 
 "previews-server@file:components/previews-server":
-  version "1.1.6"
+  version "1.1.7"
   dependencies:
     fs-xattr "^0.1.11"
     gm "^1.20.0"
@@ -1663,7 +1671,7 @@ propagate@0.4.0:
   resolved "https://registry.yarnpkg.com/propagate/-/propagate-0.4.0.tgz#f3fcca0a6fe06736a7ba572966069617c130b481"
 
 "pryvuser-cli@file:components/pryvuser-cli":
-  version "1.1.6"
+  version "1.1.7"
   dependencies:
     co-prompt "^1.0.0"
     commander "^2.8.1"
@@ -1687,6 +1695,10 @@ qs@^6.0.2, qs@^6.1.0, qs@^6.3.0, qs@~6.3.0:
 qs@~6.2.0:
   version "6.2.2"
   resolved "https://registry.yarnpkg.com/qs/-/qs-6.2.2.tgz#d506a5ad5b2cae1fd35c4f54ec182e267e3ef586"
+
+ramda@^0.23.0:
+  version "0.23.0"
+  resolved "https://registry.yarnpkg.com/ramda/-/ramda-0.23.0.tgz#ccd13fff73497a93974e3e86327bfd87bd6e8e2b"
 
 randomatic@^1.1.3:
   version "1.1.6"
@@ -1977,9 +1989,9 @@ slash@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/slash/-/slash-1.0.0.tgz#c41f2f6c39fc16d1cd17ad4b5d896114ae470d55"
 
-slug@^0.9.1:
-  version "0.9.1"
-  resolved "https://registry.yarnpkg.com/slug/-/slug-0.9.1.tgz#af08f608a7c11516b61778aa800dce84c518cfda"
+slug@0.8.x:
+  version "0.8.0"
+  resolved "https://registry.yarnpkg.com/slug/-/slug-0.8.0.tgz#6ca45b836d03abdd54b7372f1f89c9bf8d902cf8"
   dependencies:
     unicode ">= 0.3.1"
 
@@ -2051,7 +2063,7 @@ static-favicon@1.0.2:
   resolved "https://registry.yarnpkg.com/static-favicon/-/static-favicon-1.0.2.tgz#7c15920dda2bf33f414b0e60aebbd65cdd2a1d2f"
 
 "storage@file:components/storage":
-  version "1.1.6"
+  version "1.1.7"
   dependencies:
     cuid "^1.2.5"
     mongodb "^2.2.19"
@@ -2150,7 +2162,7 @@ temp@latest:
     rimraf "~2.2.6"
 
 "test-helpers@file:components/test-helpers":
-  version "1.1.6"
+  version "1.1.7"
 
 through@~2.3.4:
   version "2.3.8"
@@ -2225,7 +2237,7 @@ utils-merge@1.0.0:
   resolved "https://registry.yarnpkg.com/utils-merge/-/utils-merge-1.0.0.tgz#0294fb922bb9375153541c4f7096231f287c8af8"
 
 "utils@file:components/utils":
-  version "1.1.6"
+  version "1.1.7"
   dependencies:
     airbrake "^1.2.0"
     bcrypt "^1.0.2"
