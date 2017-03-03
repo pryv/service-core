@@ -108,7 +108,6 @@ function InstanceManager(settings) {
       throw new Error('Server is already running; stop it first.');
     }
 
-    console.log('starting server, yo');
     // write config to temp path
     fs.writeFileSync(tempConfigPath, JSON.stringify(serverSettings));
     var args = ['--config=' + tempConfigPath];
