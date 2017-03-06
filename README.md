@@ -17,8 +17,8 @@ See individual component READMEs for instructions.
 
 ### Transpile Flowtype into pure JS
 
-- `npm run release` strips the `source` code from Flowtype and outputs in `components`
-- `npm run watch` starts a watcher that runs Flow check on `source files` and outputs the pure JS files in `components`
+- `npm run release` strips the `source/` code from Flowtype and outputs in `components/`
+- `npm run watch` starts a watcher that runs Flow check on `source/` files and outputs the pure JS files in `components/`
 
 ### Quick, run the servers
 
