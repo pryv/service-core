@@ -15,7 +15,14 @@ Then just `yarn install`.
 
 See individual component READMEs for instructions.
 
+### Transpile Flowtype into pure JS
+
+- `npm run release` strips the `source` code from Flowtype and outputs in `components`
+- `npm run watch` starts a watcher that runs Flow check on `source files` and outputs the pure JS files in `components`
+
 ### Quick, run the servers
+
+To run the servers, the source code needs to be transpiled from Flowtype to pure JS.
 
 `npm run all` runs everything in a single console with `development` settings. To run processes individually:
 
@@ -106,7 +113,7 @@ Code is organized into local modules defined in the `components` folder, each wi
 _Prerequisite:_ MongoDB must be running on the default port; you can use `npm run database`.
 
 `npm test` runs tests on each component. See individual components for things like detailed output and other options.
-
+`npm test-root` runs root tests combining multiple components (e.g., High-Frequency series).
 
 ### Code analysis
 
