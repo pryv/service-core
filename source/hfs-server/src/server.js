@@ -2,7 +2,6 @@
 'use strict';
 
 import type Settings from './Settings';
-import type { Server as HttpServer } from 'http';
 
 const http = require('http');
 const express = require('express');
@@ -27,7 +26,7 @@ class Server {
   baseUrl: string; 
   
   // http server object
-  server: HttpServer; 
+  server: http$Server; 
   
   // Logger used here.
   logger: typeof logging.Logger; 
