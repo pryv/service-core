@@ -1,5 +1,7 @@
 // @flow
 
+const express = require('express');
+
 var childProcess = require('child_process'),
     CronJob = require('cron').CronJob,
     dependencies = require('dependable').container({useFnAnnotations: true}),
@@ -58,15 +60,13 @@ dependencies.register({
 
   // Express middleware
   attachmentsAccessMiddleware: middleware.attachmentsAccess,
-  commonHeadersMiddleware: middleware.commonHeaders,
-  errorsMiddleware: require('./middleware/errors'),
   initContextMiddleware: middleware.initContext,
-  requestTraceMiddleware: middleware.requestTrace,
-
-  // Express & app
-  express: require('express'),
-  expressApp: require('./expressApp')
+  
+  express: express, 
 });
+
+const {app, lifecycle} = require('./expressApp')(dependencies);
+dependencies.register({expressApp: app});
 
 // start TCP pub messaging
 
@@ -106,12 +106,11 @@ utils.messaging.openPubSocket(settings.tcpMessaging, function (err, messagingSoc
 
   // setup temp routes for handling requests during startup (incl. possible data migration)
 
-  var expressApp = dependencies.get('expressApp');
-  expressApp.setupTempRoutesForStartup();
+  lifecycle.appStartupBegin(); 
 
   // setup HTTP and register server
 
-  var server = require('http').createServer(expressApp);
+  var server = require('http').createServer(app);
   module.exports = server;
   dependencies.register({server: server});
 
@@ -126,7 +125,7 @@ utils.messaging.openPubSocket(settings.tcpMessaging, function (err, messagingSoc
     var protocol = server.key ? 'https' : 'http';
     server.url = protocol + '://' + address.address + ':' + address.port;
     logger.info('API server v' + require('../package.json').version +
-        ' [' + expressApp.settings.env + '] listening on ' + server.url);
+        ' [' + app.settings.env + '] listening on ' + server.url);
 
     // TEST: execute test setup instructions if any
     if (process.env.NODE_ENV === 'test') {
@@ -146,8 +145,8 @@ utils.messaging.openPubSocket(settings.tcpMessaging, function (err, messagingSoc
         }
 
         // ok: setup proper API routes
-
-        expressApp.clearTempRoutes();
+        
+        lifecycle.appStartupComplete(); 
 
         [
           require('./routes/system'),
@@ -162,6 +161,10 @@ utils.messaging.openPubSocket(settings.tcpMessaging, function (err, messagingSoc
         ].forEach(function (moduleDef) {
           dependencies.resolve(moduleDef);
         });
+        
+        // ok: All routes setup. Add error handling middleware. 
+        
+        lifecycle.routesAdded(); 
 
         // all right
 
