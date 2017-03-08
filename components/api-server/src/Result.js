@@ -78,8 +78,7 @@ Result.prototype.writeStreams = function(res, successCode) {
   res.setHeader('Transfer-Encoding', 'chunked');
   res.statusCode = successCode;
 
-  var _private = this._private;
-  var streamsArray = _private.streamsArray;
+  var streamsArray = this._private.streamsArray;
 
   if (streamsArray.length < 1) { throw 'error: streams array empty'; }
 
