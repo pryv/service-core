@@ -1,3 +1,32 @@
+declare class express$Request extends http$IncomingMessage mixins express$RequestResponseBase {
+  baseUrl: string;
+  body: mixed;
+  cookies: {[cookie: string]: string};
+  fresh: boolean;
+  hostname: string;
+  ip: string;
+  ips: Array<string>;
+  method: string;
+  originalUrl: string;
+  params: {[param: string]: string};
+  path: string;
+  protocol: 'https' | 'http';
+  query: {[name: string]: string};
+  route: string;
+  secure: boolean;
+  signedCookies: {[signedCookie: string]: string | Object};
+  stale: boolean;
+  subdomains: Array<string>;
+  xhr: boolean;
+  accepts(types: string): string | false;
+  acceptsCharsets(...charsets: Array<string>): string | false;
+  acceptsEncodings(...encoding: Array<string>): string | false;
+  acceptsLanguages(...lang: Array<string>): string | false;
+  header(field: string): string | void;
+  is(type: string): boolean;
+  param(name: string, defaultValue?: string): string | void;
+}
+
 declare class express$Response extends http$ServerResponse mixins express$RequestResponseBase {
   headersSent: boolean;
   locals: {[name: string]: mixed};

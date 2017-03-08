@@ -3,6 +3,7 @@
 
 const cookieParser = require('cookie-parser');
 const R = require('ramda');
+const express = require('express');
 
 const errors = require('components/errors').factory;
 
@@ -50,11 +51,13 @@ module.exports = function (expressApp: express$Application, api: any, authSettin
     });
   }
   
-  const route = expressApp.route(`${Paths.Auth}/`)
-  route.all('*', cookieParser(ssoCookieSignSecret));
-  route.get('who-am-i', function (req: express$Request, res, next) {
+  const router = express.Router(); 
+  expressApp.use(`${Paths.Auth}/`, router);
+  
+  router.all('*', cookieParser(ssoCookieSignSecret));
+  router.get('who-am-i', function (req: express$Request, res, next) {
     var ssoCookie = req.signedCookies.sso;
-    if (! ssoCookie) {
+    if (! ssoCookie || typeof ssoCookie !== 'object') {
       return next(errors.invalidCredentials('Not signed-on'));
     }
 
@@ -63,11 +66,17 @@ module.exports = function (expressApp: express$Application, api: any, authSettin
       token: ssoCookie.token
     }, 200);
   });
-  route.post('login', function (req: express$Request, res, next) {
+  router.post('login', function (req: express$Request, res, next) {
+    if (typeof req.body !== 'object' || req.body == null ||
+      ! hasProperties(req.body, ['username', 'password', 'appId'])) {
+      return next(errors.invalidOperation('Missing parameters: username, password and appId are required.'));
+    }
+    const body: Object = req.body; 
+    
     var params = {
-      username: req.body.username,
-      password: req.body.password,
-      appId: req.body.appId,
+      username: body.username,
+      password: body.password,
+      appId: body.appId,
       origin: req.headers.origin || ''
     };
     api.call('auth.login', req.context, params, function (err, result) {
@@ -76,7 +85,7 @@ module.exports = function (expressApp: express$Application, api: any, authSettin
       res.json(result, 200);
     });
   });
-  route.post('logout', function (req: express$Request, res, next) {
+  router.post('logout', function (req: express$Request, res, next) {
     clearSSOCookie(res);
     api.call('auth.logout', req.context, {}, methodCallback(res, next, 200));
   });

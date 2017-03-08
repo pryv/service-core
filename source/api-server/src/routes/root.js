@@ -34,7 +34,7 @@ module.exports = function (expressApp, api, initContextMiddleware) {
   expressApp.get(Paths.UserRoot + '/*', initContextMiddleware);
   expressApp.post(Paths.UserRoot + '/*', initContextMiddleware);
   expressApp.put(Paths.UserRoot + '/*', initContextMiddleware);
-  expressApp.del(Paths.UserRoot + '/*', initContextMiddleware);
+  expressApp.delete(Paths.UserRoot + '/*', initContextMiddleware);
 
   expressApp.get(Paths.UserRoot + '/', rootIndex);
 
