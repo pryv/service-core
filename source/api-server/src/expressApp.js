@@ -57,12 +57,6 @@ class ExpressAppLifecycle {
     this.app = app; 
     this.errorHandlingMiddleware = errorHandlingMiddleware; 
     this.phase = 'init';
-    
-    this.tempRoutes = app.route('*')
-      .get(handleRequestDuringStartup)
-      .post(handleRequestDuringStartup)
-      .put(handleRequestDuringStartup)
-      .delete(handleRequestDuringStartup);
   }
   
   /** Enter the phase given.  
@@ -76,6 +70,7 @@ class ExpressAppLifecycle {
    */
   appStartupBegin(): void {
     const app = this.app; 
+    
     this.go('startupBegon'); 
     
     // Insert a middleware that allows us to intercept requests. This will 
