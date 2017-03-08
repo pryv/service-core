@@ -1,4 +1,4 @@
-// flow-typed signature: c2998fd3e2401592c90cba66949332e2
+// flow-typed signature: ff096146ce3e5fe1dc9808fd9d9ddbfb
 // flow-typed version: <<STUB>>/eslint_v^3.16.0/flow_v0.39.0
 
 /**
@@ -479,6 +479,10 @@ declare module 'eslint/lib/rules/no-catch-shadow' {
 }
 
 declare module 'eslint/lib/rules/no-class-assign' {
+  declare module.exports: any;
+}
+
+declare module 'eslint/lib/rules/no-compare-neg-zero' {
   declare module.exports: any;
 }
 
@@ -982,6 +986,10 @@ declare module 'eslint/lib/rules/no-with' {
   declare module.exports: any;
 }
 
+declare module 'eslint/lib/rules/nonblock-statement-body-position' {
+  declare module.exports: any;
+}
+
 declare module 'eslint/lib/rules/object-curly-newline' {
   declare module.exports: any;
 }
@@ -1243,6 +1251,10 @@ declare module 'eslint/lib/token-store/utils' {
 }
 
 declare module 'eslint/lib/util/comment-event-generator' {
+  declare module.exports: any;
+}
+
+declare module 'eslint/lib/util/fix-tracker' {
   declare module.exports: any;
 }
 
@@ -1652,6 +1664,9 @@ declare module 'eslint/lib/rules/no-catch-shadow.js' {
 declare module 'eslint/lib/rules/no-class-assign.js' {
   declare module.exports: $Exports<'eslint/lib/rules/no-class-assign'>;
 }
+declare module 'eslint/lib/rules/no-compare-neg-zero.js' {
+  declare module.exports: $Exports<'eslint/lib/rules/no-compare-neg-zero'>;
+}
 declare module 'eslint/lib/rules/no-cond-assign.js' {
   declare module.exports: $Exports<'eslint/lib/rules/no-cond-assign'>;
 }
@@ -2027,6 +2042,9 @@ declare module 'eslint/lib/rules/no-whitespace-before-property.js' {
 declare module 'eslint/lib/rules/no-with.js' {
   declare module.exports: $Exports<'eslint/lib/rules/no-with'>;
 }
+declare module 'eslint/lib/rules/nonblock-statement-body-position.js' {
+  declare module.exports: $Exports<'eslint/lib/rules/nonblock-statement-body-position'>;
+}
 declare module 'eslint/lib/rules/object-curly-newline.js' {
   declare module.exports: $Exports<'eslint/lib/rules/object-curly-newline'>;
 }
@@ -2224,6 +2242,9 @@ declare module 'eslint/lib/token-store/utils.js' {
 }
 declare module 'eslint/lib/util/comment-event-generator.js' {
   declare module.exports: $Exports<'eslint/lib/util/comment-event-generator'>;
+}
+declare module 'eslint/lib/util/fix-tracker.js' {
+  declare module.exports: $Exports<'eslint/lib/util/fix-tracker'>;
 }
 declare module 'eslint/lib/util/glob-util.js' {
   declare module.exports: $Exports<'eslint/lib/util/glob-util'>;
