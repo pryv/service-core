@@ -6,6 +6,7 @@ var methodCallback = require('./methodCallback'),
     Paths = require('./Paths'),
     tryCoerceStringValues = require('../schema/validation').tryCoerceStringValues,
     _ = require('lodash');
+const upload = require('./upload');
 
 /**
  * Events route handling.
@@ -59,35 +60,39 @@ module.exports = function (expressApp, api, attachmentsAccessMiddleware, userAcc
     }
 
     userAccessesStorage.findOne(req.context.user, {id: tokenParts.accessId}, null,
-        function (err, access) {
-      if (err) { return next(errors.unexpectedError(err)); }
+      function (err, access) {
+        if (err) { return next(errors.unexpectedError(err)); }
 
-      if (! access) {
-        return next(errors.invalidAccessToken('Cannot find access matching read token "' +
-            req.query.readToken + '".'));
-      }
+        if (! access) {
+          return next(errors.invalidAccessToken('Cannot find access matching read token "' +
+              req.query.readToken + '".'));
+        }
 
-      if (! encryption.isFileReadTokenHMACValid(tokenParts.hmac, req.params.fileId, access,
-          authSettings.filesReadTokenSecret)) {
-        return next(errors.invalidAccessToken('Invalid read token "' + req.query.readToken + '".'));
-      }
+        if (! encryption.isFileReadTokenHMACValid(tokenParts.hmac, req.params.fileId, access,
+            authSettings.filesReadTokenSecret)) {
+          return next(errors.invalidAccessToken('Invalid read token "' + req.query.readToken + '".'));
+        }
 
-      req.context.access = access;
-      next();
-    });
+        req.context.access = access;
+        next();
+      });
   }
 
   function loadAccess(req, res, next) {
     req.context.retrieveExpandedAccess(next);
   }
 
-  expressApp.post(Paths.Events, filesUploadSupport, function (req, res, next) {
-    var params = req.body;
-    if (req.files) {
-      params.files = req.files;
-    }
-    api.call('events.create', req.context, params, methodCallback(res, next, 201));
-  });
+  // POST /events - create an event.
+  expressApp.post(Paths.Events, 
+    upload.any(), 
+    filesUploadSupport, 
+    function (req, res, next) {
+      var params = req.body;
+      if (req.files) {
+        params.files = req.files;
+      }
+      api.call('events.create', req.context, params, methodCallback(res, next, 201));
+    });
 
   expressApp.post(Paths.Events + '/start', function (req, res, next) {
     api.call('events.start', req.context, req.body, methodCallback(res, next, 201));

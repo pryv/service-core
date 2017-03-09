@@ -1081,63 +1081,63 @@ describe('events', function () {
           .attach('text', testData.attachments.text.path,
               testData.attachments.text.fileName)
           .end(function (res) {
-        time = timestamp.now();
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.update.result
-        });
+            time = timestamp.now();
+            validation.check(res, {
+              status: 200,
+              schema: methodsSchema.update.result
+            });
 
-        var updatedEvent = res.body.event;
-        validation.checkFilesReadToken(updatedEvent, access, filesReadTokenSecret);
-        validation.sanitizeEvent(updatedEvent);
+            var updatedEvent = res.body.event;
+            validation.checkFilesReadToken(updatedEvent, access, filesReadTokenSecret);
+            validation.sanitizeEvent(updatedEvent);
 
-	var updatedEventAttachments = {};
-	updatedEvent.attachments.forEach(function (attachment) {
-	  updatedEventAttachments[attachment.fileName] = attachment;
-	});
+            var updatedEventAttachments = {};
+            updatedEvent.attachments.forEach(function (attachment) {
+              updatedEventAttachments[attachment.fileName] = attachment;
+            });
 
-	var expected = {};
-	expected.attachments = [];
-	updatedEvent.attachments.forEach(function (attachment) {
-	  if (attachment.fileName === testData.attachments.image.filename) {
-	    expected.attachments.push(
-	      {
-		id: attachment.id,
-		fileName: testData.attachments.image.filename,
-		type: testData.attachments.image.type,
-		size: testData.attachments.image.size
-	      }
-	    );
-	  }
-	  if (attachment.fileName === testData.attachments.text.filename) {
-	    expected.attachments.push(
-	      {
-		id: attachment.id,
-		fileName: testData.attachments.text.filename,
-		type: testData.attachments.text.type,
-		size: testData.attachments.text.size
-	      }
-	    );
-	  }
-	});
-	expected.modified = time;
-	expected.modifiedBy = access.id;
-	expected = _.defaults(expected, event);
+            var expected = {};
+            expected.attachments = [];
+            updatedEvent.attachments.forEach(function (attachment) {
+              if (attachment.fileName === testData.attachments.image.filename) {
+                expected.attachments.push(
+                  {
+                    id: attachment.id,
+                    fileName: testData.attachments.image.filename,
+                    type: testData.attachments.image.type,
+                    size: testData.attachments.image.size
+                  }
+                );
+              }
+              if (attachment.fileName === testData.attachments.text.filename) {
+                expected.attachments.push(
+                  {
+                    id: attachment.id,
+                    fileName: testData.attachments.text.filename,
+                    type: testData.attachments.text.type,
+                    size: testData.attachments.text.size
+                  }
+                );
+              }
+            });
+            expected.modified = time;
+            expected.modifiedBy = access.id;
+            expected = _.defaults(expected, event);
 
-        validation.checkObjectEquality(updatedEvent, expected);
+            validation.checkObjectEquality(updatedEvent, expected);
 
-        // check attached files
-        attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
-          updatedEventAttachments[testData.attachments.image.filename].id,
-            testData.attachments.image.filename).should.equal('');
-        attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
-          updatedEventAttachments[testData.attachments.text.filename].id,
-            testData.attachments.text.filename).should.equal('');
+            // check attached files
+            attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
+              updatedEventAttachments[testData.attachments.image.filename].id,
+                testData.attachments.image.filename).should.equal('');
+            attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
+              updatedEventAttachments[testData.attachments.text.filename].id,
+                testData.attachments.text.filename).should.equal('');
 
-        eventsNotifCount.should.eql(1, 'events notifications');
+            eventsNotifCount.should.eql(1, 'events notifications');
 
-        done();
-      });
+            done();
+          });
     });
 
     it('must add the uploaded files to the event without replacing existing attachments',

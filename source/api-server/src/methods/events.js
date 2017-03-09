@@ -181,6 +181,10 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   // CREATION
 
   api.register('events.create',
+    (ctx, params, res, next) => { 
+      console.log(params);
+      next(); 
+    },
     commonFns.getParamsValidation(methodsSchema.create.params),
     applyPrerequisitesForCreation,
     validateEventContent,

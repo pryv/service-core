@@ -43,7 +43,7 @@ exports = module.exports = function (action) {
     schema.properties.id.pattern = '^c[a-z0-9-]{24}$';
     // only allow "files" (raw file data, internal stuff) on create;
     // no further checks as it's created internally
-    schema.properties.files = object({});
+    schema.properties.files = array(object()); 
   }
 
   // forbid attachments except on read and update (ignored for the latter)

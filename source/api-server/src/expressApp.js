@@ -4,7 +4,6 @@
 const express = require('express');
 const _ = require('lodash');
 const bodyParser = require('body-parser');
-const multer = require('multer');
 
 const middleware = require('components/middleware');
 const errorsMiddlewareMod = require('./middleware/errors'); 
@@ -125,15 +124,7 @@ function expressAppInit(dependencies: any) {
 
   // Parse JSON bodies: 
   app.use(bodyParser.json());
-  
-  // Parse multipart file data into request.files: 
-  const storage = multer.diskStorage({
-    filename: null, // default filename, random
-    destination: null, // operating system's default directory for temporary files is used.
-  }); 
-  const upload = multer({storage: storage});
-  app.use(upload.array('text'));
-  
+    
   // Other middleware:
   app.use(requestTraceMiddleware);
   app.use(middleware.override);
