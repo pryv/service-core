@@ -115,12 +115,12 @@ module.exports = function (expressApp, api, attachmentsAccessMiddleware, userAcc
     api.call('events.update', req.context, params, methodCallback(res, next, 200));
   });
 
-  expressApp.del(Paths.Events + '/:id', function (req, res, next) {
+  expressApp.delete(Paths.Events + '/:id', function (req, res, next) {
     api.call('events.delete', req.context, {id: req.param('id')},
         methodCallback(res, next, 200));
   });
 
-  expressApp.del(Paths.Events + '/:id/:fileId', function (req, res, next) {
+  expressApp.delete(Paths.Events + '/:id/:fileId', function (req, res, next) {
     api.call('events.deleteAttachment', req.context,
         {id: req.params.id, fileId: req.params.fileId}, methodCallback(res, next, 200));
   });

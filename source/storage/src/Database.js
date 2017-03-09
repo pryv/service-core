@@ -27,7 +27,7 @@ function Database(settings, logging) {
       settings.name;
   this.options = {
     db: {strict: true},
-    server: {auto_reconnect: true}
+    autoReconnect: true, 
   };
   this.db = null;
   this.initializedCollections = {};
@@ -63,10 +63,9 @@ Database.prototype.ensureConnect = function (callback) {
   if (this.db) {
     return callback();
   }
-
   this.logger.debug('Connecting to ' + this.connectionString);
   MongoClient.connect(this.connectionString, this.options, function (err, db) {
-    if (err) {
+    if (err) {
       this.logger.debug(err);
       return callback(err);
     }

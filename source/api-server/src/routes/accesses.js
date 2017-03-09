@@ -23,7 +23,7 @@ module.exports = function (expressApp, api) {
     api.call('accesses.update', req.context, params, methodCallback(res, next, 200));
   });
 
-  expressApp.del(Paths.Accesses + '/:id', function (req, res, next) {
+  expressApp.delete(Paths.Accesses + '/:id', function (req, res, next) {
     var params = _.extend({id: req.param('id')}, req.query);
     api.call('accesses.delete', req.context, params, methodCallback(res, next, 200));
   });

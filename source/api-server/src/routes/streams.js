@@ -28,7 +28,7 @@ module.exports = function (expressApp, api) {
         methodCallback(res, next, 200));
   });
 
-  expressApp.del(Paths.Streams + '/:id', function (req, res, next) {
+  expressApp.delete(Paths.Streams + '/:id', function (req, res, next) {
     var params = _.extend({id: req.param('id')}, req.query);
     tryCoerceStringValues(params, {
       mergeEventsWithParent: 'boolean'

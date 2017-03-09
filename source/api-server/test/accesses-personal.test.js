@@ -481,7 +481,7 @@ describe('accesses (personal)', function () {
               level: 'read'
             }
           ]
-        }
+        };
         _.defaults(expected, original);
 
         validation.checkObjectEquality(res.body.access, expected);
@@ -499,7 +499,7 @@ describe('accesses (personal)', function () {
           status: 200,
           schema: methodsSchema.update.result
         });
-        accessesNotifCount.should.eql(1, 'accesses notifications');
+        should(accessesNotifCount).be.eql(1, 'accesses notifications');
         done();
       });
     });
@@ -528,16 +528,18 @@ describe('accesses (personal)', function () {
     });
 
     it('must return an error if an access with the same name and type already exists',
-        function (done) {
-      req().put(path(testData.accesses[1].id)).send({name: testData.accesses[2].name})
+      function (done) {
+        req()
+          .put(path(testData.accesses[1].id))
+          .send({name: testData.accesses[2].name})
           .end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.ItemAlreadyExists,
-          data: { type: testData.accesses[2].type, name: testData.accesses[2].name }
-        }, done);
+            validation.checkError(res, {
+              status: 400,
+              id: ErrorIds.ItemAlreadyExists,
+              data: { type: testData.accesses[2].type, name: testData.accesses[2].name }
+            }, done);
+          });
       });
-    });
 
   });
 
@@ -745,35 +747,36 @@ describe('accesses (personal)', function () {
     });
 
     it('must propose fixes to duplicate ids of streams and signal an error when appropriate',
-        function (done) {
-      var data = {
-        requestingAppId: 'the-love-generator',
-        requestedPermissions: [
-          {
-            streamId: 'bad-new-stream',
-            level: 'contribute',
-            defaultName: testData.streams[3].name
-          }
-        ]
-      };
-      req().post(path).send(data).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.checkApp.result
-        });
+      function (done) {
+        var data = {
+          requestingAppId: 'the-love-generator',
+          requestedPermissions: [
+            {
+              streamId: 'bad-new-stream',
+              level: 'contribute',
+              defaultName: testData.streams[3].name
+            }
+          ]
+        };
+        req()
+          .post(path).send(data).end(function (res) {
+            validation.check(res, {
+              status: 200,
+              schema: methodsSchema.checkApp.result
+            });
 
-        should.exist(res.body.checkedPermissions);
-        should.exist(res.body.error);
-        res.body.error.id.should.eql(ErrorIds.ItemAlreadyExists);
+            should.exist(res.body.checkedPermissions);
+            should.exist(res.body.error);
+            res.body.error.id.should.eql(ErrorIds.ItemAlreadyExists);
 
-        var expected = R.clone(data.requestedPermissions);
-        expected[0].defaultName = testData.streams[3].name + ' (1)';
+            var expected = R.clone(data.requestedPermissions);
+            expected[0].defaultName = testData.streams[3].name + ' (1)';
 
-        res.body.checkedPermissions.should.eql(expected);
+            res.body.checkedPermissions.should.eql(expected);
 
-        done();
+            done();
+          });
       });
-    });
 
     it('must return an error if the sent data is badly formatted', function (done) {
       var data = {
@@ -805,7 +808,7 @@ describe('accesses (personal)', function () {
 
   function resetAccesses(done) {
     accessesNotifCount = 0;
-    testData.resetAccesses(done, null, request.token);
+    testData.resetAccesses(done, null, request && request.token);
   }
 
 });

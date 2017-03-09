@@ -1,14 +1,13 @@
+'use strict';
+// @flow
+
 var errors = require('components/errors'),
     APIError = errors.APIError,
     ErrorIds = errors.ErrorIds,
     errorHandling = errors.errorHandling,
     setCommonMeta = require('../methods/helpers/setCommonMeta');
 
-/*jshint -W098*/
-
-/**
- * Error route handling.
- * TODO: move that elsewhere (e.g. errors component?), handling the setCommonMeta() dependency
+/** Error route handling.
  */
 module.exports = function (logging) {
   var logger = logging.getLogger('routes');
@@ -21,8 +20,11 @@ module.exports = function (logging) {
     }
 
     errorHandling.logError(error, req, logger);
-    res.json(setCommonMeta({error: errorHandling.getPublicErrorData(error)}),
-        error.httpStatus || 500);
+    res
+      .status(error.httpStatus || 500)
+      .json(
+        setCommonMeta(
+          {error: errorHandling.getPublicErrorData(error)}));
   };
 };
 module.exports.injectDependencies = true;

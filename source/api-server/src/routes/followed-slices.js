@@ -23,7 +23,7 @@ module.exports = function (expressApp, api) {
         methodCallback(res, next, 200));
   });
 
-  expressApp.del(Paths.FollowedSlices + '/:id', function (req, res, next) {
+  expressApp.delete(Paths.FollowedSlices + '/:id', function (req, res, next) {
     api.call('followedSlices.delete', req.context, _.extend({ id: req.param('id') }, req.query),
         methodCallback(res, next, 200));
   });
