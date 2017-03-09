@@ -1,5 +1,7 @@
-/*global describe, before, beforeEach, it */
+'use strict';
+// @flow
 
+/*global describe, before, beforeEach, it */
 var helpers = require('./helpers'),
     ErrorIds = require('components/errors').ErrorIds,
     server = helpers.dependencies.instanceManager,
@@ -12,6 +14,7 @@ var helpers = require('./helpers'),
     testData = helpers.data,
     timestamp = require('unix-timestamp'),
     _ = require('lodash');
+const R = require('ramda');
 
 describe('accesses (personal)', function () {
 
@@ -23,6 +26,11 @@ describe('accesses (personal)', function () {
 
   function path(id) {
     return basePath + '/' + id;
+  }
+  
+  function req(): typeof helpers.request {
+    if (request == null) { throw Error('request was null'); }
+    return request; 
   }
 
   // to verify data change notifications
@@ -39,7 +47,8 @@ describe('accesses (personal)', function () {
         request.login(user, stepDone);
       },
       function (stepDone) {
-        storage.findOne(user, {token: request.token}, null, function (err, access) {
+        if (request == null) { stepDone('request is null'); }
+        storage.findOne(user, {token: request && request.token}, null, function (err, access) {
           sessionAccessId = access.id;
           stepDone();
         });
@@ -52,7 +61,7 @@ describe('accesses (personal)', function () {
     before(resetAccesses);
 
     it('must return all accesses (including personal ones)', function (done) {
-      request.get(basePath).end(function (res) {
+      req().get(basePath).end(function (res) {
         var expected = validation.removeDeletions(testData.accesses).map(function (a) {
           return _.omit(a, 'calls');
         });
@@ -102,14 +111,16 @@ describe('accesses (personal)', function () {
             });
           },
           function addNew(stepDone) {
-            request.post(basePath).send(data).end(function (res) {
+            req().post(basePath).send(data).end(function (res) {
               time = timestamp.now();
               validation.check(res, {
                 status: 201,
                 schema: methodsSchema.create.result
               });
               createdAccess = res.body.access;
-              accessesNotifCount.should.eql(1, 'accesses notifications');
+              should(
+                accessesNotifCount
+              ).be.eql(1, 'accesses notifications');
               stepDone();
             });
           },
@@ -117,12 +128,23 @@ describe('accesses (personal)', function () {
             storage.findAll(user, null, function (err, accesses) {
               accesses.length.should.eql(originalCount + 1, 'accesses');
 
-              var expected = _.clone(data);
-              expected.id = createdAccess.id;
-              expected.token = createdAccess.token;
-              expected.type = 'shared';
-              expected.created = expected.modified = time;
-              expected.createdBy = expected.modifiedBy = sessionAccessId;
+              const expected = {
+                id: createdAccess.id, 
+                token: createdAccess.token, 
+                type: 'shared', 
+                created: time, 
+                modified: time, 
+                createdBy: sessionAccessId, 
+                modifiedBy: sessionAccessId, 
+                name: 'New Access',
+                permissions: [
+                  {
+                    streamId: testData.streams[0].id,
+                    level: 'read'
+                  }
+                ]
+              };
+
               var actual = _.find(accesses, function (access) {
                 return access.id === createdAccess.id;
               });
@@ -137,104 +159,104 @@ describe('accesses (personal)', function () {
     });
 
     it('must create a new app access with the sent data, creating/restoring requested streams',
-        function (done) {
-      var data = {
-        name: 'my-sweet-app',
-        type: 'app',
-        deviceName: 'My Sweet Device',
-        permissions: [
-          {
-            streamId: testData.streams[0].id,
-            level: 'contribute',
-            name: 'This should be ignored'
-          },
-          {
-            streamId: 'new-stream',
-            level: 'manage',
-            defaultName: 'New stream'
-          },
-          {
-            streamId: testData.streams[3].id,
-            level: 'contribute',
-            defaultName: 'Trashed stream to restore (this should be ignored)'
-          },
-          {
-            streamId: '*',
-            level: 'read',
-            defaultName: 'Ignored, must be cleaned up'
-          }
-        ]
-      };
+      function (done) {
+        var data = {
+          name: 'my-sweet-app',
+          type: 'app',
+          deviceName: 'My Sweet Device',
+          permissions: [
+            {
+              streamId: testData.streams[0].id,
+              level: 'contribute',
+              name: 'This should be ignored'
+            },
+            {
+              streamId: 'new-stream',
+              level: 'manage',
+              defaultName: 'New stream'
+            },
+            {
+              streamId: testData.streams[3].id,
+              level: 'contribute',
+              defaultName: 'Trashed stream to restore (this should be ignored)'
+            },
+            {
+              streamId: '*',
+              level: 'read',
+              defaultName: 'Ignored, must be cleaned up'
+            }
+          ]
+        };
 
-      async.series([
-        function addNew(stepDone) {
-          request.post(basePath).send(data).end(function (res) {
-            validation.check(res, {
-              status: 201,
-              schema: methodsSchema.create.result
+        async.series([
+          function addNew(stepDone) {
+            req().post(basePath).send(data).end(function (res) {
+              validation.check(res, {
+                status: 201,
+                schema: methodsSchema.create.result
+              });
+
+              var expected = R.clone(data);
+              expected.id = res.body.access.id;
+              expected.token = res.body.access.token;
+              delete expected.permissions[0].name;
+              delete expected.permissions[1].defaultName;
+              delete expected.permissions[2].defaultName;
+              delete expected.permissions[3].defaultName;
+              delete expected.created;
+              delete expected.createdBy;
+              delete expected.modified;
+              delete expected.modifiedBy;
+
+              validation.checkObjectEquality(res.body.access, expected);
+
+              should(accessesNotifCount).be.eql(1, 'accesses notifications');
+              stepDone();
             });
-
-            var expected = _.cloneDeep(data);
-            expected.id = res.body.access.id;
-            expected.token = res.body.access.token;
-            delete expected.permissions[0].name;
-            delete expected.permissions[1].defaultName;
-            delete expected.permissions[2].defaultName;
-            delete expected.permissions[3].defaultName;
-            delete expected.created;
-            delete expected.createdBy;
-            delete expected.modified;
-            delete expected.modifiedBy;
-
-            validation.checkObjectEquality(res.body.access, expected);
-
-            accessesNotifCount.should.eql(1, 'accesses notifications');
-            stepDone();
-          });
-        },
-        function verifyNewStream(stepDone) {
-          var query = {id: data.permissions[1].streamId};
-          streamsStorage.findOne(user, query, null, function (err, stream) {
-            should.not.exist(err);
-            should.exist(stream);
-            validation.checkStoredItem(stream, 'stream');
-            stream.name.should.eql(data.permissions[1].defaultName);
-            stepDone();
-          });
-        },
-        function verifyRestoredStream(stepDone) {
-          var query = {id: data.permissions[2].streamId};
-          streamsStorage.findOne(user, query, null, function (err, stream) {
-            should.not.exist(err);
-            should.exist(stream);
-            should.not.exist(stream.trashed);
-            stepDone();
-          });
-        }
-      ], done);
-    });
+          },
+          function verifyNewStream(stepDone) {
+            var query = {id: data.permissions[1].streamId};
+            streamsStorage.findOne(user, query, null, function (err, stream) {
+              should.not.exist(err);
+              should.exist(stream);
+              validation.checkStoredItem(stream, 'stream');
+              stream.name.should.eql(data.permissions[1].defaultName);
+              stepDone();
+            });
+          },
+          function verifyRestoredStream(stepDone) {
+            var query = {id: data.permissions[2].streamId};
+            streamsStorage.findOne(user, query, null, function (err, stream) {
+              should.not.exist(err);
+              should.exist(stream);
+              should.not.exist(stream.trashed);
+              stepDone();
+            });
+          }
+        ], done);
+      });
 
     it('must accept two app accesses with the same name (app ids) but different device names',
-        function (done) {
-      var data = {
-        name: testData.accesses[4].name,
-        type: 'app',
-        deviceName: 'Calvin\'s Fantastic Cerebral Enhance-o-tron',
-        permissions: [
-          {
-            streamId: testData.streams[0].id,
-            level: 'read'
-          }
-        ]
-      };
+      function (done) {
+        var data = {
+          name: testData.accesses[4].name,
+          type: 'app',
+          deviceName: 'Calvin\'s Fantastic Cerebral Enhance-o-tron',
+          permissions: [
+            {
+              streamId: testData.streams[0].id,
+              level: 'read'
+            }
+          ]
+        };
 
-      request.post(basePath).send(data).end(function (res) {
-        validation.check(res, {
-          status: 201,
-          schema: methodsSchema.create.result
-        }, done);
+        req().post(basePath).send(data).end(function (res) {
+          validation.check(res, {
+            status: 201,
+            schema: methodsSchema.create.result
+          }, done);
+        });
       });
-    });
 
     it('must ignore erroneous requests to create new streams', function (done) {
       var data = {
@@ -248,13 +270,13 @@ describe('accesses (personal)', function () {
           }
         ]
       };
-      request.post(basePath).send(data).end(function (res) {
+      req().post(basePath).send(data).end(function (res) {
         validation.check(res, {
           status: 201,
           schema: methodsSchema.create.result
         });
 
-        var expected = _.cloneDeep(data);
+        var expected = R.clone(data);
         expected.id = res.body.access.id;
         expected.token = res.body.access.token;
         delete expected.permissions[0].defaultName;
@@ -278,7 +300,7 @@ describe('accesses (personal)', function () {
           }
         ]
       };
-      request.post(basePath).send(data).end(function (res) {
+      req().post(basePath).send(data).end(function (res) {
         validation.checkError(res, {
           status: 400,
           id: ErrorIds.ItemAlreadyExists,
@@ -293,7 +315,7 @@ describe('accesses (personal)', function () {
         name: 'New Personal Access',
         type: 'personal'
       };
-      request.post(basePath).send(data).end(function (res) {
+      req().post(basePath).send(data).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
@@ -305,7 +327,7 @@ describe('accesses (personal)', function () {
         permissions: []
       };
 
-      request.post(basePath).send(data).end(function (res) {
+      req().post(basePath).send(data).end(function (res) {
         validation.check(res, {
           status: 201,
           schema: methodsSchema.create.result
@@ -325,7 +347,7 @@ describe('accesses (personal)', function () {
           }
         ]
       };
-      request.post(basePath).send(data).end(function (res) {
+      req().post(basePath).send(data).end(function (res) {
         validation.checkErrorInvalidParams(res, done);
       });
     });
@@ -341,7 +363,7 @@ describe('accesses (personal)', function () {
           }
         ]
       };
-      request.post(basePath).send(data).end(function (res) {
+      req().post(basePath).send(data).end(function (res) {
         validation.checkErrorInvalidParams(res, done);
       });
     });
@@ -352,7 +374,7 @@ describe('accesses (personal)', function () {
         name: 'Duplicate',
         permissions: []
       };
-      request.post(basePath).send(data).end(function (res) {
+      req().post(basePath).send(data).end(function (res) {
         validation.checkError(res, {
           status: 400,
           id: ErrorIds.ItemAlreadyExists,
@@ -362,19 +384,19 @@ describe('accesses (personal)', function () {
     });
 
     it('must return an error if an access with the same name already exists',
-        function (done) {
-      var data = {
-        name: testData.accesses[2].name,
-        permissions: []
-      };
-      request.post(basePath).send(data).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.ItemAlreadyExists,
-          data: { type: 'shared', name: testData.accesses[2].name }
-        }, done);
+      function (done) {
+        var data = {
+          name: testData.accesses[2].name,
+          permissions: []
+        };
+        req().post(basePath).send(data).end(function (res) {
+          validation.checkError(res, {
+            status: 400,
+            id: ErrorIds.ItemAlreadyExists,
+            data: { type: 'shared', name: testData.accesses[2].name }
+          }, done);
+        });
       });
-    });
 
     it('must return an error if an "app" access with the same name (app id) and device ' +
         'name already exists', function (done) {
@@ -385,7 +407,7 @@ describe('accesses (personal)', function () {
         deviceName: existing.deviceName,
         permissions: []
       };
-      request.post(basePath).send(data).end(function (res) {
+      req().post(basePath).send(data).end(function (res) {
         validation.checkError(res, {
           status: 400,
           id: ErrorIds.ItemAlreadyExists,
@@ -395,18 +417,18 @@ describe('accesses (personal)', function () {
     });
 
     it('must return an error if the device name is set for a non-app access',
-        function (done) {
-      var data = {
-        name: 'Yikki-yikki',
-        deviceName: 'Impossible Device'
-      };
-      request.post(basePath).send(data).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidParametersFormat
-        }, done);
+      function (done) {
+        var data = {
+          name: 'Yikki-yikki',
+          deviceName: 'Impossible Device'
+        };
+        req().post(basePath).send(data).end(function (res) {
+          validation.checkError(res, {
+            status: 400,
+            id: ErrorIds.InvalidParametersFormat
+          }, done);
+        });
       });
-    });
 
     it('must return an error if the given predefined access\'s token is a reserved word',
         function (done) {
@@ -415,7 +437,7 @@ describe('accesses (personal)', function () {
         name: 'Badly Named Access',
         permissions: []
       };
-      request.post(basePath).send(data).end(function (res) {
+      req().post(basePath).send(data).end(function (res) {
         validation.checkError(res, {
           status: 400,
           id: ErrorIds.InvalidItemId
@@ -442,28 +464,37 @@ describe('accesses (personal)', function () {
           }
         ]
       };
-      request.put(path(original.id)).send(data).end(function (res) {
+      req().put(path(original.id)).send(data).end(function (res) {
         time = timestamp.now();
         validation.check(res, {
           status: 200,
           schema: methodsSchema.update.result
         });
-
-        var expected = _.clone(data);
-        delete expected.token;
-        expected.modified = time;
-        expected.modifiedBy = sessionAccessId;
+        
+        const expected = {
+          modified: time, 
+          modifiedBy: sessionAccessId, 
+          name: 'Updated Access 1',
+          permissions: [
+            {
+              streamId: testData.streams[0].id,
+              level: 'read'
+            }
+          ]
+        }
         _.defaults(expected, original);
 
         validation.checkObjectEquality(res.body.access, expected);
 
-        accessesNotifCount.should.eql(1, 'accesses notifications');
+        should(
+          accessesNotifCount
+        ).be.eql(1, 'accesses notifications');
         done();
       });
     });
 
     it('must modify the personal access with the specified data', function (done) {
-      request.put(path(testData.accesses[0].id)).send({name: 'Updated!'}).end(function (res) {
+      req().put(path(testData.accesses[0].id)).send({name: 'Updated!'}).end(function (res) {
         validation.check(res, {
           status: 200,
           schema: methodsSchema.update.result
@@ -474,7 +505,7 @@ describe('accesses (personal)', function () {
     });
 
     it('must return an error if the access does not exist', function (done) {
-      request.put(path('unknown-id')).send({name: '?'}).end(function (res) {
+      req().put(path('unknown-id')).send({name: '?'}).end(function (res) {
         validation.checkError(res, {
           status: 404,
           id: ErrorIds.UnknownResource
@@ -491,14 +522,14 @@ describe('accesses (personal)', function () {
           }
         ]
       };
-      request.put(path(testData.accesses[1].id)).send(data).end(function (res) {
+      req().put(path(testData.accesses[1].id)).send(data).end(function (res) {
         validation.checkErrorInvalidParams(res, done);
       });
     });
 
     it('must return an error if an access with the same name and type already exists',
         function (done) {
-      request.put(path(testData.accesses[1].id)).send({name: testData.accesses[2].name})
+      req().put(path(testData.accesses[1].id)).send({name: testData.accesses[2].name})
           .end(function (res) {
         validation.checkError(res, {
           status: 400,
@@ -519,7 +550,7 @@ describe('accesses (personal)', function () {
           deletionTime;
       async.series([
           function deleteAccess(stepDone) {
-            request.del(path(deletedAccess.id)).end(function (res) {
+            req().del(path(deletedAccess.id)).end(function (res) {
               deletionTime = timestamp.now();
               validation.check(res, {
                 status: 200,
@@ -552,7 +583,7 @@ describe('accesses (personal)', function () {
     });
 
     it('must delete the personal access', function (done) {
-      request.del(path(testData.accesses[0].id)).end(function (res) {
+      req().del(path(testData.accesses[0].id)).end(function (res) {
         validation.check(res, {
           status: 200,
           schema: methodsSchema.del.result
@@ -563,7 +594,7 @@ describe('accesses (personal)', function () {
     });
 
     it('must return an error if the access does not exist', function (done) {
-      request.del(path('unknown-id')).end(function (res) {
+      req().del(path('unknown-id')).end(function (res) {
         validation.checkError(res, {
           status: 404,
           id: ErrorIds.UnknownResource
@@ -596,7 +627,7 @@ describe('accesses (personal)', function () {
           }
         ]
       };
-      request.post(path).send(data).end(function (res) {
+      req().post(path).send(data).end(function (res) {
         validation.check(res, {
           status: 200,
           schema: methodsSchema.checkApp.result
@@ -604,7 +635,7 @@ describe('accesses (personal)', function () {
 
         should.exist(res.body.checkedPermissions);
 
-        var expected = _.cloneDeep(data.requestedPermissions);
+        var expected = R.clone(data.requestedPermissions);
         expected[0].name = testData.streams[0].name;
         delete expected[0].defaultName;
 
@@ -631,7 +662,7 @@ describe('accesses (personal)', function () {
           }
         ]
       };
-      request.post(path).send(data).end(function (res) {
+      req().post(path).send(data).end(function (res) {
         validation.check(res, {
           status: 200,
           schema: methodsSchema.checkApp.result
@@ -639,7 +670,7 @@ describe('accesses (personal)', function () {
 
         should.exist(res.body.checkedPermissions);
 
-        var expected = _.cloneDeep(data.requestedPermissions);
+        var expected = R.clone(data.requestedPermissions);
         expected[0].name = testData.streams[0].name;
         delete expected[0].defaultName;
         delete expected[1].defaultName;
@@ -662,7 +693,7 @@ describe('accesses (personal)', function () {
           }
         ]
       };
-      request.post(path).send(data).end(function (res) {
+      req().post(path).send(data).end(function (res) {
         validation.check(res, {
           status: 200,
           schema: methodsSchema.checkApp.result
@@ -690,7 +721,7 @@ describe('accesses (personal)', function () {
           }
         ]
       };
-      request.post(path).send(data).end(function (res) {
+      req().post(path).send(data).end(function (res) {
         validation.check(res, {
           status: 200,
           schema: methodsSchema.checkApp.result
@@ -698,7 +729,7 @@ describe('accesses (personal)', function () {
 
         should.exist(res.body.checkedPermissions);
 
-        var expected = _.cloneDeep(data.requestedPermissions);
+        var expected = R.clone(data.requestedPermissions);
         expected[0].name = testData.streams[0].name;
         delete expected[0].defaultName;
 
@@ -725,7 +756,7 @@ describe('accesses (personal)', function () {
           }
         ]
       };
-      request.post(path).send(data).end(function (res) {
+      req().post(path).send(data).end(function (res) {
         validation.check(res, {
           status: 200,
           schema: methodsSchema.checkApp.result
@@ -735,7 +766,7 @@ describe('accesses (personal)', function () {
         should.exist(res.body.error);
         res.body.error.id.should.eql(ErrorIds.ItemAlreadyExists);
 
-        var expected = _.cloneDeep(data.requestedPermissions);
+        var expected = R.clone(data.requestedPermissions);
         expected[0].defaultName = testData.streams[3].name + ' (1)';
 
         res.body.checkedPermissions.should.eql(expected);
@@ -755,7 +786,7 @@ describe('accesses (personal)', function () {
           }
         ]
       };
-      request.post(path).send(data).end(function (res) {
+      req().post(path).send(data).end(function (res) {
         validation.checkErrorInvalidParams(res, done);
       });
     });
@@ -765,7 +796,7 @@ describe('accesses (personal)', function () {
         requestingAppId: testData.accesses[4].name,
         requestedPermissions: []
       };
-      request.post(path, testData.accesses[4].token).send(data).end(function (res) {
+      req().post(path, testData.accesses[4].token).send(data).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });

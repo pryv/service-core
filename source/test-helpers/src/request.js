@@ -1,11 +1,15 @@
+'use strict';
+// @flow
+
 var superagent = require('superagent'),
     url = require('url');
+const should = require('should');
 
 /**
  * Helper for HTTP requests (with access token authentication).
  */
 module.exports = request;
-function request(serverURL) {
+function request(serverURL: string) {
   return new Request(serverURL);
 }
 
@@ -40,8 +44,9 @@ Request.prototype.login = function (user, callback) {
     if (! res.body.token) {
       return callback(new Error('Expected "token" in login response body.'));
     }
-    /[^A-Za-z0-9\-_.!~*'()%]/.test(res.body.token).should.eql(false,
-        'Token must be URI-encoded');
+    should(
+      /[^A-Za-z0-9\-_.!~*'()%]/.test(res.body.token)
+    ).be.false('Token must be URI-encoded');
     this.token = res.body.token;
 
     callback();
