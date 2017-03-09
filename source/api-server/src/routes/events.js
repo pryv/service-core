@@ -94,8 +94,10 @@ module.exports = function (expressApp, api, attachmentsAccessMiddleware, userAcc
   });
 
   expressApp.put(Paths.Events + '/:id', function (req, res, next) {
-    api.call('events.update', req.context, { id: req.param('id'), update: req.body },
-        methodCallback(res, next, 200));
+    api.call('events.update', 
+      req.context, 
+      { id: req.param('id'), update: req.body },
+      methodCallback(res, next, 200));
   });
 
   expressApp.post(Paths.Events + '/stop', function (req, res, next) {

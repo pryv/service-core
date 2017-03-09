@@ -1141,37 +1141,43 @@ describe('events', function () {
     });
 
     it('must add the uploaded files to the event without replacing existing attachments',
-        function (done) {
-      var event = testData.events[0];
+      function (done) {
+        var event = testData.events[0];
 
-      request.post(path(event.id))
-          .attach('text', testData.attachments.text.path, testData.attachments.text.fileName)
+        request
+          .post(path(event.id))
+          .attach('text', 
+            testData.attachments.text.path, 
+            testData.attachments.text.fileName)
           .end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.update.result
-        });
+            validation.check(res, {
+              status: 200,
+              schema: methodsSchema.update.result
+            });
 
-        var updatedEvent = validation.sanitizeEvent(res.body.event);
-        var expectedAttachments = event.attachments.slice();
-        expectedAttachments.push({
-          id: updatedEvent.attachments[updatedEvent.attachments.length - 1].id,
-          fileName: testData.attachments.text.filename,
-          type: testData.attachments.text.type,
-          size: testData.attachments.text.size
-        });
+            var updatedEvent = validation.sanitizeEvent(res.body.event);
+            var expectedAttachments = event.attachments.slice();
+            expectedAttachments.push({
+              id: updatedEvent.attachments[updatedEvent.attachments.length - 1].id,
+              fileName: testData.attachments.text.filename,
+              type: testData.attachments.text.type,
+              size: testData.attachments.text.size
+            });
 
-        updatedEvent.attachments.should.eql(expectedAttachments);
+            const attachments = updatedEvent.attachments; 
+            should(attachments.length).be.eql(expectedAttachments.length);
+            
+            attachments.should.eql(expectedAttachments);
 
-        attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
-            updatedEvent.attachments[updatedEvent.attachments.length - 1].id,
-            testData.attachments.text.filename).should.equal('');
+            attachmentsCheck.compareTestAndAttachedFiles(user, event.id,
+                attachments[attachments.length - 1].id,
+                testData.attachments.text.filename).should.equal('');
 
-        eventsNotifCount.should.eql(1, 'events notifications');
+            eventsNotifCount.should.eql(1, 'events notifications');
 
-        done();
+            done();
+          });
       });
-    });
 
   });
 

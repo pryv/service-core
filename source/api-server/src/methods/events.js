@@ -1,3 +1,5 @@
+'use strict';
+
 var utils = require('components/utils'),
     errors = require('components/errors').factory,
     async = require('async'),
@@ -266,7 +268,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     });
   }
 
-  // UPDATE
+  // -------------------------------------------------------------------- UPDATE
 
   api.register('events.update',
       commonFns.getParamsValidation(methodsSchema.update.params),
@@ -585,34 +587,34 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
     async.forEachSeries(Object.keys(files), saveFile, function (err) {
       if (err) {
-        //TODO: remove saved files if any
+        // TODO: remove saved files if any
         return callback(err);
       }
 
       // approximately update account storage size
       context.user.storageUsed.attachedFiles += sizeDelta;
       usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
-          function (err) {
-        if (err) { return callback(errors.unexpectedError(err)); }
-        callback(null, attachments);
-      });
+        function (err) {
+          if (err) { return callback(errors.unexpectedError(err)); }
+          callback(null, attachments);
+        });
     });
 
     function saveFile(name, done) {
       var fileInfo = files[name];
       userEventFilesStorage.saveAttachedFile(fileInfo.path, context.user, eventInfo.id, /*fileId,*/
-          function (err, fileId) {
-        if (err) { return done(errors.unexpectedError(err)); }
+        function (err, fileId) {
+          if (err) { return done(errors.unexpectedError(err)); }
 
-        attachments.push({
-          id: fileId,
-          fileName: fileInfo.name,
-          type: fileInfo.type,
-          size: fileInfo.size
+          attachments.push({
+            id: fileId,
+            fileName: fileInfo.originalname,
+            type: fileInfo.mimetype,
+            size: fileInfo.size
+          });
+          sizeDelta += fileInfo.size;
+          done();
         });
-        sizeDelta += fileInfo.size;
-        done();
-      });
     }
   }
 
