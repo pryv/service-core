@@ -55,7 +55,7 @@ module.exports = function (expressApp: express$Application, api: any, authSettin
   expressApp.use(`${Paths.Auth}/`, router);
   
   router.all('*', cookieParser(ssoCookieSignSecret));
-  router.get('who-am-i', function (req: express$Request, res, next) {
+  router.get('who-am-i', function routeWhoAmI(req: express$Request, res, next) {
     var ssoCookie = req.signedCookies.sso;
     if (! ssoCookie || typeof ssoCookie !== 'object') {
       return next(errors.invalidCredentials('Not signed-on'));
@@ -66,7 +66,7 @@ module.exports = function (expressApp: express$Application, api: any, authSettin
       token: ssoCookie.token
     }, 200);
   });
-  router.post('login', function (req: express$Request, res, next) {
+  router.post('login', function routeLogin(req: express$Request, res, next) {
     if (typeof req.body !== 'object' || req.body == null ||
       ! hasProperties(req.body, ['username', 'password', 'appId'])) {
       return next(errors.invalidOperation('Missing parameters: username, password and appId are required.'));
@@ -85,7 +85,7 @@ module.exports = function (expressApp: express$Application, api: any, authSettin
       res.json(result, 200);
     });
   });
-  router.post('logout', function (req: express$Request, res, next) {
+  router.post('logout', function routeLogout(req: express$Request, res, next) {
     clearSSOCookie(res);
     api.call('auth.logout', req.context, {}, methodCallback(res, next, 200));
   });
