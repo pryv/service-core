@@ -103,6 +103,11 @@ factory.unexpectedError = function (sourceError, message) {
   });
 };
 
+factory.unknownEventType = function (type) {
+  return new APIError(ErrorIds.UnknownEventType, 'Event type \'' + type + '\' not known.',
+    {type: type, httpStatus: 400});
+};
+
 /**
  * @param {String} resourceType
  * @param {String} paramKey

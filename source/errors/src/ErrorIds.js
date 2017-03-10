@@ -18,6 +18,10 @@ var ErrorIds = module.exports = {
   MissingHeader: 'missing-header',
   PeriodsOverlap: 'periods-overlap',
   UnexpectedError: 'unexpected-error',
+  /**
+   * Used for High-Frequency Series, allowing only predefined types
+   */
+  UnknownEventType: 'unknown-event-type',
   UnknownReferencedResource: 'unknown-referenced-resource',
   UnknownResource: 'unknown-resource',
   UnsupportedContentType: 'unsupported-content-type',

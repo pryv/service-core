@@ -25,7 +25,7 @@ exports = module.exports = function (action) {
     'streamId': string(),
     'tags': array(string()),
     'type': string({
-      pattern: '^[a-z0-9-]+/[a-z0-9-]+$'
+      pattern: '^(series:)?[a-z0-9-]+/[a-z0-9-]+$'
     }),
     'content': {},
     'description': string(),

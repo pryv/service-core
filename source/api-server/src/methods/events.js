@@ -1,3 +1,5 @@
+// @flow
+
 var utils = require('components/utils'),
     errors = require('components/errors').factory,
     async = require('async'),
@@ -230,7 +232,12 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     next();
   }
 
-  function createEvent(context, params, result, next) {
+  function createEvent(context: Object, params: Object, result: Object, next: Object) {
+
+    if (isSeries(context.content)) {
+      createSeriesEventBody(context);
+    }
+
     userEventsStorage.insertOne(context.user, context.content, function (err, newEvent) {
       if (err) {
         if (storage.Database.isDuplicateError(err)) {
@@ -243,6 +250,30 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       result.event = newEvent;
       next();
     });
+  }
+
+  /**
+   * Creates the event's body according to its type and
+   *
+   * @param context
+   */
+  function createSeriesEventBody(context: Object): null {
+    context.content.content = {};
+    context.content.content.elementType = context.content.type.slice(7);
+    context.content.content.fields = ['timestamp'];
+    var schema = eventTypes.types[context.content.content.elementType];
+
+    if ((schema.type === 'string') || (schema.type === 'number')) {
+      context.content.content.fields.push('value');
+    } else {
+
+      var fields = Object.keys(schema.properties);
+      context.content.content.fields = context.content.content.fields.concat(fields);
+    }
+
+    context.content.content.format = 'flatJSON'; // TODO: default for now
+    context.content.content.points = [];
+    context.content.duration = 0; // TODO: remove when time tracking strategy for HF is defined
   }
 
   function createAttachments(context, params, result, next) {
@@ -378,9 +409,25 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
    * @param {Object} result
    * @param {Function} next
    */
-  function validateEventContent(context, params, result, next) {
+  function validateEventContent(context: Object, params: Object, result: Object, next: Function) {
 
-    var knownType = eventTypes.types[context.content.type];
+    let type : string = context.content.type,
+        knownType = false;
+
+    if (isSeries(context.content)) {
+      type = type.slice(7);
+      knownType = eventTypes.types[type];
+      if (!knownType) { // how to enforce only strings, floats, integers, booleans?
+        return next(errors.unknownEventType(type));
+      }
+      if (context.content.content) {
+        return next(errors.invalidParametersFormat('The event content\'s format is ' +
+          'invalid.', 'Events of type High-frequency have a read-only content'));
+      }
+      return next();
+    }
+
+    knownType = eventTypes.types[type];
     if (knownType) {
       validation.validate(context.content.hasOwnProperty('content') ? context.content.content :
           null, knownType,
@@ -405,7 +452,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   function cleanupEventTags(eventData) {
     if (! eventData.tags) { return; }
-    eventData.tags = eventData.tags.map(function (tag) { return tag.trim(); })
+    eventData.tags = eventData.tags.map(function (tag) { return tag.trim(); })
         .filter(function (tag) { return tag.length > 0; });
   }
 
@@ -869,6 +916,10 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   function isRunning(event) {
     return event.duration === null;
+  }
+
+  function isSeries(event: Object): boolean {
+    return event.type.startsWith('series:');
   }
 
 };
