@@ -23,7 +23,8 @@ module.exports = function (expressApp: express$Application,
   api, attachmentsAccessMiddleware, userAccessesStorage,
   authSettings, eventFilesSettings) {
 
-  const attachmentsStatic = express.static(eventFilesSettings.attachmentsDirPath);
+  const attachmentsStatic = express.static(
+    eventFilesSettings.attachmentsDirPath);
   const events : express$Router = new express.Router();
   
   // This is the path prefix for the routes in this file. 
@@ -46,11 +47,12 @@ module.exports = function (expressApp: express$Application,
     api.call('events.get', req.context, params, methodCallback(res, next, 200));
   });
 
-  /**
-   * Serving attached files isn't done via API methods for now, so we must load the access here.
-   */
-  events.get('/:id/:fileId/:fileName?', retrieveAccessFromReadToken, loadAccess,
-      attachmentsAccessMiddleware, attachmentsStatic);
+  // Access an events files
+  expressApp.get(Paths.Events + '/:id/:fileId/:fileName?', 
+    retrieveAccessFromReadToken, 
+    loadAccess,
+    attachmentsAccessMiddleware, 
+    attachmentsStatic);
 
   function retrieveAccessFromReadToken(req, res, next) {
     if (req.query.auth) {

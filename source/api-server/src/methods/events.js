@@ -181,10 +181,6 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   // CREATION
 
   api.register('events.create',
-    (ctx, params, res, next) => { 
-      console.log(params);
-      next(); 
-    },
     commonFns.getParamsValidation(methodsSchema.create.params),
     applyPrerequisitesForCreation,
     validateEventContent,
@@ -411,7 +407,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   function cleanupEventTags(eventData) {
     if (! eventData.tags) { return; }
-    eventData.tags = eventData.tags.map(function (tag) { return tag.trim(); })
+    eventData.tags = eventData.tags.map(function (tag) { return tag.trim(); })
         .filter(function (tag) { return tag.length > 0; });
   }
 

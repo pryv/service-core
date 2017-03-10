@@ -15,11 +15,11 @@ var errors = require('components/errors').factory;
  */
 function validateFileUpload(req: express$Request, res: express$Response, next: Function) {
   const body = req.body; 
-  
-  if (req.is('multipart/form-data') && 
-    body != null && typeof body === 'object') {  
+
+  if (req.is('multipart/form-data') && body != null && typeof body === 'object') 
+  {  
     var bodyKeys = Object.keys(body);
-    
+
     if (bodyKeys.length > 1) {
       return next(errors.invalidRequestStructure(
         'In multipart requests, we don\'t expect more than one non-file part.'));

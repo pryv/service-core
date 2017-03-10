@@ -382,6 +382,7 @@ describe('events', function () {
     it('must return the attached file with the correct headers', function (done) {
       var event = testData.events[0],
           attachment = event.attachments[0];
+
       request.get(path(event.id) + '/' + attachment.id).end(function (res) {
         res.statusCode.should.eql(200);
 
@@ -645,10 +646,7 @@ describe('events', function () {
       var data = { streamId: testData.streams[1].id, type: testType };
 
       request.post(basePath).send(data).end(function (res) {
-        validation.check(res, {
-          status: 201,
-          schema: methodsSchema.create.result
-        });
+        should(res.statusCode).be.eql(201);
 
         var createdEvent = res.body.event;
         createdEvent.should.have.property('tags');

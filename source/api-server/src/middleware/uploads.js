@@ -32,13 +32,12 @@ module.exports = {
 function hasFileUpload(req: express$Request, res: express$Response, next: () => void) {
   const uploadMiddleware = uploadMiddlewareFactory.any(); 
   
-  filesUploadSupport(req, res, then);
-  var then = (err) => {
+  filesUploadSupport(req, res, (err) => {
     // If checking fails, don't event try to parse the upload. 
     if (err) { return next(err); }
     
     // Delegate upload handling to multer. 
     uploadMiddleware(req, res, next);
-  }; 
+  });
 }
 
