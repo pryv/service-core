@@ -1,12 +1,15 @@
+'use strict';
+// @flow
+
 /*global describe, before, after, it */
+
+require('./test-helpers'); 
 
 var helpers = require('./helpers'),
     server = helpers.dependencies.instanceManager,
     async = require('async'),
     validation = helpers.validation,
     ErrorIds = require('components/errors').ErrorIds,
-//    nock = require('nock'),
-//    querystring = require('querystring'),
     should = require('should'), // explicit require to benefit from static functions
     request = require('superagent'),
     testData = helpers.data,
@@ -14,7 +17,6 @@ var helpers = require('./helpers'),
     _ = require('lodash');
 
 describe('auth', function () {
-
   function basePath(username) {
     return url.resolve(server.url, username + '/auth');
   }
@@ -47,31 +49,31 @@ describe('auth', function () {
     before(testData.resetAccesses);
 
     it('must authenticate the given credentials, open a session and return the access token',
-        function (done) {
-      async.series([
-        function login(stepDone) {
-          request.post(path(authData.username))
-            .set('Origin', trustedOrigin)
-            .send(authData).end(function (res) {
-            res.statusCode.should.eql(200);
+      function (done) {
+        async.series([
+          function login(stepDone) {
+            request.post(path(authData.username))
+              .set('Origin', trustedOrigin)
+              .send(authData).end(function (res) {
+                res.statusCode.should.eql(200);
 
-            should.exist(res.body.token);
-            checkNoUnwantedCookie(res);
-            should.exist(res.body.preferredLanguage);
-            res.body.preferredLanguage.should.eql(user.language);
+                should.exist(res.body.token);
+                checkNoUnwantedCookie(res);
+                should.exist(res.body.preferredLanguage);
+                res.body.preferredLanguage.should.eql(user.language);
 
-            stepDone();
-          });
-        },
-        function checkAccess(stepDone) {
-          helpers.dependencies.storage.user.accesses.findOne(user, {name: authData.appId}, null,
+                stepDone();
+              });
+          },
+          function checkAccess(stepDone) {
+            helpers.dependencies.storage.user.accesses.findOne(user, {name: authData.appId}, null,
               function (err, access) {
-            access.modifiedBy.should.eql('system');
-            stepDone();
-          });
-        }
-      ], done);
-    });
+                access.modifiedBy.should.eql('system');
+                stepDone();
+              });
+          }
+        ], done);
+      });
 
     it('must reuse the current session if already open', function (done) {
       var originalToken;
@@ -108,11 +110,12 @@ describe('auth', function () {
 
     it('must accept "no origin" (i.e. not a CORS request) if authorized', function (done) {
       var authDataNoCORS = _.defaults({appId: 'pryv-test-no-cors'}, authData);
-      request.post(path(authDataNoCORS.username))
-          .send(authDataNoCORS).end(function (res) {
-        res.statusCode.should.eql(200);
-        done();
-      });
+      request
+        .post(path(authDataNoCORS.username))
+        .send(authDataNoCORS).end(function (res) {
+          res.statusCode.should.eql(200);
+          done();
+        });
     });
 
     it('must not be case-sensitive for the username', function (done) {
