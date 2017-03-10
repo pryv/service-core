@@ -120,54 +120,55 @@ describe('system (ex-register)', function () {
       ], done);
     });
 
-    it('must run the process but not save anything for test username "recla"', function (done) {
-      var originalCount,
-	  createdUserId,
-	  settings = _.clone(helpers.dependencies.settings);
+    it('must run the process but not save anything for test username "recla"', 
+      function (done) {
+        var originalCount,
+            createdUserId,
+            settings = _.clone(helpers.dependencies.settings);
 
-      // setup mail server mock, persisting over the next tests
-      helpers.instanceTestSetup.set(settings, {
-	context: settings.services.email,
-	execute: function () {
-	  require('nock')(this.context.url).persist()
-	      .post(this.context.sendMessagePath)
-	      .reply(200);
-	}
-      });
+        // setup mail server mock, persisting over the next tests
+        helpers.instanceTestSetup.set(settings, {
+          context: settings.services.email,
+          execute: function () {
+            require('nock')(this.context.url).persist()
+                .post(this.context.sendMessagePath)
+                .reply(200);
+          }
+        });
 
-      async.series([
-	server.ensureStarted.bind(server, settings),
-        function countInitialUsers(stepDone) {
-          storage.countAll(function (err, count) {
-            originalCount = count;
-            stepDone();
-          });
-        },
-        function registerNewUser(stepDone) {
-          var data = {
-            username: 'recla',
-            passwordHash: encryption.hashSync('youpi'),
-            email: 'recla@rec.la',
-            language: 'fr'
-          };
-          post(data, function (res) {
-            validation.check(res, {
-              status: 201,
-              schema: methodsSchema.createUser.result
+        async.series([
+          server.ensureStarted.bind(server, settings),
+          function countInitialUsers(stepDone) {
+            storage.countAll(function (err, count) {
+              originalCount = count;
+              stepDone();
             });
-            createdUserId = res.body.id;
-            stepDone();
-          });
-        },
-        function getUpdatedUsers(stepDone) {
-          storage.findAll(null, function (err, users) {
-            users.length.should.eql(originalCount, 'users');
-            should.not.exist(_.find(users, {id: createdUserId}));
-            stepDone();
-          });
-        }
-      ], done);
-    });
+          },
+          function registerNewUser(stepDone) {
+            var data = {
+              username: 'recla',
+              passwordHash: encryption.hashSync('youpi'),
+              email: 'recla@rec.la',
+              language: 'fr'
+            };
+            post(data, function (res) {
+              validation.check(res, {
+                status: 201,
+                schema: methodsSchema.createUser.result
+              });
+              createdUserId = res.body.id;
+              stepDone();
+            });
+          },
+          function getUpdatedUsers(stepDone) {
+            storage.findAll(null, function (err, users) {
+              users.length.should.eql(originalCount, 'users');
+              should.not.exist(_.find(users, {id: createdUserId}));
+              stepDone();
+            });
+          }
+        ], done);
+      });
 
     it('must support the old "/register" path for backwards-compatibility', function (done) {
       request.post(url.resolve(server.url, '/register/create-user'))

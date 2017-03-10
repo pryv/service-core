@@ -26,7 +26,7 @@ function Database(settings, logging) {
   this.connectionString = 'mongodb://' + authPart + settings.host + ':' + settings.port + '/' +
       settings.name;
   this.options = {
-    db: {strict: true},
+    w: 1,   // Requests acknowledgement that the write operation has propagated.
     autoReconnect: true, 
   };
   this.db = null;

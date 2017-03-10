@@ -1,6 +1,10 @@
+'use strict';
+// @flow
+
 /**
  * Helper functions for serializing/deserializing setup instructions for tests.
- * Added to support injecting mocks in server instance (separate process) from tests.
+ * Added to support injecting mocks in server instance (separate process) from
+ * tests.
  */
 
 /**
@@ -12,21 +16,22 @@
  *                       A `messagingSocket` property will be injected into `context` at execution
  *                       time to allow passing messages back to the test process.
  */
-exports.set = function (settings, setup) {
-  if (! settings || ! setup) {
+exports.set = function (settings: any, setup: any) {
+  if (!settings || !setup) {
     throw new Error('Expected config and setup object arguments');
   }
+  console.log(setup);
   settings.instanceTestSetup = stringify(setup);
 };
 
-exports.clear = function (settings) {
+exports.clear = function (settings: any) {
   delete settings.instanceTestSetup;
 };
 
 /**
  * @throws Any error encountered deserializing or calling the setup function
  */
-exports.executeIfAny = function (settings, messagingSocket) {
+exports.executeIfAny = function (settings: any, messagingSocket: any) {
   if (! settings.instanceTestSetup) { return; }
 
   var obj = parse(settings.instanceTestSetup);
