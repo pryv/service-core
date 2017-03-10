@@ -9,10 +9,12 @@ var errors = require('components/errors'),
 
 /** Error route handling.
  */
-module.exports = function (logging) {
+module.exports = function produceHandleErrorMiddleware(logging: any) {
   var logger = logging.getLogger('routes');
 
-  return function handleError(error, req, res, next) {
+  // NOTE next is not used, since the request is terminated on all errors. 
+  /*eslint-disable no-unused-vars*/
+  return function handleError(error, req: express$Request, res: express$Response, next: () => void) {
     if (! (error instanceof APIError) && error.status) {
       // it should be coming from Express' bodyParser: just wrap the error
       error = new APIError(ErrorIds.InvalidRequestStructure, error.message,
