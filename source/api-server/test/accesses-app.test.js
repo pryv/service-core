@@ -1,3 +1,6 @@
+'use strict';
+// @flow
+
 /*global describe, before, beforeEach, it */
 
 var helpers = require('./helpers'),
@@ -87,7 +90,11 @@ describe('accesses (app)', function () {
   function path(id) {
     return basePath + '/' + id;
   }
-
+  function req(): typeof request {
+    if (request) return request; 
+    throw new Error("request is still not defined.");
+  }
+  
   // to verify data change notifications
   var accessesNotifCount;
   server.on('accesses-changed', function () { accessesNotifCount++; });
@@ -106,15 +113,15 @@ describe('accesses (app)', function () {
     before(resetAccesses);
 
     it('must return shared accesses whose permissions are a subset of the current one\'s',
-        function (done) {
-      request.get(basePath, access.token).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.get.result,
-          body: {accesses: _.at(additionalTestAccesses, 2)}
-        }, done);
+      function (done) {
+        req().get(basePath, access.token).end(function (res) {
+          validation.check(res, {
+            status: 200,
+            schema: methodsSchema.get.result,
+            body: {accesses: _.at(additionalTestAccesses, 2)}
+          }, done);
+        });
       });
-    });
 
     it('must be forbidden to requests with a shared access token', function (done) {
       var sharedAccess = testData.accesses[1];
