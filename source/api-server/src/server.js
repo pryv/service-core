@@ -1,3 +1,4 @@
+'use strict';
 // @flow
 
 const express = require('express');

@@ -5,8 +5,21 @@ var errors = require('components/errors').factory;
 
 /** Transparently handles multipart requests for uploading file attachments.
  *
- * Files uploaded, if any, will be in req.files, while the rest of the request
- * will be as for a regular pure JSON request (i.e. uploaded data in req.body).
+ * Files uploaded, if any, will be in req.files. All other field parts are 
+ * reunited in the body object by multer; after the execution of this middleware, 
+ * the `req.body` is replaced by its only child object. If there is more than 
+ * one such object in `req.body`, an error is thrown. 
+ * 
+ * @example
+ *    {
+ *      event: { foo: 'bar' }
+ *    }
+ * 
+ *    // is turned into
+ * 
+ *    {
+ *      foo: 'bar'
+ *    }
  * 
  * @param req {express$Request} request object
  * @param res {express$Response} response object
