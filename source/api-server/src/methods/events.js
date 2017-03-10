@@ -395,8 +395,9 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
             }
           }
           if (err) {
-            return next(errors.invalidParametersFormat('The event content\'s format is ' +
-            'invalid.', err));
+            return next(
+              errors.invalidParametersFormat(
+                'The event content\'s format is invalid.', err));
           }
           next(null);
         });

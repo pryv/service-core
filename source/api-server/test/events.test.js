@@ -943,53 +943,53 @@ describe('events', function () {
       };
 
       request.post(basePath)
-          .field('event', JSON.stringify(data))
-          .attach('document', testData.attachments.document.path,
-              testData.attachments.document.filename)
-          .attach('image', testData.attachments.image.path,
-              testData.attachments.image.filename)
-          .end(function (res) {
-            validation.check(res, {
-              status: 201,
-              schema: methodsSchema.create.result
-            });
-
-            var createdEvent = res.body.event;
-            validation.checkFilesReadToken(createdEvent, access, filesReadTokenSecret);
-            validation.sanitizeEvent(createdEvent);
-
-            var expected = _.extend({
-              id: createdEvent.id,
-              attachments: [
-                {
-                  id: createdEvent.attachments[0].id,
-                  fileName: testData.attachments.document.filename,
-                  type: testData.attachments.document.type,
-                  size: testData.attachments.document.size
-                },
-                {
-                  id: createdEvent.attachments[1].id,
-                  fileName: testData.attachments.image.filename,
-                  type: testData.attachments.image.type,
-                  size: testData.attachments.image.size
-                }
-              ]
-            }, data);
-            validation.checkObjectEquality(createdEvent, expected);
-
-            // check attached files
-            attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
-                createdEvent.attachments[0].id,
-                testData.attachments.document.filename).should.equal('');
-            attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
-                createdEvent.attachments[1].id,
-                testData.attachments.image.filename).should.equal('');
-
-
-            eventsNotifCount.should.eql(1, 'events notifications');
-
-            done();
+        .field('event', JSON.stringify(data))
+        .attach('document', testData.attachments.document.path,
+            testData.attachments.document.filename)
+        .attach('image', testData.attachments.image.path,
+            testData.attachments.image.filename)
+        .end(function (res) {
+          validation.check(res, {
+            status: 201,
+            schema: methodsSchema.create.result
           });
+
+          var createdEvent = res.body.event;
+          validation.checkFilesReadToken(createdEvent, access, filesReadTokenSecret);
+          validation.sanitizeEvent(createdEvent);
+
+          var expected = _.extend({
+            id: createdEvent.id,
+            attachments: [
+              {
+                id: createdEvent.attachments[0].id,
+                fileName: testData.attachments.document.filename,
+                type: testData.attachments.document.type,
+                size: testData.attachments.document.size
+              },
+              {
+                id: createdEvent.attachments[1].id,
+                fileName: testData.attachments.image.filename,
+                type: testData.attachments.image.type,
+                size: testData.attachments.image.size
+              }
+            ]
+          }, data);
+          validation.checkObjectEquality(createdEvent, expected);
+
+          // check attached files
+          attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
+              createdEvent.attachments[0].id,
+              testData.attachments.document.filename).should.equal('');
+          attachmentsCheck.compareTestAndAttachedFiles(user, createdEvent.id,
+              createdEvent.attachments[1].id,
+              testData.attachments.image.filename).should.equal('');
+
+
+          eventsNotifCount.should.eql(1, 'events notifications');
+
+          done();
+        });
     });
 
     it('must properly handle part names containing special chars (e.g. ".", "$")', function (done) {
@@ -1043,18 +1043,6 @@ describe('events', function () {
       request.post(basePath)
           .field('event', '<bad>data</bad>')
           .attach('file', testData.attachments.text.path, testData.attachments.text.fileName)
-          .end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.InvalidRequestStructure
-        }, done);
-      });
-    });
-
-    it('must return an error if there is more than one non-file content part', function (done) {
-      request.post(basePath)
-          .field('event', JSON.stringify({ streamId: testData.streams[0].id, type: testType }))
-          .field('badPart', 'text')
           .end(function (res) {
         validation.checkError(res, {
           status: 400,
