@@ -6,6 +6,6 @@ exports = module.exports = {
   InstanceManager: require('./InstanceManager')
 };
 
-if (process.env.NODE_ENV === 'test') {
+// if (process.env.NODE_ENV === 'test') {
   exports.instanceTestSetup = require('./instanceTestSetup');
-}
+// }

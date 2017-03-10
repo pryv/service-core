@@ -1,9 +1,10 @@
+'use strict'; 
+// @flow
 
 const express = require('express');
 const bodyParser = require('body-parser');
 const supertest = require('supertest');
 const should = require('should');
-const assert = require('assert');
 const R = require('ramda');
 
 const {fixturePath, fixtureFile} = require('../test-helper');

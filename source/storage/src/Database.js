@@ -205,7 +205,7 @@ Database.prototype.findStreamed = function (collectionInfo, query, options, call
 Database.prototype.findOne = function (collectionInfo, query, options, callback) {
   this.getCollection(collectionInfo, function (err, collection) {
     if (err) { return callback(err); }
-    collection.findOne(query, options || {}, callback);
+    collection.findOne(query, options || {}, callback);
   });
 };
 

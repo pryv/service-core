@@ -20,7 +20,6 @@ exports.set = function (settings: any, setup: any) {
   if (!settings || !setup) {
     throw new Error('Expected config and setup object arguments');
   }
-  console.log(setup);
   settings.instanceTestSetup = stringify(setup);
 };
 
