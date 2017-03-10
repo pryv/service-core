@@ -1,13 +1,18 @@
 'use strict';
 // @flow
 
-// Transparently handles multipart requests for uploading file attachments.
-// 
-// Files uploaded, if any, will be in req.files, while the rest of the request
-// will be as for a regular pure JSON request (i.e. uploaded data in req.body).
-
 var errors = require('components/errors').factory;
 
+/** Transparently handles multipart requests for uploading file attachments.
+ *
+ * Files uploaded, if any, will be in req.files, while the rest of the request
+ * will be as for a regular pure JSON request (i.e. uploaded data in req.body).
+ * 
+ * @param req {express$Request} request object
+ * @param res {express$Response} response object
+ * @param next {Function} callback for next middleware in chain
+ * @return {void}
+ */
 function validateFileUpload(req: express$Request, res: express$Response, next: Function) {
   const body = req.body; 
   
