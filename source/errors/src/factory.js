@@ -34,6 +34,12 @@ factory.invalidCredentials = function (message) {
       {httpStatus: 401});
 };
 
+factory.invalidEventType = function (type) {
+  return new APIError(ErrorIds.UnknownEventType, 'Event type \'' + type + '\' not allowed ' +
+    'for High-Frequency Series. Please use a predefined simple type',
+    {type: type, httpStatus: 400});
+};
+
 factory.invalidItemId = function (message) {
   return new APIError(ErrorIds.InvalidItemId, message, {httpStatus: 400});
 };
@@ -101,11 +107,6 @@ factory.unexpectedError = function (sourceError, message) {
     httpStatus: 500,
     innerError: sourceError
   });
-};
-
-factory.unknownEventType = function (type) {
-  return new APIError(ErrorIds.UnknownEventType, 'Event type \'' + type + '\' not known.',
-    {type: type, httpStatus: 400});
 };
 
 /**

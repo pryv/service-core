@@ -6,6 +6,10 @@ var ErrorIds = module.exports = {
   Forbidden: 'forbidden',
   InvalidAccessToken: 'invalid-access-token',
   InvalidCredentials: 'invalid-credentials',
+  /**
+   * Used for High-Frequency Series, allowing only known, simple types.
+   */
+  InvalidEventType: 'invalid-event-type',
   InvalidItemId: 'invalid-item-id',
   /**
    * Used for Socket.IO support.
@@ -18,10 +22,6 @@ var ErrorIds = module.exports = {
   MissingHeader: 'missing-header',
   PeriodsOverlap: 'periods-overlap',
   UnexpectedError: 'unexpected-error',
-  /**
-   * Used for High-Frequency Series, allowing only predefined types
-   */
-  UnknownEventType: 'unknown-event-type',
   UnknownReferencedResource: 'unknown-referenced-resource',
   UnknownResource: 'unknown-resource',
   UnsupportedContentType: 'unsupported-content-type',

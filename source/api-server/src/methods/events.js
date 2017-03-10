@@ -417,8 +417,9 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     if (isSeries(context.content)) {
       type = type.slice(7);
       knownType = eventTypes.types[type];
-      if (!knownType) { // how to enforce only strings, floats, integers, booleans?
-        return next(errors.unknownEventType(type));
+      if (!knownType ||
+        ((knownType.type !== 'string') && (knownType.type !== 'number') && (knownType.type !== 'object'))) {
+        return next(errors.invalidEventType(type));
       }
       if (context.content.content) {
         return next(errors.invalidParametersFormat('The event content\'s format is ' +
