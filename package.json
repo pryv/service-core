@@ -46,6 +46,7 @@
     "qs": "^6.3.0",
     "ramda": "^0.23.0",
     "rimraf": "^2.4.3",
+    "slug": "^0.9.1",
     "storage": "file:source/storage",
     "superagent": "^3.4.4",
     "test-helpers": "file:source/test-helpers",
