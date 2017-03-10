@@ -6,24 +6,30 @@ var methodCallback = require('./methodCallback'),
     Paths = require('./Paths'),
     tryCoerceStringValues = require('../schema/validation').tryCoerceStringValues,
     _ = require('lodash');
-const upload = require('./upload');
+    
+const hasFileUpload = require('../middleware/uploads').hasFileUpload;
 
 /**
- * Events route handling.
+ * Set up events route handling.
  *
- * @param expressApp
+ * @param expressApp {express$Application} Express application.
  * @param api
  * @param attachmentsAccessMiddleware
  * @param userAccessesStorage
  * @param authSettings
  * @param eventFilesSettings
  */
-module.exports = function (expressApp, api, attachmentsAccessMiddleware, userAccessesStorage,
-                           authSettings, eventFilesSettings) {
+module.exports = function (expressApp: express$Application, 
+  api, attachmentsAccessMiddleware, userAccessesStorage,
+  authSettings, eventFilesSettings) {
 
-  var attachmentsStatic = express.static(eventFilesSettings.attachmentsDirPath);
+  const attachmentsStatic = express.static(eventFilesSettings.attachmentsDirPath);
+  const events : express$Router = new express.Router();
+  
+  // This is the path prefix for the routes in this file. 
+  expressApp.use(Paths.Events, events);
 
-  expressApp.get(Paths.Events, function (req, res, next) {
+  events.get('/', function (req, res, next) {
     var params = _.extend({}, req.query);
     tryCoerceStringValues(params, {
       fromTime: 'number',
@@ -43,7 +49,7 @@ module.exports = function (expressApp, api, attachmentsAccessMiddleware, userAcc
   /**
    * Serving attached files isn't done via API methods for now, so we must load the access here.
    */
-  expressApp.get(Paths.Events + '/:id/:fileId/:fileName?', retrieveAccessFromReadToken, loadAccess,
+  events.get('/:id/:fileId/:fileName?', retrieveAccessFromReadToken, loadAccess,
       attachmentsAccessMiddleware, attachmentsStatic);
 
   function retrieveAccessFromReadToken(req, res, next) {
@@ -82,10 +88,9 @@ module.exports = function (expressApp, api, attachmentsAccessMiddleware, userAcc
     req.context.retrieveExpandedAccess(next);
   }
 
-  // POST /events - create an event.
-  expressApp.post(Paths.Events, 
-    upload.any(), 
-    filesUploadSupport, 
+  // Create an event.
+  events.post('/', 
+    hasFileUpload,
     function (req, res, next) {
       var params = req.body;
       if (req.files) {
@@ -94,22 +99,23 @@ module.exports = function (expressApp, api, attachmentsAccessMiddleware, userAcc
       api.call('events.create', req.context, params, methodCallback(res, next, 201));
     });
 
-  expressApp.post(Paths.Events + '/start', function (req, res, next) {
+  events.post('/start', function (req, res, next) {
     api.call('events.start', req.context, req.body, methodCallback(res, next, 201));
   });
 
-  expressApp.put(Paths.Events + '/:id', function (req, res, next) {
+  events.put('/:id', function (req, res, next) {
     api.call('events.update', 
       req.context, 
       { id: req.param('id'), update: req.body },
       methodCallback(res, next, 200));
   });
 
-  expressApp.post(Paths.Events + '/stop', function (req, res, next) {
+  events.post('/stop', function (req, res, next) {
     api.call('events.stop', req.context, _.extend({}, req.body), methodCallback(res, next, 200));
   });
-
-  expressApp.post(Paths.Events + '/:id', filesUploadSupport, function (req, res, next) {
+  
+  // Update an event
+  events.post('/:id', hasFileUpload, function (req, res, next) {
     var params = {
       id: req.params.id,
       update: {}
@@ -122,12 +128,12 @@ module.exports = function (expressApp, api, attachmentsAccessMiddleware, userAcc
     api.call('events.update', req.context, params, methodCallback(res, next, 200));
   });
 
-  expressApp.delete(Paths.Events + '/:id', function (req, res, next) {
+  events.delete('/:id', function (req, res, next) {
     api.call('events.delete', req.context, {id: req.param('id')},
         methodCallback(res, next, 200));
   });
 
-  expressApp.delete(Paths.Events + '/:id/:fileId', function (req, res, next) {
+  events.delete('/:id/:fileId', function (req, res, next) {
     api.call('events.deleteAttachment', req.context,
         {id: req.params.id, fileId: req.params.fileId}, methodCallback(res, next, 200));
   });
