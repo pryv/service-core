@@ -1,3 +1,5 @@
+'use strict';
+
 /*global describe, before, beforeEach, it */
 
 require('./test-helpers'); 
@@ -141,14 +143,14 @@ describe('root', function () {
 
     it('should support POSTing "urlencoded" content with _json and _auth fields', function (done) {
       request.post(path() + user.username + '/streams')
-          .type('form')
-          .unset('authorization')
-          .send({_auth: request.token})
-          .send({_json: JSON.stringify({name: 'New stream'})})
-          .end(function (res) {
-        res.statusCode.should.eql(201);
-        done();
-      });
+        .type('form')
+        .unset('authorization')
+        .send({_auth: request.token})
+        .send({_json: JSON.stringify({name: 'New stream'})})
+        .end(function (err, res) {
+          res.statusCode.should.eql(201);
+          done();
+        });
     });
 
     it('should support POSTing "urlencoded" content with _json, _method (PUT) and _auth fields',
@@ -180,17 +182,17 @@ describe('root', function () {
     });
 
     it('should properly handle JSON errors when POSTing "urlencoded" content with _json field',
-        function (done) {
-      request.post(path() + user.username + '/streams')
+      function (done) {
+        request.post(path() + user.username + '/streams')
           .type('form')
           .unset('authorization')
           .send({_auth: request.token})
           .send({_json: '{"name": "New stream"'}) // <- missing closing brace
           .end(function (res) {
-        res.statusCode.should.eql(400);
-        done();
+            res.statusCode.should.eql(400);
+            done();
+          });
       });
-    });
 
     it('should update the access\'s "last used" time and *internal* request counters',
         function (done) {

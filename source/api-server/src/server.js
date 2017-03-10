@@ -131,8 +131,8 @@ utils.messaging.openPubSocket(settings.tcpMessaging, function (err, messagingSoc
     // TEST: execute test setup instructions if any
     if (process.env.NODE_ENV === 'test') {
       try {
-        require('components/test-helpers').instanceTestSetup.executeIfAny(settings,
-            messagingSocket);
+        require('components/test-helpers')
+          .instanceTestSetup.executeIfAny(settings, messagingSocket);
       } catch (err) {
         logger.warn('Error executing instance test setup instructions: ' + err.message);
       }
