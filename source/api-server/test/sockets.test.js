@@ -4,6 +4,7 @@
  * Tests Socket.IO access to the API.
  */
 
+ require('./test-helpers'); 
 var helpers = require('./helpers'),
     ErrorIds = require('components/errors').ErrorIds,
     server = helpers.dependencies.instanceManager,

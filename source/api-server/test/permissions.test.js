@@ -1,5 +1,6 @@
 /*global describe, before, beforeEach, after, it */
 
+require('./test-helpers'); 
 var helpers = require('./helpers'),
     server = helpers.dependencies.instanceManager,
     async = require('async'),

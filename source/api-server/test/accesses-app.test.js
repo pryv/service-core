@@ -3,6 +3,7 @@
 
 /*global describe, before, beforeEach, it */
 
+require('./test-helpers'); 
 var helpers = require('./helpers'),
     ErrorIds = require('components/errors').ErrorIds,
     server = helpers.dependencies.instanceManager,
