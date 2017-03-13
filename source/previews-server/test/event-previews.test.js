@@ -1,5 +1,7 @@
 /*global describe, before, beforeEach, it */
 
+require('./test-helpers');
+
 var helpers = require('./helpers'),
     server = helpers.dependencies.instanceManager,
     async = require('async'),
@@ -12,6 +14,7 @@ var helpers = require('./helpers'),
     testData = helpers.data,
     timestamp = require('unix-timestamp'),
     xattr = require('fs-xattr');
+const superagent = require('superagent'); 
 
 describe('event previews', function () {
 
@@ -195,7 +198,7 @@ describe('event previews', function () {
 
     it('must forbid requests missing an access token', function (done) {
       var url = require('url').resolve(server.url, path(testData.events[2].id));
-      require('superagent').get(url).end(function (res) {
+      superagent.get(url).end(function (err, res) {
         res.statusCode.should.eql(401);
         done();
       });

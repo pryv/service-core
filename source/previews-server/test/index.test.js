@@ -24,7 +24,7 @@ describe('(index)', function () {
       request.get(path() + 'events/' + testData.events[2].id + '?auth=' +
               testData.accesses[1].token)
           .set('Host', user.username + '.pryv.local')
-          .end(function (res) {
+          .end(function (err, res) {
         res.statusCode.should.eql(200);
         done();
       });
@@ -35,7 +35,7 @@ describe('(index)', function () {
   describe('OPTIONS /', function () {
 
     it('should return OK', function (done) {
-      request.options(path()).end(function (res) {
+      request.options(path()).end(function (err, res) {
         res.statusCode.should.eql(200);
         done();
       });
