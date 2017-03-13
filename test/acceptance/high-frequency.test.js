@@ -102,7 +102,8 @@ describe('High-Frequency', function () {
 
   describe('POST /events', function () {
 
-    it('must create an event of type series and return it', function (done) {
+    it('must create an event of type series and return it with ' +
+      'the right content.fields', function (done) {
       const type = 'position/wgs84',
             seriesEvent = {
               type: 'series:' + type,
@@ -118,7 +119,54 @@ describe('High-Frequency', function () {
         event.content.elementType.should.eql(type);
         event.content.format.should.eql('flatJSON');
         event.content.points.should.eql([]);
-        event.content.fields.should.eql(['timestamp'].concat(Object.keys(eventTypes[type].properties)));
+        event.content.fields.should.eql(['timestamp']
+          .concat(Object.keys(eventTypes[type].properties)));
+        event.duration.should.eql(0);
+        done();
+      });
+    });
+
+    it('must create an event of type series and return it with ' +
+      'the content.field value for a numerical value', function (done) {
+      const type = 'energy/j',
+            seriesEvent = {
+              type: 'series:' + type,
+              time: timestamp.now(),
+              streamId: testData.streams[0].id
+            };
+      request.post(eventsPath).send(seriesEvent).end(function (res) {
+        res.statusCode.should.eql(201);
+        const event = res.body.event;
+        should.exist(event);
+        (_.isEqual(seriesEvent, _.pick(event, ['type', 'time', 'streamId']))).should.be.true();
+        should.exist(event.content);
+        event.content.elementType.should.eql(type);
+        event.content.format.should.eql('flatJSON');
+        event.content.points.should.eql([]);
+        event.content.fields.should.eql(['timestamp','value']);
+        event.duration.should.eql(0);
+        done();
+      });
+    });
+
+    it('must create an event of type series and return it with ' +
+      'the content.field value for a string value', function (done) {
+      const type = 'mood/emoticon',
+            seriesEvent = {
+              type: 'series:' + type,
+              time: timestamp.now(),
+              streamId: testData.streams[0].id
+            };
+      request.post(eventsPath).send(seriesEvent).end(function (res) {
+        res.statusCode.should.eql(201);
+        const event = res.body.event;
+        should.exist(event);
+        (_.isEqual(seriesEvent, _.pick(event, ['type', 'time', 'streamId']))).should.be.true();
+        should.exist(event.content);
+        event.content.elementType.should.eql(type);
+        event.content.format.should.eql('flatJSON');
+        event.content.points.should.eql([]);
+        event.content.fields.should.eql(['timestamp','value']);
         event.duration.should.eql(0);
         done();
       });
