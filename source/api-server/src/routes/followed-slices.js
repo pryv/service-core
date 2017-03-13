@@ -19,12 +19,12 @@ module.exports = function (expressApp, api) {
   });
 
   expressApp.put(Paths.FollowedSlices + '/:id', function (req, res, next) {
-    api.call('followedSlices.update', req.context, { id: req.param('id'), update: req.body },
+    api.call('followedSlices.update', req.context, { id: req.params.id, update: req.body },
         methodCallback(res, next, 200));
   });
 
   expressApp.delete(Paths.FollowedSlices + '/:id', function (req, res, next) {
-    api.call('followedSlices.delete', req.context, _.extend({ id: req.param('id') }, req.query),
+    api.call('followedSlices.delete', req.context, _.extend({ id: req.params.id }, req.query),
         methodCallback(res, next, 200));
   });
 

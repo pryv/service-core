@@ -108,7 +108,7 @@ module.exports = function (expressApp: express$Application,
   events.put('/:id', function (req, res, next) {
     api.call('events.update', 
       req.context, 
-      { id: req.param('id'), update: req.body },
+      { id: req.params.id, update: req.body },
       methodCallback(res, next, 200));
   });
 
@@ -131,7 +131,7 @@ module.exports = function (expressApp: express$Application,
   });
 
   events.delete('/:id', function (req, res, next) {
-    api.call('events.delete', req.context, {id: req.param('id')},
+    api.call('events.delete', req.context, {id: req.params.id},
         methodCallback(res, next, 200));
   });
 
