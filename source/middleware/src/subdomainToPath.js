@@ -24,9 +24,7 @@ module.exports = function (ignoredPaths) {
       var usernamePathRoot = '/' + hostChunks[0];
       // just make sure it's not already there
       if (! startsWith(req.url, usernamePathRoot)) {
-        console.log(req.url);
         req.url = `${usernamePathRoot}${req.url}`;
-        console.log(req.url);
       }
     }
 
