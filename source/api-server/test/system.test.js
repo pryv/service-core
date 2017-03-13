@@ -35,9 +35,10 @@ describe('system (ex-register)', function () {
     ], done);
   });
 
-  // NOTE: because we mock the email sending service for user creation and to keep test code simple,
-  // test order is important. The first test configures the mock service in order to test email
-  // sending, the second one reconfigures it so that it just replies OK for subsequent tests.
+  // NOTE: because we mock the email sending service for user creation and to
+  // keep test code simple, test order is important. The first test configures
+  // the mock service in order to test email sending, the second one
+  // reconfigures it so that it just replies OK for subsequent tests.
   describe('POST /create-user', function () {
 
     function path() {
@@ -70,15 +71,16 @@ describe('system (ex-register)', function () {
         context: settings.services.email,
         execute: function () {
           require('nock')(this.context.url).post(this.context.sendMessagePath)
-              .reply(200, function (uri, requestBody) {
-            var body = JSON.parse(requestBody);
-            if (body.message.global_merge_vars[0].content !== 'mr-dupotager' ||
-                ! /welcome/.test(body.template_name)) {
-              console.log('MISMATCHED REQ BODY: ' + require('util').inspect(body, {depth: null}));
-              return;
-            }
-            this.context.messagingSocket.emit('mail-sent');
-          }.bind(this));
+            .reply(200, function (uri, requestBody) {
+              var body = JSON.parse(requestBody);
+              if (body.message.global_merge_vars[0].content !== 'mr-dupotager' ||
+                ! /welcome/.test(body.template_name)) 
+              {
+                // MISMATCHED REQ BODY: require('util').inspect(body, {depth: null}));
+                should.fail(); 
+              }
+              this.context.messagingSocket.emit('mail-sent');
+            }.bind(this));
         }
       });
       // fetch notification from server process
@@ -178,13 +180,13 @@ describe('system (ex-register)', function () {
 
     it('must support the old "/register" path for backwards-compatibility', function (done) {
       request.post(url.resolve(server.url, '/register/create-user'))
-	  .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
-	  .send(newUserData)
-	  .end(function (res) {
-	validation.check(res, {
-	  status: 201
-	}, done);
-      });
+        .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
+        .send(newUserData)
+        .end(function (res) {
+          validation.check(res, {
+            status: 201
+          }, done);
+        });
     });
 
     it('must return a correct 400 error if the sent data is badly formatted', function (done) {
@@ -194,30 +196,30 @@ describe('system (ex-register)', function () {
     });
 
     it('must return a correct 400 error if a user with the same user name already exists',
-        function (done) {
-      var data = {
-        username: testData.users[0].username,
-        passwordHash: '$-1s-b4d-f0r-U',
-        email: 'roudoudou@choupinou.ch',
-        language: 'fr'
-      };
-      post(data, function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.ItemAlreadyExists,
-          data: {username: data.username}
-        }, done);
+      function (done) {
+        var data = {
+          username: testData.users[0].username,
+          passwordHash: '$-1s-b4d-f0r-U',
+          email: 'roudoudou@choupinou.ch',
+          language: 'fr'
+        };
+        post(data, function (res) {
+          validation.checkError(res, {
+            status: 400,
+            id: ErrorIds.ItemAlreadyExists,
+            data: {username: data.username}
+          }, done);
+        });
       });
-    });
 
     it('must return a correct 404 error when authentication is invalid', function (done) {
       request.post(path()).set('authorization', 'bad-key').send(JSON.stringify(newUserData))
           .end(function (res) {
-        validation.checkError(res, {
-          status: 404,
-          id: ErrorIds.UnknownResource
-        }, done);
-      });
+            validation.checkError(res, {
+              status: 404,
+              id: ErrorIds.UnknownResource
+            }, done);
+          });
     });
 
     it('must return a correct error if the content type is wrong', function (done) {
@@ -249,48 +251,48 @@ describe('system (ex-register)', function () {
       async.series([
         function getInitialInfo(stepDone) {
           request.get(path(user.username))
-              .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
-              .end(function (res) {
-            validation.check(res, {
-              status: 200,
-              schema: methodsSchema.getUserInfo.result
+            .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
+            .end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.getUserInfo.result
+              });
+              originalInfo = res.body.userInfo;
+              stepDone();
             });
-            originalInfo = res.body.userInfo;
-            stepDone();
-          });
         },
         function makeUserRequest1(stepDone) {
           request.get(url.resolve(server.url, '/' + user.username + '/events'))
-              .set('authorization', testData.accesses[4].token)
-              .end(function () {
-            stepDone();
-          });
+            .set('authorization', testData.accesses[4].token)
+            .end(function () {
+              stepDone();
+            });
         },
         function makeUserRequest2(stepDone) {
           request.get(url.resolve(server.url, '/' + user.username + '/events'))
-              .set('authorization', testData.accesses[1].token)
-              .end(function () {
-            expectedTime = timestamp.now();
-            stepDone();
-          });
+            .set('authorization', testData.accesses[1].token)
+            .end(function () {
+              expectedTime = timestamp.now();
+              stepDone();
+            });
         },
         function getUpdatedInfo(stepDone) {
           request.get(path(user.username))
-              .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
-              .end(function (res) {
-            var info = res.body.userInfo;
-            Math.round(info.lastAccess).should.eql(Math.round(expectedTime));
-            info.callsTotal.should.eql(originalInfo.callsTotal + 2, 'calls total');
-            info.callsDetail['events:get'].should.eql(originalInfo.callsDetail['events:get'] + 2,
-                'calls detail');
-            var accessKey1 = testData.accesses[4].name, // app access
-                accessKey2 = 'shared'; // shared access
-            info.callsPerAccess[accessKey1].should.eql(originalInfo.callsPerAccess[accessKey1] + 1,
-                'calls per access (personal)');
-            info.callsPerAccess[accessKey2].should.eql(originalInfo.callsPerAccess[accessKey2] + 1,
-                'calls per access (shared)');
-            stepDone();
-          });
+            .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
+            .end(function (res) {
+              var info = res.body.userInfo;
+              Math.round(info.lastAccess).should.eql(Math.round(expectedTime));
+              info.callsTotal.should.eql(originalInfo.callsTotal + 2, 'calls total');
+              info.callsDetail['events:get'].should.eql(originalInfo.callsDetail['events:get'] + 2,
+                  'calls detail');
+              var accessKey1 = testData.accesses[4].name, // app access
+                  accessKey2 = 'shared'; // shared access
+              info.callsPerAccess[accessKey1].should.eql(originalInfo.callsPerAccess[accessKey1] + 1,
+                  'calls per access (personal)');
+              info.callsPerAccess[accessKey2].should.eql(originalInfo.callsPerAccess[accessKey2] + 1,
+                  'calls per access (shared)');
+              stepDone();
+            });
         }
       ], done);
     });
