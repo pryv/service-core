@@ -33,9 +33,6 @@ function InstanceManager(settings) {
       logger = settings.logging.getLogger('instance-manager');
 
 
-  // Comment this out if you want to see more logging. 
-  logger.level = 'warn';
-  
   // setup TCP messaging subscription
 
   messagingSocket.bind(+settings.tcpMessaging.port, settings.tcpMessaging.host, function () {
