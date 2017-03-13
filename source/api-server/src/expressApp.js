@@ -124,6 +124,7 @@ function expressAppInit(dependencies: any) {
 
   // Parse JSON bodies: 
   app.use(bodyParser.json());
+  app.use(bodyParser.urlencoded());
     
   // Other middleware:
   app.use(requestTraceMiddleware);
