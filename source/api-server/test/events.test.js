@@ -1051,7 +1051,19 @@ describe('events', function () {
         }, done);
       });
     });
-
+    
+    it('must return an error if there is more than one non-file content part', function (done) {
+      request.post(basePath)
+        .field('event', 
+          JSON.stringify({ streamId: testData.streams[0].id, type: testType }))
+        .field('badPart', 'text')
+        .end(function (res) {
+          validation.checkError(res, {
+            status: 400,
+            id: ErrorIds.InvalidRequestStructure
+          }, done);
+        });
+    });
   });
 
   describe('POST /<event id> (multipart content)', function () {
