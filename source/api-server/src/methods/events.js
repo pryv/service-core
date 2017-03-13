@@ -235,7 +235,8 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   function createEvent(context: Object, params: Object, result: Object, next: Object) {
 
     if (isSeries(context.content)) {
-      createSeriesEventBody(context);
+      context.content.content = createSeriesEventContent(context);
+      context.content.duration = 0; // TODO: remove when time tracking strategy for HF is defined
     }
 
     userEventsStorage.insertOne(context.user, context.content, function (err, newEvent) {
@@ -257,23 +258,23 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
    *
    * @param context
    */
-  function createSeriesEventBody(context: Object): null {
-    context.content.content = {};
-    context.content.content.elementType = context.content.type.slice(7);
-    context.content.content.fields = ['timestamp'];
-    var schema = eventTypes.types[context.content.content.elementType];
+  function createSeriesEventContent(context: Object): Object {
+    let seriesEvent = {};
+    seriesEvent.elementType = context.content.type.slice(7);
+    seriesEvent.fields = ['timestamp'];
+    const schema = eventTypes.types[seriesEvent.elementType];
 
     if ((schema.type === 'string') || (schema.type === 'number')) {
-      context.content.content.fields.push('value');
+      seriesEvent.fields.push('value');
     } else {
 
-      var fields = Object.keys(schema.properties);
-      context.content.content.fields = context.content.content.fields.concat(fields);
+      const fields = Object.keys(schema.properties);
+      seriesEvent.fields = seriesEvent.fields.concat(fields);
     }
 
-    context.content.content.format = 'flatJSON'; // TODO: default for now
-    context.content.content.points = [];
-    context.content.duration = 0; // TODO: remove when time tracking strategy for HF is defined
+    seriesEvent.format = 'flatJSON'; // TODO: default for now
+    seriesEvent.points = [];
+    return seriesEvent;
   }
 
   function createAttachments(context, params, result, next) {
@@ -411,8 +412,8 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
    */
   function validateEventContent(context: Object, params: Object, result: Object, next: Function) {
 
-    let type : string = context.content.type,
-        knownType = false;
+    let type: string = context.content.type,
+        knownType: boolean = false;
 
     if (isSeries(context.content)) {
       type = type.slice(7);

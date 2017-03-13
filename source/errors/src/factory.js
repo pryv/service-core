@@ -35,7 +35,7 @@ factory.invalidCredentials = function (message) {
 };
 
 factory.invalidEventType = function (type) {
-  return new APIError(ErrorIds.UnknownEventType, 'Event type \'' + type + '\' not allowed ' +
+  return new APIError(ErrorIds.InvalidEventType, 'Event type \'' + type + '\' not allowed ' +
     'for High-Frequency Series. Please use a predefined simple type',
     {type: type, httpStatus: 400});
 };
