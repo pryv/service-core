@@ -17,27 +17,34 @@ module.exports = function (ignoredPaths) {
 
     if (! req.headers.host) { return next(errors.missingHeader('Host')); }
 
-    var hostChunks = req.headers.host.split('.');
-    // check for subdomain, assuming we have structure '<subdomain>.<2nd level domain>.<tld>'
-    if (hostChunks.length === 3 && /^[a-zA-Z0-9]+$/.test(hostChunks[0])) {
-      var usernamePathRoot = '/' + hostChunks[0];
-      // just make sure it's not already there
-      if (! startsWith(req.url, usernamePathRoot)) {
-        req.url = `${usernamePathRoot}${req.url}`;
-      }
-    }
+    const hostChunks = req.headers.host.split('.');
+    
+    // check for subdomain, assuming we have structure '<subdomain>.<2nd level domain>.<tld>
+    if (hostChunks.length < 3) next(); 
+    
+    // For security reasons, don't allow inserting anything into path unless it
+    // looks like a user name. 
+    const firstChunk = hostChunks[0];
+    if (! looksLikeUsername(firstChunk)) next(); 
+    
+    // Skip if it is already in the path.
+    const pathPrefix = `/${firstChunk}`;
+    if (req.url.startsWith(pathPrefix)) next(); 
 
+    req.url = pathPrefix + req.url;
     next();
   };
 
   function isIgnoredPath(url) {
     return ignoredPaths.some(function (ignoredPath) {
-      return startsWith(url, ignoredPath);
+      return url.startsWith(ignoredPath);
     });
   }
 };
 module.exports.injectDependencies = true; // make it DI-friendly
 
-function startsWith(string, start) {
-  return string.length >= start.length && string.slice(0, start.length) === start;
+function looksLikeUsername(candidate: string): boolean {
+  const reUsername = /^([a-zA-Z0-9])(([a-zA-Z0-9-]){3,21})[a-zA-Z0-9]$/; 
+  
+  return reUsername.test(candidate);
 }
