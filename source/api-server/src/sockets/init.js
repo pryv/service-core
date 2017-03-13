@@ -42,8 +42,9 @@ module.exports = function (server, usersStorage, userAccessesStorage, sessionsSt
       if (! nsName) {
         return callback('Missing \'resource\' parameter.');
       }
-
-      if (! manager.isValidNamespace(nsName)) {
+      
+      if (!nsName.startsWith('/') ||
+        !manager.looksLikeUsername(nsName.slice(1))) {
         // invalid namespace
         return callback('Invalid resource "' + nsName + '".');
       }

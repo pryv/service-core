@@ -12,8 +12,10 @@ module.exports = function Manager(io, notifications, api, logging) {
   var nsContexts = {},
       logger = logging.getLogger('sockets');
 
-  this.isValidNamespace = function (name) {
-    return (/^\/[a-zA-Z0-9-]+$/).test(name);
+  this.looksLikeUsername = function (candidate: string): boolean {
+    const reUsername = /^([a-zA-Z0-9])(([a-zA-Z0-9-]){3,21})[a-zA-Z0-9]$/; 
+    
+    return reUsername.test(candidate);
   };
 
   // used by notifications (see below).
