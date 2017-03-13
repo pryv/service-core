@@ -32,6 +32,10 @@ function InstanceManager(settings) {
       messagingSocket = axon.socket('sub-emitter'),
       logger = settings.logging.getLogger('instance-manager');
 
+
+  // Comment this out if you want to see more logging. 
+  logger.level = 'warn';
+  
   // setup TCP messaging subscription
 
   messagingSocket.bind(+settings.tcpMessaging.port, settings.tcpMessaging.host, function () {
@@ -134,7 +138,7 @@ function InstanceManager(settings) {
     logger.debug('Starting server instance... ');
     var options = {
       // Remove comment here if you want to see server output
-      // stdio: 'inherit',
+      stdio: 'inherit',
       env: process.env
     };
     serverProcess = spawn(process.argv[0], args, options);
@@ -168,7 +172,7 @@ function InstanceManager(settings) {
   this.stop = function () {
     if (! isRunning()) { return; }
     logger.debug('Killing server instance... ');
-    if (! serverProcess.kill()) {
+    if (! serverProcess.kill()) {
       logger.warn('Failed to kill the server instance (it may have exited already).');
     }
     serverProcess = null;

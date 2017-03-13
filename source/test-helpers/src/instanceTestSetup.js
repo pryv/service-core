@@ -43,15 +43,18 @@ exports.executeIfAny = function (settings: any, messagingSocket: any) {
 
 function stringify(obj) {
   return JSON.stringify(obj, function (key, value) {
-    // stringify functions with their source, stripping CR/LF
-    return (typeof value === 'function') ? value.toString().replace(/\r?\n|\r/g, ' ') : value;
+    // stringify functions with their source, converting CRLF. 
+    // 
+    // NOTE If you strip CRLF here, any comment in the serialized function will
+    // comment out the rest of the line. 
+    // 
+    return (typeof value === 'function') ? value.toString().replace(/\r?\n|\n/g, '\n') : value;
   });
 }
 
 function parse(str) {
   return JSON.parse(str, function (key, value) {
     if (typeof value !== 'string') { return value; }
-    /*jshint -W061*/
     return (value.substring(0, 8) === 'function') ? eval('(' + value + ')') : value;
   });
 }

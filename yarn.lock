@@ -1994,7 +1994,7 @@ nixt@^0.5.0:
     shell-quote "^1.4.1"
     string "^3.3.1"
 
-nock@^9.0.2:
+nock@^9.0.9:
   version "9.0.9"
   resolved "https://registry.yarnpkg.com/nock/-/nock-9.0.9.tgz#ca4cd923352e206ae3c7d6595cfd7fb223299ec0"
   dependencies:

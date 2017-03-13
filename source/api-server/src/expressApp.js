@@ -124,7 +124,11 @@ function expressAppInit(dependencies: any) {
 
   // Parse JSON bodies: 
   app.use(bodyParser.json());
-  app.use(bodyParser.urlencoded());
+
+  // This object will contain key-value pairs, where the value can be a string
+  // or array (when extended is false), or any type (when extended is true).
+  app.use(bodyParser.urlencoded({
+    extended: false}));
     
   // Other middleware:
   app.use(requestTraceMiddleware);
