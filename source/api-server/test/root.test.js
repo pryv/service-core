@@ -35,10 +35,10 @@ describe('root', function () {
       },
       function (stepDone) {
         helpers.dependencies.storage.user.accesses.findOne(user, {token: request.token}, null,
-            function (err, access) {
-          accessId = access.id;
-          stepDone();
-        });
+          function (err, access) {
+            accessId = access.id;
+            stepDone();
+          });
       }
     ], done);
   });
@@ -49,10 +49,9 @@ describe('root', function () {
 
   describe('GET /', function () {
 
-    /*jshint -W030*/
-
     it('should return basic server meta information as JSON when requested', function (done) {
-      superagent.get(path()).set('Accept', 'application/json').end(function (res) {
+      superagent.get(path()).set('Accept', 'application/json').end(function (err, res) {
+        should.not.exist(err); 
         res.statusCode.should.eql(200);
         res.should.be.json;
         validation.checkMeta(res.body);
@@ -61,7 +60,8 @@ describe('root', function () {
     });
 
     it('should return basic server meta information as text otherwise', function (done) {
-      superagent.get(path()).set('Accept', 'text/html').end(function (res) {
+      superagent.get(path()).set('Accept', 'text/html').end(function (err, res) {
+        should.not.exist(err); 
         res.statusCode.should.eql(200);
         res.should.be.text;
         res.text.should.match(/Pryv API/);
@@ -70,16 +70,16 @@ describe('root', function () {
     });
 
     it('should return an error if trying to access an unknown user account', function (done) {
-      superagent.get(path() + 'unknown_user/events').end(function (res) {
-        res.statusCode.should.eql(404);
+      superagent.get(path() + 'unknown_user/events').end(function (err, res) {
+        res.status.should.eql(404);
         done();
       });
     });
 
   });
 
-  // warning: the following tests assume the server instance is started, which is done in the
-  //          previous test above
+  // warning: the following tests assume the server instance is started, which
+  // is done in the previous test above
 
   describe('All requests:', function () {
 
@@ -135,21 +135,21 @@ describe('root', function () {
           .send({ username: u.username, password: u.password, appId: 'pryv-test' })
           .set('Host', u.username + '.pryv.local')
           .set('Origin', 'http://test.pryv.local')
-          .end(function (res) {
+          .end(function (err, res) {
+            should.not.exist(err);
             res.statusCode.should.eql(200);
             done();
           });
     });
 
-    it('should support POSTing "urlencoded" content with _json and _auth fields', function (done) {
-      request.post(path() + user.username + '/streams')
+    it('should support POSTing "urlencoded" content with _json and _auth fields', function () {
+      return request.post(path() + user.username + '/streams')
         .type('form')
         .unset('authorization')
         .send({_auth: request.token})
-        .send({_json: JSON.stringify({name: 'New stream'})})
-        .end(function (err, res) {
-          res.statusCode.should.eql(201);
-          done();
+        .send({_json: JSON.stringify({name: 'New stream1'})})
+        .end((res) => {
+          should(res.status).be.eql(201);
         });
     });
 
@@ -242,7 +242,8 @@ describe('root', function () {
   describe('OPTIONS /', function () {
 
     it('should return OK', function (done) {
-      superagent.options(path()).end(function (res) {
+      superagent.options(path()).end(function (err, res) {
+        should.not.exist(err);        
         res.statusCode.should.eql(200);
         done();
       });

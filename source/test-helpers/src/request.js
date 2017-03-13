@@ -1,8 +1,8 @@
 'use strict';
 // @flow
 
-var superagent = require('superagent'),
-    url = require('url');
+const superagent = require('superagent');
+const url = require('url');
 const should = require('should');
 
 /**
@@ -21,8 +21,10 @@ function Request(serverURL) {
 var methods = ['get', 'post', 'put', 'del', 'options'];
 methods.forEach(function (method) {
   Request.prototype[method] = function (path, token) {
-    return superagent[method](url.resolve(this.serverURL, path))
-        .set('authorization', token || this.token);
+    const destUrl = url.resolve(this.serverURL, path);
+    const authToken = token || this.token; 
+    
+    return new IndifferentRequest(method, destUrl, authToken);
   };
 });
 
@@ -36,9 +38,11 @@ Request.prototype.login = function (user, callback) {
     password: user.password,
     appId: 'pryv-test'
   };
+  
   return superagent.post(targetURL)
   .set('Origin', 'http://test.pryv.local')
-  .send(authData).end(function (res) {
+  .send(authData).end(function (err, res) {
+    should(res).not.be.empty(); 
     res.statusCode.should.eql(200);
 
     if (! res.body.token) {
@@ -54,15 +58,35 @@ Request.prototype.login = function (user, callback) {
 };
 
 /**
- * HACK: work around change in superagent lib to handle all non 2XX responses as errors.
- * Easier for tests to keep old behaviour of always returning just a response with HTTP code.
- */
-var originalEnd = superagent.Request.prototype.end;
-superagent.Request.prototype.end = function (callback) {
-  return originalEnd.call(this, function (err, res) {
-    callback(res);
-  });
-};
+ * A superagent request that only ever calls back with a single argument.  The
+ * argument will be the response object, regardless of the error status of  the
+ * query. 
+ * 
+ * NOTE This is not a good idea, but most of our tests assume this behaviour
+ *      because things used to be this way. Important right now, deprected as 
+ *      well. 
+ */ 
+class IndifferentRequest extends superagent.Request {
+  
+  /** Construct a request. 
+   * 
+   * @see superagent.Request
+   *    
+   * @param  {string} method HTTP Method to use for this request
+   * @param  {string|url.Url} url request url
+   * @param  {string} token authentication token to use
+   */   
+  constructor(method: string, url, token) {
+    super(method, url)
+      .set('authorization', token);
+  }
+  
+  end(callback: (res: any) => void) {
+    super.end((err, res) => {
+      callback(res || err);
+    });
+  } 
+}
 
 /**
  * Expose the patched superagent for tests that don't need the wrapper.

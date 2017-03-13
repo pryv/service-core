@@ -18,7 +18,7 @@ module.exports = function (expressApp, api, initContextMiddleware) {
    * Accept `OPTIONS`.
    */
   expressApp.options('*', function (req, res) {
-    res.send(200);
+    res.sendStatus(200);
   });
 
   /**
