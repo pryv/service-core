@@ -154,18 +154,18 @@ describe('root', function () {
     });
 
     it('should support POSTing "urlencoded" content with _json, _method (PUT) and _auth fields',
-        function (done) {
-      request.post(path() + user.username + '/streams/' + testData.streams[3].id)
-          .type('form')
-          .unset('authorization')
-          .send({_auth: request.token})
-          .send({_method: 'PUT'})
-          .send({_json: JSON.stringify({name: 'Abrhackadabra'})})
-          .end(function (res) {
-        res.statusCode.should.eql(200);
-        done();
+      function (done) {
+        request.post(path() + user.username + '/streams/' + testData.streams[3].id)
+            .type('form')
+            .unset('authorization')
+            .send({_auth: request.token})
+            .send({_method: 'PUT'})
+            .send({_json: JSON.stringify({name: 'Abrhackadabra'})})
+            .end(function (res) {
+              res.statusCode.should.eql(200);
+              done();
+            });
       });
-    });
 
     it('should support POSTing "urlencoded" content with _json, _method (DELETE) and _auth fields',
         function (done) {
