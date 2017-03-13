@@ -40,21 +40,21 @@ Request.prototype.login = function (user, callback) {
   };
   
   return superagent.post(targetURL)
-  .set('Origin', 'http://test.pryv.local')
-  .send(authData).end(function (err, res) {
-    should(res).not.be.empty(); 
-    res.statusCode.should.eql(200);
+    .set('Origin', 'http://test.pryv.local')
+    .send(authData).end(function (err, res) {
+      should(res).not.be.empty(); 
+      res.statusCode.should.eql(200);
 
-    if (! res.body.token) {
-      return callback(new Error('Expected "token" in login response body.'));
-    }
-    should(
-      /[^A-Za-z0-9\-_.!~*'()%]/.test(res.body.token)
-    ).be.false('Token must be URI-encoded');
-    this.token = res.body.token;
+      if (! res.body.token) {
+        return callback(new Error('Expected "token" in login response body.'));
+      }
+      should(
+        /[^A-Za-z0-9\-_.!~*'()%]/.test(res.body.token)
+      ).be.false('Token must be URI-encoded');
+      this.token = res.body.token;
 
-    callback();
-  }.bind(this));
+      callback();
+    }.bind(this));
 };
 
 /**
@@ -77,6 +77,10 @@ class IndifferentRequest extends superagent.Request {
    * @param  {string} token authentication token to use
    */   
   constructor(method: string, url, token) {
+    // NOTE newer superagent versions don't know about delete; Let's pretend 
+    // we do. 
+    if (method === 'del') method = 'delete';
+
     super(method, url)
       .set('authorization', token);
   }

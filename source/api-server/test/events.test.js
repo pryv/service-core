@@ -1375,15 +1375,15 @@ describe('events', function () {
         },
         function verifyStoredItem(stepDone) {
           storage.database.findOne(storage.getCollectionInfo(user), {_id: stoppedEvent.id}, {},
-              function (err, dbEvent) {
-            var expectedDuration = stopTime - dbEvent.time;
-            // allow 1 second of lag
-            dbEvent.duration.should.be.within(expectedDuration - 1, expectedDuration);
-            dbEvent.modified.should.be.within(time - 1, time);
-            dbEvent.modifiedBy.should.eql(access.id);
-            dbEvent.endTime.should.eql(dbEvent.time + dbEvent.duration);
-            stepDone();
-          });
+            function (err, dbEvent) {
+              var expectedDuration = stopTime - dbEvent.time;
+              // allow 1 second of lag
+              dbEvent.duration.should.be.within(expectedDuration - 1, expectedDuration);
+              dbEvent.modified.should.be.within(time - 1, time);
+              dbEvent.modifiedBy.should.eql(access.id);
+              dbEvent.endTime.should.eql(dbEvent.time + dbEvent.duration);
+              stepDone();
+            });
         }
       ], done);
     });
@@ -1398,10 +1398,10 @@ describe('events', function () {
             type: testType
           };
           request.post(basePath + '/start').send(data)
-              .end(function (res) {
-            res.statusCode.should.eql(201);
-            stepDone();
-          });
+            .end(function (res) {
+              res.statusCode.should.eql(201);
+              stepDone();
+            });
         },
         function (stepDone) {
           var data = {
