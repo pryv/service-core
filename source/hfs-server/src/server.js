@@ -5,6 +5,7 @@ import type Settings from './Settings';
 
 const http = require('http');
 const express = require('express');
+const bodyParser = require('body-parser');
 const middleware = require('components/middleware');
 const logging = require('components/utils').logging;
 const promisify = require('./promisify');
@@ -90,11 +91,9 @@ class Server {
     app.disable('x-powered-by');
 
     app.use(middleware.requestTrace(express, logging(logSettings)));
-    app.use(express.bodyParser());
+    app.use(bodyParser.json());
     app.use(middleware.override);
     app.use(middleware.commonHeaders({version: '1.0.0'}));
-    app.use(app.router);
-    app.use(middleware.notFound);
     
     // TODO Do we need to copy this behaviour from api-server?
     // app.use(errorsMiddleware);
@@ -102,6 +101,9 @@ class Server {
     app.all('*', (req, res) => {
       res.json({status: 'ok'}, 200);
     });
+    
+    app.use(middleware.notFound);
+
 
     return app; 
   }
