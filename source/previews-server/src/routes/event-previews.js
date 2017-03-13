@@ -123,7 +123,7 @@ module.exports = function (expressApp, initContextMiddleware, userEventsStorage,
         });
       },
       function respond(stepDone) {
-        res.sendfile(previewPath, stepDone);
+        res.sendFile(previewPath, stepDone);
       }
     ], function handleError(err) {
       if (err) {

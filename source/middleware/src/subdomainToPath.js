@@ -20,11 +20,13 @@ module.exports = function (ignoredPaths) {
 
     var hostChunks = req.headers.host.split('.');
     // check for subdomain, assuming we have structure '<subdomain>.<2nd level domain>.<tld>'
-    if (hostChunks.length === 3 && /[a-zA-Z]/.test(hostChunks[1])) {
+    if (hostChunks.length === 3 && /[a-zA-Z]/.test(hostChunks[0])) {
       var usernamePathRoot = '/' + hostChunks[0];
       // just make sure it's not already there
       if (! startsWith(req.url, usernamePathRoot)) {
-        req.url = path.join(usernamePathRoot, req.url);
+        console.log(req.url);
+        req.url = `${usernamePathRoot}${req.url}`;
+        console.log(req.url);
       }
     }
 

@@ -20,10 +20,9 @@ module.exports = function expressApp(express, commonHeadersMiddleware, errorsMid
 
   app.use(middleware.subdomainToPath([]));
 
-
   app.use(requestTraceMiddleware);
   app.use(bodyParser.json());
-  // app.use(commonHeadersMiddleware);
+  app.use(commonHeadersMiddleware);
   
   return {
     expressApp: app, 

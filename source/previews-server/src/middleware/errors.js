@@ -9,11 +9,14 @@ var errorHandling = require('components/errors').errorHandling;
 module.exports = function (logging) {
   var logger = logging.getLogger('routes');
 
+  /*eslint-disable no-unused-vars*/
   return function handleError(error, req, res, next) {
     errorHandling.logError(error, req, logger);
-    res.json({
-      error: errorHandling.getPublicErrorData(error)
-    }, error.httpStatus || 500);
+    res
+      .status(error.httpStatus || 500)
+      .json({
+        error: errorHandling.getPublicErrorData(error)
+      });
   };
 };
 module.exports.injectDependencies = true;
