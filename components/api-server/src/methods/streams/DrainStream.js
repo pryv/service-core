@@ -41,7 +41,7 @@ DrainStream.prototype._write = function(object, enc, next) {
   this.size++;
 
   if (this.size > this.limit) {
-    return next(errors.resultSizeExceeded(this.limit));
+    return next(errors.tooManyResults(this.limit));
   }
   this.array.push(object);
   next();

@@ -95,6 +95,13 @@ factory.periodsOverlap = function (message, data, innerError) {
   });
 };
 
+factory.tooManyResults = function (limit) {
+  return new APIError(ErrorIds.tooManyResults,
+    'Your request gave too many results (the limit is ' + limit + '. Directly calling ' +
+    'the API method (i.e. not batching calls), narrowing request scope or paging can help.',
+    {limit: limit, httpStatus: 413});
+};
+
 factory.unexpectedError = function (sourceError, message) {
   return new APIError(ErrorIds.UnexpectedError,
       message || ('Unexpected error: ' + sourceError.message), {
@@ -134,10 +141,4 @@ factory.unsupportedContentType = function (contentType) {
   return new APIError(ErrorIds.UnsupportedContentType, 'We don\'t support "' + contentType +
       '" as content type. If you think we should, please help us and report an issue!',
       {httpStatus: 415});
-};
-
-factory.resultSizeExceeded = function (limit) {
-  return new APIError(ErrorIds.resultSizeExceeded, 'limit of requested items exceeded, ' +
-    'please use direct API call or page requests. Limit: ' + limit,
-    {limit: limit, httpStatus: 413});
 };
