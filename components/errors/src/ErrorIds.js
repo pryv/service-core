@@ -24,7 +24,7 @@ var ErrorIds = module.exports = {
   /**
    * Used for Batch calls and Socket.IO events.get result storing
    */
-  resultSizeExceeded: 'result-size-exceeded',
+  TooManyResults: 'too-many-results',
 
   // those last two are not in use yet but already documented (see API reference for details)
 
