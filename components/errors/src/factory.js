@@ -142,9 +142,3 @@ factory.unsupportedContentType = function (contentType) {
       '" as content type. If you think we should, please help us and report an issue!',
       {httpStatus: 415});
 };
-
-factory.resultSizeExceeded = function (limit) {
-  return new APIError(ErrorIds.resultSizeExceeded, 'limit of requested items exceeded, ' +
-    'please use direct API call or page requests. Limit: ' + limit,
-    {limit: limit, httpStatus: 413});
-};
