@@ -26,14 +26,15 @@ Note that the actual event object will have many more fields, we only display th
 
 ### Series of Points
 
-An event that contains a series of data points has a type that looks like `series[TYPE]`, where `TYPE` is any of the basic point types described above. 
+An event that contains a series of data points has a type that looks like `series:TYPE`, where `TYPE` is any of the basic point types described above. 
 
-These are the typical attributes of a `series[TYPE]` value: 
+These are the typical attributes of a `series:TYPE` event content: 
 
   + elementType: TYPE (string) - Type of the individual record stored in this series. 
-  + format: (string) - One of `{'flatJSON', 'JSON'}`, the format that the individual data items are encoded in. 
-  + fields: (array[string]) - Field names for each of the fields in a row of this series. Note that the field `"timestamp"` will always be present - it encodes the timestamp when the row was measured. For numerical types like 'mass/kg', row values are encoded in the field `"value"`. For complex types, fields will represent the JSONPath fragment to access the underlying data (see below).
-  + data: (array) - Mixed array of all the fields below the current type. For types that aren't encoded in object format (for example '`mass/kg`'), this will always be a single value. For types in object format (for example '`position/wgs84`'), this will be a list of values. See discussion and examples below.
+  + format: (string) - For now only `'flatJSON'` is supported, represents the format that the individual data items are encoded in. `'JSON'` might be supported in later versions.
+  + fields: (array[string]) - Field names for each of the fields in a row of this series. Note that the field `"timestamp"` will always be present, at first position - it encodes the timestamp when the row was measured. For numerical and string types like 'mass/kg' or 'call/name' respectively, row values are encoded in the field `"value"`. For complex types, fields will represent the JSONPath fragment to access the underlying data (see below).
+  + required: (array[string]) - Field names of required fields.
+  + points: (array) - Mixed array of all the fields below the current type. For types that aren't encoded in object format (for example '`mass/kg`'), this will always be the timestamp with a single value. For types in object format (for example '`position/wgs84`'), this will be a list of values where null is allowed for non-required fields. See discussion and examples below.
   
 The following example encodes a series of weight measurements taken at times one second from each other, starting at 1481677845 from Epoch:
 
@@ -42,12 +43,12 @@ The following example encodes a series of weight measurements taken at times one
   "id": "ciwoavk4t000sfmpuwemxdxuv",
   "time": 1481677845,
   "streamId": "diary",
-  "type": "series[mass/kg]", 
+  "type": "series:mass/kg", 
   "content": {
     "elementType": "mass/kg", 
     "format": "flatJSON", 
     "fields": ["timestamp", "value"],
-    "data": [
+    "points": [
       [1481677845, 10], 
       [1481677846, 20], 
       [1481677847, 30]
@@ -56,7 +57,7 @@ The following example encodes a series of weight measurements taken at times one
 }
 ```
 
-This is the default representation for types that encode a single value ('Numerical Types'). If asked for explicitly, this can be obtained in the form of a '`JSON`' object as well. Here's what the individual row of the data list would look like: 
+This is the default representation for types that encode a single value ('Numerical' or 'String' Types). If asked for explicitly, this can be obtained in the form of a '`JSON`' object as well. Here's what the individual row of the data list would look like: 
 
 ```json
 {
@@ -72,15 +73,16 @@ We recommend using '`flatJSON`' structure over using '`JSON`' in every case. Her
   "id": "ciwoavk4t000sfmpuwemxdxuv",
   "time": 1481677845,
   "streamId": "diary",
-  "type": "series[position/wgs84]", 
+  "type": "series:position/wgs84", 
   "content": {
     "elementType": "position/wgs84", 
     "format": "flatJSON", 
-    "fields": ["timestamp", "latitude", "longitude"],
-    "data": [
-      [1481677845, 30, 30], 
-      [1481677846, 31, 30], 
-      [1481677847, 30, 31]
+    "fields": ["timestamp", "latitude", "longitude", "altitude"],
+    "required": ["timestamp", "latitude", "longitude"],
+    "points": [
+      [1481677845, 30, 30, 412], 
+      [1481677846, 31, 30, 414], 
+      [1481677847, 30, 31, 417]
     ]
   }
 }
@@ -90,7 +92,7 @@ Note that the complex type defines names for each fields contained in it. This a
 
 ### Compatibility of Individual Types with the Series Types
 
-Only a subset of the types described in the type directory can be used as member for a series type. As a general rule, the only values that can be part of a series are strings, floats, integers, or booleans. 
+Only a subset of the types described in the type directory can be used as member for a series type. As a general rule, the only values that can be part of a series are strings, numbers, booleans or objects composed of those. 
 
 We recommend storing values in a series that are collected at high speed and that you don't want to create individual events for. Typically, a list of images would not be a series event, but a list of BPM measurements would be. 
 
@@ -109,7 +111,7 @@ Creates an event.
 
 ### Query Events [GET]
 
-Queries accessible events. Only a subset of the query parameters is copied here, please see the [documentation](http://api.pryv.com/reference/#events) for the current Pryv for more. 
+Queries accessible events. Only a subset of the query parameters is copied here, please see the [documentation](http://api.pryv.com/reference/#events) for the current Pryv API for more. 
 
   + Request (application/json)
   
@@ -117,7 +119,7 @@ Queries accessible events. Only a subset of the query parameters is copied here,
       + fromTime: 1481677845.293 (timestamp) - The start time of the timeframe you want to retrieve events for. Default is 24 hours before toTime if the latter is set; otherwise it is not taken into account.
       + toTime: 1481677845.293 (timestamp) - The end time of the timeframe you want to retrieve events for. Default is the current time. Note: events are considered to be within a given timeframe based on their time only (duration is not considered).
       + limit: 20 (number) - The number of items to return in the results. A default value of 20 items is used if no other range limiting parameter is specified (`fromTime`, `toTime`).
-      + types: `mass/kg`, `series[mass/kg]` (array[string]) - If set, only events of any of the listed types will be returned.
+      + types: `mass/kg`, `series:mass/kg` (array[string]) - If set, only events of any of the listed types will be returned.
       
   + Response 200 (application/json)
     + Attributes
@@ -150,7 +152,7 @@ Query data in a series. This function will return a subset or all the data store
   
 ### Append Data [POST]
 
-Appends data to an event that is of type `series[ELEMENT]`. Data posted this 
+Appends data to an event that is of type `series:ELEMENT`. Data posted this 
 way will be written to the series stored inside the event. 
 
   + Parameters
@@ -163,8 +165,9 @@ way will be written to the series stored inside the event.
       {
         "elementType": "position/wgs84", 
         "format": "flatJSON", 
-        "fields": ["timestamp", "latitude", "longitude"], 
-        "data": [
+        "fields": ["timestamp", "latitude", "longitude"],
+        "required": ["timestamp", "latitude", "longitude"],
+        "points": [
           [1481677845, 30, 30], 
           [1481677846, 31, 30], 
           [1481677847, 30, 31]
@@ -173,7 +176,7 @@ way will be written to the series stored inside the event.
 
   + Response 400 (application/json)
   
-    Example: If the event is not of type `"series[SUBTYPE]"`.
+    Example: If the event is not of type `"series:SUBTYPE"`.
     
     + Body
 
@@ -212,11 +215,13 @@ Time in seconds since the Epoch.
 + streamId: diary (string) - The id of the belonging stream.
 + time: 1481677845.293 (timestamp) - The event's time. For period events, this is the time the event started.
 + duration (timestamp) - If present and non-zero, indicates that the event is a period event. Running period events have a duration set to null. A duration set to zero is equivalent to no duration. (We use a dedicated field for duration—instead of using the content field—as we do specific processing of event durations, intervals and overlapping.)
-+ type: 'series[mass/kg]' (string) - The type of the event. See the event type directory for a list of standard types.
++ type: 'series:mass/kg' (string) - The type of the event. See the event type directory for a list of standard types.
 + content: 
   + elementType: mass/kg (string) - type of every row of the series.
   + format: flatJSON (string) - format of the series representation in a result set. Use only 'flatJSON' for now.
   + fields: `timestamp`, `value` (array[string]) - a list of fields that will be present in the result set if raw data is accessed. Note that the `"timestamp"` field will always be present. It encodes the timestamp of the series row. 
+  + required: `timestamp`, `value` (array[string]) fields that are required to appear in all points.
+  + points: (array[array[string]]) the data points
 
 
 ### Point (object)
