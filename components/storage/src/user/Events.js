@@ -125,6 +125,9 @@ Events.prototype.getCollectionInfo = function (user) {
  */
 Events.prototype.findStreamed = function (user, query, options, callback) {
   query.deleted = null;
+  // Ignore history of events for normal find. 
+  query.headId = null; 
+  
   this.database.findStreamed(this.getCollectionInfo(user), this.applyQueryToDB(query),
     this.applyOptionsToDB(options), function (err, dbStreamedItems) {
       if (err) { return callback(err); }
