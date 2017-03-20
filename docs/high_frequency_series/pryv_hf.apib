@@ -149,6 +149,13 @@ Query data in a series. This function will return a subset or all the data store
 
   + Parameters
     + event_id (identifier) - ID of the event in the form of a string.
+    + fromTime: 1490006816 (timestamp) - Start of the time range to return data for
+    + toTime: 1490006816 (timestamp) - End of the time range to return data for
+    
+  + Response 200 (application/json)
+    + Attributes (SeriesData)
+      
+      
   
 ### Append Data [POST]
 
@@ -160,19 +167,7 @@ way will be written to the series stored inside the event.
     
   + Request (application/json)
     
-    + Body
-    
-      {
-        "elementType": "position/wgs84", 
-        "format": "flatJSON", 
-        "fields": ["timestamp", "latitude", "longitude"],
-        "required": ["timestamp", "latitude", "longitude"],
-        "points": [
-          [1481677845, 30, 30], 
-          [1481677846, 31, 30], 
-          [1481677847, 30, 31]
-        ]
-      }
+    + Attributes (SeriesData)
 
   + Response 400 (application/json)
   
@@ -235,6 +230,23 @@ For the complex types such as a 'position/wgs84', this will be a JSON object wit
 
 + latitude: (number) - Unit: degrees north from the equator.
 + longitude: (number) - Unit: degrees east from the zero meridian.
+
+### SeriesData (object)
+
++ elementType: position/wgs84 (string) - element type that was used on series  creation. 
++ format: flatJSON (string) - format to use for the data. Only `'flatJSON'` is supported for now.
++ fields: (array[string]) - fields that are returned or that need to be supplied. Note that the field `'timestamp'` must always be present.
+  - timestamp
+  - latitude
+  - longitude
++ required: (array[string]) - fields that must be present. This attribute can be left out when creating data, as the server determines its contents. 
+  - timestamp
+  - latitude
+  - longitude
++ points: (array[array[object]]) - a list of data lines, each line has an entry for every column specified in `fields`.
+  - 1481677845, 30, 30
+  - 1481677846, 31, 30 
+  - 1481677847, 30, 31
 
 # Appendix
 
