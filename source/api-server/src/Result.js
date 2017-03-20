@@ -1,3 +1,5 @@
+'use strict';
+
 var addCommonMeta = require('./methods/helpers/setCommonMeta'),
     MultiStream = require('multistream'),
     DrainStream = require('./methods/streams/DrainStream'),
@@ -76,21 +78,20 @@ Result.prototype.writeStreams = function(res, successCode) {
   res.setHeader('Transfer-Encoding', 'chunked');
   res.statusCode = successCode;
 
-  var thisPrivate = this._private;
-  var streamsArray = thisPrivate.streamsArray;
+  var streamsArray = this._private.streamsArray;
 
   if (streamsArray.length < 1) { throw 'error: streams array empty'; }
 
   // Are we handling a single stream?
   if (streamsArray.length === 1) {
-    var first = thisPrivate.streamsArray[0];
+    var first = streamsArray[0];
     return first.stream
       .pipe(new ArrayStream(first.name, true))
       .pipe(new ResultStream())
       .pipe(res);
   }
 
-  // assert: thisPrivate.streamsArray.length > 1
+  // assert: streamsArray.length > 1
   var streams = [];
   for (var i=0; i<streamsArray.length; i++) {
     var s = streamsArray[i];
@@ -123,12 +124,12 @@ Result.prototype.toObject = function (callback) {
 };
 
 Result.prototype.toObjectStream = function (callback) {
-  var thisPrivate = this._private;
-  var streamsArray = thisPrivate.streamsArray;
+  var _private = this._private;
+  var streamsArray = _private.streamsArray;
 
   var resultObj = {};
   async.forEachOfSeries(streamsArray, function(elementDef, i, done) {
-    var drain = new DrainStream({limit: thisPrivate.arrayLimit}, function(err, list) {
+    var drain = new DrainStream({limit: _private.arrayLimit}, function(err, list) {
       if (err) {
         return done(err);
       }
