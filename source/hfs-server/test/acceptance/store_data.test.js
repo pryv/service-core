@@ -4,7 +4,7 @@
 // Tests pertaining to storing data in a hf series. 
 
 /* global describe, it */
-const { request, settings } = require('./test-helpers');
+const { should, request, settings } = require('./test-helpers');
 
 const Server = require('../../src/Server');
 
@@ -31,8 +31,13 @@ describe('Storing data in a HF series', function() {
         .post(`/events/${EVENT_ID}/series`)
         .send(data);
         
-      response.then((res) => {
-      });
+      response
+        .then((res) => {
+          should(res.status).be.eql(200);
+        })
+        .then(() => {
+          
+        });
     });
   }); 
 });

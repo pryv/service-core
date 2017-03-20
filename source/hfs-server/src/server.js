@@ -7,6 +7,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const middleware = require('components/middleware');
 const logging = require('components/utils').logging;
+const errorsMiddleware = require('./middleware/errors');
 const promisify = require('./promisify');
 
 const KEY_IP = 'http.ip';
@@ -94,15 +95,12 @@ class Server {
     app.use(middleware.override);
     app.use(middleware.commonHeaders({version: '1.0.0'}));
     
-    // TODO Do we need to copy this behaviour from api-server?
-    // app.use(errorsMiddleware);
-    
     app.all('*', (req, res) => {
       res.status(200).json({status: 'ok'});
     });
     
+    app.use(errorsMiddleware);
     app.use(middleware.notFound);
-
 
     return app; 
   }

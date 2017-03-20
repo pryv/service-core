@@ -6,7 +6,7 @@ const bodyParser = require('body-parser');
  * The Express app definition.
  */
 module.exports = function expressApp(express, commonHeadersMiddleware, errorsMiddleware,
-                           requestTraceMiddleware) {
+                           requestTraceMiddleware) {
   var app = express();
   
   /** Called once routes are defined on app, allows finalizing middleware stack
