@@ -173,7 +173,6 @@ describe('root', function () {
           .send({_auth: request.token})
           .send({_method: 'DELETE'})
           .end(function (res) {
-            console.log(res);
         res.statusCode.should.eql(200);
         done();
       });
