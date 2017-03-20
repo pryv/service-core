@@ -822,7 +822,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         if (auditSettings.deletionMode !== 'keep-nothing') {
           return stepDone();
         }
-        userEventsStorage.remove(context.user, {headId: params.id}, function (err) {
+        userEventsStorage.removeMany(context.user, {headId: params.id}, function (err) {
           if (err) {
             return stepDone(errors.unexpectedError(err));
           }

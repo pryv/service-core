@@ -161,7 +161,7 @@ describe('events', function () {
           sanitizeFn: validation.sanitizeEvents,
           sanitizeTarget: 'events',
           body: {
-            events: _.at(testData.events, 11, 3, 2, 0)
+            events: _.at(testData.events, 16, 11, 3, 2, 0)
           }
         }, done);
       });
