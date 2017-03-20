@@ -34,6 +34,12 @@ factory.invalidCredentials = function (message) {
       {httpStatus: 401});
 };
 
+factory.invalidEventType = function (type) {
+  return new APIError(ErrorIds.InvalidEventType, 'Event type \'' + type + '\' not allowed ' +
+    'for High-Frequency Series. Please use a predefined simple type',
+    {type: type, httpStatus: 400});
+};
+
 factory.invalidItemId = function (message) {
   return new APIError(ErrorIds.InvalidItemId, message, {httpStatus: 400});
 };

@@ -1,18 +1,20 @@
 /*global describe, it, before*/
-var helpers = require(__dirname + '/../../components/api-server/test/helpers'),
-    testData = helpers.data,
-    server = helpers.dependencies.instanceManager,
-    timestamp = require('unix-timestamp'),
-    _ = require('lodash'),
-    async = require('async'),
-    nock = require('nock');
+const helpers = require(__dirname + '/../../components/api-server/test/helpers'),
+      testData = helpers.data,
+      server = helpers.dependencies.instanceManager,
+      timestamp = require('unix-timestamp'),
+      _ = require('lodash'),
+      async = require('async'),
+      nock = require('nock'),
+      should = require('should'),
+      eventTypes = require('../../components/api-server/src/schema/event-types.default.json').types,
+      errors = require('../../components/errors/src/ErrorIds');
 
 
 describe('High-Frequency', function () {
 
-  var user = testData.users[0],
-      apiServerPath = '/' + user.username + '/events',
-      seriesServerPath = '/' + user.username + '/events',
+  let user = testData.users[0],
+      eventsPath = '/' + user.username + '/events',
       request = null; // must be set after server started
 
   before(function (done) {
@@ -38,63 +40,171 @@ describe('High-Frequency', function () {
       return Math.floor(80 * (40 * Math.random()));
     }
 
-    var type = 'frequency/bpm',
+    let type = 'position/wgs84',
         seriesEvent = {
           type: 'series:' + type,
           time: timestamp.now(),
-          streamId: testData.streams[0].id // content should be not allowed at creation, right?
+          streamId: testData.streams[0].id
         };
 
-    var points = [],
+    let points = [],
         baseTime = timestamp.now();
 
-    for (var i=0; i<1000; i++) {
+    for (let i=0; i<1000; i++) {
       points.push([baseTime + i, getBpm()]);
     }
 
-    var postSeries = nock(seriesServerPath)
-                      .post('/' + seriesEvent.id + '/series', points)
-                      .reply(201, {
-                        points: points
-                      });
     async.series([
-      /*function createSeriesEvent(stepDone) {
-        request.post(apiServerPath).send(seriesEvent).end(function (res) {
-          console.log('body', res.body);
+      function createSeriesEvent(stepDone) {
+        request.post(eventsPath).send(seriesEvent).end(function (res) {
           res.statusCode.should.eql(201);
-          var event = res.body.event;
-          event.should.exist();
-
+          const event = res.body.event;
+          should.exist(event);
           (_.isEqual(seriesEvent, _.pick(event, ['type', 'time', 'streamId']))).should.be.true();
+          should.exist(event.content);
+          event.content.elementType.should.eql(type);
+          event.content.format.should.eql('flatJSON');
+          event.content.points.should.eql([]);
+          event.content.fields.should.eql(['timestamp'].concat(Object.keys(eventTypes[type].properties)));
           event.duration.should.eql(0);
-          event.content.should.exist();
-
           seriesEvent = event;
-          stepDone();
-        });
-      },*/
-      function createPoints(stepDone) {
-        request.post(seriesServerPath + '/' + seriesEvent.id + '/series').send(points).end(function (res) {
-          res.statusCode.should.eql(201);
-          res.body.points.should.exist();
-          res.body.points.length.should.eql(1000);
-          // TODO: test each point for content
           stepDone();
         });
       },
       function retrievePoints(stepDone) {
-        request.get(apiServerPath + '/' + seriesEvent.id + '/series').end(function (res) {
+        const params = {
+          types: [seriesEvent.type]
+        };
+        request.get(eventsPath).query(params).end(function (res) {
           res.statusCode.should.eql(200);
-          var event = res.body.event;
-          event.content.should.eql(points);
+          const event = res.body.events[0];
+          event.content.should.eql(seriesEvent.content);
           stepDone();
         });
-      }
+      }/*,
+      function createPoints(stepDone) {
+        nock(server.url)
+          .post(eventsPath + '/' + seriesEvent.id + '/series', points)
+          .reply(201, {
+            points: points
+          });
+        request.post(eventsPath + '/' + seriesEvent.id + '/series').send(points).end(function (res) {
+          res.statusCode.should.eql(201);
+          should.exist(res.body.points);
+          res.body.points.length.should.eql(1000);
+          // TODO: test each point for content
+          stepDone();
+        });
+      }*/
     ], done);
 
+  });
+
+  describe('POST /events', function () {
+
+    it('must create an event of type series and return it with ' +
+      'the right content.fields', function (done) {
+      const type = 'position/wgs84',
+            seriesEvent = {
+              type: 'series:' + type,
+              time: timestamp.now(),
+              streamId: testData.streams[0].id
+            };
+      request.post(eventsPath).send(seriesEvent).end(function (res) {
+        res.statusCode.should.eql(201);
+        const event = res.body.event;
+        should.exist(event);
+        (_.isEqual(seriesEvent, _.pick(event, ['type', 'time', 'streamId']))).should.be.true();
+        should.exist(event.content);
+        event.content.elementType.should.eql(type);
+        event.content.format.should.eql('flatJSON');
+        event.content.points.should.eql([]);
+        event.content.fields.should.eql(['timestamp']
+          .concat(Object.keys(eventTypes[type].properties)));
+        event.duration.should.eql(0);
+        done();
+      });
+    });
+
+    it('must create an event of type series and return it with ' +
+      'the content.field value for a numerical value', function (done) {
+      const type = 'energy/j',
+            seriesEvent = {
+              type: 'series:' + type,
+              time: timestamp.now(),
+              streamId: testData.streams[0].id
+            };
+      request.post(eventsPath).send(seriesEvent).end(function (res) {
+        res.statusCode.should.eql(201);
+        const event = res.body.event;
+        should.exist(event);
+        (_.isEqual(seriesEvent, _.pick(event, ['type', 'time', 'streamId']))).should.be.true();
+        should.exist(event.content);
+        event.content.elementType.should.eql(type);
+        event.content.format.should.eql('flatJSON');
+        event.content.points.should.eql([]);
+        event.content.fields.should.eql(['timestamp','value']);
+        event.duration.should.eql(0);
+        done();
+      });
+    });
+
+    it('must create an event of type series and return it with ' +
+      'the content.field value for a string value', function (done) {
+      const type = 'mood/emoticon',
+            seriesEvent = {
+              type: 'series:' + type,
+              time: timestamp.now(),
+              streamId: testData.streams[0].id
+            };
+      request.post(eventsPath).send(seriesEvent).end(function (res) {
+        res.statusCode.should.eql(201);
+        const event = res.body.event;
+        should.exist(event);
+        (_.isEqual(seriesEvent, _.pick(event, ['type', 'time', 'streamId']))).should.be.true();
+        should.exist(event.content);
+        event.content.elementType.should.eql(type);
+        event.content.format.should.eql('flatJSON');
+        event.content.points.should.eql([]);
+        event.content.fields.should.eql(['timestamp','value']);
+        event.duration.should.eql(0);
+        done();
+      });
+    });
+
+    it('must not allow events of type series containing an unknown type', function (done) {
+      const invalidSeriesEvent = {
+        type: 'series:unknown/type',
+        time: timestamp.now(),
+        streamId: testData.streams[0].id
+      };
+
+      request.post(eventsPath).send(invalidSeriesEvent).end(function (res) {
+        res.statusCode.should.eql(400);
+        const error = res.body.error;
+        error.id.should.eql(errors.InvalidEventType);
+        done();
+      });
+    });
+
+  });
 
 
+  describe('GET /events/{id}', function () {
 
+    it('must retrieve an event of type series', function (done) {
+
+      done();
+    });
+
+  });
+
+  describe('GET /events/{id}/hf', function () {
+
+    it('must return the points contained in the event of type series', function (done) {
+
+      done();
+    });
   });
 
 });
