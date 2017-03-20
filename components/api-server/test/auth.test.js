@@ -52,7 +52,7 @@ describe('auth', function () {
         function login(stepDone) {
           request.post(path(authData.username))
             .set('Origin', trustedOrigin)
-            .send(authData).end(function (res) {
+            .send(authData).end(function (err, res) {
             res.statusCode.should.eql(200);
 
             should.exist(res.body.token);
@@ -79,7 +79,7 @@ describe('auth', function () {
         function login(stepDone) {
           request.post(path(authData.username))
               .set('Origin', trustedOrigin)
-              .send(authData).end(function (res) {
+              .send(authData).end(function (err, res) {
             res.statusCode.should.eql(200);
             originalToken = res.body.token;
             stepDone();
@@ -88,7 +88,7 @@ describe('auth', function () {
         function loginAgain(stepDone) {
           request.post(path(authData.username))
               .set('Origin', trustedOrigin)
-              .send(authData).end(function (res) {
+              .send(authData).end(function (err, res) {
             res.statusCode.should.eql(200);
             res.body.token.should.eql(originalToken);
             stepDone();
@@ -100,7 +100,7 @@ describe('auth', function () {
     it('must accept "wildcarded" app ids and origins', function (done) {
       request.post(path(authData.username))
           .set('Origin', 'https://test.rec.la:1234')
-          .send(authData).end(function (res) {
+          .send(authData).end(function (err, res) {
         res.statusCode.should.eql(200);
         done();
       });
@@ -109,7 +109,7 @@ describe('auth', function () {
     it('must accept "no origin" (i.e. not a CORS request) if authorized', function (done) {
       var authDataNoCORS = _.defaults({appId: 'pryv-test-no-cors'}, authData);
       request.post(path(authDataNoCORS.username))
-          .send(authDataNoCORS).end(function (res) {
+          .send(authDataNoCORS).end(function (err, res) {
         res.statusCode.should.eql(200);
         done();
       });
@@ -119,7 +119,7 @@ describe('auth', function () {
       request.post(path(authData.username))
           .set('Origin', trustedOrigin)
           .send(_.defaults({username: authData.username.toUpperCase()}, authData))
-          .end(function (res) {
+          .end(function (err, res) {
         res.statusCode.should.eql(200);
         done();
       });
@@ -133,7 +133,7 @@ describe('auth', function () {
       }, authData);
       request.post(path(data.username))
           .set('Origin', trustedOrigin)
-          .send(data).end(function (res) {
+          .send(data).end(function (err, res) {
         validation.checkError(res, {
           status: 401,
           id: ErrorIds.InvalidCredentials
@@ -147,7 +147,7 @@ describe('auth', function () {
       var data = _.defaults({appId: 'untrusted-app-id'}, authData);
       request.post(path(data.username))
           .set('Origin', trustedOrigin)
-          .send(data).end(function (res) {
+          .send(data).end(function (err, res) {
         validation.checkError(res, {
           status: 401,
           id: ErrorIds.InvalidCredentials
@@ -161,7 +161,7 @@ describe('auth', function () {
         function (done) {
       request.post(path(authData.username))
           .set('Origin', 'http://mismatching.origin')
-          .send(authData).end(function (res) {
+          .send(authData).end(function (err, res) {
         validation.checkError(res, {
           status: 401,
           id: ErrorIds.InvalidCredentials
@@ -193,21 +193,21 @@ describe('auth', function () {
           function (stepDone) {
             request.post(basePath(user.username) + '/login')
             .set('Origin', trustedOrigin)
-            .send(authData).end(function (res) {
+            .send(authData).end(function (err, res) {
               token = res.body.token;
               stepDone();
             });
           },
           function (stepDone) {
             request.post(path(user.username)).send({})
-            .set('authorization', token).end(function (res) {
+            .set('authorization', token).end(function (err, res) {
               res.statusCode.should.eql(200);
               stepDone();
             });
           },
           function (stepDone) {
             request.post(path(user.username)).send({})
-            .set('authorization', token).end(function (res) {
+            .set('authorization', token).end(function (err, res) {
               validation.checkError(res, {
                 status: 401,
                 id: ErrorIds.InvalidAccessToken
@@ -226,7 +226,7 @@ describe('auth', function () {
           testRequest.login.bind(testRequest, user),
           function (stepDone) {
             request.post(path(user.username)).query({auth: testRequest.token}).send({})
-            .end(function (res) {
+            .end(function (err, res) {
               res.statusCode.should.eql(200);
               stepDone();
             });
@@ -250,7 +250,7 @@ describe('auth', function () {
     it('must set the SSO cookie on /login with the access token', function (done) {
       persistentReq.post(basePath(authData.username) + '/login')
           .set('Origin', trustedOrigin)
-          .send(authData).end(function (res) {
+          .send(authData).end(function (err, res) {
             res.statusCode.should.eql(200);
 
             var setCookie = res.headers['set-cookie'];
@@ -275,7 +275,7 @@ describe('auth', function () {
     });
 
     it('must answer /who-am-i with username and session details if session open', function (done) {
-      persistentReq.get(basePath(authData.username) + '/who-am-i').end(function (res) {
+      persistentReq.get(basePath(authData.username) + '/who-am-i').end(function (err, res) {
         validation.check(res, {
           status: 200,
           body: ssoInfo
@@ -288,7 +288,7 @@ describe('auth', function () {
     it('must clear the SSO cookie on /logout', function (done) {
       persistentReq.post(basePath(authData.username) + '/logout').send({})
           .set('authorization', ssoInfo.token)
-          .end(function (res) {
+          .end(function (err, res) {
         res.statusCode.should.eql(200);
 
         var setCookie = res.headers['set-cookie'];
@@ -306,7 +306,7 @@ describe('auth', function () {
     });
 
     it('must respond /who-am-i with an "unauthorized" error if no cookie is sent', function (done) {
-      persistentReq.get(basePath(authData.username) + '/who-am-i').end(function (res) {
+      persistentReq.get(basePath(authData.username) + '/who-am-i').end(function (err, res) {
         res.statusCode.should.eql(401);
         should.not.exist(res.body.username);
         should.not.exist(res.body.token);
