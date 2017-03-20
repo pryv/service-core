@@ -183,7 +183,7 @@ BaseStorage.prototype.minimizeEventsHistory = function (user, headId, callback) 
       createdBy: 1
     }
   };
-  this.database.update(this.getCollectionInfo(user), this.applyQueryToDB({headId: headId}),
+  this.database.updateMany(this.getCollectionInfo(user), this.applyQueryToDB({headId: headId}),
     update, callback);
 };
 
