@@ -78,8 +78,10 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     }
     if (params.state === 'default') {
       // exclude events in trashed streams
-      var nonTrashedStreamIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, false,
-          function (s) { return ! s.trashed; }), 'id');
+      var nonTrashedStreamIds = treeUtils.collectPluck(
+        treeUtils.filterTree(
+          context.streams, false, (s) => { return ! s.trashed; }), 
+        'id');
       params.streams = params.streams ?
           _.intersection(params.streams, nonTrashedStreamIds) : nonTrashedStreamIds;
     }
@@ -138,7 +140,6 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       skip: params.skip,
       limit: params.limit
     };
-
     userEventsStorage.findStreamed(context.user, query, options, function (err, eventsStream) {
       if (err) {
         return next(errors.unexpectedError(err));
