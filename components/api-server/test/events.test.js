@@ -1284,6 +1284,9 @@ describe('events', function () {
       };
 
       request.put(path(original.id)).send(data).end(function (res) {
+        // BUG Depending on when we do this inside any given second, by the time
+        // we call timestamp.now here, we already have a different second than
+        // we had when we made the request. -> Random test success.
         time = timestamp.now();
         validation.check(res, {
           status: 200,
@@ -1546,11 +1549,9 @@ describe('events', function () {
     beforeEach(resetEvents);
 
     it('must delete the attachment (reference in event + file)', function (done) {
-      var event = testData.events[0],
-          time;
+      var event = testData.events[0]
       var fPath = path(event.id) + '/' + event.attachments[0].id;
       request.del(fPath).end(function (res) {
-        time = timestamp.now();
         validation.check(res, {
           status: 200,
           schema: methodsSchema.update.result
@@ -1561,10 +1562,16 @@ describe('events', function () {
         validation.sanitizeEvent(updatedEvent);
         var expected = _.clone(testData.events[0]);
         expected.attachments = expected.attachments.slice();
-        expected.modified = time;
+        // NOTE We cannot be sure that we still are at the exact same second that
+        // we were just now when we did the call. So don't use time here, test
+        // for time delta below. 
+        delete expected.modified; 
         expected.modifiedBy = access.id;
         expected.attachments.shift();
         validation.checkObjectEquality(updatedEvent, expected);
+        
+        let time = timestamp.now();
+        should(updatedEvent.modified).be.approximately(time, 2);
 
         var filePath = eventFilesStorage.getAttachedFilePath(user, event.id,
             event.attachments[0].id);
