@@ -1,5 +1,4 @@
 /* @flow */
-'use strict';
 
 import type Settings from './Settings';
 
@@ -99,7 +98,7 @@ class Server {
     // app.use(errorsMiddleware);
     
     app.all('*', (req, res) => {
-      res.json({status: 'ok'}, 200);
+      res.status(200).json({status: 'ok'});
     });
     
     app.use(middleware.notFound);
