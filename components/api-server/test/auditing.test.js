@@ -1,22 +1,22 @@
 /*global describe, before, beforeEach, after, it */
 
 var helpers = require('./helpers'),
-  server = helpers.dependencies.instanceManager,
-  async = require('async'),
-  validation = helpers.validation,
-  eventsMethodsSchema = require('../src/schema/eventsMethods'),
-  streamsMethodsSchema = require('../src/schema/streamsMethods'),
-  should = require('should'), // explicit require to benefit from static functions
-  _ = require('lodash'),
-  storage = helpers.dependencies.storage.user.events,
-  timestamp = require('unix-timestamp'),
-  testData = helpers.data;
+    server = helpers.dependencies.instanceManager,
+    async = require('async'),
+    validation = helpers.validation,
+    eventsMethodsSchema = require('../src/schema/eventsMethods'),
+    streamsMethodsSchema = require('../src/schema/streamsMethods'),
+    should = require('should'), // explicit require to benefit from static functions
+    _ = require('lodash'),
+    storage = helpers.dependencies.storage.user.events,
+    timestamp = require('unix-timestamp'),
+    testData = helpers.data;
 require('date-utils');
 
 describe('Auditing', function () {
 
   var user = testData.users[0],
-    request = null;
+      request = null;
 
   function pathToEvent(eventId) {
     var resPath = '/' + user.username + '/events';
@@ -61,15 +61,15 @@ describe('Auditing', function () {
   });
 
   var eventWithHistory = testData.events[16],
-    trashedEventWithHistory = testData.events[19],
-    eventWithNoHistory = testData.events[22],
-    runningEventOnNormalStream = testData.events[23],
-    runningEventOnSingleActivityStream = testData.events[24],
-    eventOnChildStream = testData.events[25];
+      trashedEventWithHistory = testData.events[19],
+      eventWithNoHistory = testData.events[22],
+      runningEventOnNormalStream = testData.events[23],
+      runningEventOnSingleActivityStream = testData.events[24],
+      eventOnChildStream = testData.events[25];
 
   var normalStream = testData.streams[7],
-    singleActivityStream = testData.streams[8],
-    childStream = normalStream.children[0];
+      singleActivityStream = testData.streams[8],
+      childStream = normalStream.children[0];
 
   describe('Events', function () {
 
