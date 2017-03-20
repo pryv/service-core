@@ -1,5 +1,8 @@
+// @flow
+
 /*global describe, before, beforeEach, it */
 
+require('./test-helpers'); 
 var helpers = require('./helpers'),
     server = helpers.dependencies.instanceManager,
     async = require('async'),
@@ -660,8 +663,8 @@ describe('streams', function () {
                 schema: methodsSchema.del.result
               });
 
-              streamsNotifCount.should.eql(1, 'streams notifications');
-              eventsNotifCount.should.eql(1, 'events notifications');
+              should(streamsNotifCount).eql(1, 'streams notifications');
+              should(eventsNotifCount).eql(1, 'events notifications');
 
               stepDone();
             });

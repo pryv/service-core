@@ -2,7 +2,7 @@ module.exports = function index(expressApp) {
 
   expressApp.options('*', function (req, res /*, next*/) {
     // common headers (e.g. CORS) are handled in related middleware
-    res.send(200);
+    res.sendStatus(200);
   });
 
 };

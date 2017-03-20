@@ -19,12 +19,12 @@ module.exports = function (expressApp, api) {
   });
 
   expressApp.put(Paths.Accesses + '/:id', function (req, res, next) {
-    var params = { id: req.param('id'), update: req.body };
+    var params = { id: req.params.id, update: req.body };
     api.call('accesses.update', req.context, params, methodCallback(res, next, 200));
   });
 
-  expressApp.del(Paths.Accesses + '/:id', function (req, res, next) {
-    var params = _.extend({id: req.param('id')}, req.query);
+  expressApp.delete(Paths.Accesses + '/:id', function (req, res, next) {
+    var params = _.extend({id: req.params.id}, req.query);
     api.call('accesses.delete', req.context, params, methodCallback(res, next, 200));
   });
 

@@ -32,6 +32,7 @@ function InstanceManager(settings) {
       messagingSocket = axon.socket('sub-emitter'),
       logger = settings.logging.getLogger('instance-manager');
 
+
   // setup TCP messaging subscription
 
   messagingSocket.bind(+settings.tcpMessaging.port, settings.tcpMessaging.host, function () {
@@ -93,7 +94,7 @@ function InstanceManager(settings) {
   /**
    * @api private
    */
-  this.setup = function () {
+  this.setup = function() {
     // adjust config settings for test instance
     serverSettings.tcpMessaging.pubConnectInsteadOfBind = true;
 
@@ -166,9 +167,9 @@ function InstanceManager(settings) {
    * @api private
    */
   this.stop = function () {
-    if (! isRunning()) { return; }
+    if (! isRunning()) { return; }
     logger.debug('Killing server instance... ');
-    if (! serverProcess.kill()) {
+    if (! serverProcess.kill()) {
       logger.warn('Failed to kill the server instance (it may have exited already).');
     }
     serverProcess = null;

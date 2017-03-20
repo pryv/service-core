@@ -49,8 +49,11 @@ dependencies.register({
 
   // Express & app
   express: require('express'),
-  expressApp: require('./expressApp')
 });
+
+const {expressApp, routesDefined} = dependencies.resolve(
+  require('./expressApp'));
+dependencies.register('expressApp', expressApp);
 
 // setup routes
 
@@ -61,9 +64,10 @@ dependencies.register({
   dependencies.resolve(require(routeDefs));
 });
 
-// setup HTTP
+// Finalize middleware stack: 
+routesDefined(); 
 
-var expressApp = dependencies.get('expressApp');
+// setup HTTP
 
 var server = require('http').createServer(expressApp);
 module.exports = server;

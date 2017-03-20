@@ -1,12 +1,14 @@
+'use strict';
+// @flow
+
 /*global describe, before, after, it */
 
+require('./test-helpers'); 
 var helpers = require('./helpers'),
     server = helpers.dependencies.instanceManager,
     async = require('async'),
     validation = helpers.validation,
     ErrorIds = require('components/errors').ErrorIds,
-//    nock = require('nock'),
-//    querystring = require('querystring'),
     should = require('should'), // explicit require to benefit from static functions
     request = require('superagent'),
     testData = helpers.data,
@@ -14,7 +16,6 @@ var helpers = require('./helpers'),
     _ = require('lodash');
 
 describe('auth', function () {
-
   function basePath(username) {
     return url.resolve(server.url, username + '/auth');
   }
@@ -47,129 +48,130 @@ describe('auth', function () {
     before(testData.resetAccesses);
 
     it('must authenticate the given credentials, open a session and return the access token',
-        function (done) {
-      async.series([
-        function login(stepDone) {
-          request.post(path(authData.username))
-            .set('Origin', trustedOrigin)
-            .send(authData).end(function (res) {
-            res.statusCode.should.eql(200);
+      function (done) {
+        async.series([
+          function login(stepDone) {
+            request.post(path(authData.username))
+              .set('Origin', trustedOrigin)
+              .send(authData).end(function (err, res) {
+                res.statusCode.should.eql(200);
 
-            should.exist(res.body.token);
-            checkNoUnwantedCookie(res);
-            should.exist(res.body.preferredLanguage);
-            res.body.preferredLanguage.should.eql(user.language);
+                should.exist(res.body.token);
+                checkNoUnwantedCookie(res);
+                should.exist(res.body.preferredLanguage);
+                res.body.preferredLanguage.should.eql(user.language);
 
-            stepDone();
-          });
-        },
-        function checkAccess(stepDone) {
-          helpers.dependencies.storage.user.accesses.findOne(user, {name: authData.appId}, null,
+                stepDone();
+              });
+          },
+          function checkAccess(stepDone) {
+            helpers.dependencies.storage.user.accesses.findOne(user, {name: authData.appId}, null,
               function (err, access) {
-            access.modifiedBy.should.eql('system');
-            stepDone();
-          });
-        }
-      ], done);
-    });
+                access.modifiedBy.should.eql('system');
+                stepDone();
+              });
+          }
+        ], done);
+      });
 
     it('must reuse the current session if already open', function (done) {
       var originalToken;
       async.series([
         function login(stepDone) {
           request.post(path(authData.username))
-              .set('Origin', trustedOrigin)
-              .send(authData).end(function (res) {
-            res.statusCode.should.eql(200);
-            originalToken = res.body.token;
-            stepDone();
-          });
+            .set('Origin', trustedOrigin)
+            .send(authData).end(function (err, res) {
+              res.statusCode.should.eql(200);
+              originalToken = res.body.token;
+              stepDone();
+            });
         },
         function loginAgain(stepDone) {
           request.post(path(authData.username))
-              .set('Origin', trustedOrigin)
-              .send(authData).end(function (res) {
-            res.statusCode.should.eql(200);
-            res.body.token.should.eql(originalToken);
-            stepDone();
-          });
+            .set('Origin', trustedOrigin)
+            .send(authData).end(function (err, res) {
+              res.statusCode.should.eql(200);
+              res.body.token.should.eql(originalToken);
+              stepDone();
+            });
         }
       ], done);
     });
 
     it('must accept "wildcarded" app ids and origins', function (done) {
       request.post(path(authData.username))
-          .set('Origin', 'https://test.rec.la:1234')
-          .send(authData).end(function (res) {
-        res.statusCode.should.eql(200);
-        done();
-      });
+        .set('Origin', 'https://test.rec.la:1234')
+        .send(authData).end(function (err, res) {
+          res.statusCode.should.eql(200);
+          done();
+        });
     });
 
     it('must accept "no origin" (i.e. not a CORS request) if authorized', function (done) {
       var authDataNoCORS = _.defaults({appId: 'pryv-test-no-cors'}, authData);
-      request.post(path(authDataNoCORS.username))
-          .send(authDataNoCORS).end(function (res) {
-        res.statusCode.should.eql(200);
-        done();
-      });
+      request
+        .post(path(authDataNoCORS.username))
+        .send(authDataNoCORS).end(function (err, res) {
+          res.statusCode.should.eql(200);
+          done();
+        });
     });
 
     it('must not be case-sensitive for the username', function (done) {
       request.post(path(authData.username))
-          .set('Origin', trustedOrigin)
-          .send(_.defaults({username: authData.username.toUpperCase()}, authData))
-          .end(function (res) {
-        res.statusCode.should.eql(200);
-        done();
-      });
+        .set('Origin', trustedOrigin)
+        .send(_.defaults({username: authData.username.toUpperCase()}, authData))
+        .end(function (err, res) {
+          res.statusCode.should.eql(200);
+          done();
+        });
     });
 
     it('must return a correct error when the local credentials are missing or invalid',
-        function (done) {
-      var data = _.defaults({
-        username: authData.username,
-        password: 'bad-password'
-      }, authData);
-      request.post(path(data.username))
+      function (done) {
+        var data = _.defaults({
+          username: authData.username,
+          password: 'bad-password'
+        }, authData);
+        request.post(path(data.username))
           .set('Origin', trustedOrigin)
-          .send(data).end(function (res) {
-        validation.checkError(res, {
-          status: 401,
-          id: ErrorIds.InvalidCredentials
-        });
-        should.not.exist(res.body.token);
-        done();
+          .send(data).end(function (err, res) {
+            validation.checkError(res, {
+              status: 401,
+              id: ErrorIds.InvalidCredentials
+            });
+            should.not.exist(res.body.token);
+            done();
+          });
       });
-    });
 
     it('must return a correct error if the app id is missing or untrusted', function (done) {
       var data = _.defaults({appId: 'untrusted-app-id'}, authData);
       request.post(path(data.username))
-          .set('Origin', trustedOrigin)
-          .send(data).end(function (res) {
-        validation.checkError(res, {
-          status: 401,
-          id: ErrorIds.InvalidCredentials
+        .set('Origin', trustedOrigin)
+        .send(data).end(function (err, res) {
+          validation.checkError(res, {
+            status: 401,
+            id: ErrorIds.InvalidCredentials
+          });
+          should.not.exist(res.body.token);
+          done();
         });
-        should.not.exist(res.body.token);
-        done();
-      });
     });
 
     it('must return a correct error if the origin is missing or does not match the app id',
-        function (done) {
-      request.post(path(authData.username))
+      function (done) {
+        request.post(path(authData.username))
           .set('Origin', 'http://mismatching.origin')
-          .send(authData).end(function (res) {
-        validation.checkError(res, {
-          status: 401,
-          id: ErrorIds.InvalidCredentials
-        });
-        should.not.exist(res.body.token);
-        done();
+          .send(authData).end(function (err, res) {
+            validation.checkError(res, {
+              status: 401,
+              id: ErrorIds.InvalidCredentials
+            });
+            should.not.exist(res.body.token);
+            done();
+          });
       });
-    });
 
     function checkNoUnwantedCookie(res) {
       if (! res.headers['set-cookie']) { return; }
@@ -193,21 +195,21 @@ describe('auth', function () {
           function (stepDone) {
             request.post(basePath(user.username) + '/login')
             .set('Origin', trustedOrigin)
-            .send(authData).end(function (res) {
+            .send(authData).end(function (err, res) {
               token = res.body.token;
               stepDone();
             });
           },
           function (stepDone) {
             request.post(path(user.username)).send({})
-            .set('authorization', token).end(function (res) {
+            .set('authorization', token).end(function (err, res) {
               res.statusCode.should.eql(200);
               stepDone();
             });
           },
           function (stepDone) {
             request.post(path(user.username)).send({})
-            .set('authorization', token).end(function (res) {
+            .set('authorization', token).end(function (err, res) {
               validation.checkError(res, {
                 status: 401,
                 id: ErrorIds.InvalidAccessToken
@@ -226,7 +228,7 @@ describe('auth', function () {
           testRequest.login.bind(testRequest, user),
           function (stepDone) {
             request.post(path(user.username)).query({auth: testRequest.token}).send({})
-            .end(function (res) {
+            .end(function (err, res) {
               res.statusCode.should.eql(200);
               stepDone();
             });
@@ -250,7 +252,7 @@ describe('auth', function () {
     it('must set the SSO cookie on /login with the access token', function (done) {
       persistentReq.post(basePath(authData.username) + '/login')
           .set('Origin', trustedOrigin)
-          .send(authData).end(function (res) {
+          .send(authData).end(function (err, res) {
             res.statusCode.should.eql(200);
 
             var setCookie = res.headers['set-cookie'];
@@ -275,7 +277,7 @@ describe('auth', function () {
     });
 
     it('must answer /who-am-i with username and session details if session open', function (done) {
-      persistentReq.get(basePath(authData.username) + '/who-am-i').end(function (res) {
+      persistentReq.get(basePath(authData.username) + '/who-am-i').end(function (err, res) {
         validation.check(res, {
           status: 200,
           body: ssoInfo
@@ -288,7 +290,7 @@ describe('auth', function () {
     it('must clear the SSO cookie on /logout', function (done) {
       persistentReq.post(basePath(authData.username) + '/logout').send({})
           .set('authorization', ssoInfo.token)
-          .end(function (res) {
+          .end(function (err, res) {
         res.statusCode.should.eql(200);
 
         var setCookie = res.headers['set-cookie'];
@@ -306,7 +308,7 @@ describe('auth', function () {
     });
 
     it('must respond /who-am-i with an "unauthorized" error if no cookie is sent', function (done) {
-      persistentReq.get(basePath(authData.username) + '/who-am-i').end(function (res) {
+      persistentReq.get(basePath(authData.username) + '/who-am-i').end(function (err, res) {
         res.statusCode.should.eql(401);
         should.not.exist(res.body.username);
         should.not.exist(res.body.token);

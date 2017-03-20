@@ -1,6 +1,7 @@
 /*global describe, it*/
 'use strict';
 
+require('./test-helpers'); 
 var Result = require('../src/Result'),
     Transform = require('stream').Transform,
     inherits = require('util').inherits,

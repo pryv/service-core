@@ -1,3 +1,5 @@
+'use strict';
+
 var errors = require('components/errors').factory,
     validation = require('../../schema/validation');
 
@@ -71,11 +73,20 @@ exports.getTrustedAppCheck = function getTrustedAppCheck(authSettings) {
   }
 };
 
+
+/** Produces a middleware function to verify parameters against the schema
+ * given in `paramsSchema`.
+ *  
+ * @param  {Object} paramsSchema JSON Schema for the parameters
+ * @return {void}
+ */ 
 exports.getParamsValidation = function getParamsValidation(paramsSchema) {
   return function validateParams(context, params, result, next) {
     validation.validate(params, paramsSchema, function (err) {
       if (err) {
-        return next(errors.invalidParametersFormat('The parameters\' format is invalid.',
+        return next(
+          errors.invalidParametersFormat(
+            'The parameters\' format is invalid.',
             err));
       }
       next();

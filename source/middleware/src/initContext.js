@@ -22,7 +22,7 @@ module.exports = function initContext(usersStorage, userAccessesStorage, session
   };
   return function (req, res, next) {
     req.context = new MethodContext(req.params.username,
-        req.headers.authorization || req.query.auth, storage,
+        req.headers.authorization || req.query.auth, storage,
         customExtensionsSettings.customAuthStepFn);
     req.context.retrieveUser(next);
   };

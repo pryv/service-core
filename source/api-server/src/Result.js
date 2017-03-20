@@ -102,7 +102,9 @@ Result.prototype.writeStreams = function(res, successCode) {
 
 Result.prototype.writeSingle = function(res, successCode) {
   delete this._private;
-  res.json(addCommonMeta(this), successCode);
+  res
+    .status(successCode)
+    .json(addCommonMeta(this));
 };
 
 

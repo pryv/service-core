@@ -26,8 +26,8 @@ function Database(settings, logging) {
   this.connectionString = 'mongodb://' + authPart + settings.host + ':' + settings.port + '/' +
       settings.name;
   this.options = {
-    db: {strict: true},
-    server: {auto_reconnect: true}
+    w: 1,   // Requests acknowledgement that the write operation has propagated.
+    autoReconnect: true, 
   };
   this.db = null;
   this.initializedCollections = {};
@@ -63,10 +63,9 @@ Database.prototype.ensureConnect = function (callback) {
   if (this.db) {
     return callback();
   }
-
   this.logger.debug('Connecting to ' + this.connectionString);
   MongoClient.connect(this.connectionString, this.options, function (err, db) {
-    if (err) {
+    if (err) {
       this.logger.debug(err);
       return callback(err);
     }
@@ -206,7 +205,7 @@ Database.prototype.findStreamed = function (collectionInfo, query, options, call
 Database.prototype.findOne = function (collectionInfo, query, options, callback) {
   this.getCollection(collectionInfo, function (err, collection) {
     if (err) { return callback(err); }
-    collection.findOne(query, options || {}, callback);
+    collection.findOne(query, options || {}, callback);
   });
 };
 
