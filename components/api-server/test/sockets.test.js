@@ -177,6 +177,12 @@ describe('Socket.IO', function () {
         validation.checkSchema(result, eventsMethodsSchema.get.result);
         validation.sanitizeEvents(result.events);
 
+        result.events.should.eql(validation.removeDeletionsAndHistory(_.clone(testData.events)
+          .sort(function (a, b) {
+            return a.time - b.time;
+          }
+        )));
+
         // check deletions
         var deletions = testData.events.filter(function (e) {
           return e.deleted;

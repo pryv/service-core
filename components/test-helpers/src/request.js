@@ -21,8 +21,7 @@ var methods = ['get', 'post', 'put', 'del', 'options'];
 methods.forEach(function (method) {
   Request.prototype[method] = function (path, token) {
     const destUrl = url.resolve(this.serverURL, path);
-    const authToken = token || this.token; 
-    
+    const authToken = token || this.token;
     return new IndifferentRequest(method, destUrl, authToken);
   };
 });
@@ -41,7 +40,8 @@ Request.prototype.login = function (user, callback) {
   return superagent.post(targetURL)
     .set('Origin', 'http://test.pryv.local')
     .send(authData).end(function (err, res) {
-      should(res).not.be.empty(); 
+      should(res).not.be.empty();
+
       res.statusCode.should.eql(200);
 
       if (! res.body.token) {
@@ -74,7 +74,7 @@ class IndifferentRequest extends superagent.Request {
    * @param  {string} method HTTP Method to use for this request
    * @param  {string|url.Url} url request url
    * @param  {string} token authentication token to use
-   */   
+   */
   constructor(method, url, token) {
     // NOTE newer superagent versions don't know about delete; Let's pretend 
     // we do. 
@@ -83,12 +83,11 @@ class IndifferentRequest extends superagent.Request {
     super(method, url)
       .set('authorization', token);
   }
-  
   end(callback) {
     super.end((err, res) => {
       callback(res || err);
     });
-  } 
+  }
 }
 
 /**

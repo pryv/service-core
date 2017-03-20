@@ -768,11 +768,11 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
         context.updateTrackingProperties(updatedData);
 
-    	userEventsStorage.updateOne(context.user, {id: event.id}, updatedData, function (err) {
-      	  if (err) {
+        userEventsStorage.updateOne(context.user, {id: event.id}, updatedData, function (err) {
+          if (err) {
             return callback(errors.unexpectedError(err));
-      	  }
-      	  callback(null, event.id);
+          }
+          stepDone(null, event.id);
         });
       }
     ], function(err, res) {
@@ -855,8 +855,9 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       function (stepDone) {
         // approximately update account storage size
         context.user.storageUsed.attachedFiles -= getTotalAttachmentsSize(context.event);
-	usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
+        usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
           stepDone);
+
       }
     ], next);
   }

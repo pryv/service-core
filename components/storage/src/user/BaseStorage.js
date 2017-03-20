@@ -83,6 +83,16 @@ BaseStorage.prototype.find = function (user, query, options, callback) {
   }.bind(this));
 };
 
+/* jshint -W098 */
+/**
+ * Same as find(), but returns a readable stream
+ */
+BaseStorage.prototype.findStreamed = function (user, query, options, callback) {
+  return new Error('Not implemented (user: ' + user + ')');
+  // Implemented for Events only.
+};
+/* jshint +W098 */
+
 BaseStorage.prototype.findHistory = function (user, headId, options, callback) {
   this.database.find(this.getCollectionInfo(user), this.applyQueryToDB({headId: headId}),
     this.applyOptionsToDB(options),
@@ -92,6 +102,7 @@ BaseStorage.prototype.findHistory = function (user, headId, options, callback) {
     }.bind(this));
 };
 
+/* jshint -W098 */
 /**
  * Same as find(), but returns a readable stream
  */

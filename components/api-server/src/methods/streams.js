@@ -243,6 +243,20 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     }
   }
 
+  function flagAsTrashed(context, params, result, next) {
+    var updatedData = {trashed: true};
+    context.updateTrackingProperties(updatedData);
+
+    userStreamsStorage.updateOne(context.user, {id: params.id}, updatedData,
+        function (err, updatedStream) {
+      if (err) { return next(errors.unexpectedError(err)); }
+
+      result.stream = updatedStream;
+      notifications.streamsChanged(context.user);
+      next();
+    });
+  }
+
   function deleteWithData(context, params, result, next) {
     var itemAndDescendantIds,
       parentId,

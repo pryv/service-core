@@ -32,7 +32,7 @@ describe('Access permissions', function () {
   }
 
   function getAllTagsByToken(testAccessIndex) {
-    return _.pluck(testData.accesses[testAccessIndex].permissions, 'tag');
+    return _.map(testData.accesses[testAccessIndex].permissions, 'tag');
   }
 
   before(function (done) {
