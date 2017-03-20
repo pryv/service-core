@@ -13,8 +13,7 @@ var methodCallback = require('./methodCallback'),
  */
 module.exports = function (expressApp, api, authSettings, httpSettings) {
   var sessionMaxAge = authSettings.sessionMaxAge || 1000 * 60 * 60 * 24 * 14, // 14 days
-      ssoCookieDomain = authSettings.ssoCookieDomain ||
-          httpSettings.ip + ':' + httpSettings.port,
+      ssoCookieDomain = authSettings.ssoCookieDomain || httpSettings.ip,
       ssoCookieSignSecret = authSettings.ssoCookieSignSecret || 'Hallowed Be Thy Name, O Node',
       ssoCookieSecure = process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'test';
 

@@ -80,7 +80,7 @@ PasswordResetRequests.prototype.generate = function (data, callback) {
  * @param {Function} callback
  */
 PasswordResetRequests.prototype.destroy = function (id, callback) {
-  this.database.remove(collectionInfo, {_id: id}, callback);
+  this.database.deleteOne(collectionInfo, {_id: id}, callback);
 };
 
 /**
@@ -89,7 +89,7 @@ PasswordResetRequests.prototype.destroy = function (id, callback) {
  * @param {Function} callback
  */
 PasswordResetRequests.prototype.clearAll = function (callback) {
-  this.database.remove(collectionInfo, {}, callback);
+  this.database.deleteMany(collectionInfo, {}, callback);
 };
 
 PasswordResetRequests.prototype.getNewExpirationDate = function () {

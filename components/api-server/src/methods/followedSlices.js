@@ -82,7 +82,7 @@ module.exports = function (api, userFollowedSlicesStorage, notifications) {
         });
       },
       function update(stepDone) {
-        userFollowedSlicesStorage.update(context.user, {id: params.id}, params.update,
+	userFollowedSlicesStorage.updateOne(context.user, {id: params.id}, params.update,
             function (err, updatedSlice) {
           if (err) {
             return stepDone(getCreationOrUpdateError(err, params.update));
@@ -104,9 +104,8 @@ module.exports = function (api, userFollowedSlicesStorage, notifications) {
     if (! storage.Database.isDuplicateError(dbError)) {
       return errors.unexpectedError(dbError);
     }
-    var errObject = dbError.lastErrorObject || dbError;
     // HACK: relying on error text as nothing else available to differentiate
-    var conflictingKeys = errObject.err && errObject.err.indexOf('$name_') > 0 ?
+    var conflictingKeys = dbError.message.indexOf('$name_') > 0 ?
         {name: params.name} : { url: params.url, accessToken: params.accessToken };
     return errors.itemAlreadyExists('followed slice', conflictingKeys, dbError);
   }
@@ -128,7 +127,7 @@ module.exports = function (api, userFollowedSlicesStorage, notifications) {
         return next(errors.unknownResource('followed slice', params.id));
       }
 
-      userFollowedSlicesStorage.remove(context.user, {id: params.id}, function (err) {
+      userFollowedSlicesStorage.removeOne(context.user, {id: params.id}, function (err) {
         if (err) { return next(errors.unexpectedError(err)); }
 
         result.followedSliceDeletion = {id: params.id};

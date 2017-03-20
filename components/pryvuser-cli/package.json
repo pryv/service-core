@@ -15,8 +15,5 @@
   "dependencies": {
     "co-prompt": "^1.0.0",
     "commander": "^2.8.1"
-  },
-  "devDependencies": {
-    "mocha": "^2.1.0"
   }
 }

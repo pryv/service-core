@@ -72,7 +72,7 @@ module.exports = function (api, userProfileStorage) {
         }.bind(this));
       }.bind(this),
       function update(stepDone) {
-        userProfileStorage.update(context.user, {id: params.id}, {data: params.update},
+	userProfileStorage.updateOne(context.user, {id: params.id}, {data: params.update},
             function (err, updatedProfile) {
           if (err) { return stepDone(errors.unexpectedError(err)); }
 

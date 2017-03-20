@@ -27,6 +27,9 @@ module.exports = function (expressApp, api, attachmentsAccessMiddleware, userAcc
     tryCoerceStringValues(params, {
       fromTime: 'number',
       toTime: 'number',
+      streams: 'array',
+      tags: 'array',
+      types: 'array',
       sortAscending: 'boolean',
       skip: 'number',
       limit: 'number',

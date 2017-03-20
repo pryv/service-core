@@ -142,7 +142,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
       if (err) {
         if (storage.Database.isDuplicateError(err)) {
           // HACK: relying on error text as nothing else available to differentiate
-          var apiError = err.err.indexOf('_id_') > 0 ?
+	  var apiError = err.message.indexOf('_id_') > 0 ?
               errors.itemAlreadyExists('stream', {id: params.id}, err) :
               errors.itemAlreadyExists('sibling stream', {name: params.name}, err);
           return next(apiError);
@@ -192,7 +192,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   }
 
   function updateStream(context, params, result, next) {
-    userStreamsStorage.update(context.user, {id: params.id}, params.update,
+    userStreamsStorage.updateOne(context.user, {id: params.id}, params.update,
         function (err, updatedStream) {
       if (err) {
         if (storage.Database.isDuplicateError(err)) {
@@ -233,30 +233,6 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     next();
   }
 
-  function deleteStream(context, params, result, next) {
-    if (! context.stream.trashed) {
-      // move to trash
-      flagAsTrashed(context, params, result, next);
-    } else {
-      // actually delete
-      deleteWithData(context, params, result, next);
-    }
-  }
-
-  function flagAsTrashed(context, params, result, next) {
-    var updatedData = {trashed: true};
-    context.updateTrackingProperties(updatedData);
-
-    userStreamsStorage.update(context.user, {id: params.id}, updatedData,
-        function (err, updatedStream) {
-      if (err) { return next(errors.unexpectedError(err)); }
-
-      result.stream = updatedStream;
-      notifications.streamsChanged(context.user);
-      next();
-    });
-  }
-
   function deleteWithData(context, params, result, next) {
     var itemAndDescendantIds,
       parentId,
@@ -277,21 +253,20 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         });
       },
       function retrieveLinkedEventIds(stepDone) {
-          userEventsStorage.find(context.user, {streamId: {$in: itemAndDescendantIds}},
-            null, function (err, events) {
-              if (err) {
-                return stepDone(errors.unexpectedError(err));
-              }
+        userEventsStorage.find(context.user, {streamId: {$in: itemAndDescendantIds}},
+          null, function (err, events) {
+            if (err) {
+              return stepDone(errors.unexpectedError(err));
+            }
 
-              linkedEvents = events;
-
-              if (linkedEvents.length > 0 && params.mergeEventsWithParent === null) {
-                return stepDone(errors.invalidParametersFormat('There are events referring to ' +
+            linkedEvents = events;
+            if (linkedEvents.length > 0 && params.mergeEventsWithParent === null) {
+              return stepDone(errors.invalidParametersFormat('There are events referring to ' +
                 'the deleted items and the `mergeEventsWithParent` parameter is missing.'));
-              }
+            }
 
-              stepDone();
-            });
+            stepDone();
+          });
       },
 
       function handleLinkedEvents(stepDone) {
@@ -318,18 +293,17 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
               });
             },
             function updateStreamIds(subStepDone) {
-              userEventsStorage.updateMultiple(context.user,
-                {id: {$in: _.pluck(linkedEvents, 'id')}}, {streamId: parentId}, function (err) {
+              userEventsStorage.updateMany(context.user,
+                {id: {$in: _.map(linkedEvents, 'id')}}, {streamId: parentId}, function (err) {
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));
                   }
                   notifications.eventsChanged(context.user);
                   subStepDone();
                 });
-            }
-          ], stepDone);
+            }], stepDone);
         } else {
-          var linkedEventIds = _.pluck(linkedEvents, 'id');
+          var linkedEventIds = _.map(linkedEvents, 'id');
           async.series([
             function handleDeletionMode(subStepDone) {
               if (auditSettings.deletionMode === 'keep-nothing') {

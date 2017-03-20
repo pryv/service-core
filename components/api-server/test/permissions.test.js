@@ -402,11 +402,22 @@ describe('Access permissions', function () {
         async.series([
           function setupCustomAuthStep(stepDone) {
             fs.readFile(srcPath, function (err, data) {
+              if (err) {
+                return stepDone(err);
+              }
               fs.writeFile(destPath, data, stepDone);
             });
           },
           server.restart.bind(server)
-        ], done);
+        ], function (err) { 
+          if (err) {
+            throw new Error(err);
+          }
+          if (! fs.existsSync(destPath)) {
+            throw new Error('Failed creating :' + destPath);
+          }
+          done(err);
+        });
       });
 
       after(function (done) {

@@ -196,5 +196,7 @@ Events.prototype.delete = function (user, query, deletionMode, callback) {
     };
     break;
   }
-  this.database.update(this.getCollectionInfo(user), this.applyQueryToDB(query), update, callback);
+  this.database.updateMany(
+    this.getCollectionInfo(user), this.applyQueryToDB(query), update,
+    callback);
 };
