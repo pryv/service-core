@@ -93,7 +93,7 @@ function InstanceManager(settings) {
   /**
    * @api private
    */
-  this.setup = function () {
+  this.setup = function () {
     // adjust config settings for test instance
     serverSettings.tcpMessaging.pubConnectInsteadOfBind = true;
 
