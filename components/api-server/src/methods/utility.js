@@ -48,10 +48,13 @@ module.exports = function (api, logging) {
           };
           errorHandling.logError(err, reqContext, logger);
           results.results.push({error: errorHandling.getPublicErrorData(err)});
+          done();
         } else {
-          results.results.push(result);
+          result.toObject(function (object) {
+            results.results.push(object);
+            done();
+          });
         }
-        done();
       });
     }
   }

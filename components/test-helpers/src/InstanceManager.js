@@ -157,6 +157,10 @@ function InstanceManager(settings) {
     }
   };
 
+  this.crashed = function () {
+    return serverProcess && serverProcess.exitCode > 0;
+  };
+
   /**
    * @api private
    */

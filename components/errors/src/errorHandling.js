@@ -29,7 +29,8 @@ errorHandling.logError = function (error, req, logger) {
       metadata.errorData = error.data;
     }
     if (error.innerError) {
-      metadata.innerError = error.innerError.stack || error.innerError.message;
+        metadata.innerError = error.id === ErrorIds.UnexpectedError ?
+            (error.innerError.stack || error.innerError.message) : error.innerError.message;
     }
 
     if (error.id === ErrorIds.UnexpectedError) {

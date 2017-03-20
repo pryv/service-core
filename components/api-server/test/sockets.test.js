@@ -139,7 +139,7 @@ describe('Socket.IO', function () {
       done();
     });
   });
-  
+
   it('must refuse connection if no valid access token is provided', function (done) {
     ioCons.con = connect(namespace);
 
@@ -155,22 +155,45 @@ describe('Socket.IO', function () {
 
   describe('calling API methods', function () {
 
+    afterEach(function (done) {
+      // restart server if crashed
+      if (server.crashed()) {
+        return server.restart(done);
+      }
+      done();
+    });
+
     it('must properly route method call messages for events and return the results, ' +
       'including meta',
         function (done) {
       ioCons.con = connect(namespace, {auth: token});
       var params = {
         sortAscending: true,
-        state: 'all'
+        state: 'all',
+        includeDeletions: true,
+        modifiedSince: -10000
       };
       ioCons.con.emit('events.get', params, function (err, result) {
         validation.checkSchema(result, eventsMethodsSchema.get.result);
         validation.sanitizeEvents(result.events);
-        result.events.should.eql(validation.removeDeletionsAndHistory(_.clone(testData.events)
-          .sort(function (a, b) {
-            return a.time - b.time;
-          }
-        )));
+
+        // check deletions
+        var deletions = testData.events.filter(function (e) {
+          return e.deleted;
+        });
+        var found = false;
+        deletions.forEach(function (d) {
+          result.eventDeletions.forEach(function (d2) {
+            if (d.id === d2.id && d.deleted === d2.deleted) {
+              found = true;
+            }
+          });
+          found.should.eql(true);
+          found = false;
+        });
+
+        // check untrashed
+        result.events.should.eql(validation.removeDeletions(testData.events));
         validation.checkMeta(result);
         done();
       });
@@ -182,6 +205,15 @@ describe('Socket.IO', function () {
       ioCons.con.emit('streams.get', {state: 'all'}, function (err, result) {
         validation.checkSchema(result, streamsMethodsSchema.get.result);
         result.streams.should.eql(validation.removeDeletions(testData.streams));
+        done();
+      });
+    });
+
+    it('must not crash when callers omit the callback', function (done) {
+      ioCons.con = connect(namespace, {auth: token});
+      ioCons.con.emit('events.get', {} /* no callback here */);
+      process.nextTick(function () {
+        server.crashed().should.eql(false);
         done();
       });
     });

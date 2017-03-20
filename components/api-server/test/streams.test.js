@@ -281,6 +281,21 @@ describe('streams', function () {
       );
     });
 
+    // Test added to verify fix of issue#29
+    it('must return an error if the new stream\'s parentId ' +
+      'is the empty string', function (done) {
+      var data = {
+        name: 'zero-length parentId string Stream',
+        parentId: ''
+      };
+      request.post(basePath).send(data).end(function (res) {
+        validation.checkError(res, {
+          status: 400,
+          id: ErrorIds.InvalidParametersFormat
+        }, done);
+      });
+    });
+
     it('must slugify the new stream\'s predefined id', function (done) {
       var data = {
         id: 'pas encodé de bleu!',

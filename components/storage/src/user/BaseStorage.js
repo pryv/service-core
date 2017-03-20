@@ -92,6 +92,15 @@ BaseStorage.prototype.findHistory = function (user, headId, options, callback) {
     }.bind(this));
 };
 
+/**
+ * Same as find(), but returns a readable stream
+ */
+BaseStorage.prototype.findStreamed = function (user, query, options, callback) {
+  return new Error('Not implemented (user: ' + user + ')');
+  // Implemented for Events only.
+};
+/* jshint +W098 */
+
 BaseStorage.prototype.findDeletions = function (user, deletedSince, options, callback) {
   var query = {deleted: {$gt: timestamp.toDate(deletedSince)}};
   query.headId = null;
@@ -101,6 +110,16 @@ BaseStorage.prototype.findDeletions = function (user, deletedSince, options, cal
     callback(null, this.applyItemsFromDB(dbItems));
   }.bind(this));
 };
+
+/* jshint -W098 */
+/**
+ * Same as findDeletions(), but returns a readable stream
+ */
+BaseStorage.prototype.findDeletionsStreamed = function (user, deletedSince, options, callback) {
+  return new Error('Not implemented (user: ' + user + ')');
+  // Implemented for Events only.
+};
+/* jshint +W098 */
 
 BaseStorage.prototype.findOne = function (user, query, options, callback) {
   query.deleted = null;
