@@ -232,6 +232,16 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
     next();
   }
+  
+  function deleteStream(context, params, result, next) {
+    if (! context.stream.trashed) {
+      // move to trash
+      flagAsTrashed(context, params, result, next);
+    } else {
+      // actually delete
+      deleteWithData(context, params, result, next);
+    }
+  }
 
   function deleteWithData(context, params, result, next) {
     var itemAndDescendantIds,
@@ -308,7 +318,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
             function handleDeletionMode(subStepDone) {
               if (auditSettings.deletionMode === 'keep-nothing') {
 
-                userEventsStorage.remove(context.user, {headId: linkedEventIds[0]},
+                userEventsStorage.removeMany(context.user, {headId: linkedEventIds[0]},
                   function (err) {
                     if (err) {
                       return subStepDone(errors.unexpectedError(err));

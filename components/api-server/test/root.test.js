@@ -49,7 +49,7 @@ describe('root', function () {
     /*jshint -W030*/
 
     it('should return basic server meta information as JSON when requested', function (done) {
-      superagent.get(path()).set('Accept', 'application/json').end(function (res) {
+      superagent.get(path()).set('Accept', 'application/json').end(function (err, res) {
         res.statusCode.should.eql(200);
         res.should.be.json;
         validation.checkMeta(res.body);
@@ -58,7 +58,7 @@ describe('root', function () {
     });
 
     it('should return basic server meta information as text otherwise', function (done) {
-      superagent.get(path()).set('Accept', 'text/html').end(function (res) {
+      superagent.get(path()).set('Accept', 'text/html').end(function (err, res) {
         res.statusCode.should.eql(200);
         res.should.be.text;
         res.text.should.match(/Pryv API/);
@@ -67,7 +67,7 @@ describe('root', function () {
     });
 
     it('should return an error if trying to access an unknown user account', function (done) {
-      superagent.get(path() + 'unknown_user/events').end(function (res) {
+      superagent.get(path() + 'unknown_user/events').end(function (err, res) {
         res.statusCode.should.eql(404);
         done();
       });
@@ -132,7 +132,7 @@ describe('root', function () {
           .send({ username: u.username, password: u.password, appId: 'pryv-test' })
           .set('Host', u.username + '.pryv.local')
           .set('Origin', 'http://test.pryv.local')
-          .end(function (res) {
+          .end(function (err, res) {
             res.statusCode.should.eql(200);
             done();
           });
@@ -173,6 +173,7 @@ describe('root', function () {
           .send({_auth: request.token})
           .send({_method: 'DELETE'})
           .end(function (res) {
+            console.log(res);
         res.statusCode.should.eql(200);
         done();
       });
@@ -239,7 +240,7 @@ describe('root', function () {
   describe('OPTIONS /', function () {
 
     it('should return OK', function (done) {
-      superagent.options(path()).end(function (res) {
+      superagent.options(path()).end(function (err, res) {
         res.statusCode.should.eql(200);
         done();
       });
