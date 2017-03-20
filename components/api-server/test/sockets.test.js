@@ -17,6 +17,7 @@ var helpers = require('./helpers'),
     testData = helpers.data,
     timestamp = require('unix-timestamp'),
     _ = require('lodash');
+const R = require('ramda');
 
 describe('Socket.IO', function () {
 
@@ -184,22 +185,27 @@ describe('Socket.IO', function () {
         )));
 
         // check deletions
-        var deletions = testData.events.filter(function (e) {
-          return e.deleted;
-        });
-        var found = false;
-        deletions.forEach(function (d) {
-          result.eventDeletions.forEach(function (d2) {
-            if (d.id === d2.id && d.deleted === d2.deleted) {
-              found = true;
-            }
-          });
-          found.should.eql(true);
-          found = false;
-        });
-
+        let deleted = R.filter(R.where({deleted: R.equals(true)}), testData.events);
+        for (let el of deleted) {
+          let deletion = R.find(R.where({id: R.equals(el.id)}), result.eventDeletions);
+          
+          should(deletion).not.be.empty();
+          should(deletion.deleted).be.true(); 
+        }
+        
         // check untrashed
-        result.events.should.eql(validation.removeDeletions(testData.events));
+        let getId = (e) => e.id; 
+        let sortById = R.sortBy(getId);
+        
+        let resultEvents = sortById(result.events);
+        let activeEvents = R.compose(sortById, R.reject(R.has('headId')));
+        let activeTestEvents = activeEvents(
+          validation.removeDeletions(testData.events));
+        
+        should(
+          resultEvents
+        ).be.eql(activeTestEvents);
+
         validation.checkMeta(result);
         done();
       });
