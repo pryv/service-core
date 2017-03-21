@@ -3,9 +3,6 @@ exports = module.exports = {
   attachmentsCheck: require('./attachmentsCheck'),
   data: require('./data'),
   dependencies: require('./dependencies'),
-  InstanceManager: require('./InstanceManager')
+  InstanceManager: require('./InstanceManager'),
+  instanceTestSetup: require('./instanceTestSetup')
 };
-
-if (process.env.NODE_ENV === 'test') {
-  exports.instanceTestSetup = require('./instanceTestSetup');
-}
