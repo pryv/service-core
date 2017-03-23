@@ -86,7 +86,7 @@ class Settings {
    */
   static load(): Settings {
     const settings = new Settings(); 
-    const configFilePath = settings.get('config_file').str(); 
+    const configFilePath = settings.get('config').str(); 
     
     settings.loadFromFile(configFilePath);
     
@@ -106,9 +106,12 @@ class Settings {
   /** Class constructor. */
   constructor() {
     this.config = this.produceConfigInstance(); 
+    this.config.validate(); 
   }
   
   /** Loads configuration values from the file pointed to by `path`.
+   * 
+   * @throws {Error} `.code === ENOENT` if the configuration file doesn't exist. 
    */
   loadFromFile(path: string) {
     const config = this.config; 
@@ -149,10 +152,10 @@ class Settings {
     };
 
     return convict({
-      config_file: {
+      config: {
         doc: 'Path to the server configuration file.', 
         format: String, 
-        default: 'hfs-server.json', 
+        default: 'config/hfs-server.json', 
         arg: 'config', 
       },
       logs: {

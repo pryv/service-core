@@ -82,7 +82,7 @@ class Server {
    * 
    * @return express application.
    */
-  setupExpress(): any {
+  setupExpress(): express$Application {
     const settings = this.settings;
     const logSettings = settings.get('logs').obj();
     

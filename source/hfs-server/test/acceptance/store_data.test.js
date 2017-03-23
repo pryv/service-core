@@ -26,18 +26,13 @@ describe('Storing data in a HF series', function() {
           [1481677847, 14.3], 
         ]
       };
-      
+
       const response = request(app)
         .post(`/events/${EVENT_ID}/series`)
         .send(data);
         
-      response
-        .then((res) => {
-          should(res.status).be.eql(200);
-        })
-        .then(() => {
-          
-        });
+      return response
+        .expect(200);
     });
   }); 
 });
