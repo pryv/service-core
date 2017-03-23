@@ -95,15 +95,27 @@ class Server {
     app.use(middleware.override);
     app.use(middleware.commonHeaders({version: '1.0.0'}));
     
-    app.all('*', (req, res) => {
-      res.status(200).json({status: 'ok'});
-    });
-    
+    this.defineApplication(app); 
+        
     app.use(errorsMiddleware);
     app.use(middleware.notFound);
 
     return app; 
   }
+  
+  /** Defines all the routes that we serve from this server. 
+   */   
+  defineApplication(app: express$Application) {
+    app.get('/system/status', systemStatus);
+  }
+}
+
+function systemStatus(req: express$Request, res: express$Response) {
+  res
+    .status(200)
+    .json({
+      status: 'ok',
+    });
 }
 
 module.exports = Server;
