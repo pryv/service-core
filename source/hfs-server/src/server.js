@@ -44,6 +44,8 @@ class Server {
     const ip = settings.get(KEY_IP).str(); 
     const port = settings.get(KEY_PORT).num(); 
     this.baseUrl = `http://${ip}:${port}/`;
+    
+    this.logger.info('constructed.');
   }
   
   /**
@@ -53,6 +55,8 @@ class Server {
    *    started and accepts connections.
    */
   start(): Promise<true> {
+    this.logger.info('starting...');
+    
     const settings = this.settings;
     const app = this.expressApp;
     
@@ -61,7 +65,10 @@ class Server {
     
     var server = this.server = http.createServer(app);
     
-    return promisify(server.listen, server)(port, ip);
+    return promisify(server.listen, server)(port, ip)
+      .then((...args) => { 
+        this.logger.info('started.');
+        return args; });
   }
   
   /** 
@@ -72,7 +79,8 @@ class Server {
    */
   stop(): Promise<true> {
     const server = this.server;
-    
+      
+    this.logger.info('stopping...');
     return promisify(server.close, server)();
   }
     

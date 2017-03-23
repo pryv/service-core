@@ -34,7 +34,7 @@ module.exports = function (logsSettings: Object) {
   if (logsSettings.console.active) {
     console.level = logsSettings.console.level;
     console.colorize = logsSettings.console.colorize;
-    console.timestamp = logsSettings.console.timestamp;
+    console.timestamp = logsSettings.console.timestamp || true;
   }
   if (winston['default'].transports.file) {
     // in production env it seems winston already includes a file transport...
