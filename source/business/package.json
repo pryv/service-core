@@ -1,0 +1,8 @@
+{
+  "name": "business",
+  "version": "1.0.0",
+  "description": "Business method layer",
+  "main": "src/index.js",
+  "author": "Pryv",
+  "license": "All rights reserved / Proprietary"
+}

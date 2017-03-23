@@ -10,6 +10,7 @@ const logging = require('components/utils').logging;
 const errorsMiddleware = require('./middleware/errors');
 const promisify = require('./promisify');
 
+const business = require('business');
 const SeriesResponse = require('./web/SeriesResponse');
 const errors = require('components/errors').factory;
 
@@ -179,24 +180,10 @@ function querySeriesData(req: express$Request, res: express$Response) {
   // const series = business.series.get(eventId);
   // const data = series.runQuery(query);
   // 
-  const fakeData = new DataMatrix(); 
+  const fakeData = new business.series.DataMatrix(); 
   const responseObj = new SeriesResponse(fakeData);
   
   responseObj.answer(res);
-}
-
-type Element = string | number; 
-class DataMatrix {
-  columns: Array<string>; 
-  data: Array<Array<Element>>; 
-  
-  constructor() {
-    this.columns = ['timestamp', 'value'];
-    this.data = [
-      [1490277022, 10], 
-      [1490277023, 20],
-    ];
-  }
 }
 
 module.exports = Server;
