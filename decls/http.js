@@ -1,4 +1,4 @@
-declare class http$Server {
+declare class http$Server extends net$Socket {
   listen(port: number, hostname?: string, backlog?: number, callback?: Function): http$Server;
   listen(path: string, callback?: Function): http$Server;
   listen(handle: Object, callback?: Function): http$Server;

@@ -71,9 +71,17 @@ class Server {
     var server = this.server = http.createServer(app);
     
     return promisify(server.listen, server)(port, ip)
-      .then((server) => { 
-        this.logger.info(`started. (http://${ip}:${port})`);
-        return server; });
+      .then(this.logStarted.bind(this));
+  }
+  
+  /** Logs that the server has started.
+   */
+  logStarted(arg: any): Promise<*> {
+    const addr = this.server.address(); 
+    this.logger.info(`started. (http://${addr.address}:${addr.port})`);
+    
+    // passthrough of our single argument
+    return arg;
   }
   
   /** 
