@@ -115,7 +115,15 @@ class Server {
    */   
   defineApplication(app: express$Application) {
     app.get('/system/status', systemStatus);
+    
+    app.all('*', errorOut);
   }
+}
+
+/** Catch-all handler that will error out for all routes that call this. 
+ */
+function errorOut(req: express$Request, res: express$Response, next) {
+  return next(new Error(`Undefined route. (${req.path})`));
 }
 
 /** GET /system/status - Answers the caller with a status of the application. 
