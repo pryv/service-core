@@ -10,6 +10,8 @@ const logging = require('components/utils').logging;
 const errorsMiddleware = require('./middleware/errors');
 const promisify = require('./promisify');
 
+const errors = require('components/errors').factory;
+
 const KEY_IP = 'http.ip';
 const KEY_PORT = 'http.port';  
 
@@ -31,12 +33,14 @@ class Server {
   
   // Logger used here.
   logger: typeof logging.Logger; 
+  errorLogger: typeof logging.Logger; 
   
   constructor(settings: Settings) {
     const logSettings = settings.get('logs').obj();
     const logFactory = logging(logSettings);
     
     this.logger = logFactory.getLogger('hfs-server');
+    this.errorLogger = logFactory.getLogger('errors');
     this.settings = settings; 
         
     this.expressApp = this.setupExpress();
@@ -105,8 +109,8 @@ class Server {
     
     this.defineApplication(app); 
         
-    app.use(errorsMiddleware);
     app.use(middleware.notFound);
+    app.use(errorsMiddleware(this.errorLogger));
 
     return app; 
   }
@@ -116,17 +120,9 @@ class Server {
   defineApplication(app: express$Application) {
     app.get('/system/status', systemStatus);
     
-    app.post('/events/:event_id/series', storeSeriesData); 
-    app.get('/events/:event_id/series', querySeriesData);
-    
-    app.all('*', errorOut);
+    // app.post('/events/:event_id/series', storeSeriesData); 
+    // app.get('/events/:event_id/series', querySeriesData);
   }
-}
-
-/** Catch-all handler that will error out for all routes that call this. 
- */
-function errorOut(req: express$Request, res: express$Response, next) {
-  return next(new Error(`Undefined route. (${req.path})`));
 }
 
 /** GET /system/status - Answers the caller with a status of the application. 
@@ -141,9 +137,23 @@ function systemStatus(req: express$Request, res: express$Response) {
 }
 
 function storeSeriesData(req: express$Request, res: express$Response) {
+  throw errors.forbidden(); 
+    
+  // if (! business.access.canWriteToSeries(eventId, authToken)) {
+  //   throw errors.forbidden(); 
+  // }
+  // 
+  // const data = parseData(req);
+  // 
+  // const series = business.series.get(eventId);
+  // series.append(data);
+  // 
   res
-    .status(500)
-    .json({status: 'not implemented'});
+    .status(200)
+    .json({
+      status: 'ok',
+      linesWritten: data.length,
+    });
 }
 function querySeriesData(req: express$Request, res: express$Response) {
   res
