@@ -120,8 +120,8 @@ class Server {
   defineApplication(app: express$Application) {
     app.get('/system/status', systemStatus);
     
-    // app.post('/events/:event_id/series', storeSeriesData); 
-    // app.get('/events/:event_id/series', querySeriesData);
+    app.post('/events/:event_id/series', storeSeriesData); 
+    app.get('/events/:event_id/series', querySeriesData);
   }
 }
 
@@ -137,8 +137,6 @@ function systemStatus(req: express$Request, res: express$Response) {
 }
 
 function storeSeriesData(req: express$Request, res: express$Response) {
-  throw errors.forbidden(); 
-    
   // if (! business.access.canWriteToSeries(eventId, authToken)) {
   //   throw errors.forbidden(); 
   // }
@@ -150,15 +148,76 @@ function storeSeriesData(req: express$Request, res: express$Response) {
   // 
   res
     .status(200)
-    .json({
-      status: 'ok',
-      linesWritten: data.length,
-    });
+    .json({status: 'ok'});
 }
+
+
+/** GET /events/:event_id/series - Query a series for a data subset.
+ *  
+ * @param  {type} req: express$Request  description 
+ * @param  {type} res: express$Response description 
+ * @return {type}                       description 
+ */ 
 function querySeriesData(req: express$Request, res: express$Response) {
+  // if (! business.access.canReadFromSeries(eventId, authToken)) {
+  //   throw errors.forbidden(); 
+  // }
+  // 
+  // query = parseQueryFromGET(req);
+  // 
+  // const series = business.series.get(eventId);
+  // const data = series.runQuery(query);
+  // 
+  const fakeData = new DataMatrix(); 
+  formatSeriesResponse(res, fakeData);
+}
+/** Formats series data into a series object for responding to a query. 
+ */
+function formatSeriesResponse(res, data) {
+  const json = new SeriesResponse(data); 
+  
   res
-    .status(500)
-    .json({status: 'not implemented'});
+    .json(json)
+    .status(200);
+}
+
+type Element = string | number; 
+class DataMatrix {
+  columns: Array<string>; 
+  data: Array<Array<Element>>; 
+  
+  constructor() {
+    this.columns = ['timestamp', 'value'];
+    this.data = [
+      [1490277022, 10], 
+      [1490277023, 20],
+    ];
+  }
+}
+
+/** Represents a response in series format. 
+ * 
+ * This class is used to represent a series response. It serializes to JSON. 
+ */
+class SeriesResponse {
+  data: DataMatrix; 
+  
+  /** Constructs a series response from an existing data matrix. 
+   */
+  constructor(data: DataMatrix) {
+    this.data = data; 
+  }
+  
+  /** Serializes this response to JSON. 
+   */
+  toJSON() {
+    return {
+      elementType: 'unknown/fake', 
+      format: 'flatJSON', 
+      fields: this.data.columns, 
+      points: this.data.data, 
+    };
+  }
 }
 
 module.exports = Server;

@@ -5,6 +5,7 @@
 
 /* global describe, it */
 const { should, request, settings } = require('./test-helpers');
+const R = require('ramda');
 
 const Server = require('../../src/Server');
 
@@ -14,6 +15,30 @@ describe('Storing data in a HF series', function() {
   
   describe('POST /events/EVENT_ID/series', function() {
     const EVENT_ID = 'EVENTID';
+    
+    // TODO Worry about deleting data that we stored in earlier tests.
+    
+    function storeData(data): Promise<*> {
+      const response = request(app)
+        .post(`/events/${EVENT_ID}/series`)
+        .send(data);
+        
+      return response.expect(200);   // Store data
+    }
+    function queryData(): Promise<Object> {
+      let response = request(app)
+        .get(`/events/${EVENT_ID}/series`)
+        .query({
+          fromTime: 1481677844, 
+          toTime: 1481677850,
+        });
+      
+      return response.expect(200)
+        .then((res) => {
+          should(res.body.elementType).be.instanceof(String);
+          return res.body;
+        });
+    }
     
     it('stores data into InfluxDB', function() {
       const data = {
@@ -26,13 +51,19 @@ describe('Storing data in a HF series', function() {
           [1481677847, 14.3], 
         ]
       };
-
-      const response = request(app)
-        .post(`/events/${EVENT_ID}/series`)
-        .send(data);
-        
-      return response
-        .expect(200);
+      
+      return storeData(data)
+        .then(queryData)
+        .then((response) => {
+          // Verify data here
+          should(response).not.be.empty(); 
+          
+          should(response.fields).be.eql(['timestamp', 'value']);
+          
+          const pairEqual = (a, b) => should(a).be.eql(b);
+          R.all(pairEqual, R.zip(response.points, data.data));
+        });
     });
+    
   }); 
 });
