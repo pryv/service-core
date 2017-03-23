@@ -116,6 +116,9 @@ class Server {
   defineApplication(app: express$Application) {
     app.get('/system/status', systemStatus);
     
+    app.post('/events/:event_id/series', storeSeriesData); 
+    app.get('/events/:event_id/series', querySeriesData);
+    
     app.all('*', errorOut);
   }
 }
@@ -135,6 +138,17 @@ function systemStatus(req: express$Request, res: express$Response) {
     .json({
       status: 'ok',
     });
+}
+
+function storeSeriesData(req: express$Request, res: express$Response) {
+  res
+    .status(500)
+    .json({status: 'not implemented'});
+}
+function querySeriesData(req: express$Request, res: express$Response) {
+  res
+    .status(500)
+    .json({status: 'not implemented'});
 }
 
 module.exports = Server;
