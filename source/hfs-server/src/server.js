@@ -66,9 +66,9 @@ class Server {
     var server = this.server = http.createServer(app);
     
     return promisify(server.listen, server)(port, ip)
-      .then((...args) => { 
-        this.logger.info('started.');
-        return args; });
+      .then((server) => { 
+        this.logger.info(`started. (http://${ip}:${port})`);
+        return server; });
   }
   
   /** 

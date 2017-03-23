@@ -20,5 +20,5 @@ catch (err) {
     process.exit(1);
   }
 
-  console.error(`Fatal Error caught: ${err}`); // eslint-disable-line no-console
+  throw err;
 }

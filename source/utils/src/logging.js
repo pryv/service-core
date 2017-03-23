@@ -5,7 +5,7 @@ var winston = require('winston'),
     airbrake = null;
 
 // setup logging levels (match logging methods below)
-var levels = Object.freeze({
+const levels = Object.freeze({
   debug: 3,
   info: 2,
   warn: 1,
@@ -29,12 +29,12 @@ module.exports = function (logsSettings: Object) {
   // apply settings
 
   // (console transport is present by default)
-  var console = winston['default'].transports.console;
-  console.silent = ! logsSettings.console.active;
+  let consoleSettings = winston['default'].transports.console;
+  consoleSettings.silent = ! logsSettings.console.active;
   if (logsSettings.console.active) {
-    console.level = logsSettings.console.level;
-    console.colorize = logsSettings.console.colorize;
-    console.timestamp = logsSettings.console.timestamp || true;
+    consoleSettings.level = logsSettings.console.level;
+    consoleSettings.colorize = logsSettings.console.colorize;
+    consoleSettings.timestamp = logsSettings.console.timestamp || true;
   }
   if (winston['default'].transports.file) {
     // in production env it seems winston already includes a file transport...
@@ -57,7 +57,7 @@ module.exports = function (logsSettings: Object) {
 
   // return singleton
 
-  var loggers = {},
+  var loggers: Map<string, Logger> = new Map(),
       prefix = logsSettings.prefix;
   return {
     /**
@@ -67,11 +67,17 @@ module.exports = function (logsSettings: Object) {
      * @param {String} componentName
      */
     getLogger: function (componentName: string): Logger {
-      var context = prefix + componentName;
-      if (! loggers[context]) {
-        loggers[context] = new Logger(context);
-      }
-      return loggers[context];
+      const context = prefix + componentName;
+      
+      // Return memoized instance if we have produced it before.
+      const existingLogger = loggers.get(context);
+      if (existingLogger) return existingLogger;
+      
+      // Construct a new instance. We're passing winston as a logger here. 
+      const logger = new Logger(context, winston);
+      loggers.set(context, logger);
+      
+      return logger; 
     }
   };
 };
@@ -83,14 +89,16 @@ module.exports.injectDependencies = true; // make it DI-friendly
  * @param {String} context
  * @constructor
  */
-function Logger(context) {
+function Logger(context, winstonLogger) {
   this.messagePrefix = context ? '[' + context + '] ' : '';
+  this.winstonLogger = winstonLogger;
 }
 
 // define logging methods
 Object.keys(levels).forEach(function (level) {
   Logger.prototype[level] = function (message, metadata) {
-    return winston[level](this.messagePrefix + message, metadata || {});
+    const msg = this.messagePrefix + message;
+    this.winstonLogger[level](msg, metadata || {});
   };
 });
 
@@ -102,8 +110,4 @@ Logger.prototype.sendToErrorService = function (error, callback) {
     return;
   }
   airbrake.notify(error, callback);
-};
-
-Logger.prototype.isValidLevel = function (level) {
-  return levels.hasOwnProperty(level);
 };
