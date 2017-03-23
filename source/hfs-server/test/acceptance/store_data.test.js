@@ -60,7 +60,10 @@ describe('Storing data in a HF series', function() {
           
           should(response.fields).be.eql(['timestamp', 'value']);
           
-          const pairEqual = (a, b) => should(a).be.eql(b);
+          const pairEqual = ([given, expected]) => 
+            should(given).be.eql(expected);
+            
+          should(response.points.length).be.eql(data.data.length);
           R.all(pairEqual, R.zip(response.points, data.data));
         });
     });

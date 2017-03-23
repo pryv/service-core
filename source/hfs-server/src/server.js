@@ -10,6 +10,7 @@ const logging = require('components/utils').logging;
 const errorsMiddleware = require('./middleware/errors');
 const promisify = require('./promisify');
 
+const SeriesResponse = require('./web/SeriesResponse');
 const errors = require('components/errors').factory;
 
 const KEY_IP = 'http.ip';
@@ -136,6 +137,8 @@ function systemStatus(req: express$Request, res: express$Response) {
     });
 }
 
+/** POST /events/:event_id/series - Store data in a series. 
+ */
 function storeSeriesData(req: express$Request, res: express$Response) {
   // if (! business.access.canWriteToSeries(eventId, authToken)) {
   //   throw errors.forbidden(); 
@@ -169,16 +172,9 @@ function querySeriesData(req: express$Request, res: express$Response) {
   // const data = series.runQuery(query);
   // 
   const fakeData = new DataMatrix(); 
-  formatSeriesResponse(res, fakeData);
-}
-/** Formats series data into a series object for responding to a query. 
- */
-function formatSeriesResponse(res, data) {
-  const json = new SeriesResponse(data); 
+  const responseObj = new SeriesResponse(fakeData);
   
-  res
-    .json(json)
-    .status(200);
+  responseObj.answer(res);
 }
 
 type Element = string | number; 
@@ -192,31 +188,6 @@ class DataMatrix {
       [1490277022, 10], 
       [1490277023, 20],
     ];
-  }
-}
-
-/** Represents a response in series format. 
- * 
- * This class is used to represent a series response. It serializes to JSON. 
- */
-class SeriesResponse {
-  data: DataMatrix; 
-  
-  /** Constructs a series response from an existing data matrix. 
-   */
-  constructor(data: DataMatrix) {
-    this.data = data; 
-  }
-  
-  /** Serializes this response to JSON. 
-   */
-  toJSON() {
-    return {
-      elementType: 'unknown/fake', 
-      format: 'flatJSON', 
-      fields: this.data.columns, 
-      points: this.data.data, 
-    };
   }
 }
 
