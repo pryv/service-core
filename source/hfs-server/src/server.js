@@ -110,6 +110,9 @@ class Server {
   }
 }
 
+/** GET /system/status - Answers the caller with a status of the application. 
+ * This call should eventually permit health checks for this subsystem. 
+ */ 
 function systemStatus(req: express$Request, res: express$Response) {
   res
     .status(200)
