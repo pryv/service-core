@@ -81,11 +81,12 @@ MethodContext.prototype.retrieveUser = function (callback) {
 };
 
 /**
- * Retrieves the context's access from its token (set at init time) and expand its permissions
- * (e.g. to include child streams). Also sets `context.streams`.
+ * Retrieves the context's access from its token (set at init time) and expand
+ * its permissions (e.g. to include child streams). Also sets `context.streams`.
  *
- * If the context's access is already set, the initial step is skipped. This allows callers to
- * implement custom retrieval logic if needed (e.g. using a read token for attached files).
+ * If the context's access is already set, the initial step is skipped. This
+ * allows callers to implement custom retrieval logic if needed (e.g. using a
+ * read token for attached files).
  *
  * @param {Function} callback ({APIError} error)
  */
