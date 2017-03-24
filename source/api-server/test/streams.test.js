@@ -680,7 +680,7 @@ describe('streams', function () {
               });
 
               var dirPath = eventFilesStorage.getAttachedFilePath(user, deletedEventWithAtt.id);
-              fs.existsSync(dirPath).should.eql(false, 'deleted event directory existence');
+              should(fs.existsSync(dirPath)).be.eql(false, 'deleted event directory existence');
 
               stepDone();
             });
