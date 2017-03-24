@@ -5,7 +5,6 @@
 
 /* global describe, it */
 const { should } = require('../../test-helpers');
-const testdouble = require('testdouble');
 
 const series = require('../../../src/index.js').series; 
 const Repository = series.Repository; 
