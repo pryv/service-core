@@ -1,9 +1,17 @@
 // @flow
 
-import type {InfluxDB} from 'influx';
+import type {InfluxDB, Expression} from 'influx';
+
 const R = require('ramda');
+const influx = require('influx');
 
 const DataMatrix = require('./data_matrix');
+
+type Timestamp = (Date | string | number); 
+type Query = {
+  from?: Timestamp, 
+  to?: Timestamp, 
+}
 
 /** Represents a single data series in influxDB. 
  * 
@@ -55,6 +63,52 @@ class Series {
     const points = R.map(toMeasurement, data);
     
     return this.connection.writeMeasurement(this.name, points, appendOptions);
+  }
+
+  /** Queries the given series, returning a data matrix. 
+   */
+  query(query: Query): Promise<DataMatrix> {
+    const queryOptions = { database: this.namespace };
+      
+    // NOTE You MUST use escaping functions provided by influx here, otherwise
+    // tainted input will reach the backend. 
+    // TODO worry about limit, offset
+    const measurementName = this.name;
+    const condition = this.buildExpression(query);
+    const statement = `
+      SELECT * FROM ${measurementName}
+      WHERE ${condition.toString()}
+      ORDER BY time ASC
+      LIMIT 10
+    `;
+    console.log(statement);
+    
+    return this.connection.query(statement, queryOptions);
+  }
+  
+  buildExpression(query: Query): Expression {
+    // NOTE it looks as though exp is a value producing chain, but really, it
+    // stores the whole query internally (side effect).
+    let subConditions = []; 
+    let exp = () => new influx.Expression(); 
+    
+    if (query.from) {
+      subConditions.push(
+        exp().field('time').gte.value(query.from));
+    }
+    if (query.to) {
+      subConditions.push(
+        exp().field('time').lt.value(query.to));
+    }
+    
+    // If we have no conditions in the query, return an empty expression. 
+    if (subConditions.length <= 0) return exp().value(1).equals.value(1); 
+    
+    // assert: subConditions.length > 0
+    
+    const or = (exp, andExp) => 
+      exp.and.exp(() => andExp);
+    return R.reduce(or, R.head(subConditions), R.tail(subConditions));
   }
 }
 

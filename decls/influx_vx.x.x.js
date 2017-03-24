@@ -17,6 +17,19 @@ declare module 'influx' {
       measurement: string, 
       points: Array<IPoint>, 
       options?: IWriteOptions): Promise<void>;
+    query(query: string, options?: IQueryOptions): Promise<IResult>; 
+    query(query: Array<string>, options?: IQueryOptions): Promise<Array<IResult>>;
+  }
+  
+  declare class Expression {
+    field(name: string): Expression; 
+    gte(): Expression; 
+    lt(): Expression; 
+    // TODO replace this with getter/setter once flowtype supports it.
+    and: Expression; 
+    or: Expression;
+    equals: Expression; 
+    value(value: any): Expression; 
   }
   
   declare type IPoint = {
@@ -32,10 +45,20 @@ declare module 'influx' {
     database?: string,
   }
   
+  declare type IQueryOptions = {
+    precision?: TimePrecision, 
+    retentionPolicy?: string, 
+    database?: string,
+  }
+  
   declare type TimePrecision = 'h' | 'm' | 's' | 'ms' | 'u' | 'ns';
 
   declare module.exports: {
     InfluxDB: typeof InfluxDB, // `Router` property on the function
+    Expression: typeof Expression,
+    escape: {
+      stringLit: (s: string) => string, 
+    }
   };
 }
 

@@ -16,6 +16,8 @@ describe('Manage InfluxDB data (business.series.*)', function () {
   const connection = new influx.InfluxDB({
     host: 'localhost'});
   
+  // TODO beforeEach delete the measurement
+  
   it('should allow writing to a series', function () {
     const seriesName = 'series1';
     const repository = new Repository(connection);
@@ -29,6 +31,17 @@ describe('Manage InfluxDB data (business.series.*)', function () {
     ); 
     
     return series
-      .then((series) => series.append(data)); 
+      .then((series) => {
+        return series.append(data) 
+          .then(() => series.query({from: 1490277021, to: 1490277024}) )
+          .then((data) => {
+            should(data.length).be.eql(2);
+            should(data.headers).be.eql(['timestamp', 'value']);
+            
+            should(data[0]).be.eql([1490277022, 10]);
+            should(data[1]).be.eql([1490277022, 10]);
+          });
+      });
+
   });
 });
