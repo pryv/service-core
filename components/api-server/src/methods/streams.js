@@ -257,9 +257,9 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   function deleteWithData(context, params, result, next) {
     var itemAndDescendantIds,
         parentId,
-        linkedEventIds;
+        linkedEvent;
     async.series([
-      function retrieveIdsToDelete(stepDone) {
+      function retrieveStreamIdsToDelete(stepDone) {
         userStreamsStorage.find(context.user, {}, null, function (err, streams) {
           if (err) { return stepDone(errors.unexpectedError(err)); }
 
@@ -271,16 +271,16 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
           stepDone();
         });
       },
-      function retrieveLinkedEventIds(stepDone) {
-        userEventsStorage.find(context.user, {streamId: {$in: itemAndDescendantIds}},
-            {fields: {id: 1}}, function (err, linkedEvents) {
+      function checkIfLinkedEventsExist(stepDone) {
+        userEventsStorage.findOne(context.user, {streamId: {$in: itemAndDescendantIds}},
+            null, function (err, event) {
           if (err) {
             return stepDone(errors.unexpectedError(err));
           }
 
-          linkedEventIds = _.pluck(linkedEvents, 'id');
+          linkedEvent = event;
 
-          if (linkedEventIds.length > 0 && params.mergeEventsWithParent === null) {
+          if (linkedEvent && params.mergeEventsWithParent === null) {
             return stepDone(errors.invalidParametersFormat('There are events referring to the ' +
                 'deleted items and the `mergeEventsWithParent` parameter is missing.'));
           }
@@ -289,12 +289,12 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         });
       },
       function handleLinkedEvents(stepDone) {
-        if (linkedEventIds.length === 0) {
+        if (! linkedEvent) {
           return stepDone();
         }
 
         if (params.mergeEventsWithParent) {
-          userEventsStorage.updateMultiple(context.user, {id: {$in: linkedEventIds}},
+          userEventsStorage.updateMultiple(context.user, {streamId: {$in: itemAndDescendantIds}},
               {streamId: parentId}, function (err) {
             if (err) { return stepDone(errors.unexpectedError(err)); }
 
@@ -302,22 +302,44 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
             stepDone();
           });
         } else {
-          /* jshint -W024 */
-          userEventsStorage.delete(context.user, {id: {$in: linkedEventIds}}, function (err) {
-            if (err) { return stepDone(errors.unexpectedError(err)); }
+          var linkedEventsWithAttachmentsIds;
+          async.series([
+            function retrieveEventsWithAttachments(subStepDone) {
+              userEventsStorage.find(context.user,
+                {streamId: {$in: itemAndDescendantIds}, attachments: {$exists: true}},
+                {fields: {id: 1}}, function (err, eventsWithAttachmentsIds) {
+                  if (err) {
+                    return subStepDone(errors.unexpectedError(err));
+                  }
+                  linkedEventsWithAttachmentsIds = _.pluck(eventsWithAttachmentsIds, 'id');
+                  subStepDone();
+                });
+            },
+            function deleteEvents(subStepDone) {
+              /* jshint -W024 */
+              userEventsStorage.delete(context.user, {streamId: {$in: itemAndDescendantIds}},
+                function (err) {
+                  if (err) {
+                    return stepDone(errors.unexpectedError(err));
+                  }
 
-            // async delete attached files (if any) – don't wait for this, just log possible errors
-            linkedEventIds.forEach(function (evtId) {
-              userEventFilesStorage.removeAllForEvent(context.user, evtId, function (err) {
-                if (err) {
-                  errorHandling.logError(err, null, logger);
-                }
+                  if (linkedEventsWithAttachmentsIds.length > 0) {
+                    // async delete attached files (if any) –
+                    // don't wait for this, just log possible errors
+                    linkedEventsWithAttachmentsIds.forEach(function (evtId) {
+                      userEventFilesStorage.removeAllForEvent(context.user, evtId, function (err) {
+                        if (err) {
+                          errorHandling.logError(err, null, logger);
+                        }
+                      });
+                    });
+                  }
+
+                  notifications.eventsChanged(context.user);
+                  subStepDone();
               });
-            });
-
-            notifications.eventsChanged(context.user);
-            stepDone();
-          });
+            }
+          ], stepDone);
         }
       },
       function deleteStreams(stepDone) {
