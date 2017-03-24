@@ -10,9 +10,8 @@ const logging = require('components/utils').logging;
 const errorsMiddleware = require('./middleware/errors');
 const promisify = require('./promisify');
 
-const business = require('business');
+const business = require('components/business');
 const SeriesResponse = require('./web/SeriesResponse');
-const errors = require('components/errors').factory;
 
 const KEY_IP = 'http.ip';
 const KEY_PORT = 'http.port';  
