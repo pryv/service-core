@@ -18,7 +18,7 @@ describe('business.series.Repository', function () {
 
     // A test double for the actual connection:
     const influxConnection = {
-      ensureDatabase: () => Promise.resolve(true),
+      createDatabase: () => Promise.resolve(true),
       writeMeasurement: () => Promise.resolve(true), 
     };
 
