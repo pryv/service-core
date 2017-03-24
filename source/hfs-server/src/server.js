@@ -179,7 +179,8 @@ function querySeriesData(req: express$Request, res: express$Response) {
   // const series = business.series.get(eventId);
   // const data = series.runQuery(query);
   // 
-  const fakeData = new business.series.DataMatrix(); 
+  const fakeData = new business.series.DataMatrix(
+    ['timestamp', 'value'], [[1, 2], [3, 4], [5, 6]]); 
   const responseObj = new SeriesResponse(fakeData);
   
   responseObj.answer(res);
