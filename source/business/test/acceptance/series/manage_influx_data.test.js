@@ -20,8 +20,14 @@ describe('Manage InfluxDB data (business.series.*)', function () {
     const seriesName = 'series1';
     const repository = new Repository(connection);
     const series = repository.get('test.manage_influx_data', seriesName);
-    const data = new DataMatrix(); 
-
+    const data = new DataMatrix(
+      ['timestamp', 'value'], 
+      [
+        [1490277022, 10], 
+        [1490277023, 20],
+      ]
+    ); 
+    
     return series
       .then((series) => series.append(data)); 
   });

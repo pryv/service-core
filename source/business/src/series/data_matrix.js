@@ -1,6 +1,7 @@
 // @flow
 
 const R = require('ramda');
+const assert = require('assert');
 
 const Row = require('./row');
 
@@ -12,12 +13,26 @@ class DataMatrix {
   columns: Array<string>; 
   data: Array<Array<Element>>; 
   
-  constructor() {
-    this.columns = ['timestamp', 'value'];
-    this.data = [
-      [1490277022, 10], 
-      [1490277023, 20],
-    ];
+  /** Store data inside the data matrix. This replaces the
+   * existing content of this matrix with the content you 
+   * give as parameter. 
+   * 
+   * NOTE data must be rectangular; it can contain as many 
+   *  rows as you want (outer array), but should always 
+   *  contain columns.length columns (inner array). This is 
+   *  not checked, but further operations will take place 
+   *  only on known columns. 
+   * 
+   * @param columns {Array<string>} column names to use for 
+   *  this matrix. 
+   * @param data {Array<Array<Element>} data
+   * @return {void}
+   */
+  constructor(columns: Array<string>, data: Array<Array<Element>>) {
+    assert.ok(columns.length > 0);
+
+    this.columns = columns;
+    this.data = data;
   }
   
   /** Functor implementation for the data matrix, iterating over all rows. 
