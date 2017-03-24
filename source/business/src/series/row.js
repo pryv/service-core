@@ -1,5 +1,6 @@
 
 const R = require('ramda');
+const assert = require('assert');
 
 /** A single row of the data matrix. Stores a reference to the original 
  * matrix; this is like a pointer, not like a value. It is used during iteration
@@ -30,6 +31,21 @@ class Row {
     const createObj = R.reduce(assoc, s); 
     
     return createObj(R.zip(this.columnNames, this.values));
+  }
+  
+  /** Returns a single field value. 
+   * 
+   * You need to make sure that you access an actual column, 
+   * otherwise this method throws an error. 
+   */
+  get(column: string): Element {
+    const idx = this.columnNames.indexOf(column);
+    if (idx < 0) throw new Error(`No such column ${column}.`); 
+    
+    assert.ok(idx < this.values.length);
+    assert.ok(idx >= 0);
+    
+    return this.values[idx];
   }
 }
 
