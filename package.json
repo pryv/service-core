@@ -65,7 +65,7 @@
     "deep-equal": "latest",
     "eslint": "^3.16.0",
     "eslint-plugin-flowtype": "^2.30.0",
-    "flow-bin": "^0.41.0",
+    "flow-bin": "^0.42.0",
     "flow-typed": "^2.0.0",
     "jsdoc": "^3.4.3",
     "jsdoc-babel": "^0.3.0",
