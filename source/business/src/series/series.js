@@ -1,6 +1,6 @@
 // @flow
 
-import type {InfluxDB, Expression} from 'influx';
+import type {InfluxDB, Expression, IResults} from 'influx';
 
 const R = require('ramda');
 const influx = require('influx');
@@ -87,9 +87,33 @@ class Series {
       LIMIT 10
     `;
     
-    return this.connection.query(statement, queryOptions);
+    return this.connection
+      .query(statement, queryOptions)
+      .then(this.transformResult.bind(this));
+  }
+
+  /** Transforms an IResult object into a data matrix. 
+   */
+  transformResult(result: IResults): DataMatrix {
+    if (result.length <= 0) return DataMatrix.empty(); 
+    
+    // assert: result.length > 0
+    const head = R.head(result);
+    const headers = R.keys(head);
+
+    // Replace influx 'time' with 'timestamp'
+    const idx = R.findIndex(
+      R.equals('time'), headers); 
+    if (idx >= 0) headers[idx] = 'timestamp';
+      
+    const extractHeaders = (e) => R.map(R.prop(R.__, e), headers);
+    const data = R.map(extractHeaders, result); 
+    
+    return new DataMatrix(headers, data);
   }
   
+  /** Builds an expression that can be used within `WHERE` from a query. 
+   */
   buildExpression(query: Query): Expression {
     // NOTE it looks as though exp is a value producing chain, but really, it
     // stores the whole query internally (side effect).

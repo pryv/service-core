@@ -17,8 +17,8 @@ declare module 'influx' {
       measurement: string, 
       points: Array<IPoint>, 
       options?: IWriteOptions): Promise<void>;
-    query(query: string, options?: IQueryOptions): Promise<IResult>; 
-    query(query: Array<string>, options?: IQueryOptions): Promise<Array<IResult>>;
+    query(query: string, options?: IQueryOptions): Promise<IResults>; 
+    query(query: Array<string>, options?: IQueryOptions): Promise<Array<IResults>>;
   }
   
   declare class Expression {
@@ -30,6 +30,16 @@ declare module 'influx' {
     or: Expression;
     equals: Expression; 
     value(value: any): Expression; 
+  }
+  
+  declare type IResults = {
+    time?: INanoDate, 
+    [key: string]: any, 
+  }
+  
+  declare type INanoDate = {
+    getNanoTime(): string; 
+    toNanoISOString(): string; 
   }
   
   declare type IPoint = {

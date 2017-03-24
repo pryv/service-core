@@ -13,6 +13,15 @@ class DataMatrix {
   columns: Array<string>; 
   data: Array<Array<Element>>; 
   
+  // @return {number} number of rows this data matrix has. 
+  length: number; 
+  
+  /** Constructs an empty matrix. 
+   */
+  static empty(): DataMatrix {
+    return new DataMatrix([], []);
+  }
+  
   /** Store data inside the data matrix. This replaces the
    * existing content of this matrix with the content you 
    * give as parameter. 
@@ -32,8 +41,26 @@ class DataMatrix {
     assert.ok(columns.length > 0);
 
     this.columns = columns;
-    this.data = data;
+    this.setData(data);
   }
+  
+  /** Updates the data attribute internally, keeping length === data.length. 
+   */
+  setData(data: Array<*>) {
+    this.data = data; 
+    this.length = data.length; 
+  }
+  
+  /** Accesses the nth element of the array. If the index is out of bounds, 
+   * an error is thrown. 
+   */
+  at(idx: number): Array<Element> {
+    assert.ok(idx >= 0);
+    assert.ok(idx < this.length);
+    
+    return this.data[idx];
+  }
+  
   
   /** Functor implementation for the data matrix, iterating over all rows. 
    * Use this with ramda `map` for example. 
