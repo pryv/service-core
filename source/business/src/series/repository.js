@@ -1,16 +1,22 @@
+// @flow
+
+const influx = require('influx');
 
 const Series = require('./series');
 
 /** Repository of all series in this Pryv instance. 
  */
 class Repository {
-  
+  influxConnection: InfluxDB;
+
   /** Constructs a series repository based on a connection to InfluxDB. 
+   * 
+   * @param influxConnection {InfluxDB} handle to the database instance
    */
-  constructor(influxConnection) {
+  constructor(influxConnection: InfluxDB) {
     this.influxConnection = influxConnection;
   }
-  
+
   /** Return a series from a given namespace. 
    * 
    * In practice, we'll map namespaces to pryv users and series to events. 
@@ -20,12 +26,13 @@ class Repository {
    * @return {Series} - series instance that can be used to manipulate the data
    */
   get(namespace: string, name: string): Promise<Series> {
+    // TODO Cache all the setup checks we do here in an LRU cache. 
+    
     // Make sure that the database exists:
     const databaseCheck = this.influxConnection.ensureDatabase(namespace);
 
-    return databaseCheck
-      .then(() => new Series(this.influxConnection));
+    return databaseCheck.then(() => new Series(this.influxConnection, name));
   }
 }
 
-module.exports = Repository; 
+module.exports = Repository;
