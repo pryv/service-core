@@ -17,6 +17,11 @@ type Query = {
  * 
  * This is the high level internal interface to series. Series can be
  * manipulated through this interface. 
+ * 
+ * NOTE Currently, the code that accesses influx is spread out between this class
+ *   and the Repository class. The easy way to centralize this is to create a 
+ *   connection object and have the code be in there. I am delaying this for now, 
+ *   since I don't want to create infrastructure, I want to create functionality. 
  */
 class Series {
   namespace: string; 
@@ -81,7 +86,6 @@ class Series {
       ORDER BY time ASC
       LIMIT 10
     `;
-    console.log(statement);
     
     return this.connection.query(statement, queryOptions);
   }
