@@ -1,5 +1,3 @@
-// @flow
-
 var utils = require('components/utils'),
     errors = require('components/errors').factory,
     async = require('async'),

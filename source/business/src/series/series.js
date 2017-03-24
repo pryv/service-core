@@ -1,6 +1,6 @@
 // @flow
 
-const influx = require('influx');
+import type {InfluxDB} from 'influx';
 const R = require('ramda');
 
 const DataMatrix = require('./data_matrix');

@@ -1,8 +1,7 @@
 // @flow
 
-const influx = require('influx');
-
 const Series = require('./series');
+import type {InfluxDB} from 'influx';
 
 /** Repository of all series in this Pryv instance. 
  */
@@ -29,9 +28,11 @@ class Repository {
     // TODO Cache all the setup checks we do here in an LRU cache. 
     
     // Make sure that the database exists:
-    const databaseCheck = this.influxConnection.ensureDatabase(namespace);
+    const databaseCheck = this.influxConnection
+      .createDatabase(namespace);
 
-    return databaseCheck.then(() => new Series(this.influxConnection, name));
+    return databaseCheck.then(() => new
+      Series(this.influxConnection, namespace, name));
   }
 }
 
