@@ -14,6 +14,7 @@ var helpers = require('./helpers'),
     testData = helpers.data,
     timestamp = require('unix-timestamp'),
     _ = require('lodash');
+const should = require('should');
 
 describe('accesses (app)', function () {
 
@@ -93,7 +94,7 @@ describe('accesses (app)', function () {
   }
   function req(): typeof request {
     if (request) return request; 
-    throw new Error("request is still not defined.");
+    throw new Error('request is still not defined.');
   }
   
   // to verify data change notifications
@@ -119,7 +120,7 @@ describe('accesses (app)', function () {
           validation.check(res, {
             status: 200,
             schema: methodsSchema.get.result,
-            body: {accesses: _.at(additionalTestAccesses, 2)}
+            body: {accesses: additionalTestAccesses[2]}
           }, done);
         });
       });
@@ -167,7 +168,7 @@ describe('accesses (app)', function () {
         delete expected.permissions[0].name;
         validation.checkObjectEquality(res.body.access, expected);
 
-        accessesNotifCount.should.eql(1, 'accesses notifications');
+        should(accessesNotifCount).be.eql(1, 'accesses notifications');
         done();
       });
     });
