@@ -10,8 +10,7 @@ const logging = require('components/utils').logging;
 const errorsMiddleware = require('./middleware/errors');
 const promisify = require('./promisify');
 
-const business = require('components/business');
-const SeriesResponse = require('./web/SeriesResponse');
+const controller = require('./web/controller')
 
 const KEY_IP = 'http.ip';
 const KEY_PORT = 'http.port';  
@@ -127,10 +126,12 @@ class Server {
   /** Defines all the routes that we serve from this server. 
    */   
   defineApplication(app: express$Application) {
+    const c = controller; 
+    
     app.get('/system/status', systemStatus);
     
-    app.post('/events/:event_id/series', storeSeriesData); 
-    app.get('/events/:event_id/series', querySeriesData);
+    app.post('/events/:event_id/series', c.storeSeriesData); 
+    app.get('/events/:event_id/series', c.querySeriesData);
   }
 }
 
@@ -143,47 +144,6 @@ function systemStatus(req: express$Request, res: express$Response) {
     .json({
       status: 'ok',
     });
-}
-
-/** POST /events/:event_id/series - Store data in a series. 
- */
-function storeSeriesData(req: express$Request, res: express$Response) {
-  // if (! business.access.canWriteToSeries(eventId, authToken)) {
-  //   throw errors.forbidden(); 
-  // }
-  // 
-  // const data = parseData(req);
-  // 
-  // const series = business.series.get(eventId);
-  // series.append(data);
-  // 
-  res
-    .status(200)
-    .json({status: 'ok'});
-}
-
-
-/** GET /events/:event_id/series - Query a series for a data subset.
- *  
- * @param  {type} req: express$Request  description 
- * @param  {type} res: express$Response description 
- * @return {type}                       description 
- */ 
-function querySeriesData(req: express$Request, res: express$Response) {
-  // if (! business.access.canReadFromSeries(eventId, authToken)) {
-  //   throw errors.forbidden(); 
-  // }
-  // 
-  // query = parseQueryFromGET(req);
-  // 
-  // const series = business.series.get(eventId);
-  // const data = series.runQuery(query);
-  // 
-  const fakeData = new business.series.DataMatrix(
-    ['timestamp', 'value'], [[1, 2], [3, 4], [5, 6]]); 
-  const responseObj = new SeriesResponse(fakeData);
-  
-  responseObj.answer(res);
 }
 
 module.exports = Server;
