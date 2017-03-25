@@ -67,6 +67,8 @@ describe('Storing data in a HF series', function() {
           R.all(pairEqual, R.zip(response.points, data.data));
         });
     });
-    
+    it.skip('should reject malformed requests', function () {
+      
+    });
   }); 
 });
