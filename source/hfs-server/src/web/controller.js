@@ -1,12 +1,18 @@
 // @flow
 
+import type {DataMatrix} from 'components/business';
+import type Context from './context';
+
+const R = require('ramda');
+
 const business = require('components/business');
 const SeriesResponse = require('./SeriesResponse');
 
+module.exports.storeSeriesData = R.curryN(3, storeSeriesData);
+
 /** POST /events/:event_id/series - Store data in a series. 
  */
-module.exports.storeSeriesData = 
-function storeSeriesData(req: express$Request, res: express$Response) {
+function storeSeriesData(ctx: Context, req: express$Request, res: express$Response, next: (err: any) => void) {
   // if (! business.access.canWriteToSeries(eventId, authToken)) {
   //   throw errors.forbidden(); 
   // }
@@ -16,10 +22,27 @@ function storeSeriesData(req: express$Request, res: express$Response) {
   // const series = business.series.get(eventId);
   // series.append(data);
   // 
-  res
-    .status(200)
-    .json({status: 'ok'});
-};
+  const sr = ctx.seriesRepository;
+  
+  // Parse request
+  if (typeof req.body !== 'object' || req.body == null) {
+    // TODO subdivise errors here?
+    throw new Error('Must have a JSON body');
+  }
+  const data = parseData(req.body);
+  
+  // Store data
+  // TODO derieve namespace from user id
+  const seriesFut = sr.get('test');
+  seriesFut
+    .then((series) => series.append(data))
+    .then(() => {
+      res
+        .status(200)
+        .json({status: 'ok'});
+    })
+    .catch((err) => next(err));
+}
 
 /** Parses request data into a data matrix that can be used as input to the
  * influx store. You should give this method the `req.body`.
@@ -29,9 +52,14 @@ function storeSeriesData(req: express$Request, res: express$Response) {
  * @throw {Error} when the request is malformed
  */
 function parseData(createRequest: Object): DataMatrix {
+  // TODO validate using a schema
   
+  // const hasFields = R.map(R.has(R.__, createRequest)); // (fields)
+  return new business.series.DataMatrix(
+    createRequest.fields, createRequest.points);
 }
 
+module.exports.querySeriesData = R.curryN(3, querySeriesData);
 
 /** GET /events/:event_id/series - Query a series for a data subset.
  *  
@@ -39,8 +67,7 @@ function parseData(createRequest: Object): DataMatrix {
  * @param  {type} res: express$Response description 
  * @return {type}                       description 
  */ 
-module.exports.querySeriesData = 
-function querySeriesData(req: express$Request, res: express$Response) {
+function querySeriesData(ctx: Context, req: express$Request, res: express$Response) {
   // if (! business.access.canReadFromSeries(eventId, authToken)) {
   //   throw errors.forbidden(); 
   // }
@@ -55,4 +82,4 @@ function querySeriesData(req: express$Request, res: express$Response) {
   const responseObj = new SeriesResponse(fakeData);
   
   responseObj.answer(res);
-};
+}

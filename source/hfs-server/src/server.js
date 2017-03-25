@@ -8,9 +8,12 @@ const bodyParser = require('body-parser');
 const middleware = require('components/middleware');
 const logging = require('components/utils').logging;
 const errorsMiddleware = require('./middleware/errors');
+
 const promisify = require('./promisify');
 
-const controller = require('./web/controller')
+const influx = require('influx'); // TODO maybe push this dependency outwards?
+const controller = require('./web/controller');
+const Context = require('./web/context');
 
 const KEY_IP = 'http.ip';
 const KEY_PORT = 'http.port';  
@@ -35,6 +38,9 @@ class Server {
   logger: typeof logging.Logger; 
   errorLogger: typeof logging.Logger; 
   
+  // Web request context
+  context: Context; 
+  
   constructor(settings: Settings) {
     const logSettings = settings.get('logs').obj();
     const logFactory = logging(logSettings);
@@ -42,7 +48,8 @@ class Server {
     this.logger = logFactory.getLogger('hfs-server');
     this.errorLogger = logFactory.getLogger('errors');
     this.settings = settings; 
-        
+  
+    this.context = this.setupContext(); 
     this.expressApp = this.setupExpress();
     
     const ip = settings.get(KEY_IP).str(); 
@@ -95,6 +102,17 @@ class Server {
     this.logger.info('stopping...');
     return promisify(server.close, server)();
   }
+  
+  /** Set up the request context. This is an object that contains infrastructure
+   * instances of objects, much like singletons, just without the icky part. 
+   */
+  setupContext(): Context {
+    // TODO make this a config setting
+    const influxConnection = new influx.InfluxDB(
+      {host: 'localhost'});
+    
+    return new Context(influxConnection);
+  }
     
   /** 
    * Sets up the express application, injecting middleware and configuring the 
@@ -130,8 +148,9 @@ class Server {
     
     app.get('/system/status', systemStatus);
     
-    app.post('/events/:event_id/series', c.storeSeriesData); 
-    app.get('/events/:event_id/series', c.querySeriesData);
+    const ctx = this.context; 
+    app.post('/events/:event_id/series', c.storeSeriesData(ctx)); 
+    app.get('/events/:event_id/series', c.querySeriesData(ctx));
   }
 }
 

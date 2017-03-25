@@ -23,7 +23,8 @@ describe('Storing data in a HF series', function() {
         .post(`/events/${EVENT_ID}/series`)
         .send(data);
         
-      return response.expect(200);   // Store data
+      return response
+        .expect(200);   // Store data
     }
     function queryData(): Promise<Object> {
       let response = request(app)
@@ -32,8 +33,9 @@ describe('Storing data in a HF series', function() {
           fromTime: 1481677844, 
           toTime: 1481677850,
         });
-      
-      return response.expect(200)
+
+      return response
+        .expect(200)
         .then((res) => {
           should(res.body.elementType).be.instanceof(String);
           return res.body;
@@ -45,7 +47,7 @@ describe('Storing data in a HF series', function() {
         elementType: 'mass/kg',
         format: 'flatJSON', 
         fields: ['timestamp', 'value'], 
-        data: [
+        points: [
           [1481677845, 14.1], 
           [1481677846, 14.2], 
           [1481677847, 14.3], 
@@ -63,12 +65,11 @@ describe('Storing data in a HF series', function() {
           const pairEqual = ([given, expected]) => 
             should(given).be.eql(expected);
             
-          should(response.points.length).be.eql(data.data.length);
-          R.all(pairEqual, R.zip(response.points, data.data));
+          should(response.points.length).be.eql(data.points.length);
+          R.all(pairEqual, R.zip(response.points, data.points));
         });
     });
-    it.skip('should reject malformed requests', function () {
-      
-    });
+    it.skip('should reject malformed requests', function () { });
+    it.skip('should reject non-JSON bodies', function () { });
   }); 
 });

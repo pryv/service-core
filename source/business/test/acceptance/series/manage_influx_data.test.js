@@ -35,7 +35,6 @@ describe('Manage InfluxDB data (business.series.*)', function () {
         return series.append(data) 
           .then(() => series.query({from: 1490277021, to: 1490277024}) )
           .then((data) => {
-            console.log(data);
             should(data.length).be.eql(2);
             should(data.columns).be.eql(['timestamp', 'value']);
             
