@@ -8,7 +8,7 @@ const R = require('ramda');
 const business = require('components/business');
 const SeriesResponse = require('./SeriesResponse');
 
-module.exports.storeSeriesData = R.curryN(3, storeSeriesData);
+module.exports.storeSeriesData = R.curryN(4, storeSeriesData);
 
 /** POST /events/:event_id/series - Store data in a series. 
  */
