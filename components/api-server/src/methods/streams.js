@@ -320,7 +320,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
               userEventsStorage.delete(context.user, {streamId: {$in: itemAndDescendantIds}},
                 function (err) {
                   if (err) {
-                    return stepDone(errors.unexpectedError(err));
+                    return subStepDone(errors.unexpectedError(err));
                   }
 
                   if (linkedEventsWithAttachmentsIds.length > 0) {
