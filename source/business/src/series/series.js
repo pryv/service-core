@@ -1,9 +1,9 @@
 // @flow
 
-import type {InfluxDB, Expression, IResults} from 'influx';
+import type {InfluxDB, IResults} from 'influx';
 
 const R = require('ramda');
-const influx = require('influx');
+const formatDate = require('influx/lib/src/grammar/times').formatDate;
 
 const DataMatrix = require('./data_matrix');
 
@@ -80,13 +80,16 @@ class Series {
     // TODO worry about limit, offset
     const measurementName = this.name;
     const condition = this.buildExpression(query);
+    const wherePart = condition.length > 0 ? 
+      'WHERE ' + condition.join(' AND ') : 
+      ''; 
     const statement = `
       SELECT * FROM ${measurementName}
-      WHERE ${condition.toString()}
+      ${wherePart}
       ORDER BY time ASC
       LIMIT 10
     `;
-    
+
     return this.connection
       .query(statement, queryOptions)
       .then(this.transformResult.bind(this));
@@ -95,6 +98,7 @@ class Series {
   /** Transforms an IResult object into a data matrix. 
    */
   transformResult(result: IResults): DataMatrix {
+    console.log(result);
     if (result.length <= 0) return DataMatrix.empty(); 
     
     // assert: result.length > 0
@@ -114,29 +118,25 @@ class Series {
   
   /** Builds an expression that can be used within `WHERE` from a query. 
    */
-  buildExpression(query: Query): Expression {
+  buildExpression(query: Query): Array<string> {
     // NOTE it looks as though exp is a value producing chain, but really, it
     // stores the whole query internally (side effect).
     let subConditions = []; 
-    let exp = () => new influx.Expression(); 
+    
+    // Replace double quotes with single quotes, since the influx library gets
+    // the date format for influx wrong...
+    const correct = (v) => `'${v.slice(1, v.length-2)}'`;
     
     if (query.from) {
       subConditions.push(
-        exp().field('time').gte.value(query.from));
+        `time >= ${correct(formatDate(query.from))}`);
     }
     if (query.to) {
       subConditions.push(
-        exp().field('time').lt.value(query.to));
+        `time < ${correct(formatDate(query.from))}`);
     }
     
-    // If we have no conditions in the query, return an empty expression. 
-    if (subConditions.length <= 0) return exp().value(1).equals.value(1); 
-    
-    // assert: subConditions.length > 0
-    
-    const or = (exp, andExp) => 
-      exp.and.exp(() => andExp);
-    return R.reduce(or, R.head(subConditions), R.tail(subConditions));
+    return subConditions;
   }
 }
 

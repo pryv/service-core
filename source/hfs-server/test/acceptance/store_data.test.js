@@ -30,8 +30,8 @@ describe('Storing data in a HF series', function() {
       let response = request(app)
         .get(`/events/${EVENT_ID}/series`)
         .query({
-          fromTime: 1481677844, 
-          toTime: 1481677850,
+          fromTime: "1481677844", 
+          toTime: "1481677850",
         });
 
       return response
