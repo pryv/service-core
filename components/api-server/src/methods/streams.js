@@ -257,7 +257,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   function deleteWithData(context, params, result, next) {
     var itemAndDescendantIds,
         parentId,
-        linkedEvent;
+        hasLinkedEvent;
     async.series([
       function retrieveStreamIdsToDelete(stepDone) {
         userStreamsStorage.find(context.user, {}, null, function (err, streams) {
@@ -272,15 +272,15 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         });
       },
       function checkIfLinkedEventsExist(stepDone) {
-        userEventsStorage.findOne(context.user, {streamId: {$in: itemAndDescendantIds}},
-            null, function (err, event) {
+        userEventsStorage.find(context.user, {streamId: {$in: itemAndDescendantIds}},
+          {limit: 1}, function (err, event) {
           if (err) {
             return stepDone(errors.unexpectedError(err));
           }
 
-          linkedEvent = event;
+          hasLinkedEvent = !! event.length;
 
-          if (linkedEvent && params.mergeEventsWithParent === null) {
+          if (hasLinkedEvent && params.mergeEventsWithParent === null) {
             return stepDone(errors.invalidParametersFormat('There are events referring to the ' +
                 'deleted items and the `mergeEventsWithParent` parameter is missing.'));
           }
@@ -289,7 +289,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         });
       },
       function handleLinkedEvents(stepDone) {
-        if (! linkedEvent) {
+        if (! hasLinkedEvent) {
           return stepDone();
         }
 
