@@ -283,6 +283,17 @@ BaseStorage.prototype.getTotalSize = function (user, callback) {
   this.database.totalSize(this.getCollectionInfo(user), callback);
 };
 
+/**
+ * Gets the indexes set for the collection.
+ *
+ * @param {Object} user
+ * @param {Object} options
+ * @param {Function} callback
+ */
+BaseStorage.prototype.listIndexes = function (user, options, callback) {
+  this.database.listIndexes(this.getCollectionInfo(user), options, callback);
+};
+
 // converters application functions
 
 /**

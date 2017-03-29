@@ -10,5 +10,6 @@ module.exports = {
   '0.4.0': require('./0.4.0.js'),
   '0.5.0': require('./0.5.0.js'),
   '0.7.0': require('./0.7.0.js'),
-  '0.7.1': require('./0.7.1.js')
+  '0.7.1': require('./0.7.1.js'),
+  '1.2.0': require('./1.2.0.js')
 };
