@@ -98,21 +98,24 @@ class Series {
   /** Transforms an IResult object into a data matrix. 
    */
   transformResult(result: IResults): DataMatrix {
-    console.log(result);
     if (result.length <= 0) return DataMatrix.empty(); 
     
     // assert: result.length > 0
     const head = R.head(result);
     const headers = R.keys(head);
 
+    const extractHeaders = (e) => R.map(R.prop(R.__, e), headers);
+    const data = R.map(extractHeaders, result); 
+    
     // Replace influx 'time' with 'timestamp'
     const idx = R.findIndex(
       R.equals('time'), headers); 
     if (idx >= 0) headers[idx] = 'timestamp';
-      
-    const extractHeaders = (e) => R.map(R.prop(R.__, e), headers);
-    const data = R.map(extractHeaders, result); 
     
+    for (let row of data) {
+      row[idx] = +row[idx] / 1000; // TODO replace
+    }
+      
     return new DataMatrix(headers, data);
   }
   
@@ -133,7 +136,7 @@ class Series {
     }
     if (query.to) {
       subConditions.push(
-        `time < ${correct(formatDate(query.from))}`);
+        `time < ${correct(formatDate(query.to))}`);
     }
     
     return subConditions;

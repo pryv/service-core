@@ -30,8 +30,8 @@ describe('Storing data in a HF series', function() {
       let response = request(app)
         .get(`/events/${EVENT_ID}/series`)
         .query({
-          fromTime: "1481677844", 
-          toTime: "1481677850",
+          fromTime: '1481677844', 
+          toTime: '1481677850',
         });
 
       return response
@@ -72,4 +72,8 @@ describe('Storing data in a HF series', function() {
     it.skip('should reject malformed requests', function () { });
     it.skip('should reject non-JSON bodies', function () { });
   }); 
+  describe('GET /events/EVENT_ID/series', function () {
+    it.skip('should query data from the influx store', function () { });
+    it.skip('should return correctly for empty sets', function () { });
+  });
 });
