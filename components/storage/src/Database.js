@@ -423,6 +423,22 @@ Database.prototype.dropDatabase = function (callback) {
   }.bind(this));
 };
 
+/**
+ * Primarily meant for tests
+ *
+ * @param {Object} collectionInfo
+ * @param {Object} options
+ * @param {Function} callback
+ */
+Database.prototype.listIndexes = function (collectionInfo, options, callback) {
+  this.getCollection(collectionInfo, function (err, collection) {
+    if (err) {
+      return callback(err);
+    }
+    collection.listIndexes(options).toArray(callback);
+  });
+};
+
 // class utility functions
 
 Database.isDuplicateError = function (err) {

@@ -100,13 +100,6 @@ var indexes = [
   {
     index: {modified: 1},
     options: {}
-  },
-  {
-    index: {deleted: 1},
-    options: {
-      // cleanup deletions after a year
-      expireAfterSeconds: 3600 * 24 * 365
-    }
   }
 ];
 
@@ -125,6 +118,9 @@ Events.prototype.getCollectionInfo = function (user) {
  */
 Events.prototype.findStreamed = function (user, query, options, callback) {
   query.deleted = null;
+  // Ignore history of events for normal find. 
+  query.headId = null; 
+  
   this.database.findStreamed(this.getCollectionInfo(user), this.applyQueryToDB(query),
     this.applyOptionsToDB(options), function (err, dbStreamedItems) {
       if (err) { return callback(err); }
@@ -152,10 +148,15 @@ Events.prototype.countAll = function (user, callback) {
 /**
  * Implementation.
  */
-Events.prototype.delete = function (user, query, callback) {
+Events.prototype.delete = function (user, query, deletionMode, callback) {
+  // default
   var update = {
-    $set: {deleted: new Date()},
-    $unset: {
+    $set: {deleted: new Date()}
+  };
+
+  switch (deletionMode) {
+  case 'keep-nothing':
+    update.$unset = {
       streamId: 1,
       time: 1,
       duration: 1,
@@ -171,8 +172,27 @@ Events.prototype.delete = function (user, query, callback) {
       createdBy: 1,
       modified: 1,
       modifiedBy: 1
-    }
-  };
-  this.database.updateMany(this.getCollectionInfo(user), this.applyQueryToDB(query), update,
-      callback);
+    };
+    break;
+  case 'keep-authors':
+    update.$unset = {
+      streamId: 1,
+      time: 1,
+      duration: 1,
+      endTime: 1,
+      type: 1,
+      content: 1,
+      tags: 1,
+      description: 1,
+      attachments: 1,
+      clientData: 1,
+      trashed: 1,
+      created: 1,
+      createdBy: 1
+    };
+    break;
+  }
+  this.database.updateMany(
+    this.getCollectionInfo(user), this.applyQueryToDB(query), update,
+    callback);
 };

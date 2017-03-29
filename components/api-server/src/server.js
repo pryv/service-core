@@ -23,6 +23,7 @@ var settings = config.load();
 dependencies.register({
   // settings
   authSettings: settings.auth,
+  auditSettings: settings.audit,
   eventFilesSettings: settings.eventFiles,
   eventTypesSettings: settings.eventTypes,
   httpSettings: settings.http,

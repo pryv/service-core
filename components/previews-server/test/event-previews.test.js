@@ -195,7 +195,7 @@ describe('event previews', function () {
 
     it('must forbid requests missing an access token', function (done) {
       var url = require('url').resolve(server.url, path(testData.events[2].id));
-      require('superagent').get(url).end(function (res) {
+      require('superagent').get(url).end(function (err, res) {
         res.statusCode.should.eql(401);
         done();
       });

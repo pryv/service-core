@@ -91,7 +91,7 @@ describe('system (ex-register)', function () {
           });
         },
         function registerNewUser(stepDone) {
-          post(newUserData, function (res) {
+          post(newUserData, function (err, res) {
             validation.check(res, {
               status: 201,
               schema: methodsSchema.createUser.result
@@ -150,7 +150,7 @@ describe('system (ex-register)', function () {
             email: 'recla@rec.la',
             language: 'fr'
           };
-          post(data, function (res) {
+          post(data, function (err, res) {
             validation.check(res, {
               status: 201,
               schema: methodsSchema.createUser.result
@@ -173,7 +173,7 @@ describe('system (ex-register)', function () {
       request.post(url.resolve(server.url, '/register/create-user'))
 	  .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
 	  .send(newUserData)
-	  .end(function (res) {
+	  .end(function (err, res) {
 	validation.check(res, {
 	  status: 201
 	}, done);
@@ -181,7 +181,7 @@ describe('system (ex-register)', function () {
     });
 
     it('must return a correct 400 error if the sent data is badly formatted', function (done) {
-      post({ badProperty: 'bad value' }, function (res) {
+      post({ badProperty: 'bad value' }, function (err, res) {
         validation.checkErrorInvalidParams(res, done);
       });
     });
@@ -194,7 +194,7 @@ describe('system (ex-register)', function () {
         email: 'roudoudou@choupinou.ch',
         language: 'fr'
       };
-      post(data, function (res) {
+      post(data, function (err, res) {
         validation.checkError(res, {
           status: 400,
           id: ErrorIds.ItemAlreadyExists,
@@ -205,7 +205,7 @@ describe('system (ex-register)', function () {
 
     it('must return a correct 404 error when authentication is invalid', function (done) {
       request.post(path()).set('authorization', 'bad-key').send(JSON.stringify(newUserData))
-          .end(function (res) {
+          .end(function (err, res) {
         validation.checkError(res, {
           status: 404,
           id: ErrorIds.UnknownResource
@@ -218,7 +218,7 @@ describe('system (ex-register)', function () {
           .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
           .set('Content-Type', 'application/Json') // <-- case error
           .send(JSON.stringify(newUserData))
-          .end(function (res) {
+          .end(function (err, res) {
             validation.checkError(res, {
               status: 415,
               id: ErrorIds.UnsupportedContentType
@@ -243,7 +243,7 @@ describe('system (ex-register)', function () {
         function getInitialInfo(stepDone) {
           request.get(path(user.username))
               .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
-              .end(function (res) {
+              .end(function (err, res) {
             validation.check(res, {
               status: 200,
               schema: methodsSchema.getUserInfo.result
@@ -270,7 +270,7 @@ describe('system (ex-register)', function () {
         function getUpdatedInfo(stepDone) {
           request.get(path(user.username))
               .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
-              .end(function (res) {
+              .end(function (err, res) {
             var info = res.body.userInfo;
             Math.round(info.lastAccess).should.eql(Math.round(expectedTime));
             info.callsTotal.should.eql(originalInfo.callsTotal + 2, 'calls total');
@@ -289,7 +289,7 @@ describe('system (ex-register)', function () {
     });
 
     it('must return a correct 404 error when authentication is invalid', function (done) {
-      request.get(path(user.username)).set('authorization', 'bad-key').end(function (res) {
+      request.get(path(user.username)).set('authorization', 'bad-key').end(function (err, res) {
         validation.checkError(res, {
           status: 404,
           id: ErrorIds.UnknownResource

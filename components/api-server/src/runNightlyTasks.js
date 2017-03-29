@@ -49,3 +49,4 @@ usersStorage.findAll(null, function (err, users) {
     process.exit(0);
   });
 });
+

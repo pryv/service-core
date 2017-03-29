@@ -174,7 +174,7 @@ describe('Versions', function () {
     });
   });
 
-  it('must handle data migration from v0.7.0 to v0.7.1', function (done) {
+  it.skip('must handle data migration from v0.7.0 to v0.7.1', function (done) {
     var versions = getVersions('0.7.1'),
         user = {id: 'ciya1zox20000ebotsvzyl8cx'};
 
@@ -197,6 +197,46 @@ describe('Versions', function () {
       done();
     });
 
+  });
+
+  it('must handle data migration from v0.7.1 to 1.2.0', function (done) {
+    const versions = getVersions('1.2.0'),
+      user = {id: 'u_0'};
+
+    const indexes = testData.getStructure('0.7.1').indexes;
+
+    async.series({
+      restore: testData.restoreFromDump.bind(null, '0.7.1', mongoFolder),
+      indexEvents: applyPreviousIndexes.bind(null, 'events', indexes.events),
+      indexStreams: applyPreviousIndexes.bind(null, 'streams', indexes.streams),
+      indexAccesses: applyPreviousIndexes.bind(null, 'events', indexes.accesses),
+      migrate: versions.migrateIfNeeded.bind(versions),
+      events: storage.user.events.listIndexes.bind(storage.user.events, user, {}),
+      streams: storage.user.streams.listIndexes.bind(storage.user.streams, user, {}),
+      accesses: storage.user.accesses.listIndexes.bind(storage.user.accesses, user, {}),
+      version: versions.getCurrent.bind(versions)
+    }, function (err, results) {
+      should.not.exist(err);
+      should.equal(_.findIndex(results.events, (o) => {return o.key.deleted === 1;}), -1);
+      should.equal(_.findIndex(results.streams, (o) => {return o.key.deleted === 1;}), -1);
+      should.equal(_.findIndex(results.accesses, (o) => {return o.key.deleted === 1;}), -1);
+      results.version._id.should.eql('1.2.0');
+      should.exist(results.version.migrationCompleted);
+      done();
+    });
+
+    function applyPreviousIndexes(collectionName, indexes, callback) {
+      async.forEachSeries(indexes, ensureIndex, function (err) {
+        if (err) { return callback(err); }
+        database.initializedCollections[collectionName] = true;
+        callback();
+      }.bind(this));
+
+      function ensureIndex(item, itemCallback) {
+        database.db.collection(collectionName)
+          .ensureIndex(item.index, item.options, itemCallback);
+      }
+    }
   });
 
   function getVersions(/* migration1Id, migration2Id, ... */) {

@@ -4,6 +4,7 @@
   },
   "logs": {
     "console": {
+      "active": false, 
       "timestamp": false
     }
   }

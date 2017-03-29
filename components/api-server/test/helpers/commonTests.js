@@ -12,7 +12,7 @@ var validation = require('./validation'),
  * @param {String} path
  */
 exports.checkAccessTokenAuthentication = function (serverURL, path, done) {
-  request.get(url.resolve(serverURL, path)).end(function (res) {
+  request.get(url.resolve(serverURL, path)).end(function (err, res) {
     validation.check(res, {
       status: 401,
       id: ErrorIds.InvalidAccessToken

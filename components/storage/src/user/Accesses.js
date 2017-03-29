@@ -43,13 +43,6 @@ var indexes = [
   {
     index: { name: 1, type: 1, deviceName: 1 },
     options: { unique: true, sparse: true }
-  },
-  {
-    index: {deleted: 1},
-    options: {
-      // cleanup deletions after 3 years (cf. HIPAA rules)
-      expireAfterSeconds: 3600 * 24 * 365 * 3
-    }
   }
 ];
 
