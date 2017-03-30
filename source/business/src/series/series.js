@@ -3,7 +3,7 @@
 import type {InfluxDB, IResults} from 'influx';
 
 const R = require('ramda');
-const formatDate = require('influx/lib/src/grammar/times').formatDate;
+const {isoOrTimeToDate, formatDate} = require('influx/lib/src/grammar/times');
 
 const DataMatrix = require('./data_matrix');
 
@@ -129,16 +129,20 @@ class Series {
     // Replace double quotes with single quotes, since the influx library gets
     // the date format for influx wrong...
     const correct = (v) => `'${v.slice(1, v.length-2)}'`;
-    
+    const dateToString = (v) => 
+      correct(
+        formatDate(
+          isoOrTimeToDate(v, 's')));
+
     if (query.from) {
       subConditions.push(
-        `time >= ${correct(formatDate(query.from))}`);
+        `time >= ${dateToString(query.from)}`);
     }
     if (query.to) {
       subConditions.push(
-        `time < ${correct(formatDate(query.to))}`);
+        `time < ${dateToString(query.to)}`);
     }
-    
+
     return subConditions;
   }
 }
