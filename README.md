@@ -1,7 +1,6 @@
 # Pryv core service
 
-Pryv core server app components, ie. what runs on each server node and handles
-user data.
+Pryv core server app components, ie. what runs on each server node and handles user data.
 
 
 ## Usage
