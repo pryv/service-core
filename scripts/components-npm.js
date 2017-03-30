@@ -7,7 +7,7 @@ try {
   colors = require('colors');
 } catch (e) {}
 
-var componentsPath = path.resolve(__dirname, '../components'),
+var componentsPath = path.resolve(__dirname, '../dist/components'),
     args = process.argv.slice(2);
 
 if (args.length === 0) {

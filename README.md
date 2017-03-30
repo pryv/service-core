@@ -1,6 +1,7 @@
 # Pryv core service
 
-Pryv core server app components, ie. what runs on each server node and handles user data.
+Pryv core server app components, ie. what runs on each server node and handles
+user data.
 
 
 ## Usage
@@ -11,34 +12,68 @@ _Prerequisites:_ Node v6.9.5, Yarn v0.20.3, Mongo DB v2.6+ (needs at least 4GB o
 
 Then just `yarn install`.
 
-### Component-specific usage
+### Top Level Directories
 
-See individual component READMEs for instructions.
+    .
+    ├── CHANGELOG.md            Changelog
+    ├── Jenkinsfile             Used by Jenkins to identify and run the build
+    ├── Procfile                Used by foreman (`nf`) to identify processes 
+    ├── README.md               This README
+    ├── build                   Contains files needed for Docker release build
+    ├── custom-extensions       Custom auth steps, during tests mainly.
+    ├── decls                   Flow-Type annotations, managed by us
+    ├── dist                    Once you run 'npm run release', this is created
+    ├── docs                    Documentation in Markdown format 
+    ├── flow-typed              Flow-Type annotations, managed by flow-typed
+    ├── jsdoc.json              JSDoc configuration, `npm run jsdoc`
+    ├── node_modules            Package installation, `yarn install`
+    ├── package.json            Yarn package file
+    ├── proxy                   Proxy configuration
+    ├── scripts                 Scripts used to manage the repository
+    ├── source                  Source code for all components 
+    ├── test                    Top-Level Tests for Integration tests.
+    └── yarn.lock               Lockfile for Yarn, locks down npm versions.
+    
+### How to?
 
-### Transpile Flowtype into pure JS
+| Task                         | Command                 |
+| ---------------------------- | ------------------------|
+| Setup                        | `yarn install`          |
+| Create Distribution          | `yarn run release`      |
+| Recompile During Development | `yarn run watch`        |
+| Run Tests                    | `yarn run test`         |
+| Run Integration Tests        | `yarn run test-root`    |
+| Run ALL server proecesses    | `nf start`              |
+| Run API server               | `nf start api`          |
+| Run API and Preview server   | `nf start api, previews`|
 
-- `npm run release` strips the `source/` code from Flowtype and outputs in `components/`
-- `npm run watch` starts a watcher that runs Flow check on `source/` files and outputs the pure JS files in `components/`
+Normally, all binaries like `nf` or `flow` must be accessed by prepending `node_modules/.bin/{nf, flow}`. If you want easier development, either add the above path into your `$PATH` or install the binaries globally using `yarn global add foreman`, `yarn global add flow-cli`.
+
+# Test Running
+
+If you want to run tests in `source/`, you will need to start with a command like this: 
+
+    $ ../../node_modules/.bin/mocha \
+      --compilers js:babel-register \
+      test/**/*.test.js
+    
+This is something that should probably be a shell alias in your environment. I use 
+
+    $ alias pm="../../node_modules/.bin/mocha --compilers js:babel-register test/**/*.test.js"
 
 ### Quick, run the servers
 
-To run the servers, the source code needs to be transpiled from Flowtype to pure JS.
+To run the servers, the source code needs to be transpiled from Flowtype to pure JS. Run `yarn run release` at least once to get this done. 
 
-`npm run all` runs everything in a single console with `development` settings. To run processes individually:
+During development, use `yarn run watch` to recompile all files immediately. Look out for compilation errors that might prevent the distribution from being updated. 
 
-- `npm run database` runs Mongo DB from its expected location
-- `npm run api` runs the API server
-- `npm run previews` runs the previews server
-- `npm run proxy` compiles the Nginx config (see below) then runs Nginx
+To run the processes, use `nf` (javascript foreman), as documented [here](http://strongloop.github.io/node-foreman/).
 
 The proxy runs on `https://{username}.rec.la:8080` (`{username}` can be anything; see [Nginx proxy config below](#nginx-proxy)) and is configured as follows:
 
 - `/api/{path}` proxies for `/{path}` on the API server
 - `/previews/{path}` proxies for `/{path}` on the previews server
 - `/{path}` serves files from `{static.root}` as defined in the Nginx config
-
-
-### Configuration
 
 #### Components
 
@@ -98,15 +133,7 @@ It is possible to extend the API and previews servers with your own code, via th
 
 `./scripts/setup-dev-env.bash` installs MongoDB in the parent folder, sets up your working copy with a JSHint commit hook, and `yarn install`s if needed.
 
-
-### About code structure
-
-Code is organized into local modules defined in the `components` folder, each with its own `package.json`. Components thus defined help code modularity and potential extraction into separate npm modules.
-
-- Shared dependencies are defined in the root `package.json`
-- `npm run check-dependencies` lists declared dependencies (both shared and components'), highlighting those declared multiple times
-- `yarn install` installs each component's dependencies and the shared ones
-- `scripts/components-npm.js` can be used to automatically run npm commands on every component. For example, `node scripts/components-npm outdated` outputs each component's outdated dependencies.
+This might be broken right now. Sorry.
 
 ### Tests
 
@@ -115,43 +142,8 @@ _Prerequisite:_ MongoDB must be running on the default port; you can use `npm ru
 `npm test` runs tests on each component. See individual components for things like detailed output and other options.
 `npm test-root` runs root tests combining multiple components (e.g., High-Frequency series).
 
-### Code analysis
-
-_Prerequisite:_ [Plato](https://www.npmjs.com/package/plato)
-
-`npm run analysis` produces and opens a report with various code stats and linting output.  
-
-
 ### Coding conventions
 
 See the [Pryv guidelines](http://pryv.github.io/guidelines/).
 
-
-### Deployment (Pryv-specific)
-
-_Prerequisite:_ setup Git remotes for production and staging targets (in `.git/config`):
-
-```
-[remote "staging"]
-  fetch = +refs/heads/*:refs/remotes/stage/*
-  url = git@sthead2.pryv.net:~/repos/service-core
-[remote "production"]
-  fetch = +refs/heads/*:refs/remotes/prod/*
-  url = git@head2.pryv.net:~/repos/service-core
-```
-
-To deploy (`{target}` is either `staging` or `production`):
-
-1. Make sure the version to deploy is properly tagged (e.g. `{major}.{minor}.{revision}`)
-2. `git checkout {target}`
-3. `git merge {version tag}`
-4. `git push {target} {target}`
-5. `git push origin {target}` to keep origin up-to-date
-
-(Your Git SSH key must be authorized for deployment.)
-
-
-## TODO: more on deployment etc.
-
-This is a work in progress.
 

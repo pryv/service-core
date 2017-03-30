@@ -8,17 +8,11 @@
     "url": "git://github.com/pryv/service-core.git"
   },
   "scripts": {
-    "all": "parallelshell 'npm run database' 'npm run api' 'npm run previews' 'npm run proxy'",
-    "database": "scripts/start-database.sh",
-    "api": "cd components/api-server && npm start",
-    "previews": "cd components/previews-server && npm start",
-    "proxy": "node scripts/compile-proxy-config proxy/vars.development.js && nginx -c \"`pwd`/proxy/nginx.conf\"",
     "test": "node scripts/components-npm test",
-    "flow": "node_modules/.bin/flow; test $? -eq 0 -o $? -eq 2",
     "jsdoc": "node_modules/.bin/jsdoc -c jsdoc.json",
     "test-root": "node_modules/.bin/mocha --compilers js:babel-register --timeout 10000 --reporter=dot test/**/*.test.js",
-    "watch": "node_modules/.bin/babel --watch=./source --out-dir=./components --copy-files",
-    "release": "node_modules/.bin/babel ./source --out-dir=./components --copy-files"
+    "watch": "node_modules/.bin/babel --watch=./source --out-dir=dist/components --copy-files",
+    "release": "scripts/prepare_dist && node_modules/.bin/babel ./source --out-dir=dist/components --copy-files"
   },
   "dependencies": {
     "api-server": "file:source/api-server",
@@ -67,6 +61,7 @@
     "eslint-plugin-flowtype": "^2.30.0",
     "flow-bin": "^0.42.0",
     "flow-typed": "^2.0.0",
+    "foreman": "^2.0.0",
     "jsdoc": "^3.4.3",
     "jsdoc-babel": "^0.3.0",
     "mocha": "^3.2.0",
