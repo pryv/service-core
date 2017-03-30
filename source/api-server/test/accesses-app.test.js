@@ -16,6 +16,8 @@ var helpers = require('./helpers'),
     _ = require('lodash');
 const should = require('should');
 
+import type Request from './helpers';
+
 describe('accesses (app)', function () {
 
   var additionalTestAccesses = [
@@ -87,12 +89,12 @@ describe('accesses (app)', function () {
   var user = testData.users[0],
       access = additionalTestAccesses[0],
       basePath = '/' + user.username + '/accesses',
-      request = null; // must be set after server instance started
+      request: ?Request = null; // must be set after server instance started
 
   function path(id) {
     return basePath + '/' + id;
   }
-  function req(): typeof request {
+  function req(): Request {
     if (request) return request; 
     throw new Error('request is still not defined.');
   }
@@ -120,14 +122,14 @@ describe('accesses (app)', function () {
           validation.check(res, {
             status: 200,
             schema: methodsSchema.get.result,
-            body: {accesses: additionalTestAccesses[2]}
+            body: {accesses: [additionalTestAccesses[2]]}
           }, done);
         });
       });
 
     it('must be forbidden to requests with a shared access token', function (done) {
       var sharedAccess = testData.accesses[1];
-      request.get(basePath, sharedAccess.token).end(function (res) {
+      req().get(basePath, sharedAccess.token).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
@@ -154,7 +156,7 @@ describe('accesses (app)', function () {
           }
         ]
       };
-      request.post(basePath, access.token).send(data).end(function (res) {
+      req().post(basePath, access.token).send(data).end(function (res) {
         validation.check(res, {
           status: 201,
           schema: methodsSchema.create.result
@@ -184,7 +186,7 @@ describe('accesses (app)', function () {
           }
         ]
       };
-      request.post(basePath, access.token).send(data).end(function (res) {
+      req().post(basePath, access.token).send(data).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
@@ -199,7 +201,7 @@ describe('accesses (app)', function () {
           }
         ]
       };
-      request.post(basePath, access.token).send(data).end(function (res) {
+      req().post(basePath, access.token).send(data).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });

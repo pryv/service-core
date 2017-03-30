@@ -10,6 +10,10 @@ const errors = require('components/errors').factory;
 const methodCallback = require('./methodCallback');
 const Paths = require('./Paths');
 
+declare class RequestWithContext extends express$Request {
+  context: any; 
+}
+
 /**
  * Auth routes.
  *
@@ -61,7 +65,7 @@ module.exports = function (expressApp: express$Application, api: any, authSettin
         token: ssoCookie.token
       }, 200);
     });
-    router.post('/login', function routeLogin(req: express$Request, res, next) {
+    router.post('/login', function routeLogin(req: RequestWithContext, res, next) {
       if (typeof req.body !== 'object' || req.body == null ||
         ! hasProperties(req.body, ['username', 'password', 'appId'])) {
         return next(errors.invalidOperation('Missing parameters: username, password and appId are required.'));
@@ -80,7 +84,7 @@ module.exports = function (expressApp: express$Application, api: any, authSettin
         res.status(200).json(result);
       });
     });
-    router.post('/logout', function routeLogout(req: express$Request, res, next) {
+    router.post('/logout', function routeLogout(req: RequestWithContext, res, next) {
       clearSSOCookie(res);
       api.call('auth.logout', req.context, {}, methodCallback(res, next, 200));
     });

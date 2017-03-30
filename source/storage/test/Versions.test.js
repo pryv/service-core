@@ -18,7 +18,7 @@ var helpers = require('components/test-helpers'),
 
 describe('Versions', function () {
 
-  var mongoFolder = __dirname + '/../../../../mongodb-osx-x86_64-2.6.0';
+  var mongoFolder = __dirname + '/../../../../../mongodb-osx-x86_64-2.6.0';
 
   // older migration tests are skipped; they're kept for reference (e.g. when writing new tests)
 

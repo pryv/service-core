@@ -76,11 +76,11 @@ config.schema = {
   eventFiles: {
     attachmentsDirPath: {
       format: String,
-      default: path.join(__dirname, '../../../../service-core-files/attachments')
+      default: path.join(__dirname, '../../../../../service-core-files/attachments')
     },
     previewsDirPath: {
       format: String,
-      default: path.join(__dirname, '../../../../service-core-files/previews')
+      default: path.join(__dirname, '../../../../../service-core-files/previews')
     }
   },
   auth: {
@@ -93,7 +93,7 @@ config.schema = {
   customExtensions: {
     defaultFolder: {
       format: String,
-      default: path.join(__dirname, '../../../custom-extensions'),
+      default: path.join(__dirname, '../../../../custom-extensions'),
       doc: 'The folder in which custom extension modules are searched for by default. Unless ' +
       'defined by its specific setting (see other settings in `customExtensions`), each module ' +
       'is loaded from there by its default name (e.g. `customAuthStepFn.js`), or ignored if ' +

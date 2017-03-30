@@ -367,7 +367,7 @@ describe('Access permissions', function () {
 
       var fileName = 'customAuthStepFn.js',
           srcPath = path.join(__dirname, 'permissions.fixtures', fileName),
-          destPath = path.join(__dirname, '../../../custom-extensions', fileName);
+          destPath = path.join(__dirname, '../../../../custom-extensions', fileName);
 
       before(function (done) {
         async.series([

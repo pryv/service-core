@@ -4,8 +4,8 @@ decls/
 [include]
 
 [ignore]
-scripts/
-components/
+scripts/*
+dist/*
 .*/node_modules/nixt/node_modules/changelog/examples/node.json
 .*/node_modules/nock/node_modules/changelog/examples/node.json
 .*/node_modules/api-server/.*

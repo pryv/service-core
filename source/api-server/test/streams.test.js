@@ -1,5 +1,3 @@
-// @flow
-
 /*global describe, before, beforeEach, it */
 
 require('./test-helpers'); 
