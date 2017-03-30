@@ -5,6 +5,7 @@
 
 /* global describe, it */
 const { should } = require('../../test-helpers');
+const influx = require('influx');
 
 const series = require('../../../src/index.js').series; 
 const Repository = series.Repository; 
@@ -20,7 +21,7 @@ describe('business.series.Repository', function () {
     ); 
 
     // A test double for the actual connection:
-    const influxConnection = {
+    const influxConnection: influx.InfluxDB = {
       createDatabase: () => Promise.resolve(true),
       writeMeasurement: () => Promise.resolve(true), 
     };

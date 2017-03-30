@@ -4,8 +4,10 @@ decls/
 [include]
 
 [ignore]
-scripts/.*
-dist/.*
-.*/node_modules/nixt/node_modules/changelog/examples/node.json
-.*/node_modules/nock/node_modules/changelog/examples/node.json
-.*/node_modules/api-server/.*
+<PROJECT_ROOT>/scripts/.*
+<PROJECT_ROOT>/dist/.*
+<PROJECT_ROOT>/node_modules/nixt/node_modules/changelog/examples/node.json
+<PROJECT_ROOT>/node_modules/nock/node_modules/changelog/examples/node.json
+<PROJECT_ROOT>/node_modules/api-server/.*
+<PROJECT_ROOT>/node_modules/storage/.*
+<PROJECT_ROOT>/node_modules/hfs-server/.*

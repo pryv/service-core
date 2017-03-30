@@ -46,6 +46,7 @@ function storeSeriesData(ctx: Context, req: express$Request, res: express$Respon
     .catch((err) => next(err));
 }
 
+import type Type from 'business';
 class InfluxDateType implements Type {
   secondsToNanos(secs: number): number {
     return secs * 1000 * 1000 * 1000;
@@ -156,6 +157,7 @@ class Cell {
   }
 }
 
+import type DataMatrix from 'business';
 /** Parses request data into a data matrix that can be used as input to the
  * influx store. You should give this method the `req.body`.
  * 
@@ -193,12 +195,6 @@ function parseData(createRequest: mixed): ?DataMatrix {
 }
 
 module.exports.querySeriesData = R.curryN(4, querySeriesData);
-
-type TimeExpression = Date | number | null; 
-type Query = {
-  from?: TimeExpression, 
-  to?: TimeExpression,
-}
 
 /** GET /events/:event_id/series - Query a series for a data subset.
  *  

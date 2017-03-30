@@ -1,18 +1,19 @@
 // @flow
+// 
+const influx = require('influx');
 
 const Series = require('./series');
-import type {InfluxDB} from 'influx';
 
 /** Repository of all series in this Pryv instance. 
  */
 class Repository {
-  influxConnection: InfluxDB;
+  influxConnection: influx.InfluxDB;
 
   /** Constructs a series repository based on a connection to InfluxDB. 
    * 
    * @param influxConnection {InfluxDB} handle to the database instance
    */
-  constructor(influxConnection: InfluxDB) {
+  constructor(influxConnection: influx.InfluxDB) {
     this.influxConnection = influxConnection;
   }
 

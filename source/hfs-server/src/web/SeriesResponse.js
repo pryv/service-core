@@ -1,15 +1,17 @@
 // @flow
 
+const business = require('components/business');
+
 /** Represents a response in series format. 
  * 
  * This class is used to represent a series response. It serializes to JSON. 
  */
 class SeriesResponse {
-  matrix: DataMatrix; 
+  matrix: business.series.DataMatrix; 
   
   /** Constructs a series response from an existing data matrix. 
    */
-  constructor(mat: DataMatrix) {
+  constructor(mat: business.series.DataMatrix) {
     this.matrix = mat; 
   }
 
