@@ -3,6 +3,12 @@
 
 var APIError = require('components/errors').APIError,
     ErrorIds = require('components/errors').ErrorIds;
+    
+// NOTE Name chosen to be unwieldy, so as not to make this look too good. 
+declare class RequestWithOriginalMethodAndBody extends express$Request { 
+  originalMethod: ?string;
+  originalBody: any;
+}
 
 /**
  * Middleware to allow overriding HTTP method, "Authorization" header and JSON
@@ -10,7 +16,7 @@ var APIError = require('components/errors').APIError,
  * perform request body parsing (expects req.body to exist), so must be executed
  * after e.g. bodyParser middleware.
  */
-module.exports = function (req: express$Request, res: express$Response, next: () => void) {
+module.exports = function (req: RequestWithOriginalMethodAndBody, res: express$Response, next: () => void) {
   if (! req.is('application/x-www-form-urlencoded')) { return next(); }
   
   const body = req.body; 

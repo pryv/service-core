@@ -158,6 +158,7 @@ class Cell {
 }
 
 import type DataMatrix from 'business';
+
 /** Parses request data into a data matrix that can be used as input to the
  * influx store. You should give this method the `req.body`.
  * 
@@ -169,7 +170,7 @@ function parseData(createRequest: mixed): ?DataMatrix {
   if (createRequest == null) return null; 
   if (typeof createRequest !== 'object') return null; 
   
-  const fields = createRequest.fields;
+  const fields = checkFields(createRequest.fields);
   const points = createRequest.points; 
   if (fields == null || points == null) return null; 
   
@@ -192,6 +193,18 @@ function parseData(createRequest: mixed): ?DataMatrix {
   // const hasFields = R.map(R.has(R.__, createRequest)); // (fields)
   return new business.series.DataMatrix(
     fields, dataCopy);
+}
+
+function checkFields(val: any): ?Array<string> {
+  if (val == null) return null; 
+  if (R.type(val) !== 'Array') return null; 
+  
+  const allStrings = R.all(
+    R.where(R.equals('String', R.type(R.__))) );
+    
+  if (!allStrings(val)) return null; 
+  
+  return allStrings;
 }
 
 module.exports.querySeriesData = R.curryN(4, querySeriesData);
@@ -224,6 +237,7 @@ function querySeriesData(ctx: Context, req: express$Request, res: express$Respon
     .catch((err) => next(err));
 }
 
+import type Query from 'business';
 function parseQueryFromGET(params: {[key: string]: string}): Query {
   type ConversionTable = Array<{
     test: RegExp, 
