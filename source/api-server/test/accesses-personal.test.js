@@ -283,7 +283,7 @@ describe('accesses (personal)', function () {
         delete expected.permissions[0].defaultName;
         validation.checkObjectEquality(res.body.access, expected);
 
-        accessesNotifCount.should.eql(1, 'accesses notifications');
+        should(accessesNotifCount).be.eql(1, 'accesses notifications');
         done();
       });
     });
@@ -560,7 +560,7 @@ describe('accesses (personal)', function () {
                 schema: methodsSchema.del.result,
                 body: {accessDeletion: {id: deletedAccess.id}}
               });
-              accessesNotifCount.should.eql(1, 'accesses notifications');
+              should(accessesNotifCount).be.eql(1, 'accesses notifications');
               stepDone();
             });
           },
@@ -591,7 +591,7 @@ describe('accesses (personal)', function () {
           status: 200,
           schema: methodsSchema.del.result
         });
-        accessesNotifCount.should.eql(1, 'accesses notifications');
+        should(accessesNotifCount).be.eql(1, 'accesses notifications');
         done();
       });
     });
