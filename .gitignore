@@ -13,3 +13,4 @@ proxy/nginx.conf
 service-core.iml
 yarn-error.log
 /dist/
+/flow-coverage/
