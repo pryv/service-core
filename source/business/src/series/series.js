@@ -7,6 +7,8 @@ const {isoOrTimeToDate, formatDate} = require('influx/lib/src/grammar/times');
 
 const DataMatrix = require('./data_matrix');
 
+import type {Logger} from 'components/utils/src/logging';
+
 export type Timestamp = (Date | string | number); 
 export type Query = {
   from?: Timestamp, 
@@ -22,19 +24,24 @@ export type Query = {
  *   and the Repository class. The easy way to centralize this is to create a 
  *   connection object and have the code be in there. I am delaying this for now, 
  *   since I don't want to create infrastructure, I want to create functionality. 
+ * 
+ *   When you extract the connection, you might want to centralize connection 
+ *   logging there. 
  */
 class Series {
   namespace: string; 
   name: string; 
   connection: InfluxDB; 
+  logger: Logger; 
   
   /** Internal constructor, creates a series with a given name in the namespace
    * given.
    */
-  constructor(conn: InfluxDB, namespace: string, name: string) {
+  constructor(conn: InfluxDB, namespace: string, name: string, logger: Logger) {
     this.connection = conn; 
     this.namespace = namespace;
     this.name = name; 
+    this.logger = logger; 
   }
   
   /** Append data to this series. 
@@ -95,10 +102,15 @@ class Series {
       ORDER BY time ASC
       LIMIT 10
     `;
+    this.logStatement(statement);
 
     return this.connection
       .query(statement, queryOptions)
       .then(this.transformResult.bind(this));
+  }
+  
+  logStatement(statement: string) {
+    this.logger.info(statement.replace(/\s*\n\s*/g, ' '));
   }
 
   /** Transforms an IResult object into a data matrix. 

@@ -4,17 +4,21 @@ const influx = require('influx');
 
 const Series = require('./series');
 
+import type {Logger} from 'components/utils/src/logging';
+
 /** Repository of all series in this Pryv instance. 
  */
 class Repository {
   influxConnection: influx.InfluxDB;
+  logger: Logger; 
 
   /** Constructs a series repository based on a connection to InfluxDB. 
    * 
    * @param influxConnection {InfluxDB} handle to the database instance
    */
-  constructor(influxConnection: influx.InfluxDB) {
+  constructor(influxConnection: influx.InfluxDB, logger: Logger) {
     this.influxConnection = influxConnection;
+    this.logger = logger;
   }
 
   /** Return a series from a given namespace. 
@@ -33,7 +37,7 @@ class Repository {
       .createDatabase(namespace);
 
     return databaseCheck.then(() => new
-      Series(this.influxConnection, namespace, name));
+      Series(this.influxConnection, namespace, name, this.logger));
   }
 }
 

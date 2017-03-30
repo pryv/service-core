@@ -48,7 +48,11 @@ describe('DataMatrix', function () {
         should(value).be.eql(n+1);
         
         n += 1; 
+
+        return value; // satisfy the checker
       });
+      
+      should(n).be.eql(6);
     });
     it('should store the return value in the matrix', function () {
       const headers = ['a', 'b', 'c']; 
@@ -59,7 +63,7 @@ describe('DataMatrix', function () {
         ]
       ); 
 
-      matrix.transform((name, value) => {
+      matrix.transform(() => {
         return 42; // don't ask
       });
       

@@ -3,7 +3,6 @@
 import type Context from './context';
 
 const R = require('ramda');
-const assert = require('assert');
 
 const business = require('components/business');
 const errors = require('components/errors').factory;
@@ -47,6 +46,9 @@ function storeSeriesData(ctx: Context, req: express$Request, res: express$Respon
 }
 
 import type Type from 'business';
+
+/** Represents the type of the timestamp column in influx input data. 
+ */
 class InfluxDateType implements Type {
   secondsToNanos(secs: number): number {
     return secs * 1000 * 1000 * 1000;
@@ -86,8 +88,6 @@ class InfluxRowType {
   }
 }
 
-type InfluxValue = number; 
-
 import type DataMatrix from 'business';
 
 /** Parses request data into a data matrix that can be used as input to the
@@ -101,9 +101,15 @@ function parseData(createRequest: mixed): ?DataMatrix {
   if (createRequest == null) return null; 
   if (typeof createRequest !== 'object') return null; 
   
+  // assert: createRequest is a {}
+  
   const fields = checkFields(createRequest.fields);
   const points = createRequest.points; 
+
   if (fields == null || points == null) return null; 
+  if (! (points instanceof Array)) return null; 
+  
+  // assert: fields, points ar both arrays
   
   const type = new InfluxRowType(
     business.types.lookup('mass/kg'));
@@ -114,21 +120,14 @@ function parseData(createRequest: mixed): ?DataMatrix {
     return cellType.coerce(cellValue);
   });
   
-  // const hasFields = R.map(R.has(R.__, createRequest)); // (fields)
-  return new business.series.DataMatrix(
-    fields, dataCopy);
+  return matrix;
 }
 
 function checkFields(val: any): ?Array<string> {
   if (val == null) return null; 
-  if (R.type(val) !== 'Array') return null; 
+  if (! (val instanceof Array)) return null; 
   
-  const allStrings = R.all(
-    R.where(R.equals('String', R.type(R.__))) );
-    
-  if (!allStrings(val)) return null; 
-  
-  return allStrings;
+  return val;
 }
 
 module.exports.querySeriesData = R.curryN(4, querySeriesData);
@@ -176,10 +175,9 @@ function parseQueryFromGET(params: {[key: string]: string}): Query {
   }
   
   const query = {}; 
-  const table = [
+  const table = [ // Target format is a number of seconds since Epoch
     // TODO add conversion from date formats.
-    {test: /^\d+$/, convert: R.compose(
-      R.constructN(1, Date), R.multiply(1000), parseInt)}, // Seconds since Unix Epoch
+    {test: /^\d+$/, convert: parseInt},
   ];
 
   if (params.fromTime != null) query.from = interpret(params.fromTime, table);

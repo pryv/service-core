@@ -6,7 +6,7 @@ const http = require('http');
 const express = require('express');
 const bodyParser = require('body-parser');
 const middleware = require('components/middleware');
-const logging = require('components/utils').logging;
+const logging = require('components/utils/src/logging');
 const errorsMiddleware = require('./middleware/errors');
 
 const promisify = require('./promisify');
@@ -17,6 +17,8 @@ const Context = require('./web/context');
 
 const KEY_IP = 'http.ip';
 const KEY_PORT = 'http.port';  
+
+import type {Logger} from 'components/utils/src/logging';
 
 /**
  * HTTP server responsible for the REST api that the HFS server exposes. 
@@ -35,8 +37,8 @@ class Server {
   server: http$Server; 
   
   // Logger used here.
-  logger: typeof logging.Logger; 
-  errorLogger: typeof logging.Logger; 
+  logger: Logger; 
+  errorLogger: Logger; 
   
   // Web request context
   context: Context; 
@@ -49,7 +51,7 @@ class Server {
     this.errorLogger = logFactory.getLogger('errors');
     this.settings = settings; 
   
-    this.context = this.setupContext(); 
+    this.context = this.setupContext(logFactory.getLogger); 
     this.expressApp = this.setupExpress();
     
     const ip = settings.get(KEY_IP).str(); 
@@ -106,12 +108,12 @@ class Server {
   /** Set up the request context. This is an object that contains infrastructure
    * instances of objects, much like singletons, just without the icky part. 
    */
-  setupContext(): Context {
+  setupContext(logFactory): Context {
     // TODO make this a config setting
     const influxConnection = new influx.InfluxDB(
       {host: 'localhost'});
     
-    return new Context(influxConnection);
+    return new Context(influxConnection, logFactory);
   }
     
   /** 

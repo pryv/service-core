@@ -6,6 +6,8 @@ const business = require('components/business');
 
 type Repository = business.series.Repository;
 
+import type {Logger} from 'components/utils/src/logging';
+
 /** Request context object which is created initially in Server and the passed
  * to every request handler as first argument. 
  * 
@@ -14,8 +16,9 @@ type Repository = business.series.Repository;
 class Context {
   seriesRepository: Repository; 
   
-  constructor(influxConn: InfluxDB) {
-    this.seriesRepository = new business.series.Repository(influxConn);
+  constructor(influxConn: InfluxDB, logFactory: (name: string) => Logger) {
+    this.seriesRepository = new business.series.Repository(
+      influxConn, logFactory('influx'));
   }
 }
 

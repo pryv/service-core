@@ -11,6 +11,9 @@ interface Type {
   coerce(value: any): any; 
 }
 
+/** A basic type like 'number' or 'boolean'. In high frequency data, this must 
+ * be stored using the column name 'value'.
+ */
 class BasicType {
   typeName: string; 
   

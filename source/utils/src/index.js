@@ -1,3 +1,5 @@
+// @flow
+
 module.exports = {
   config: require('./config'),
   encryption: require('./encryption'),

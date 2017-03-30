@@ -74,40 +74,79 @@ module.exports = function (logsSettings: Object) {
       if (existingLogger) return existingLogger;
       
       // Construct a new instance. We're passing winston as a logger here. 
-      const logger = new Logger(context, winston);
+      const logger = new LoggerImpl(context, winston);
       loggers.set(context, logger);
       
       return logger; 
-    }
+    }, 
   };
 };
 module.exports.injectDependencies = true; // make it DI-friendly
 
-/**
- * Creates a new logger for the given component.
- *
- * @param {String} context
- * @constructor
- */
-function Logger(context, winstonLogger) {
-  this.messagePrefix = context ? '[' + context + '] ' : '';
-  this.winstonLogger = winstonLogger;
+export interface Logger {
+  sendToErrorService(error: any, callback: (err: any, res: any) => void): void;
+  debug(msg: string, metaData?: {}): void; 
+  info(msg: string, metaData?: {}): void;
+  warn(msg: string, metaData?: {}): void; 
+  error(msg: string, metaData?: {}): void; 
 }
 
-// define logging methods
-Object.keys(levels).forEach(function (level) {
-  Logger.prototype[level] = function (message, metadata) {
-    const msg = this.messagePrefix + message;
-    this.winstonLogger[level](msg, metadata || {});
-  };
-});
-
-Logger.prototype.sendToErrorService = function (error, callback) {
-  if (! airbrake) {
-    if (typeof(callback) === 'function') {
-      callback(null, null);
-    }
-    return;
+class NullLogger implements Logger {
+  sendToErrorService(error: any, callback: (err: any, res: any) => void) { // eslint-disable-line no-unused-vars
   }
-  airbrake.notify(error, callback);
-};
+  
+  debug(msg: string, metaData?: {}) { // eslint-disable-line no-unused-vars
+  }
+  info(msg: string, metaData?: {}) { // eslint-disable-line no-unused-vars
+  }
+  warn(msg: string, metaData?: {}) { // eslint-disable-line no-unused-vars
+  }
+  error(msg: string, metaData?: {}) { // eslint-disable-line no-unused-vars
+  }
+}
+module.exports.NullLogger = NullLogger;
+
+class LoggerImpl implements Logger {
+  messagePrefix: string; 
+  winstonLogger: any; 
+  
+  /**
+   * Creates a new logger for the given component.
+   *
+   * @param {String} context
+   * @constructor
+   */
+  constructor(context?: string, winstonLogger) {
+    this.messagePrefix = context ? '[' + context + '] ' : '';
+    this.winstonLogger = winstonLogger;
+  }
+  
+  sendToErrorService(error: any, callback: (err: any, res: any) => void) {
+    if (! airbrake) {
+      if (typeof(callback) === 'function') {
+        callback(null, null);
+      }
+      return;
+    }
+    airbrake.notify(error, callback);
+  }
+  
+  debug(msg: string, metaData?: {}) {
+    this.log('debug', msg, metaData);
+  }
+  info(msg: string, metaData?: {}) {
+    this.log('info', msg, metaData);
+  }
+  warn(msg: string, metaData?: {}) {
+    this.log('warn', msg, metaData);
+  }
+  error(msg: string, metaData?: {}) {
+    this.log('error', msg, metaData);
+  }
+  
+  log(level: number, message: string, metaData?: {}) {
+    const msg = this.messagePrefix + message;
+    this.winstonLogger[level](msg, metaData || {});
+  }
+}
+

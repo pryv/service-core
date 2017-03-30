@@ -8,6 +8,8 @@ const { should } = require('../../test-helpers');
 
 const influx = require('influx');
 
+const NullLogger = require('components/utils/src/logging').NullLogger;
+
 const series = require('../../../src/index.js').series; 
 const Repository = series.Repository; 
 const DataMatrix = series.DataMatrix; 
@@ -15,12 +17,13 @@ const DataMatrix = series.DataMatrix;
 describe('Manage InfluxDB data (business.series.*)', function () {
   const connection = new influx.InfluxDB({
     host: 'localhost'});
+  const logger = new NullLogger(); 
   
   // TODO beforeEach delete the measurement
   
   it('should allow writing to a series', function () {
     const seriesName = 'series1';
-    const repository = new Repository(connection);
+    const repository = new Repository(connection, logger);
     const series = repository.get('test.manage_influx_data', seriesName);
     
     const toNano = (v) => v * 1000 * 1000 * 1000; 
