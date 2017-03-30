@@ -35,16 +35,17 @@ Then just `yarn install`.
     
 ### How to?
 
-| Task                         | Command                 |
-| ---------------------------- | ------------------------|
-| Setup                        | `yarn install`          |
-| Create Distribution          | `yarn run release`      |
-| Recompile During Development | `yarn run watch`        |
-| Run Tests                    | `yarn run test`         |
-| Run Integration Tests        | `yarn run test-root`    |
-| Run ALL server proecesses    | `nf start`              |
-| Run API server               | `nf start api`          |
-| Run API and Preview server   | `nf start api, previews`|
+| Task                         | Command                        |
+| ---------------------------- | ------------------------------ |
+| Setup                        | `yarn install`                 |
+| Create Distribution          | `yarn run release`             |
+| Recompile During Development | `yarn run watch`               |
+| Run Tests                    | `yarn run test`                |
+| Run Integration Tests        | `yarn run test-root`           |
+| Run ALL server proecesses    | `nf start`                     |
+| Run API server               | `nf start api`                 |
+| Run API and Preview server   | `nf start api, previews`       |
+| Run flow checker             | `watch -c flow --color=always` |
 
 Normally, all binaries like `nf` or `flow` must be accessed by prepending `yarn run {nf,flow}`. 
 
