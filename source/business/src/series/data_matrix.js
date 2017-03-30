@@ -1,12 +1,11 @@
 // @flow
 
-const R = require('ramda');
 const assert = require('assert');
-
-const Row = require('./row');
 
 export type Element = string | number; 
 export type RawRow = Array<Element>;
+
+const Row = require('./row');
 
 /** Data in matrix form. Columns have names, rows have numbers, starting at 0. 
  */
@@ -62,16 +61,23 @@ class DataMatrix {
     return this.data[idx];
   }
   
-  
-  /** Functor implementation for the data matrix, iterating over all rows. 
-   * Use this with ramda `map` for example. 
-   * 
-   * @param f {Row => T} function mapping each row to some return type
-   * @return {Array<T>} a new array, containing all the returned elements
+  /** Iterates over each row of the data matrix. 
    */
-  map<T>(f: (Row) => T): Array<T> {
-    const mapper = (rawRow: RawRow) => f(new Row(rawRow, this.columns));
-    return R.map(mapper, this.data);
+  eachRow(fn: (row: Row, idx: number) => void) {
+    this.data.forEach((row, idx) => {
+      const rowObj = new Row(row, this.columns); 
+      fn(rowObj, idx);
+    });
+  }
+  
+  /** Transforms this matrix in place by calling `fn` for each cell, replacing
+   * its value with what fn returns. 
+   */
+  transform(fn: (colName: string, cellVal: Element) => Element) {
+    for (let row of this.data) {
+      row.forEach((cell, idx) => 
+        row[idx] = fn(this.columns[idx], cell));
+    }
   }
 }
 

@@ -51,6 +51,8 @@ class Series {
       database: this.namespace, 
     };
     
+    const points = []; 
+    
     // Transform all data rows into a measurement point. Transform of rows 
     // is done via toStruct in DataMatrix.Row.
     const toMeasurement = (row) => {
@@ -65,7 +67,11 @@ class Series {
         timestamp: timestamp, 
       };
     };
-    const points = R.map(toMeasurement, data);
+      
+    data.eachRow((row) => {
+      points.push(
+        toMeasurement(row));
+    });
     
     return this.connection.writeMeasurement(this.name, points, appendOptions);
   }
