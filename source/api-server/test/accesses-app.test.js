@@ -162,7 +162,7 @@ describe('accesses (app)', function () {
           schema: methodsSchema.create.result
         });
 
-        var expected = _.cloneDeep(data);
+        var expected: {[key: string]: any} = _.cloneDeep(data);
         expected.id = res.body.access.id;
         expected.token = res.body.access.token;
         expected.type = 'shared';
@@ -216,7 +216,7 @@ describe('accesses (app)', function () {
           }
         ]
       };
-      request.post(basePath, access.token).send(data).end(function (res) {
+      req().post(basePath, access.token).send(data).end(function (res) {
         validation.checkErrorInvalidParams(res, done);
       });
     });
@@ -240,13 +240,13 @@ describe('accesses (app)', function () {
           }
         ]
       };
-      request.put(path(original.id), access.token).send(data).end(function (res) {
+      req().put(path(original.id), access.token).send(data).end(function (res) {
         validation.check(res, {
           status: 200,
           schema: methodsSchema.update.result
         });
 
-        var expected = _.clone(data);
+        var expected: {[key: string]: any} = _.clone(data);
         expected.modifiedBy = access.id;
         delete expected.token;
         delete expected.type;
@@ -254,27 +254,27 @@ describe('accesses (app)', function () {
         delete expected.modified;
         validation.checkObjectEquality(res.body.access, expected);
 
-        accessesNotifCount.should.eql(1, 'accesses notifications');
+        should(accessesNotifCount).be.eql(1, 'accesses notifications');
         done();
       });
     });
 
     it('must forbid trying to modify a non-shared access', function (done) {
-      request.put(path(additionalTestAccesses[1].id), access.token)
+      req().put(path(additionalTestAccesses[1].id), access.token)
           .send({name: 'Updated App Access'}).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
     it('must forbid trying to modify an access with greater permissions', function (done) {
-      request.put(path(testData.accesses[1].id), access.token)
+      req().put(path(testData.accesses[1].id), access.token)
           .send({name: 'Updated Shared Access'}).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
     it('must return a correct error if the access does not exist', function (done) {
-      request.put(path('unknown-id'), access.token).send({name: '?'}).end(function (res) {
+      req().put(path('unknown-id'), access.token).send({name: '?'}).end(function (res) {
         validation.checkError(res, {
           status: 404,
           id: ErrorIds.UnknownResource
@@ -291,7 +291,7 @@ describe('accesses (app)', function () {
           }
         ]
       };
-      request.put(path(additionalTestAccesses[2].id), access.token).send(data)
+      req().put(path(additionalTestAccesses[2].id), access.token).send(data)
       .end(function (res) {
         validation.checkErrorInvalidParams(res, done);
       });
@@ -299,7 +299,7 @@ describe('accesses (app)', function () {
 
     it('must return a correct error if an access with the same name already exists',
         function (done) {
-      request.put(path(additionalTestAccesses[2].id), access.token)
+      req().put(path(additionalTestAccesses[2].id), access.token)
           .send({name: testData.accesses[1].name}).end(function (res) {
         validation.checkError(res, {
           status: 400,
@@ -321,13 +321,13 @@ describe('accesses (app)', function () {
       async.series([
         function deleteAccess(stepDone) {
           deletionTime = timestamp.now();
-          request.del(path(deletedAccess.id), access.token).end(function (res) {
+          req().del(path(deletedAccess.id), access.token).end(function (res) {
             validation.check(res, {
               status: 200,
               schema: methodsSchema.del.result,
               body: {accessDeletion: {id: deletedAccess.id}}
             });
-            accessesNotifCount.should.eql(1, 'accesses notifications');
+            should(accessesNotifCount).be.eql(1, 'accesses notifications');
             stepDone();
           });
         },
@@ -354,19 +354,19 @@ describe('accesses (app)', function () {
     });
 
     it('must forbid trying to delete a non-shared access', function (done) {
-      request.del(path(additionalTestAccesses[1].id), access.token).end(function (res) {
+      req().del(path(additionalTestAccesses[1].id), access.token).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
     it('must forbid trying to delete an access with greater permissions', function (done) {
-      request.del(path(testData.accesses[1].id), access.token).end(function (res) {
+      req().del(path(testData.accesses[1].id), access.token).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
     it('must return a correct error if the access does not exist', function (done) {
-      request.del(path('unknown-id'), access.token).end(function (res) {
+      req().del(path('unknown-id'), access.token).end(function (res) {
         validation.checkError(res, {
           status: 404,
           id: ErrorIds.UnknownResource
