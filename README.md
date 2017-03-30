@@ -46,7 +46,7 @@ Then just `yarn install`.
 | Run API server               | `nf start api`          |
 | Run API and Preview server   | `nf start api, previews`|
 
-Normally, all binaries like `nf` or `flow` must be accessed by prepending `node_modules/.bin/{nf, flow}`. If you want easier development, either add the above path into your `$PATH` or install the binaries globally using `yarn global add foreman`, `yarn global add flow-cli`.
+Normally, all binaries like `nf` or `flow` must be accessed by prepending `yarn run {nf,flow}`. 
 
 # Test Running
 
