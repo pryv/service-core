@@ -1,6 +1,5 @@
 // @flow
 
-import type {DataMatrix} from 'components/business';
 import type Context from './context';
 
 const R = require('ramda');
@@ -47,7 +46,6 @@ function storeSeriesData(ctx: Context, req: express$Request, res: express$Respon
     .catch((err) => next(err));
 }
 
-import type Type from 'components/business';
 class InfluxDateType implements Type {
   secondsToNanos(secs: number): number {
     return secs * 1000 * 1000 * 1000;

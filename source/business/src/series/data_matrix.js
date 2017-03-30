@@ -5,13 +5,14 @@ const assert = require('assert');
 
 const Row = require('./row');
 
-type Element = string | number; 
+export type Element = string | number; 
+export type RawRow = Array<Element>;
 
 /** Data in matrix form. Columns have names, rows have numbers, starting at 0. 
  */
 class DataMatrix {
   columns: Array<string>; 
-  data: Array<Array<Element>>; 
+  data: Array<RawRow>; 
   
   // @return {number} number of rows this data matrix has. 
   length: number; 
@@ -69,7 +70,7 @@ class DataMatrix {
    * @return {Array<T>} a new array, containing all the returned elements
    */
   map<T>(f: (Row) => T): Array<T> {
-    const mapper = (rawRow) => f(new Row(rawRow, this.columns));
+    const mapper = (rawRow: RawRow) => f(new Row(rawRow, this.columns));
     return R.map(mapper, this.data);
   }
 }

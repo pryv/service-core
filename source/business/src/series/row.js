@@ -1,6 +1,9 @@
+// @flow
 
 const R = require('ramda');
 const assert = require('assert');
+
+import type Element from './data_matrix';
 
 /** A single row of the data matrix. Stores a reference to the original 
  * matrix; this is like a pointer, not like a value. It is used during iteration
@@ -12,7 +15,7 @@ class Row {
   
   /** Constructs a row - internal constructor. Use DataMatrix to produce rows. 
    */
-  constructor(values: Array<Element>, columnNames: Array<string>) {
+  constructor(values: Array<*>, columnNames: Array<string>) {
     this.values = values; 
     this.columnNames = columnNames; 
   }

@@ -1,3 +1,4 @@
+// @flow
 
 /** Represents a response in series format. 
  * 

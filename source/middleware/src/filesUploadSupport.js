@@ -1,4 +1,3 @@
-'use strict';
 // @flow
 
 var errors = require('components/errors').factory;
