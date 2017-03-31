@@ -3,18 +3,19 @@
 
 // Tests pertaining to storing data in a hf series. 
 
-/* global describe, it */
+/* global describe, it, beforeEach */
 const { should, request, settings } = require('./test-helpers');
 const R = require('ramda');
 
 const Application = require('../../src/Application');
-const Server = require('../../src/Server');
 
 import type {Response} from 'supertest';
 
 describe('Storing data in a HF series', function() {
   const application = new Application().init(settings); 
+  const context = application.context; 
   const server = application.server; 
+
   const app = server.setupExpress();
   
   describe('POST /events/EVENT_ID/series', function() {
@@ -22,10 +23,10 @@ describe('Storing data in a HF series', function() {
     
     // TODO Worry about deleting data that we stored in earlier tests.
     
-    function storeData(data, authorization='valid'): Response {
+    function storeData(data): Response {
       const response = request(app)
         .post(`/events/${EVENT_ID}/series`)
-        .set('Authorization', authorization)
+        .set('authorization', 'AUTH_TOKEN')
         .send(data);
         
       return response;
@@ -78,10 +79,22 @@ describe('Storing data in a HF series', function() {
           R.all(pairEqual, R.zip(response.points, data.points));
         });
     });
+    describe('when authToken is not valid', function () {
+      // Replace metadata loader with a stub that always returns write access
+      // denied.
+      beforeEach(function () {
+        const seriesMeta = {
+          canWrite: function canWrite(): boolean { return false; },
+        };
+        context.metadata = {
+          forSeries: function forSeries() { return seriesMeta; }
+        };
+      });
+    });
     it('refuses invalid/unauthorized accesses', function () {
       const data = produceData(); 
       
-      return storeData(data, 'invalid')
+      return storeData(data)
         .expect(403)
         .then((res) => {
           const error = res.body.error; 

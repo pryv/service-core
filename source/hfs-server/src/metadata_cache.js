@@ -4,6 +4,10 @@ export interface MetadataRepository {
   forSeries(eventId: string, accessToken: string): SeriesMetadata;
 }
 
+export interface SeriesMetadata {
+  canWrite(): boolean;
+}
+
 /** Holds metadata related to series for some time so that we don't have to 
  * compile it every time we store data in the server. 
  * 
@@ -26,7 +30,7 @@ class MetadataCache implements MetadataRepository {
  */
 class MetadataLoader {
   forSeries(eventId: string, accessToken: string): SeriesMetadata {
-    return new SeriesMetadata(); 
+    return new SeriesMetadataImpl(); 
   }
 }
 
@@ -36,7 +40,7 @@ class MetadataLoader {
  *  reason why we don't store everything about the event and the user here, 
  *  only things that we subsequently need for our operations. 
  */
-class SeriesMetadata {
+class SeriesMetadataImpl implements SeriesMetadata {
   canWrite(): boolean {
     return false; 
   }
