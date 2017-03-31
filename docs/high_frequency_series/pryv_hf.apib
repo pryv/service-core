@@ -162,13 +162,21 @@ Query data in a series. This function will return a subset or all the data store
 Appends data to an event that is of type `series:ELEMENT`. Data posted this 
 way will be written to the series stored inside the event. 
 
+To be able to write to an event using this method, you need a valid access 
+token for writing to the event's stream. 
+
   + Parameters
     + event_id (identifier) - ID of the event in the form of a string.
     
   + Request (application/json)
-    
+      
+    + Headers 
+      Authorization: ACCESS_TOKEN
+      
     + Attributes (SeriesData)
-
+    
+  + Response 403 (application/json)
+  
   + Response 400 (application/json)
   
     Example: If the event is not of type `"series:SUBTYPE"`.

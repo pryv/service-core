@@ -6,12 +6,13 @@ const { should, superagent, settings } = require('./test-helpers');
 
 const url = require('url');
 
-const Server = require('../../src/Server');
+const Application = require('../../src/Application');
 
 describe('Server', function() {
   const request = superagent;
 
-  var server = new Server(settings); 
+  const application = new Application().init(settings); 
+  const server = application.server; 
   
   function toUrl(path): string {
     const baseUrl = server.baseUrl; 

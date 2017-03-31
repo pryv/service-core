@@ -1,9 +1,7 @@
 // @flow
 
-const Repository = require('./series/repository');
-const DataMatrix = require('./series/data_matrix');
-
 module.exports = {
-  Repository: Repository, 
-  DataMatrix: DataMatrix,
+  Repository: require('./series/repository'), 
+  DataMatrix: require('./series/data_matrix'),
+  InfluxConnection: require('./series/influx_connection'),
 };

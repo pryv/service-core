@@ -1,13 +1,12 @@
 // @flow
 
-import type {InfluxDB, IResults} from 'influx';
+import type {IResults} from 'influx';
+import type InfluxConnection from './influx_connection';
 
 const R = require('ramda');
 const {isoOrTimeToDate, formatDate} = require('influx/lib/src/grammar/times');
 
 const DataMatrix = require('./data_matrix');
-
-import type {Logger} from 'components/utils/src/logging';
 
 export type Timestamp = (Date | string | number); 
 export type Query = {
@@ -19,29 +18,19 @@ export type Query = {
  * 
  * This is the high level internal interface to series. Series can be
  * manipulated through this interface. 
- * 
- * NOTE Currently, the code that accesses influx is spread out between this class
- *   and the Repository class. The easy way to centralize this is to create a 
- *   connection object and have the code be in there. I am delaying this for now, 
- *   since I don't want to create infrastructure, I want to create functionality. 
- * 
- *   When you extract the connection, you might want to centralize connection 
- *   logging there. 
  */
 class Series {
   namespace: string; 
   name: string; 
-  connection: InfluxDB; 
-  logger: Logger; 
+  connection: InfluxConnection; 
   
   /** Internal constructor, creates a series with a given name in the namespace
    * given.
    */
-  constructor(conn: InfluxDB, namespace: string, name: string, logger: Logger) {
+  constructor(conn: InfluxConnection, namespace: string, name: string) {
     this.connection = conn; 
     this.namespace = namespace;
     this.name = name; 
-    this.logger = logger; 
   }
   
   /** Append data to this series. 
@@ -80,7 +69,8 @@ class Series {
         toMeasurement(row));
     });
     
-    return this.connection.writeMeasurement(this.name, points, appendOptions);
+    return this.connection
+      .writeMeasurement(this.name, points, appendOptions);
   }
 
   /** Queries the given series, returning a data matrix. 
@@ -102,17 +92,12 @@ class Series {
       ORDER BY time ASC
       LIMIT 10
     `;
-    this.logStatement(statement);
 
     return this.connection
       .query(statement, queryOptions)
       .then(this.transformResult.bind(this));
   }
   
-  logStatement(statement: string) {
-    this.logger.info(statement.replace(/\s*\n\s*/g, ' '));
-  }
-
   /** Transforms an IResult object into a data matrix. 
    */
   transformResult(result: IResults): DataMatrix {

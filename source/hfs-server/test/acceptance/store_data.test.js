@@ -7,10 +7,12 @@
 const { should, request, settings } = require('./test-helpers');
 const R = require('ramda');
 
+const Application = require('../../src/Application');
 const Server = require('../../src/Server');
 
 describe('Storing data in a HF series', function() {
-  const server = new Server(settings);
+  const application = new Application().init(settings); 
+  const server = application.server; 
   const app = server.setupExpress();
   
   describe('POST /events/EVENT_ID/series', function() {
@@ -18,9 +20,10 @@ describe('Storing data in a HF series', function() {
     
     // TODO Worry about deleting data that we stored in earlier tests.
     
-    function storeData(data): Promise<*> {
+    function storeData(data, authorization='valid'): Promise<*> {
       const response = request(app)
         .post(`/events/${EVENT_ID}/series`)
+        .set('Authorization', 'valid')
         .send(data);
         
       return response
@@ -42,8 +45,8 @@ describe('Storing data in a HF series', function() {
         });
     }
     
-    it('stores data into InfluxDB', function() {
-      const data = {
+    function produceData() {
+      return {
         elementType: 'mass/kg',
         format: 'flatJSON', 
         fields: ['timestamp', 'value'], 
@@ -53,6 +56,10 @@ describe('Storing data in a HF series', function() {
           [1481677847, 14.3], 
         ]
       };
+    }
+    
+    it('stores data into InfluxDB', function() {
+      const data = produceData(); 
       
       return storeData(data)
         .then(queryData)
@@ -67,6 +74,16 @@ describe('Storing data in a HF series', function() {
             
           should(response.points.length).be.eql(data.points.length);
           R.all(pairEqual, R.zip(response.points, data.points));
+        });
+    });
+    it('refuses invalid/unauthorized accesses', function () {
+      const data = produceData(); 
+      
+      return storeData(data, 'invalid')
+        .then((res) => should.fail())
+        .catch((err) => {
+          should(err.statusCode).be.eql(403);
+          console.log(err.body);
         });
     });
     it.skip('should reject malformed requests', function () { });

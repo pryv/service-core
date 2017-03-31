@@ -4,6 +4,7 @@ import type Settings from './Settings';
 
 const http = require('http');
 const express = require('express');
+
 const bodyParser = require('body-parser');
 const middleware = require('components/middleware');
 const logging = require('components/utils/src/logging');
@@ -11,7 +12,6 @@ const errorsMiddleware = require('./middleware/errors');
 
 const promisify = require('./promisify');
 
-const influx = require('influx'); // TODO maybe push this dependency outwards?
 const controller = require('./web/controller');
 const Context = require('./web/context');
 
@@ -43,7 +43,7 @@ class Server {
   // Web request context
   context: Context; 
   
-  constructor(settings: Settings) {
+  constructor(settings: Settings, context: Context) {
     const logSettings = settings.get('logs').obj();
     const logFactory = logging(logSettings);
     
@@ -51,7 +51,7 @@ class Server {
     this.errorLogger = logFactory.getLogger('errors');
     this.settings = settings; 
   
-    this.context = this.setupContext(logFactory.getLogger); 
+    this.context = context; 
     this.expressApp = this.setupExpress();
     
     const ip = settings.get(KEY_IP).str(); 
@@ -105,17 +105,6 @@ class Server {
     return promisify(server.close, server)();
   }
   
-  /** Set up the request context. This is an object that contains infrastructure
-   * instances of objects, much like singletons, just without the icky part. 
-   */
-  setupContext(logFactory): Context {
-    // TODO make this a config setting
-    const influxConnection = new influx.InfluxDB(
-      {host: 'localhost'});
-    
-    return new Context(influxConnection, logFactory);
-  }
-    
   /** 
    * Sets up the express application, injecting middleware and configuring the 
    * instance. 

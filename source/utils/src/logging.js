@@ -90,6 +90,7 @@ export interface Logger {
   warn(msg: string, metaData?: {}): void; 
   error(msg: string, metaData?: {}): void; 
 }
+export type LogFactory = (topic: string) => Logger; 
 
 class NullLogger implements Logger {
   sendToErrorService(error: any, callback: (err: any, res: any) => void) { // eslint-disable-line no-unused-vars

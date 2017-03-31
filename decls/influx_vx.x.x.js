@@ -8,6 +8,10 @@ declare type ISingleHostConfig = {
   // Some missing here, see
   // https://node-influx.github.io/typedef/index.html#static-typedef-IWriteOptions
 }
+
+declare class InfluxDB {
+  constructor(options: ISingleHostConfig | string): InfluxDB; 
+}
   
 declare class Expression {
   field(name: string): Expression; 
@@ -60,7 +64,7 @@ declare module 'influx' {
   declare type IQueryOptions = IQueryOptions;
   
   declare module.exports: {
-    InfluxDB: InfluxDB, // `Router` property on the function
+    InfluxDB: InfluxDB, 
     Expression: typeof Expression,
   }
 }

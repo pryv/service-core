@@ -1,24 +1,20 @@
 // @flow
 // 
-const influx = require('influx');
 
 const Series = require('./series');
-
-import type {Logger} from 'components/utils/src/logging';
+import type InfluxConnection from './influx_connection';
 
 /** Repository of all series in this Pryv instance. 
  */
 class Repository {
-  influxConnection: influx.InfluxDB;
-  logger: Logger; 
+  connection: InfluxConnection;
 
   /** Constructs a series repository based on a connection to InfluxDB. 
    * 
    * @param influxConnection {InfluxDB} handle to the database instance
    */
-  constructor(influxConnection: influx.InfluxDB, logger: Logger) {
-    this.influxConnection = influxConnection;
-    this.logger = logger;
+  constructor(influxConnection: InfluxConnection) {
+    this.connection = influxConnection;
   }
 
   /** Return a series from a given namespace. 
@@ -33,11 +29,11 @@ class Repository {
     // TODO Cache all the setup checks we do here in an LRU cache. 
     
     // Make sure that the database exists:
-    const databaseCheck = this.influxConnection
+    const databaseCheck = this.connection
       .createDatabase(namespace);
 
     return databaseCheck.then(() => new
-      Series(this.influxConnection, namespace, name, this.logger));
+      Series(this.connection, namespace, name));
   }
 }
 

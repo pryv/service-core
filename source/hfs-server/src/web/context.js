@@ -1,24 +1,19 @@
 // @flow
 
-import type {InfluxDB} from 'influx';
-
 const business = require('components/business');
 
 type Repository = business.series.Repository;
+type InfluxConnection = business.series.InfluxConnection; 
 
-import type {Logger} from 'components/utils/src/logging';
-
-/** Request context object which is created initially in Server and the passed
- * to every request handler as first argument. 
- * 
- * Like a singleton, but managed by the server instance. 
+/** Application context object, holding references to all major subsystems. 
+ * Once the system is initialized, these instance references will not change 
+ * any more and together make up the configuration of the system. 
  */
 class Context {
   seriesRepository: Repository; 
   
-  constructor(influxConn: InfluxDB, logFactory: (name: string) => Logger) {
-    this.seriesRepository = new business.series.Repository(
-      influxConn, logFactory('influx'));
+  constructor(influxConn: InfluxConnection) {
+    this.seriesRepository = new business.series.Repository(influxConn);
   }
 }
 
