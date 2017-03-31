@@ -10,6 +10,8 @@ const R = require('ramda');
 const Application = require('../../src/Application');
 const Server = require('../../src/Server');
 
+import type {Response} from 'supertest';
+
 describe('Storing data in a HF series', function() {
   const application = new Application().init(settings); 
   const server = application.server; 
@@ -20,14 +22,13 @@ describe('Storing data in a HF series', function() {
     
     // TODO Worry about deleting data that we stored in earlier tests.
     
-    function storeData(data, authorization='valid'): Promise<*> {
+    function storeData(data, authorization='valid'): Response {
       const response = request(app)
         .post(`/events/${EVENT_ID}/series`)
-        .set('Authorization', 'valid')
+        .set('Authorization', authorization)
         .send(data);
         
-      return response
-        .expect(200);   // Store data
+      return response;
     }
     function queryData(): Promise<Object> {
       let response = request(app)
@@ -62,6 +63,7 @@ describe('Storing data in a HF series', function() {
       const data = produceData(); 
       
       return storeData(data)
+        .expect(200)
         .then(queryData)
         .then((response) => {
           // Verify data here
@@ -80,10 +82,11 @@ describe('Storing data in a HF series', function() {
       const data = produceData(); 
       
       return storeData(data, 'invalid')
-        .then((res) => should.fail())
-        .catch((err) => {
-          should(err.statusCode).be.eql(403);
-          console.log(err.body);
+        .expect(403)
+        .then((res) => {
+          const error = res.body.error; 
+          should(error.id).be.eql('forbidden');
+          should(error.message).be.instanceof(String);
         });
     });
     it.skip('should reject malformed requests', function () { });

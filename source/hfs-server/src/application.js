@@ -7,7 +7,7 @@ const influx = require('influx'); // TODO maybe push this dependency outwards?
 const logComponent = require('components/utils/src/logging');
 const business = require('components/business');
 
-const Context = require('./web/context');
+const Context = require('./context');
 const Settings = require('./Settings');
 const Server = require('./Server'); 
 

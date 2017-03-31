@@ -1,6 +1,6 @@
 // @flow
 
-import type Context from './context';
+import type Context from '../context';
 
 const R = require('ramda');
 
@@ -8,22 +8,29 @@ const business = require('components/business');
 const errors = require('components/errors').factory;
 const SeriesResponse = require('./SeriesResponse');
 
+const AUTH_HEADER = 'authorization';
+
 module.exports.storeSeriesData = R.curryN(4, storeSeriesData);
 
 /** POST /events/:event_id/series - Store data in a series. 
  */
 function storeSeriesData(ctx: Context, req: express$Request, res: express$Response, next: (err: any) => void) {
-  // if (! business.access.canWriteToSeries(eventId, authToken)) {
-  //   throw errors.forbidden(); 
-  // }
-  // 
-  // const data = parseData(req);
-  // 
-  // const series = business.series.get(eventId);
-  // series.append(data);
-  // 
-  const sr = ctx.seriesRepository;
+  const series = ctx.series;
+  const metadata = ctx.metadata; 
   
+  // Extract parameters from request: 
+  const eventId = req.params.event_id;
+  const accessToken = req.headers[AUTH_HEADER];
+
+  // If params are not there, abort. 
+  // TODO test this
+  if (accessToken == null) return next(errors.missingHeader(AUTH_HEADER));
+  if (eventId == null) return next(errors.invalidItemId());
+  
+  // Access check: Can user write to this series? 
+  const seriesMeta = metadata.forSeries(eventId, accessToken);
+  if (! seriesMeta.canWrite()) return next(errors.forbidden());
+
   // Parse request
   const data = parseData(req.body);
   if (data == null) {
@@ -34,8 +41,7 @@ function storeSeriesData(ctx: Context, req: express$Request, res: express$Respon
   
   // Store data
   // TODO derieve namespace from user id
-  const seriesFut = sr.get('test', 'series1');
-  seriesFut
+  series.get('test', 'series1')
     .then((series) => series.append(data))
     .then(() => {
       res
@@ -144,13 +150,12 @@ function querySeriesData(ctx: Context, req: express$Request, res: express$Respon
   // }
   // 
   
-  const sr = ctx.seriesRepository;
+  const series = ctx.series;
   const query = parseQueryFromGET(req.query);
   
   // Store data
   // TODO derieve namespace from user id
-  const seriesFut = sr.get('test', 'series1');
-  seriesFut
+  series.get('test', 'series1')
     .then((series) => series.query(query))
     .then((data) => {
       const responseObj = new SeriesResponse(data); 

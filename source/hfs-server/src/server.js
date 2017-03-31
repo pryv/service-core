@@ -13,12 +13,12 @@ const errorsMiddleware = require('./middleware/errors');
 const promisify = require('./promisify');
 
 const controller = require('./web/controller');
-const Context = require('./web/context');
 
 const KEY_IP = 'http.ip';
 const KEY_PORT = 'http.port';  
 
 import type {Logger} from 'components/utils/src/logging';
+import type Context from './context';
 
 /**
  * HTTP server responsible for the REST api that the HFS server exposes. 
