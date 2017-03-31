@@ -131,6 +131,18 @@ Events.prototype.findStreamed = function (user, query, options, callback) {
 /**
  * Implementation
  */
+Events.prototype.findHistory = function (user, headId, options, callback) {
+  this.database.find(this.getCollectionInfo(user), this.applyQueryToDB({headId: headId}),
+    this.applyOptionsToDB(options),
+    function (err, dbItems) {
+      if (err) { return callback(err); }
+      callback(null, this.applyItemsFromDB(dbItems));
+    }.bind(this));
+};
+
+/**
+ * Implementation
+ */
 Events.prototype.findDeletionsStreamed = function (user, deletedSince, options, callback) {
   var query = {deleted: {$gt: timestamp.toDate(deletedSince)}};
   this.database.findStreamed(this.getCollectionInfo(user), query, this.applyOptionsToDB(options),
@@ -142,6 +154,31 @@ Events.prototype.findDeletionsStreamed = function (user, deletedSince, options, 
 
 Events.prototype.countAll = function (user, callback) {
   this.count(user, {}, callback);
+};
+
+/**
+ * Implementation
+ */
+Events.prototype.minimizeEventsHistory = function (user, headId, callback) {
+  var update = {
+    $unset: {
+      streamId: 1,
+      time: 1,
+      duration: 1,
+      endTime: 1,
+      type: 1,
+      content: 1,
+      tags: 1,
+      description: 1,
+      attachments: 1,
+      clientData: 1,
+      trashed: 1,
+      created: 1,
+      createdBy: 1
+    }
+  };
+  this.database.updateMany(this.getCollectionInfo(user), this.applyQueryToDB({headId: headId}),
+    update, callback);
 };
 
 /* jshint -W024 */

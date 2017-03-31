@@ -93,14 +93,21 @@ BaseStorage.prototype.findStreamed = function (user, query, options, callback) {
 };
 /* jshint +W098 */
 
+/* jshint -W098 */
+/**
+ * Retrieves the history for a certain event
+ *
+ * @param user {Object} user The user owning the collection
+ * @param headId {string} the id of the event whose history is queried
+ * @param options {Object}
+ * @param callback {Function}
+ * @returns {Error}
+ */
 BaseStorage.prototype.findHistory = function (user, headId, options, callback) {
-  this.database.find(this.getCollectionInfo(user), this.applyQueryToDB({headId: headId}),
-    this.applyOptionsToDB(options),
-    function (err, dbItems) {
-      if (err) { return callback(err); }
-      callback(null, this.applyItemsFromDB(dbItems));
-    }.bind(this));
+  return new Error('Not implemented (user: ' + user + ')');
+  // Implemented for Events only
 };
+/* jshint +W098 */
 
 BaseStorage.prototype.findDeletions = function (user, deletedSince, options, callback) {
   var query = {deleted: {$gt: timestamp.toDate(deletedSince)}};
@@ -158,34 +165,19 @@ BaseStorage.prototype.insertOne = function (user, item, callback) {
   });
 };
 
+/* jshint -W098 */
 /**
  * Minimizes an event's history, used when in 'keep-authors' deletionMode
  *
- * @param user
- * @param headId
- * @param callback
+ * @param user {Object} user The user owning the collection
+ * @param headId {string} the id of the event whose history is minimized
+ * @param callback {Function}
  */
 BaseStorage.prototype.minimizeEventsHistory = function (user, headId, callback) {
-  var update = {
-    $unset: {
-      streamId: 1,
-      time: 1,
-      duration: 1,
-      endTime: 1,
-      type: 1,
-      content: 1,
-      tags: 1,
-      description: 1,
-      attachments: 1,
-      clientData: 1,
-      trashed: 1,
-      created: 1,
-      createdBy: 1
-    }
-  };
-  this.database.updateMany(this.getCollectionInfo(user), this.applyQueryToDB({headId: headId}),
-    update, callback);
+  return new Error('Not implemented (user: ' + user + ')');
+  // implemented for events only
 };
+/* jshint +W098 */
 
 /**
  * Updates the single document matching the given query, returning the updated document.
