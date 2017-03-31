@@ -18,7 +18,8 @@ program.version(require('../package.json').version)
     .option('--printConfig',
         'Prints the configuration settings actually loaded (e.g. for debugging purposes)');
 
-var settings = utils.config.load(path.resolve(process.cwd(), 'api-server.config.json')),
+// TODO: keep default path '/var/pryv/' or rollback process.cwd()
+var settings = utils.config.load(path.resolve('/var/pryv/', 'api-server.config.json')),
     logging = utils.logging(settings.logs),
     database = new storage.Database(settings.database, logging),
     usersStorage = new storage.Users(database),
