@@ -24,7 +24,6 @@ ApplyEventsFromDbStream.prototype._transform = function (event, encoding, callba
     this.push(event);
     callback();
   } catch(err) {
-    this.push();
     return callback(err);
   }
 };
