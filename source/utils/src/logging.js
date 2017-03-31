@@ -144,7 +144,7 @@ class LoggerImpl implements Logger {
     this.log('error', msg, metaData);
   }
   
-  log(level: number, message: string, metaData?: {}) {
+  log(level: string, message: string, metaData?: {}) {
     const msg = this.messagePrefix + message;
     this.winstonLogger[level](msg, metaData || {});
   }
