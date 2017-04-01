@@ -12,8 +12,7 @@
     "jsdoc": "node_modules/.bin/jsdoc -c jsdoc.json",
     "test-root": "node_modules/.bin/mocha --compilers js:babel-register --timeout 10000 --reporter=dot test/**/*.test.js",
     "watch": "node_modules/.bin/babel --watch=./source --out-dir=dist/components --copy-files",
-    "release": "scripts/prepare_dist && node_modules/.bin/babel ./source --out-dir=dist/components --copy-files", 
-    
+    "release": "scripts/prepare_dist && node_modules/.bin/babel ./source --out-dir=dist/components --copy-files",
     "flow-coverage": "node_modules/.bin/flow-coverage-report -i 'source/**/*.js' -t html"
   },
   "dependencies": {
@@ -67,6 +66,7 @@
     "foreman": "^2.0.0",
     "jsdoc": "^3.4.3",
     "jsdoc-babel": "^0.3.0",
+    "memo-is": "^0.0.2",
     "mocha": "^3.2.0",
     "nixt": "^0.5.0",
     "nock": "^9.0.9",

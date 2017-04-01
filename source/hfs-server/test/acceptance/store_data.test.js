@@ -5,18 +5,20 @@
 
 /* global describe, it, beforeEach */
 const { should, request, settings } = require('./test-helpers');
+const memo = require('memo-is');
 const R = require('ramda');
 
 const Application = require('../../src/Application');
 
+import type {MetadataRepository} from '../../src/metadata_cache';
 import type {Response} from 'supertest';
 
 describe('Storing data in a HF series', function() {
-  const application = new Application().init(settings); 
-  const context = application.context; 
-  const server = application.server; 
+  const application = memo().is(()  => new Application().init(settings)); 
+  const context = memo().is(()      => application().context); 
+  const server = memo().is(()       => application().server); 
 
-  const app = server.setupExpress();
+  const app = memo().is(()          => server().setupExpress());
   
   describe('POST /events/EVENT_ID/series', function() {
     const EVENT_ID = 'EVENTID';
@@ -24,7 +26,7 @@ describe('Storing data in a HF series', function() {
     // TODO Worry about deleting data that we stored in earlier tests.
     
     function storeData(data): Response {
-      const response = request(app)
+      const response = request(app())
         .post(`/events/${EVENT_ID}/series`)
         .set('authorization', 'AUTH_TOKEN')
         .send(data);
@@ -32,7 +34,7 @@ describe('Storing data in a HF series', function() {
       return response;
     }
     function queryData(): Promise<Object> {
-      let response = request(app)
+      let response = request(app())
         .get(`/events/${EVENT_ID}/series`)
         .query({
           fromTime: '1481677844', 
@@ -47,6 +49,14 @@ describe('Storing data in a HF series', function() {
         });
     }
     
+    function produceMetadataLoader(authTokenValid=true): MetadataRepository {
+      const seriesMeta = {
+        canWrite: function canWrite(): boolean { return authTokenValid; },
+      };
+      return {
+        forSeries: function forSeries() { return seriesMeta; }
+      };
+    }
     function produceData() {
       return {
         elementType: 'mass/kg',
@@ -59,6 +69,11 @@ describe('Storing data in a HF series', function() {
         ]
       };
     }
+    
+    // Bypass authentication check: Succeed always
+    beforeEach(function () {
+      context().metadata = produceMetadataLoader();
+    });
     
     it('stores data into InfluxDB', function() {
       const data = produceData(); 
@@ -79,31 +94,27 @@ describe('Storing data in a HF series', function() {
           R.all(pairEqual, R.zip(response.points, data.points));
         });
     });
-    describe('when authToken is not valid', function () {
-      // Replace metadata loader with a stub that always returns write access
-      // denied.
-      beforeEach(function () {
-        const seriesMeta = {
-          canWrite: function canWrite(): boolean { return false; },
-        };
-        context.metadata = {
-          forSeries: function forSeries() { return seriesMeta; }
-        };
-      });
-    });
-    it('refuses invalid/unauthorized accesses', function () {
-      const data = produceData(); 
-      
-      return storeData(data)
-        .expect(403)
-        .then((res) => {
-          const error = res.body.error; 
-          should(error.id).be.eql('forbidden');
-          should(error.message).be.instanceof(String);
-        });
-    });
     it.skip('should reject malformed requests', function () { });
     it.skip('should reject non-JSON bodies', function () { });
+    
+    describe('when authToken is not valid', function () {
+      // Bypass authentication check: Fail always
+      beforeEach(function () {
+        context().metadata = produceMetadataLoader(false); 
+      });
+
+      it('refuses invalid/unauthorized accesses', function () {
+        const data = produceData(); 
+        
+        return storeData(data)
+          .expect(403)
+          .then((res) => {
+            const error = res.body.error; 
+            should(error.id).be.eql('forbidden');
+            should(error.message).be.instanceof(String);
+          });
+      });
+    });
   }); 
   describe('GET /events/EVENT_ID/series', function () {
     it.skip('should query data from the influx store', function () { });
