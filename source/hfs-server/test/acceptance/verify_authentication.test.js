@@ -13,7 +13,7 @@ import type {MetadataRepository} from '../../src/metadata_cache';
 import type {Memo} from 'memo-is';
 
 describe('Metadata Loader', function () {
-  const loader = 
+  const loader: Memo<MetadataRepository> = 
     memo().is(() => new MetadataLoader());
 
   const EVENT_ID = 'c1';
