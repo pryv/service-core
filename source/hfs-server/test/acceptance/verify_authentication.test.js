@@ -26,7 +26,7 @@ describe('Metadata Loader', function () {
   const loggingStub = {
     getLogger: () => new NullLogger(), 
   };
-  const database = storage.Database(
+  const database = new storage.Database(
     settings.get('mongodb').obj(), 
     loggingStub); 
   const pryv = databaseFixture(database, this);

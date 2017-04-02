@@ -101,10 +101,10 @@ class FixtureTreeNode {
    * resulting attribute set. 
    */
   attributes(attrs: {}) {
-    return R.mergeAll(
+    return R.mergeAll([
       this.fakeAttributes(),
       attrs,
-    );
+    ]);
   }
   /** Override this to provide default attributes via Charlatan generation. 
    */
@@ -168,7 +168,9 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
     super(context);
     
     this.attrs = this.attributes(
-      R.mergeAll(attrs, {username: name})); 
+      R.mergeAll([attrs, {username: name}])); 
+    console.log(this.attrs);
+    console.log(R.mergeAll([attrs, {username: name}]));
   }
   
   stream(attrs: {}={}, cb: (FixtureStream) => void) {
@@ -210,11 +212,10 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
   }
   createUser() {
     const db = this.db; 
-    const user = null; // NOTE not needed for access to users collection.
     const attributes = this.attrs; 
     
     return bluebird.fromCallback((cb) => 
-      db.users.insertOne(user, attributes, cb)); 
+      db.users.insertOne(attributes, cb)); 
   }
   
   fakeAttributes() {
@@ -223,6 +224,7 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
       username: Charlatan.Internet.userName(),
       email: Charlatan.Internet.email(), 
       password: Charlatan.Internet.password(), 
+      language: 'fr',
     };
   }
 }
@@ -263,6 +265,7 @@ class FixtureStream extends FixtureTreeNode implements ChildResource {
     const db = this.db; 
     const username = this.context.userName; 
     const attributes = this.attrs; 
+    console.log('createStream', username);
     
     return bluebird.fromCallback((cb) => 
       db.streams.insertOne(username, attributes, cb)); 
