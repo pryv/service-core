@@ -34,11 +34,18 @@ type DatabaseShortcuts = {
 }
 class UserContext {
   userName: string; 
-  context: Context; 
+  context: Context;
+  user: {
+    id: string,
+  };
   
   constructor(context, userName: string) {
     this.context = context; 
     this.userName = userName;
+    
+    // NOTE For simplicity of debugging, we'll assume that user.id ===
+    // user.username. 
+    this.user = { id: userName };
   }
   
   produceDb() {
@@ -75,16 +82,22 @@ class ChildHolder {
       (child) => child.create(...rest));
   }
 }
+type Attributes = {
+  id: string, 
+}
 class FixtureTreeNode {
   childs: ChildHolder;
   context: UserContext; 
   db: DatabaseShortcuts; 
+  attrs: Attributes; 
     
-  constructor(context: UserContext) {
+  constructor(context: UserContext, attrs: {}) {
     this.childs = new ChildHolder(); 
     this.context = context; 
     
     this.db = this.context.produceDb(); 
+    
+    this.attrs = this.attributes(attrs);
   }
   
   addChild(child: ChildResource) {
@@ -93,6 +106,7 @@ class FixtureTreeNode {
   hasChilds(): boolean {
     return this.childs.hasChilds();
   }
+  
   createChildResources(): Promise<*> {
     return this.childs.createAll();
   }
@@ -100,8 +114,9 @@ class FixtureTreeNode {
   /** Merges attributes given with generated attributes and returns the
    * resulting attribute set. 
    */
-  attributes(attrs: {}) {
+  attributes(attrs: {}): Attributes {
     return R.mergeAll([
+      { id: `c${Charlatan.Number.number(15)}` },
       this.fakeAttributes(),
       attrs,
     ]);
@@ -157,20 +172,12 @@ class Fixture {
   }
 }
 
-type Attributes = {
-  id: string, 
-}
 class FixtureUser extends FixtureTreeNode implements ChildResource {
   attrs: Attributes; 
   
   /** Internal constructor for a user fixture. */
   constructor(context: UserContext, name: string, attrs: {}) {
-    super(context);
-    
-    this.attrs = this.attributes(
-      R.mergeAll([attrs, {username: name}])); 
-    console.log(this.attrs);
-    console.log(R.mergeAll([attrs, {username: name}]));
+    super(context, R.mergeAll([attrs, {id: name, username: name}]));
   }
   
   stream(attrs: {}={}, cb: (FixtureStream) => void) {
@@ -203,13 +210,33 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
     const db = this.db; 
     const user = null; // NOTE not needed for access to users collection.
     const username = this.context.userName; 
-    
+    const collections = [
+      db.streams, 
+      db.events,
+      db.accesses, 
+    ];
+        
     // NOTE username in context will be the same as the one stored in
     // this.attrs.
-    
-    return bluebird.fromCallback((cb) => 
+    const removeUser = bluebird.fromCallback((cb) => 
       db.users.removeOne(user, {username: username}, cb));
+
+    return removeUser
+      .then(() => 
+        bluebird.map(collections, (coll) => this.safeRemoveColl(coll)) );
   }
+  safeRemoveColl(col): Promise<*> {
+    const user = this.context.user;
+    // const colName = col.getCollectionInfo(user).name;
+
+    return bluebird
+      .fromCallback((cb) => col.dropCollection(user, cb))
+      // .then(() => console.log('dropped', colName))
+      .catch((err) => {
+        if (! /ns not found/.test(err.message)) throw err; 
+      });
+  }
+  
   createUser() {
     const db = this.db; 
     const attributes = this.attrs; 
@@ -220,7 +247,6 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
   
   fakeAttributes() {
     return {
-      id: `c${Charlatan.Number.number(15)}`,
       username: Charlatan.Internet.userName(),
       email: Charlatan.Internet.email(), 
       password: Charlatan.Internet.password(), 
@@ -233,10 +259,8 @@ class FixtureStream extends FixtureTreeNode implements ChildResource {
   parentId: ?string; 
   
   constructor(context: UserContext, attrs: {}, parentId: ?string) {
-    super(context);
+    super(context, R.merge(attrs, {parentId: parentId}));
     
-    this.attrs = this.attributes(
-      R.merge(attrs, {parentId: parentId})); 
     this.parentId = parentId; 
   }
   
@@ -263,12 +287,11 @@ class FixtureStream extends FixtureTreeNode implements ChildResource {
   }
   createStream() {
     const db = this.db; 
-    const username = this.context.userName; 
+    const user = this.context.user; 
     const attributes = this.attrs; 
-    console.log('createStream', username);
     
     return bluebird.fromCallback((cb) => 
-      db.streams.insertOne(username, attributes, cb)); 
+      db.streams.insertOne(user, attributes, cb)); 
   }
 
   fakeAttributes() {
@@ -280,13 +303,9 @@ class FixtureStream extends FixtureTreeNode implements ChildResource {
   }
 }
 class FixtureEvent extends FixtureTreeNode implements ChildResource {
-  attrs: {}; 
-  
   constructor(context: UserContext, attrs: {}, streamId: string) {
-    super(context);
-    
-    this.attrs = this.attributes(
-      R.merge(attrs, {streamId: streamId})); 
+    super(context, 
+      R.merge(attrs, {streamId: streamId}));
   }
   
   create() {
@@ -295,11 +314,11 @@ class FixtureEvent extends FixtureTreeNode implements ChildResource {
   }
   createEvent() {
     const db = this.db; 
-    const username = this.context.userName; 
+    const user = this.context.user; 
     const attributes = this.attrs; 
     
     return bluebird.fromCallback((cb) => 
-      db.events.insertOne(username, attributes, cb)); 
+      db.events.insertOne(user, attributes, cb)); 
   }
 
   fakeAttributes() {
@@ -316,12 +335,8 @@ class FixtureEvent extends FixtureTreeNode implements ChildResource {
   }
 }
 class FixtureAccess extends FixtureTreeNode implements ChildResource {
-  attrs: {}; 
-  
   constructor(context: UserContext, attrs: {}) {
-    super(context);
-
-    this.attrs = this.attributes(attrs); 
+    super(context, attrs);
   }
   
   create() {
@@ -330,11 +345,11 @@ class FixtureAccess extends FixtureTreeNode implements ChildResource {
   }
   createAccess() {
     const db = this.db; 
-    const username = this.context.userName; 
+    const user = this.context.user; 
     const attributes = this.attrs; 
     
     return bluebird.fromCallback((cb) => 
-      db.accesses.insertOne(username, attributes, cb)); 
+      db.accesses.insertOne(user, attributes, cb)); 
   }
 
   fakeAttributes() {
