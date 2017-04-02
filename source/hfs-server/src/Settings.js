@@ -158,6 +158,29 @@ class Settings {
         default: 'config/hfs-server.json', 
         arg: 'config', 
       },
+      mongodb: {
+        // These should be the production defaults. 
+        host: {
+          format: String, 
+          default: 'mongo'
+        }, 
+        port: {
+          format: Number, 
+          default: 27017, 
+        }, 
+        name: {
+          format: String, 
+          default: 'pryv-node',
+        },
+        authUser: {
+          format: String, 
+          default: '', 
+        }, 
+        authPassword: {
+          format: String, 
+          default: '', 
+        }, 
+      },
       logs: {
         prefix: {
           default: '', 

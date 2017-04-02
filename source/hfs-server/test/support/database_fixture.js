@@ -8,62 +8,53 @@ const Charlatan = require('charlatan');
 
 const storage = require('components/storage');
 
-class Fixture {
-  mocha: *;
+class Context {
+  databaseConn: storage.Database; 
+  mochaContext: Suite; 
   
-  users: Array<FixtureUser>;
-  hookRegistered: boolean;
-  
-  constructor(mochaContext: Suite) {
-    this.mocha = mochaContext;
-    this.users = []; 
-    this.hookRegistered = false; 
+  constructor(databaseConn, mochaContext) {
+    this.databaseConn = databaseConn; 
+    this.mochaContext = mochaContext; 
   }
   
-  user(name: string, attrs: UserAttributes={}, cb: (FixtureUser) => void) {
-    const u = new FixtureUser(name, attrs);
-    
-    this.registerUser(u);
-    
-    if (cb) cb(u);
-    return u;
+  registerBeforeEach(fun: (done: () => void) => void) {
+    this.mochaContext.beforeEach(fun);
   }
   
-  registerUser(user: FixtureUser) {
-    this.users.push(user);
-    
-    if (!this.hook$hookRegistered) {
-      this.mocha.beforeEach((done) => {
-        this.beforeEachHook(done); 
-      });
-    }
-  }
-  
-  /** Gets called in beforeEach. */
-  beforeEachHook(done: () => void) {
-    if (this.users.length <= 0) return done(); 
-    
-    const userOps = []; 
-    for (let user of this.users) {
-      userOps.push(
-        this.createUserFixture(user));
-    }
-
-    bluebird.all(userOps).asCallback(done);
-  }
-
-  createUserFixture(user: FixtureUser): Promise<void> {
-    return user.recreate();
+  forUser(user: string) {
+    return new UserContext(this, user);
   }
 }
 
-type Attributes = {
-  id: string, 
+type DatabaseShortcuts = {
+  users: storage.Users, 
+  streams: storage.Streams, 
+  events: storage.Events, 
+  accesses: storage.Accesses, 
 }
+class UserContext {
+  userName: string; 
+  context: Context; 
+  
+  constructor(context, userName: string) {
+    this.context = context; 
+    this.userName = userName;
+  }
+  
+  produceDb() {
+    const conn = this.context.databaseConn;
+    return {
+      users: new storage.Users(conn),
+      streams: new storage.user.Streams(conn),
+      events: new storage.user.Events(conn),
+      accesses: new storage.user.Accesses(conn),
+    };
+  }
+}
+
 interface ChildResource {
   create(): Promise<*>;
 }
-
 class ChildHolder {
   childs: Array<ChildResource>; 
   
@@ -75,71 +66,157 @@ class ChildHolder {
     this.childs.push(child);
   }
   
+  hasChilds(): boolean {
+    return this.childs.length > 0;
+  }
+  
   createAll(...rest) {
     return bluebird.map(this.childs, 
       (child) => child.create(...rest));
   }
 }
-
-class FixtureUser {
-  childs: ChildHolder; 
+class FixtureTreeNode {
+  childs: ChildHolder;
+  context: UserContext; 
+  db: DatabaseShortcuts; 
+    
+  constructor(context: UserContext) {
+    this.childs = new ChildHolder(); 
+    this.context = context; 
+    
+    this.db = this.context.produceDb(); 
+  }
   
+  addChild(child: ChildResource) {
+    this.childs.push(child);
+  }
+  hasChilds(): boolean {
+    return this.childs.hasChilds();
+  }
+  createChildResources(): Promise<*> {
+    return this.childs.createAll();
+  }
+  
+  /** Merges attributes given with generated attributes and returns the
+   * resulting attribute set. 
+   */
+  attributes(attrs: {}) {
+    return R.mergeAll(
+      this.fakeAttributes(),
+      attrs,
+    );
+  }
+  /** Override this to provide default attributes via Charlatan generation. 
+   */
+  fakeAttributes() {
+    return {}; 
+  }
+}
+
+class Fixture {
+  hookRegistered: boolean;
+  childs: ChildHolder; 
+  context: Context; 
+  
+  constructor(context: Context) {
+    this.context = context; 
+    
+    this.childs = new ChildHolder(); 
+    this.hookRegistered = false; 
+  }
+  
+  user(name: string, attrs: {}={}, cb?: (FixtureUser) => void): FixtureUser {
+    const u = new FixtureUser(
+      this.context.forUser(name), 
+      name, attrs);
+    
+    this.addChild(u);
+    
+    if (cb) cb(u);
+    return u;
+  }
+  
+  // Overrides parent implementation
+  addChild(u: ChildResource) {
+    this.childs.push(u);
+    
+    // Make sure that we hook into mocha, but only once. 
+    if (!this.hookRegistered) {
+      this.hookRegistered = true; 
+      
+      this.context.registerBeforeEach((done) => 
+        this.beforeEachHook(done));
+    }
+  }
+  
+  /** Gets called in beforeEach. */
+  beforeEachHook(done: () => void) {
+    if (! this.childs.hasChilds()) return done(); 
+
+    this.childs.createAll().asCallback(done);
+  }
+}
+
+type Attributes = {
+  id: string, 
+}
+class FixtureUser extends FixtureTreeNode implements ChildResource {
   attrs: Attributes; 
-  name: string; 
   
   /** Internal constructor for a user fixture. */
-  constructor(name: string, attrs: UserAttributes) {
-    this.name = name; 
-    this.attrs = this.attributes(attrs); 
-    this.childs = new ChildHolder(); 
+  constructor(context: UserContext, name: string, attrs: {}) {
+    super(context);
+    
+    this.attrs = this.attributes(
+      R.mergeAll(attrs, {username: name})); 
   }
   
   stream(attrs: {}={}, cb: (FixtureStream) => void) {
-    const s = new FixtureStream(this.name, null, attrs); 
-    this.childs.push(s);
-    
+    const s = new FixtureStream(this.context, attrs);
+
+    this.addChild(s);
     if (cb) cb(s);
 
     return s; 
   }
   access(attrs: {}={}) {
-    const a = new FixtureAccess(this.name, attrs); 
-    this.childs.push(a);
+    const a = new FixtureAccess(this.context, attrs); 
+    
+    this.addChild(a);
 
     return a; 
   }
   
   /** Removes all resources belonging to the user, then creates them again, 
-   * according to the spec stored here. */
-  recreate(): Promise<*> {
+   * according to the spec stored here. 
+   */
+  create(): Promise<*> {
     return bluebird
       .try(() => this.remove()) // Remove user if it exists, including all associated data
-      .then(() => this.create()) // Create user
-      .then(() => this.createChildResources); // Create child resources
+      .then(() => this.createUser()) // Create user
+      .then(() => this.createChildResources()); // Create child resources
   }
   
   remove() {
+    const db = this.db; 
     const user = null; // NOTE not needed for access to users collection.
+    const username = this.context.userName; 
+    
+    // NOTE username in context will be the same as the one stored in
+    // this.attrs.
+    
     return bluebird.fromCallback((cb) => 
-      storage.users.removeOne(user, {username: this.name}, cb));
+      db.users.removeOne(user, {username: username}, cb));
   }
-  create() {
+  createUser() {
+    const db = this.db; 
+    const user = null; // NOTE not needed for access to users collection.
     const attributes = this.attrs; 
     
     return bluebird.fromCallback((cb) => 
-      storage.users.insertOne(attributes, cb)); 
-  }
-  createChildResources() {
-    return this.childs.createAll(); 
+      db.users.insertOne(user, attributes, cb)); 
   }
   
-  attributes(attrs: {}): Attributes {
-    return R.mergeAll(
-      this.fakeAttributes(),
-      attrs || {}, 
-      {username: this.name},
-    );
-  }
   fakeAttributes() {
     return {
       id: `c${Charlatan.Number.number(15)}`,
@@ -149,34 +226,30 @@ class FixtureUser {
     };
   }
 }
-class FixtureStream implements ChildResource {
-  childs: ChildHolder; 
-  
+class FixtureStream extends FixtureTreeNode implements ChildResource {
   attrs: Attributes; 
-  
   parentId: ?string; 
-  user: string; 
   
-  // TODO worry about a streams parent
-  
-  constructor(user: string, parentId: ?string, attrs: {}) {
-    this.attrs = this.attributes(attrs); 
-    this.user = user; 
+  constructor(context: UserContext, attrs: {}, parentId: ?string) {
+    super(context);
+    
+    this.attrs = this.attributes(
+      R.merge(attrs, {parentId: parentId})); 
     this.parentId = parentId; 
-    this.childs = new ChildHolder(); 
   }
   
   stream(attrs: {}={}, cb: (FixtureStream) => void) {
-    const s = new FixtureStream(this.user, this.attrs.id, attrs); 
-    this.childs.push(s);
+    const s = new FixtureStream(this.context, attrs, this.attrs.id); 
     
+    this.addChild(s);
     if (cb) cb(s);
 
     return s; 
   }
   event(attrs: {}) {
-    const e = new FixtureEvent(this.user, this.attrs.id, attrs); 
-    this.childs.push(e);
+    const e = new FixtureEvent(this.context, attrs, this.attrs.id); 
+    
+    this.addChild(e);
     
     return e; 
   }
@@ -187,21 +260,14 @@ class FixtureStream implements ChildResource {
       .then(() => this.createChildResources()); 
   }
   createStream() {
+    const db = this.db; 
+    const username = this.context.userName; 
     const attributes = this.attrs; 
     
     return bluebird.fromCallback((cb) => 
-      storage.streams.insertOne(this.user, attributes, cb)); 
-  }
-  createChildResources() {
-    return this.childs.createAll();
+      db.streams.insertOne(username, attributes, cb)); 
   }
 
-  attributes(attrs: {}): Attributes {
-    return R.mergeAll(
-      this.fakeAttributes(),
-      attrs || {}, 
-    );
-  }
   fakeAttributes() {
     return {
       id: `c${Charlatan.Number.number(15)}`,
@@ -210,15 +276,14 @@ class FixtureStream implements ChildResource {
     };
   }
 }
-class FixtureEvent implements ChildResource {
+class FixtureEvent extends FixtureTreeNode implements ChildResource {
   attrs: {}; 
-  user: string; 
-  streamId: string; 
   
-  constructor(user: string, streamId: string, attrs: {}) {
-    this.attrs = this.attributes(attrs); 
-    this.user = user; 
-    this.streamId = streamId;
+  constructor(context: UserContext, attrs: {}, streamId: string) {
+    super(context);
+    
+    this.attrs = this.attributes(
+      R.merge(attrs, {streamId: streamId})); 
   }
   
   create() {
@@ -226,22 +291,19 @@ class FixtureEvent implements ChildResource {
       .try(() => this.createEvent());
   }
   createEvent() {
+    const db = this.db; 
+    const username = this.context.userName; 
     const attributes = this.attrs; 
     
     return bluebird.fromCallback((cb) => 
-      storage.events.insertOne(this.user, attributes, cb)); 
+      db.events.insertOne(username, attributes, cb)); 
   }
 
-  attributes(attrs: {}): Attributes {
-    return R.mergeAll(
-      this.fakeAttributes(),
-      attrs || {}, 
-    );
-  }
   fakeAttributes() {
+    // NOTE no need to worry about streamId, this is enforced by the
+    // constructor. 
     return {
       id: `c${Charlatan.Number.number(15)}`,
-      streamId: this.streamId, 
       time: Charlatan.Date.backward(), 
       duration: 0, 
       type: Charlatan.Helpers.sample(['mass/kg']), 
@@ -250,13 +312,13 @@ class FixtureEvent implements ChildResource {
     };
   }
 }
-class FixtureAccess {
+class FixtureAccess extends FixtureTreeNode implements ChildResource {
   attrs: {}; 
-  user: string; 
   
-  constructor(user: string, attrs: {}) {
+  constructor(context: UserContext, attrs: {}) {
+    super(context);
+
     this.attrs = this.attributes(attrs); 
-    this.user = user; 
   }
   
   create() {
@@ -264,18 +326,14 @@ class FixtureAccess {
       .try(() => this.createAccess());
   }
   createAccess() {
+    const db = this.db; 
+    const username = this.context.userName; 
     const attributes = this.attrs; 
     
     return bluebird.fromCallback((cb) => 
-      storage.accesses.insertOne(this.user, attributes, cb)); 
+      db.accesses.insertOne(username, attributes, cb)); 
   }
 
-  attributes(attrs: {}): Attributes {
-    return R.mergeAll(
-      this.fakeAttributes(),
-      attrs || {}, 
-    );
-  }
   fakeAttributes() {
     return {
       id: `c${Charlatan.Number.number(15)}`,
@@ -286,8 +344,10 @@ class FixtureAccess {
   }
 }
 
-function databaseFixture(mochaContext: Suite) {
-  return new Fixture(mochaContext);
+function databaseFixture(database: storage.Database, mochaContext: Suite) {
+  const context = new Context(database, mochaContext);
+  
+  return new Fixture(context);
 }
 
 module.exports = databaseFixture;

@@ -9,6 +9,8 @@ declare interface Memo<T> {
 }
 
 declare module 'memo-is' {
+  declare type Memo<T> = Memo<T>;
+  
   declare module.exports: {
     (): MemoSeed;
   }

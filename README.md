@@ -9,6 +9,8 @@ Pryv core server app components, ie. what runs on each server node and handles u
 
 _Prerequisites:_ Node v6.9.5, Yarn v0.20.3, Mongo DB v2.6+ (needs at least 4GB of free disk space for the initial database), Nginx (optional, skip if you don't need the proxy server).
 
+You will need to install 'node-gyp' globally as well: `yarn global add node-gyp`. Your environment needs to support C/C++ compilation. On Linux, this includes `sudo apt-get install build-essentials`, on Mac OS X this is XCode + Command Line Utilities. 
+
 Then just `yarn install`.
 
 ### Top Level Directories

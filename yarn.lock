@@ -603,9 +603,9 @@ charenc@~0.0.1:
   version "0.0.2"
   resolved "https://registry.yarnpkg.com/charenc/-/charenc-0.0.2.tgz#c0a1d2f3a7092e03774bfa83f14c0fc5790a8667"
 
-charlatan@^1.1.0:
+charlatan@kschiess/charlatan#b6e770f90e41ab28be739c6e78e1352ead6df1cc:
   version "1.1.0"
-  resolved "https://registry.yarnpkg.com/charlatan/-/charlatan-1.1.0.tgz#58b5e39e91e9b28009aaee08a930700b7e94582b"
+  resolved "https://codeload.github.com/kschiess/charlatan/tar.gz/b6e770f90e41ab28be739c6e78e1352ead6df1cc"
   dependencies:
     js-yaml "^3.2.7"
 
@@ -735,6 +735,19 @@ convict@^2.0.0:
     validator "6.2.0"
   optionalDependencies:
     varify "0.1.1"
+
+convict@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/convict/-/convict-3.0.0.tgz#259f30bfb87ee0944860486203519d467b4d51b5"
+  dependencies:
+    depd "1.1.0"
+    json5 "0.5.1"
+    lodash.clonedeep "4.5.0"
+    minimist "1.2.0"
+    moment "2.17.1"
+    validator "7.0.0"
+  optionalDependencies:
+    varify "0.2.0"
 
 cookie-parser@^1.4.3:
   version "1.4.3"
@@ -1108,6 +1121,10 @@ esprima@^3.1.1:
 esprima@~1.0.4:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/esprima/-/esprima-1.0.4.tgz#9f557e08fc3b4d26ece9dd34f8fbf476b62585ad"
+
+esprima@~3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/esprima/-/esprima-3.0.0.tgz#53cf247acda77313e551c3aa2e73342d3fb4f7d9"
 
 esrecurse@^4.1.0:
   version "4.1.0"
@@ -2719,6 +2736,12 @@ redeyed@~0.4.2:
   dependencies:
     esprima "~1.0.4"
 
+redeyed@~1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/redeyed/-/redeyed-1.0.1.tgz#e96c193b40c0816b00aec842698e61185e55498a"
+  dependencies:
+    esprima "~3.0.0"
+
 redis@0.7.3:
   version "0.7.3"
   resolved "https://registry.yarnpkg.com/redis/-/redis-0.7.3.tgz#ee57b7a44d25ec1594e44365d8165fa7d1d4811a"
@@ -3411,11 +3434,22 @@ validator@6.2.0, validator@^6.0.0:
   version "6.2.0"
   resolved "https://registry.yarnpkg.com/validator/-/validator-6.2.0.tgz#b2cccdc49ff0f4b8ee4e61dba2ddd3dde13f23e7"
 
+validator@7.0.0:
+  version "7.0.0"
+  resolved "https://registry.yarnpkg.com/validator/-/validator-7.0.0.tgz#c74deb8063512fac35547938e6f0b1504a282fd2"
+
 varify@0.1.1:
   version "0.1.1"
   resolved "https://registry.yarnpkg.com/varify/-/varify-0.1.1.tgz#98854bf465438a520788cfca136e14f511155b1e"
   dependencies:
     redeyed "~0.4.2"
+    through "~2.3.4"
+
+varify@0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/varify/-/varify-0.2.0.tgz#191da9fe9dc4cd68d0d14498d4e2a910ff4e6516"
+  dependencies:
+    redeyed "~1.0.1"
     through "~2.3.4"
 
 vary@~1.1.0:

@@ -2,16 +2,14 @@
 
 // Load configuration file, set up execution context and start the server. 
 
-const influx = require('influx'); // TODO maybe push this dependency outwards?
-
-const logComponent = require('components/utils/src/logging');
+const logComponent = require('components/utils').logging;
 const business = require('components/business');
 
 const Context = require('./context');
 const Settings = require('./Settings');
 const Server = require('./Server'); 
 
-import type {Logger, LogFactory} from 'components/utils/src/logging';
+import type {LogFactory} from 'components/utils/src/logging';
 
 function createSettings(): Settings {
   try {

@@ -11,3 +11,4 @@ decls/
 <PROJECT_ROOT>/node_modules/api-server/.*
 <PROJECT_ROOT>/node_modules/storage/.*
 <PROJECT_ROOT>/node_modules/hfs-server/.*
+<PROJECT_ROOT>/node_modules/business/.*

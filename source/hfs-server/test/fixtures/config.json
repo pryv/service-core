@@ -11,5 +11,8 @@
     "airbrake": {
       "active": false
     }
+  }, 
+  "mongodb": {
+    "host": "localhost",
   }
 }

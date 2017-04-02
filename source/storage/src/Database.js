@@ -21,7 +21,7 @@ module.exports = Database;
  * @constructor
  */
 function Database(settings, logging) {
-  var authPart = settings.authUser ?
+  var authPart = settings.authUser && settings.authUser.length>0 ?
       settings.authUser + ':' + settings.authPassword + '@' : '';
   this.connectionString = 'mongodb://' + authPart + settings.host + ':' + settings.port + '/' +
       settings.name;

@@ -3,8 +3,12 @@
 // Tests that exercise auth checks that have been disabled in other tests. 
 
 /* global describe, it */
-const { should, settings } = require('./test-helpers');
 const memo = require('memo-is');
+
+const { should, settings } = require('./test-helpers');
+
+const NullLogger = require('components/utils/src/logging').NullLogger;
+const storage = require('components/storage');
 const databaseFixture = require('../support/database_fixture');
 
 const {MetadataLoader, MetadataCache} = require('../../src/metadata_cache');
@@ -19,9 +23,16 @@ describe('Metadata Loader', function () {
   const EVENT_ID = 'c1';
   const ACCESS_TOKEN = 'a1';
 
-  const pryv = databaseFixture(this);
-  pryv.user('foo', function (user) {
-    user.stream('something', {}, function (stream) {
+  const loggingStub = {
+    getLogger: () => new NullLogger(), 
+  };
+  const database = storage.Database(
+    settings.get('mongodb').obj(), 
+    loggingStub); 
+  const pryv = databaseFixture(database, this);
+
+  pryv.user('foo', {}, function (user) {
+    user.stream({id: 'something'}, function (stream) {
       stream.event({id: EVENT_ID});
     });
     
