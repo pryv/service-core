@@ -47,6 +47,7 @@
     "storage": "file:source/storage",
     "superagent": "^3.4.4",
     "test-helpers": "file:source/test-helpers",
+    "unicode": "^0.6.1",
     "unix-timestamp": "^0.2.0",
     "utils": "file:source/utils"
   },
