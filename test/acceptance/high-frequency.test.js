@@ -1,5 +1,5 @@
 /*global describe, it, before*/
-const helpers = require(__dirname + '/../../components/api-server/test/helpers'),
+const helpers = require(__dirname + '/../../dist/components/api-server/test/helpers'),
       testData = helpers.data,
       server = helpers.dependencies.instanceManager,
       timestamp = require('unix-timestamp'),
@@ -7,8 +7,8 @@ const helpers = require(__dirname + '/../../components/api-server/test/helpers')
       async = require('async'),
       nock = require('nock'),
       should = require('should'),
-      eventTypes = require('../../components/api-server/src/schema/event-types.default.json').types,
-      errors = require('../../components/errors/src/ErrorIds');
+      eventTypes = require('../../dist/components/api-server/src/schema/event-types.default.json').types,
+      errors = require('../../dist/components/errors/src/ErrorIds');
 
 
 describe('High-Frequency', function () {
