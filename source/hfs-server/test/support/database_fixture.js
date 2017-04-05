@@ -5,6 +5,7 @@ import type {Suite} from 'mocha';
 const bluebird = require('bluebird');
 const R = require('ramda');
 const Charlatan = require('charlatan');
+const generateId = require('cuid');
 
 const storage = require('components/storage');
 
@@ -28,6 +29,8 @@ class Context {
 
 type DatabaseShortcuts = {
   users: storage.Users, 
+  sessions: Sessions, 
+  
   streams: storage.Streams, 
   events: storage.Events, 
   accesses: storage.user.Accesses, 
@@ -52,6 +55,8 @@ class UserContext {
     const conn = this.context.databaseConn;
     return {
       users: new storage.Users(conn),
+      sessions: new Sessions(conn),
+      
       streams: new storage.user.Streams(conn),
       events: new storage.user.Events(conn),
       accesses: new storage.user.Accesses(conn),
@@ -195,6 +200,13 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
 
     return a; 
   }
+  session(token?: string) {
+    const a = new FixtureSession(this.context, token); 
+    
+    this.addChild(a);
+
+    return a; 
+  }
   
   /** Removes all resources belonging to the user, then creates them again, 
    * according to the spec stored here. 
@@ -220,8 +232,12 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
     // this.attrs.
     const removeUser = bluebird.fromCallback((cb) => 
       db.users.removeOne(user, {username: username}, cb));
+      
+    const removeSessions = bluebird.fromCallback((cb) => 
+      db.sessions.removeForUser(username, cb));
 
-    return removeUser
+    return bluebird
+      .all([removeUser, removeSessions])
       .then(() => 
         bluebird.map(collections, (coll) => this.safeRemoveColl(coll)) );
   }
@@ -359,6 +375,93 @@ class FixtureAccess extends FixtureTreeNode implements ChildResource {
       name: Charlatan.Commerce.productName(), 
       type: Charlatan.Helpers.sample(['personal', 'shared']), 
     };
+  }
+}
+
+/** A hack that allows session creation. The storage.Sessions interface 
+ * will not really allow fixture creation, so we're cloning some of the code 
+ * here. 
+ */
+class FixtureSession extends FixtureTreeNode implements ChildResource {
+  session: storage.Sessions; 
+  
+  constructor(context: UserContext, token?: string) {
+    const attrs = {}; 
+    if (token != null) attrs.id = token; 
+    
+    super(context, attrs);
+  }
+  
+  create() {
+    return bluebird
+      .try(() => this.createSession());
+  }
+  createSession() {
+    const db = this.db; 
+    const user = this.context.user; 
+    const attributes = this.attrs; 
+    
+    return bluebird.fromCallback((cb) => 
+      db.sessions.insertOne(user, attributes, cb));
+  }
+
+  fakeAttributes() {
+    const getNewExpirationDate = storage.Sessions.prototype.getNewExpirationDate
+      .bind({
+        options: {
+          maxAge: 1000 * 60 * 60 * 24 * 14, // two weeks
+        },
+      });
+    
+    return {
+      _id: generateId(), 
+      expires: getNewExpirationDate(), 
+      data: {
+        username: this.context.userName, 
+        appId: Charlatan.App.name(), 
+      },
+    };
+  }
+}
+class Sessions {
+  collectionInfo: {
+    name: string, 
+    indexes: Array<{}>, 
+  }
+  databaseConn: storage.Database; 
+  
+  constructor(databaseConn: storage.Database) {
+    this.databaseConn = databaseConn;
+    
+    this.collectionInfo = {
+      name: 'sessions',
+      indexes: [
+        // set TTL index for auto cleanup of expired sessions
+        {
+          index: {expires: 1},
+          options: {expireAfterSeconds: 0}
+        }
+      ]
+    };
+  }
+  
+  insertOne(user: {id: string}, attributes: Attributes, cb: () => void) {
+    const id = attributes.id; 
+    delete attributes.id; 
+    
+    attributes['_id'] = id; 
+    
+    this.databaseConn.insertOne(
+      this.collectionInfo, 
+      attributes, 
+      cb);
+  }
+  
+  removeForUser(userName: string, cb: () => void) {
+    this.databaseConn.deleteMany(
+      this.collectionInfo, 
+      {'data.username': userName}, 
+      cb);
   }
 }
 

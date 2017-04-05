@@ -204,7 +204,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
             conflictingKeys = {token: params.token};
           } else {
             conflictingKeys = { type: params.type, name: params.name };
-            if (params.deviceName) {
+            if (params.deviceName) {
               conflictingKeys.deviceName = params.deviceName;
             }
           }

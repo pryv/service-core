@@ -65,7 +65,7 @@ class MetadataLoader {
     // Retrieve Access (including accessLogic)
     const methodContext = new MethodContext(userName, accessToken, storage);
     
-    return bluebird.fromCallback((returnValue) => {
+    return bluebird.fromCallback((returnValueCallback) => {
       async.series(
         [
           methodContext.retrieveUser.bind(methodContext),
@@ -73,7 +73,7 @@ class MetadataLoader {
           function loadEvent(done) {
             const user = methodContext.user; 
             const query = {id: eventId};
-            const findOpts = {}; 
+            const findOpts = null; 
 
             storage.events.findOne(user, query, findOpts, done);
           },
@@ -83,7 +83,8 @@ class MetadataLoader {
           const user = methodContext.user; 
           const event = R.last(results);  // TODO fragile!
           
-          returnValue(null, 
+          if (err) return returnValueCallback(err);
+          returnValueCallback(null, 
             new SeriesMetadataImpl(accesss, user, event));
         }
       );
@@ -92,7 +93,9 @@ class MetadataLoader {
 }
 
 type AccessModel = {};
-type EventModel = {}; 
+type EventModel = {
+  streamId: string
+}; 
 
 /** Metadata on a series, obtained from querying the main database. 
  *
@@ -101,7 +104,10 @@ type EventModel = {};
  *  only things that we subsequently need for our operations. 
  */
 class SeriesMetadataImpl implements SeriesMetadata {
+  streamId: string; 
+  
   constructor(access: AccessModel, user: UserModel, event: EventModel) {
+    this.streamId = event.streamId; 
   }
   
   canWrite(): boolean {

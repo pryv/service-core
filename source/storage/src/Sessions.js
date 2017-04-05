@@ -63,10 +63,6 @@ Sessions.prototype.get = function (id, callback) {
  * @param {Function} callback Args: err, id
  */
 Sessions.prototype.getMatching = function (data, callback) {
-  var query = {};
-  Object.keys(data).forEach(function (key) {
-    query['data.' + key] = data[key];
-  });
   this.database.findOne(collectionInfo, {data: data}, null, function (err, session) {
     if (err) {
       return callback(err);

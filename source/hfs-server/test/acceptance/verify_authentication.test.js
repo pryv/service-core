@@ -39,6 +39,7 @@ describe('Metadata Loader', function () {
     });
     
     user.access({token: ACCESS_TOKEN});
+    user.session(ACCESS_TOKEN);
   });
   
   it('should allow write access to series', function () {
