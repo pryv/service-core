@@ -38,7 +38,7 @@ describe('Metadata Loader', function () {
       stream.event({id: EVENT_ID});
     });
     
-    user.access({token: ACCESS_TOKEN});
+    user.access({token: ACCESS_TOKEN, type: 'personal'});
     user.session(ACCESS_TOKEN);
   });
   

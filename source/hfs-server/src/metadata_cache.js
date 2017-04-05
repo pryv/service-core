@@ -79,13 +79,13 @@ class MetadataLoader {
           },
         ], 
         (err, results) => {
-          const accesss = methodContext.accesss; 
+          const access = methodContext.access; 
           const user = methodContext.user; 
           const event = R.last(results);  // TODO fragile!
           
           if (err) return returnValueCallback(err);
           returnValueCallback(null, 
-            new SeriesMetadataImpl(accesss, user, event));
+            new SeriesMetadataImpl(access, user, event));
         }
       );
     });
@@ -104,14 +104,22 @@ type EventModel = {
  *  only things that we subsequently need for our operations. 
  */
 class SeriesMetadataImpl implements SeriesMetadata {
-  streamId: string; 
+  permissions: {
+    write: boolean, 
+    read: boolean, 
+  }
   
   constructor(access: AccessModel, user: UserModel, event: EventModel) {
-    this.streamId = event.streamId; 
+    const streamId = event.streamId; 
+    
+    this.permissions = {
+      write: access.canContributeToStream(streamId),
+      read: access.canReadStream(streamId),
+    }
   }
   
   canWrite(): boolean {
-    return false; 
+    return this.permissions.write; 
   }
 }
 
