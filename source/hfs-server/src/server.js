@@ -119,7 +119,7 @@ class Server {
     
     app.disable('x-powered-by');
 
-    app.use(middleware.subdomainToPath());
+    app.use(middleware.subdomainToPath([]));
     app.use(middleware.requestTrace(express, logging(logSettings)));
     app.use(bodyParser.json());
     app.use(middleware.override);
