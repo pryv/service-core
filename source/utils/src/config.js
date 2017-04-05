@@ -128,6 +128,10 @@ config.schema = {
       colorize: {
         format: Boolean,
         default: true
+      }, 
+      timestamp: {
+        format: Boolean, 
+        default: true, 
       }
     },
     file: {
