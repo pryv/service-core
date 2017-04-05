@@ -603,9 +603,9 @@ charenc@~0.0.1:
   version "0.0.2"
   resolved "https://registry.yarnpkg.com/charenc/-/charenc-0.0.2.tgz#c0a1d2f3a7092e03774bfa83f14c0fc5790a8667"
 
-charlatan@kschiess/charlatan#b6e770f90e41ab28be739c6e78e1352ead6df1cc:
+charlatan@^1.1.0:
   version "1.1.0"
-  resolved "https://codeload.github.com/kschiess/charlatan/tar.gz/b6e770f90e41ab28be739c6e78e1352ead6df1cc"
+  resolved "https://registry.yarnpkg.com/charlatan/-/charlatan-1.1.0.tgz#58b5e39e91e9b28009aaee08a930700b7e94582b"
   dependencies:
     js-yaml "^3.2.7"
 

@@ -57,7 +57,7 @@
     "babel-eslint": "^7.1.1",
     "babel-register": "^6.23.0",
     "blanket": "^1.2.3",
-    "charlatan": "kschiess/charlatan#b6e770f90e41ab28be739c6e78e1352ead6df1cc",
+    "charlatan": "^1.1.0",
     "colors": "^1.0.3",
     "cookie": "latest",
     "date-utils": "latest",
