@@ -9,6 +9,7 @@ const errors = require('components/errors').factory;
 const SeriesResponse = require('./SeriesResponse');
 
 const AUTH_HEADER = 'authorization';
+const FORMAT_FLAT_JSON = 'flatJSON';
 
 module.exports.storeSeriesData = R.curryN(4, storeSeriesData);
 
@@ -113,6 +114,8 @@ function parseData(createRequest: mixed): ?DataMatrix {
   if (typeof createRequest !== 'object') return null; 
   
   // assert: createRequest is a {}
+  
+  if (createRequest.format !== FORMAT_FLAT_JSON) return null; 
   
   const fields = checkFields(createRequest.fields);
   const points = createRequest.points; 

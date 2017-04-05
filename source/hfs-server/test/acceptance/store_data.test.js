@@ -94,7 +94,6 @@ describe('Storing data in a HF series', function() {
           R.all(pairEqual, R.zip(response.points, data.points));
         });
     });
-    it.skip('should reject malformed requests', function () { });
     it.skip('should reject non-JSON bodies', function () { });
     
     describe('when authToken is not valid', function () {
@@ -114,6 +113,28 @@ describe('Storing data in a HF series', function() {
             should(error.message).be.instanceof(String);
           });
       });
+    });
+    describe('when request is malformed', function () {
+      bad('format is not flatJSON', {
+        elementType: 'mass/kg',
+        format: 'JSON', 
+        fields: ['timestamp', 'value'], 
+        points: [
+          [1481677845, 14.1], 
+          [1481677846, 14.2], 
+          [1481677847, 14.3], 
+        ]
+      });
+      
+      function bad(text, data) {
+        it(`should be rejected (${text})`, function () {
+          return storeData(data).expect(400)
+            .then((res) => {
+              const error = res.body.error; 
+              should(error.id).be.eql('invalid-request-structure');
+            });
+        });
+      }
     });
   }); 
   describe('GET /events/EVENT_ID/series', function () {
