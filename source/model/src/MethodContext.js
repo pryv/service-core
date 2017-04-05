@@ -15,7 +15,6 @@ module.exports = MethodContext;
  * @param {Object} storage Must have properties `users`, `accesses` and `streams`
  * @constructor
  */
-// TODO: refactor as stamp (see lib `stampit`) and put globals (storage, settings) in global closure
 function MethodContext(username, auth, storage, customAuthStepFn) {
   this.username = username;
   _.extend(this, parseAuth(auth));
