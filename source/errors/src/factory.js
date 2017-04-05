@@ -7,6 +7,11 @@ var APIError = require('./APIError'),
  */
 var factory = module.exports = {};
 
+factory.apiUnavailable = (message) => {
+  return new APIError(ErrorIds.ApiUnavailable, message, {
+    httpStatus: 503});
+};
+
 factory.corruptedData = function (message, innerError) {
   return new APIError(ErrorIds.CorruptedData, message, {
     httpStatus: 422,
@@ -111,9 +116,9 @@ factory.tooManyResults = function (limit) {
 factory.unexpectedError = function (sourceError, message) {
   return new APIError(ErrorIds.UnexpectedError,
       message || ('Unexpected error: ' + sourceError.message), {
-    httpStatus: 500,
-    innerError: sourceError
-  });
+        httpStatus: 500,
+        innerError: sourceError
+      });
 };
 
 /**

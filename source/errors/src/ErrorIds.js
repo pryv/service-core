@@ -1,7 +1,8 @@
 /**
  * Identifier constants for API errors.
  */
-var ErrorIds = module.exports = {
+const ErrorIds = module.exports = {
+  ApiUnavailable: 'api-unavailable',
   CorruptedData: 'corrupted-data',
   Forbidden: 'forbidden',
   InvalidAccessToken: 'invalid-access-token',
