@@ -1,3 +1,5 @@
+// @flow
+
 const errors = require('components/errors').factory;
 
 /**
@@ -11,8 +13,8 @@ const errors = require('components/errors').factory;
  * @param {Array} ignoredPaths Paths for which no translation is needed
  * @return {Function}
  */
-module.exports = function (ignoredPaths) {
-  return function (req, res, next) {
+module.exports = function (ignoredPaths: Array<string>) {
+  return function (req: express$Request, res: express$Response, next: () => void) {
     if (isIgnoredPath(req.url)) { return next(); }
 
     if (! req.headers.host) { return next(errors.missingHeader('Host')); }

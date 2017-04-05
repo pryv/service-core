@@ -4,11 +4,12 @@ const business = require('components/business');
 
 const {MetadataLoader, MetadataCache} = require('./metadata_cache');
 
-import type {Database} from 'components/storage';
 import type {MetadataRepository} from './metadata_cache';
 
 type Repository = business.series.Repository;
 type InfluxConnection = business.series.InfluxConnection; 
+
+type Database = {}; // NOTE anything but null for now.
 
 /** Application context object, holding references to all major subsystems. 
  * Once the system is initialized, these instance references will not change 

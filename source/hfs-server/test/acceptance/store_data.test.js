@@ -54,7 +54,7 @@ describe('Storing data in a HF series', function() {
         canWrite: function canWrite(): boolean { return authTokenValid; },
       };
       return {
-        forSeries: function forSeries() { return seriesMeta; }
+        forSeries: function forSeries() { return Promise.resolve(seriesMeta); }
       };
     }
     function produceData() {

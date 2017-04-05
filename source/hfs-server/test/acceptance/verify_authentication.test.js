@@ -17,21 +17,23 @@ import type {MetadataRepository} from '../../src/metadata_cache';
 import type {Memo} from 'memo-is';
 
 describe('Metadata Loader', function () {
-  const loader: Memo<MetadataRepository> = 
-    memo().is(() => new MetadataLoader());
-
-  const EVENT_ID = 'c1';
-  const ACCESS_TOKEN = 'a1';
-
   const loggingStub = {
     getLogger: () => new NullLogger(), 
   };
   const database = new storage.Database(
     settings.get('mongodb').obj(), 
     loggingStub); 
+
+  const loader: Memo<MetadataRepository> = 
+    memo().is(() => new MetadataLoader(database));
+
+  const USER_NAME = 'foo';
+  const EVENT_ID = 'c1';
+  const ACCESS_TOKEN = 'a1';
+
   const pryv = databaseFixture(database, this);
 
-  pryv.user('foo', {}, function (user) {
+  pryv.user(USER_NAME, {}, function (user) {
     user.stream({id: 'something'}, function (stream) {
       stream.event({id: EVENT_ID});
     });
@@ -40,9 +42,12 @@ describe('Metadata Loader', function () {
   });
   
   it('should allow write access to series', function () {
-    const metadata = loader().forSeries(EVENT_ID, ACCESS_TOKEN);
+    const metadata = loader().forSeries(USER_NAME, EVENT_ID, ACCESS_TOKEN);
     
-    should(metadata.canWrite()).be.true(); 
+    return metadata
+      .then((metadata) => {
+        should(metadata.canWrite()).be.true()
+      });
   });
 });
 

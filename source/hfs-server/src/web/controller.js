@@ -19,6 +19,7 @@ function storeSeriesData(ctx: Context, req: express$Request, res: express$Respon
   const metadata = ctx.metadata; 
   
   // Extract parameters from request: 
+  const userName = req.params.user_name; 
   const eventId = req.params.event_id;
   const accessToken = req.headers[AUTH_HEADER];
 
@@ -28,27 +29,31 @@ function storeSeriesData(ctx: Context, req: express$Request, res: express$Respon
   if (eventId == null) return next(errors.invalidItemId());
   
   // Access check: Can user write to this series? 
-  const seriesMeta = metadata.forSeries(eventId, accessToken);
-  if (! seriesMeta.canWrite()) return next(errors.forbidden());
+  const seriesMeta = metadata.forSeries(userName, eventId, accessToken);
+  return seriesMeta
+    .catch(() => next(errors.forbidden()))
+    .then((seriesMeta) => {
+      if (! seriesMeta.canWrite()) return next(errors.forbidden());
 
-  // Parse request
-  const data = parseData(req.body);
-  if (data == null) {
-    return next(errors.invalidRequestStructure('Malformed request.'));
-  }
+      // Parse request
+      const data = parseData(req.body);
+      if (data == null) {
+        return next(errors.invalidRequestStructure('Malformed request.'));
+      }
 
-  // assert: data != null
-  
-  // Store data
-  // TODO derieve namespace from user id
-  series.get('test', 'series1')
-    .then((series) => series.append(data))
-    .then(() => {
-      res
-        .status(200)
-        .json({status: 'ok'});
-    })
-    .catch((err) => next(err));
+      // assert: data != null
+      
+      // Store data
+      // TODO derieve namespace from user id
+      series.get('test', 'series1')
+        .then((series) => series.append(data))
+        .then(() => {
+          res
+            .status(200)
+            .json({status: 'ok'});
+        })
+        .catch((err) => next(err));
+    });
 }
 
 import type Type from 'business';

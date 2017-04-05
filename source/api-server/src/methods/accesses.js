@@ -115,7 +115,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
     async.forEachSeries(params.permissions, ensureStream, next);
 
     function ensureStream(permission, streamCallback) {
-      if (! permission.defaultName) { return streamCallback(); }
+      if (! permission.defaultName) { return streamCallback(); }
 
       var existingStream = treeUtils.findById(context.streams, permission.streamId);
 
@@ -123,7 +123,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
         if (! existingStream.trashed) { return streamCallback(); }
 
         var update = {trashed: false};
-	userStreamsStorage.updateOne(context.user, {id: existingStream.id}, update, function (err) {
+        userStreamsStorage.updateOne(context.user, {id: existingStream.id}, update, function (err) {
           if (err) { return streamCallback(errors.unexpectedError(err)); }
           streamCallback();
         });

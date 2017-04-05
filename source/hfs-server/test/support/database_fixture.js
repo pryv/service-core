@@ -30,7 +30,7 @@ type DatabaseShortcuts = {
   users: storage.Users, 
   streams: storage.Streams, 
   events: storage.Events, 
-  accesses: storage.Accesses, 
+  accesses: storage.user.Accesses, 
 }
 class UserContext {
   userName: string; 
