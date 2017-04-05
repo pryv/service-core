@@ -27,7 +27,7 @@ describe('Storing data in a HF series', function() {
     
     function storeData(data): Response {
       const response = request(app())
-        .post(`/events/${EVENT_ID}/series`)
+        .post(`/USERNAME/events/${EVENT_ID}/series`)
         .set('authorization', 'AUTH_TOKEN')
         .send(data);
         
@@ -35,7 +35,7 @@ describe('Storing data in a HF series', function() {
     }
     function queryData(): Promise<Object> {
       let response = request(app())
-        .get(`/events/${EVENT_ID}/series`)
+        .get(`/USERNAME/events/${EVENT_ID}/series`)
         .query({
           fromTime: '1481677844', 
           toTime: '1481677850',
