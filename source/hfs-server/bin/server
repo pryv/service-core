@@ -3,22 +3,7 @@
 // Starts a HTTP server for high frequency series. Main entry point for the high
 // frequency series server. 
 
-const Settings = require('../src/Settings');
-const Server = require('../src/Server'); 
+const Application = require('../src/application');
 
-try {
-  const settings = Settings.load(); 
-  var server = new Server(settings); 
-  server.start(); 
-}
-catch (err) {
-  if (err.code == 'ENOENT') {
-    console.error('Configuration file not found. '     // eslint-disable-line no-console
-      + 'Default location is \'./hfs-server.json\'. '
-      + 'Use --config to modify expected location.');
-      
-    process.exit(1);
-  }
-
-  throw err;
-}
+const app = new Application(); 
+app.run(); 
