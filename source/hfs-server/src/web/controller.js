@@ -109,8 +109,8 @@ class InfluxRowType {
    */
   validateColumns(columnNames: Array<string>): boolean {
     // TODO remove hard coding to simple types. 
-    // if (columnNames.indexOf(FIELD_TIMESTAMP) < 0) return false; 
-    // if (columnNames.indexOf('value') < 0) return false; 
+    if (columnNames.indexOf(FIELD_TIMESTAMP) < 0) return false; 
+    if (columnNames.indexOf('value') < 0) return false; 
     
     return true; 
   }

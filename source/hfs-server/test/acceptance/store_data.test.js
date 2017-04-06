@@ -151,8 +151,18 @@ describe('Storing data in a HF series', function() {
         fields: ['value'], 
         points: [
           [14.1], 
-          ['foobar'], 
+          [13.2], 
           [14.3], 
+        ]
+      });
+      malformed('missing value column for a simple input', {
+        elementType: 'mass/kg',
+        format: 'flatJSON', 
+        fields: ['timestamp'], 
+        points: [
+          [1481677845], 
+          [1481677846], 
+          [1481677847], 
         ]
       });
       
