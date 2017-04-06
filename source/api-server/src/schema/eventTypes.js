@@ -1,21 +1,29 @@
+// @flow
+
 var request = require('superagent'),
     validation = require('./validation'),
     _ = require('lodash');
+    
+interface LogFactory {
+  getLogger(name: string): Logger; 
+}
+interface Logger {
+  warn(msg: string): void;
+}
+
+type EventTypeSettings = {
+  sourceURL: string, 
+}
 
 /**
- * JSON Schema specifications for known types of event content.
- * Uses `event-types.default.json` as the default source file,
- * and tries to asynchronously update from the URL defined by config setting `eventTypes.sourceURL`.
- *
- * TODO: regularly retrieve event types with timer (cron)
- *
- * @param eventTypesSettings Event types eventTypesSettings
- * @param logging
+ * JSON Schema specifications for known types of event content. Uses
+ * `event-types.default.json` as the default source file, and tries to
+ * asynchronously update from the URL defined by config setting
+ * `eventTypes.sourceURL`.
  */
-module.exports = function (eventTypesSettings, logging) {
+module.exports = function (eventTypesSettings: EventTypeSettings, logging: LogFactory) {
   var types = require('./event-types.default.json'),
       logger = logging.getLogger('event-types');
-  types.isDefault = true;
 
   tryUpdateFromSourceURL();
 
@@ -23,7 +31,7 @@ module.exports = function (eventTypesSettings, logging) {
 
   function tryUpdateFromSourceURL() {
     request.get(eventTypesSettings.sourceURL).end(function (err, res) {
-      if (err || ! res.ok) {
+      if (err || !res.ok) {
         return logger.warn('Could not update event types from ' + eventTypesSettings.sourceURL +
             '\nError: ' + err ? err.message : res.status + ': ' + res.text);
       }
@@ -34,7 +42,6 @@ module.exports = function (eventTypesSettings, logging) {
         }
         // OK, override current definitions
         _.extend(types, res.body);
-        types.isDefault = false;
       });
     });
   }

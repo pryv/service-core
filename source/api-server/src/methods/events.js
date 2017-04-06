@@ -252,9 +252,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   }
 
   /**
-   * Creates the event's body according to its type and
-   *
-   * @param context
+   * Creates the event's body according to its type and context. 
    */
   function createSeriesEventContent(context: Object): Object {
     let seriesEvent = {};
@@ -265,13 +263,11 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     if ((schema.type === 'string') || (schema.type === 'number')) {
       seriesEvent.fields.push('value');
     } else {
-
       const fields = Object.keys(schema.properties);
       seriesEvent.fields = seriesEvent.fields.concat(fields);
     }
 
-    seriesEvent.format = 'flatJSON'; // TODO: default for now
-    seriesEvent.points = [];
+    seriesEvent.format = 'flatJSON';
     return seriesEvent;
   }
 
@@ -424,6 +420,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         return next(errors.invalidParametersFormat('The event content\'s format is ' +
           'invalid.', 'Events of type High-frequency have a read-only content'));
       }
+      
       return next();
     }
 
