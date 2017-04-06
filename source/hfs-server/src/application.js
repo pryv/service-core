@@ -4,6 +4,7 @@
 
 const logComponent = require('components/utils').logging;
 const business = require('components/business');
+const storage = require('components/storage');
 
 const Context = require('./context');
 const Settings = require('./Settings');
@@ -33,8 +34,12 @@ function createLogFactory(settings): LogFactory {
 function createContext(logFactory: LogFactory): Context {
   const influx = new business.series.InfluxConnection(
     {host: 'localhost'}, logFactory('influx')); 
+  
+  const logAdapter = { getLogger: (name) => logFactory(name) };
+  const mongo = new storage.Database(
+    {host: 'localhost', port: 27017}, logAdapter);
     
-  return new Context(influx);
+  return new Context(influx, mongo);
 }
 
 /** The HF application holds references to all subsystems and ties everything

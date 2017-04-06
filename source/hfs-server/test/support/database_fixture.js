@@ -89,6 +89,7 @@ class ChildHolder {
 }
 type Attributes = {
   id: string, 
+  _id: string, 
 }
 class FixtureTreeNode {
   childs: ChildHolder;

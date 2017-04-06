@@ -92,7 +92,10 @@ class MetadataLoader {
   }
 }
 
-type AccessModel = {};
+type AccessModel = {
+  canContributeToStream(streamId: string): boolean; 
+  canReadStream(streamId: string): boolean; 
+};
 type EventModel = {
   streamId: string
 }; 
