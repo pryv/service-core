@@ -115,7 +115,7 @@ describe('Storing data in a HF series', function() {
       });
     });
     describe('when request is malformed', function () {
-      bad('format is not flatJSON', {
+      malformed('format is not flatJSON', {
         elementType: 'mass/kg',
         format: 'JSON', 
         fields: ['timestamp', 'value'], 
@@ -125,8 +125,38 @@ describe('Storing data in a HF series', function() {
           [1481677847, 14.3], 
         ]
       });
+      malformed('matrix is not square - not enough fields', {
+        elementType: 'mass/kg',
+        format: 'flatJSON', 
+        fields: ['timestamp', 'value'], 
+        points: [
+          [1481677845, 14.1], 
+          [1481677846], 
+          [1481677847, 14.3], 
+        ]
+      });
+      malformed('value types are not all valid', {
+        elementType: 'mass/kg',
+        format: 'flatJSON', 
+        fields: ['timestamp', 'value'], 
+        points: [
+          [1481677845, 14.1], 
+          [1481677846, 'foobar'], 
+          [1481677847, 14.3], 
+        ]
+      });
+      malformed('missing timestamp column', {
+        elementType: 'mass/kg',
+        format: 'flatJSON', 
+        fields: ['value'], 
+        points: [
+          [14.1], 
+          ['foobar'], 
+          [14.3], 
+        ]
+      });
       
-      function bad(text, data) {
+      function malformed(text, data) {
         it(`should be rejected (${text})`, function () {
           return storeData(data).expect(400)
             .then((res) => {

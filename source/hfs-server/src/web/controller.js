@@ -54,7 +54,19 @@ function storeSeriesData(ctx: Context, req: express$Request, res: express$Respon
             .json({status: 'ok'});
         })
         .catch((err) => next(err));
-    });
+    })
+    .catch((err) => dispatchErrors(err, next));
+}
+
+/** Handles errors that might happen during a controller execution that are 
+ * translated into a client error. 
+ */
+function dispatchErrors(err: any, next: (err: any) => void) {
+  if (err instanceof business.types.errors.InputTypeError) {
+    return next(errors.invalidRequestStructure(err.message));
+  }
+  
+  return next(err);
 }
 
 import type Type from 'business';
@@ -65,7 +77,7 @@ class InfluxDateType implements Type {
   secondsToNanos(secs: number): number {
     return secs * 1000 * 1000 * 1000;
   }
-  
+
   coerce(value: any): any {
     switch (R.type(value)) {
       case 'Number': 
@@ -79,7 +91,12 @@ class InfluxDateType implements Type {
   }
 }
 
+const FIELD_TIMESTAMP = 'timestamp';
+
 /** Represents the type of a row in influx input data.
+ * 
+ * @private
+ * @memberof module:Controller
  */
 class InfluxRowType {
   eventType: Type; 
@@ -88,10 +105,59 @@ class InfluxRowType {
     this.eventType = eventType; 
   }
   
+  /** Returns true if the columns given can be reconciled with this type. 
+   */
+  validateColumns(columnNames: Array<string>): boolean {
+    // TODO remove hard coding to simple types. 
+    // if (columnNames.indexOf(FIELD_TIMESTAMP) < 0) return false; 
+    // if (columnNames.indexOf('value') < 0) return false; 
+    
+    return true; 
+  }
+  
+  /** Returns true if all the rows in the given row array are valid for this 
+   * type. 
+   */
+  validateAllRows(rows: Array<any>, columnNames: Array<string>) {
+    for (let row of rows) {
+      if (! this.isRowValid(row, columnNames)) return false; 
+    }
+    
+    return true; 
+  }
+  
+  /** Returns true if the given row (part of the input from the client) looks 
+   * right. See the code for what rules define right. 
+   * 
+   * Normal order of operations would be: 
+   * 
+   *  1) Check `columnNames` (`{@link validateColumns}`).
+   *  2) For each row: 
+   *    2.1) `isRowValid`?
+   *    2.2) For each cell: 
+   *      2.2.1) `coerce` into target type
+   *      2.2.2) `isCellValid`?
+   * 
+   * @param row {any} Rows parsed from client input, could be any type. 
+   * @param columnNames {Array<string>} A list of column names the client 
+   *  provided. Check these first using `validateColumns`.
+   */
+  isRowValid(row: any, columnNames: Array<string>) {
+    // A valid row is an array of cells. 
+    const outerType = R.type(row);
+    if (outerType !== 'Array') return false;
+    
+    // It has the correct length. (Assumes that columnNames is right)
+    if (row.length !== columnNames.length) return false; 
+    
+    // Everything looks good. 
+    return true; 
+  }
+  
   /** Returns the type of a single cell with column name `name`. 
    */
   forCell(name: string): Type  {
-    if (name === 'timestamp') {
+    if (name === FIELD_TIMESTAMP) {
       return new InfluxDateType();
     }
     else {
@@ -123,17 +189,23 @@ function parseData(createRequest: mixed): ?DataMatrix {
   if (fields == null || points == null) return null; 
   if (! (points instanceof Array)) return null; 
   
-  // assert: fields, points ar both arrays
+  // assert: fields, points are both arrays
   
   const type = new InfluxRowType(
     business.types.lookup('mass/kg'));
+    
+  if (! type.validateColumns(fields)) return null; 
+  if (! type.validateAllRows(points, fields)) return null; 
 
   const matrix = new business.series.DataMatrix(fields, points);
+  
   matrix.transform((columnName, cellValue) => {
     const cellType = type.forCell(columnName);
-    return cellType.coerce(cellValue);
+
+    const coercedValue = cellType.coerce(cellValue);
+    return coercedValue; 
   });
-  
+    
   return matrix;
 }
 
