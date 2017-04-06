@@ -4,13 +4,12 @@ import type Settings from './Settings';
 
 const http = require('http');
 const express = require('express');
+const bluebird = require('bluebird');
 
 const bodyParser = require('body-parser');
 const middleware = require('components/middleware');
 const logging = require('components/utils/src/logging');
 const errorsMiddleware = require('./middleware/errors');
-
-const promisify = require('./promisify');
 
 const controller = require('./web/controller');
 
@@ -78,7 +77,8 @@ class Server {
     
     var server = this.server = http.createServer(app);
     
-    return promisify(server.listen, server)(port, ip)
+    const serverListen = bluebird.promisify(server.listen, {context: server});
+    return serverListen(port, ip)
       .then(this.logStarted.bind(this));
   }
   
@@ -102,7 +102,9 @@ class Server {
     const server = this.server;
       
     this.logger.info('stopping...');
-    return promisify(server.close, server)();
+    
+    const serverClose = bluebird.promisify(server.close, {context: server}); 
+    return serverClose();
   }
   
   /** 
