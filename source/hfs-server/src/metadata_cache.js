@@ -115,7 +115,7 @@ class SeriesMetadataImpl implements SeriesMetadata {
     this.permissions = {
       write: access.canContributeToStream(streamId),
       read: access.canReadStream(streamId),
-    }
+    };
   }
   
   canWrite(): boolean {

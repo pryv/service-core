@@ -47,7 +47,7 @@ describe('Metadata Loader', function () {
     
     return metadata
       .then((metadata) => {
-        should(metadata.canWrite()).be.true()
+        should(metadata.canWrite()).be.true();
       });
   });
 });
