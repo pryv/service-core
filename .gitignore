@@ -14,3 +14,4 @@ service-core.iml
 yarn-error.log
 /dist/
 /flow-coverage/
+/out
