@@ -13,15 +13,6 @@ var utils = require('components/utils'),
 
 /**
  * Events API methods implementations.
- * TODO: refactor methods as chains of functions
- *
- * @param api
- * @param userEventsStorage
- * @param userEventFilesStorage
- * @param usersStorage
- * @param authSettings
- * @param eventTypes
- * @param notifications
  */
 module.exports = function (api, userEventsStorage, userEventFilesStorage, usersStorage,
                            authSettings, eventTypes, notifications) {
