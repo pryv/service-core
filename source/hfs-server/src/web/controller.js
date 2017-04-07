@@ -59,7 +59,6 @@ function storeSeriesData(ctx: Context, req: express$Request, res: express$Respon
             .json({status: 'ok'});
         })
         .catch((err) => {
-          console.log('err caught', err)
           if (err.constructor.name === ServiceNotAvailableError) {
             return next(errors.apiUnavailable(err.message));
           }

@@ -61,7 +61,7 @@ describe('Controller', () => {
         metadata: {
           forSeries: () => {
             return new Promise(
-            (resolve, reject) => {
+            (resolve) => {
               resolve({
                 canWrite: () => {return true;}
               });
