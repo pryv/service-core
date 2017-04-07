@@ -2,6 +2,11 @@
 
 import type Context from '../context';
 
+// TODO if possible, find a more elegant way to link to error
+const ServiceNotAvailableError: string =
+  require('../../../../node_modules/influx/lib/src/pool')
+    .ServiceNotAvailableError().constructor.name;
+
 const R = require('ramda');
 
 const business = require('components/business');
@@ -17,10 +22,10 @@ module.exports.storeSeriesData = R.curryN(4, storeSeriesData);
  */
 function storeSeriesData(ctx: Context, req: express$Request, res: express$Response, next: (err: any) => void) {
   const series = ctx.series;
-  const metadata = ctx.metadata; 
-  
+  const metadata = ctx.metadata;
+
   // Extract parameters from request: 
-  const userName = req.params.user_name; 
+  const userName = req.params.user_name;
   const eventId = req.params.event_id;
   const accessToken = req.headers[AUTH_HEADER];
 
@@ -28,13 +33,13 @@ function storeSeriesData(ctx: Context, req: express$Request, res: express$Respon
   // TODO test this
   if (accessToken == null) return next(errors.missingHeader(AUTH_HEADER));
   if (eventId == null) return next(errors.invalidItemId());
-  
+
   // Access check: Can user write to this series? 
   const seriesMeta = metadata.forSeries(userName, eventId, accessToken);
   return seriesMeta
     .catch(() => next(errors.forbidden()))
     .then((seriesMeta) => {
-      if (! seriesMeta.canWrite()) return next(errors.forbidden());
+      if (!seriesMeta.canWrite()) return next(errors.forbidden());
 
       // Parse request
       const data = parseData(req.body);
@@ -43,17 +48,23 @@ function storeSeriesData(ctx: Context, req: express$Request, res: express$Respon
       }
 
       // assert: data != null
-      
+
       // Store data
-      // TODO derieve namespace from user id
+      // TODO derive namespace from user id
       series.get('test', 'series1')
-        .then((series) => series.append(data))
+        .then((seriesInstance) => seriesInstance.append(data))
         .then(() => {
           res
             .status(200)
             .json({status: 'ok'});
         })
-        .catch((err) => next(err));
+        .catch((err) => {
+          console.log('err caught', err)
+          if (err.constructor.name === ServiceNotAvailableError) {
+            return next(errors.apiUnavailable(err.message));
+          }
+          next(err);
+        });
     })
     .catch((err) => dispatchErrors(err, next));
 }
@@ -166,7 +177,7 @@ class InfluxRowType {
   }
 }
 
-import type DataMatrix from 'business';
+type DataMatrix = business.series.DataMatrix;
 
 /** Parses request data into a data matrix that can be used as input to the
  * influx store. You should give this method the `req.body`.
