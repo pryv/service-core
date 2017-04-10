@@ -11,6 +11,8 @@ type JSONSchema = {
 const assert = require('assert');
 const R = require('ramda');
 
+const BasicType = require('./basic_type');
+
 // A complex type like 'position/wgs84' that has several subfields. 
 // 
 class ComplexType implements EventType {

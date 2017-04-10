@@ -104,8 +104,9 @@ function parseData(createRequest: mixed): ?DataMatrix {
   
   // assert: fields, points are both arrays
   
-  const type = new InfluxRowType(
-    business.types.lookup('mass/kg'));
+  const typeRepo = new business.types.TypeRepository(); 
+  const type = new business.types.InfluxRowType(
+    typeRepo.lookup('mass/kg'));
     
   if (! type.validateColumns(fields)) return null; 
   if (! type.validateAllRows(points, fields)) return null; 
@@ -113,7 +114,7 @@ function parseData(createRequest: mixed): ?DataMatrix {
   const matrix = new business.series.DataMatrix(fields, points);
   
   matrix.transform((columnName, cellValue) => {
-    const cellType = type.forCell(columnName);
+    const cellType = type.forField(columnName);
 
     const coercedValue = cellType.coerce(cellValue);
     return coercedValue; 
