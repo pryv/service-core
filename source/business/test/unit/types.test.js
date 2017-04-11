@@ -29,6 +29,13 @@ describe('business.types.TypeRepository', function () {
       should(fieldType.coerce('1234')).be.eql(1234); 
       should(fieldType.coerce(1234)).be.eql(1234); 
     });
+    it('should coerce to number during validation', function () {
+      const eventType = repository().lookup('mass/kg');
+      const validator = repository().validator();
+      
+      return eventType.callValidator(validator, '123')
+        .then((val) => should(val).be.eql(123));
+    });
   });
   describe('complex types like position/wgs84', function () {
     it('should be known', function () {
