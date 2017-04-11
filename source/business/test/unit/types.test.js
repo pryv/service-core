@@ -73,3 +73,34 @@ describe('business.types.TypeRepository', function () {
     });
   });
 });
+
+describe('business.types.TypeValidator', function () {
+  const repository = memo().is(() => new TypeRepository());
+
+  it('should be produced via a type repository', function () {
+    const validator = repository().validator(); 
+    
+    should(validator.constructor.name).be.eql('TypeValidator');
+  });
+  it('should validate simple types', function () {
+    const validator = repository().validator(); 
+    const schema = { type: 'number' }; 
+    
+    return validator.validateWithSchema(1234, schema); 
+  });
+  it('should validate complex types', function () {
+    const validator = repository().validator(); 
+    const schema = { type: 'object', 
+      properties: {
+        a: { type: 'number' }, 
+        b: { type: 'string' }, 
+      }};  
+      
+    const value = {
+      a: 1234, 
+      b: 'string',
+    };
+    
+    return validator.validateWithSchema(value, schema); 
+  });
+});
