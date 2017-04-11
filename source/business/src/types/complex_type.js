@@ -11,14 +11,15 @@ type JSONSchema = {
 const assert = require('assert');
 const R = require('ramda');
 
-const BasicType = require('./basic_type');
+const value_types = require('./value_types');
 
 // A complex type like 'position/wgs84' that has several subfields. 
 // 
 class ComplexType implements EventType {
   schema: JSONSchema;
+  _outerType: string; 
   
-  constructor(schema: JSONSchema) {
+  constructor(outerType: string, schema: JSONSchema) {
     // We only handle this kind of schema
     assert.ok(schema.type === 'object'); 
     
@@ -30,6 +31,11 @@ class ComplexType implements EventType {
       'Type Schema must have a properties object.');   
     
     this.schema = schema; 
+    this._outerType = outerType;
+  }
+  
+  typeName() {
+    return this._outerType;
   }
   
   requiredFields() {
@@ -54,7 +60,7 @@ class ComplexType implements EventType {
   
   forField(name: string): PropertyType {
     // TODO
-    return new BasicType('number'); 
+    return value_types('number');
   }
 }
 

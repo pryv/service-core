@@ -1,3 +1,4 @@
+
 var utils = require('components/utils'),
     errors = require('components/errors').factory,
     async = require('async'),
@@ -10,6 +11,11 @@ var utils = require('components/utils'),
     validation = require('../schema/validation'),
     _ = require('lodash'),
     SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
+    
+const assert = require('assert');
+    
+const {TypeRepository, InfluxRowType} = require('components/business').types;
+const typeRepo = new TypeRepository(); 
 
 /**
  * Events API methods implementations.
@@ -221,45 +227,53 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     next();
   }
 
-  function createEvent(context: Object, params: Object, result: Object, next: Object) {
+  function createEvent(
+    context: Object, params: Object, result: Object, next: Object) 
+  {
 
     if (isSeries(context.content)) {
-      context.content.content = createSeriesEventContent(context);
-      context.content.duration = 0; // TODO: remove when time tracking strategy for HF is defined
+      try {
+        context.content.content = createSeriesEventContent(context);
+      }
+      catch (err) { return next(err); }
+      
+      // TODO: remove when time tracking strategy for HF is defined
+      context.content.duration = 0; 
     }
 
-    userEventsStorage.insertOne(context.user, context.content, function (err, newEvent) {
-      if (err) {
-        if (storage.Database.isDuplicateError(err)) {
-          return next(errors.itemAlreadyExists('event', {id: params.id}, err));
-        } else {
-          return next(errors.unexpectedError(err));
+    userEventsStorage.insertOne(
+      context.user, context.content, function (err, newEvent) {
+        if (err) {
+          if (storage.Database.isDuplicateError(err)) {
+            return next(errors.itemAlreadyExists('event', {id: params.id}, err));
+          } else {
+            return next(errors.unexpectedError(err));
+          }
         }
-      }
 
-      result.event = newEvent;
-      next();
-    });
+        result.event = newEvent;
+        next();
+      });
   }
+
+  const FORMAT_FLAT_JSON = 'flatJSON';
 
   /**
    * Creates the event's body according to its type and context. 
    */
-  function createSeriesEventContent(context: Object): Object {
-    let seriesEvent = {};
-    seriesEvent.elementType = context.content.type.slice(7);
-    seriesEvent.fields = ['timestamp'];
-    const schema = eventTypes.types[seriesEvent.elementType];
+  function createSeriesEventContent(context: Object): {} {
+    const seriesTypeName = context.content.type; 
+    const eventType = typeRepo.lookup(seriesTypeName); 
+    
+    // assert: Type is a series type, so this should be always true: 
+    assert.ok(eventType instanceof InfluxRowType); 
 
-    if ((schema.type === 'string') || (schema.type === 'number')) {
-      seriesEvent.fields.push('value');
-    } else {
-      const fields = Object.keys(schema.properties);
-      seriesEvent.fields = seriesEvent.fields.concat(fields);
-    }
-
-    seriesEvent.format = 'flatJSON';
-    return seriesEvent;
+    return {
+      elementType: eventType.elementTypeName(), 
+      fields: eventType.fields(), 
+      required: eventType.requiredFields(),
+      format: FORMAT_FLAT_JSON,
+    };
   }
 
   function createAttachments(context, params, result, next) {

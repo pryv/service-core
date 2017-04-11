@@ -35,6 +35,13 @@ class InfluxRowType implements EventType {
     this.eventType = eventType; 
   }
   
+  typeName() {
+    return 'series:'+this.eventType.typeName();
+  }
+  elementTypeName() {
+    return this.eventType.typeName(); 
+  }
+  
   /** Returns true if the columns given can be reconciled with this type. 
    */
   validateColumns(columnNames: Array<string>): boolean {

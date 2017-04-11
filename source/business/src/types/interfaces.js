@@ -6,6 +6,10 @@
 // field name to get a property type. 
 // 
 export interface EventType {
+  // Returns this types official name. 
+  // 
+  typeName(): string; 
+  
   // Returns a type to use for coercion of field named `name`.
   // 
   forField(name: string): PropertyType; 

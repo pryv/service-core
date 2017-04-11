@@ -25,7 +25,6 @@ describe('business.types.TypeRepository', function () {
       should(fieldType.coerce(1234)).be.eql(1234); 
     });
   });
-
   describe('complex types like position/wgs84', function () {
     it('should return a complex type instance', function () {
       const eventType = repository().lookup('position/wgs84');
@@ -44,6 +43,15 @@ describe('business.types.TypeRepository', function () {
         'speed', 'bearing',
       ]);
       
+    });
+  });
+  describe('series types like series:mass/kg', function () {
+    it('should inform about fields correctly', function () {
+      const eventType = repository().lookup('series:mass/kg');
+
+      should(eventType.requiredFields()).be.eql(['timestamp', 'value']);
+      should(eventType.optionalFields()).be.eql([]);
+      should(eventType.fields()).be.eql(['timestamp', 'value']);
     });
   });
 });

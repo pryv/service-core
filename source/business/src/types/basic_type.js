@@ -1,22 +1,28 @@
 // @flow
 
 import type {EventType, PropertyType} from './interfaces';
+import type {ValueType} from './value_types';
 
 const assert = require('assert');
 const R = require('ramda');
 
 const errors = require('./errors');
+const value_types = require('./value_types');
 
 // A basic type like 'number' or 'boolean'. In high frequency data, this must 
 // be stored using the column name 'value'.
 // 
-class BasicType implements EventType, PropertyType {
-  typeName: string; 
+class BasicType implements EventType {
+  _outerType: string; 
+  _innerType: ValueType; 
   
-  constructor(typeName: string) {
-    assert.ok(typeName === 'number'); // TODO implement other variants
-    
-    this.typeName = typeName;
+  constructor(outerType: string, innerType: string) {
+    this._outerType = outerType; 
+    this._innerType = value_types(innerType);
+  }
+  
+  typeName(): string {
+    return this._outerType; 
   }
   
   requiredFields() {
@@ -34,27 +40,7 @@ class BasicType implements EventType, PropertyType {
     // fields. So the name MUST be 'value' here. 
     assert.ok(name === 'value');
     
-    return this;
-  }
-  
-  coerce(value: any): any {
-    switch (R.type(value)) {
-      case 'String': 
-        return this.coerceString(value);
-      case 'Number':
-        return value; 
-    }
-    
-    throw new errors.InputTypeError(`Unknown outer type (${R.type(value)}).`);
-  }
-  
-  coerceString(str: string) {
-    const reNumber = /^\d+(\.\d+)?$/;
-    if (! reNumber.test(str)) {
-      throw new errors.InputTypeError(`Doesn't look like a valid number: '${str}'.`); 
-    }
-    
-    return Number.parseFloat(str);
+    return this._innerType;
   }
 }
 

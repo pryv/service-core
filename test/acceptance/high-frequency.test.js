@@ -5,7 +5,6 @@ const helpers = require(__dirname + '/../../dist/components/api-server/test/help
       timestamp = require('unix-timestamp'),
       _ = require('lodash'),
       async = require('async'),
-      nock = require('nock'),
       should = require('should'),
       eventTypes = require('../../dist/components/api-server/src/schema/event-types.default.json').types,
       errors = require('../../dist/components/errors/src/ErrorIds');
@@ -64,7 +63,6 @@ describe('High-Frequency', function () {
           should.exist(event.content);
           event.content.elementType.should.eql(type);
           event.content.format.should.eql('flatJSON');
-          event.content.points.should.eql([]);
           event.content.fields.should.eql(['timestamp'].concat(Object.keys(eventTypes[type].properties)));
           event.duration.should.eql(0);
           seriesEvent = event;
@@ -118,9 +116,10 @@ describe('High-Frequency', function () {
         should.exist(event.content);
         event.content.elementType.should.eql(type);
         event.content.format.should.eql('flatJSON');
-        event.content.points.should.eql([]);
-        event.content.fields.should.eql(['timestamp']
-          .concat(Object.keys(eventTypes[type].properties)));
+        event.content.fields.should.eql([
+          'timestamp', 'latitude', 'longitude',
+          'altitude', 'horizontalAccuracy', 'verticalAccuracy', 
+          'speed', 'bearing']); 
         event.duration.should.eql(0);
         done();
       });
@@ -142,7 +141,6 @@ describe('High-Frequency', function () {
         should.exist(event.content);
         event.content.elementType.should.eql(type);
         event.content.format.should.eql('flatJSON');
-        event.content.points.should.eql([]);
         event.content.fields.should.eql(['timestamp','value']);
         event.duration.should.eql(0);
         done();
@@ -165,7 +163,6 @@ describe('High-Frequency', function () {
         should.exist(event.content);
         event.content.elementType.should.eql(type);
         event.content.format.should.eql('flatJSON');
-        event.content.points.should.eql([]);
         event.content.fields.should.eql(['timestamp','value']);
         event.duration.should.eql(0);
         done();
