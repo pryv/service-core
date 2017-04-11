@@ -12,8 +12,8 @@ const assert = require('assert');
 
 const value_types = require('./value_types');
 
-// A basic type like 'number' or 'boolean'. In high frequency data, this must 
-// be stored using the column name 'value'.
+// A basic type like 'mass/kg'. In high frequency data, this must be stored
+// using the column name 'value'.
 // 
 class BasicType implements EventType {
   _schema: JSONSchema; 

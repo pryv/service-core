@@ -8,20 +8,19 @@ var utils = require('components/utils'),
     storage = require('components/storage'),
     timestamp = require('unix-timestamp'),
     treeUtils = utils.treeUtils,
-    validation = require('../schema/validation'),
     _ = require('lodash'),
     SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
     
 const assert = require('assert');
     
-const {TypeRepository} = require('components/business').types;
+const {TypeRepository, isSeriesType} = require('components/business').types;
 const typeRepo = new TypeRepository(); 
 
 /**
  * Events API methods implementations.
  */
 module.exports = function (api, userEventsStorage, userEventFilesStorage, usersStorage,
-                           authSettings, eventTypes, notifications) {
+                           authSettings, notifications) {
 
   // COMMON
 
@@ -231,7 +230,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     context: Object, params: Object, result: Object, next: Object) 
   {
 
-    if (isSeries(context.content)) {
+    if (isSeriesType(context.content.type)) {
       try {
         context.content.content = createSeriesEventContent(context);
       }
@@ -415,7 +414,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     // Unknown types can just be created as normal events. 
     if (! typeRepo.isKnown(type)) {
       // We forbid the 'series' prefix for these free types. 
-      if (isSeries(type)) return next(errors.invalidEventType(type));
+      if (isSeriesType(type)) return next(errors.invalidEventType(type));
 
       // No further checks, let the user do what he wants. 
       return next();
@@ -916,10 +915,6 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   function isRunning(event) {
     return event.duration === null;
-  }
-
-  function isSeries(event: Object): boolean {
-    return event.type.startsWith('series:');
   }
 
 };
