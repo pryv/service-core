@@ -1,11 +1,13 @@
 // @flow
 
-const defaultTypes = require('./types/event-types.default.json');
-
 import type {EventType, Content} from './types/interfaces';
 
+const R = require('ramda');
+const superagent = require('superagent');
 const bluebird = require('bluebird');
 const ZSchemaValidator = require('z-schema');
+
+let defaultTypes = require('./types/event-types.default.json');
 
 const errors = require('./types/errors');
 const InfluxRowType = require('./types/influx_row_type');
@@ -102,6 +104,42 @@ class TypeRepository {
   validator(): TypeValidator {
     return new TypeValidator(); 
   }
+
+  // Tries to update the stored type definitions with a file found on the 
+  // internet. 
+  // 
+  tryUpdate(sourceURL: string): Promise<void> {
+    function unavailableError(err) {
+      throw new Error(
+        'Could not update event types from ' + sourceURL +
+        '\nError: ' + err.message);
+    }
+    function invalidError(err) {
+      throw new Error(
+        'Invalid event types schema returned from ' + sourceURL + 
+        '\nErrors: ' + err.errors);
+    }
+    
+    return superagent
+      .get(sourceURL)
+      .catch(unavailableError)
+      .then((res) => {
+        const validator = new ZSchemaValidator(); 
+        const schema = res.body; 
+        
+        return bluebird.try(() => {
+          if (!validator.validateSchema(schema)) 
+            return invalidError(validator.lastReport);
+            
+          // Overwrite defaultTypes with the merged list of type schemata. 
+          defaultTypes = R.merge(defaultTypes, schema);
+        });
+      });
+  }
+}
+
+interface Logger {
+  warn(msg: string): void; 
 }
 
 module.exports = {

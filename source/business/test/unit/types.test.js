@@ -12,6 +12,21 @@ const {TypeRepository} = require('../../src/types');
 describe('business.types.TypeRepository', function () {
   const repository = memo().is(() => new TypeRepository());
   
+  describe('type list update', function () {
+    const sourceURL = 'https://pryv.github.io/event-types/flat.json';
+    
+    it('should work (must be called manually)', function () {
+      // NOTE This test uses an internet URL. If internet is down, it will 
+      // not work. Much like Pryv in general, also because of this function. 
+       
+      return repository().tryUpdate(sourceURL);
+    });
+    it('should fail gracefully', function () {
+      return repository().tryUpdate('bahbahblacksheep')
+        .catch(
+          (err) => should(err.message).match(/Could not update event types/));
+    });
+  });
   describe('basic types like mass/kg', function () {
     it('should be known', function () {
       should(
