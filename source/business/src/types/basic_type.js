@@ -4,9 +4,7 @@ import type {EventType, PropertyType} from './interfaces';
 import type {ValueType} from './value_types';
 
 const assert = require('assert');
-const R = require('ramda');
 
-const errors = require('./errors');
 const value_types = require('./value_types');
 
 // A basic type like 'number' or 'boolean'. In high frequency data, this must 
