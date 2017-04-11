@@ -6,7 +6,6 @@ const helpers = require(__dirname + '/../../dist/components/api-server/test/help
       _ = require('lodash'),
       async = require('async'),
       should = require('should'),
-      eventTypes = require('../../dist/components/api-server/src/schema/event-types.default.json').types,
       errors = require('../../dist/components/errors/src/ErrorIds');
 
 
@@ -63,7 +62,6 @@ describe('High-Frequency', function () {
           should.exist(event.content);
           event.content.elementType.should.eql(type);
           event.content.format.should.eql('flatJSON');
-          event.content.fields.should.eql(['timestamp'].concat(Object.keys(eventTypes[type].properties)));
           event.duration.should.eql(0);
           seriesEvent = event;
           stepDone();

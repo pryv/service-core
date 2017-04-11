@@ -1,4 +1,3 @@
-'use strict';
 // @flow
 
 const express = require('express');
@@ -82,7 +81,6 @@ utils.messaging.openPubSocket(settings.tcpMessaging, function (err, messagingSoc
   // register dependencies (continued)
 
   dependencies.register({
-    eventTypes: require('./schema/eventTypes'),
     notifications: new Notifications(messagingSocket),
     api: new API(),
     systemAPI: new API() // use separate API instance to avoid any possible security issue

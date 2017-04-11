@@ -14,13 +14,20 @@ var utils = require('components/utils'),
 const assert = require('assert');
     
 const {TypeRepository, isSeriesType} = require('components/business').types;
+
+// Type repository that will contain information about what is allowed/known
+// for events. 
 const typeRepo = new TypeRepository(); 
 
 /**
  * Events API methods implementations.
  */
 module.exports = function (api, userEventsStorage, userEventFilesStorage, usersStorage,
-                           authSettings, notifications) {
+                           authSettings, notifications, eventTypesSettings, logging) {
+                             
+  // Update types and log error
+  typeRepo.tryUpdate(eventTypesSettings.sourceURL)
+    .catch((err) => logging.getLogger('typeRepo').warn(err));
 
   // COMMON
 

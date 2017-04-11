@@ -197,7 +197,7 @@ var customFormats = {
       } catch (e) {
         throw new Error('Cannot load function module "' + val + '": ' + e.message);
       }
-      if (typeof fn !== 'function') {
+      if (typeof fn !== 'function') {
         throw new Error('Module is not a function [' + val + ']');
       }
     },
@@ -224,7 +224,7 @@ Object.keys(customFormats).forEach(function (key) {
  * Note: possible output is printed to the console (logging is not yet setup at this point).
  *
  * @param configDefault An optional override default value for option `config`
- * @returns {Object} The loaded settings
+ * @returns {Object} The loaded settings
  */
 config.load = function (configDefault) {
   autoSetEnvAndArg(this.schema);
@@ -255,7 +255,7 @@ config.load = function (configDefault) {
 
   function loadFile(fPath) {
     if (! fs.existsSync(fPath)) {
-      console.error('Could not load config file ' + toString.path(fPath) + '');
+      console.error('Could not load config file ' + toString.path(fPath) + ''); // eslint-disable-line no-console
     } else {
       instance.loadFile(fPath);
     }
@@ -321,5 +321,5 @@ function loadCustomExtensions(settings) {
 }
 
 function print(title, data) {
-  console.log(title + ':\n' + JSON.stringify(data, null, 2));
+  console.log(title + ':\n' + JSON.stringify(data, null, 2)); // eslint-disable-line no-console
 }
