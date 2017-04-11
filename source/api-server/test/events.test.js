@@ -1264,8 +1264,9 @@ describe('events', function () {
           schema: methodsSchema.update.result
         });
 
+        should(res.body.event.modified).be.approximately(time, 2);
         var expected = _.clone(original);
-        expected.modified = time;
+        delete expected.modified; 
         expected.modifiedBy = access.id;
         _.extend(expected.clientData, data.clientData);
         delete expected.clientData.numberProp;
