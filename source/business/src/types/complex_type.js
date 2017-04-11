@@ -40,14 +40,16 @@ class ComplexType implements EventType {
   }
   optionalFields() {
     const requiredKeys = this.requiredFields();
-
-    if (this.schema.properties == null) 
-      throw new Error('Type Schema must have a properties object.');
-    const allKeys = Object.keys(this.schema.properties); 
+    const allKeys = this.fields(); 
     
     return R.reject(
       (el) => R.indexOf(el, requiredKeys) >= 0,
       allKeys);
+  }
+  fields() {
+    if (this.schema.properties == null) 
+      throw new Error('Type Schema must have a properties object.');
+    return Object.keys(this.schema.properties); 
   }
   
   forField(name: string): PropertyType {

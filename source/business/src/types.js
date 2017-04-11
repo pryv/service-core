@@ -1,18 +1,14 @@
 // @flow
 
-const R = require('ramda');
-const assert = require('assert');
-
 const defaultTypes = require('./types/event-types.default.json');
 
-import type {EventType, PropertyType} from './types/interfaces';
+import type {EventType} from './types/interfaces';
 
 const errors = require('./types/errors');
 const InfluxRowType = require('./types/influx_row_type');
 const BasicType = require('./types/basic_type');
 const ComplexType = require('./types/complex_type');
 
-// A complex ty
 // A repository of types that Pryv knows about. Currently, this is seeded from 
 // 'types/event-types.default.json' in this component. Also, once the server 
 // is running, a list is downloaded from the internet (pryv.com) that will

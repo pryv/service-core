@@ -17,6 +17,10 @@ export interface EventType {
   // Returns a list of optional fields in no particular order. 
   // 
   optionalFields(): Array<string>; 
+  
+  // Returns a list of all fields, optional and mandatory. 
+  // 
+  fields(): Array<string>; 
 }
 
 // All Pryv Event Types must implement this interface.

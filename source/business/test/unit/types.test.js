@@ -18,6 +18,7 @@ describe('business.types.TypeRepository', function () {
       
       should(eventType.requiredFields()).be.eql(['value']);
       should(eventType.optionalFields()).be.eql([]);
+      should(eventType.fields()).be.eql(['value']);
       
       const fieldType = eventType.forField('value'); 
       should(fieldType.coerce('1234')).be.eql(1234); 
@@ -34,6 +35,11 @@ describe('business.types.TypeRepository', function () {
         'longitude',
       ]);
       should(eventType.optionalFields()).be.eql([
+        'altitude', 'horizontalAccuracy', 'verticalAccuracy', 
+        'speed', 'bearing',
+      ]);
+      should(eventType.fields()).be.eql([
+        'latitude', 'longitude',
         'altitude', 'horizontalAccuracy', 'verticalAccuracy', 
         'speed', 'bearing',
       ]);

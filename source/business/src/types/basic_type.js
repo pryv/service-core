@@ -25,6 +25,9 @@ class BasicType implements EventType, PropertyType {
   optionalFields() {
     return [];
   }
+  fields() {
+    return this.requiredFields();
+  }
   
   forField(name: string): PropertyType {
     // NOTE BasicType only represents types that are not composed of multiple 

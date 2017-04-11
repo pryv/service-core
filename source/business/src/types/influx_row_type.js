@@ -108,6 +108,10 @@ class InfluxRowType implements EventType {
     return [FIELD_TIMESTAMP].concat(
       this.eventType.requiredFields());
   }
+  fields() {
+    return [FIELD_TIMESTAMP].concat(
+      this.eventType.fields()); 
+  }
 }
 
 module.exports = InfluxRowType;
