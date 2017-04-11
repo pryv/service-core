@@ -14,7 +14,7 @@ var utils = require('components/utils'),
     
 const assert = require('assert');
     
-const {TypeRepository, InfluxRowType} = require('components/business').types;
+const {TypeRepository} = require('components/business').types;
 const typeRepo = new TypeRepository(); 
 
 /**
@@ -266,7 +266,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     const eventType = typeRepo.lookup(seriesTypeName); 
     
     // assert: Type is a series type, so this should be always true: 
-    assert.ok(eventType instanceof InfluxRowType); 
+    assert.ok(eventType.isSeries()); 
 
     return {
       elementType: eventType.elementTypeName(), 
@@ -410,47 +410,44 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
    * @param {Function} next
    */
   function validateEventContent(context: Object, params: Object, result: Object, next: Function) {
+    const type: string = context.content.type;
+        
+    // Unknown types can just be created as normal events. 
+    if (! typeRepo.isKnown(type)) {
+      // We forbid the 'series' prefix for these free types. 
+      if (isSeries(type)) return next(errors.invalidEventType(type));
 
-    let type: string = context.content.type,
-        knownType: boolean = false;
-
-    if (isSeries(context.content)) {
-      type = type.slice(7);
-      knownType = eventTypes.types[type];
-      if (!knownType ||
-        ((knownType.type !== 'string') && (knownType.type !== 'number') && (knownType.type !== 'object'))) {
-        return next(errors.invalidEventType(type));
-      }
-      if (context.content.content) {
-        return next(errors.invalidParametersFormat('The event content\'s format is ' +
-          'invalid.', 'Events of type High-frequency have a read-only content'));
-      }
-      
+      // No further checks, let the user do what he wants. 
       return next();
     }
-
-    knownType = eventTypes.types[type];
-    if (knownType) {
-      validation.validate(context.content.hasOwnProperty('content') ? context.content.content :
-          null, knownType,
-        function (err) {
-          if (err && knownType.type === 'number' && typeof context.content.content === 'string') {
-            var castedToNum = +context.content.content;
-            if (!isNaN(castedToNum)) {
-              context.content.content = castedToNum;
-              return validation.validate(context.content.content, knownType, next);
-            }
-          }
-          if (err) {
-            return next(
-              errors.invalidParametersFormat(
-                'The event content\'s format is invalid.', err));
-          }
-          next(null);
-        });
-    } else {
-      next(null);
+        
+    // assert: `type` is known
+    
+    const eventType = typeRepo.lookup(type);
+    if (eventType.isSeries()) {
+      // Series cannot have content on update, not here at least.
+      if (context.content.content != null) {
+        return next(errors.invalidParametersFormat(
+          'The event content\'s format is invalid.', 
+          'Events of type High-frequency have a read-only content'));
+      }
+      
+      return next(); 
     }
+    
+    // assert: `type` is not a series but is known
+    
+    const content = context.content.hasOwnProperty('content') 
+      ? context.content.content
+      : null;
+
+    const validator = typeRepo.validator();
+    validator.validate(eventType, content)
+      .then(() => next())
+      .catch(
+        (err) => next(errors.invalidParametersFormat(
+          'The event content\'s format is invalid.', err))
+      );
   }
 
   function cleanupEventTags(eventData) {

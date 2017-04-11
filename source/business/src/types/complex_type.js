@@ -1,6 +1,6 @@
 // @flow
 
-import type {EventType, PropertyType} from './interfaces';
+import type {EventType, PropertyType, Validator} from './interfaces';
 
 type JSONSchema = {
   type: string, 
@@ -16,7 +16,7 @@ const value_types = require('./value_types');
 // A complex type like 'position/wgs84' that has several subfields. 
 // 
 class ComplexType implements EventType {
-  schema: JSONSchema;
+  _schema: JSONSchema;
   _outerType: string; 
   
   constructor(outerType: string, schema: JSONSchema) {
@@ -30,7 +30,7 @@ class ComplexType implements EventType {
     assert.ok(schema.properties != null, 
       'Type Schema must have a properties object.');   
     
-    this.schema = schema; 
+    this._schema = schema; 
     this._outerType = outerType;
   }
   
@@ -39,10 +39,10 @@ class ComplexType implements EventType {
   }
   
   requiredFields() {
-    if (this.schema.required == null) 
+    if (this._schema.required == null) 
       throw new Error('Type Schema must have a list of required fields.');
       
-    return this.schema.required; 
+    return this._schema.required; 
   }
   optionalFields() {
     const requiredKeys = this.requiredFields();
@@ -53,14 +53,25 @@ class ComplexType implements EventType {
       allKeys);
   }
   fields() {
-    if (this.schema.properties == null) 
+    if (this._schema.properties == null) 
       throw new Error('Type Schema must have a properties object.');
-    return Object.keys(this.schema.properties); 
+    return Object.keys(this._schema.properties); 
   }
   
   forField(name: string): PropertyType {
     // TODO
     return value_types('number');
+  }
+  
+  isSeries(): false {
+    return false; 
+  }
+  
+  callValidator(
+    validator: Validator, 
+    content: Object | number | string | boolean
+  ): Promise<void> {
+    return validator.validateWithSchema(content, this._schema);
   }
 }
 

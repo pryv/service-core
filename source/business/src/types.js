@@ -4,6 +4,9 @@ const defaultTypes = require('./types/event-types.default.json');
 
 import type {EventType} from './types/interfaces';
 
+const bluebird = require('bluebird');
+const ZSchemaValidator = require('z-schema');
+
 const errors = require('./types/errors');
 const InfluxRowType = require('./types/influx_row_type');
 const BasicType = require('./types/basic_type');
@@ -18,6 +21,30 @@ function isSeriesType(name: string): boolean {
   return name.startsWith(SERIES_PREFIX);
 }
 
+// A validator that can check values against a types JSON Schema. 
+// 
+class TypeValidator {
+  
+  // Validates the given event type against its schema. 
+  // 
+  validate(type: EventType, content: Object | string | number | boolean): Promise<void> {
+    return type.callValidator(this, content);
+  }
+  
+  validateWithSchema(
+    content: Object | string | number | boolean, 
+    schema: any
+  ): Promise<void> 
+  {
+    return bluebird.try(() => {
+      const validator = new ZSchemaValidator(); 
+      
+      return bluebird.fromCallback(
+        (cb) => validator.validate(content, schema, cb));
+    }); 
+  }
+}
+
 // A repository of types that Pryv knows about. Currently, this is seeded from 
 // 'types/event-types.default.json' in this component. Also, once the server 
 // is running, a list is downloaded from the internet (pryv.com) that will
@@ -25,6 +52,11 @@ function isSeriesType(name: string): boolean {
 // 
 class TypeRepository {
   isKnown(name: string): boolean {
+    if (isSeriesType(name)) {
+      const leafTypeName = name.slice(SERIES_PREFIX.length); 
+      return this.isKnown(leafTypeName);
+    }
+    
     return defaultTypes.types.hasOwnProperty(name);
   }
 
@@ -42,7 +74,7 @@ class TypeRepository {
       return new ComplexType(name, typeSchema);
     }
     
-    return new BasicType(name, typeSchema.type);
+    return new BasicType(name, typeSchema);
   }
   
   // Lookup a Pryv Event Type by name. To check if a type exists, use
@@ -62,11 +94,18 @@ class TypeRepository {
     // assert: Not a series type, must be a leaf type. 
     return this.lookupLeafType(name);
   }
+
+  // Produces a validator instance. 
+  //
+  validator(): TypeValidator {
+    return new TypeValidator(); 
+  }
 }
 
 module.exports = {
   TypeRepository: TypeRepository, 
-  InfluxRowType: InfluxRowType, 
+  InfluxRowType: InfluxRowType, // TODO remove eventually 
+  isSeriesType: isSeriesType,
   errors: errors, 
 };
 

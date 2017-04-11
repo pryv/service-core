@@ -13,6 +13,11 @@ describe('business.types.TypeRepository', function () {
   const repository = memo().is(() => new TypeRepository());
   
   describe('basic types like mass/kg', function () {
+    it('should be known', function () {
+      should(
+        repository().isKnown('mass/kg')
+      ).be.true(); 
+    });
     it('should return a type instance allowing conversion', function () {
       const eventType = repository().lookup('mass/kg');
       
@@ -26,6 +31,11 @@ describe('business.types.TypeRepository', function () {
     });
   });
   describe('complex types like position/wgs84', function () {
+    it('should be known', function () {
+      should(
+        repository().isKnown('position/wgs84')
+      ).be.true(); 
+    });
     it('should return a complex type instance', function () {
       const eventType = repository().lookup('position/wgs84');
 
@@ -46,6 +56,14 @@ describe('business.types.TypeRepository', function () {
     });
   });
   describe('series types like series:mass/kg', function () {
+    it('should be known', function () {
+      should(
+        repository().isKnown('series:position/wgs84')
+      ).be.true(); 
+      should(
+        repository().isKnown('series:mass/kg')
+      ).be.true(); 
+    });
     it('should inform about fields correctly', function () {
       const eventType = repository().lookup('series:mass/kg');
 

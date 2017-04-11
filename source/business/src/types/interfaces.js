@@ -6,7 +6,7 @@
 // field name to get a property type. 
 // 
 export interface EventType {
-  // Returns this types official name. 
+  // Returns this types official name ('mass/kg'). 
   // 
   typeName(): string; 
   
@@ -25,9 +25,21 @@ export interface EventType {
   // Returns a list of all fields, optional and mandatory. 
   // 
   fields(): Array<string>; 
+  
+  // Returns true if this type represents a series of another type. 
+  // 
+  isSeries(): boolean; 
+
+  // Call the validator with this types schema. 
+  // 
+  callValidator(
+    validator: Validator, 
+    content: Object | number | string | boolean
+  ): Promise<void>;
 }
 
-// All Pryv Event Types must implement this interface.
+// A single property of a type has a type that can be applied to incoming
+// values. 
 // 
 export interface PropertyType {
   // Coerces the value given into this type. If the input value cannot be
@@ -38,3 +50,8 @@ export interface PropertyType {
   coerce(value: any): any; 
 }
 
+export interface Validator {
+  validateWithSchema(
+    content: Object | string | number | boolean, schema: any)
+    : Promise<void>;
+}

@@ -1,8 +1,13 @@
 // @flow
 
-import type {EventType, PropertyType} from './interfaces';
+import type {EventType, PropertyType, Validator} from './interfaces';
 import type {ValueType} from './value_types';
 
+type JSONSchema = {
+  type: string, 
+}
+
+const bluebird = require('bluebird');
 const assert = require('assert');
 
 const value_types = require('./value_types');
@@ -11,12 +16,21 @@ const value_types = require('./value_types');
 // be stored using the column name 'value'.
 // 
 class BasicType implements EventType {
+  _schema: JSONSchema; 
   _outerType: string; 
   _innerType: ValueType; 
   
-  constructor(outerType: string, innerType: string) {
+  /** 
+   * Construct a basic type. 
+   * 
+   * @param outerType {string} Type name such as 'mass/kg'
+   * @param schema {JSONSchema} Schema to verify content against. 
+   */
+  constructor(outerType: string, schema: JSONSchema) {
+    this._schema = schema; 
+    
     this._outerType = outerType; 
-    this._innerType = value_types(innerType);
+    this._innerType = value_types(schema.type);
   }
   
   typeName(): string {
@@ -39,6 +53,23 @@ class BasicType implements EventType {
     assert.ok(name === 'value');
     
     return this._innerType;
+  }
+  
+  isSeries(): false {
+    return false; 
+  }
+  
+  callValidator(
+    validator: Validator, 
+    content: Object | number | string | boolean
+  ): Promise<void> {
+    return bluebird.try(() => {
+      // Perform coercion into target type first. Then verify using the 
+      // validator. This saves us one roundtrip. 
+      const value = this._innerType.coerce(content);
+      
+      return validator.validateWithSchema(value, this._schema);
+    });
   }
 }
 

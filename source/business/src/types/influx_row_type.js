@@ -2,7 +2,7 @@
 
 const R = require('ramda');
 
-import type {EventType, PropertyType} from './interfaces';
+import type {EventType, PropertyType, Validator} from './interfaces';
 
 const FIELD_TIMESTAMP = 'timestamp';
 
@@ -35,9 +35,8 @@ class InfluxRowType implements EventType {
     this.eventType = eventType; 
   }
   
-  typeName() {
-    return 'series:'+this.eventType.typeName();
-  }
+  // Returns the name of the type inside the series. 
+  // 
   elementTypeName() {
     return this.eventType.typeName(); 
   }
@@ -91,6 +90,12 @@ class InfluxRowType implements EventType {
     return true; 
   }
   
+  // As part of being an EventType, return the name of this type. 
+  // 
+  typeName() {
+    return 'series:'+this.eventType.typeName();
+  }
+  
   /** Returns the type of a single cell with column name `name`. 
    */
   forField(name: string): PropertyType  {
@@ -118,6 +123,18 @@ class InfluxRowType implements EventType {
   fields() {
     return [FIELD_TIMESTAMP].concat(
       this.eventType.fields()); 
+  }
+
+  isSeries(): true {
+    return true; 
+  }
+
+  callValidator(
+    validator: Validator,                         
+    content: Object | number | string | boolean // eslint-disable-line no-unused-vars
+  ): Promise<void> {
+    return Promise.reject(
+      new Error('No validation for influx row types.'));
   }
 }
 

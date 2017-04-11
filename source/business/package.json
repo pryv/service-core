@@ -4,8 +4,11 @@
   "description": "Business method layer",
   "main": "src/index.js",
   "author": "Pryv",
-  "license": "All rights reserved / Proprietary", 
+  "license": "All rights reserved / Proprietary",
   "scripts": {
     "test": "../../node_modules/.bin/mocha -R dot test/**/*.test.js"
+  },
+  "dependencies": {
+    "z-schema": "^3.18.2"
   }
 }
