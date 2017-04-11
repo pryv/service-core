@@ -177,7 +177,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   api.register('events.create',
     commonFns.getParamsValidation(methodsSchema.create.params),
     applyPrerequisitesForCreation,
-    validateEventContent,
+    validateEventContentAndCoerce,
     checkExistingLaterPeriodIfNeeded,
     checkOverlappedPeriodsIfNeeded,
     verifyContext,
@@ -301,7 +301,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   api.register('events.update',
       commonFns.getParamsValidation(methodsSchema.update.params),
       applyPrerequisitesForUpdate,
-      validateEventContent,
+      validateEventContentAndCoerce,
       checkExistingLaterPeriodIfNeeded,
       checkOverlappedPeriodsIfNeeded,
       stopPreviousPeriodIfNeeded,
@@ -408,7 +408,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
    * @param {Object} result
    * @param {Function} next
    */
-  function validateEventContent(context: Object, params: Object, result: Object, next: Function) {
+  function validateEventContentAndCoerce(context: Object, params: Object, result: Object, next: Function) {
     const type: string = context.content.type;
         
     // Unknown types can just be created as normal events. 
@@ -442,7 +442,12 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
     const validator = typeRepo.validator();
     validator.validate(eventType, content)
-      .then(() => next())
+      .then((newContent) => {
+        // Store the coerced value. 
+        context.content.content = newContent; 
+        
+        next()
+      })
       .catch(
         (err) => next(errors.invalidParametersFormat(
           'The event content\'s format is invalid.', err))

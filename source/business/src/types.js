@@ -2,7 +2,7 @@
 
 const defaultTypes = require('./types/event-types.default.json');
 
-import type {EventType} from './types/interfaces';
+import type {EventType, Content} from './types/interfaces';
 
 const bluebird = require('bluebird');
 const ZSchemaValidator = require('z-schema');
@@ -27,20 +27,22 @@ class TypeValidator {
   
   // Validates the given event type against its schema. 
   // 
-  validate(type: EventType, content: Object | string | number | boolean): Promise<void> {
+  validate(type: EventType, content: Content): Promise<Content> {
     return type.callValidator(this, content);
   }
   
   validateWithSchema(
-    content: Object | string | number | boolean, 
+    content: Content, 
     schema: any
-  ): Promise<void> 
+  ): Promise<Content> 
   {
     return bluebird.try(() => {
       const validator = new ZSchemaValidator(); 
       
-      return bluebird.fromCallback(
-        (cb) => validator.validate(content, schema, cb));
+      return bluebird
+        .fromCallback(
+          (cb) => validator.validate(content, schema, cb))
+        .then(() => content);
     }); 
   }
 }

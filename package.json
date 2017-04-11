@@ -68,6 +68,7 @@
     "flow-coverage-report": "^0.3.0",
     "flow-typed": "^2.0.0",
     "foreman": "^2.0.0",
+    "inspect": "^0.0.2",
     "jsdoc": "^3.4.3",
     "jsdoc-babel": "^0.3.0",
     "memo-is": "^0.0.2",

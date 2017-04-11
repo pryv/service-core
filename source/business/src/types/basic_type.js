@@ -1,6 +1,6 @@
 // @flow
 
-import type {EventType, PropertyType, Validator} from './interfaces';
+import type {EventType, PropertyType, Validator, Content} from './interfaces';
 import type {ValueType} from './value_types';
 
 type JSONSchema = {
@@ -61,8 +61,8 @@ class BasicType implements EventType {
   
   callValidator(
     validator: Validator, 
-    content: Object | number | string | boolean
-  ): Promise<void> {
+    content: Content
+  ): Promise<Content> {
     return bluebird.try(() => {
       // Perform coercion into target type first. Then verify using the 
       // validator. This saves us one roundtrip. 

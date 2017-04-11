@@ -2,7 +2,7 @@
 
 const R = require('ramda');
 
-import type {EventType, PropertyType, Validator} from './interfaces';
+import type {EventType, PropertyType, Validator, Content} from './interfaces';
 
 const FIELD_TIMESTAMP = 'timestamp';
 
@@ -131,8 +131,8 @@ class InfluxRowType implements EventType {
 
   callValidator(
     validator: Validator,                         
-    content: Object | number | string | boolean // eslint-disable-line no-unused-vars
-  ): Promise<void> {
+    content: Content // eslint-disable-line no-unused-vars
+  ): Promise<Content> {
     return Promise.reject(
       new Error('No validation for influx row types.'));
   }

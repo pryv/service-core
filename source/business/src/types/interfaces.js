@@ -34,8 +34,8 @@ export interface EventType {
   // 
   callValidator(
     validator: Validator, 
-    content: Object | number | string | boolean
-  ): Promise<void>;
+    content: Content
+  ): Promise<Content>;
 }
 
 // A single property of a type has a type that can be applied to incoming
@@ -51,7 +51,14 @@ export interface PropertyType {
 }
 
 export interface Validator {
+  
+  // Validate `content` using the JSON schema `schema`. If needed, perform 
+  // value coercion to allow the content to pass verification. Coerced value
+  // is returned in the promise. 
+  //
   validateWithSchema(
-    content: Object | string | number | boolean, schema: any)
-    : Promise<void>;
+    content: Content, schema: any)
+    : Promise<Content>;
 }
+
+export type Content = Object | string | number | boolean;

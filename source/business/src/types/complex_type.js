@@ -1,6 +1,6 @@
 // @flow
 
-import type {EventType, PropertyType, Validator} from './interfaces';
+import type {EventType, PropertyType, Validator, Content} from './interfaces';
 
 type JSONSchema = {
   type: string, 
@@ -69,8 +69,10 @@ class ComplexType implements EventType {
   
   callValidator(
     validator: Validator, 
-    content: Object | number | string | boolean
-  ): Promise<void> {
+    content: Content
+  ): Promise<Content> {
+    // NOTE We don't currently perform coercion on leaf types of complex
+    // named types. We could though - and this is where we would do it. 
     return validator.validateWithSchema(content, this._schema);
   }
 }
