@@ -44,6 +44,12 @@ describe('business.types.TypeRepository', function () {
       should(fieldType.coerce('1234')).be.eql(1234); 
       should(fieldType.coerce(1234)).be.eql(1234); 
     });
+    it('should throw when conversion fails', function () {
+      const eventType = repository().lookup('mass/kg');
+      const fieldType = eventType.forField('value'); 
+
+      should.throws(() => fieldType.coerce({}), Error); 
+    });
     it('should coerce to number during validation', function () {
       const eventType = repository().lookup('mass/kg');
       const validator = repository().validator();
