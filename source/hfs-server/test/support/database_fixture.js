@@ -67,14 +67,14 @@ class UserContext {
 interface ChildResource {
   create(): Promise<*>;
 }
-class ChildHolder {
-  childs: Array<ChildResource>; 
+class GenericChildHolder<T: ChildResource> {
+  childs: Array<T>; 
   
   constructor() {
     this.childs = []; 
   }
   
-  push(child: ChildResource) {
+  push(child: T) {
     this.childs.push(child);
   }
   
@@ -82,11 +82,20 @@ class ChildHolder {
     return this.childs.length > 0;
   }
   
-  createAll(...rest) {
+  createAll(...rest: Array<any>) {
     return bluebird.map(this.childs, 
       (child) => child.create(...rest));
   }
+
+  // Calls fun for each child, accumulating the promises returned by fun and 
+  // then returns a promise that only resolves once all individual promises 
+  // resolve (aka Promise.all).
+  // 
+  all<U>(fun: (T) => Promise<U>): Promise<Array<U>> {
+    return bluebird.map(this.childs, fun);
+  }
 }
+type ChildHolder = GenericChildHolder<ChildResource>;
 type Attributes = {
   id: string, 
   _id: string, 
@@ -98,7 +107,7 @@ class FixtureTreeNode {
   attrs: Attributes; 
     
   constructor(context: UserContext, attrs: {}) {
-    this.childs = new ChildHolder(); 
+    this.childs = new GenericChildHolder(); 
     this.context = context; 
     
     this.db = this.context.produceDb(); 
@@ -135,13 +144,13 @@ class FixtureTreeNode {
 }
 
 class Fixture {
-  childs: ChildHolder; 
+  childs: GenericChildHolder<FixtureUser>; 
   context: Context; 
   
   constructor(context: Context) {
     this.context = context; 
     
-    this.childs = new ChildHolder(); 
+    this.childs = new GenericChildHolder(); 
   }
   
   // ----------------------------------------------------------------------- dsl
@@ -163,32 +172,21 @@ class Fixture {
   // this in an afterEach function to ensure that the database is clean after
   // running tests. 
   //
-  clean(): Promise<void> {
-    return bluebird.reject(new Error('Implement me'));
+  clean(): Promise<mixed> {
+    return this.childs.all(
+      (child) => child.remove());
   }
   
   // ------------------------------------------------------------------ internal
   
-  createChild<T: ChildResource>(child: T, cb?: (T) => mixed): Promise<T> {
+  createChild(child: FixtureUser, cb?: (FixtureUser) => mixed): Promise<FixtureUser> {
     return child.create()
       .then(() => {
-        this.addChild(child);
+        this.childs.push(child);
         if (cb) cb(child);
         
         return child; 
       });
-  }
-  
-  // Overrides parent implementation
-  addChild(u: ChildResource) {
-    this.childs.push(u);
-  }
-  
-  /** Gets called in beforeEach. */
-  beforeEachHook(done: () => void) {
-    if (! this.childs.hasChilds()) return done(); 
-
-    this.childs.createAll().asCallback(done);
   }
 }
 
@@ -233,7 +231,7 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
       .then(() => this.createChildResources()); // Create child resources
   }
   
-  remove() {
+  remove(): Promise<mixed> {
     const db = this.db; 
     const user = null; // NOTE not needed for access to users collection.
     const username = this.context.userName; 

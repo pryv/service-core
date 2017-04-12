@@ -10,37 +10,13 @@ const request = require('supertest');
 const R = require('ramda');
 const cuid = require('cuid');
 
-const { settings, produceMongoConnection } = require('./test-helpers');
+const { settings, produceMongoConnection, define } = require('./test-helpers');
 const databaseFixture = require('../support/database_fixture');
 
 const Application = require('../../src/Application');
 
 import type {MetadataRepository} from '../../src/metadata_cache';
 import type {Response} from 'supertest';
-
-import type {Suite} from 'mocha';
-function define<T>(suite: Suite, generator: () => Promise<T>): () => T {
-  let value: ?T = null; 
-  
-  suite.beforeEach(() => {
-    const futureValue = generator(); 
-
-    if (futureValue.then) {
-      // If generator returned a promise, return it so that mocha awaits it. 
-      // Also, once the value becomes available (after this awaiting), have 
-      // value contain it. 
-      // 
-      return futureValue.then((val) => value = val);
-    }
-    else {
-      throw new Error('Please return a promise from your define block.')
-    }
-  });
-  
-  return function() { 
-    if (value == null) throw new Error('beforeEach should have set this value.')
-    return value; }; 
-}
 
 describe('Storing data in a HF series', function() {
   const application = memo().is(()  => new Application().init(settings)); 
