@@ -34,7 +34,7 @@ describe('Storing data in a HF series', function() {
     const accessToken = define(this, () => cuid());
 
     const pryv = databaseFixture(database, this);
-    const user = define(this, () => {
+    define(this, () => {
       return pryv.user(userName(), {}, function (user) {
         user.stream({id: cuid()}, function (stream) {
           stream.event({id: eventId()});
@@ -48,8 +48,28 @@ describe('Storing data in a HF series', function() {
       pryv.clean(); 
     });
     
+    function storeData(
+      type: string, 
+      data: {}
+    ): Response {
+      const postData = {
+        fields: Object.keys(data), 
+        points: [ 
+          R.pick(Object.keys(data), data),
+        ]
+      };
+      
+      const response = request(app())
+        .post(`/${userName()}/events/${eventId()}/series`)
+        .set('authorization', accessToken())
+        .send(data)
+        .expect(201);
+        
+      return response;
+    }
+    
     it('should store data correctly', function () {
-      // store data
+      return storeData('mass/kg', {timestamp: 1481677845, value: 80.3});
       // verify db existence in InfluxDB
       // verify content in InfluxDB
     });

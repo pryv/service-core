@@ -70,7 +70,7 @@ class MetadataLoader {
         [
           methodContext.retrieveUser.bind(methodContext),
           methodContext.retrieveExpandedAccess.bind(methodContext), 
-          function loadEvent(done) {
+          function loadEvent(done) { // result is used in success handler!
             const user = methodContext.user; 
             const query = {id: eventId};
             const findOpts = null; 
@@ -81,7 +81,7 @@ class MetadataLoader {
         (err, results) => {
           const access = methodContext.access; 
           const user = methodContext.user; 
-          const event = R.last(results);  // TODO fragile!
+          const event = R.last(results);
           
           if (err) return returnValueCallback(err);
           returnValueCallback(null, 

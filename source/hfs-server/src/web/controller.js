@@ -33,11 +33,17 @@ function storeSeriesData(ctx: Context, req: express$Request, res: express$Respon
   // TODO test this
   if (accessToken == null) return next(errors.missingHeader(AUTH_HEADER));
   if (eventId == null) return next(errors.invalidItemId());
+  
+  // NOTE Only call next once. This avoids having to deal with a second
+  // exception generating a second call to next. 
+  const handleErrors = R.once(next);
 
   // Access check: Can user write to this series? 
   const seriesMeta = metadata.forSeries(userName, eventId, accessToken);
   return seriesMeta
-    .catch(() => next(errors.forbidden()))
+    .catch(e => {
+      handleErrors(errors.forbidden())
+      throw e; })
     .then((seriesMeta) => {
       if (!seriesMeta.canWrite()) return next(errors.forbidden());
 
@@ -65,7 +71,7 @@ function storeSeriesData(ctx: Context, req: express$Request, res: express$Respon
           next(err);
         });
     })
-    .catch((err) => dispatchErrors(err, next));
+    .catch((err) => handleErrors(err, next));
 }
 
 /** Handles errors that might happen during a controller execution that are 
@@ -113,12 +119,17 @@ function parseData(createRequest: mixed): ?DataMatrix {
 
   const matrix = new business.series.DataMatrix(fields, points);
   
-  matrix.transform((columnName, cellValue) => {
-    const cellType = type.forField(columnName);
-
-    const coercedValue = cellType.coerce(cellValue);
-    return coercedValue; 
-  });
+  try {
+    matrix.transform((columnName, cellValue) => {
+      const cellType = type.forField(columnName);
+      
+      const coercedValue = cellType.coerce(cellValue);
+      return coercedValue; 
+    });
+  }
+  catch (e) {
+    return null; 
+  }
     
   return matrix;
 }
