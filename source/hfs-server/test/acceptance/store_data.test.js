@@ -4,7 +4,7 @@
 // Tests pertaining to storing data in a hf series. 
 
 /* global describe, it, beforeEach, afterEach */
-const memo = require('memo-is');
+const bluebird = require('bluebird');
 const should = require('should');
 const request = require('supertest');
 const R = require('ramda');
@@ -19,18 +19,19 @@ import type {MetadataRepository} from '../../src/metadata_cache';
 import type {Response} from 'supertest';
 
 describe('Storing data in a HF series', function() {
-  const application = memo().is(()  => new Application().init(settings)); 
-  const context = memo().is(()      => application().context); 
-  const server = memo().is(()       => application().server); 
+  const application = define(this, () => bluebird.resolve(
+    new Application().init(settings))); 
+  const context = define(this, () => application().context); 
+  const server = define(this, () => application().server); 
 
-  const app = memo().is(()          => server().setupExpress());
+  const app = define(this, () => server().setupExpress());
 
   describe('Use Case: Store data in InfluxDB', function () {
     const database = produceMongoConnection(); 
     
-    const userName = memo().is(() => cuid());
-    const eventId = memo().is(() => cuid());
-    const accessToken = memo().is(() => cuid());
+    const userName = define(this, () => cuid());
+    const eventId = define(this, () => cuid());
+    const accessToken = define(this, () => cuid());
 
     const pryv = databaseFixture(database, this);
     const user = define(this, () => {

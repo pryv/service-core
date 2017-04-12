@@ -38,13 +38,15 @@ import type {Suite} from 'mocha';
 // We chose to have the define function to return a promise here since the
 // beforeEach of mocha must wait on the value to be available. 
 //  
-function define<T>(suite: Suite, generator: () => Promise<T>): () => T {
+function define<T>(suite: Suite, generator: () => (Promise<T> | T)): () => T {
   let value: ?T = null; 
   
   suite.beforeEach(() => {
-    const futureValue = generator(); 
+    // Since flow will not be able to know what value we're treating here, let's
+    // give it a hint: 
+    const futureValue: any = (generator(): any); 
 
-    if (futureValue.then) {
+    if (futureValue.then != null) {
       // If generator returned a promise, return it so that mocha awaits it. 
       // Also, once the value becomes available (after this awaiting), have 
       // value contain it. 
@@ -52,7 +54,9 @@ function define<T>(suite: Suite, generator: () => Promise<T>): () => T {
       return futureValue.then((val) => value = val);
     }
     else {
-      throw new Error('Please return a promise from your define block.');
+      // We'll assume that everything that doesn't have a 'then' method is 
+      // just an immediate value
+      value = futureValue; 
     }
   });
   
