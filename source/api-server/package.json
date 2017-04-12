@@ -14,7 +14,6 @@
   "dependencies": {
     "slug": "^0.9.1",
     "multistream": "^2.1.0",
-    "slug": "0.8.x",
     "socket.io": "^0.9.17",
     "z-schema": "^3.15.3"
   }
