@@ -69,34 +69,99 @@ describe('Storing data in a HF series', function() {
         ]
       };
     }
-    
-    // Bypass authentication check: Succeed always
-    beforeEach(function () {
-      context().metadata = produceMetadataLoader();
-    });
-    
-    it('stores data into InfluxDB', function() {
-      const data = produceData(); 
-      
-      return storeData(data)
-        .expect(200)
-        .then(queryData)
-        .then((response) => {
-          // Verify data here
-          should(response).not.be.empty(); 
-          
-          should(response.fields).be.eql(['timestamp', 'value']);
-          
-          const pairEqual = ([given, expected]) => 
-            should(given).be.eql(expected);
-            
-          should(response.points.length).be.eql(data.points.length);
-          R.all(pairEqual, R.zip(response.points, data.points));
-        });
-    });
+
     it.skip('should reject non-JSON bodies', function () { });
     
-    describe('when authToken is not valid', function () {
+    describe('when bypassing authentication (succeed always)', function () {
+      // Bypass authentication check: Succeed always
+      beforeEach(function () {
+        context().metadata = produceMetadataLoader();
+      });
+      
+      it('stores data into InfluxDB', function() {
+        const data = produceData(); 
+        
+        return storeData(data)
+          .expect(200)
+          .then(queryData)
+          .then((response) => {
+            // Verify HTTP response content
+            should(response).not.be.empty(); 
+            
+            should(response.fields).be.eql(['timestamp', 'value']);
+            
+            const pairEqual = ([given, expected]) => 
+              should(given).be.eql(expected);
+              
+            should(response.points.length).be.eql(data.points.length);
+            R.all(pairEqual, R.zip(response.points, data.points));
+          });
+      });
+
+      describe('when request is malformed', function () {
+        malformed('format is not flatJSON', {
+          elementType: 'mass/kg',
+          format: 'JSON', 
+          fields: ['timestamp', 'value'], 
+          points: [
+            [1481677845, 14.1], 
+            [1481677846, 14.2], 
+            [1481677847, 14.3], 
+          ]
+        });
+        malformed('matrix is not square - not enough fields', {
+          elementType: 'mass/kg',
+          format: 'flatJSON', 
+          fields: ['timestamp', 'value'], 
+          points: [
+            [1481677845, 14.1], 
+            [1481677846], 
+            [1481677847, 14.3], 
+          ]
+        });
+        malformed('value types are not all valid', {
+          elementType: 'mass/kg',
+          format: 'flatJSON', 
+          fields: ['timestamp', 'value'], 
+          points: [
+            [1481677845, 14.1], 
+            [1481677846, 'foobar'], 
+            [1481677847, 14.3], 
+          ]
+        });
+        malformed('missing timestamp column', {
+          elementType: 'mass/kg',
+          format: 'flatJSON', 
+          fields: ['value'], 
+          points: [
+            [14.1], 
+            [13.2], 
+            [14.3], 
+          ]
+        });
+        malformed('missing value column for a simple input', {
+          elementType: 'mass/kg',
+          format: 'flatJSON', 
+          fields: ['timestamp'], 
+          points: [
+            [1481677845], 
+            [1481677846], 
+            [1481677847], 
+          ]
+        });
+        
+        function malformed(text, data) {
+          it(`should be rejected (${text})`, function () {
+            return storeData(data).expect(400)
+              .then((res) => {
+                const error = res.body.error; 
+                should(error.id).be.eql('invalid-request-structure');
+              });
+          });
+        }
+      });
+    });
+    describe('when authentication fails', function () {
       // Bypass authentication check: Fail always
       beforeEach(function () {
         context().metadata = produceMetadataLoader(false); 
@@ -113,68 +178,6 @@ describe('Storing data in a HF series', function() {
             should(error.message).be.instanceof(String);
           });
       });
-    });
-    describe('when request is malformed', function () {
-      malformed('format is not flatJSON', {
-        elementType: 'mass/kg',
-        format: 'JSON', 
-        fields: ['timestamp', 'value'], 
-        points: [
-          [1481677845, 14.1], 
-          [1481677846, 14.2], 
-          [1481677847, 14.3], 
-        ]
-      });
-      malformed('matrix is not square - not enough fields', {
-        elementType: 'mass/kg',
-        format: 'flatJSON', 
-        fields: ['timestamp', 'value'], 
-        points: [
-          [1481677845, 14.1], 
-          [1481677846], 
-          [1481677847, 14.3], 
-        ]
-      });
-      malformed('value types are not all valid', {
-        elementType: 'mass/kg',
-        format: 'flatJSON', 
-        fields: ['timestamp', 'value'], 
-        points: [
-          [1481677845, 14.1], 
-          [1481677846, 'foobar'], 
-          [1481677847, 14.3], 
-        ]
-      });
-      malformed('missing timestamp column', {
-        elementType: 'mass/kg',
-        format: 'flatJSON', 
-        fields: ['value'], 
-        points: [
-          [14.1], 
-          [13.2], 
-          [14.3], 
-        ]
-      });
-      malformed('missing value column for a simple input', {
-        elementType: 'mass/kg',
-        format: 'flatJSON', 
-        fields: ['timestamp'], 
-        points: [
-          [1481677845], 
-          [1481677846], 
-          [1481677847], 
-        ]
-      });
-      
-      function malformed(text, data) {
-        it(`should be rejected (${text})`, function () {
-          return storeData(data).expect(400)
-            .then((res) => {
-              const error = res.body.error; 
-              should(error.id).be.eql('invalid-request-structure');
-            });
-        });
-      }
     });
   }); 
   describe('GET /events/EVENT_ID/series', function () {
