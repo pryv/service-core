@@ -252,7 +252,6 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
     
   fakeAttributes() {
     return {
-      username: Charlatan.Internet.userName(),
       email: Charlatan.Internet.email(), 
       password: Charlatan.Internet.password(), 
       language: 'fr',

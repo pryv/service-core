@@ -42,10 +42,9 @@ function storeSeriesData(ctx: Context, req: express$Request, res: express$Respon
   const seriesMeta = metadata.forSeries(userName, eventId, accessToken);
   return seriesMeta
     .catch(e => {
-      handleErrors(errors.forbidden())
-      throw e; })
+      handleErrors(errors.forbidden()); throw e; })
     .then((seriesMeta) => {
-      if (!seriesMeta.canWrite()) return next(errors.forbidden());
+      if (!seriesMeta.canWrite()) return handleErrors(errors.forbidden());
 
       // Parse request
       const data = parseData(req.body);
@@ -116,7 +115,7 @@ function parseData(createRequest: mixed): ?DataMatrix {
     
   if (! type.validateColumns(fields)) return null; 
   if (! type.validateAllRows(points, fields)) return null; 
-
+  
   const matrix = new business.series.DataMatrix(fields, points);
   
   try {

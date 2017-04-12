@@ -14,6 +14,8 @@ const { settings, produceMongoConnection, define } = require('./test-helpers');
 const databaseFixture = require('../support/database_fixture');
 
 const Application = require('../../src/Application');
+const storage = require('components/storage');
+
 
 import type {MetadataRepository} from '../../src/metadata_cache';
 import type {Response} from 'supertest';
@@ -29,13 +31,13 @@ describe('Storing data in a HF series', function() {
   describe('Use Case: Store data in InfluxDB', function () {
     const database = produceMongoConnection(); 
     
-    const userName = define(this, () => cuid());
+    const userId = define(this, () => cuid());
     const eventId = define(this, () => cuid());
     const accessToken = define(this, () => cuid());
 
     const pryv = databaseFixture(database, this);
-    define(this, () => {
-      return pryv.user(userName(), {}, function (user) {
+    const fixtureUser = define(this, () => {
+      return pryv.user(userId(), {}, function (user) {
         user.stream({id: cuid()}, function (stream) {
           stream.event({id: eventId()});
         });
@@ -44,6 +46,7 @@ describe('Storing data in a HF series', function() {
         user.session(accessToken());
       });
     });
+    
     afterEach(function () {
       pryv.clean(); 
     });
@@ -53,23 +56,26 @@ describe('Storing data in a HF series', function() {
       data: {}
     ): Response {
       const postData = {
+        format: 'flatJSON',
         fields: Object.keys(data), 
         points: [ 
-          R.pick(Object.keys(data), data),
+          R.map(R.prop(R.__, data), Object.keys(data)),
         ]
       };
       
       const response = request(app())
-        .post(`/${userName()}/events/${eventId()}/series`)
+        .post(`/${userId()}/events/${eventId()}/series`)
         .set('authorization', accessToken())
-        .send(data)
-        .expect(201);
+        .send(postData)
+        .expect(200);
         
       return response;
     }
     
     it('should store data correctly', function () {
-      return storeData('mass/kg', {timestamp: 1481677845, value: 80.3});
+      return bluebird
+        .try(() => storeData('mass/kg', {timestamp: 1481677845, value: 80.3}));
+
       // verify db existence in InfluxDB
       // verify content in InfluxDB
     });

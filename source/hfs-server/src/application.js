@@ -31,13 +31,13 @@ function createLogFactory(settings): LogFactory {
   const logSettings = settings.get('logs').obj();
   return logComponent(logSettings).getLogger;
 }
-function createContext(logFactory: LogFactory): Context {
+function createContext(settings: Settings, logFactory: LogFactory): Context {
   const influx = new business.series.InfluxConnection(
     {host: 'localhost'}, logFactory('influx')); 
   
   const logAdapter = { getLogger: (name) => logFactory(name) };
   const mongo = new storage.Database(
-    {host: 'localhost', port: 27017}, logAdapter);
+    settings.get('mongodb').obj(), logAdapter);
     
   return new Context(influx, mongo);
 }
@@ -55,7 +55,7 @@ class Application {
   init(settings?: Settings): Application {
     this.settings = settings || createSettings(); 
     this.logFactory = createLogFactory(this.settings);
-    this.context = createContext(this.logFactory);
+    this.context = createContext(this.settings, this.logFactory);
 
     this.server = new Server(this.settings, this.context);
     
