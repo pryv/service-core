@@ -135,7 +135,6 @@ class FixtureTreeNode {
 }
 
 class Fixture {
-  hookRegistered: boolean;
   childs: ChildHolder; 
   context: Context; 
   
@@ -143,31 +142,46 @@ class Fixture {
     this.context = context; 
     
     this.childs = new ChildHolder(); 
-    this.hookRegistered = false; 
   }
   
-  user(name: string, attrs: {}={}, cb?: (FixtureUser) => void): FixtureUser {
-    const u = new FixtureUser(
-      this.context.forUser(name), 
-      name, attrs);
-    
-    this.addChild(u);
-    
-    if (cb) cb(u);
-    return u;
+  // ----------------------------------------------------------------------- dsl
+
+  // Creates a Pryv user. If a block is given (`cb`), it is called after
+  // the user is really created. 
+  // 
+  user(name: string, attrs: {}={}, cb?: (FixtureUser) => mixed): Promise<FixtureUser> {
+    return bluebird.try(() => { 
+      const u = new FixtureUser(
+        this.context.forUser(name), 
+        name, attrs);
+        
+      return this.createChild(u, cb);
+    });
+  }
+  
+  // Cleans all created structures from the database. Usually, you would call 
+  // this in an afterEach function to ensure that the database is clean after
+  // running tests. 
+  //
+  clean(): Promise<void> {
+    return bluebird.reject(new Error('Implement me'));
+  }
+  
+  // ------------------------------------------------------------------ internal
+  
+  createChild<T: ChildResource>(child: T, cb?: (T) => mixed): Promise<T> {
+    return child.create()
+      .then(() => {
+        this.addChild(child);
+        if (cb) cb(child);
+        
+        return child; 
+      });
   }
   
   // Overrides parent implementation
   addChild(u: ChildResource) {
     this.childs.push(u);
-    
-    // Make sure that we hook into mocha, but only once. 
-    if (!this.hookRegistered) {
-      this.hookRegistered = true; 
-      
-      this.context.registerBeforeEach((done) => 
-        this.beforeEachHook(done));
-    }
   }
   
   /** Gets called in beforeEach. */

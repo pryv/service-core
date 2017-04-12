@@ -4,8 +4,9 @@
 
 /* global describe, it */
 const memo = require('memo-is');
+const should = require('should');
 
-const { should, settings } = require('./test-helpers');
+const { settings } = require('./test-helpers');
 
 const NullLogger = require('components/utils/src/logging').NullLogger;
 const storage = require('components/storage');

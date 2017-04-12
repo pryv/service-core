@@ -1,8 +1,10 @@
 'use strict';
 // @flow
 
+const should = require('should');
 /* global describe, it */
-const { should } = require('../test-helpers');
+
+require('../test-helpers');
 
 const controller = require('../../../src/web/controller');
 

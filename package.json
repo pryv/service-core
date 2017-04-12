@@ -60,6 +60,7 @@
     "charlatan": "^1.1.0",
     "colors": "^1.0.3",
     "cookie": "latest",
+    "cuid": "^1",
     "date-utils": "latest",
     "deep-equal": "latest",
     "eslint": "^3.16.0",

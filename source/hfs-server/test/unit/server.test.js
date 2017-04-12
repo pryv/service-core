@@ -1,10 +1,12 @@
 'use strict';
 // @flow
 
-/* global describe, it, beforeEach, afterEach */
-const { should, superagent, settings } = require('./test-helpers');
-
+const should = require('should');
+const superagent = require('superagent');
 const url = require('url');
+/* global describe, it, beforeEach, afterEach */
+
+const { settings } = require('./test-helpers');
 
 const Application = require('../../src/Application');
 
