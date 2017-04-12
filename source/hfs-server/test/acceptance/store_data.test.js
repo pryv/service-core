@@ -48,7 +48,6 @@ describe('Storing data in a HF series', function() {
     });
     
     it('should store data correctly', function () {
-      console.log(user());
       // store data
       // verify db existence in InfluxDB
       // verify content in InfluxDB

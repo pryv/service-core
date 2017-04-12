@@ -11,15 +11,9 @@ const storage = require('components/storage');
 
 class Context {
   databaseConn: storage.Database; 
-  mochaContext: Suite; 
   
-  constructor(databaseConn, mochaContext) {
+  constructor(databaseConn) {
     this.databaseConn = databaseConn; 
-    this.mochaContext = mochaContext; 
-  }
-  
-  registerBeforeEach(fun: (done: () => void) => void) {
-    this.mochaContext.beforeEach(fun);
   }
   
   forUser(user: string) {
@@ -65,7 +59,7 @@ class UserContext {
 }
 
 interface ChildResource {
-  create(): Promise<*>;
+  create(): Promise<mixed>;
 }
 class GenericChildHolder<T: ChildResource> {
   childs: Array<T>; 
@@ -82,9 +76,22 @@ class GenericChildHolder<T: ChildResource> {
     return this.childs.length > 0;
   }
   
-  createAll(...rest: Array<any>) {
-    return bluebird.map(this.childs, 
-      (child) => child.create(...rest));
+  // Adds a child to the child holder. This will a) create the child using the
+  // #create method, b) add the child to be tracked using this holder and 
+  // c) call the callback (`cb`).
+  // 
+  // The signature might be a little bit confusing, let's try and clear this up:
+  // Child needs to be any subclass of T. The first parameter of the callback 
+  // (if given) needs to be of the same type, subclass of T. 
+  // 
+  create<U: T>(resource: U, cb?: (U) => mixed): Promise<U> {
+    return resource.create()
+      .then(() => {
+        this.push(resource);
+        if (cb) cb(resource);
+                
+        return resource; 
+      });
   }
 
   // Calls fun for each child, accumulating the promises returned by fun and 
@@ -115,15 +122,8 @@ class FixtureTreeNode {
     this.attrs = this.attributes(attrs);
   }
   
-  addChild(child: ChildResource) {
-    this.childs.push(child);
-  }
   hasChilds(): boolean {
     return this.childs.hasChilds();
-  }
-  
-  createChildResources(): Promise<*> {
-    return this.childs.createAll();
   }
   
   /** Merges attributes given with generated attributes and returns the
@@ -136,6 +136,7 @@ class FixtureTreeNode {
       attrs,
     ]);
   }
+
   /** Override this to provide default attributes via Charlatan generation. 
    */
   fakeAttributes() {
@@ -164,7 +165,8 @@ class Fixture {
         this.context.forUser(name), 
         name, attrs);
         
-      return this.createChild(u, cb);
+      return u.remove()
+        .then(() => this.childs.create(u, cb));
     });
   }
   
@@ -175,18 +177,6 @@ class Fixture {
   clean(): Promise<mixed> {
     return this.childs.all(
       (child) => child.remove());
-  }
-  
-  // ------------------------------------------------------------------ internal
-  
-  createChild(child: FixtureUser, cb?: (FixtureUser) => mixed): Promise<FixtureUser> {
-    return child.create()
-      .then(() => {
-        this.childs.push(child);
-        if (cb) cb(child);
-        
-        return child; 
-      });
   }
 }
 
@@ -201,34 +191,28 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
   stream(attrs: {}={}, cb: (FixtureStream) => void) {
     const s = new FixtureStream(this.context, attrs);
 
-    this.addChild(s);
-    if (cb) cb(s);
-
-    return s; 
+    return this.childs.create(s, cb);
   }
   access(attrs: {}={}) {
     const a = new FixtureAccess(this.context, attrs); 
-    
-    this.addChild(a);
-
-    return a; 
+  
+    return this.childs.create(a);
   }
   session(token?: string) {
-    const a = new FixtureSession(this.context, token); 
+    const s = new FixtureSession(this.context, token); 
     
-    this.addChild(a);
-
-    return a; 
+    return this.childs.create(s);
   }
   
   /** Removes all resources belonging to the user, then creates them again, 
    * according to the spec stored here. 
    */
-  create(): Promise<*> {
-    return bluebird
-      .try(() => this.remove()) // Remove user if it exists, including all associated data
-      .then(() => this.createUser()) // Create user
-      .then(() => this.createChildResources()); // Create child resources
+  create(): Promise<mixed> {
+    const db = this.db; 
+    const attributes = this.attrs; 
+    
+    return bluebird.fromCallback((cb) => 
+      db.users.insertOne(attributes, cb)); 
   }
   
   remove(): Promise<mixed> {
@@ -265,15 +249,7 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
         if (! /ns not found/.test(err.message)) throw err; 
       });
   }
-  
-  createUser() {
-    const db = this.db; 
-    const attributes = this.attrs; 
     
-    return bluebird.fromCallback((cb) => 
-      db.users.insertOne(attributes, cb)); 
-  }
-  
   fakeAttributes() {
     return {
       username: Charlatan.Internet.userName(),
@@ -295,26 +271,16 @@ class FixtureStream extends FixtureTreeNode implements ChildResource {
   
   stream(attrs: {}={}, cb: (FixtureStream) => void) {
     const s = new FixtureStream(this.context, attrs, this.attrs.id); 
-    
-    this.addChild(s);
-    if (cb) cb(s);
 
-    return s; 
+    return this.childs.create(s, cb);
   }
   event(attrs: {}) {
     const e = new FixtureEvent(this.context, attrs, this.attrs.id); 
     
-    this.addChild(e);
-    
-    return e; 
+    return this.childs.create(e);
   }
   
   create() {
-    return bluebird
-      .try(() => this.createStream())
-      .then(() => this.createChildResources()); 
-  }
-  createStream() {
     const db = this.db; 
     const user = this.context.user; 
     const attributes = this.attrs; 
@@ -369,10 +335,6 @@ class FixtureAccess extends FixtureTreeNode implements ChildResource {
   }
   
   create() {
-    return bluebird
-      .try(() => this.createAccess());
-  }
-  createAccess() {
     const db = this.db; 
     const user = this.context.user; 
     const attributes = this.attrs; 
@@ -478,8 +440,8 @@ class Sessions {
   }
 }
 
-function databaseFixture(database: storage.Database, mochaContext: Suite) {
-  const context = new Context(database, mochaContext);
+function databaseFixture(database: storage.Database) {
+  const context = new Context(database);
   
   return new Fixture(context);
 }

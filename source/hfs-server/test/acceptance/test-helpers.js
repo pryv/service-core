@@ -22,6 +22,22 @@ function produceMongoConnection(): storage.Database {
 exports.produceMongoConnection = produceMongoConnection;
 
 import type {Suite} from 'mocha';
+
+// Define a value that should be reset for each test execution (each 'it' in
+// your mocha suite). 
+// 
+// Example: 
+//    const foo = define(this, () => {
+//      return bluebird.resolve(true)
+//    });
+// 
+// After the above example, `foo` will contain a function that, when called, 
+// returns true. The block given to `define` is executed for each 'it' in your 
+// test suite (`this`) - for isolation. 
+// 
+// We chose to have the define function to return a promise here since the
+// beforeEach of mocha must wait on the value to be available. 
+//  
 function define<T>(suite: Suite, generator: () => Promise<T>): () => T {
   let value: ?T = null; 
   
