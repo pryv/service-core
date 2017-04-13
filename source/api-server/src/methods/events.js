@@ -453,7 +453,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         // Store the coerced value. 
         context.content.content = newContent; 
         
-        next()
+        next();
       })
       .catch(
         (err) => next(errors.invalidParametersFormat(
