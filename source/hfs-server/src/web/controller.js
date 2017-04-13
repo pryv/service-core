@@ -33,18 +33,14 @@ function storeSeriesData(ctx: Context, req: express$Request, res: express$Respon
   if (accessToken == null) return next(errors.missingHeader(AUTH_HEADER));
   if (eventId == null) return next(errors.invalidItemId());
   
-  // Once prevents our catch-all handler from calling next a second time below. 
-  const handleErrors = R.once(next);
-
   // Access check: Can user write to this series? 
   const seriesMeta = metadata.forSeries(userName, eventId, accessToken);
   return seriesMeta
     // Not found: At this point an access problem.
-    .catch(e => {
-      handleErrors(errors.forbidden()); throw e; })
+    .catch(() => { throw errors.forbidden(); })
     .then((seriesMeta) => {
       // No access permission: Abort.
-      if (!seriesMeta.canWrite()) return handleErrors(errors.forbidden());
+      if (!seriesMeta.canWrite()) throw errors.forbidden();
 
       // Parse request
       const data = parseData(req.body);
@@ -55,27 +51,25 @@ function storeSeriesData(ctx: Context, req: express$Request, res: express$Respon
       // assert: data != null
 
       // Store data
-      series.get(...seriesMeta.namespace())
+      return series.get(...seriesMeta.namespace())
         .then((seriesInstance) => seriesInstance.append(data))
         .then(() => {
           res
             .status(200)
             .json({status: 'ok'});
-        })
-        .catch((err) => {
-          if (err.constructor.name === ServiceNotAvailableError) {
-            return next(errors.apiUnavailable(err.message));
-          }
-          next(err);
         });
     })
-    .catch(dispatchErrors.bind(null, handleErrors));
+    .catch(dispatchErrors.bind(null, next));
 }
 
 /** Handles errors that might happen during a controller execution that are 
  * translated into a client error. 
  */
 function dispatchErrors(next: (err: any) => void, err: any) {
+  if (err.constructor.name === ServiceNotAvailableError) {
+    return next(errors.apiUnavailable(err.message));
+  }
+
   if (err instanceof business.types.errors.InputTypeError) {
     return next(errors.invalidRequestStructure(err.message));
   }

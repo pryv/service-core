@@ -65,7 +65,8 @@ describe('Controller', () => {
             return new Promise(
             (resolve) => {
               resolve({
-                canWrite: () => {return true;}
+                canWrite: () => {return true;}, 
+                namespace: () => ['test', 'controller.test'],
               });
             }
           )}
