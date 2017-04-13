@@ -14,31 +14,38 @@ const { settings, produceMongoConnection, define } = require('./test-helpers');
 const databaseFixture = require('../support/database_fixture');
 
 const Application = require('../../src/Application');
-const storage = require('components/storage');
-
 
 import type {MetadataRepository} from '../../src/metadata_cache';
 import type {Response} from 'supertest';
 
 describe('Storing data in a HF series', function() {
-  const application = define(this, () => bluebird.resolve(
-    new Application().init(settings))); 
+  // Application, Context and Server are needed for influencing the way 
+  // authentication works in some of the tests here. 
+  const application = define(this, () => new Application().init(settings)); 
   const context = define(this, () => application().context); 
   const server = define(this, () => application().server); 
 
+  // Express app that we test against.
   const app = define(this, () => server().setupExpress());
 
   describe('Use Case: Store data in InfluxDB', function () {
     const database = produceMongoConnection(); 
-    
-    const userId = define(this, () => cuid());
-    const eventId = define(this, () => cuid());
-    const accessToken = define(this, () => cuid());
 
     const pryv = databaseFixture(database, this);
-    const fixtureUser = define(this, () => {
+    afterEach(function () {
+      pryv.clean(); 
+    });
+    
+    // Set up a few ids that we'll use for testing. NOTE that these ids will
+    // change on every test run. 
+    const userId = define(this, cuid);
+    const parentStreamId = define(this, cuid); 
+    const eventId = define(this, cuid);
+    const accessToken = define(this, cuid);
+
+    define(this, () => {
       return pryv.user(userId(), {}, function (user) {
-        user.stream({id: cuid()}, function (stream) {
+        user.stream({id: parentStreamId()}, function (stream) {
           stream.event({id: eventId()});
         });
 
@@ -47,14 +54,7 @@ describe('Storing data in a HF series', function() {
       });
     });
     
-    afterEach(function () {
-      pryv.clean(); 
-    });
-    
-    function storeData(
-      type: string, 
-      data: {}
-    ): Response {
+    function storeData(type: string, data: {}): Response {
       const postData = {
         format: 'flatJSON',
         fields: Object.keys(data), 
