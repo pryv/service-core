@@ -10,7 +10,7 @@ const request = require('supertest');
 const R = require('ramda');
 const cuid = require('cuid');
 
-const { settings, produceMongoConnection, define } = require('./test-helpers');
+const { settings, produceMongoConnection, define, produceInfluxConnection } = require('./test-helpers');
 const databaseFixture = require('../support/database_fixture');
 
 const Application = require('../../src/Application');
@@ -30,23 +30,26 @@ describe('Storing data in a HF series', function() {
 
   describe('Use Case: Store data in InfluxDB', function () {
     const database = produceMongoConnection(); 
+    const influx = produceInfluxConnection(); 
 
     const pryv = databaseFixture(database, this);
     afterEach(function () {
       pryv.clean(); 
     });
-    
+      
     // Set up a few ids that we'll use for testing. NOTE that these ids will
     // change on every test run. 
     const userId = define(this, cuid);
     const parentStreamId = define(this, cuid); 
-    const eventId = define(this, cuid);
+    const eventId = define(this, cuid); 
     const accessToken = define(this, cuid);
 
     define(this, () => {
       return pryv.user(userId(), {}, function (user) {
         user.stream({id: parentStreamId()}, function (stream) {
-          stream.event({id: eventId()});
+          stream.event({
+            id: eventId(), 
+            type: 'mass/kg'});
         });
 
         user.access({token: accessToken(), type: 'personal'});
@@ -54,7 +57,8 @@ describe('Storing data in a HF series', function() {
       });
     });
     
-    function storeData(type: string, data: {}): Response {
+    function storeData(data: {}): Response {
+      // Insert some data into the events series:
       const postData = {
         format: 'flatJSON',
         fields: Object.keys(data), 
@@ -62,22 +66,38 @@ describe('Storing data in a HF series', function() {
           R.map(R.prop(R.__, data), Object.keys(data)),
         ]
       };
-      
-      const response = request(app())
+      return request(app())
         .post(`/${userId()}/events/${eventId()}/series`)
         .set('authorization', accessToken())
         .send(postData)
         .expect(200);
-        
-      return response;
     }
     
     it('should store data correctly', function () {
       return bluebird
-        .try(() => storeData('mass/kg', {timestamp: 1481677845, value: 80.3}));
-
-      // verify db existence in InfluxDB
-      // verify content in InfluxDB
+        // Store some data into InfluxDB
+        .try(() => storeData({timestamp: 1481677845, value: 80.3}))
+        
+        // Check if the data is really there (1/2)
+        .then(() => {
+          const userName = userId(); // identical with id here, but will be user name in general. 
+          const options = { database: `user.${userName}` };
+          const query = `
+            SELECT * FROM "event.${eventId()}"
+          `;
+          
+          return influx.query(query, options);
+        })
+        
+        // Check if the data is really there (2/2)
+        .then((res) => {
+          const row = res[0];
+          if (row.time == null || row.value == null) 
+            throw new Error("Should have time and value.");
+          
+          should(row.time.toNanoISOString()).be.eql('2016-12-14T01:10:45.000000000Z');
+          should(row.value).be.eql(80.3);
+        });
     });
   });
   
@@ -113,6 +133,7 @@ describe('Storing data in a HF series', function() {
     function produceMetadataLoader(authTokenValid=true): MetadataRepository {
       const seriesMeta = {
         canWrite: function canWrite(): boolean { return authTokenValid; },
+        namespace: () => ['test', 'foo'],
       };
       return {
         forSeries: function forSeries() { return Promise.resolve(seriesMeta); }

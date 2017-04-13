@@ -16,12 +16,12 @@ export interface MetadataRepository {
 /** Meta data on series. 
  */
 export interface SeriesMetadata {
+  // Returns true if write access to the series is allowed.
   canWrite(): boolean;
+  
+  // Returns a namespace/database name and a series name for use with InfluxDB. 
+  namespace(): [string, string];
 }
-
-// Declares a minimal user model to allow us to do user specific operations on 
-// storage. 
-type UserModel = { id: string };
 
 /** Holds metadata related to series for some time so that we don't have to 
  * compile it every time we store data in the server. 
@@ -97,8 +97,14 @@ type AccessModel = {
   canReadStream(streamId: string): boolean; 
 };
 type EventModel = {
+  id: string, 
   streamId: string
 }; 
+type UserModel = { 
+  id: string, 
+  username: string, 
+};
+
 
 /** Metadata on a series, obtained from querying the main database. 
  *
@@ -112,6 +118,9 @@ class SeriesMetadataImpl implements SeriesMetadata {
     read: boolean, 
   }
   
+  userName: string; 
+  eventId: string; 
+  
   constructor(access: AccessModel, user: UserModel, event: EventModel) {
     const streamId = event.streamId; 
     
@@ -119,10 +128,19 @@ class SeriesMetadataImpl implements SeriesMetadata {
       write: access.canContributeToStream(streamId),
       read: access.canReadStream(streamId),
     };
+    this.userName = user.username; 
+    this.eventId = event.id; 
   }
   
   canWrite(): boolean {
     return this.permissions.write; 
+  }
+  
+  namespace(): [string, string] {
+    return [
+      `user.${this.userName}`, 
+      `event.${this.eventId}`,
+    ];
   }
 }
 

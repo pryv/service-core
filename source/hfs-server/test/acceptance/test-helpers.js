@@ -1,13 +1,25 @@
-'use strict'; 
 // @flow
 
 // Test helpers for all acceptance tests. 
 
 const NullLogger = require('components/utils/src/logging').NullLogger;
 const storage = require('components/storage');
+const business = require('components/business');
 
 const toplevelHelpers = require('../test-helpers');
 
+// Produces and returns a connection to InfluxDB. 
+// 
+function produceInfluxConnection(): business.series.InfluxConnection {
+  const logger = new NullLogger(); 
+  
+  return new business.series.InfluxConnection(
+    {host: 'localhost'}, logger); 
+}
+exports.produceInfluxConnection = produceInfluxConnection;
+
+// Produces and returns a connection to MongoDB. 
+// 
 function produceMongoConnection(): storage.Database {
   const settings = toplevelHelpers.settings;
   const loggingStub = {

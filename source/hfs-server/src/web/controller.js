@@ -30,20 +30,20 @@ function storeSeriesData(ctx: Context, req: express$Request, res: express$Respon
   const accessToken = req.headers[AUTH_HEADER];
 
   // If params are not there, abort. 
-  // TODO test this
   if (accessToken == null) return next(errors.missingHeader(AUTH_HEADER));
   if (eventId == null) return next(errors.invalidItemId());
   
-  // NOTE Only call next once. This avoids having to deal with a second
-  // exception generating a second call to next. 
+  // Once prevents our catch-all handler from calling next a second time below. 
   const handleErrors = R.once(next);
 
   // Access check: Can user write to this series? 
   const seriesMeta = metadata.forSeries(userName, eventId, accessToken);
   return seriesMeta
+    // Not found: At this point an access problem.
     .catch(e => {
       handleErrors(errors.forbidden()); throw e; })
     .then((seriesMeta) => {
+      // No access permission: Abort.
       if (!seriesMeta.canWrite()) return handleErrors(errors.forbidden());
 
       // Parse request
@@ -55,8 +55,7 @@ function storeSeriesData(ctx: Context, req: express$Request, res: express$Respon
       // assert: data != null
 
       // Store data
-      // TODO derive namespace from user id
-      series.get('test', 'series1')
+      series.get(...seriesMeta.namespace())
         .then((seriesInstance) => seriesInstance.append(data))
         .then(() => {
           res
@@ -70,13 +69,13 @@ function storeSeriesData(ctx: Context, req: express$Request, res: express$Respon
           next(err);
         });
     })
-    .catch((err) => handleErrors(err, next));
+    .catch(dispatchErrors.bind(null, handleErrors));
 }
 
 /** Handles errors that might happen during a controller execution that are 
  * translated into a client error. 
  */
-function dispatchErrors(err: any, next: (err: any) => void) {
+function dispatchErrors(next: (err: any) => void, err: any) {
   if (err instanceof business.types.errors.InputTypeError) {
     return next(errors.invalidRequestStructure(err.message));
   }

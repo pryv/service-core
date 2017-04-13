@@ -78,8 +78,6 @@ class Series {
   query(query: Query): Promise<DataMatrix> {
     const queryOptions = { database: this.namespace };
       
-    // NOTE You MUST use escaping functions provided by influx here, otherwise
-    // tainted input will reach the backend. 
     // TODO worry about limit, offset
     const measurementName = this.name;
     const condition = this.buildExpression(query);

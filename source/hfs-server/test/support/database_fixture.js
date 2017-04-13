@@ -1,7 +1,5 @@
 // @flow
 
-import type {Suite} from 'mocha';
-
 const bluebird = require('bluebird');
 const R = require('ramda');
 const Charlatan = require('charlatan');

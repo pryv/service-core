@@ -19,7 +19,13 @@ class Repository {
 
   /** Return a series from a given namespace. 
    * 
-   * In practice, we'll map namespaces to pryv users and series to events. 
+   * In practice, we'll map namespaces to pryv users and series to events. Please
+   * see MetadataRepository and SeriesMetadata for how to get a namespace and a
+   * name. 
+   * 
+   * Example: 
+   *    
+   *    seriesRepo.get(...seriesMeta.namespace())
    * 
    * @param namespace {string} - namespace to look for series
    * @param name {string} - name of the series

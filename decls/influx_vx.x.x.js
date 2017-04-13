@@ -24,10 +24,10 @@ declare class Expression {
   value(value: any): Expression; 
 }
 
-declare type IResults = {
+declare type IResults = Array<{
   time?: INanoDate, 
   [key: string]: any, 
-}
+}>;
 
 declare type INanoDate = {
   getNanoTime(): string; 
