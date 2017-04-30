@@ -8,6 +8,7 @@ const ServiceNotAvailableError: string =
     .ServiceNotAvailableError().constructor.name;
 
 const R = require('ramda');
+const timestamp = require('unix-timestamp');
 
 const business = require('components/business');
 const errors = require('components/errors').factory;
@@ -59,7 +60,7 @@ function storeSeriesData(ctx: Context, req: express$Request, res: express$Respon
             .json({status: 'ok'});
         });
     })
-    .catch(dispatchErrors.bind(null, next));
+    .catch(dispatchErrors.bind(next, null));
 }
 
 /** Handles errors that might happen during a controller execution that are 
@@ -69,7 +70,6 @@ function dispatchErrors(next: (err: any) => void, err: any) {
   if (err.constructor.name === ServiceNotAvailableError) {
     return next(errors.apiUnavailable(err.message));
   }
-
   if (err instanceof business.types.errors.InputTypeError) {
     return next(errors.invalidRequestStructure(err.message));
   }
@@ -142,50 +142,96 @@ module.exports.querySeriesData = R.curryN(4, querySeriesData);
  * @return {type}                       description 
  */ 
 function querySeriesData(ctx: Context, req: express$Request, res: express$Response, next: () => void) {
+  /*
+  1- validate params
+  2- apply default values to optional params
+  3- verify access
+  4- if any, post processing or secondary call to storage
+   */
+
   // if (! business.access.canReadFromSeries(eventId, authToken)) {
-  //   throw errors.forbidden(); 
+  //   throw errors.forbidden();
   // }
-  // 
-  
-  const series = ctx.series;
-  const query = parseQueryFromGET(req.query);
-  
-  // Store data
-  // TODO derieve namespace from user id
-  series.get('test', 'series1')
-    .then((series) => series.query(query))
-    .then((data) => {
-      const responseObj = new SeriesResponse(data); 
-      
-      responseObj.answer(res);
-    })
-    .catch((err) => next(err));
+  //
+
+  const seriesRepo = ctx.series;
+
+  parseQueryFromGET(req.query)
+    .catch((err) => next(err))
+    .then((query) => {
+      // Store data
+      // TODO derive namespace from user id
+      seriesRepo.get('test', 'series1')
+        .then((seriesInstance) => seriesInstance.query(query))
+        .then((data) => {
+          const responseObj = new SeriesResponse(data);
+
+          responseObj.answer(res);
+        })
+        .catch((err) => next(err));
+    });
 }
 
 import type Query from 'business';
-function parseQueryFromGET(params: {[key: string]: string}): Query {
-  type ConversionTable = Array<{
-    test: RegExp, 
-    convert: (v: string) => *, 
-  }>;
-  function interpret(obj: any, table: ConversionTable) {
-    for (let {test, convert} of table) {
-      if (test.test(obj)) return convert(obj);
+function parseQueryFromGET(params: {[key: string]: string}): Promise<Query> {
+  return new Promise((accept, reject) => {
+
+    type ConversionTable = Array<{
+      test: RegExp,
+      convert: (v: string) => *,
+    }>;
+    function interpret(obj: any, table: ConversionTable) {
+      for (let {test, convert} of table) {
+        if (test.test(obj)) return convert(obj);
+      }
+      return null;
     }
-    
-    return null; 
-  }
-  
-  const query = {}; 
-  const table = [ // Target format is a number of seconds since Epoch
-    // TODO add conversion from date formats.
-    {test: /^\d+$/, convert: parseInt},
-  ];
 
-  if (params.fromTime != null) query.from = interpret(params.fromTime, table);
-  if (params.toTime != null) query.to = interpret(params.toTime, table);
+    const query = {};
+    const numberTable = [ // Target format is a number of seconds since Epoch
+      // TODO add conversion from date formats.
+      {test: /^[1-9]\d*(\.\d+)?$/, convert: parseFloat}
+    ];
 
-  // TODO Query validity check...
-  
-  return query; 
+    let errorsThrown = [];
+
+    if (params.fromTime != null) {
+      query.from = interpret(params.fromTime, numberTable);
+      if (! isNaN(query.from)) {
+        errorsThrown.push({
+          message: 'Expected type number but found type not-a-number',
+          parameter: 'fromTime',
+          method: 'series.get'
+        });
+      }
+    } else {
+      // TODO test this, default value setting
+      // default value: 1 hour ago
+      query.from = timestamp.now('-1h');
+    }
+
+    if (params.toTime != null) {
+      query.to = interpret(params.toTime, numberTable);
+      if (! isNaN(query.to)) {
+        errorsThrown.push({
+          message: 'Expected type number but found type not-a-number',
+          parameter: 'toTime',
+          method: 'series.get'
+        });
+      }
+    } else {
+      // TODO test this, default value setting
+      // default value: now, can omit this as it is the default value in influxDB
+      query.to = timestamp.now();
+    }
+
+    if (errorsThrown.length > 0) {
+      return reject(errors.invalidParametersFormat(
+        'The parameters\' format is invalid.',
+        errorsThrown));
+    }
+    accept(query);
+  });
+
+
 }
