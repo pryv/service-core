@@ -25,9 +25,8 @@ describe('Querying data from a HF series', () => {
 
     function produceMetadataLoader(authTokenValid = true): MetadataRepository {
       const seriesMeta = {
-        canWrite: function canWrite(): boolean {
-          return authTokenValid;
-        },
+        canWrite: () => authTokenValid,
+        canRead: () => authTokenValid, 
         namespace: () => ['test', 'series1'], // Hard coded, will eventually change
       };
       return {

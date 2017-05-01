@@ -146,30 +146,39 @@ module.exports.querySeriesData = R.curryN(4, querySeriesData);
 function querySeriesData(ctx: Context, 
   req: express$Request, res: express$Response, next: express$NextFunction) 
 {
-  /*
-  1- validate params
-  2- apply default values to optional params
-  3- verify access
-  4- if any, post processing or secondary call to storage
-   */
-
-  // if (! business.access.canReadFromSeries(eventId, authToken)) {
-  //   throw errors.forbidden();
-  // }
-  //
-
+  const metadata = ctx.metadata;
   const seriesRepo = ctx.series;
 
-  parseQueryFromGET(req.query)
-    .then((query) => {
-      // Store data
-      // TODO derive namespace from user id
-      return seriesRepo.get('test', 'series1')
-        .then((seriesInstance) => seriesInstance.query(query))
-        .then((data) => {
-          const responseObj = new SeriesResponse(data);
+  // Extract parameters from request: 
+  const userName = req.params.user_name;
+  const eventId = req.params.event_id;
+  const accessToken: ?string = req.headers[AUTH_HEADER];
 
-          responseObj.answer(res);
+  // If params are not there, abort. 
+  if (accessToken == null) return next(errors.missingHeader(AUTH_HEADER));
+  if (eventId == null) return next(errors.invalidItemId());
+  
+  // Access check: Can user write to this series? 
+  const seriesMetaF = metadata.forSeries(userName, eventId, accessToken);
+
+  return seriesMetaF
+    // Not found: At this point an access problem.
+    .catch(() => { throw errors.forbidden(); })
+    .then((seriesMeta) => {
+      // No access permission: Abort.
+      if (!seriesMeta.canRead()) throw errors.forbidden();
+
+      return parseQueryFromGET(req.query)
+        .then((query) => {
+          // Store data
+          // TODO derive namespace from user id
+          return seriesRepo.get(...seriesMeta.namespace())
+            .then((seriesInstance) => seriesInstance.query(query))
+            .then((data) => {
+              const responseObj = new SeriesResponse(data);
+
+              responseObj.answer(res);
+            });
         });
     })
     .catch(dispatchErrors.bind(null, next));

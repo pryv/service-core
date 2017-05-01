@@ -11,6 +11,9 @@ declare type ISingleHostConfig = {
 
 declare class InfluxDB {
   constructor(options: ISingleHostConfig | string): InfluxDB; 
+  
+  createDatabase(name: string): Promise<void>; 
+  dropDatabase(name: string): Promise<void>; 
 }
   
 declare class Expression {

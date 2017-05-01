@@ -85,7 +85,7 @@ class Series {
       'WHERE ' + condition.join(' AND ') : 
       ''; 
     const statement = `
-      SELECT * FROM ${measurementName}
+      SELECT * FROM "${measurementName}"
       ${wherePart}
       ORDER BY time ASC
       LIMIT 10

@@ -19,6 +19,9 @@ export interface SeriesMetadata {
   // Returns true if write access to the series is allowed.
   canWrite(): boolean;
   
+  // Returns true if read access to the series is allowed. 
+  canRead(): boolean;
+  
   // Returns a namespace/database name and a series name for use with InfluxDB. 
   namespace(): [string, string];
 }
@@ -134,6 +137,9 @@ class SeriesMetadataImpl implements SeriesMetadata {
   
   canWrite(): boolean {
     return this.permissions.write; 
+  }
+  canRead(): boolean {
+    return this.permissions.read;
   }
   
   namespace(): [string, string] {

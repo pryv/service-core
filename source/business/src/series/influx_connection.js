@@ -22,6 +22,11 @@ class InfluxConnection {
     return this.conn.createDatabase(name);
   }
   
+  dropDatabase(name: string): Promise<void> {
+    this.logger.debug(`Dropping database ${name}.`);
+    return this.conn.dropDatabase(name);
+  }
+  
   writeMeasurement(
     name: string, 
     points: Array<IPoint>, 

@@ -38,8 +38,6 @@ class DataMatrix {
    * @return {void}
    */
   constructor(columns: Array<string>, data: Array<Array<Element>>) {
-    assert.ok(columns.length > 0);
-
     this.columns = columns;
     this.setData(data);
   }

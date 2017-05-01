@@ -28,7 +28,7 @@ describe('Storing data in a HF series', function() {
   // Express app that we test against.
   const app = define(this, () => server().setupExpress());
 
-  describe('Use Case: Store data in InfluxDB', function () {
+  describe('Use Case: Store data in InfluxDB, Verification on either half', function () {
     const database = produceMongoConnection(); 
     const influx = produceInfluxConnection(); 
 
@@ -99,6 +99,44 @@ describe('Storing data in a HF series', function() {
           should(row.value).be.eql(80.3);
         });
     });
+    it('should return data once stored', function () {
+      const userName = userId(); // identical with id here, but will be user name in general. 
+      const dbName = `user.${userName}`; 
+      const measurementName = `event.${eventId()}`;
+
+      return cycleDatabase(dbName)
+        .then(() => storeSampleMeasurement(dbName, measurementName))
+        .then(() => queryData());
+
+      function cycleDatabase(dbName: string) {
+        return influx.dropDatabase(dbName).
+          then(() => influx.createDatabase(dbName));
+      }
+      function storeSampleMeasurement(dbName: string, measurementName: string) {
+        const options = { database: dbName };
+
+        const points = [
+          {
+            fields: { value: 1234 }, 
+            timestamp: 1493647899000000, 
+          }
+        ];
+        
+        return influx.writeMeasurement(measurementName, points, options);
+      }
+      function queryData() {
+        return request(app())
+          .get(`/${userId()}/events/${eventId()}/series`)
+          .set('authorization', accessToken())
+          .query({
+            fromTime: '1493647898', toTime: '1493647900' })
+          .expect(200)
+          .then((res) => {
+            const points = res.body.points || [];
+            should(points).not.be.empty();
+          });
+      }
+    });
   });
   
   describe('POST /events/EVENT_ID/series', function() {
@@ -132,7 +170,8 @@ describe('Storing data in a HF series', function() {
     
     function produceMetadataLoader(authTokenValid=true): MetadataRepository {
       const seriesMeta = {
-        canWrite: function canWrite(): boolean { return authTokenValid; },
+        canWrite: () => authTokenValid,
+        canRead: () => authTokenValid, 
         namespace: () => ['test', 'foo'],
       };
       return {
