@@ -21,7 +21,9 @@ module.exports.storeSeriesData = R.curryN(4, storeSeriesData);
 
 /** POST /events/:event_id/series - Store data in a series. 
  */
-function storeSeriesData(ctx: Context, req: express$Request, res: express$Response, next: (err: any) => void) {
+function storeSeriesData(ctx: Context, 
+  req: express$Request, res: express$Response, next: express$NextFunction) 
+{
   const series = ctx.series;
   const metadata = ctx.metadata;
 
@@ -60,13 +62,13 @@ function storeSeriesData(ctx: Context, req: express$Request, res: express$Respon
             .json({status: 'ok'});
         });
     })
-    .catch(dispatchErrors.bind(next, null));
+    .catch(dispatchErrors.bind(null, next));
 }
 
 /** Handles errors that might happen during a controller execution that are 
  * translated into a client error. 
  */
-function dispatchErrors(next: (err: any) => void, err: any) {
+function dispatchErrors(next: express$NextFunction, err: any) {
   if (err.constructor.name === ServiceNotAvailableError) {
     return next(errors.apiUnavailable(err.message));
   }
