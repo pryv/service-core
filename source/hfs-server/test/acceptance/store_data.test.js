@@ -93,7 +93,7 @@ describe('Storing data in a HF series', function() {
         .then((res) => {
           const row = res[0];
           if (row.time == null || row.value == null) 
-            throw new Error("Should have time and value.");
+            throw new Error('Should have time and value.');
           
           should(row.time.toNanoISOString()).be.eql('2016-12-14T01:10:45.000000000Z');
           should(row.value).be.eql(80.3);
