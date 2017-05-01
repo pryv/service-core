@@ -57,7 +57,7 @@ describe('Querying data from a HF series', () => {
     });
 
     it('should refuse a query containing parameters with the wrong format', function() {
-      request(app())
+      return request(app())
         .get('/USERNAME/events/some-id/series')
         .set('authorization', 'valid-auth')
         .query({
@@ -68,12 +68,8 @@ describe('Querying data from a HF series', () => {
           const err = res.body.error;
           should.equal(err.id, ErrorIds.InvalidParametersFormat);
           should.equal(err.data[0].parameter, 'fromTime');
-          should.equal(err.data[1].parameter, 'toTime')
-        })
-        .catch((err) => {
-        // TODO: I can't manage to find a way to make the test appear as failed when running it with mocha.
-          should.not.exist(err);
-        })
+          should.equal(err.data[1].parameter, 'toTime');
+        });
     });
 
   });
