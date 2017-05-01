@@ -32,6 +32,7 @@ describe('Querying data from a HF series', () => {
         canWrite: function canWrite(): boolean {
           return authTokenValid;
         },
+        namespace: () => ['test', 'series1'], // Hard coded, will eventually change
       };
       return {
         forSeries: function forSeries() {
@@ -46,7 +47,7 @@ describe('Querying data from a HF series', () => {
 
 
     it('should refuse a query missing the authorization token', function () {
-      request(app())
+      return request(app())
         .get('USERNAME/events/some-id/series')
         .expect(403)
         .then((res) => {

@@ -44,7 +44,7 @@ function storeSeriesData(ctx: Context,
     .then((seriesMeta) => {
       // No access permission: Abort.
       if (!seriesMeta.canWrite()) throw errors.forbidden();
-
+      
       // Parse request
       const data = parseData(req.body);
       if (data == null) {
@@ -143,7 +143,9 @@ module.exports.querySeriesData = R.curryN(4, querySeriesData);
  * @param  {type} res: express$Response description 
  * @return {type}                       description 
  */ 
-function querySeriesData(ctx: Context, req: express$Request, res: express$Response, next: () => void) {
+function querySeriesData(ctx: Context, 
+  req: express$Request, res: express$Response, next: express$NextFunction) 
+{
   /*
   1- validate params
   2- apply default values to optional params
@@ -159,19 +161,18 @@ function querySeriesData(ctx: Context, req: express$Request, res: express$Respon
   const seriesRepo = ctx.series;
 
   parseQueryFromGET(req.query)
-    .catch((err) => next(err))
     .then((query) => {
       // Store data
       // TODO derive namespace from user id
-      seriesRepo.get('test', 'series1')
+      return seriesRepo.get('test', 'series1')
         .then((seriesInstance) => seriesInstance.query(query))
         .then((data) => {
           const responseObj = new SeriesResponse(data);
 
           responseObj.answer(res);
-        })
-        .catch((err) => next(err));
-    });
+        });
+    })
+    .catch(dispatchErrors.bind(null, next));
 }
 
 import type Query from 'business';
@@ -206,7 +207,8 @@ function parseQueryFromGET(params: {[key: string]: string}): Promise<Query> {
           method: 'series.get'
         });
       }
-    } else {
+    } 
+    else {
       // TODO test this, default value setting
       // default value: 1 hour ago
       query.from = timestamp.now('-1h');
@@ -221,7 +223,8 @@ function parseQueryFromGET(params: {[key: string]: string}): Promise<Query> {
           method: 'series.get'
         });
       }
-    } else {
+    } 
+    else {
       // TODO test this, default value setting
       // default value: now, can omit this as it is the default value in influxDB
       query.to = timestamp.now();
@@ -232,6 +235,7 @@ function parseQueryFromGET(params: {[key: string]: string}): Promise<Query> {
         'The parameters\' format is invalid.',
         errorsThrown));
     }
+    
     accept(query);
   });
 
