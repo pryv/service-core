@@ -118,7 +118,7 @@ describe('Storing data in a HF series', function() {
         const points = [
           {
             fields: { value: 1234 }, 
-            timestamp: 1493647899000000, 
+            timestamp: 1493647899000000000, 
           }
         ];
         
@@ -134,6 +134,7 @@ describe('Storing data in a HF series', function() {
           .then((res) => {
             const points = res.body.points || [];
             should(points).not.be.empty();
+            should(points[0]).be.eql([1493647899, 1234]);
           });
       }
     });
