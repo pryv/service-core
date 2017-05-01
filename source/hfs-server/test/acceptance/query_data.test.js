@@ -8,15 +8,11 @@ const {settings} = require('./test-helpers');
 const request = require('supertest');
 const should = require('should');
 const memo = require('memo-is');
-const R = require('ramda');
-const {ErrorIds, factory} = require('../../../errors');
+const {ErrorIds} = require('../../../errors');
 
 const Application = require('../../src/Application');
 
-const timestamp = require('unix-timestamp');
-
 import type {MetadataRepository} from '../../src/metadata_cache';
-import type {Response} from 'supertest';
 
 describe('Querying data from a HF series', () => {
 
