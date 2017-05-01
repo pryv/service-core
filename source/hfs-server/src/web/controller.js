@@ -200,7 +200,7 @@ function parseQueryFromGET(params: {[key: string]: string}): Promise<Query> {
 
     if (params.fromTime != null) {
       query.from = interpret(params.fromTime, numberTable);
-      if (! isNaN(query.from)) {
+      if (isNaN(query.from)) {
         errorsThrown.push({
           message: 'Expected type number but found type not-a-number',
           parameter: 'fromTime',
@@ -216,7 +216,7 @@ function parseQueryFromGET(params: {[key: string]: string}): Promise<Query> {
 
     if (params.toTime != null) {
       query.to = interpret(params.toTime, numberTable);
-      if (! isNaN(query.to)) {
+      if (isNaN(query.to)) {
         errorsThrown.push({
           message: 'Expected type number but found type not-a-number',
           parameter: 'toTime',
