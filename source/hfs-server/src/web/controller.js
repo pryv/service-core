@@ -106,7 +106,7 @@ function parseData(createRequest: mixed): ?DataMatrix {
   
   const typeRepo = new business.types.TypeRepository(); 
   const type = new business.types.InfluxRowType(
-    typeRepo.lookup('mass/kg'));
+    typeRepo.lookup('mass/kg')); // TODO
     
   if (! type.validateColumns(fields)) return null; 
   if (! type.validateAllRows(points, fields)) return null; 
