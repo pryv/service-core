@@ -43,7 +43,8 @@ describe('Querying data from a HF series', () => {
 
     it('should refuse a query missing the authorization token', function () {
       return request(app())
-        .get('USERNAME/events/some-id/series')
+        .get('/USERNAME/events/some-id/series')
+        .set('authorization', 'yolo')
         .expect(403)
         .then((res) => {
           should.exist(res.body.err);

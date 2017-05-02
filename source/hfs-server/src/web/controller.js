@@ -7,6 +7,8 @@ const ServiceNotAvailableError: string =
   require('../../../../node_modules/influx/lib/src/pool')
     .ServiceNotAvailableError().constructor.name;
 
+const {tryCoerceStringValues} = require('../../../api-server/src/schema/validation');
+
 const R = require('ramda');
 const timestamp = require('unix-timestamp');
 
@@ -138,77 +140,50 @@ function checkFields(val: any): ?Array<string> {
 module.exports.querySeriesData = R.curryN(4, querySeriesData);
 
 /** GET /events/:event_id/series - Query a series for a data subset.
- *  
- * @param  {type} req: express$Request  description 
- * @param  {type} res: express$Response description 
- * @return {type}                       description 
- */ 
-function querySeriesData(ctx: Context, 
-  req: express$Request, res: express$Response, next: express$NextFunction) 
-{
+ *
+ * @param  {type} ctx:  Context
+ * @param  {type} req:  express$Request       description
+ * @param  {type} res:  express$Response      description
+ * @param  {type} next: express$NextFunction  description
+ * @return {void}
+ */
+function querySeriesData(ctx: Context, req: express$Request,
+                         res: express$Response, next: express$NextFunction): void {
+
   const metadata = ctx.metadata;
   const seriesRepo = ctx.series;
 
-  // Extract parameters from request: 
-  const userName = req.params.user_name;
+  // Extract parameters from request:
+  const username = req.params.user_name;
   const eventId = req.params.event_id;
   const accessToken: ?string = req.headers[AUTH_HEADER];
 
-  // If params are not there, abort. 
+  // If required params are not there, abort.
   if (accessToken == null) return next(errors.missingHeader(AUTH_HEADER));
   if (eventId == null) return next(errors.invalidItemId());
-  
-  // Access check: Can user write to this series? 
-  const seriesMetaF = metadata.forSeries(userName, eventId, accessToken);
 
-  return seriesMetaF
-    // Not found: At this point an access problem.
-    .catch(() => { throw errors.forbidden(); })
-    .then((seriesMeta) => {
-      // No access permission: Abort.
-      if (!seriesMeta.canRead()) throw errors.forbidden();
-
-      return parseQueryFromGET(req.query)
-        .then((query) => {
-          // Store data
-          // TODO derive namespace from user id
-          return seriesRepo.get(...seriesMeta.namespace())
-            .then((seriesInstance) => seriesInstance.query(query))
-            .then((data) => {
-              const responseObj = new SeriesResponse(data);
-
-              responseObj.answer(res);
-            });
-        });
-    })
+  coerceAndValidateParams(R.clone(req.query))
+    .then(applyDefaultValues)
+    .then(verifyAccess.bind(null, username, eventId, accessToken, metadata))
+    .then(retrievePoints.bind(null, seriesRepo, res))
     .catch(dispatchErrors.bind(null, next));
 }
 
 import type Query from 'business';
-function parseQueryFromGET(params: {[key: string]: string}): Promise<Query> {
+
+function coerceAndValidateParams(params: object): Promise<Query> {
   return new Promise((accept, reject) => {
 
-    type ConversionTable = Array<{
-      test: RegExp,
-      convert: (v: string) => *,
-    }>;
-    function interpret(obj: any, table: ConversionTable) {
-      for (let {test, convert} of table) {
-        if (test.test(obj)) return convert(obj);
-      }
-      return null;
-    }
+    tryCoerceStringValues(params, {
+      fromTime: 'number',
+      toTime: 'number'
+    });
 
-    const query = {};
-    const numberTable = [ // Target format is a number of seconds since Epoch
-      // TODO add conversion from date formats.
-      {test: /^[1-9]\d*(\.\d+)?$/, convert: parseFloat}
-    ];
-
+    let query = {};
     let errorsThrown = [];
 
     if (params.fromTime != null) {
-      query.from = interpret(params.fromTime, numberTable);
+      query.from = params.fromTime;
       if (isNaN(query.from)) {
         errorsThrown.push({
           message: 'Expected type number but found type not-a-number',
@@ -216,15 +191,10 @@ function parseQueryFromGET(params: {[key: string]: string}): Promise<Query> {
           method: 'series.get'
         });
       }
-    } 
-    else {
-      // TODO test this, default value setting
-      // default value: 1 hour ago
-      query.from = timestamp.now('-1h');
     }
 
     if (params.toTime != null) {
-      query.to = interpret(params.toTime, numberTable);
+      query.to = query.toTime;
       if (isNaN(query.to)) {
         errorsThrown.push({
           message: 'Expected type number but found type not-a-number',
@@ -232,11 +202,6 @@ function parseQueryFromGET(params: {[key: string]: string}): Promise<Query> {
           method: 'series.get'
         });
       }
-    } 
-    else {
-      // TODO test this, default value setting
-      // default value: now, can omit this as it is the default value in influxDB
-      query.to = timestamp.now();
     }
 
     if (errorsThrown.length > 0) {
@@ -244,9 +209,51 @@ function parseQueryFromGET(params: {[key: string]: string}): Promise<Query> {
         'The parameters\' format is invalid.',
         errorsThrown));
     }
-    
     accept(query);
   });
+}
 
+function applyDefaultValues(query: object): Promise<Query> {
+  //TODO currently the default values are the same as for events.get, to review
+  return new Promise((accept, reject) => {
+    if (query.from === null && query.to !== null) {
+      // TODO test this, default value setting
+      query.from = timestamp.add(query.to, -24 * 60 * 60);
+    }
+    if (query.from !== null && query.to === null) {
+      // TODO test this, default value setting
+      query.to = timestamp.now(); // default value: now, can omit this as it is the default value in influxDB
+    }
+    if (query.from === null && query.to === null) {
+      query.from = timestamp.now('-1h')
+    }
+    accept(query);
+  });
+}
 
+function verifyAccess(username: string, eventId: string, authToken: string, metadata: any, query: Query): Promise<Query> {
+  return new Promise((accept, reject) => {
+
+    metadata.forSeries(username, eventId, authToken)
+      .catch(() => {
+        return reject(errors.forbidden());
+      })
+      .then((seriesMeta) => {
+        if (!seriesMeta.canRead()) throw errors.forbidden();
+        // TODO figure out how to call these promises correctly
+        accept(query);
+      });
+  });
+
+}
+
+function retrievePoints(seriesRepo: any, res: express$Response, query: Query): void {
+  // TODO find a way to get access to seriesMeta.namespace() or username/eventId here
+  return seriesRepo.get('test', 'series1')
+    .then((seriesInstance) => seriesInstance.query(query))
+    .then((data) => {
+      const responseObj = new SeriesResponse(data);
+
+      responseObj.answer(res);
+    });
 }
