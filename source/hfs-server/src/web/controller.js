@@ -232,18 +232,16 @@ function applyDefaultValues(query: object): Promise<Query> {
 }
 
 function verifyAccess(username: string, eventId: string, authToken: string, metadata: any, query: Query): Promise<Query> {
-  return new Promise((accept, reject) => {
+  return metadata.forSeries(username, eventId, authToken)
+    .catch(() => {
+      // TODO shouldn't this be an unexpected error?
+      throw errors.forbidden();
+    })
+    .then((seriesMeta) => {
+      if (!seriesMeta.canRead()) throw errors.forbidden();
 
-    metadata.forSeries(username, eventId, authToken)
-      .catch(() => {
-        return reject(errors.forbidden());
-      })
-      .then((seriesMeta) => {
-        if (!seriesMeta.canRead()) throw errors.forbidden();
-        // TODO figure out how to call these promises correctly
-        accept(query);
-      });
-  });
+      accept(query);
+    });
 
 }
 

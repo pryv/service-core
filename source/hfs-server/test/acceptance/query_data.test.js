@@ -29,8 +29,11 @@ describe('Querying data from a HF series', function() {
       canWrite: function canWrite(): boolean {
         return authTokenValid;
       },
+      canRead: function canRead(): boolean {
+        return authTokenValid;
+      },
       namespace: () => ['test', 'series1'] // Hard coded, will eventually change
-    }
+    };
     return {
       forSeries: function forSeries() {
         return Promise.resolve(seriesMeta);
@@ -51,6 +54,19 @@ describe('Querying data from a HF series', function() {
       .then((res) => {
         should.exist(res.body.error);
         should.equal(res.body.error.id, ErrorIds.MissingHeader);
+      });
+  });
+
+  it('should refuse a query containing an unauthorized token', function () {
+    context().metadata = produceMetadataLoader(false);
+    return request(app())
+      .get('/' + username + '/events/some-id/series')
+      .set('authorization', 'invalid-auth')
+      //.expect(403)
+      .expect(403)
+      .then((res) => {
+        should.exist(res.body.error);
+        should.equal(res.body.error.id, ErrorIds.Forbidden);
       });
   });
 
