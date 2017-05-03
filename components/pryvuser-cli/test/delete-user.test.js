@@ -100,7 +100,7 @@ describe('"delete user" script', function () {
       helpers.data.resetEvents,
       helpers.data.resetAttachments,
       function deleteUser(stepDone) {
-        nixt().run('pryvuser delete ' + user.username + ' --config ' + path.resolve(__dirname + '/config/invalidPaths.json'))
+        nixt().run('node ./src/cli.js delete ' + user.username + ' --config ' + path.resolve(__dirname + '/config/invalidPaths.json'))
           .on(/Confirm username/).respond(user.username)
           .code(1)
           .stdout(/path is not as expected/)
