@@ -44,15 +44,15 @@ describe('Querying data from a HF series', function() {
 
   it('should refuse a query missing the authorization token', function () {
     return request(app())
-      .get('USERNAME/events/some-id/series')
-      .expect(403)
+      .get('/USERNAME/events/some-id/series')
+      .expect(400)
       .then((res) => {
-        should.exist(res.body.err);
-        should.equal(res.body.err.id, ErrorIds.Forbidden);
+        should.exist(res.body.error);
+        should.equal(res.body.error.id, ErrorIds.MissingHeader);
       });
   });
 
-  it.skip('should refuse a query containing parameters with the wrong format', function () {
+  it('should refuse a query containing parameters with the wrong format', function () {
     return request(app())
       .get('/USERNAME/events/some-id/series')
       .set('authorization', 'valid-auth')
