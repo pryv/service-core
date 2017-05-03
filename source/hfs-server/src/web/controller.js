@@ -153,7 +153,7 @@ import type SeriesMetadata from '../metadata_cache';
  * @return {void}
  */
 function querySeriesData(ctx: Context, req: express$Request,
-                         res: express$Response, next: express$NextFunction): void {
+                         res: express$Response, next: express$NextFunction): mixed {
 
   const metadata: MetadataRepository = ctx.metadata;
   const seriesRepo: Repository = ctx.series;
@@ -173,6 +173,8 @@ function querySeriesData(ctx: Context, req: express$Request,
     .then(retrievePoints.bind(null, seriesRepo, res))
     .catch(dispatchErrors.bind(null, next));
 }
+
+import type Query from 'components/business';
 
 function coerceAndValidateParams(params: object): Promise<Query> {
   return new Promise((accept, reject) => {
@@ -206,7 +208,6 @@ function coerceAndValidateParams(params: object): Promise<Query> {
         });
       }
     }
-
     if (errorsThrown.length > 0) {
       return reject(errors.invalidParametersFormat(
         'The parameters\' format is invalid.',

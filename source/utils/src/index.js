@@ -8,3 +8,7 @@ module.exports = {
   toString: require('./toString'),
   treeUtils: require('./treeUtils')
 };
+
+// Reexport the Logger interface for external declarations. 
+import type { Logger } from './logging';
+export type { Logger };
