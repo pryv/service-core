@@ -7,7 +7,7 @@ var async = require('async'),
     should = require('should'),
     storage = helpers.dependencies.storage,
     _ = require('lodash'),
-  path = require('path');
+    path = require('path');
 
 describe('"delete user" script', function () {
 
