@@ -6,6 +6,7 @@ const bluebird = require('bluebird');
 
 const storage = require('components/storage');
 const MethodContext = require('components/model').MethodContext;
+const errors = require('components/errors').factory;
 
 /** A repository for meta data on series. 
  */
@@ -82,12 +83,15 @@ class MetadataLoader {
           },
         ], 
         (err, results) => {
-          const access = methodContext.access; 
-          const user = methodContext.user; 
+          if (err) return returnValueCallback(errors.unexpectedError(err));
+
+          const access = methodContext.access;
+          const user = methodContext.user;
           const event = R.last(results);
-          
-          if (err) return returnValueCallback(err);
-          returnValueCallback(null, 
+
+          if (event === null) return returnValueCallback(errors.unknownResource('event', eventId));
+
+          returnValueCallback(null,
             new SeriesMetadataImpl(access, user, event));
         }
       );

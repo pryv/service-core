@@ -8,7 +8,7 @@ const { settings, define } = require('./test-helpers');
 const request = require('supertest');
 const should = require('should');
 const memo = require('memo-is');
-const { ErrorIds } = require('../../../errors');
+const { ErrorIds, factory } = require('../../../errors');
 
 const Application = require('../../src/Application');
 
@@ -55,6 +55,45 @@ describe('Querying data from a HF series', function() {
       .then((res) => {
         should.exist(res.body.error);
         should.equal(res.body.error.id, ErrorIds.MissingHeader);
+      });
+  });
+
+  it('should return an unknown resource error when querying data ' +
+    'for an nonexistent event id', function () {
+    // TODO modify this using a database fixture and querying an nonexisting event
+    const nonexistentEventId = 'nonexistent-event-id';
+
+    context().metadata = {
+      forSeries: function forSeries() {
+        return Promise.reject(factory.unknownResource('event', nonexistentEventId));
+      }
+    };
+
+    return request(app())
+      .get('/' + username + '/events/' + nonexistentEventId + '/series')
+      .set('authorization', 'valid-auth')
+      .expect(404)
+      .then((res) => {
+        should.exist(res.body.error);
+        should.equal(res.body.error.id, ErrorIds.UnknownResource);
+      });
+  });
+
+  it('should return an unexpected error when querying for the ' +
+    'event metadata fails', function () {
+    context().metadata = {
+      forSeries: function forSeries() {
+        return Promise.reject({error: 'main-storage-error'});
+      }
+    };
+
+    return request(app())
+      .get('/' + username + '/events/some-id/series')
+      .set('authorization', 'valid-auth')
+      .expect(500)
+      .then((res) => {
+        should.exist(res.body.error);
+        should.equal(res.body.error.id, ErrorIds.UnexpectedError);
       });
   });
 

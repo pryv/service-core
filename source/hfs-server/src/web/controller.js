@@ -15,6 +15,7 @@ const Promise = require('bluebird');
 
 const business = require('components/business');
 const errors = require('components/errors').factory;
+const { APIError} = require('components/errors');
 const SeriesResponse = require('./SeriesResponse');
 
 const AUTH_HEADER = 'authorization';
@@ -248,9 +249,8 @@ function verifyAccess(
   metadata: MetadataRepository, query: Query): Promise<[Query, SeriesMetadata]> 
 {
   return metadata.forSeries(username, eventId, authToken)
-    .catch(() => {
-      // TODO shouldn't this be an unexpected error?
-      throw errors.forbidden();
+    .catch((err) => {
+      throw err instanceof APIError ? err : errors.unexpectedError(err)
     })
     .then((seriesMeta) => {
       if (!seriesMeta.canRead()) throw errors.forbidden();
