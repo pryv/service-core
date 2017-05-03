@@ -29,8 +29,8 @@ describe('Querying data from a HF series', function() {
       canWrite: function canWrite(): boolean {
         return authTokenValid;
       },
-      namespace: () => ['test', 'series1'], // Hard coded, will eventually change
-    };
+      namespace: () => ['test', 'series1'] // Hard coded, will eventually change
+    }
     return {
       forSeries: function forSeries() {
         return Promise.resolve(seriesMeta);
@@ -42,9 +42,11 @@ describe('Querying data from a HF series', function() {
     context().metadata = produceMetadataLoader(true);
   });
 
+  const username = 'USERNAME';
+
   it('should refuse a query missing the authorization token', function () {
     return request(app())
-      .get('/USERNAME/events/some-id/series')
+      .get('/' + username + '/events/some-id/series')
       .expect(400)
       .then((res) => {
         should.exist(res.body.error);
@@ -54,7 +56,7 @@ describe('Querying data from a HF series', function() {
 
   it('should refuse a query containing parameters with the wrong format', function () {
     return request(app())
-      .get('/USERNAME/events/some-id/series')
+      .get('/' + username + '/events/some-id/series')
       .set('authorization', 'valid-auth')
       .query({
         fromTime: 'hi-i-am-not-a-timestamp',
