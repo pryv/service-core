@@ -32,7 +32,8 @@ describe('Querying data from a HF series', function() {
       canRead: function canRead(): boolean {
         return authTokenValid;
       },
-      namespace: () => ['test', 'series1'] // Hard coded, will eventually change
+      // TODO change when calling to InfluxDB available
+      namespace: () => ['test', 'series1']
     };
     return {
       forSeries: function forSeries() {
@@ -62,7 +63,6 @@ describe('Querying data from a HF series', function() {
     return request(app())
       .get('/' + username + '/events/some-id/series')
       .set('authorization', 'invalid-auth')
-      //.expect(403)
       .expect(403)
       .then((res) => {
         should.exist(res.body.error);
