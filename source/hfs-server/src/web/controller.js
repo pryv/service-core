@@ -139,10 +139,10 @@ function checkFields(val: any): ?Array<string> {
 
 module.exports.querySeriesData = R.curryN(4, querySeriesData);
 
-import type Query from 'business';
-import type Repository from 'business';
-import type MetadataRepository from '../metadata_cache';
-import type SeriesMetadata from '../metadata_cache';
+import type {Query} from 'business';
+import type {Repository} from 'business';
+import type {MetadataRepository} from '../metadata_cache';
+import type {SeriesMetadata} from '../metadata_cache';
 
 /** GET /events/:event_id/series - Query a series for a data subset.
  *
@@ -174,9 +174,7 @@ function querySeriesData(ctx: Context, req: express$Request,
     .catch(dispatchErrors.bind(null, next));
 }
 
-import type Query from 'components/business';
-
-function coerceAndValidateParams(params: object): Promise<Query> {
+function coerceAndValidateParams(params: Object): Promise<Query> {
   return new Promise((accept, reject) => {
 
     tryCoerceStringValues(params, {
@@ -199,7 +197,7 @@ function coerceAndValidateParams(params: object): Promise<Query> {
     }
 
     if (params.toTime != null) {
-      query.to = query.toTime;
+      query.to = params.toTime;
       if (isNaN(query.to)) {
         errorsThrown.push({
           message: 'Expected type number but found type not-a-number',
@@ -217,9 +215,9 @@ function coerceAndValidateParams(params: object): Promise<Query> {
   });
 }
 
-function applyDefaultValues(query: object): Promise<Query> {
+function applyDefaultValues(query: Object): Promise<Query> {
   //TODO currently the default values are the same as for events.get, to review
-  return new Promise((accept, reject) => {
+  return new Promise((accept) => {
     if (query.from === null && query.to !== null) {
       // TODO test this, default value setting
       query.from = timestamp.add(query.to, -24 * 60 * 60);
@@ -229,14 +227,16 @@ function applyDefaultValues(query: object): Promise<Query> {
       query.to = timestamp.now(); // default value: now, can omit this as it is the default value in influxDB
     }
     if (query.from === null && query.to === null) {
-      query.from = timestamp.now('-1h')
+      query.from = timestamp.now('-1h');
     }
     accept(query);
   });
 }
 
-function verifyAccess(username: string, eventId: string, authToken: string,
-                      metadata: MetadataRepository, query: Query): Promise<[Query, SeriesMetadata]> {
+function verifyAccess(
+  username: string, eventId: string, authToken: string, 
+  metadata: MetadataRepository, query: Query): Promise<[Query, SeriesMetadata]> 
+{
   return metadata.forSeries(username, eventId, authToken)
     .catch(() => {
       // TODO shouldn't this be an unexpected error?
@@ -245,13 +245,16 @@ function verifyAccess(username: string, eventId: string, authToken: string,
     .then((seriesMeta) => {
       if (!seriesMeta.canRead()) throw errors.forbidden();
 
-      accept([query, seriesMeta]);
+      return [query, seriesMeta];
     });
 }
 
-function retrievePoints(seriesRepo: Repository, res: express$Response, eventId: string,
+function retrievePoints(seriesRepo: Repository, res: express$Response,
                         queryAndSeriesMeta: [Query, SeriesMetadata]): void {
-  return seriesRepo.get(queryAndSeriesMeta[1].namespace(), eventId)
+  // const query = queryAndSeriesMeta[0];
+  const seriesMeta = queryAndSeriesMeta[1];
+  
+  return seriesRepo.get(...seriesMeta.namespace())
     .then((seriesInstance) => seriesInstance.query(queryAndSeriesMeta[0]))
     .then((data) => {
       const responseObj = new SeriesResponse(data);
