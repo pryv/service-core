@@ -194,8 +194,6 @@ describe('Storing data in a HF series', function() {
       };
     }
 
-    it.skip('should reject non-JSON bodies', function () { });
-    
     describe('when bypassing authentication (succeed always)', function () {
       // Bypass authentication check: Succeed always
       beforeEach(function () {
@@ -220,6 +218,17 @@ describe('Storing data in a HF series', function() {
             should(response.points.length).be.eql(data.points.length);
             R.all(pairEqual, R.zip(response.points, data.points));
           });
+      });
+
+      it('should reject non-JSON bodies', function () { 
+        const response = request(app())
+          .post(`/USERNAME/events/${EVENT_ID}/series`)
+          .set('authorization', 'AUTH_TOKEN')
+          .type('form')
+          .send({ format: 'flatJSON' });
+          
+        return response
+          .expect(400);
       });
 
       describe('when request is malformed', function () {
@@ -304,8 +313,4 @@ describe('Storing data in a HF series', function() {
       });
     });
   }); 
-  describe('GET /events/EVENT_ID/series', function () {
-    it.skip('should query data from the influx store', function () { });
-    it.skip('should return correctly for empty sets', function () { });
-  });
 });
