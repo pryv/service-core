@@ -130,6 +130,7 @@ describe('Storing data in a HF series', function() {
           .set('authorization', accessToken())
           .query({
             fromTime: '1493647898', toTime: '1493647900' })
+          // .then((res) => console.log(require('util').inspect(res.body, { depth: null })))
           .expect(200)
           .then((res) => {
             const points = res.body.points || [];
@@ -156,6 +157,7 @@ describe('Storing data in a HF series', function() {
     function queryData(): Promise<Object> {
       let response = request(app())
         .get(`/USERNAME/events/${EVENT_ID}/series`)
+        .set('authorization', 'KEN SENT ME')
         .query({
           fromTime: '1481677844', 
           toTime: '1481677850',

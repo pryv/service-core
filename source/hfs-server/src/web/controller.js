@@ -140,10 +140,8 @@ function checkFields(val: any): ?Array<string> {
 
 module.exports.querySeriesData = R.curryN(4, querySeriesData);
 
-import type Query from 'business';
-import type Repository from 'business';
-import type MetadataRepository from '../metadata_cache';
-import type SeriesMetadata from '../metadata_cache';
+import type {Query, Repository} from 'business';
+import type {MetadataRepository, SeriesMetadata} from '../metadata_cache';
 
 /** GET /events/:event_id/series - Query a series for a data subset.
  *
@@ -154,7 +152,7 @@ import type SeriesMetadata from '../metadata_cache';
  * @return {void}
  */
 function querySeriesData(ctx: Context, req: express$Request,
-                         res: express$Response, next: express$NextFunction): void {
+                         res: express$Response, next: express$NextFunction): mixed {
 
   const metadata: MetadataRepository = ctx.metadata;
   const seriesRepo: Repository = ctx.series;
@@ -179,7 +177,6 @@ function querySeriesData(ctx: Context, req: express$Request,
 function coerceAndInterpret(params: object): Promise<Query> {
   // TODO add interpret if needed
   return Promise.try(() => {
-
     tryCoerceStringValues(params, {
       fromTime: 'number',
       toTime: 'number',
@@ -237,7 +234,6 @@ function validateQuery(query: Query): Promise<Query> {
         });
       }
     }
-
     if (errorsThrown.length > 0) {
       throw errors.invalidParametersFormat(
         'The parameters\' format is invalid.',
@@ -247,8 +243,10 @@ function validateQuery(query: Query): Promise<Query> {
   });
 }
 
-function verifyAccess(username: string, eventId: string, authToken: string,
-                      metadata: MetadataRepository, query: Query): Promise<[Query, SeriesMetadata]> {
+function verifyAccess(
+  username: string, eventId: string, authToken: string, 
+  metadata: MetadataRepository, query: Query): Promise<[Query, SeriesMetadata]> 
+{
   return metadata.forSeries(username, eventId, authToken)
     .catch(() => {
       // TODO shouldn't this be an unexpected error?
@@ -257,13 +255,16 @@ function verifyAccess(username: string, eventId: string, authToken: string,
     .then((seriesMeta) => {
       if (!seriesMeta.canRead()) throw errors.forbidden();
 
-      accept([query, seriesMeta]);
+      return [query, seriesMeta];
     });
 }
 
-function retrievePoints(seriesRepo: Repository, res: express$Response, eventId: string,
+function retrievePoints(seriesRepo: Repository, res: express$Response,
                         queryAndSeriesMeta: [Query, SeriesMetadata]): void {
-  return seriesRepo.get(queryAndSeriesMeta[1].namespace(), eventId)
+  // const query = queryAndSeriesMeta[0];
+  const seriesMeta = queryAndSeriesMeta[1];
+  
+  return seriesRepo.get(...seriesMeta.namespace())
     .then((seriesInstance) => seriesInstance.query(queryAndSeriesMeta[0]))
     .then((data) => {
       const responseObj = new SeriesResponse(data);
