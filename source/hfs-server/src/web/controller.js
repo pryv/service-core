@@ -139,6 +139,11 @@ function checkFields(val: any): ?Array<string> {
 
 module.exports.querySeriesData = R.curryN(4, querySeriesData);
 
+import type Query from 'business';
+import type Repository from 'business';
+import type MetadataRepository from '../metadata_cache';
+import type SeriesMetadata from '../metadata_cache';
+
 /** GET /events/:event_id/series - Query a series for a data subset.
  *
  * @param  {type} ctx:  Context
@@ -150,8 +155,8 @@ module.exports.querySeriesData = R.curryN(4, querySeriesData);
 function querySeriesData(ctx: Context, req: express$Request,
                          res: express$Response, next: express$NextFunction): void {
 
-  const metadata = ctx.metadata;
-  const seriesRepo = ctx.series;
+  const metadata: MetadataRepository = ctx.metadata;
+  const seriesRepo: Repository = ctx.series;
 
   // Extract parameters from request:
   const username = req.params.user_name;
@@ -168,8 +173,6 @@ function querySeriesData(ctx: Context, req: express$Request,
     .then(retrievePoints.bind(null, seriesRepo, res))
     .catch(dispatchErrors.bind(null, next));
 }
-
-import type Query from 'business';
 
 function coerceAndValidateParams(params: object): Promise<Query> {
   return new Promise((accept, reject) => {
@@ -231,7 +234,8 @@ function applyDefaultValues(query: object): Promise<Query> {
   });
 }
 
-function verifyAccess(username: string, eventId: string, authToken: string, metadata: any, query: Query): Promise<Query> {
+function verifyAccess(username: string, eventId: string, authToken: string,
+                      metadata: MetadataRepository, query: Query): Promise<[Query, SeriesMetadata]> {
   return metadata.forSeries(username, eventId, authToken)
     .catch(() => {
       // TODO shouldn't this be an unexpected error?
@@ -240,18 +244,16 @@ function verifyAccess(username: string, eventId: string, authToken: string, meta
     .then((seriesMeta) => {
       if (!seriesMeta.canRead()) throw errors.forbidden();
 
-      accept(query);
+      accept([query, seriesMeta]);
     });
-
 }
 
-function retrievePoints(seriesRepo: any, res: express$Response, query: Query): void {
-  // TODO find a way to get access to seriesMeta.namespace() or username/eventId here
-  return seriesRepo.get('test', 'series1')
-    .then((seriesInstance) => seriesInstance.query(query))
+function retrievePoints(seriesRepo: Repository, res: express$Response, eventId: string,
+                        queryAndSeriesMeta: [Query, SeriesMetadata]): void {
+  return seriesRepo.get(queryAndSeriesMeta[1].namespace(), eventId)
+    .then((seriesInstance) => seriesInstance.query(queryAndSeriesMeta[0]))
     .then((data) => {
       const responseObj = new SeriesResponse(data);
-
       responseObj.answer(res);
     });
 }
