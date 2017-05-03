@@ -157,6 +157,7 @@ describe('Storing data in a HF series', function() {
     function queryData(): Promise<Object> {
       let response = request(app())
         .get(`/USERNAME/events/${EVENT_ID}/series`)
+        .set('authorization', 'KEN SENT ME')
         .query({
           fromTime: '1481677844', 
           toTime: '1481677850',
