@@ -167,55 +167,33 @@ function querySeriesData(ctx: Context, req: express$Request,
   if (accessToken == null) return next(errors.missingHeader(AUTH_HEADER));
   if (eventId == null) return next(errors.invalidItemId());
 
-  coerceAndValidateParams(R.clone(req.query))
+  coerceAndInterpret(R.clone(req.query))
     .then(applyDefaultValues)
+    .then(validateQuery)
     .then(verifyAccess.bind(null, username, eventId, accessToken, metadata))
     .then(retrievePoints.bind(null, seriesRepo, res))
     .catch(dispatchErrors.bind(null, next));
 }
 
-function coerceAndValidateParams(params: object): Promise<Query> {
+function coerceAndInterpret(params: object): Promise<Query> {
+  // TODO add interpret if needed
   return new Promise((accept, reject) => {
 
     tryCoerceStringValues(params, {
       fromTime: 'number',
-      toTime: 'number'
+      toTime: 'number',
     });
 
-    let query = {};
-    let errorsThrown = [];
+    let query = {
+      from: params.fromTime,
+      to: params.toTime,
+    };
 
-    if (params.fromTime != null) {
-      query.from = params.fromTime;
-      if (isNaN(query.from)) {
-        errorsThrown.push({
-          message: 'Expected type number but found type not-a-number',
-          parameter: 'fromTime',
-          method: 'series.get'
-        });
-      }
-    }
-
-    if (params.toTime != null) {
-      query.to = query.toTime;
-      if (isNaN(query.to)) {
-        errorsThrown.push({
-          message: 'Expected type number but found type not-a-number',
-          parameter: 'toTime',
-          method: 'series.get'
-        });
-      }
-    }
-
-    if (errorsThrown.length > 0) {
-      return reject(errors.invalidParametersFormat(
-        'The parameters\' format is invalid.',
-        errorsThrown));
-    }
     accept(query);
   });
 }
 
+// TODO decide if default values are meant to be
 function applyDefaultValues(query: object): Promise<Query> {
   //TODO currently the default values are the same as for events.get, to review
   return new Promise((accept, reject) => {
@@ -229,6 +207,40 @@ function applyDefaultValues(query: object): Promise<Query> {
     }
     if (query.from === null && query.to === null) {
       query.from = timestamp.now('-1h')
+    }
+    accept(query);
+  });
+}
+
+function validateQuery(query: Query): Promise<Query> {
+  return new Promise((accept, reject) => {
+
+    let errorsThrown = [];
+
+    if (query.from != null) {
+      if (isNaN(query.from)) {
+        errorsThrown.push({
+          message: 'Expected type number but found type not-a-number',
+          parameter: 'fromTime',
+          method: 'series.get'
+        });
+      }
+    }
+
+    if (query.to != null) {
+      if (isNaN(query.to)) {
+        errorsThrown.push({
+          message: 'Expected type number but found type not-a-number',
+          parameter: 'toTime',
+          method: 'series.get'
+        });
+      }
+    }
+
+    if (errorsThrown.length > 0) {
+      return reject(errors.invalidParametersFormat(
+        'The parameters\' format is invalid.',
+        errorsThrown));
     }
     accept(query);
   });
