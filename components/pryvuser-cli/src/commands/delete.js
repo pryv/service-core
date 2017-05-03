@@ -1,7 +1,7 @@
 var async = require('async'),
-  output = require('../utils/output'),
-  prompt = require('co-prompt'),
-  fs = require('fs');
+    output = require('../utils/output'),
+    prompt = require('co-prompt'),
+    fs = require('fs');
 
 module.exports = function registerDelete(program, logging, usersStorage, accessesStorage,
                                          eventsStorage, eventFilesStorage, followedSlicesStorage,
