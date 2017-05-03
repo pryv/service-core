@@ -11,6 +11,7 @@ const {tryCoerceStringValues} = require('../../../api-server/src/schema/validati
 
 const R = require('ramda');
 const timestamp = require('unix-timestamp');
+const Promise = require('bluebird');
 
 const business = require('components/business');
 const errors = require('components/errors').factory;
@@ -177,26 +178,26 @@ function querySeriesData(ctx: Context, req: express$Request,
 
 function coerceAndInterpret(params: object): Promise<Query> {
   // TODO add interpret if needed
-  return new Promise((accept, reject) => {
+  return Promise.try(() => {
 
     tryCoerceStringValues(params, {
       fromTime: 'number',
       toTime: 'number',
     });
 
-    let query = {
+    const query = {
       from: params.fromTime,
       to: params.toTime,
     };
 
-    accept(query);
+    return query;
   });
 }
 
 // TODO decide if default values are meant to be
 function applyDefaultValues(query: object): Promise<Query> {
   //TODO currently the default values are the same as for events.get, to review
-  return new Promise((accept, reject) => {
+  return Promise.try(() => {
     if (query.from === null && query.to !== null) {
       // TODO test this, default value setting
       query.from = timestamp.add(query.to, -24 * 60 * 60);
@@ -208,12 +209,12 @@ function applyDefaultValues(query: object): Promise<Query> {
     if (query.from === null && query.to === null) {
       query.from = timestamp.now('-1h')
     }
-    accept(query);
+    return query;
   });
 }
 
 function validateQuery(query: Query): Promise<Query> {
-  return new Promise((accept, reject) => {
+  return Promise.try(() => {
 
     let errorsThrown = [];
 
@@ -238,11 +239,11 @@ function validateQuery(query: Query): Promise<Query> {
     }
 
     if (errorsThrown.length > 0) {
-      return reject(errors.invalidParametersFormat(
+      throw errors.invalidParametersFormat(
         'The parameters\' format is invalid.',
-        errorsThrown));
+        errorsThrown);
     }
-    accept(query);
+    return query;
   });
 }
 
