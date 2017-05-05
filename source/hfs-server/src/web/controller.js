@@ -26,7 +26,7 @@ module.exports.storeSeriesData = R.curryN(4, storeSeriesData);
 /** POST /events/:event_id/series - Store data in a series. 
  */
 function storeSeriesData(ctx: Context, 
-  req: express$Request, res: express$Response, next: express$NextFunction) 
+  req: express$Request, res: express$Response, next: express$NextFunction)
 {
   const series = ctx.series;
   const metadata = ctx.metadata;
@@ -235,6 +235,17 @@ function validateQuery(query: Query): Promise<Query> {
         });
       }
     }
+
+    if (query.to && query.from) {
+      if (query.to < query.from) {
+        errorsThrown.push({
+          message: 'Parameter fromTime is bigger than toTime',
+          parameter: 'fromTime',
+          method: 'series.get',
+        });
+      }
+    }
+
     if (errorsThrown.length > 0) {
       throw errors.invalidParametersFormat(
         'The parameters\' format is invalid.',

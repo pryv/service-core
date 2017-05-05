@@ -8,6 +8,7 @@ const { settings, define } = require('./test-helpers');
 const request = require('supertest');
 const should = require('should');
 const memo = require('memo-is');
+const timestamp = require('unix-timestamp');
 const { ErrorIds, factory } = require('../../../errors');
 
 const Application = require('../../src/Application');
@@ -123,6 +124,22 @@ describe('Querying data from a HF series', function() {
         should.equal(err.id, ErrorIds.InvalidParametersFormat);
         should.equal(err.data[0].parameter, 'fromTime');
         should.equal(err.data[1].parameter, 'toTime');
+      });
+  });
+
+  it('should refuse a query when toTime is before fromTime', function () {
+    return request(app())
+      .get('/' + username + '/events/some-id/series')
+      .set('authorization', 'valid-auth')
+      .query({
+        fromTime: timestamp.now(),
+        toTime: timestamp.now('-1h'),
+      })
+      .expect(400)
+      .then((res) => {
+        const err = res.body.error;
+        should.equal(err.id, ErrorIds.InvalidParametersFormat);
+        should.equal(err.data[0].message, 'Parameter fromTime is bigger than toTime');
       });
   });
 
