@@ -25,9 +25,13 @@ function Database(settings, logging) {
       settings.authUser + ':' + settings.authPassword + '@' : '';
   this.connectionString = 'mongodb://' + authPart + settings.host + ':' + settings.port + '/' +
       settings.name;
+      
+  const s60 = 60000; // 60 seconds
   this.options = {
     db: {strict: true},
-    server: {auto_reconnect: true}
+    server: {auto_reconnect: true}, 
+    connectTimeoutMS: s60, 
+    socketTimeoutMS: s60,
   };
   this.db = null;
   this.initializedCollections = {};
