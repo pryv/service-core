@@ -8,5 +8,5 @@ cd $SCRIPT_FOLDER/..
 if [ `uname` = "Linux" ]; then
 mongod --smallfiles --dbpath /var/pryv/data/mongodb
 else
-../mongodb-osx-x86_64-2.6.0/bin/mongod --smallfiles --dbpath ../mongodb-data
+../mongodb-osx-x86_64-3.4.4/bin/mongod --smallfiles --dbpath ../mongodb-data
 fi
