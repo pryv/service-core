@@ -108,14 +108,14 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
    * Creates default data structure from permissions if needed, for app authorization.
    */
   function createDataStructureFromPermissions(context, params, result, next) {
-    if (! context.access.isPersonal() || ! params.permissions) {
+    if (! context.access.isPersonal() || !params.permissions) {
       return next();
     }
 
     async.forEachSeries(params.permissions, ensureStream, next);
 
     function ensureStream(permission, streamCallback) {
-      if (! permission.defaultName) { return streamCallback(); }
+      if (! permission.defaultName) { return streamCallback(); }
 
       var existingStream = treeUtils.findById(context.streams, permission.streamId);
 
@@ -204,7 +204,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
             conflictingKeys = {token: params.token};
           } else {
             conflictingKeys = { type: params.type, name: params.name };
-            if (params.deviceName) {
+            if (params.deviceName) {
               conflictingKeys.deviceName = params.deviceName;
             }
           }
