@@ -170,15 +170,15 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
   }
 
   /**
-   * Returns `true` if the given error is a DB "duplicate key" error caused by a duplicate token.
-   * Returns `false` otherwise (e.g. if caused by another unique key like the name).
+   * Returns true if `dbError` was caused by a 'duplicate key' error (E11000). 
    *
    * @param {Error} dbError
    */
   function isDBDuplicateToken(dbError) {
-    // HACK: relying on error text as nothing else available to differentiate
-    if (! dbError.message) { return false; }
-    return dbError.message.indexOf('$token_') > 0;
+    if (dbError.message == null) { return false; }
+    
+    const message = dbError.message; 
+    return message.match(/^E11000 duplicate key error collection/);
   }
 
   /**
