@@ -28,11 +28,12 @@ function Database(settings, logging) {
       
   const s60 = 60000; // 60 seconds
   this.options = {
-    db: {strict: true},
-    server: {auto_reconnect: true}, 
+    w: 1,   // Requests acknowledgement that the write operation has propagated.
+    autoReconnect: true, 
     connectTimeoutMS: s60, 
     socketTimeoutMS: s60,
   };
+
   this.db = null;
   this.initializedCollections = {};
   this.logger = logging.getLogger('database');
