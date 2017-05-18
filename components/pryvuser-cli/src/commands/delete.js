@@ -1,13 +1,14 @@
 var async = require('async'),
     output = require('../utils/output'),
-    prompt = require('co-prompt');
+    prompt = require('co-prompt'),
+    fs = require('fs');
 
 module.exports = function registerDelete(program, logging, usersStorage, accessesStorage,
                                          eventsStorage, eventFilesStorage, followedSlicesStorage,
                                          profileStorage, streamsStorage) {
   program.command('delete <username>')
-      .description('Delete user account <username>')
-      .action(deleteAccount);
+    .description('Delete user account <username>')
+    .action(deleteAccount);
 
   var logger = logging.getLogger('delete');
 
@@ -19,7 +20,7 @@ module.exports = function registerDelete(program, logging, usersStorage, accesse
           if (err) {
             logger.debug('Error finding user: ' + err);
             return stepDone(err);
-          } else if (! u) {
+          } else if (!u) {
             return stepDone('User "' + username + '" not found');
           }
           logger.debug('Found user');
@@ -34,6 +35,20 @@ module.exports = function registerDelete(program, logging, usersStorage, accesse
           }
           stepDone();
         });
+      },
+      function checkAttachmentsPath(stepDone) {
+        // If user's account contains attachments then the provided attachments path for this user
+        // should exist and should not be empty
+        if (user.storageUsed.attachedFiles > 0) {
+          fs.readdir(eventFilesStorage.settings.attachmentsDirPath, function (err, files) {
+            if (err || !files || files.length <= 0) {
+              return stepDone('Provided attachments path is not as expected');
+            }
+            return stepDone();
+          });
+        } else {
+          stepDone();
+        }
       },
       function (stepDone) {
         usersStorage.remove({id: user.id}, function (err) {
