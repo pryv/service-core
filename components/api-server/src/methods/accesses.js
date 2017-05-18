@@ -170,7 +170,8 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
   }
 
   /**
-   * Returns true if `dbError` was caused by a 'duplicate key' error (E11000). 
+   * Returns true if `dbError` was caused by a 'duplicate key' error (E11000)
+   * and the key that conflicted was named 'token_1'.
    *
    * @param {Error} dbError
    */
@@ -178,7 +179,8 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
     if (dbError.message == null) { return false; }
     
     const message = dbError.message; 
-    return message.match(/^E11000 duplicate key error collection/);
+    return message.match(/^E11000 duplicate key error collection/) && 
+      message.match(/index: token_1 dup key:/);
   }
 
   /**
