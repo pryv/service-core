@@ -167,7 +167,7 @@ function querySeriesData(ctx: Context, req: express$Request,
   if (accessToken == null) return next(errors.missingHeader(AUTH_HEADER));
   if (eventId == null) return next(errors.invalidItemId());
 
-  coerceAndInterpret(R.clone(req.query))
+  coerceStringParams(R.clone(req.query))
     .then(applyDefaultValues)
     .then(validateQuery)
     .then(verifyAccess.bind(null, username, eventId, accessToken, metadata))
@@ -175,8 +175,7 @@ function querySeriesData(ctx: Context, req: express$Request,
     .catch(dispatchErrors.bind(null, next));
 }
 
-function coerceAndInterpret(params: object): Promise<Query> {
-  // TODO add interpret if needed
+function coerceStringParams(params: object): Promise<Query> {
   return Promise.try(() => {
     tryCoerceStringValues(params, {
       fromTime: 'number',
