@@ -143,4 +143,25 @@ describe('Querying data from a HF series', function() {
       });
   });
 
+  it('should set the toTime parameter 1h after from time when ' +
+    'fromTime is set, but toTime is not', function () {
+    const startTime = timestamp.now();
+
+    return request(app())
+      .get('/' + username + '/events/some-id/series')
+      .set('authorization', 'valid-auth')
+      .query({
+        fromTime: startTime,
+      })
+      .expect(200)
+      .then((res) => {
+        should.exist(res.body.points);
+        res.body.points.forEach((p) => {
+          p[0].should.be.within(startTime, startTime + 3600);
+        });
+      });
+  });
+
+
+
 });
