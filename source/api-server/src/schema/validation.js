@@ -30,9 +30,9 @@ exports.tryCoerceStringValues = function (object, settings) {
 
     switch (settings[key]) {
     case 'boolean':
-      if (object[key].toLowerCase() === 'true') {
+      if (object[key].toLowerCase() === 'true') {
         object[key] = true;
-      } else if (object[key].toLowerCase() === 'false') {
+      } else if (object[key].toLowerCase() === 'false') {
         object[key] = false;
       }
       break;
