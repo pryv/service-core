@@ -12,6 +12,7 @@ const timestamp = require('unix-timestamp');
 const { ErrorIds } = require('../../../errors');
 const cuid = require('cuid');
 const R = require('ramda');
+const bluebird = require('bluebird');
 
 const Application = require('../../src/Application');
 
@@ -140,7 +141,7 @@ describe('Querying data from a HF series', function() {
     'event metadata fails', function () {
     context().metadata = {
       forSeries: function forSeries() {
-        return Promise.reject({error: 'main-storage-error'});
+        return bluebird.reject({error: 'main-storage-error'});
       }
     };
 

@@ -12,7 +12,7 @@ const APIError = require('components/errors').APIError;
 /** A repository for meta data on series. 
  */
 export interface MetadataRepository {
-  forSeries(userName: string, eventId: string, accessToken: string): Promise<SeriesMetadata>;
+  forSeries(userName: string, eventId: string, accessToken: string): bluebird<SeriesMetadata>;
 }
 
 /** Meta data on series. 
@@ -40,7 +40,7 @@ class MetadataCache implements MetadataRepository {
     this.loader = metadataLoader;
   }
   
-  forSeries(userName: string, eventId: string, accessToken: string): Promise<SeriesMetadata> {
+  forSeries(userName: string, eventId: string, accessToken: string): bluebird<SeriesMetadata> {
     // TODO implement caching
     return this.loader.forSeries(userName, eventId, accessToken); 
   }
@@ -64,7 +64,7 @@ class MetadataLoader {
     };
   }
   
-  forSeries(userName: string, eventId: string, accessToken: string): Promise<SeriesMetadata> {
+  forSeries(userName: string, eventId: string, accessToken: string): bluebird<SeriesMetadata> {
     const storage = this.storage; 
     
     // Retrieve Access (including accessLogic)

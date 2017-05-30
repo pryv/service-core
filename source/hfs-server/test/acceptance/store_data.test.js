@@ -178,7 +178,7 @@ describe('Storing data in a HF series', function() {
         namespace: () => ['test', 'foo'],
       };
       return {
-        forSeries: function forSeries() { return Promise.resolve(seriesMeta); }
+        forSeries: function forSeries() { return bluebird.resolve(seriesMeta); }
       };
     }
     function produceData() {
