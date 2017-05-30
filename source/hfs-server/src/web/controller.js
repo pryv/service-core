@@ -11,7 +11,7 @@ const {tryCoerceStringValues} = require('../../../api-server/src/schema/validati
 
 const R = require('ramda');
 const timestamp = require('unix-timestamp');
-const Promise = require('bluebird');
+const bluebird = require('bluebird');
 
 const business = require('components/business');
 const errors = require('components/errors').factory;
@@ -165,6 +165,7 @@ function querySeriesData(ctx: Context, req: express$Request,
 
   // If required params are not there, abort.
   if (accessToken == null) return next(errors.missingHeader(AUTH_HEADER));
+  // TODO: calls for /username//series are interpreted as /username/series, hence this check is useless
   if (eventId == null) return next(errors.invalidItemId());
 
   coerceStringParams(R.clone(req.query))
@@ -175,8 +176,8 @@ function querySeriesData(ctx: Context, req: express$Request,
     .catch(dispatchErrors.bind(null, next));
 }
 
-function coerceStringParams(params: object): Promise<Query> {
-  return Promise.try(() => {
+function coerceStringParams(params: Object): bluebird<Query> {
+  return bluebird.try(() => {
     tryCoerceStringValues(params, {
       fromTime: 'number',
       toTime: 'number',
@@ -191,27 +192,25 @@ function coerceStringParams(params: object): Promise<Query> {
   });
 }
 
-// TODO decide if default values are meant to be
-function applyDefaultValues(query: object): Promise<Query> {
-  //TODO currently the default values are the same as for events.get, to review
-  return Promise.try(() => {
+// TODO decide if default values are meant to be & test this
+function applyDefaultValues(query: Object): bluebird<Query> {
+  // currently the default values are the same as for events.get, to review
+  return bluebird.try(() => {
     if (query.from === null && query.to !== null) {
-      // TODO test this, default value setting
       query.from = timestamp.add(query.to, -24 * 60 * 60);
     }
     if (query.from !== null && query.to === null) {
-      // TODO test this, default value setting
       query.to = timestamp.now(); // default value: now, can omit this as it is the default value in influxDB
     }
     if (query.from === null && query.to === null) {
-      query.from = timestamp.now('-1h')
+      query.from = timestamp.now('-1h');
     }
     return query;
   });
 }
 
-function validateQuery(query: Query): Promise<Query> {
-  return Promise.try(() => {
+function validateQuery(query: Query): bluebird<Query> {
+  return bluebird.try(() => {
 
     let errorsThrown = [];
 
@@ -256,11 +255,11 @@ function validateQuery(query: Query): Promise<Query> {
 
 function verifyAccess(
   username: string, eventId: string, authToken: string, 
-  metadata: MetadataRepository, query: Query): Promise<[Query, SeriesMetadata]> 
+  metadata: MetadataRepository, query: Query): bluebird<[Query, SeriesMetadata]>
 {
   return metadata.forSeries(username, eventId, authToken)
     .catch((err) => {
-      throw err instanceof APIError ? err : errors.unexpectedError(err)
+      throw err instanceof APIError ? err : errors.unexpectedError(err);
     })
     .then((seriesMeta) => {
       if (!seriesMeta.canRead()) throw errors.forbidden();
