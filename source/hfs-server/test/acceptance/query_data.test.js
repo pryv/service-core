@@ -3,17 +3,17 @@
 
 // Tests pertaining to storing data in a hf series.
 
-/* global describe, it, beforeEach */
-const { settings, define } = require('./test-helpers');
+/* global describe, it, afterEach */
+const { settings, define, produceInfluxConnection, produceMongoConnection } = require('./test-helpers');
+const databaseFixture = require('../support/database_fixture');
 const request = require('supertest');
 const should = require('should');
-const memo = require('memo-is');
 const timestamp = require('unix-timestamp');
-const { ErrorIds, factory } = require('../../../errors');
+const { ErrorIds } = require('../../../errors');
+const cuid = require('cuid');
+const R = require('ramda');
 
 const Application = require('../../src/Application');
-
-import type { MetadataRepository } from '../../src/metadata_cache';
 
 describe('Querying data from a HF series', function() {
   // Application, Context and Server are needed for influencing the way
@@ -25,33 +25,84 @@ describe('Querying data from a HF series', function() {
   // Express app that we test against.
   const app = define(this, () => server().setupExpress());
 
-  function produceMetadataLoader(authTokenValid = true): MetadataRepository {
-    const seriesMeta = {
-      canWrite: function canWrite(): boolean {
-        return authTokenValid;
-      },
-      canRead: function canRead(): boolean {
-        return authTokenValid;
-      },
-      // TODO change when calling to InfluxDB available
-      namespace: () => ['test', 'series1']
-    };
-    return {
-      forSeries: function forSeries() {
-        return Promise.resolve(seriesMeta);
-      }
-    };
-  }
+  const database = produceMongoConnection();
+  const influx = produceInfluxConnection();
 
-  beforeEach(() => {
-    context().metadata = produceMetadataLoader(true);
+  const pryv = databaseFixture(database, this);
+  afterEach(function () {
+    pryv.clean();
   });
 
-  const username = 'USERNAME';
+  // Set up a few ids that we'll use for testing. NOTE that these ids will
+  // change on every test run.
+  const userId = define(this, cuid);
+  const streamId = define(this, cuid);
+  const eventId = define(this, cuid);
+  const accessToken = define(this, cuid);
+
+  define(this, () => {
+    return pryv.user(userId(), {}, function (user) {
+      user.stream({id: streamId()}, function (stream) {
+        stream.event({
+          id: eventId(),
+          type: 'series:mass/kg'});
+      });
+
+      user.access({token: accessToken(), type: 'personal'});
+      user.session(accessToken());
+    });
+  });
+
+  function storeData(data: {}): Response {
+    // Insert some data into the events series:
+    const postData = {
+      format: 'flatJSON',
+      fields: Object.keys(data),
+      points: [
+        R.map(R.prop(R.__, data), Object.keys(data)),
+      ]
+    };
+    return request(app())
+      .post(`/${userId()}/events/${eventId()}/series`)
+      .set('authorization', accessToken())
+      .send(postData)
+      .expect(200);
+  }
+
+  it.skip('should set the toTime parameter 1h after from time when ' +
+    'fromTime is set, but toTime is not', function () {
+    const startTime = timestamp.now();
+
+    // TODO: implement fixtures for Influx
+
+    return request(app())
+      .get(`/${userId()}/events/${eventId()}/series`)
+      .set('authorization', accessToken())
+      .query({
+        fromTime: startTime,
+      })
+      .expect(200)
+      .then((res) => {
+        should.exist(res.body.points);
+        res.body.points.forEach((p) => {
+          p[0].should.be.within(startTime, startTime + 3600);
+        });
+      });
+  });
+
+  it('should refuse a query for an unknown user', function () {
+    return request(app())
+      .get('/some-user/events/some-eventId/series')
+      .set('authorization', 'someToken')
+      .then((res) => {
+        should.exist(res.body.error);
+        should.equal(res.body.error.id, ErrorIds.UnknownResource);
+      });
+  });
 
   it('should refuse a query missing the authorization token', function () {
     return request(app())
-      .get('/' + username + '/events/some-id/series')
+      .get(`/${userId()}/events/${eventId()}/series`)
       .expect(400)
       .then((res) => {
         should.exist(res.body.error);
@@ -59,24 +110,29 @@ describe('Querying data from a HF series', function() {
       });
   });
 
+  it('should refuse a query containing an unauthorized token', function () {
+    return request(app())
+      .get(`/${userId()}/events/${eventId()}/series`)
+      .set('authorization', 'invalid-auth')
+      .expect(401)
+      .then((res) => {
+        should.exist(res.body.error);
+        should.equal(res.body.error.id, ErrorIds.InvalidAccessToken);
+      });
+  });
+
   it('should return an unknown resource error when querying data ' +
     'for an nonexistent event id', function () {
-    // TODO modify this using a database fixture and querying an nonexisting event
     const nonexistentEventId = 'nonexistent-event-id';
 
-    context().metadata = {
-      forSeries: function forSeries() {
-        return Promise.reject(factory.unknownResource('event', nonexistentEventId));
-      }
-    };
-
     return request(app())
-      .get('/' + username + '/events/' + nonexistentEventId + '/series')
-      .set('authorization', 'valid-auth')
+      .get(`/${userId()}/events/` + nonexistentEventId + '/series')
+      .set('authorization', accessToken())
       .expect(404)
       .then((res) => {
         should.exist(res.body.error);
         should.equal(res.body.error.id, ErrorIds.UnknownResource);
+        (res.body.error.message.indexOf('Unknown event')).should.be.aboveOrEqual(0);
       });
   });
 
@@ -89,8 +145,8 @@ describe('Querying data from a HF series', function() {
     };
 
     return request(app())
-      .get('/' + username + '/events/some-id/series')
-      .set('authorization', 'valid-auth')
+      .get(`/${userId()}/events/${eventId()}/series`)
+      .set('authorization', accessToken())
       .expect(500)
       .then((res) => {
         should.exist(res.body.error);
@@ -98,22 +154,10 @@ describe('Querying data from a HF series', function() {
       });
   });
 
-  it('should refuse a query containing an unauthorized token', function () {
-    context().metadata = produceMetadataLoader(false);
-    return request(app())
-      .get('/' + username + '/events/some-id/series')
-      .set('authorization', 'invalid-auth')
-      .expect(403)
-      .then((res) => {
-        should.exist(res.body.error);
-        should.equal(res.body.error.id, ErrorIds.Forbidden);
-      });
-  });
-
   it('should refuse a query containing parameters with the wrong format', function () {
     return request(app())
-      .get('/' + username + '/events/some-id/series')
-      .set('authorization', 'valid-auth')
+      .get(`/${userId()}/events/${eventId()}/series`)
+      .set('authorization', accessToken())
       .query({
         fromTime: 'hi-i-am-not-a-timestamp',
         toTime: 'i-am-not-a-timestamp-either'
@@ -129,8 +173,8 @@ describe('Querying data from a HF series', function() {
 
   it('should refuse a query when toTime is before fromTime', function () {
     return request(app())
-      .get('/' + username + '/events/some-id/series')
-      .set('authorization', 'valid-auth')
+      .get(`/${userId()}/events/${eventId()}/series`)
+      .set('authorization', accessToken())
       .query({
         fromTime: timestamp.now(),
         toTime: timestamp.now('-1h'),
@@ -142,26 +186,5 @@ describe('Querying data from a HF series', function() {
         should.equal(err.data[0].message, 'Parameter fromTime is bigger than toTime');
       });
   });
-
-  it('should set the toTime parameter 1h after from time when ' +
-    'fromTime is set, but toTime is not', function () {
-    const startTime = timestamp.now();
-
-    return request(app())
-      .get('/' + username + '/events/some-id/series')
-      .set('authorization', 'valid-auth')
-      .query({
-        fromTime: startTime,
-      })
-      .expect(200)
-      .then((res) => {
-        should.exist(res.body.points);
-        res.body.points.forEach((p) => {
-          p[0].should.be.within(startTime, startTime + 3600);
-        });
-      });
-  });
-
-
 
 });
