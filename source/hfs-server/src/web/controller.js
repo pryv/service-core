@@ -217,7 +217,7 @@ function validateQuery(query: Query): bluebird<Query> {
     if (query.from != null) {
       if (isNaN(query.from)) {
         errorsThrown.push({
-          message: 'Expected type number but found type not-a-number',
+          message: 'Expected type number but found type ' + (typeof query.from),
           parameter: 'fromTime',
           method: 'series.get'
         });
@@ -227,7 +227,7 @@ function validateQuery(query: Query): bluebird<Query> {
     if (query.to != null) {
       if (isNaN(query.to)) {
         errorsThrown.push({
-          message: 'Expected type number but found type not-a-number',
+          message: 'Expected type number but found type ' + (typeof query.to),
           parameter: 'toTime',
           method: 'series.get'
         });

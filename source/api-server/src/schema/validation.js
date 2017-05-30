@@ -38,7 +38,8 @@ exports.tryCoerceStringValues = function (object, settings) {
       break;
     case 'number':
       try {
-        object[key] = +object[key];
+        const temp = +object[key];
+        object[key] = isNaN(temp) ? object[key] : temp;
       } catch (e) { /* cannot coerce */ }
       break;
     case 'integer':
