@@ -119,11 +119,13 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     }
     if (params.fromTime) {
       query.$or = [
-        {
+        { // Event started before fromTime, but finished inside from->to.
           time: {$lt: params.fromTime},
           endTime: {$gte: params.fromTime}
         },
-        {time: { $gte: params.fromTime, $lte: params.toTime }}
+        { // Event has started inside the interval.
+          time: { $gte: params.fromTime, $lte: params.toTime }
+        },
       ];
     }
     if (params.toTime) {
