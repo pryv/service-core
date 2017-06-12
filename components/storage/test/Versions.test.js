@@ -224,27 +224,17 @@ describe('Versions', function () {
       should.exist(results.version.migrationCompleted);
       done();
     });
-
-    function applyPreviousIndexes(collectionName, indexes, callback) {
-      async.forEachSeries(indexes, ensureIndex, function (err) {
-        if (err) { return callback(err); }
-        database.initializedCollections[collectionName] = true;
-        callback();
-      }.bind(this));
-
-      function ensureIndex(item, itemCallback) {
-        database.db.collection(collectionName)
-          .ensureIndex(item.index, item.options, itemCallback);
-      }
-    }
   });
 
   it('must handle data migration from v1.2.0 to v1.2.5', function (done) {
     const versions = getVersions('1.2.5'),
       user = {id: 'u_0'};
 
+    const indexes = testData.getStructure('1.2.4').indexes;
+
     async.series({
       restore: testData.restoreFromDump.bind(null, '1.2.4', mongoFolder),
+      indexEvents: applyPreviousIndexes.bind(null, 'events', indexes.events),
       migrate: versions.migrateIfNeeded.bind(versions),
       events: storage.user.events.listIndexes.bind(storage.user.events, user, {}),
       version: versions.getCurrent.bind(versions)
