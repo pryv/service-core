@@ -1,3 +1,5 @@
+// File built manually by copying indexes (that will change during migration)
+// from different collections specifications in storage/src/user
 module.exports = {
   indexes: {
     events: [
