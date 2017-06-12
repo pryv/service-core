@@ -267,4 +267,17 @@ describe('Versions', function () {
         pickedMigrations);
   }
 
+  function applyPreviousIndexes(collectionName, indexes, callback) {
+    async.forEachSeries(indexes, ensureIndex, function (err) {
+      if (err) { return callback(err); }
+      database.initializedCollections[collectionName] = true;
+      callback();
+    }.bind(this));
+
+    function ensureIndex(item, itemCallback) {
+      database.db.collection(collectionName)
+        .ensureIndex(item.index, item.options, itemCallback);
+    }
+  }
+
 });
