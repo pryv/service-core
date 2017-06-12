@@ -199,7 +199,7 @@ describe('Versions', function () {
 
   });
 
-  it('must handle data migration from v0.7.1 to 1.2.0', function (done) {
+  it.skip('must handle data migration from v0.7.1 to 1.2.0', function (done) {
     const versions = getVersions('1.2.0'),
       user = {id: 'u_0'};
 
@@ -224,19 +224,27 @@ describe('Versions', function () {
       should.exist(results.version.migrationCompleted);
       done();
     });
+  });
 
-    function applyPreviousIndexes(collectionName, indexes, callback) {
-      async.forEachSeries(indexes, ensureIndex, function (err) {
-        if (err) { return callback(err); }
-        database.initializedCollections[collectionName] = true;
-        callback();
-      }.bind(this));
+  it('must handle data migration from v1.2.0 to v1.2.5', function (done) {
+    const versions = getVersions('1.2.5'),
+      user = {id: 'u_0'};
 
-      function ensureIndex(item, itemCallback) {
-        database.db.collection(collectionName)
-          .ensureIndex(item.index, item.options, itemCallback);
-      }
-    }
+    const indexes = testData.getStructure('1.2.4').indexes;
+
+    async.series({
+      restore: testData.restoreFromDump.bind(null, '1.2.4', mongoFolder),
+      indexEvents: applyPreviousIndexes.bind(null, 'events', indexes.events),
+      migrate: versions.migrateIfNeeded.bind(versions),
+      events: storage.user.events.listIndexes.bind(storage.user.events, user, {}),
+      version: versions.getCurrent.bind(versions)
+    }, function (err, results) {
+      should.not.exist(err);
+      (_.findIndex(results.events, (o) => {return o.key.endTime === 1;})).should.be.aboveOrEqual(0);
+      results.version._id.should.eql('1.2.5');
+      should.exist(results.version.migrationCompleted);
+      done();
+    });
   });
 
   function getVersions(/* migration1Id, migration2Id, ... */) {
@@ -247,6 +255,19 @@ describe('Versions', function () {
         helpers.dependencies.settings.eventFiles.attachmentsDirPath,
         helpers.dependencies.logging,
         pickedMigrations);
+  }
+
+  function applyPreviousIndexes(collectionName, indexes, callback) {
+    async.forEachSeries(indexes, ensureIndex, function (err) {
+      if (err) { return callback(err); }
+      database.initializedCollections[collectionName] = true;
+      callback();
+    }.bind(this));
+
+    function ensureIndex(item, itemCallback) {
+      database.db.collection(collectionName)
+        .ensureIndex(item.index, item.options, itemCallback);
+    }
   }
 
 });

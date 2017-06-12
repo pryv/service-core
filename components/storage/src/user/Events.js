@@ -100,6 +100,10 @@ var indexes = [
   {
     index: {modified: 1},
     options: {}
+  },
+  {
+    index: {endTime: 1},
+    options: {partialFilterExpression: {endTime: {$exists: true}}}
   }
 ];
 

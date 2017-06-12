@@ -4,7 +4,7 @@
  */
 
 var testData = require('../src/data'),
-    mongoFolder = __dirname + '/../../../../mongodb-osx-x86_64-2.6.0';
+    mongoFolder = __dirname + '/../../../../mongodb-osx-x86_64-3.4.4';
 testData.dumpCurrent(mongoFolder, function (err) {
   if (err) {
     console.error(err);
