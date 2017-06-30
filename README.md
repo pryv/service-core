@@ -11,6 +11,10 @@ _Prerequisites:_ Node v6.9.5, Yarn v0.20.3, Mongo DB v3.4+ (needs at least 4GB o
 
 Then just `yarn install`.
 
+If you're blocking because 'unicode.org' doesn't like you today, here's what you do: 
+
+    $ NODE_UNICODETABLE_UNICODEDATA_TXT=$(pwd)/UnicodeData.txt yarn install
+
 ### Component-specific usage
 
 See individual component READMEs for instructions.

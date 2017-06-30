@@ -52,11 +52,11 @@ anymatch@^1.3.0:
     micromatch "^2.1.5"
 
 "api-server@file:components/api-server":
-  version "1.1.7"
+  version "1.2.4"
   dependencies:
     multistream "^2.1.0"
     slug "0.8.x"
-    socket.io "^0.9.17"
+    socket.io "^0.9.19"
     z-schema "^3.15.3"
 
 aproba@^1.0.3:
@@ -746,7 +746,7 @@ errorhandler@1.0.0:
   resolved "https://registry.yarnpkg.com/errorhandler/-/errorhandler-1.0.0.tgz#d74b37e8dc38c99afb3f5a79edcebaea022d042a"
 
 "errors@file:components/errors":
-  version "1.1.7"
+  version "1.2.4"
 
 es6-promise@3.2.1:
   version "3.2.1"
@@ -1359,7 +1359,7 @@ micromatch@^2.1.5:
     regex-cache "^0.4.2"
 
 "middleware@file:components/middleware":
-  version "1.1.7"
+  version "1.2.4"
 
 mime-db@~1.26.0:
   version "1.26.0"
@@ -1420,7 +1420,7 @@ mocha@^3.2.0:
     supports-color "3.1.2"
 
 "model@file:components/model":
-  version "1.1.7"
+  version "1.2.4"
 
 moment-timezone@^0.5.x:
   version "0.5.11"
@@ -1653,7 +1653,7 @@ preserve@^0.2.0:
   resolved "https://registry.yarnpkg.com/preserve/-/preserve-0.2.0.tgz#815ed1f6ebc65926f865b310c0713bcb3315ce4b"
 
 "previews-server@file:components/previews-server":
-  version "1.1.7"
+  version "1.2.4"
   dependencies:
     fs-xattr "^0.1.11"
     gm "^1.20.0"
@@ -1671,7 +1671,7 @@ propagate@0.4.0:
   resolved "https://registry.yarnpkg.com/propagate/-/propagate-0.4.0.tgz#f3fcca0a6fe06736a7ba572966069617c130b481"
 
 "pryvuser-cli@file:components/pryvuser-cli":
-  version "1.1.7"
+  version "1.2.4"
   dependencies:
     co-prompt "^1.0.0"
     commander "^2.8.1"
@@ -2019,9 +2019,9 @@ socket.io-client@0.9.x:
     ws "0.4.x"
     xmlhttprequest "1.4.2"
 
-socket.io@^0.9.17:
-  version "0.9.17"
-  resolved "https://registry.yarnpkg.com/socket.io/-/socket.io-0.9.17.tgz#ca389268fb2cd5df4b59218490a08c907581c9ec"
+socket.io@^0.9.19:
+  version "0.9.19"
+  resolved "https://registry.yarnpkg.com/socket.io/-/socket.io-0.9.19.tgz#490bb5fd0dc54cf002ee04e67fadfc43b848a38f"
   dependencies:
     base64id "0.1.0"
     policyfile "0.0.4"
@@ -2063,7 +2063,7 @@ static-favicon@1.0.2:
   resolved "https://registry.yarnpkg.com/static-favicon/-/static-favicon-1.0.2.tgz#7c15920dda2bf33f414b0e60aebbd65cdd2a1d2f"
 
 "storage@file:components/storage":
-  version "1.1.7"
+  version "1.2.4"
   dependencies:
     cuid "^1.2.5"
     mongodb "^2.2.19"
@@ -2162,7 +2162,7 @@ temp@latest:
     rimraf "~2.2.6"
 
 "test-helpers@file:components/test-helpers":
-  version "1.1.7"
+  version "1.2.4"
 
 through@~2.3.4:
   version "2.3.8"
@@ -2237,7 +2237,7 @@ utils-merge@1.0.0:
   resolved "https://registry.yarnpkg.com/utils-merge/-/utils-merge-1.0.0.tgz#0294fb922bb9375153541c4f7096231f287c8af8"
 
 "utils@file:components/utils":
-  version "1.1.7"
+  version "1.2.4"
   dependencies:
     airbrake "^1.2.0"
     bcrypt "^1.0.2"
