@@ -48,7 +48,7 @@ module.exports = function (logsSettings) {
     });
   }
   if (logsSettings.airbrake.active) {
-    airbrake = require('airbrake').createClient(logsSettings.airbrake.key);
+    airbrake = require('airbrake').createClient(logsSettings.airbrake.projectId, logsSettings.airbrake.key);
     airbrake.handleExceptions();
   }
 
