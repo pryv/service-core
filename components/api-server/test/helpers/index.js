@@ -8,3 +8,4 @@ exports.commonTests = require('./commonTests');
 // override
 exports.dependencies = require('./dependencies');
 exports.validation = require('./validation');
+exports.SourceStream = require('./SourceStream');

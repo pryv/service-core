@@ -97,16 +97,20 @@ module.exports = function (api, userFollowedSlicesStorage, notifications) {
   });
 
   /**
-   * @param {Error} dbError
-   * @param {Object} params
+   * Returns the error to propagate given `dbError` and `params` as input. 
    */
   function getCreationOrUpdateError(dbError, params) {
     if (! storage.Database.isDuplicateError(dbError)) {
       return errors.unexpectedError(dbError);
     }
-    // HACK: relying on error text as nothing else available to differentiate
-    var conflictingKeys = dbError.message.indexOf('$name_') > 0 ?
-        {name: params.name} : { url: params.url, accessToken: params.accessToken };
+    // assert: dbError isDuplicateError
+    
+    const message = dbError.message; 
+    const nameKeyDuplicate = message.match(/index: name_1 dup key:/);
+    
+    var conflictingKeys = nameKeyDuplicate
+        ? {name: params.name} 
+        : { url: params.url, accessToken: params.accessToken };
     return errors.itemAlreadyExists('followed slice', conflictingKeys, dbError);
   }
 

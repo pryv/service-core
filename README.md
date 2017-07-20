@@ -7,9 +7,13 @@ Pryv core server app components, ie. what runs on each server node and handles u
 
 ### Install
 
-_Prerequisites:_ Node v6.9.5, Mongo DB v2.6+ (needs at least 4GB of free disk space for the initial database), Nginx (optional, skip if you don't need the proxy server).
+_Prerequisites:_ Node v8.1.3, Yarn v0.24.5, Mongo DB v3.4+ (needs at least 4GB of free disk space for the initial database), Nginx (optional, skip if you don't need the proxy server).
 
 Then just `yarn install`.
+
+If you're blocking because 'unicode.org' doesn't like you today, here's what you do: 
+
+    $ NODE_UNICODETABLE_UNICODEDATA_TXT=$(pwd)/UnicodeData.txt yarn install
 
 ### Component-specific usage
 

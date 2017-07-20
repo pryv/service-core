@@ -1,6 +1,6 @@
 {
   "name": "utils",
-  "version": "1.1.6",
+  "version": "1.2.5",
   "private": true,
   "main": "./src/index.js",
   "scripts": {
@@ -15,8 +15,5 @@
     "bcrypt": "^1.0.2",
     "convict": "^2.0.0",
     "winston": "^2.3.0"
-  },
-  "devDependencies": {
-    "mocha": "^3.2.0"
   }
 }

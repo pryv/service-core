@@ -25,10 +25,15 @@ function Database(settings, logging) {
       settings.authUser + ':' + settings.authPassword + '@' : '';
   this.connectionString = 'mongodb://' + authPart + settings.host + ':' + settings.port + '/' +
       settings.name;
+      
+  const s60 = 60000; // 60 seconds
   this.options = {
-    db: {strict: true},
-    server: {auto_reconnect: true}
+    w: 1,   // Requests acknowledgement that the write operation has propagated.
+    autoReconnect: true, 
+    connectTimeoutMS: s60, 
+    socketTimeoutMS: s60,
   };
+
   this.db = null;
   this.initializedCollections = {};
   this.logger = logging.getLogger('database');
@@ -165,6 +170,33 @@ Database.prototype.find = function (collectionInfo, query, options, callback) {
       cursor = cursor.limit(options.limit);
     }
     cursor.toArray(callback);
+  });
+};
+
+/**
+ * Finds all documents matching the given query and returns a readable stream.
+ *
+ * @param {Object} collectionInfo
+ * @param {Object} query Mongo-style query
+ * @param {Object} options Properties:
+ *    * {Object} fields Mongo-style fields inclusion/exclusion definition
+ *    * {Object} sort Mongo-style sorting definition
+ *    * {Number} skip Number of records to skip (or `null`)
+ *    * {Number} limit Number of records to return (or `null`)
+ * @param {Function} callback
+ */
+Database.prototype.findStreamed = function (collectionInfo, query, options, callback) {
+  this.getCollection(collectionInfo, function (err, collection) {
+    if (err) { return callback(err); }
+
+    var cursor = collection.find(query, options.fields).sort(options.sort);
+    if (options.skip) {
+      cursor = cursor.skip(options.skip);
+    }
+    if (options.limit) {
+      cursor = cursor.limit(options.limit);
+    }
+    callback(null, cursor.stream());
   });
 };
 
@@ -394,6 +426,22 @@ Database.prototype.dropDatabase = function (callback) {
     if (err) { return callback(err); }
     this.db.dropDatabase(callback);
   }.bind(this));
+};
+
+/**
+ * Primarily meant for tests
+ *
+ * @param {Object} collectionInfo
+ * @param {Object} options
+ * @param {Function} callback
+ */
+Database.prototype.listIndexes = function (collectionInfo, options, callback) {
+  this.getCollection(collectionInfo, function (err, collection) {
+    if (err) {
+      return callback(err);
+    }
+    collection.listIndexes(options).toArray(callback);
+  });
 };
 
 // class utility functions

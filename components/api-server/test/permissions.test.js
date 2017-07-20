@@ -1,6 +1,7 @@
 /*global describe, before, beforeEach, after, it */
 
 var helpers = require('./helpers'),
+    treeUtils = require('components/utils').treeUtils,
     server = helpers.dependencies.instanceManager,
     async = require('async'),
     fs = require('fs'),
@@ -19,6 +20,19 @@ describe('Access permissions', function () {
 
   function token(testAccessIndex) {
     return testData.accesses[testAccessIndex].token;
+  }
+
+
+  function getAllStreamIdsByToken(testAccessIndex) {
+    var tokenStreamIds = [];
+    testData.accesses[testAccessIndex].permissions.forEach(function (p) {
+      tokenStreamIds.push(p.streamId);
+    });
+    return treeUtils.expandIds(testData.streams, tokenStreamIds);
+  }
+
+  function getAllTagsByToken(testAccessIndex) {
+    return _.map(testData.accesses[testAccessIndex].permissions, 'tag');
   }
 
   before(function (done) {
@@ -52,39 +66,55 @@ describe('Access permissions', function () {
         limit: 100, // i.e. all
         state: 'all'
       };
+      var streamIds = getAllStreamIdsByToken(1);
+
+      var events = validation.removeDeletionsAndHistory(testData.events).filter(function (e) {
+        return streamIds.indexOf(e.streamId) >= 0;
+      }).sort(function (a, b) {
+        return b.time - a.time;
+      });
       request.get(basePath, token(1)).query(params).end(function (res) {
         validation.checkFilesReadToken(res.body.events, testData.accesses[1],
-            filesReadTokenSecret);
+          filesReadTokenSecret);
         validation.sanitizeEvents(res.body.events);
-
-        res.body.events.should.eql(_.without(validation.removeDeletions(testData.events),
-                testData.events[6], testData.events[7], testData.events[12])
-            .reverse());
-
+        res.body.events.should.eql(events);
         done();
       });
     });
 
     it('`get` must return all events when permissions are defined for "all streams" (*)',
-        function (done) {
-      var params = {
-        limit: 100, // i.e. all
-        state: 'all'
-      };
-      request.get(basePath, token(2)).query(params).end(function (res) {
-        validation.checkFilesReadToken(res.body.events, testData.accesses[2],
+      function (done) {
+        var params = {
+          limit: 100, // i.e. all
+          state: 'all'
+        };
+        request.get(basePath, token(2)).query(params).end(function (res) {
+          validation.checkFilesReadToken(res.body.events, testData.accesses[2],
             filesReadTokenSecret);
-        validation.sanitizeEvents(res.body.events);
-
-        res.body.events.should.eql(validation.removeDeletions(testData.events).reverse());
-        done();
+          validation.sanitizeEvents(res.body.events);
+          res.body.events.should.eql(validation.removeDeletionsAndHistory(testData.events).sort(
+            function (a, b) {
+              return b.time - a.time;
+            }
+          ));
+          done();
+        });
       });
-    });
 
     it('`get` must only return events with accessible tags', function (done) {
+      var tags = getAllTagsByToken(5);
+      var events = [];
+      validation.removeDeletionsAndHistory(testData.events).sort(
+        function (a, b) {
+          return b.time - a.time;
+        }).filter(function (e) {
+          if (_.intersection(tags, e.tags).length > 0) {
+            events.push(e);
+          }
+        });
       request.get(basePath, token(5)).end(function (res) {
         validation.sanitizeEvents(res.body.events);
-        res.body.events.should.eql(_.at(testData.events, 11, 3, 2, 0));
+        res.body.events.should.eql(events);
         done();
       });
     });
@@ -321,7 +351,7 @@ describe('Access permissions', function () {
 
     it('must allow access to all streams when only tag permissions are defined', function (done) {
       request.get(basePath, token(5)).query({state: 'all'}).end(function (res) {
-        res.body.streams.should.eql(validation.removeDeletions(testData.streams));
+        res.body.streams.should.eql(validation.removeDeletionsAndHistory(testData.streams));
         done();
       });
     });

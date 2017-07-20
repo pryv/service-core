@@ -12,6 +12,9 @@ header "Install application from release.tar"
 run mkdir -p $target_dir
 run chown app $target_dir
 
+# This will avoid getting DOSed by unicode.org because of the unicode npm package.
+minimal_apt_get_install unicode-data
+
 # Unpack the application and run npm install. 
 pushd $target_dir
 run run tar -x --owner app -f \

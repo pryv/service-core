@@ -25,6 +25,7 @@ dependencies.register({
   // settings
   authSettings: settings.auth,
   blockchainSettings: settings.blockchain,
+  auditSettings: settings.audit,
   eventFilesSettings: settings.eventFiles,
   eventTypesSettings: settings.eventTypes,
   httpSettings: settings.http,

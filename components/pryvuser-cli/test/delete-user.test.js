@@ -6,7 +6,8 @@ var async = require('async'),
     nixt = require('nixt'),
     should = require('should'),
     storage = helpers.dependencies.storage,
-    _ = require('lodash');
+    _ = require('lodash'),
+    path = require('path');
 
 describe('"delete user" script', function () {
 
@@ -91,4 +92,20 @@ describe('"delete user" script', function () {
     ], done);
   });
 
+  it('should stop if the attachments path is not as expected', function (done) {
+    var user = helpers.data.users[0];
+
+    async.series([
+      helpers.data.resetUsers,
+      helpers.data.resetEvents,
+      helpers.data.resetAttachments,
+      function deleteUser(stepDone) {
+        nixt().run('node ./src/cli.js delete ' + user.username + ' --config ' + path.resolve(__dirname + '/config/invalidPaths.json'))
+          .on(/Confirm username/).respond(user.username)
+          .code(1)
+          .stdout(/path is not as expected/)
+          .end(stepDone);
+      }
+    ], done);
+  });
 });

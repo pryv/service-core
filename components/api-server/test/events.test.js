@@ -78,7 +78,8 @@ describe('events', function () {
         storage.insertMany.bind(storage, user, additionalEvents),
         function getDefault(stepDone) {
           request.get(basePath).end(function (res) {
-            var allEvents = additionalEvents.concat(validation.removeDeletions(testData.events))
+            var allEvents = additionalEvents
+              .concat(validation.removeDeletionsAndHistory(testData.events))
                 .filter(function (e) {
                   return ! e.trashed && ! _.some(testData.streams, containsTrashedEventStream);
                   function containsTrashedEventStream(stream) {
@@ -261,14 +262,17 @@ describe('events', function () {
     });
 
     it('must only return events in the given paging range when set', function (done) {
-      request.get(basePath).query({ state: 'all', skip: 1, limit: 3 }).end(function (res) {
+      request.get(basePath).query({state: 'all', skip: 1, limit: 3}).end(function (res) {
+        var events = (validation.removeDeletionsAndHistory(testData.events)).sort(function (a, b) {
+          return (b.time - a.time);
+        }).slice(1, 4);
         validation.check(res, {
           status: 200,
           schema: methodsSchema.get.result,
           sanitizeFn: validation.sanitizeEvents,
           sanitizeTarget: 'events',
           body: {
-            events: _.at(testData.events, 11, 10, 9)
+            events: events
           }
         }, done);
       });
@@ -276,12 +280,15 @@ describe('events', function () {
 
     it('must return only trashed events when requested', function (done) {
       request.get(basePath).query({state: 'trashed'}).end(function (res) {
+        var events = (validation.removeDeletionsAndHistory(testData.events)).sort(function (a, b) {
+          return (b.time - a.time);
+        });
         validation.check(res, {
           status: 200,
           schema: methodsSchema.get.result,
           sanitizeFn: validation.sanitizeEvents,
           sanitizeTarget: 'events',
-          body: { events: _.filter(testData.events, {trashed: true}) }
+          body: {events: _.filter(events, {trashed: true})}
         }, done);
       });
     });
@@ -293,7 +300,8 @@ describe('events', function () {
           schema: methodsSchema.get.result,
           sanitizeFn: validation.sanitizeEvents,
           sanitizeTarget: 'events',
-          body: { events: _.sortBy(validation.removeDeletions(testData.events), 'time').reverse() }
+          body: { events: _.sortBy(validation.removeDeletionsAndHistory(testData.events), 'time')
+            .reverse() }
         }, done);
       });
     });
@@ -303,6 +311,12 @@ describe('events', function () {
         state: 'all',
         modifiedSince: timestamp.now('-45m')
       };
+      var events = validation.removeDeletionsAndHistory(testData.events).filter(function (e) {
+        return e.modified >= timestamp.now('-45m');
+      });
+      events = events.sort(function (a, b) {
+        return (b.time - a.time);
+      });
       request.get(basePath).query(params).end(function (res) {
         validation.check(res, {
           status: 200,
@@ -310,7 +324,7 @@ describe('events', function () {
           sanitizeFn: validation.sanitizeEvents,
           sanitizeTarget: 'events',
           body: {
-            events: _.at(testData.events, 12, 11, 10, 0)
+            events: events
           }
         }, done);
       });
@@ -322,6 +336,15 @@ describe('events', function () {
         modifiedSince: timestamp.now('-45m'),
         includeDeletions: true
       };
+      var events = _.clone(testData.events).sort(function (a, b) {
+        return (b.time - a.time);
+      });
+      var eventDeletions = events.filter(function (e) {
+        return (e.deleted && e.deleted > timestamp.now('-45m'));
+      });
+      events = validation.removeDeletionsAndHistory(events).filter(function (e) {
+        return (e.modified >= timestamp.now('-45m'));
+      });
       request.get(basePath).query(params).end(function (res) {
         validation.check(res, {
           status: 200,
@@ -329,8 +352,8 @@ describe('events', function () {
           sanitizeFn: validation.sanitizeEvents,
           sanitizeTarget: 'events',
           body: {
-            events: _.at(testData.events, 12, 11, 10, 0),
-            eventDeletions: _.at(testData.events, 13)
+            events: events,
+            eventDeletions: eventDeletions
           }
         }, done);
       });
@@ -338,6 +361,7 @@ describe('events', function () {
 
     it('must not keep event deletions past a certain time ' +
         '(cannot test because cannot force-run Mongo\'s TTL cleanup task)'
+      //TODO do this test when cleanup is delegated to nightlyTask
     /*, function (done) {
       var params = {
         state: 'all',
@@ -358,13 +382,20 @@ describe('events', function () {
       var params = {
         running: true
       };
+      var events = validation.removeDeletionsAndHistory(testData.events).filter(function (e) {
+        return (typeof e.duration !== 'undefined') && e.duration === null;
+      }).sort(function (a, b) {
+        return b.time - a.time;
+      });
       request.get(basePath).query(params).end(function (res) {
         validation.check(res, {
           status: 200,
           schema: methodsSchema.get.result,
           sanitizeFn: validation.sanitizeEvents,
           sanitizeTarget: 'events',
-          body: { events: [testData.events[11], testData.events[9]] }
+          body: {
+            events: events
+          }
         }, done);
       });
     });
@@ -1253,6 +1284,9 @@ describe('events', function () {
       };
 
       request.put(path(original.id)).send(data).end(function (res) {
+        // BUG Depending on when we do this inside any given second, by the time
+        // we call timestamp.now here, we already have a different second than
+        // we had when we made the request. -> Random test success.
         time = timestamp.now();
         validation.check(res, {
           status: 200,
@@ -1515,11 +1549,9 @@ describe('events', function () {
     beforeEach(resetEvents);
 
     it('must delete the attachment (reference in event + file)', function (done) {
-      var event = testData.events[0],
-          time;
+      var event = testData.events[0]
       var fPath = path(event.id) + '/' + event.attachments[0].id;
       request.del(fPath).end(function (res) {
-        time = timestamp.now();
         validation.check(res, {
           status: 200,
           schema: methodsSchema.update.result
@@ -1530,10 +1562,16 @@ describe('events', function () {
         validation.sanitizeEvent(updatedEvent);
         var expected = _.clone(testData.events[0]);
         expected.attachments = expected.attachments.slice();
-        expected.modified = time;
+        // NOTE We cannot be sure that we still are at the exact same second that
+        // we were just now when we did the call. So don't use time here, test
+        // for time delta below. 
+        delete expected.modified; 
         expected.modifiedBy = access.id;
         expected.attachments.shift();
         validation.checkObjectEquality(updatedEvent, expected);
+        
+        let time = timestamp.now();
+        should(updatedEvent.modified).be.approximately(time, 2);
 
         var filePath = eventFilesStorage.getAttachedFilePath(user, event.id,
             event.attachments[0].id);

@@ -21,6 +21,10 @@ var ErrorIds = module.exports = {
   UnknownReferencedResource: 'unknown-referenced-resource',
   UnknownResource: 'unknown-resource',
   UnsupportedContentType: 'unsupported-content-type',
+  /**
+   * Used for Batch calls and Socket.IO events.get result storing
+   */
+  TooManyResults: 'too-many-results',
 
   // those last two are not in use yet but already documented (see API reference for details)
 

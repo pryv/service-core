@@ -108,14 +108,14 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
    * Creates default data structure from permissions if needed, for app authorization.
    */
   function createDataStructureFromPermissions(context, params, result, next) {
-    if (! context.access.isPersonal() || ! params.permissions) {
+    if (! context.access.isPersonal() || !params.permissions) {
       return next();
     }
 
     async.forEachSeries(params.permissions, ensureStream, next);
 
     function ensureStream(permission, streamCallback) {
-      if (! permission.defaultName) { return streamCallback(); }
+      if (! permission.defaultName) { return streamCallback(); }
 
       var existingStream = treeUtils.findById(context.streams, permission.streamId);
 
@@ -170,15 +170,17 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
   }
 
   /**
-   * Returns `true` if the given error is a DB "duplicate key" error caused by a duplicate token.
-   * Returns `false` otherwise (e.g. if caused by another unique key like the name).
+   * Returns true if `dbError` was caused by a 'duplicate key' error (E11000)
+   * and the key that conflicted was named 'token_1'.
    *
    * @param {Error} dbError
    */
   function isDBDuplicateToken(dbError) {
-    // HACK: relying on error text as nothing else available to differentiate
-    if (! dbError.message) { return false; }
-    return dbError.message.indexOf('$token_') > 0;
+    if (dbError.message == null) { return false; }
+    
+    const message = dbError.message; 
+    return message.match(/^E11000 duplicate key error collection/) && 
+      message.match(/index: token_1 dup key:/);
   }
 
   /**
@@ -204,7 +206,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
             conflictingKeys = {token: params.token};
           } else {
             conflictingKeys = { type: params.type, name: params.name };
-            if (params.deviceName) {
+            if (params.deviceName) {
               conflictingKeys.deviceName = params.deviceName;
             }
           }

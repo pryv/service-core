@@ -95,6 +95,13 @@ factory.periodsOverlap = function (message, data, innerError) {
   });
 };
 
+factory.tooManyResults = function (limit) {
+  return new APIError(ErrorIds.tooManyResults,
+    'Your request gave too many results (the limit is ' + limit + '. Directly calling ' +
+    'the API method (i.e. not batching calls), narrowing request scope or paging can help.',
+    {limit: limit, httpStatus: 413});
+};
+
 factory.unexpectedError = function (sourceError, message) {
   return new APIError(ErrorIds.UnexpectedError,
       message || ('Unexpected error: ' + sourceError.message), {

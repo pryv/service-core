@@ -39,6 +39,14 @@ module.exports = function (expressApp, api, attachmentsAccessMiddleware, userAcc
     api.call('events.get', req.context, params, methodCallback(res, next, 200));
   });
 
+  expressApp.get(Paths.Events + '/:id', function (req, res, next) {
+    var params = _.extend({id: req.params.id}, req.query);
+    tryCoerceStringValues(params, {
+      includeHistory: 'boolean'
+    });
+    api.call('events.getOne', req.context, params, methodCallback(res, next, 200));
+  });
+
   /**
    * Serving attached files isn't done via API methods for now, so we must load the access here.
    */

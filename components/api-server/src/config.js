@@ -23,6 +23,22 @@ _.merge(config.schema, {
       format: Boolean,
       default: false,
       doc: 'When true, all events methods compute and return a blockchain value.'
+      }
+  },
+  audit: {
+    forceKeepHistory: {
+      format: Boolean,
+      default: false,
+      doc: 'When true, modification history of items is stored.'
+    },
+    deletionMode: {
+      format: String,
+      default: 'keep-nothing',
+      doc: 'Defines the behaviour of items deletion.\n' +
+      '\'keep-nothing\': Delete history, keep head as itemDeletion as it is now by default.\n' +
+      '\'keep-authors\': Keep fields \'headId\', \'id\', \'modified\', \'modifiedBy\'' +
+      ' in head and history.\n' +
+      '\'keep-everything\': Add \'deleted\' field to head item, leave history as is.'
     }
   },
   auth: {

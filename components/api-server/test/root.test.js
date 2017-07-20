@@ -1,4 +1,4 @@
-/*global describe, before, it */
+/*global describe, before, beforeEach, it */
 
 var helpers = require('./helpers'),
     async = require('async'),
@@ -13,7 +13,7 @@ var helpers = require('./helpers'),
     timestamp = require('unix-timestamp'),
     _ = require('lodash');
 
-describe('(root)', function () {
+describe('root', function () {
 
   var user = testData.users[0],
       // these must be set after server instance started
@@ -49,7 +49,7 @@ describe('(root)', function () {
     /*jshint -W030*/
 
     it('should return basic server meta information as JSON when requested', function (done) {
-      superagent.get(path()).set('Accept', 'application/json').end(function (res) {
+      superagent.get(path()).set('Accept', 'application/json').end(function (err, res) {
         res.statusCode.should.eql(200);
         res.should.be.json;
         validation.checkMeta(res.body);
@@ -58,7 +58,7 @@ describe('(root)', function () {
     });
 
     it('should return basic server meta information as text otherwise', function (done) {
-      superagent.get(path()).set('Accept', 'text/html').end(function (res) {
+      superagent.get(path()).set('Accept', 'text/html').end(function (err, res) {
         res.statusCode.should.eql(200);
         res.should.be.text;
         res.text.should.match(/Pryv API/);
@@ -67,7 +67,7 @@ describe('(root)', function () {
     });
 
     it('should return an error if trying to access an unknown user account', function (done) {
-      superagent.get(path() + 'unknown_user/events').end(function (res) {
+      superagent.get(path() + 'unknown_user/events').end(function (err, res) {
         res.statusCode.should.eql(404);
         done();
       });
@@ -132,7 +132,7 @@ describe('(root)', function () {
           .send({ username: u.username, password: u.password, appId: 'pryv-test' })
           .set('Host', u.username + '.pryv.local')
           .set('Origin', 'http://test.pryv.local')
-          .end(function (res) {
+          .end(function (err, res) {
             res.statusCode.should.eql(200);
             done();
           });
@@ -239,7 +239,7 @@ describe('(root)', function () {
   describe('OPTIONS /', function () {
 
     it('should return OK', function (done) {
-      superagent.options(path()).end(function (res) {
+      superagent.options(path()).end(function (err, res) {
         res.statusCode.should.eql(200);
         done();
       });
@@ -269,7 +269,7 @@ describe('(root)', function () {
 
   describe('POST / (i.e. batch call)', function () {
 
-    before(resetEvents);
+    beforeEach(resetEvents);
 
     var path = '/' + user.username,
         testType = 'test/test',
@@ -335,6 +335,60 @@ describe('(root)', function () {
         results[2].error.id.should.eql(ErrorIds.UnknownReferencedResource);
 
         eventsNotifCount.should.eql(2, 'events notifications');
+
+        done();
+      });
+    });
+
+    it('must execute the method calls containing events.get and ' +
+      'return the results', function (done) {
+      var streamId = 'batch-call-streamId',
+          calls = [
+        {
+          method: 'streams.create',
+          params: {
+            id: streamId,
+            name: 'batch call root stream'
+          }
+        },
+        {
+          method: 'events.create',
+          params: {
+            streamId: streamId,
+            type: 'note/txt',
+            content: 'Hi, i am an event in a batch call',
+            time: timestamp.now()
+          }
+        },
+        {
+          method: 'events.get',
+          params: {modifiedSince: -1000000, includeDeletions: true}
+        }
+      ];
+      request.post(path).send(calls).end(function (res) {
+        validation.check(res, {
+          status: 200,
+          schema: methodsSchema.callBatch.result
+        });
+
+        validation.checkMeta(res.body);
+        var results = res.body.results;
+
+        results.length.should.eql(calls.length, 'method call results');
+
+        should.exist(results[0].stream);
+        validation.checkObjectEquality(results[0].stream, _.defaults({
+          parentId: null
+        }, calls[0].params));
+        should.exist(results[1].event);
+        validation.checkObjectEquality(results[1].event, _.defaults({
+          tags: [],
+          id: results[1].event.id
+        }, calls[1].params));
+
+        var getEventsResult = results[2];
+        should.exist(getEventsResult.events);
+        should.exist(getEventsResult.eventDeletions);
 
         done();
       });

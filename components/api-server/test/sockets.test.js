@@ -17,6 +17,7 @@ var helpers = require('./helpers'),
     testData = helpers.data,
     timestamp = require('unix-timestamp'),
     _ = require('lodash');
+const R = require('ramda');
 
 describe('Socket.IO', function () {
 
@@ -105,7 +106,7 @@ describe('Socket.IO', function () {
 
   it('must connect to a user with a dash in the username', function (done) {
 
-    var dashUser = testData.users[3],
+    var dashUser = testData.users[4],
         dashRequest = null,
         dashToken = null;
 
@@ -169,12 +170,42 @@ describe('Socket.IO', function () {
       ioCons.con = connect(namespace, {auth: token});
       var params = {
         sortAscending: true,
-        state: 'all'
+        state: 'all',
+        includeDeletions: true,
+        modifiedSince: -10000
       };
       ioCons.con.emit('events.get', params, function (err, result) {
         validation.checkSchema(result, eventsMethodsSchema.get.result);
         validation.sanitizeEvents(result.events);
-        result.events.should.eql(validation.removeDeletions(testData.events));
+
+        result.events.should.eql(validation.removeDeletionsAndHistory(_.clone(testData.events)
+          .sort(function (a, b) {
+            return a.time - b.time;
+          }
+        )));
+
+        // check deletions
+        let deleted = R.filter(R.where({deleted: R.equals(true)}), testData.events);
+        for (let el of deleted) {
+          let deletion = R.find(R.where({id: R.equals(el.id)}), result.eventDeletions);
+          
+          should(deletion).not.be.empty();
+          should(deletion.deleted).be.true(); 
+        }
+        
+        // check untrashed
+        let getId = (e) => e.id; 
+        let sortById = R.sortBy(getId);
+        
+        let resultEvents = sortById(result.events);
+        let activeEvents = R.compose(sortById, R.reject(R.has('headId')));
+        let activeTestEvents = activeEvents(
+          validation.removeDeletions(testData.events));
+        
+        should(
+          resultEvents
+        ).be.eql(activeTestEvents);
+
         validation.checkMeta(result);
         done();
       });

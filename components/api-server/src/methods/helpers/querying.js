@@ -10,7 +10,7 @@
  * @returns {Object} The query object
  */
 exports.applyState = function (query, state) {
-  query = query || {};
+  query = query || {};
   switch (state) {
   case 'trashed':
     query.trashed = true;
