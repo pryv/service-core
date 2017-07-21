@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "api-server": "file:components/api-server",
+    "pryv-blockchain": "git+https://github.com/pryv/lib-javascript-blockchain",
     "async": "^2.1.4",
     "axon": "2.0.x",
     "cron": "^1.2.1",
