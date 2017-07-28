@@ -62,7 +62,7 @@ Request.prototype.login = function (user, callback) {
  * query. 
  * 
  * NOTE This is not a good idea, but most of our tests assume this behaviour
- *      because things used to be this way. Important right now, deprected as 
+ *      because things used to be this way. Important right now, deprecated as 
  *      well. 
  */ 
 class IndifferentRequest extends superagent.Request {
