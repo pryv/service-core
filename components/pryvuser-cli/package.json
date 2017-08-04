@@ -1,6 +1,6 @@
 {
   "name": "pryvuser-cli",
-  "version": "1.2.5",
+  "version": "1.2.7",
   "private": true,
   "bin": {
     "pryvuser": "./src/cli.js"
