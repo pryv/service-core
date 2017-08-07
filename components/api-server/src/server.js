@@ -176,14 +176,15 @@ utils.messaging.openPubSocket(settings.tcpMessaging, function (err, messagingSoc
 
           // all right
 
-          logger.info('Server ready');
+          logger.info('Blockchain Server ready');
           dependencies.get('notifications').serverReady();
 
           setupNightlyScript(server);
 
         });
 
-
+        // Tell observers of this process that we're ready to accept requests. 
+        messagingSocket.emit('server-ready');
       });
     });
   });
