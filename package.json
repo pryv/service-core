@@ -23,7 +23,6 @@
     "api-server": "file:components/api-server",
     "async": "^2.1.4",
     "axon": "2.0.x",
-    "bson-ext": "^1.0.5",
     "cron": "^1.2.1",
     "dependable": "attentif/dependable#0bb5c4a9ef2b32dded1b24d5d3c0ecccfb0bf7fd",
     "errors": "file:components/errors",
