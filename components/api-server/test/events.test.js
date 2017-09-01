@@ -670,7 +670,20 @@ describe('events', function () {
       });
     });
 
-
+    it('must reject tags that are too long', function (done) {
+      // TODO: Fix and document this limit
+      var limit = 1000;
+      var bigTag = new Array(limit+1).join('a');
+      var data = {
+        streamId: testData.streams[2].id,
+        type: 'generic/count',
+        content: 1,
+        tags: [bigTag]
+      };
+      request.post(basePath).send(data).end(function (res) {
+        validation.checkErrorInvalidParams(res, done);
+      });
+    });
 
     it('must fix the tags to an empty array if not set', function (done) {
       var data = { streamId: testData.streams[1].id, type: testType };
@@ -1382,6 +1395,17 @@ describe('events', function () {
         }, done);
       });
     });
+    
+    it('must reject tags that are too long', function (done) {
+      // TODO: Fix and document this limit
+      var limit = 1000;
+      var bigTag = new Array(limit+1).join('a');
+      
+      request.put(path(testData.events[1].id)).send({tags: [bigTag]})
+        .end(function (res) {
+          validation.checkErrorInvalidParams(res, done);
+        });
+    });
 
   });
 
@@ -1549,7 +1573,7 @@ describe('events', function () {
     beforeEach(resetEvents);
 
     it('must delete the attachment (reference in event + file)', function (done) {
-      var event = testData.events[0]
+      var event = testData.events[0];
       var fPath = path(event.id) + '/' + event.attachments[0].id;
       request.del(fPath).end(function (res) {
         validation.check(res, {
@@ -1570,7 +1594,7 @@ describe('events', function () {
         expected.attachments.shift();
         validation.checkObjectEquality(updatedEvent, expected);
         
-        let time = timestamp.now();
+        var time = timestamp.now();
         should(updatedEvent.modified).be.approximately(time, 2);
 
         var filePath = eventFilesStorage.getAttachedFilePath(user, event.id,
