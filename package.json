@@ -65,7 +65,7 @@
     "deep-equal": "latest",
     "eslint": "^3.16.0",
     "eslint-plugin-flowtype": "^2.30.0",
-    "flow-bin": "^0.42.0",
+    "flow-bin": "^0.54.0",
     "flow-coverage-report": "^0.3.0",
     "flow-typed": "^2.0.0",
     "foreman": "^2.0.0",

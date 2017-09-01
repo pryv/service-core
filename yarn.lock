@@ -91,7 +91,7 @@ anymatch@^1.3.0:
   version "1.1.7"
   dependencies:
     multistream "^2.1.0"
-    slug "0.8.x"
+    slug "^0.9.1"
     socket.io "^0.9.17"
     z-schema "^3.15.3"
 
@@ -548,6 +548,8 @@ busboy@^0.2.11:
 
 "business@file:source/business":
   version "1.0.0"
+  dependencies:
+    z-schema "^3.18.2"
 
 bytes@2.4.0:
   version "2.4.0"
@@ -1308,9 +1310,9 @@ flat-cache@^1.2.1:
     graceful-fs "^4.1.2"
     write "^0.2.1"
 
-flow-bin@^0.42.0:
-  version "0.42.0"
-  resolved "https://registry.yarnpkg.com/flow-bin/-/flow-bin-0.42.0.tgz#05dd754b6b052de7b150f9210e2160746961e3cf"
+flow-bin@^0.54.0:
+  version "0.54.0"
+  resolved "https://registry.yarnpkg.com/flow-bin/-/flow-bin-0.54.0.tgz#f2fb0478e9e99702b623c9ed84079a39903bba77"
 
 flow-coverage-report@^0.3.0:
   version "0.3.0"
@@ -3027,12 +3029,6 @@ slash@^1.0.0:
 slice-ansi@0.0.4:
   version "0.0.4"
   resolved "https://registry.yarnpkg.com/slice-ansi/-/slice-ansi-0.0.4.tgz#edbf8903f66f7ce2f8eafd6ceed65e264c831b35"
-
-slug@0.8.x:
-  version "0.8.0"
-  resolved "https://registry.yarnpkg.com/slug/-/slug-0.8.0.tgz#6ca45b836d03abdd54b7372f1f89c9bf8d902cf8"
-  dependencies:
-    unicode ">= 0.3.1"
 
 slug@^0.9.1:
   version "0.9.1"
