@@ -170,6 +170,36 @@ describe('auth', function () {
         done();
       });
     });
+    
+    it('must support identical and simultaneous login request',
+        function (done) {          
+          var loginCount = 3;
+          // TODO: Find a way to remove the access first
+          async.times(loginCount, function (n, next) {
+            parallelLogin(function(err) {
+              next(err);
+            });
+          }, function (error) {
+            done(error);
+          });
+        }
+    );
+    
+    function parallelLogin(callback) {
+      request.post(path(authData.username))
+          .set('Origin', trustedOrigin)
+          .send(authData)
+          .end(function (err, res) {
+            if(err) {
+              return callback(err);
+            }
+            if(res.statusCode !== 200) {
+              return callback('Unexpected status:', res.statusCode);
+            }
+            callback(err);
+          }
+      );
+    }
 
     function checkNoUnwantedCookie(res) {
       if (! res.headers['set-cookie']) { return; }
