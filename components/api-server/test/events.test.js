@@ -1382,6 +1382,23 @@ describe('events', function () {
         }, done);
       });
     });
+    
+    it('must forbid any update of sensitive properties',
+        function (done) {
+          // TODO: Check if we need to add more unalterable properties (trashed...?)
+          var unalterableProperties = {
+            created: 1,
+            createdBy: 'jojo'
+          };
+          request.put(path(testData.events[1].id)).send(unalterableProperties)
+          .end(function (res) {
+            validation.checkError(res, {
+              status: 400,
+              id: ErrorIds.Forbidden,
+              data: unalterableProperties
+            }, done);
+          });
+        });
 
   });
 
@@ -1549,7 +1566,7 @@ describe('events', function () {
     beforeEach(resetEvents);
 
     it('must delete the attachment (reference in event + file)', function (done) {
-      var event = testData.events[0]
+      var event = testData.events[0];
       var fPath = path(event.id) + '/' + event.attachments[0].id;
       request.del(fPath).end(function (res) {
         validation.check(res, {
@@ -1570,7 +1587,7 @@ describe('events', function () {
         expected.attachments.shift();
         validation.checkObjectEquality(updatedEvent, expected);
         
-        let time = timestamp.now();
+        var time = timestamp.now();
         should(updatedEvent.modified).be.approximately(time, 2);
 
         var filePath = eventFilesStorage.getAttachedFilePath(user, event.id,
