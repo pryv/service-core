@@ -470,8 +470,15 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   function cleanupEventTags(eventData) {
     if (! eventData.tags) { return; }
-    eventData.tags = eventData.tags.map(function (tag) { return tag.trim(); })
-        .filter(function (tag) { return tag.length > 0; });
+    eventData.tags = eventData.tags.map(function (tag) {
+      var limit = 1000;
+      tag = tag.trim();
+      // TODO: document this limit
+      if(tag.length > limit) {
+        tag = tag.substring(0,limit);
+      } 
+      return tag;
+    }).filter(function (tag) { return tag.length > 0; });
   }
 
   /**
