@@ -170,7 +170,11 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     // strip ignored properties if there (read-only)
     delete params.update.id;
     delete params.update.children;
-
+    delete params.update.created;
+    delete params.update.createdBy;
+    delete params.update.modified;
+    delete params.update.modifiedBy;
+    
     // check stream
     var stream = treeUtils.findById(context.streams, params.id);
     if (! stream) {
