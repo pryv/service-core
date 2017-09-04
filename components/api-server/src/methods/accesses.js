@@ -233,8 +233,15 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
       updateAccess);
 
   function stripOffIgnoredStuffForUpdate(context, params, result, next) {
+    delete params.update.id;
     delete params.update.token;
     delete params.update.type;
+    delete params.update.lastUsed;
+    delete params.update.created;
+    delete params.update.createdBy;
+    delete params.update.modified;
+    delete params.update.modifiedBy;
+
     next();
   }
 
