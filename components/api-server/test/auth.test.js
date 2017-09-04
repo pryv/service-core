@@ -174,9 +174,10 @@ describe('auth', function () {
     it('must support identical and simultaneous login request',
         function (done) {          
           var loginCount = 3;
-          // TODO: Find a way to remove the access first
+          var randomId = 'pryv-test-' + Date.now();
+          
           async.times(loginCount, function (n, next) {
-            parallelLogin(function(err) {
+            parallelLogin(randomId, function(err) {
               next(err);
             });
           }, function (error) {
@@ -185,10 +186,14 @@ describe('auth', function () {
         }
     );
     
-    function parallelLogin(callback) {
+    function parallelLogin(appId, callback) {
       request.post(path(authData.username))
           .set('Origin', trustedOrigin)
-          .send(authData)
+          .send({
+            username: user.username,
+            password: user.password,
+            appId: appId
+          })
           .end(function (err, res) {
             if(err) {
               return callback(err);
