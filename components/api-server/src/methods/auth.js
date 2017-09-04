@@ -1,4 +1,5 @@
 var commonFns = require('./helpers/commonFunctions'),
+    Database = require('components/storage').Database,
     utils = require('components/utils'),
     encryption = utils.encryption,
     errors = require('components/errors').factory,
@@ -83,7 +84,18 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
         // create
         _.extend(accessData, context.accessQuery);
         context.initTrackingProperties(accessData, 'system');
-        userAccessesStorage.insertOne(context.user, accessData, next);
+        userAccessesStorage.insertOne(context.user, accessData, function (err) {
+          if (err) {
+            if (Database.isDuplicateError(err)) {
+              // Concurrency issue, the access is already created
+              // by a simultaneous login, nothing to do
+              return next();
+            } else {
+              return next(errors.unexpectedError(err));
+            }
+          }
+          next();
+        });
       }
     });
   }
