@@ -333,6 +333,10 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     // strip ignored properties if there (read-only)
     delete params.update.id;
     delete params.update.attachments;
+    delete params.update.created;
+    delete params.update.createdBy;
+    delete params.update.modified;
+    delete params.update.modifiedBy;
 
     context.updateTrackingProperties(params.update);
 

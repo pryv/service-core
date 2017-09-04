@@ -1383,20 +1383,36 @@ describe('events', function () {
       });
     });
     
-    it('must forbid any update of sensitive properties',
+    it('must ignore any read-only properties',
         function (done) {
-          // TODO: Check if we need to add more unalterable properties (trashed...?)
-          var unalterableProperties = {
+          var forbiddenUpdate = {
+            id: 'forbidden',
+            attachments: [],
             created: 1,
-            createdBy: 'jojo'
+            createdBy: 'bob',
+            modified: 1,
+            modifiedBy: 'alice'
           };
-          request.put(path(testData.events[1].id)).send(unalterableProperties)
+          var expectedEvent = testData.events[0];
+          var time = timestamp.now();
+
+          request.put(path(expectedEvent.id)).send(forbiddenUpdate)
           .end(function (res) {
-            validation.checkError(res, {
-              status: 400,
-              id: ErrorIds.Forbidden,
-              data: unalterableProperties
-            }, done);
+            validation.check(res, {
+              status: 200,
+              schema: methodsSchema.update.result
+            });
+            
+            validation.checkFilesReadToken(res.body.event, access, filesReadTokenSecret);
+            validation.sanitizeEvent(res.body.event);
+            
+            var expected = _.clone(expectedEvent);
+            expected.modified = time;
+            expected.modifiedBy = access.id;
+            expected.attachments = expectedEvent.attachments;
+            validation.checkObjectEquality(res.body.event, expected);
+            
+            done();
           });
         });
 
