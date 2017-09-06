@@ -171,7 +171,7 @@ describe('auth', function () {
       });
     });
     
-    it('must support identical and simultaneous login request',
+    it('must support concurrent login request',
         function (done) {          
           var loginCount = 3;
           var randomId = 'pryv-test-' + Date.now();
@@ -187,8 +187,9 @@ describe('auth', function () {
     );
     
     function parallelLogin(appId, callback) {
+       // We want our random appId to be trusted, so using recla as origin
       request.post(path(authData.username))
-          .set('Origin', trustedOrigin)
+          .set('Origin', 'https://test.rec.la:1234')
           .send({
             username: user.username,
             password: user.password,
@@ -196,12 +197,10 @@ describe('auth', function () {
           })
           .end(function (err, res) {
             if(err) {
-              return callback(err);
+              return callback(err.text);
             }
-            if(res.statusCode !== 200) {
-              return callback('Unexpected status:', res.statusCode);
-            }
-            callback(err);
+            should(res.statusCode).be.equal(200);
+            callback();
           }
       );
     }
