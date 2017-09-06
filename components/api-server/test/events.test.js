@@ -670,7 +670,7 @@ describe('events', function () {
       });
     });
     
-    it('must reject tags that are too long', function (done) {
+    it('must strip tags that are too long', function (done) {
       // TODO: Fix and document this limit
       var limit = 1000;
       var bigTag = new Array(limit+2).join('a');
