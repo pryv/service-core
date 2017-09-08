@@ -197,7 +197,7 @@ describe('auth', function () {
           })
           .end(function (err, res) {
             if(err) {
-              return callback(err.text);
+              return callback(err);
             }
             should(res.statusCode).be.equal(200);
             callback();

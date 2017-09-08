@@ -71,25 +71,23 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
 
   function updateOrCreateAccess(context, params, result, next) {
     context.accessQuery = { name: params.appId, type: 'personal' };
-    userAccessesStorage.findOne(context.user, context.accessQuery, null, function (err, access) {
+    findAccess(context, (err, access) => {
       if (err) { return next(errors.unexpectedError(err)); }
-
+      
       var accessData = {token: result.token};
       // can't use Mongo upsert as we want control over the id
-      if (access) {
-        // update
-        context.updateTrackingProperties(accessData, 'system');
-	userAccessesStorage.updateOne(context.user, context.accessQuery, accessData, next);
+      if (access != null) {
+        updateAccess(accessData, context, next);
       } else {
-        // create
-        _.extend(accessData, context.accessQuery);
-        context.initTrackingProperties(accessData, 'system');
-        userAccessesStorage.insertOne(context.user, accessData, function (err) {
+        createAccess(accessData, context, (err) => {
           if (err) {
             if (Database.isDuplicateError(err)) {
               // Concurrency issue, the access is already created
               // by a simultaneous login, nothing to do
-              return next();
+              findAccess(context, (err, access) => {
+                if (err || access == null) { return next(errors.unexpectedError(err)); }
+                updateAccess(accessData, context, next);
+              });
             } else {
               return next(errors.unexpectedError(err));
             }
@@ -98,6 +96,21 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
         });
       }
     });
+    
+    function findAccess(context, callback) {
+      userAccessesStorage.findOne(context.user, context.accessQuery, null, callback);
+    }
+    
+    function createAccess(access, context, callback) {
+      _.extend(access, context.accessQuery);
+      context.initTrackingProperties(access, 'system');
+      userAccessesStorage.insertOne(context.user, access, callback);
+    }
+    
+    function updateAccess(access, context, callback) {
+      context.updateTrackingProperties(access, 'system');
+      userAccessesStorage.updateOne(context.user, context.accessQuery, access, callback);
+    }
   }
 
   function setAdditionalInfo(context, params, result, next) {
