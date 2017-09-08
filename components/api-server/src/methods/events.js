@@ -329,15 +329,16 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
     cleanupEventTags(params.update);
+    
+    var alterableParams = ['streamId', 'time', 'duration', 'type', 'content', 'tags', 'references', 'description', 'clientData', 'trashed'];
 
     // strip ignored properties if there (read-only)
-    delete params.update.id;
-    delete params.update.attachments;
-    delete params.update.created;
-    delete params.update.createdBy;
-    delete params.update.modified;
-    delete params.update.modifiedBy;
-
+    Object.keys(params.update).forEach((key) => {
+      if(!alterableParams.includes(key)) {
+        delete params.update[key];
+      }
+    });
+        
     context.updateTrackingProperties(params.update);
 
     userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {

@@ -168,12 +168,14 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
     // strip ignored properties if there (read-only)
-    delete params.update.id;
-    delete params.update.children;
-    delete params.update.created;
-    delete params.update.createdBy;
-    delete params.update.modified;
-    delete params.update.modifiedBy;
+    var alterableParams = ['name', 'parentId', 'singleActivity', 'clientData', 'trashed'];
+
+    // strip ignored properties if there (read-only)
+    Object.keys(params.update).forEach((key) => {
+      if(!alterableParams.includes(key)) {
+        delete params.update[key];
+      }
+    });
     
     // check stream
     var stream = treeUtils.findById(context.streams, params.id);
