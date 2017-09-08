@@ -75,24 +75,28 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
       if (err) { return next(errors.unexpectedError(err)); }
       
       var accessData = {token: result.token};
-      // can't use Mongo upsert as we want control over the id
+      // Access is already existing, updating it
       if (access != null) {
         updateAccess(accessData, context, next);
-      } else {
+      }
+      // Access not found, creating it
+      else {
         createAccess(accessData, context, (err) => {
           if (err) {
+            // Concurrency issue, the access is already created
+            // by a simultaneous login, retrieving and updating it
             if (Database.isDuplicateError(err)) {
-              // Concurrency issue, the access is already created
-              // by a simultaneous login, nothing to do
               findAccess(context, (err, access) => {
                 if (err || access == null) { return next(errors.unexpectedError(err)); }
-                updateAccess(accessData, context, next);
+                result.token = access.token;
+                next();
               });
             } else {
               return next(errors.unexpectedError(err));
             }
+          } else {
+            next();
           }
-          next();
         });
       }
     });

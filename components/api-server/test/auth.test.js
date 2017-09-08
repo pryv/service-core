@@ -200,7 +200,12 @@ describe('auth', function () {
               return callback(err);
             }
             should(res.statusCode).be.equal(200);
-            callback();
+            helpers.dependencies.storage.user.accesses.findOne(user, {name: appId, type: 'personal'}, null,
+                (err, access) => {
+                  should(access.token).be.equal(res.body.token);
+                  callback();
+                }
+            );
           }
       );
     }
