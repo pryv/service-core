@@ -89,7 +89,8 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
               findAccess(context, (err, access) => {
                 if (err || access == null) { return next(errors.unexpectedError(err)); }
                 result.token = access.token;
-                next();
+                accessData.token = access.token;
+                updateAccess(accessData, context, next);
               });
             } else {
               return next(errors.unexpectedError(err));
