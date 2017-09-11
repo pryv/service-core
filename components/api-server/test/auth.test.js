@@ -173,7 +173,7 @@ describe('auth', function () {
     
     it('must support concurrent login request',
         function (done) {          
-          var loginCount = 3;
+          var loginCount = 2;
           var randomId = 'pryv-test-' + Date.now();
           
           async.times(loginCount, function (n, next) {
