@@ -1214,7 +1214,6 @@ describe('events', function () {
       var original = testData.events[0],
           time;
       var data = {
-        id: 'Bavazakamasarpataparda', // check that properly ignored
         time: timestamp.add(original.time, '-15m'),
         duration: timestamp.add(original.duration, '15m'),
         type: testType,
@@ -1225,17 +1224,6 @@ describe('events', function () {
         clientData: {
           clientField: 'client value'
         },
-        //check if properly ignored
-        attachments: [
-          {
-            id: 'bidon',
-            fileName: 'bidon.ext',
-            type: 'application/bidon',
-            size: 0
-          }
-        ],
-        // check if properly ignored
-        modified: timestamp.now('-1h')
       };
       async.series([
         function update(stepDone) {
@@ -1396,7 +1384,6 @@ describe('events', function () {
 
           request.put(path(testData.events[0].id)).send(forbiddenUpdate)
           .end(function (res) {
-            console.log(res.data);
             validation.check(res, {
               status: 403,
               id: ErrorIds.Forbidden,

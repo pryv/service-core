@@ -364,13 +364,10 @@ describe('streams', function () {
       var original = testData.streams[0],
           time;
       var data = {
-        id: 'Tralala-itou', // check that properly ignored
         name: 'Updated Root Stream 0',
         clientData: {
           clientField: 'client value'
         },
-        // to test if properly stripped and ignored
-        children: [{name: 'should be ignored'}]
       };
 
       request.put(path(original.id)).send(data).end(function (res) {

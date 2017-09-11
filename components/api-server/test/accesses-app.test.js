@@ -219,8 +219,6 @@ describe('accesses (app)', function () {
     it('must modify the access with the sent data', function (done) {
       var original = additionalTestAccesses[2];
       var data = {
-        token: 'Ratata', // to check if properly ignored
-        type: 'app', // to check if properly ignored
         name: 'Updated Shared Access A',
         permissions: [
           {

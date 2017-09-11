@@ -433,7 +433,6 @@ describe('accesses (personal)', function () {
       var original = _.omit(testData.accesses[1], 'calls'),
           time;
       var data = {
-        token: 'Ratata', // to check if properly ignored
         name: 'Updated Access 1',
         permissions: [
           {
