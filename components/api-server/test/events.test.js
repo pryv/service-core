@@ -670,10 +670,8 @@ describe('events', function () {
       });
     });
     
-    it('must strip tags that are too long', function (done) {
-      // TODO: Fix and document this limit
-      var limit = 1000;
-      var bigTag = new Array(limit+2).join('a');
+    it('must reject tags that are too long', function (done) {
+      var bigTag = new Array(600).join('a');
       var data = {
         streamId: testData.streams[2].id,
         type: 'generic/count',
@@ -682,14 +680,10 @@ describe('events', function () {
       };
       request.post(basePath).send(data).end(function (res) {
         validation.check(res, {
-          status: 201,
-          schema: methodsSchema.create.result
-        });
-        
-        var strippedTag = bigTag.trim().substring(0,limit);
-        var event = res.body.event;
-        should(event.tags[0]).be.equal(strippedTag);
-        done();
+          status: 400,
+          id: ErrorIds.invalidParametersFormat,
+          data: bigTag
+        }, done);
       });
     });
 
@@ -1404,22 +1398,16 @@ describe('events', function () {
       });
     });
     
-    it('must strip tags that are too long', function (done) {
-      // TODO: Fix and document this limit
-      var limit = 1000;
-      var bigTag = new Array(limit+2).join('a');
+    it('must reject tags that are too long', function (done) {
+      var bigTag = new Array(600).join('a');
       
       request.put(path(testData.events[1].id)).send({tags: [bigTag]})
         .end(function (res) {
           validation.check(res, {
-            status: 200,
-            schema: methodsSchema.update.result
-          });
-          
-          var strippedTag = bigTag.trim().substring(0,limit);
-          var event = res.body.event;
-          should(event.tags[0]).be.equal(strippedTag);
-          done();
+            status: 400,
+            id: ErrorIds.InvalidParametersFormat,
+            data: bigTag
+          }, done);
         });
     });
 
