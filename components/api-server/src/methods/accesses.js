@@ -5,6 +5,7 @@ var APIError = require('components/errors').APIError,
     commonFns = require('./helpers/commonFunctions'),
     Database = require('components/storage').Database,
     methodsSchema = require('../schema/accessesMethods'),
+    accessSchema = require('../schema/access'),
     slugify = require('slug'),
     string = require('./helpers/string'),
     treeUtils = require('components/utils').treeUtils,
@@ -226,24 +227,11 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
   // UPDATE
 
   api.register('accesses.update',
-      stripOffIgnoredStuffForUpdate,
       commonFns.getParamsValidation(methodsSchema.update.params),
+      commonFns.catchForbiddenUpdate(accessSchema('update')),
       applyPrerequisitesForUpdate,
       checkAccessForUpdate,
       updateAccess);
-
-  function stripOffIgnoredStuffForUpdate(context, params, result, next) {
-    var alterableParams = ['name', 'deviceName', 'permissions'];
-
-    // strip ignored properties if there (read-only)
-    Object.keys(params.update).forEach((key) => {
-      if(!alterableParams.includes(key)) {
-        delete params.update[key];
-      }
-    });
-
-    next();
-  }
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
     context.updateTrackingProperties(params.update);

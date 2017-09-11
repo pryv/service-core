@@ -508,12 +508,12 @@ describe('accesses (personal)', function () {
       });
     });
     
-    it('must ignore read-only properties', function (done) {
+    it('must reject of read-only properties', function (done) {
       var original = _.omit(testData.accesses[1], 'calls');
       var forbiddenUpdate = {
         id: 'forbidden',
         token: 'forbidden',
-        type: 'forbidden',
+        type: 'shared',
         lastUsed: 1,
         created: 1,
         createdBy: 'bob',
@@ -522,18 +522,11 @@ describe('accesses (personal)', function () {
       };
       
       request.put(path(original.id)).send(forbiddenUpdate).end(function (res) {
-        var time = timestamp.now();
         validation.check(res, {
-          status: 200,
-          schema: methodsSchema.update.result
-        });
-
-        var expected = _.clone(original);
-        expected.modified = time;
-        expected.modifiedBy = sessionAccessId;
-        validation.checkObjectEquality(res.body.access, expected);
-
-        done();
+          status: 403,
+          id: ErrorIds.Forbidden,
+          data: {forbiddenProperties: forbiddenUpdate}
+        }, done);
       });
     });
 

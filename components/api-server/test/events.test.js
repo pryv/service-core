@@ -1383,7 +1383,7 @@ describe('events', function () {
       });
     });
     
-    it('must ignore any read-only properties',
+    it('must reject update of read-only properties',
         function (done) {
           var forbiddenUpdate = {
             id: 'forbidden',
@@ -1393,26 +1393,15 @@ describe('events', function () {
             modified: 1,
             modifiedBy: 'alice'
           };
-          var expectedEvent = testData.events[0];
-          var time = timestamp.now();
 
-          request.put(path(expectedEvent.id)).send(forbiddenUpdate)
+          request.put(path(testData.events[0].id)).send(forbiddenUpdate)
           .end(function (res) {
+            console.log(res.data);
             validation.check(res, {
-              status: 200,
-              schema: methodsSchema.update.result
-            });
-            
-            validation.checkFilesReadToken(res.body.event, access, filesReadTokenSecret);
-            validation.sanitizeEvent(res.body.event);
-            
-            var expected = _.clone(expectedEvent);
-            expected.modified = time;
-            expected.modifiedBy = access.id;
-            expected.attachments = expectedEvent.attachments;
-            validation.checkObjectEquality(res.body.event, expected);
-            
-            done();
+              status: 403,
+              id: ErrorIds.Forbidden,
+              data: {forbiddenProperties: forbiddenUpdate}
+            }, done);
           });
         });
 

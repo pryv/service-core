@@ -56,6 +56,9 @@ exports = module.exports = function (action) {
     schema.properties.attachments = exports.attachments;
   } else if (action === Action.UPDATE) {
     schema.properties.attachments = { type: 'array' };
+    // whitelist for properties that can be updated
+    schema.alterableProperties = ['streamId', 'time', 'duration', 'type',
+      'content', 'tags', 'references', 'description', 'clientData', 'trashed'];
   }
 
   switch (action) {

@@ -82,3 +82,14 @@ exports.getParamsValidation = function getParamsValidation(paramsSchema) {
     });
   };
 };
+
+exports.catchForbiddenUpdate = function catchForbiddenUpdate(paramsSchema) {
+  return function validateParams(context, params, result, next) {
+    const allowed = paramsSchema.alterableProperties;
+    const forbidden = Object.keys(params.update)
+      .filter(key => !allowed.includes(key));
+    if(forbidden.length > 0) return next(errors.forbidden(
+      'Update is forbidden on the following properties: [' + forbidden + '].'));
+    next();
+  };
+};

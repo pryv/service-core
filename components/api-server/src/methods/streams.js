@@ -3,6 +3,7 @@ var errors = require('components/errors').factory,
     commonFns = require('./helpers/commonFunctions'),
     errorHandling = require('components/errors').errorHandling,
     methodsSchema = require('../schema/streamsMethods'),
+    streamSchema = require('../schema/stream'),
     slugify = require('slug'),
     storage = require('components/storage'),
     string = require('./helpers/string'),
@@ -163,20 +164,11 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
   api.register('streams.update',
       commonFns.getParamsValidation(methodsSchema.update.params),
+      commonFns.catchForbiddenUpdate(streamSchema('update')),
       applyPrerequisitesForUpdate,
       updateStream);
 
-  function applyPrerequisitesForUpdate(context, params, result, next) {
-    // strip ignored properties if there (read-only)
-    var alterableParams = ['name', 'parentId', 'singleActivity', 'clientData', 'trashed'];
-
-    // strip ignored properties if there (read-only)
-    Object.keys(params.update).forEach((key) => {
-      if(!alterableParams.includes(key)) {
-        delete params.update[key];
-      }
-    });
-    
+  function applyPrerequisitesForUpdate(context, params, result, next) {    
     // check stream
     var stream = treeUtils.findById(context.streams, params.id);
     if (! stream) {

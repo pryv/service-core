@@ -499,8 +499,7 @@ describe('streams', function () {
       });
     });
     
-    it('must ignore read-only properties', function (done) {
-      var original = testData.streams[0];
+    it('must reject update of read-only properties', function (done) {
       var forbiddenUpdate = {
         id: 'forbidden',
         children: [],
@@ -510,20 +509,12 @@ describe('streams', function () {
         modifiedBy: 'alice'
       };
 
-      request.put(path(original.id)).send(forbiddenUpdate).end(function (res) {
-        var time = timestamp.now();
+      request.put(path(testData.streams[0].id)).send(forbiddenUpdate).end(function (res) {
         validation.check(res, {
-          status: 200,
-          schema: methodsSchema.update.result
-        });
-
-        var expected = _.clone(original);
-        expected.modified = time;
-        expected.modifiedBy = accessId;
-        delete expected.children;
-        validation.checkObjectEquality(res.body.stream, expected);
-
-        done();
+          status: 403,
+          id: ErrorIds.Forbidden,
+          data: {forbiddenProperties: forbiddenUpdate}
+        }, done);
       });
     });
 
