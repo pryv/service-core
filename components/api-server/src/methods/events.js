@@ -473,10 +473,10 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   function cleanupEventTags(eventData) {
     return new Promise((resolve, reject) => {
       
-      var limit = 500;
-
       if (! eventData.tags) return resolve();
-    
+
+      var limit = 500;
+      
       eventData.tags = eventData.tags.map(function (tag) {
         tag = tag.trim();
         if(tag.length > limit) {
