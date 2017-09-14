@@ -255,19 +255,24 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     if (! params.tags) {
       params.tags = [];
     }
-    cleanupEventTags(params).then(() => {
-      context.files = sanitizeRequestFiles(params.files);
-      delete params.files;
+    
+    try {
+      cleanupEventTags(params);
+    } catch(error) {
+      return next(error);
+    }
+    
+    context.files = sanitizeRequestFiles(params.files);
+    delete params.files;
 
-      context.initTrackingProperties(params);
+    context.initTrackingProperties(params);
 
-      context.setStream(params.streamId);
-      if (! checkStream(context, params.streamId, next)) {
-        return;
-      }
-      context.content = params;
-      next();
-    }, next);
+    context.setStream(params.streamId);
+    if (! checkStream(context, params.streamId, next)) {
+      return;
+    }
+    context.content = params;
+    next();
   }
 
   function verifyContext(context, params, result, next) {
@@ -328,38 +333,42 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       notify);
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
-    cleanupEventTags(params.update).then(() => {
-      
-      // strip ignored properties if there (read-only)
-      delete params.update.id;
-      delete params.update.attachments;
+    
+    try {
+      cleanupEventTags(params.update);
+    } catch(error) {
+      return next(error);
+    }
+    
+    // strip ignored properties if there (read-only)
+    delete params.update.id;
+    delete params.update.attachments;
 
-      context.updateTrackingProperties(params.update);
+    context.updateTrackingProperties(params.update);
 
-      userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
-        if (err) {
-          return next(errors.unexpectedError(err));
-        }
+    userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
+      if (err) {
+        return next(errors.unexpectedError(err));
+      }
 
-        if (! event) {
-          return next(errors.unknownResource('event', params.id));
-        }
+      if (! event) {
+        return next(errors.unknownResource('event', params.id));
+      }
 
-        if (! context.canContributeToContext(event.streamId, event.tags)) {
-          return next(errors.forbidden());
-        }
+      if (! context.canContributeToContext(event.streamId, event.tags)) {
+        return next(errors.forbidden());
+      }
 
-        context.oldContent = _.cloneDeep(event);
-        context.content = _.extend(event, params.update);
+      context.oldContent = _.cloneDeep(event);
+      context.content = _.extend(event, params.update);
 
-        context.setStream(context.content.streamId);
-        if (context.content.streamId && ! checkStream(context, context.content.streamId, next)) {
-          return;
-        }
+      context.setStream(context.content.streamId);
+      if (context.content.streamId && ! checkStream(context, context.content.streamId, next)) {
+        return;
+      }
 
-        next();
-      });
-    }, next);
+      next();
+    });
 
   }
 
@@ -470,25 +479,19 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     }
   }
 
-  function cleanupEventTags(eventData) {
-    return new Promise((resolve, reject) => {
-      
-      if (! eventData.tags) return resolve();
+  function cleanupEventTags(eventData) {      
+    if (! eventData.tags) return;
 
-      var limit = 500;
-      
-      eventData.tags = eventData.tags.map(function (tag) {
-        tag = tag.trim();
-        if(tag.length > limit) {
-          return reject(errors.invalidParametersFormat(
-            'The event contains a tag that exceeds the size limit of ' +
-             limit + ' characters.', tag));
-        } 
-        return tag;
-      }).filter(function (tag) { return tag.length > 0; });
-
-      resolve();
-    });
+    var limit = 500;
+    
+    eventData.tags = eventData.tags.map(function (tag) {
+      if(tag.length > limit) {
+        throw errors.invalidParametersFormat(
+          'The event contains a tag that exceeds the size limit of ' +
+           limit + ' characters.', tag);
+      } 
+      return tag.trim();
+    }).filter(function (tag) { return tag.length > 0; });
   }
 
   /**
