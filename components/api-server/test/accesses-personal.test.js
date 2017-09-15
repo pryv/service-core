@@ -433,7 +433,6 @@ describe('accesses (personal)', function () {
       var original = _.omit(testData.accesses[1], 'calls'),
           time;
       var data = {
-        token: 'Ratata', // to check if properly ignored
         name: 'Updated Access 1',
         permissions: [
           {
@@ -504,6 +503,28 @@ describe('accesses (personal)', function () {
           status: 400,
           id: ErrorIds.ItemAlreadyExists,
           data: { type: testData.accesses[2].type, name: testData.accesses[2].name }
+        }, done);
+      });
+    });
+    
+    it('must reject of read-only properties', function (done) {
+      var original = _.omit(testData.accesses[1], 'calls');
+      var forbiddenUpdate = {
+        id: 'forbidden',
+        token: 'forbidden',
+        type: 'shared',
+        lastUsed: 1,
+        created: 1,
+        createdBy: 'bob',
+        modified: 1,
+        modifiedBy: 'alice'
+      };
+      
+      request.put(path(original.id)).send(forbiddenUpdate).end(function (res) {
+        validation.check(res, {
+          status: 403,
+          id: ErrorIds.Forbidden,
+          data: {forbiddenProperties: forbiddenUpdate}
         }, done);
       });
     });

@@ -3,6 +3,7 @@ var errors = require('components/errors').factory,
     commonFns = require('./helpers/commonFunctions'),
     errorHandling = require('components/errors').errorHandling,
     methodsSchema = require('../schema/streamsMethods'),
+    streamSchema = require('../schema/stream'),
     slugify = require('slug'),
     storage = require('components/storage'),
     string = require('./helpers/string'),
@@ -163,14 +164,11 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
   api.register('streams.update',
       commonFns.getParamsValidation(methodsSchema.update.params),
+      commonFns.catchForbiddenUpdate(streamSchema('update')),
       applyPrerequisitesForUpdate,
       updateStream);
 
-  function applyPrerequisitesForUpdate(context, params, result, next) {
-    // strip ignored properties if there (read-only)
-    delete params.update.id;
-    delete params.update.children;
-
+  function applyPrerequisitesForUpdate(context, params, result, next) {    
     // check stream
     var stream = treeUtils.findById(context.streams, params.id);
     if (! stream) {

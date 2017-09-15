@@ -3,6 +3,7 @@ var utils = require('components/utils'),
     async = require('async'),
     commonFns = require('./helpers/commonFunctions'),
     methodsSchema = require('../schema/eventsMethods'),
+    eventSchema = require('../schema/event'),
     querying = require('./helpers/querying'),
     storage = require('components/storage'),
     timestamp = require('unix-timestamp'),
@@ -317,6 +318,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   api.register('events.update',
       commonFns.getParamsValidation(methodsSchema.update.params),
+      commonFns.catchForbiddenUpdate(eventSchema('update')),
       applyPrerequisitesForUpdate,
       validateEventContent,
       checkExistingLaterPeriodIfNeeded,
@@ -329,11 +331,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
     cleanupEventTags(params.update);
-
-    // strip ignored properties if there (read-only)
-    delete params.update.id;
-    delete params.update.attachments;
-
+            
     context.updateTrackingProperties(params.update);
 
     userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
