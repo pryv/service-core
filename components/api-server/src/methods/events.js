@@ -256,11 +256,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       params.tags = [];
     }
     
-    try {
-      cleanupEventTags(params);
-    } catch(error) {
-      return next(error);
-    }
+    cleanupEventTags(params);
     
     context.files = sanitizeRequestFiles(params.files);
     delete params.files;
@@ -334,11 +330,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
     
-    try {
-      cleanupEventTags(params.update);
-    } catch(error) {
-      return next(error);
-    }
+    cleanupEventTags(params.update);
     
     // strip ignored properties if there (read-only)
     delete params.update.id;
@@ -482,7 +474,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   function cleanupEventTags(eventData) {      
     if (! eventData.tags) return;
 
-    var limit = 500;
+    const limit = 500;
     
     eventData.tags = eventData.tags.map(function (tag) {
       if(tag.length > limit) {
