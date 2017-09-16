@@ -1,4 +1,5 @@
 var commonFns = require('./helpers/commonFunctions'),
+    Database = require('components/storage').Database,
     utils = require('components/utils'),
     encryption = utils.encryption,
     errors = require('components/errors').factory,
@@ -70,22 +71,51 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
 
   function updateOrCreateAccess(context, params, result, next) {
     context.accessQuery = { name: params.appId, type: 'personal' };
-    userAccessesStorage.findOne(context.user, context.accessQuery, null, function (err, access) {
+    findAccess(context, (err, access) => {
       if (err) { return next(errors.unexpectedError(err)); }
-
+      
       var accessData = {token: result.token};
-      // can't use Mongo upsert as we want control over the id
-      if (access) {
-        // update
-        context.updateTrackingProperties(accessData, 'system');
-	userAccessesStorage.updateOne(context.user, context.accessQuery, accessData, next);
-      } else {
-        // create
-        _.extend(accessData, context.accessQuery);
-        context.initTrackingProperties(accessData, 'system');
-        userAccessesStorage.insertOne(context.user, accessData, next);
+      // Access is already existing, updating it
+      if (access != null) {
+        updateAccess(accessData, context, next);
+      }
+      // Access not found, creating it
+      else {
+        createAccess(accessData, context, (err) => {
+          if (err) {
+            // Concurrency issue, the access is already created
+            // by a simultaneous login, retrieving and updating it
+            if (Database.isDuplicateError(err)) {
+              findAccess(context, (err, access) => {
+                if (err || access == null) { return next(errors.unexpectedError(err)); }
+                result.token = access.token;
+                accessData.token = access.token;
+                updateAccess(accessData, context, next);
+              });
+            } else {
+              return next(errors.unexpectedError(err));
+            }
+          } else {
+            next();
+          }
+        });
       }
     });
+    
+    function findAccess(context, callback) {
+      userAccessesStorage.findOne(context.user, context.accessQuery, null, callback);
+    }
+    
+    function createAccess(access, context, callback) {
+      _.extend(access, context.accessQuery);
+      context.initTrackingProperties(access, 'system');
+      userAccessesStorage.insertOne(context.user, access, callback);
+    }
+    
+    function updateAccess(access, context, callback) {
+      context.updateTrackingProperties(access, 'system');
+      userAccessesStorage.updateOne(context.user, context.accessQuery, access, callback);
+    }
   }
 
   function setAdditionalInfo(context, params, result, next) {
