@@ -669,8 +669,23 @@ describe('events', function () {
         validation.checkErrorInvalidParams(res, done);
       });
     });
-
-
+    
+    it('must reject tags that are too long', function (done) {
+      var bigTag = new Array(600).join('a');
+      var data = {
+        streamId: testData.streams[2].id,
+        type: 'generic/count',
+        content: 1,
+        tags: [bigTag]
+      };
+      request.post(basePath).send(data).end(function (res) {
+        validation.check(res, {
+          status: 400,
+          id: ErrorIds.invalidParametersFormat,
+          data: bigTag
+        }, done);
+      });
+    });
 
     it('must fix the tags to an empty array if not set', function (done) {
       var data = { streamId: testData.streams[1].id, type: testType };
@@ -1391,6 +1406,19 @@ describe('events', function () {
             }, done);
           });
         });
+    
+    it('must reject tags that are too long', function (done) {
+      var bigTag = new Array(600).join('a');
+      
+      request.put(path(testData.events[1].id)).send({tags: [bigTag]})
+        .end(function (res) {
+          validation.check(res, {
+            status: 400,
+            id: ErrorIds.InvalidParametersFormat,
+            data: bigTag
+          }, done);
+        });
+    });
 
   });
 

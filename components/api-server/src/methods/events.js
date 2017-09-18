@@ -256,8 +256,9 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     if (! params.tags) {
       params.tags = [];
     }
+    
     cleanupEventTags(params);
-
+    
     context.files = sanitizeRequestFiles(params.files);
     delete params.files;
 
@@ -330,8 +331,9 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       notify);
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
+    
     cleanupEventTags(params.update);
-            
+
     context.updateTrackingProperties(params.update);
 
     userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
@@ -357,6 +359,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
       next();
     });
+
   }
 
   function generateLogIfNeeded(context, params, result, next) {
@@ -466,10 +469,19 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     }
   }
 
-  function cleanupEventTags(eventData) {
-    if (! eventData.tags) { return; }
-    eventData.tags = eventData.tags.map(function (tag) { return tag.trim(); })
-        .filter(function (tag) { return tag.length > 0; });
+  function cleanupEventTags(eventData) {      
+    if (! eventData.tags) return;
+
+    const limit = 500;
+    
+    eventData.tags = eventData.tags.map(function (tag) {
+      if(tag.length > limit) {
+        throw errors.invalidParametersFormat(
+          'The event contains a tag that exceeds the size limit of ' +
+           limit + ' characters.', tag);
+      } 
+      return tag.trim();
+    }).filter(function (tag) { return tag.length > 0; });
   }
 
   /**
