@@ -1,5 +1,11 @@
 # API change log
 
+## 1.2.12
+
+- Tags have a maximum length of 500 characters. An error is returned from the API when this limit is exceeded. 
+- When two users would log in at almost the same time, we had a insert/update data race. This should be fixed now. 
+- Instead of blacklisting the fields that the user cannot update, we now whitelist those that he can. 
+
 ## v0.8.x
 
 Changes:
