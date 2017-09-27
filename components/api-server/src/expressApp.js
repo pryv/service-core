@@ -1,6 +1,7 @@
 var middleware = require('components/middleware'),
     Paths = require('./routes/Paths'),
     _ = require('lodash');
+const config = require('./config');
 
 /**
  * The Express app definition.
@@ -24,16 +25,13 @@ module.exports = function (express, commonHeadersMiddleware, errorsMiddleware,
   app.use(middleware.override);
   app.use(commonHeadersMiddleware);
   app.use(app.router);
+  
+  // Activate Airbrake if needed
+  activateAirbrake(app);
+
   app.use(middleware.notFound);
   app.use(errorsMiddleware);
   
-  // Activate Airbrake notifications
-  app.activateAirbrake = function activateAirbrake(projectId, key) {
-    const airbrake = require('airbrake').createClient(projectId, key);
-    airbrake.handleExceptions();
-    app.use(airbrake.expressHandler()); 
-  };
-
   // define init sequence utils
   app.setupTempRoutesForStartup = function setupTempRoutesForStartup() {
     app.get('*', handleRequestDuringStartup);
@@ -52,6 +50,22 @@ module.exports = function (express, commonHeadersMiddleware, errorsMiddleware,
   return app;
 };
 module.exports.injectDependencies = true;
+
+function activateAirbrake(app) {
+  const logSettings = config.load().logs;
+  if(logSettings != null) {
+    const airbrakeSettings = logSettings.airbrake;
+    if(airbrakeSettings != null && airbrakeSettings.active) {
+      const projectId = airbrakeSettings.projectId;
+      const key = airbrakeSettings.key;
+      if(projectId != null && key != null){
+        const airbrake = require('airbrake').createClient(projectId, key);
+        airbrake.handleExceptions();
+        app.use(airbrake.expressHandler());
+      }
+    }
+  }
+}
 
 function handleRequestDuringStartup(req, res) {
   res.send({

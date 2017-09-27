@@ -60,7 +60,8 @@
     },
     "airbrake": {
       "active": true,
-      "key": "OVERRIDE ME"
+      "key": "OVERRIDE ME",
+      "projectId": "OVERRIDE ME"
     }
   }
 }

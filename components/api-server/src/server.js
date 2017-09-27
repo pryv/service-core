@@ -107,17 +107,6 @@ utils.messaging.openPubSocket(settings.tcpMessaging, function (err, messagingSoc
 
   var expressApp = dependencies.get('expressApp');
   expressApp.setupTempRoutesForStartup();
-  
-  // Setup Airbrake if needed
-  const airbrakeSettings = settings.logs.airbrake;
-
-  if(airbrakeSettings != null && airbrakeSettings.active) {
-    const projectId = airbrakeSettings.projectId;
-    const key = airbrakeSettings.key;
-    if(projectId != null && key != null){
-      expressApp.activateAirbrake(projectId, key);
-    }
-  }
 
   // setup HTTP and register server
 
