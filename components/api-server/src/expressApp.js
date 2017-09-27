@@ -26,9 +26,15 @@ module.exports = function (express, commonHeadersMiddleware, errorsMiddleware,
   app.use(app.router);
   app.use(middleware.notFound);
   app.use(errorsMiddleware);
+  
+  // Activate Airbrake notifications
+  app.activateAirbrake = function activateAirbrake(projectId, key) {
+    const airbrake = require('airbrake').createClient(projectId, key);
+    airbrake.handleExceptions();
+    app.use(airbrake.expressHandler()); 
+  };
 
   // define init sequence utils
-
   app.setupTempRoutesForStartup = function setupTempRoutesForStartup() {
     app.get('*', handleRequestDuringStartup);
     app.post('*', handleRequestDuringStartup);

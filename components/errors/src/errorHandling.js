@@ -35,14 +35,12 @@ errorHandling.logError = function (error, req, logger) {
 
     if (error.id === ErrorIds.UnexpectedError) {
       logger.warn(logMsg, metadata);
-      logger.sendToErrorService(error);
     } else {
       logger.info(logMsg, metadata);
     }
   } else {
     logger.error('Unhandled API error (' + error.name + '): ' + error.message + '\n' + error.stack,
         metadata);
-    logger.sendToErrorService(error);
   }
 };
 
