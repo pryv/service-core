@@ -1,5 +1,4 @@
-var winston = require('winston'),
-    airbrake = null;
+var winston = require('winston');
 
 // setup logging levels (match logging methods below)
 var levels = Object.freeze({
