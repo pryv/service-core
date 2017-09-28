@@ -80,13 +80,15 @@ exports.check = function (response, expected, done) {
 exports.checkError = function (response, expected, done) {
   response.statusCode.should.eql(expected.status);
   checkJSON(response, schemas.errorResult);
-  var error = response.body.error;
-  error.id.should.eql(expected.id);
-  if (expected.data) {
-    should(error.data).exist;
-    error.data.should.eql(expected.data);
+  
+  const error = response.body.error;
+  assert.equal(error.id, expected.id);
+
+  if (expected.data != null) {
+    assert.deepEqual(error.data, expected.data);
   }
-  if (done) { done(); }
+  
+  if (done) done();
 };
 
 function checkJSON(response, schema) {
@@ -131,7 +133,11 @@ exports.checkErrorInvalidParams = function (res, done) {
   expect(res.statusCode).to.equal(400);
 
   checkJSON(res, schemas.errorResult);
-  res.body.error.id.should.eql(ErrorIds.InvalidParametersFormat);
+  const body = res.body; 
+  const error = body.error; 
+  
+  expect(error).to.exist;
+  expect(error.id).to.equal(ErrorIds.InvalidParametersFormat);
   expect(res.body.error.data).to.exist; // expect validation errors
 
   done();

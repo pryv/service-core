@@ -295,16 +295,16 @@ describe('accesses (app)', function () {
       });
     });
 
-    it('must return a correct error if an access with the same name already exists',
-        function (done) {
-      req().put(path(additionalTestAccesses[2].id), access.token)
-          .send({name: testData.accesses[1].name}).end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.ItemAlreadyExists,
-          data: { type: 'shared', name: testData.accesses[1].name }
-        }, done);
-      });
+    it('must return a correct error if an access with the same name already exists', (done) => {
+      req()
+        .put(path(additionalTestAccesses[2].id), access.token)
+        .send({name: testData.accesses[1].name}).end((res) => {
+          validation.checkError(res, {
+            status: 400,
+            id: ErrorIds.ItemAlreadyExists,
+            data: { type: 'shared', name: testData.accesses[1].name }
+          }, done);
+        });
     });
 
   });
