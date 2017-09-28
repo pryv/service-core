@@ -7,7 +7,7 @@ const Action = require('../../src/schema/Action');
 const encryption = require('components/utils').encryption;
 const Validator = require('z-schema');
 const validator = new Validator();
-const { assert, should, expect } = require('chai');
+const { assert, expect } = require('chai');
 const util = require('util');
 const _ = require('lodash');
 
@@ -105,7 +105,7 @@ function checkJSON(response, schema) {
  */
 function checkSchema(data, schema) {
   validator.validate(data, schema).should.equal(true,
-      util.inspect(validator.getLastErrors(), {depth: 5}));
+    util.inspect(validator.getLastErrors(), {depth: 5}));
 }
 exports.checkSchema = checkSchema;
 
@@ -237,9 +237,9 @@ function checkObjectEquality(actual, expected) {
   assert.deepEqual(remaining, expectedRemaining);
 }
 
-function checkApproxTimeEquality(actual, expected) {
-  Math.round(actual).should.eql(Math.round(expected),
-      '"modified" time');
+function checkApproxTimeEquality(actual, expected, epsilon=1) {
+  const diff = (expected - actual);
+  assert.isBelow(Math.abs(diff), epsilon);
 }
 
 /**
