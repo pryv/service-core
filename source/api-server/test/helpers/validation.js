@@ -2,14 +2,14 @@
  * Helper stuff for validating objects against schemas.
  */
 
-var ErrorIds = require('components/errors').ErrorIds,
-    Action = require('../../src/schema/Action'),
-    encryption = require('components/utils').encryption,
-    Validator = require('z-schema'),
-    validator = new Validator(),
-    should = require('should'), // explicit require to benefit from static functions
-    util = require('util'),
-    _ = require('lodash');
+const ErrorIds = require('components/errors').ErrorIds;
+const Action = require('../../src/schema/Action');
+const encryption = require('components/utils').encryption;
+const Validator = require('z-schema');
+const validator = new Validator();
+const { assert, should, expect } = require('chai');
+const util = require('util');
+const _ = require('lodash');
 
 /**
  * Expose common JSON schemas.
@@ -54,11 +54,11 @@ exports.check = function (response, expected, done) {
     checkJSON(response, expected.schema);
   }
   if (expected.sanitizeFn) {
-    should.exist(expected.sanitizeTarget);
+    expect(expected.sanitizeTarget).to.exist;
     expected.sanitizeFn(response.body[expected.sanitizeTarget]);
   }
   if (expected.body) {
-    response.body.should.eql(expected.body);
+    assert.deepEqual(response.body, expected.body);
   }
 
   // restore ignored metadata
@@ -83,7 +83,7 @@ exports.checkError = function (response, expected, done) {
   var error = response.body.error;
   error.id.should.eql(expected.id);
   if (expected.data) {
-    should.exist(error.data);
+    should(error.data).exist;
     error.data.should.eql(expected.data);
   }
   if (done) { done(); }
@@ -118,7 +118,7 @@ exports.checkStoredItem = function (item, schemaName) {
 };
 
 function checkMeta(parentObject) {
-  should.exist(parentObject.meta);
+  expect(parentObject.meta).to.exist;
   parentObject.meta.apiVersion.should.eql(require('../../package.json').version);
   parentObject.meta.serverTime.should.match(/^\d+\.?\d*$/);
 }
@@ -128,11 +128,11 @@ exports.checkMeta = checkMeta;
  * Specific error check for convenience.
  */
 exports.checkErrorInvalidParams = function (res, done) {
-  res.statusCode.should.eql(400);
+  expect(res.statusCode).to.equal(400);
 
   checkJSON(res, schemas.errorResult);
   res.body.error.id.should.eql(ErrorIds.InvalidParametersFormat);
-  should.exist(res.body.error.data); // expect validation errors
+  expect(res.body.error.data).to.exist; // expect validation errors
 
   done();
 };
@@ -141,7 +141,7 @@ exports.checkErrorInvalidParams = function (res, done) {
  * Specific error check for convenience.
  */
 exports.checkErrorInvalidAccess = function (res, done) {
-  res.statusCode.should.eql(401);
+  expect(res.statusCode).to.equal(401);
 
   checkJSON(res, schemas.errorResult);
   res.body.error.id.should.eql(ErrorIds.InvalidAccessToken);
@@ -153,7 +153,7 @@ exports.checkErrorInvalidAccess = function (res, done) {
  * Specific error check for convenience.
  */
 exports.checkErrorForbidden = function (res, done) {
-  res.statusCode.should.eql(403);
+  expect(res.statusCode).to.equal(403);
 
   checkJSON(res, schemas.errorResult);
   res.body.error.id.should.eql(ErrorIds.Forbidden);
@@ -196,7 +196,7 @@ var checkObjectEquality = exports.checkObjectEquality = function (actual, expect
   }
 
   if (expected.children) {
-    should.exist(actual.children);
+    expect(actual.children).to.exist;
     should.equal(actual.children.length, expected.children.length);
     for (var i = 0, n = expected.children.length; i < n; i++) {
       checkObjectEquality(actual.children[i], expected.children[i]);
@@ -206,7 +206,7 @@ var checkObjectEquality = exports.checkObjectEquality = function (actual, expect
 
 
   if (expected.attachments) {
-    should.exist(actual.attachments);
+    expect(actual.attachments).to.exist;
     should.equal(actual.attachments.length, expected.attachments.length);
     var attachmentsNumber = actual.attachments.length;
     expected.attachments.forEach( function (attachmentFromExpected) {
@@ -236,7 +236,7 @@ function checkApproxTimeEquality(actual, expected) {
 exports.checkHeaders = function (response, expectedHeaders) {
   expectedHeaders.forEach(function (expected) {
     var value = response.headers[expected.name.toLowerCase()];
-    should.exist(value);
+    expect(value).to.exist;
     if (expected.value) {
       value.should.eql(expected.value);
     }

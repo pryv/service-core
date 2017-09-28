@@ -142,7 +142,9 @@ describe('account', function () {
     });
 
     it('must be forbidden to non-personal accesses', function (done) {
-      request.put(basePath, testData.accesses[4].token).send({language: 'zh'}).end(function (res) {
+      request
+        .put(basePath, testData.accesses[4].token)
+        .send({language: 'zh'}).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });

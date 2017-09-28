@@ -26,8 +26,9 @@ const typeRepo = new TypeRepository();
  */
 module.exports = function (
   api, userEventsStorage, userEventFilesStorage, usersStorage,
-  authSettings, eventTypesSettings, notifications, logging) 
-{
+  authSettings, eventTypesSettings, notifications, logging,
+  auditSettings
+) {
                              
   // Update types and log error
   typeRepo.tryUpdate(eventTypesSettings.sourceURL)
@@ -76,8 +77,10 @@ module.exports = function (
       var unknownIds = _.difference(params.streams, expandedStreamIds);
 
       if (unknownIds.length > 0) {
-        return next(errors.unknownReferencedResource('stream' + (unknownIds.length > 1 ? 's' : ''),
-            'streams', unknownIds));
+        return next(errors.unknownReferencedResource(
+          'stream' + (unknownIds.length > 1 ? 's' : ''),
+          'streams', 
+          unknownIds));
       }
 
       params.streams = expandedStreamIds;
@@ -88,19 +91,22 @@ module.exports = function (
         treeUtils.filterTree(
           context.streams, false, (s) => { return ! s.trashed; }), 
         'id');
-      params.streams = params.streams ?
-          _.intersection(params.streams, nonTrashedStreamIds) : nonTrashedStreamIds;
+      params.streams = params.streams 
+        ? _.intersection(params.streams, nonTrashedStreamIds) 
+        : nonTrashedStreamIds;
     }
     if (! context.access.canReadAllStreams()) {
       var accessibleStreamIds = Object.keys(context.access.streamPermissionsMap);
-      params.streams = params.streams ?
-          _.intersection(params.streams, accessibleStreamIds) : accessibleStreamIds;
+      params.streams = params.streams 
+        ? _.intersection(params.streams, accessibleStreamIds) 
+        : accessibleStreamIds;
     }
 
     if (! context.access.canReadAllTags()) {
       var accessibleTags = Object.keys(context.access.tagPermissionsMap);
-      params.tags = params.tags ?
-          _.intersection(params.tags, accessibleTags) : accessibleTags;
+      params.tags = params.tags 
+        ? _.intersection(params.tags, accessibleTags) 
+        : accessibleTags;
     }
 
     next();
@@ -357,17 +363,17 @@ module.exports = function (
   // -------------------------------------------------------------------- UPDATE
 
   api.register('events.update',
-      commonFns.getParamsValidation(methodsSchema.update.params),
-      commonFns.catchForbiddenUpdate(eventSchema('update')),
-      applyPrerequisitesForUpdate,
-      validateEventContentAndCoerce,
-      checkExistingLaterPeriodIfNeeded,
-      checkOverlappedPeriodsIfNeeded,
-      stopPreviousPeriodIfNeeded,
-      generateLogIfNeeded,
-      updateAttachments,
-      updateEvent,
-      notify);
+    commonFns.getParamsValidation(methodsSchema.update.params),
+    commonFns.catchForbiddenUpdate(eventSchema('update')),
+    applyPrerequisitesForUpdate,
+    validateEventContentAndCoerce,
+    checkExistingLaterPeriodIfNeeded,
+    checkOverlappedPeriodsIfNeeded,
+    stopPreviousPeriodIfNeeded,
+    generateLogIfNeeded,
+    updateAttachments,
+    updateEvent,
+    notify);
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
     
@@ -656,7 +662,7 @@ module.exports = function (
       if (periodEvents.length > 0) {
         var msg = 'The event\'s period overlaps existing period events.';
         return next(errors.periodsOverlap(msg,
-            {overlappedIds: periodEvents.map(function (e) { return e.id; })}));
+          { overlappedIds: periodEvents.map(function (e) { return e.id; })}));
       }
 
       next();
@@ -693,8 +699,9 @@ module.exports = function (
    */
   function findLastRunning(context, params, callback) {
     var query = {
-      streamId: params.singleActivity ?
-          {$in: context.getSingleActivityExpandedIds()} : context.stream.id,
+      streamId: params.singleActivity 
+        ? { $in: context.getSingleActivityExpandedIds()} 
+        : context.stream.id,
       time: {'$lt': params.time},
       duration: {'$type' : 10} // matches when duration exists and is null
     };
@@ -752,53 +759,53 @@ module.exports = function (
   }
 
   api.register('events.stop',
-      commonFns.getParamsValidation(methodsSchema.stop.params),
-      function (context, params, result, next) {
-    // default time is now
-    _.defaults(params, { time: timestamp.now() });
+    commonFns.getParamsValidation(methodsSchema.stop.params),
+    function (context, params, result, next) {
+      // default time is now
+      _.defaults(params, { time: timestamp.now() });
 
-    if (params.id) {
-      userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
-        if (err) { return next(errors.unexpectedError(err)); }
-        if (! event) {
-          return next(errors.unknownReferencedResource('event', 'id', params.id));
+      if (params.id) {
+        userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
+          if (err) { return next(errors.unexpectedError(err)); }
+          if (! event) {
+            return next(errors.unknownReferencedResource('event', 'id', params.id));
+          }
+          if (! isRunning(event)) {
+            return next(errors.invalidOperation('Event "' + params.id + '" is not a running ' +
+                'period event.'));
+          }
+          applyStop(null, event);
+        });
+      } else if (params.streamId) {
+        context.setStream(params.streamId);
+        if (! context.stream.singleActivityRootId && ! params.type) {
+          return process.nextTick(next.bind(null, errors.invalidParametersFormat('You must specify ' +
+              'the event `id` or `type` (not a "single activity" stream).')));
         }
-        if (! isRunning(event)) {
-          return next(errors.invalidOperation('Event "' + params.id + '" is not a running ' +
-              'period event.'));
-        }
-        applyStop(null, event);
-      });
-    } else if (params.streamId) {
-      context.setStream(params.streamId);
-      if (! context.stream.singleActivityRootId && ! params.type) {
-        return process.nextTick(next.bind(null, errors.invalidParametersFormat('You must specify ' +
-            'the event `id` or `type` (not a "single activity" stream).')));
+        if (! checkStream(context, params.streamId, next)) { return; }
+        var stopParams = {
+          singleActivity: !! context.stream.singleActivityRootId,
+          time: params.time,
+          type: params.type
+        };
+        findLastRunning(context, stopParams, applyStop);
+      } else {
+        process.nextTick(next.bind(null, errors.invalidParametersFormat('You must specify either ' +
+            'the "single activity " stream id or the event `id`.')));
       }
-      if (! checkStream(context, params.streamId, next)) { return; }
-      var stopParams = {
-        singleActivity: !! context.stream.singleActivityRootId,
-        time: params.time,
-        type: params.type
-      };
-      findLastRunning(context, stopParams, applyStop);
-    } else {
-      process.nextTick(next.bind(null, errors.invalidParametersFormat('You must specify either ' +
-          'the "single activity " stream id or the event `id`.')));
-    }
 
-    function applyStop(error, event) {
-      if (error) { return next(errors.unexpectedError(error)); }
+      function applyStop(error, event) {
+        if (error) { return next(errors.unexpectedError(error)); }
 
-      stopEvent(context, event, params.time, function (err, stoppedId) {
-        if (err) { return next(err); }
+        stopEvent(context, event, params.time, function (err, stoppedId) {
+          if (err) { return next(err); }
 
-        result.stoppedId = stoppedId;
-        notifications.eventsChanged(context.user);
-        next();
-      });
-    }
-  });
+          result.stoppedId = stoppedId;
+          notifications.eventsChanged(context.user);
+          next();
+        });
+      }
+    });
 
   /**
    * Enforces permissions (returns an error if forbidden).

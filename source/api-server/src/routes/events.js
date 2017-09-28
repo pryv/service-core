@@ -19,9 +19,11 @@ const hasFileUpload = require('../middleware/uploads').hasFileUpload;
  * @param authSettings
  * @param eventFilesSettings
  */
-module.exports = function (expressApp: express$Application, 
+module.exports = function(
+  expressApp: express$Application, 
   api, attachmentsAccessMiddleware, userAccessesStorage,
-  authSettings, eventFilesSettings) {
+  authSettings, eventFilesSettings
+) {
 
   const attachmentsStatic = express.static(
     eventFilesSettings.attachmentsDirPath);
