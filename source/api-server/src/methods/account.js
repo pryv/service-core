@@ -198,7 +198,7 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
   function sanitizeAccountDetails(data) {
     delete data.id;
     delete data.passwordHash;
-    if (! data.storageUsed) {
+    if (! data.storageUsed) {
       data.storageUsed = {
         dbDocuments: -1,
         attachedFiles: -1

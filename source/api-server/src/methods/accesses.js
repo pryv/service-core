@@ -5,6 +5,7 @@ var APIError = require('components/errors').APIError,
     commonFns = require('./helpers/commonFunctions'),
     Database = require('components/storage').Database,
     methodsSchema = require('../schema/accessesMethods'),
+    accessSchema = require('../schema/access'),
     slugify = require('slug'),
     string = require('./helpers/string'),
     treeUtils = require('components/utils').treeUtils,
@@ -108,7 +109,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
    * Creates default data structure from permissions if needed, for app authorization.
    */
   function createDataStructureFromPermissions(context, params, result, next) {
-    if (! context.access.isPersonal() || ! params.permissions) {
+    if (! context.access.isPersonal() || !params.permissions) {
       return next();
     }
 
@@ -170,15 +171,17 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
   }
 
   /**
-   * Returns `true` if the given error is a DB "duplicate key" error caused by a duplicate token.
-   * Returns `false` otherwise (e.g. if caused by another unique key like the name).
+   * Returns true if `dbError` was caused by a 'duplicate key' error (E11000)
+   * and the key that conflicted was named 'token_1'.
    *
    * @param {Error} dbError
    */
   function isDBDuplicateToken(dbError) {
-    // HACK: relying on error text as nothing else available to differentiate
-    if (! dbError.message) { return false; }
-    return dbError.message.indexOf('$token_') > 0;
+    if (dbError.message == null) { return false; }
+    
+    const message = dbError.message; 
+    return message.match(/^E11000 duplicate key error collection/) && 
+      message.match(/index: token_1 dup key:/);
   }
 
   /**
@@ -224,17 +227,11 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
   // UPDATE
 
   api.register('accesses.update',
-      stripOffIgnoredStuffForUpdate,
       commonFns.getParamsValidation(methodsSchema.update.params),
+      commonFns.catchForbiddenUpdate(accessSchema('update')),
       applyPrerequisitesForUpdate,
       checkAccessForUpdate,
       updateAccess);
-
-  function stripOffIgnoredStuffForUpdate(context, params, result, next) {
-    delete params.update.token;
-    delete params.update.type;
-    next();
-  }
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
     context.updateTrackingProperties(params.update);

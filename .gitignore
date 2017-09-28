@@ -12,7 +12,6 @@ components/*/node_modules/
 proxy/nginx.conf
 service-core.iml
 yarn-error.log
-/dist/
 /flow-coverage/
 /out
 .nyc_output/

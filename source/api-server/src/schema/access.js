@@ -66,11 +66,18 @@ exports = module.exports = function (action) {
     shared.required = [ 'name', 'permissions' ];
     break;
   }
-
-  return {
+    
+  var res = {
     id: helpers.getTypeURI('access', action),
     anyOf: [ personal, app, shared ]
   };
+  
+  // whitelist for properties that can be updated
+  if (action === Action.UPDATE) {
+    res.alterableProperties = ['name', 'deviceName', 'permissions'];
+  }
+  
+  return res;
 };
 
 var permissionLevel = exports.permissionLevel = string({enum: ['read', 'contribute', 'manage']});

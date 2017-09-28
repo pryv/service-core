@@ -172,6 +172,45 @@ describe('auth', function () {
             done();
           });
       });
+    
+    it('must support concurrent login request',
+        function (done) {          
+          var loginCount = 2;
+          var randomId = 'pryv-test-' + Date.now();
+          
+          async.times(loginCount, function (n, next) {
+            parallelLogin(randomId, function(err) {
+              next(err);
+            });
+          }, function (error) {
+            done(error);
+          });
+        }
+    );
+    
+    function parallelLogin(appId, callback) {
+       // We want our random appId to be trusted, so using recla as origin
+      request.post(path(authData.username))
+          .set('Origin', 'https://test.rec.la:1234')
+          .send({
+            username: user.username,
+            password: user.password,
+            appId: appId
+          })
+          .end(function (err, res) {
+            if(err) {
+              return callback(err);
+            }
+            should(res.statusCode).be.equal(200);
+            helpers.dependencies.storage.user.accesses.findOne(user, {name: appId, type: 'personal'}, null,
+                (err, access) => {
+                  should(access.token).be.equal(res.body.token);
+                  callback();
+                }
+            );
+          }
+      );
+    }
 
     function checkNoUnwantedCookie(res) {
       if (! res.headers['set-cookie']) { return; }

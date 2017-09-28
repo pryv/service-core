@@ -62,6 +62,11 @@ module.exports = function (action, ignoreChildren, refToStreamSchema) {
   case Action.CREATE:
     schema.required = [ 'name' ];
     break;
+  case Action.UPDATE:
+    // whitelist for properties that can be updated
+    schema.alterableProperties = ['name', 'parentId', 'singleActivity',
+      'clientData', 'trashed'];
+    break;
   }
 
   return schema;

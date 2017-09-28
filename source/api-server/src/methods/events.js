@@ -4,6 +4,7 @@ var utils = require('components/utils'),
     async = require('async'),
     commonFns = require('./helpers/commonFunctions'),
     methodsSchema = require('../schema/eventsMethods'),
+    eventSchema = require('../schema/event'),
     querying = require('./helpers/querying'),
     storage = require('components/storage'),
     timestamp = require('unix-timestamp'),
@@ -21,9 +22,10 @@ const typeRepo = new TypeRepository();
 
 /**
  * Events API methods implementations.
+ * @param auditSettings
  */
 module.exports = function (api, userEventsStorage, userEventFilesStorage, usersStorage,
-                           authSettings, notifications, eventTypesSettings, logging) {
+                           authSettings, eventTypes, notifications) {
                              
   // Update types and log error
   typeRepo.tryUpdate(eventTypesSettings.sourceURL)
@@ -80,8 +82,10 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     }
     if (params.state === 'default') {
       // exclude events in trashed streams
-      var nonTrashedStreamIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, false,
-          function (s) { return ! s.trashed; }), 'id');
+      var nonTrashedStreamIds = treeUtils.collectPluck(
+        treeUtils.filterTree(
+          context.streams, false, (s) => { return ! s.trashed; }), 
+        'id');
       params.streams = params.streams ?
           _.intersection(params.streams, nonTrashedStreamIds) : nonTrashedStreamIds;
     }
@@ -119,11 +123,13 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     }
     if (params.fromTime) {
       query.$or = [
-        {
+        { // Event started before fromTime, but finished inside from->to.
           time: {$lt: params.fromTime},
           endTime: {$gte: params.fromTime}
         },
-        {time: { $gte: params.fromTime, $lte: params.toTime }}
+        { // Event has started inside the interval.
+          time: { $gte: params.fromTime, $lte: params.toTime }
+        },
       ];
     }
     if (params.toTime) {
@@ -140,7 +146,6 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       skip: params.skip,
       limit: params.limit
     };
-
     userEventsStorage.findStreamed(context.user, query, options, function (err, eventsStream) {
       if (err) {
         return next(errors.unexpectedError(err));
@@ -179,6 +184,49 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       });
   }
 
+  api.register('events.getOne',
+    commonFns.getParamsValidation(methodsSchema.getOne.params),
+    findEvent,
+    includeHistoryIfRequested
+  );
+
+  function findEvent(context, params, result, next) {
+    userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
+      if (err) {
+        return next(errors.unexpectedError(err));
+      }
+
+      if (! event) {
+        return next(errors.unknownResource('event', params.id));
+      }
+
+      if (! context.canContributeToContext(event.streamId, event.tags)) {
+        return next(errors.forbidden());
+      }
+      result.event = event;
+      next();
+    });
+  }
+
+  function includeHistoryIfRequested(context, params, result, next) {
+    if (!params.includeHistory) {
+      return next();
+    }
+
+    var options = {
+      sort: {modified: 1}
+    };
+
+    userEventsStorage.findHistory(context.user, params.id, options,
+      function (err, history) {
+        if (err) {
+          return next(errors.unexpectedError(err));
+        }
+        result.history = history;
+        next();
+      });
+  }
+
   // CREATION
 
   api.register('events.create',
@@ -211,8 +259,9 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     if (! params.tags) {
       params.tags = [];
     }
+    
     cleanupEventTags(params);
-
+    
     context.files = sanitizeRequestFiles(params.files);
     delete params.files;
 
@@ -307,21 +356,20 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   api.register('events.update',
       commonFns.getParamsValidation(methodsSchema.update.params),
+      commonFns.catchForbiddenUpdate(eventSchema('update')),
       applyPrerequisitesForUpdate,
       validateEventContentAndCoerce,
       checkExistingLaterPeriodIfNeeded,
       checkOverlappedPeriodsIfNeeded,
       stopPreviousPeriodIfNeeded,
+      generateLogIfNeeded,
       updateAttachments,
       updateEvent,
       notify);
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
+    
     cleanupEventTags(params.update);
-
-    // strip ignored properties if there (read-only)
-    delete params.update.id;
-    delete params.update.attachments;
 
     context.updateTrackingProperties(params.update);
 
@@ -338,6 +386,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         return next(errors.forbidden());
       }
 
+      context.oldContent = _.cloneDeep(event);
       context.content = _.extend(event, params.update);
 
       context.setStream(context.content.streamId);
@@ -345,6 +394,24 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         return;
       }
 
+      next();
+    });
+
+  }
+
+  function generateLogIfNeeded(context, params, result, next) {
+    if (!auditSettings.forceKeepHistory) {
+      return next();
+    }
+
+    context.oldContent = _.extend(context.oldContent, {headId: context.content.id});
+    delete context.oldContent.id;
+
+    userEventsStorage.insertOne(context.user, context.oldContent, function (err) {
+      if (err) {
+        return next(errors.unexpectedError(err));
+      }
+      delete context.oldContent;
       next();
     });
   }
@@ -366,7 +433,6 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   }
 
   function updateEvent (context, params, result, next) {
-
     userEventsStorage.updateOne(context.user, {id: context.content.id}, context.content,
       function (err, updatedEvent) {
         if (err) {
@@ -461,10 +527,19 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       );
   }
 
-  function cleanupEventTags(eventData) {
-    if (! eventData.tags) { return; }
-    eventData.tags = eventData.tags.map(function (tag) { return tag.trim(); })
-        .filter(function (tag) { return tag.length > 0; });
+  function cleanupEventTags(eventData) {      
+    if (! eventData.tags) return;
+
+    const limit = 500;
+    
+    eventData.tags = eventData.tags.map(function (tag) {
+      if(tag.length > limit) {
+        throw errors.invalidParametersFormat(
+          'The event contains a tag that exceeds the size limit of ' +
+           limit + ' characters.', tag);
+      } 
+      return tag.trim();
+    }).filter(function (tag) { return tag.length > 0; });
   }
 
   /**
@@ -739,40 +814,63 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       return process.nextTick(callback.bind(null, errors.forbidden()));
     }
 
-    var updatedData = {
-      // always include time: needed by userEventsStorage to update the DB-only "endTime" field
-      time: event.time,
-      duration: stopTime - event.time
-    };
+    async.series([
+      function generateLogIfNeeded(stepDone) {
+        if (!auditSettings.forceKeepHistory) {
+          return stepDone();
+        }
+        var oldEvent = _.cloneDeep(event);
+        oldEvent = _.extend(oldEvent, {headId: oldEvent.id});
+        delete oldEvent.id;
 
-    context.updateTrackingProperties(updatedData);
+        userEventsStorage.insertOne(context.user, oldEvent, function (err) {
+          if (err) {
+            return stepDone(errors.unexpectedError(err));
+          }
+          stepDone();
+        });
+      },
+      function stopEvent(stepDone) {
+        var updatedData = {
+          // always include time: needed by userEventsStorage to update the DB-only "endTime" field
+          time: event.time,
+          duration: stopTime - event.time
+        };
 
-    userEventsStorage.updateOne(context.user, {id: event.id}, updatedData, function (err) {
-      if (err) {
-        return callback(errors.unexpectedError(err));
+        context.updateTrackingProperties(updatedData);
+
+        userEventsStorage.updateOne(context.user, {id: event.id}, updatedData, function (err) {
+          if (err) {
+            return callback(errors.unexpectedError(err));
+          }
+          stepDone(null, event.id);
+        });
       }
-      callback(null, event.id);
+    ], function(err, res) {
+      callback(err, res[1]);
     });
   }
 
   // DELETION
 
   api.register('events.delete',
-      commonFns.getParamsValidation(methodsSchema.del.params),
-      function (context, params, result, next) {
-    checkEventForWriting(context, params.id, function (err, event) {
-      if (err) { return next(err); }
+    commonFns.getParamsValidation(methodsSchema.del.params),
+    function (context, params, result, next) {
+      checkEventForWriting(context, params.id, function (err, event) {
+        if (err) {
+          return next(err);
+        }
 
-      context.event = event;
-      if (! event.trashed) {
-        // move to trash
-        flagAsTrashed(context, params, result, next);
-      } else {
-        // actually delete
-        deleteWithData(context, params, result, next);
-      }
+        context.event = event;
+        if (!event.trashed) {
+          // move to trash
+          flagAsTrashed(context, params, result, next);
+        } else {
+          // actually delete
+          deleteWithData(context, params, result, next);
+        }
+      });
     });
-  });
 
   function flagAsTrashed(context, params, result, next) {
     var updatedData = {trashed: true};
@@ -791,22 +889,46 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   function deleteWithData(context, params, result, next) {
     async.series([
-      function (stepDone) {
-        /* jshint -W024 */
-        userEventsStorage.delete(context.user, {id: params.id}, function (err) {
-          if (err) { return stepDone(errors.unexpectedError(err)); }
-
-          result.eventDeletion = {id: params.id};
-          notifications.eventsChanged(context.user);
+      function deleteHistoryCompletely(stepDone) {
+        if (auditSettings.deletionMode !== 'keep-nothing') {
+          return stepDone();
+        }
+        userEventsStorage.removeMany(context.user, {headId: params.id}, function (err) {
+          if (err) {
+            return stepDone(errors.unexpectedError(err));
+          }
           stepDone();
         });
+      },
+      function minimizeHistory(stepDone) {
+        if (auditSettings.deletionMode !== 'keep-authors') {
+          return stepDone();
+        }
+        userEventsStorage.minimizeEventsHistory(context.user, params.id, function (err) {
+          if (err) {
+            return stepDone(errors.unexpectedError(err));
+          }
+          stepDone();
+        });
+      },
+      function deleteEvent(stepDone) {
+        userEventsStorage.delete(context.user, {id: params.id}, auditSettings.deletionMode,
+          function (err) {
+            if (err) {
+              return stepDone(errors.unexpectedError(err));
+            }
+            result.eventDeletion = {id: params.id};
+            notifications.eventsChanged(context.user);
+            stepDone();
+          });
       },
       userEventFilesStorage.removeAllForEvent.bind(userEventFilesStorage, context.user, params.id),
       function (stepDone) {
         // approximately update account storage size
         context.user.storageUsed.attachedFiles -= getTotalAttachmentsSize(context.event);
-	usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
-            stepDone);
+        usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
+          stepDone);
+
       }
     ], next);
   }

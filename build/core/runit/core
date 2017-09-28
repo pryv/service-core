@@ -5,6 +5,7 @@ set -e
 cd /app/bin/components/api-server
 
 chown -R app:app /app/data/
+chown app:app /app/log/
 
 export NODE_ENV=production
 export NODE_PATH=/app/bin/

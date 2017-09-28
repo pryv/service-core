@@ -38,6 +38,11 @@ exports = module.exports = function (action) {
 
   helpers.addTrackingProperties(schema, action);
 
+  if (action !== Action.CREATE) {
+    schema.properties.id = string();
+    schema.properties.headId = string();
+  }
+
   if (action === Action.CREATE) {
     // only allow cuid-like strings for custom ids
     schema.properties.id.pattern = '^c[a-z0-9-]{24}$';
@@ -51,6 +56,9 @@ exports = module.exports = function (action) {
     schema.properties.attachments = exports.attachments;
   } else if (action === Action.UPDATE) {
     schema.properties.attachments = { type: 'array' };
+    // whitelist for properties that can be updated
+    schema.alterableProperties = ['streamId', 'time', 'duration', 'type',
+      'content', 'tags', 'references', 'description', 'clientData', 'trashed'];
   }
 
   switch (action) {

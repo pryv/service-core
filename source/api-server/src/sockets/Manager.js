@@ -97,9 +97,14 @@ module.exports = function Manager(io, notifications, api, logging) {
   function onSocketMethodCall(callData, callback) {
     if (! callback) { callback = function () {}; }
 
+
+
     var nsContext = nsContexts[this.namespace.name],
         id = callData.name,
         params = callData.args[0];
+
+    logger.info('Call: ' + nsContext.user.username + nsContext.namespace.name + ' method: ' +
+      id + ' body: ' + JSON.toString(params) + '');
 
     api.call(id, nsContext.socketMethodContexts[this.id], params, function (err, result) {
       if (err) {

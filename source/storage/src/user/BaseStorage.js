@@ -60,19 +60,22 @@ BaseStorage.prototype.countAll = function (user, callback) {
 };
 
 /**
- * Ignores item deletions (i.e. documents with `deleted` field).
+ * Ignores item deletions & history (i.e. documents with either `deleted` or `headId` field).
  */
 BaseStorage.prototype.count = function (user, query, callback) {
   query.deleted = null;
+  query.headId = null;
   this.database.count(this.getCollectionInfo(user), this.applyQueryToDB(query), callback);
 };
 
 /**
- * Ignores item deletions (i.e. documents with `deleted` field).
+ * Ignores item deletions (i.e. documents with `deleted` field) &
+ * history items (i.e. documents with `headId` field)
  * @see `findDeletions()`
  */
 BaseStorage.prototype.find = function (user, query, options, callback) {
   query.deleted = null;
+  query.headId = null;
   this.database.find(this.getCollectionInfo(user), this.applyQueryToDB(query),
       this.applyOptionsToDB(options), function (err, dbItems) {
     if (err) { return callback(err); }
@@ -90,8 +93,25 @@ BaseStorage.prototype.findStreamed = function (user, query, options, callback) {
 };
 /* jshint +W098 */
 
+/* jshint -W098 */
+/**
+ * Retrieves the history for a certain event
+ *
+ * @param user {Object} user The user owning the collection
+ * @param headId {string} the id of the event whose history is queried
+ * @param options {Object}
+ * @param callback {Function}
+ * @returns {Error}
+ */
+BaseStorage.prototype.findHistory = function (user, headId, options, callback) {
+  return new Error('Not implemented (user: ' + user + ')');
+  // Implemented for Events only
+};
+/* jshint +W098 */
+
 BaseStorage.prototype.findDeletions = function (user, deletedSince, options, callback) {
   var query = {deleted: {$gt: timestamp.toDate(deletedSince)}};
+  query.headId = null;
   this.database.find(this.getCollectionInfo(user), query, this.applyOptionsToDB(options),
       function (err, dbItems) {
     if (err) { return callback(err); }
@@ -144,6 +164,20 @@ BaseStorage.prototype.insertOne = function (user, item, callback) {
     callback(null, item);
   });
 };
+
+/* jshint -W098 */
+/**
+ * Minimizes an event's history, used when in 'keep-authors' deletionMode
+ *
+ * @param user {Object} user The user owning the collection
+ * @param headId {string} the id of the event whose history is minimized
+ * @param callback {Function}
+ */
+BaseStorage.prototype.minimizeEventsHistory = function (user, headId, callback) {
+  return new Error('Not implemented (user: ' + user + ')');
+  // implemented for events only
+};
+/* jshint +W098 */
 
 /**
  * Updates the single document matching the given query, returning the updated document.
@@ -239,6 +273,17 @@ BaseStorage.prototype.insertMany = function (user, items, callback) {
  */
 BaseStorage.prototype.getTotalSize = function (user, callback) {
   this.database.totalSize(this.getCollectionInfo(user), callback);
+};
+
+/**
+ * Gets the indexes set for the collection.
+ *
+ * @param {Object} user
+ * @param {Object} options
+ * @param {Function} callback
+ */
+BaseStorage.prototype.listIndexes = function (user, options, callback) {
+  this.database.listIndexes(this.getCollectionInfo(user), options, callback);
 };
 
 // converters application functions

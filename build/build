@@ -13,18 +13,17 @@ if [ -e release_build ]; then
 fi
 
 function release {
+  local host='pryvsa-docker-release.bintray.io'
   local service_name=$1
   local version=$2
   
+  local local_name="$service_name:$version"
+  local remote_name="$host/$service_name:$version"
+  
   if [ -e ../release_build ]; then
-    sudo docker tag $service_name:$version $service_name:latest
-
     # Publication to registry:
-    sudo docker tag $service_name:$version localhost:5000/$service_name:$version
-    sudo docker tag $service_name:$version localhost:5000/$service_name:latest
-    
-    sudo docker push localhost:5000/$service_name:$version
-    sudo docker push localhost:5000/$service_name:latest
+    sudo docker tag $local_name $remote_name
+    sudo docker push $remote_name
   fi
 }
 

@@ -305,3 +305,23 @@ exports.sanitizeEvents = function (events) {
 exports.removeDeletions = function (items) {
   return items.filter(function (e) { return ! e.deleted; });
 };
+
+/**
+ * Strips off items history from the given array
+ *
+ * @param {Array} items
+ * @returns {Array}
+ */
+exports.removeHistory = function (items) {
+  return items.filter(function (e) { return ! e.headId; });
+};
+
+/**
+ * Strips off items deletions and history from the given array
+ *
+ * @param {Array} items
+ * @returns {Array}
+ */
+exports.removeDeletionsAndHistory = function (items) {
+  return items.filter(function (e) { return ! (e.deleted || e.headId); });
+};

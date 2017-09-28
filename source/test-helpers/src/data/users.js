@@ -25,10 +25,19 @@ module.exports = [
     email: '00000@test.com',
     language: 'en'
   },
+  // auditing
   {
     id: 'u_3',
-    username: 'user-three',
-    password: 't3st-Thr33',
+    username: 'auditorUser',
+    password: 't3st-tHr3e',
+    email: 'auditor@test.com',
+    language: 'en'
+  },
+  // websockets dash user
+  {
+    id: 'u_4',
+    username: 'user-four',
+    password: 't3st-f0uR',
     email: 'user-three@test.com',
     language: 'en'
   }

@@ -63,9 +63,8 @@ describe('streams', function () {
     it('must return non-trashed streams (as a tree) by default', function (done) {
       request.get(basePath).end(function (res) {
         // manually filter out trashed items
-        var expected = validation.removeDeletions(testData.streams).slice(0, -1);
-        expected[2] = _.clone(expected[2]);
-        expected[2].children = expected[2].children.slice(1);
+        var expected = treeUtils.filterTree(validation.removeDeletionsAndHistory(testData.streams),
+          false, function (s) { return !s.trashed; });
         validation.check(res, {
           status: 200,
           schema: methodsSchema.get.result,
@@ -366,13 +365,10 @@ describe('streams', function () {
       var original = testData.streams[0],
           time;
       var data = {
-        id: 'Tralala-itou', // check that properly ignored
         name: 'Updated Root Stream 0',
         clientData: {
           clientField: 'client value'
         },
-        // to test if properly stripped and ignored
-        children: [{name: 'should be ignored'}]
       };
 
       request.put(path(original.id)).send(data).end(function (res) {
@@ -497,6 +493,25 @@ describe('streams', function () {
           status: 400,
           id: ErrorIds.UnknownReferencedResource,
           data: {parentId: 'unknown-id'}
+        }, done);
+      });
+    });
+    
+    it('must reject update of read-only properties', function (done) {
+      var forbiddenUpdate = {
+        id: 'forbidden',
+        children: [],
+        created: 1,
+        createdBy: 'bob',
+        modified: 1,
+        modifiedBy: 'alice'
+      };
+
+      request.put(path(testData.streams[0].id)).send(forbiddenUpdate).end(function (res) {
+        validation.check(res, {
+          status: 403,
+          id: ErrorIds.Forbidden,
+          data: {forbiddenProperties: forbiddenUpdate}
         }, done);
       });
     });

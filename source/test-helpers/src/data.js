@@ -214,6 +214,16 @@ exports.restoreFromDump = function (versionNum, mongoFolder, callback) {
   });
 };
 
+/**
+ * Fetches the database structure for a given version
+ *
+ * @param {String} version
+ * @returns {Object} structure
+ */
+exports.getStructure = function (version) {
+  return require(path.resolve(__dirname + '/data/structure/' + version));
+};
+
 function clearAllData(callback) {
   async.series([
     storage.database.dropDatabase.bind(storage.database),

@@ -25,10 +25,15 @@ function Database(settings, logging) {
       settings.authUser + ':' + settings.authPassword + '@' : '';
   this.connectionString = 'mongodb://' + authPart + settings.host + ':' + settings.port + '/' +
       settings.name;
+      
+  const s60 = 60000; // 60 seconds
   this.options = {
     w: 1,   // Requests acknowledgement that the write operation has propagated.
     autoReconnect: true, 
+    connectTimeoutMS: s60, 
+    socketTimeoutMS: s60,
   };
+
   this.db = null;
   this.initializedCollections = {};
   this.logger = logging.getLogger('database');
@@ -420,6 +425,22 @@ Database.prototype.dropDatabase = function (callback) {
     if (err) { return callback(err); }
     this.db.dropDatabase(callback);
   }.bind(this));
+};
+
+/**
+ * Primarily meant for tests
+ *
+ * @param {Object} collectionInfo
+ * @param {Object} options
+ * @param {Function} callback
+ */
+Database.prototype.listIndexes = function (collectionInfo, options, callback) {
+  this.getCollection(collectionInfo, function (err, collection) {
+    if (err) {
+      return callback(err);
+    }
+    collection.listIndexes(options).toArray(callback);
+  });
 };
 
 // class utility functions

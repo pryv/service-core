@@ -62,13 +62,6 @@ var indexes = [
   {
     index: {trashed: 1},
     options: {}
-  },
-  {
-    index: {deleted: 1},
-    options: {
-      // cleanup deletions after a year
-      expireAfterSeconds: 3600 * 24 * 365
-    }
   }
 ];
 

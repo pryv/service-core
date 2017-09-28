@@ -47,6 +47,15 @@ module.exports = function (expressApp: express$Application,
     api.call('events.get', req.context, params, methodCallback(res, next, 200));
   });
 
+  // MERGE: Might not be in the right spot...
+  expressApp.get(Paths.Events + '/:id', function (req, res, next) {
+    var params = _.extend({id: req.params.id}, req.query);
+    tryCoerceStringValues(params, {
+      includeHistory: 'boolean'
+    });
+    api.call('events.getOne', req.context, params, methodCallback(res, next, 200));
+  });
+
   // Access an events files
   expressApp.get(Paths.Events + '/:id/:fileId/:fileName?', 
     retrieveAccessFromReadToken, 
@@ -105,11 +114,9 @@ module.exports = function (expressApp: express$Application,
     api.call('events.start', req.context, req.body, methodCallback(res, next, 201));
   });
 
-  events.put('/:id', function (req, res, next) {
-    api.call('events.update', 
-      req.context, 
-      { id: req.params.id, update: req.body },
-      methodCallback(res, next, 200));
+  expressApp.put(Paths.Events + '/:id', function (req, res, next) {
+    api.call('events.update', req.context, { id: req.param('id'), update: req.body },
+        methodCallback(res, next, 200));
   });
 
   events.post('/stop', function (req, res, next) {
