@@ -90,8 +90,8 @@ describe('accesses (personal)', function () {
       ], done);
     });
 
-    it('must create a new shared access with the sent data, returning it', function (done) {
-      var data = {
+    it('must create a new shared access with the sent data, returning it', (done) => {
+      const data = {
         name: 'New Access',
         permissions: [
           {
@@ -100,63 +100,61 @@ describe('accesses (personal)', function () {
           }
         ]
       };
-      var originalCount,
+      let originalCount,
           createdAccess,
           time;
 
       async.series([
-          function countInitial(stepDone) {
-            storage.countAll(user, function (err, count) {
-              originalCount = count;
-              stepDone();
+        function countInitial(stepDone) {
+          storage.countAll(user, function (err, count) {
+            originalCount = count;
+            stepDone();
+          });
+        },
+        function addNew(stepDone) {
+          req().post(basePath).send(data).end(function (res) {
+            time = timestamp.now();
+            validation.check(res, {
+              status: 201,
+              schema: methodsSchema.create.result
             });
-          },
-          function addNew(stepDone) {
-            req().post(basePath).send(data).end(function (res) {
-              time = timestamp.now();
-              validation.check(res, {
-                status: 201,
-                schema: methodsSchema.create.result
-              });
-              createdAccess = res.body.access;
-              should(
-                accessesNotifCount
-              ).be.eql(1, 'accesses notifications');
-              stepDone();
+            createdAccess = res.body.access;
+            should(
+              accessesNotifCount
+            ).be.eql(1, 'accesses notifications');
+            stepDone();
+          });
+        },
+        function verifyData(stepDone) {
+          storage.findAll(user, null, function (err, accesses) {
+            accesses.length.should.eql(originalCount + 1, 'accesses');
+
+            const expected = {
+              id: createdAccess.id, 
+              token: createdAccess.token, 
+              type: 'shared', 
+              created: time, 
+              modified: time, 
+              createdBy: sessionAccessId, 
+              modifiedBy: sessionAccessId, 
+              name: 'New Access',
+              permissions: [
+                {
+                  streamId: testData.streams[0].id,
+                  level: 'read'
+                }
+              ]
+            };
+
+            var actual = _.find(accesses, function (access) {
+              return access.id === createdAccess.id;
             });
-          },
-          function verifyData(stepDone) {
-            storage.findAll(user, null, function (err, accesses) {
-              accesses.length.should.eql(originalCount + 1, 'accesses');
+            validation.checkObjectEquality(actual, expected);
 
-              const expected = {
-                id: createdAccess.id, 
-                token: createdAccess.token, 
-                type: 'shared', 
-                created: time, 
-                modified: time, 
-                createdBy: sessionAccessId, 
-                modifiedBy: sessionAccessId, 
-                name: 'New Access',
-                permissions: [
-                  {
-                    streamId: testData.streams[0].id,
-                    level: 'read'
-                  }
-                ]
-              };
-
-              var actual = _.find(accesses, function (access) {
-                return access.id === createdAccess.id;
-              });
-              validation.checkObjectEquality(actual, expected);
-
-              stepDone();
-            });
-          }
-        ],
-        done
-      );
+            stepDone();
+          });
+        }
+      ], done);
     });
 
     it('must create a new app access with the sent data, creating/restoring requested streams',
