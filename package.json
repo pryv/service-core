@@ -59,7 +59,7 @@
     "blanket": "^1.2.3",
     "charlatan": "^1.1.0",
     "colors": "^1.0.3",
-    "cookie": "latest",
+    "cookie": "^0.3.1",
     "cuid": "^1",
     "date-utils": "latest",
     "deep-equal": "latest",
@@ -80,10 +80,10 @@
     "should": "^11.2.0",
     "socket.io-client": "0.9.x",
     "supertest": "^3.0.0",
-    "temp": "latest",
+    "temp": "^0.8.3",
     "wrench": "latest"
   },
   "engines": {
-    "node": "~6.9.5"
+    "node": "^8.3.0"
   }
 }

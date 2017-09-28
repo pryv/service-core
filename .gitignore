@@ -15,3 +15,4 @@ yarn-error.log
 /flow-coverage/
 /out
 .nyc_output/
+dist
