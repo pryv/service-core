@@ -175,60 +175,67 @@ exports.checkErrorForbidden = function (res, done) {
  * Recurses to sub-objects in `children` if defined (warning: removes `children` properties from
  * `actual` and `expected` if not empty).
  */
-var checkObjectEquality = exports.checkObjectEquality = function (actual, expected) {
-  var skippedProps = [];
+exports.checkObjectEquality = checkObjectEquality;
+function checkObjectEquality(actual, expected) {
+  var verifiedProps = [];
 
   if (expected.created) {
     checkApproxTimeEquality(actual.created, expected.created);
   }
-  skippedProps.push('created');
+  verifiedProps.push('created');
 
   if (! expected.createdBy) {
-    skippedProps.push('createdBy');
+    verifiedProps.push('createdBy');
   }
 
   if (expected.modified) {
     checkApproxTimeEquality(actual.modified, expected.modified);
   }
-  skippedProps.push('modified');
+  verifiedProps.push('modified');
 
   if (expected.deleted) {
     checkApproxTimeEquality(actual.deleted, expected.deleted);
   }
-  skippedProps.push('deleted');
+  verifiedProps.push('deleted');
 
   if (! expected.modifiedBy) {
-    skippedProps.push('modifiedBy');
+    verifiedProps.push('modifiedBy');
   }
 
-  if (expected.children) {
+  if (expected.children != null) {
     expect(actual.children).to.exist;
-    should.equal(actual.children.length, expected.children.length);
+    assert.strictEqual(actual.children.length, expected.children.length);
+    
     for (var i = 0, n = expected.children.length; i < n; i++) {
       checkObjectEquality(actual.children[i], expected.children[i]);
     }
   }
-  skippedProps.push('children');
+  verifiedProps.push('children');
 
 
-  if (expected.attachments) {
+  if (expected.attachments != null) {
     expect(actual.attachments).to.exist;
-    should.equal(actual.attachments.length, expected.attachments.length);
-    var attachmentsNumber = actual.attachments.length;
-    expected.attachments.forEach( function (attachmentFromExpected) {
-      actual.attachments.forEach( function (attachmentFromActual) {
-        if (attachmentFromActual.id === attachmentFromExpected.id) {
-          checkObjectEquality(attachmentFromActual, attachmentFromExpected);
-          attachmentsNumber = attachmentsNumber - 1;
-        }
-      });
-    });
-    should.equal(attachmentsNumber, 0);
-  }
-  skippedProps.push('attachments');
 
-  _.omit(actual, skippedProps).should.eql(_.omit(expected, skippedProps));
-};
+    assert.strictEqual(actual.attachments.length, expected.attachments.length, 
+      `Must have ${expected.attachments.length} attachments.`);
+    
+    const expectMap = new Map(); 
+    for (let ex of expected.attachments)
+      expectMap.set(ex.id, ex);
+    
+    for (let act of actual.attachments) {
+      const ex = expectMap.get(act.id);
+      assert.isNotNull(ex);
+      
+      checkObjectEquality(act, ex);
+    }
+  }
+  verifiedProps.push('attachments');
+
+  const remaining = _.omit(actual, verifiedProps);
+  const expectedRemaining = _.omit(expected, verifiedProps);
+  assert.deepEqual(remaining, expectedRemaining);
+}
 
 function checkApproxTimeEquality(actual, expected) {
   Math.round(actual).should.eql(Math.round(expected),
