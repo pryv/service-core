@@ -221,7 +221,7 @@ exports.restoreFromDump = function (versionNum, mongoFolder, callback) {
  * @returns {Object} structure
  */
 exports.getStructure = function (version) {
-  return require(path.resolve(__dirname + '/data/structure/' + version));
+  return require(path.resolve(__dirname + '/structure/' + version));
 };
 
 function clearAllData(callback) {

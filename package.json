@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "api-server": "file:source/api-server",
-    "async": "^2.1.4",
+    "async": "^2.5.0",
     "axon": "2.0.x",
     "babel-plugin-transform-flow-strip-types": "^6.22.0",
     "bcrypt": "^1.0.2",
@@ -81,7 +81,8 @@
     "socket.io-client": "0.9.x",
     "supertest": "^3.0.0",
     "temp": "^0.8.3",
-    "wrench": "latest"
+    "wrench": "latest", 
+    "chai": "^4.1.2"
   },
   "engines": {
     "node": "^8.3.0"
