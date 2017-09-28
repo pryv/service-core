@@ -24,8 +24,10 @@ const typeRepo = new TypeRepository();
  * Events API methods implementations.
  * @param auditSettings
  */
-module.exports = function (api, userEventsStorage, userEventFilesStorage, usersStorage,
-                           authSettings, eventTypes, notifications) {
+module.exports = function (
+  api, userEventsStorage, userEventFilesStorage, usersStorage,
+  authSettings, eventTypesSettings, notifications, logging) 
+{
                              
   // Update types and log error
   typeRepo.tryUpdate(eventTypesSettings.sourceURL)
@@ -34,15 +36,15 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   // COMMON
 
   api.register('events.*',
-      commonFns.loadAccess);
+    commonFns.loadAccess);
 
   // RETRIEVAL
 
   api.register('events.get',
-      commonFns.getParamsValidation(methodsSchema.get.params),
-      applyDefaultsForRetrieval,
-      findAccessibleEvents,
-      includeDeletionsIfRequested);
+    commonFns.getParamsValidation(methodsSchema.get.params),
+    applyDefaultsForRetrieval,
+    findAccessibleEvents,
+    includeDeletionsIfRequested);
 
   function applyDefaultsForRetrieval(context, params, result, next) {
     _.defaults(params, {

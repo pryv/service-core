@@ -88,7 +88,7 @@ utils.messaging.openPubSocket(settings.tcpMessaging, function (err, messagingSoc
   });
 
   // register API methods
-
+  
   [
     require('./methods/system'),
     require('./methods/utility'),
