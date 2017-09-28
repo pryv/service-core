@@ -121,8 +121,12 @@ exports.checkStoredItem = function (item, schemaName) {
 
 function checkMeta(parentObject) {
   expect(parentObject.meta).to.exist;
-  parentObject.meta.apiVersion.should.eql(require('../../package.json').version);
-  parentObject.meta.serverTime.should.match(/^\d+\.?\d*$/);
+  
+  const meta = parentObject.meta;
+  const expectVersion = require('../../package.json').version;
+
+  assert.strictEqual(meta.apiVersion, expectVersion);
+  assert.match(meta.serverTime, /^\d+\.?\d*$/);
 }
 exports.checkMeta = checkMeta;
 

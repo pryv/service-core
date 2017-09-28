@@ -50,13 +50,15 @@ describe('root', function () {
   describe('GET /', function () {
 
     it('should return basic server meta information as JSON when requested', function (done) {
-      superagent.get(path()).set('Accept', 'application/json').end(function (err, res) {
-        should.not.exist(err); 
-        res.statusCode.should.eql(200);
-        res.should.be.json;
-        validation.checkMeta(res.body);
-        done();
-      });
+      superagent
+        .get(path()).set('Accept', 'application/json')
+        .end(function (err, res) {
+          should.not.exist(err); 
+          res.statusCode.should.eql(200);
+          res.should.be.json;
+          validation.checkMeta(res.body);
+          done();
+        });
     });
 
     it('should return basic server meta information as text otherwise', function (done) {
