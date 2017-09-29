@@ -1,4 +1,3 @@
-'use strict';
 
 /*global describe, before, beforeEach, it */
 
@@ -12,7 +11,7 @@ var helpers = require('./helpers'),
     encryption = require('components/utils').encryption,
     should = require('should'),
     storage = helpers.dependencies.storage.users,
-    request = helpers.request.superagent,
+    request = require('superagent'),
     testData = helpers.data,
     timestamp = require('unix-timestamp'),
     url = require('url'),
