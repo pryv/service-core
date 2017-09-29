@@ -16,6 +16,7 @@
     "flow-coverage": "node_modules/.bin/flow-coverage-report -i 'source/**/*.js' -t html"
   },
   "dependencies": {
+    "mongodb": "^2.2.31",
     "api-server": "file:source/api-server",
     "async": "^2.5.0",
     "axon": "2.0.x",
