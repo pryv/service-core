@@ -1,5 +1,9 @@
+
+const requestModule = require('./request'); 
+
 exports = module.exports = {
-  request: require('./request'),
+  request: requestModule,
+  unpatchedRequest: requestModule.unpatched, 
   attachmentsCheck: require('./attachmentsCheck'),
   data: require('./data'),
   dependencies: require('./dependencies'),

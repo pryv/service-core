@@ -1,4 +1,3 @@
-'use strict';
 // @flow
 
 const superagent = require('superagent');
@@ -9,7 +8,37 @@ const should = require('should');
  * Helper for HTTP requests (with access token authentication).
  */
 module.exports = request;
+module.exports.unpatched = unpatchedRequest; 
 
+
+// --------------------------------- new usage, unpatched sa with helpers added
+function unpatchedRequest(serverURL: string) {
+  return new UnpatchedRequest(serverURL); 
+}
+
+class UnpatchedRequest {
+  serverURL: string; 
+  token: ?string; 
+  
+  constructor(serverURL: string) {
+    this.serverURL = serverURL;
+    this.token = null; 
+  }
+  
+  get(...args) {
+    return this.execute('GET', ...args);
+  }
+  
+  execute(method: string, path: string, token?: string) {
+    const authToken = token || this.token; 
+    const destUrl = url.resolve(this.serverURL, path);
+
+    return new superagent.Request(method, destUrl)
+      .set('authorization', authToken);
+  }
+}
+
+// -------------------------------------------------------- deprecated old usage
 function request(serverURL: string) {
   return new Request(serverURL);
 }
@@ -93,7 +122,3 @@ class IndifferentRequest extends superagent.Request {
   } 
 }
 
-/**
- * Expose the patched superagent for tests that don't need the wrapper.
- */
-request.superagent = superagent;
