@@ -25,11 +25,11 @@ module.exports = function (express, commonHeadersMiddleware, errorsMiddleware,
   app.use(middleware.override);
   app.use(commonHeadersMiddleware);
   app.use(app.router);
+  app.use(middleware.notFound);
   
   // Activate Airbrake if needed
   activateAirbrake(app);
-
-  app.use(middleware.notFound);
+  
   app.use(errorsMiddleware);
   
   // define init sequence utils
@@ -60,7 +60,6 @@ function activateAirbrake(app) {
       const key = airbrakeSettings.key;
       if(projectId != null && key != null){
         const airbrake = require('airbrake').createClient(projectId, key);
-        airbrake.handleExceptions();
         app.use(airbrake.expressHandler());
       }
     }
