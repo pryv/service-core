@@ -52,6 +52,18 @@ module.exports = function (express, commonHeadersMiddleware, errorsMiddleware,
 module.exports.injectDependencies = true;
 
 function activateAirbrake(app) {
+  /*
+    Quick guide on how to test Airbrake notifications (under logs entry):
+    1. Update configuration file with Airbrake information:
+        "airbrake": {
+         "active": true,
+         "key": "get it from pryv.airbrake.io settings",
+         "projectId": "get it from pryv.airbrake.io settings"
+       }
+    2. Throw a fake error in the code (/routes/root.js is easy to trigger):
+        throw new Error('This is a test of Airbrake notifications');
+    3. Trigger the error by running the faulty code (run a local core)
+   */
   const logSettings = config.load().logs;
   if(logSettings != null) {
     const airbrakeSettings = logSettings.airbrake;
