@@ -1,5 +1,4 @@
-var winston = require('winston'),
-    airbrake = null;
+var winston = require('winston');
 
 // setup logging levels (match logging methods below)
 var levels = Object.freeze({
@@ -47,10 +46,6 @@ module.exports = function (logsSettings) {
       json: false
     });
   }
-  if (logsSettings.airbrake.active) {
-    airbrake = require('airbrake').createClient(logsSettings.airbrake.projectId, logsSettings.airbrake.key);
-    airbrake.handleExceptions();
-  }
 
   // return singleton
 
@@ -90,16 +85,6 @@ Object.keys(levels).forEach(function (level) {
     return winston[level](this.messagePrefix + message, metadata || {});
   };
 });
-
-Logger.prototype.sendToErrorService = function (error, callback) {
-  if (! airbrake) {
-    if (typeof(callback) === 'function') {
-      callback(null, null);
-    }
-    return;
-  }
-  airbrake.notify(error, callback);
-};
 
 Logger.prototype.isValidLevel = function (level) {
   return levels.hasOwnProperty(level);

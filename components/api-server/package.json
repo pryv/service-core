@@ -12,6 +12,7 @@
     "update-event-types": "scripts/update-event-types.bash"
   },
   "dependencies": {
+    "airbrake": "^2.1.0",
     "slug": "^0.9.1",
     "multistream": "^2.1.0",
     "slug": "0.8.x",
