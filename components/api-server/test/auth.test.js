@@ -185,6 +185,24 @@ describe('auth', function () {
           });
         }
     );
+
+    // cf. GH issue #57
+    it('must not leak _private object from Result', function (done) {
+      request.post(path(authData.username))
+        .set('Origin', trustedOrigin)
+        .send(authData).end(function (err, res) {
+        res.statusCode.should.eql(200);
+
+        should.exist(res.body.token);
+        checkNoUnwantedCookie(res);
+        should.exist(res.body.preferredLanguage);
+        res.body.preferredLanguage.should.eql(user.language);
+
+        should.not.exist(res.body._private);
+
+        done();
+      });
+    });
     
     function parallelLogin(appId, callback) {
        // We want our random appId to be trusted, so using recla as origin

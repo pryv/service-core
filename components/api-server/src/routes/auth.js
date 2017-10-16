@@ -41,7 +41,7 @@ module.exports = function (expressApp, api, authSettings, httpSettings) {
     api.call('auth.login', req.context, params, function (err, result) {
       if (err) { return next(err); }
       setSSOCookie({ username: req.context.username, token: result.token }, res);
-      res.json(result, 200);
+      result.writeToHttpResponse(res, 200);
     });
   });
 
