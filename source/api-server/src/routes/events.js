@@ -2,12 +2,13 @@ var methodCallback = require('./methodCallback'),
     encryption = require('components/utils').encryption,
     errors = require('components/errors').factory,
     express = require('express'),
-    filesUploadSupport = require('components/middleware').filesUploadSupport,
     Paths = require('./Paths'),
     tryCoerceStringValues = require('../schema/validation').tryCoerceStringValues,
     _ = require('lodash');
     
 const hasFileUpload = require('../middleware/uploads').hasFileUpload;
+
+// import type { $Application as ExpressApplication } from 'express';
 
 /**
  * Set up events route handling.
@@ -20,14 +21,14 @@ const hasFileUpload = require('../middleware/uploads').hasFileUpload;
  * @param eventFilesSettings
  */
 module.exports = function(
-  expressApp: express$Application, 
+  expressApp, 
   api, attachmentsAccessMiddleware, userAccessesStorage,
   authSettings, eventFilesSettings
 ) {
 
   const attachmentsStatic = express.static(
     eventFilesSettings.attachmentsDirPath);
-  const events : express$Router = new express.Router();
+  const events = new express.Router();
   
   // This is the path prefix for the routes in this file. 
   expressApp.use(Paths.Events, events);
