@@ -50,7 +50,6 @@ module.exports = function(
     api.call('events.get', req.context, params, methodCallback(res, next, 200));
   });
 
-  // MERGE: Might not be in the right spot...
   expressApp.get(Paths.Events + '/:id', function (req, res, next) {
     var params = _.extend({id: req.params.id}, req.query);
     tryCoerceStringValues(params, {
