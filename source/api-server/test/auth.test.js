@@ -174,42 +174,59 @@ describe('auth', function () {
       });
     
     it('must support concurrent login request',
-        function (done) {          
-          var loginCount = 2;
-          var randomId = 'pryv-test-' + Date.now();
-          
-          async.times(loginCount, function (n, next) {
-            parallelLogin(randomId, function(err) {
-              next(err);
-            });
-          }, function (error) {
-            done(error);
+      function (done) {          
+        var loginCount = 2;
+        var randomId = 'pryv-test-' + Date.now();
+        
+        async.times(loginCount, function (n, next) {
+          parallelLogin(randomId, function(err) {
+            next(err);
           });
-        }
+        }, function (error) {
+          done(error);
+        });
+      }
     );
+
+    // cf. GH issue #57
+    it('must not leak _private object from Result', function (done) {
+      request.post(path(authData.username))
+        .set('Origin', trustedOrigin)
+        .send(authData).end(function (err, res) {
+          res.statusCode.should.eql(200);
+
+          should.exist(res.body.token);
+          checkNoUnwantedCookie(res);
+          should.exist(res.body.preferredLanguage);
+          res.body.preferredLanguage.should.eql(user.language);
+
+          should.not.exist(res.body._private);
+
+          done();
+        });
+    });
     
     function parallelLogin(appId, callback) {
-       // We want our random appId to be trusted, so using recla as origin
+      // We want our random appId to be trusted, so using recla as origin
       request.post(path(authData.username))
-          .set('Origin', 'https://test.rec.la:1234')
-          .send({
-            username: user.username,
-            password: user.password,
-            appId: appId
-          })
-          .end(function (err, res) {
-            if(err) {
-              return callback(err);
-            }
-            should(res.statusCode).be.equal(200);
-            helpers.dependencies.storage.user.accesses.findOne(user, {name: appId, type: 'personal'}, null,
-                (err, access) => {
-                  should(access.token).be.equal(res.body.token);
-                  callback();
-                }
-            );
+        .set('Origin', 'https://test.rec.la:1234')
+        .send({
+          username: user.username,
+          password: user.password,
+          appId: appId
+        })
+        .end(function (err, res) {
+          if(err) {
+            return callback(err);
           }
-      );
+          should(res.statusCode).be.equal(200);
+          helpers.dependencies.storage.user.accesses.findOne(user, {name: appId, type: 'personal'}, null,
+            (err, access) => {
+              should(access.token).be.equal(res.body.token);
+              callback();
+            }
+          );
+        });
     }
 
     function checkNoUnwantedCookie(res) {
