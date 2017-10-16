@@ -1,4 +1,3 @@
-'use strict';
 // @flow
 
 /*global describe, before, after, it */

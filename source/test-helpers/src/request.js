@@ -3,6 +3,7 @@
 const superagent = require('superagent');
 const url = require('url');
 const should = require('should');
+const assert = require('chai').assert;
 
 /**
  * Helper for HTTP requests (with access token authentication).
@@ -72,7 +73,8 @@ Request.prototype.login = function (user, callback) {
   return superagent.post(targetURL)
     .set('Origin', 'http://test.pryv.local')
     .send(authData).end(function (err, res) {
-      should(res).not.be.empty(); 
+      assert.isNull(err, 'Request must be a success');
+      assert.isDefined(res, 'Request has a result');
       res.statusCode.should.eql(200);
 
       if (! res.body.token) {

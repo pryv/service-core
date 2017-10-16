@@ -81,7 +81,7 @@ module.exports = function (expressApp: express$Application, api: any, authSettin
       api.call('auth.login', req.context, params, function (err, result) {
         if (err) return next(err);
         setSSOCookie({ username: req.context.username, token: result.token }, res);
-        result.writeToHttpResponse(result, 200);
+        result.writeToHttpResponse(res, 200);
       });
     });
     router.post('/logout', function routeLogout(req: RequestWithContext, res, next) {
