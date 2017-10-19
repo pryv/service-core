@@ -160,6 +160,12 @@ describe('accesses (personal)', function () {
     it('must create a new app access with the sent data, creating/restoring requested streams',
       function (done) {
         var data = {
+          id: null, 
+          token: null, 
+          created: null, 
+          createdBy: null, 
+          modified: null, 
+          modifiedBy: null, 
           name: 'my-sweet-app',
           type: 'app',
           deviceName: 'My Sweet Device',
@@ -259,6 +265,7 @@ describe('accesses (personal)', function () {
 
     it('must ignore erroneous requests to create new streams', function (done) {
       var data = {
+        id: null, token: null, 
         name: 'my-sweet-app-id',
         type: 'app',
         permissions: [
@@ -552,7 +559,7 @@ describe('accesses (personal)', function () {
         modifiedBy: 'alice'
       };
       
-      request.put(path(original.id)).send(forbiddenUpdate).end(function (res) {
+      req().put(path(original.id)).send(forbiddenUpdate).end(function (res) {
         validation.check(res, {
           status: 403,
           id: ErrorIds.Forbidden,
@@ -638,6 +645,7 @@ describe('accesses (personal)', function () {
         deviceName: 'It\'s a washing machine that sends tender e-mails to your grandmother!',
         requestedPermissions: [
           {
+            name: null, 
             streamId: testData.streams[0].id,
             level: 'contribute',
             defaultName: 'A different name'
@@ -673,6 +681,7 @@ describe('accesses (personal)', function () {
         deviceName: 'It\'s a matchbox that sings the entire repertoire of Maria Callas!',
         requestedPermissions: [
           {
+            name: null, 
             streamId: testData.streams[0].id,
             level: 'manage',
             defaultName: 'A different name'
@@ -737,6 +746,7 @@ describe('accesses (personal)', function () {
         deviceName: testData.accesses[4].deviceName,
         requestedPermissions: [
           {
+            name: null, 
             streamId: testData.streams[0].id,
             level: 'manage',
             defaultName: 'This permission differs from the existing access\' permissions'

@@ -4,18 +4,13 @@
 // Tests pertaining to storing data in a hf series. 
 
 /* global describe, it */
-const { should } = require('../../test-helpers');
 const influx = require('influx');
-
-const NullLogger = require('components/utils/src/logging').NullLogger;
 
 const series = require('../../../src/index.js').series; 
 const Repository = series.Repository; 
 const DataMatrix = series.DataMatrix; 
 
 describe('business.series.Repository', function () {
-  const logger = new NullLogger(); 
-  
   describe('with stubbed out connection', function () {
     const namespace = 'pryv-userdb.USER_ID';  // influx database
     const seriesName = 'event.EVENT_ID';      // influx measurement
@@ -31,7 +26,7 @@ describe('business.series.Repository', function () {
     };
 
     it('should produce series objects for events', function () {
-      const repository = new Repository(influxConnection, logger);
+      const repository = new Repository(influxConnection);
       const series = repository.get(namespace, seriesName);
       
       return series

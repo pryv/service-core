@@ -29,7 +29,7 @@ module.exports = {
  * Enables file uploads on a route. file uploads are checked in their global
  * form (MUST have only a JSON body). 
  */ 
-function hasFileUpload(req: express$Request, res: express$Response, next: () => void) {
+function hasFileUpload(req: express$Request, res: express$Response, next: express$NextFunction) {
   const uploadMiddleware = uploadMiddlewareFactory.any(); 
   
   uploadMiddleware(req, res, (err) => {

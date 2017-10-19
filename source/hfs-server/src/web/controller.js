@@ -141,7 +141,7 @@ function checkFields(val: any): ?Array<string> {
 
 module.exports.querySeriesData = R.curryN(4, querySeriesData);
 
-import type {Query, Repository} from 'business';
+import type {Query, Repository} from 'components/business';
 import type {MetadataRepository, SeriesMetadata} from '../metadata_cache';
 
 /** GET /events/:event_id/series - Query a series for a data subset.
@@ -269,7 +269,7 @@ function verifyAccess(
 }
 
 function retrievePoints(seriesRepo: Repository, res: express$Response,
-                        queryAndSeriesMeta: [Query, SeriesMetadata]): void {
+                        queryAndSeriesMeta: [Query, SeriesMetadata]): mixed {
   // const query = queryAndSeriesMeta[0];
   const seriesMeta = queryAndSeriesMeta[1];
   

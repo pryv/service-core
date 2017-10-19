@@ -15,11 +15,13 @@ describe('uploads middleware', function() {
   function app(): express$Application {
     const app = express(); 
     
-    app.post('/path', bodyParser.json(), uploads.hasFileUpload, (req, res) => {
+    const verifyAssumptions = (req: express$Request, res) => {
       res
         .status(200)
         .json({files: req.files});
-    });
+    }; 
+    
+    app.post('/path', bodyParser.json(), uploads.hasFileUpload, verifyAssumptions);
     
     return app;  
   }

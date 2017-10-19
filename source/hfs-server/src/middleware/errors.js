@@ -22,7 +22,7 @@ module.exports = function produceErrorHandlingMiddleware(logger: Logger) {
     error: any, 
     req: express$Request, 
     res: express$Response, 
-    next: () => void) 
+    next: express$NextFunction) 
   {
     errorHandling.logError(error, req, logger);
     res

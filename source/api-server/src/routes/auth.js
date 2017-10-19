@@ -3,6 +3,7 @@
 
 const cookieParser = require('cookie-parser');
 const R = require('ramda');
+const lodash = require('lodash');
 const express = require('express');
 
 const errors = require('components/errors').factory;
@@ -26,14 +27,17 @@ module.exports = function (expressApp: express$Application, api: any, authSettin
   const ssoCookieSignSecret = authSettings.ssoCookieSignSecret || 'Hallowed Be Thy Name, O Node';
   const ssoCookieSecure = process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'test';
 
+  // Returns true if the given `obj` has all of the property values identified
+  // by the names contained in `keys`.
+  //
   function hasProperties(obj: mixed, keys: Array<string>): boolean {
     if (obj == null) { return false; }
     if (typeof obj !== 'object') { return false; }
-    
-    return R.all(
-      R.has(R.__, obj),
-      keys
-    ); 
+        
+    for (const key of keys) {
+      if (! lodash.has(obj, key)) return false; 
+    }
+    return true; 
   }
   function setSSOCookie(data, res) {
     res.cookie('sso', data, {
@@ -60,10 +64,10 @@ module.exports = function (expressApp: express$Application, api: any, authSettin
         return next(errors.invalidCredentials('Not signed-on'));
       }
 
-      res.json({
+      res.status(200).json({
         username: ssoCookie.username,
         token: ssoCookie.token
-      }, 200);
+      });
     });
     router.post('/login', function routeLogin(req: RequestWithContext, res, next) {
       if (typeof req.body !== 'object' || req.body == null ||

@@ -14,10 +14,9 @@ const Paths = require('./routes/Paths');
 /** Handles requests during application startup. 
  */
 function handleRequestDuringStartup(req: express$Request, res: express$Response) {
-  res.send({
+  res.status(503).send({
     id: 'api-unavailable',
-    message: 'The API is temporarily unavailable; please try again in a moment.'
-  }, 503);
+    message: 'The API is temporarily unavailable; please try again in a moment.' });
 }
 
 /** Manages our express app during application startup. 
