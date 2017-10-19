@@ -234,7 +234,7 @@ function validateQuery(query: Query): bluebird<Query> {
       }
     }
 
-    if (query.to && query.from) {
+    if (query.to != null && query.from != null) {
       if (query.to < query.from) {
         errorsThrown.push({
           message: 'Parameter fromTime is bigger than toTime',

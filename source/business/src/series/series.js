@@ -8,7 +8,7 @@ const {isoOrTimeToDate, formatDate} = require('influx/lib/src/grammar/times');
 
 const DataMatrix = require('./data_matrix');
 
-export type Timestamp = (Date | string | number); 
+export type Timestamp = (number); 
 export type Query = {
   from?: Timestamp, 
   to?: Timestamp, 

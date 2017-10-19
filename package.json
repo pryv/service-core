@@ -16,7 +16,7 @@
     "flow-coverage": "node_modules/.bin/flow-coverage-report -i 'source/**/*.js' -t html"
   },
   "dependencies": {
-    "mongodb": "^2.2.31",
+    "airbrake": "^2.1.1",
     "api-server": "file:source/api-server",
     "async": "^2.5.0",
     "axon": "2.0.x",
@@ -37,6 +37,7 @@
     "middleware": "file:source/middleware",
     "mkdirp": "0.5.x",
     "model": "file:source/model",
+    "mongodb": "^2.2.31",
     "morgan": "^1.8.1",
     "multer": "^1.3.0",
     "previews-server": "file:source/previews-server",
@@ -58,6 +59,7 @@
     "babel-eslint": "^7.1.1",
     "babel-register": "^6.23.0",
     "blanket": "^1.2.3",
+    "chai": "^4.1.2",
     "charlatan": "^1.1.0",
     "colors": "^1.0.3",
     "cookie": "^0.3.1",
@@ -82,8 +84,7 @@
     "socket.io-client": "0.9.x",
     "supertest": "^3.0.0",
     "temp": "^0.8.3",
-    "wrench": "latest", 
-    "chai": "^4.1.2"
+    "wrench": "latest"
   },
   "engines": {
     "node": "8.x"
