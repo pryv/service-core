@@ -16,7 +16,11 @@ declare class RequestWithOriginalMethodAndBody extends express$Request {
  * perform request body parsing (expects req.body to exist), so must be executed
  * after e.g. bodyParser middleware.
  */
-module.exports = function (req: RequestWithOriginalMethodAndBody, res: express$Response, next: () => void) {
+function normalizeRequest(
+  req: RequestWithOriginalMethodAndBody, 
+  res: express$Response, 
+  next: express$NextFunction) 
+{
   if (! req.is('application/x-www-form-urlencoded')) { return next(); }
   
   const body = req.body; 
@@ -46,5 +50,6 @@ module.exports = function (req: RequestWithOriginalMethodAndBody, res: express$R
   }
 
   next();
-};
+}
 
+module.exports = normalizeRequest;

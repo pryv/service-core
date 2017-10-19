@@ -2,6 +2,7 @@
 
 const bluebird = require('bluebird');
 const R = require('ramda');
+const lodash = require('lodash');
 const Charlatan = require('charlatan');
 const generateId = require('cuid');
 
@@ -128,11 +129,11 @@ class FixtureTreeNode {
    * resulting attribute set. 
    */
   attributes(attrs: {}): Attributes {
-    return R.mergeAll([
+    return lodash.merge(
       { id: `c${Charlatan.Number.number(15)}` },
       this.fakeAttributes(),
       attrs,
-    ]);
+    );
   }
 
   /** Override this to provide default attributes via Charlatan generation. 
@@ -183,7 +184,9 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
   
   /** Internal constructor for a user fixture. */
   constructor(context: UserContext, name: string, attrs: {}) {
-    super(context, R.mergeAll([attrs, {id: name, username: name}]));
+    super(
+      context, 
+      lodash.merge({}, attrs, {id: name, username: name}));
   }
   
   stream(attrs: {}={}, cb: (FixtureStream) => void) {

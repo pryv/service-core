@@ -33,7 +33,9 @@ function produceMongoConnection(): storage.Database {
 }
 exports.produceMongoConnection = produceMongoConnection;
 
-import type {Suite} from 'mocha';
+interface Suite {
+  beforeEach(() => mixed): void;
+}
 
 // Define a value that should be reset for each test execution (each 'it' in
 // your mocha suite). 

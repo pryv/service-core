@@ -46,10 +46,13 @@ var logging = dependencies.get('logging'),
 
 dependencies.register({
   // storage
-  versionsStorage: new storage.Versions(database, settings.eventFiles.attachmentsDirPath,
-      logging),
-  passwordResetRequestsStorage: new storage.PasswordResetRequests(database,
-      {maxAge: settings.auth.passwordResetRequestMaxAge}),
+  versionsStorage: new storage.Versions(
+    database, 
+    settings.eventFiles.attachmentsDirPath,
+    logging),
+  passwordResetRequestsStorage: new storage.PasswordResetRequests(
+    database,
+    {maxAge: settings.auth.passwordResetRequestMaxAge}),
   sessionsStorage: new storage.Sessions(database, {maxAge: settings.auth.sessionMaxAge}),
   usersStorage: new storage.Users(database),
   userAccessesStorage: new storage.user.Accesses(database),
@@ -124,8 +127,8 @@ utils.messaging.openPubSocket(settings.tcpMessaging, function (err, messagingSoc
     var address = server.address();
     var protocol = server.key ? 'https' : 'http';
     server.url = protocol + '://' + address.address + ':' + address.port;
-    logger.info('API server v' + require('../package.json').version +
-        ' [' + app.settings.env + '] listening on ' + server.url);
+    logger.info(
+      `Core Server (API module) listening on ${server.url}`);
 
     // TEST: execute test setup instructions if any
     if (process.env.NODE_ENV === 'test') {

@@ -14,7 +14,7 @@ describe('subdomainToPath middleware', function() {
     const request = supertest(app);
     
     app.use(subdomainToPath);
-    app.get('*', (req, res) => {
+    app.get('*', (req: express$Request, res) => {
       res.json({path: req.path});
     });
     

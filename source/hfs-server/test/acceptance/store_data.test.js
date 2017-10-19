@@ -32,7 +32,7 @@ describe('Storing data in a HF series', function() {
     const database = produceMongoConnection(); 
     const influx = produceInfluxConnection(); 
 
-    const pryv = databaseFixture(database, this);
+    const pryv = databaseFixture(database);
     afterEach(function () {
       pryv.clean(); 
     });

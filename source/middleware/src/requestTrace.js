@@ -10,26 +10,12 @@ interface Logger {
   info(msg: string): void; 
 }
 
-/** Adaptor to be able to use a logger as a stream for morgan. 
- * 
- * Will write messages as if you called `logger.info`.
- */
-class LoggerToStream {
-  logger: Logger; 
-  
-  constructor(logger: Logger) {
-    this.logger = logger; 
-  }
-  
-  write(message: string) {
-    this.logger.info(message);
-  }
-}
-
 module.exports = function (express: any, logging: LoggerFactory) {
   const logger = logging.getLogger('routes');
-  const loggerStream = new LoggerToStream(logger);
+  const morganLoggerStreamWrite = (msg: string) => logger.info(msg);
   
-  return morgan('combined', {stream: loggerStream});
+  return morgan('combined', {stream: {
+    write: morganLoggerStreamWrite
+  }});
 };
 module.exports.injectDependencies = true; // make it DI-friendly
