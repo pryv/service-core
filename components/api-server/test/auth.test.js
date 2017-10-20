@@ -11,7 +11,9 @@ var helpers = require('./helpers'),
     request = require('superagent'),
     testData = helpers.data,
     url = require('url'),
-    _ = require('lodash');
+    _ = require('lodash'),
+    fs = require('fs'),
+    os = require('os');
 
 describe('auth', function () {
 
@@ -203,6 +205,48 @@ describe('auth', function () {
         done();
       });
     });
+
+    // cf. GH issue #3
+    it('must hide the password in the logs when an error occurs', function (done) {
+      const logFilePath = os.tmpdir() + '/password-logs.log';
+
+      let settings = _.cloneDeep(helpers.dependencies.settings);
+      settings.logs = {
+        file: {
+          active: true,
+          path: logFilePath,
+          level: 'debug',
+          maxsize: 500000,
+          maxFiles: 50,
+          json: false
+        }
+      };
+
+      let wrongPasswordData = _.cloneDeep(authData);
+      wrongPasswordData.password = 'wrongPassword';
+
+      async.series([
+        server.ensureStarted.bind(server, settings),
+        function failLogin(stepDone) {
+          request.post(path(authData.username))
+            .set('Origin', trustedOrigin)
+            .send(wrongPasswordData).end(function (err, res) {
+            res.statusCode.should.eql(401);
+            stepDone();
+          });
+        },
+        function verifyNoPasswordInLogs(stepDone) {
+          fs.readFile(logFilePath, 'utf8', function (err, data) {
+            if (err) {
+              return stepDone(err);
+            }
+            should(data.indexOf(wrongPasswordData.password) === -1).be.true();
+            stepDone();
+          })
+        },
+        server.ensureStarted.bind(server, helpers.dependencies.settings)
+      ], done);
+    });
     
     function parallelLogin(appId, callback) {
        // We want our random appId to be trusted, so using recla as origin
@@ -252,6 +296,7 @@ describe('auth', function () {
             .set('Origin', trustedOrigin)
             .send(authData).end(function (err, res) {
               token = res.body.token;
+              console.log('token', token)
               stepDone();
             });
           },
