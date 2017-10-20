@@ -13,7 +13,10 @@ var helpers = require('./helpers'),
     testData = helpers.data,
     timestamp = require('unix-timestamp'),
     url = require('url'),
-    _ = require('lodash');
+    _ = require('lodash'),
+    os = require('os'),
+    fs = require('fs');
+
 require('date-utils');
 
 describe('system (ex-register)', function () {
@@ -224,6 +227,48 @@ describe('system (ex-register)', function () {
               id: ErrorIds.UnsupportedContentType
             }, done);
           });
+    });
+
+    // cf. GH issue #64
+    it('must hide the passwordHash in the logs when the authentication is invalid', function (done) {
+
+
+      const logFilePath = os.tmpdir() + '/password-logs.log';
+
+      let settings = _.cloneDeep(helpers.dependencies.settings);
+      settings.logs = {
+        file: {
+          active: true,
+          path: logFilePath,
+          level: 'debug',
+          maxsize: 500000,
+          maxFiles: 50,
+          json: false
+        }
+      };
+
+      async.series([
+        server.ensureStarted.bind(server, settings),
+        function failCreateUser(stepDone) {
+          request.post(path()).set('authorization', 'bad-key').send(newUserData)
+            .end(function (err, res) {
+              validation.checkError(res, {
+                status: 404,
+                id: ErrorIds.UnknownResource
+              }, stepDone);
+            });
+        },
+        function verifyNoPasswordInLogs(stepDone) {
+          fs.readFile(logFilePath, 'utf8', function (err, data) {
+            if (err) {
+              return stepDone(err);
+            }
+            should(data.indexOf(newUserData.passwordHash) === -1).be.true();
+            stepDone();
+          })
+        },
+        server.ensureStarted.bind(server, helpers.dependencies.settings)
+      ], done);
     });
 
   });
