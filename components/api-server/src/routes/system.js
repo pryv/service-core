@@ -29,6 +29,9 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
     var secret = req.headers.authorization;
 
     if (! secret || secret !== authSettings.adminAccessKey) {
+
+      req.body = hidePasswordHash(req.body);
+
       logger.warn('Unauthorized attempt to access system route', {
         url: req.url,
         ip: req.ip,
@@ -48,8 +51,11 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
   expressApp.post('/register/create-user', contentType.json, createUser);
 
   function createUser(req, res, next) {
-    systemAPI.call('system.createUser', {}, _.extend({}, req.body),
-        methodCallback(res, next, 201));
+
+    let params = _.extend({}, req.body);
+    req.body = hidePasswordHash(req.body);
+
+    systemAPI.call('system.createUser', {}, params, methodCallback(res, next, 201));
   }
 
   expressApp.get(Paths.System + '/user-info/:username', function (req, res, next) {
@@ -58,6 +64,11 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
     };
     systemAPI.call('system.getUserInfo', {}, params, methodCallback(res, next, 200));
   });
+
+  function hidePasswordHash(requestBody) {
+    requestBody.passwordHash = '############';
+    return requestBody;
+  }
 
 };
 module.exports.injectDependencies = true;
