@@ -204,7 +204,7 @@ describe('system (ex-register)', function () {
     });
 
     it('must return a correct 404 error when authentication is invalid', function (done) {
-      request.post(path()).set('authorization', 'bad-key').send(JSON.stringify(newUserData))
+      request.post(path()).set('authorization', 'bad-key').send(newUserData)
           .end(function (err, res) {
         validation.checkError(res, {
           status: 404,
@@ -217,7 +217,7 @@ describe('system (ex-register)', function () {
       request.post(path())
           .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
           .set('Content-Type', 'application/Json') // <-- case error
-          .send(JSON.stringify(newUserData))
+          .send(newUserData)
           .end(function (err, res) {
             validation.checkError(res, {
               status: 415,
