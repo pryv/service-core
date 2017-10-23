@@ -89,8 +89,7 @@ type DataMatrix = business.series.DataMatrix;
  * influx store. You should give this method the `req.body`.
  * 
  * @param createRequest {mixed} Deserialized JSON from the client
- * @return {DataMatrix} normalized data to be input to influx
- * @throw {Error} when the request is malformed
+ * @return {DataMatrix, null} normalized data to be input to influx
  */
 function parseData(createRequest: mixed): ?DataMatrix {
   if (createRequest == null) return null; 
@@ -165,7 +164,8 @@ function querySeriesData(ctx: Context, req: express$Request,
 
   // If required params are not there, abort.
   if (accessToken == null) return next(errors.missingHeader(AUTH_HEADER));
-  // TODO: calls for /username//series are interpreted as /username/series, hence this check is useless
+  // TODO: calls for /username//series are interpreted as /username/series,
+  // hence this check is useless
   if (eventId == null) return next(errors.invalidItemId());
 
   coerceStringParams(R.clone(req.query))
