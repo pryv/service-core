@@ -55,6 +55,10 @@ class TypeValidator {
 // extend the built in types. 
 // 
 class TypeRepository {
+  // Returns true if the type given by `name` is known by Pryv. To be known, 
+  // it needs to be part of our standard types list that we load on startup
+  // (#tryUpdate). 
+  // 
   isKnown(name: string): boolean {
     if (isSeriesType(name)) {
       const leafTypeName = name.slice(SERIES_PREFIX.length); 
