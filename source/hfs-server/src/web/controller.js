@@ -151,8 +151,10 @@ import type {MetadataRepository, SeriesMetadata} from '../metadata_cache';
  * @param  {type} next: express$NextFunction  description
  * @return {void}
  */
-function querySeriesData(ctx: Context, req: express$Request,
-                         res: express$Response, next: express$NextFunction): mixed {
+function querySeriesData(
+  ctx: Context, req: express$Request,
+  res: express$Response, next: express$NextFunction): mixed 
+{
 
   const metadata: MetadataRepository = ctx.metadata;
   const seriesRepo: Repository = ctx.series;
@@ -164,8 +166,7 @@ function querySeriesData(ctx: Context, req: express$Request,
 
   // If required params are not there, abort.
   if (accessToken == null) return next(errors.missingHeader(AUTH_HEADER));
-  // TODO: calls for /username//series are interpreted as /username/series,
-  // hence this check is useless
+  // assert: eventId is not null
   if (eventId == null) return next(errors.invalidItemId());
 
   coerceStringParams(R.clone(req.query))
@@ -268,8 +269,10 @@ function verifyAccess(
     });
 }
 
-function retrievePoints(seriesRepo: Repository, res: express$Response,
-                        queryAndSeriesMeta: [Query, SeriesMetadata]): mixed {
+function retrievePoints(
+  seriesRepo: Repository, res: express$Response,
+  queryAndSeriesMeta: [Query, SeriesMetadata]): mixed 
+{
   // const query = queryAndSeriesMeta[0];
   const seriesMeta = queryAndSeriesMeta[1];
   
