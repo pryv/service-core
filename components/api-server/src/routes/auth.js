@@ -70,8 +70,8 @@ module.exports = function (expressApp, api, authSettings, httpSettings) {
   }
 
   function hidePassword(requestBody) {
-    requestBody.password = '############';
-    return requestBody;
+    // requestBody.password = '############';
+    // return requestBody;
   }
 
 };

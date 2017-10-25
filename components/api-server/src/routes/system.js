@@ -66,8 +66,8 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
   });
 
   function hidePasswordHash(requestBody) {
-    requestBody.passwordHash = '############';
-    return requestBody;
+    // requestBody.passwordHash = '############';
+    // return requestBody;
   }
 
 };

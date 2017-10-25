@@ -226,26 +226,34 @@ describe('auth', function () {
       wrongPasswordData.password = 'wrongPassword';
 
       async.series([
+        ensureLogFileIsEmpty, 
         server.ensureStarted.bind(server, settings),
         function failLogin(stepDone) {
           request.post(path(authData.username))
             .set('Origin', trustedOrigin)
             .send(wrongPasswordData).end(function (err, res) {
-            res.statusCode.should.eql(401);
-            stepDone();
-          });
+              res.statusCode.should.eql(401);
+              stepDone();
+            });
         },
         function verifyNoPasswordInLogs(stepDone) {
           fs.readFile(logFilePath, 'utf8', function (err, data) {
             if (err) {
               return stepDone(err);
             }
+            console.log('HERE!!!');
+            console.log(data);
+            console.log('END!!!');
             should(data.indexOf(wrongPasswordData.password) === -1).be.true();
             stepDone();
           })
         },
         server.ensureStarted.bind(server, helpers.dependencies.settings)
       ], done);
+      
+      function ensureLogFileIsEmpty(stepDone) {
+        fs.unlink(logFilePath, stepDone);
+      }
     });
     
     function parallelLogin(appId, callback) {

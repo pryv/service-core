@@ -233,8 +233,6 @@ describe('system (ex-register)', function () {
 
     // cf. GH issue #64
     it('must hide the passwordHash in the logs when the authentication is invalid', function (done) {
-
-
       const logFilePath = os.tmpdir() + '/password-logs.log';
 
       let settings = _.cloneDeep(helpers.dependencies.settings);
@@ -250,6 +248,7 @@ describe('system (ex-register)', function () {
       };
 
       async.series([
+        ensureLogFileIsEmpty,
         server.ensureStarted.bind(server, settings),
         function failCreateUser(stepDone) {
           request.post(path()).set('authorization', 'bad-key').send(newUserData)
@@ -265,12 +264,20 @@ describe('system (ex-register)', function () {
             if (err) {
               return stepDone(err);
             }
+            console.log('HERE!!', data, 'END!!');
             should(data.indexOf(newUserData.passwordHash) === -1).be.true();
             stepDone();
           })
         },
         server.ensureStarted.bind(server, helpers.dependencies.settings)
       ], done);
+      
+      function ensureLogFileIsEmpty(stepDone) {
+        fs.unlink(logFilePath, (err) => {
+          if (err && err.code === 'ENOENT') stepDone(); // ignore error if file doesn't exist
+          stepDone(err);
+        });
+      }
     });
 
     // cf. GH issue #64 too
@@ -291,6 +298,7 @@ describe('system (ex-register)', function () {
       };
 
       async.series([
+        ensureLogFileIsEmpty,
         server.ensureStarted.bind(server, settings),
         function failCreateUser(stepDone) {
 
@@ -307,12 +315,20 @@ describe('system (ex-register)', function () {
             if (err) {
               return stepDone(err);
             }
+            console.log('HERE!!', data, 'END!!');
             should(data.indexOf(newUserData.passwordHash) === -1).be.true();
             stepDone();
           })
         },
         server.ensureStarted.bind(server, helpers.dependencies.settings)
       ], done);
+
+      function ensureLogFileIsEmpty(stepDone) {
+        fs.unlink(logFilePath, (err) => {
+          if (err && err.code === 'ENOENT') stepDone(); // ignore error if file doesn't exist
+          stepDone(err);
+        });
+      }
     });
 
   });
