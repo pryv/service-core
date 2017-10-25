@@ -320,8 +320,8 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
   // OTHER METHODS
 
   api.register('accesses.checkApp',
-      commonFns.getParamsValidation(methodsSchema.checkApp.params),
-      checkApp);
+    commonFns.getParamsValidation(methodsSchema.checkApp.params),
+    checkApp);
 
   function checkApp(context, params, result, next) {
     if (! context.access.isPersonal()) {
