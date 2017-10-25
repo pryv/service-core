@@ -201,7 +201,9 @@ function applyDefaultValues(query: Object): bluebird<Query> {
       query.from = timestamp.add(query.to, -24 * 60 * 60);
     }
     if (query.from !== null && query.to === null) {
-      query.to = timestamp.now(); // default value: now, can omit this as it is the default value in influxDB
+      // default value: now, can omit this as it is the default value in
+      // influxDB
+      query.to = timestamp.now(); 
     }
     if (query.from === null && query.to === null) {
       query.from = timestamp.now('-1h');
