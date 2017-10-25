@@ -19,12 +19,12 @@ const R = require('ramda');
 
 describe('accesses (personal)', function () {
 
-  var user = testData.users[0],
-      basePath = '/' + user.username + '/accesses',
-      // these must be set after server instance started
-      request = null,
-      sessionAccessId = null;
-
+  const user = testData.users[0];
+  const basePath = '/' + user.username + '/accesses';
+  
+  let sessionAccessId = null;
+  let request = null;
+  
   function path(id) {
     return basePath + '/' + id;
   }
@@ -160,12 +160,12 @@ describe('accesses (personal)', function () {
     it('must create a new app access with the sent data, creating/restoring requested streams',
       function (done) {
         var data = {
-          id: null, 
-          token: null, 
-          created: null, 
-          createdBy: null, 
-          modified: null, 
-          modifiedBy: null, 
+          id: undefined, 
+          token: undefined, 
+          created: undefined, 
+          createdBy: undefined, 
+          modified: undefined, 
+          modifiedBy: undefined, 
           name: 'my-sweet-app',
           type: 'app',
           deviceName: 'My Sweet Device',
@@ -265,7 +265,8 @@ describe('accesses (personal)', function () {
 
     it('must ignore erroneous requests to create new streams', function (done) {
       var data = {
-        id: null, token: null, 
+        id: undefined,          // declare property for flow
+        token: undefined,       // declare property for flow 
         name: 'my-sweet-app-id',
         type: 'app',
         permissions: [
@@ -645,7 +646,7 @@ describe('accesses (personal)', function () {
         deviceName: 'It\'s a washing machine that sends tender e-mails to your grandmother!',
         requestedPermissions: [
           {
-            name: null, 
+            name: 'myaccess', 
             streamId: testData.streams[0].id,
             level: 'contribute',
             defaultName: 'A different name'
@@ -681,7 +682,7 @@ describe('accesses (personal)', function () {
         deviceName: 'It\'s a matchbox that sings the entire repertoire of Maria Callas!',
         requestedPermissions: [
           {
-            name: null, 
+            name: 'myaccess', 
             streamId: testData.streams[0].id,
             level: 'manage',
             defaultName: 'A different name'
@@ -746,7 +747,7 @@ describe('accesses (personal)', function () {
         deviceName: testData.accesses[4].deviceName,
         requestedPermissions: [
           {
-            name: null, 
+            name: 'foobar', 
             streamId: testData.streams[0].id,
             level: 'manage',
             defaultName: 'This permission differs from the existing access\' permissions'
