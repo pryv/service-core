@@ -296,7 +296,6 @@ describe('auth', function () {
             .set('Origin', trustedOrigin)
             .send(authData).end(function (err, res) {
               token = res.body.token;
-              console.log('token', token)
               stepDone();
             });
           },
