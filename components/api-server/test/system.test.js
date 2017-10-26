@@ -1,4 +1,4 @@
-/*global describe, before, beforeEach, it */
+/*global describe, before, beforeEach, after it */
 
 var helpers = require('./helpers'),
     ErrorIds = require('components/errors').ErrorIds,
@@ -21,7 +21,7 @@ require('date-utils');
 
 describe('system (ex-register)', function () {
 
-  this.timeout(5000)
+  this.timeout(5000);
 
   function basePath() {
     return url.resolve(server.url, '/system');
@@ -231,105 +231,113 @@ describe('system (ex-register)', function () {
           });
     });
 
-    // cf. GH issue #64
-    it('must hide the passwordHash in the logs when the authentication is invalid', function (done) {
-      const logFilePath = os.tmpdir() + '/password-logs.log';
+    describe('must replace the passwordHash in the logs by (hidden)', function () {
 
-      let settings = _.cloneDeep(helpers.dependencies.settings);
-      settings.logs = {
-        file: {
-          active: true,
-          path: logFilePath,
-          level: 'debug',
-          maxsize: 500000,
-          maxFiles: 50,
-          json: false
-        }
-      };
+      let logFilePath = '';
 
-      async.series([
-        ensureLogFileIsEmpty,
-        server.ensureStarted.bind(server, settings),
-        function failCreateUser(stepDone) {
-          request.post(path()).set('authorization', 'bad-key').send(newUserData)
-            .end(function (err, res) {
+      beforeEach(function (done) {
+        async.series([
+          function ensureLogFileIsEmpty(stepDone) {
+            if ( logFilePath.length <= 0 ) return stepDone();
+            fs.truncate(logFilePath, function (err) {
+              if (err && err.code === 'ENOENT') {
+                return stepDone();
+              } // ignore error if file doesn't exist
+              stepDone(err);
+            });
+          },
+          function generateLogFile(stepDone) {
+            logFilePath = os.tmpdir() + '/password-logs.log';
+            stepDone();
+          },
+          function instanciateServerWithLogs(stepDone) {
+            let settings = _.cloneDeep(helpers.dependencies.settings);
+            settings.logs = {
+              file: {
+                active: true,
+                path: logFilePath,
+                level: 'debug',
+                maxsize: 500000,
+                maxFiles: 50,
+                json: false
+              }
+            };
+            server.ensureStarted.call(server, settings, stepDone);
+          }
+        ], done);
+      });
+
+      // cf. GH issue #64
+      it('when the authentication is invalid', function (done) {
+        async.series([
+          function failCreateUser(stepDone) {
+            request.post(path()).set('authorization', 'bad-key').send(newUserData)
+              .end(function (err, res) {
+                validation.checkError(res, {
+                  status: 404,
+                  id: ErrorIds.UnknownResource
+                }, stepDone);
+              });
+          },
+          verifyHiddenPasswordHashInLogs
+        ], done);
+      });
+
+      // cf. GH issue #64 too
+      it('when the payload is invalid (here parameters)', function (done) {
+        async.series([
+          function failCreateUser(stepDone) {
+            post(_.extend({invalidParam: 'yolo'}, newUserData), function (err, res) {
               validation.checkError(res, {
-                status: 404,
-                id: ErrorIds.UnknownResource
+                status: 400,
+                id: ErrorIds.InvalidParametersFormat
               }, stepDone);
             });
-        },
-        function verifyNoPasswordInLogs(stepDone) {
-          fs.readFile(logFilePath, 'utf8', function (err, data) {
-            if (err) {
-              return stepDone(err);
-            }
-            console.log('HERE!!', data, 'END!!');
-            should(data.indexOf(newUserData.passwordHash) === -1).be.true();
-            stepDone();
-          })
-        },
-        server.ensureStarted.bind(server, helpers.dependencies.settings)
-      ], done);
-      
-      function ensureLogFileIsEmpty(stepDone) {
-        fs.unlink(logFilePath, (err) => {
-          if (err && err.code === 'ENOENT') stepDone(); // ignore error if file doesn't exist
-          stepDone(err);
+          },
+          verifyHiddenPasswordHashInLogs
+        ], done);
+      });
+
+      it('except when no passwordHash was provided, nothing must be done', function (done) {
+        async.series([
+          function failCreateUser(stepDone) {
+            let dataWithNoPasswordHash = _.cloneDeep(newUserData);
+            delete dataWithNoPasswordHash.passwordHash;
+
+            post(dataWithNoPasswordHash, function (err, res) {
+              validation.checkError(res, {
+                status: 400,
+                id: ErrorIds.InvalidParametersFormat
+              }, stepDone);
+            });
+          },
+          verifyNoPasswordHashFieldInLogs
+        ], done);
+      });
+
+      function verifyHiddenPasswordHashInLogs(callback) {
+        fs.readFile(logFilePath, 'utf8', function (err, data) {
+          if (err) {
+            return callback(err);
+          }
+          should(data.indexOf(newUserData.passwordHash) === -1).be.true();
+          should(data.indexOf('passwordHash=(hidden)') >= 0).be.true();
+          callback();
         });
       }
-    });
 
-    // cf. GH issue #64 too
-    it('must hide the passwordHash in the logs when the payload is invalid (here parameters)', function (done) {
-
-      const logFilePath = os.tmpdir() + '/password-logs.log';
-
-      let settings = _.cloneDeep(helpers.dependencies.settings);
-      settings.logs = {
-        file: {
-          active: true,
-          path: logFilePath,
-          level: 'debug',
-          maxsize: 500000,
-          maxFiles: 50,
-          json: false
-        }
-      };
-
-      async.series([
-        ensureLogFileIsEmpty,
-        server.ensureStarted.bind(server, settings),
-        function failCreateUser(stepDone) {
-
-          post(_.extend({invalidParam: 'yolo'}, newUserData), function (err, res) {
-            validation.checkError(res, {
-              status: 400,
-              id: ErrorIds.InvalidParametersFormat
-            }, stepDone);
-          });
-        },
-        function verifyNoPasswordInLogs(stepDone) {
-
-          fs.readFile(logFilePath, 'utf8', function (err, data) {
-            if (err) {
-              return stepDone(err);
-            }
-            console.log('HERE!!', data, 'END!!');
-            should(data.indexOf(newUserData.passwordHash) === -1).be.true();
-            stepDone();
-          })
-        },
-        server.ensureStarted.bind(server, helpers.dependencies.settings)
-      ], done);
-
-      function ensureLogFileIsEmpty(stepDone) {
-        fs.unlink(logFilePath, (err) => {
-          if (err && err.code === 'ENOENT') stepDone(); // ignore error if file doesn't exist
-          stepDone(err);
+      function verifyNoPasswordHashFieldInLogs(callback) {
+        fs.readFile(logFilePath, 'utf8', function (err, data) {
+          if (err) {
+            return callback(err);
+          }
+          should(data.indexOf('passwordHash=') === -1).be.true();
+          callback();
         });
       }
+
     });
+
 
   });
 

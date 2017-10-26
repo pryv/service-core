@@ -1,4 +1,4 @@
-/*global describe, before, after, it */
+/*global describe, before, beforeEach, after, it */
 
 var helpers = require('./helpers'),
     server = helpers.dependencies.instanceManager,
@@ -16,6 +16,8 @@ var helpers = require('./helpers'),
     os = require('os');
 
 describe('auth', function () {
+
+  this.timeout(5000);
 
   function basePath(username) {
     return url.resolve(server.url, username + '/auth');
@@ -207,53 +209,93 @@ describe('auth', function () {
     });
 
     // cf. GH issue #3
-    it('must hide the password in the logs when an error occurs', function (done) {
-      const logFilePath = os.tmpdir() + '/password-logs.log';
+    describe('must replace the password in the logs by (hidden)', function () {
 
-      let settings = _.cloneDeep(helpers.dependencies.settings);
-      settings.logs = {
-        file: {
-          active: true,
-          path: logFilePath,
-          level: 'debug',
-          maxsize: 500000,
-          maxFiles: 50,
-          json: false
-        }
-      };
+      let logFilePath = '';
 
-      let wrongPasswordData = _.cloneDeep(authData);
-      wrongPasswordData.password = 'wrongPassword';
+      beforeEach(function (done) {
+        async.series([
+          function ensureLogFileIsEmpty(stepDone) {
+            if ( logFilePath.length <= 0 ) return stepDone();
+            fs.truncate(logFilePath, function (err) {
+              if (err && err.code === 'ENOENT') {
+                return stepDone();
+              } // ignore error if file doesn't exist
+              stepDone(err);
+            });
+          },
+          function generateLogFile(stepDone) {
+            logFilePath = os.tmpdir() + '/password-logs.log';
+            stepDone();
+          },
+          function instanciateServerWithLogs(stepDone) {
+            let settings = _.cloneDeep(helpers.dependencies.settings);
+            settings.logs = {
+              file: {
+                active: true,
+                path: logFilePath,
+                level: 'debug',
+                maxsize: 500000,
+                maxFiles: 50,
+                json: false
+              }
+            };
+            server.ensureStarted.call(server, settings, stepDone);
+          }
+        ], done);
+      });
 
-      async.series([
-        ensureLogFileIsEmpty, 
-        server.ensureStarted.bind(server, settings),
-        function failLogin(stepDone) {
-          request.post(path(authData.username))
-            .set('Origin', trustedOrigin)
-            .send(wrongPasswordData).end(function (err, res) {
+      it('when an error occurs', function (done) {
+        let wrongPasswordData = _.cloneDeep(authData);
+        wrongPasswordData.password = 'wrongPassword';
+
+        async.series([
+          function failLogin(stepDone) {
+            request.post(path(authData.username))
+              .set('Origin', trustedOrigin)
+              .send(wrongPasswordData).end(function (err, res) {
               res.statusCode.should.eql(401);
               stepDone();
             });
-        },
-        function verifyNoPasswordInLogs(stepDone) {
-          fs.readFile(logFilePath, 'utf8', function (err, data) {
-            if (err) {
-              return stepDone(err);
-            }
-            console.log('HERE!!!');
-            console.log(data);
-            console.log('END!!!');
-            should(data.indexOf(wrongPasswordData.password) === -1).be.true();
-            stepDone();
-          })
-        },
-        server.ensureStarted.bind(server, helpers.dependencies.settings)
-      ], done);
-      
-      function ensureLogFileIsEmpty(stepDone) {
-        fs.unlink(logFilePath, stepDone);
-      }
+          },
+          function verifyHiddenPasswordInLogs(stepDone) {
+            fs.readFile(logFilePath, 'utf8', function (err, data) {
+              if (err) {
+                return stepDone(err);
+              }
+              should(data.indexOf(wrongPasswordData.password) === -1).be.true();
+              should(data.indexOf('password=(hidden)') >= 0).be.true();
+              stepDone();
+            });
+          }
+        ], done);
+      });
+
+      it('except when no password was provided, nothing must be done', function (done) {
+        let wrongPasswordData = _.cloneDeep(authData);
+        delete wrongPasswordData.password;
+
+        async.series([
+          function failLogin(stepDone) {
+            request.post(path(authData.username))
+              .set('Origin', trustedOrigin)
+              .send(wrongPasswordData).end(function (err, res) {
+              res.statusCode.should.eql(400);
+              stepDone();
+            });
+          },
+          function verifyNoPasswordFieldInLogs(stepDone) {
+            fs.readFile(logFilePath, 'utf8', function (err, data) {
+              if (err) {
+                return stepDone(err);
+              }
+              should(data.indexOf('password=') === -1).be.true();
+              stepDone();
+            });
+          }
+        ], done);
+      });
+
     });
     
     function parallelLogin(appId, callback) {
