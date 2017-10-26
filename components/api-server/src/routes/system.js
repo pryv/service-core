@@ -52,7 +52,7 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
 
   function createUser(req, res, next) {
 
-    let params = _.extend({}, req.body);
+    let params = _.extend({}, req.body); // Make a copy of the request before we hide the password
     hidePasswordHash(req.body);
 
     systemAPI.call('system.createUser', {}, params, methodCallback(res, next, 201));
