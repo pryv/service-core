@@ -30,7 +30,7 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
 
     if (! secret || secret !== authSettings.adminAccessKey) {
 
-      hidePasswordHash(req.body);
+      hidePasswordHashIfExists(req.body);
 
       logger.warn('Unauthorized attempt to access system route', {
         url: req.url,
@@ -53,7 +53,7 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
   function createUser(req, res, next) {
 
     let params = _.extend({}, req.body); // Make a copy of the request before we hide the password
-    hidePasswordHash(req.body);
+    hidePasswordHashIfExists(req.body);
 
     systemAPI.call('system.createUser', {}, params, methodCallback(res, next, 201));
   }
@@ -65,7 +65,7 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
     systemAPI.call('system.getUserInfo', {}, params, methodCallback(res, next, 200));
   });
 
-  function hidePasswordHash(requestBody) {
+  function hidePasswordHashIfExists(requestBody) {
     if (requestBody.passwordHash) {
       requestBody.passwordHash = '(hidden)';
     }
