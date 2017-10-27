@@ -1,4 +1,4 @@
-/*global describe, before, beforeEach, after it */
+/*global describe, before, beforeEach, after, it */
 
 var helpers = require('./helpers'),
     ErrorIds = require('components/errors').ErrorIds,
@@ -231,46 +231,52 @@ describe('system (ex-register)', function () {
           });
     });
 
-    describe('must replace the passwordHash in the logs by (hidden)', function () {
+    describe('when we log into a temporary log file', function () {
 
       let logFilePath = '';
 
       beforeEach(function (done) {
         async.series([
-          function ensureLogFileIsEmpty(stepDone) {
-            if ( logFilePath.length <= 0 ) return stepDone();
-            fs.truncate(logFilePath, function (err) {
-              if (err && err.code === 'ENOENT') {
-                return stepDone();
-              } // ignore error if file doesn't exist
-              stepDone(err);
-            });
-          },
-          function generateLogFile(stepDone) {
-            logFilePath = os.tmpdir() + '/password-logs.log';
-            stepDone();
-          },
-          function instanciateServerWithLogs(stepDone) {
-            let settings = _.cloneDeep(helpers.dependencies.settings);
-            settings.logs = {
-              file: {
-                active: true,
-                path: logFilePath,
-                level: 'debug',
-                maxsize: 500000,
-                maxFiles: 50,
-                json: false
-              }
-            };
-            server.ensureStarted.call(server, settings, stepDone);
-          }
+          ensureLogFileIsEmpty,
+          generateLogFile,
+          instanciateServerWithLogs
         ], done);
       });
+
+      function ensureLogFileIsEmpty(stepDone) {
+        if ( logFilePath.length <= 0 ) return stepDone();
+        fs.truncate(logFilePath, function (err) {
+          if (err && err.code === 'ENOENT') {
+            return stepDone();
+          } // ignore error if file doesn't exist
+          stepDone(err);
+        });
+      }
+
+      function generateLogFile(stepDone) {
+        logFilePath = os.tmpdir() + '/password-logs.log';
+        stepDone();
+      }
+
+      function instanciateServerWithLogs(stepDone) {
+        let settings = _.cloneDeep(helpers.dependencies.settings);
+        settings.logs = {
+          file: {
+            active: true,
+            path: logFilePath,
+            level: 'debug',
+            maxsize: 500000,
+            maxFiles: 50,
+            json: false
+          }
+        };
+        server.ensureStarted.call(server, settings, stepDone);
+      }
 
       after(server.ensureStarted.bind(server,helpers.dependencies.settings));
 
       // cf. GH issue #64
-      it('when the authentication is invalid', function (done) {
+      it('must replace the passwordHash in the logs by (hidden) when the authentication is invalid', function (done) {
         async.series([
           function failCreateUser(stepDone) {
             request.post(path()).set('authorization', 'bad-key').send(newUserData)
@@ -286,7 +292,7 @@ describe('system (ex-register)', function () {
       });
 
       // cf. GH issue #64 too
-      it('when the payload is invalid (here parameters)', function (done) {
+      it('must replace the passwordHash in the logs by (hidden) when the payload is invalid (here parameters)', function (done) {
         async.series([
           function failCreateUser(stepDone) {
             post(_.extend({invalidParam: 'yolo'}, newUserData), function (err, res) {
@@ -300,7 +306,7 @@ describe('system (ex-register)', function () {
         ], done);
       });
 
-      it('except when no passwordHash was provided, nothing must be done', function (done) {
+      it('must not mention the passwordHash in the logs when none is provided', function (done) {
         async.series([
           function failCreateUser(stepDone) {
             let dataWithNoPasswordHash = _.cloneDeep(newUserData);

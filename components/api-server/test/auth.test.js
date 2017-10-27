@@ -209,45 +209,51 @@ describe('auth', function () {
     });
 
     // cf. GH issue #3
-    describe('must replace the password in the logs by (hidden)', function () {
+    describe('when we log into a temporary log file', function () {
 
       let logFilePath = '';
 
       beforeEach(function (done) {
         async.series([
-          function ensureLogFileIsEmpty(stepDone) {
-            if ( logFilePath.length <= 0 ) return stepDone();
-            fs.truncate(logFilePath, function (err) {
-              if (err && err.code === 'ENOENT') {
-                return stepDone();
-              } // ignore error if file doesn't exist
-              stepDone(err);
-            });
-          },
-          function generateLogFile(stepDone) {
-            logFilePath = os.tmpdir() + '/password-logs.log';
-            stepDone();
-          },
-          function instanciateServerWithLogs(stepDone) {
-            let settings = _.cloneDeep(helpers.dependencies.settings);
-            settings.logs = {
-              file: {
-                active: true,
-                path: logFilePath,
-                level: 'debug',
-                maxsize: 500000,
-                maxFiles: 50,
-                json: false
-              }
-            };
-            server.ensureStarted.call(server, settings, stepDone);
-          }
+          ensureLogFileIsEmpty,
+          generateLogFile,
+          instanciateServerWithLogs
         ], done);
       });
 
+      function ensureLogFileIsEmpty(stepDone) {
+        if ( logFilePath.length <= 0 ) return stepDone();
+        fs.truncate(logFilePath, function (err) {
+          if (err && err.code === 'ENOENT') {
+            return stepDone();
+          } // ignore error if file doesn't exist
+          stepDone(err);
+        });
+      }
+
+      function generateLogFile(stepDone) {
+        logFilePath = os.tmpdir() + '/password-logs.log';
+        stepDone();
+      }
+
+      function instanciateServerWithLogs(stepDone) {
+        let settings = _.cloneDeep(helpers.dependencies.settings);
+        settings.logs = {
+          file: {
+            active: true,
+            path: logFilePath,
+            level: 'debug',
+            maxsize: 500000,
+            maxFiles: 50,
+            json: false
+          }
+        };
+        server.ensureStarted.call(server, settings, stepDone);
+      }
+
       after(server.ensureStarted.bind(server,helpers.dependencies.settings));
 
-      it('when an error occurs', function (done) {
+      it('must replace the password in the logs by (hidden) when an error occurs', function (done) {
         let wrongPasswordData = _.cloneDeep(authData);
         wrongPasswordData.password = 'wrongPassword';
 
@@ -273,7 +279,7 @@ describe('auth', function () {
         ], done);
       });
 
-      it('except when no password was provided, nothing must be done', function (done) {
+      it('must not mention the password in the logs when none is provided', function (done) {
         let wrongPasswordData = _.cloneDeep(authData);
         delete wrongPasswordData.password;
 
