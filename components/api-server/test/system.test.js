@@ -267,6 +267,8 @@ describe('system (ex-register)', function () {
         ], done);
       });
 
+      after(server.ensureStarted.bind(server,helpers.dependencies.settings));
+
       // cf. GH issue #64
       it('when the authentication is invalid', function (done) {
         async.series([

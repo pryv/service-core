@@ -245,6 +245,8 @@ describe('auth', function () {
         ], done);
       });
 
+      after(server.ensureStarted.bind(server,helpers.dependencies.settings));
+
       it('when an error occurs', function (done) {
         let wrongPasswordData = _.cloneDeep(authData);
         wrongPasswordData.password = 'wrongPassword';
