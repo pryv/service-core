@@ -38,6 +38,7 @@ module.exports = function (expressApp, api, authSettings, httpSettings) {
       appId: req.body.appId,
       origin: req.headers.origin || ''
     };
+    hidePasswordIfExists(req.body);
     api.call('auth.login', req.context, params, function (err, result) {
       if (err) { return next(err); }
       setSSOCookie({ username: req.context.username, token: result.token }, res);
@@ -66,6 +67,13 @@ module.exports = function (expressApp, api, authSettings, httpSettings) {
       secure: ssoCookieSecure,
       httpOnly: false
     });
+  }
+
+  function hidePasswordIfExists(requestBody) {
+    if (requestBody.password) {
+      requestBody.password = '(hidden)';
+    }
+    // don't set it if no value was provided
   }
 
 };

@@ -1,4 +1,4 @@
-/*global describe, before, beforeEach, it */
+/*global describe, before, beforeEach, after, it */
 
 var helpers = require('./helpers'),
     ErrorIds = require('components/errors').ErrorIds,
@@ -13,10 +13,15 @@ var helpers = require('./helpers'),
     testData = helpers.data,
     timestamp = require('unix-timestamp'),
     url = require('url'),
-    _ = require('lodash');
+    _ = require('lodash'),
+    os = require('os'),
+    fs = require('fs');
+
 require('date-utils');
 
 describe('system (ex-register)', function () {
+
+  this.timeout(5000);
 
   function basePath() {
     return url.resolve(server.url, '/system');
@@ -204,7 +209,7 @@ describe('system (ex-register)', function () {
     });
 
     it('must return a correct 404 error when authentication is invalid', function (done) {
-      request.post(path()).set('authorization', 'bad-key').send(JSON.stringify(newUserData))
+      request.post(path()).set('authorization', 'bad-key').send(newUserData)
           .end(function (err, res) {
         validation.checkError(res, {
           status: 404,
@@ -216,8 +221,8 @@ describe('system (ex-register)', function () {
     it('must return a correct error if the content type is wrong', function (done) {
       request.post(path())
           .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
-          .set('Content-Type', 'application/Json') // <-- case error
-          .send(JSON.stringify(newUserData))
+          .set('Content-Type', 'application/wrongUnexistantType')
+          .send(new Buffer('I need to provide a buffer here for superagent not to crash'))
           .end(function (err, res) {
             validation.checkError(res, {
               status: 415,
@@ -226,7 +231,125 @@ describe('system (ex-register)', function () {
           });
     });
 
+    describe('when we log into a temporary log file', function () {
+
+      let logFilePath = '';
+
+      beforeEach(function (done) {
+        async.series([
+          ensureLogFileIsEmpty,
+          generateLogFile,
+          instanciateServerWithLogs
+        ], done);
+      });
+
+      function ensureLogFileIsEmpty(stepDone) {
+        if ( logFilePath.length <= 0 ) return stepDone();
+        fs.truncate(logFilePath, function (err) {
+          if (err && err.code === 'ENOENT') {
+            return stepDone();
+          } // ignore error if file doesn't exist
+          stepDone(err);
+        });
+      }
+
+      function generateLogFile(stepDone) {
+        logFilePath = os.tmpdir() + '/password-logs.log';
+        stepDone();
+      }
+
+      function instanciateServerWithLogs(stepDone) {
+        let settings = _.cloneDeep(helpers.dependencies.settings);
+        settings.logs = {
+          file: {
+            active: true,
+            path: logFilePath,
+            level: 'debug',
+            maxsize: 500000,
+            maxFiles: 50,
+            json: false
+          }
+        };
+        server.ensureStarted.call(server, settings, stepDone);
+      }
+
+      after(server.ensureStarted.bind(server,helpers.dependencies.settings));
+
+      // cf. GH issue #64
+      it('must replace the passwordHash in the logs by (hidden) when the authentication is invalid', function (done) {
+        async.series([
+          function failCreateUser(stepDone) {
+            request.post(path()).set('authorization', 'bad-key').send(newUserData)
+              .end(function (err, res) {
+                validation.checkError(res, {
+                  status: 404,
+                  id: ErrorIds.UnknownResource
+                }, stepDone);
+              });
+          },
+          verifyHiddenPasswordHashInLogs
+        ], done);
+      });
+
+      // cf. GH issue #64 too
+      it('must replace the passwordHash in the logs by (hidden) when the payload is invalid (here parameters)', function (done) {
+        async.series([
+          function failCreateUser(stepDone) {
+            post(_.extend({invalidParam: 'yolo'}, newUserData), function (err, res) {
+              validation.checkError(res, {
+                status: 400,
+                id: ErrorIds.InvalidParametersFormat
+              }, stepDone);
+            });
+          },
+          verifyHiddenPasswordHashInLogs
+        ], done);
+      });
+
+      it('must not mention the passwordHash in the logs when none is provided', function (done) {
+        async.series([
+          function failCreateUser(stepDone) {
+            let dataWithNoPasswordHash = _.cloneDeep(newUserData);
+            delete dataWithNoPasswordHash.passwordHash;
+
+            post(dataWithNoPasswordHash, function (err, res) {
+              validation.checkError(res, {
+                status: 400,
+                id: ErrorIds.InvalidParametersFormat
+              }, stepDone);
+            });
+          },
+          verifyNoPasswordHashFieldInLogs
+        ], done);
+      });
+
+      function verifyHiddenPasswordHashInLogs(callback) {
+        fs.readFile(logFilePath, 'utf8', function (err, data) {
+          if (err) {
+            return callback(err);
+          }
+          should(data.indexOf(newUserData.passwordHash) === -1).be.true();
+          should(data.indexOf('passwordHash=(hidden)') >= 0).be.true();
+          callback();
+        });
+      }
+
+      function verifyNoPasswordHashFieldInLogs(callback) {
+        fs.readFile(logFilePath, 'utf8', function (err, data) {
+          if (err) {
+            return callback(err);
+          }
+          should(data.indexOf('passwordHash=') === -1).be.true();
+          callback();
+        });
+      }
+
+    });
+
+
   });
+
+
 
   describe('GET /user-info/{username}', function () {
 
