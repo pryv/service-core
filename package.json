@@ -48,6 +48,7 @@
     "cookie": "latest",
     "date-utils": "latest",
     "deep-equal": "latest",
+    "eslint": "^4.9.0",
     "mocha": "^3.2.0",
     "nixt": "^0.5.0",
     "nock": "^9.0.2",

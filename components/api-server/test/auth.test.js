@@ -256,9 +256,9 @@ describe('auth', function () {
             request.post(path(authData.username))
               .set('Origin', trustedOrigin)
               .send(wrongPasswordData).end(function (err, res) {
-              res.statusCode.should.eql(401);
-              stepDone();
-            });
+                res.statusCode.should.eql(401);
+                stepDone();
+              });
           },
           function verifyHiddenPasswordInLogs(stepDone) {
             fs.readFile(logFilePath, 'utf8', function (err, data) {
