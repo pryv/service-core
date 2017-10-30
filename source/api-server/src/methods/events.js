@@ -291,7 +291,7 @@ module.exports = function (
   }
 
   function createEvent(
-    context: Object, params: Object, result: Object, next: Object) 
+    context, params, result, next) 
   {
 
     if (isSeriesType(context.content.type)) {
@@ -324,7 +324,7 @@ module.exports = function (
   /**
    * Creates the event's body according to its type and context. 
    */
-  function createSeriesEventContent(context: Object): {} {
+  function createSeriesEventContent(context) {
     const seriesTypeName = context.content.type; 
     const eventType = typeRepo.lookup(seriesTypeName); 
     
@@ -489,8 +489,8 @@ module.exports = function (
    * @param {Object} result
    * @param {Function} next
    */
-  function validateEventContentAndCoerce(context: Object, params: Object, result: Object, next: Function) {
-    const type: string = context.content.type;
+  function validateEventContentAndCoerce(context, params, result, next) {
+    const type = context.content.type;
         
     // Unknown types can just be created as normal events. 
     if (! typeRepo.isKnown(type)) {
@@ -886,14 +886,14 @@ module.exports = function (
     context.updateTrackingProperties(updatedData);
 
     userEventsStorage.updateOne(context.user, {id: params.id}, updatedData,
-        function (err, updatedEvent) {
-      if (err) { return next(errors.unexpectedError(err)); }
+      function (err, updatedEvent) {
+        if (err) { return next(errors.unexpectedError(err)); }
 
-      result.event = updatedEvent;
-      setFileReadToken(context.access, result.event);
-      notifications.eventsChanged(context.user);
-      next();
-    });
+        result.event = updatedEvent;
+        setFileReadToken(context.access, result.event);
+        notifications.eventsChanged(context.user);
+        next();
+      });
   }
 
   function deleteWithData(context, params, result, next) {
@@ -952,53 +952,53 @@ module.exports = function (
   }
 
   api.register('events.deleteAttachment',
-      commonFns.getParamsValidation(methodsSchema.deleteAttachment.params),
-      function (context, params, result, next) {
-    var updatedEvent,
-        deletedAtt;
-    async.series([
-      function (stepDone) {
-        checkEventForWriting(context, params.id, function (err, event) {
-          if (err) { return stepDone(err); }
+    commonFns.getParamsValidation(methodsSchema.deleteAttachment.params),
+    function (context, params, result, next) {
+      var updatedEvent,
+          deletedAtt;
+      async.series([
+        function (stepDone) {
+          checkEventForWriting(context, params.id, function (err, event) {
+            if (err) { return stepDone(err); }
 
-          updatedEvent = event;
-          stepDone();
-        });
-      },
-      function (stepDone) {
-        var attIndex = getAttachmentIndex(updatedEvent.attachments, params.fileId);
-        if (attIndex === -1) {
-          return stepDone(errors.unknownResource('attachment', params.fileId));
-        }
-        deletedAtt = updatedEvent.attachments[attIndex];
-        updatedEvent.attachments.splice(attIndex, 1);
+            updatedEvent = event;
+            stepDone();
+          });
+        },
+        function (stepDone) {
+          var attIndex = getAttachmentIndex(updatedEvent.attachments, params.fileId);
+          if (attIndex === -1) {
+            return stepDone(errors.unknownResource('attachment', params.fileId));
+          }
+          deletedAtt = updatedEvent.attachments[attIndex];
+          updatedEvent.attachments.splice(attIndex, 1);
 
-        var updatedData = {attachments: updatedEvent.attachments};
-        context.updateTrackingProperties(updatedData);
+          var updatedData = {attachments: updatedEvent.attachments};
+          context.updateTrackingProperties(updatedData);
 
-	userEventsStorage.updateOne(context.user, {id: params.id}, updatedData,
+          userEventsStorage.updateOne(context.user, {id: params.id}, updatedData,
             function (err, updatedEvent) {
-          if (err) { return stepDone(err); }
-          result.event = updatedEvent;
-          setFileReadToken(context.access, result.event);
-          stepDone();
-        });
-      },
-      function (stepDone) {
-        userEventFilesStorage.removeAttachedFile(context.user, params.id, params.fileId, stepDone);
-      },
-      function (stepDone) {
-        // approximately update account storage size
-        context.user.storageUsed.attachedFiles -= deletedAtt.size;
-	usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
+              if (err) { return stepDone(err); }
+              result.event = updatedEvent;
+              setFileReadToken(context.access, result.event);
+              stepDone();
+            });
+        },
+        function (stepDone) {
+          userEventFilesStorage.removeAttachedFile(context.user, params.id, params.fileId, stepDone);
+        },
+        function (stepDone) {
+          // approximately update account storage size
+          context.user.storageUsed.attachedFiles -= deletedAtt.size;
+          usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
             stepDone);
-      },
-      function (stepDone) {
-        notifications.eventsChanged(context.user);
-        stepDone();
-      }
-    ], next);
-  });
+        },
+        function (stepDone) {
+          notifications.eventsChanged(context.user);
+          stepDone();
+        }
+      ], next);
+    });
 
   /**
    * Returns the query value to use for the given type, handling possible wildcards.
@@ -1008,7 +1008,8 @@ module.exports = function (
   function getTypeQueryValue(requestedType) {
     var wildcardIndex = requestedType.indexOf('/*');
     return wildcardIndex > 0 ?
-        new RegExp('^' + requestedType.substr(0, wildcardIndex + 1)) : requestedType;
+      new RegExp('^' + requestedType.substr(0, wildcardIndex + 1)) : 
+      requestedType;
   }
 
   function checkEventForWriting(context, eventId, callback) {
@@ -1047,7 +1048,7 @@ module.exports = function (
     if (! event.attachments) { return; }
     event.attachments.forEach(function (att) {
       att.readToken = utils.encryption.fileReadToken(att.id, access,
-          authSettings.filesReadTokenSecret);
+        authSettings.filesReadTokenSecret);
     });
   }
 

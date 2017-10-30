@@ -67,7 +67,7 @@ Result.prototype.isStreamResult = function() {
  */
 Result.prototype.writeToHttpResponse = function (res, successCode) {
   if (this.isStreamResult()) {
-   this.writeStreams(res, successCode);
+    this.writeStreams(res, successCode);
   } else {
     this.writeSingle(res, successCode);
   }
