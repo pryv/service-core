@@ -87,8 +87,7 @@ module.exports = function(
               req.query.readToken + '".'));
         }
 
-        if (! encryption.isFileReadTokenHMACValid(tokenParts.hmac, req.params.fileId, access,
-            authSettings.filesReadTokenSecret)) {
+        if (! encryption.isFileReadTokenHMACValid(tokenParts.hmac, req.params.fileId, access, authSettings.filesReadTokenSecret)) {
           return next(errors.invalidAccessToken('Invalid read token "' + req.query.readToken + '".'));
         }
 
@@ -117,8 +116,7 @@ module.exports = function(
   });
 
   expressApp.put(Paths.Events + '/:id', function (req, res, next) {
-    api.call('events.update', req.context, { id: req.param('id'), update: req.body },
-        methodCallback(res, next, 200));
+    api.call('events.update', req.context, { id: req.param('id'), update: req.body }, methodCallback(res, next, 200));
   });
 
   events.post('/stop', function (req, res, next) {
@@ -140,13 +138,11 @@ module.exports = function(
   });
 
   events.delete('/:id', function (req, res, next) {
-    api.call('events.delete', req.context, {id: req.params.id},
-        methodCallback(res, next, 200));
+    api.call('events.delete', req.context, {id: req.params.id}, methodCallback(res, next, 200));
   });
 
   events.delete('/:id/:fileId', function (req, res, next) {
-    api.call('events.deleteAttachment', req.context,
-        {id: req.params.id, fileId: req.params.fileId}, methodCallback(res, next, 200));
+    api.call('events.deleteAttachment', req.context, {id: req.params.id, fileId: req.params.fileId}, methodCallback(res, next, 200));
   });
 
 };
