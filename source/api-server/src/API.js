@@ -1,3 +1,5 @@
+// @flow
+
 var async = require('async'),
     APIError = require('components/errors').APIError,
     errors = require('components/errors').factory,
@@ -52,9 +54,10 @@ var wildcard = '*';
  * - `api.register('events.start', fn1, 'events.create', ...)`
  */
 API.prototype.register = function (/* arguments: id, fn1, fn2, ... */) {
-  var id = arguments[0],
-      fns = [].slice.call(arguments, 1),
-      wildcardAt = id.indexOf(wildcard);
+  const id = arguments[0];
+  const fns = [].slice.call(arguments, 1);
+  const wildcardAt = id.indexOf(wildcard);
+  
   if (wildcardAt === -1) {
     // full method id (no wildcard)
     if (! this.map[id]) {
@@ -77,17 +80,16 @@ API.prototype.register = function (/* arguments: id, fn1, fn2, ... */) {
         this.map[id].push(fn);
       }
     }.bind(this) );
-
-  } else {
-    // filter (with wildcard)
-    if (wildcardAt !== id.length - 1) {
+  } else { // filter (with wildcard)
+    if (wildcardAt !== id.length - 1) 
       throw new Error('Wildcard is only allowed as suffix.');
-    }
+    
     var filter = {
       idFilter: id,
       fns: fns
     };
     this.applyToMatchingIds(filter);
+    
     // save filter for applying to methods registered later
     this.filters.push(filter);
   }
