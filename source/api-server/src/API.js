@@ -65,19 +65,18 @@ API.prototype.register = function (/* arguments: id, fn1, fn2, ... */) {
     }
     // append registered functions
     fns.forEach(function (fn) {
-        if (!_.isFunction(fn)) {
-          // registering functions of another method
-          var fnId = fn;
-          if (! this.map[fnId]) {
-            throw new Error('trying to use undefined API method as shortcut');
-          }
-          this.map[id].push.apply(this.map[id], this.map[fnId]);
-        } else {
-          // registering a function
-          this.map[id].push(fn);
+      if (!_.isFunction(fn)) {
+        // registering functions of another method
+        var fnId = fn;
+        if (! this.map[fnId]) {
+          throw new Error('trying to use undefined API method as shortcut');
         }
-      }.bind(this)
-    );
+        this.map[id].push.apply(this.map[id], this.map[fnId]);
+      } else {
+        // registering a function
+        this.map[id].push(fn);
+      }
+    }.bind(this) );
 
   } else {
     // filter (with wildcard)
@@ -116,7 +115,7 @@ API.prototype.applyToMatchingIds = function (filter) {
  * @private
  */
 API.prototype.applyIfMatches = function (filter, id) {
-  if (matches(filter.idFilter, id)) {
+  if (matches(filter.idFilter, id)) {
     this.map[id].push.apply(this.map[id], filter.fns);
   }
 };
@@ -132,7 +131,7 @@ API.prototype.has = function (id) {
   return !! this.map[id];
 };
 
-API.prototype.call = function (id, context, params, callback) {
+API.prototype.call = function (id, context, params, callback) {
   var fns = this.map[id];
   if (! fns) {
     return callback(errors.invalidMethod(id));
