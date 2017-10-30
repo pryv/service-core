@@ -235,7 +235,7 @@ module.exports = function (
       });
   }
 
-  // CREATION
+  // -------------------------------------------------------------------- CREATE
 
   api.register('events.create',
     commonFns.getParamsValidation(methodsSchema.create.params),
@@ -299,8 +299,8 @@ module.exports = function (
         context.content.content = createSeriesEventContent(context);
       }
       catch (err) { return next(err); }
-      
-      // TODO: remove when time tracking strategy for HF is defined
+        
+      // As long as there is no data, event duration is considered to be 0.
       context.content.duration = 0; 
     }
 

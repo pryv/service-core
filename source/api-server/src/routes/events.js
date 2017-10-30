@@ -104,7 +104,7 @@ module.exports = function(
   events.post('/', 
     hasFileUpload,
     function (req, res, next) {
-      var params = req.body;
+      const params = req.body;
       if (req.files) {
         params.files = req.files;
       }
