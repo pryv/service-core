@@ -15,3 +15,7 @@ decls/
 <PROJECT_ROOT>/node_modules/middleware/.*
 <PROJECT_ROOT>/node_modules/utils/.*
 <PROJECT_ROOT>/node_modules/flow-coverage-report/.*
+
+[options]
+module.use_strict=true
+suppress_comment= \\(.\\|\n\\)*FLOW
