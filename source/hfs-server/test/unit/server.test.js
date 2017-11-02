@@ -8,7 +8,7 @@ const url = require('url');
 
 const { settings } = require('./test-helpers');
 
-const Application = require('../../src/Application');
+const Application = require('src/Application');
 
 describe('Server', function() {
   const request = superagent;
