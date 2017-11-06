@@ -21,11 +21,11 @@ factory.forbidden = function (message) {
   return new APIError(ErrorIds.Forbidden, message, {httpStatus: 403});
 };
 
-factory.invalidAccessToken = function (message, innerError) {
-  return new APIError(ErrorIds.InvalidAccessToken, message, {
+factory.invalidAccessToken = function (message, innerError, options) {
+  return new APIError(ErrorIds.InvalidAccessToken, message, _.merge({
     httpStatus: 401,
     innerError: innerError
-  });
+  }, options));
 };
 
 factory.invalidCredentials = function (message) {
@@ -129,12 +129,12 @@ factory.unknownReferencedResource = function (resourceType, paramKey, value, inn
   });
 };
 
-factory.unknownResource = function (resourceType, id, innerError) {
+factory.unknownResource = function (resourceType, id, innerError, options) {
   var message = 'Unknown ' + (resourceType || 'resource') + ' ' + (id ? '"' + id + '"' : '');
-  return new APIError(ErrorIds.UnknownResource, message, {
+  return new APIError(ErrorIds.UnknownResource, message, _.merge({
     httpStatus: 404,
     innerError: innerError
-  });
+  }, options));
 };
 
 factory.unsupportedContentType = function (contentType) {

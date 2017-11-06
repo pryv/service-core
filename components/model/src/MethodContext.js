@@ -72,7 +72,7 @@ MethodContext.prototype.retrieveUser = function (callback) {
       return callback(errors.unexpectedError(err));
     }
     if (! user) {
-      return callback(errors.unknownResource('user', this.username));
+      return callback(errors.unknownResource('user', this.username, null, {dontNotifyAirbrake: true}));
     }
 
     this.user = user;
@@ -109,7 +109,7 @@ MethodContext.prototype.retrieveExpandedAccess = function (callback) {
 
         if (! access) {
           return stepDone(errors.invalidAccessToken('Cannot find access from token "' +
-              this.accessToken + '".'));
+              this.accessToken + '".', null, {dontNotifyAirbrake: true}));
         }
 
         this.access = access;
