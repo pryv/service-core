@@ -22,7 +22,7 @@ module.exports = function (expressApp, api, authSettings, httpSettings) {
   expressApp.get(Paths.Auth + '/who-am-i', function (req, res, next) {
     var ssoCookie = req.signedCookies.sso;
     if (! ssoCookie) {
-      return next(errors.invalidCredentials('Not signed-on'));
+      return next(errors.invalidCredentials('Not signed-on'), { dontNotifyAirbrake: true });
     }
 
     res.json({

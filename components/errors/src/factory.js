@@ -28,10 +28,10 @@ factory.invalidAccessToken = function (message, innerError, options) {
   }, options));
 };
 
-factory.invalidCredentials = function (message) {
+factory.invalidCredentials = function (message, options) {
   return new APIError(ErrorIds.InvalidCredentials,
-      message || 'The given username/password pair is invalid.',
-      {httpStatus: 401});
+    message || 'The given username/password pair is invalid.',
+    _.merge({httpStatus: 401}, options));
 };
 
 factory.invalidItemId = function (message) {
