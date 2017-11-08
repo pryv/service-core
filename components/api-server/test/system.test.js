@@ -124,6 +124,78 @@ describe('system (ex-register)', function () {
         }
       ], done);
     });
+    
+    it('must not send a welcome email if mailing is deactivated', function (done) {
+      var settings = _.clone(helpers.dependencies.settings),
+          mailSent = false;
+      // deactivate mailing
+      settings.services.email.enabled = false;
+      // setup mail server mock
+      helpers.instanceTestSetup.set(settings, {
+        context: settings.services.email,
+        execute: function () {
+          require('nock')(this.context.url).post(this.context.sendMessagePath)
+            .reply(200, function () {
+              this.context.messagingSocket.emit('mail-sent');
+            }.bind(this));
+        }
+      });
+      // fetch notification from server process
+      server.on('mail-sent', function () {
+        mailSent = true;
+        return done('Welcome email should not be sent!');
+      });
+
+      async.series([
+        server.ensureStarted.bind(server, settings),
+        function registerNewUser(stepDone) {
+          post(newUserData, function (err, res) {
+            validation.check(res, {
+              status: 201,
+              schema: methodsSchema.createUser.result
+            });
+            mailSent.should.eql(false);
+            stepDone();
+          });
+        }
+      ], done);
+    });
+    
+    it('must not send a welcome email if welcome mail is deactivated', function (done) {
+      var settings = _.clone(helpers.dependencies.settings),
+          mailSent = false;
+      // deactivate welcome mail
+      settings.services.email.enabled.welcome = false;
+      // setup mail server mock
+      helpers.instanceTestSetup.set(settings, {
+        context: settings.services.email,
+        execute: function () {
+          require('nock')(this.context.url).post(this.context.sendMessagePath)
+            .reply(200, function () {
+              this.context.messagingSocket.emit('mail-sent');
+            }.bind(this));
+        }
+      });
+      // fetch notification from server process
+      server.on('mail-sent', function () {
+        mailSent = true;
+        return done('Welcome email should not be sent!');
+      });
+
+      async.series([
+        server.ensureStarted.bind(server, settings),
+        function registerNewUser(stepDone) {
+          post(newUserData, function (err, res) {
+            validation.check(res, {
+              status: 201,
+              schema: methodsSchema.createUser.result
+            });
+            mailSent.should.eql(false);
+            stepDone();
+          });
+        }
+      ], done);
+    });
 
     it('must run the process but not save anything for test username "recla"', function (done) {
       var originalCount,
