@@ -89,7 +89,7 @@ exports.catchForbiddenUpdate = function catchForbiddenUpdate(paramsSchema) {
     const forbidden = Object.keys(params.update)
       .filter(key => !allowed.includes(key));
     if(forbidden.length > 0) return next(errors.forbidden(
-      'Update is forbidden on the following properties: [' + forbidden + '].'));
+      'Update is forbidden on the following properties: [' + forbidden + '].'), { dontNotifyAirbrake: true });
     next();
   };
 };

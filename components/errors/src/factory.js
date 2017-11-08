@@ -14,11 +14,11 @@ factory.corruptedData = function (message, innerError) {
   });
 };
 
-factory.forbidden = function (message) {
+factory.forbidden = function (message, options) {
   if (! message) {
     message = 'The given token\'s access permissions do not allow this operation.';
   }
-  return new APIError(ErrorIds.Forbidden, message, {httpStatus: 403});
+  return new APIError(ErrorIds.Forbidden, message, _.merge({httpStatus: 403}, options));
 };
 
 factory.invalidAccessToken = function (message, innerError, options) {
