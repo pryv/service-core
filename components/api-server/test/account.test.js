@@ -511,6 +511,7 @@ describe('account', function () {
             .set('Origin', 'http://test.pryv.local')
             .send(authData)
             .end(function (res) {
+              console.log(res);
               validation.check(res, {
                 status: 200,
                 schema: methodsSchema.requestPasswordReset.result
