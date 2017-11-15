@@ -283,7 +283,8 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     userEventsStorage.insertOne(context.user, context.content, function (err, newEvent) {
       if (err) {
         if (storage.Database.isDuplicateError(err)) {
-          return next(errors.itemAlreadyExists('event', {id: params.id}, err));
+          return next(errors.itemAlreadyExists('event', {id: params.id}, err,
+            { dontNotifyAirbrake: true }));
         } else {
           return next(errors.unexpectedError(err));
         }
@@ -342,7 +343,8 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       }
 
       if (! event) {
-        return next(errors.unknownResource('event', params.id));
+        return next(errors.unknownResource('event', params.id, null,
+          { dontNotifyAirbrake: true }));
       }
 
       if (! context.canContributeToContext(event.streamId, event.tags)) {
@@ -534,7 +536,8 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
       if (periodEvent) {
         return next(errors.invalidOperation('At least one period event ("' + periodEvent.id +
-            '") already exists at a later time', {conflictingEventId: periodEvent.id}));
+          '") already exists at a later time', {conflictingEventId: periodEvent.id},
+          null, { dontNotifyAirbrake: true }));
       }
 
       next();
@@ -596,7 +599,8 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       if (periodEvents.length > 0) {
         var msg = 'The event\'s period overlaps existing period events.';
         return next(errors.periodsOverlap(msg,
-            {overlappedIds: periodEvents.map(function (e) { return e.id; })}));
+          {overlappedIds: periodEvents.map(function (e) { return e.id; })},
+          null, { dontNotifyAirbrake: true }));
       }
 
       next();

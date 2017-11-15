@@ -173,7 +173,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     var stream = treeUtils.findById(context.streams, params.id);
     if (! stream) {
       return process.nextTick(next.bind(null,
-          errors.unknownResource('stream', params.id)));
+          errors.unknownResource('stream', params.id, null, { dontNotifyAirbrake: true })));
     }
     if (! context.canManageStream(stream.id)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
@@ -222,7 +222,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     context.stream = treeUtils.findById(context.streams, params.id);
     if (! context.stream) {
       return process.nextTick(next.bind(null,
-          errors.unknownResource('stream', params.id)));
+          errors.unknownResource('stream', params.id, null, { dontNotifyAirbrake: true })));
     }
     if (! context.canManageStream(context.stream.id)) {
       return process.nextTick(next.bind(null, errors.forbidden()));

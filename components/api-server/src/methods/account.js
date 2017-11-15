@@ -61,7 +61,7 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
       if (err) { return next(errors.unexpectedError(err)); }
 
       if (! isValid) {
-        return next(errors.invalidOperation('The given password does not match.'));
+        return next(errors.invalidOperation('The given password does not match.', { dontNotifyAirbrake: true }));
       }
       next();
     });

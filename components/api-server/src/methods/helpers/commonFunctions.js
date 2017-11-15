@@ -8,7 +8,7 @@ exports.loadAccess = function loadAccess(context, params, result, next) {
 exports.requirePersonalAccess = function requirePersonalAccess(context, params, result, next) {
   if (! context.access.isPersonal()) {
     return next(errors.forbidden('You cannot access this resource using the given access ' +
-        'token.'));
+        'token.', { dontNotifyAirbrake: true }));
   }
   next();
 };
@@ -27,7 +27,7 @@ exports.getTrustedAppCheck = function getTrustedAppCheck(authSettings) {
   return function requireTrustedApp(context, params, result, next) {
     if (! isTrustedApp(params.appId, params.origin)) {
       return next(errors.invalidCredentials('The app id ("appId") is either missing or ' +
-          'not trusted.'));
+          'not trusted.', { dontNotifyAirbrake: true }));
     }
     next();
   };
@@ -76,7 +76,7 @@ exports.getParamsValidation = function getParamsValidation(paramsSchema) {
     validation.validate(params, paramsSchema, function (err) {
       if (err) {
         return next(errors.invalidParametersFormat('The parameters\' format is invalid.',
-            err));
+            err, null, { dontNotifyAirbrake: true }));
       }
       next();
     });

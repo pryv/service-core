@@ -244,7 +244,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
       if (err) { return next(errors.unexpectedError(err)); }
 
       if (! access) {
-        return next(errors.unknownResource('access', params.id));
+        return next(errors.unknownResource('access', params.id, null, { dontNotifyAirbrake: true }));
       }
 
       if (! context.access.isPersonal() && ! context.access.canManageAccess(access)) {
@@ -293,7 +293,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
       if (err) { return next(errors.unexpectedError(err)); }
 
       if (! access) {
-        return next(errors.unknownResource('access', params.id));
+        return next(errors.unknownResource('access', params.id, null, { dontNotifyAirbrake: true }));
       }
 
       if (! context.access.isPersonal() && ! context.access.canManageAccess(access)) {

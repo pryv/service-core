@@ -7,7 +7,7 @@ var APIError = require('./APIError'),
  */
 var factory = module.exports = {};
 
-factory.corruptedData = function (message, innerError) {
+factory.corruptedData = function (message, innerError) { //
   return new APIError(ErrorIds.CorruptedData, message, {
     httpStatus: 422,
     innerError: innerError
@@ -43,20 +43,20 @@ factory.invalidMethod = function (methodId) {
       {httpStatus: 404});
 };
 
-factory.invalidOperation = function (message, data, innerError) {
-  return new APIError(ErrorIds.InvalidOperation, message, {
+factory.invalidOperation = function (message, data, innerError, options) {
+  return new APIError(ErrorIds.InvalidOperation, message, _.merge({
     httpStatus: 400,
     data: data,
     innerError: innerError
-  });
+  }, options));
 };
 
-factory.invalidParametersFormat = function (message, data, innerError) {
-  return new APIError(ErrorIds.InvalidParametersFormat, message, {
+factory.invalidParametersFormat = function (message, data, innerError, options) {
+  return new APIError(ErrorIds.InvalidParametersFormat, message, _.merge({
     httpStatus: 400,
     data: data,
     innerError: innerError
-  });
+  }, options));
 };
 
 factory.invalidRequestStructure = function (message, data, innerError) {
@@ -67,7 +67,7 @@ factory.invalidRequestStructure = function (message, data, innerError) {
   });
 };
 
-factory.itemAlreadyExists = function (resourceType, conflictingKeys, innerError) {
+factory.itemAlreadyExists = function (resourceType, conflictingKeys, innerError, options) {
   resourceType = resourceType || 'resource';
   var article = _.includes(['a', 'e', 'i', 'o', 'u'], resourceType[0]) ? 'An ' : 'A ';
   var keysDescription = Object.keys(conflictingKeys).map(function (k) {
@@ -75,11 +75,11 @@ factory.itemAlreadyExists = function (resourceType, conflictingKeys, innerError)
   }).join(', ');
   var message = article + resourceType + ' with ' + keysDescription +
       ' already exists';
-  return new APIError(ErrorIds.ItemAlreadyExists, message, {
+  return new APIError(ErrorIds.ItemAlreadyExists, message, _.merge({
     httpStatus: 400,
     innerError: innerError,
     data: conflictingKeys
-  });
+  }, options));
 };
 
 factory.missingHeader = function (headerName) {
@@ -87,12 +87,12 @@ factory.missingHeader = function (headerName) {
       {httpStatus: 400});
 };
 
-factory.periodsOverlap = function (message, data, innerError) {
-  return new APIError(ErrorIds.PeriodsOverlap, message, {
+factory.periodsOverlap = function (message, data, innerError, options) {
+  return new APIError(ErrorIds.PeriodsOverlap, message, _.merge({
     httpStatus: 400,
     data: data,
     innerError: innerError
-  });
+  }, options));
 };
 
 factory.tooManyResults = function (limit) {
