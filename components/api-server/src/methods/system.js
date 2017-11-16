@@ -56,7 +56,7 @@ module.exports = function (systemAPI, usersStorage, userAccessesStorage, service
       sendMailURL = emailSettings.url + emailSettings.sendMessagePath;
 
   function sendWelcomeMail(context, params, result, next) {
-    // drop this step if welcome mail is deactivated
+    // skip this step if welcome mail is deactivated
     const isMailActivated = emailSettings.enabled;
     if(isMailActivated === false
       || (isMailActivated != null && isMailActivated.welcome === false)) {

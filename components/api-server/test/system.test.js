@@ -138,7 +138,7 @@ describe('system (ex-register)', function () {
     it('must not send a welcome email if mailing is deactivated', function (done) {
       var settings = _.clone(helpers.dependencies.settings);
       settings.services.email.enabled = false;
-      testWelcomeMailSending(settings, done);
+      testWelcomeMailNotSent(settings, done);
     });
     
     it('must not send a welcome email if welcome mail is deactivated', function (done) {
@@ -146,10 +146,10 @@ describe('system (ex-register)', function () {
       settings.services.email.enabled = {
         welcome : false
       };
-      testWelcomeMailSending(settings, done);
+      testWelcomeMailNotSent(settings, done);
     });
     
-    function testWelcomeMailSending (settings, callback) {
+    function testWelcomeMailNotSent (settings, callback) {
       var mailSent = false;
       // setup mail server mock
       helpers.instanceTestSetup.set(settings, {

@@ -489,7 +489,7 @@ describe('account', function () {
     it('must not trigger a reset email if mailing is deactivated', function (done) {
       var settings = _.clone(helpers.dependencies.settings);
       settings.services.email.enabled = false;
-      testResetMailSending(settings, done);
+      testResetMailNotSent(settings, done);
     });
     
     it('must not trigger a reset email if reset mail is deactivated', function (done) {
@@ -497,10 +497,10 @@ describe('account', function () {
       settings.services.email.enabled = {
         resetPassword: false
       };
-      testResetMailSending(settings, done);
+      testResetMailNotSent(settings, done);
     });
     
-    function testResetMailSending (settings, callback) {
+    function testResetMailNotSent (settings, callback) {
       var mailSent = false;
           
       // setup mail server mock
