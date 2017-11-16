@@ -106,6 +106,16 @@ describe('system (ex-register)', function () {
             stepDone();
           });
         },
+        // IMPORTANT The superagent library currently has a bug where throws
+        // inside an 'end' callback would cause the callback to be raised a
+        // second time. Combined with async.series, anything below this comment
+        // cannot throw errors, otherwise it results in a double callback error
+        // on stepDone. Please use try/catch.
+        
+        // As soon as this PR: 
+        //  https://github.com/visionmedia/superagent/commit/6ff0493a1ebdb1d6fff6d71d1cafe080ec33e6fd#diff-c24ce7e3da4c0e4ff811a2b6a76f8bd9
+        // hits a released superagent version, remove the comment and the 
+        // try/catches.
         function getUpdatedUsers(stepDone) {
           storage.findAll(null, function (err, users) {
             users.length.should.eql(originalCount + 1, 'users');
@@ -126,46 +136,21 @@ describe('system (ex-register)', function () {
     });
     
     it('must not send a welcome email if mailing is deactivated', function (done) {
-      var settings = _.clone(helpers.dependencies.settings),
-          mailSent = false;
-      // deactivate mailing
+      var settings = _.clone(helpers.dependencies.settings);
       settings.services.email.enabled = false;
-      // setup mail server mock
-      helpers.instanceTestSetup.set(settings, {
-        context: settings.services.email,
-        execute: function () {
-          require('nock')(this.context.url).post(this.context.sendMessagePath)
-            .reply(200, function () {
-              this.context.messagingSocket.emit('mail-sent');
-            }.bind(this));
-        }
-      });
-      // fetch notification from server process
-      server.on('mail-sent', function () {
-        mailSent = true;
-        return done('Welcome email should not be sent!');
-      });
-
-      async.series([
-        server.ensureStarted.bind(server, settings),
-        function registerNewUser(stepDone) {
-          post(newUserData, function (err, res) {
-            validation.check(res, {
-              status: 201,
-              schema: methodsSchema.createUser.result
-            });
-            mailSent.should.eql(false);
-            stepDone();
-          });
-        }
-      ], done);
+      testWelcomeMailSending(settings, done);
     });
     
     it('must not send a welcome email if welcome mail is deactivated', function (done) {
-      var settings = _.clone(helpers.dependencies.settings),
-          mailSent = false;
-      // deactivate welcome mail
-      settings.services.email.enabled.welcome = false;
+      var settings = _.clone(helpers.dependencies.settings);
+      settings.services.email.enabled = {
+        welcome : false
+      };
+      testWelcomeMailSending(settings, done);
+    });
+    
+    function testWelcomeMailSending (settings, callback) {
+      var mailSent = false;
       // setup mail server mock
       helpers.instanceTestSetup.set(settings, {
         context: settings.services.email,
@@ -179,7 +164,7 @@ describe('system (ex-register)', function () {
       // fetch notification from server process
       server.on('mail-sent', function () {
         mailSent = true;
-        return done('Welcome email should not be sent!');
+        return callback('Welcome email should not be sent!');
       });
 
       async.series([
@@ -194,8 +179,18 @@ describe('system (ex-register)', function () {
             stepDone();
           });
         }
-      ], done);
-    });
+        // IMPORTANT The superagent library currently has a bug where throws
+        // inside an 'end' callback would cause the callback to be raised a
+        // second time. Combined with async.series, anything below this comment
+        // cannot throw errors, otherwise it results in a double callback error
+        // on stepDone. Please use try/catch.
+        
+        // As soon as this PR: 
+        //  https://github.com/visionmedia/superagent/commit/6ff0493a1ebdb1d6fff6d71d1cafe080ec33e6fd#diff-c24ce7e3da4c0e4ff811a2b6a76f8bd9
+        // hits a released superagent version, remove the comment and the 
+        // try/catches.
+      ], callback);
+    }
 
     it('must run the process but not save anything for test username "recla"', function (done) {
       var originalCount,
