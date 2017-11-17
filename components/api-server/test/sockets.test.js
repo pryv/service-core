@@ -97,7 +97,7 @@ describe('Socket.IO', function () {
     ioCons.con = connect(namespace, {auth: token});
 
     ioCons.con.on('connect', function () {
-      if (! ioCons.con) { return; }
+      if (! ioCons.con) { return; }
       // if we get here, communication is properly established
       done();
     });
@@ -106,10 +106,9 @@ describe('Socket.IO', function () {
 
   it('must connect to a user with a dash in the username', function (done) {
 
-    var dashUser = testData.users[4],
-        dashRequest = null,
-        dashToken = null;
-
+    var dashUser = testData.users[4];
+    var dashRequest = null;
+    
     async.series([
       function (stepDone) {
         testData.resetAccesses(stepDone, dashUser);
@@ -117,10 +116,6 @@ describe('Socket.IO', function () {
       function (stepDone) {
         dashRequest = helpers.request(server.url);
         dashRequest.login(dashUser, stepDone);
-      },
-      function (stepDone) {
-        dashToken = dashRequest.token;
-        stepDone();
       },
       function (stepDone) {
         ioCons.con = connect('/' + dashUser.username, {auth: testData.accesses[2].token});
@@ -145,7 +140,7 @@ describe('Socket.IO', function () {
     ioCons.con = connect(namespace);
 
     ioCons.con.socket.on('error', function () {
-      if (! ioCons.con) { return; }
+      if (! ioCons.con) { return; }
       done();
     });
 
