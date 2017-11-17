@@ -56,6 +56,12 @@ module.exports = function (systemAPI, usersStorage, userAccessesStorage, service
       sendMailURL = emailSettings.url + emailSettings.sendMessagePath;
 
   function sendWelcomeMail(context, params, result, next) {
+    // skip this step if welcome mail is deactivated
+    const isMailActivated = emailSettings.enabled;
+    if(isMailActivated === false
+      || (isMailActivated != null && isMailActivated.welcome === false)) {
+      return next();
+    }
     var sendMailData = {
       key: emailSettings.key,
       template_name: emailSettings.welcomeTemplate,

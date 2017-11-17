@@ -88,6 +88,13 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
   var sendMailURL = emailSettings.url + emailSettings.sendMessagePath;
 
   function sendPasswordResetMail(context, params, result, next) {
+    // skip this step if reset mail is deactivated
+    const isMailActivated = emailSettings.enabled;
+    if(isMailActivated === false
+      || (isMailActivated != null && isMailActivated.resetPassword === false)) {
+      return next();
+    }
+    
     var sendMailData = {
       key: emailSettings.key,
       template_name: emailSettings.resetPasswordTemplate,
