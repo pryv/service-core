@@ -1388,7 +1388,7 @@ describe('events', function () {
     
     it('must prevent update of protected fields and throw a forbidden error in strict mode',
       function (done) {
-        var forbiddenUpdate = {
+        const forbiddenUpdate = {
           id: 'forbidden',
           attachments: [],
           created: 1,
@@ -1420,7 +1420,7 @@ describe('events', function () {
       
     it('must prevent update of protected fields and log a warning in non-strict mode',
       function (done) {
-        var forbiddenUpdate = {
+        const forbiddenUpdate = {
           id: 'forbidden',
           attachments: [],
           created: 1,
@@ -1428,17 +1428,23 @@ describe('events', function () {
           modified: 1,
           modifiedBy: 'alice'
         };
+        const original = testData.events[0];
           
         async.series([
           instanciateServerWithNonStrictMode,
           function testForbiddenUpdate(stepDone) {
-            request.put(path(testData.events[0].id)).send(forbiddenUpdate)
+            request.put(path(original.id)).send(forbiddenUpdate)
               .end(function (res) {
                 validation.check(res, {
                   status: 200,
                   schema: methodsSchema.update.result
                 });
-                // TODO: test that protected fields in resulting event are not updated
+                const update = res.body.event;
+                should(update.id).be.equal(original.id);
+                should(update.created).be.equal(original.created);
+                should(update.createdBy).be.equal(original.createdBy);
+                should(update.modified).be.equal(original.modified);
+                should(update.modifiedBy).be.equal(original.modifiedBy);
                 stepDone();
               });
           }

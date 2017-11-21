@@ -497,7 +497,7 @@ describe('streams', function () {
     });
     
     it('must prevent update of protected fields and throw a forbidden error in strict mode', function (done) {
-      var forbiddenUpdate = {
+      const forbiddenUpdate = {
         id: 'forbidden',
         children: [],
         created: 1,
@@ -527,7 +527,7 @@ describe('streams', function () {
     });
     
     it('must prevent update of protected fields and log a warning in non-strict mode', function (done) {
-      var forbiddenUpdate = {
+      const forbiddenUpdate = {
         id: 'forbidden',
         children: [],
         created: 1,
@@ -535,16 +535,22 @@ describe('streams', function () {
         modified: 1,
         modifiedBy: 'alice'
       };
+      const original = testData.streams[0];
       
       async.series([
         instanciateServerWithNonStrictMode,
         function testForbiddenUpdate(stepDone) {
-          request.put(path(testData.streams[0].id)).send(forbiddenUpdate).end(function (res) {
+          request.put(path(original.id)).send(forbiddenUpdate).end(function (res) {
             validation.check(res, {
               status: 200,
               schema: methodsSchema.update.result
             });
-            // TODO: test that protected fields in resulting stream are not updated
+            const stream = res.body.stream;
+            should(stream.id).be.equal(original.id);
+            should(stream.created).be.equal(original.created);
+            should(stream.createdBy).be.equal(original.createdBy);
+            should(stream.modified).be.equal(original.modified);
+            should(stream.modifiedBy).be.equal(original.modifiedBy);
             stepDone();
           });
         }

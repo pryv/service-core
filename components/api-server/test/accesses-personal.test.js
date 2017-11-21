@@ -508,8 +508,8 @@ describe('accesses (personal)', function () {
     });
     
     it('must prevent update of protected fields and throw a forbidden error in strict mode', function (done) {
-      var original = _.omit(testData.accesses[1], 'calls');
-      var forbiddenUpdate = {
+      const original = _.omit(testData.accesses[1], 'calls');
+      const forbiddenUpdate = {
         id: 'forbidden',
         token: 'forbidden',
         type: 'shared',
@@ -541,8 +541,8 @@ describe('accesses (personal)', function () {
     });
     
     it('must prevent update of protected fields and log a warning in non-strict mode', function (done) {
-      var original = _.omit(testData.accesses[1], 'calls');
-      var forbiddenUpdate = {
+      const original = _.omit(testData.accesses[1], 'calls');
+      const forbiddenUpdate = {
         id: 'forbidden',
         token: 'forbidden',
         type: 'shared',
@@ -561,7 +561,15 @@ describe('accesses (personal)', function () {
               status: 200,
               schema: methodsSchema.update.result
             });
-            // TODO: test that protected fields in resulting stream are not updated
+            const access = res.body.access;
+            should(access.id).be.equal(original.id);
+            should(access.token).be.equal(original.token);
+            should(access.type).be.equal(original.type);
+            should(access.lastUsed).be.equal(original.lastUsed);
+            should(access.created).be.equal(original.created);
+            should(access.createdBy).be.equal(original.createdBy);
+            should(access.modified).be.equal(original.modified);
+            should(access.modifiedBy).be.equal(original.modifiedBy);
             stepDone();
           });
         }
