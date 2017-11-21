@@ -3,47 +3,42 @@
 const commonFns = require('../src/methods/helpers/commonFunctions');
 const streamSchema = require('../src/schema/stream');
 const should = require('should');
-const dependencies = require('./helpers/dependencies');
-const _ = require('lodash');
 
 describe('methods/helpers/commonFunctions.js: catchForbiddenUpdate(schema)', function () {
   const forbiddenUpdate = {
     update: {
-      'id': 'forbidden'
+      id: 'forbidden',
+      modifiedBy: 'toto'
     }
   };
 
   it('must throw a forbidden error if "ignoreProtectedFieldUpdates" is null', function (done) {
-    let settings = _.clone(dependencies.settings);
-    settings.ignoreProtectedFieldUpdates = null;
-    testForbiddenUpdate(forbiddenUpdate, true, done);
+    testForbiddenUpdate(forbiddenUpdate, null, done);
   });
   
   it('must throw a forbidden error if "ignoreProtectedFieldUpdates" is false', function (done) {
-    let settings = _.clone(dependencies.settings);
-    settings.ignoreProtectedFieldUpdates = false;
-    testForbiddenUpdate(forbiddenUpdate, true, done);
-  });
-  
-  it('must not throw any error if "ignoreProtectedFieldUpdates" is true but print a warn log', function (done) {
-    let settings = _.clone(dependencies.settings);
-    settings.ignoreProtectedFieldUpdates = true;
     testForbiddenUpdate(forbiddenUpdate, false, done);
   });
   
-  function testForbiddenUpdate(update, shouldThrow, done) {
+  it('must not throw any error if "ignoreProtectedFieldUpdates" is true but print a warn log', function (done) {
+    testForbiddenUpdate(forbiddenUpdate, true, done);
+  });
+  
+  function testForbiddenUpdate(update, ignoreProtectedFieldUpdates, done) {
     // Here we fake a logger to test that a warning is logged in non-strict mode
     const logger = {
       warn: function(msg) {
-        should(shouldThrow).be.false();
-        should(msg.indexOf('Update is forbidden on the following properties') >= 0).be.true();
+        should(ignoreProtectedFieldUpdates).be.true();
+        should(msg.indexOf('Forbidden update was attempted on the following protected field(s)') >= 0).be.true();
+        should(msg.indexOf('Server has "ignoreProtectedFieldUpdates" turned on: Fields are not updated, but no error is thrown.') >= 0).be.true();
         should(msg.indexOf('id') >= 0).be.true();
+        should(msg.indexOf('modifiedBy') >= 0).be.true();
         done();
       }
     };
-    const catchForbiddenUpdate = commonFns.catchForbiddenUpdate(streamSchema('update'), logger);
+    const catchForbiddenUpdate = commonFns.catchForbiddenUpdate(streamSchema('update'), ignoreProtectedFieldUpdates, logger);
     catchForbiddenUpdate(null, forbiddenUpdate, null, function(err) {
-      if(shouldThrow) {
+      if(!ignoreProtectedFieldUpdates) {
         should.exist(err);
         done();
       } else if(err) {

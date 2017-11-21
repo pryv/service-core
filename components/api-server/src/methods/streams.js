@@ -164,7 +164,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
   api.register('streams.update',
       commonFns.getParamsValidation(methodsSchema.update.params),
-      commonFns.catchForbiddenUpdate(streamSchema('update')),
+      commonFns.catchForbiddenUpdate(streamSchema('update'), auditSettings.ignoreProtectedFieldUpdates, logger),
       applyPrerequisitesForUpdate,
       updateStream);
 

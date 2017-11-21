@@ -83,13 +83,20 @@ exports.getParamsValidation = function getParamsValidation(paramsSchema) {
   };
 };
 
-exports.catchForbiddenUpdate = function catchForbiddenUpdate(paramsSchema) {
+exports.catchForbiddenUpdate = function catchForbiddenUpdate(paramsSchema, ignoreProtectedFieldUpdates, logger) {
   return function validateParams(context, params, result, next) {
     const allowed = paramsSchema.alterableProperties;
     const forbidden = Object.keys(params.update)
       .filter(key => !allowed.includes(key));
-    if(forbidden.length > 0) return next(errors.forbidden(
-      'Update is forbidden on the following properties: [' + forbidden + '].'));
+    if(forbidden.length > 0) {
+      const errorMsg = 'Forbidden update was attempted on the following protected field(s): [' + forbidden + '].';
+      if(ignoreProtectedFieldUpdates) {
+        logger.warn(errorMsg + '\n' +
+          'Server has "ignoreProtectedFieldUpdates" turned on: Fields are not updated, but no error is thrown.');
+      } else {
+        return next(errors.forbidden(errorMsg));
+      }
+    }
     next();
   };
 };
