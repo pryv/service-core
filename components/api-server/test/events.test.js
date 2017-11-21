@@ -1386,26 +1386,70 @@ describe('events', function () {
       });
     });
     
-    it('must reject update of read-only properties',
-        function (done) {
-          var forbiddenUpdate = {
-            id: 'forbidden',
-            attachments: [],
-            created: 1,
-            createdBy: 'bob',
-            modified: 1,
-            modifiedBy: 'alice'
-          };
-
-          request.put(path(testData.events[0].id)).send(forbiddenUpdate)
-          .end(function (res) {
-            validation.check(res, {
-              status: 403,
-              id: ErrorIds.Forbidden,
-              data: {forbiddenProperties: forbiddenUpdate}
-            }, done);
-          });
-        });
+    it('must prevent update of protected fields and throw a forbidden error in strict mode',
+      function (done) {
+        var forbiddenUpdate = {
+          id: 'forbidden',
+          attachments: [],
+          created: 1,
+          createdBy: 'bob',
+          modified: 1,
+          modifiedBy: 'alice'
+        };
+          
+        async.series([
+          instanciateServerWithStrictMode,
+          function testForbiddenUpdate(stepDone) {
+            request.put(path(testData.events[0].id)).send(forbiddenUpdate)
+              .end(function (res) {
+                validation.check(res, {
+                  status: 403,
+                  id: ErrorIds.Forbidden,
+                  data: {forbiddenProperties: forbiddenUpdate}
+                }, stepDone);
+              });
+          }
+        ], done);
+        
+        function instanciateServerWithStrictMode(stepDone) {
+          let settings = _.cloneDeep(helpers.dependencies.settings);
+          settings.audit.ignoreProtectedFieldUpdates = false;
+          server.ensureStarted.call(server, settings, stepDone);
+        }
+      });
+      
+    it('must prevent update of protected fields and log a warning in non-strict mode',
+      function (done) {
+        var forbiddenUpdate = {
+          id: 'forbidden',
+          attachments: [],
+          created: 1,
+          createdBy: 'bob',
+          modified: 1,
+          modifiedBy: 'alice'
+        };
+          
+        async.series([
+          instanciateServerWithNonStrictMode,
+          function testForbiddenUpdate(stepDone) {
+            request.put(path(testData.events[0].id)).send(forbiddenUpdate)
+              .end(function (res) {
+                validation.check(res, {
+                  status: 200,
+                  schema: methodsSchema.update.result
+                });
+                // TODO: test that protected fields in resulting event are not updated
+                stepDone();
+              });
+          }
+        ], done);
+        
+        function instanciateServerWithNonStrictMode(stepDone) {
+          let settings = _.cloneDeep(helpers.dependencies.settings);
+          settings.audit.ignoreProtectedFieldUpdates = true;
+          server.ensureStarted.call(server, settings, stepDone);
+        }
+      });
     
     it('must reject tags that are too long', function (done) {
       var bigTag = new Array(600).join('a');

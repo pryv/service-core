@@ -19,8 +19,9 @@ var APIError = require('components/errors').APIError,
  * @param userStreamsStorage
  * @param notifications
  * @param logging
+ * @param auditSettings
  */
-module.exports = function (api, userAccessesStorage, userStreamsStorage, notifications, logging) {
+module.exports = function (api, userAccessesStorage, userStreamsStorage, notifications, logging, auditSettings) {
 
   var logger = logging.getLogger('methods/accesses'),
       dbFindOptions = {fields: {calls: 0}};
@@ -228,7 +229,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
 
   api.register('accesses.update',
       commonFns.getParamsValidation(methodsSchema.update.params),
-      commonFns.catchForbiddenUpdate(accessSchema('update')),
+      commonFns.catchForbiddenUpdate(accessSchema('update'), auditSettings.ignoreProtectedFieldUpdates, logger),
       applyPrerequisitesForUpdate,
       checkAccessForUpdate,
       updateAccess);

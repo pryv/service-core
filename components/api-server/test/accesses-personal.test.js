@@ -507,7 +507,7 @@ describe('accesses (personal)', function () {
       });
     });
     
-    it('must reject of read-only properties', function (done) {
+    it('must prevent update of protected fields and throw a forbidden error in strict mode', function (done) {
       var original = _.omit(testData.accesses[1], 'calls');
       var forbiddenUpdate = {
         id: 'forbidden',
@@ -520,13 +520,58 @@ describe('accesses (personal)', function () {
         modifiedBy: 'alice'
       };
       
-      request.put(path(original.id)).send(forbiddenUpdate).end(function (res) {
-        validation.check(res, {
-          status: 403,
-          id: ErrorIds.Forbidden,
-          data: {forbiddenProperties: forbiddenUpdate}
-        }, done);
-      });
+      async.series([
+        instanciateServerWithStrictMode,
+        function testForbiddenUpdate(stepDone) {
+          request.put(path(original.id)).send(forbiddenUpdate).end(function (res) {
+            validation.check(res, {
+              status: 403,
+              id: ErrorIds.Forbidden,
+              data: {forbiddenProperties: forbiddenUpdate}
+            }, stepDone);
+          });
+        }
+      ], done);
+      
+      function instanciateServerWithStrictMode(stepDone) {
+        let settings = _.cloneDeep(helpers.dependencies.settings);
+        settings.audit.ignoreProtectedFieldUpdates = false;
+        server.ensureStarted.call(server, settings, stepDone);
+      }
+    });
+    
+    it('must prevent update of protected fields and log a warning in non-strict mode', function (done) {
+      var original = _.omit(testData.accesses[1], 'calls');
+      var forbiddenUpdate = {
+        id: 'forbidden',
+        token: 'forbidden',
+        type: 'shared',
+        lastUsed: 1,
+        created: 1,
+        createdBy: 'bob',
+        modified: 1,
+        modifiedBy: 'alice'
+      };
+      
+      async.series([
+        instanciateServerWithStrictMode,
+        function testForbiddenUpdate(stepDone) {
+          request.put(path(original.id)).send(forbiddenUpdate).end(function (res) {
+            validation.check(res, {
+              status: 200,
+              schema: methodsSchema.update.result
+            });
+            // TODO: test that protected fields in resulting stream are not updated
+            stepDone();
+          });
+        }
+      ], done);
+      
+      function instanciateServerWithStrictMode(stepDone) {
+        let settings = _.cloneDeep(helpers.dependencies.settings);
+        settings.audit.ignoreProtectedFieldUpdates = true;
+        server.ensureStarted.call(server, settings, stepDone);
+      }
     });
 
   });
