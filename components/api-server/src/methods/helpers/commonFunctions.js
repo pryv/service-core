@@ -90,10 +90,17 @@ exports.catchForbiddenUpdate = function catchForbiddenUpdate(paramsSchema, ignor
       .filter(key => !allowed.includes(key));
     if(forbidden.length > 0) {
       const errorMsg = 'Forbidden update was attempted on the following protected field(s): [' + forbidden + '].';
+      // Non-strict mode:
       if(ignoreProtectedFieldUpdates) {
+        // Ignore protected fields in update
+        forbidden.forEach((key) => {
+          delete params[key];
+        });
+        // Log a warning
         logger.warn(errorMsg + '\n' +
           'Server has "ignoreProtectedFieldUpdates" turned on: Fields are not updated, but no error is thrown.');
       } else {
+        // Strict mode: throw a forbidden error
         return next(errors.forbidden(errorMsg));
       }
     }

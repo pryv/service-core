@@ -1,4 +1,4 @@
-/*global describe, before, beforeEach, it */
+/*global describe, before, after, beforeEach, it */
 
 var helpers = require('./helpers'),
     ErrorIds = require('components/errors').ErrorIds,
@@ -507,81 +507,105 @@ describe('accesses (personal)', function () {
       });
     });
     
-    it('must prevent update of protected fields and throw a forbidden error in strict mode', function (done) {
-      const original = _.omit(testData.accesses[1], 'calls');
-      const forbiddenUpdate = {
-        id: 'forbidden',
-        token: 'forbidden',
-        type: 'shared',
-        lastUsed: 1,
-        created: 1,
-        createdBy: 'bob',
-        modified: 1,
-        modifiedBy: 'alice'
+    describe('forbidden updates of protected fields', function () {
+      let originalAccess = {
+        name: 'Forbidden access update test',
+        permissions:[{
+          streamId: 'work',
+          level: 'read'
+        }]
       };
       
-      async.series([
-        instanciateServerWithStrictMode,
-        function testForbiddenUpdate(stepDone) {
-          request.put(path(original.id)).send(forbiddenUpdate).end(function (res) {
-            validation.check(res, {
-              status: 403,
-              id: ErrorIds.Forbidden,
-              data: {forbiddenProperties: forbiddenUpdate}
-            }, stepDone);
+      before(function (done) {
+        request.post(basePath).send(originalAccess).end(function (res) {
+          validation.check(res, {
+            status: 201,
+            schema: methodsSchema.create.result
           });
-        }
-      ], done);
+          originalAccess = res.body.access;
+          done();
+        });
+      });
       
-      function instanciateServerWithStrictMode(stepDone) {
-        let settings = _.cloneDeep(helpers.dependencies.settings);
-        settings.audit.ignoreProtectedFieldUpdates = false;
-        server.ensureStarted.call(server, settings, stepDone);
-      }
-    });
+      after(function (done) {
+        request.del(path(originalAccess.id)).end(function () {
+          done();
+        });
+      });
     
-    it('must prevent update of protected fields and log a warning in non-strict mode', function (done) {
-      const original = _.omit(testData.accesses[1], 'calls');
-      const forbiddenUpdate = {
-        id: 'forbidden',
-        token: 'forbidden',
-        type: 'shared',
-        lastUsed: 1,
-        created: 1,
-        createdBy: 'bob',
-        modified: 1,
-        modifiedBy: 'alice'
-      };
-      
-      async.series([
-        instanciateServerWithStrictMode,
-        function testForbiddenUpdate(stepDone) {
-          request.put(path(original.id)).send(forbiddenUpdate).end(function (res) {
-            validation.check(res, {
-              status: 200,
-              schema: methodsSchema.update.result
+      it('must prevent update of protected fields and throw a forbidden error in strict mode', function (done) {
+        const forbiddenUpdate = {
+          id: 'forbidden',
+          token: 'forbidden',
+          type: 'shared',
+          lastUsed: 1,
+          created: 1,
+          createdBy: 'bob',
+          modified: 1,
+          modifiedBy: 'alice'
+        };
+        
+        async.series([
+          instanciateServerWithStrictMode,
+          function testForbiddenUpdate(stepDone) {
+            request.put(path(originalAccess.id)).send(forbiddenUpdate).end(function (res) {
+              validation.check(res, {
+                status: 403,
+                id: ErrorIds.Forbidden,
+                data: {forbiddenProperties: forbiddenUpdate}
+              }, stepDone);
             });
-            const access = res.body.access;
-            should(access.id).be.equal(original.id);
-            should(access.token).be.equal(original.token);
-            should(access.type).be.equal(original.type);
-            should(access.lastUsed).be.equal(original.lastUsed);
-            should(access.created).be.equal(original.created);
-            should(access.createdBy).be.equal(original.createdBy);
-            should(access.modified).be.equal(original.modified);
-            should(access.modifiedBy).be.equal(original.modifiedBy);
-            stepDone();
-          });
+          }
+        ], done);
+        
+        function instanciateServerWithStrictMode(stepDone) {
+          let settings = _.cloneDeep(helpers.dependencies.settings);
+          settings.audit.ignoreProtectedFieldUpdates = false;
+          server.ensureStarted.call(server, settings, stepDone);
         }
-      ], done);
+      });
       
-      function instanciateServerWithStrictMode(stepDone) {
-        let settings = _.cloneDeep(helpers.dependencies.settings);
-        settings.audit.ignoreProtectedFieldUpdates = true;
-        server.ensureStarted.call(server, settings, stepDone);
-      }
+      it('must prevent update of protected fields and log a warning in non-strict mode', function (done) {
+        const forbiddenUpdate = {
+          id: 'forbidden',
+          token: 'forbidden',
+          type: 'shared',
+          lastUsed: 1,
+          created: 1,
+          createdBy: 'bob',
+          modified: 1,
+          modifiedBy: 'alice'
+        };
+        
+        async.series([
+          instanciateServerWithStrictMode,
+          function testForbiddenUpdate(stepDone) {
+            request.put(path(originalAccess.id)).send(forbiddenUpdate).end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.update.result
+              });
+              const access = res.body.access;
+              should(access.id).be.equal(originalAccess.id);
+              should(access.token).be.equal(originalAccess.token);
+              should(access.type).be.equal(originalAccess.type);
+              should(access.lastUsed).be.equal(originalAccess.lastUsed);
+              should(access.created).be.equal(originalAccess.created);
+              should(access.createdBy).be.equal(originalAccess.createdBy);
+              should(access.modified).be.equal(originalAccess.modified);
+              should(access.modifiedBy).be.equal(originalAccess.modifiedBy);
+              stepDone();
+            });
+          }
+        ], done);
+        
+        function instanciateServerWithStrictMode(stepDone) {
+          let settings = _.cloneDeep(helpers.dependencies.settings);
+          settings.audit.ignoreProtectedFieldUpdates = true;
+          server.ensureStarted.call(server, settings, stepDone);
+        }
+      });
     });
-
   });
 
   describe('DELETE /<token>', function () {

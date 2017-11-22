@@ -1,4 +1,4 @@
-/*global describe, before, beforeEach, it */
+/*global describe, before, after, beforeEach, it */
 
 var helpers = require('./helpers'),
     server = helpers.dependencies.instanceManager,
@@ -496,71 +496,95 @@ describe('streams', function () {
       });
     });
     
-    it('must prevent update of protected fields and throw a forbidden error in strict mode', function (done) {
-      const forbiddenUpdate = {
-        id: 'forbidden',
-        children: [],
-        created: 1,
-        createdBy: 'bob',
-        modified: 1,
-        modifiedBy: 'alice'
+    describe('forbidden updates of protected fields', function () {
+      const streamId = 'forbidden_stream_update_test';
+      let originalStream = {
+        id: streamId,
+        name: streamId
       };
       
-      async.series([
-        instanciateServerWithStrictMode,
-        function testForbiddenUpdate(stepDone) {
-          request.put(path(testData.streams[0].id)).send(forbiddenUpdate).end(function (res) {
-            validation.check(res, {
-              status: 403,
-              id: ErrorIds.Forbidden,
-              data: {forbiddenProperties: forbiddenUpdate}
-            }, stepDone);
+      before(function (done) {
+        request.post(basePath).send(originalStream).end(function (res) {
+          validation.check(res, {
+            status: 201,
+            schema: methodsSchema.create.result
           });
-        }
-      ], done);
+          originalStream = res.body.stream;
+          done();
+        });
+      });
       
-      function instanciateServerWithStrictMode(stepDone) {
-        let settings = _.cloneDeep(helpers.dependencies.settings);
-        settings.audit.ignoreProtectedFieldUpdates = false;
-        server.ensureStarted.call(server, settings, stepDone);
-      }
-    });
-    
-    it('must prevent update of protected fields and log a warning in non-strict mode', function (done) {
-      const forbiddenUpdate = {
-        id: 'forbidden',
-        children: [],
-        created: 1,
-        createdBy: 'bob',
-        modified: 1,
-        modifiedBy: 'alice'
-      };
-      const original = testData.streams[0];
+      after(function (done) {
+        request.del(path(streamId)).end(function () {
+          done();
+        });
+      });
       
-      async.series([
-        instanciateServerWithNonStrictMode,
-        function testForbiddenUpdate(stepDone) {
-          request.put(path(original.id)).send(forbiddenUpdate).end(function (res) {
-            validation.check(res, {
-              status: 200,
-              schema: methodsSchema.update.result
+      it('must fail and throw a forbidden error in strict mode', function (done) {
+        const forbiddenUpdate = {
+          id: 'forbidden',
+          children: [],
+          created: 1,
+          createdBy: 'bob',
+          modified: 1,
+          modifiedBy: 'alice'
+        };
+        
+        async.series([
+          instanciateServerWithStrictMode,
+          function testForbiddenUpdate(stepDone) {
+            request.put(path(streamId)).send(forbiddenUpdate).end(function (res) {
+              validation.check(res, {
+                status: 403,
+                id: ErrorIds.Forbidden,
+                data: {forbiddenProperties: forbiddenUpdate}
+              }, stepDone);
             });
-            const stream = res.body.stream;
-            should(stream.id).be.equal(original.id);
-            should(stream.created).be.equal(original.created);
-            should(stream.createdBy).be.equal(original.createdBy);
-            should(stream.modified).be.equal(original.modified);
-            should(stream.modifiedBy).be.equal(original.modifiedBy);
-            stepDone();
-          });
+          }
+        ], done);
+        
+        function instanciateServerWithStrictMode(stepDone) {
+          let settings = _.cloneDeep(helpers.dependencies.settings);
+          settings.audit.ignoreProtectedFieldUpdates = false;
+          server.ensureStarted.call(server, settings, stepDone);
         }
-      ], done);
+      });
       
-      function instanciateServerWithNonStrictMode(stepDone) {
-        let settings = _.cloneDeep(helpers.dependencies.settings);
-        settings.audit.ignoreProtectedFieldUpdates = true;
-        server.ensureStarted.call(server, settings, stepDone);
-      }
+      it('must succeed by ignoring protected fields and log a warning in non-strict mode', function (done) {
+        const forbiddenUpdate = {
+          id: 'forbidden',
+          children: [],
+          created: 1,
+          createdBy: 'bob',
+          modified: 1,
+          modifiedBy: 'alice'
+        };
+                
+        async.series([
+          instanciateServerWithNonStrictMode,
+          function testForbiddenUpdate(stepDone) {
+            request.put(path(streamId)).send(forbiddenUpdate).end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.update.result
+              });
+              const stream = res.body.stream;
+              should(stream.id).be.equal(originalStream.id);
+              should(stream.created).be.equal(originalStream.created);
+              should(stream.createdBy).be.equal(originalStream.createdBy);
+              should(stream.modified).be.equal(originalStream.modified);
+              should(stream.modifiedBy).be.equal(originalStream.modifiedBy);
+              stepDone();
+            });
+          }
+        ], done);
+        
+        function instanciateServerWithNonStrictMode(stepDone) {
+          let settings = _.cloneDeep(helpers.dependencies.settings);
+          settings.audit.ignoreProtectedFieldUpdates = true;
+          server.ensureStarted.call(server, settings, stepDone);
+        }
+      });
     });
 
   });
