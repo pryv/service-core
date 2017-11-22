@@ -119,7 +119,7 @@ anymatch@^1.3.0:
     micromatch "^2.1.5"
     normalize-path "^2.0.0"
 
-"api-server@file:source/api-server":
+"api-server@file:components/api-server":
   version "1.3.0"
   dependencies:
     multistream "^2.1.0"
@@ -271,7 +271,7 @@ axon@2.0.x:
     debug "*"
     escape-regexp "0.0.1"
 
-babel-cli@^6.23.0:
+babel-cli@^6.26.0:
   version "6.26.0"
   resolved "https://registry.yarnpkg.com/babel-cli/-/babel-cli-6.26.0.tgz#502ab54874d7db88ad00b887a06383ce03d002f1"
   dependencies:
@@ -377,6 +377,12 @@ babel-polyfill@^6.23.0, babel-polyfill@^6.26.0:
     babel-runtime "^6.26.0"
     core-js "^2.5.0"
     regenerator-runtime "^0.10.5"
+
+babel-preset-flow@^6.23.0:
+  version "6.23.0"
+  resolved "https://registry.yarnpkg.com/babel-preset-flow/-/babel-preset-flow-6.23.0.tgz#e71218887085ae9a24b5be4169affb599816c49d"
+  dependencies:
+    babel-plugin-transform-flow-strip-types "^6.22.0"
 
 babel-register@^6.23.0, babel-register@^6.26.0:
   version "6.26.0"
@@ -605,7 +611,7 @@ busboy@^0.2.11:
     dicer "0.2.5"
     readable-stream "1.1.x"
 
-"business@file:source/business":
+"business@file:components/business":
   version "1.0.0"
   dependencies:
     z-schema "^3.18.2"
@@ -1100,7 +1106,7 @@ error-ex@^1.2.0:
   dependencies:
     is-arrayish "^0.2.1"
 
-"errors@file:source/errors":
+"errors@file:components/errors":
   version "1.2.7"
 
 es-abstract@^1.5.0:
@@ -1857,7 +1863,7 @@ he@1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/he/-/he-1.1.1.tgz#93410fd21b009735151f8868c2f271f3427e23fd"
 
-"hfs-server@file:source/hfs-server":
+"hfs-server@file:components/hfs-server":
   version "1.0.0"
 
 hoek@2.x.x:
@@ -2559,7 +2565,7 @@ micromatch@^2.1.5:
     parse-glob "^3.0.4"
     regex-cache "^0.4.2"
 
-"middleware@file:source/middleware":
+"middleware@file:components/middleware":
   version "1.1.7"
 
 mime-db@~1.30.0:
@@ -2627,7 +2633,7 @@ mocha@^3.2.0:
     mkdirp "0.5.1"
     supports-color "3.1.2"
 
-"model@file:source/model":
+"model@file:components/model":
   version "1.2.7"
 
 moment-timezone@^0.5.x:
@@ -3058,7 +3064,7 @@ preserve@^0.2.0:
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/preserve/-/preserve-0.2.0.tgz#815ed1f6ebc65926f865b310c0713bcb3315ce4b"
 
-"previews-server@file:source/previews-server":
+"previews-server@file:components/previews-server":
   version "1.2.7"
   dependencies:
     fs-xattr "^0.1.11"
@@ -3100,7 +3106,7 @@ proxy-addr@~1.1.5:
     forwarded "~0.1.0"
     ipaddr.js "1.4.0"
 
-"pryvuser-cli@file:source/pryvuser-cli":
+"pryvuser-cli@file:components/pryvuser-cli":
   version "1.2.7"
   dependencies:
     co-prompt "^1.0.0"
@@ -3699,7 +3705,7 @@ stack-trace@^0.0.9:
   version "1.3.1"
   resolved "https://registry.yarnpkg.com/statuses/-/statuses-1.3.1.tgz#faf51b9eb74aaef3b3acf4ad5f61abf24cb7b93e"
 
-"storage@file:source/storage":
+"storage@file:components/storage":
   version "1.2.7"
   dependencies:
     cuid "^1.2.5"
@@ -3871,7 +3877,7 @@ terminal-table@0.0.12:
     colors "^1.0.3"
     eastasianwidth "^0.1.0"
 
-"test-helpers@file:source/test-helpers":
+"test-helpers@file:components/test-helpers":
   version "1.2.7"
 
 text-table@~0.2.0:
@@ -4149,7 +4155,7 @@ utils-merge@1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/utils-merge/-/utils-merge-1.0.0.tgz#0294fb922bb9375153541c4f7096231f287c8af8"
 
-"utils@file:source/utils":
+"utils@file:components/utils":
   version "1.2.7"
   dependencies:
     airbrake-js "^0.9.8"

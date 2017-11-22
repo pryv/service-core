@@ -25,6 +25,7 @@ If you're blocking because 'unicode.org' doesn't like you today, here's what you
     ├── Procfile                Used by foreman (`nf`) to identify processes 
     ├── README.md               This README
     ├── build                   Contains files needed for Docker release build
+    ├── components              Source code for all components 
     ├── custom-extensions       Custom auth steps, during tests mainly.
     ├── decls                   Flow-Type annotations, managed by us
     ├── dist                    Once you run 'npm run release', this is created
@@ -35,7 +36,6 @@ If you're blocking because 'unicode.org' doesn't like you today, here's what you
     ├── package.json            Yarn package file
     ├── proxy                   Proxy configuration
     ├── scripts                 Scripts used to manage the repository
-    ├── source                  Source code for all components 
     ├── test                    Top-Level Tests for Integration tests.
     └── yarn.lock               Lockfile for Yarn, locks down npm versions.
     
@@ -53,11 +53,11 @@ If you're blocking because 'unicode.org' doesn't like you today, here's what you
 | Run API and Preview server   | `nf start api, previews`       |
 | Run flow checker             | `watch -c flow --color=always` |
 
-Normally, all binaries like `nf` or `flow` must be accessed by prepending `yarn run {nf,flow}`. 
+Normally, all binaries like `nf` or `flow` must be accessed by prepending `yarn run {nf,flow}`. Kaspar has a set of shell aliases that simplify this. 
 
 # Test Running
 
-If you want to run tests in `source/`, you will need to start with a command like this: 
+If you want to run tests in `components/`, you will need to start with a command like this: 
 
     $ ../../node_modules/.bin/mocha \
       --compilers js:babel-register \
