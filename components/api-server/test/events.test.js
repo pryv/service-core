@@ -1,4 +1,4 @@
-/*global describe, before, after, beforeEach, it */
+/*global describe, before, beforeEach, it */
 
 var helpers = require('./helpers'),
     server = helpers.dependencies.instanceManager,
@@ -1393,7 +1393,7 @@ describe('events', function () {
         streamId: testData.streams[0].id
       };
       
-      before(function (done) {
+      beforeEach(function (done) {
         request.post(basePath).send(originalEvent).end(function (res) {
           validation.check(res, {
             status: 201,
@@ -1402,21 +1402,6 @@ describe('events', function () {
           originalEvent = res.body.event;
           done();
         });
-      });
-      
-      after(function (done) {
-        async.series([
-          function trashEvent(stepDone) {
-            request.del(path(originalEvent.id)).end(function () {
-              stepDone();
-            });
-          },
-          function deleteEvent(stepDone) {
-            request.del(path(originalEvent.id)).end(function () {
-              stepDone();
-            });
-          }
-        ], done);
       });
     
       it('must prevent update of protected fields and throw a forbidden error in strict mode',

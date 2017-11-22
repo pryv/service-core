@@ -1,4 +1,4 @@
-/*global describe, before, after, beforeEach, it */
+/*global describe, before, beforeEach, it */
 
 var helpers = require('./helpers'),
     ErrorIds = require('components/errors').ErrorIds,
@@ -523,12 +523,6 @@ describe('accesses (personal)', function () {
             schema: methodsSchema.create.result
           });
           originalAccess = res.body.access;
-          done();
-        });
-      });
-      
-      after(function (done) {
-        request.del(path(originalAccess.id)).end(function () {
           done();
         });
       });

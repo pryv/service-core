@@ -1,4 +1,4 @@
-/*global describe, before, after, beforeEach, it */
+/*global describe, before, beforeEach, it */
 
 var helpers = require('./helpers'),
     server = helpers.dependencies.instanceManager,
@@ -503,19 +503,13 @@ describe('streams', function () {
         name: streamId
       };
       
-      before(function (done) {
+      beforeEach(function (done) {
         request.post(basePath).send(originalStream).end(function (res) {
           validation.check(res, {
             status: 201,
             schema: methodsSchema.create.result
           });
           originalStream = res.body.stream;
-          done();
-        });
-      });
-      
-      after(function (done) {
-        request.del(path(streamId)).end(function () {
           done();
         });
       });
