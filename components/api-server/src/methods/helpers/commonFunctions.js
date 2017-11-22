@@ -94,7 +94,7 @@ exports.catchForbiddenUpdate = function catchForbiddenUpdate(paramsSchema, ignor
       if(ignoreProtectedFieldUpdates) {
         // Ignore protected fields in update
         forbidden.forEach((key) => {
-          delete params[key];
+          delete params.update[key];
         });
         // Log a warning
         logger.warn(errorMsg + '\n' +

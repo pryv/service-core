@@ -1387,19 +1387,20 @@ describe('events', function () {
     });
     
     describe('forbidden updates of protected fields', function () {
-      let originalEvent = {
+      const event = {
         type: 'note/txt',
         content: 'forbidden event update test',
         streamId: testData.streams[0].id
       };
+      let eventId;
       
       beforeEach(function (done) {
-        request.post(basePath).send(originalEvent).end(function (res) {
+        request.post(basePath).send(event).end(function (res) {
           validation.check(res, {
             status: 201,
             schema: methodsSchema.create.result
           });
-          originalEvent = res.body.event;
+          eventId = res.body.event.id;
           done();
         });
       });
@@ -1418,7 +1419,7 @@ describe('events', function () {
           async.series([
             instanciateServerWithStrictMode,
             function testForbiddenUpdate(stepDone) {
-              request.put(path(originalEvent.id)).send(forbiddenUpdate)
+              request.put(path(eventId)).send(forbiddenUpdate)
                 .end(function (res) {
                   validation.check(res, {
                     status: 403,
@@ -1449,19 +1450,18 @@ describe('events', function () {
           async.series([
             instanciateServerWithNonStrictMode,
             function testForbiddenUpdate(stepDone) {
-              request.put(path(originalEvent.id)).send(forbiddenUpdate)
+              request.put(path(eventId)).send(forbiddenUpdate)
                 .end(function (res) {
-                  //console.log(res);
                   validation.check(res, {
                     status: 200,
                     schema: methodsSchema.update.result
                   });
                   const update = res.body.event;
-                  should(update.id).be.equal(originalEvent.id);
-                  should(update.created).be.equal(originalEvent.created);
-                  should(update.createdBy).be.equal(originalEvent.createdBy);
-                  should(update.modified).be.equal(originalEvent.modified);
-                  should(update.modifiedBy).be.equal(originalEvent.modifiedBy);
+                  should(update.id).not.be.equal(forbiddenUpdate.id);
+                  should(update.created).not.be.equal(forbiddenUpdate.created);
+                  should(update.createdBy).not.be.equal(forbiddenUpdate.createdBy);
+                  should(update.modified).not.be.equal(forbiddenUpdate.modified);
+                  should(update.modifiedBy).not.be.equal(forbiddenUpdate.modifiedBy);
                   stepDone();
                 });
             }

@@ -91,6 +91,7 @@ describe('accesses (personal)', function () {
         ]
       };
       var originalCount,
+      
           createdAccess,
           time;
 
@@ -508,21 +509,22 @@ describe('accesses (personal)', function () {
     });
     
     describe('forbidden updates of protected fields', function () {
-      let originalAccess = {
+      const access = {
         name: 'Forbidden access update test',
         permissions:[{
           streamId: 'work',
           level: 'read'
-        }]
+        }],
       };
+      let accessId;
       
-      before(function (done) {
-        request.post(basePath).send(originalAccess).end(function (res) {
+      beforeEach(function (done) {
+        request.post(basePath).send(access).end(function (res) {
           validation.check(res, {
             status: 201,
             schema: methodsSchema.create.result
           });
-          originalAccess = res.body.access;
+          accessId = res.body.access.id;
           done();
         });
       });
@@ -531,7 +533,7 @@ describe('accesses (personal)', function () {
         const forbiddenUpdate = {
           id: 'forbidden',
           token: 'forbidden',
-          type: 'shared',
+          type: 'personal',
           lastUsed: 1,
           created: 1,
           createdBy: 'bob',
@@ -542,7 +544,7 @@ describe('accesses (personal)', function () {
         async.series([
           instanciateServerWithStrictMode,
           function testForbiddenUpdate(stepDone) {
-            request.put(path(originalAccess.id)).send(forbiddenUpdate).end(function (res) {
+            request.put(path(accessId)).send(forbiddenUpdate).end(function (res) {
               validation.check(res, {
                 status: 403,
                 id: ErrorIds.Forbidden,
@@ -563,7 +565,7 @@ describe('accesses (personal)', function () {
         const forbiddenUpdate = {
           id: 'forbidden',
           token: 'forbidden',
-          type: 'shared',
+          type: 'personal',
           lastUsed: 1,
           created: 1,
           createdBy: 'bob',
@@ -574,20 +576,20 @@ describe('accesses (personal)', function () {
         async.series([
           instanciateServerWithStrictMode,
           function testForbiddenUpdate(stepDone) {
-            request.put(path(originalAccess.id)).send(forbiddenUpdate).end(function (res) {
+            request.put(path(accessId)).send(forbiddenUpdate).end(function (res) {
               validation.check(res, {
                 status: 200,
                 schema: methodsSchema.update.result
               });
               const access = res.body.access;
-              should(access.id).be.equal(originalAccess.id);
-              should(access.token).be.equal(originalAccess.token);
-              should(access.type).be.equal(originalAccess.type);
-              should(access.lastUsed).be.equal(originalAccess.lastUsed);
-              should(access.created).be.equal(originalAccess.created);
-              should(access.createdBy).be.equal(originalAccess.createdBy);
-              should(access.modified).be.equal(originalAccess.modified);
-              should(access.modifiedBy).be.equal(originalAccess.modifiedBy);
+              should(access.id).not.be.equal(forbiddenUpdate.id);
+              should(access.token).not.be.equal(forbiddenUpdate.token);
+              should(access.type).not.be.equal(forbiddenUpdate.type);
+              should(access.lastUsed).not.be.equal(forbiddenUpdate.lastUsed);
+              should(access.created).not.be.equal(forbiddenUpdate.created);
+              should(access.createdBy).not.be.equal(forbiddenUpdate.createdBy);
+              should(access.modified).not.be.equal(forbiddenUpdate.modified);
+              should(access.modifiedBy).not.be.equal(forbiddenUpdate.modifiedBy);
               stepDone();
             });
           }

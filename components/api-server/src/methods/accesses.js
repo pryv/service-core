@@ -243,10 +243,10 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
     userAccessesStorage.findOne(context.user, {id: params.id}, dbFindOptions,
         function (err, access) {
       if (err) { return next(errors.unexpectedError(err)); }
-
       if (! access) {
         return next(errors.unknownResource('access', params.id));
       }
+
 
       if (! context.access.isPersonal() && ! context.access.canManageAccess(access)) {
         return next(errors.forbidden('Your access token has insufficient permissions to ' +

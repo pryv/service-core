@@ -498,19 +498,17 @@ describe('streams', function () {
     
     describe('forbidden updates of protected fields', function () {
       const streamId = 'forbidden_stream_update_test';
-      let originalStream = {
+      const stream = {
         id: streamId,
         name: streamId
       };
       
       beforeEach(function (done) {
-        request.post(basePath).send(originalStream).end(function (res) {
+        request.post(basePath).send(stream).end(function (res) {
           validation.check(res, {
             status: 201,
             schema: methodsSchema.create.result
-          });
-          originalStream = res.body.stream;
-          done();
+          }, done);
         });
       });
       
@@ -563,11 +561,11 @@ describe('streams', function () {
                 schema: methodsSchema.update.result
               });
               const stream = res.body.stream;
-              should(stream.id).be.equal(originalStream.id);
-              should(stream.created).be.equal(originalStream.created);
-              should(stream.createdBy).be.equal(originalStream.createdBy);
-              should(stream.modified).be.equal(originalStream.modified);
-              should(stream.modifiedBy).be.equal(originalStream.modifiedBy);
+              should(stream.id).not.be.equal(forbiddenUpdate.id);
+              should(stream.created).not.be.equal(forbiddenUpdate.created);
+              should(stream.createdBy).not.be.equal(forbiddenUpdate.createdBy);
+              should(stream.modified).not.be.equal(forbiddenUpdate.modified);
+              should(stream.modifiedBy).not.be.equal(forbiddenUpdate.modifiedBy);
               stepDone();
             });
           }
