@@ -523,7 +523,9 @@ describe('streams', function () {
         };
         
         async.series([
-          instanciateServerWithStrictMode,
+          function instanciateServerWithStrictMode(stepDone) {
+            setIgnoreProtectedFieldUpdates(false, stepDone);
+          },
           function testForbiddenUpdate(stepDone) {
             request.put(path(streamId)).send(forbiddenUpdate).end(function (res) {
               validation.check(res, {
@@ -534,12 +536,6 @@ describe('streams', function () {
             });
           }
         ], done);
-        
-        function instanciateServerWithStrictMode(stepDone) {
-          let settings = _.cloneDeep(helpers.dependencies.settings);
-          settings.audit.ignoreProtectedFieldUpdates = false;
-          server.ensureStarted.call(server, settings, stepDone);
-        }
       });
       
       it('must succeed by ignoring protected fields and log a warning in non-strict mode', function (done) {
@@ -553,7 +549,9 @@ describe('streams', function () {
         };
                 
         async.series([
-          instanciateServerWithNonStrictMode,
+          function instanciateServerWithNonStrictMode(stepDone) {
+            setIgnoreProtectedFieldUpdates(true, stepDone);
+          },
           function testForbiddenUpdate(stepDone) {
             request.put(path(streamId)).send(forbiddenUpdate).end(function (res) {
               validation.check(res, {
@@ -570,13 +568,14 @@ describe('streams', function () {
             });
           }
         ], done);
-        
-        function instanciateServerWithNonStrictMode(stepDone) {
-          let settings = _.cloneDeep(helpers.dependencies.settings);
-          settings.audit.ignoreProtectedFieldUpdates = true;
-          server.ensureStarted.call(server, settings, stepDone);
-        }
       });
+      
+      function setIgnoreProtectedFieldUpdates(activated, stepDone) {
+        let settings = _.cloneDeep(helpers.dependencies.settings);
+        settings.audit.ignoreProtectedFieldUpdates = activated;
+        server.ensureStarted.call(server, settings, stepDone);
+      }
+      
     });
 
   });

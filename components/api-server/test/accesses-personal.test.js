@@ -542,7 +542,9 @@ describe('accesses (personal)', function () {
         };
         
         async.series([
-          instanciateServerWithStrictMode,
+          function instanciateServerWithStrictMode(stepDone) {
+            setIgnoreProtectedFieldUpdates(false, stepDone);
+          },
           function testForbiddenUpdate(stepDone) {
             request.put(path(accessId)).send(forbiddenUpdate).end(function (res) {
               validation.check(res, {
@@ -553,12 +555,6 @@ describe('accesses (personal)', function () {
             });
           }
         ], done);
-        
-        function instanciateServerWithStrictMode(stepDone) {
-          let settings = _.cloneDeep(helpers.dependencies.settings);
-          settings.audit.ignoreProtectedFieldUpdates = false;
-          server.ensureStarted.call(server, settings, stepDone);
-        }
       });
       
       it('must prevent update of protected fields and log a warning in non-strict mode', function (done) {
@@ -574,7 +570,9 @@ describe('accesses (personal)', function () {
         };
         
         async.series([
-          instanciateServerWithStrictMode,
+          function instanciateServerWithNonStrictMode(stepDone) {
+            setIgnoreProtectedFieldUpdates(true, stepDone);
+          },
           function testForbiddenUpdate(stepDone) {
             request.put(path(accessId)).send(forbiddenUpdate).end(function (res) {
               validation.check(res, {
@@ -594,13 +592,14 @@ describe('accesses (personal)', function () {
             });
           }
         ], done);
-        
-        function instanciateServerWithStrictMode(stepDone) {
-          let settings = _.cloneDeep(helpers.dependencies.settings);
-          settings.audit.ignoreProtectedFieldUpdates = true;
-          server.ensureStarted.call(server, settings, stepDone);
-        }
       });
+      
+      function setIgnoreProtectedFieldUpdates(activated, stepDone) {
+        let settings = _.cloneDeep(helpers.dependencies.settings);
+        settings.audit.ignoreProtectedFieldUpdates = activated;
+        server.ensureStarted.call(server, settings, stepDone);
+      }
+      
     });
   });
 
