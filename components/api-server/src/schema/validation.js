@@ -51,14 +51,16 @@ function tryCoerceStringValues(
   for (const key of Object.keys(settings)) {
     const type = settings[key];
     const value = object[key];
+
+    // Do not touch null, undefined or things that aren't a string.
+    if (value == null) continue;
+    if (typeof value !== 'string') continue; 
   
+    // Obtain new value from coercion. 
     object[key] = tryCoerceValue(value, type);
   }
   
   function tryCoerceValue(value: mixed, type: string): mixed {
-    if (value == null) return; 
-    if (typeof value !== 'string') return; 
-  
     // Cannot declare these inside the case, because javascript. 
     let newNumber;
     let newInteger; 

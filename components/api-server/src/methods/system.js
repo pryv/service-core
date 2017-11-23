@@ -20,6 +20,7 @@ module.exports = function (systemAPI, usersStorage, userAccessesStorage, service
 
   var logger = logging.getLogger('methods/system');
 
+  // ---------------------------------------------------------------- createUser
   systemAPI.register('system.createUser',
       commonFns.getParamsValidation(methodsSchema.createUser.params),
       applyDefaultsForCreation,
@@ -82,7 +83,7 @@ module.exports = function (systemAPI, usersStorage, userAccessesStorage, service
       }
     };
     request.post(sendMailURL).send(sendMailData).end(function (err, res) {
-      if (err || ! res.ok) {
+      if (err || ! res.ok) {
         if (! err) {
           err = new Error('Sending welcome e-mail failed: ' + util.inspect(res.body));
         }
@@ -94,11 +95,12 @@ module.exports = function (systemAPI, usersStorage, userAccessesStorage, service
     });
   }
 
+  // --------------------------------------------------------------- getUserInfo
   systemAPI.register('system.getUserInfo',
-      commonFns.getParamsValidation(methodsSchema.getUserInfo.params),
-      retrieveUser,
-      getUserInfoInit,
-      getUserInfoSetAccessStats);
+    commonFns.getParamsValidation(methodsSchema.getUserInfo.params),
+    retrieveUser,
+    getUserInfoInit,
+    getUserInfoSetAccessStats);
 
   function retrieveUser(context, params, result, next) {
     usersStorage.findOne({username: params.username}, null, function (err, user) {
@@ -121,7 +123,7 @@ module.exports = function (systemAPI, usersStorage, userAccessesStorage, service
   }
 
   function getUserInfoSetAccessStats(context, params, result, next) {
-    var info = _.defaults(result.userInfo, {
+    const info = _.defaults(result.userInfo, {
       lastAccess: 0,
       callsTotal: 0,
       callsDetail: {},
@@ -151,6 +153,10 @@ module.exports = function (systemAPI, usersStorage, userAccessesStorage, service
           });
         }
       });
+      
+      // Since we've merged new keys into _the old userInfo_ on result, we don't
+      // need to return our result here, since we've modified the result in 
+      // place. 
 
       next();
     });

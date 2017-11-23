@@ -16,6 +16,14 @@ describe('tryCoerceStringValues', () => {
     assert.deepEqual(object, expect);
   });
   
+  it("doesn't create keys in object", () => {
+    const o = { };
+    const t = { a: 'number' };
+    
+    tryCoerceStringValues(o, t);
+    
+    assert.lengthOf(Object.keys(o), 0, "Keys have been created in target.");
+  });
   it('should convert to array', () => {
     const obj = { a: '1', b: 'test' };
     

@@ -18,6 +18,7 @@ module.exports = function (api, userAccessesStorage, logging) {
       updateAccessUsageStats);
 
   function updateAccessUsageStats(context, params, result, next) {
+    console.log('here');
     // don't make callers wait on this to get their reply
     next();
 
@@ -25,29 +26,29 @@ module.exports = function (api, userAccessesStorage, logging) {
     try {
       var access = context.access;
       if (access) {
-	var calledMethodKey = string.toMongoKey(context.calledMethodId),
-	    prevCallCount = (access.calls && access.calls[calledMethodKey]) ?
-		access.calls[calledMethodKey] : 0;
+        const calledMethodKey = string.toMongoKey(context.calledMethodId);
+        const prevCallCount = (access.calls && access.calls[calledMethodKey]) ?
+          access.calls[calledMethodKey] : 
+          0;
 
-	var update = {lastUsed: timestamp.now()};
-	update['calls.' + calledMethodKey] = prevCallCount + 1;
+        const update = { lastUsed: timestamp.now() };
+        update['calls.' + calledMethodKey] = prevCallCount + 1;
 
-	userAccessesStorage.updateOne(context.user, {id: context.access.id}, update,
-	    function (err) {
-	  if (err) {
-	    errorHandling.logError(errors.unexpectedError(err), {
-	      url: context.user.username,
-	      method: 'updateAccessLastUsed',
-	      body: params
-	    }, logger);
-	  }
-	});
+        userAccessesStorage.updateOne(context.user, {id: context.access.id}, update, function (err) {
+          if (err) {
+            errorHandling.logError(errors.unexpectedError(err), {
+              url: context.user.username,
+              method: 'updateAccessLastUsed',
+              body: params
+            }, logger);
+          }
+        });
       }
     } catch (err) {
       errorHandling.logError(errors.unexpectedError(err), {
-	url: context.user.username,
-	method: 'updateAccessLastUsed',
-	body: params
+        url: context.user.username,
+        method: 'updateAccessLastUsed',
+        body: params
       }, logger);
     }
   }
