@@ -28,9 +28,12 @@ describe('Socket.IO', function () {
       otherToken = null;
 
   function connect(namespace, queryParams) {
-    var paramsWithNS = _.defaults({resource: namespace}, queryParams || {}),
-        url = server.url + namespace + '?' + queryString.stringify(paramsWithNS);
-    return io.connect(url, {'force new connection': true});
+    const paramsWithNS = _.defaults({resource: namespace}, queryParams || {});
+    const url = server.url + namespace + '?' + queryString.stringify(paramsWithNS);
+    
+    return io.connect(url, {
+      'reconnect': false, 
+      'force new connection': true});
   }
 
   // all Socket.IO connections used in tests should be added in there to simplify cleanup
@@ -97,13 +100,14 @@ describe('Socket.IO', function () {
   it('must dynamically create a namespace for the user', function (done) {
     ioCons.con = connect(namespace, {auth: token});
 
-    ioCons.con.on('connect', function () {
-      if (! ioCons.con) { return; }
+    ioCons.con.on('connect', function (err) {
       // if we get here, communication is properly established
-      done();
+      done(err);
     });
-    ioCons.con.on('error', function () { 
-      throw new Error('Connection failed.'); });
+    ioCons.con.on('connect_error', function (err) {
+      if (err) return done(err);
+      done(new Error('Connection failed.')); 
+    });
   });
   it('must connect to a user with a dash in the username', function (done) {
 
@@ -205,7 +209,6 @@ describe('Socket.IO', function () {
         done();
       });
     });
-
     it('must properly route method call messages for streams and return the results',
         function (done) {
       ioCons.con = connect(namespace, {auth: token});
@@ -233,7 +236,6 @@ describe('Socket.IO', function () {
         done();
       });
     });
-
     it('must fail if the called method does not exist', function (done) {
       ioCons.con = connect(namespace, {auth: token});
       ioCons.con.emit('streams.badMethod', {}, function (err) {
@@ -280,9 +282,7 @@ describe('Socket.IO', function () {
         });
       });
     });
-
-    it('must notify other sockets for the same user (only) about streams changes',
-        function (done) {
+    it('must notify other sockets for the same user (only) about streams changes', function (done) {
       ioCons.con1 = connect(namespace, {auth: token}); // personal access
       ioCons.con2 = connect(namespace, {auth: testData.accesses[2].token}); // "read all" access
       ioCons.otherCon = connect('/' + otherUser.username, {auth: otherToken});
