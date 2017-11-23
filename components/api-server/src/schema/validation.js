@@ -1,3 +1,5 @@
+// @flow
+
 var Validator = require('z-schema'),
     validator = new Validator();
 
@@ -18,38 +20,77 @@ exports.validate = validator.validate.bind(validator);
  */
 exports.validateSchema = validator.validateSchema.bind(validator);
 
-/**
- * Tries to type-coerce properties of the given object according to the given settings.
- *
- * @param object
- * @param settings Map of property keys to coerce and their target types
- */
-exports.tryCoerceStringValues = function (object, settings) {
-  Object.keys(settings).forEach(function (key) {
-    if (! object[key] || typeof object[key] !== 'string') { return; }
-
-    switch (settings[key]) {
-    case 'boolean':
-      if (object[key].toLowerCase() === 'true') {
-        object[key] = true;
-      } else if (object[key].toLowerCase() === 'false') {
-        object[key] = false;
-      }
-      break;
-    case 'number':
-      try {
-        const temp = +object[key];
-        object[key] = isNaN(temp) ? object[key] : temp;
-      } catch (e) { /* cannot coerce */ }
-      break;
-    case 'integer':
-      try {
-        object[key] = parseInt(object[key], 10);
-      } catch (e) { /* cannot coerce */ }
-      break;
-    case 'array':
-      object[key] = [object[key]];
-      break;
+// Tries to type-coerce properties of the given `object` according to the
+// settings. Iterates in shallow manner over the keys of `settings`, coercing 
+// the values of the same key in `object` to the type indicated by the value
+// from `settings`. 
+//
+// Properties in `object` that have no corresponding type in `settings` are left
+// alone. If a value cannot be coerced to the target type, it is left alone. 
+// Values that are not a string in `object` will not be touched.
+// 
+// Allowed types are 'boolean', 'number', 'integer' and 'array'.
+//
+// Example: 
+// 
+//   const object = { a: 'true', 'b': '2343', c: 'foobar' };
+//   const types = { a: 'boolean', b: 'number' }
+//   tryCoerceStringValues(object, types)
+//   
+//   // object is now 
+//   { 
+//     a: true, 
+//     b: 2343,
+//     c: 'foobar'
+//   }
+//
+function tryCoerceStringValues(
+  object: { [string]: mixed }, 
+  settings: { [string]: string }
+) {
+  for (const key of Object.keys(settings)) {
+    const type = settings[key];
+    const value = object[key];
+  
+    object[key] = tryCoerceValue(value, type);
+  }
+  
+  function tryCoerceValue(value: mixed, type: string): mixed {
+    if (value == null) return; 
+    if (typeof value !== 'string') return; 
+  
+    // Cannot declare these inside the case, because javascript. 
+    let newNumber;
+    let newInteger; 
+  
+    switch (type) {
+      case 'boolean': 
+        if (value.toLowerCase() == 'true') return true; 
+        if (value.toLowerCase() == 'false') return false; 
+  
+        return value; 
+  
+      case 'number':
+        newNumber = Number(value);
+  
+        if (isNaN(newNumber)) return value; 
+        return newNumber;
+  
+      case 'integer':
+        newInteger = parseInt(value, 10);
+  
+        if (isNaN(newInteger)) return value; 
+        return newInteger;
+  
+      case 'array': 
+        return [value];
     }
-  });
-};
+  
+    // assert: type not in ['boolean', 'number', 'integer', 'array']
+    //  (since we're returning early above)
+  
+    // Unknown type, leave the value as it is. 
+    return value; 
+  }
+}
+exports.tryCoerceStringValues = tryCoerceStringValues;
