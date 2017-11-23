@@ -74,10 +74,9 @@ describe('system (ex-register)', function () {
               .reply(200, function (uri, requestBody) {
                 var body = JSON.parse(requestBody);
                 if (body.message.global_merge_vars[0].content !== 'mr-dupotager' ||
-                  ! /welcome/.test(body.template_name)) 
-                {
+                  ! /welcome/.test(body.template_name)) {
                   // MISMATCHED REQ BODY: require('util').inspect(body, {depth: null}));
-                    require('util').inspect(body, {depth: null})); 
+                  require('util').inspect(body, {depth: null}); 
                 }
                 this.context.messagingSocket.emit('mail-sent');
               }.bind(this));

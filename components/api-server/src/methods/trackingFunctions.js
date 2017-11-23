@@ -18,7 +18,6 @@ module.exports = function (api, userAccessesStorage, logging) {
       updateAccessUsageStats);
 
   function updateAccessUsageStats(context, params, result, next) {
-    console.log('here');
     // don't make callers wait on this to get their reply
     next();
 
