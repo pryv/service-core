@@ -23,8 +23,8 @@ var APIError = require('components/errors').APIError,
  */
 module.exports = function (api, userAccessesStorage, userStreamsStorage, notifications, logging, auditSettings) {
 
-  var logger = logging.getLogger('methods/accesses'),
-      dbFindOptions = {fields: {calls: 0}};
+  const logger = logging.getLogger('methods/accesses');
+  const dbFindOptions = {fields: {calls: 0}};
 
   // COMMON
 

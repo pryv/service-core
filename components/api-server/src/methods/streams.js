@@ -25,7 +25,7 @@ var errors = require('components/errors').factory,
 module.exports = function (api, userStreamsStorage, userEventsStorage, userEventFilesStorage,
                            notifications, logging, auditSettings) {
 
-  var logger = logging.getLogger('methods/streams');
+  const logger = logging.getLogger('methods/streams');
 
   // COMMON
 

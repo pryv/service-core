@@ -29,7 +29,7 @@ var utils = require('components/utils'),
 module.exports = function (api, userEventsStorage, userEventFilesStorage, usersStorage,
                            authSettings, auditSettings, eventTypes, notifications, logging) {
 
-  var logger = logging.getLogger('methods/events');
+  const logger = logging.getLogger('methods/events');
 
   // COMMON
 
