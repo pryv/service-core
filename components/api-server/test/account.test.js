@@ -184,6 +184,7 @@ describe('account', function () {
             should.not.exist(err);
             // hard to know what the exact difference should be, so we just expect it's bigger
             storageUsed.dbDocuments.should.be.above(initialStorageUsed.dbDocuments);
+            // SPURIOUS Comparison sometimes fails by more than 1024.
             storageUsed.attachedFiles.should.be.approximately(initialStorageUsed.attachedFiles +
                 newAtt.size, 1024);
             updatedStorageUsed = storageUsed;
