@@ -56,31 +56,4 @@ describe('tryCoerceStringValues', () => {
       assert.equal(o.a, n);
     }
   });
-  it('integer conversion works', () => {
-    
-    ok('123', 123); 
-    ok('123.45', 123); 
-    
-    ok('123abc', 123);
-    ok('123.45aksfhjal', 123);
-    
-    not_ok('a213b');
-    
-    function ok(n: string, e: number) {
-      const o = { a: n };
-      const s = { a: 'integer' };
-      
-      tryCoerceStringValues(o, s);
-      
-      assert.equal(o.a, e);
-    }
-    function not_ok(n: string) {
-      const o = { a: n };
-      const s = { a: 'integer' };
-      
-      tryCoerceStringValues(o, s);
-      
-      assert.equal(o.a, n);
-    }
-  });
 });

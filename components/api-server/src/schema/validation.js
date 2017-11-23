@@ -29,7 +29,7 @@ exports.validateSchema = validator.validateSchema.bind(validator);
 // alone. If a value cannot be coerced to the target type, it is left alone. 
 // Values that are not a string in `object` will not be touched.
 // 
-// Allowed types are 'boolean', 'number', 'integer' and 'array'.
+// Allowed types are 'boolean', 'number' and 'array'.
 //
 // Example: 
 // 
@@ -51,11 +51,11 @@ function tryCoerceStringValues(
   for (const key of Object.keys(settings)) {
     const type = settings[key];
     const value = object[key];
-
+    
     // Do not touch null, undefined or things that aren't a string.
-    if (value == null) continue;
+    if (value == null) continue; 
     if (typeof value !== 'string') continue; 
-  
+
     // Obtain new value from coercion. 
     object[key] = tryCoerceValue(value, type);
   }
@@ -63,7 +63,12 @@ function tryCoerceStringValues(
   function tryCoerceValue(value: mixed, type: string): mixed {
     // Cannot declare these inside the case, because javascript. 
     let newNumber;
-    let newInteger; 
+    
+    // DEFENSIVE Do not touch null, undefined or things that aren't a string.
+    // Yes, we have done this above, this  time we refine types for the flow
+    // checker. 
+    if (value == null) return value; 
+    if (typeof value !== 'string') return value; 
   
     switch (type) {
       case 'boolean': 
@@ -77,18 +82,12 @@ function tryCoerceStringValues(
   
         if (isNaN(newNumber)) return value; 
         return newNumber;
-  
-      case 'integer':
-        newInteger = parseInt(value, 10);
-  
-        if (isNaN(newInteger)) return value; 
-        return newInteger;
-  
+    
       case 'array': 
         return [value];
     }
   
-    // assert: type not in ['boolean', 'number', 'integer', 'array']
+    // assert: type not in ['boolean', 'number', 'array']
     //  (since we're returning early above)
   
     // Unknown type, leave the value as it is. 
