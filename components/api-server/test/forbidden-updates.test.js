@@ -9,7 +9,7 @@ const async = require('async');
 
 describe('methods/helpers/commonFunctions.js: catchForbiddenUpdate(schema)', function () {
   
-  describe('streams schema', function () {
+  describe('with streams schema', function () {
     
     const protectedFields = ['id', 'children', 'created', 'createdBy', 'modified', 'modifiedBy'];
     
@@ -26,7 +26,7 @@ describe('methods/helpers/commonFunctions.js: catchForbiddenUpdate(schema)', fun
     });
   });
   
-  describe('events schema', function () {
+  describe('with events schema', function () {
     
     const protectedFields = ['id', 'attachments', 'created', 'createdBy', 'modified', 'modifiedBy'];
 
@@ -43,7 +43,7 @@ describe('methods/helpers/commonFunctions.js: catchForbiddenUpdate(schema)', fun
     });
   });
   
-  describe('accesses schema', function () {
+  describe('with accesses schema', function () {
     
     const protectedFields = ['id', 'token', 'type', 'lastUsed', 'created', 'createdBy', 'modified', 'modifiedBy'];
 
@@ -78,13 +78,20 @@ describe('methods/helpers/commonFunctions.js: catchForbiddenUpdate(schema)', fun
         let forbiddenUpdate = {update: {}};
         forbiddenUpdate.update[protectedField] = 'forbidden';
         catchForbiddenUpdate(null, forbiddenUpdate, null, function(err) {
+          // Strict mode: we expect a forbidden error
           if(!ignoreProtectedFieldUpdates) {
             should.exist(err);
             should(err.id).be.equal('forbidden');
             should(err.httpStatus).be.equal(403);
             stepDone();
-          } else if(err) {
-            stepDone(err);
+          }
+          // Non-strict mode: we do not expect an error but a warning log
+          else {
+            if(err) return stepDone(err);
+            // From here we expect a warning log to be triggered (see logger above).
+            // We throw an explicit error if this is not the case
+            // after a reasonable amount of time (better than a timeout error).
+            setTimeout(stepDone('The expected warning log was not triggered'), 1000); 
           }
         });
       },
