@@ -65,12 +65,14 @@ describe('methods/helpers/commonFunctions.js: catchForbiddenUpdate(schema)', fun
       protectedFields,
       function testForbiddenUpdateForEachField(protectedField, stepDone) {
         // Here we fake a logger to test that a warning is logged in non-strict mode
+        let logTimeout;
         const logger = {
           warn: function(msg) {
             should(ignoreProtectedFieldUpdates).be.true();
             should(msg.indexOf('Forbidden update was attempted on the following protected field(s)') >= 0).be.true();
             should(msg.indexOf('Server has "ignoreProtectedFieldUpdates" turned on: Fields are not updated, but no error is thrown.') >= 0).be.true();
             should(msg.indexOf(protectedField) >= 0).be.true();
+            if(logTimeout) clearTimeout(logTimeout);
             stepDone();
           }
         };
@@ -91,7 +93,7 @@ describe('methods/helpers/commonFunctions.js: catchForbiddenUpdate(schema)', fun
             // From here we expect a warning log to be triggered (see logger above).
             // We throw an explicit error if this is not the case
             // after a reasonable amount of time (better than a timeout error).
-            setTimeout(stepDone('The expected warning log was not triggered'), 1000); 
+            logTimeout = setTimeout(stepDone('The expected warning log was not triggered'), 1000); 
           }
         });
       },
