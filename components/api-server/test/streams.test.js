@@ -528,10 +528,9 @@ describe('streams', function () {
           },
           function testForbiddenUpdate(stepDone) {
             request.put(path(streamId)).send(forbiddenUpdate).end(function (res) {
-              validation.check(res, {
+              validation.checkError(res, {
                 status: 403,
-                id: ErrorIds.Forbidden,
-                data: {forbiddenProperties: forbiddenUpdate}
+                id: ErrorIds.Forbidden
               }, stepDone);
             });
           }
