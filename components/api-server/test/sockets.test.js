@@ -19,6 +19,7 @@ const testData = helpers.data;
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 const R = require('ramda');
+const assert = require('chai').assert; 
 
 describe('Socket.IO', function () {
 
@@ -287,13 +288,11 @@ describe('Socket.IO', function () {
       ioCons.con2 = connect(namespace, {auth: testData.accesses[2].token}); // "read all" access
       ioCons.otherCon = connect('/' + otherUser.username, {auth: otherToken});
 
-      var con2NotifsCount = 0,
-          otherConNotifsCount = 0;
+      let con2NotifsCount = 0;
+      let otherConNotifsCount = 0;
 
-      ioCons.con2.on('streamsChanged', function () {
-        con2NotifsCount++;
-      });
-      ioCons.otherCon.on('streamsChanged', function () { otherConNotifsCount++; });
+      ioCons.con2.on('streamsChanged',      function () { con2NotifsCount++; });
+      ioCons.otherCon.on('streamsChanged',  function () { otherConNotifsCount++; });
 
       whenAllConnectedDo(function () {
         var params = {
@@ -312,7 +311,47 @@ describe('Socket.IO', function () {
         });
       });
     });
+    it('must notify on each change', function (done) {
+      const tokens = [token, testData.accesses[2].token];
+      const socketConnections = tokens.map(
+        (token) => connect(namespace, {auth: token}));
+      
+      const createConnection = socketConnections[0];
+      
+      const callCounts = [0, 0]; 
+      socketConnections.map(
+        (conn, i) => conn.on('streamsChanged', () => callCounts[i] += 1));
+        
+      onAllConnected(socketConnections, () => {
+        async.series([
+          (step) => createStream(createConnection, {name: 'foo'}, step),
+          (step) => createStream(createConnection, {name: 'bar'}, step),
+          (step) => {
+            setImmediate(() => {
+              assert.deepEqual(callCounts, [2, 2]);
+              step();
+            });
+          }
+        ], done);
+      });
+      
+      function createStream(conn, params, cb) {
+        conn.emit('streams.create', params, (err) => cb(err));
+      }
+      function onAllConnected(conns, cb) {
+        let needConnectEvents = conns.length;
+        for (const conn of conns) {
+          conn.on('connect', (err) => {
+            if (err) cb(err);
+            
+            needConnectEvents -= 1; 
+            
+            if (needConnectEvents <= 0) cb(); 
+          });
+        }
+      }
 
+    });
   });
 
 });
