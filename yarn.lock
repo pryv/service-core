@@ -3632,9 +3632,18 @@ sntp@2.x.x:
   dependencies:
     hoek "4.x.x"
 
-socket.io-client@0.9.16, socket.io-client@0.9.x:
+socket.io-client@0.9.16:
   version "0.9.16"
   resolved "https://registry.yarnpkg.com/socket.io-client/-/socket.io-client-0.9.16.tgz#4da7515c5e773041d1b423970415bcc430f35fc6"
+  dependencies:
+    active-x-obfuscator "0.0.1"
+    uglify-js "1.2.5"
+    ws "0.4.x"
+    xmlhttprequest "1.4.2"
+
+socket.io-client@0.9.x:
+  version "0.9.17"
+  resolved "https://registry.yarnpkg.com/socket.io-client/-/socket.io-client-0.9.17.tgz#31d12c44b73fbba349639eccf833e3f9ae13fe6f"
   dependencies:
     active-x-obfuscator "0.0.1"
     uglify-js "1.2.5"

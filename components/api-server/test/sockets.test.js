@@ -4,20 +4,20 @@
  * Tests Socket.IO access to the API.
  */
 
- require('./test-helpers'); 
-var helpers = require('./helpers'),
-    ErrorIds = require('components/errors').ErrorIds,
-    server = helpers.dependencies.instanceManager,
-    async = require('async'),
-    streamsMethodsSchema = require('../src/schema/streamsMethods'),
-    eventsMethodsSchema = require('../src/schema/eventsMethods'),
-    validation = helpers.validation,
-    io = require('socket.io-client'),
-    queryString = require('qs'),
-    should = require('should'), // explicit require to benefit from static functions
-    testData = helpers.data,
-    timestamp = require('unix-timestamp'),
-    _ = require('lodash');
+require('./test-helpers'); 
+const helpers = require('./helpers');
+const ErrorIds = require('components/errors').ErrorIds;
+const server = helpers.dependencies.instanceManager;
+const async = require('async');
+const streamsMethodsSchema = require('../src/schema/streamsMethods');
+const eventsMethodsSchema = require('../src/schema/eventsMethods');
+const validation = helpers.validation;
+const io = require('socket.io-client');
+const queryString = require('qs');
+const should = require('should'); // explicit require to benefit from static funcions
+const testData = helpers.data;
+const timestamp = require('unix-timestamp');
+const _ = require('lodash');
 const R = require('ramda');
 
 describe('Socket.IO', function () {
@@ -98,19 +98,18 @@ describe('Socket.IO', function () {
     ioCons.con = connect(namespace, {auth: token});
 
     ioCons.con.on('connect', function () {
-      if (! ioCons.con) { return; }
+      if (! ioCons.con) { return; }
       // if we get here, communication is properly established
       done();
     });
-    ioCons.con.on('error', function () { throw new Error('Connection failed.'); });
+    ioCons.con.on('error', function () { 
+      throw new Error('Connection failed.'); });
   });
-
   it('must connect to a user with a dash in the username', function (done) {
 
     var dashUser = testData.users[4],
-        dashRequest = null,
-        dashToken = null;
-
+        dashRequest = null;
+        
     async.series([
       function (stepDone) {
         testData.resetAccesses(stepDone, dashUser);
@@ -118,10 +117,6 @@ describe('Socket.IO', function () {
       function (stepDone) {
         dashRequest = helpers.request(server.url);
         dashRequest.login(dashUser, stepDone);
-      },
-      function (stepDone) {
-        dashToken = dashRequest.token;
-        stepDone();
       },
       function (stepDone) {
         ioCons.con = connect('/' + dashUser.username, {auth: testData.accesses[2].token});
@@ -141,12 +136,11 @@ describe('Socket.IO', function () {
       done();
     });
   });
-
   it('must refuse connection if no valid access token is provided', function (done) {
     ioCons.con = connect(namespace);
 
     ioCons.con.socket.on('error', function () {
-      if (! ioCons.con) { return; }
+      if (! ioCons.con) { return; }
       done();
     });
 
