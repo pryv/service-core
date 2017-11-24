@@ -422,8 +422,8 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
                   eventsStream.on('data', (event) => {
                     userEventFilesStorage.removeAllForEvent(context.user, event.id, function (err) {
                       if (err) {
-                        // async delete attached files (if any) –
-                        // don't wait for this, just log possible errors
+                        // async delete attached files (if any) – don't wait for
+                        // this, just log possible errors
                         errorHandling.logError(err, null, logger);
                       }
                     });

@@ -1,21 +1,24 @@
 /*global describe, before, beforeEach, it */
 
-var helpers = require('./helpers'),
-    server = helpers.dependencies.instanceManager,
-    async = require('async'),
-    commonTests = helpers.commonTests,
-    fs = require('fs'),
-    validation = helpers.validation,
-    ErrorIds = require('components/errors').ErrorIds,
-    eventsStorage = helpers.dependencies.storage.user.events,
-    eventFilesStorage = helpers.dependencies.storage.user.eventFiles,
-    methodsSchema = require('../src/schema/streamsMethods'),
-    should = require('should'), // explicit require to benefit from static functions
-    storage = helpers.dependencies.storage.user.streams,
-    testData = helpers.data,
-    timestamp = require('unix-timestamp'),
-    treeUtils = require('components/utils').treeUtils,
-    _ = require('lodash');
+const helpers = require('./helpers');
+const server = helpers.dependencies.instanceManager;
+const async = require('async');
+const commonTests = helpers.commonTests;
+const fs = require('fs');
+const validation = helpers.validation;
+const ErrorIds = require('components/errors').ErrorIds;
+const eventsStorage = helpers.dependencies.storage.user.events;
+const eventFilesStorage = helpers.dependencies.storage.user.eventFiles;
+const methodsSchema = require('../src/schema/streamsMethods');
+const should = require('should'); // explicit require to benefit from static function
+const storage = helpers.dependencies.storage.user.streams;
+const testData = helpers.data;
+const timestamp = require('unix-timestamp');
+const treeUtils = require('components/utils').treeUtils;
+const _ = require('lodash');
+
+const chai = require('chai');
+const assert = chai.assert; 
 
 describe('streams', function () {
 
@@ -712,25 +715,28 @@ describe('streams', function () {
       );
     });
 
-    it('must delete the linked events when specified', function (done) {
-      var id = testData.streams[0].children[1].id,
-          deletedEvents = testData.events.filter(function (e) { return e.streamId === id; }),
-          deletedEventWithAtt = deletedEvents[0],
-          deletionTime;
+    it('must delete the linked events when mergeEventsWithParent is false', function (done) {
+      const id = testData.streams[0].children[1].id;
+      const deletedEvents = testData.events.filter(function (e) { return e.streamId === id; });
+      const deletedEventWithAtt = deletedEvents[0];
+      let deletionTime;
+      
       async.series([
-          function addEventAttachment(stepDone) {
-            request.post('/' + user.username + '/events/' + deletedEventWithAtt.id)
-                .attach('image', testData.attachments.image.path,
-                    testData.attachments.image.fileName)
-                .end(function (res) {
+        function addEventAttachment(stepDone) {
+          request.post('/' + user.username + '/events/' + deletedEventWithAtt.id)
+            .attach('image', testData.attachments.image.path,
+              testData.attachments.image.fileName)
+            .end(function (res) {
               validation.check(res, {status: 200});
               eventsNotifCount = 0; // reset
               stepDone();
             });
-          },
-	  storage.updateOne.bind(storage, user, {id: id}, {trashed: true}),
-          function deleteStream(stepDone) {
-            request.del(path(id)).query({mergeEventsWithParent: false}).end(function (res) {
+        },
+        (step) => storage.updateOne(user, {id: id}, {trashed: true}, step),
+        function deleteStream(stepDone) {
+          request.del(path(id))
+            .query({mergeEventsWithParent: false})
+            .end(function (res) {
               deletionTime = timestamp.now();
               validation.check(res, {
                 status: 200,
@@ -742,26 +748,52 @@ describe('streams', function () {
 
               stepDone();
             });
-          },
-          function verifyLinkedEvents(stepDone) {
-            eventsStorage.findAll(user, null, function (err, events) {
-              events.length.should.eql(testData.events.length, 'events');
+        },
+        function verifyLinkedEvents(stepDone) {
+          eventsStorage.findAll(user, null, function (err, events) {
+            events.length.should.eql(testData.events.length, 'events');
 
-              deletedEvents.forEach(function (e) {
-                var actual = _.find(events, {id: e.id}),
-                    expected = { id: e.id, deleted: deletionTime };
-                validation.checkObjectEquality(actual, expected);
-              });
+            deletedEvents.forEach(function (e) {
+              const actual = _.find(events, {id: e.id});
 
-              var dirPath = eventFilesStorage.getAttachedFilePath(user, deletedEventWithAtt.id);
-              fs.existsSync(dirPath).should.eql(false, 'deleted event directory existence');
-
-              stepDone();
+              assert.approximately(
+                actual.deleted, deletionTime, 2, 
+                'Deletion time must be correct.');
+              assert.equal(actual.id, e.id);
             });
+
+            var dirPath = eventFilesStorage.getAttachedFilePath(user, deletedEventWithAtt.id);
+
+            // The 'streams.delete' method will delete the directory asynchronously
+            // some time after returning to the client. Let's hang around and try 
+            // this several times. 
+            assertEventuallyTrue(
+              () => ! fs.existsSync(dirPath), 
+              1, // second(s) 
+              'Event directory must be deleted', 
+              stepDone
+            );
+          });
+        }
+      ], done);
+      
+      function assertEventuallyTrue(property, maxWaitSeconds, msg, cb) {
+        const deadline = new Date().getTime() + maxWaitSeconds;
+        const checker = () => {
+          if (new Date().getTime() > deadline) {
+            return cb(new chai.AssertionError('Timeout: '+msg));
           }
-        ],
-        done
-      );
+          
+          const result = property(); 
+          if (result) return cb();
+
+          // assert: result is false, try again in a bit.
+          setImmediate(checker);
+        };
+        
+        // Launch first check
+        setImmediate(checker);
+      }
     });
 
     it('must return a correct error if the item is unknown', function (done) {
