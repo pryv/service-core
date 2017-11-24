@@ -21,7 +21,7 @@ var errors = require('components/errors').factory,
  * @param notifications
  * @param logging
  * @param auditSettings
- * @param ignoreProtectedFieldUpdates
+ * @param updatesSettings
  */
 module.exports = function (api, userStreamsStorage, userEventsStorage, userEventFilesStorage, 
   notifications, logging, auditSettings, updatesSettings) {

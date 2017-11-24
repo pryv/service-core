@@ -22,10 +22,10 @@ var utils = require('components/utils'),
  * @param usersStorage
  * @param authSettings
  * @param auditSettings
+ * @param updatesSettings
  * @param eventTypes
  * @param notifications
  * @param logging
- * @param ignoreProtectedFieldUpdates
  */
 module.exports = function (api, userEventsStorage, userEventFilesStorage, usersStorage, authSettings, 
   auditSettings, updatesSettings, eventTypes, notifications, logging) {

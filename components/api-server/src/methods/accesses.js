@@ -19,7 +19,7 @@ var APIError = require('components/errors').APIError,
  * @param userStreamsStorage
  * @param notifications
  * @param logging
- * @param ignoreProtectedFieldUpdates
+ * @param updatesSettings
  */
 module.exports = function (api, userAccessesStorage, userStreamsStorage, 
   notifications, logging, updatesSettings) {
