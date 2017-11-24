@@ -571,7 +571,7 @@ describe('streams', function () {
       
       function setIgnoreProtectedFieldUpdates(activated, stepDone) {
         let settings = _.cloneDeep(helpers.dependencies.settings);
-        settings.audit.ignoreProtectedFieldUpdates = activated;
+        settings.updates.ignoreProtectedFields = activated;
         server.ensureStarted.call(server, settings, stepDone);
       }
       

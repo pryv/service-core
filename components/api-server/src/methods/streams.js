@@ -21,9 +21,10 @@ var errors = require('components/errors').factory,
  * @param notifications
  * @param logging
  * @param auditSettings
+ * @param ignoreProtectedFieldUpdates
  */
-module.exports = function (api, userStreamsStorage, userEventsStorage, userEventFilesStorage,
-                           notifications, logging, auditSettings) {
+module.exports = function (api, userStreamsStorage, userEventsStorage, userEventFilesStorage, 
+  notifications, logging, auditSettings, updatesSettings) {
 
   const logger = logging.getLogger('methods/streams');
 
@@ -164,7 +165,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
   api.register('streams.update',
       commonFns.getParamsValidation(methodsSchema.update.params),
-      commonFns.catchForbiddenUpdate(streamSchema('update'), auditSettings.ignoreProtectedFieldUpdates, logger),
+      commonFns.catchForbiddenUpdate(streamSchema('update'), updatesSettings.ignoreProtectedFields, logger),
       applyPrerequisitesForUpdate,
       updateStream);
 

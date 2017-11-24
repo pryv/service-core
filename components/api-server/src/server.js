@@ -30,6 +30,7 @@ dependencies.register({
   logsSettings: settings.logs,
   servicesSettings: settings.services,
   customExtensionsSettings: settings.customExtensions,
+  updatesSettings: settings.updates,
 
   // misc utility
   serverInfo: require('../package.json'),
@@ -128,7 +129,7 @@ utils.messaging.openPubSocket(settings.tcpMessaging, function (err, messagingSoc
         ' [' + expressApp.settings.env + '] listening on ' + server.url);
         
     // Warning if ignoring forbidden updates
-    if(settings.audit.ignoreProtectedFieldUpdates) {
+    if(settings.updates.ignoreProtectedFields) {
       logger.warn('Server configuration has "ignoreProtectedFieldUpdates" set to true: ' +
         'This means updates to protected fields will be ignored and operations will succeed. ' +
         'We recommend turning this off, but please be aware of the implications for your code.');

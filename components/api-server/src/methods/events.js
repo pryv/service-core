@@ -25,9 +25,10 @@ var utils = require('components/utils'),
  * @param eventTypes
  * @param notifications
  * @param logging
+ * @param ignoreProtectedFieldUpdates
  */
-module.exports = function (api, userEventsStorage, userEventFilesStorage, usersStorage,
-                           authSettings, auditSettings, eventTypes, notifications, logging) {
+module.exports = function (api, userEventsStorage, userEventFilesStorage, usersStorage, authSettings, 
+  auditSettings, updatesSettings, eventTypes, notifications, logging) {
 
   const logger = logging.getLogger('methods/events');
 
@@ -322,7 +323,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   api.register('events.update',
       commonFns.getParamsValidation(methodsSchema.update.params),
-      commonFns.catchForbiddenUpdate(eventSchema('update'), auditSettings.ignoreProtectedFieldUpdates, logger),
+      commonFns.catchForbiddenUpdate(eventSchema('update'), updatesSettings.ignoreProtectedFields, logger),
       applyPrerequisitesForUpdate,
       validateEventContent,
       checkExistingLaterPeriodIfNeeded,
