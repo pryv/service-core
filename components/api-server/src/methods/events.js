@@ -22,11 +22,15 @@ var utils = require('components/utils'),
  * @param usersStorage
  * @param authSettings
  * @param auditSettings
+ * @param updatesSettings
  * @param eventTypes
  * @param notifications
+ * @param logging
  */
-module.exports = function (api, userEventsStorage, userEventFilesStorage, usersStorage,
-                           authSettings, auditSettings, eventTypes, notifications) {
+module.exports = function (api, userEventsStorage, userEventFilesStorage, usersStorage, authSettings, 
+  auditSettings, updatesSettings, eventTypes, notifications, logging) {
+
+  const logger = logging.getLogger('methods/events');
 
   // COMMON
 
@@ -319,7 +323,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   api.register('events.update',
       commonFns.getParamsValidation(methodsSchema.update.params),
-      commonFns.catchForbiddenUpdate(eventSchema('update')),
+      commonFns.catchForbiddenUpdate(eventSchema('update'), updatesSettings.ignoreProtectedFields, logger),
       applyPrerequisitesForUpdate,
       validateEventContent,
       checkExistingLaterPeriodIfNeeded,
