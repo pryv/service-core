@@ -1,6 +1,10 @@
+// @flow
+
 var errorHandling = require('components/errors').errorHandling,
     setCommonMeta = require('../methods/helpers/setCommonMeta'),
     _ = require('lodash');
+    
+import type { LogFactory } from 'components/utils';
 
 /**
  * Singleton for managing sockets access:
@@ -8,7 +12,7 @@ var errorHandling = require('components/errors').errorHandling,
  * - dynamic namespaces per user
  * - forwards data notifications to appropriate sockets
  */
-module.exports = function Manager(io, notifications, api, logging) {
+module.exports = function Manager(io: any, notifications: mixed, api: any, logging: LogFactory) {
   var nsContexts = {},
       logger = logging.getLogger('sockets');
 
@@ -51,10 +55,10 @@ module.exports = function Manager(io, notifications, api, logging) {
     var ns = io.of(name);
     var nsContext = {
       namespace: ns,
-      user: user
+      user: user, 
+      socketMethodContexts: {}
     };
     nsContexts[name] = nsContext;
-    nsContext.socketMethodContexts = {};
 
     ns.on('connection', onConnect);
   };
@@ -103,8 +107,8 @@ module.exports = function Manager(io, notifications, api, logging) {
         id = callData.name,
         params = callData.args[0];
 
-    logger.info('Call: ' + nsContext.user.username + nsContext.namespace.name + ' method: ' +
-      id + ' body: ' + JSON.toString(params) + '');
+    logger.debug('Call: ' + nsContext.user.username + nsContext.namespace.name + ' method: ' +
+      id + ' body: ' + JSON.stringify(params) + '');
 
     api.call(id, nsContext.socketMethodContexts[this.id], params, function (err, result) {
       if (err) {
