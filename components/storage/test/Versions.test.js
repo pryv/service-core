@@ -265,7 +265,7 @@ describe('Versions', function () {
     var pickedMigrations = _.pick.apply(_, pickArgs);
     return new Versions(database,
         helpers.dependencies.settings.eventFiles.attachmentsDirPath,
-        helpers.dependencies.logging,
+        helpers.dependencies.logging.getLogger('versions'),
         pickedMigrations);
   }
 

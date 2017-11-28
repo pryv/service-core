@@ -10,13 +10,10 @@ module.exports = EventFiles;
 /**
  * Manages files storage for events (attachments & previews).
  *
- * @param {Object} settings
- * @param {Object} logging
- * @constructor
  */
-function EventFiles(settings, logging) {
+function EventFiles(settings, logger) {
   this.settings = settings;
-  this.logger = logging.getLogger('event-files');
+  this.logger = logger; 
 }
 
 /**

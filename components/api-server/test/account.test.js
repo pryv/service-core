@@ -90,11 +90,11 @@ describe('account', function () {
           execute: function () {
             var path = '/users/' + this.context.username + '/change-email';
             require('nock')(this.context.url).post(path)
-                .matchHeader('Authorization', this.context.key)
-                .reply(200, 
-                  function (uri, requestBody) {
-                    this.context.messagingSocket.emit('reg-server-called', JSON.parse(requestBody));
-                  }.bind(this));
+              .matchHeader('Authorization', this.context.key)
+              .reply(200, 
+                function (uri, requestBody) {
+                  this.context.messagingSocket.emit('reg-server-called', JSON.parse(requestBody));
+                }.bind(this));
           }
         });
         // fetch service call data from server process
