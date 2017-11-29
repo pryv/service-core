@@ -31,7 +31,7 @@ module.exports = function (userEventsStorage) {
       var attachment = event.attachments ?
           _.find(event.attachments, {id: req.params.fileId}) : null;
       if (! attachment) {
-        return next(errors.unknownResource('attachment', req.params.fileId));
+        return next(errors.unknownResource('attachment', req.params.fileId, null, {dontNotifyAirbrake: true}));
       }
       res.header('Content-Type', attachment.type);
 
