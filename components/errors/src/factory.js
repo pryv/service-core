@@ -117,16 +117,16 @@ factory.unexpectedError = function (sourceError, message) {
  * @param {Error} innerError
  * @returns {APIError}
  */
-factory.unknownReferencedResource = function (resourceType, paramKey, value, innerError) {
+factory.unknownReferencedResource = function (resourceType, paramKey, value, innerError, options) {
   var message = 'Unknown referenced ' + (resourceType || 'resource(s)') + ' "' +
       (value.join ? value.join('", "') : value) + '"';
   var data = {};
   data[paramKey] = value;
-  return new APIError(ErrorIds.UnknownReferencedResource, message, {
+  return new APIError(ErrorIds.UnknownReferencedResource, message, _.merge({
     httpStatus: 400,
     data: data,
     innerError: innerError
-  });
+  }, options));
 };
 
 factory.unknownResource = function (resourceType, id, innerError, options) {

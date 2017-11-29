@@ -72,7 +72,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
       if (unknownIds.length > 0) {
         return next(errors.unknownReferencedResource('stream' + (unknownIds.length > 1 ? 's' : ''),
-            'streams', unknownIds));
+            'streams', unknownIds, null, {dontNotifyAirbrake: true}));
       }
 
       params.streams = expandedStreamIds;
