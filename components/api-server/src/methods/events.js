@@ -480,7 +480,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       if(tag.length > limit) {
         throw errors.invalidParametersFormat(
           'The event contains a tag that exceeds the size limit of ' +
-           limit + ' characters.', tag);
+           limit + ' characters.', tag, null, {dontNotifyAirbrake: true});
       } 
       return tag.trim();
     }).filter(function (tag) { return tag.length > 0; });
