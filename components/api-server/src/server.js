@@ -39,6 +39,7 @@ type StorageLayer = {
   
   waitForConnection(): Promise<mixed>, 
 }
+export type { StorageLayer };
 
 // Server class for api-server process. To use this, you 
 // would 
@@ -207,8 +208,7 @@ class Server {
     module.exports = server;
     dependencies.register({server: server});
 
-    // setup web sockets
-    dependencies.resolve(require('./sockets/init'));
+    this.setupSocketIO(server); 
 
     // start listening to HTTP
     try {
@@ -225,6 +225,21 @@ class Server {
     process.on('exit', function () {
       logger.info('API server exiting.');
     });
+  }
+  
+  setupSocketIO(server: http$Server) {
+    const logFactory = this.logFactory; 
+    const notificationBus = this.notificationBus;
+    const api = this.api; 
+    const storageLayer = this.storageLayer;
+    const settings = this.settings; 
+    const customAuthFn = settings.customExtensions.customAuthFn; 
+    
+    const socketIOsetup = require('./socket-io');
+    socketIOsetup(
+      server, logFactory('socketIO'), 
+      notificationBus, api, 
+      storageLayer, customAuthFn);
   }
   
   async startListen(server: http$Server, axonSocket: EventEmitter) {
