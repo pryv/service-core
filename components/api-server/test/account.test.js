@@ -90,11 +90,11 @@ describe('account', function () {
           execute: function () {
             var path = '/users/' + this.context.username + '/change-email';
             require('nock')(this.context.url).post(path)
-                .matchHeader('Authorization', this.context.key)
-                .reply(200, 
-                  function (uri, requestBody) {
-                    this.context.messagingSocket.emit('reg-server-called', JSON.parse(requestBody));
-                  }.bind(this));
+              .matchHeader('Authorization', this.context.key)
+              .reply(200, 
+                function (uri, requestBody) {
+                  this.context.messagingSocket.emit('reg-server-called', JSON.parse(requestBody));
+                }.bind(this));
           }
         });
         // fetch service call data from server process
@@ -184,6 +184,7 @@ describe('account', function () {
             should.not.exist(err);
             // hard to know what the exact difference should be, so we just expect it's bigger
             storageUsed.dbDocuments.should.be.above(initialStorageUsed.dbDocuments);
+            // SPURIOUS Comparison sometimes fails by more than 1024.
             storageUsed.attachedFiles.should.be.approximately(initialStorageUsed.attachedFiles +
                 newAtt.size, 1024);
             updatedStorageUsed = storageUsed;

@@ -28,16 +28,19 @@ dependencies.register({
   logging: utils.logging
 });
 
-var logging = dependencies.get('logging'),
-    logger = logging.getLogger('server'),
-    database = new storage.Database(settings.database, logging);
+const logging = dependencies.get('logging');
+const logger = logging.getLogger('server');
+
+const database = new storage.Database(
+  settings.database, logging.getLogger('database'));
 
 dependencies.register({
   // storage
   sessionsStorage: new storage.Sessions(database, {maxAge: settings.auth.sessionMaxAge}),
   usersStorage: new storage.Users(database),
   userAccessesStorage: new storage.user.Accesses(database),
-  userEventFilesStorage: new storage.user.EventFiles(settings.eventFiles, logging),
+  userEventFilesStorage: new storage.user.EventFiles(
+    settings.eventFiles, logging.getLogger('eventFiles')),
   userEventsStorage: new storage.user.Events(database),
   userStreamsStorage: new storage.user.Streams(database),
 

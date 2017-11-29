@@ -35,9 +35,8 @@ function createContext(settings: Settings, logFactory: LogFactory): Context {
   const influx = new business.series.InfluxConnection(
     {host: 'localhost'}, logFactory('influx')); 
   
-  const logAdapter = { getLogger: (name) => logFactory(name) };
   const mongo = new storage.Database(
-    settings.get('mongodb').obj(), logAdapter);
+    settings.get('mongodb').obj(), logFactory('database'));
     
   return new Context(influx, mongo);
 }

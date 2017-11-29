@@ -142,3 +142,5 @@ function expressAppInit(dependencies: any) {
 }
 
 module.exports = expressAppInit;
+
+export type { ExpressAppLifecycle };

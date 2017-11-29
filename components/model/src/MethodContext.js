@@ -261,7 +261,7 @@ MethodContext.prototype.canManageTag = function (tag) {
 MethodContext.prototype.canReadContext = function (streamId, tags) {
   return this.access.canReadStream(streamId) &&
       (this.access.canReadAllTags() ||
-       _.some(tags || [], this.access.canReadTag.bind(this.access)));
+       _.some(tags || [], this.access.canReadTag.bind(this.access)));
 };
 
 /**
@@ -274,7 +274,7 @@ MethodContext.prototype.canReadContext = function (streamId, tags) {
 MethodContext.prototype.canContributeToContext = function (streamId, tags) {
   return this.access.canContributeToStream(streamId) ||
       (this.access.canContributeToTag('*') ||
-       _.some(tags || [], this.access.canContributeToTag.bind(this.access)));
+       _.some(tags || [], this.access.canContributeToTag.bind(this.access)));
 };
 
 MethodContext.prototype.initTrackingProperties = function (item, authorOverride) {
@@ -293,7 +293,7 @@ MethodContext.prototype.getTrackingAuthorId = function () {
   return this.access.id + (this.callerId ? MethodContext.AuthSeparator + this.callerId : '');
 };
 
-MethodContext.prototype.clone = function () {
+MethodContext.prototype.clone = function () {
   var clone = new MethodContext();
   _.extend(clone, this);
   return clone;

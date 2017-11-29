@@ -448,8 +448,7 @@ describe('Access permissions', function () {
         });
       });
 
-      it('must fail properly (i.e. not granting access) when the custom function crashes',
-          function (done) {
+      it('must fail properly (i.e. not granting access) when the custom function crashes', function (done) {
         var crashAuth = token(sharedAccessIndex) + ' Please Crash';
         request.post(basePath, crashAuth).send(newEventData).end(function (res) {
           res.statusCode.should.eql(500);
@@ -467,7 +466,6 @@ describe('Access permissions', function () {
           },
           server.restart.bind(server)
         ], function (err) {
-          should.exist(err);
           // basic validation; users are expected to check console output
           err.message.should.match(/Server failed/);
           done();

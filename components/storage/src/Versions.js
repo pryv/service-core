@@ -27,11 +27,11 @@ module.exports = Versions;
  * @param migrationsOverride Use for tests
  * @constructor
  */
-function Versions(database, attachmentsDirPath, logging, migrationsOverride) {
+function Versions(database, attachmentsDirPath, logger, migrationsOverride) {
   this.database = database;
   this.attachmentsDirPath = attachmentsDirPath;
-  this.migrations = migrationsOverride || migrations;
-  this.logger = logging.getLogger('versions');
+  this.migrations = migrationsOverride || migrations;
+  this.logger = logger;
 }
 
 Versions.prototype.getCurrent = function (callback) {

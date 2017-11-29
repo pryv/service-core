@@ -81,7 +81,7 @@
     "nock": "^9.0.9",
     "parallelshell": "^2.0.0",
     "should": "^11.2.0",
-    "socket.io-client": "0.9.x",
+    "socket.io-client": "^0.9",
     "supertest": "^3.0.0",
     "temp": "^0.8.3",
     "wrench": "latest"

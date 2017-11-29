@@ -2,20 +2,24 @@
 /*global describe, before, beforeEach, it */
 
 require('./test-helpers'); 
-var helpers = require('./helpers'),
-    ErrorIds = require('components/errors').ErrorIds,
-    server = helpers.dependencies.instanceManager,
-    async = require('async'),
-    methodsSchema = require('../src/schema/systemMethods'),
-    validation = helpers.validation,
-    encryption = require('components/utils').encryption,
-    should = require('should'),
-    storage = helpers.dependencies.storage.users,
-    request = require('superagent'),
-    testData = helpers.data,
-    timestamp = require('unix-timestamp'),
-    url = require('url'),
-    _ = require('lodash');
+
+const async = require('async');
+const should = require('should');
+const request = require('superagent');
+const timestamp = require('unix-timestamp');
+const url = require('url');
+const _ = require('lodash');
+const assert = require('chai').assert; 
+
+const helpers = require('./helpers');
+const ErrorIds = require('components/errors').ErrorIds;
+const server = helpers.dependencies.instanceManager;
+const methodsSchema = require('../src/schema/systemMethods');
+const validation = helpers.validation;
+const encryption = require('components/utils').encryption;
+const storage = helpers.dependencies.storage.users;
+const testData = helpers.data;
+
 require('date-utils');
 
 describe('system (ex-register)', function () {
@@ -70,11 +74,9 @@ describe('system (ex-register)', function () {
               .reply(200, function (uri, requestBody) {
                 var body = JSON.parse(requestBody);
                 if (body.message.global_merge_vars[0].content !== 'mr-dupotager' ||
-                  ! /welcome/.test(body.template_name)) 
-                {
+                  ! /welcome/.test(body.template_name)) {
                   // MISMATCHED REQ BODY: require('util').inspect(body, {depth: null}));
-                  console.log(
-                    require('util').inspect(body, {depth: null})); 
+                  require('util').inspect(body, {depth: null}); 
                 }
                 this.context.messagingSocket.emit('mail-sent');
               }.bind(this));
@@ -266,33 +268,43 @@ describe('system (ex-register)', function () {
         function makeUserRequest1(stepDone) {
           request.get(url.resolve(server.url, '/' + user.username + '/events'))
             .set('authorization', testData.accesses[4].token)
-            .end(function () {
-              stepDone();
+            .end(function (err) {
+              stepDone(err);
             });
         },
         function makeUserRequest2(stepDone) {
           request.get(url.resolve(server.url, '/' + user.username + '/events'))
             .set('authorization', testData.accesses[1].token)
-            .end(function () {
+            .end(function (err) {
               expectedTime = timestamp.now();
-              stepDone();
+              stepDone(err);
             });
         },
         function getUpdatedInfo(stepDone) {
           request.get(path(user.username))
             .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
             .end(function (err, res) {
-              var info = res.body.userInfo;
-              Math.round(info.lastAccess).should.eql(Math.round(expectedTime));
-              info.callsTotal.should.eql(originalInfo.callsTotal + 2, 'calls total');
-              info.callsDetail['events:get'].should.eql(originalInfo.callsDetail['events:get'] + 2,
+              const info = res.body.userInfo;
+              
+              assert.approximately(info.lastAccess, expectedTime, 2);
+              
+              info.callsTotal
+                .should.eql(originalInfo.callsTotal + 2, 
+                  'calls total');
+              info.callsDetail['events:get']
+                .should.eql(originalInfo.callsDetail['events:get'] + 2, 
                   'calls detail');
-              var accessKey1 = testData.accesses[4].name, // app access
-                  accessKey2 = 'shared'; // shared access
-              info.callsPerAccess[accessKey1].should.eql(originalInfo.callsPerAccess[accessKey1] + 1,
+                
+              const accessKey1 = testData.accesses[4].name; // app access
+              const accessKey2 = 'shared';                  // shared access
+              
+              info.callsPerAccess[accessKey1]
+                .should.eql(originalInfo.callsPerAccess[accessKey1] + 1, 
                   'calls per access (personal)');
-              info.callsPerAccess[accessKey2].should.eql(originalInfo.callsPerAccess[accessKey2] + 1,
+              info.callsPerAccess[accessKey2]
+                .should.eql(originalInfo.callsPerAccess[accessKey2] + 1,
                   'calls per access (shared)');
+                
               stepDone();
             });
         }

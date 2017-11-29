@@ -4,21 +4,22 @@
  * Tests Socket.IO access to the API.
  */
 
- require('./test-helpers'); 
-var helpers = require('./helpers'),
-    ErrorIds = require('components/errors').ErrorIds,
-    server = helpers.dependencies.instanceManager,
-    async = require('async'),
-    streamsMethodsSchema = require('../src/schema/streamsMethods'),
-    eventsMethodsSchema = require('../src/schema/eventsMethods'),
-    validation = helpers.validation,
-    io = require('socket.io-client'),
-    queryString = require('qs'),
-    should = require('should'), // explicit require to benefit from static functions
-    testData = helpers.data,
-    timestamp = require('unix-timestamp'),
-    _ = require('lodash');
+require('./test-helpers'); 
+const helpers = require('./helpers');
+const ErrorIds = require('components/errors').ErrorIds;
+const server = helpers.dependencies.instanceManager;
+const async = require('async');
+const streamsMethodsSchema = require('../src/schema/streamsMethods');
+const eventsMethodsSchema = require('../src/schema/eventsMethods');
+const validation = helpers.validation;
+const io = require('socket.io-client');
+const queryString = require('qs');
+const should = require('should'); // explicit require to benefit from static funcions
+const testData = helpers.data;
+const timestamp = require('unix-timestamp');
+const _ = require('lodash');
 const R = require('ramda');
+const assert = require('chai').assert; 
 
 describe('Socket.IO', function () {
 
@@ -28,9 +29,12 @@ describe('Socket.IO', function () {
       otherToken = null;
 
   function connect(namespace, queryParams) {
-    var paramsWithNS = _.defaults({resource: namespace}, queryParams || {}),
-        url = server.url + namespace + '?' + queryString.stringify(paramsWithNS);
-    return io.connect(url, {'force new connection': true});
+    const paramsWithNS = _.defaults({resource: namespace}, queryParams || {});
+    const url = server.url + namespace + '?' + queryString.stringify(paramsWithNS);
+    
+    return io.connect(url, {
+      'reconnect': false, 
+      'force new connection': true});
   }
 
   // all Socket.IO connections used in tests should be added in there to simplify cleanup
@@ -97,20 +101,20 @@ describe('Socket.IO', function () {
   it('must dynamically create a namespace for the user', function (done) {
     ioCons.con = connect(namespace, {auth: token});
 
-    ioCons.con.on('connect', function () {
-      if (! ioCons.con) { return; }
+    ioCons.con.on('connect', function (err) {
       // if we get here, communication is properly established
-      done();
+      done(err);
     });
-    ioCons.con.on('error', function () { throw new Error('Connection failed.'); });
+    ioCons.con.on('connect_error', function (err) {
+      if (err) return done(err);
+      done(new Error('Connection failed.')); 
+    });
   });
-
   it('must connect to a user with a dash in the username', function (done) {
 
     var dashUser = testData.users[4],
-        dashRequest = null,
-        dashToken = null;
-
+        dashRequest = null;
+        
     async.series([
       function (stepDone) {
         testData.resetAccesses(stepDone, dashUser);
@@ -118,10 +122,6 @@ describe('Socket.IO', function () {
       function (stepDone) {
         dashRequest = helpers.request(server.url);
         dashRequest.login(dashUser, stepDone);
-      },
-      function (stepDone) {
-        dashToken = dashRequest.token;
-        stepDone();
       },
       function (stepDone) {
         ioCons.con = connect('/' + dashUser.username, {auth: testData.accesses[2].token});
@@ -141,12 +141,11 @@ describe('Socket.IO', function () {
       done();
     });
   });
-
   it('must refuse connection if no valid access token is provided', function (done) {
     ioCons.con = connect(namespace);
 
     ioCons.con.socket.on('error', function () {
-      if (! ioCons.con) { return; }
+      if (! ioCons.con) { return; }
       done();
     });
 
@@ -211,7 +210,6 @@ describe('Socket.IO', function () {
         done();
       });
     });
-
     it('must properly route method call messages for streams and return the results',
         function (done) {
       ioCons.con = connect(namespace, {auth: token});
@@ -239,7 +237,6 @@ describe('Socket.IO', function () {
         done();
       });
     });
-
     it('must fail if the called method does not exist', function (done) {
       ioCons.con = connect(namespace, {auth: token});
       ioCons.con.emit('streams.badMethod', {}, function (err) {
@@ -286,20 +283,16 @@ describe('Socket.IO', function () {
         });
       });
     });
-
-    it('must notify other sockets for the same user (only) about streams changes',
-        function (done) {
+    it('must notify other sockets for the same user (only) about streams changes', function (done) {
       ioCons.con1 = connect(namespace, {auth: token}); // personal access
       ioCons.con2 = connect(namespace, {auth: testData.accesses[2].token}); // "read all" access
       ioCons.otherCon = connect('/' + otherUser.username, {auth: otherToken});
 
-      var con2NotifsCount = 0,
-          otherConNotifsCount = 0;
+      let con2NotifsCount = 0;
+      let otherConNotifsCount = 0;
 
-      ioCons.con2.on('streamsChanged', function () {
-        con2NotifsCount++;
-      });
-      ioCons.otherCon.on('streamsChanged', function () { otherConNotifsCount++; });
+      ioCons.con2.on('streamsChanged',      function () { con2NotifsCount++; });
+      ioCons.otherCon.on('streamsChanged',  function () { otherConNotifsCount++; });
 
       whenAllConnectedDo(function () {
         var params = {
@@ -318,7 +311,47 @@ describe('Socket.IO', function () {
         });
       });
     });
+    it('must notify on each change', function (done) {
+      const tokens = [token, testData.accesses[2].token];
+      const socketConnections = tokens.map(
+        (token) => connect(namespace, {auth: token}));
+      
+      const createConnection = socketConnections[0];
+      
+      const callCounts = [0, 0]; 
+      socketConnections.map(
+        (conn, i) => conn.on('streamsChanged', () => callCounts[i] += 1));
+        
+      onAllConnected(socketConnections, () => {
+        async.series([
+          (step) => createStream(createConnection, {name: 'foo'}, step),
+          (step) => createStream(createConnection, {name: 'bar'}, step),
+          (step) => {
+            setImmediate(() => {
+              assert.deepEqual(callCounts, [2, 2]);
+              step();
+            });
+          }
+        ], done);
+      });
+      
+      function createStream(conn, params, cb) {
+        conn.emit('streams.create', params, (err) => cb(err));
+      }
+      function onAllConnected(conns, cb) {
+        let needConnectEvents = conns.length;
+        for (const conn of conns) {
+          conn.on('connect', (err) => {
+            if (err) cb(err);
+            
+            needConnectEvents -= 1; 
+            
+            if (needConnectEvents <= 0) cb(); 
+          });
+        }
+      }
 
+    });
   });
 
 });
