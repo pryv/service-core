@@ -63,26 +63,33 @@ module.exports = function (expressApp, api, attachmentsAccessMiddleware, userAcc
 
     var tokenParts = encryption.parseFileReadToken(req.query.readToken);
     if (! tokenParts.accessId) {
-      return next(errors.invalidAccessToken('Invalid read token "' + req.query.readToken + '".'));
+      return next(errors.invalidAccessToken(
+        'Invalid read token "' + req.query.readToken + '".',
+        null,
+        {dontNotifyAirbrake: true}));
     }
 
-    userAccessesStorage.findOne(req.context.user, {id: tokenParts.accessId}, null,
-        function (err, access) {
-      if (err) { return next(errors.unexpectedError(err)); }
+    userAccessesStorage.findOne(req.context.user, {id: tokenParts.accessId},
+      null, function (err, access) {
+        if (err) { return next(errors.unexpectedError(err)); }
 
-      if (! access) {
-        return next(errors.invalidAccessToken('Cannot find access matching read token "' +
+        if (! access) {
+          return next(errors.invalidAccessToken(
+            'Cannot find access matching read token "' +
             req.query.readToken + '".'));
-      }
+        }
 
-      if (! encryption.isFileReadTokenHMACValid(tokenParts.hmac, req.params.fileId, access,
-          authSettings.filesReadTokenSecret)) {
-        return next(errors.invalidAccessToken('Invalid read token "' + req.query.readToken + '".'));
-      }
+        if (! encryption.isFileReadTokenHMACValid(tokenParts.hmac,
+          req.params.fileId, access, authSettings.filesReadTokenSecret)) {
+          return next(errors.invalidAccessToken(
+            'Invalid read token "' + req.query.readToken + '".',
+            null,
+            {dontNotifyAirbrake: true}));
+        }
 
-      req.context.access = access;
-      next();
-    });
+        req.context.access = access;
+        next();
+      });
   }
 
   function loadAccess(req, res, next) {
