@@ -10,7 +10,9 @@ type User = { username: string };
 // ChangeNotifier distributes messages from the Notifications bus to both
 // socket.io clients in this process (by delivering to Manager directly) and 
 // to socket.io clients in other processes (by sending the messages to the 
-// NATS server). 
+// NATS server). Note that this is a description of the use we make of this 
+// class, technically all the consumers (sinks) implement the `MessageSink`
+// interface. 
 // 
 // Translation from Notifications bus messages ('events-changed') to socket.IO
 // messages ('eventsChanged') also happens here. 

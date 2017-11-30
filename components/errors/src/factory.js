@@ -85,7 +85,9 @@ factory.invalidRequestStructure = function (message: string, data: Object, inner
   });
 };
 
-factory.itemAlreadyExists = function (resourceType, conflictingKeys, innerError) {
+factory.itemAlreadyExists = function (
+  resourceType: ?string, conflictingKeys: { [string]: string }, innerError: Error
+) {
   resourceType = resourceType || 'resource';
   var article = _.includes(['a', 'e', 'i', 'o', 'u'], resourceType[0]) ? 'An ' : 'A ';
   var keysDescription = Object.keys(conflictingKeys).map(function (k) {
@@ -100,12 +102,14 @@ factory.itemAlreadyExists = function (resourceType, conflictingKeys, innerError)
   });
 };
 
-factory.missingHeader = function (headerName) {
-  return new APIError(ErrorIds.MissingHeader, 'Missing expected header "' + headerName + '"',
-      {httpStatus: 400});
+factory.missingHeader = function (headerName: string) {
+  return new APIError(
+    ErrorIds.MissingHeader, 
+    'Missing expected header "' + headerName + '"',
+    { httpStatus: 400 });
 };
 
-factory.periodsOverlap = function (message, data, innerError) {
+factory.periodsOverlap = function (message: string, data: Object, innerError: Error) {
   return new APIError(ErrorIds.PeriodsOverlap, message, {
     httpStatus: 400,
     data: data,
@@ -113,7 +117,7 @@ factory.periodsOverlap = function (message, data, innerError) {
   });
 };
 
-factory.tooManyResults = function (limit) {
+factory.tooManyResults = function (limit: number) {
   return new APIError(ErrorIds.tooManyResults,
     'Your request gave too many results (the limit is ' + limit + '. Directly calling ' +
     'the API method (i.e. not batching calls), narrowing request scope or paging can help.',
@@ -147,18 +151,20 @@ factory.unexpectedError = function (sourceError: mixed, message?: string) {
   }
 };
 
-/**
- * @param {String} resourceType
- * @param {String} paramKey
- * @param {String|Array} value
- * @param {Error} innerError
- * @returns {APIError}
- */
-factory.unknownReferencedResource = function (resourceType, paramKey, value, innerError) {
-  var message = 'Unknown referenced ' + (resourceType || 'resource(s)') + ' "' +
-      (value.join ? value.join('", "') : value) + '"';
-  var data = {};
+factory.unknownReferencedResource = function (
+  resourceType: ?string, paramKey: string, 
+  value: Array<string> | string, innerError: Error
+) {
+  const joinedVals = typeof value === 'string' ?
+    value :
+    value.join('", "');
+  const resourceTypeText = resourceType || 'resource(s)';
+  
+  const message = `Unknown referenced ${resourceTypeText} "${joinedVals}"`;
+
+  const data = {};
   data[paramKey] = value;
+
   return new APIError(ErrorIds.UnknownReferencedResource, message, {
     httpStatus: 400,
     data: data,
@@ -166,7 +172,7 @@ factory.unknownReferencedResource = function (resourceType, paramKey, value, inn
   });
 };
 
-factory.unknownResource = function (resourceType, id, innerError) {
+factory.unknownResource = function (resourceType: ?string, id: ?string, innerError: Error) {
   var message = 'Unknown ' + (resourceType || 'resource') + ' ' + (id ? '"' + id + '"' : '');
   return new APIError(ErrorIds.UnknownResource, message, {
     httpStatus: 404,
@@ -174,8 +180,10 @@ factory.unknownResource = function (resourceType, id, innerError) {
   });
 };
 
-factory.unsupportedContentType = function (contentType) {
-  return new APIError(ErrorIds.UnsupportedContentType, 'We don\'t support "' + contentType +
+factory.unsupportedContentType = function (contentType: string) {
+  return new APIError(
+    ErrorIds.UnsupportedContentType, 
+    'We don\'t support "' + contentType +
       '" as content type. If you think we should, please help us and report an issue!',
-      {httpStatus: 415});
+    { httpStatus: 415 });
 };
