@@ -34,8 +34,9 @@ factory.invalidCredentials = function (message, options) {
     _.merge({httpStatus: 401}, options));
 };
 
-factory.invalidItemId = function (message) {
-  return new APIError(ErrorIds.InvalidItemId, message, {httpStatus: 400});
+factory.invalidItemId = function (message, options) {
+  return new APIError(ErrorIds.InvalidItemId, message,
+    _.merge({httpStatus: 400}, options));
 };
 
 factory.invalidMethod = function (methodId) {

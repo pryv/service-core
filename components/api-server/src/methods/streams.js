@@ -126,10 +126,10 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     }
 
     if (params.id) {
-      if (string.isReservedId(params.id) ||
-          string.isReservedId(params.id = slugify(params.id))) {
+      if (string.isReservedId(params.id) || 
+      string.isReservedId(params.id = slugify(params.id))) {
         return process.nextTick(next.bind(null, errors.invalidItemId('The specified id "' +
-            params.id + '" is not allowed.')));
+            params.id + '" is not allowed.', {dontNotifyAirbrake: true})));
       }
     }
 
