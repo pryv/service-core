@@ -497,7 +497,10 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
    */
   function checkStream(context, streamId, errorCallback) {
     if (! context.stream) {
-      errorCallback(errors.unknownReferencedResource('stream', 'streamId', streamId));
+      errorCallback(errors.unknownReferencedResource(
+        'stream', 'streamId', streamId, null,
+        {dontNotifyAirbrake: true}
+      ));
       return false;
     }
     if (context.stream.trashed) {
