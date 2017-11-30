@@ -121,7 +121,10 @@ module.exports = function (api, userFollowedSlicesStorage, notifications){
     
     const conflictingKeys = nameKeyDuplicate ?
       {name: params.name} : { url: params.url, accessToken: params.accessToken };
-    return errors.itemAlreadyExists('followed slice', conflictingKeys, dbError);
+    return errors.itemAlreadyExists(
+      'followed slice', conflictingKeys, dbError,
+      {dontNotifyAirbrake: true}
+    );
   }
 
   // DELETION
