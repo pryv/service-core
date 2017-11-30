@@ -33,7 +33,10 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
 
   function checkNoSharedAccess(context, params, result, next) {
     if (context.access.isShared()) {
-      return next(errors.forbidden('You cannot access this resource using a shared access token.'));
+      return next(errors.forbidden(
+        'You cannot access this resource using a shared access token.',
+        {dontNotifyAirbrake: true})
+      );
     }
     next();
   }
