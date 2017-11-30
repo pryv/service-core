@@ -54,44 +54,40 @@ function setupSocketIO(
   function authorizeUserMiddleware(
     handshake: SocketIO$Handshake, callback: (err: any, res: any) => mixed
   ) {
-    var nsName = handshake.query.resource;
-    if (! nsName) {
-      return callback('Missing \'resource\' parameter.');
-    }
+    const nsName = handshake.query.resource;
+    if (nsName == null) return callback('Missing \'resource\' parameter.');
     
-    if (!nsName.startsWith('/') ||
-      !manager.looksLikeUsername(nsName.slice(1))) {
-      // invalid namespace
-      return callback('Invalid resource "' + nsName + '".');
-    }
+    const userName = manager.extractUsername(nsName); 
+    if (userName == null) return callback(`Invalid resource "${nsName}".`);
 
-    var username = manager.extractUsername(nsName);
-
-    var accessToken = handshake.query.auth;
-    if (! accessToken) {
+    const accessToken = handshake.query.auth;
+    if (accessToken == null) 
       return callback('Missing \'auth\' parameter with a valid access token.');
-    }
 
     const context = new MethodContext(
-      username, accessToken, 
+      userName, accessToken, 
       storageLayer, customAuthStepFn);
       
     // HACK Attach our method context to the handshake as a means of talking to
     // the code in Manager. 
     handshake.methodContext = context;
 
-    if (manager.hasContextForNamespace(nsName)) {
-      // We've cached the user per namespace, so we avoid loading it here. 
-      context.user = manager.getUser(nsName);
-      done();
-    } else {
-      context.retrieveUser(done);
+    // Attempt to reuse the user object we previously loaded for the given 
+    // `nsName` namespace. 
+    const cachedUser = manager.getUser(nsName);
+    if (cachedUser != null) {
+      context.user = cachedUser; 
+      return userLoaded(); 
     }
-
-    function done(err) {
+    
+    // User wasn't cached, load it. 
+    return context.retrieveUser(userLoaded);
+      
+    function userLoaded(err) {
       if (err) { return callback(err); }
+      
       manager.ensureInitNamespace(nsName, context.user);
-      callback(null, true);
+      return callback(null, true);
     }
   }
 }

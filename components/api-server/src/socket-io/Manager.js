@@ -82,11 +82,19 @@ class Manager {
   }
 
   // Extracts the username from the given valid namespace name.
+  // Returns null if the given `namespaceName` cannot be parsed as a user name. 
   // 
   //    manager.getUsername('/foobar') // => 'foobar'
   //
-  extractUsername(namespaceName: string): string {
-    return namespaceName.split('/')[1];
+  extractUsername(namespaceName: string): ?string {
+    if (! namespaceName.startsWith('/')) return null; 
+
+    // assert: namespaceName[0] === '/'
+    const candidate = namespaceName.slice(1);
+      
+    if (! this.looksLikeUsername(candidate)) return null; 
+    
+    return candidate;
   }
   
   // Returns true if we already have a context for the given `namespaceName`.
