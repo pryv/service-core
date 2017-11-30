@@ -274,7 +274,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   function verifyContext(context, params, result, next) {
     if (! context.canContributeToContext(context.content.streamId, context.content.tags)) {
-      return next(errors.forbidden());
+      return next(errors.forbidden(null, {dontNotifyAirbrake: true}));
     }
     next();
   }

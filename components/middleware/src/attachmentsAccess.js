@@ -17,7 +17,7 @@ module.exports = function (userEventsStorage) {
         return next(errors.unknownResource('event', req.params.id));
       }
       if (! req.context.canReadStream(event.streamId)) {
-        return next(errors.forbidden());
+        return next(errors.forbidden(null, {dontNotifyAirbrake: true}));
       }
 
       req.url = req.url.replace(req.params.username, req.context.user.id).replace('/events/', '/');
