@@ -267,7 +267,8 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
       if (err) {
         if (Database.isDuplicateError(err)) {
           return next(errors.itemAlreadyExists('access',
-              { type: context.resource.type, name: params.update.name }, err));
+              { type: context.resource.type, name: params.update.name },
+              err, {dontNotifyAirbrake: true}));
         } else {
           return next(errors.unexpectedError(err));
         }
