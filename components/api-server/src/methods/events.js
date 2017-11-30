@@ -892,53 +892,56 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   }
 
   api.register('events.deleteAttachment',
-      commonFns.getParamsValidation(methodsSchema.deleteAttachment.params),
-      function (context, params, result, next) {
-    var updatedEvent,
-        deletedAtt;
-    async.series([
-      function (stepDone) {
-        checkEventForWriting(context, params.id, function (err, event) {
-          if (err) { return stepDone(err); }
+    commonFns.getParamsValidation(methodsSchema.deleteAttachment.params),
+    function (context, params, result, next) {
+      var updatedEvent,
+          deletedAtt;
+      async.series([
+        function (stepDone) {
+          checkEventForWriting(context, params.id, function (err, event) {
+            if (err) { return stepDone(err); }
 
-          updatedEvent = event;
-          stepDone();
-        });
-      },
-      function (stepDone) {
-        var attIndex = getAttachmentIndex(updatedEvent.attachments, params.fileId);
-        if (attIndex === -1) {
-          return stepDone(errors.unknownResource('attachment', params.fileId));
-        }
-        deletedAtt = updatedEvent.attachments[attIndex];
-        updatedEvent.attachments.splice(attIndex, 1);
+            updatedEvent = event;
+            stepDone();
+          });
+        },
+        function (stepDone) {
+          var attIndex = getAttachmentIndex(updatedEvent.attachments, params.fileId);
+          if (attIndex === -1) {
+            return stepDone(errors.unknownResource(
+              'attachment', params.fileId, null,
+              {dontNotifyAirbrake: true}
+            ));
+          }
+          deletedAtt = updatedEvent.attachments[attIndex];
+          updatedEvent.attachments.splice(attIndex, 1);
 
-        var updatedData = {attachments: updatedEvent.attachments};
-        context.updateTrackingProperties(updatedData);
+          var updatedData = {attachments: updatedEvent.attachments};
+          context.updateTrackingProperties(updatedData);
 
-	userEventsStorage.updateOne(context.user, {id: params.id}, updatedData,
+          userEventsStorage.updateOne(context.user, {id: params.id}, updatedData,
             function (err, updatedEvent) {
-          if (err) { return stepDone(err); }
-          result.event = updatedEvent;
-          setFileReadToken(context.access, result.event);
-          stepDone();
-        });
-      },
-      function (stepDone) {
-        userEventFilesStorage.removeAttachedFile(context.user, params.id, params.fileId, stepDone);
-      },
-      function (stepDone) {
-        // approximately update account storage size
-        context.user.storageUsed.attachedFiles -= deletedAtt.size;
-	usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
+              if (err) { return stepDone(err); }
+              result.event = updatedEvent;
+              setFileReadToken(context.access, result.event);
+              stepDone();
+            });
+        },
+        function (stepDone) {
+          userEventFilesStorage.removeAttachedFile(context.user, params.id, params.fileId, stepDone);
+        },
+        function (stepDone) {
+          // approximately update account storage size
+          context.user.storageUsed.attachedFiles -= deletedAtt.size;
+          usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
             stepDone);
-      },
-      function (stepDone) {
-        notifications.eventsChanged(context.user);
-        stepDone();
-      }
-    ], next);
-  });
+        },
+        function (stepDone) {
+          notifications.eventsChanged(context.user);
+          stepDone();
+        }
+      ], next);
+    });
 
   /**
    * Returns the query value to use for the given type, handling possible wildcards.

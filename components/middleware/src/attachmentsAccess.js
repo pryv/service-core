@@ -28,10 +28,13 @@ module.exports = function (userEventsStorage) {
       }
 
       // set response content type (we can't rely on the filename)
-      var attachment = event.attachments ?
-          _.find(event.attachments, {id: req.params.fileId}) : null;
+      const attachment = event.attachments ?
+        _.find(event.attachments, {id: req.params.fileId}) : null;
       if (! attachment) {
-        return next(errors.unknownResource('attachment', req.params.fileId, null, {dontNotifyAirbrake: true}));
+        return next(errors.unknownResource(
+          'attachment', req.params.fileId, null,
+          {dontNotifyAirbrake: true}
+        ));
       }
       res.header('Content-Type', attachment.type);
 
