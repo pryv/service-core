@@ -960,7 +960,10 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         return callback(errors.unexpectedError(err));
       }
       if (! event) {
-        return callback(errors.unknownResource('event', eventId));
+        return callback(errors.unknownResource(
+          'event', eventId
+          , {dontNotifyAirbrake: true}
+        ));
       }
       if (! context.canContributeToContext(event.streamId, event.tags)) {
         return callback(errors.forbidden());
