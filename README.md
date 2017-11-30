@@ -7,7 +7,13 @@ Pryv core server app components, ie. what runs on each server node and handles u
 
 ### Install
 
-_Prerequisites:_ Node v8.3.0, Yarn v1.1.0, Mongo DB v3.4+ (needs at least 4GB of free disk space for the initial database), Nginx (optional, skip if you don't need the proxy server).
+_Prerequisites:_ Node v8.3.0, Yarn v1.1.0, Mongo DB v3.4+ (needs at least 4GB of free disk space for the initial database), Nginx (optional, skip if you don't need the proxy server), gnatsd. On a mac OS X system, you should be able to install these prerequisites by first installing homebrew and then running these commands: 
+
+~~~bash
+$ brew install gnatsd mongodb nodenv node-build nginx
+# Follow post-install instructions by homebrew, especially for nodenv. 
+$ nodenv install 8.8.0
+~~~
 
 You will need to install 'node-gyp' globally as well: `yarn global add node-gyp`. Your environment needs to support C/C++ compilation. On Linux, this includes `sudo apt-get install build-essentials`, on Mac OS X this is XCode + Command Line Utilities. 
 
@@ -38,7 +44,7 @@ If you're blocking because 'unicode.org' doesn't like you today, here's what you
     ├── scripts                 Scripts used to manage the repository
     ├── test                    Top-Level Tests for Integration tests.
     └── yarn.lock               Lockfile for Yarn, locks down npm versions.
-    
+
 ### How to?
 
 | Task                         | Command                        |
@@ -46,7 +52,7 @@ If you're blocking because 'unicode.org' doesn't like you today, here's what you
 | Setup                        | `yarn install`                 |
 | Create Distribution          | `yarn run release`             |
 | Recompile During Development | `yarn run watch`               |
-| Run Tests                    | `yarn run test`                |
+| Run Tests                    | `yarn test`                    |
 | Run Integration Tests        | `yarn run test-root`           |
 | Run ALL server proecesses    | `nf start`                     |
 | Run API server               | `nf start api`                 |
@@ -62,7 +68,7 @@ If you want to run tests in `components/`, you will need to start with a command
     $ ../../node_modules/.bin/mocha \
       --compilers js:babel-register \
       test/**/*.test.js
-    
+
 This is something that should probably be a shell alias in your environment. I use 
 
     $ alias pm="../../node_modules/.bin/mocha --compilers js:babel-register test/**/*.test.js"
@@ -125,7 +131,7 @@ It is possible to extend the API and previews servers with your own code, via th
     ```
 
     Available context properties (as of now):
-    
+
     - `username` (string)
     - `user` (object): the user object (properties include `id`)
     - `accessToken` (string): as read in the `Authorization` header or `auth` parameter
@@ -137,7 +143,7 @@ It is possible to extend the API and previews servers with your own code, via th
 
 ### Setup the dev environment
 
-`./scripts/setup-dev-env.bash` installs MongoDB in the parent folder, sets up your working copy with a JSHint commit hook, and `yarn install`s if needed.
+`./scripts/setup-dev-env.bash` installs MongoDB in the parent folder and `yarn install`s if needed.
 
 This might be broken right now. Sorry.
 
