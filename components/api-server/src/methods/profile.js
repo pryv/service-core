@@ -85,7 +85,9 @@ module.exports = function (api, userProfileStorage) {
 
   function setAppProfile(context, params, result, next) {
     if (! context.access.isApp()) {
-      return next(errors.invalidOperation('This resource is only available to app accesses.'));
+      return next(errors.invalidOperation(
+        'This resource is only available to app accesses.', null, null, 
+        {dontNotifyAirbrake: true}));
     }
     params.id = context.access.name;
     next();
