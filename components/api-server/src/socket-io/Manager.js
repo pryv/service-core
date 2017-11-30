@@ -4,12 +4,12 @@ const errorHandling = require('components/errors').errorHandling;
 const setCommonMeta = require('../methods/helpers/setCommonMeta');
 const bluebird = require('bluebird');
 const util = require('util');
-
-import type EventEmitter from 'events';
     
 import type { Logger } from 'components/utils';
 import type { MethodContext } from 'components/model';
 import type API from '../API';
+
+import type { MessageSink } from './change_notifier';
 
 type SocketIO$SocketId = string; 
 export type SocketIO$Handshake = {
@@ -48,29 +48,24 @@ type User = { username: string };
 // Singleton for managing sockets access:
 //
 //   - dynamic namespaces per user
-//   - forwards data notifications to appropriate sockets
 // 
-class Manager {
+class Manager implements MessageSink {
   contexts: Map<string, NamespaceContext>; 
   connections: Map<SocketIO$SocketId, Connection>; 
   
   logger: Logger; 
   io: SocketIO$Server; 
   api: API; 
-  notifications: EventEmitter; 
   
   constructor(
-    logger: Logger, io: SocketIO$Server, api: API, notifications: EventEmitter
+    logger: Logger, io: SocketIO$Server, api: API
   ) {
     this.logger = logger; 
     this.io = io; 
     this.api = api; 
-    this.notifications = notifications;
 
     this.contexts = new Map(); 
     this.connections = new Map(); 
-    
-    this.registerNotificationHandlers();
   }
   
   // Returns true if the `candidate` could be a username on a lexical level. 
@@ -158,19 +153,18 @@ class Manager {
     connections.delete(conn.id);
   }
   
-  registerNotificationHandlers() {
-    const notificationMap = new Map([
-      ['accesses-changed', 'accessesChanged'],
-      ['events-changed', 'eventsChanged'],
-      ['streams-changed', 'streamsChanged'],
-    ]);
+  // Given a `userName` and a `message`, delivers the `message` as a socket.io
+  // event to all clients currently connected to the namespace '/USERNAME'.
+  //
+  deliver(userName: string, message: string): void {
+    const context = this.getContext(`/${userName}`);
+    if (context == null) return; 
     
-    const notifications = this.notifications;
+    const namespace = context.socketNs;
+    if (namespace == null) 
+      throw new Error('AF: namespace should not be null');
     
-    for (const [internal, external] of notificationMap) {
-      notifications.on(internal, 
-        (userName) => this.handleNotification(userName, external));
-    }
+    namespace.emit(message);
   }
   
   // ------------------------------------------------------------ event handlers
@@ -264,8 +258,8 @@ class Connection {
     const api = this.api; 
     const logger = this.logger; 
     
-    if (callback == null) 
-      return callback('AF: No callback on a method call.'); 
+    // Make sure that we have a callback here. 
+    if (callback == null) callback = function(err: any) { }; // eslint-disable-line no-unused-vars
     
     const methodContext = this.methodContext;
     const userName = methodContext.username; 
@@ -289,7 +283,8 @@ class Connection {
         method: method,
         body: params
       }, logger);
-      return callback(setCommonMeta({error: errorHandling.getPublicErrorData(err)}));
+      return callback(
+        setCommonMeta({ error: errorHandling.getPublicErrorData(err) }));
     }
     // NOT REACHED
   }

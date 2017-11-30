@@ -5,6 +5,7 @@ const socketIO = require('socket.io');
 const MethodContext = require('components/model').MethodContext;
 
 const Manager = require('./Manager');
+const ChangeNotifier = require('./change_notifier');
 const Paths = require('../routes/Paths');
 
 
@@ -49,7 +50,15 @@ function setupSocketIO(
     authorization: authorizeUserMiddleware, 
   });
 
-  var manager: Manager = new Manager(logger, io, api, notifications);
+  // Manages socket.io connections and delivers method calls to the api. 
+  const manager: Manager = new Manager(logger, io, api);
+  
+  // Manages change notifications.
+  const changeNotifier = new ChangeNotifier();
+  changeNotifier.addSink(manager);
+  
+  // Listen to messages that we need to notify socket.io clients about. 
+  changeNotifier.listenTo(notifications);
   
   function authorizeUserMiddleware(
     handshake: SocketIO$Handshake, callback: (err: any, res: any) => mixed
@@ -84,7 +93,7 @@ function setupSocketIO(
     return context.retrieveUser(userLoaded);
       
     function userLoaded(err) {
-      if (err) { return callback(err); }
+      if (err != null) { return callback(err); }
       
       manager.ensureInitNamespace(nsName, context.user);
       return callback(null, true);

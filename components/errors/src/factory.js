@@ -1,60 +1,67 @@
-var APIError = require('./APIError'),
-    ErrorIds = require('./ErrorIds'),
-    _ = require('lodash');
+// @flow
+
+const APIError = require('./APIError');
+const ErrorIds = require('./ErrorIds');
+const _ = require('lodash');
 
 /**
  * Helper "factory" methods for API errors (see error ids).
  */
 var factory = module.exports = {};
 
-factory.apiUnavailable = (message) => {
+factory.apiUnavailable = (message: string) => {
   return new APIError(ErrorIds.ApiUnavailable, message, {
-    httpStatus: 503});
+    httpStatus: 503
+  });
 };
 
-factory.corruptedData = function (message, innerError) {
+factory.corruptedData = function (message: string, innerError: Error) {
   return new APIError(ErrorIds.CorruptedData, message, {
     httpStatus: 422,
     innerError: innerError
   });
 };
 
-factory.forbidden = function (message) {
+factory.forbidden = function (message: string) {
   if (! message) {
     message = 'The given token\'s access permissions do not allow this operation.';
   }
   return new APIError(ErrorIds.Forbidden, message, {httpStatus: 403});
 };
 
-factory.invalidAccessToken = function (message, innerError) {
+factory.invalidAccessToken = function (message: string, innerError: Error) {
   return new APIError(ErrorIds.InvalidAccessToken, message, {
     httpStatus: 401,
     innerError: innerError
   });
 };
 
-factory.invalidCredentials = function (message) {
+factory.invalidCredentials = function (message?: string) {
   return new APIError(ErrorIds.InvalidCredentials,
-      message || 'The given username/password pair is invalid.',
-      {httpStatus: 401});
+    message || 'The given username/password pair is invalid.',
+    {httpStatus: 401});
 };
 
-factory.invalidEventType = function (type) {
-  return new APIError(ErrorIds.InvalidEventType, 'Event type \'' + type + '\' not allowed ' +
-    'for High-Frequency Series. Please use a predefined simple type',
+factory.invalidEventType = function (type: string) {
+  return new APIError(
+    ErrorIds.InvalidEventType, 
+    'Event type \'' + type + '\' not allowed ' +
+      'for High-Frequency Series. Please use a predefined simple type',
     {type: type, httpStatus: 400});
 };
 
-factory.invalidItemId = function (message) {
+factory.invalidItemId = function (message?: string) {
   return new APIError(ErrorIds.InvalidItemId, message, {httpStatus: 400});
 };
 
-factory.invalidMethod = function (methodId) {
-  return new APIError(ErrorIds.InvalidMethod, 'Invalid method id "' + methodId + '"',
-      {httpStatus: 404});
+factory.invalidMethod = function (methodId: string) {
+  return new APIError(
+    ErrorIds.InvalidMethod, 
+    'Invalid method id "' + methodId + '"',
+    { httpStatus: 404 });
 };
 
-factory.invalidOperation = function (message, data, innerError) {
+factory.invalidOperation = function (message: string, data: Object, innerError: Error) {
   return new APIError(ErrorIds.InvalidOperation, message, {
     httpStatus: 400,
     data: data,
@@ -62,7 +69,7 @@ factory.invalidOperation = function (message, data, innerError) {
   });
 };
 
-factory.invalidParametersFormat = function (message, data, innerError) {
+factory.invalidParametersFormat = function (message: string, data: Object, innerError: Error) {
   return new APIError(ErrorIds.InvalidParametersFormat, message, {
     httpStatus: 400,
     data: data,
@@ -70,7 +77,7 @@ factory.invalidParametersFormat = function (message, data, innerError) {
   });
 };
 
-factory.invalidRequestStructure = function (message, data, innerError) {
+factory.invalidRequestStructure = function (message: string, data: Object, innerError: Error) {
   return new APIError(ErrorIds.InvalidRequestStructure, message, {
     httpStatus: 400,
     data: data,
@@ -113,12 +120,31 @@ factory.tooManyResults = function (limit) {
     {limit: limit, httpStatus: 413});
 };
 
-factory.unexpectedError = function (sourceError, message) {
-  return new APIError(ErrorIds.UnexpectedError,
-      message || ('Unexpected error: ' + sourceError.message), {
-        httpStatus: 500,
-        innerError: sourceError
-      });
+factory.unexpectedError = function (sourceError: mixed, message?: string) {
+  const opts = {
+    httpStatus: 500,
+    innerError: sourceError
+  };
+  
+  // If a message was given: display it. 
+  if (message != null)
+    return produceError(message);
+
+  // Sometimes people throw strings
+  if (typeof sourceError == 'string') 
+    return produceError(sourceError);
+    
+  // Maybe this looks like an Error?
+  if (sourceError != null && typeof sourceError.message === 'string') 
+    return produceError(sourceError.message);
+
+  // Give up: 
+  return produceError('(no message given)');
+  
+  function produceError(msg: string): APIError {
+    const text = `Unexpected error: ${msg}`;
+    return new APIError(ErrorIds.UnexpectedError, text, opts);  
+  }
 };
 
 /**

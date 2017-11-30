@@ -182,7 +182,8 @@ MethodContext.prototype.retrieveExpandedAccess = function (callback) {
       stepDone();
     }.bind(this)
   ], function (err) {
-    if (! (err instanceof APIError)) {
+    // Make sure we only forward APIErrors. 
+    if (err != null && ! (err instanceof APIError)) {
       err = errors.unexpectedError(err);
     }
     callback(err || null);
