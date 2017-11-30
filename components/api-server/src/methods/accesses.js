@@ -301,8 +301,9 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
       }
 
       if (! context.access.isPersonal() && ! context.access.canManageAccess(access)) {
-        return next(errors.forbidden('Your access token has insufficient permissions to ' +
-            'delete this access.'));
+        return next(errors.forbidden(
+            'Your access token has insufficient permissions to ' +
+            'delete this access.', {dontNotifyAirbrake: true}));
       }
 
       next();
