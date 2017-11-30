@@ -330,8 +330,10 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
 
   function checkApp(context, params, result, next) {
     if (! context.access.isPersonal()) {
-      return next(errors.forbidden('Your access token has insufficient permissions to access ' +
-          'this resource.'));
+      return next(errors.forbidden(
+        'Your access token has insufficient permissions to access this resource.',
+        {dontNotifyAirbrake: true}
+      ));
     }
 
     var query = {
