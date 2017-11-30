@@ -14,7 +14,7 @@ var errors = require('components/errors').factory,
  * @param notifications
  */
 module.exports = function (api, usersStorage, passwordResetRequestsStorage,
-                           authSettings, servicesSettings, notifications) {
+  authSettings, servicesSettings, notifications) {
 
   var registerSettings = servicesSettings.register,
       emailSettings = servicesSettings.email,
@@ -23,45 +23,47 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
   // RETRIEVAL
 
   api.register('account.get',
-      commonFns.loadAccess,
-      commonFns.requirePersonalAccess,
-      commonFns.getParamsValidation(methodsSchema.get.params),
-      function (context, params, result, next) {
-    usersStorage.findOne({id: context.user.id}, null, function (err, user) {
-      if (err) { return next(errors.unexpectedError(err)); }
+    commonFns.loadAccess,
+    commonFns.requirePersonalAccess,
+    commonFns.getParamsValidation(methodsSchema.get.params),
+    function (context, params, result, next) {
+      usersStorage.findOne({id: context.user.id}, null, function (err, user) {
+        if (err) { return next(errors.unexpectedError(err)); }
 
-      sanitizeAccountDetails(user);
-      result.account = user;
-      next();
+        sanitizeAccountDetails(user);
+        result.account = user;
+        next();
+      });
     });
-  });
 
   // UPDATE
 
   api.register('account.update',
-      commonFns.loadAccess,
-      commonFns.requirePersonalAccess,
-      commonFns.getParamsValidation(methodsSchema.update.params),
-      updateAccount,
-      notifyEmailChangeToRegister);
+    commonFns.loadAccess,
+    commonFns.requirePersonalAccess,
+    commonFns.getParamsValidation(methodsSchema.update.params),
+    updateAccount,
+    notifyEmailChangeToRegister);
 
   // CHANGE PASSWORD
 
   api.register('account.changePassword',
-      commonFns.loadAccess,
-      commonFns.requirePersonalAccess,
-      commonFns.getParamsValidation(methodsSchema.changePassword.params),
-      verifyOldPassword,
-      encryptNewPassword,
-      updateAccount,
-      cleanupResult);
+    commonFns.loadAccess,
+    commonFns.requirePersonalAccess,
+    commonFns.getParamsValidation(methodsSchema.changePassword.params),
+    verifyOldPassword,
+    encryptNewPassword,
+    updateAccount,
+    cleanupResult);
 
   function verifyOldPassword(context, params, result, next) {
     encryption.compare(params.oldPassword, context.user.passwordHash, function (err, isValid) {
       if (err) { return next(errors.unexpectedError(err)); }
 
       if (! isValid) {
-        return next(errors.invalidOperation('The given password does not match.', { dontNotifyAirbrake: true }));
+        return next(errors.invalidOperation(
+          'The given password does not match.', null, null,
+          {dontNotifyAirbrake: true }));
       }
       next();
     });
@@ -70,10 +72,10 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
   // REQUEST PASSWORD RESET
 
   api.register('account.requestPasswordReset',
-      commonFns.getParamsValidation(methodsSchema.requestPasswordReset.params),
-      requireTrustedAppFn,
-      generatePasswordResetRequest,
-      sendPasswordResetMail);
+    commonFns.getParamsValidation(methodsSchema.requestPasswordReset.params),
+    requireTrustedAppFn,
+    generatePasswordResetRequest,
+    sendPasswordResetMail);
 
   function generatePasswordResetRequest(context, params, result, next) {
     var requestData = {};
@@ -128,12 +130,12 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
   // RESET PASSWORD
 
   api.register('account.resetPassword',
-      commonFns.getParamsValidation(methodsSchema.resetPassword.params),
-      requireTrustedAppFn,
-      checkResetToken,
-      encryptNewPassword,
-      updateAccount,
-      cleanupResult);
+    commonFns.getParamsValidation(methodsSchema.resetPassword.params),
+    requireTrustedAppFn,
+    checkResetToken,
+    encryptNewPassword,
+    updateAccount,
+    cleanupResult);
 
   function checkResetToken(context, params, result, next) {
     passwordResetRequestsStorage.get(params.resetToken, function (err, reqData) {
@@ -176,18 +178,18 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
     var regChangeEmailURL = registerSettings.url + '/users/' + context.user.username +
         '/change-email';
     request.post(regChangeEmailURL)
-        .set('Authorization', registerSettings.key)
-	.send({email: params.update.email})
-        .end(function (err, res) {
+      .set('Authorization', registerSettings.key)
+      .send({email: params.update.email})
+      .end(function (err, res) {
       // check if first argument is Error;
       // for some reason superagent did return res as first argument on success
-      if (err instanceof Error || (res && ! res.ok)) {
-        if (! err) { err = new Error(util.inspect(res.body)); }
-	return next(errors.unexpectedError(err, 'Could not reach register service.'));
-      }
+        if (err instanceof Error || (res && ! res.ok)) {
+          if (! err) { err = new Error(util.inspect(res.body)); }
+          return next(errors.unexpectedError(err, 'Could not reach register service.'));
+        }
 
-      next();
-    });
+        next();
+      });
   }
 
   function cleanupResult(context, params, result, next) {
