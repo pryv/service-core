@@ -38,6 +38,7 @@
     "model": "file:components/model",
     "mongodb": "^2.2.31",
     "morgan": "^1.8.1",
+    "msgpack5": "^3.6.0",
     "multer": "^1.3.0",
     "previews-server": "file:components/previews-server",
     "pryvuser-cli": "file:components/pryvuser-cli",
