@@ -98,7 +98,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
       params.token = slugify(params.token);
       if (string.isReservedId(params.token)) {
         return next(errors.invalidItemId('The specified token "' + params.token +
-            '" is not allowed.'));
+            '" is not allowed.', {dontNotifyAirbrake: true}));
       }
     } else {
       params.token = userAccessesStorage.generateToken();
