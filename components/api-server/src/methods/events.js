@@ -699,53 +699,67 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   }
 
   api.register('events.stop',
-      commonFns.getParamsValidation(methodsSchema.stop.params),
-      function (context, params, result, next) {
-    // default time is now
-    _.defaults(params, { time: timestamp.now() });
+    commonFns.getParamsValidation(methodsSchema.stop.params),
+    function (context, params, result, next) {
+      // default time is now
+      _.defaults(params, { time: timestamp.now() });
 
-    if (params.id) {
-      userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
-        if (err) { return next(errors.unexpectedError(err)); }
-        if (! event) {
-          return next(errors.unknownReferencedResource('event', 'id', params.id));
+      if (params.id) {
+        userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
+          if (err) { return next(errors.unexpectedError(err)); }
+          if (! event) {
+            return next(errors.unknownReferencedResource(
+              'event', 'id', params.id, null, {dontNotifyAirbrake: true}
+            ));
+          }
+          if (! isRunning(event)) {
+            return next(errors.invalidOperation(
+              'Event "' + params.id + '" is not a running period event.',
+              null, null, {dontNotifyAirbrake: true}
+            ));
+          }
+          applyStop(null, event);
+        });
+      } else if (params.streamId) {
+        context.setStream(params.streamId);
+        if (! context.stream.singleActivityRootId && ! params.type) {
+          return process.nextTick(next.bind(null, 
+            errors.invalidParametersFormat(
+              'You must specify the event `id` or `type` ' +
+              ' (not a "single activity" stream).',
+              null, null, {dontNotifyAirbrake: true}
+            )
+          ));
         }
-        if (! isRunning(event)) {
-          return next(errors.invalidOperation('Event "' + params.id + '" is not a running ' +
-              'period event.'));
-        }
-        applyStop(null, event);
-      });
-    } else if (params.streamId) {
-      context.setStream(params.streamId);
-      if (! context.stream.singleActivityRootId && ! params.type) {
-        return process.nextTick(next.bind(null, errors.invalidParametersFormat('You must specify ' +
-            'the event `id` or `type` (not a "single activity" stream).')));
+        if (! checkStream(context, params.streamId, next)) { return; }
+        var stopParams = {
+          singleActivity: !! context.stream.singleActivityRootId,
+          time: params.time,
+          type: params.type
+        };
+        findLastRunning(context, stopParams, applyStop);
+      } else {
+        process.nextTick(next.bind(null,
+          errors.invalidParametersFormat(
+            'You must specify either the "single activity " stream id '+
+            'or the event `id`.',
+            null, null, {dontNotifyAirbrake: true}
+          )
+        ));
       }
-      if (! checkStream(context, params.streamId, next)) { return; }
-      var stopParams = {
-        singleActivity: !! context.stream.singleActivityRootId,
-        time: params.time,
-        type: params.type
-      };
-      findLastRunning(context, stopParams, applyStop);
-    } else {
-      process.nextTick(next.bind(null, errors.invalidParametersFormat('You must specify either ' +
-          'the "single activity " stream id or the event `id`.')));
-    }
 
-    function applyStop(error, event) {
-      if (error) { return next(errors.unexpectedError(error)); }
+      function applyStop(error, event) {
+        if (error) { return next(errors.unexpectedError(error)); }
 
-      stopEvent(context, event, params.time, function (err, stoppedId) {
-        if (err) { return next(err); }
+        stopEvent(context, event, params.time, function (err, stoppedId) {
+          if (err) { return next(err); }
 
-        result.stoppedId = stoppedId;
-        notifications.eventsChanged(context.user);
-        next();
-      });
-    }
-  });
+          result.stoppedId = stoppedId;
+          notifications.eventsChanged(context.user);
+          next();
+        });
+      }
+    });
 
   /**
    * Enforces permissions (returns an error if forbidden).
