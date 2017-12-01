@@ -43,7 +43,9 @@ module.exports = function (systemAPI, usersStorage, userAccessesStorage, service
       usersStorage.insertOne(params, function (err, newUser) {
         if (err) {
           // for now let's just assume the user already exists
-          return next(errors.itemAlreadyExists('user', {username: params.username}, err));
+          return next(errors.itemAlreadyExists(
+            'user', {username: params.username}, err, {dontNotifyAirbrake: true}
+          ));
         }
         result.id = newUser.id;
         context.user = newUser;
