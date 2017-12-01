@@ -86,7 +86,10 @@ module.exports = function (api, userFollowedSlicesStorage, notifications){
               if (err) { return stepDone(errors.unexpectedError(err)); }
 
               if (! slice) {
-                return stepDone(errors.unknownResource('followed slice', params.id));
+                return stepDone(errors.unknownResource(
+                  'followed slice', params.id, null,
+                  {dontNotifyAirbrake: true}
+                ));
               }
 
               stepDone();
