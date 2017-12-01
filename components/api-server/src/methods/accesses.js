@@ -86,12 +86,16 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
 
   function applyPrerequisitesForCreation(context, params, result, next) {
     if (params.type === 'personal') {
-      return next(errors.forbidden('Personal accesses are created automatically on login.'));
+      return next(errors.forbidden(
+        'Personal accesses are created automatically on login.',
+        {dontNotifyAirbrake: true}
+      ));
     }
 
     if (! context.access.isPersonal() && ! context.access.canManageAccess(params)) {
-      return next(errors.forbidden('Your access token has insufficient permissions to create ' +
-          'this new access.'));
+      return next(errors.forbidden(
+        'Your access token has insufficient permissions ' +
+        'to create this new access.', {dontNotifyAirbrake: true}));
     }
 
     if (params.token) {
@@ -148,8 +152,10 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
                     err.message);
               } else {
                 // not OK: stream exists with same unique key but different id
-                return streamCallback(errors.itemAlreadyExists('stream', {name: newStream.name},
-                    err));
+                return streamCallback(errors.itemAlreadyExists(
+                  'stream', {name: newStream.name}, err,
+                  {dontNotifyAirbrake: true}
+                ));
               }
             } else {
               return streamCallback(errors.unexpectedError(err));
@@ -214,7 +220,9 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
               conflictingKeys.deviceName = params.deviceName;
             }
           }
-          return next(errors.itemAlreadyExists('access', conflictingKeys, err));
+          return next(errors.itemAlreadyExists(
+            'access', conflictingKeys, err, {dontNotifyAirbrake: true}
+          ));
         } else {
           return next(errors.unexpectedError(err));
         }
