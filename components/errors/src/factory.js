@@ -60,12 +60,12 @@ factory.invalidParametersFormat = function (message, data, innerError, options) 
   }, options));
 };
 
-factory.invalidRequestStructure = function (message, data, innerError) {
-  return new APIError(ErrorIds.InvalidRequestStructure, message, {
+factory.invalidRequestStructure = function (message, data, innerError, options) {
+  return new APIError(ErrorIds.InvalidRequestStructure, message, _.merge({
     httpStatus: 400,
     data: data,
     innerError: innerError
-  });
+  }, options));
 };
 
 factory.itemAlreadyExists = function (resourceType, conflictingKeys, innerError, options) {
