@@ -251,44 +251,48 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
 
   function checkAccessForUpdate(context, params, result, next) {
     userAccessesStorage.findOne(context.user, {id: params.id}, dbFindOptions,
-        function (err, access) {
-      if (err) { return next(errors.unexpectedError(err)); }
+      function (err, access) {
+        if (err) { return next(errors.unexpectedError(err)); }
 
-      if (! access) {
-        return next(errors.unknownResource('access', params.id, null, { dontNotifyAirbrake: true }));
-      }
+        if (! access) {
+          return next(errors.unknownResource(
+            'access', params.id, null, { dontNotifyAirbrake: true }
+          ));
+        }
 
-      if (! context.access.isPersonal() && ! context.access.canManageAccess(access)) {
-        return next(errors.forbidden('Your access token has insufficient permissions to ' +
-            'modify this access.'));
-      }
+        if (! context.access.isPersonal() && ! context.access.canManageAccess(access)) {
+          return next(errors.forbidden(
+            'Your access token has insufficient permissions ' +
+            'to modify this access.', {dontNotifyAirbrake: true}
+          ));
+        }
 
-      context.resource = access;
+        context.resource = access;
 
-      next();
-    });
+        next();
+      });
   }
 
   function updateAccess(context, params, result, next) {
     userAccessesStorage.updateOne(context.user, {id: params.id}, params.update,
-        function (err, updatedAccess) {
-      if (err) {
-        if (Database.isDuplicateError(err)) {
-          return next(errors.itemAlreadyExists('access',
-              { type: context.resource.type, name: params.update.name },
-              err, {dontNotifyAirbrake: true}));
-        } else {
-          return next(errors.unexpectedError(err));
+      function (err, updatedAccess) {
+        if (err) {
+          if (Database.isDuplicateError(err)) {
+            return next(errors.itemAlreadyExists('access',
+              { type: context.resource.type, name: params.update.name }, err,
+              {dontNotifyAirbrake: true}));
+          } else {
+            return next(errors.unexpectedError(err));
+          }
         }
-      }
 
-      // cleanup internal fields
-      delete updatedAccess.calls;
+        // cleanup internal fields
+        delete updatedAccess.calls;
 
-      result.access = updatedAccess;
-      notifications.accessesChanged(context.user);
-      next();
-    });
+        result.access = updatedAccess;
+        notifications.accessesChanged(context.user);
+        next();
+      });
   }
 
 
