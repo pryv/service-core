@@ -128,8 +128,9 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     if (params.id) {
       if (string.isReservedId(params.id) || 
       string.isReservedId(params.id = slugify(params.id))) {
-        return process.nextTick(next.bind(null, errors.invalidItemId('The specified id "' +
-            params.id + '" is not allowed.', {dontNotifyAirbrake: true})));
+        return process.nextTick(next.bind(null, errors.invalidItemId(
+          'The specified id "' + params.id + '" is not allowed.',
+          {dontNotifyAirbrake: true})));
       }
     }
 
@@ -143,14 +144,22 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
       if (err) {
         if (storage.Database.isDuplicateError(err)) {
           // HACK: relying on error text as nothing else available to differentiate
-	  var apiError = err.message.indexOf('_id_') > 0 ?
-              errors.itemAlreadyExists('stream', {id: params.id}, err) :
-              errors.itemAlreadyExists('sibling stream', {name: params.name}, err);
+          const apiError = err.message.indexOf('_id_') > 0 ?
+            errors.itemAlreadyExists(
+              'stream', {id: params.id}, err,
+              {dontNotifyAirbrake: true}
+            ) :
+            errors.itemAlreadyExists(
+              'sibling stream', {name: params.name}, err,
+              {dontNotifyAirbrake: true}
+            );
           return next(apiError);
         } else {
           // for now we just assume the parent is unknown
-          return next(errors.unknownReferencedResource('parent stream', 'parentId', params.parentId,
-              err));
+          return next(errors.unknownReferencedResource(
+            'parent stream', 'parentId', params.parentId, err,
+            {dontNotifyAirbrake: true}
+          ));
         }
       }
 
