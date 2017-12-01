@@ -504,8 +504,11 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       return false;
     }
     if (context.stream.trashed) {
-      errorCallback(errors.invalidOperation('The referenced stream "' + streamId +
-          '" is trashed.', {trashedReference: 'streamId'}));
+      errorCallback(errors.invalidOperation(
+        'The referenced stream "' + streamId + '" is trashed.',
+        {trashedReference: 'streamId'},
+        {dontNotifyAirbrake: true}
+      ));
       return false;
     }
     return true;
