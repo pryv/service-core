@@ -173,7 +173,10 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     var stream = treeUtils.findById(context.streams, params.id);
     if (! stream) {
       return process.nextTick(next.bind(null,
-          errors.unknownResource('stream', params.id, null, { dontNotifyAirbrake: true })));
+        errors.unknownResource(
+          'stream', params.id, null, { dontNotifyAirbrake: true }
+        )
+      ));
     }
     if (! context.canManageStream(stream.id)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
@@ -191,21 +194,26 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
   function updateStream(context, params, result, next) {
     userStreamsStorage.updateOne(context.user, {id: params.id}, params.update,
-        function (err, updatedStream) {
-      if (err) {
-        if (storage.Database.isDuplicateError(err)) {
-          return next(errors.itemAlreadyExists('sibling stream', {name: params.update.name}, err));
-        } else {
-          // for now we just assume the parent is unknown
-          return next(errors.unknownReferencedResource('parent stream', 'parentId',
-              params.update.parentId, err));
+      function (err, updatedStream) {
+        if (err) {
+          if (storage.Database.isDuplicateError(err)) {
+            return next(errors.itemAlreadyExists(
+              'sibling stream', {name: params.update.name}, err,
+              {dontNotifyAirbrake: true}
+            ));
+          } else {
+            // for now we just assume the parent is unknown
+            return next(errors.unknownReferencedResource(
+              'parent stream', 'parentId', params.update.parentId, err,
+              {dontNotifyAirbrake: true}
+            ));
+          }
         }
-      }
 
-      result.stream = updatedStream;
-      notifications.streamsChanged(context.user);
-      next();
-    });
+        result.stream = updatedStream;
+        notifications.streamsChanged(context.user);
+        next();
+      });
   }
 
   // DELETION
