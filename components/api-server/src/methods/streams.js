@@ -284,8 +284,10 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
             hasLinkedEvents = !!events.length;
 
             if (hasLinkedEvents && params.mergeEventsWithParent === null) {
-              return stepDone(errors.invalidParametersFormat('There are events referring to the ' +
-                'deleted items and the `mergeEventsWithParent` parameter is missing.'));
+              return stepDone(errors.invalidParametersFormat(
+                'There are events referring to the deleted items ' +
+                'and the `mergeEventsWithParent` parameter is missing.',
+                null, null, {dontNotifyAirbrake: true}));
             }
 
             stepDone();
