@@ -92,8 +92,10 @@ MethodContext.prototype.retrieveUser = function (callback) {
 //TODO: rename or split to match custom auth step
 MethodContext.prototype.retrieveExpandedAccess = function (callback) {
   if (! this.accessToken && ! this.access) {
-    return callback(errors.invalidAccessToken('The access token is missing: expected an ' +
-        '"Authorization" header or an "auth" query string parameter.'));
+    return callback(errors.invalidAccessToken(
+      'The access token is missing: expected an ' +
+        '"Authorization" header or an "auth" query string parameter.')
+      , null, {dontNotifyAirbrake: true});
   }
 
   async.waterfall([
