@@ -346,7 +346,7 @@ describe('auth', function () {
       return basePath(username) + '/logout';
     }
 
-    it('must terminate the access session', function (done) {
+    it('must terminate the access session and fail to logout a second time (session already expired)', function (done) {
       var token;
       async.series([
           function (stepDone) {
@@ -365,6 +365,8 @@ describe('auth', function () {
             });
           },
           function (stepDone) {
+            // Session was already closed
+            // Trying to logout a second time should fail
             request.post(path(user.username)).send({})
             .set('authorization', token).end(function (err, res) {
               validation.checkError(res, {
