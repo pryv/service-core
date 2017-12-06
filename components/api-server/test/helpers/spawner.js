@@ -1,0 +1,325 @@
+// @flow
+
+const bluebird = require('bluebird');
+const lodash = require('lodash');
+const url = require('url');
+const child_process = require('child_process');
+const msgpack = require('msgpack5')();
+
+// Set DEBUG=spawner to see these messages.
+const debug = require('debug')('spawner');
+
+const PRESPAWN_LIMIT = 2; 
+
+// Spawns instances of api-server for tests. Listening port is chosen at random; 
+// settings are either default or what you pass into the #spawn function. 
+// 
+class SpawnContext {
+  basePort: number; 
+  
+  pool: Array<ProcessProxy>;
+  
+  constructor() {
+    this.basePort = 3000;
+    
+    this.pool = []; 
+    
+    this.prespawn(); 
+  }
+  
+  // Prespawns processes up to PRESPAWN_LIMIT.
+  //
+  prespawn() {
+    while (this.pool.length < PRESPAWN_LIMIT) {
+      debug('Forking a new child...');
+      
+      const childProcess = child_process.fork('test/helpers/child_process');
+      const proxy = new ProcessProxy(childProcess, this);
+      
+      this.pool.push(proxy);
+    }
+  }
+  
+  // Spawns a server instance. 
+  //
+  async spawn(): Promise<Server> {
+    // Find a port to use
+    // TODO Free ports once done.
+    const port = this.allocatePort(); 
+    
+    // Obtain a process proxy
+    const process = this.getProcess(); 
+    
+    // Create settings for this new instance.
+    const settings = {
+      port: port,
+    };
+    
+    // Specialize the server we've started using the settings above.
+    await process.startServer(settings);
+    
+    const baseUrl = `http://localhost:${port}/`;
+    debug(`spawned a child at ${baseUrl}`);
+    
+    // Return to our caller - server should be up and answering at this point. 
+    return new Server(baseUrl, process);
+  }
+  
+  // Returns the next free port to use for testing. 
+  //
+  allocatePort(): number {
+    // Simple strategy: Keep increasing port numbers. 
+    const nextPort = this.basePort; 
+    
+    this.basePort += 1; 
+    
+    // If this fires, we might reconsider the simple implementation here. 
+    if (this.basePort > 9000) throw new Error('AF: port numbers are <= 9000');
+    
+    return nextPort;
+  }
+  
+  // Spawns and returns a process to use for testing. This will probably spawn
+  // processes ahead of time in the background and return the next process from 
+  // the internal prespawn pool. 
+  // 
+  getProcess(): ProcessProxy {
+    this.prespawn();
+    // TODO call this again upon process death
+    
+    if (this.pool.length <= 0) throw new Error('AF: pool is not empty');
+    
+    const proxy = this.pool.shift(); 
+    return proxy; 
+  }
+  
+  // Spawns `n` instances at different listening ports. See #spawn.
+  // 
+  spawn_multi(n: number): Array<Promise<Server>> {
+    if (n <= 0) throw new Error('AF: n expected to be > 0');
+    
+    return lodash.times(n, () => this.spawn());
+  }
+  
+  // Called by the ProcessProxy when the child it is connected to exits. This 
+  // exists to allow prespawning to catch up. 
+  //
+  onChildExit() {
+    this.prespawn();
+  }
+}
+
+// A proxy to the processes we launch. This class will care for the child
+// processes and manage their lifecycle. It also provides a type-safe interface
+// to messages that can be sent to the process. 
+// 
+class ProcessProxy {
+  childProcess: child_process.ChildProcess; 
+  pool: SpawnContext; 
+  
+  started: Fuse; 
+  exited: Fuse; 
+  
+  constructor(childProcess: child_process.ChildProcess, pool: SpawnContext) {
+    this.childProcess = childProcess;
+    this.pool = pool; 
+    
+    this.started = new Fuse(); 
+    this.exited = new Fuse(); 
+    
+    this.registerEvents(); 
+  }
+  
+  registerEvents() {
+    const child = this.childProcess;
+    
+    child.on('error', (err) => this.onChildError(err));
+    child.on('exit', () => this.onChildExit());
+    
+    child.on('message', (wire) => this.dispatchChildMessage(wire));
+  }
+  
+  dispatchChildMessage(wireMsg) {
+    const [cmd, ...args] = msgpack.decode(wireMsg);
+    
+    switch(cmd) {
+      case 'int_started': 
+        this.onChildStarted();
+        break; 
+      default: 
+        debug('received unknown message: ', cmd);
+    }
+  }
+  
+  onChildError(err: mixed) {
+    debug(err);
+  }
+  onChildExit() {
+    debug('child exited');
+    this.pool.onChildExit();
+  }
+  
+  onChildStarted() {
+    debug('child started');
+    this.started.burn(); 
+  }
+  
+  // Starts the express/socket.io server with the settings given. 
+  // 
+  async startServer(settings: mixed): Promise<void> {
+    this.sendToChild('int_startServer', settings);
+
+    await this.started.wait(); 
+    return;
+  }
+  
+  // Terminates the associated child process; progressing from SIGTERM to SIGKILL. 
+  // 
+  async terminate(): Promise<mixed> {
+    const child = this.childProcess;
+    
+    child.kill('SIGTERM');
+    try {
+      await this.exited.wait(1000);
+    }
+    catch(err) {
+      child.kill('SIGKILL');
+    }
+  }
+  
+  sendToChild(msg: string, ...args: any) {
+    const child = this.childProcess; 
+    child.send(
+      msgpack.encode([msg, ...args]));
+  }
+}
+
+class Server {
+  baseUrl: string; 
+  process: ProcessProxy;
+  
+  constructor(baseUrl: string, proxy: ProcessProxy) {
+    this.baseUrl = baseUrl;
+    this.process = proxy; 
+  }
+  
+  // Stops the server as soon as possible. Eventually returns either `true` (for
+  // when the process could be stopped) or `false` for when the child could not
+  // be terminated. 
+  // 
+  async stop(): Promise<boolean> {
+    debug('stop called')
+    try {
+      debug('stopping child...');
+      await this.process.terminate(); 
+      debug('child stopped.');
+      
+      return true; 
+    }
+    catch (err) {
+      return false; 
+    }
+  }
+  
+  url(path?: string): string {
+    return new url.URL(path || '', this.baseUrl).toString();
+  }
+}
+
+class Waiter {
+  promise: Promise<void>;
+  resolve: () => void; 
+  reject: (err: Error) => void; 
+  timeout: ?number;
+  
+  done: boolean; 
+  
+  constructor(timeout?: number) {
+    this.done = false; 
+    
+    this.promise = new bluebird((res, rej) => {
+      this.resolve = res; 
+      this.reject = rej;
+      
+      if (timeout != null && timeout > 0) {
+        this.timeout = setTimeout(() => this.timeoutFired(), timeout);
+      }
+    });
+  }
+  
+  timeoutFired() {
+    this.reject(
+      new Error('timeout'));
+  }
+  
+  release() {
+    if (this.done) throw new Error('AF: waiter is not released');
+    this.done = true; 
+    
+    this.resolve(); 
+  }
+}
+class ConditionVariable {
+  waiters: Array<Waiter>;
+  
+  constructor() {
+    this.waiters = []; 
+  }
+  
+  wait(timeout?: number): Promise<void> {
+    const waiter = new Waiter(timeout);
+      
+    this.waiters.push(waiter);
+    
+    return waiter.promise; 
+  }
+  
+  broadcast() {
+    const list = this.waiters; 
+    
+    // release this reference before broadcasting; this avoids somehow
+    // broadcasting twice during the first broadcast. 
+    this.waiters = []; 
+    
+    for (const waiter of list) {
+      waiter.release(); 
+    }
+  }
+}
+
+// A fuse that can be burnt once. As long as it is not burnt, waiters can
+// register to be nofitied when the fuse burns. Once burnt, it always notifies
+// immediately. Like a combination of a boolean and a ConditionVariable.
+//
+class Fuse {
+  cv: ConditionVariable; 
+  burnt: boolean; 
+  
+  constructor() {
+    this.burnt = false; 
+    this.cv = new ConditionVariable(); 
+  }
+  
+  async wait(timeout?: number): Promise<void> {
+    if (this.burnt) return; 
+    
+    await this.cv.wait(timeout); 
+    return;
+  }
+  
+  burn() {
+    this.burnt = true; 
+    this.cv.broadcast();
+  }
+  
+  isBurnt(): boolean {
+    return this.burnt;
+  }
+}
+
+
+module.exports = {
+  SpawnContext: SpawnContext,
+  Server: Server, 
+  ConditionVariable: ConditionVariable,
+};

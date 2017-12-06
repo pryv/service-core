@@ -1,3 +1,5 @@
+// @flow
+
 /*global describe, before, beforeEach, afterEach, it */
 
 /**
@@ -20,6 +22,8 @@ const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 const R = require('ramda');
 const assert = require('chai').assert; 
+const bluebird = require('bluebird');
+const { SpawnContext, Server, ConditionVariable } = require('./helpers/spawner');
 
 describe('Socket.IO', function () {
 
@@ -155,7 +159,6 @@ describe('Socket.IO', function () {
   });
 
   describe('calling API methods', function () {
-
     afterEach(function (done) {
       // restart server if crashed
       if (server.crashed()) {
@@ -349,5 +352,102 @@ describe('Socket.IO', function () {
 
     });
   });
+  
+  describe('when spawning 2 api-server processes, A and B', () => {
+    let context = new SpawnContext(); 
+    
+    // Servers A and B, length will be 2
+    let servers: Array<Server>; 
+    
+    // Aggregate user data to be more contextual
+    const user: User = {
+      name: testData.users[0].username,
+      token: token, 
+    };
+    
+    // Client connections that we make. If you add your connection here, it 
+    // will get #close()d. 
+    const connections = []; 
+    
+    // Closes all `connections` after each test. 
+    afterEach(() => {
+      for (const conn of connections) {
+        conn.disconnect(); 
+      }
+    });
+    
+    // Spawns A and B. 
+    beforeEach(async () => {
+      servers = await bluebird.all( context.spawn_multi(2) );
+    });
+    
+    // Stops A and B. 
+    afterEach(() => {
+      return bluebird.all(
+        servers.map( s => s.stop() ));
+    });
+    
+    it('changes made in A notify clients of B', async () => {
+      const eventReceived = new ConditionVariable(); 
+      
+      const conn1 = connectTo(servers[0], user);
+      const conn2 = connectTo(servers[1], user);
+      
+      const msgs = [];
+      conn2.on('eventsChanged', () => {
+        msgs.push('ec'); 
+        eventReceived.broadcast(); 
+      }); 
+      
+      await addEvent(conn1);
+      await eventReceived.wait(1000);
+      
+      assert.deepEqual(msgs, ['ec']);
+    });
+    it.skip('changes made in A (still) notify clients of A', () => {
+      
+    });
+    it.skip('should not notify twice, even if changes are process-local', () => {
+      
+    });
+    
+    function connectTo(server: Server, user: User): SocketIO$Client {
+      const params = { auth: user.token };
+      const namespace = `/${user.name}`;
+      
+      const url = server.url(namespace) + 
+        `?${queryString.stringify(params)}`;
+      
+      const connectOpts = {
+        'reconnect': false,             // Once connection is interrupted, it stays interrupted.
+        'force new connection': true,   // Connect again, don't reuse old connections.
+      };
+        
+      const conn = io.connect(url, connectOpts);
+      
+      // Automatically add all created connections to the cleanup array: 
+      connections.push(conn);
+      
+      return conn; 
+    }
+    function addEvent(conn): Promise<void> {
+      const attributes = {
+        type: 'mass/kg', 
+        content: '1',
+      };
+      return bluebird.fromCallback(
+        (cb) => conn.emit('events.create', attributes, cb));
+    }
+    
+  });
 
 });
+type User = {
+  name: string, 
+  token: string, 
+};
+type SocketIO$Client = {
+  on: (event: string, cb: () => void) => void;
+  emit: (event: string, params: any, cb: () => void) => void;
+};
+
