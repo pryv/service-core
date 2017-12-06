@@ -165,8 +165,7 @@ describe('Socket.IO', function () {
     });
 
     it('must properly route method call messages for events and return the results, ' +
-      'including meta',
-        function (done) {
+      'including meta',function (done) {
       ioCons.con = connect(namespace, {auth: token});
       var params = {
         sortAscending: true,
@@ -179,10 +178,7 @@ describe('Socket.IO', function () {
         validation.sanitizeEvents(result.events);
 
         result.events.should.eql(validation.removeDeletionsAndHistory(_.clone(testData.events)
-          .sort(function (a, b) {
-            return a.time - b.time;
-          }
-        )));
+          .sort(function (a, b) { return a.time - b.time; } )));
 
         // check deletions
         let deleted = R.filter(R.where({deleted: R.equals(true)}), testData.events);
@@ -210,8 +206,7 @@ describe('Socket.IO', function () {
         done();
       });
     });
-    it('must properly route method call messages for streams and return the results',
-        function (done) {
+    it('must properly route method call messages for streams and return the results', function (done) {
       ioCons.con = connect(namespace, {auth: token});
       ioCons.con.emit('streams.get', {state: 'all'}, function (err, result) {
         validation.checkSchema(result, streamsMethodsSchema.get.result);
