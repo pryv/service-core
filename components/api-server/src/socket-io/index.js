@@ -42,7 +42,7 @@ function setupSocketIO(
   server: http$Server, logger: Logger, 
   notifications: EventEmitter, api: API, 
   storageLayer: StorageLayer, 
-  customAuthStepFn: Function, 
+  customAuthStepFn: ?Function, 
 ) {
   const io = socketIO.listen(server, {
     resource: Paths.SocketIO,

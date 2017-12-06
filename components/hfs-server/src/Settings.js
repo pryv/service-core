@@ -46,7 +46,7 @@ class ConfigValue {
   }
   
   /** 
-   * Returns the configuration value as a number. 
+   * Returns the configuration value as an unspecified object. 
    */
   obj(): Object {
     const value = this.value; 

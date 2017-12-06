@@ -211,6 +211,7 @@ Object.keys(customFormats).forEach(function (key) {
   var format = customFormats[key];
   convict.addFormat(key, format.validate, format.coerce);
 });
+config.customFormats = customFormats;
 
 /**
  * Loads configuration settings from (last takes precedence):
@@ -227,6 +228,22 @@ Object.keys(customFormats).forEach(function (key) {
  * @returns {Object} The loaded settings
  */
 config.load = function (configDefault) {
+  const instance = setup(configDefault);
+  
+  var settings = instance.get();
+
+  loadCustomExtensions(settings);
+
+  if (settings.printConfig) {
+    print('Configuration settings loaded', settings);
+  }
+
+  return settings;
+};
+
+// For internal use only: loads convict instance, then validates and returns it. 
+//
+function setup(configDefault) {
   autoSetEnvAndArg(this.schema);
 
   var instance = convict(this.schema);
@@ -242,16 +259,8 @@ config.load = function (configDefault) {
   }
 
   instance.validate();
-
-  var settings = instance.get();
-
-  loadCustomExtensions(settings);
-
-  if (settings.printConfig) {
-    print('Configuration settings loaded', settings);
-  }
-
-  return settings;
+  
+  return instance; 
 
   function loadFile(fPath) {
     if (! fs.existsSync(fPath)) {
@@ -260,7 +269,9 @@ config.load = function (configDefault) {
       instance.loadFile(fPath);
     }
   }
-};
+
+}
+config.setup = setup;
 
 config.printSchemaAndExitIfNeeded = function () {
   process.argv.slice(2).forEach(function (arg) {

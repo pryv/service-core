@@ -357,7 +357,7 @@ describe('Socket.IO', function () {
     let context = new SpawnContext(); 
     
     // Servers A and B, length will be 2
-    let servers: Array<Server>; 
+    let servers: Array<Server> = []; 
     
     // Aggregate user data to be more contextual
     const user: User = {
@@ -383,8 +383,15 @@ describe('Socket.IO', function () {
     
     // Stops A and B. 
     afterEach(() => {
+      // If startup has failed, don't teardown.
+      if (servers.length <= 0) return; 
+
+      // Make sure that we end up with `servers` === []
+      const stopList = servers; 
+      servers = []; 
+      
       return bluebird.all(
-        servers.map( s => s.stop() ));
+        stopList.map( s => s.stop() ));
     });
     
     it('changes made in A notify clients of B', async () => {

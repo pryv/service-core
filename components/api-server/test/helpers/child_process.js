@@ -4,7 +4,8 @@ const process = require('process');
 const debug = require('debug')('test-child');
 const msgpack = require('msgpack5')();
 
-debug('hi from child');
+const config = require('../../src/config');
+const Server = require('../../src/server');
 
 process.on('message', (wireMessage) => {
   const message = msgpack.decode(wireMessage);
@@ -13,10 +14,18 @@ process.on('message', (wireMessage) => {
   const [cmd, ...args] = message; 
   switch(cmd) {
     case 'int_startServer': 
-      sendToParent('int_started');
+      intStartServer(args[0]); 
       break; 
   }
 });
+
+async function intStartServer(settings: mixed) {
+  const server = new Server(); 
+  await server.start(); 
+  
+  sendToParent('int_started');
+}
+
 function sendToParent(cmd, ...args) {
   process.send(
     msgpack.encode([cmd, ...args]));

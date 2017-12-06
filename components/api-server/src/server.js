@@ -16,7 +16,7 @@ const utils = require('components/utils');
 const Notifications = require('./Notifications');
 const API = require('./API');
 
-const config = require('./config');
+const Settings = require('./settings');
 
 import type { LogFactory, Logger } from 'components/utils';
 import type { ExpressAppLifecycle } from './expressApp';
@@ -48,7 +48,7 @@ export type { StorageLayer };
 //    server.start(); 
 // 
 class Server {
-  settings: any; 
+  settings: Settings; 
   
   logFactory: LogFactory; 
   logger: Logger; 
@@ -64,39 +64,18 @@ class Server {
   
   // Load settings and setup base configuration. 
   //
-  init() {
-    // load config settings
-    config.printSchemaAndExitIfNeeded();
-    const settings = this.settings = config.load();
+  constructor(settings: Settings) {
+    this.settings = settings;
     
-    const logging = utils.logging(settings.logs); 
+    const logging = utils.logging(settings.get('logs').obj()); 
     this.logger = logging.getLogger('api-server');
     this.logFactory = logging.getLogger;
     
     this.api = new API(); 
     this.systemAPI = new API(); 
-    dependencies.register({
-      api: this.api,
-      // use separate API instance to avoid any possible security issue
-      systemAPI: this.systemAPI 
-    });
     
-    // register base dependencies (aka global variables)
-    dependencies.register({
-      // settings
-      authSettings: settings.auth,
-      auditSettings: settings.audit,
-      eventFilesSettings: settings.eventFiles,
-      eventTypesSettings: settings.eventTypes,
-      httpSettings: settings.http,
-      servicesSettings: settings.services,
-      customExtensionsSettings: settings.customExtensions,
-
-      // misc utility
-      serverInfo: require('../package.json'),
-      logging: logging, 
-    });
-
+    // We're going to fade the use of 'logging' out, so we only store it there:
+    dependencies.register({ logging: logging });
   }
   
   // Setup this.storageLayer.
@@ -105,7 +84,7 @@ class Server {
     const settings = this.settings;
 
     const database = new storage.Database(
-      settings.database, 
+      settings.get('database').obj(), 
       this.logFactory('database'));
 
     // 'StorageLayer' is a component that contains all the vertical registries
@@ -113,17 +92,18 @@ class Server {
     this.storageLayer = {
       versions: new storage.Versions(
         database, 
-        settings.eventFiles.attachmentsDirPath, 
+        settings.get('eventFiles.attachmentsDirPath').str(), 
         this.logFactory('versions')),
       passwordResetRequests: new storage.PasswordResetRequests(
         database,{
-          maxAge: settings.auth.passwordResetRequestMaxAge }),
+          maxAge: settings.get('auth.passwordResetRequestMaxAge').num() }),
       sessions: new storage.Sessions(database, {
-        maxAge: settings.auth.sessionMaxAge }),
+        maxAge: settings.get('auth.sessionMaxAge').num() }),
       users: new storage.Users(database),
       accesses: new storage.user.Accesses(database),
       eventFiles: new storage.user.EventFiles(
-        settings.eventFiles, this.logFactory('eventFiles')),
+        settings.get('eventFiles').obj(), 
+        this.logFactory('eventFiles')),
       events: new storage.user.Events(database),
       followedSlices: new storage.user.FollowedSlices(database),
       profile: new storage.user.Profile(database),
@@ -151,17 +131,31 @@ class Server {
     });
   }
   
-  // Start the server. This function never returns. 
+  // Start the server. 
   //
   async start() {
-    try {
-      this.init(); 
-    }
-    catch (err) {
-      console.error('Could not parse configuration; Server failed. Please see below for details:'); // eslint-disable-line no-console
-      console.log(err); // eslint-disable-line no-console
-      process.exit(1);
-    }
+    const settings = this.settings; 
+    
+    dependencies.register({
+      api: this.api,
+      // use separate API instance to avoid any possible security issue
+      systemAPI: this.systemAPI 
+    });
+    
+    // register base dependencies (aka global variables)
+    dependencies.register({
+      // settings
+      authSettings: settings.get('auth').obj(),
+      auditSettings: settings.get('audit').obj(),
+      eventFilesSettings: settings.get('eventFiles').obj(),
+      eventTypesSettings: settings.get('eventTypes').obj(),
+      httpSettings: settings.get('http').obj(),
+      servicesSettings: settings.get('services').obj(),
+      customExtensionsSettings: settings.get('customExtensions').obj(),
+
+      // misc utility
+      serverInfo: require('../package.json'),
+    });
     
     const logger = this.logger; 
     
@@ -233,22 +227,25 @@ class Server {
     const api = this.api; 
     const storageLayer = this.storageLayer;
     const settings = this.settings; 
-    const customAuthFn = settings.customExtensions.customAuthFn; 
+    let customAuthStepFn = null; 
     
+    if (settings.has('customExtensions.customAuthStepFn')) {
+      customAuthStepFn = settings.get('customExtensions.customAuthStepFn').fun(); 
+    }
+        
     const socketIOsetup = require('./socket-io');
     socketIOsetup(
       server, logFactory('socketIO'), 
       notificationBus, api, 
-      storageLayer, customAuthFn);
+      storageLayer, customAuthStepFn);
   }
   
   async startListen(server: http$Server, axonSocket: EventEmitter) {
     const settings = this.settings; 
-    const http = settings.http; 
     const logger = this.logger; 
     
-    const port: number = Number(http.port);
-    const hostname: string = http.ip; 
+    const port = settings.get('http.port').num();
+    const hostname = settings.get('http.ip').str(); 
     
     // All listen() methods can take a backlog parameter to specify the maximum
     // length of the queue of pending connections. The actual length will be
@@ -291,8 +288,8 @@ class Server {
   async openAxonSocket(): EventEmitter {
     const logger = this.logger; 
     const settings = this.settings; 
-    const tcpMessaging = settings.tcpMessaging;
-
+    const tcpMessaging = settings.get('tcpMessaging').obj();
+    
     try {
       const socket = await bluebird.fromCallback(
         (cb) => utils.messaging.openPubSocket(tcpMessaging, cb));
@@ -372,7 +369,7 @@ class Server {
     
     var workerRunning = false;
     var cronJob = new CronJob({
-      cronTime: settings.nightlyScriptCronTime || '00 15 2 * * *',
+      cronTime: settings.get('nightlyScriptCronTime').str() || '00 15 2 * * *',
       onTick: function () {
         if (workerRunning) {
           return;

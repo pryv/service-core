@@ -52,7 +52,10 @@ class SpawnContext {
     
     // Create settings for this new instance.
     const settings = {
-      port: port,
+      http: {
+        port: port,           // use this port for http/express
+      },
+      tcpMessaging: null,     // disable axon messaging
     };
     
     // Specialize the server we've started using the settings above.
