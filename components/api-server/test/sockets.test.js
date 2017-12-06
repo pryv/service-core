@@ -164,8 +164,7 @@ describe('Socket.IO', function () {
       done();
     });
 
-    it('must properly route method call messages for events and return the results, ' +
-      'including meta',function (done) {
+    it('must properly route method call messages for events and return the results, including meta',function (done) {
       ioCons.con = connect(namespace, {auth: token});
       var params = {
         sortAscending: true,
@@ -176,9 +175,11 @@ describe('Socket.IO', function () {
       ioCons.con.emit('events.get', params, function (err, result) {
         validation.checkSchema(result, eventsMethodsSchema.get.result);
         validation.sanitizeEvents(result.events);
-
-        result.events.should.eql(validation.removeDeletionsAndHistory(_.clone(testData.events)
-          .sort(function (a, b) { return a.time - b.time; } )));
+        
+        const testEvents = _.clone(testData.events);
+        const chronologicalEvents = testEvents.sort( (a, b) => a.time - b.time );
+        const expectedEvents = validation.removeDeletionsAndHistory(chronologicalEvents);
+        result.events.should.eql(expectedEvents);
 
         // check deletions
         let deleted = R.filter(R.where({deleted: R.equals(true)}), testData.events);
