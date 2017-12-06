@@ -394,7 +394,7 @@ describe('Socket.IO', function () {
         stopList.map( s => s.stop() ));
     });
     
-    it('changes made in A notify clients of B', async () => {
+    it.skip('changes made in A notify clients of B', async () => {
       const eventReceived = new ConditionVariable(); 
       
       const conn1 = connectTo(servers[0], user);

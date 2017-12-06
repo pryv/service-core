@@ -61,7 +61,7 @@ class ConfigValue {
   /** 
    * Returns the configuration value as an unspecified object. 
    */
-  obj(): mixed {
+  obj(): {} {
     const value = this.value; 
     
     // NOTE Flow doesn't want values to be null, that's why the second check is
@@ -86,6 +86,14 @@ class ConfigValue {
     throw this._typeError('function');
   }
   
+  // Returns true if the value exists, meaning that it is not null or undefined.
+  // 
+  exists(): boolean {
+    const value = this.value;  
+
+    return value != null; 
+  }
+  
   _typeError(typeName: string) {
     const name = this.name; 
     
@@ -93,12 +101,12 @@ class ConfigValue {
   }
 }
 
-opaque type ConvictConfig = Object; 
+opaque type ConvictConfig = Object; // TODO can we narrow this down?
 
 // Handles loading and access to project settings. 
 //
 class Settings {
-  convict: ConvictConfig; // TODO can we narrow this down?
+  convict: ConvictConfig; 
   
   // Loads the settings for production use. This means that we follow the order
   // defined in config.load.

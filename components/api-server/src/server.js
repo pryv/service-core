@@ -174,6 +174,7 @@ class Server {
 
     // start TCP pub messaging
     const axonSocket = await this.openAxonSocket();
+    this.setupNotificationBus(axonSocket);
 
     // register API methods
     [
@@ -229,8 +230,9 @@ class Server {
     const settings = this.settings; 
     let customAuthStepFn = null; 
     
-    if (settings.has('customExtensions.customAuthStepFn')) {
-      customAuthStepFn = settings.get('customExtensions.customAuthStepFn').fun(); 
+    const configAuthStep = settings.get('customExtensions.customAuthStepFn');
+    if (configAuthStep.exists()) {
+      customAuthStepFn = configAuthStep.obj(); 
     }
         
     const socketIOsetup = require('./socket-io');
@@ -288,15 +290,16 @@ class Server {
   async openAxonSocket(): EventEmitter {
     const logger = this.logger; 
     const settings = this.settings; 
+
     const tcpMessaging = settings.get('tcpMessaging').obj();
+    const host = settings.get('tcpMessaging.host').str();
+    const port = settings.get('tcpMessaging.port').num();
     
     try {
       const socket = await bluebird.fromCallback(
         (cb) => utils.messaging.openPubSocket(tcpMessaging, cb));
         
-      logger.info(`TCP pub socket ready on ${tcpMessaging.host}:${tcpMessaging.port}`);
-      this.setupNotificationBus(socket);
-      
+      logger.info(`TCP pub socket ready on ${host}:${port}`);
       return socket; 
     }
     catch (err) {
