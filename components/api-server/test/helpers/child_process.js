@@ -1,10 +1,8 @@
 // @flow
 
-const process = require('process');
 const debug = require('debug')('test-child');
 const msgpack = require('msgpack5')();
 
-const config = require('../../src/config');
 const Server = require('../../src/server');
 
 process.on('message', (wireMessage) => {
@@ -20,7 +18,7 @@ process.on('message', (wireMessage) => {
 });
 
 async function intStartServer(settings: mixed) {
-  const server = new Server(); 
+  const server = new Server(settings); 
   await server.start(); 
   
   sendToParent('int_started');

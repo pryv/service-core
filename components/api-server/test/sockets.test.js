@@ -78,8 +78,8 @@ describe('Socket.IO', function () {
       }
     ], function (err) {
       if (err) { return done(err); }
-      token = request.token;
-      otherToken = otherRequest.token;
+      token = request && request.token;
+      otherToken = otherRequest && otherRequest.token;
       done();
     });
   });
@@ -275,7 +275,7 @@ describe('Socket.IO', function () {
           should.not.exist(err);
 
           setTimeout(function () { // pass turn to make sure notifs are received
-            con2NotifsCount.should.eql(1, 'expected notifications');
+            assert.equal(con2NotifsCount, 1, 'expected 1 notification');
 
             done();
           }, 0);
@@ -302,8 +302,8 @@ describe('Socket.IO', function () {
           should.not.exist(err);
 
           setTimeout(function () { // pass turn to make sure notifs are received
-            con2NotifsCount.should.eql(1, 'expected notifications');
-            otherConNotifsCount.should.eql(0, 'unexpected notifications');
+            assert.equal(con2NotifsCount, 1);
+            assert.equal(otherConNotifsCount, 0);
 
             done();
           }, 0);
@@ -340,9 +340,7 @@ describe('Socket.IO', function () {
       function onAllConnected(conns, cb) {
         let needConnectEvents = conns.length;
         for (const conn of conns) {
-          conn.on('connect', (err) => {
-            if (err) cb(err);
-            
+          conn.on('connect', () => {            
             needConnectEvents -= 1; 
             
             if (needConnectEvents <= 0) cb(); 
@@ -359,8 +357,10 @@ describe('Socket.IO', function () {
     // Servers A and B, length will be 2
     let servers: Array<Server> = []; 
     
+    if (token == null) throw new Error('AF: token must be set');
+    
     // Aggregate user data to be more contextual
-    const user: User = {
+    const user = {
       name: testData.users[0].username,
       token: token, 
     };

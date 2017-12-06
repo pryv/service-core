@@ -244,13 +244,14 @@ config.load = function (configDefault) {
 // For internal use only: loads convict instance, then validates and returns it. 
 //
 function setup(configDefault) {
-  autoSetEnvAndArg(this.schema);
+  autoSetEnvAndArg(config.schema);
 
-  var instance = convict(this.schema);
+  var instance = convict(config.schema);
 
   var filePath = instance.get('config') ||
                  configDefault ||
                  'config/' + instance.get('env') + '.json';
+
   loadFile(filePath);
 
   var overridesFilePath = instance.get('configOverrides');
@@ -269,7 +270,6 @@ function setup(configDefault) {
       instance.loadFile(fPath);
     }
   }
-
 }
 config.setup = setup;
 
