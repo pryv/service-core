@@ -97,9 +97,8 @@ class Settings {
   get(key: string): ConfigValue {
     const configuration = this.convict; 
     
-    if (! configuration.has(key)) {
-      throw new Error(`Configuration for '${key}' missing.`);
-    }
+    if (! configuration.has(key)) 
+      return new MissingValue(key);
     
     // assert: `config` contains a value for `key`
     const value = configuration.get(key);
@@ -222,4 +221,19 @@ class ConfigValue {
   }
 }
 
-
+class MissingValue extends ConfigValue {
+  // NOTE maybe we should define a common interface rather than inheriting 
+  //   in this way. Oh well.
+  
+  message: string; 
+  
+  constructor(key: string) {
+    super(key, null);
+    
+    this.message = `Configuration for '${key}' missing.`;
+  }
+  
+  exists(): false {
+    return false; 
+  }
+}

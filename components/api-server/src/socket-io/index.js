@@ -36,13 +36,15 @@ import type { StorageLayer } from '../server';
 
 import type { SocketIO$Handshake } from './Manager';
 
+import type { CustomAuthFunction } from '../settings'
+
 // Initializes the SocketIO subsystem. 
 //
 function setupSocketIO(
   server: http$Server, logger: Logger, 
   notifications: EventEmitter, api: API, 
   storageLayer: StorageLayer, 
-  customAuthStepFn: ?Function, 
+  customAuthStepFn: ?CustomAuthFunction, 
 ) {
   const io = socketIO.listen(server, {
     resource: Paths.SocketIO,

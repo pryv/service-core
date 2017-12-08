@@ -228,12 +228,7 @@ class Server {
     const api = this.api; 
     const storageLayer = this.storageLayer;
     const settings = this.settings; 
-    let customAuthStepFn = null; 
-    
-    const configAuthStep = settings.get('customExtensions.customAuthStepFn');
-    if (configAuthStep.exists()) {
-      customAuthStepFn = configAuthStep.obj(); 
-    }
+    const customAuthStepFn = settings.getCustomAuthFunction();
         
     const socketIOsetup = require('./socket-io');
     socketIOsetup(
@@ -270,10 +265,13 @@ class Server {
     server.url = serverUrl;
 
     // TEST: execute test setup instructions if any
-    if (process.env.NODE_ENV === 'test') {
+    const instanceTestSetup = settings.get('instanceTestSetup'); 
+    if (process.env.NODE_ENV === 'test' && instanceTestSetup.exists()) {
+      console.log('testSetup', instanceTestSetup.str());
+
       try {
         require('components/test-helpers')
-          .instanceTestSetup.executeIfAny(settings, axonSocket);
+          .instanceTestSetup.execute(instanceTestSetup.str(), axonSocket);
       } catch (err) {
         logger.warn('Error executing instance test setup instructions: ' + err.message);
       }

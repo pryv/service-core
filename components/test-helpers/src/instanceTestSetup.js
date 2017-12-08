@@ -29,14 +29,14 @@ exports.clear = function (settings: any) {
 /**
  * @throws Any error encountered deserializing or calling the setup function
  */
-exports.executeIfAny = function (settings: any, messagingSocket: any) {
-  if (! settings.instanceTestSetup) { return; }
-
-  var obj = parse(settings.instanceTestSetup);
-  if (obj.context) {
+exports.execute = function (testSetup: string, messagingSocket: any) {
+  var obj = parse(testSetup);
+  
+  if (obj.context != null) {
     // inject TCP messaging socket to allow passing data back to test process
     obj.context.messagingSocket = messagingSocket;
   }
+  
   obj.execute();
 };
 
