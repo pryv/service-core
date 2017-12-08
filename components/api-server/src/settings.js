@@ -5,103 +5,13 @@ const fs = require('fs');
 
 const config = require('./config');
 
-/** Encapsulates values that are obtained from the configuration (file/...) using
- * a convict configuration for this project. 
- *
- * Example: 
- * 
- *    var settings = Settings.load(); 
- *    var value = settings.get('logs.console.active');
- *    value.bool() //=> true (or a type error)
- */
-class ConfigValue {
-  name: string; 
-  value: mixed; 
-  
-  constructor(name: string, value: mixed) {
-    this.name = name; 
-    this.value = value; 
-  }
-  
-  // REturns the configuration value as a boolean. 
-  // 
-  bool(): boolean {
-    const value = this.value; 
-    if (typeof value === 'boolean') {
-      return value; 
-    }
-    
-    throw this._typeError('boolean');
-  }
-  
-  /** 
-   * Returns the configuration value as a string. 
-   */
-  str(): string {
-    const value = this.value; 
-    if (typeof value === 'string') {
-      return value; 
-    }
-    
-    throw this._typeError('string');
-  }
-  
-  /** 
-   * Returns the configuration value as a number. 
-   */
-  num(): number {
-    const value = this.value; 
-    if (typeof value === 'number') {
-      return value; 
-    }
-    
-    throw this._typeError('number');
-  }
-  
-  /** 
-   * Returns the configuration value as an unspecified object. 
-   */
-  obj(): {} {
-    const value = this.value; 
-    
-    // NOTE Flow doesn't want values to be null, that's why the second check is
-    // also needed. (typeof null === 'object'...)
-    if (typeof value === 'object' && value != null) {
-      return value; 
-    }
-    
-    throw this._typeError('object');
-  }
-
-  /** 
-   * Returns the configuration value as an unspecified object. 
-   */
-  fun(): (...a: Array<mixed>) => void {
-    const value = this.value;  
-    
-    if (typeof value === 'function') {
-      return value; 
-    }
-    
-    throw this._typeError('function');
-  }
-  
-  // Returns true if the value exists, meaning that it is not null or undefined.
-  // 
-  exists(): boolean {
-    const value = this.value;  
-
-    return value != null; 
-  }
-  
-  _typeError(typeName: string) {
-    const name = this.name; 
-    
-    return new Error(`Configuration value type mismatch: ${name} should be of type ${typeName}, but isn't.`); 
-  }
-}
-
 opaque type ConvictConfig = Object; // TODO can we narrow this down?
+
+import type { MethodContext } from 'components/model';
+
+// For #getCustomAuthFunction. 
+export type CustomAuthFunctionCallback = (err: any) => void; 
+export type CustomAuthFunction = (MethodContext, CustomAuthFunctionCallback) => void; 
 
 // Handles loading and access to project settings. 
 //
@@ -201,6 +111,115 @@ class Settings {
   has(key: string): boolean {
     return this.convict.has(key) && this.convict.get(key) != null;
   }
+
+  // Returns the custom auth function if one was configured. Otherwise returns
+  // null. 
+  // 
+  getCustomAuthFunction(): ?CustomAuthFunction {
+    const customAuthFunction = this.get('customExtensions.customAuthStepFn');
+    
+    if (! customAuthFunction.exists()) return null; 
+    
+    const fun = customAuthFunction.fun();
+    return fun; 
+  }
+}
+module.exports = Settings;
+
+/** Encapsulates values that are obtained from the configuration (file/...) using
+ * a convict configuration for this project. 
+ *
+ * Example: 
+ * 
+ *    var settings = Settings.load(); 
+ *    var value = settings.get('logs.console.active');
+ *    value.bool() //=> true (or a type error)
+ */
+class ConfigValue {
+  name: string; 
+  value: mixed; 
+  
+  constructor(name: string, value: mixed) {
+    this.name = name; 
+    this.value = value; 
+  }
+  
+  // REturns the configuration value as a boolean. 
+  // 
+  bool(): boolean {
+    const value = this.value; 
+    if (typeof value === 'boolean') {
+      return value; 
+    }
+    
+    throw this._typeError('boolean');
+  }
+  
+  /** 
+   * Returns the configuration value as a string. 
+   */
+  str(): string {
+    const value = this.value; 
+    if (typeof value === 'string') {
+      return value; 
+    }
+    
+    throw this._typeError('string');
+  }
+  
+  /** 
+   * Returns the configuration value as a number. 
+   */
+  num(): number {
+    const value = this.value; 
+    if (typeof value === 'number') {
+      return value; 
+    }
+    
+    throw this._typeError('number');
+  }
+  
+  /** 
+   * Returns the configuration value as an unspecified object. 
+   */
+  obj(): {} {
+    const value = this.value; 
+    
+    // NOTE Flow doesn't want values to be null, that's why the second check is
+    // also needed. (typeof null === 'object'...)
+    if (typeof value === 'object' && value != null) {
+      return value; 
+    }
+    
+    throw this._typeError('object');
+  }
+
+  /** 
+   * Returns the configuration value as an unspecified object. 
+   */
+  fun(): (...a: Array<mixed>) => void {
+    const value = this.value;  
+    
+    if (typeof value === 'function') {
+      return value; 
+    }
+    
+    throw this._typeError('function');
+  }
+  
+  // Returns true if the value exists, meaning that it is not null or undefined.
+  // 
+  exists(): boolean {
+    const value = this.value;  
+
+    return value != null; 
+  }
+  
+  _typeError(typeName: string) {
+    const name = this.name; 
+    
+    return new Error(`Configuration value type mismatch: ${name} should be of type ${typeName}, but isn't.`); 
+  }
 }
 
-module.exports = Settings;
+
