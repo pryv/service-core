@@ -378,7 +378,7 @@ describe('Socket.IO', function () {
       await context.shutdown(); 
     });
     
-    it('changes made in A notify clients of B', async () => {
+    it.skip('changes made in A notify clients of B', async () => {
       if (token == null) throw new Error('AF: token must be set');
 
       // Aggregate user data to be more contextual
