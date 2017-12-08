@@ -126,7 +126,7 @@ function loadCustomAuthStepFn(customExtensions) {
   
   const loader = new ExtensionLoader(defaultFolder);
   
-  if (customAuthStepFnPath != null) 
+  if (customAuthStepFnPath != null && customAuthStepFnPath != '') 
     return loader.loadFrom(customAuthStepFnPath);
     
   return loader.load('customAuthStepFn');
