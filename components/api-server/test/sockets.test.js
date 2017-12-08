@@ -1,6 +1,6 @@
 // @flow
 
-/*global describe, before, beforeEach, afterEach, it */
+/*global describe, before, beforeEach, afterEach, it, after */
 
 /**
  * Tests Socket.IO access to the API.
@@ -357,14 +357,6 @@ describe('Socket.IO', function () {
     // Servers A and B, length will be 2
     let servers: Array<Server> = []; 
     
-    if (token == null) throw new Error('AF: token must be set');
-    
-    // Aggregate user data to be more contextual
-    const user = {
-      name: testData.users[0].username,
-      token: token, 
-    };
-    
     // Client connections that we make. If you add your connection here, it 
     // will get #close()d. 
     const connections = []; 
@@ -380,21 +372,21 @@ describe('Socket.IO', function () {
     beforeEach(async () => {
       servers = await bluebird.all( context.spawn_multi(2) );
     });
-    
-    // Stops A and B. 
-    afterEach(() => {
-      // If startup has failed, don't teardown.
-      if (servers.length <= 0) return; 
-
-      // Make sure that we end up with `servers` === []
-      const stopList = servers; 
-      servers = []; 
-      
-      return bluebird.all(
-        stopList.map( s => s.stop() ));
+        
+    // Teardown for all tests
+    after(async () => {
+      await context.shutdown(); 
     });
     
-    it.skip('changes made in A notify clients of B', async () => {
+    it('changes made in A notify clients of B', async () => {
+      if (token == null) throw new Error('AF: token must be set');
+
+      // Aggregate user data to be more contextual
+      const user = {
+        name: testData.users[0].username,
+        token: token, 
+      };
+
       const eventReceived = new ConditionVariable(); 
       
       const conn1 = connectTo(servers[0], user);

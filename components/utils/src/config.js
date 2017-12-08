@@ -169,6 +169,10 @@ config.schema = {
     }
   },
   tcpMessaging: {
+    enabled: {
+      format: Boolean, 
+      default: true, 
+    },
     host: {
       format: String,
       default: 'localhost'

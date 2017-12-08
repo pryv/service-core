@@ -7,6 +7,7 @@ const childProcess = require('child_process');
 const CronJob = require('cron').CronJob;
 const dependencies = require('dependable').container({useFnAnnotations: true});
 const bluebird = require('bluebird');
+const EventEmitter = require('events');
 
 const errors = require('components/errors');
 const middleware = require('components/middleware');
@@ -16,7 +17,7 @@ const utils = require('components/utils');
 const Notifications = require('./Notifications');
 const API = require('./API');
 
-const Settings = require('./settings');
+import type { ConfigAccess } from './settings';
 
 import type { LogFactory, Logger } from 'components/utils';
 import type { ExpressAppLifecycle } from './expressApp';
@@ -29,7 +30,7 @@ import type { StorageLayer } from 'components/storage';
 //    server.start(); 
 // 
 class Server {
-  settings: Settings; 
+  settings: ConfigAccess; 
   
   logFactory: LogFactory; 
   logger: Logger; 
@@ -45,7 +46,7 @@ class Server {
   
   // Load settings and setup base configuration. 
   //
-  constructor(settings: Settings) {
+  constructor(settings: ConfigAccess) {
     this.settings = settings;
     
     const logging = utils.logging(settings.get('logs').obj()); 
@@ -271,6 +272,9 @@ class Server {
     const logger = this.logger; 
     const settings = this.settings; 
 
+    const enabled = settings.get('tcpMessaging.enabled').bool();
+    if (! enabled) return new EventEmitter(); 
+    
     const tcpMessaging = settings.get('tcpMessaging').obj();
     const host = settings.get('tcpMessaging.host').str();
     const port = settings.get('tcpMessaging.port').num();

@@ -22,7 +22,6 @@ dependencies.register({
   // settings
   authSettings: settings.auth,
   eventFilesSettings: settings.eventFiles,
-  httpSettings: settings.http,
   logsSettings: settings.logs,
 
   // misc utility

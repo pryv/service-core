@@ -7,9 +7,15 @@ opaque type ConvictConfig = Object; // TODO can we narrow this down?
 
 import type { CustomAuthFunction } from 'components/model';
 
+export interface ConfigAccess {
+  get(key: string): ConfigValue;
+  has(key: string): boolean;
+  getCustomAuthFunction(): ?CustomAuthFunction;
+}
+
 // Handles loading and access to project settings. 
 //
-class Settings {
+class Settings implements ConfigAccess {
   convict: ConvictConfig; 
   customAuthStepFn: ?Extension; 
   
@@ -61,7 +67,7 @@ class Settings {
    * 
    *    settings.get('logs.console.active') //=> true
    *
-   * @return {ConfigValue} Returns the configuration value that corresponds to 
+   * @return {ExistingValue} Returns the configuration value that corresponds to 
    *    `key` given. 
    * @throws {Error} If the key you're trying to access doesn't exist in the 
    *    configuration. This is a hard error, since we have a schema that the 
@@ -72,11 +78,11 @@ class Settings {
     const configuration = this.convict; 
     
     if (! configuration.has(key)) 
-      return new MissingValue(key);
+      return Settings.missingValue(key);
     
     // assert: `config` contains a value for `key`
     const value = configuration.get(key);
-    return new ConfigValue(key, value);
+    return Settings.existingValue(key, value);
   }
   
   // Returns true if the given key exists in the configuration, false otherwise. 
@@ -93,8 +99,26 @@ class Settings {
     
     return this.customAuthStepFn.fn; 
   }
+  
+  static missingValue(key: string): ConfigValue {
+    return new MissingValue(key);
+  }
+  static existingValue(key: string, value: mixed): ConfigValue {
+    return new ExistingValue(key, value);
+  }
 }
 module.exports = Settings;
+
+export interface ConfigValue {
+  bool(): boolean;
+  str(): string;
+  num(): number;
+  obj(): {};
+  fun(): (...a: Array<mixed>) => void;
+  
+  exists(): boolean;
+  blank(): boolean;
+}
 
 /** Encapsulates values that are obtained from the configuration (file/...) using
  * a convict configuration for this project. 
@@ -105,7 +129,7 @@ module.exports = Settings;
  *    var value = settings.get('logs.console.active');
  *    value.bool() //=> true (or a type error)
  */
-class ConfigValue {
+class ExistingValue implements ConfigValue {
   name: string; 
   value: mixed; 
   
@@ -201,20 +225,40 @@ class ConfigValue {
       `(typeof returns '${typeof this.value}')`); 
   }
 }
-
-class MissingValue extends ConfigValue {
+class MissingValue implements ConfigValue {
   // NOTE maybe we should define a common interface rather than inheriting 
   //   in this way. Oh well.
   
   message: string; 
   
   constructor(key: string) {
-    super(key, null);
-    
     this.message = `Configuration for '${key}' missing.`;
+  }
+  
+  error() {
+    return new Error(this.message);
+  }
+  
+  bool(): boolean {
+    throw this.error(); 
+  }
+  str(): string {
+    throw this.error(); 
+  }
+  num(): number {
+    throw this.error(); 
+  }
+  obj(): {} {
+    throw this.error(); 
+  }
+  fun(): (...a: Array<mixed>) => void {
+    throw this.error(); 
   }
   
   exists(): false {
     return false; 
+  }
+  blank(): true {
+    return true; 
   }
 }

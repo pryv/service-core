@@ -16,13 +16,20 @@ const PRESPAWN_LIMIT = 2;
 // 
 class SpawnContext {
   basePort: number; 
+  shuttingDown: boolean; 
   
   pool: Array<ProcessProxy>;
+  allocated: Array<ProcessProxy>;
   
   constructor() {
-    this.basePort = 3000;
-    
+    this.basePort = 3001;
+
+    this.shuttingDown = false; 
     this.pool = []; 
+    
+    // All the processes that we've created and given to someone using
+    // getProcess.
+    this.allocated = [];
     
     this.prespawn(); 
   }
@@ -55,7 +62,9 @@ class SpawnContext {
       http: {
         port: port,           // use this port for http/express
       },
-      tcpMessaging: null,     // disable axon messaging
+      tcpMessaging: {
+        enabled: false,       // disable axon messaging
+      },
     };
     
     // Specialize the server we've started using the settings above.
@@ -88,11 +97,12 @@ class SpawnContext {
   // 
   getProcess(): ProcessProxy {
     this.prespawn();
-    // TODO call this again upon process death
     
     if (this.pool.length <= 0) throw new Error('AF: pool is not empty');
     
     const proxy = this.pool.shift(); 
+    this.allocated.push(proxy);
+    
     return proxy; 
   }
   
@@ -108,7 +118,23 @@ class SpawnContext {
   // exists to allow prespawning to catch up. 
   //
   onChildExit() {
-    this.prespawn();
+    if (! this.shuttingDown) 
+      this.prespawn();
+  }
+  
+  // Call this when you want to stop all children at the end of the test suite. 
+  //
+  async shutdown() {
+    debug('shutting down the context', this.pool.length);
+    this.shuttingDown = true; 
+    
+    for (const child of this.pool) {
+      await child.terminate();
+    }
+    
+    for (const child of this.allocated) {
+      await child.terminate();
+    }
   }
 }
 
@@ -143,14 +169,14 @@ class ProcessProxy {
   }
   
   dispatchChildMessage(wireMsg) {
-    const [cmd, ...args] = msgpack.decode(wireMsg);
+    const [cmd, ...a] = msgpack.decode(wireMsg);
     
     switch(cmd) {
       case 'int_started': 
         this.onChildStarted();
         break; 
       default: 
-        debug('received unknown message: ', cmd);
+        debug('received unknown message: ', cmd, a);
     }
   }
   
@@ -159,6 +185,8 @@ class ProcessProxy {
   }
   onChildExit() {
     debug('child exited');
+    this.exited.burn();
+    
     this.pool.onChildExit();
   }
   
@@ -179,14 +207,25 @@ class ProcessProxy {
   // Terminates the associated child process; progressing from SIGTERM to SIGKILL. 
   // 
   async terminate(): Promise<mixed> {
-    const child = this.childProcess;
+    if (this.exited.isBurnt()) return; 
     
+    const child = this.childProcess;
+
+    debug('sending SIGTERM');
     child.kill('SIGTERM');
     try {
       await this.exited.wait(1000);
     }
     catch(err) {
+      debug('sending SIGKILL');
       child.kill('SIGKILL');
+      
+      try {
+        await this.exited.wait(1000);
+      }
+      catch(err) {
+        debug('giving up, unkillable child');
+      }
     }
   }
   
