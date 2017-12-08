@@ -262,6 +262,7 @@ class Connection {
     if (callback == null) callback = function(err: any) { }; // eslint-disable-line no-unused-vars
     
     const methodContext = this.methodContext;
+    // FLOW This is a hack, we should not piggy-back on the methodContext.
     const userName = methodContext.username; 
     
     const method = callData.name; 

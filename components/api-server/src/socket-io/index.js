@@ -31,12 +31,11 @@ function onClientMessage(id, packet) {
 socketIO.Manager.prototype.onClientMessage = onClientMessage;
 
 import type { Logger } from 'components/utils';
+import type { StorageLayer } from 'components/storage';
+import type { CustomAuthFunction } from 'components/model';
+
 import type API from '../API';
-import type { StorageLayer } from '../server';
-
 import type { SocketIO$Handshake } from './Manager';
-
-import type { CustomAuthFunction } from '../settings'
 
 // Initializes the SocketIO subsystem. 
 //
@@ -87,6 +86,7 @@ function setupSocketIO(
     // `nsName` namespace. 
     const cachedUser = manager.getUser(nsName);
     if (cachedUser != null) {
+      // FLOW We should not piggy-back on the method context here.
       context.user = cachedUser; 
       return userLoaded(); 
     }
@@ -97,6 +97,7 @@ function setupSocketIO(
     function userLoaded(err) {
       if (err != null) { return callback(err); }
       
+      // FLOW We should not piggy-back on the method context here.
       manager.ensureInitNamespace(nsName, context.user);
       return callback(null, true);
     }

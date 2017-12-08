@@ -1,22 +1,17 @@
 // @flow
 
-const path = require('path');
-const fs = require('fs');
-
+const { Extension, ExtensionLoader } = require('components/utils').extension;
 const config = require('./config');
 
 opaque type ConvictConfig = Object; // TODO can we narrow this down?
 
-import type { MethodContext } from 'components/model';
-
-// For #getCustomAuthFunction. 
-export type CustomAuthFunctionCallback = (err: any) => void; 
-export type CustomAuthFunction = (MethodContext, CustomAuthFunctionCallback) => void; 
+import type { CustomAuthFunction } from 'components/model';
 
 // Handles loading and access to project settings. 
 //
 class Settings {
   convict: ConvictConfig; 
+  customAuthStepFn: ?Extension; 
   
   // Loads the settings for production use. This means that we follow the order
   // defined in config.load.
@@ -29,13 +24,13 @@ class Settings {
     const settings = new Settings(ourConfig);
     
     settings.maybePrint(); 
-    settings.loadCustomExtensions(); 
      
     return settings; 
   }
 
   constructor(ourConfig: ConvictConfig) {
     this.convict = ourConfig;
+    this.customAuthStepFn = this.loadCustomExtension(); 
   }
   
   maybePrint() {
@@ -45,40 +40,19 @@ class Settings {
       console.info('Configuration settings loaded', this.convict.get()); // eslint-disable-line no-console
     }
   }
-  loadCustomExtensions() {
-    // NOTE Yes, this is a duplicate of config.loadCustomExtensions. If we want
-    //    to make settings type safe, we cannot just keep them as a big js Object. 
-    
-    const configuration = this.convict; 
-    const extSettings = this.get('customExtensions').obj(); 
+  loadCustomExtension(): ?Extension {
     const defaultFolder = this.get('customExtensions.defaultFolder').str(); 
-    const format = config.customFormats['function-module'];
+    const name = 'customAuthStepFn';
+    const customAuthStepFnPath = this.get('customExtensions.customAuthStepFn');
     
-    if (extSettings == null) return; 
+    const loader = new ExtensionLoader(defaultFolder);
+
+    if (! customAuthStepFnPath.blank())
+      return loader.loadFrom(customAuthStepFnPath.str());
     
-    for (const key of Object.keys(extSettings)) {
-      // Skip the only key that doesn't point to a file
-      if (key === 'defaultFolder') continue; 
-      
-      // Skip values that have been set (and thus: loaded)
-      const value = extSettings[key];
-      if (value != null) continue; 
-      
-      // assert: value == null, no explicit file path was set.
-      
-      // Load from default folder anyway.
-      const defaultModulePath = path.join(defaultFolder, `${key}.js`);
-      
-      // Does the file exist? 
-      if (! fs.existsSync(defaultModulePath)) continue;
-      
-      // assert: file exists @ defaultModulePath
-      format.validate(defaultModulePath);
-      
-      // Store the loaded value back into the public configuration.
-      configuration.set(`customExtensions.${key}`, 
-        format.coerce(defaultModulePath));
-    }
+    // assert: no path was configured in configuration file, try loading from 
+    // default location:
+    return loader.load(name);
   }
   
   /** Returns the value for the configuration key `key`.  
@@ -115,12 +89,9 @@ class Settings {
   // null. 
   // 
   getCustomAuthFunction(): ?CustomAuthFunction {
-    const customAuthFunction = this.get('customExtensions.customAuthStepFn');
+    if (this.customAuthStepFn == null) return null; 
     
-    if (! customAuthFunction.exists()) return null; 
-    
-    const fun = customAuthFunction.fun();
-    return fun; 
+    return this.customAuthStepFn.fn; 
   }
 }
 module.exports = Settings;
@@ -214,10 +185,20 @@ class ConfigValue {
     return value != null; 
   }
   
+  // Returns true if the value is either null, undefined or the empty string. 
+  // 
+  blank(): boolean {
+    const value = this.value;  
+
+    return !this.exists() || value === ''; 
+  }
+  
   _typeError(typeName: string) {
     const name = this.name; 
-    
-    return new Error(`Configuration value type mismatch: ${name} should be of type ${typeName}, but isn't.`); 
+        
+    return new Error(
+      `Configuration value type mismatch: ${name} should be of type ${typeName}, but isn't. `+
+      `(typeof returns '${typeof this.value}')`); 
   }
 }
 

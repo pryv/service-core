@@ -8,13 +8,10 @@ const timestamp = require('unix-timestamp');
 const treeUtils = require('components/utils').treeUtils;
 const _ = require('lodash');
 
-// WIP Once we centralize this concept to the storage layer, we will be able to
-//  import from there. 
-type StorageLayer = {
-  users: any, 
-  accesses: any, 
-  streams: any, 
-}
+import type { StorageLayer } from 'components/storage';
+
+export type CustomAuthFunctionCallback = (err: any) => void; 
+export type CustomAuthFunction = (MethodContext, CustomAuthFunctionCallback) => void; 
 
 export type AuthenticationData = {
   accessToken: string, 
@@ -26,7 +23,9 @@ module.exports = MethodContext;
  * Retrieves and holds contextual info for a given API method.
  */
 function MethodContext(
-  username: string, auth: string, storage: StorageLayer, customAuthStepFn: Function
+  username: string, auth: ?string, 
+  storage: StorageLayer, 
+  customAuthStepFn: ?CustomAuthFunction
 ) {
   this.username = username;
   _.extend(this, parseAuth(auth));
@@ -46,7 +45,7 @@ function MethodContext(
  * @param {String} auth
  * @returns {{accessToken: string, callerId: string}}
  */
-function parseAuth(auth: string): AuthenticationData {
+function parseAuth(auth: ?string): AuthenticationData {
   var result = {
     accessToken: ''
   };

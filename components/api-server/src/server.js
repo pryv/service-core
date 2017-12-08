@@ -20,26 +20,7 @@ const Settings = require('./settings');
 
 import type { LogFactory, Logger } from 'components/utils';
 import type { ExpressAppLifecycle } from './expressApp';
-
-// GOALS This server setup should - over time - move away
-//    from the excessive DI and move towards constructor based
-//    DI. (ksc, 28Nov17)
-
-type StorageLayer = {
-  versions: storage.Versions,
-  passwordResetRequests: storage.PasswordResetRequests,
-  sessions: storage.Sessions,
-  users: storage.Users,
-  accesses: storage.user.Accesses,
-  eventFiles: storage.user.EventFiles,
-  events: storage.user.Events,
-  followedSlices: storage.user.FollowedSlices,
-  profile: storage.user.Profile,
-  streams: storage.user.Streams,
-  
-  waitForConnection(): Promise<mixed>, 
-}
-export type { StorageLayer };
+import type { StorageLayer } from 'components/storage';
 
 // Server class for api-server process. To use this, you 
 // would 
@@ -151,7 +132,6 @@ class Server {
       eventTypesSettings: settings.get('eventTypes').obj(),
       httpSettings: settings.get('http').obj(),
       servicesSettings: settings.get('services').obj(),
-      customExtensionsSettings: settings.get('customExtensions').obj(),
 
       // misc utility
       serverInfo: require('../package.json'),
@@ -160,11 +140,15 @@ class Server {
     const logger = this.logger; 
     
     this.setupStorageLayer();
+    
+    const customAuthStepFn = settings.getCustomAuthFunction();
+    const initContextMiddleware = middleware.initContext(
+      this.storageLayer, customAuthStepFn);
 
     dependencies.register({
       // Express middleware
       attachmentsAccessMiddleware: middleware.attachmentsAccess,
-      initContextMiddleware: middleware.initContext,
+      initContextMiddleware: initContextMiddleware,
       
       express: express, 
     });
@@ -267,8 +251,6 @@ class Server {
     // TEST: execute test setup instructions if any
     const instanceTestSetup = settings.get('instanceTestSetup'); 
     if (process.env.NODE_ENV === 'test' && instanceTestSetup.exists()) {
-      console.log('testSetup', instanceTestSetup.str());
-
       try {
         require('components/test-helpers')
           .instanceTestSetup.execute(instanceTestSetup.str(), axonSocket);

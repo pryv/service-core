@@ -1,3 +1,5 @@
+// @flow
+
 module.exports = {
   Database: require('./Database'),
   PasswordResetRequests: require('./PasswordResetRequests'),
@@ -14,3 +16,20 @@ module.exports = {
     Streams: require('./user/Streams')
   }
 };
+
+type StorageLayer = {
+  versions: exports.Versions,
+  passwordResetRequests: exports.PasswordResetRequests,
+  sessions: exports.Sessions,
+  users: exports.Users,
+  accesses: exports.user.Accesses,
+  eventFiles: exports.user.EventFiles,
+  events: exports.user.Events,
+  followedSlices: exports.user.FollowedSlices,
+  profile: exports.user.Profile,
+  streams: exports.user.Streams,
+  
+  waitForConnection(): Promise<mixed>, 
+}
+export type { StorageLayer };
+
