@@ -14,61 +14,74 @@ factory.corruptedData = function (message, innerError) { //
   });
 };
 
-factory.forbidden = function (message, options) {
+factory.forbidden = function (message) {
   if (! message) {
     message = 'The given token\'s access permissions do not allow this operation.';
   }
-  return new APIError(ErrorIds.Forbidden, message, _.merge({httpStatus: 403}, options));
+  return new APIError(ErrorIds.Forbidden, message, {
+    httpStatus: 403,
+    dontNotifyAirbrake: true
+  });
 };
 
-factory.invalidAccessToken = function (message, innerError, options) {
-  return new APIError(ErrorIds.InvalidAccessToken, message, _.merge({
+factory.invalidAccessToken = function (message, innerError) {
+  return new APIError(ErrorIds.InvalidAccessToken, message, {
     httpStatus: 401,
-    innerError: innerError
-  }, options));
+    innerError: innerError,
+    dontNotifyAirbrake: true
+  });
 };
 
-factory.invalidCredentials = function (message, options) {
+factory.invalidCredentials = function (message) {
   return new APIError(ErrorIds.InvalidCredentials,
-    message || 'The given username/password pair is invalid.',
-    _.merge({httpStatus: 401}, options));
+    message || 'The given username/password pair is invalid.', {
+      httpStatus: 401,
+      dontNotifyAirbrake: true
+    });
 };
 
-factory.invalidItemId = function (message, options) {
-  return new APIError(ErrorIds.InvalidItemId, message,
-    _.merge({httpStatus: 400}, options));
+factory.invalidItemId = function (message) {
+  return new APIError(ErrorIds.InvalidItemId, message, {
+    httpStatus: 400,
+    dontNotifyAirbrake: true
+  });
 };
 
 factory.invalidMethod = function (methodId) {
-  return new APIError(ErrorIds.InvalidMethod, 'Invalid method id "' + methodId + '"',
-      {httpStatus: 404});
+  return new APIError(ErrorIds.InvalidMethod,
+    'Invalid method id "' + methodId + '"', 
+    {httpStatus: 404}
+  );
 };
 
-factory.invalidOperation = function (message, data, innerError, options) {
-  return new APIError(ErrorIds.InvalidOperation, message, _.merge({
+factory.invalidOperation = function (message, data, innerError) {
+  return new APIError(ErrorIds.InvalidOperation, message, {
     httpStatus: 400,
     data: data,
-    innerError: innerError
-  }, options));
+    innerError: innerError,
+    dontNotifyAirbrake: true
+  });
 };
 
-factory.invalidParametersFormat = function (message, data, innerError, options) {
-  return new APIError(ErrorIds.InvalidParametersFormat, message, _.merge({
+factory.invalidParametersFormat = function (message, data, innerError) {
+  return new APIError(ErrorIds.InvalidParametersFormat, message, {
     httpStatus: 400,
     data: data,
-    innerError: innerError
-  }, options));
+    innerError: innerError,
+    dontNotifyAirbrake: true
+  });
 };
 
-factory.invalidRequestStructure = function (message, data, innerError, options) {
-  return new APIError(ErrorIds.InvalidRequestStructure, message, _.merge({
+factory.invalidRequestStructure = function (message, data, innerError) {
+  return new APIError(ErrorIds.InvalidRequestStructure, message, {
     httpStatus: 400,
     data: data,
-    innerError: innerError
-  }, options));
+    innerError: innerError,
+    dontNotifyAirbrake: true
+  });
 };
 
-factory.itemAlreadyExists = function (resourceType, conflictingKeys, innerError, options) {
+factory.itemAlreadyExists = function (resourceType, conflictingKeys, innerError) {
   resourceType = resourceType || 'resource';
   var article = _.includes(['a', 'e', 'i', 'o', 'u'], resourceType[0]) ? 'An ' : 'A ';
   var keysDescription = Object.keys(conflictingKeys).map(function (k) {
@@ -76,24 +89,28 @@ factory.itemAlreadyExists = function (resourceType, conflictingKeys, innerError,
   }).join(', ');
   var message = article + resourceType + ' with ' + keysDescription +
       ' already exists';
-  return new APIError(ErrorIds.ItemAlreadyExists, message, _.merge({
+  return new APIError(ErrorIds.ItemAlreadyExists, message, {
     httpStatus: 400,
     innerError: innerError,
-    data: conflictingKeys
-  }, options));
+    data: conflictingKeys,
+    dontNotifyAirbrake: true
+  });
 };
 
 factory.missingHeader = function (headerName) {
-  return new APIError(ErrorIds.MissingHeader, 'Missing expected header "' + headerName + '"',
-      {httpStatus: 400});
+  return new APIError(ErrorIds.MissingHeader, 
+    'Missing expected header "' + headerName + '"',
+    {httpStatus: 400}
+  );
 };
 
-factory.periodsOverlap = function (message, data, innerError, options) {
-  return new APIError(ErrorIds.PeriodsOverlap, message, _.merge({
+factory.periodsOverlap = function (message, data, innerError) {
+  return new APIError(ErrorIds.PeriodsOverlap, message, {
     httpStatus: 400,
     data: data,
-    innerError: innerError
-  }, options));
+    innerError: innerError,
+    dontNotifyAirbrake: true
+  });
 };
 
 factory.tooManyResults = function (limit) {
@@ -105,10 +122,10 @@ factory.tooManyResults = function (limit) {
 
 factory.unexpectedError = function (sourceError, message) {
   return new APIError(ErrorIds.UnexpectedError,
-      message || ('Unexpected error: ' + sourceError.message), {
-    httpStatus: 500,
-    innerError: sourceError
-  });
+    message || ('Unexpected error: ' + sourceError.message), {
+      httpStatus: 500,
+      innerError: sourceError
+    });
 };
 
 /**
@@ -118,28 +135,31 @@ factory.unexpectedError = function (sourceError, message) {
  * @param {Error} innerError
  * @returns {APIError}
  */
-factory.unknownReferencedResource = function (resourceType, paramKey, value, innerError, options) {
+factory.unknownReferencedResource = function (resourceType, paramKey, value, innerError) {
   var message = 'Unknown referenced ' + (resourceType || 'resource(s)') + ' "' +
       (value.join ? value.join('", "') : value) + '"';
   var data = {};
   data[paramKey] = value;
-  return new APIError(ErrorIds.UnknownReferencedResource, message, _.merge({
+  return new APIError(ErrorIds.UnknownReferencedResource, message, {
     httpStatus: 400,
     data: data,
-    innerError: innerError
-  }, options));
+    innerError: innerError,
+    dontNotifyAirbrake: true
+  });
 };
 
-factory.unknownResource = function (resourceType, id, innerError, options) {
+factory.unknownResource = function (resourceType, id, innerError) {
   var message = 'Unknown ' + (resourceType || 'resource') + ' ' + (id ? '"' + id + '"' : '');
-  return new APIError(ErrorIds.UnknownResource, message, _.merge({
+  return new APIError(ErrorIds.UnknownResource, message, {
     httpStatus: 404,
-    innerError: innerError
-  }, options));
+    innerError: innerError,
+    dontNotifyAirbrake: true
+  });
 };
 
 factory.unsupportedContentType = function (contentType) {
-  return new APIError(ErrorIds.UnsupportedContentType, 'We don\'t support "' + contentType +
-      '" as content type. If you think we should, please help us and report an issue!',
-      {httpStatus: 415});
+  return new APIError(ErrorIds.UnsupportedContentType,
+    'We don\'t support "' + contentType + '" as content type. ' +
+    'If you think we should, please help us and report an issue!',
+    {httpStatus: 415});
 };
