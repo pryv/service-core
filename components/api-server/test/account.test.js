@@ -428,11 +428,11 @@ describe('account', function () {
         context: settings.services.email,
         execute: function () {
           require('nock')(this.context.url).post(this.context.sendMessagePath)
-              .reply(200, function (uri, requestBody) {
-            var body = JSON.parse(requestBody);
-            var token = body.message.global_merge_vars[1].content; /* HACK, assume structure */
-            this.context.messagingSocket.emit('password-reset-token', token);
-          }.bind(this));
+            .reply(200, function (uri, requestBody) {
+              var body = JSON.parse(requestBody);
+              var token = body.message.global_merge_vars[1].content; /* HACK, assume structure */
+              this.context.messagingSocket.emit('password-reset-token', token);
+            }.bind(this));
         }
       });
       // fetch reset token from server process
@@ -442,17 +442,17 @@ describe('account', function () {
 
       async.series([
         server.ensureStarted.bind(server, settings),
-        function requestReset(stepDone) {
-	  request.post(requestPath)
-              .unset('authorization')
-              .set('Origin', 'http://test.pryv.local')
-	      .send(authData)
-              .end(function (res) {
-            validation.check(res, {
-              status: 200,
-              schema: methodsSchema.requestPasswordReset.result
-            }, stepDone);
-          });
+        function requestReset(stepDone) { 
+          request.post(requestPath)
+            .unset('authorization')
+            .set('Origin', 'http://test.pryv.local')
+            .send(authData)
+            .end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.requestPasswordReset.result
+              }, stepDone);
+            });
         },
         function verifyStoredRequest(stepDone) {
           should.exist(resetToken);
@@ -467,14 +467,14 @@ describe('account', function () {
             newPassword: newPassword
           }, authData);
           request.post(resetPath).send(data)
-              .unset('authorization')
-              .set('Origin', 'http://test.pryv.local')
-              .end(function (res) {
-            validation.check(res, {
-              status: 200,
-              schema: methodsSchema.resetPassword.result
-            }, stepDone);
-          });
+            .unset('authorization')
+            .set('Origin', 'http://test.pryv.local')
+            .end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.resetPassword.result
+              }, stepDone);
+            });
         },
         function verifyNewPassword(stepDone) {
           request.login(_.defaults({password: newPassword}, user), stepDone);
