@@ -44,7 +44,7 @@ module.exports = function (systemAPI, usersStorage, userAccessesStorage, service
         if (err) {
           // for now let's just assume the user already exists
           return next(errors.itemAlreadyExists(
-            'user', {username: params.username}, err, {dontNotifyAirbrake: true}
+            'user', {username: params.username}, err
           ));
         }
         result.id = newUser.id;

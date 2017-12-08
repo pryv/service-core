@@ -72,7 +72,7 @@ MethodContext.prototype.retrieveUser = function (callback) {
       return callback(errors.unexpectedError(err));
     }
     if (! user) {
-      return callback(errors.unknownResource('user', this.username, null, {dontNotifyAirbrake: true}));
+      return callback(errors.unknownResource('user', this.username));
     }
 
     this.user = user;
@@ -94,8 +94,7 @@ MethodContext.prototype.retrieveExpandedAccess = function (callback) {
   if (! this.accessToken && ! this.access) {
     return callback(errors.invalidAccessToken(
       'The access token is missing: expected an ' +
-        '"Authorization" header or an "auth" query string parameter.')
-      , null, {dontNotifyAirbrake: true});
+        '"Authorization" header or an "auth" query string parameter.'));
   }
 
   async.waterfall([
@@ -111,8 +110,7 @@ MethodContext.prototype.retrieveExpandedAccess = function (callback) {
           
           if (! access) {
             return stepDone(errors.invalidAccessToken(
-              'Cannot find access from token "' + this.accessToken + '".',
-              null, {dontNotifyAirbrake: true}));
+              'Cannot find access from token "' + this.accessToken + '".'));
           }
 
           this.access = access;
@@ -134,8 +132,7 @@ MethodContext.prototype.retrieveExpandedAccess = function (callback) {
 
       if (! sessionData) {
         return stepDone(errors.invalidAccessToken(
-          'Access session has expired.', null,
-          {dontNotifyAirbrake: true}
+          'Access session has expired.'
         ));
       }
       // keep alive

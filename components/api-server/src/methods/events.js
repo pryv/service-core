@@ -72,7 +72,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
       if (unknownIds.length > 0) {
         return next(errors.unknownReferencedResource('stream' + (unknownIds.length > 1 ? 's' : ''),
-            'streams', unknownIds, null, {dontNotifyAirbrake: true}));
+            'streams', unknownIds));
       }
 
       params.streams = expandedStreamIds;
@@ -274,7 +274,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
   function verifyContext(context, params, result, next) {
     if (! context.canContributeToContext(context.content.streamId, context.content.tags)) {
-      return next(errors.forbidden(null, {dontNotifyAirbrake: true}));
+      return next(errors.forbidden());
     }
     next();
   }
@@ -283,8 +283,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     userEventsStorage.insertOne(context.user, context.content, function (err, newEvent) {
       if (err) {
         if (storage.Database.isDuplicateError(err)) {
-          return next(errors.itemAlreadyExists('event', {id: params.id}, err,
-            { dontNotifyAirbrake: true }));
+          return next(errors.itemAlreadyExists('event', {id: params.id}, err));
         } else {
           return next(errors.unexpectedError(err));
         }
@@ -343,8 +342,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       }
 
       if (! event) {
-        return next(errors.unknownResource('event', params.id, null,
-          { dontNotifyAirbrake: true }));
+        return next(errors.unknownResource('event', params.id));
       }
 
       if (! context.canContributeToContext(event.streamId, event.tags)) {
@@ -462,7 +460,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
           }
           if (err) {
             return next(errors.invalidParametersFormat('The event content\'s format is ' +
-            'invalid.', err, null, {dontNotifyAirbrake: true}));
+            'invalid.', err));
           }
           next(null);
         });
@@ -480,7 +478,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       if(tag.length > limit) {
         throw errors.invalidParametersFormat(
           'The event contains a tag that exceeds the size limit of ' +
-           limit + ' characters.', tag, null, {dontNotifyAirbrake: true});
+           limit + ' characters.', tag);
       } 
       return tag.trim();
     }).filter(function (tag) { return tag.length > 0; });
@@ -498,16 +496,14 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   function checkStream(context, streamId, errorCallback) {
     if (! context.stream) {
       errorCallback(errors.unknownReferencedResource(
-        'stream', 'streamId', streamId, null,
-        {dontNotifyAirbrake: true}
+        'stream', 'streamId', streamId
       ));
       return false;
     }
     if (context.stream.trashed) {
       errorCallback(errors.invalidOperation(
         'The referenced stream "' + streamId + '" is trashed.',
-        {trashedReference: 'streamId'},
-        {dontNotifyAirbrake: true}
+        {trashedReference: 'streamId'}
       ));
       return false;
     }
@@ -542,8 +538,8 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
       if (periodEvent) {
         return next(errors.invalidOperation('At least one period event ("' + periodEvent.id +
-          '") already exists at a later time', {conflictingEventId: periodEvent.id},
-          null, { dontNotifyAirbrake: true }));
+          '") already exists at a later time', {conflictingEventId: periodEvent.id}
+        ));
       }
 
       next();
@@ -605,8 +601,8 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       if (periodEvents.length > 0) {
         var msg = 'The event\'s period overlaps existing period events.';
         return next(errors.periodsOverlap(msg,
-          {overlappedIds: periodEvents.map(function (e) { return e.id; })},
-          null, { dontNotifyAirbrake: true }));
+          {overlappedIds: periodEvents.map(function (e) { return e.id; })}
+        ));
       }
 
       next();
@@ -712,13 +708,12 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
           if (err) { return next(errors.unexpectedError(err)); }
           if (! event) {
             return next(errors.unknownReferencedResource(
-              'event', 'id', params.id, null, {dontNotifyAirbrake: true}
+              'event', 'id', params.id
             ));
           }
           if (! isRunning(event)) {
             return next(errors.invalidOperation(
-              'Event "' + params.id + '" is not a running period event.',
-              null, null, {dontNotifyAirbrake: true}
+              'Event "' + params.id + '" is not a running period event.'
             ));
           }
           applyStop(null, event);
@@ -729,8 +724,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
           return process.nextTick(next.bind(null, 
             errors.invalidParametersFormat(
               'You must specify the event `id` or `type` ' +
-              ' (not a "single activity" stream).',
-              null, null, {dontNotifyAirbrake: true}
+              ' (not a "single activity" stream).'
             )
           ));
         }
@@ -745,8 +739,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         process.nextTick(next.bind(null,
           errors.invalidParametersFormat(
             'You must specify either the "single activity " stream id '+
-            'or the event `id`.',
-            null, null, {dontNotifyAirbrake: true}
+            'or the event `id`.'
           )
         ));
       }
@@ -926,8 +919,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
           var attIndex = getAttachmentIndex(updatedEvent.attachments, params.fileId);
           if (attIndex === -1) {
             return stepDone(errors.unknownResource(
-              'attachment', params.fileId, null,
-              {dontNotifyAirbrake: true}
+              'attachment', params.fileId
             ));
           }
           deletedAtt = updatedEvent.attachments[attIndex];
@@ -979,7 +971,6 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       if (! event) {
         return callback(errors.unknownResource(
           'event', eventId
-          , {dontNotifyAirbrake: true}
         ));
       }
       if (! context.canContributeToContext(event.streamId, event.tags)) {

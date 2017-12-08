@@ -34,8 +34,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
   function checkNoSharedAccess(context, params, result, next) {
     if (context.access.isShared()) {
       return next(errors.forbidden(
-        'You cannot access this resource using a shared access token.',
-        {dontNotifyAirbrake: true})
+        'You cannot access this resource using a shared access token.')
       );
     }
     next();
@@ -87,22 +86,21 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
   function applyPrerequisitesForCreation(context, params, result, next) {
     if (params.type === 'personal') {
       return next(errors.forbidden(
-        'Personal accesses are created automatically on login.',
-        {dontNotifyAirbrake: true}
+        'Personal accesses are created automatically on login.'
       ));
     }
 
     if (! context.access.isPersonal() && ! context.access.canManageAccess(params)) {
       return next(errors.forbidden(
         'Your access token has insufficient permissions ' +
-        'to create this new access.', {dontNotifyAirbrake: true}));
+        'to create this new access.'));
     }
 
     if (params.token) {
       params.token = slugify(params.token);
       if (string.isReservedId(params.token)) {
         return next(errors.invalidItemId('The specified token "' + params.token +
-            '" is not allowed.', {dontNotifyAirbrake: true}));
+            '" is not allowed.'));
       }
     } else {
       params.token = userAccessesStorage.generateToken();
@@ -153,8 +151,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
               } else {
                 // not OK: stream exists with same unique key but different id
                 return streamCallback(errors.itemAlreadyExists(
-                  'stream', {name: newStream.name}, err,
-                  {dontNotifyAirbrake: true}
+                  'stream', {name: newStream.name}, err
                 ));
               }
             } else {
@@ -221,7 +218,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
             }
           }
           return next(errors.itemAlreadyExists(
-            'access', conflictingKeys, err, {dontNotifyAirbrake: true}
+            'access', conflictingKeys, err
           ));
         } else {
           return next(errors.unexpectedError(err));
@@ -256,14 +253,14 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
 
         if (! access) {
           return next(errors.unknownResource(
-            'access', params.id, null, { dontNotifyAirbrake: true }
+            'access', params.id
           ));
         }
 
         if (! context.access.isPersonal() && ! context.access.canManageAccess(access)) {
           return next(errors.forbidden(
             'Your access token has insufficient permissions ' +
-            'to modify this access.', {dontNotifyAirbrake: true}
+            'to modify this access.'
           ));
         }
 
@@ -279,8 +276,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
         if (err) {
           if (Database.isDuplicateError(err)) {
             return next(errors.itemAlreadyExists('access',
-              { type: context.resource.type, name: params.update.name }, err,
-              {dontNotifyAirbrake: true}));
+              { type: context.resource.type, name: params.update.name }, err));
           } else {
             return next(errors.unexpectedError(err));
           }
@@ -309,13 +305,13 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
       if (err) { return next(errors.unexpectedError(err)); }
 
       if (! access) {
-        return next(errors.unknownResource('access', params.id, null, { dontNotifyAirbrake: true }));
+        return next(errors.unknownResource('access', params.id));
       }
 
       if (! context.access.isPersonal() && ! context.access.canManageAccess(access)) {
         return next(errors.forbidden(
             'Your access token has insufficient permissions to ' +
-            'delete this access.', {dontNotifyAirbrake: true}));
+            'delete this access.'));
       }
 
       next();
@@ -343,8 +339,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
   function checkApp(context, params, result, next) {
     if (! context.access.isPersonal()) {
       return next(errors.forbidden(
-        'Your access token has insufficient permissions to access this resource.',
-        {dontNotifyAirbrake: true}
+        'Your access token has insufficient permissions to access this resource.'
       ));
     }
 

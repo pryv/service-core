@@ -12,8 +12,7 @@ module.exports = function (req, res, next) {
 
     if (bodyKeys.length > 1) {
       return next(errors.invalidRequestStructure(
-        'In multipart requests, we don\'t expect more than one non-file part.',
-        null, null, {dontNotifyAirbrake: true}));
+        'In multipart requests, we don\'t expect more than one non-file part.'));
     } else if (bodyKeys.length === 1) {
       try {
         req.body = JSON.parse(req.body[bodyKeys[0]]);

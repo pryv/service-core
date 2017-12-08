@@ -17,7 +17,7 @@ module.exports = function (userEventsStorage) {
         return next(errors.unknownResource('event', req.params.id));
       }
       if (! req.context.canReadStream(event.streamId)) {
-        return next(errors.forbidden(null, {dontNotifyAirbrake: true}));
+        return next(errors.forbidden());
       }
 
       req.url = req.url.replace(req.params.username, req.context.user.id).replace('/events/', '/');
@@ -32,8 +32,7 @@ module.exports = function (userEventsStorage) {
         _.find(event.attachments, {id: req.params.fileId}) : null;
       if (! attachment) {
         return next(errors.unknownResource(
-          'attachment', req.params.fileId, null,
-          {dontNotifyAirbrake: true}
+          'attachment', req.params.fileId
         ));
       }
       res.header('Content-Type', attachment.type);

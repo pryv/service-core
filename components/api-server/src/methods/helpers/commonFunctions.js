@@ -8,7 +8,7 @@ exports.loadAccess = function loadAccess(context, params, result, next) {
 exports.requirePersonalAccess = function requirePersonalAccess(context, params, result, next) {
   if (! context.access.isPersonal()) {
     return next(errors.forbidden('You cannot access this resource using the given access ' +
-        'token.', { dontNotifyAirbrake: true }));
+        'token.'));
   }
   next();
 };
@@ -27,7 +27,7 @@ exports.getTrustedAppCheck = function getTrustedAppCheck(authSettings) {
   return function requireTrustedApp(context, params, result, next) {
     if (! isTrustedApp(params.appId, params.origin)) {
       return next(errors.invalidCredentials('The app id ("appId") is either missing or ' +
-          'not trusted.', { dontNotifyAirbrake: true }));
+          'not trusted.'));
     }
     next();
   };
@@ -75,8 +75,9 @@ exports.getParamsValidation = function getParamsValidation(paramsSchema) {
   return function validateParams(context, params, result, next) {
     validation.validate(params, paramsSchema, function (err) {
       if (err) {
-        return next(errors.invalidParametersFormat('The parameters\' format is invalid.',
-            err, null, { dontNotifyAirbrake: true }));
+        return next(errors.invalidParametersFormat(
+          'The parameters\' format is invalid.', err
+        ));
       }
       next();
     });
@@ -89,7 +90,7 @@ exports.catchForbiddenUpdate = function catchForbiddenUpdate(paramsSchema) {
     const forbidden = Object.keys(params.update)
       .filter(key => !allowed.includes(key));
     if(forbidden.length > 0) return next(errors.forbidden(
-      'Update is forbidden on the following properties: [' + forbidden + '].', { dontNotifyAirbrake: true }));
+      'Update is forbidden on the following properties: [' + forbidden + '].'));
     next();
   };
 };

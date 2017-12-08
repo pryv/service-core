@@ -28,8 +28,7 @@ module.exports = function (api, userFollowedSlicesStorage, notifications){
       if (! context.access.isPersonal()) {
         return process.nextTick(next.bind(null,
           errors.forbidden(
-            'You cannot access this resource using the given access token.',
-            {dontNotifyAirbrake: true}
+            'You cannot access this resource using the given access token.'
           )));
       }
 
@@ -48,8 +47,7 @@ module.exports = function (api, userFollowedSlicesStorage, notifications){
       if (! context.access.isPersonal()) {
         return process.nextTick(next.bind(null,
           errors.forbidden(
-            'You cannot access this resource using the given access token.',
-            {dontNotifyAirbrake: true}
+            'You cannot access this resource using the given access token.'
           )
         ));
       }
@@ -73,8 +71,7 @@ module.exports = function (api, userFollowedSlicesStorage, notifications){
       if (! context.access.isPersonal()) {
         return process.nextTick(next.bind(null,
           errors.forbidden(
-            'You cannot access this resource using the given access token.',
-            {dontNotifyAirbrake: true}
+            'You cannot access this resource using the given access token.'
           )
         ));
       }
@@ -87,8 +84,7 @@ module.exports = function (api, userFollowedSlicesStorage, notifications){
 
               if (! slice) {
                 return stepDone(errors.unknownResource(
-                  'followed slice', params.id, null,
-                  {dontNotifyAirbrake: true}
+                  'followed slice', params.id
                 ));
               }
 
@@ -125,8 +121,7 @@ module.exports = function (api, userFollowedSlicesStorage, notifications){
     const conflictingKeys = nameKeyDuplicate ?
       {name: params.name} : { url: params.url, accessToken: params.accessToken };
     return errors.itemAlreadyExists(
-      'followed slice', conflictingKeys, dbError,
-      {dontNotifyAirbrake: true}
+      'followed slice', conflictingKeys, dbError
     );
   }
 
@@ -138,8 +133,7 @@ module.exports = function (api, userFollowedSlicesStorage, notifications){
       if (! context.access.isPersonal()) {
         return process.nextTick(next.bind(null,
           errors.forbidden(
-            'You cannot access this resource using the given access token.',
-            {dontNotifyAirbrake: true}
+            'You cannot access this resource using the given access token.'
           )
         ));
       }
@@ -150,8 +144,7 @@ module.exports = function (api, userFollowedSlicesStorage, notifications){
         if (! slice) {
           return next(errors.unknownResource(
             'followed slice',
-            params.id, null, 
-            {dontNotifyAirbrake: true}
+            params.id
           ));
         }
 

@@ -57,7 +57,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         var parent = treeUtils.findById(streams, params.parentId);
         if (! parent) {
           return next(errors.unknownReferencedResource('parent stream',
-            'parentId', params.parentId, err, {dontNotifyAirbrake: true}));
+            'parentId', params.parentId, err));
         }
         streams = parent.children;
       }
@@ -129,8 +129,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
       if (string.isReservedId(params.id) || 
       string.isReservedId(params.id = slugify(params.id))) {
         return process.nextTick(next.bind(null, errors.invalidItemId(
-          'The specified id "' + params.id + '" is not allowed.',
-          {dontNotifyAirbrake: true})));
+          'The specified id "' + params.id + '" is not allowed.')));
       }
     }
 
@@ -146,19 +145,16 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
           // HACK: relying on error text as nothing else available to differentiate
           const apiError = err.message.indexOf('_id_') > 0 ?
             errors.itemAlreadyExists(
-              'stream', {id: params.id}, err,
-              {dontNotifyAirbrake: true}
+              'stream', {id: params.id}, err
             ) :
             errors.itemAlreadyExists(
-              'sibling stream', {name: params.name}, err,
-              {dontNotifyAirbrake: true}
+              'sibling stream', {name: params.name}, err
             );
           return next(apiError);
         } else {
           // for now we just assume the parent is unknown
           return next(errors.unknownReferencedResource(
-            'parent stream', 'parentId', params.parentId, err,
-            {dontNotifyAirbrake: true}
+            'parent stream', 'parentId', params.parentId, err
           ));
         }
       }
@@ -183,7 +179,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     if (! stream) {
       return process.nextTick(next.bind(null,
         errors.unknownResource(
-          'stream', params.id, null, { dontNotifyAirbrake: true }
+          'stream', params.id
         )
       ));
     }
@@ -207,14 +203,12 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         if (err) {
           if (storage.Database.isDuplicateError(err)) {
             return next(errors.itemAlreadyExists(
-              'sibling stream', {name: params.update.name}, err,
-              {dontNotifyAirbrake: true}
+              'sibling stream', {name: params.update.name}, err
             ));
           } else {
             // for now we just assume the parent is unknown
             return next(errors.unknownReferencedResource(
-              'parent stream', 'parentId', params.update.parentId, err,
-              {dontNotifyAirbrake: true}
+              'parent stream', 'parentId', params.update.parentId, err
             ));
           }
         }
@@ -239,7 +233,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     context.stream = treeUtils.findById(context.streams, params.id);
     if (! context.stream) {
       return process.nextTick(next.bind(null,
-          errors.unknownResource('stream', params.id, null, { dontNotifyAirbrake: true })));
+          errors.unknownResource('stream', params.id)));
     }
     if (! context.canManageStream(context.stream.id)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
@@ -303,8 +297,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
             if (hasLinkedEvents && params.mergeEventsWithParent === null) {
               return stepDone(errors.invalidParametersFormat(
                 'There are events referring to the deleted items ' +
-                'and the `mergeEventsWithParent` parameter is missing.',
-                null, null, {dontNotifyAirbrake: true}));
+                'and the `mergeEventsWithParent` parameter is missing.'));
             }
 
             stepDone();

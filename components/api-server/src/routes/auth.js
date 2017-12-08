@@ -23,8 +23,7 @@ module.exports = function (expressApp, api, authSettings, httpSettings) {
     var ssoCookie = req.signedCookies.sso;
     if (! ssoCookie) {
       return next(errors.invalidCredentials(
-        'Not signed-on',
-        { dontNotifyAirbrake: true }
+        'Not signed-on'
       ));
     }
 
