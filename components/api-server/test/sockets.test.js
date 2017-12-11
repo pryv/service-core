@@ -308,44 +308,50 @@ describe('Socket.IO', function () {
         });
       });
     });
-    it('must notify on each change', function (done) {
+    it('must notify on each change', async function () {
       const tokens = [token, testData.accesses[2].token];
       const socketConnections = tokens.map(
         (token) => connect(namespace, {auth: token}));
       
       const createConnection = socketConnections[0];
-      
-      const callCounts = [0, 0]; 
-      socketConnections.map(
-        (conn, i) => conn.on('streamsChanged', () => callCounts[i] += 1));
-        
-      onAllConnected(socketConnections, () => {
-        async.series([
-          (step) => createStream(createConnection, {name: 'foo'}, step),
-          (step) => createStream(createConnection, {name: 'bar'}, step),
-          (step) => {
-            setImmediate(() => {
-              assert.deepEqual(callCounts, [2, 2]);
-              step();
-            });
-          }
-        ], done);
-      });
-      
-      function createStream(conn, params, cb) {
-        conn.emit('streams.create', params, (err) => cb(err));
-      }
-      function onAllConnected(conns, cb) {
-        let needConnectEvents = conns.length;
-        for (const conn of conns) {
-          conn.on('connect', () => {            
-            needConnectEvents -= 1; 
-            
-            if (needConnectEvents <= 0) cb(); 
-          });
-        }
-      }
 
+      const donePromises = socketConnections.map(conn => {
+        const [promise, cb] = expectNCalls(2);
+        
+        conn.on('streamsChanged', cb);
+        return promise; 
+      });
+        
+      await createStream(createConnection, {name: 'foo'}); 
+      await createStream(createConnection, {name: 'bar'}); 
+      
+      return bluebird.all(donePromises);
+              
+      // Returns a tuple of a (promise, callback). The promise fulfills when the
+      // callback is called `n` times. 
+      function expectNCalls(n: number): [Promise<void>, () => void] {
+        let callCount = 0; 
+        let deferred; 
+      
+        const promise = new bluebird((res) => {
+          deferred = res; 
+        }); 
+        
+        const fun = () => {
+          callCount += 1; 
+          
+          if (deferred == null) 
+            throw new Error('AF: deferred promise is created synchronously.');
+          
+          if (callCount >= n) deferred(); 
+        };
+        
+        return [promise, fun];
+      }
+      function createStream(conn, params) {
+        return bluebird.fromCallback(
+          (cb) => conn.emit('streams.create', params, cb));
+      }
     });
   });
   
