@@ -257,31 +257,26 @@ describe('Socket.IO', function () {
       });
     });
 
-    it('must notify other sockets for the same user about events changes', function (done) {
+    it('must notify other sockets for the same user about events changes', () => {
       ioCons.con1 = connect(namespace, {auth: token}); // personal access
       ioCons.con2 = connect(namespace, {auth: testData.accesses[2].token}); // "read all" access
 
-      var con2NotifsCount = 0;
+      return new bluebird((resolve, reject) => {
+        ioCons.con2.on('eventsChanged', function () {
+          resolve(); 
+        });
 
-      ioCons.con2.on('eventsChanged', function () {
-        con2NotifsCount++;
-      });
-
-      whenAllConnectedDo(function () {
-        var params = {
-          time: timestamp.fromDate('2012-03-22T10:00'),
-          duration: timestamp.duration('3h33m'),
-          type: 'test/test',
-          streamId: testData.streams[0].id
-        };
-        ioCons.con1.emit('events.create', params, function (err/*, result*/) {
-          should.not.exist(err);
-
-          setTimeout(function () { // pass turn to make sure notifs are received
-            assert.equal(con2NotifsCount, 1, 'expected 1 notification');
-
-            done();
-          }, 0);
+        whenAllConnectedDo(function () {
+          const params = {
+            time: timestamp.fromDate('2012-03-22T10:00'),
+            duration: timestamp.duration('3h33m'),
+            type: 'test/test',
+            streamId: testData.streams[0].id
+          };
+          
+          ioCons.con1.emit('events.create', params, function (err/*, result*/) {
+            if (err) reject(err); 
+          });
         });
       });
     });
@@ -355,20 +350,28 @@ describe('Socket.IO', function () {
   });
   
   describe('when spawning 2 api-server processes, A and B', () => {
-    let context = new SpawnContext(); 
-    
     // Servers A and B, length will be 2
     let servers: Array<Server> = []; 
     
     // Client connections that we make. If you add your connection here, it 
     // will get #close()d. 
-    const connections = []; 
+    let connections;
+    beforeEach(() => { 
+      connections = []; 
+    });
     
     // Closes all `connections` after each test. 
     afterEach(() => {
       for (const conn of connections) {
         conn.disconnect(); 
       }
+    });
+    
+    let context;
+
+    // Sets up context
+    before(() => {
+      context = new SpawnContext(); 
     });
     
     // Spawns A and B. 
@@ -382,7 +385,7 @@ describe('Socket.IO', function () {
       servers = await bluebird.all( context.spawn_multi(2) );
     });
         
-    // Teardown for all tests
+    // Teardown context
     after(async () => {
       await context.shutdown(); 
     });
