@@ -21,11 +21,12 @@ var errors = require('components/errors').factory,
  * @param notifications
  * @param logging
  * @param auditSettings
+ * @param updatesSettings
  */
-module.exports = function (api, userStreamsStorage, userEventsStorage, userEventFilesStorage,
-                           notifications, logging, auditSettings) {
+module.exports = function (api, userStreamsStorage, userEventsStorage, userEventFilesStorage, 
+  notifications, logging, auditSettings, updatesSettings) {
 
-  var logger = logging.getLogger('methods/streams');
+  const logger = logging.getLogger('methods/streams');
 
   // COMMON
 
@@ -169,7 +170,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
   api.register('streams.update',
       commonFns.getParamsValidation(methodsSchema.update.params),
-      commonFns.catchForbiddenUpdate(streamSchema('update')),
+      commonFns.catchForbiddenUpdate(streamSchema('update'), updatesSettings.ignoreProtectedFields, logger),
       applyPrerequisitesForUpdate,
       updateStream);
 
@@ -433,8 +434,8 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
                   eventsStream.on('data', (event) => {
                     userEventFilesStorage.removeAllForEvent(context.user, event.id, function (err) {
                       if (err) {
-                        // async delete attached files (if any) –
-                        // don't wait for this, just log possible errors
+                        // async delete attached files (if any) – don't wait for
+                        // this, just log possible errors
                         errorHandling.logError(err, null, logger);
                       }
                     });

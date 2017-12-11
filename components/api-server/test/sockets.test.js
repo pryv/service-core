@@ -29,7 +29,13 @@ describe('Socket.IO', function () {
   function connect(namespace, queryParams) {
     var paramsWithNS = _.defaults({resource: namespace}, queryParams || {}),
         url = server.url + namespace + '?' + queryString.stringify(paramsWithNS);
-    return io.connect(url, {'force new connection': true});
+    return io.connect(url, {
+      'force new connection': true,       // one connection per namespace
+      'reconnect': false                  // don't reconnect automatically
+    });
+    
+    // See node_modules/socket.io-client/lib/socket.js for an explanation of the
+    // above options. 
   }
 
   // all Socket.IO connections used in tests should be added in there to simplify cleanup
@@ -97,7 +103,7 @@ describe('Socket.IO', function () {
     ioCons.con = connect(namespace, {auth: token});
 
     ioCons.con.on('connect', function () {
-      if (! ioCons.con) { return; }
+      if (! ioCons.con) { return; }
       // if we get here, communication is properly established
       done();
     });
@@ -105,11 +111,9 @@ describe('Socket.IO', function () {
   });
 
   it('must connect to a user with a dash in the username', function (done) {
-
-    var dashUser = testData.users[4],
-        dashRequest = null,
-        dashToken = null;
-
+    var dashUser = testData.users[4];
+    var dashRequest = null;
+    
     async.series([
       function (stepDone) {
         testData.resetAccesses(stepDone, dashUser);
@@ -119,14 +123,9 @@ describe('Socket.IO', function () {
         dashRequest.login(dashUser, stepDone);
       },
       function (stepDone) {
-        dashToken = dashRequest.token;
-        stepDone();
-      },
-      function (stepDone) {
         ioCons.con = connect('/' + dashUser.username, {auth: testData.accesses[2].token});
 
         ioCons.con.on('error', function (e) {
-          should.not.exist(e);
           stepDone(e);
         });
 
@@ -145,7 +144,7 @@ describe('Socket.IO', function () {
     ioCons.con = connect(namespace);
 
     ioCons.con.socket.on('error', function () {
-      if (! ioCons.con) { return; }
+      if (! ioCons.con) { return; }
       done();
     });
 
