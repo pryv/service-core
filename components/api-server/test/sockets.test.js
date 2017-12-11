@@ -370,6 +370,12 @@ describe('Socket.IO', function () {
     
     // Spawns A and B. 
     beforeEach(async () => {
+      // Stop a few servers here; this is just so that we can maybe reclaim 
+      // some memory and sockets. Actual cleanup is done in `after()` below. 
+      if (servers && servers.length > 0) 
+        for (const server of servers) server.stop();
+      
+      // Spawn two new servers.
       servers = await bluebird.all( context.spawn_multi(2) );
     });
         
@@ -439,8 +445,8 @@ describe('Socket.IO', function () {
     }
     
   });
-
 });
+
 type User = {
   name: string, 
   token: string, 
