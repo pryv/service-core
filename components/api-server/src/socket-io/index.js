@@ -65,14 +65,14 @@ function setupSocketIO(
     handshake: SocketIO$Handshake, callback: (err: any, res: any) => mixed
   ) {
     const nsName = handshake.query.resource;
-    if (nsName == null) return callback('Missing \'resource\' parameter.');
+    if (nsName == null) return callback("Missing 'resource' parameter.");
     
     const userName = manager.extractUsername(nsName); 
     if (userName == null) return callback(`Invalid resource "${nsName}".`);
 
     const accessToken = handshake.query.auth;
     if (accessToken == null) 
-      return callback('Missing \'auth\' parameter with a valid access token.');
+      return callback("Missing 'auth' parameter with a valid access token.");
 
     const context = new MethodContext(
       userName, accessToken, 
