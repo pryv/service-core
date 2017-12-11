@@ -1,9 +1,12 @@
 // @flow
 
-const lodash = require('lodash');
 const url = require('url');
 const child_process = require('child_process');
+const net = require('net');
+
+const lodash = require('lodash');
 const msgpack = require('msgpack5')();
+const bluebird = require('bluebird');
 
 const { ConditionVariable, Fuse } = require('./condition_variable');
 
@@ -53,7 +56,7 @@ class SpawnContext {
   async spawn(): Promise<Server> {
     // Find a port to use
     // TODO Free ports once done.
-    const port = this.allocatePort(); 
+    const port = await this.allocatePort(); 
     
     // Obtain a process proxy
     const process = this.getProcess(); 
@@ -80,16 +83,55 @@ class SpawnContext {
   
   // Returns the next free port to use for testing. 
   //
-  allocatePort(): number {
-    // Simple strategy: Keep increasing port numbers. 
-    const nextPort = this.basePort; 
+  async allocatePort(): Promise<number> {
     
-    this.basePort += 1; 
+    // Infinite loop, see below for exits. 
+    while (true) { // eslint-disable-line no-constant-condition
+      // Simple strategy: Keep increasing port numbers. 
+      const nextPort = this.basePort; 
+      this.basePort += 1; 
+
+      // Exit 1: If this fires, we might reconsider the simple implementation
+      // here. 
+      if (this.basePort > 9000) 
+        throw new Error('AF: port numbers are <= 9000');
+
+      // Exit 2: If we can bind to the port, return it for our next child
+      // process.
+      if (await tryBindPort(nextPort))
+        return nextPort;
+    }
     
-    // If this fires, we might reconsider the simple implementation here. 
-    if (this.basePort > 9000) throw new Error('AF: port numbers are <= 9000');
-    
-    return nextPort;
+    // Tell flow not to worry about returns from this execution path. 
+    throw new Error('AF: NOT REACHED'); // eslint-disable-line no-unreachable
+        
+    // Returns true if this process can bind a listener to the `port` given. 
+    // Closes the port immediately after calling `listen()` so that a child
+    // can reuse the port number. 
+    // 
+    async function tryBindPort(port: number): Promise<boolean> {
+      const server = net.createServer();
+      
+      debug('Trying future child port', port);
+      return new bluebird((res, rej) => {
+        try {
+          server.on('error', (err) => {
+            debug('Future child port unavailable: ', err);
+            server.close(); 
+            res(false);
+          });
+          
+          server.listen(port, () => {
+            server.close(); 
+            res(true); 
+          });
+        } 
+        catch(err) {
+          debug('Synchronous exception while looking for a future child port: ', err);
+          rej(err);
+        }
+      });
+    }
   }
   
   // Spawns and returns a process to use for testing. This will probably spawn
@@ -237,6 +279,8 @@ class ProcessProxy {
   }
 }
 
+// Public facade to the servers we spawn. 
+//
 class Server {
   baseUrl: string; 
   process: ProcessProxy;
