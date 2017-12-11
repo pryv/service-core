@@ -9,7 +9,17 @@ const Settings = require('../../src/settings');
 import type { CustomAuthFunction } from 'components/model';
 import type { ConfigAccess, ConfigValue } from '../../src/settings';
 
-// Masks the config with values from `mask`. 
+// Decorator for the Settings class that api-server uses. Accepts an object as 
+// a mask; values from that object will overlay those from the actual loaded
+// configuration.
+//
+// Example: 
+// 
+//    const overlay = { foo: 'bar' };
+//    const mask = new ConfigMask(overlay, settings);
+//  
+//    mask.get('foo').str() // => 'bar'
+//
 class ConfigMask implements ConfigAccess {
   mask: Object; 
   settings: Settings;
@@ -20,9 +30,11 @@ class ConfigMask implements ConfigAccess {
   }
   
   get(key: string): ConfigValue {
+    // Overlaid?
     const value = this.getMask(key);
     if (value != null) return value; 
     
+    // No.
     return this.settings.get(key);
   }
   has(key: string): boolean {
@@ -40,41 +52,33 @@ class ConfigMask implements ConfigAccess {
   //
   getMask(key: string): ?ConfigValue {
     let current = this.mask; 
-    let lastPart = null; 
     const parts = key.split('.');
     
+    // Walk the parts array, updating current as we go. Each part is used to 
+    // access the subobject stored below it. 
     while (current != null && parts.length > 0) {
       const part = parts.shift(); 
-      lastPart = part; 
       
       current = current[part];
     }
+
+    // No overlay found, stop here. 
+    if (current == null) return null; 
     
-    if (current != null)
-      return Settings.existingValue(lastPart || 'n/a', current);
-      
-    return null; 
+    // If we haven't gone off the tracks, this is the overlay value we're
+    // looking for. 
+    return Settings.existingValue(key, current);
   }
 }
 
 // This bit is useful to trace down promise rejections that aren't caught. 
-process.on('unhandledRejection', (reason, promise) => {
-  console.warn(                                // eslint-disable-line no-console
-    'Unhandled promise rejection:', promise, 
-    'reason:', reason.stack || reason); 
-});
+//
+process.on('unhandledRejection', unhandledRejection);
 
-process.on('message', (wireMessage) => {
-  const message = msgpack.decode(wireMessage);
-  debug('received ', message);
-  
-  const [cmd, ...args] = message; 
-  switch(cmd) {
-    case 'int_startServer': 
-      intStartServer(args[0]); 
-      break; 
-  }
-});
+// Receives messages from the parent (spawner.js) and dispatches them to the 
+// handler functions below. 
+//
+process.on('message', dispatchParentMessage);
 
 async function intStartServer(injectSettings: {}) {
   const settings = Settings.load(); 
@@ -86,14 +90,44 @@ async function intStartServer(injectSettings: {}) {
   sendToParent('int_started');
 }
 
+function dispatchParentMessage(wireMessage: Buffer) {
+  const message = msgpack.decode(wireMessage);
+  
+  const [cmd, ...args] = message; 
+  debug('received ', cmd, args);
+  
+  switch(cmd) {
+    case 'int_startServer': 
+      intStartServer(args[0]); 
+      break; 
+    default: 
+      throw new Error(
+        `Child has received unknown message, ignoring... (${cmd})`);
+  }
+  
+  debug('done', cmd);
+}
+
+// Helper function to answer something to the parent. This is the counterpart
+// to 'dispatchParentMessage' above. 
 function sendToParent(cmd, ...args) {
   // FLOW Somehow flow-type doesn't know about process here. 
   process.send(
     msgpack.encode([cmd, ...args]));
 }
 
-function work() {
-  setTimeout(work, 1000);
+// Handles promise rejections that aren't caught somewhere. This is very useful
+// for debugging. 
+function unhandledRejection(reason, promise) {
+  console.warn(                                // eslint-disable-line no-console
+    'Unhandled promise rejection:', promise, 
+    'reason:', reason.stack || reason); 
 }
 
+// Keeps the event loop busy. This is what the child does as long as it is not 
+// serving requests. 
+//
+function work() {
+  setTimeout(work, 10000);
+}
 work(); 
