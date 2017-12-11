@@ -403,12 +403,16 @@ describe('Socket.IO', function () {
       
       const msgs = [];
       conn2.on('eventsChanged', () => {
+        console.log('eventsChanged');
         msgs.push('ec'); 
         eventReceived.broadcast(); 
       }); 
       
+      console.log('p1');
       await addEvent(conn1);
+      console.log('p2');
       await eventReceived.wait(1000);
+      console.log('p3');
       
       assert.deepEqual(msgs, ['ec']);
     });
@@ -420,8 +424,8 @@ describe('Socket.IO', function () {
     });
     
     function connectTo(server: Server, user: User): SocketIO$Client {
-      const params = { auth: user.token };
       const namespace = `/${user.name}`;
+      const params = { auth: user.token, resource: namespace };
       
       const url = server.url(namespace) + 
         `?${queryString.stringify(params)}`;
@@ -430,7 +434,7 @@ describe('Socket.IO', function () {
         'reconnect': false,             // Once connection is interrupted, it stays interrupted.
         'force new connection': true,   // Connect again, don't reuse old connections.
       };
-        
+
       const conn = io.connect(url, connectOpts);
       
       // Automatically add all created connections to the cleanup array: 
@@ -439,9 +443,11 @@ describe('Socket.IO', function () {
       return conn; 
     }
     function addEvent(conn): Promise<void> {
+      const stream = testData.streams[0];
       const attributes = {
         type: 'mass/kg', 
         content: '1',
+        streamId: stream.id,
       };
       return bluebird.fromCallback(
         (cb) => conn.emit('events.create', attributes, cb));

@@ -5,9 +5,11 @@ const socketIO = require('socket.io');
 const MethodContext = require('components/model').MethodContext;
 
 const Manager = require('./Manager');
-const ChangeNotifier = require('./change_notifier');
 const Paths = require('../routes/Paths');
 
+const ChangeNotifier = require('./change_notifier');
+const NatsPublisher = require('./nats_publisher');
+const NatsSubscriber = require('./nats_subscriber');
 
 // MONKEY PATCH Add support for wildcard event
 //
@@ -54,12 +56,13 @@ function setupSocketIO(
   // Manages socket.io connections and delivers method calls to the api. 
   const manager: Manager = new Manager(logger, io, api);
   
-  // Manages change notifications.
-  const changeNotifier = new ChangeNotifier();
-  changeNotifier.addSink(manager);
-  
-  // Listen to messages that we need to notify socket.io clients about. 
+  // Setup the chain from notifications -> NATS
+  const natsPublisher = new NatsPublisher('nats://127.0.0.1:4222');
+  const changeNotifier = new ChangeNotifier(natsPublisher);
   changeNotifier.listenTo(notifications);
+  
+  // Setup the chain from NATS -> manager
+  new NatsSubscriber('nats://127.0.0.1:4222', manager);
   
   function authorizeUserMiddleware(
     handshake: SocketIO$Handshake, callback: (err: any, res: any) => mixed
@@ -86,7 +89,7 @@ function setupSocketIO(
     // `nsName` namespace. 
     const cachedUser = manager.getUser(nsName);
     if (cachedUser != null) {
-      // FLOW We should not piggy-back on the method context here.
+      // FLOW Once MethodContext will be a class, this will work. 
       context.user = cachedUser; 
       return userLoaded(); 
     }

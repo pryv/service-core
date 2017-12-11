@@ -9,7 +9,7 @@ import type { Logger } from 'components/utils';
 import type { MethodContext } from 'components/model';
 import type API from '../API';
 
-import type { MessageSink } from './change_notifier';
+import type { MessageSink } from './sink_collection';
 
 type SocketIO$SocketId = string; 
 export type SocketIO$Handshake = {
@@ -45,9 +45,21 @@ type NamespaceContext = {
 
 type User = { username: string };
 
-// Singleton for managing sockets access:
-//
-//   - dynamic namespaces per user
+// Manages context and connections for socket-io. Usual sequence of things will 
+// be: 
+// 
+//  * The code in index.js sets up a methodContext instance and attaches it to 
+//    the handshake object. 
+//  * It calls `ensureInitNamespace` to make sure that we have a NamespaceContext
+//    instance for the connection. 
+//  * socket.io connects the client and calls 'onNsConnect' on the manager. 
+//  * manager creates a 'Connection' instance and calls `storeConnection` to 
+//    persist the connection. 
+//  * User calls methods on the connection, which will translate into 
+//    `onMethodCall` on the connection. 
+//  * ...
+//  * Once disconnection is registered, socket.io will call 'onDisconnect' on 
+//    the manager, which will in turn call `deleteConnection`.
 // 
 class Manager implements MessageSink {
   contexts: Map<string, NamespaceContext>; 
@@ -133,8 +145,7 @@ class Manager implements MessageSink {
     const socketNs = io.of(namespaceName);
     const ctx = {
       user: user, 
-      socketNs: socketNs, 
-      methodContexts: new Map(),
+      socketNs: socketNs
     };
     
     contexts.set(namespaceName, ctx);
@@ -164,7 +175,7 @@ class Manager implements MessageSink {
     if (namespace == null) 
       throw new Error('AF: namespace should not be null');
     
-    namespace.emit(message);
+    // namespace.emit(message);
   }
   
   // ------------------------------------------------------------ event handlers
@@ -262,9 +273,9 @@ class Connection {
     if (callback == null) callback = function(err: any) { }; // eslint-disable-line no-unused-vars
     
     const methodContext = this.methodContext;
-    // FLOW This is a hack, we should not piggy-back on the methodContext.
-    const userName = methodContext.username; 
-    
+
+    // FLOW MethodContext will need to be rewritten as a class...
+    const userName = methodContext.username;   
     const method = callData.name; 
     const params = callData.args[0];
     
