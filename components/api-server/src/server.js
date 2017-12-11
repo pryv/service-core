@@ -222,6 +222,8 @@ class Server {
       storageLayer, customAuthStepFn);
   }
   
+  // Open http/https port and listen to incoming connections. 
+  //
   async startListen(server: http$Server, axonSocket: EventEmitter) {
     const settings = this.settings; 
     const logger = this.logger; 
@@ -261,7 +263,8 @@ class Server {
     }
   }
   
-  // Opens an axon PUB socket. The socket will be used for three purposes mainly: 
+  // Opens an axon PUB socket. The socket will be used for three purposes: 
+  //
   //  a) Internal communication via events, called directly on the notifications 
   //    instance. 
   //  b) Communication with the tests. When ran via InstanceManager, this is 
@@ -291,6 +294,9 @@ class Server {
       process.exit(1);
     }
   }
+  
+  // Sets up `Notifications` bus and registers it for everyone to consume. 
+  // 
   setupNotificationBus(messagingSocket: EventEmitter) {
     const bus = this.notificationBus = new Notifications(messagingSocket);
     
