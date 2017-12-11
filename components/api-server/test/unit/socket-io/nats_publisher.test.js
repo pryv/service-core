@@ -37,11 +37,16 @@ describe('NatsPublisher', () => {
       'preserveBuffers': true 
     });
     
-    rawClient.subscribe('foobar.sok1', (msg) => {
+    const sid = rawClient.subscribe('foobar.sok1', (msg) => {
       try {
+        rawClient.unsubscribe(sid);
+        
         assert.deepEqual(decode(msg), 'onTestMessage');
+        
         done(); 
-      } catch(err) { done(err); }
+      } catch(err) { 
+        done(err); 
+      }
     });
     
     waitForConnect(rawClient)
