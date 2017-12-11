@@ -15,7 +15,7 @@ const { ConditionVariable } = require('../../helpers/condition_variable');
 const NatsSubscriber = require('../../../src/socket-io/nats_subscriber');
 const { encode } = require('../../../src/socket-io/nats_wire_message');
 
-import type { MessageSink } from '../../../src/socket-io/sink_collection';
+import type { MessageSink } from '../../../src/socket-io/message_sink';
 
 describe('NatsSubscriber', () => {
   it('should construct', () => {

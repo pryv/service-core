@@ -11,7 +11,7 @@ import type { Logger } from 'components/utils';
 import type { MethodContext } from 'components/model';
 import type API from '../API';
 
-import type { MessageSink } from './sink_collection';
+import type { MessageSink } from './message_sink';
 
 type SocketIO$SocketId = string; 
 export type SocketIO$Handshake = {
