@@ -4,6 +4,8 @@ const errorHandling = require('components/errors').errorHandling;
 const setCommonMeta = require('../methods/helpers/setCommonMeta');
 const bluebird = require('bluebird');
 const util = require('util');
+
+const NatsSubscriber = require('./nats_subscriber');
     
 import type { Logger } from 'components/utils';
 import type { MethodContext } from 'components/model';
@@ -41,6 +43,7 @@ type SocketIO$Server = {
 type NamespaceContext = {
   user: User; 
   socketNs: SocketIO$Namespace;
+  natsSubscriber: NatsSubscriber; 
 };
 
 type User = { username: string };
@@ -143,11 +146,17 @@ class Manager implements MessageSink {
     logger.debug(`Initializing namespace '${namespaceName}'`);
 
     const socketNs = io.of(namespaceName);
+    const sink: MessageSink = this; 
+    const natsSubscriber = new NatsSubscriber(
+      'nats://127.0.0.1:4222', 
+      user.username, 
+      sink);
+    
     const ctx = {
       user: user, 
-      socketNs: socketNs
+      socketNs: socketNs, 
+      natsSubscriber: natsSubscriber, 
     };
-    
     contexts.set(namespaceName, ctx);
     
     socketNs.on('connection', (socket: SocketIO$Socket) => this.onNsConnect(socket));
@@ -175,7 +184,7 @@ class Manager implements MessageSink {
     if (namespace == null) 
       throw new Error('AF: namespace should not be null');
     
-    // namespace.emit(message);
+    namespace.emit(message);
   }
   
   // ------------------------------------------------------------ event handlers
@@ -237,6 +246,9 @@ class Manager implements MessageSink {
   //
   onDisconnect(conn: Connection) {
     this.deleteConnection(conn);
+    
+    // TODO Look at how many connections remain for the namespace. If we're at
+    //  zero connections, remove the NATS subscription as well. 
   }
 }
 

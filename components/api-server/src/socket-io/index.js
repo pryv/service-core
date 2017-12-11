@@ -9,7 +9,6 @@ const Paths = require('../routes/Paths');
 
 const ChangeNotifier = require('./change_notifier');
 const NatsPublisher = require('./nats_publisher');
-const NatsSubscriber = require('./nats_subscriber');
 
 // MONKEY PATCH Add support for wildcard event
 //
@@ -60,9 +59,6 @@ function setupSocketIO(
   const natsPublisher = new NatsPublisher('nats://127.0.0.1:4222');
   const changeNotifier = new ChangeNotifier(natsPublisher);
   changeNotifier.listenTo(notifications);
-  
-  // Setup the chain from NATS -> manager
-  new NatsSubscriber('nats://127.0.0.1:4222', manager);
   
   function authorizeUserMiddleware(
     handshake: SocketIO$Handshake, callback: (err: any, res: any) => mixed

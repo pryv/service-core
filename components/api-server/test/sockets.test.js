@@ -403,16 +403,12 @@ describe('Socket.IO', function () {
       
       const msgs = [];
       conn2.on('eventsChanged', () => {
-        console.log('eventsChanged');
         msgs.push('ec'); 
         eventReceived.broadcast(); 
       }); 
       
-      console.log('p1');
       await addEvent(conn1);
-      console.log('p2');
       await eventReceived.wait(1000);
-      console.log('p3');
       
       assert.deepEqual(msgs, ['ec']);
     });
