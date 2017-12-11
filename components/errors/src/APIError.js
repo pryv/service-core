@@ -6,7 +6,7 @@ var util = require('util');
  * @constructor
  * @param {String} id
  * @param {String} message
- * @param {Object} options Possible options: {Number} httpStatus, {*} data, {Error} innerError
+ * @param {Object} options Possible options: {Number} httpStatus, {*} data, {Error} innerError, {Boolean} dontNotifyAirbrake
  */
 var APIError = module.exports = function (id, message, options) {
   APIError.super_.call(this);
@@ -16,6 +16,7 @@ var APIError = module.exports = function (id, message, options) {
   if (options.httpStatus) { this.httpStatus = options.httpStatus; }
   if (options.data) { this.data = options.data; }
   if (options.innerError) { this.innerError = options.innerError; }
+  if (options.dontNotifyAirbrake) { this.dontNotifyAirbrake = options.dontNotifyAirbrake; }
 };
 
 util.inherits(APIError, Error);

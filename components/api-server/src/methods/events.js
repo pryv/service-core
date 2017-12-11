@@ -499,12 +499,16 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
    */
   function checkStream(context, streamId, errorCallback) {
     if (! context.stream) {
-      errorCallback(errors.unknownReferencedResource('stream', 'streamId', streamId));
+      errorCallback(errors.unknownReferencedResource(
+        'stream', 'streamId', streamId
+      ));
       return false;
     }
     if (context.stream.trashed) {
-      errorCallback(errors.invalidOperation('The referenced stream "' + streamId +
-          '" is trashed.', {trashedReference: 'streamId'}));
+      errorCallback(errors.invalidOperation(
+        'The referenced stream "' + streamId + '" is trashed.',
+        {trashedReference: 'streamId'}
+      ));
       return false;
     }
     return true;
@@ -538,7 +542,8 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
       if (periodEvent) {
         return next(errors.invalidOperation('At least one period event ("' + periodEvent.id +
-            '") already exists at a later time', {conflictingEventId: periodEvent.id}));
+          '") already exists at a later time', {conflictingEventId: periodEvent.id}
+        ));
       }
 
       next();
@@ -600,7 +605,8 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       if (periodEvents.length > 0) {
         var msg = 'The event\'s period overlaps existing period events.';
         return next(errors.periodsOverlap(msg,
-            {overlappedIds: periodEvents.map(function (e) { return e.id; })}));
+          {overlappedIds: periodEvents.map(function (e) { return e.id; })}
+        ));
       }
 
       next();
@@ -696,53 +702,64 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   }
 
   api.register('events.stop',
-      commonFns.getParamsValidation(methodsSchema.stop.params),
-      function (context, params, result, next) {
-    // default time is now
-    _.defaults(params, { time: timestamp.now() });
+    commonFns.getParamsValidation(methodsSchema.stop.params),
+    function (context, params, result, next) {
+      // default time is now
+      _.defaults(params, { time: timestamp.now() });
 
-    if (params.id) {
-      userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
-        if (err) { return next(errors.unexpectedError(err)); }
-        if (! event) {
-          return next(errors.unknownReferencedResource('event', 'id', params.id));
+      if (params.id) {
+        userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
+          if (err) { return next(errors.unexpectedError(err)); }
+          if (! event) {
+            return next(errors.unknownReferencedResource(
+              'event', 'id', params.id
+            ));
+          }
+          if (! isRunning(event)) {
+            return next(errors.invalidOperation(
+              'Event "' + params.id + '" is not a running period event.'
+            ));
+          }
+          applyStop(null, event);
+        });
+      } else if (params.streamId) {
+        context.setStream(params.streamId);
+        if (! context.stream.singleActivityRootId && ! params.type) {
+          return process.nextTick(next.bind(null, 
+            errors.invalidParametersFormat(
+              'You must specify the event `id` or `type` ' +
+              ' (not a "single activity" stream).'
+            )
+          ));
         }
-        if (! isRunning(event)) {
-          return next(errors.invalidOperation('Event "' + params.id + '" is not a running ' +
-              'period event.'));
-        }
-        applyStop(null, event);
-      });
-    } else if (params.streamId) {
-      context.setStream(params.streamId);
-      if (! context.stream.singleActivityRootId && ! params.type) {
-        return process.nextTick(next.bind(null, errors.invalidParametersFormat('You must specify ' +
-            'the event `id` or `type` (not a "single activity" stream).')));
+        if (! checkStream(context, params.streamId, next)) { return; }
+        var stopParams = {
+          singleActivity: !! context.stream.singleActivityRootId,
+          time: params.time,
+          type: params.type
+        };
+        findLastRunning(context, stopParams, applyStop);
+      } else {
+        process.nextTick(next.bind(null,
+          errors.invalidParametersFormat(
+            'You must specify either the "single activity " stream id '+
+            'or the event `id`.'
+          )
+        ));
       }
-      if (! checkStream(context, params.streamId, next)) { return; }
-      var stopParams = {
-        singleActivity: !! context.stream.singleActivityRootId,
-        time: params.time,
-        type: params.type
-      };
-      findLastRunning(context, stopParams, applyStop);
-    } else {
-      process.nextTick(next.bind(null, errors.invalidParametersFormat('You must specify either ' +
-          'the "single activity " stream id or the event `id`.')));
-    }
 
-    function applyStop(error, event) {
-      if (error) { return next(errors.unexpectedError(error)); }
+      function applyStop(error, event) {
+        if (error) { return next(errors.unexpectedError(error)); }
 
-      stopEvent(context, event, params.time, function (err, stoppedId) {
-        if (err) { return next(err); }
+        stopEvent(context, event, params.time, function (err, stoppedId) {
+          if (err) { return next(err); }
 
-        result.stoppedId = stoppedId;
-        notifications.eventsChanged(context.user);
-        next();
-      });
-    }
-  });
+          result.stoppedId = stoppedId;
+          notifications.eventsChanged(context.user);
+          next();
+        });
+      }
+    });
 
   /**
    * Enforces permissions (returns an error if forbidden).
@@ -889,53 +906,55 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   }
 
   api.register('events.deleteAttachment',
-      commonFns.getParamsValidation(methodsSchema.deleteAttachment.params),
-      function (context, params, result, next) {
-    var updatedEvent,
-        deletedAtt;
-    async.series([
-      function (stepDone) {
-        checkEventForWriting(context, params.id, function (err, event) {
-          if (err) { return stepDone(err); }
+    commonFns.getParamsValidation(methodsSchema.deleteAttachment.params),
+    function (context, params, result, next) {
+      var updatedEvent,
+          deletedAtt;
+      async.series([
+        function (stepDone) {
+          checkEventForWriting(context, params.id, function (err, event) {
+            if (err) { return stepDone(err); }
 
-          updatedEvent = event;
-          stepDone();
-        });
-      },
-      function (stepDone) {
-        var attIndex = getAttachmentIndex(updatedEvent.attachments, params.fileId);
-        if (attIndex === -1) {
-          return stepDone(errors.unknownResource('attachment', params.fileId));
-        }
-        deletedAtt = updatedEvent.attachments[attIndex];
-        updatedEvent.attachments.splice(attIndex, 1);
+            updatedEvent = event;
+            stepDone();
+          });
+        },
+        function (stepDone) {
+          var attIndex = getAttachmentIndex(updatedEvent.attachments, params.fileId);
+          if (attIndex === -1) {
+            return stepDone(errors.unknownResource(
+              'attachment', params.fileId
+            ));
+          }
+          deletedAtt = updatedEvent.attachments[attIndex];
+          updatedEvent.attachments.splice(attIndex, 1);
 
-        var updatedData = {attachments: updatedEvent.attachments};
-        context.updateTrackingProperties(updatedData);
+          var updatedData = {attachments: updatedEvent.attachments};
+          context.updateTrackingProperties(updatedData);
 
-	userEventsStorage.updateOne(context.user, {id: params.id}, updatedData,
+          userEventsStorage.updateOne(context.user, {id: params.id}, updatedData,
             function (err, updatedEvent) {
-          if (err) { return stepDone(err); }
-          result.event = updatedEvent;
-          setFileReadToken(context.access, result.event);
-          stepDone();
-        });
-      },
-      function (stepDone) {
-        userEventFilesStorage.removeAttachedFile(context.user, params.id, params.fileId, stepDone);
-      },
-      function (stepDone) {
-        // approximately update account storage size
-        context.user.storageUsed.attachedFiles -= deletedAtt.size;
-	usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
+              if (err) { return stepDone(err); }
+              result.event = updatedEvent;
+              setFileReadToken(context.access, result.event);
+              stepDone();
+            });
+        },
+        function (stepDone) {
+          userEventFilesStorage.removeAttachedFile(context.user, params.id, params.fileId, stepDone);
+        },
+        function (stepDone) {
+          // approximately update account storage size
+          context.user.storageUsed.attachedFiles -= deletedAtt.size;
+          usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
             stepDone);
-      },
-      function (stepDone) {
-        notifications.eventsChanged(context.user);
-        stepDone();
-      }
-    ], next);
-  });
+        },
+        function (stepDone) {
+          notifications.eventsChanged(context.user);
+          stepDone();
+        }
+      ], next);
+    });
 
   /**
    * Returns the query value to use for the given type, handling possible wildcards.
@@ -954,7 +973,9 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         return callback(errors.unexpectedError(err));
       }
       if (! event) {
-        return callback(errors.unknownResource('event', eventId));
+        return callback(errors.unknownResource(
+          'event', eventId
+        ));
       }
       if (! context.canContributeToContext(event.streamId, event.tags)) {
         return callback(errors.forbidden());

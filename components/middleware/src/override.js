@@ -1,5 +1,4 @@
-var APIError = require('components/errors').APIError,
-    ErrorIds = require('components/errors').ErrorIds;
+const errors = require('components/errors').factory;
 
 /**
  * Middleware to allow overriding HTTP method, "Authorization" header and JSON body content
@@ -29,7 +28,7 @@ module.exports = function (req, res, next) {
     try {
       req.body = JSON.parse(req.body._json);
     } catch (err) {
-      return next(new APIError(ErrorIds.InvalidRequestStructure, err.message, {httpStatus: 400}));
+      return next(errors.invalidRequestStructure(err.message));
     }
   }
 

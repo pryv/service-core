@@ -72,6 +72,15 @@ function activateAirbrake(app) {
       const key = airbrakeSettings.key;
       if(projectId != null && key != null){
         const airbrake = require('airbrake').createClient(projectId, key);
+
+        airbrake.addFilter(function (notice) {
+          if (notice.environment['err.dontNotifyAirbrake']) {
+            // Ignore errors with this messsage
+            return null;
+          }
+          return notice;
+        });
+
         app.use(airbrake.expressHandler());
       }
     }
