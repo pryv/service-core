@@ -250,7 +250,6 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
 
   function checkAccessForUpdate(context, params, result, next) {
     userAccessesStorage.findOne(context.user, {id: params.id}, dbFindOptions,
-<<<<<<< HEAD
       function (err, access) {
         if (err) { return next(errors.unexpectedError(err)); }
 
@@ -266,19 +265,6 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
             'to modify this access.'
           ));
         }
-=======
-        function (err, access) {
-      if (err) { return next(errors.unexpectedError(err)); }
-      if (! access) {
-        return next(errors.unknownResource('access', params.id));
-      }
-
-
-      if (! context.access.isPersonal() && ! context.access.canManageAccess(access)) {
-        return next(errors.forbidden('Your access token has insufficient permissions to ' +
-            'modify this access.'));
-      }
->>>>>>> master
 
         context.resource = access;
 
