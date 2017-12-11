@@ -250,7 +250,7 @@ class Server {
   // be terminated. 
   // 
   async stop(): Promise<boolean> {
-    debug('stop called')
+    debug('stop called');
     try {
       debug('stopping child...');
       await this.process.terminate(); 
