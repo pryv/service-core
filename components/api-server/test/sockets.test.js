@@ -280,31 +280,28 @@ describe('Socket.IO', function () {
         });
       });
     });
-    it('must notify other sockets for the same user (only) about streams changes', function (done) {
+    it('must notify other sockets for the same user (only) about streams changes', function () {
       ioCons.con1 = connect(namespace, {auth: token}); // personal access
-      ioCons.con2 = connect(namespace, {auth: testData.accesses[2].token}); // "read all" access
       ioCons.otherCon = connect('/' + otherUser.username, {auth: otherToken});
 
-      let con2NotifsCount = 0;
-      let otherConNotifsCount = 0;
+      return new bluebird((res, rej) => {
+        // We do _not_ want otherCon to be notified.
+        ioCons.otherCon.on('streamsChanged', rej);
+        
+        // NOTE How to test if no notifications are sent to otherCon? We reject
+        //  if we receive one - but have to wait for notifications to get in to
+        //  make this effective. Let's sacrifice 100ms.
+        setTimeout(res, 100);
 
-      ioCons.con2.on('streamsChanged',      function () { con2NotifsCount++; });
-      ioCons.otherCon.on('streamsChanged',  function () { otherConNotifsCount++; });
-
-      whenAllConnectedDo(function () {
-        var params = {
-          name: 'Rutabaga',
-          parentId: undefined
-        };
-        ioCons.con1.emit('streams.create', params, function (err/*, result*/) {
-          should.not.exist(err);
-
-          setTimeout(function () { // pass turn to make sure notifs are received
-            assert.equal(con2NotifsCount, 1);
-            assert.equal(otherConNotifsCount, 0);
-
-            done();
-          }, 0);
+        // Now create a stream for con1.
+        whenAllConnectedDo(function () {
+          var params = {
+            name: 'Rutabaga',
+            parentId: undefined
+          };
+          ioCons.con1.emit('streams.create', params, (err) => {
+            if (err) rej(err); 
+          });
         });
       });
     });
@@ -327,27 +324,6 @@ describe('Socket.IO', function () {
       
       return bluebird.all(donePromises);
               
-      // Returns a tuple of a (promise, callback). The promise fulfills when the
-      // callback is called `n` times. 
-      function expectNCalls(n: number): [Promise<void>, () => void] {
-        let callCount = 0; 
-        let deferred; 
-      
-        const promise = new bluebird((res) => {
-          deferred = res; 
-        }); 
-        
-        const fun = () => {
-          callCount += 1; 
-          
-          if (deferred == null) 
-            throw new Error('AF: deferred promise is created synchronously.');
-          
-          if (callCount >= n) deferred(); 
-        };
-        
-        return [promise, fun];
-      }
       function createStream(conn, params) {
         return bluebird.fromCallback(
           (cb) => conn.emit('streams.create', params, cb));
@@ -470,3 +446,24 @@ type SocketIO$Client = {
   emit: (event: string, params: any, cb: () => void) => void;
 };
 
+// Returns a tuple of a (promise, callback). The promise fulfills when the
+// callback is called `n` times. 
+function expectNCalls(n: number): [Promise<void>, () => void] {
+  let callCount = 0; 
+  let deferred; 
+
+  const promise = new bluebird((res) => {
+    deferred = res; 
+  }); 
+  
+  const fun = () => {
+    callCount += 1; 
+    
+    if (deferred == null) 
+      throw new Error('AF: deferred promise is created synchronously.');
+    
+    if (callCount >= n) deferred(); 
+  };
+  
+  return [promise, fun];
+}
