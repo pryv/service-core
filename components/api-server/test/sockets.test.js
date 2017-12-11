@@ -1,28 +1,31 @@
 // @flow
 
-/*global describe, before, beforeEach, afterEach, it, after */
+/* global describe, before, beforeEach, afterEach, it, after */
 
 /**
  * Tests Socket.IO access to the API.
  */
 
-require('./test-helpers'); 
-const helpers = require('./helpers');
-const ErrorIds = require('components/errors').ErrorIds;
-const server = helpers.dependencies.instanceManager;
-const async = require('async');
-const streamsMethodsSchema = require('../src/schema/streamsMethods');
-const eventsMethodsSchema = require('../src/schema/eventsMethods');
-const validation = helpers.validation;
-const io = require('socket.io-client');
-const queryString = require('qs');
-const should = require('should'); // explicit require to benefit from static funcions
-const testData = helpers.data;
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 const R = require('ramda');
 const assert = require('chai').assert; 
 const bluebird = require('bluebird');
+const async = require('async');
+const io = require('socket.io-client');
+// explicit require to benefit from static funcions
+const should = require('should'); 
+const queryString = require('qs');
+
+require('./test-helpers'); 
+const helpers = require('./helpers');
+const ErrorIds = require('components/errors').ErrorIds;
+const server = helpers.dependencies.instanceManager;
+const streamsMethodsSchema = require('../src/schema/streamsMethods');
+const eventsMethodsSchema = require('../src/schema/eventsMethods');
+const validation = helpers.validation;
+const testData = helpers.data;
+
 const { SpawnContext, Server, ConditionVariable } = require('./helpers/spawner');
 
 describe('Socket.IO', function () {
@@ -384,7 +387,7 @@ describe('Socket.IO', function () {
       await context.shutdown(); 
     });
     
-    it.skip('changes made in A notify clients of B', async () => {
+    it('changes made in A notify clients of B', async () => {
       if (token == null) throw new Error('AF: token must be set');
 
       // Aggregate user data to be more contextual
