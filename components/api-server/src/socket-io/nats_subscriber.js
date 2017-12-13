@@ -60,6 +60,16 @@ class NatsSubscriber {
     }
   }
   
+  // Closes this NatsSubscriber's connections. This unsubscribes and closes  the
+  // connection to the NATS server in particular. The instance will be useless 
+  // after this. 
+  // 
+  close() {
+    const conn = this.conn; 
+
+    conn.close(); 
+  }
+  
   // Dispatches a single message received from NATS. 
   // 
   dispatch(buf: Buffer) {
