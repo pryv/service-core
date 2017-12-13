@@ -397,13 +397,8 @@ describe('Socket.IO', function () {
       
       assert.deepEqual(msgs, ['ec']);
     });
-    it.skip('changes made in A (still) notify clients of A', () => {
       
-    });
-    it.skip('should not notify twice, even if changes are process-local', () => {
-      
-    });
-    
+    // Connect to `server` using `user` as credentials. 
     function connectTo(server: Server, user: User): SocketIO$Client {
       const namespace = `/${user.name}`;
       const params = { auth: user.token, resource: namespace };
@@ -423,6 +418,8 @@ describe('Socket.IO', function () {
       
       return conn; 
     }
+    
+    // Creates an event, using socket connection `conn`.
     function addEvent(conn): Promise<void> {
       const stream = testData.streams[0];
       const attributes = {
