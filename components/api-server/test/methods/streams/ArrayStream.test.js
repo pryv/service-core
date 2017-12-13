@@ -60,6 +60,33 @@ describe('ArrayStream', function () {
       .pipe(aStream)
       .pipe(new DestinationStream(true, expectation));
   });
+  
+  it('must return a valid array when receiving limit+1 items', function (done) {
+    var items = [],
+      name = 'name';
+
+    var aStream = new ArrayStream(name, true);
+
+    for (var i = 0; i < aStream.size + 1; i++) {
+      items.push({
+        a: 'a',
+        n: i
+      });
+    }
+
+    function expectation(err, res) {
+      should.not.exist(err);
+      should.exist(res);
+      res = JSON.parse(res);
+      should.exist(res[name]);
+      res[name].should.eql(items);
+      done();
+    }
+
+    new Source(items)
+      .pipe(aStream)
+      .pipe(new DestinationStream(true, expectation));
+  });
 
   it('must return a valid empty array when receiving zero items', function (done) {
     var items = [],

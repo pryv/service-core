@@ -17,7 +17,6 @@ function ArrayStream(arrayName, isFirst) {
   this.isStart = true;
   this.prefix = formatPrefix(arrayName, isFirst);
   this.size = SERIALIZATION_STACK_SIZE;
-  this.count = 0;
   this.stack = [];
 }
 
@@ -26,8 +25,7 @@ inherits(ArrayStream, Transform);
 ArrayStream.prototype._transform = function (item, encoding, callback) {
 
   this.stack.push(item);
-  this.count++;
-  if (this.count > this.size) {
+  if (this.stack.size == this.size) {
     if (this.isStart) {
       this.isStart = false;
       this.push((this.prefix + JSON.stringify(this.stack)).slice(0,-1));
@@ -35,7 +33,6 @@ ArrayStream.prototype._transform = function (item, encoding, callback) {
       this.push(',' + (JSON.stringify(this.stack)).slice(1,-1));
     }
     this.stack = [];
-    this.count = 0;
   }
   callback();
 };
