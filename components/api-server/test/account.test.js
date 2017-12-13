@@ -74,64 +74,66 @@ describe('account', function () {
     beforeEach(resetUsers);
 
     it('must modify account details with the sent data, notifying register if e-mail changed',
-        function (done) {
-      var settings = _.clone(helpers.dependencies.settings);
-      var updatedData = {
-        email: 'userzero.new@test.com',
-        language: 'zh'
-      };
+      function (done) {
+        const settings = _.clone(helpers.dependencies.settings);
+        const updatedData = {
+          email: 'userzero.new@test.com',
+          language: 'zh'
+        };
 
-      // setup registration server mock
-
-      var regServerCalled = false;
-      helpers.instanceTestSetup.set(settings, {
-        context: _.defaults({username: user.username}, settings.services.register),
-        execute: function () {
-          var path = '/users/' + this.context.username + '/change-email';
-          require('nock')(this.context.url).post(path)
+        // setup registration server mock
+        let regServerCalled = false;
+        helpers.instanceTestSetup.set(settings, {
+          context: _.defaults({username: user.username}, settings.services.register),
+          execute: function () {
+            const path = '/users/' + this.context.username + '/change-email';
+            require('nock')(this.context.url).post(path)
               .matchHeader('Authorization', this.context.key)
               .reply(200, function (uri, requestBody) {
-            this.context.messagingSocket.emit('reg-server-called', JSON.parse(requestBody));
-          }.bind(this));
-        }
-      });
-      // fetch service call data from server process
-      server.on('reg-server-called', function (sentData) {
-        sentData.should.eql({email: updatedData.email});
-        regServerCalled = true;
-      });
+                this.context.messagingSocket.emit('reg-server-called', JSON.parse(requestBody));
+              }.bind(this));
+          }
+        });
+        
+        // fetch service call data from server process
+        server.on('reg-server-called', function (sentData) {
+          sentData.should.eql({email: updatedData.email});
+          regServerCalled = true;
+        });
 
-      async.series([
-        server.ensureStarted.bind(server, settings),
-        function update(stepDone) {
-          request.put(basePath).send(updatedData).end(function (res) {
-            /*jshint -W030*/
-            regServerCalled.should.be.ok;
+        async.series([
+          server.ensureStarted.bind(server, settings),
+          function update(stepDone) {
+            request.put(basePath).send(updatedData).end(function (res) {
+              /*jshint -W030*/
+              regServerCalled.should.be.ok;
 
-            var expected = _.defaults(updatedData, user);
-            delete expected.id;
-            delete expected.password;
-            delete expected.storageUsed;
-            validation.check(res, {
-              status: 200,
-              schema: methodsSchema.update.result,
-              body: {account: expected},
-              sanitizeFn: cleanUpDetails,
-              sanitizeTarget: 'account'
+              let expected = _.defaults(updatedData, user);
+              delete expected.id;
+              delete expected.password;
+              delete expected.storageUsed;
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.update.result,
+                body: {account: expected},
+                sanitizeFn: cleanUpDetails,
+                sanitizeTarget: 'account'
+              });
+              accountNotifCount.should.eql(1, 'account notifications');
+              stepDone();
             });
-
-            accountNotifCount.should.eql(1, 'account notifications');
-            stepDone();
-          });
-        },
-        function verifyData(stepDone) {
-          storage.findOne({id: user.id}, null, function (err, updatedUser) {
-            validation.checkStoredItem(updatedUser, 'user');
-            stepDone();
-          });
-        }
-      ], done);
-    });
+          },
+          function verifyData(stepDone) {
+            storage.findOne({id: user.id}, null, function (err, updatedUser) {
+              if(err) {
+                return stepDone(err);
+              }
+              validation.checkStoredItem(updatedUser, 'user');
+              stepDone();
+            });
+          }
+        ], done);
+      });
 
     it('must return a correct error if the sent data is badly formatted', function (done) {
       request.put(basePath).send({badProperty: 'bad value'}).end(function (res) {
