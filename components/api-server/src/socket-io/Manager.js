@@ -135,7 +135,7 @@ class Manager implements MessageSink {
   
   // Sets up the namespace with the given name and user, if not already present.
   // 
-  ensureInitNamespace(namespaceName: string, user: User) {
+  async ensureInitNamespace(namespaceName: string, user: User) {
     const io = this.io; 
     const logger = this.logger; 
     const contexts = this.contexts;
@@ -149,8 +149,11 @@ class Manager implements MessageSink {
     const sink: MessageSink = this; 
     const natsSubscriber = new NatsSubscriber(
       'nats://127.0.0.1:4222', 
-      user.username, 
       sink);
+    
+    // We'll await this, since the user will want a connection that has
+    // notifications turned on immediately. 
+    await natsSubscriber.subscribe(user.username);
     
     const ctx = {
       user: user, 

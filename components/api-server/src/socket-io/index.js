@@ -93,11 +93,12 @@ function setupSocketIO(
     // User wasn't cached, load it. 
     return context.retrieveUser(userLoaded);
       
-    function userLoaded(err) {
+    async function userLoaded(err) {
       if (err != null) { return callback(err); }
       
       // FLOW We should not piggy-back on the method context here.
-      manager.ensureInitNamespace(nsName, context.user);
+      await manager.ensureInitNamespace(nsName, context.user);
+      
       return callback(null, true);
     }
   }

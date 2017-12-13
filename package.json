@@ -19,6 +19,7 @@
     "airbrake": "^2.1.1",
     "api-server": "file:components/api-server",
     "async": "^2.5.0",
+    "awaiting": "^3.0.0",
     "axon": "2.0.x",
     "bcrypt": "^1.0.2",
     "bluebird": "^3.5.0",
