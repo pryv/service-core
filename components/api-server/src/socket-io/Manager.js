@@ -3,7 +3,7 @@
 const errorHandling = require('components/errors').errorHandling;
 const setCommonMeta = require('../methods/helpers/setCommonMeta');
 const bluebird = require('bluebird');
-const util = require('util');
+const lodash = require('lodash');
 
 const NatsSubscriber = require('./nats_subscriber');
     
@@ -28,6 +28,7 @@ type SocketIO$CallData = {
 type SocketIO$Socket = {
   id: SocketIO$SocketId;
   on(string, ...a: Array<mixed>): mixed; 
+  once(string, ...a: Array<mixed>): mixed; 
   namespace: SocketIO$Namespace;
 };
 type SocketIO$Namespace = {
@@ -35,16 +36,12 @@ type SocketIO$Namespace = {
   on(string, ...a: Array<mixed>): mixed; 
   emit(string, ...a: Array<mixed>): void; 
   name: string; 
+  sockets: {[socketId: SocketIO$SocketId]: SocketIO$Socket};
 }
 type SocketIO$Server = {
   of: (string) => SocketIO$Namespace; 
   handshaken: {[id: SocketIO$SocketId]: SocketIO$Handshake};
 }; 
-type NamespaceContext = {
-  user: User; 
-  socketNs: SocketIO$Namespace;
-  natsSubscriber: NatsSubscriber; 
-};
 
 type User = { username: string };
 
@@ -107,19 +104,32 @@ class Manager implements MessageSink {
     return candidate;
   }
   
-  // Returns true if we already have a context for the given `namespaceName`.
-  hasContextForNamespace(namespaceName: string): boolean {
-    return this.contexts.has(namespaceName);
-  }
-  
   // Retrieves the namespace context given a namespace. 
   // 
   getContext(namespaceName: string): ?NamespaceContext {
     const contexts = this.contexts; 
     
-    const context = contexts.get(namespaceName);
-    if (context == null) return null; 
+    return contexts.get(namespaceName);
+  }
+  
+  // Retrieves the namespace context from this.contexts - or calls `missingCb` 
+  // if no such namespace exists yet. The namespace returned from `missingCb` 
+  // is then stored in the contexts map. 
+  // 
+  ensureContext(
+    namespaceName: string, missingCb: () => NamespaceContext
+  ): NamespaceContext {
+    const contexts = this.contexts; 
+    
+    let context = contexts.get(namespaceName);
+    
+    // Value is not missing, return it. 
+    if (context != null) return context; 
+    
+    // Value is missing, produce it. 
+    context = missingCb();
 
+    contexts.set(namespaceName, context);
     return context; 
   }
   
@@ -136,44 +146,38 @@ class Manager implements MessageSink {
   // Sets up the namespace with the given name and user, if not already present.
   // 
   async ensureInitNamespace(namespaceName: string, user: User) {
+    const context = this.ensureContext(namespaceName, 
+      () => this.setupNamespaceContext(namespaceName, user));
+    
+    // On every path, reopen the context resources. 
+    await context.open(); 
+  }
+  
+  // Creates a NamespaceContext and stores it in the contexts map. The context
+  // will not be open yet. 
+  // 
+  setupNamespaceContext(namespaceName: string, user: User): NamespaceContext {
     const io = this.io; 
     const logger = this.logger; 
-    const contexts = this.contexts;
-    
-    // If the namespace has a context, abort. 
-    if (this.hasContextForNamespace(namespaceName)) return; 
-    
-    logger.debug(`Initializing namespace '${namespaceName}'`);
-
     const socketNs = io.of(namespaceName);
-    const sink: MessageSink = this; 
-    const natsSubscriber = new NatsSubscriber(
-      'nats://127.0.0.1:4222', 
-      sink);
-    
-    // We'll await this, since the user will want a connection that has
-    // notifications turned on immediately. 
-    await natsSubscriber.subscribe(user.username);
-    
-    const ctx = {
-      user: user, 
-      socketNs: socketNs, 
-      natsSubscriber: natsSubscriber, 
-    };
-    contexts.set(namespaceName, ctx);
+    const ctx = new NamespaceContext(user, socketNs, this);
+
+    logger.debug(`Initializing namespace '${namespaceName}'`);
     
     socketNs.on('connection', (socket: SocketIO$Socket) => this.onNsConnect(socket));
+
+    return ctx; 
   }
   
   storeConnection(conn: Connection) {
     const connections = this.connections;
     
-    connections.set(conn.id, conn);
+    connections.set(conn.key(), conn);
   }
   deleteConnection(conn: Connection) {
     const connections = this.connections;
       
-    connections.delete(conn.id);
+    connections.delete(conn.key());
   }
   
   // Given a `userName` and a `message`, delivers the `message` as a socket.io
@@ -217,10 +221,8 @@ class Manager implements MessageSink {
     
     logger.debug(`New client connected on namespace '${namespaceName}`);
     
-    if (context == null) {
-      logger.warn(`AF: onNsConnect received for '${namespaceName}', but no context was available.`);
-      return; 
-    }
+    if (context == null) 
+      throw new Error(`AF: onNsConnect received for '${namespaceName}', but no context was available.`);
     // assert: context != null
     
     // Extract the methodContext from the handshake: 
@@ -235,48 +237,138 @@ class Manager implements MessageSink {
 
     // This will represent state that we keep for every connection. 
     const connection = new Connection(
-      this.logger, socket.id, methodContext, this.api);
+      this.logger, socket, context, methodContext, this.api);
 
-    // TODO Either add namespace deletion here or remove the whole doodle altoghether.
     this.storeConnection(connection);
-    socket.on('disconnect', 
-      () => this.onDisconnect(connection));
+    socket.once('disconnect', eventHandler(
+      () => this.onDisconnect(connection)));
     
     connection.registerCallbacks(socket);
+    
+    // TODO apply this pattern in all of this file. 
+    function eventHandler(fun) {
+      return lodash.partial(catchAndLog,
+        logger, 
+        fun);
+    }
+    function catchAndLog(logger, fun) {
+      try {
+        fun(); 
+      }
+      catch (err) {
+        logger.error(err);
+      }
+    }
   }
   
   // Called when the underlying socket-io socket disconnects.
   //
   onDisconnect(conn: Connection) {
     this.deleteConnection(conn);
-    
-    // TODO Look at how many connections remain for the namespace. If we're at
-    //  zero connections, remove the NATS subscription as well. 
   }
 }
 
+class NamespaceContext {
+  user: User; 
+  socketNs: SocketIO$Namespace;
+  sink: MessageSink;
+  
+  natsSubscriber: ?NatsSubscriber; 
+  
+  constructor(
+    user: User, socketNs: SocketIO$Namespace, sink: MessageSink
+  ) {
+    this.user = user; 
+    this.socketNs = socketNs; 
+    this.sink = sink; 
+    
+    this.natsSubscriber = null;
+  }
+  
+  async open() {
+    const sink = this.sink; 
+    const userName = this.user.username;
+    
+    const natsSubscriber = new NatsSubscriber(
+      'nats://127.0.0.1:4222', 
+      sink);
+          
+    // We'll await this, since the user will want a connection that has
+    // notifications turned on immediately. 
+    await natsSubscriber.subscribe(userName);
+    
+    this.natsSubscriber = natsSubscriber;
+  }
+  
+  // Closes down resources associated with this namespace context. 
+  // 
+  async close() {
+    const natsSubscriber = this.natsSubscriber;
+
+    if (natsSubscriber == null) return; 
+    this.natsSubscriber = null; 
+    
+    await natsSubscriber.close(); 
+  }
+}
+
+
 class Connection {
-  id: SocketIO$SocketId; 
+  socket: SocketIO$Socket; 
+  namespaceContext: NamespaceContext;
   methodContext: MethodContext;
   api: API; 
   logger: Logger; 
   
   constructor(
     logger: Logger, 
-    id: SocketIO$SocketId, methodContext: MethodContext, api: API
+    socket: SocketIO$Socket, 
+    namespaceContext: NamespaceContext,
+    methodContext: MethodContext, api: API
   ) {
-    this.id = id; 
-    this.methodContext = methodContext; 
+    this.socket = socket; 
+    this.namespaceContext = namespaceContext; 
+    this.methodContext = methodContext;
     this.api = api; 
     this.logger = logger; 
   }
   
+  // This should be used as a key when storing the connection inside a Map. 
+  key(): string {
+    return this.socket.id;
+  }
+  
   registerCallbacks(socket: SocketIO$Socket) {
     // Attach a few handlers to this socket. 
-    socket.on('*', (callData, callback) => this.onMethodCall(callData, callback));
+    socket.on('*', 
+      (callData, callback) => this.onMethodCall(callData, callback));
+    socket.once('disconnect', 
+      () => this.onDisconnect());
   }
   
   // ------------------------------------------------------------ event handlers
+  
+  async onDisconnect() {
+    const logger = this.logger; 
+    const socket = this.socket; 
+    const namespace = socket.namespace; 
+    const connectionIds = Object.keys(namespace.sockets); 
+    
+    logger.info(`Namespace ${namespace.name}: socket disconnect (${connectionIds.length} conns remain).`);
+    
+    // Are we the last connected socket? (disconnect event fires before we're
+    // removed from that array)
+    if (connectionIds.length > 1) return; 
+    if (connectionIds[0] !== socket.id) return; 
+    
+    // assert: We're the last connected socket in this namespace. 
+    //         (connectionIds === [socket.id])
+
+    logger.info(`Namespace ${namespace.name} closing down, cleaning up resources`); 
+
+    // Deregister resources that we might have associated to the namespace. 
+    await this.namespaceContext.close();
+  }
   
   // Called when the socket wants to call a Pryv IO method. 
   // 
@@ -294,9 +386,6 @@ class Connection {
     const method = callData.name; 
     const params = callData.args[0];
     
-    logger.debug(
-      `Call: for '${userName}', method '${method}', body ${util.inspect(params)}`);
-      
     const answer = bluebird.fromCallback(
       (cb) => api.call(method, methodContext, params, cb));
       

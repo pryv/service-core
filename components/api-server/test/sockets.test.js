@@ -30,28 +30,47 @@ const { SpawnContext, Server, ConditionVariable } = require('./helpers/spawner')
 
 describe('Socket.IO', function () {
 
-  var user = testData.users[0],
-      otherUser = testData.users[1],
-      token = null,
-      otherToken = null;
+  const user = testData.users[0];
+  const namespace = '/' + user.username;
 
+  const otherUser = testData.users[1];
+  let token = null;
+  let otherToken = null;
+
+  let cleanupConnections = []; 
+  
+  // Connects to `namespace` given `queryParams`. Connections are disconnected
+  // after each test automatically.
   function connect(namespace, queryParams) {
     const paramsWithNS = _.defaults({resource: namespace}, queryParams || {});
     const url = server.url + namespace + '?' + queryString.stringify(paramsWithNS);
     
-    return io.connect(url, {
+    const conn = io.connect(url, {
       'reconnect': false, 
       'force new connection': true});
+      
+    cleanupConnections.push(conn);
+    
+    return conn; 
   }
+  // Disconnects all connections in cleanupConnections; then empties it. 
+  afterEach(() => {
+    for (const conn of cleanupConnections) {
+      conn.disconnect(); 
+    }
+    
+    cleanupConnections = []; 
+  });
 
-  // all Socket.IO connections used in tests should be added in there to simplify cleanup
-  var ioCons = {};
-
+  let ioCons = {};
+  
+  // Waits until all the connections stored as properties of `ioCons` are 
+  // connected.  
   function whenAllConnectedDo(callback) {
     var conKeys = Object.keys(ioCons),
         conCount = 0;
     conKeys.forEach(function (key) {
-      ioCons[key].on('connect', function () {
+      ioCons[key].once('connect', function () {
         conCount++;
         if (conCount === conKeys.length) {
           callback();
@@ -59,7 +78,12 @@ describe('Socket.IO', function () {
       });
     });
   }
+  // Reset ioCons to be empty. 
+  afterEach(() => {
+    ioCons = {}; 
+  });
 
+  // Reset database contents for the tests here. 
   before(function (done) {
     var request = null,
         otherRequest = null;
@@ -86,28 +110,16 @@ describe('Socket.IO', function () {
       done();
     });
   });
-
   beforeEach(function (done) {
     async.series([
       testData.resetStreams,
       testData.resetEvents
     ], done);
   });
-
-  afterEach(function (done) {
-    // cleanup open connections
-    Object.keys(ioCons).forEach(function (key) {
-      ioCons[key].disconnect();
-      delete ioCons[key];
-    });
-    done();
-  });
-
-  var namespace = '/' + user.username;
-
+  
   it('must dynamically create a namespace for the user', function (done) {
     ioCons.con = connect(namespace, {auth: token});
-
+  
     ioCons.con.on('connect', function (err) {
       // if we get here, communication is properly established
       done(err);
@@ -118,10 +130,9 @@ describe('Socket.IO', function () {
     });
   });
   it('must connect to a user with a dash in the username', function (done) {
-
     var dashUser = testData.users[4],
         dashRequest = null;
-        
+  
     async.series([
       function (stepDone) {
         testData.resetAccesses(stepDone, dashUser);
@@ -132,44 +143,35 @@ describe('Socket.IO', function () {
       },
       function (stepDone) {
         ioCons.con = connect('/' + dashUser.username, {auth: testData.accesses[2].token});
-
+  
         ioCons.con.on('error', function (e) {
           should.not.exist(e);
           stepDone(e);
         });
-
+  
         ioCons.con.on('connect', function () {
           should.exist(ioCons.con);
           stepDone();
         });
       }
-    ], function (err) {
-      if (err) { return done(err); }
-      done();
-    });
+    ], done);
   });
   it('must refuse connection if no valid access token is provided', function (done) {
     ioCons.con = connect(namespace);
-
-    ioCons.con.socket.on('error', function () {
-      if (! ioCons.con) { return; }
-      done();
-    });
-
+  
     ioCons.con.on('connect', function () {
       throw new Error('Connecting should have failed');
     });
-  });
-
-  describe('calling API methods', function () {
-    afterEach(function (done) {
-      // restart server if crashed
-      if (server.crashed()) {
-        return server.restart(done);
-      }
+  
+    ioCons.con.socket.on('error', function () {
+      if (! ioCons.con) { return; }
+  
+      // We expect failure, so we're done here. 
       done();
     });
-
+  });
+  
+  describe('calling API methods', function () {
     it('must properly route method call messages for events and return the results, including meta',function (done) {
       ioCons.con = connect(namespace, {auth: token});
       var params = {
@@ -181,34 +183,34 @@ describe('Socket.IO', function () {
       ioCons.con.emit('events.get', params, function (err, result) {
         validation.checkSchema(result, eventsMethodsSchema.get.result);
         validation.sanitizeEvents(result.events);
-        
+    
         const testEvents = _.clone(testData.events);
         const chronologicalEvents = testEvents.sort( (a, b) => a.time - b.time );
         const expectedEvents = validation.removeDeletionsAndHistory(chronologicalEvents);
         result.events.should.eql(expectedEvents);
-
+    
         // check deletions
         let deleted = R.filter(R.where({deleted: R.equals(true)}), testData.events);
         for (let el of deleted) {
           let deletion = R.find(R.where({id: R.equals(el.id)}), result.eventDeletions);
-          
+    
           should(deletion).not.be.empty();
           should(deletion.deleted).be.true(); 
         }
-        
+    
         // check untrashed
         let getId = (e) => e.id; 
         let sortById = R.sortBy(getId);
-        
+    
         let resultEvents = sortById(result.events);
         let activeEvents = R.compose(sortById, R.reject(R.has('headId')));
         let activeTestEvents = activeEvents(
           validation.removeDeletions(testData.events));
-        
+    
         should(
           resultEvents
         ).be.eql(activeTestEvents);
-
+    
         validation.checkMeta(result);
         done();
       });
@@ -221,7 +223,7 @@ describe('Socket.IO', function () {
         done();
       });
     });
-
+    
     it('must not crash when callers omit the callback', function (done) {
       ioCons.con = connect(namespace, {auth: token});
       ioCons.con.emit('events.get', {} /* no callback here */);
@@ -230,7 +232,7 @@ describe('Socket.IO', function () {
         done();
       });
     });
-
+    
     it('must fail if the called target does not exist', function (done) {
       ioCons.con = connect(namespace, {auth: token});
       ioCons.con.emit('badTarget.get', {}, function (err) {
@@ -247,7 +249,7 @@ describe('Socket.IO', function () {
         done();
       });
     });
-
+    
     it('must return API errors properly, including meta', function (done) {
       ioCons.con = connect(namespace, {auth: token});
       ioCons.con.emit('events.create', {badParam: 'bad-data'}, function (err/*, result*/) {
@@ -256,16 +258,16 @@ describe('Socket.IO', function () {
         done();
       });
     });
-
+    
     it('must notify other sockets for the same user about events changes', () => {
       ioCons.con1 = connect(namespace, {auth: token}); // personal access
       ioCons.con2 = connect(namespace, {auth: testData.accesses[2].token}); // "read all" access
-
+    
       return new bluebird((resolve, reject) => {
         ioCons.con2.on('eventsChanged', function () {
           resolve(); 
         });
-
+    
         whenAllConnectedDo(function () {
           const params = {
             time: timestamp.fromDate('2012-03-22T10:00'),
@@ -273,7 +275,7 @@ describe('Socket.IO', function () {
             type: 'test/test',
             streamId: testData.streams[0].id
           };
-          
+    
           ioCons.con1.emit('events.create', params, function (err/*, result*/) {
             if (err) reject(err); 
           });
@@ -283,16 +285,16 @@ describe('Socket.IO', function () {
     it('must notify other sockets for the same user (only) about streams changes', function () {
       ioCons.con1 = connect(namespace, {auth: token}); // personal access
       ioCons.otherCon = connect('/' + otherUser.username, {auth: otherToken});
-
+    
       return new bluebird((res, rej) => {
         // We do _not_ want otherCon to be notified.
         ioCons.otherCon.on('streamsChanged', rej);
-        
+    
         // NOTE How to test if no notifications are sent to otherCon? We reject
         //  if we receive one - but have to wait for notifications to get in to
         //  make this effective. Let's sacrifice 100ms.
         setTimeout(res, 100);
-
+    
         // Now create a stream for con1.
         whenAllConnectedDo(function () {
           var params = {
@@ -309,21 +311,21 @@ describe('Socket.IO', function () {
       const tokens = [token, testData.accesses[2].token];
       const socketConnections = tokens.map(
         (token) => connect(namespace, {auth: token}));
-      
+    
       const createConnection = socketConnections[0];
-
+    
       const donePromises = socketConnections.map(conn => {
         const [promise, cb] = expectNCalls(2);
-        
+    
         conn.on('streamsChanged', cb);
         return promise; 
       });
-        
+    
       await createStream(createConnection, {name: 'foo'}); 
       await createStream(createConnection, {name: 'bar'}); 
-      
+    
       return bluebird.all(donePromises);
-              
+    
       function createStream(conn, params) {
         return bluebird.fromCallback(
           (cb) => conn.emit('streams.create', params, cb));
@@ -331,94 +333,94 @@ describe('Socket.IO', function () {
     });
   });
   
-  describe('when spawning 2 api-server processes, A and B', () => {
+  describe('when spawning 2 api-server pro00cesses, A and B', () => {
     // Servers A and B, length will be 2
     let servers: Array<Server> = []; 
-    
+  
     // Client connections that we make. If you add your connection here, it 
     // will get #close()d. 
     let connections;
     beforeEach(() => { 
       connections = []; 
     });
-    
+  
     // Closes all `connections` after each test. 
     afterEach(() => {
       for (const conn of connections) {
         conn.disconnect(); 
       }
     });
-    
+  
     let context;
-
+  
     // Sets up context
     before(() => {
       context = new SpawnContext(); 
     });
-    
+  
     // Spawns A and B. 
     beforeEach(async () => {
       // Stop a few servers here; this is just so that we can maybe reclaim 
       // some memory and sockets. Actual cleanup is done in `after()` below. 
       if (servers && servers.length > 0) 
         for (const server of servers) server.stop();
-      
+  
       // Spawn two new servers.
       servers = await bluebird.all( context.spawn_multi(2) );
     });
-        
+  
     // Teardown context
     after(async () => {
       await context.shutdown(); 
     });
-    
+  
     it('changes made in A notify clients of B', async () => {
       if (token == null) throw new Error('AF: token must be set');
-
+  
       // Aggregate user data to be more contextual
       const user = {
         name: testData.users[0].username,
         token: token, 
       };
-
+  
       const eventReceived = new ConditionVariable(); 
-      
+  
       const conn1 = connectTo(servers[0], user);
       const conn2 = connectTo(servers[1], user);
-      
+  
       const msgs = [];
       conn2.on('eventsChanged', () => {
         msgs.push('ec'); 
         eventReceived.broadcast(); 
       }); 
-      
+  
       await addEvent(conn1);
       await eventReceived.wait(1000);
-      
+  
       assert.deepEqual(msgs, ['ec']);
     });
-      
+  
     // Connect to `server` using `user` as credentials. 
     function connectTo(server: Server, user: User): SocketIO$Client {
       const namespace = `/${user.name}`;
       const params = { auth: user.token, resource: namespace };
-      
+  
       const url = server.url(namespace) + 
         `?${queryString.stringify(params)}`;
-      
+  
       const connectOpts = {
         'reconnect': false,             // Once connection is interrupted, it stays interrupted.
         'force new connection': true,   // Connect again, don't reuse old connections.
       };
-
+  
       const conn = io.connect(url, connectOpts);
-      
+  
       // Automatically add all created connections to the cleanup array: 
       connections.push(conn);
-      
+  
       return conn; 
     }
-    
+  
     // Creates an event, using socket connection `conn`.
     function addEvent(conn): Promise<void> {
       const stream = testData.streams[0];
@@ -430,7 +432,7 @@ describe('Socket.IO', function () {
       return bluebird.fromCallback(
         (cb) => conn.emit('events.create', attributes, cb));
     }
-    
+  
   });
 });
 

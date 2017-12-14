@@ -1,6 +1,5 @@
 // @flow
 
-const bluebird = require('bluebird');
 const awaiting = require('awaiting');
 const NATS = require('nats');
 const { decode } = require('./nats_wire_message');
