@@ -61,7 +61,7 @@ If you're blocking because 'unicode.org' doesn't like you today, here's what you
 
 Normally, all binaries like `nf` or `flow` must be accessed by prepending `yarn run {nf,flow}`. Kaspar has a set of shell aliases that simplify this. 
 
-# Test Running
+### Test Running
 
 If you want to run tests in `components/`, you will need to start with a command like this: 
 
@@ -117,7 +117,7 @@ It is possible to extend the API and previews servers with your own code, via th
 - `defaultFolder`: The folder in which custom extension modules are searched for by default. Unless defined by its specific setting (see other settings in `customExtensions`), each module is loaded from there by its default name (e.g. `customAuthStepFn.js`), or ignored if missing. Defaults to `{app root}/custom-extensions`.
 - `customAuthStepFn`: A Node module identifier (e.g. `/custom/auth/function.js`) implementing a custom auth step (such as authenticating the caller id against an external service). The function is passed the method context, which it can alter, and a callback to be called with either no argument (success) or an error (failure). If this setting is not empty and the specified module cannot be loaded as a function, server startup will fail. Undefined by default.
 
-    ```
+    ```javascript
     // Example of customAuthStepFn.js
     module.exports = function (context, callback) {
       // do whatever is needed here (check LDAP, custom DB, etc.)
