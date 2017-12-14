@@ -5,6 +5,7 @@
   "logs": {
     "console": {
       "active": false,
+      "level": "info",
       "timestamp": false
     }
   }

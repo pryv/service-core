@@ -120,11 +120,11 @@ describe('Socket.IO', function () {
   it('must dynamically create a namespace for the user', function (done) {
     ioCons.con = connect(namespace, {auth: token});
   
-    ioCons.con.on('connect', function (err) {
+    ioCons.con.once('connect', function (err) {
       // if we get here, communication is properly established
       done(err);
     });
-    ioCons.con.on('connect_error', function (err) {
+    ioCons.con.once('connect_error', function (err) {
       if (err) return done(err);
       done(new Error('Connection failed.')); 
     });
@@ -144,12 +144,12 @@ describe('Socket.IO', function () {
       function (stepDone) {
         ioCons.con = connect('/' + dashUser.username, {auth: testData.accesses[2].token});
   
-        ioCons.con.on('error', function (e) {
+        ioCons.con.once('error', function (e) {
           should.not.exist(e);
           stepDone(e);
         });
   
-        ioCons.con.on('connect', function () {
+        ioCons.con.once('connect', function () {
           should.exist(ioCons.con);
           stepDone();
         });
@@ -159,11 +159,11 @@ describe('Socket.IO', function () {
   it('must refuse connection if no valid access token is provided', function (done) {
     ioCons.con = connect(namespace);
   
-    ioCons.con.on('connect', function () {
+    ioCons.con.once('connect', function () {
       throw new Error('Connecting should have failed');
     });
   
-    ioCons.con.socket.on('error', function () {
+    ioCons.con.socket.once('error', function () {
       if (! ioCons.con) { return; }
   
       // We expect failure, so we're done here. 
@@ -288,7 +288,7 @@ describe('Socket.IO', function () {
     
       return new bluebird((res, rej) => {
         // We do _not_ want otherCon to be notified.
-        ioCons.otherCon.on('streamsChanged', rej);
+        ioCons.otherCon.once('streamsChanged', rej);
     
         // NOTE How to test if no notifications are sent to otherCon? We reject
         //  if we receive one - but have to wait for notifications to get in to
@@ -333,7 +333,7 @@ describe('Socket.IO', function () {
     });
   });
   
-  describe('when spawning 2 api-server pro00cesses, A and B', () => {
+  describe('when spawning 2 api-server processes, A and B', () => {
     // Servers A and B, length will be 2
     let servers: Array<Server> = []; 
   

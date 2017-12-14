@@ -240,25 +240,10 @@ class Manager implements MessageSink {
       this.logger, socket, context, methodContext, this.api);
 
     this.storeConnection(connection);
-    socket.once('disconnect', eventHandler(
-      () => this.onDisconnect(connection)));
+    socket.once('disconnect', 
+      () => this.onDisconnect(connection));
     
     connection.registerCallbacks(socket);
-    
-    // TODO apply this pattern in all of this file. 
-    function eventHandler(fun) {
-      return lodash.partial(catchAndLog,
-        logger, 
-        fun);
-    }
-    function catchAndLog(logger, fun) {
-      try {
-        fun(); 
-      }
-      catch (err) {
-        logger.error(err);
-      }
-    }
   }
   
   // Called when the underlying socket-io socket disconnects.
