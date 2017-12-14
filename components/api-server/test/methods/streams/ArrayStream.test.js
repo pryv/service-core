@@ -13,19 +13,23 @@ describe('ArrayStream', function () {
   
   describe('testing around the array size limit', function () {
     for (let i = -3; i <= 3; i++) {
-      it('must return a valid array when receiving limit+(' + i + ') items', function (done) {
-        const n = arraySize+i;
-        n.should.be.above(0);
-        pipeAndCheck(n, true, null, done);
-      });
+      it('must return a valid array when receiving limit+(' + i + ') items',
+        function (done) {
+          const n = arraySize+i;
+          n.should.be.above(0);
+          pipeAndCheck(n, true, null, done);
+        }
+      );
     }
   });
   
   describe('testing with small number of items', function () {
     for (let i = 0; i <= 3; i++) {
-      it('must return a valid array when receiving (' + i + ') item(s)', function (done) {
-        pipeAndCheck(i, true, null, done);
-      });
+      it('must return a valid array when receiving (' + i + ') item(s)',
+        function (done) {
+          pipeAndCheck(i, true, null, done);
+        }
+      );
     }
   });
 
@@ -37,7 +41,8 @@ describe('ArrayStream', function () {
         res.charAt(0).should.eql(',');
         return '{' + res.slice(1) + '}';
       }, done);
-    });
+    }
+  );
     
   function pipeAndCheck(itemNumber, isFirst, resultMapping, done) {
     const name = 'name';
