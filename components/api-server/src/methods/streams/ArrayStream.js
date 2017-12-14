@@ -25,7 +25,7 @@ inherits(ArrayStream, Transform);
 ArrayStream.prototype._transform = function (item, encoding, callback) {
 
   this.stack.push(item);
-  if (this.stack.size == this.size) {
+  if (this.stack.length >= this.size) {
     if (this.isStart) {
       this.isStart = false;
       this.push((this.prefix + JSON.stringify(this.stack)).slice(0,-1));
