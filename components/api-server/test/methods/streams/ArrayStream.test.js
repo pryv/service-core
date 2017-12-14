@@ -11,68 +11,44 @@ describe('ArrayStream', function () {
   
   const arraySize = new ArrayStream('getSize', true).size;
   
-  it('must return a valid array when receiving less than the limit items', function (done) {
-    let items = [];
-    for (let i = 0; i < 10; i++) {
-      items.push({
-        a: 'a',
-        n: i
+  describe('testing around the array size limit', function () {
+    for (let i = -3; i <= 3; i++) {
+      it('must return a valid array when receiving limit+(' + i + ') items', function (done) {
+        const n = arraySize+i;
+        n.should.be.above(0);
+        pipeAndCheck(n, true, null, done);
       });
     }
-    
-    pipeAndCheck(items, true, null, done);
-  });
-
-  it('must return a valid array when receiving more than the limit items', function (done) {
-    let items = [];
-    
-    for (let i = 0; i < arraySize + 10; i++) {
-      items.push({
-        a: 'a',
-        n: i
-      });
-    }
-
-    pipeAndCheck(items, true, null, done);
   });
   
-  it('must return a valid array when receiving limit+1 items', function (done) {
-    let items = [];
-
-    for (let i = 0; i < arraySize + 1; i++) {
-      items.push({
-        a: 'a',
-        n: i
+  describe('testing with small number of items', function () {
+    for (let i = 0; i <= 3; i++) {
+      it('must return a valid array when receiving (' + i + ') item(s)', function (done) {
+        pipeAndCheck(i, true, null, done);
       });
     }
-
-    pipeAndCheck(items, true, null, done);
-  });
-
-  it('must return a valid empty array when receiving zero items', function (done) {
-    let items = [];
-    
-    pipeAndCheck(items, true, null, done);
   });
 
   it('must return an array preceded by a comma when called with parameter isFirst=false',
     function (done) {
-      let items = [];
-      for (let i = 0; i < 10; i++) {
-        items.push({
-          a: 'a',
-          n: i
-        });
-      }
+      const n = 10;
 
-      pipeAndCheck(items, false, (res) => {
+      pipeAndCheck(n, false, (res) => {
         res.charAt(0).should.eql(',');
         return '{' + res.slice(1) + '}';
       }, done);
     });
     
-  function pipeAndCheck(items, isFirst, resultMapping, done) {
+  function pipeAndCheck(itemNumber, isFirst, resultMapping, done) {
     const name = 'name';
+    
+    let items = [];
+    for (let i = 0; i < itemNumber; i++) {
+      items.push({
+        a: 'a',
+        n: i
+      });
+    }
 
     new Source(items)
       .pipe(new ArrayStream(name, isFirst))
