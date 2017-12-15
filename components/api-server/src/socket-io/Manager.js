@@ -3,7 +3,6 @@
 const errorHandling = require('components/errors').errorHandling;
 const setCommonMeta = require('../methods/helpers/setCommonMeta');
 const bluebird = require('bluebird');
-const lodash = require('lodash');
 
 const NatsSubscriber = require('./nats_subscriber');
     
@@ -273,6 +272,9 @@ class NamespaceContext {
   async open() {
     const sink = this.sink; 
     const userName = this.user.username;
+
+    // If we've already got an active subscription, leave it be. 
+    if (this.natsSubscriber != null) return; 
     
     const natsSubscriber = new NatsSubscriber(
       'nats://127.0.0.1:4222', 
