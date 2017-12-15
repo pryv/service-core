@@ -270,12 +270,14 @@ class NamespaceContext {
   }
   
   async open() {
+    // If we've already got an active subscription, leave it be. 
+    if (this.natsSubscriber != null) return; 
+    this.natsSubscriber = await this.produceNatsSubscriber();
+  }
+  async produceNatsSubscriber(): Promise<NatsSubscriber> {
     const sink = this.sink; 
     const userName = this.user.username;
 
-    // If we've already got an active subscription, leave it be. 
-    if (this.natsSubscriber != null) return; 
-    
     const natsSubscriber = new NatsSubscriber(
       'nats://127.0.0.1:4222', 
       sink);
@@ -284,8 +286,9 @@ class NamespaceContext {
     // notifications turned on immediately. 
     await natsSubscriber.subscribe(userName);
     
-    this.natsSubscriber = natsSubscriber;
+    return natsSubscriber;
   }
+
   
   // Closes down resources associated with this namespace context. 
   // 
