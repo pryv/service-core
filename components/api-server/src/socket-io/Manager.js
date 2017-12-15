@@ -44,21 +44,8 @@ type SocketIO$Server = {
 
 type User = { username: string };
 
-// Manages context and connections for socket-io. Usual sequence of things will 
-// be: 
-// 
-//  * The code in index.js sets up a methodContext instance and attaches it to 
-//    the handshake object. 
-//  * It calls `ensureInitNamespace` to make sure that we have a NamespaceContext
-//    instance for the connection. 
-//  * socket.io connects the client and calls 'onNsConnect' on the manager. 
-//  * manager creates a 'Connection' instance and calls `storeConnection` to 
-//    persist the connection. 
-//  * User calls methods on the connection, which will translate into 
-//    `onMethodCall` on the connection. 
-//  * ...
-//  * Once disconnection is registered, socket.io will call 'onDisconnect' on 
-//    the manager, which will in turn call `deleteConnection`.
+// Manages contexts for socket-io. NamespaceContext's are created when the first
+// client connects to a namespace and are then kept forever.  
 // 
 class Manager implements MessageSink {
   contexts: Map<string, NamespaceContext>; 
@@ -131,7 +118,7 @@ class Manager implements MessageSink {
   }
   
   // Looks up a namespace and returns the user from the namespace context. This
-  // is aequivalent to `getNamespace('/namespace').user`.
+  // is equivalent to `getNamespace('/namespace').user`.
   // 
   //    getUser('/mynamespace') // => user instance.
   // 
@@ -172,6 +159,8 @@ class Manager implements MessageSink {
     
   // Given a `userName` and a `message`, delivers the `message` as a socket.io
   // event to all clients currently connected to the namespace '/USERNAME'.
+  // 
+  // Part of the MessageSink implementation.
   //
   deliver(userName: string, message: string): void {
     const context = this.getContext(`/${userName}`);
@@ -182,22 +171,6 @@ class Manager implements MessageSink {
       throw new Error('AF: namespace should not be null');
     
     namespace.emit(message);
-  }
-  
-  // ------------------------------------------------------------ event handlers
-
-  // Called by our own message bus upon reception of an internal event. 
-  // 
-  handleNotification(user: User, externalName: string) {
-    const userName = user.username;
-    const context = this.getContext(`/${userName}`);
-    if (context == null) return; 
-    
-    const namespace = context.socketNs;
-    if (namespace == null) 
-      throw new Error('AF: namespace should not be null');
-    
-    namespace.emit(externalName);
   }
 }
 
@@ -243,7 +216,10 @@ class NamespaceContext {
     socketNs.on('connection', 
       (socket: SocketIO$Socket) => this.onConnect(socket));
   }
-  
+
+  // Adds a connection to the namespace. This produces a `Connection` instance 
+  // and stores it in (our) namespace. 
+  // 
   addConnection(socket: SocketIO$Socket, methodContext: MethodContext) {    
     // This will represent state that we keep for every connection. 
     const connection = new Connection(
