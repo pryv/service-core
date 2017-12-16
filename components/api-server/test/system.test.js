@@ -109,16 +109,6 @@ describe('system (ex-register)', function () {
               stepDone();
             });
           },
-        // IMPORTANT The superagent library currently has a bug where throws
-        // inside an 'end' callback would cause the callback to be raised a
-        // second time. Combined with async.series, anything below this comment
-        // cannot throw errors, otherwise it results in a double callback error
-        // on stepDone. Please use try/catch.
-        
-        // As soon as this PR: 
-        //  https://github.com/visionmedia/superagent/commit/6ff0493a1ebdb1d6fff6d71d1cafe080ec33e6fd#diff-c24ce7e3da4c0e4ff811a2b6a76f8bd9
-        // hits a released superagent version, remove the comment and the 
-        // try/catches.
           function getUpdatedUsers(stepDone) {
             storage.findAll(null, function (err, users) {
               users.length.should.eql(originalCount + 1, 'users');
@@ -182,16 +172,6 @@ describe('system (ex-register)', function () {
             stepDone();
           });
         }
-        // IMPORTANT The superagent library currently has a bug where throws
-        // inside an 'end' callback would cause the callback to be raised a
-        // second time. Combined with async.series, anything below this comment
-        // cannot throw errors, otherwise it results in a double callback error
-        // on stepDone. Please use try/catch.
-        
-        // As soon as this PR: 
-        //  https://github.com/visionmedia/superagent/commit/6ff0493a1ebdb1d6fff6d71d1cafe080ec33e6fd#diff-c24ce7e3da4c0e4ff811a2b6a76f8bd9
-        // hits a released superagent version, remove the comment and the 
-        // try/catches.
       ], callback);
     }
 

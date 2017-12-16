@@ -46,7 +46,7 @@
     "rimraf": "^2.4.3",
     "slug": "^0.9.1",
     "storage": "file:components/storage",
-    "superagent": "^3.4.4",
+    "superagent": "^3.8",
     "test-helpers": "file:components/test-helpers",
     "unicode": "^0.6.1",
     "unix-timestamp": "^0.2.0",
