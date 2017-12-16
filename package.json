@@ -66,7 +66,7 @@
     "cuid": "^1",
     "date-utils": "latest",
     "deep-equal": "latest",
-    "eslint": "^3.16.0",
+    "eslint": "^4.9.0",
     "eslint-plugin-flowtype": "^2.30.0",
     "flow-bin": "^0.54.0",
     "flow-coverage-report": "^0.3.0",

@@ -2,7 +2,6 @@
 // @flow
 
 const cookieParser = require('cookie-parser');
-const R = require('ramda');
 const lodash = require('lodash');
 const express = require('express');
 
@@ -82,11 +81,20 @@ module.exports = function (expressApp: express$Application, api: any, authSettin
         appId: body.appId,
         origin: req.headers.origin || ''
       };
+      hidePassword(req.body);
+      
       api.call('auth.login', req.context, params, function (err, result) {
         if (err) return next(err);
         setSSOCookie({ username: req.context.username, token: result.token }, res);
         result.writeToHttpResponse(res, 200);
       });
+
+      // Replaces the field 'password' of `obj` with 'hidden' if the field is 
+      // not empty. 
+      function hidePassword(obj) {
+        if (obj.password == null) return; 
+        obj.password = '(hidden)';
+      }
     });
     router.post('/logout', function routeLogout(req: RequestWithContext, res, next) {
       clearSSOCookie(res);

@@ -1,6 +1,6 @@
 // @flow
 
-/*global describe, before, after, it */
+/*global describe, before, beforeEach, after, it */
 
 require('./test-helpers'); 
 var helpers = require('./helpers'),
@@ -12,9 +12,13 @@ var helpers = require('./helpers'),
     request = require('superagent'),
     testData = helpers.data,
     url = require('url'),
-    _ = require('lodash');
+    _ = require('lodash'),
+    fs = require('fs'),
+    os = require('os');
 
 describe('auth', function () {
+
+  this.timeout(5000);
   function basePath(username) {
     return url.resolve(server.url, username + '/auth');
   }
@@ -203,6 +207,104 @@ describe('auth', function () {
 
           done();
         });
+    });
+
+    // cf. GH issue #3
+    describe('when we log into a temporary log file', function () {
+
+      let logFilePath = '';
+
+      beforeEach(function (done) {
+        async.series([
+          ensureLogFileIsEmpty,
+          generateLogFile,
+          instanciateServerWithLogs
+        ], done);
+      });
+
+      function ensureLogFileIsEmpty(stepDone) {
+        if ( logFilePath.length <= 0 ) return stepDone();
+        fs.truncate(logFilePath, function (err) {
+          if (err && err.code === 'ENOENT') {
+            return stepDone();
+          } // ignore error if file doesn't exist
+          stepDone(err);
+        });
+      }
+
+      function generateLogFile(stepDone) {
+        logFilePath = os.tmpdir() + '/password-logs.log';
+        stepDone();
+      }
+
+      function instanciateServerWithLogs(stepDone) {
+        let settings = _.cloneDeep(helpers.dependencies.settings);
+        settings.logs = {
+          file: {
+            active: true,
+            path: logFilePath,
+            level: 'debug',
+            maxsize: 500000,
+            maxFiles: 50,
+            json: false
+          }
+        };
+        server.ensureStarted.call(server, settings, stepDone);
+      }
+
+      after(server.ensureStarted.bind(server,helpers.dependencies.settings));
+
+      it('must replace the password in the logs by (hidden) when an error occurs', function (done) {
+        let wrongPasswordData = _.cloneDeep(authData);
+        wrongPasswordData.password = 'wrongPassword';
+
+        async.series([
+          function failLogin(stepDone) {
+            request.post(path(authData.username))
+              .set('Origin', trustedOrigin)
+              .send(wrongPasswordData).end(function (err, res) {
+                res.statusCode.should.eql(401);
+                stepDone();
+              });
+          },
+          function verifyHiddenPasswordInLogs(stepDone) {
+            fs.readFile(logFilePath, 'utf8', function (err, data) {
+              if (err) {
+                return stepDone(err);
+              }
+              should(data.indexOf(wrongPasswordData.password) === -1).be.true();
+              should(data.indexOf('password=(hidden)') >= 0).be.true();
+              stepDone();
+            });
+          }
+        ], done);
+      });
+
+      it('must not mention the password in the logs when none is provided', function (done) {
+        let wrongPasswordData = _.cloneDeep(authData);
+        delete wrongPasswordData.password;
+
+        async.series([
+          function failLogin(stepDone) {
+            request.post(path(authData.username))
+              .set('Origin', trustedOrigin)
+              .send(wrongPasswordData).end(function (err, res) {
+              res.statusCode.should.eql(400);
+              stepDone();
+            });
+          },
+          function verifyNoPasswordFieldInLogs(stepDone) {
+            fs.readFile(logFilePath, 'utf8', function (err, data) {
+              if (err) {
+                return stepDone(err);
+              }
+              should(data.indexOf('password=') === -1).be.true();
+              stepDone();
+            });
+          }
+        ], done);
+      });
+
     });
     
     function parallelLogin(appId, callback) {
