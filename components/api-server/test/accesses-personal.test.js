@@ -558,7 +558,7 @@ describe('accesses (personal)', function () {
       let accessId;
       
       beforeEach(function (done) {
-        request.post(basePath).send(access).end(function (res) {
+        req().post(basePath).send(access).end(function (res) {
           validation.check(res, {
             status: 201,
             schema: methodsSchema.create.result
@@ -585,7 +585,7 @@ describe('accesses (personal)', function () {
             setIgnoreProtectedFieldUpdates(false, stepDone);
           },
           function testForbiddenUpdate(stepDone) {
-            request.put(path(accessId)).send(forbiddenUpdate).end(function (res) {
+            req().put(path(accessId)).send(forbiddenUpdate).end(function (res) {
               validation.checkError(res, {
                 status: 403,
                 id: ErrorIds.Forbidden
@@ -612,7 +612,7 @@ describe('accesses (personal)', function () {
             setIgnoreProtectedFieldUpdates(true, stepDone);
           },
           function testForbiddenUpdate(stepDone) {
-            request.put(path(accessId)).send(forbiddenUpdate).end(function (res) {
+            req().put(path(accessId)).send(forbiddenUpdate).end(function (res) {
               validation.check(res, {
                 status: 200,
                 schema: methodsSchema.update.result
@@ -640,12 +640,11 @@ describe('accesses (personal)', function () {
       
     });
   });
-      request.put(path(original.id)).send(forbiddenUpdate).end(function (res) {
 
   describe('DELETE /<token>', function () {
-
+  
     beforeEach(resetAccesses);
-
+  
     it('must delete the shared access', function (done) {
       var deletedAccess = testData.accesses[1],
           deletionTime;
@@ -665,7 +664,7 @@ describe('accesses (personal)', function () {
           function verifyData(stepDone) {
             storage.findAll(user, null, function (err, accesses) {
               accesses.length.should.eql(testData.accesses.length, 'accesses');
-
+  
               var expected = _.extend({
                 _token: deletedAccess.token,
                 _type: deletedAccess.type,
@@ -674,7 +673,7 @@ describe('accesses (personal)', function () {
               }, _.omit(deletedAccess, 'token', 'type', 'name'));
               var actual = _.find(accesses, {id: deletedAccess.id});
               validation.checkObjectEquality(actual, expected);
-
+  
               stepDone();
             });
           }
@@ -682,7 +681,7 @@ describe('accesses (personal)', function () {
         done
       );
     });
-
+  
     it('must delete the personal access', function (done) {
       req().del(path(testData.accesses[0].id)).end(function (res) {
         validation.check(res, {
@@ -693,7 +692,7 @@ describe('accesses (personal)', function () {
         done();
       });
     });
-
+  
     it('must return an error if the access does not exist', function (done) {
       req().del(path('unknown-id')).end(function (res) {
         validation.checkError(res, {
@@ -702,7 +701,7 @@ describe('accesses (personal)', function () {
         }, done);
       });
     });
-
+  
   });
 
   describe('POST /check-app', function () {
@@ -914,3 +913,4 @@ describe('accesses (personal)', function () {
   }
 
 });
+
