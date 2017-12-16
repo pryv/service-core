@@ -78,7 +78,7 @@ describe('system (ex-register)', function () {
                   ! /welcome/.test(body.template_name)) 
                 {
                   // MISMATCHED REQ BODY: require('util').inspect(body, {depth: null}));
-                  console.log(
+                  console.log( // eslint-disable-line no-console
                     require('util').inspect(body, {depth: null})); 
                 }
                 this.context.messagingSocket.emit('mail-sent');
@@ -127,6 +127,7 @@ describe('system (ex-register)', function () {
           }
         ], done);
       });
+    });
     
     it('must not send a welcome email if mailing is deactivated', function (done) {
       var settings = _.clone(helpers.dependencies.settings);
