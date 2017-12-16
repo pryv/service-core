@@ -1,22 +1,25 @@
 /*global describe, before, beforeEach, it */
 
 require('./test-helpers'); 
-var helpers = require('./helpers'),
-    server = helpers.dependencies.instanceManager,
-    async = require('async'),
-    commonTests = helpers.commonTests,
-    fs = require('fs'),
-    validation = helpers.validation,
-    ErrorIds = require('components/errors').ErrorIds,
-    eventsStorage = helpers.dependencies.storage.user.events,
-    eventFilesStorage = helpers.dependencies.storage.user.eventFiles,
-    methodsSchema = require('../src/schema/streamsMethods'),
-    should = require('should'), // explicit require to benefit from static functions
-    storage = helpers.dependencies.storage.user.streams,
-    testData = helpers.data,
-    timestamp = require('unix-timestamp'),
-    treeUtils = require('components/utils').treeUtils,
-    _ = require('lodash');
+const helpers = require('./helpers');
+const server = helpers.dependencies.instanceManager;
+const async = require('async');
+const commonTests = helpers.commonTests;
+const fs = require('fs');
+const validation = helpers.validation;
+const ErrorIds = require('components/errors').ErrorIds;
+const eventsStorage = helpers.dependencies.storage.user.events;
+const eventFilesStorage = helpers.dependencies.storage.user.eventFiles;
+const methodsSchema = require('../src/schema/streamsMethods');
+const should = require('should'); // explicit require to benefit from static function
+const storage = helpers.dependencies.storage.user.streams;
+const testData = helpers.data;
+const timestamp = require('unix-timestamp');
+const treeUtils = require('components/utils').treeUtils;
+const _ = require('lodash');
+
+const chai = require('chai');
+const assert = chai.assert; 
 
 describe('streams', function () {
 
@@ -497,23 +500,85 @@ describe('streams', function () {
       });
     });
     
-    it('must reject update of read-only properties', function (done) {
-      var forbiddenUpdate = {
-        id: 'forbidden',
-        children: [],
-        created: 1,
-        createdBy: 'bob',
-        modified: 1,
-        modifiedBy: 'alice'
+    describe('forbidden updates of protected fields', function () {
+      const streamId = 'forbidden_stream_update_test';
+      const stream = {
+        id: streamId,
+        name: streamId
       };
-
-      request.put(path(testData.streams[0].id)).send(forbiddenUpdate).end(function (res) {
-        validation.check(res, {
-          status: 403,
-          id: ErrorIds.Forbidden,
-          data: {forbiddenProperties: forbiddenUpdate}
-        }, done);
+      
+      beforeEach(function (done) {
+        request.post(basePath).send(stream).end(function (res) {
+          validation.check(res, {
+            status: 201,
+            schema: methodsSchema.create.result
+          }, done);
+        });
       });
+      
+      it('must fail and throw a forbidden error in strict mode', function (done) {
+        const forbiddenUpdate = {
+          id: 'forbidden',
+          children: [],
+          created: 1,
+          createdBy: 'bob',
+          modified: 1,
+          modifiedBy: 'alice'
+        };
+        
+        async.series([
+          function instanciateServerWithStrictMode(stepDone) {
+            setIgnoreProtectedFieldUpdates(false, stepDone);
+          },
+          function testForbiddenUpdate(stepDone) {
+            request.put(path(streamId)).send(forbiddenUpdate).end(function (res) {
+              validation.checkError(res, {
+                status: 403,
+                id: ErrorIds.Forbidden
+              }, stepDone);
+            });
+          }
+        ], done);
+      });
+      
+      it('must succeed by ignoring protected fields and log a warning in non-strict mode', function (done) {
+        const forbiddenUpdate = {
+          id: 'forbidden',
+          children: [],
+          created: 1,
+          createdBy: 'bob',
+          modified: 1,
+          modifiedBy: 'alice'
+        };
+                
+        async.series([
+          function instanciateServerWithNonStrictMode(stepDone) {
+            setIgnoreProtectedFieldUpdates(true, stepDone);
+          },
+          function testForbiddenUpdate(stepDone) {
+            request.put(path(streamId)).send(forbiddenUpdate).end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.update.result
+              });
+              const stream = res.body.stream;
+              should(stream.id).not.be.equal(forbiddenUpdate.id);
+              should(stream.created).not.be.equal(forbiddenUpdate.created);
+              should(stream.createdBy).not.be.equal(forbiddenUpdate.createdBy);
+              should(stream.modified).not.be.equal(forbiddenUpdate.modified);
+              should(stream.modifiedBy).not.be.equal(forbiddenUpdate.modifiedBy);
+              stepDone();
+            });
+          }
+        ], done);
+      });
+      
+      function setIgnoreProtectedFieldUpdates(activated, stepDone) {
+        let settings = _.cloneDeep(helpers.dependencies.settings);
+        settings.updates.ignoreProtectedFields = activated;
+        server.ensureStarted.call(server, settings, stepDone);
+      }
+      
     });
 
   });
@@ -553,63 +618,59 @@ describe('streams', function () {
           expectedChildDeletion;
 
       async.series([
-	  storage.updateOne.bind(storage, user, {id: id}, {trashed: true}),
-          function deleteStream(stepDone) {
-            request.del(path(id)).end(function (res) {
-              expectedDeletion = {
-                id: id,
-                deleted: timestamp.now()
-              };
-              expectedChildDeletion = {
-                id: childId,
-                deleted: timestamp.now()
-              };
+        storage.updateOne.bind(storage, user, {id: id}, {trashed: true}), function deleteStream(stepDone) {
+          request.del(path(id)).end(function (res) {
+            expectedDeletion = {
+              id: id,
+              deleted: timestamp.now()
+            };
+            expectedChildDeletion = {
+              id: childId,
+              deleted: timestamp.now()
+            };
 
-              validation.check(res, {
-                status: 200,
-                schema: methodsSchema.del.result
-              });
-              streamsNotifCount.should.eql(1, 'streams notifications');
-              stepDone();
+            validation.check(res, {
+              status: 200,
+              schema: methodsSchema.del.result
             });
-          },
-          function verifyStreamData(stepDone) {
-            storage.findAll(user, null, function (err, streams) {
-              treeUtils.findById(streams, parent.id).children.length
-                  .should.eql(testData.streams[2].children.length - 1, 'child streams');
+            streamsNotifCount.should.eql(1, 'streams notifications');
+            stepDone();
+          });
+        },
+        function verifyStreamData(stepDone) {
+          storage.findAll(user, null, function (err, streams) {
+            treeUtils.findById(streams, parent.id).children.length
+              .should.eql(testData.streams[2].children.length - 1, 'child streams');
 
-              var deletion = treeUtils.findById(streams, id);
-              should.exist(deletion);
-              validation.checkObjectEquality(deletion, expectedDeletion);
+            var deletion = treeUtils.findById(streams, id);
+            should.exist(deletion);
+            validation.checkObjectEquality(deletion, expectedDeletion);
 
-              var childDeletion = treeUtils.findById(streams, childId);
-              should.exist(childDeletion);
-              validation.checkObjectEquality(childDeletion, expectedChildDeletion);
+            var childDeletion = treeUtils.findById(streams, childId);
+            should.exist(childDeletion);
+            validation.checkObjectEquality(childDeletion, expectedChildDeletion);
 
-              stepDone();
-            });
-          }
-        ],
-        done
-      );
+            stepDone();
+          });
+        }
+      ],
+      done );
     });
 
     it('must return a correct error if there are linked events and the related parameter is ' +
         'missing', function (done) {
       var id = testData.streams[0].id;
       async.series([
-	  storage.updateOne.bind(storage, user, {id: id}, {trashed: true}),
-          function deleteStream(stepDone) {
-            request.del(path(testData.streams[0].id)).end(function (res) {
-              validation.checkError(res, {
-                status: 400,
-                id: ErrorIds.InvalidParametersFormat
-              }, stepDone);
-            });
-          }
-        ],
-        done
-      );
+        storage.updateOne.bind(storage, user, {id: id}, {trashed: true}), function deleteStream(stepDone) {
+          request.del(path(testData.streams[0].id)).end(function (res) {
+            validation.checkError(res, {
+              status: 400,
+              id: ErrorIds.InvalidParametersFormat
+            }, stepDone);
+          });
+        }
+      ],
+      done );
     });
 
     it('must reassign the linked events to the deleted stream\'s parent when specified',
@@ -651,25 +712,28 @@ describe('streams', function () {
       );
     });
 
-    it('must delete the linked events when specified', function (done) {
-      var id = testData.streams[0].children[1].id,
-          deletedEvents = testData.events.filter(function (e) { return e.streamId === id; }),
-          deletedEventWithAtt = deletedEvents[0],
-          deletionTime;
+    it('must delete the linked events when mergeEventsWithParent is false', function (done) {
+      const id = testData.streams[0].children[1].id;
+      const deletedEvents = testData.events.filter(function (e) { return e.streamId === id; });
+      const deletedEventWithAtt = deletedEvents[0];
+      let deletionTime;
+      
       async.series([
-          function addEventAttachment(stepDone) {
-            request.post('/' + user.username + '/events/' + deletedEventWithAtt.id)
-                .attach('image', testData.attachments.image.path,
-                    testData.attachments.image.fileName)
-                .end(function (res) {
+        function addEventAttachment(stepDone) {
+          request.post('/' + user.username + '/events/' + deletedEventWithAtt.id)
+            .attach('image', testData.attachments.image.path,
+              testData.attachments.image.fileName)
+            .end(function (res) {
               validation.check(res, {status: 200});
               eventsNotifCount = 0; // reset
               stepDone();
             });
-          },
-	  storage.updateOne.bind(storage, user, {id: id}, {trashed: true}),
-          function deleteStream(stepDone) {
-            request.del(path(id)).query({mergeEventsWithParent: false}).end(function (res) {
+        },
+        (step) => storage.updateOne(user, {id: id}, {trashed: true}, step),
+        function deleteStream(stepDone) {
+          request.del(path(id))
+            .query({mergeEventsWithParent: false})
+            .end(function (res) {
               deletionTime = timestamp.now();
               validation.check(res, {
                 status: 200,
@@ -681,26 +745,51 @@ describe('streams', function () {
 
               stepDone();
             });
-          },
-          function verifyLinkedEvents(stepDone) {
-            eventsStorage.findAll(user, null, function (err, events) {
-              events.length.should.eql(testData.events.length, 'events');
+        },
+        function verifyLinkedEvents(stepDone) {
+          eventsStorage.findAll(user, null, function (err, events) {
+            events.length.should.eql(testData.events.length, 'events');
 
-              deletedEvents.forEach(function (e) {
-                var actual = _.find(events, {id: e.id}),
-                    expected = { id: e.id, deleted: deletionTime };
-                validation.checkObjectEquality(actual, expected);
-              });
+            deletedEvents.forEach(function (e) {
+              const actual = _.find(events, {id: e.id});
 
-              var dirPath = eventFilesStorage.getAttachedFilePath(user, deletedEventWithAtt.id);
-              should(fs.existsSync(dirPath)).be.eql(false, 'deleted event directory existence');
-
-              stepDone();
+              assert.approximately(
+                actual.deleted, deletionTime, 2, 
+                'Deletion time must be correct.');
+              assert.equal(actual.id, e.id);
             });
+
+            var dirPath = eventFilesStorage.getAttachedFilePath(user, deletedEventWithAtt.id);
+
+            // some time after returning to the client. Let's hang around and try 
+            // this several times. 
+            assertEventuallyTrue(
+              () => ! fs.existsSync(dirPath), 
+              1, // second(s) 
+              'Event directory must be deleted', 
+              stepDone
+            );
+          });
+        }
+      ], done);
+      
+      function assertEventuallyTrue(property, maxWaitSeconds, msg, cb) {
+        const deadline = new Date().getTime() + maxWaitSeconds;
+        const checker = () => {
+          if (new Date().getTime() > deadline) {
+            return cb(new chai.AssertionError('Timeout: '+msg));
           }
-        ],
-        done
-      );
+          
+          const result = property(); 
+          if (result) return cb();
+
+          // assert: result is false, try again in a bit.
+          setImmediate(checker);
+        };
+        
+        // Launch first check
+        setImmediate(checker);
+      }
     });
 
     it('must return a correct error if the item is unknown', function (done) {

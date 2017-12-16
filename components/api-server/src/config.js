@@ -109,5 +109,13 @@ _.merge(config.schema, {
         default: 'reset-password'
       }
     }
-  }
+  },
+  updates: {
+    ignoreProtectedFields: {
+      format: Boolean,
+      default: false,
+      doc: 'When true, updates will ignore protected fields and print a warning log.' +
+      'When false, trying to update protected fields will fail with a forbidden error.'
+    }
+  },
 });

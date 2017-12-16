@@ -27,13 +27,14 @@ const typeRepo = new TypeRepository();
 module.exports = function (
   api, userEventsStorage, userEventFilesStorage, usersStorage,
   authSettings, eventTypesSettings, notifications, logging,
-  auditSettings
+  auditSettings, updatesSettings,
 ) {
                              
   // Update types and log error
   typeRepo.tryUpdate(eventTypesSettings.sourceURL)
     .catch((err) => logging.getLogger('typeRepo').warn(err));
-
+    
+  const logger = logging.getLogger('methods/events');
   // COMMON
 
   api.register('events.*',
@@ -364,7 +365,7 @@ module.exports = function (
 
   api.register('events.update',
     commonFns.getParamsValidation(methodsSchema.update.params),
-    commonFns.catchForbiddenUpdate(eventSchema('update')),
+    commonFns.catchForbiddenUpdate(eventSchema('update'), updatesSettings.ignoreProtectedFields, logger),
     applyPrerequisitesForUpdate,
     validateEventContentAndCoerce,
     checkExistingLaterPeriodIfNeeded,
@@ -561,12 +562,16 @@ module.exports = function (
    */
   function checkStream(context, streamId, errorCallback) {
     if (! context.stream) {
-      errorCallback(errors.unknownReferencedResource('stream', 'streamId', streamId));
+      errorCallback(errors.unknownReferencedResource(
+        'stream', 'streamId', streamId
+      ));
       return false;
     }
     if (context.stream.trashed) {
-      errorCallback(errors.invalidOperation('The referenced stream "' + streamId +
-          '" is trashed.', {trashedReference: 'streamId'}));
+      errorCallback(errors.invalidOperation(
+        'The referenced stream "' + streamId + '" is trashed.',
+        {trashedReference: 'streamId'}
+      ));
       return false;
     }
     return true;
@@ -600,7 +605,8 @@ module.exports = function (
 
       if (periodEvent) {
         return next(errors.invalidOperation('At least one period event ("' + periodEvent.id +
-            '") already exists at a later time', {conflictingEventId: periodEvent.id}));
+          '") already exists at a later time', {conflictingEventId: periodEvent.id}
+        ));
       }
 
       next();
@@ -662,7 +668,8 @@ module.exports = function (
       if (periodEvents.length > 0) {
         var msg = 'The event\'s period overlaps existing period events.';
         return next(errors.periodsOverlap(msg,
-          { overlappedIds: periodEvents.map(function (e) { return e.id; })}));
+          {overlappedIds: periodEvents.map(function (e) { return e.id; })}
+        ));
       }
 
       next();
@@ -768,19 +775,26 @@ module.exports = function (
         userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
           if (err) { return next(errors.unexpectedError(err)); }
           if (! event) {
-            return next(errors.unknownReferencedResource('event', 'id', params.id));
+            return next(errors.unknownReferencedResource(
+              'event', 'id', params.id
+            ));
           }
           if (! isRunning(event)) {
-            return next(errors.invalidOperation('Event "' + params.id + '" is not a running ' +
-                'period event.'));
+            return next(errors.invalidOperation(
+              'Event "' + params.id + '" is not a running period event.'
+            ));
           }
           applyStop(null, event);
         });
       } else if (params.streamId) {
         context.setStream(params.streamId);
         if (! context.stream.singleActivityRootId && ! params.type) {
-          return process.nextTick(next.bind(null, errors.invalidParametersFormat('You must specify ' +
-              'the event `id` or `type` (not a "single activity" stream).')));
+          return process.nextTick(next.bind(null, 
+            errors.invalidParametersFormat(
+              'You must specify the event `id` or `type` ' +
+              ' (not a "single activity" stream).'
+            )
+          ));
         }
         if (! checkStream(context, params.streamId, next)) { return; }
         var stopParams = {
@@ -790,8 +804,12 @@ module.exports = function (
         };
         findLastRunning(context, stopParams, applyStop);
       } else {
-        process.nextTick(next.bind(null, errors.invalidParametersFormat('You must specify either ' +
-            'the "single activity " stream id or the event `id`.')));
+        process.nextTick(next.bind(null,
+          errors.invalidParametersFormat(
+            'You must specify either the "single activity " stream id '+
+            'or the event `id`.'
+          )
+        ));
       }
 
       function applyStop(error, event) {
@@ -968,7 +986,9 @@ module.exports = function (
         function (stepDone) {
           var attIndex = getAttachmentIndex(updatedEvent.attachments, params.fileId);
           if (attIndex === -1) {
-            return stepDone(errors.unknownResource('attachment', params.fileId));
+            return stepDone(errors.unknownResource(
+              'attachment', params.fileId
+            ));
           }
           deletedAtt = updatedEvent.attachments[attIndex];
           updatedEvent.attachments.splice(attIndex, 1);
@@ -1018,7 +1038,9 @@ module.exports = function (
         return callback(errors.unexpectedError(err));
       }
       if (! event) {
-        return callback(errors.unknownResource('event', eventId));
+        return callback(errors.unknownResource(
+          'event', eventId
+        ));
       }
       if (! context.canContributeToContext(event.streamId, event.tags)) {
         return callback(errors.forbidden());

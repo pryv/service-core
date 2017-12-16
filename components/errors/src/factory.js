@@ -26,20 +26,26 @@ factory.forbidden = function (message: string) {
   if (! message) {
     message = 'The given token\'s access permissions do not allow this operation.';
   }
-  return new APIError(ErrorIds.Forbidden, message, {httpStatus: 403});
+  return new APIError(ErrorIds.Forbidden, message, {
+    httpStatus: 403,
+    dontNotifyAirbrake: true
+  });
 };
 
 factory.invalidAccessToken = function (message: string, innerError: Error) {
   return new APIError(ErrorIds.InvalidAccessToken, message, {
     httpStatus: 401,
-    innerError: innerError
+    innerError: innerError,
+    dontNotifyAirbrake: true
   });
 };
 
 factory.invalidCredentials = function (message?: string) {
   return new APIError(ErrorIds.InvalidCredentials,
-    message || 'The given username/password pair is invalid.',
-    {httpStatus: 401});
+    message || 'The given username/password pair is invalid.', {
+      httpStatus: 401,
+      dontNotifyAirbrake: true
+    });
 };
 
 factory.invalidEventType = function (type: string) {
@@ -51,21 +57,25 @@ factory.invalidEventType = function (type: string) {
 };
 
 factory.invalidItemId = function (message?: string) {
-  return new APIError(ErrorIds.InvalidItemId, message, {httpStatus: 400});
+  return new APIError(ErrorIds.InvalidItemId, message, {
+    httpStatus: 400,
+    dontNotifyAirbrake: true
+  });
 };
 
 factory.invalidMethod = function (methodId: string) {
-  return new APIError(
-    ErrorIds.InvalidMethod, 
-    'Invalid method id "' + methodId + '"',
-    { httpStatus: 404 });
+  return new APIError(ErrorIds.InvalidMethod, 'Invalid method id "' + methodId + '"',
+    'Invalid method id "' + methodId + '"', 
+    {httpStatus: 404}
+  );
 };
 
 factory.invalidOperation = function (message: string, data: Object, innerError: Error) {
   return new APIError(ErrorIds.InvalidOperation, message, {
     httpStatus: 400,
     data: data,
-    innerError: innerError
+    innerError: innerError,
+    dontNotifyAirbrake: true
   });
 };
 
@@ -73,7 +83,8 @@ factory.invalidParametersFormat = function (message: string, data: Object, inner
   return new APIError(ErrorIds.InvalidParametersFormat, message, {
     httpStatus: 400,
     data: data,
-    innerError: innerError
+    innerError: innerError,
+    dontNotifyAirbrake: true
   });
 };
 
@@ -81,7 +92,8 @@ factory.invalidRequestStructure = function (message: string, data: Object, inner
   return new APIError(ErrorIds.InvalidRequestStructure, message, {
     httpStatus: 400,
     data: data,
-    innerError: innerError
+    innerError: innerError,
+    dontNotifyAirbrake: true
   });
 };
 
@@ -98,22 +110,24 @@ factory.itemAlreadyExists = function (
   return new APIError(ErrorIds.ItemAlreadyExists, message, {
     httpStatus: 400,
     innerError: innerError,
-    data: conflictingKeys
+    data: conflictingKeys,
+    dontNotifyAirbrake: true
   });
 };
 
 factory.missingHeader = function (headerName: string) {
   return new APIError(
-    ErrorIds.MissingHeader, 
     'Missing expected header "' + headerName + '"',
-    { httpStatus: 400 });
+    {httpStatus: 400}
+  );
 };
 
 factory.periodsOverlap = function (message: string, data: Object, innerError: Error) {
   return new APIError(ErrorIds.PeriodsOverlap, message, {
     httpStatus: 400,
     data: data,
-    innerError: innerError
+    innerError: innerError,
+    dontNotifyAirbrake: true
   });
 };
 
@@ -168,7 +182,8 @@ factory.unknownReferencedResource = function (
   return new APIError(ErrorIds.UnknownReferencedResource, message, {
     httpStatus: 400,
     data: data,
-    innerError: innerError
+    innerError: innerError,
+    dontNotifyAirbrake: true
   });
 };
 
@@ -176,14 +191,14 @@ factory.unknownResource = function (resourceType: ?string, id: ?string, innerErr
   var message = 'Unknown ' + (resourceType || 'resource') + ' ' + (id ? '"' + id + '"' : '');
   return new APIError(ErrorIds.UnknownResource, message, {
     httpStatus: 404,
-    innerError: innerError
+    innerError: innerError,
+    dontNotifyAirbrake: true
   });
 };
 
 factory.unsupportedContentType = function (contentType: string) {
   return new APIError(
     ErrorIds.UnsupportedContentType, 
-    'We don\'t support "' + contentType +
-      '" as content type. If you think we should, please help us and report an issue!',
+    'If you think we should, please help us and report an issue!',
     { httpStatus: 415 });
 };

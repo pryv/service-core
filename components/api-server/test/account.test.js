@@ -481,6 +481,58 @@ describe('account', function () {
         }
       ], done);
     });
+    
+    it('must not trigger a reset email if mailing is deactivated', function (done) {
+      var settings = _.clone(helpers.dependencies.settings);
+      settings.services.email.enabled = false;
+      testResetMailNotSent(settings, done);
+    });
+    
+    it('must not trigger a reset email if reset mail is deactivated', function (done) {
+      var settings = _.clone(helpers.dependencies.settings);
+      settings.services.email.enabled = {
+        resetPassword: false
+      };
+      testResetMailNotSent(settings, done);
+    });
+    
+    function testResetMailNotSent (settings, callback) {
+      var mailSent = false;
+          
+      // setup mail server mock
+      helpers.instanceTestSetup.set(settings, {
+        context: settings.services.email,
+        execute: function () {
+          require('nock')(this.context.url).post(this.context.sendMessagePath)
+            .reply(200, function () {
+              this.context.messagingSocket.emit('password-reset-token');
+            }.bind(this));
+        }
+      });
+      // fetch reset token from server process
+      server.on('password-reset-token', function () {
+        mailSent = true;
+        return callback('Reset email should not be sent!');
+      });
+
+      async.series([
+        server.ensureStarted.bind(server, settings),
+        function requestReset(stepDone) {
+          request.post(requestPath)
+            .unset('authorization')
+            .set('Origin', 'http://test.pryv.local')
+            .send(authData)
+            .end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.requestPasswordReset.result
+              });
+              mailSent.should.eql(false);
+              stepDone();
+            });
+        },
+      ], callback);
+    }
 
     it('"request" must return an error if the requesting app is not trusted', function (done) {
       request.post(requestPath).send({appId: 'bad-app-id'})

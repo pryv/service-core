@@ -1,9 +1,7 @@
-var APIError = require('components/errors').APIError,
-    ErrorIds = require('components/errors').ErrorIds,
+var errors = require('components/errors').factory,
     Paths = require('./Paths'),
     methodCallback = require('./methodCallback'),
     contentType = require('components/middleware').contentType,
-//    util = require('util'),
     _ = require('lodash');
 
 /**
@@ -29,6 +27,9 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
     var secret = req.headers.authorization;
 
     if (! secret || secret !== authSettings.adminAccessKey) {
+
+      hidePasswordHashIfExists(req.body);
+
       logger.warn('Unauthorized attempt to access system route', {
         url: req.url,
         ip: req.ip,
@@ -36,8 +37,7 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
         body: req.body
       });
       // return "not found" to avoid encouraging retries
-      return next(new APIError(ErrorIds.UnknownResource, 'Resource not found',
-          {httpStatus: 404}));
+      return next(errors.unknownResource());
     }
 
     next();
@@ -48,8 +48,11 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
   expressApp.post('/register/create-user', contentType.json, createUser);
 
   function createUser(req, res, next) {
-    systemAPI.call('system.createUser', {}, _.extend({}, req.body),
-        methodCallback(res, next, 201));
+
+    let params = _.extend({}, req.body); // Make a copy of the request before we hide the password
+    hidePasswordHashIfExists(req.body);
+
+    systemAPI.call('system.createUser', {}, params, methodCallback(res, next, 201));
   }
 
   expressApp.get(Paths.System + '/user-info/:username', function (req, res, next) {
@@ -58,6 +61,13 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
     };
     systemAPI.call('system.getUserInfo', {}, params, methodCallback(res, next, 200));
   });
+
+  function hidePasswordHashIfExists(requestBody) {
+    if (requestBody.passwordHash) {
+      requestBody.passwordHash = '(hidden)';
+    }
+    // don't set it if no value was provided
+  }
 
 };
 module.exports.injectDependencies = true;

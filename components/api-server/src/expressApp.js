@@ -1,4 +1,3 @@
-'use strict'; 
 // @flow
 
 const express = require('express');
@@ -9,6 +8,7 @@ const middleware = require('components/middleware');
 const errorsMiddlewareMod = require('./middleware/errors'); 
 
 const Paths = require('./routes/Paths');
+const config = require('./config');
 
 
 /** Handles requests during application startup. 
@@ -18,6 +18,10 @@ function handleRequestDuringStartup(req: express$Request, res: express$Response)
     id: 'api-unavailable',
     message: 'The API is temporarily unavailable; please try again in a moment.' });
 }
+
+type AirbrakeSettings = {
+  projectId: string, key: string,
+};
 
 /** Manages our express app during application startup. 
  * 
@@ -63,6 +67,60 @@ class ExpressAppLifecycle {
   go(phase: Phase): void {
     this.phase = phase; 
   }
+
+  // Inserts airbrake related middleware into the stack. 
+  // 
+  activateAirbrake() {
+    const app = this.app; 
+    
+    /*
+      Quick guide on how to test Airbrake notifications (under logs entry):
+      1. Update configuration file with Airbrake information:
+          "airbrake": {
+           "active": true,
+           "key": "get it from pryv.airbrake.io settings",
+           "projectId": "get it from pryv.airbrake.io settings"
+         }
+      2. Throw a fake error in the code (/routes/root.js is easy to trigger):
+          throw new Error('This is a test of Airbrake notifications');
+      3. Trigger the error by running the faulty code (run a local core)
+     */
+    const settings = this.getAirbrakeSettings(); 
+    if (settings == null) return; 
+
+    const airbrake = require('airbrake').createClient(
+      settings.projectId, settings.key);
+
+    airbrake.addFilter(function (notice) {
+      if (notice.environment['err.dontNotifyAirbrake']) {
+        // Ignore errors with this messsage
+        return null;
+      }
+      return notice;
+    });
+
+    app.use(airbrake.expressHandler());
+  }
+
+  getAirbrakeSettings(): ?AirbrakeSettings {
+    // TODO Directly hand log settings to this class. 
+    const logSettings = config.load().logs;
+    if (logSettings == null) return null; 
+    
+    const airbrakeSettings = logSettings.airbrake;
+    if (airbrakeSettings == null || !airbrakeSettings.active) return null; 
+    
+    const projectId = airbrakeSettings.projectId;
+    const key = airbrakeSettings.key;
+    if (projectId == null || key == null) return null; 
+    
+    return {
+      projectId: projectId, 
+      key: key,
+    };
+  }
+
+  // ------------------------------------------------------ state machine events
   
   /** Called before we have a database connection. This prevents errors while
    * the boot sequence is in progress. 
@@ -98,6 +156,10 @@ class ExpressAppLifecycle {
     this.go('routesAdded');
     
     app.use(middleware.notFound);
+    
+    // Activate Airbrake if needed
+    this.activateAirbrake();
+    
     app.use(this.errorHandlingMiddleware);
   }
 }

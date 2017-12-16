@@ -133,6 +133,7 @@ class Server {
       eventTypesSettings: settings.get('eventTypes').obj(),
       httpSettings: settings.get('http').obj(),
       servicesSettings: settings.get('services').obj(),
+      updatesSettings: settings.get('updates').obj(),
 
       // misc utility
       serverInfo: require('../package.json'),
@@ -250,7 +251,14 @@ class Server {
     
     // FLOW: For use during our testing (DEPRECATED)
     server.url = serverUrl;
-
+        
+    // Warning if ignoring forbidden updates
+    if (settings.get('updates.ignoreProtectedFields').bool()) {
+      logger.warn('Server configuration has "ignoreProtectedFieldUpdates" set to true: ' +
+        'This means updates to protected fields will be ignored and operations will succeed. ' +
+        'We recommend turning this off, but please be aware of the implications for your code.');
+    }
+    
     // TEST: execute test setup instructions if any
     const instanceTestSetup = settings.get('instanceTestSetup'); 
     if (process.env.NODE_ENV === 'test' && instanceTestSetup.exists()) {

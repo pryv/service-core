@@ -1,4 +1,3 @@
-'use strict';
 // @flow
 
 /*global describe, before, beforeEach, it */
@@ -101,6 +100,7 @@ describe('accesses (personal)', function () {
         ]
       };
       let originalCount,
+      
           createdAccess,
           time;
 
@@ -547,34 +547,104 @@ describe('accesses (personal)', function () {
       });
     });
     
-    it('must reject of read-only properties', function (done) {
-      var original = _.omit(testData.accesses[1], 'calls');
-      var forbiddenUpdate = {
-        id: 'forbidden',
-        token: 'forbidden',
-        type: 'shared',
-        lastUsed: 1,
-        created: 1,
-        createdBy: 'bob',
-        modified: 1,
-        modifiedBy: 'alice'
+    describe('forbidden updates of protected fields', function () {
+      const access = {
+        name: 'Forbidden access update test',
+        permissions:[{
+          streamId: 'work',
+          level: 'read'
+        }],
       };
+      let accessId;
       
-      req().put(path(original.id)).send(forbiddenUpdate).end(function (res) {
-        validation.check(res, {
-          status: 403,
-          id: ErrorIds.Forbidden,
-          data: {forbiddenProperties: forbiddenUpdate}
-            }, done);
+      beforeEach(function (done) {
+        req().post(basePath).send(access).end(function (res) {
+          validation.check(res, {
+            status: 201,
+            schema: methodsSchema.create.result
           });
+          accessId = res.body.access.id;
+          done();
+        });
       });
-
+    
+      it('must prevent update of protected fields and throw a forbidden error in strict mode', function (done) {
+        const forbiddenUpdate = {
+          id: 'forbidden',
+          token: 'forbidden',
+          type: 'personal',
+          lastUsed: 1,
+          created: 1,
+          createdBy: 'bob',
+          modified: 1,
+          modifiedBy: 'alice'
+        };
+        
+        async.series([
+          function instanciateServerWithStrictMode(stepDone) {
+            setIgnoreProtectedFieldUpdates(false, stepDone);
+          },
+          function testForbiddenUpdate(stepDone) {
+            req().put(path(accessId)).send(forbiddenUpdate).end(function (res) {
+              validation.checkError(res, {
+                status: 403,
+                id: ErrorIds.Forbidden
+              }, stepDone);
+            });
+          }
+        ], done);
+      });
+      
+      it('must prevent update of protected fields and log a warning in non-strict mode', function (done) {
+        const forbiddenUpdate = {
+          id: 'forbidden',
+          token: 'forbidden',
+          type: 'personal',
+          lastUsed: 1,
+          created: 1,
+          createdBy: 'bob',
+          modified: 1,
+          modifiedBy: 'alice'
+        };
+        
+        async.series([
+          function instanciateServerWithNonStrictMode(stepDone) {
+            setIgnoreProtectedFieldUpdates(true, stepDone);
+          },
+          function testForbiddenUpdate(stepDone) {
+            req().put(path(accessId)).send(forbiddenUpdate).end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.update.result
+              });
+              const access = res.body.access;
+              should(access.id).not.be.equal(forbiddenUpdate.id);
+              should(access.token).not.be.equal(forbiddenUpdate.token);
+              should(access.type).not.be.equal(forbiddenUpdate.type);
+              should(access.lastUsed).not.be.equal(forbiddenUpdate.lastUsed);
+              should(access.created).not.be.equal(forbiddenUpdate.created);
+              should(access.createdBy).not.be.equal(forbiddenUpdate.createdBy);
+              should(access.modified).not.be.equal(forbiddenUpdate.modified);
+              should(access.modifiedBy).not.be.equal(forbiddenUpdate.modifiedBy);
+              stepDone();
+            });
+          }
+        ], done);
+      });
+      
+      function setIgnoreProtectedFieldUpdates(activated, stepDone) {
+        let settings = _.cloneDeep(helpers.dependencies.settings);
+        settings.updates.ignoreProtectedFields = activated;
+        server.ensureStarted.call(server, settings, stepDone);
+      }
+      
+    });
   });
 
   describe('DELETE /<token>', function () {
-
+  
     beforeEach(resetAccesses);
-
+  
     it('must delete the shared access', function (done) {
       var deletedAccess = testData.accesses[1],
           deletionTime;
@@ -594,7 +664,7 @@ describe('accesses (personal)', function () {
           function verifyData(stepDone) {
             storage.findAll(user, null, function (err, accesses) {
               accesses.length.should.eql(testData.accesses.length, 'accesses');
-
+  
               var expected = _.extend({
                 _token: deletedAccess.token,
                 _type: deletedAccess.type,
@@ -603,7 +673,7 @@ describe('accesses (personal)', function () {
               }, _.omit(deletedAccess, 'token', 'type', 'name'));
               var actual = _.find(accesses, {id: deletedAccess.id});
               validation.checkObjectEquality(actual, expected);
-
+  
               stepDone();
             });
           }
@@ -611,7 +681,7 @@ describe('accesses (personal)', function () {
         done
       );
     });
-
+  
     it('must delete the personal access', function (done) {
       req().del(path(testData.accesses[0].id)).end(function (res) {
         validation.check(res, {
@@ -622,7 +692,7 @@ describe('accesses (personal)', function () {
         done();
       });
     });
-
+  
     it('must return an error if the access does not exist', function (done) {
       req().del(path('unknown-id')).end(function (res) {
         validation.checkError(res, {
@@ -631,7 +701,7 @@ describe('accesses (personal)', function () {
         }, done);
       });
     });
-
+  
   });
 
   describe('POST /check-app', function () {
@@ -843,3 +913,4 @@ describe('accesses (personal)', function () {
   }
 
 });
+

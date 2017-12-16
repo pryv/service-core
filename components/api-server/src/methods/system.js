@@ -44,7 +44,9 @@ module.exports = function (systemAPI, usersStorage, userAccessesStorage, service
       usersStorage.insertOne(params, function (err, newUser) {
         if (err) {
           // for now let's just assume the user already exists
-          return next(errors.itemAlreadyExists('user', {username: params.username}, err));
+          return next(errors.itemAlreadyExists(
+            'user', {username: params.username}, err
+          ));
         }
         result.id = newUser.id;
         context.user = newUser;
@@ -57,6 +59,12 @@ module.exports = function (systemAPI, usersStorage, userAccessesStorage, service
       sendMailURL = emailSettings.url + emailSettings.sendMessagePath;
 
   function sendWelcomeMail(context, params, result, next) {
+    // skip this step if welcome mail is deactivated
+    const isMailActivated = emailSettings.enabled;
+    if(isMailActivated === false
+      || (isMailActivated != null && isMailActivated.welcome === false)) {
+      return next();
+    }
     var sendMailData = {
       key: emailSettings.key,
       template_name: emailSettings.welcomeTemplate,

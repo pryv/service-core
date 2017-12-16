@@ -1,4 +1,4 @@
-FROM pryv/base:1.2.7
+FROM pryv/base:1.2.13
 MAINTAINER "Tech@Pryv" <tech@pryv.com>
 
 ADD . /pd_build

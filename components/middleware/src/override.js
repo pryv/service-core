@@ -1,8 +1,6 @@
-'use strict';
 // @flow
 
-var APIError = require('components/errors').APIError,
-    ErrorIds = require('components/errors').ErrorIds;
+const errors = require('components/errors').factory;
     
 // NOTE Name chosen to be unwieldy, so as not to make this look too good. 
 declare class RequestWithOriginalMethodAndBody extends express$Request { 
@@ -45,7 +43,7 @@ function normalizeRequest(
     try {
       req.body = JSON.parse(body._json);
     } catch (err) {
-      return next(new APIError(ErrorIds.InvalidRequestStructure, err.message, {httpStatus: 400}));
+      return next(errors.invalidRequestStructure(err.message));
     }
   }
 

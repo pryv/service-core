@@ -1,110 +1,75 @@
 /*global describe, it*/
 'use strict';
 
-var ArrayStream = require('../../../src/methods/streams/ArrayStream'),
-    Writable = require('stream').Writable,
-    inherits = require('util').inherits,
-    should = require('should'),
-    Source = require('../../helpers').SourceStream;
+const ArrayStream = require('../../../src/methods/streams/ArrayStream');
+const Writable = require('stream').Writable;
+const inherits = require('util').inherits;
+const should = require('should');
+const Source = require('../../helpers').SourceStream;
 
 describe('ArrayStream', function () {
-
-  it('must return a valid array when receiving less than the limit items', function (done) {
-    var items = [],
-      name = 'name';
-    for (var i = 0; i < 10; i++) {
-      items.push({
-        a: 'a',
-        n: i
-      });
+  
+  const arraySize = new ArrayStream('getSize', true).size;
+  
+  describe('testing around the array size limit', function () {
+    for (let i = -3; i <= 3; i++) {
+      const sign = i < 0 ? '' : '+';
+      it('must return a valid array when receiving limit' + sign + i +' items',
+        function (done) {
+          const n = arraySize+i;
+          n.should.be.above(0);
+          pipeAndCheck(n, true, null, done);
+        }
+      );
     }
-
-    function expectation(err, res) {
-      should.not.exist(err);
-      should.exist(res);
-      res = JSON.parse(res);
-      should.exist(res[name]);
-      res[name].should.eql(items);
-      done();
-    }
-
-    new Source(items)
-      .pipe(new ArrayStream(name, true))
-      .pipe(new DestinationStream(true, expectation));
-
   });
-
-  it('must return a valid array when receiving more than the limit items', function (done) {
-    var items = [],
-      name = 'name';
-
-    var aStream = new ArrayStream(name, true);
-
-    for (var i = 0; i < aStream.size + 10; i++) {
-      items.push({
-        a: 'a',
-        n: i
-      });
+  
+  describe('testing with small number of items', function () {
+    for (let i = 0; i <= 3; i++) {
+      it('must return a valid array when receiving ' + i + ' item(s)',
+        function (done) {
+          pipeAndCheck(i, true, null, done);
+        }
+      );
     }
-
-    function expectation(err, res) {
-      should.not.exist(err);
-      should.exist(res);
-      res = JSON.parse(res);
-      should.exist(res[name]);
-      res[name].should.eql(items);
-      done();
-    }
-
-    new Source(items)
-      .pipe(aStream)
-      .pipe(new DestinationStream(true, expectation));
-  });
-
-  it('must return a valid empty array when receiving zero items', function (done) {
-    var items = [],
-      name = 'name';
-
-    function expectation(err, res) {
-      should.not.exist(err);
-      should.exist(res);
-      res = JSON.parse(res);
-      should.exist(res[name]);
-      res[name].should.eql(items);
-      done();
-    }
-
-    new Source(items)
-      .pipe(new ArrayStream(name, true))
-      .pipe(new DestinationStream(true, expectation));
   });
 
   it('must return an array preceded by a comma when called with parameter isFirst=false',
     function (done) {
-      var items = [],
-        name = 'name';
-      for (var i = 0; i < 10; i++) {
-        items.push({
-          a: 'a',
-          n: i
-        });
-      }
+      const n = 10;
 
-      function expectation(err, res) {
+      pipeAndCheck(n, false, (res) => {
+        res.charAt(0).should.eql(',');
+        return '{' + res.slice(1) + '}';
+      }, done);
+    }
+  );
+    
+  function pipeAndCheck(itemNumber, isFirst, resultMapping, done) {
+    const name = 'name';
+    
+    let items = [];
+    for (let i = 0; i < itemNumber; i++) {
+      items.push({
+        a: 'a',
+        n: i
+      });
+    }
+
+    new Source(items)
+      .pipe(new ArrayStream(name, isFirst))
+      .pipe(new DestinationStream(isFirst, (err, res) => {
         should.not.exist(err);
         should.exist(res);
-        res.charAt(0).should.eql(',');
-        res = '{' + res.slice(1) + '}';
+        if(typeof(resultMapping) == 'function') {
+          res = resultMapping(res);
+        }
         res = JSON.parse(res);
         should.exist(res[name]);
         res[name].should.eql(items);
         done();
-      }
-
-      new Source(items)
-        .pipe(new ArrayStream(name, false))
-        .pipe(new DestinationStream(false, expectation));
-    });
+      }));
+  }
 });
 
 

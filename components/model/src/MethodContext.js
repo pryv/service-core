@@ -117,16 +117,16 @@ MethodContext.prototype.retrieveExpandedAccess = function (callback) {
       }
 
       this.storage.accesses.findOne(this.user, {token: this.accessToken}, null,function (err, access) {
-        if (err) { return stepDone(err); }
+          if (err) { return stepDone(err); }
+          
+          if (! access) {
+            return stepDone(errors.invalidAccessToken(
+              'Cannot find access from token "' + this.accessToken + '".'));
+          }
 
-        if (! access) {
-          return stepDone(errors.invalidAccessToken('Cannot find access from token "' +
-              this.accessToken + '".'));
-        }
-
-        this.access = access;
-        stepDone();
-      }.bind(this));
+          this.access = access;
+          stepDone();
+        }.bind(this));
     }.bind(this),
 
     function checkAccess(stepDone) {
@@ -142,7 +142,9 @@ MethodContext.prototype.retrieveExpandedAccess = function (callback) {
       if (this.access.type !== 'personal') { return stepDone(); }
 
       if (! sessionData) {
-        return stepDone(errors.invalidAccessToken('Access session has expired.'));
+        return stepDone(errors.invalidAccessToken(
+          'Access session has expired.'
+        ));
       }
       // keep alive
       this.storage.sessions.touch(this.access.token, function () {});

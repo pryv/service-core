@@ -13,8 +13,9 @@
     "update-event-types": "scripts/update-event-types.bash"
   },
   "dependencies": {
-    "slug": "^0.9.1",
+    "airbrake": "^2.1.0",
     "multistream": "^2.1.0",
+    "slug": "^0.9.1",
     "socket.io": "^0.9.19",
     "z-schema": "^3.15.3", 
     "nats": "^0.7", 

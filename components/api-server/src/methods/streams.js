@@ -21,11 +21,12 @@ var errors = require('components/errors').factory,
  * @param notifications
  * @param logging
  * @param auditSettings
+ * @param updatesSettings
  */
-module.exports = function (api, userStreamsStorage, userEventsStorage, userEventFilesStorage,
-                           notifications, logging, auditSettings) {
+module.exports = function (api, userStreamsStorage, userEventsStorage, userEventFilesStorage, 
+  notifications, logging, auditSettings, updatesSettings) {
 
-  var logger = logging.getLogger('methods/streams');
+  const logger = logging.getLogger('methods/streams');
 
   // COMMON
 
@@ -56,8 +57,8 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
       if (params.parentId) {
         var parent = treeUtils.findById(streams, params.parentId);
         if (! parent) {
-          return next(errors.unknownReferencedResource('parent stream', 'parentId', params.parentId,
-              err));
+          return next(errors.unknownReferencedResource('parent stream',
+            'parentId', params.parentId, err));
         }
         streams = parent.children;
       }
@@ -126,10 +127,10 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     }
 
     if (params.id) {
-      if (string.isReservedId(params.id) ||
-          string.isReservedId(params.id = slugify(params.id))) {
-        return process.nextTick(next.bind(null, errors.invalidItemId('The specified id "' +
-            params.id + '" is not allowed.')));
+      if (string.isReservedId(params.id) || 
+      string.isReservedId(params.id = slugify(params.id))) {
+        return process.nextTick(next.bind(null, errors.invalidItemId(
+          'The specified id "' + params.id + '" is not allowed.')));
       }
     }
 
@@ -143,14 +144,19 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
       if (err) {
         if (storage.Database.isDuplicateError(err)) {
           // HACK: relying on error text as nothing else available to differentiate
-	  var apiError = err.message.indexOf('_id_') > 0 ?
-              errors.itemAlreadyExists('stream', {id: params.id}, err) :
-              errors.itemAlreadyExists('sibling stream', {name: params.name}, err);
+          const apiError = err.message.indexOf('_id_') > 0 ?
+            errors.itemAlreadyExists(
+              'stream', {id: params.id}, err
+            ) :
+            errors.itemAlreadyExists(
+              'sibling stream', {name: params.name}, err
+            );
           return next(apiError);
         } else {
           // for now we just assume the parent is unknown
-          return next(errors.unknownReferencedResource('parent stream', 'parentId', params.parentId,
-              err));
+          return next(errors.unknownReferencedResource(
+            'parent stream', 'parentId', params.parentId, err
+          ));
         }
       }
 
@@ -164,7 +170,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
   api.register('streams.update',
       commonFns.getParamsValidation(methodsSchema.update.params),
-      commonFns.catchForbiddenUpdate(streamSchema('update')),
+      commonFns.catchForbiddenUpdate(streamSchema('update'), updatesSettings.ignoreProtectedFields, logger),
       applyPrerequisitesForUpdate,
       updateStream);
 
@@ -173,7 +179,10 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     var stream = treeUtils.findById(context.streams, params.id);
     if (! stream) {
       return process.nextTick(next.bind(null,
-          errors.unknownResource('stream', params.id)));
+        errors.unknownResource(
+          'stream', params.id
+        )
+      ));
     }
     if (! context.canManageStream(stream.id)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
@@ -191,21 +200,24 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
   function updateStream(context, params, result, next) {
     userStreamsStorage.updateOne(context.user, {id: params.id}, params.update,
-        function (err, updatedStream) {
-      if (err) {
-        if (storage.Database.isDuplicateError(err)) {
-          return next(errors.itemAlreadyExists('sibling stream', {name: params.update.name}, err));
-        } else {
-          // for now we just assume the parent is unknown
-          return next(errors.unknownReferencedResource('parent stream', 'parentId',
-              params.update.parentId, err));
+      function (err, updatedStream) {
+        if (err) {
+          if (storage.Database.isDuplicateError(err)) {
+            return next(errors.itemAlreadyExists(
+              'sibling stream', {name: params.update.name}, err
+            ));
+          } else {
+            // for now we just assume the parent is unknown
+            return next(errors.unknownReferencedResource(
+              'parent stream', 'parentId', params.update.parentId, err
+            ));
+          }
         }
-      }
 
-      result.stream = updatedStream;
-      notifications.streamsChanged(context.user);
-      next();
-    });
+        result.stream = updatedStream;
+        notifications.streamsChanged(context.user);
+        next();
+      });
   }
 
   // DELETION
@@ -284,8 +296,9 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
             hasLinkedEvents = !!events.length;
 
             if (hasLinkedEvents && params.mergeEventsWithParent === null) {
-              return stepDone(errors.invalidParametersFormat('There are events referring to the ' +
-                'deleted items and the `mergeEventsWithParent` parameter is missing.'));
+              return stepDone(errors.invalidParametersFormat(
+                'There are events referring to the deleted items ' +
+                'and the `mergeEventsWithParent` parameter is missing.'));
             }
 
             stepDone();
@@ -421,8 +434,8 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
                   eventsStream.on('data', (event) => {
                     userEventFilesStorage.removeAllForEvent(context.user, event.id, function (err) {
                       if (err) {
-                        // async delete attached files (if any) –
-                        // don't wait for this, just log possible errors
+                        // async delete attached files (if any) – don't wait for
+                        // this, just log possible errors
                         errorHandling.logError(err, null, logger);
                       }
                     });

@@ -1,8 +1,6 @@
 // @flow
-'use strict';
 
-var winston = require('winston'),
-    airbrake = null;
+const winston = require('winston');
 
 // setup logging levels (match logging methods below)
 const levels = Object.freeze({
@@ -50,10 +48,6 @@ module.exports = function (logsSettings: Object) {
       json: false
     });
   }
-  if (logsSettings.airbrake.active) {
-    airbrake = require('airbrake').createClient(logsSettings.airbrake.projectId, logsSettings.airbrake.key);
-    airbrake.handleExceptions();
-  }
 
   // return singleton
 
@@ -84,7 +78,6 @@ module.exports = function (logsSettings: Object) {
 module.exports.injectDependencies = true; // make it DI-friendly
 
 export interface Logger {
-  sendToErrorService(error: any, callback?: (err: any, res: any) => void): void;
   debug(msg: string, metaData?: {}): void; 
   info(msg: string, metaData?: {}): void;
   warn(msg: string, metaData?: {}): void; 
@@ -93,9 +86,6 @@ export interface Logger {
 export type LogFactory = (topic: string) => Logger; 
 
 class NullLogger implements Logger {
-  sendToErrorService(error: any, callback?: (err: any, res: any) => void) { // eslint-disable-line no-unused-vars
-  }
-  
   debug(msg: string, metaData?: {}) { // eslint-disable-line no-unused-vars
   }
   info(msg: string, metaData?: {}) { // eslint-disable-line no-unused-vars
@@ -122,16 +112,6 @@ class LoggerImpl implements Logger {
     this.winstonLogger = winstonLogger;
   }
   
-  sendToErrorService(error: any, callback?: (err: any, res: any) => void) {
-    if (! airbrake) {
-      if (typeof(callback) === 'function') {
-        callback(null, null);
-      }
-      return;
-    }
-    airbrake.notify(error, callback);
-  }
-  
   debug(msg: string, metaData?: {}) {
     this.log('debug', msg, metaData);
   }
@@ -150,4 +130,3 @@ class LoggerImpl implements Logger {
     this.winstonLogger[level](msg, metaData || {});
   }
 }
-
