@@ -230,15 +230,14 @@ describe('system (ex-register)', function () {
 
       it('must return a correct error if the content type is wrong', function (done) {
         request.post(path())
-            .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
-          .set('Content-Type', 'application/Json') // <-- case error
-          .send(new Buffer('I need to provide a buffer here for superagent not to crash'))
-            .end(function (err, res) {
-              validation.checkError(res, {
-                status: 415,
-                id: ErrorIds.UnsupportedContentType
-              }, done);
-            });
+          .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
+          .set('Content-Type', 'application/Jssdlfkjslkjfon') // <-- case error
+          .end(function (err, res) {
+            validation.checkError(res, {
+              status: 415,
+              id: ErrorIds.UnsupportedContentType
+            }, done);
+          });
       });
     });
     describe('when we log into a temporary log file', function () {
