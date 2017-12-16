@@ -90,6 +90,15 @@ class ExpressAppLifecycle {
 
     const airbrake = require('airbrake').createClient(
       settings.projectId, settings.key);
+
+    airbrake.addFilter(function (notice) {
+      if (notice.environment['err.dontNotifyAirbrake']) {
+        // Ignore errors with this messsage
+        return null;
+      }
+      return notice;
+    });
+
     app.use(airbrake.expressHandler());
   }
 

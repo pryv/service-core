@@ -75,7 +75,8 @@ module.exports = function(
 
     var tokenParts = encryption.parseFileReadToken(req.query.readToken);
     if (! tokenParts.accessId) {
-      return next(errors.invalidAccessToken('Invalid read token "' + req.query.readToken + '".'));
+      return next(errors.invalidAccessToken(
+        'Invalid read token "' + req.query.readToken + '".'));
     }
 
     userAccessesStorage.findOne(req.context.user, {id: tokenParts.accessId}, null,

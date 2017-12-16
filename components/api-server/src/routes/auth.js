@@ -26,15 +26,12 @@ module.exports = function (expressApp: express$Application, api: any, authSettin
   const ssoCookieSignSecret = authSettings.ssoCookieSignSecret || 'Hallowed Be Thy Name, O Node';
   const ssoCookieSecure = process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'test';
 
-  // Returns true if the given `obj` has all of the property values identified
-  // by the names contained in `keys`.
-  //
-  function hasProperties(obj: mixed, keys: Array<string>): boolean {
-    if (obj == null) { return false; }
-    if (typeof obj !== 'object') { return false; }
-        
-    for (const key of keys) {
-      if (! lodash.has(obj, key)) return false; 
+  expressApp.get(Paths.Auth + '/who-am-i', function (req, res, next) {
+    var ssoCookie = req.signedCookies.sso;
+    if (! ssoCookie) {
+      return next(errors.invalidCredentials(
+        'Not signed-on'
+      ));
     }
     return true; 
   }

@@ -35,7 +35,9 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
 
   function checkNoSharedAccess(context, params, result, next) {
     if (context.access.isShared()) {
-      return next(errors.forbidden('You cannot access this resource using a shared access token.'));
+      return next(errors.forbidden(
+        'You cannot access this resource using a shared access token.')
+      );
     }
     next();
   }
@@ -85,12 +87,15 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
 
   function applyPrerequisitesForCreation(context, params, result, next) {
     if (params.type === 'personal') {
-      return next(errors.forbidden('Personal accesses are created automatically on login.'));
+      return next(errors.forbidden(
+        'Personal accesses are created automatically on login.'
+      ));
     }
 
     if (! context.access.isPersonal() && ! context.access.canManageAccess(params)) {
-      return next(errors.forbidden('Your access token has insufficient permissions to create ' +
-          'this new access.'));
+      return next(errors.forbidden(
+        'Your access token has insufficient permissions ' +
+        'to create this new access.'));
     }
 
     if (params.token) {
@@ -147,8 +152,9 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
                     err.message);
               } else {
                 // not OK: stream exists with same unique key but different id
-                return streamCallback(errors.itemAlreadyExists('stream', {name: newStream.name},
-                    err));
+                return streamCallback(errors.itemAlreadyExists(
+                  'stream', {name: newStream.name}, err
+                ));
               }
             } else {
               return streamCallback(errors.unexpectedError(err));
@@ -213,7 +219,9 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
               conflictingKeys.deviceName = params.deviceName;
             }
           }
-          return next(errors.itemAlreadyExists('access', conflictingKeys, err));
+          return next(errors.itemAlreadyExists(
+            'access', conflictingKeys, err
+          ));
         } else {
           return next(errors.unexpectedError(err));
         }
@@ -242,43 +250,47 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
 
   function checkAccessForUpdate(context, params, result, next) {
     userAccessesStorage.findOne(context.user, {id: params.id}, dbFindOptions,
-        function (err, access) {
-      if (err) { return next(errors.unexpectedError(err)); }
-      if (! access) {
-        return next(errors.unknownResource('access', params.id));
-      }
+      function (err, access) {
+        if (err) { return next(errors.unexpectedError(err)); }
 
+        if (! access) {
+          return next(errors.unknownResource(
+            'access', params.id
+          ));
+        }
 
-      if (! context.access.isPersonal() && ! context.access.canManageAccess(access)) {
-        return next(errors.forbidden('Your access token has insufficient permissions to ' +
-            'modify this access.'));
-      }
+        if (! context.access.isPersonal() && ! context.access.canManageAccess(access)) {
+          return next(errors.forbidden(
+            'Your access token has insufficient permissions ' +
+            'to modify this access.'
+          ));
+        }
 
-      context.resource = access;
+        context.resource = access;
 
-      next();
-    });
+        next();
+      });
   }
 
   function updateAccess(context, params, result, next) {
     userAccessesStorage.updateOne(context.user, {id: params.id}, params.update,
-        function (err, updatedAccess) {
-      if (err) {
-        if (Database.isDuplicateError(err)) {
-          return next(errors.itemAlreadyExists('access',
+      function (err, updatedAccess) {
+        if (err) {
+          if (Database.isDuplicateError(err)) {
+            return next(errors.itemAlreadyExists('access',
               { type: context.resource.type, name: params.update.name }, err));
-        } else {
-          return next(errors.unexpectedError(err));
+          } else {
+            return next(errors.unexpectedError(err));
+          }
         }
-      }
 
-      // cleanup internal fields
-      delete updatedAccess.calls;
+        // cleanup internal fields
+        delete updatedAccess.calls;
 
-      result.access = updatedAccess;
-      notifications.accessesChanged(context.user);
-      next();
-    });
+        result.access = updatedAccess;
+        notifications.accessesChanged(context.user);
+        next();
+      });
   }
 
 
@@ -299,7 +311,8 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
       }
 
       if (! context.access.isPersonal() && ! context.access.canManageAccess(access)) {
-        return next(errors.forbidden('Your access token has insufficient permissions to ' +
+        return next(errors.forbidden(
+            'Your access token has insufficient permissions to ' +
             'delete this access.'));
       }
 
@@ -327,8 +340,9 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
 
   function checkApp(context, params, result, next) {
     if (! context.access.isPersonal()) {
-      return next(errors.forbidden('Your access token has insufficient permissions to access ' +
-          'this resource.'));
+      return next(errors.forbidden(
+        'Your access token has insufficient permissions to access this resource.'
+      ));
     }
 
     var query = {

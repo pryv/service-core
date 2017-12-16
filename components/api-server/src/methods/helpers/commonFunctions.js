@@ -84,10 +84,9 @@ exports.getParamsValidation = function getParamsValidation(paramsSchema) {
   return function validateParams(context, params, result, next) {
     validation.validate(params, paramsSchema, function (err) {
       if (err) {
-        return next(
-          errors.invalidParametersFormat(
-            'The parameters\' format is invalid.',
-            err));
+        return next(errors.invalidParametersFormat(
+          "The parameters' format is invalid.", err
+        ));
       }
       next();
     });

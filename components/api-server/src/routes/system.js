@@ -1,9 +1,7 @@
-var APIError = require('components/errors').APIError,
-    ErrorIds = require('components/errors').ErrorIds,
+var errors = require('components/errors').factory,
     Paths = require('./Paths'),
     methodCallback = require('./methodCallback'),
     contentType = require('components/middleware').contentType,
-//    util = require('util'),
     _ = require('lodash');
 
 /**
@@ -39,8 +37,7 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
         body: req.body
       });
       // return "not found" to avoid encouraging retries
-      return next(new APIError(ErrorIds.UnknownResource, 'Resource not found',
-          {httpStatus: 404}));
+      return next(errors.unknownResource());
     }
 
     next();

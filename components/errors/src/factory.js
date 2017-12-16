@@ -23,20 +23,26 @@ factory.forbidden = function (message) {
   if (! message) {
     message = 'The given token\'s access permissions do not allow this operation.';
   }
-  return new APIError(ErrorIds.Forbidden, message, {httpStatus: 403});
+  return new APIError(ErrorIds.Forbidden, message, {
+    httpStatus: 403,
+    dontNotifyAirbrake: true
+  });
 };
 
 factory.invalidAccessToken = function (message, innerError) {
   return new APIError(ErrorIds.InvalidAccessToken, message, {
     httpStatus: 401,
-    innerError: innerError
+    innerError: innerError,
+    dontNotifyAirbrake: true
   });
 };
 
 factory.invalidCredentials = function (message) {
   return new APIError(ErrorIds.InvalidCredentials,
-      message || 'The given username/password pair is invalid.',
-      {httpStatus: 401});
+    message || 'The given username/password pair is invalid.', {
+      httpStatus: 401,
+      dontNotifyAirbrake: true
+    });
 };
 
 factory.invalidEventType = function (type) {
@@ -46,19 +52,25 @@ factory.invalidEventType = function (type) {
 };
 
 factory.invalidItemId = function (message) {
-  return new APIError(ErrorIds.InvalidItemId, message, {httpStatus: 400});
+  return new APIError(ErrorIds.InvalidItemId, message, {
+    httpStatus: 400,
+    dontNotifyAirbrake: true
+  });
 };
 
 factory.invalidMethod = function (methodId) {
-  return new APIError(ErrorIds.InvalidMethod, 'Invalid method id "' + methodId + '"',
-      {httpStatus: 404});
+  return new APIError(ErrorIds.InvalidMethod,
+    'Invalid method id "' + methodId + '"', 
+    {httpStatus: 404}
+  );
 };
 
 factory.invalidOperation = function (message, data, innerError) {
   return new APIError(ErrorIds.InvalidOperation, message, {
     httpStatus: 400,
     data: data,
-    innerError: innerError
+    innerError: innerError,
+    dontNotifyAirbrake: true
   });
 };
 
@@ -66,7 +78,8 @@ factory.invalidParametersFormat = function (message, data, innerError) {
   return new APIError(ErrorIds.InvalidParametersFormat, message, {
     httpStatus: 400,
     data: data,
-    innerError: innerError
+    innerError: innerError,
+    dontNotifyAirbrake: true
   });
 };
 
@@ -74,7 +87,8 @@ factory.invalidRequestStructure = function (message, data, innerError) {
   return new APIError(ErrorIds.InvalidRequestStructure, message, {
     httpStatus: 400,
     data: data,
-    innerError: innerError
+    innerError: innerError,
+    dontNotifyAirbrake: true
   });
 };
 
@@ -89,20 +103,24 @@ factory.itemAlreadyExists = function (resourceType, conflictingKeys, innerError)
   return new APIError(ErrorIds.ItemAlreadyExists, message, {
     httpStatus: 400,
     innerError: innerError,
-    data: conflictingKeys
+    data: conflictingKeys,
+    dontNotifyAirbrake: true
   });
 };
 
 factory.missingHeader = function (headerName) {
-  return new APIError(ErrorIds.MissingHeader, 'Missing expected header "' + headerName + '"',
-      {httpStatus: 400});
+  return new APIError(ErrorIds.MissingHeader, 
+    'Missing expected header "' + headerName + '"',
+    {httpStatus: 400}
+  );
 };
 
 factory.periodsOverlap = function (message, data, innerError) {
   return new APIError(ErrorIds.PeriodsOverlap, message, {
     httpStatus: 400,
     data: data,
-    innerError: innerError
+    innerError: innerError,
+    dontNotifyAirbrake: true
   });
 };
 
@@ -115,10 +133,10 @@ factory.tooManyResults = function (limit) {
 
 factory.unexpectedError = function (sourceError, message) {
   return new APIError(ErrorIds.UnexpectedError,
-      message || ('Unexpected error: ' + sourceError.message), {
-        httpStatus: 500,
-        innerError: sourceError
-      });
+    message || ('Unexpected error: ' + sourceError.message), {
+      httpStatus: 500,
+      innerError: sourceError
+    });
 };
 
 /**
@@ -136,7 +154,8 @@ factory.unknownReferencedResource = function (resourceType, paramKey, value, inn
   return new APIError(ErrorIds.UnknownReferencedResource, message, {
     httpStatus: 400,
     data: data,
-    innerError: innerError
+    innerError: innerError,
+    dontNotifyAirbrake: true
   });
 };
 
@@ -144,12 +163,14 @@ factory.unknownResource = function (resourceType, id, innerError) {
   var message = 'Unknown ' + (resourceType || 'resource') + ' ' + (id ? '"' + id + '"' : '');
   return new APIError(ErrorIds.UnknownResource, message, {
     httpStatus: 404,
-    innerError: innerError
+    innerError: innerError,
+    dontNotifyAirbrake: true
   });
 };
 
 factory.unsupportedContentType = function (contentType) {
-  return new APIError(ErrorIds.UnsupportedContentType, 'We don\'t support "' + contentType +
-      '" as content type. If you think we should, please help us and report an issue!',
-      {httpStatus: 415});
+  return new APIError(ErrorIds.UnsupportedContentType,
+    'We don\'t support "' + contentType + '" as content type. ' +
+    'If you think we should, please help us and report an issue!',
+    {httpStatus: 415});
 };
