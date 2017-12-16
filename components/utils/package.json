@@ -11,7 +11,6 @@
     "_test": "NODE_ENV=test ../../node_modules/.bin/mocha --timeout 10000 --reporter=dot test/*.js"
   },
   "dependencies": {
-    "airbrake-js": "^0.9.8",
     "bcrypt": "^1.0.2",
     "convict": "^2.0.0",
     "winston": "^2.3.0"

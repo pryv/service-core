@@ -1,8 +1,6 @@
 // @flow
-'use strict';
 
-var winston = require('winston'),
-    airbrake = null;
+const winston = require('winston');
 
 // setup logging levels (match logging methods below)
 const levels = Object.freeze({
@@ -49,10 +47,6 @@ module.exports = function (logsSettings: Object) {
       timestamp: true,
       json: false
     });
-  }
-  if (logsSettings.airbrake.active) {
-    airbrake = require('airbrake').createClient(logsSettings.airbrake.projectId, logsSettings.airbrake.key);
-    airbrake.handleExceptions();
   }
 
   // return singleton
@@ -150,4 +144,3 @@ class LoggerImpl implements Logger {
     this.winstonLogger[level](msg, metaData || {});
   }
 }
-
