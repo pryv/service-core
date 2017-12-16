@@ -762,7 +762,7 @@ describe('streams', function () {
             // this several times. 
             assertEventuallyTrue(
               () => ! fs.existsSync(dirPath), 
-              1, // second(s) 
+              2, // second(s) 
               'Event directory must be deleted', 
               stepDone
             );
