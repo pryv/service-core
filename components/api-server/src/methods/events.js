@@ -27,7 +27,7 @@ const typeRepo = new TypeRepository();
 module.exports = function (
   api, userEventsStorage, userEventFilesStorage, usersStorage,
   authSettings, eventTypesSettings, notifications, logging,
-  auditSettings
+  auditSettings, updatesSettings,
 ) {
                              
   // Update types and log error
