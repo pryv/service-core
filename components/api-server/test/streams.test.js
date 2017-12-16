@@ -497,23 +497,85 @@ describe('streams', function () {
       });
     });
     
-    it('must reject update of read-only properties', function (done) {
-      var forbiddenUpdate = {
-        id: 'forbidden',
-        children: [],
-        created: 1,
-        createdBy: 'bob',
-        modified: 1,
-        modifiedBy: 'alice'
+    describe('forbidden updates of protected fields', function () {
+      const streamId = 'forbidden_stream_update_test';
+      const stream = {
+        id: streamId,
+        name: streamId
       };
-
-      request.put(path(testData.streams[0].id)).send(forbiddenUpdate).end(function (res) {
-        validation.check(res, {
-          status: 403,
-          id: ErrorIds.Forbidden,
-          data: {forbiddenProperties: forbiddenUpdate}
-        }, done);
+      
+      beforeEach(function (done) {
+        request.post(basePath).send(stream).end(function (res) {
+          validation.check(res, {
+            status: 201,
+            schema: methodsSchema.create.result
+          }, done);
+        });
       });
+      
+      it('must fail and throw a forbidden error in strict mode', function (done) {
+        const forbiddenUpdate = {
+          id: 'forbidden',
+          children: [],
+          created: 1,
+          createdBy: 'bob',
+          modified: 1,
+          modifiedBy: 'alice'
+        };
+        
+        async.series([
+          function instanciateServerWithStrictMode(stepDone) {
+            setIgnoreProtectedFieldUpdates(false, stepDone);
+          },
+          function testForbiddenUpdate(stepDone) {
+            request.put(path(streamId)).send(forbiddenUpdate).end(function (res) {
+              validation.checkError(res, {
+                status: 403,
+                id: ErrorIds.Forbidden
+              }, stepDone);
+            });
+          }
+        ], done);
+      });
+      
+      it('must succeed by ignoring protected fields and log a warning in non-strict mode', function (done) {
+        const forbiddenUpdate = {
+          id: 'forbidden',
+          children: [],
+          created: 1,
+          createdBy: 'bob',
+          modified: 1,
+          modifiedBy: 'alice'
+        };
+                
+        async.series([
+          function instanciateServerWithNonStrictMode(stepDone) {
+            setIgnoreProtectedFieldUpdates(true, stepDone);
+          },
+          function testForbiddenUpdate(stepDone) {
+            request.put(path(streamId)).send(forbiddenUpdate).end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.update.result
+              });
+              const stream = res.body.stream;
+              should(stream.id).not.be.equal(forbiddenUpdate.id);
+              should(stream.created).not.be.equal(forbiddenUpdate.created);
+              should(stream.createdBy).not.be.equal(forbiddenUpdate.createdBy);
+              should(stream.modified).not.be.equal(forbiddenUpdate.modified);
+              should(stream.modifiedBy).not.be.equal(forbiddenUpdate.modifiedBy);
+              stepDone();
+            });
+          }
+        ], done);
+      });
+      
+      function setIgnoreProtectedFieldUpdates(activated, stepDone) {
+        let settings = _.cloneDeep(helpers.dependencies.settings);
+        settings.updates.ignoreProtectedFields = activated;
+        server.ensureStarted.call(server, settings, stepDone);
+      }
+      
     });
 
   });

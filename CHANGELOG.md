@@ -1,5 +1,11 @@
 # API change log
 
+## 1.2.14
+
+- Updates to latest nodejs version as a reaction to advisory https://nodejs.org/en/blog/vulnerability/oct-2017-dos/
+- Security fixes to various parts of Pryv: Now doesn't log passwords or password hashes as part of normal operation. 
+- Please see Migration Guide for implications on your infrastructure. 
+
 ## 1.2.12
 
 - Tags have a maximum length of 500 characters. An error is returned from the API when this limit is exceeded. 

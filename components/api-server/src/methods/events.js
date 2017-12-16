@@ -33,7 +33,8 @@ module.exports = function (
   // Update types and log error
   typeRepo.tryUpdate(eventTypesSettings.sourceURL)
     .catch((err) => logging.getLogger('typeRepo').warn(err));
-
+    
+  const logger = logging.getLogger('methods/events');
   // COMMON
 
   api.register('events.*',
@@ -364,7 +365,7 @@ module.exports = function (
 
   api.register('events.update',
     commonFns.getParamsValidation(methodsSchema.update.params),
-    commonFns.catchForbiddenUpdate(eventSchema('update')),
+    commonFns.catchForbiddenUpdate(eventSchema('update'), updatesSettings.ignoreProtectedFields, logger),
     applyPrerequisitesForUpdate,
     validateEventContentAndCoerce,
     checkExistingLaterPeriodIfNeeded,

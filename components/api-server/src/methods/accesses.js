@@ -19,11 +19,13 @@ var APIError = require('components/errors').APIError,
  * @param userStreamsStorage
  * @param notifications
  * @param logging
+ * @param updatesSettings
  */
-module.exports = function (api, userAccessesStorage, userStreamsStorage, notifications, logging) {
+module.exports = function (api, userAccessesStorage, userStreamsStorage, 
+  notifications, logging, updatesSettings) {
 
-  var logger = logging.getLogger('methods/accesses'),
-      dbFindOptions = {fields: {calls: 0}};
+  const logger = logging.getLogger('methods/accesses');
+  const dbFindOptions = {fields: {calls: 0}};
 
   // COMMON
 
@@ -228,7 +230,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
 
   api.register('accesses.update',
       commonFns.getParamsValidation(methodsSchema.update.params),
-      commonFns.catchForbiddenUpdate(accessSchema('update')),
+      commonFns.catchForbiddenUpdate(accessSchema('update'), updatesSettings.ignoreProtectedFields, logger),
       applyPrerequisitesForUpdate,
       checkAccessForUpdate,
       updateAccess);
@@ -242,10 +244,10 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage, notific
     userAccessesStorage.findOne(context.user, {id: params.id}, dbFindOptions,
         function (err, access) {
       if (err) { return next(errors.unexpectedError(err)); }
-
       if (! access) {
         return next(errors.unknownResource('access', params.id));
       }
+
 
       if (! context.access.isPersonal() && ! context.access.canManageAccess(access)) {
         return next(errors.forbidden('Your access token has insufficient permissions to ' +

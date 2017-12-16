@@ -34,6 +34,7 @@ dependencies.register({
   logsSettings: settings.logs,
   servicesSettings: settings.services,
   customExtensionsSettings: settings.customExtensions,
+  updatesSettings: settings.updates,
 
   // misc utility
   serverInfo: require('../package.json'),
@@ -129,7 +130,14 @@ utils.messaging.openPubSocket(settings.tcpMessaging, function (err, messagingSoc
     server.url = protocol + '://' + address.address + ':' + address.port;
     logger.info(
       `Core Server (API module) listening on ${server.url}`);
-
+        
+    // Warning if ignoring forbidden updates
+    if(settings.updates.ignoreProtectedFields) {
+      logger.warn('Server configuration has "ignoreProtectedFieldUpdates" set to true: ' +
+        'This means updates to protected fields will be ignored and operations will succeed. ' +
+        'We recommend turning this off, but please be aware of the implications for your code.');
+    }
+    
     // TEST: execute test setup instructions if any
     if (process.env.NODE_ENV === 'test') {
       try {

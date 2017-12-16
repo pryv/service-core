@@ -21,11 +21,12 @@ var errors = require('components/errors').factory,
  * @param notifications
  * @param logging
  * @param auditSettings
+ * @param updatesSettings
  */
-module.exports = function (api, userStreamsStorage, userEventsStorage, userEventFilesStorage,
-                           notifications, logging, auditSettings) {
+module.exports = function (api, userStreamsStorage, userEventsStorage, userEventFilesStorage, 
+  notifications, logging, auditSettings, updatesSettings) {
 
-  var logger = logging.getLogger('methods/streams');
+  const logger = logging.getLogger('methods/streams');
 
   // COMMON
 
@@ -164,7 +165,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
   api.register('streams.update',
       commonFns.getParamsValidation(methodsSchema.update.params),
-      commonFns.catchForbiddenUpdate(streamSchema('update')),
+      commonFns.catchForbiddenUpdate(streamSchema('update'), updatesSettings.ignoreProtectedFields, logger),
       applyPrerequisitesForUpdate,
       updateStream);
 
