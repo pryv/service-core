@@ -185,7 +185,8 @@ function expressAppInit(dependencies: any) {
   app.use(middleware.subdomainToPath(ignoredPaths));
 
   // Parse JSON bodies: 
-  app.use(bodyParser.json());
+  app.use(bodyParser.json({
+    limit: '10mb'}));
 
   // This object will contain key-value pairs, where the value can be a string
   // or array (when extended is false), or any type (when extended is true).
