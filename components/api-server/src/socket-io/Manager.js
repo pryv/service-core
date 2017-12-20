@@ -145,7 +145,7 @@ class Manager implements MessageSink {
     const io = this.io; 
     const logger = this.logger; 
     const socketNs = io.of(namespaceName);
-    const sink = this; 
+    const sink: MessageSink = this; 
     
     const ctx = new NamespaceContext(
       user, 
