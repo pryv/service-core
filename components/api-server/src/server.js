@@ -9,7 +9,6 @@ const dependencies = require('dependable').container({useFnAnnotations: true});
 const bluebird = require('bluebird');
 const EventEmitter = require('events');
 
-const errors = require('components/errors');
 const middleware = require('components/middleware');
 const storage = require('components/storage');
 const utils = require('components/utils');
