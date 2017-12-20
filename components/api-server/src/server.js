@@ -141,17 +141,18 @@ class Server {
     // data migration)
     lifecycle.appStartupBegin(); 
 
-    // setup HTTP and register server
+    // Setup HTTP and register server; setup Socket.IO.
     const server = http.createServer(app);
-    
-    // Initialize the socket.io subsystem
     this.setupSocketIO(server); 
-
-    // start listening to HTTP
     await this.startListen(server);
+
+    // Setup DB connection
     await this.storageLayer.waitForConnection();
     await this.migrateIfNeeded();
+    
+    // Finish booting the server, start accepting connections.
     await this.readyServer(lifecycle);
+    
     await this.setupNightlyScript(server);
     
     logger.info('Server ready.');
