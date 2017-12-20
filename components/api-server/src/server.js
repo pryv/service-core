@@ -283,6 +283,10 @@ class Server {
   //    used to synchronize with the tests. 
   //  c) For communication with other api-server processes on the same core. 
   // 
+  // You can turn this off! If you set 'tcpMessaging.enabled' to false, no axon
+  // messaging will be performed. This method returns a plain EventEmitter 
+  // instead; allowing a) and c) to work. The power of interfaces. 
+  // 
   async openAxonSocket(): EventEmitter {
     const logger = this.logger; 
     const settings = this.settings; 

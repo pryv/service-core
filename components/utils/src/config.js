@@ -171,7 +171,7 @@ config.schema = {
   tcpMessaging: {
     enabled: {
       format: Boolean, 
-      default: true, 
+      default: false, 
     },
     host: {
       format: String,
