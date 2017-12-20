@@ -117,7 +117,6 @@ class Server {
   //
   async start() {
     const settings = this.settings; 
-    const logger = this.logger; 
     
     dependencies.register({
       api: this.api,
@@ -133,10 +132,33 @@ class Server {
     dependencies.register({expressApp: app});
 
     // start TCP pub messaging
-    const axonSocket = await this.openAxonSocket();
-    this.setupNotificationBus(axonSocket);
+    const notificationBus = await this.openNotificationBus();
+    this.setupNotificationBus(notificationBus);
 
     // register API methods
+    this.registerApiMethods();
+
+    // setup temp routes for handling requests during startup (incl. possible
+    // data migration)
+    lifecycle.appStartupBegin(); 
+
+    // setup HTTP and register server
+    const server = http.createServer(app);
+    
+    // Initialize the socket.io subsystem
+    this.setupSocketIO(server); 
+
+    // start listening to HTTP
+    await this.startListen(server, notificationBus);
+    await this.storageLayer.waitForConnection();
+    await this.migrateIfNeeded();
+    await this.readyServer(lifecycle);
+    await this.setupNightlyScript(server);
+  }
+  
+  // Requires and registers all API methods. 
+  // 
+  registerApiMethods() {
     [
       require('./methods/system'),
       require('./methods/utility'),
@@ -150,32 +172,6 @@ class Server {
       require('./methods/trackingFunctions'),
     ].forEach(function (moduleDef) {
       dependencies.resolve(moduleDef);
-    });
-
-    // setup temp routes for handling requests during startup (incl. possible
-    // data migration)
-    lifecycle.appStartupBegin(); 
-
-    // setup HTTP and register server
-    const server = http.createServer(app);
-    
-    // Initialize the socket.io subsystem
-    this.setupSocketIO(server); 
-
-    // start listening to HTTP
-    try {
-      await this.startListen(server, axonSocket);
-      await this.storageLayer.waitForConnection();
-      await this.migrateIfNeeded();
-      await this.readyServer(lifecycle);
-      await this.setupNightlyScript(server);
-    }
-    catch (e) {
-      this.handleStartupFailure(e);
-    }
-
-    process.on('exit', function () {
-      logger.info('API server exiting.');
     });
   }
   
@@ -287,7 +283,7 @@ class Server {
   // messaging will be performed. This method returns a plain EventEmitter 
   // instead; allowing a) and c) to work. The power of interfaces. 
   // 
-  async openAxonSocket(): EventEmitter {
+  async openNotificationBus(): EventEmitter {
     const logger = this.logger; 
     const settings = this.settings; 
 
@@ -351,15 +347,6 @@ class Server {
 
     logger.info('Server ready');
     this.notificationBus.serverReady();
-  }
-  
-  // Prints out an error and aborts the process. 
-  // 
-  handleStartupFailure(error: mixed) {
-    const logger = this.logger; 
-    errors.errorHandling.logError(error, null, logger);
-    
-    process.exit(1);
   }
   
   // Migrates mongodb database to the latest version, if needed. 
