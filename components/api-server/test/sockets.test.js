@@ -154,12 +154,10 @@ describe('Socket.IO', function () {
     ioCons.con = connect(namespace);
   
     ioCons.con.once('connect', function () {
-      throw new Error('Connecting should have failed');
+      done(new Error('Connecting should have failed'));
     });
   
     ioCons.con.socket.once('error', function () {
-      if (! ioCons.con) { return; }
-  
       // We expect failure, so we're done here. 
       done();
     });
