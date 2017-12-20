@@ -88,6 +88,18 @@ _.merge(config.schema, {
       }
     },
     email: {
+      enabled: {
+        welcome: {
+          format: Boolean,
+          default: false,
+          doc: 'Allows to activate/deactivate the sending of welcome emails.'
+        },
+        resetPassword: {
+          format: Boolean,
+          default: false,
+          doc: 'Allows to activate/deactivate the sending of password reset emails.'
+        }
+      },
       url: {
         format: 'url',
         default: 'https://mandrillapp.local'
