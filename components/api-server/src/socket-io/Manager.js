@@ -12,6 +12,9 @@ import type API from '../API';
 
 import type { MessageSink } from './message_sink';
 
+// Uri for internal NATS connection.
+const NATS_CONNECTION_URI = 'nats://127.0.0.1:4222';
+
 type SocketIO$SocketId = string; 
 export type SocketIO$Handshake = {
   methodContext: MethodContext,
@@ -248,11 +251,11 @@ class NamespaceContext {
     this.natsSubscriber = await this.produceNatsSubscriber();
   }
   async produceNatsSubscriber(): Promise<NatsSubscriber> {
-    const sink = this.sink; 
+    const sink: MessageSink = this.sink; 
     const userName = this.user.username;
 
     const natsSubscriber = new NatsSubscriber(
-      'nats://127.0.0.1:4222', 
+      NATS_CONNECTION_URI, 
       sink);
           
     // We'll await this, since the user will want a connection that has
