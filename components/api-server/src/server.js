@@ -151,7 +151,10 @@ class Server {
     await this.migrateIfNeeded();
     
     // Finish booting the server, start accepting connections.
-    await this.readyServer(lifecycle);
+    await this.addRoutes();
+    
+    // Let actual requests pass.
+    lifecycle.appStartupComplete(); 
     
     await this.setupNightlyScript(server);
     
@@ -324,10 +327,7 @@ class Server {
   
   // Installs actual routes in express and prints 'Server ready'.
   //
-  readyServer(lifecycle: ExpressAppLifecycle) {
-    // Setup proper API routes
-    lifecycle.appStartupComplete(); 
-
+  addRoutes() {
     [
       require('./routes/system'),
       require('./routes/root'),
@@ -341,9 +341,6 @@ class Server {
     ].forEach(function (moduleDef) {
       dependencies.resolve(moduleDef);
     });
-    
-    // All routes setup. Add error handling middleware. 
-    lifecycle.routesAdded(); 
   }
   
   // Migrates mongodb database to the latest version, if needed. 
