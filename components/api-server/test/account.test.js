@@ -335,7 +335,7 @@ describe('account', function () {
           storage.findOne({id: user.id}, null, function (err, account) {
             account.storageUsed.dbDocuments.should.eql(initialStorageUsed.dbDocuments);
             account.storageUsed.attachedFiles.should.be.approximately(
-                initialStorageUsed.attachedFiles - getTotalAttachmentsSize(deletedEvt), 1024);
+              initialStorageUsed.attachedFiles - getTotalAttachmentsSize(deletedEvt), 1024);
             stepDone();
           });
         }
