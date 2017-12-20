@@ -26,40 +26,42 @@ If you're blocking because 'unicode.org' doesn't like you today, here's what you
 ### Top Level Directories
 
     .
-    ├── CHANGELOG.md            Changelog
-    ├── Jenkinsfile             Used by Jenkins to identify and run the build
-    ├── Procfile                Used by foreman (`nf`) to identify processes 
-    ├── README.md               This README
-    ├── build                   Contains files needed for Docker release build
-    ├── components              Source code for all components 
-    ├── custom-extensions       Custom auth steps, during tests mainly.
-    ├── decls                   Flow-Type annotations, managed by us
-    ├── dist                    Once you run 'npm run release', this is created
-    ├── docs                    Documentation in Markdown format 
-    ├── flow-typed              Flow-Type annotations, managed by flow-typed
-    ├── jsdoc.json              JSDoc configuration, `npm run jsdoc`
-    ├── node_modules            Package installation, `yarn install`
-    ├── package.json            Yarn package file
-    ├── proxy                   Proxy configuration
-    ├── scripts                 Scripts used to manage the repository
-    ├── test                    Top-Level Tests for Integration tests.
-    └── yarn.lock               Lockfile for Yarn, locks down npm versions.
+    ├── CHANGELOG.md     Changelog
+    ├── Jenkinsfile      Used by Jenkins to identify and run the build
+    ├── Procfile         Used by foreman (`nf`) to identify processes 
+    ├── README.md        This README
+    ├── build            Contains files needed for Docker release build
+    ├── components       Source code for all components 
+    ├── custom-extensions  Custom auth steps, during tests mainly.
+    ├── decls            Flow-Type annotations, managed by us
+    ├── dist             Once you run 'npm run release', this is created
+    ├── docs             Documentation in Markdown format 
+    ├── flow-typed       Flow-Type annotations, managed by flow-typed
+    ├── jsdoc.json       JSDoc configuration, `npm run jsdoc`
+    ├── node_modules     Package installation, `yarn install`
+    ├── package.json     Yarn package file
+    ├── proxy            Proxy configuration
+    ├── scripts          Scripts used to manage the repository
+    ├── test             Top-Level Tests for Integration tests.
+    └── yarn.lock        Lockfile for Yarn, locks down npm versions.
 
 ### How to?
 
-| Task                         | Command                        |
-| ---------------------------- | ------------------------------ |
-| Setup                        | `yarn install`                 |
-| Create Distribution          | `yarn run release`             |
-| Recompile During Development | `yarn run watch`               |
-| Run Tests                    | `yarn test`                    |
-| Run Integration Tests        | `yarn run test-root`           |
-| Run ALL server proecesses    | `nf start`                     |
-| Run API server               | `nf start api`                 |
-| Run API and Preview server   | `nf start api, previews`       |
-| Run flow checker             | `watch -c flow --color=always` |
+| Task                              | Command                        |
+| --------------------------------- | ------------------------------ |
+| Setup                             | `yarn install`                 |
+| Create Distribution               | `yarn release`                 |
+| Recompile During Development      | `yarn watch`                   |
+| Run Tests                         | `yarn test`                    |
+| Run Integration Tests             | `yarn test-root`               |
+| Run ALL server processes          | `nf start`                     |
+| Run API server                    | `nf start api`                 |
+| Run API and Preview server        | `nf start api, previews`       |
+| Run Database                      | `nf start database`            |
+| Get a list of available processes | `cat Procfile`                 |
+| Run flow checker                  | `watch -c flow --color=always` |
 
-Normally, all binaries like `nf` or `flow` must be accessed by prepending `yarn run {nf,flow}`. Kaspar has a set of shell aliases that simplify this. 
+**NOTE** that all binaries like `nf` or `flow` must be accessed by prepending `yarn run {nf,flow}`. Kaspar has a set of shell aliases that simplify this. 
 
 ### Test Running
 
@@ -75,9 +77,9 @@ This is something that should probably be a shell alias in your environment. I u
 
 ### Quick, run the servers
 
-To run the servers, the source code needs to be transpiled from Flowtype to pure JS. Run `yarn run release` at least once to get this done. 
+To run the servers, the source code needs to be transpiled from Flowtype to pure JS. Run `yarn release` at least once to get this done. 
 
-During development, use `yarn run watch` to recompile all files immediately. Look out for compilation errors that might prevent the distribution from being updated. 
+During development, use `yarn watch` to recompile all files immediately. Look out for compilation errors that might prevent the distribution from being updated. 
 
 To run the processes, use `nf` (javascript foreman), as documented [here](http://strongloop.github.io/node-foreman/).
 
@@ -149,13 +151,9 @@ This might be broken right now. Sorry.
 
 ### Tests
 
-_Prerequisite:_ MongoDB must be running on the default port; you can use `npm run database`.
+_Prerequisite:_ MongoDB must be running on the default port; you can use `nf start database`.
 
-`npm test` runs tests on each component. See individual components for things like detailed output and other options.
-`npm test-root` runs root tests combining multiple components (e.g., High-Frequency series).
-
-### Coding conventions
-
-See the [Pryv guidelines](http://pryv.github.io/guidelines/).
+`yarn test` runs tests on each component. See individual components for things like detailed output and other options.
+`yarn test-root` runs root tests combining multiple components (e.g., High-Frequency series).
 
 
