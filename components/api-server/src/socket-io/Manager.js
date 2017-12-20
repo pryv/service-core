@@ -110,6 +110,7 @@ class Manager implements MessageSink {
     // Value is not missing, return it. 
     if (context != null) return context; 
     
+    // assert: context == null
     // Value is missing, produce it. 
     context = missingCb();
 
