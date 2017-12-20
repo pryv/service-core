@@ -1,5 +1,10 @@
 {
   "logs": {
     "prefix": "api::"
+  }, 
+  "services": {
+    "email": {
+      "enabled": "false"
+    }
   }
 }
