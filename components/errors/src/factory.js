@@ -117,6 +117,7 @@ factory.itemAlreadyExists = function (
 
 factory.missingHeader = function (headerName: string) {
   return new APIError(
+    ErrorIds.MissingHeader, 
     'Missing expected header "' + headerName + '"',
     {httpStatus: 400}
   );

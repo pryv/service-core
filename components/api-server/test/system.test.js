@@ -65,10 +65,12 @@ describe('system (ex-register)', function () {
 
     describe('when email sending really works', function() {
       it('must create a new user with the sent data, sending a welcome email', function (done) {
-        var originalCount,
-            createdUserId,
-            settings = _.cloneDeep(helpers.dependencies.settings),
-            mailSent = false;
+        const settings = _.cloneDeep(helpers.dependencies.settings);
+        
+        let mailSent = false;
+        
+        let originalCount;
+        let createdUserId;
             
         // setup mail server mock
         helpers.instanceTestSetup.set(settings, {

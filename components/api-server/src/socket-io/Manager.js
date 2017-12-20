@@ -12,6 +12,9 @@ import type API from '../API';
 
 import type { MessageSink } from './message_sink';
 
+// Uri for internal NATS connection.
+const NATS_CONNECTION_URI = 'nats://127.0.0.1:4222';
+
 type SocketIO$SocketId = string; 
 export type SocketIO$Handshake = {
   methodContext: MethodContext,
@@ -110,21 +113,12 @@ class Manager implements MessageSink {
     // Value is not missing, return it. 
     if (context != null) return context; 
     
+    // assert: context == null
     // Value is missing, produce it. 
     context = missingCb();
 
     contexts.set(namespaceName, context);
     return context; 
-  }
-  
-  // Looks up a namespace and returns the user from the namespace context. This
-  // is equivalent to `getNamespace('/namespace').user`.
-  // 
-  //    getUser('/mynamespace') // => user instance.
-  // 
-  getUser(namespaceName: string): ?User {
-    const context = this.getContext(namespaceName);
-    return context && context.user;
   }
   
   // Sets up the namespace with the given name and user, if not already present.
@@ -144,7 +138,7 @@ class Manager implements MessageSink {
     const io = this.io; 
     const logger = this.logger; 
     const socketNs = io.of(namespaceName);
-    const sink = this; 
+    const sink: MessageSink = this; 
     
     const ctx = new NamespaceContext(
       user, 
@@ -247,11 +241,11 @@ class NamespaceContext {
     this.natsSubscriber = await this.produceNatsSubscriber();
   }
   async produceNatsSubscriber(): Promise<NatsSubscriber> {
-    const sink = this.sink; 
+    const sink: MessageSink = this.sink; 
     const userName = this.user.username;
 
     const natsSubscriber = new NatsSubscriber(
-      'nats://127.0.0.1:4222', 
+      NATS_CONNECTION_URI, 
       sink);
           
     // We'll await this, since the user will want a connection that has
