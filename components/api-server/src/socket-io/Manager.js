@@ -121,16 +121,6 @@ class Manager implements MessageSink {
     return context; 
   }
   
-  // Looks up a namespace and returns the user from the namespace context. This
-  // is equivalent to `getNamespace('/namespace').user`.
-  // 
-  //    getUser('/mynamespace') // => user instance.
-  // 
-  getUser(namespaceName: string): ?User {
-    const context = this.getContext(namespaceName);
-    return context && context.user;
-  }
-  
   // Sets up the namespace with the given name and user, if not already present.
   // 
   async ensureInitNamespace(namespaceName: string, user: User) {

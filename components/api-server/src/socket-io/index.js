@@ -81,18 +81,8 @@ function setupSocketIO(
     // the code in Manager. 
     handshake.methodContext = context;
 
-    // Attempt to reuse the user object we previously loaded for the given 
-    // `nsName` namespace. 
-    const cachedUser = manager.getUser(nsName);
-    if (cachedUser != null) {
-      // FLOW Once MethodContext will be a class, this will work. 
-      context.user = cachedUser; 
-      return userLoaded(); 
-    }
-    
-    // User wasn't cached, load it. 
+    // Load user.
     return context.retrieveUser(userLoaded);
-      
     async function userLoaded(err) {
       if (err != null) { return callback(err); }
       
