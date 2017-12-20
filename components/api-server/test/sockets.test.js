@@ -120,13 +120,11 @@ describe('Socket.IO', function () {
   it('must dynamically create a namespace for the user', function (done) {
     ioCons.con = connect(namespace, {auth: token});
   
-    ioCons.con.once('connect', function (err) {
-      // if we get here, communication is properly established
-      done(err);
-    });
+    // We expect communication to work.
+    ioCons.con.once('connect', done);
+    
     ioCons.con.once('connect_error', function (err) {
-      if (err) return done(err);
-      done(new Error('Connection failed.')); 
+      done(err || new Error('Connection failed.')); 
     });
   });
   it('must connect to a user with a dash in the username', function (done) {
@@ -145,14 +143,10 @@ describe('Socket.IO', function () {
         ioCons.con = connect('/' + dashUser.username, {auth: testData.accesses[2].token});
   
         ioCons.con.once('error', function (e) {
-          should.not.exist(e);
-          stepDone(e);
+          stepDone(e || new Error('Communication failed.')); 
         });
   
-        ioCons.con.once('connect', function () {
-          should.exist(ioCons.con);
-          stepDone();
-        });
+        ioCons.con.once('connect', stepDone);
       }
     ], done);
   });
