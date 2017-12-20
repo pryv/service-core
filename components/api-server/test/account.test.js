@@ -90,11 +90,11 @@ describe('account', function () {
           execute: function () {
             var path = '/users/' + this.context.username + '/change-email';
             require('nock')(this.context.url).post(path)
-                .matchHeader('Authorization', this.context.key)
-                .reply(200, 
-                  function (uri, requestBody) {
-                    this.context.messagingSocket.emit('reg-server-called', JSON.parse(requestBody));
-                  }.bind(this));
+              .matchHeader('Authorization', this.context.key)
+              .reply(200, 
+                function (uri, requestBody) {
+                  this.context.messagingSocket.emit('reg-server-called', JSON.parse(requestBody));
+                }.bind(this));
           }
         });
         // fetch service call data from server process
@@ -184,6 +184,7 @@ describe('account', function () {
             should.not.exist(err);
             // hard to know what the exact difference should be, so we just expect it's bigger
             storageUsed.dbDocuments.should.be.above(initialStorageUsed.dbDocuments);
+            // SPURIOUS Comparison sometimes fails by more than 1024.
             storageUsed.attachedFiles.should.be.approximately(initialStorageUsed.attachedFiles +
                 newAtt.size, 1024);
             updatedStorageUsed = storageUsed;
@@ -334,7 +335,7 @@ describe('account', function () {
           storage.findOne({id: user.id}, null, function (err, account) {
             account.storageUsed.dbDocuments.should.eql(initialStorageUsed.dbDocuments);
             account.storageUsed.attachedFiles.should.be.approximately(
-                initialStorageUsed.attachedFiles - getTotalAttachmentsSize(deletedEvt), 1024);
+              initialStorageUsed.attachedFiles - getTotalAttachmentsSize(deletedEvt), 1024);
             stepDone();
           });
         }
@@ -427,11 +428,11 @@ describe('account', function () {
         context: settings.services.email,
         execute: function () {
           require('nock')(this.context.url).post(this.context.sendMessagePath)
-              .reply(200, function (uri, requestBody) {
-            var body = JSON.parse(requestBody);
-            var token = body.message.global_merge_vars[1].content; /* HACK, assume structure */
-            this.context.messagingSocket.emit('password-reset-token', token);
-          }.bind(this));
+            .reply(200, function (uri, requestBody) {
+              var body = JSON.parse(requestBody);
+              var token = body.message.global_merge_vars[1].content; /* HACK, assume structure */
+              this.context.messagingSocket.emit('password-reset-token', token);
+            }.bind(this));
         }
       });
       // fetch reset token from server process
@@ -441,17 +442,17 @@ describe('account', function () {
 
       async.series([
         server.ensureStarted.bind(server, settings),
-        function requestReset(stepDone) {
-	  request.post(requestPath)
-              .unset('authorization')
-              .set('Origin', 'http://test.pryv.local')
-	      .send(authData)
-              .end(function (res) {
-            validation.check(res, {
-              status: 200,
-              schema: methodsSchema.requestPasswordReset.result
-            }, stepDone);
-          });
+        function requestReset(stepDone) { 
+          request.post(requestPath)
+            .unset('authorization')
+            .set('Origin', 'http://test.pryv.local')
+            .send(authData)
+            .end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.requestPasswordReset.result
+              }, stepDone);
+            });
         },
         function verifyStoredRequest(stepDone) {
           should.exist(resetToken);
@@ -466,14 +467,14 @@ describe('account', function () {
             newPassword: newPassword
           }, authData);
           request.post(resetPath).send(data)
-              .unset('authorization')
-              .set('Origin', 'http://test.pryv.local')
-              .end(function (res) {
-            validation.check(res, {
-              status: 200,
-              schema: methodsSchema.resetPassword.result
-            }, stepDone);
-          });
+            .unset('authorization')
+            .set('Origin', 'http://test.pryv.local')
+            .end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.resetPassword.result
+              }, stepDone);
+            });
         },
         function verifyNewPassword(stepDone) {
           request.login(_.defaults({password: newPassword}, user), stepDone);

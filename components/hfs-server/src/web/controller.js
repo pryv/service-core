@@ -2,12 +2,7 @@
 
 import type Context from '../context';
 
-// TODO if possible, find a more elegant way to link to error
-const ServiceNotAvailableError: string =
-  require('../../../../node_modules/influx/lib/src/pool')
-    .ServiceNotAvailableError().constructor.name;
-
-const {tryCoerceStringValues} = require('../../../api-server/src/schema/validation');
+const { tryCoerceStringValues } = require('components/api-server').validation;
 
 const R = require('ramda');
 const timestamp = require('unix-timestamp');
@@ -73,7 +68,7 @@ function storeSeriesData(ctx: Context,
  * translated into a client error. 
  */
 function dispatchErrors(next: express$NextFunction, err: any) {
-  if (err.constructor.name === ServiceNotAvailableError) {
+  if (err.constructor.name === 'ServiceNotAvailableError') {
     return next(errors.apiUnavailable(err.message));
   }
   if (err instanceof business.types.errors.InputTypeError) {

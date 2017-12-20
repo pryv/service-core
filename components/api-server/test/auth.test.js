@@ -224,7 +224,8 @@ describe('auth', function () {
 
       function ensureLogFileIsEmpty(stepDone) {
         if ( logFilePath.length <= 0 ) return stepDone();
-        fs.truncate(logFilePath, function (err) {
+        const truncateTo = 0; // default 
+        fs.truncate(logFilePath, truncateTo, function (err) {
           if (err && err.code === 'ENOENT') {
             return stepDone();
           } // ignore error if file doesn't exist

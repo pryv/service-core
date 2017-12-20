@@ -180,7 +180,7 @@ declare class Bluebird$Promise<+R> extends Promise<R>{
   ): Bluebird$Promise<T>;
   filter<T>(filterer: (item: T, index: number, arrayLength: number) => $Promisable<bool>, options?: Bluebird$ConcurrencyOption): Bluebird$Promise<Array<T>>;
   each<T, U>(iterator: (item: T, index: number, arrayLength: number) => $Promisable<U>): Bluebird$Promise<Array<T>>;
-  asCallback<T>(callback: (error: ?any, value?: T) => any, options?: Bluebird$SpreadOption): Bluebird$Promise<T>;
+  asCallback<T>(callback: (error: ?any, value?: T) => any, options?: Bluebird$SpreadOption): void;
   return<T>(value: T): Bluebird$Promise<T>;
   thenReturn<T>(value: T): Bluebird$Promise<T>;
   spread<T>(...args: Array<T>): Bluebird$Promise<*>;

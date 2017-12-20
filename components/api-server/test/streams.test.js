@@ -673,16 +673,15 @@ describe('streams', function () {
       done );
     });
 
-    it('must reassign the linked events to the deleted stream\'s parent when specified',
-        function (done) {
+    it('must reassign the linked events to the deleted stream\'s parent when specified', function (done) {
       var parentStream = testData.streams[0],
           deletedStream = parentStream.children[1];
 
       async.series([
-	  storage.updateOne.bind(storage, user, {id: deletedStream.id}, {trashed: true}),
-          function deleteStream(stepDone) {
-            request.del(path(deletedStream.id)).query({mergeEventsWithParent: true})
-                .end(function (res) {
+        storage.updateOne.bind(storage, user, {id: deletedStream.id}, {trashed: true}),
+        function deleteStream(stepDone) {
+          request.del(path(deletedStream.id)).query({mergeEventsWithParent: true})
+            .end(function (res) {
               validation.check(res, {
                 status: 200,
                 schema: methodsSchema.del.result
@@ -693,23 +692,21 @@ describe('streams', function () {
 
               stepDone();
             });
-          },
-          function verifyLinkedEvents(stepDone) {
-            eventsStorage.find(user, {streamId: parentStream.id}, null,
-                function (err, linkedEvents) {
-	      _.map(linkedEvents, 'id').should.eql([
-                testData.events[4].id,
-                testData.events[3].id,
-                testData.events[2].id,
-                testData.events[1].id
-              ]);
+        },
+        function verifyLinkedEvents(stepDone) {
+          eventsStorage.find(user, {streamId: parentStream.id}, null, function (err, linkedEvents) {
+            _.map(linkedEvents, 'id').should.eql([
+              testData.events[4].id,
+              testData.events[3].id,
+              testData.events[2].id,
+              testData.events[1].id
+            ]);
 
-              stepDone();
-            });
-          }
-        ],
-        done
-      );
+            stepDone();
+          });
+        }
+      ],
+      done );
     });
 
     it('must delete the linked events when mergeEventsWithParent is false', function (done) {
@@ -761,12 +758,11 @@ describe('streams', function () {
 
             var dirPath = eventFilesStorage.getAttachedFilePath(user, deletedEventWithAtt.id);
 
-              fs.existsSync(dirPath).should.eql(false, 'deleted event directory existence');
             // some time after returning to the client. Let's hang around and try 
             // this several times. 
             assertEventuallyTrue(
               () => ! fs.existsSync(dirPath), 
-              1, // second(s) 
+              2, // second(s) 
               'Event directory must be deleted', 
               stepDone
             );

@@ -22,12 +22,9 @@ exports.produceInfluxConnection = produceInfluxConnection;
 // 
 function produceMongoConnection(): storage.Database {
   const settings = toplevelHelpers.settings;
-  const loggingStub = {
-    getLogger: () => new NullLogger(), 
-  };
   const database = new storage.Database(
     settings.get('mongodb').obj(), 
-    loggingStub); 
+    new NullLogger()); 
   
   return database; 
 }

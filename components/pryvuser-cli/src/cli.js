@@ -20,10 +20,11 @@ program.version(require('../package.json').version)
 
 var settings = utils.config.load(path.resolve(process.cwd(), 'api-server.config.json')),
     logging = utils.logging(settings.logs),
-    database = new storage.Database(settings.database, logging),
+    database = new storage.Database(settings.database, logging.getLogger('database')),
     usersStorage = new storage.Users(database),
     userAccessesStorage = new storage.user.Accesses(database),
-    userEventFilesStorage = new storage.user.EventFiles(settings.eventFiles, logging),
+    userEventFilesStorage = new storage.user.EventFiles(
+      settings.eventFiles, logging.getLogger('eventFiles')),
     userEventsStorage = new storage.user.Events(database),
     userFollowedSlicesStorage = new storage.user.FollowedSlices(database),
     userProfileStorage = new storage.user.Profile(database),

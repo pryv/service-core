@@ -1,7 +1,9 @@
-var dependencies = require('dependable').container({useFnAnnotations: true}),
-    middleware = require('components/middleware'),
-    storage = require('components/storage'),
-    utils = require('components/utils');
+const dependencies = require('dependable').container({useFnAnnotations: true});
+const middleware = require('components/middleware');
+const storage = require('components/storage');
+const utils = require('components/utils');
+
+const ExtensionLoader = utils.extension.ExtensionLoader;
 
 /**
  * Runs the server.
@@ -13,38 +15,53 @@ var config = require('./config');
 config.printSchemaAndExitIfNeeded();
 var settings = config.load();
 
-// register base dependencies
+const customAuthStepFn = loadCustomAuthStepFn(settings.customExtensions); 
 
+// register base dependencies
 dependencies.register({
   // settings
   authSettings: settings.auth,
   eventFilesSettings: settings.eventFiles,
-  httpSettings: settings.http,
   logsSettings: settings.logs,
-  customExtensionsSettings: settings.customExtensions,
 
   // misc utility
   serverInfo: require('../package.json'),
   logging: utils.logging
 });
 
-var logging = dependencies.get('logging'),
-    logger = logging.getLogger('server'),
-    database = new storage.Database(settings.database, logging);
+const logging = dependencies.get('logging');
+const logger = logging.getLogger('server');
+
+const database = new storage.Database(
+  settings.database, logging.getLogger('database'));
+
+const storageLayer = {
+  sessions: new storage.Sessions(database, {maxAge: settings.auth.sessionMaxAge}),
+  users: new storage.Users(database),
+  accesses: new storage.user.Accesses(database),
+  eventFiles: new storage.user.EventFiles(
+    settings.eventFiles, logging.getLogger('eventFiles')),
+  events: new storage.user.Events(database),
+  streams: new storage.user.Streams(database),
+};
+
+const initContextMiddleware = middleware.initContext(
+  storageLayer,
+  customAuthStepFn);
 
 dependencies.register({
   // storage
-  sessionsStorage: new storage.Sessions(database, {maxAge: settings.auth.sessionMaxAge}),
-  usersStorage: new storage.Users(database),
-  userAccessesStorage: new storage.user.Accesses(database),
-  userEventFilesStorage: new storage.user.EventFiles(settings.eventFiles, logging),
-  userEventsStorage: new storage.user.Events(database),
-  userStreamsStorage: new storage.user.Streams(database),
+  sessionsStorage: storageLayer.sessions,
+  usersStorage: storageLayer.users,
+  userAccessesStorage: storageLayer.accesses,
+  userEventFilesStorage: storageLayer.eventFiles,
+  userEventsStorage: storageLayer.events,
+  userStreamsStorage: storageLayer.streams,
 
   // Express middleware
   commonHeadersMiddleware: middleware.commonHeaders,
   errorsMiddleware: require('./middleware/errors'),
-  initContextMiddleware: middleware.initContext,
+  initContextMiddleware: initContextMiddleware,
   requestTraceMiddleware: middleware.requestTrace,
 
   // Express & app
@@ -101,3 +118,15 @@ utils.messaging.openPubSocket(settings.tcpMessaging, function (err, pubSocket) {
 process.on('exit', function () {
   logger.info('Browser server exiting.');
 });
+
+function loadCustomAuthStepFn(customExtensions) {
+  const defaultFolder = customExtensions.defaultFolder;
+  const customAuthStepFnPath = customExtensions.customAuthStepFn;
+  
+  const loader = new ExtensionLoader(defaultFolder);
+  
+  if (customAuthStepFnPath != null && customAuthStepFnPath != '') 
+    return loader.loadFrom(customAuthStepFnPath);
+    
+  return loader.load('customAuthStepFn');
+}

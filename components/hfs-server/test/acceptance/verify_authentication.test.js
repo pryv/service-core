@@ -18,12 +18,9 @@ import type {MetadataRepository} from '../../src/metadata_cache';
 import type {Memo} from 'memo-is';
 
 describe('Metadata Loader', function () {
-  const loggingStub = {
-    getLogger: () => new NullLogger(), 
-  };
   const database = new storage.Database(
     settings.get('mongodb').obj(), 
-    loggingStub); 
+    new NullLogger()); 
 
   const loader: Memo<MetadataRepository> = 
     define(this, () => bluebird.resolve(new MetadataLoader(database)));

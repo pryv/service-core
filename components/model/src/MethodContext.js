@@ -1,21 +1,32 @@
-var accessLogic = require('./accessLogic'),
-    APIError = require('components/errors').APIError,
-    async = require('async'),
-    errors = require('components/errors').factory,
-    timestamp = require('unix-timestamp'),
-    treeUtils = require('components/utils').treeUtils,
-    _ = require('lodash');
+// @flow
+
+const accessLogic = require('./accessLogic');
+const APIError = require('components/errors').APIError;
+const async = require('async');
+const errors = require('components/errors').factory;
+const timestamp = require('unix-timestamp');
+const treeUtils = require('components/utils').treeUtils;
+const _ = require('lodash');
+
+import type { StorageLayer } from 'components/storage';
+
+export type CustomAuthFunctionCallback = (err: any) => void; 
+export type CustomAuthFunction = (MethodContext, CustomAuthFunctionCallback) => void; 
+
+export type AuthenticationData = {
+  accessToken: string, 
+  callerId?: string, 
+}
 
 module.exports = MethodContext;
 /**
  * Retrieves and holds contextual info for a given API method.
- *
- * @param {String} username
- * @param {String} auth
- * @param {Object} storage Must have properties `users`, `accesses` and `streams`
- * @constructor
  */
-function MethodContext(username, auth, storage, customAuthStepFn) {
+function MethodContext(
+  username: string, auth: ?string, 
+  storage: StorageLayer, 
+  customAuthStepFn: ?CustomAuthFunction
+) {
   this.username = username;
   _.extend(this, parseAuth(auth));
 
@@ -34,7 +45,7 @@ function MethodContext(username, auth, storage, customAuthStepFn) {
  * @param {String} auth
  * @returns {{accessToken: string, callerId: string}}
  */
-function parseAuth(auth) {
+function parseAuth(auth: ?string): AuthenticationData {
   var result = {
     accessToken: ''
   };
@@ -105,8 +116,7 @@ MethodContext.prototype.retrieveExpandedAccess = function (callback) {
         return stepDone();
       }
 
-      this.storage.accesses.findOne(this.user, {token: this.accessToken}, null,
-        function (err, access) {
+      this.storage.accesses.findOne(this.user, {token: this.accessToken}, null,function (err, access) {
           if (err) { return stepDone(err); }
           
           if (! access) {
@@ -147,8 +157,8 @@ MethodContext.prototype.retrieveExpandedAccess = function (callback) {
       try {
         this.customAuthStepFn(this, function (err) {
           if (err) {
-            return stepDone(errors.invalidAccessToken('Custom auth step failed: ' + err.message),
-                err);
+            return stepDone(
+              errors.invalidAccessToken('Custom auth step failed: ' + err.message), err);
           }
           stepDone();
         });
@@ -173,7 +183,8 @@ MethodContext.prototype.retrieveExpandedAccess = function (callback) {
       stepDone();
     }.bind(this)
   ], function (err) {
-    if (! err instanceof APIError) {
+    // Make sure we only forward APIErrors. 
+    if (err != null && ! (err instanceof APIError)) {
       err = errors.unexpectedError(err);
     }
     callback(err || null);
@@ -220,7 +231,8 @@ MethodContext.prototype.getSingleActivityExpandedIds = function () {
       throw new Error('The context\'s `stream` must be set before calling this method.');
     }
     this.singleActivityExpandedIds = this.stream.singleActivityRootId ?
-        treeUtils.expandIds(this.streams, [this.stream.singleActivityRootId]) : [];
+      treeUtils.expandIds(this.streams, [this.stream.singleActivityRootId]) : 
+      [];
   }
   return this.singleActivityExpandedIds;
 };
@@ -263,7 +275,7 @@ MethodContext.prototype.canManageTag = function (tag) {
 MethodContext.prototype.canReadContext = function (streamId, tags) {
   return this.access.canReadStream(streamId) &&
       (this.access.canReadAllTags() ||
-       _.some(tags || [], this.access.canReadTag.bind(this.access)));
+       _.some(tags || [], this.access.canReadTag.bind(this.access)));
 };
 
 /**
@@ -276,7 +288,7 @@ MethodContext.prototype.canReadContext = function (streamId, tags) {
 MethodContext.prototype.canContributeToContext = function (streamId, tags) {
   return this.access.canContributeToStream(streamId) ||
       (this.access.canContributeToTag('*') ||
-       _.some(tags || [], this.access.canContributeToTag.bind(this.access)));
+       _.some(tags || [], this.access.canContributeToTag.bind(this.access)));
 };
 
 MethodContext.prototype.initTrackingProperties = function (item, authorOverride) {
@@ -293,10 +305,4 @@ MethodContext.prototype.updateTrackingProperties = function (updatedData, author
 
 MethodContext.prototype.getTrackingAuthorId = function () {
   return this.access.id + (this.callerId ? MethodContext.AuthSeparator + this.callerId : '');
-};
-
-MethodContext.prototype.clone = function () {
-  var clone = new MethodContext();
-  _.extend(clone, this);
-  return clone;
 };

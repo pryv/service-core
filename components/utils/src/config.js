@@ -100,7 +100,7 @@ config.schema = {
       'missing.'
     },
     customAuthStepFn: {
-      format: 'function-module',
+      format: String,
       default: '',
       doc: 'A Node module identifier (e.g. "/custom/auth/function.js") implementing a custom ' +
       'auth step (such as authenticating the caller id against an external service). ' +
@@ -169,6 +169,10 @@ config.schema = {
     }
   },
   tcpMessaging: {
+    enabled: {
+      format: Boolean, 
+      default: true, 
+    },
     host: {
       format: String,
       default: 'localhost'
@@ -185,33 +189,6 @@ config.schema = {
   }
 };
 
-// Define custom configuration value format(s)
-var customFormats = {
-  'function-module': {
-    validate: function (val) {
-      if (! val) { return; }
-
-      var fn;
-      try {
-        fn = require(val);
-      } catch (e) {
-        throw new Error('Cannot load function module "' + val + '": ' + e.message);
-      }
-      if (typeof fn !== 'function') {
-        throw new Error('Module is not a function [' + val + ']');
-      }
-    },
-    coerce: function (val) {
-      if (! val) { return null; }
-      return require(val);
-    }
-  }
-};
-Object.keys(customFormats).forEach(function (key) {
-  var format = customFormats[key];
-  convict.addFormat(key, format.validate, format.coerce);
-});
-
 /**
  * Loads configuration settings from (last takes precedence):
  *
@@ -227,13 +204,28 @@ Object.keys(customFormats).forEach(function (key) {
  * @returns {Object} The loaded settings
  */
 config.load = function (configDefault) {
-  autoSetEnvAndArg(this.schema);
+  const instance = setup(configDefault);
+  
+  var settings = instance.get();
 
-  var instance = convict(this.schema);
+  if (settings.printConfig) {
+    print('Configuration settings loaded', settings);
+  }
+
+  return settings;
+};
+
+// For internal use only: loads convict instance, then validates and returns it. 
+//
+function setup(configDefault) {
+  autoSetEnvAndArg(config.schema);
+
+  var instance = convict(config.schema);
 
   var filePath = instance.get('config') ||
                  configDefault ||
                  'config/' + instance.get('env') + '.json';
+
   loadFile(filePath);
 
   var overridesFilePath = instance.get('configOverrides');
@@ -242,16 +234,8 @@ config.load = function (configDefault) {
   }
 
   instance.validate();
-
-  var settings = instance.get();
-
-  loadCustomExtensions(settings);
-
-  if (settings.printConfig) {
-    print('Configuration settings loaded', settings);
-  }
-
-  return settings;
+  
+  return instance; 
 
   function loadFile(fPath) {
     if (! fs.existsSync(fPath)) {
@@ -260,7 +244,8 @@ config.load = function (configDefault) {
       instance.loadFile(fPath);
     }
   }
-};
+}
+config.setup = setup;
 
 config.printSchemaAndExitIfNeeded = function () {
   process.argv.slice(2).forEach(function (arg) {
@@ -299,25 +284,6 @@ function getSettingEnvName(keyPath) {
 
 function getSettingArgName(keyPath) {
   return keyPath.join(':');
-}
-
-function loadCustomExtensions(settings) {
-  var extSettings = settings.customExtensions;
-  Object.keys(extSettings).forEach(function (key) {
-    if (key === 'defaultFolder') { return; }
-    if (! extSettings[key]) {
-      // not explicitly specified —> try to load from default folder
-      var defaultModulePath = path.join(extSettings.defaultFolder, key + '.js');
-      if (! fs.existsSync(defaultModulePath)) {
-        // ignore if missing
-        return;
-      }
-      // for now we assume all extensions are functions
-      var format = customFormats['function-module'];
-      format.validate(defaultModulePath);
-      extSettings[key] = format.coerce(defaultModulePath);
-    }
-  });
 }
 
 function print(title, data) {

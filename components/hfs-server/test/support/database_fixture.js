@@ -24,8 +24,8 @@ type DatabaseShortcuts = {
   users: storage.Users, 
   sessions: Sessions, 
   
-  streams: storage.Streams, 
-  events: storage.Events, 
+  streams: storage.user.Streams, 
+  events: storage.user.Events, 
   accesses: storage.user.Accesses, 
 }
 class UserContext {

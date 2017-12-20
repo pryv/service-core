@@ -7,7 +7,6 @@ var helpers = require('./helpers'),
     async = require('async'),
     fs = require('fs'),
     path = require('path'),
-    should = require('should'), // explicit require to benefit from static functions
     validation = helpers.validation,
     testData = helpers.data,
     timestamp = require('unix-timestamp'),
@@ -367,7 +366,7 @@ describe('Access permissions', function () {
 
   });
 
-  describe('Auth and change tracking', function () {
+  describe('Auth and change tracking', function () {
 
     before(testData.resetStreams);
 
@@ -403,21 +402,20 @@ describe('Access permissions', function () {
         async.series([
           function setupCustomAuthStep(stepDone) {
             fs.readFile(srcPath, function (err, data) {
-              if (err) {
+              if (err) 
                 return stepDone(err);
-              }
+
               fs.writeFile(destPath, data, stepDone);
             });
           },
           server.restart.bind(server)
-        ], function (err) { 
-          if (err) {
-            throw new Error(err);
-          }
-          if (! fs.existsSync(destPath)) {
+        ], function (err) {
+          if (err) done(err);
+          
+          if (! fs.existsSync(destPath))
             throw new Error('Failed creating :' + destPath);
-          }
-          done(err);
+
+          done();
         });
       });
 
@@ -448,8 +446,7 @@ describe('Access permissions', function () {
         });
       });
 
-      it('must fail properly (i.e. not granting access) when the custom function crashes',
-          function (done) {
+      it('must fail properly (i.e. not granting access) when the custom function crashes', function (done) {
         var crashAuth = token(sharedAccessIndex) + ' Please Crash';
         request.post(basePath, crashAuth).send(newEventData).end(function (res) {
           res.statusCode.should.eql(500);
@@ -467,7 +464,6 @@ describe('Access permissions', function () {
           },
           server.restart.bind(server)
         ], function (err) {
-          should.exist(err);
           // basic validation; users are expected to check console output
           err.message.should.match(/Server failed/);
           done();

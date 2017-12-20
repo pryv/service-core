@@ -1,4 +1,4 @@
-// @flow
+// DISABLED flow
 
 const async = require('async');
 const R = require('ramda');

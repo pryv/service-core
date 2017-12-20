@@ -7,7 +7,7 @@ var testHelpers = require('components/test-helpers'),
 var deps = module.exports = testHelpers.dependencies;
 deps.settings = require('../../src/config').load();
 deps.instanceManager = new InstanceManager({
-  serverFilePath: __dirname + '/../../src/server.js',
+  serverFilePath: __dirname + '/../../bin/server',
   tcpMessaging: deps.settings.tcpMessaging,
   logging: deps.logging
 });

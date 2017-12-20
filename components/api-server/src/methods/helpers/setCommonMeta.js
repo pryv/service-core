@@ -1,4 +1,4 @@
-'use strict';
+// @flow
 
 const thisPackage = require('../../../package.json'),
       timestamp = require('unix-timestamp'),
@@ -10,7 +10,7 @@ const thisPackage = require('../../../package.json'),
  *
  * @param result {Object} Current result. MODIFIED IN PLACE. 
  */
-module.exports = function (result) {
+module.exports = function (result: Object) {
   if (! result.meta) {
     result.meta = {};
   }

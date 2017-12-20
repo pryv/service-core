@@ -7,7 +7,13 @@ Pryv core server app components, ie. what runs on each server node and handles u
 
 ### Install
 
-_Prerequisites:_ Node v8.3.0, Yarn v1.1.0, Mongo DB v3.4+ (needs at least 4GB of free disk space for the initial database), Nginx (optional, skip if you don't need the proxy server).
+_Prerequisites:_ Node v8.3.0, Yarn v1.1.0, Mongo DB v3.4+ (needs at least 4GB of free disk space for the initial database), Nginx (optional, skip if you don't need the proxy server), gnatsd. On a mac OS X system, you should be able to install these prerequisites by first installing homebrew and then running these commands: 
+
+~~~bash
+$ brew install gnatsd mongodb nodenv node-build nginx
+# Follow post-install instructions by homebrew, especially for nodenv. 
+$ nodenv install 8.8.0
+~~~
 
 You will need to install 'node-gyp' globally as well: `yarn global add node-gyp`. Your environment needs to support C/C++ compilation. On Linux, this includes `sudo apt-get install build-essentials`, on Mac OS X this is XCode + Command Line Utilities. 
 
@@ -20,58 +26,60 @@ If you're blocking because 'unicode.org' doesn't like you today, here's what you
 ### Top Level Directories
 
     .
-    ├── CHANGELOG.md            Changelog
-    ├── Jenkinsfile             Used by Jenkins to identify and run the build
-    ├── Procfile                Used by foreman (`nf`) to identify processes 
-    ├── README.md               This README
-    ├── build                   Contains files needed for Docker release build
-    ├── components              Source code for all components 
-    ├── custom-extensions       Custom auth steps, during tests mainly.
-    ├── decls                   Flow-Type annotations, managed by us
-    ├── dist                    Once you run 'npm run release', this is created
-    ├── docs                    Documentation in Markdown format 
-    ├── flow-typed              Flow-Type annotations, managed by flow-typed
-    ├── jsdoc.json              JSDoc configuration, `npm run jsdoc`
-    ├── node_modules            Package installation, `yarn install`
-    ├── package.json            Yarn package file
-    ├── proxy                   Proxy configuration
-    ├── scripts                 Scripts used to manage the repository
-    ├── test                    Top-Level Tests for Integration tests.
-    └── yarn.lock               Lockfile for Yarn, locks down npm versions.
-    
+    ├── CHANGELOG.md     Changelog
+    ├── Jenkinsfile      Used by Jenkins to identify and run the build
+    ├── Procfile         Used by foreman (`nf`) to identify processes 
+    ├── README.md        This README
+    ├── build            Contains files needed for Docker release build
+    ├── components       Source code for all components 
+    ├── custom-extensions  Custom auth steps, during tests mainly.
+    ├── decls            Flow-Type annotations, managed by us
+    ├── dist             Once you run 'npm run release', this is created
+    ├── docs             Documentation in Markdown format 
+    ├── flow-typed       Flow-Type annotations, managed by flow-typed
+    ├── jsdoc.json       JSDoc configuration, `npm run jsdoc`
+    ├── node_modules     Package installation, `yarn install`
+    ├── package.json     Yarn package file
+    ├── proxy            Proxy configuration
+    ├── scripts          Scripts used to manage the repository
+    ├── test             Top-Level Tests for Integration tests.
+    └── yarn.lock        Lockfile for Yarn, locks down npm versions.
+
 ### How to?
 
-| Task                         | Command                        |
-| ---------------------------- | ------------------------------ |
-| Setup                        | `yarn install`                 |
-| Create Distribution          | `yarn run release`             |
-| Recompile During Development | `yarn run watch`               |
-| Run Tests                    | `yarn run test`                |
-| Run Integration Tests        | `yarn run test-root`           |
-| Run ALL server proecesses    | `nf start`                     |
-| Run API server               | `nf start api`                 |
-| Run API and Preview server   | `nf start api, previews`       |
-| Run flow checker             | `watch -c flow --color=always` |
+| Task                              | Command                        |
+| --------------------------------- | ------------------------------ |
+| Setup                             | `yarn install`                 |
+| Create Distribution               | `yarn release`                 |
+| Recompile During Development      | `yarn watch`                   |
+| Run Tests                         | `yarn test`                    |
+| Run Integration Tests             | `yarn test-root`               |
+| Run ALL server processes          | `nf start`                     |
+| Run API server                    | `nf start api`                 |
+| Run API and Preview server        | `nf start api, previews`       |
+| Run Database                      | `nf start database`            |
+| Get a list of available processes | `cat Procfile`                 |
+| Run flow checker                  | `watch -c flow --color=always` |
 
-Normally, all binaries like `nf` or `flow` must be accessed by prepending `yarn run {nf,flow}`. Kaspar has a set of shell aliases that simplify this. 
+**NOTE** that all binaries like `nf` or `flow` must be accessed by prepending `yarn run {nf,flow}`. Kaspar has a set of shell aliases that simplify this. 
 
-# Test Running
+### Test Running
 
 If you want to run tests in `components/`, you will need to start with a command like this: 
 
     $ ../../node_modules/.bin/mocha \
       --compilers js:babel-register \
       test/**/*.test.js
-    
+
 This is something that should probably be a shell alias in your environment. I use 
 
     $ alias pm="../../node_modules/.bin/mocha --compilers js:babel-register test/**/*.test.js"
 
 ### Quick, run the servers
 
-To run the servers, the source code needs to be transpiled from Flowtype to pure JS. Run `yarn run release` at least once to get this done. 
+To run the servers, the source code needs to be transpiled from Flowtype to pure JS. Run `yarn release` at least once to get this done. 
 
-During development, use `yarn run watch` to recompile all files immediately. Look out for compilation errors that might prevent the distribution from being updated. 
+During development, use `yarn watch` to recompile all files immediately. Look out for compilation errors that might prevent the distribution from being updated. 
 
 To run the processes, use `nf` (javascript foreman), as documented [here](http://strongloop.github.io/node-foreman/).
 
@@ -111,7 +119,7 @@ It is possible to extend the API and previews servers with your own code, via th
 - `defaultFolder`: The folder in which custom extension modules are searched for by default. Unless defined by its specific setting (see other settings in `customExtensions`), each module is loaded from there by its default name (e.g. `customAuthStepFn.js`), or ignored if missing. Defaults to `{app root}/custom-extensions`.
 - `customAuthStepFn`: A Node module identifier (e.g. `/custom/auth/function.js`) implementing a custom auth step (such as authenticating the caller id against an external service). The function is passed the method context, which it can alter, and a callback to be called with either no argument (success) or an error (failure). If this setting is not empty and the specified module cannot be loaded as a function, server startup will fail. Undefined by default.
 
-    ```
+    ```javascript
     // Example of customAuthStepFn.js
     module.exports = function (context, callback) {
       // do whatever is needed here (check LDAP, custom DB, etc.)
@@ -125,7 +133,7 @@ It is possible to extend the API and previews servers with your own code, via th
     ```
 
     Available context properties (as of now):
-    
+
     - `username` (string)
     - `user` (object): the user object (properties include `id`)
     - `accessToken` (string): as read in the `Authorization` header or `auth` parameter
@@ -137,19 +145,15 @@ It is possible to extend the API and previews servers with your own code, via th
 
 ### Setup the dev environment
 
-`./scripts/setup-dev-env.bash` installs MongoDB in the parent folder, sets up your working copy with a JSHint commit hook, and `yarn install`s if needed.
+`./scripts/setup-dev-env.bash` installs MongoDB in the parent folder and `yarn install`s if needed.
 
 This might be broken right now. Sorry.
 
 ### Tests
 
-_Prerequisite:_ MongoDB must be running on the default port; you can use `npm run database`.
+_Prerequisite:_ MongoDB must be running on the default port; you can use `nf start database`.
 
-`npm test` runs tests on each component. See individual components for things like detailed output and other options.
-`npm test-root` runs root tests combining multiple components (e.g., High-Frequency series).
-
-### Coding conventions
-
-See the [Pryv guidelines](http://pryv.github.io/guidelines/).
+`yarn test` runs tests on each component. See individual components for things like detailed output and other options.
+`yarn test-root` runs root tests combining multiple components (e.g., High-Frequency series).
 
 

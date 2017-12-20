@@ -6,9 +6,10 @@ module.exports = {
   logging: require('./logging'),
   messaging: require('./messaging'),
   toString: require('./toString'),
-  treeUtils: require('./treeUtils')
+  treeUtils: require('./treeUtils'), 
+  extension: require('./extension'),
 };
 
 // Reexport the Logger interface for external declarations. 
-import type { Logger } from './logging';
-export type { Logger };
+import type { Logger, LogFactory } from './logging';
+export type { Logger, LogFactory };
