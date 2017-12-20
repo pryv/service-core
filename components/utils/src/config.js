@@ -47,7 +47,8 @@ config.schema = {
     },
     port: {
       format: 'port',
-      default: 3000
+      default: 3000, 
+      arg: 'http-port'
     }
   },
   database: {
