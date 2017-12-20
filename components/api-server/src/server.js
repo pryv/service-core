@@ -19,7 +19,6 @@ const API = require('./API');
 import type { ConfigAccess } from './settings';
 
 import type { LogFactory, Logger } from 'components/utils';
-import type { ExpressAppLifecycle } from './expressApp';
 import type { StorageLayer } from 'components/storage';
 
 // Server class for api-server process. To use this, you 
@@ -148,7 +147,13 @@ class Server {
 
     // Setup DB connection
     await this.storageLayer.waitForConnection();
-    await this.migrateIfNeeded();
+    try {
+      await this.migrateIfNeeded();
+    }
+    catch(err) {
+      // TODO We need to do more, that's clear. An actual WIP. 
+      logger.error('Could not migrate.');
+    }
     
     // Finish booting the server, start accepting connections.
     await this.addRoutes();
