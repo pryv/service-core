@@ -14,7 +14,11 @@ process.on('unhandledRejection', (reason, promise) => {
   console.warn('Unhandled promise rejection:', promise, 'reason:', reason.stack || reason); 
 });
 process.on('exit', function () {
-  console.info('Server exiting.'); // eslint-disable-line no-console
+  console.info('Server stopped.');
+});
+process.on('SIGINT', () => {
+  console.warn('Received SIGINT. Exiting...');
+  process.exit(2);
 });
 
 // Load settings

@@ -115,7 +115,8 @@ class Server {
   // Start the server. 
   //
   async start() {
-    const settings = this.settings; 
+    const settings = this.settings;
+    const logger = this.logger;
     
     dependencies.register({
       api: this.api,
@@ -153,6 +154,9 @@ class Server {
     await this.migrateIfNeeded();
     await this.readyServer(lifecycle);
     await this.setupNightlyScript(server);
+    
+    logger.info('Server ready.');
+    this.notificationBus.serverReady();
   }
   
   // Requires and registers all API methods. 
@@ -319,9 +323,7 @@ class Server {
   // Installs actual routes in express and prints 'Server ready'.
   //
   readyServer(lifecycle: ExpressAppLifecycle) {
-    const logger = this.logger; 
-    
-    // ok: setup proper API routes
+    // Setup proper API routes
     lifecycle.appStartupComplete(); 
 
     [
@@ -338,14 +340,8 @@ class Server {
       dependencies.resolve(moduleDef);
     });
     
-    // ok: All routes setup. Add error handling middleware. 
-    
+    // All routes setup. Add error handling middleware. 
     lifecycle.routesAdded(); 
-
-    // all right
-
-    logger.info('Server ready');
-    this.notificationBus.serverReady();
   }
   
   // Migrates mongodb database to the latest version, if needed. 
