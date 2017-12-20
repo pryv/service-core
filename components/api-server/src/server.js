@@ -117,6 +117,7 @@ class Server {
   //
   async start() {
     const settings = this.settings; 
+    const logger = this.logger; 
     
     dependencies.register({
       api: this.api,
@@ -124,37 +125,10 @@ class Server {
       systemAPI: this.systemAPI 
     });
     
-    // register base dependencies (aka global variables)
-    dependencies.register({
-      // settings
-      authSettings: settings.get('auth').obj(),
-      auditSettings: settings.get('audit').obj(),
-      eventFilesSettings: settings.get('eventFiles').obj(),
-      eventTypesSettings: settings.get('eventTypes').obj(),
-      httpSettings: settings.get('http').obj(),
-      servicesSettings: settings.get('services').obj(),
-      updatesSettings: settings.get('updates').obj(),
-
-      // misc utility
-      serverInfo: require('../package.json'),
-    });
-    
-    const logger = this.logger; 
-    
+    this.publishLegacySettings(settings); 
     this.setupStorageLayer();
+    this.publishExpressMiddleware(settings);
     
-    const customAuthStepFn = settings.getCustomAuthFunction();
-    const initContextMiddleware = middleware.initContext(
-      this.storageLayer, customAuthStepFn);
-
-    dependencies.register({
-      // Express middleware
-      attachmentsAccessMiddleware: middleware.attachmentsAccess,
-      initContextMiddleware: initContextMiddleware,
-      
-      express: express, 
-    });
-
     const {app, lifecycle} = require('./expressApp')(dependencies);
     dependencies.register({expressApp: app});
 
@@ -185,10 +159,7 @@ class Server {
     // setup HTTP and register server
     const server = http.createServer(app);
     
-    // Allow everyone (and his dog) to access this server. 
-    module.exports = server;
-    dependencies.register({server: server});
-
+    // Initialize the socket.io subsystem
     this.setupSocketIO(server); 
 
     // start listening to HTTP
@@ -205,6 +176,42 @@ class Server {
 
     process.on('exit', function () {
       logger.info('API server exiting.');
+    });
+  }
+  
+  // Publishes dependencies for legacy code that accesses whole parts of the 
+  // settings object. 
+  // 
+  publishLegacySettings(settings: ConfigAccess) {
+    // register base dependencies (aka global variables)
+    dependencies.register({
+      // settings
+      authSettings: settings.get('auth').obj(),
+      auditSettings: settings.get('audit').obj(),
+      eventFilesSettings: settings.get('eventFiles').obj(),
+      eventTypesSettings: settings.get('eventTypes').obj(),
+      httpSettings: settings.get('http').obj(),
+      servicesSettings: settings.get('services').obj(),
+      updatesSettings: settings.get('updates').obj(),
+
+      // misc utility
+      serverInfo: require('../package.json'),
+    });
+  }
+  
+  // Publishes dependencies for express middleware setup. 
+  // 
+  publishExpressMiddleware(settings: ConfigAccess) {
+    const customAuthStepFn = settings.getCustomAuthFunction();
+    const initContextMiddleware = middleware.initContext(
+      this.storageLayer, customAuthStepFn);
+
+    dependencies.register({
+      // Express middleware
+      attachmentsAccessMiddleware: middleware.attachmentsAccess,
+      initContextMiddleware: initContextMiddleware,
+      
+      express: express, 
     });
   }
   
@@ -249,9 +256,6 @@ class Server {
     const serverUrl = protocol + '://' + address.address + ':' + address.port;
     logger.info(`Core Server (API module) listening on ${serverUrl}`);
     
-    // FLOW: For use during our testing (DEPRECATED)
-    server.url = serverUrl;
-        
     // Warning if ignoring forbidden updates
     if (settings.get('updates.ignoreProtectedFields').bool()) {
       logger.warn('Server configuration has "ignoreProtectedFieldUpdates" set to true: ' +
