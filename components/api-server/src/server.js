@@ -132,8 +132,7 @@ class Server {
     dependencies.register({expressApp: app});
 
     // start TCP pub messaging
-    const notificationBus = await this.openNotificationBus();
-    this.setupNotificationBus(notificationBus);
+    await this.setupNotificationBus();
 
     // register API methods
     this.registerApiMethods();
@@ -149,7 +148,7 @@ class Server {
     this.setupSocketIO(server); 
 
     // start listening to HTTP
-    await this.startListen(server, notificationBus);
+    await this.startListen(server);
     await this.storageLayer.waitForConnection();
     await this.migrateIfNeeded();
     await this.readyServer(lifecycle);
@@ -231,7 +230,7 @@ class Server {
   
   // Open http/https port and listen to incoming connections. 
   //
-  async startListen(server: http$Server, axonSocket: EventEmitter) {
+  async startListen(server: http$Server) {
     const settings = this.settings; 
     const logger = this.logger; 
     
@@ -266,6 +265,7 @@ class Server {
     const instanceTestSetup = settings.get('instanceTestSetup'); 
     if (process.env.NODE_ENV === 'test' && instanceTestSetup.exists()) {
       try {
+        const axonSocket = this.notificationBus.axonSocket;
         require('components/test-helpers')
           .instanceTestSetup.execute(instanceTestSetup.str(), axonSocket);
       } catch (err) {
@@ -312,8 +312,9 @@ class Server {
   
   // Sets up `Notifications` bus and registers it for everyone to consume. 
   // 
-  setupNotificationBus(messagingSocket: EventEmitter) {
-    const bus = this.notificationBus = new Notifications(messagingSocket);
+  async setupNotificationBus() {
+    const notificationEvents = await this.openNotificationBus();
+    const bus = this.notificationBus = new Notifications(notificationEvents);
     
     dependencies.register({
       notifications: bus,
