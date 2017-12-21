@@ -24,22 +24,22 @@ PYTHON=$(which python2.7) run yarn install
 
 # Perform a release build of the source code. (-> lib)
 run yarn release > /dev/null
-run rm -fr components && mv dist components
+run "rm -fr components && mv dist components"
 
 # Install the config file
-run mkdir -p $conf_dir && \
-  cp /pd_build/config/core.json $conf_dir/core.json
+run "mkdir -p $conf_dir && \
+  cp /pd_build/config/core.json $conf_dir/core.json"
   
 # Install the procfile (for running node-foreman)
-run cp /pd_build/config/production.procfile components/api-server/
+run cp /pd_build/config/production.procfile $conf_dir/production.procfile
 
 # Create the log
-run mkdir -p $log_dir && \
-  touch $log_dir/core.log && chown -R app:app $log_dir
+run "mkdir -p $log_dir && \
+  touch $log_dir/core.log && chown -R app:app $log_dir"
 
 # Create the data space (attachments/previews)
-run mkdir -p $data_dir/attachments && mkdir -p $data_dir/previews && \
-  chown -R app:app $data_dir
+run "mkdir -p $data_dir/attachments && mkdir -p $data_dir/previews && \
+  chown -R app:app $data_dir"
 
 # Install the script that runs the api service
 run mkdir /etc/service/core

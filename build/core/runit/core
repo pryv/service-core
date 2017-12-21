@@ -17,6 +17,6 @@ fi
 
 export NODE_ENV=production
 export NODE_PATH=/app/bin/
-exec chpst -u app /app/bin/node_modules/.bin/nf -j production.procfile \
+exec chpst -u app /app/bin/node_modules/.bin/nf -j /app/conf/production.procfile \
   -p 3000 \
   start api=$num_procs,nats
