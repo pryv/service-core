@@ -22,16 +22,17 @@ run run tar -x --owner app -f \
 PYTHON=$(which python2.7) run yarn install
 
 # Perform a release build of the source code. (-> lib)
-run npm run release
-rm -r components && mv lib components
+run yarn release > /dev/null
+run rm -r components && run mv dist components
 
 # Install the config file
 run mkdir -p $conf_dir && \
-  cp /pd_build/config/preview.json $conf_dir/preview.json
+  run cp /pd_build/config/preview.json $conf_dir/preview.json
 
 # Create the log
-run mkdir -p $log_dir && chown -R app:app $log_dir && \
-  touch $log_dir/preview.log
+run mkdir -p $log_dir && \
+  run chown -R app:app $log_dir && \
+  run touch $log_dir/preview.log
 
 # Install the script that runs the api service
 run mkdir /etc/service/preview
