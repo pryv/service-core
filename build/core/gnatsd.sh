@@ -10,14 +10,14 @@ SPOOLDIR=/var/spool
 
 minimal_apt_get_install unzip
 
-mkdir -p $SPOOLDIR/gnatsd && \
+run mkdir -p $SPOOLDIR/gnatsd && \
   cd $SPOOLDIR/gnatsd/ && \
   curl -O $SOURCE_URL && \
   unzip $FILENAME
 
-echo "d6f93ff2951524a49b8eec76b54c86f49616c65c5bbdd0d438d58b3cb6373022  gnatsd-v1.0.4-linux-amd64.zip" | \
+run echo "d6f93ff2951524a49b8eec76b54c86f49616c65c5bbdd0d438d58b3cb6373022  $FILENAME" | \
   sha256sum -c -
 
-mv $BASENAME/gnatsd /usr/local/bin/
+run mv $BASENAME/gnatsd /usr/local/bin/
 
 
