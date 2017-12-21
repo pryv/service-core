@@ -4,7 +4,10 @@
   }, 
   "services": {
     "email": {
-      "enabled": "false"
+      "enabled": false
     }
+  }, 
+  "tcpMessaging": {
+    "enabled": false
   }
 }
