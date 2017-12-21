@@ -2,9 +2,9 @@
 
 set -e
 
-cd /app/bin/components/previews-server
+cd /app/bin/dist/components/previews-server
 chown app:app /app/log/
 
 export NODE_ENV=production
-export NODE_PATH=/app/bin/
+export NODE_PATH=/app/bin/dist/
 exec chpst -u app /usr/bin/node src/server --config /app/conf/preview.json

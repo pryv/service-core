@@ -24,7 +24,6 @@ PYTHON=$(which python2.7) run yarn install
 
 # Perform a release build of the source code. (-> lib)
 run yarn release > /dev/null
-run rm -fr components && run mv dist components
 
 # Install the config file
 run mkdir -p $conf_dir && \
