@@ -12,7 +12,7 @@ minimal_apt_get_install unzip
 
 run mkdir -p $SPOOLDIR/gnatsd && \
   cd $SPOOLDIR/gnatsd/ && \
-  curl -O $SOURCE_URL && \
+  curl -L -O $SOURCE_URL && \
   unzip $FILENAME
 
 run echo "d6f93ff2951524a49b8eec76b54c86f49616c65c5bbdd0d438d58b3cb6373022  $FILENAME" | \
