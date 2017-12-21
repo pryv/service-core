@@ -8,6 +8,8 @@ FILENAME="$BASENAME.zip"
 SOURCE_URL="https://github.com/nats-io/gnatsd/releases/download/$VERSION/$FILENAME"
 SPOOLDIR=/var/spool
 
+minimal_apt_get_install unzip
+
 mkdir -p $SPOOLDIR/gnatsd && \
   cd $SPOOLDIR/gnatsd/ && \
   curl -O $SOURCE_URL && \
