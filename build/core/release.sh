@@ -23,15 +23,15 @@ run run tar -x --owner app -f \
 PYTHON=$(which python2.7) run yarn install
 
 # Perform a release build of the source code. (-> lib)
-run yarn release
-rm -r components && mv dist components
+run yarn release > /dev/null
+run rm -fr components && mv dist components
 
 # Install the config file
 run mkdir -p $conf_dir && \
   cp /pd_build/config/core.json $conf_dir/core.json
   
 # Install the procfile (for running node-foreman)
-run cp /pd_build/config/production.procfile $target_dir/components/api-server/
+run cp /pd_build/config/production.procfile components/api-server/
 
 # Create the log
 run mkdir -p $log_dir && \
