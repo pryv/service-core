@@ -52,7 +52,8 @@
     "test-helpers": "file:components/test-helpers",
     "unicode": "^0.6.1",
     "unix-timestamp": "^0.2.0",
-    "utils": "file:components/utils"
+    "utils": "file:components/utils", 
+    "node-foreman": "git://github.com/pryv/node-foreman.git#4eb501d443432878491b2d0387ded96e7c4154d0"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
@@ -73,7 +74,6 @@
     "flow-bin": "^0.54.0",
     "flow-coverage-report": "^0.3.0",
     "flow-typed": "^2.0.0",
-    "foreman": "^2.0.0",
     "inspect": "^0.0.2",
     "jsdoc": "^3.4.3",
     "jsdoc-babel": "^0.3.0",

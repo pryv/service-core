@@ -23,12 +23,15 @@ run run tar -x --owner app -f \
 PYTHON=$(which python2.7) run yarn install
 
 # Perform a release build of the source code. (-> lib)
-run npm run release
-rm -r components && mv lib components
+run yarn release
+rm -r components && mv dist components
 
 # Install the config file
 run mkdir -p $conf_dir && \
   cp /pd_build/config/core.json $conf_dir/core.json
+  
+# Install the procfile (for running node-foreman)
+run cp /pd_build/config/production.procfile $target_dir/components/api-server/
 
 # Create the log
 run mkdir -p $log_dir && \
@@ -41,6 +44,3 @@ run mkdir -p $data_dir/attachments && mkdir -p $data_dir/previews && \
 # Install the script that runs the api service
 run mkdir /etc/service/core
 run cp /pd_build/runit/core /etc/service/core/run
-
-# Have CRON run in this container
-run rm /etc/service/cron/down

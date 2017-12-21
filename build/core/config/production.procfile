@@ -1,0 +1,4 @@
+# Procfile for launching N api-servers in production.
+api: bin/server --config /app/conf/core.json --http-port $PORT
+nats: /usr/local/bin/gnatsd
+

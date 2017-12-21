@@ -5,8 +5,18 @@ set -e
 cd /app/bin/components/api-server
 
 chown -R app:app /app/data/
-chown app:app /app/log/
+chown -R app:app /app/log/
+
+# Sets $num_procs to 2 or the value of $NUM_PROCS, if set.
+if [ -z ${NUM_PROCS+x} ]
+then
+  num_procs=2
+else
+  num_procs=$NUM_PROCS
+fi
 
 export NODE_ENV=production
 export NODE_PATH=/app/bin/
-exec chpst -u app /usr/bin/node src/server --config /app/conf/core.json
+exec chpst -u app /app/bin/node_modules/.bin/nf -j production.procfile \
+  -p 3000 \
+  start api=$num_procs,nats
