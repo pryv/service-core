@@ -30,7 +30,8 @@ run mkdir -p $conf_dir && \
   run cp /pd_build/config/core.json $conf_dir/core.json
   
 # Install the procfile (for running node-foreman)
-run cp /pd_build/config/production.procfile $conf_dir/production.procfile
+run cp /pd_build/config/production.procfile \
+  dist/components/api-server/production.procfile
 
 # Create the log
 run mkdir -p $log_dir && \
