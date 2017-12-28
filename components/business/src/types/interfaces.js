@@ -39,7 +39,7 @@ export interface EventType {
 }
 
 // A single property of a type has a type that can be applied to incoming
-// values. 
+// values.  
 // 
 export interface PropertyType {
   // Coerces the value given into this type. If the input value cannot be
