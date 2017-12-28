@@ -142,10 +142,6 @@ class TypeRepository {
   }
 }
 
-interface Logger {
-  warn(msg: string): void; 
-}
-
 module.exports = {
   TypeRepository: TypeRepository, 
   InfluxRowType: InfluxRowType, // TODO remove eventually 
