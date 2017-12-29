@@ -1,5 +1,8 @@
 // @flow
 
+// TypeRepository is the repository for all Pryv event types. It allows access
+// to coercion and validation. 
+
 import type {EventType, Content} from './types/interfaces';
 
 const R = require('ramda');
@@ -53,6 +56,28 @@ class TypeValidator {
 // 'types/event-types.default.json' in this component. Also, once the server 
 // is running, a list is downloaded from the internet (pryv.com) that will
 // extend the built in types. 
+// 
+// There are several different kind of types: 
+// 
+//  * 'leaf' types, which form the types you would use in vanilla events, such 
+//    as 'mass/kg' or 'picture/attached'. 
+//  * 'series' types, which describe a sequence of individual data points, each 
+//    data point being of the same leaf type. 
+// 
+// Leaf types are further divided into 'complex' types and 'basic' types.
+// Complex types are objects with attributes, each attribute being itself either
+// of a complex or a basic type. E.g. 'message/email'. 
+// 
+// Basic types are 'number', 'string' and others. These are the types of a
+// single element of data. 
+// 
+// Synopsis: 
+// 
+//    const repo = new TypeRepository(); 
+//    await repo.tryUpdate(someUrl);
+//    
+//    const type = repo.lookup('mass/kg');
+//    const seriesType = repo.lookup('series:mass/kg');
 // 
 class TypeRepository {
   // Returns true if the type given by `name` is known by Pryv. To be known, 
@@ -144,7 +169,7 @@ class TypeRepository {
 
 module.exports = {
   TypeRepository: TypeRepository, 
-  InfluxRowType: InfluxRowType, // TODO remove eventually 
+  InfluxRowType: InfluxRowType,
   isSeriesType: isSeriesType,
   errors: errors, 
 };
