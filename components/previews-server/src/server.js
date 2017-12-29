@@ -35,15 +35,11 @@ const logger = logging.getLogger('server');
 const database = new storage.Database(
   settings.database, logging.getLogger('database'));
 
-const storageLayer = {
-  sessions: new storage.Sessions(database, {maxAge: settings.auth.sessionMaxAge}),
-  users: new storage.Users(database),
-  accesses: new storage.user.Accesses(database),
-  eventFiles: new storage.user.EventFiles(
-    settings.eventFiles, logging.getLogger('eventFiles')),
-  events: new storage.user.Events(database),
-  streams: new storage.user.Streams(database),
-};
+const storageLayer = new storage.StorageLayer(
+  database, logger, 
+  settings.eventFiles.attachmentsDirPath, 
+  settings.eventFiles.previewsDirPath,
+  10, settings.auth.sessionMaxAge);
 
 const initContextMiddleware = middleware.initContext(
   storageLayer,
@@ -57,6 +53,9 @@ dependencies.register({
   userEventFilesStorage: storageLayer.eventFiles,
   userEventsStorage: storageLayer.events,
   userStreamsStorage: storageLayer.streams,
+  
+  // For the code that hasn't quite migrated away from dependencies yet.
+  storageLayer: storageLayer,
 
   // Express middleware
   commonHeadersMiddleware: middleware.commonHeaders,

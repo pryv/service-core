@@ -10,12 +10,12 @@ var errors = require('components/errors').factory,
  * @param api
  * @param userProfileStorage
  */
-module.exports = function (api, userProfileStorage) {
+module.exports = function (api, userProfileStorage, storageLayer) {
 
   // COMMON
 
   api.register('profile.*',
-      commonFns.loadAccess);
+      commonFns.loadAccess(storageLayer));
 
   // RETRIEVAL / CREATION
 

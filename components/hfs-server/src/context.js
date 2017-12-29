@@ -5,6 +5,7 @@ const business = require('components/business');
 const {MetadataLoader, MetadataCache} = require('./metadata_cache');
 
 import type {MetadataRepository} from './metadata_cache';
+import type {Logger} from 'components/utils';
 
 type Repository = business.series.Repository;
 type InfluxConnection = business.series.InfluxConnection; 
@@ -19,14 +20,14 @@ class Context {
   series: Repository; 
   metadata: MetadataRepository;
   
-  constructor(influxConn: InfluxConnection, mongoConn: Database) {
+  constructor(influxConn: InfluxConnection, mongoConn: Database, modelLogger: Logger) {
     this.series = new business.series.Repository(influxConn);
-    this.metadata = this.produceMetadataCache(mongoConn);
+    this.metadata = this.produceMetadataCache(mongoConn, modelLogger);
   }
   
-  produceMetadataCache(mongoConn: Database): MetadataRepository {
+  produceMetadataCache(mongoConn: Database, logger: Logger): MetadataRepository {
     return new MetadataCache(
-      new MetadataLoader(mongoConn));
+      new MetadataLoader(mongoConn, logger));
   }
 }
 

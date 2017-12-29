@@ -14,18 +14,17 @@ var commonFns = require('./helpers/commonFunctions'),
  * @param sessionsStorage
  * @param authSettings
  */
-module.exports = function (api, userAccessesStorage, sessionsStorage, authSettings) {
-
+module.exports = function (api, userAccessesStorage, sessionsStorage, authSettings, storageLayer) {
   // LOGIN
 
   api.register('auth.login',
-      commonFns.getParamsValidation(methodsSchema.login.params),
-      commonFns.getTrustedAppCheck(authSettings),
-      applyPrerequisitesForLogin,
-      checkPassword,
-      openSession,
-      updateOrCreateAccess,
-      setAdditionalInfo);
+    commonFns.getParamsValidation(methodsSchema.login.params),
+    commonFns.getTrustedAppCheck(authSettings),
+    applyPrerequisitesForLogin,
+    checkPassword,
+    openSession,
+    updateOrCreateAccess,
+    setAdditionalInfo);
 
   function applyPrerequisitesForLogin(context, params, result, next) {
     var fixedUsername = params.username.toLowerCase();
@@ -126,10 +125,9 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
   // LOGOUT
 
   api.register('auth.logout',
-      //TODO: optimize by only loading the access itself (no need for expansion etc.)
-      commonFns.loadAccess,
-      commonFns.getParamsValidation(methodsSchema.logout.params),
-      destroySession);
+    commonFns.loadAccess(storageLayer),
+    commonFns.getParamsValidation(methodsSchema.logout.params),
+    destroySession);
 
   function destroySession(context, params, result, next) {
     sessionsStorage.destroy(context.accessToken, function (err) {

@@ -23,7 +23,7 @@ describe('Metadata Loader', function () {
     new NullLogger()); 
 
   const loader: Memo<MetadataRepository> = 
-    define(this, () => bluebird.resolve(new MetadataLoader(database)));
+    define(this, () => bluebird.resolve(new MetadataLoader(database, new NullLogger())));
 
   const USER_NAME = 'foo';
   const EVENT_ID = 'c1';
