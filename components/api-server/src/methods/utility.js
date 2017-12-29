@@ -9,13 +9,12 @@ var async = require('async'),
  *
  * @param api
  */
-module.exports = function (api, logging) {
+module.exports = function (api, logging, storageLayer) {
 
   var logger = logging.getLogger('methods/batch');
 
   api.register('getAccessInfo',
-      //TODO: optimize by only loading the access itself (no need for expansion etc.)
-      commonFns.loadAccess,
+      commonFns.loadAccess(storageLayer),
       commonFns.getParamsValidation(methodsSchema.getAccessInfo.params),
       getAccessInfo);
 

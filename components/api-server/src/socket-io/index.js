@@ -1,5 +1,6 @@
 // @flow
 
+const bluebird = require('bluebird');
 const socketIO = require('socket.io');
 
 const MethodContext = require('components/model').MethodContext;
@@ -75,22 +76,24 @@ function setupSocketIO(
 
     const context = new MethodContext(
       userName, accessToken, 
-      storageLayer, customAuthStepFn);
+      customAuthStepFn);
       
     // HACK Attach our method context to the handshake as a means of talking to
     // the code in Manager. 
     handshake.methodContext = context;
 
-    // Load user.
-    return context.retrieveUser(userLoaded);
-    async function userLoaded(err) {
-      if (err != null) { return callback(err); }
-      
+    // Load user, init the namespace
+    const initDone = context.retrieveUser(storageLayer)
       // FLOW We should not piggy-back on the method context here.
-      await manager.ensureInitNamespace(nsName, context.user);
-      
-      return callback(null, true);
-    }
+      .then(() => {
+        if (context.user == null) throw new Error('AF: context.user != null');
+        
+        manager.ensureInitNamespace(nsName, context.user); 
+        return true; 
+      });
+    
+    // Makes sure that we call back 
+    return bluebird.resolve(initDone).asCallback(callback);
   }
 }
 module.exports = setupSocketIO; 

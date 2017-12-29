@@ -5,25 +5,17 @@ var methodCallback = require('./methodCallback'),
     Paths = require('./Paths'),
     tryCoerceStringValues = require('../schema/validation').tryCoerceStringValues,
     _ = require('lodash');
-    
-const hasFileUpload = require('../middleware/uploads').hasFileUpload;
 
-// import type { $Application as ExpressApplication } from 'express';
+const bluebird = require('bluebird');  
+const hasFileUpload = require('../middleware/uploads').hasFileUpload;
 
 /**
  * Set up events route handling.
- *
- * @param expressApp {express$Application} Express application.
- * @param api
- * @param attachmentsAccessMiddleware
- * @param userAccessesStorage
- * @param authSettings
- * @param eventFilesSettings
  */
 module.exports = function(
   expressApp, 
   api, attachmentsAccessMiddleware, userAccessesStorage,
-  authSettings, eventFilesSettings
+  authSettings, eventFilesSettings, storageLayer
 ) {
 
   const attachmentsStatic = express.static(
@@ -98,7 +90,10 @@ module.exports = function(
   }
 
   function loadAccess(req, res, next) {
-    req.context.retrieveExpandedAccess(next);
+    const context = req.context; 
+    
+    return bluebird.resolve(
+      context.retrieveExpandedAccess(storageLayer)).asCallback(next);
   }
 
   // Create an event.

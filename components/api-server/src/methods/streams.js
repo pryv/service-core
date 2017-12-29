@@ -24,14 +24,14 @@ var errors = require('components/errors').factory,
  * @param updatesSettings
  */
 module.exports = function (api, userStreamsStorage, userEventsStorage, userEventFilesStorage, 
-  notifications, logging, auditSettings, updatesSettings) {
+  notifications, logging, auditSettings, updatesSettings, storageLayer) {
 
   const logger = logging.getLogger('methods/streams');
 
   // COMMON
 
   api.register('streams.*',
-      commonFns.loadAccess);
+      commonFns.loadAccess(storageLayer));
 
   // RETRIEVAL
 

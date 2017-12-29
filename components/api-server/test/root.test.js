@@ -196,17 +196,15 @@ describe('root', function () {
           });
       });
 
-    it('should update the access\'s "last used" time and *internal* request counters',
-        function (done) {
+    it('should update the access\'s "last used" time and *internal* request counters',function (done) {
       var expectedTime,
           calledMethodKey = 'events:get',
           originalCallCount;
       async.series([
         function checkOriginalAccess(stepDone) {
-          helpers.dependencies.storage.user.accesses.findOne(user, {id: accessId}, null,
-              function (err, access) {
+          helpers.dependencies.storage.user.accesses.findOne(user, {id: accessId}, null, function (err, access) {
             originalCallCount = (access.calls && access.calls[calledMethodKey]) ?
-                access.calls[calledMethodKey] : 0;
+              access.calls[calledMethodKey] : 0;
             stepDone();
           });
         },
@@ -217,8 +215,7 @@ describe('root', function () {
           });
         },
         function checkUpdatedAccess(stepDone) {
-          helpers.dependencies.storage.user.accesses.findOne(user, {id: accessId}, null,
-              function (err, access) {
+          helpers.dependencies.storage.user.accesses.findOne(user, {id: accessId}, null, function (err, access) {
             should.exist(access.lastUsed);
             Math.round(access.lastUsed).should.eql(Math.round(expectedTime));
 
@@ -348,8 +345,8 @@ describe('root', function () {
 
     it('must execute the method calls containing events.get and ' +
       'return the results', function (done) {
-      var streamId = 'batch-call-streamId',
-          calls = [
+      const streamId = 'batch-call-streamId';
+      const calls = [
         {
           method: 'streams.create',
           params: {

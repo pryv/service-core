@@ -22,7 +22,7 @@ var APIError = require('components/errors').APIError,
  * @param updatesSettings
  */
 module.exports = function (api, userAccessesStorage, userStreamsStorage, 
-  notifications, logging, updatesSettings) {
+  notifications, logging, updatesSettings, storageLayer) {
 
   const logger = logging.getLogger('methods/accesses');
   const dbFindOptions = {fields: {calls: 0}};
@@ -30,7 +30,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
   // COMMON
 
   api.register('accesses.*',
-      commonFns.loadAccess,
+      commonFns.loadAccess(storageLayer),
       checkNoSharedAccess);
 
   function checkNoSharedAccess(context, params, result, next) {
@@ -470,7 +470,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
                 function (err, stream) {
               if (err) { return checkDone(err); }
 
-              if (! stream) {
+              if (! stream) {
                 nameIsUnique = true;
                 permission.defaultName = checkedName;
               } else {
@@ -486,7 +486,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
     }
 
     function setCheckError() {
-      if (! checkError) {
+      if (! checkError) {
         checkError = {
           id: ErrorIds.ItemAlreadyExists,
           message: 'One or more requested streams have the same names as existing streams ' +

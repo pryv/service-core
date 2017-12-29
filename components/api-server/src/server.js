@@ -19,7 +19,6 @@ const API = require('./API');
 import type { ConfigAccess } from './settings';
 
 import type { LogFactory, Logger } from 'components/utils';
-import type { StorageLayer } from 'components/storage';
 
 // Server class for api-server process. To use this, you 
 // would 
@@ -40,7 +39,7 @@ class Server {
   // Axon based internal notification and messaging bus. 
   notificationBus: Notifications;
   
-  storageLayer: StorageLayer; 
+  storageLayer: storage.StorageLayer; 
   
   // Load settings and setup base configuration. 
   //
@@ -69,31 +68,14 @@ class Server {
 
     // 'StorageLayer' is a component that contains all the vertical registries
     // for various database models. 
-    this.storageLayer = {
-      versions: new storage.Versions(
-        database, 
-        settings.get('eventFiles.attachmentsDirPath').str(), 
-        this.logFactory('versions')),
-      passwordResetRequests: new storage.PasswordResetRequests(
-        database,{
-          maxAge: settings.get('auth.passwordResetRequestMaxAge').num() }),
-      sessions: new storage.Sessions(database, {
-        maxAge: settings.get('auth.sessionMaxAge').num() }),
-      users: new storage.Users(database),
-      accesses: new storage.user.Accesses(database),
-      eventFiles: new storage.user.EventFiles(
-        settings.get('eventFiles').obj(), 
-        this.logFactory('eventFiles')),
-      events: new storage.user.Events(database),
-      followedSlices: new storage.user.FollowedSlices(database),
-      profile: new storage.user.Profile(database),
-      streams: new storage.user.Streams(database),
-      
-      // Delegate connection waiting to the datbase: 
-      waitForConnection: () => bluebird.fromCallback(
-        (cb) => database.waitForConnection(cb)),
-    };
-
+    this.storageLayer = new storage.StorageLayer(database, 
+      this.logFactory('model'),
+      settings.get('eventFiles.attachmentsDirPath').str(), 
+      settings.get('eventFiles.previewsDirPath').str(), 
+      settings.get('auth.passwordResetRequestMaxAge').num(), 
+      settings.get('auth.sessionMaxAge').num(), 
+    );
+    
     // Now map back to DI: We hope that this bit will eventually disappear. 
     const sl = this.storageLayer;
     dependencies.register({
@@ -108,6 +90,9 @@ class Server {
       userFollowedSlicesStorage: sl.followedSlices,
       userProfileStorage: sl.profile,
       userStreamsStorage: sl.streams,
+      
+      // and finally, for code that is almost, but not quite there
+      storageLayer: sl, 
     });
   }
   
