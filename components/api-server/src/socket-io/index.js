@@ -86,6 +86,8 @@ function setupSocketIO(
     const initDone = context.retrieveUser(storageLayer)
       // FLOW We should not piggy-back on the method context here.
       .then(() => {
+        if (context.user == null) throw new Error('AF: context.user != null');
+        
         manager.ensureInitNamespace(nsName, context.user); 
         return true; 
       });
