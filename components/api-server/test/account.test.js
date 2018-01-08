@@ -413,15 +413,17 @@ describe('account', function () {
 
     beforeEach(resetUsers);
 
-    var requestPath = basePath + '/request-password-reset',
-        resetPath = basePath + '/reset-password',
-        authData = {appId: 'pryv-test'};
+    const requestPath = basePath + '/request-password-reset';
+    const resetPath = basePath + '/reset-password';
+    const authData = {appId: 'pryv-test'};
 
     it('"request" must trigger an email with a reset token, store that token, ' +
        'then "reset" must reset the password to the given value', function (done) {
-      var settings = _.clone(helpers.dependencies.settings),
-          resetToken = null,
-          newPassword = 'Dr0ws$4p';
+      let settings = _.clone(helpers.dependencies.settings);
+      let resetToken;
+      const newPassword = 'Dr0ws$4p';
+      
+      settings.services.email.enabled = true;
 
       // setup mail server mock
 
@@ -463,7 +465,7 @@ describe('account', function () {
           });
         },
         function doReset(stepDone) {
-          var data = _.defaults({
+          const data = _.defaults({
             resetToken: resetToken,
             newPassword: newPassword
           }, authData);
@@ -484,13 +486,13 @@ describe('account', function () {
     });
     
     it('must not trigger a reset email if mailing is deactivated', function (done) {
-      var settings = _.clone(helpers.dependencies.settings);
+      let settings = _.clone(helpers.dependencies.settings);
       settings.services.email.enabled = false;
       testResetMailNotSent(settings, done);
     });
     
     it('must not trigger a reset email if reset mail is deactivated', function (done) {
-      var settings = _.clone(helpers.dependencies.settings);
+      let settings = _.clone(helpers.dependencies.settings);
       settings.services.email.enabled = {
         resetPassword: false
       };
@@ -498,7 +500,7 @@ describe('account', function () {
     });
     
     function testResetMailNotSent (settings, callback) {
-      var mailSent = false;
+      let mailSent = false;
           
       // setup mail server mock
       helpers.instanceTestSetup.set(settings, {
