@@ -1,0 +1,2 @@
+hfs: bin/server --config /app/conf/hfs.json --http-port $PORT
+
