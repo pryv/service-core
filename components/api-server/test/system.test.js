@@ -65,8 +65,8 @@ describe('system (ex-register)', function () {
 
     describe('when email sending really works', function() {
       it('must create a new user with the sent data, sending a welcome email', function (done) {
-        const settings = _.cloneDeep(helpers.dependencies.settings);
-        
+        let settings = _.cloneDeep(helpers.dependencies.settings);
+        settings.services.email.enabled = true;
         let mailSent = false;
         
         let originalCount;
@@ -136,12 +136,12 @@ describe('system (ex-register)', function () {
     });
     
     it('must not send a welcome email if mailing is deactivated', function (done) {
-      var settings = _.cloneDeep(helpers.dependencies.settings);
+      let settings = _.cloneDeep(helpers.dependencies.settings);
       settings.services.email.enabled = false;
       testWelcomeMailNotSent(settings, done);
     });
     it('must not send a welcome email if welcome mail is deactivated', function (done) {
-      var settings = _.cloneDeep(helpers.dependencies.settings);
+      let settings = _.cloneDeep(helpers.dependencies.settings);
       settings.services.email.enabled = {
         welcome : false
       };
