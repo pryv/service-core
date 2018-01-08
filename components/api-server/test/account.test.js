@@ -76,7 +76,7 @@ describe('account', function () {
 
     it('must modify account details with the sent data, notifying register if e-mail changed',
       function (done) {
-        const settings = _.clone(helpers.dependencies.settings);
+        const settings = _.cloneDeep(helpers.dependencies.settings);
         const updatedData = {
           email: 'userzero.new@test.com',
           language: 'zh'
@@ -419,7 +419,7 @@ describe('account', function () {
 
     it('"request" must trigger an email with a reset token, store that token, ' +
        'then "reset" must reset the password to the given value', function (done) {
-      let settings = _.clone(helpers.dependencies.settings);
+      let settings = _.cloneDeep(helpers.dependencies.settings);
       let resetToken;
       const newPassword = 'Dr0ws$4p';
       
@@ -486,13 +486,13 @@ describe('account', function () {
     });
     
     it('must not trigger a reset email if mailing is deactivated', function (done) {
-      let settings = _.clone(helpers.dependencies.settings);
+      let settings = _.cloneDeep(helpers.dependencies.settings);
       settings.services.email.enabled = false;
       testResetMailNotSent(settings, done);
     });
     
     it('must not trigger a reset email if reset mail is deactivated', function (done) {
-      let settings = _.clone(helpers.dependencies.settings);
+      let settings = _.cloneDeep(helpers.dependencies.settings);
       settings.services.email.enabled = {
         resetPassword: false
       };
