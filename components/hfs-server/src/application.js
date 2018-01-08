@@ -8,7 +8,7 @@ const storage = require('components/storage');
 
 const Context = require('./context');
 const Settings = require('./Settings');
-const Server = require('./Server'); 
+const Server = require('./server'); 
 
 import type {LogFactory} from 'components/utils/src/logging';
 
