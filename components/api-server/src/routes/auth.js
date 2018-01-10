@@ -80,6 +80,7 @@ module.exports = function (expressApp: express$Application, api: any, authSettin
         username: body.username,
         password: body.password,
         appId: body.appId,
+        // some browsers provide origin, some provide only referer
         origin: req.headers.origin || req.headers.referer || ''
       };
       hidePassword(req.body);
