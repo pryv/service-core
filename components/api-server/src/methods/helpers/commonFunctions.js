@@ -1,8 +1,16 @@
+'use strict';
+
 var errors = require('components/errors').factory,
     validation = require('../../schema/validation');
+    
+const bluebird = require('bluebird');
 
-exports.loadAccess = function loadAccess(context, params, result, next) {
-  context.retrieveExpandedAccess(next);
+exports.loadAccess = function(storage) {
+  return function loadAccessMiddleware(context, params, result, next) {
+    const loadedAccess = context.retrieveExpandedAccess(storage);
+
+    return bluebird.resolve(loadedAccess).asCallback(next);
+  };
 };
 
 exports.requirePersonalAccess = function requirePersonalAccess(context, params, result, next) {
@@ -71,12 +79,19 @@ exports.getTrustedAppCheck = function getTrustedAppCheck(authSettings) {
   }
 };
 
+
+/** Produces a middleware function to verify parameters against the schema
+ * given in `paramsSchema`.
+ *  
+ * @param  {Object} paramsSchema JSON Schema for the parameters
+ * @return {void}
+ */ 
 exports.getParamsValidation = function getParamsValidation(paramsSchema) {
   return function validateParams(context, params, result, next) {
     validation.validate(params, paramsSchema, function (err) {
       if (err) {
         return next(errors.invalidParametersFormat(
-          'The parameters\' format is invalid.', err
+          "The parameters' format is invalid.", err
         ));
       }
       next();

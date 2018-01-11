@@ -14,7 +14,7 @@ var errors = require('components/errors').factory,
  * @param notifications
  */
 module.exports = function (api, usersStorage, passwordResetRequestsStorage,
-  authSettings, servicesSettings, notifications) {
+  authSettings, servicesSettings, notifications, storageLayer) {
 
   var registerSettings = servicesSettings.register,
       emailSettings = servicesSettings.email,
@@ -23,7 +23,7 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
   // RETRIEVAL
 
   api.register('account.get',
-    commonFns.loadAccess,
+    commonFns.loadAccess(storageLayer),
     commonFns.requirePersonalAccess,
     commonFns.getParamsValidation(methodsSchema.get.params),
     function (context, params, result, next) {
@@ -39,7 +39,7 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
   // UPDATE
 
   api.register('account.update',
-    commonFns.loadAccess,
+    commonFns.loadAccess(storageLayer),
     commonFns.requirePersonalAccess,
     commonFns.getParamsValidation(methodsSchema.update.params),
     updateAccount,
@@ -48,7 +48,7 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
   // CHANGE PASSWORD
 
   api.register('account.changePassword',
-    commonFns.loadAccess,
+    commonFns.loadAccess(storageLayer),
     commonFns.requirePersonalAccess,
     commonFns.getParamsValidation(methodsSchema.changePassword.params),
     verifyOldPassword,

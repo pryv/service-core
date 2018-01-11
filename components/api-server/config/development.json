@@ -1,5 +1,13 @@
 {
   "logs": {
     "prefix": "api::"
+  }, 
+  "services": {
+    "email": {
+      "enabled": false
+    }
+  }, 
+  "tcpMessaging": {
+    "enabled": false
   }
 }

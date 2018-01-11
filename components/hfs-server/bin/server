@@ -1,0 +1,9 @@
+#!/usr/bin/env node
+
+// Starts a HTTP server for high frequency series. Main entry point for the high
+// frequency series server. 
+
+const Application = require('../src/application');
+
+const app = new Application(); 
+app.run(); 

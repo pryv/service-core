@@ -8,6 +8,8 @@ var async = require('async'),
     xattr = require('fs-xattr'),
     _ = require('lodash');
 
+const bluebird = require('bluebird');
+
 // constants
 var PreviewNotSupported = 'preview-not-supported',
     StandardDimensions = [ 256, 512, 768, 1024 ],
@@ -24,15 +26,17 @@ var PreviewNotSupported = 'preview-not-supported',
  * @param userEventFilesStorage
  * @param logging
  */
-module.exports = function (expressApp, initContextMiddleware, userEventsStorage,
-                           userEventFilesStorage, logging) {
+module.exports = function (
+  expressApp, initContextMiddleware, userEventsStorage,
+  userEventFilesStorage, logging, storageLayer) {
 
   // SERVING PREVIEWS
 
   expressApp.all('/:username/events/*', initContextMiddleware, loadAccess);
 
   function loadAccess(req, res, next) {
-    req.context.retrieveExpandedAccess(next);
+    return bluebird.resolve(
+      req.context.retrieveExpandedAccess(storageLayer)).asCallback(next);
   }
 
   expressApp.get('/:username/events/:id:extension(.jpg|.jpeg|)', function (req, res, next) {
@@ -64,7 +68,7 @@ module.exports = function (expressApp, initContextMiddleware, userEventsStorage,
           }
 
           attachmentPath = userEventFilesStorage.getAttachedFilePath(req.context.user,
-              req.params.id, attachment.id);
+            req.params.id, attachment.id);
 
           stepDone();
         });
@@ -82,9 +86,9 @@ module.exports = function (expressApp, initContextMiddleware, userEventsStorage,
           originalSize = size;
           attachment.width = size.width;
           attachment.height = size.height;
-
-	  userEventsStorage.updateOne(req.context.user, {id: req.params.id},
-              {attachments: event.attachments}, stepDone);
+          
+          userEventsStorage.updateOne(req.context.user, {id: req.params.id},
+            {attachments: event.attachments}, stepDone);
         });
       },
       function preparePath(stepDone) {
@@ -123,7 +127,7 @@ module.exports = function (expressApp, initContextMiddleware, userEventsStorage,
         });
       },
       function respond(stepDone) {
-        res.sendfile(previewPath, stepDone);
+        res.sendFile(previewPath, stepDone);
       }
     ], function handleError(err) {
       if (err) {
@@ -165,7 +169,7 @@ module.exports = function (expressApp, initContextMiddleware, userEventsStorage,
 
     var originalRatio = original.width / original.height,
         result = {};
-    if (! desired.height || desired.width / desired.height > originalRatio) {
+    if (! desired.height || desired.width / desired.height > originalRatio) {
       // reference = width
       result.width = adjustToStandardDimension(desired.width);
       result.height = result.width / originalRatio;
@@ -176,8 +180,8 @@ module.exports = function (expressApp, initContextMiddleware, userEventsStorage,
     }
 
     // fix if oversize
-    if (result.width > BiggestStandardDimension) { result.width = BiggestStandardDimension; }
-    if (result.height > BiggestStandardDimension) { result.height = BiggestStandardDimension; }
+    if (result.width > BiggestStandardDimension) { result.width = BiggestStandardDimension; }
+    if (result.height > BiggestStandardDimension) { result.height = BiggestStandardDimension; }
 
     return result;
   }
@@ -215,7 +219,7 @@ module.exports = function (expressApp, initContextMiddleware, userEventsStorage,
   }
 
   var cronJob = new CronJob({
-    cronTime: userEventFilesStorage.settings.previewsCacheCleanUpCronTime || '00 00 2 * * *',
+    cronTime: userEventFilesStorage.settings.previewsCacheCleanUpCronTime || '00 00 2 * * *',
     onTick: function () {
       if (workerRunning) {
         return;

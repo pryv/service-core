@@ -1,46 +1,21 @@
-/**
- * Dumps basic request info to the log.
- *
- * @param express
- * @param logging
- */
-module.exports = function (express, logging) {
-  var logger = logging.getLogger('routes');
+'use strict'; 
+// @flow
 
-  // customize output a little
+const morgan = require('morgan');
 
-  express.logger.token('url', function (req) {
-    return req.url;
-  });
+interface LoggerFactory {
+  getLogger(name: string): Logger; 
+}
+interface Logger {
+  info(msg: string): void; 
+}
 
-  // copied & adapted from Connect source
-  var devFormat = function (tokens, req, res) {
-    var status = res.statusCode,
-        len = parseInt(res.getHeader('Content-Length'), 10),
-        color = 32;
-
-    if (status >= 500) { color = 31; }
-    else if (status >= 400) { color = 33; }
-    else if (status >= 300) { color = 36; }
-
-    len = isNaN(len) ? '' : (' - ' + len + 'b');
-
-    return '\x1b[90m' + req.method +
-        ' ' + req.url + ' ' +
-        '\x1b[' + color + 'm' + res.statusCode +
-        ' \x1b[90m' +
-        (new Date() - req._startTime) +
-        'ms' + len +
-        '\x1b[0m';
-  };
-
-  return express.logger({
-    format: process.env.NODE_ENV === 'development' ? devFormat: 'tiny',
-    stream: {
-      write: function (message) {
-        logger.info(message);
-      }
-    }
-  });
+module.exports = function (express: any, logging: LoggerFactory) {
+  const logger = logging.getLogger('routes');
+  const morganLoggerStreamWrite = (msg: string) => logger.info(msg);
+  
+  return morgan('combined', {stream: {
+    write: morganLoggerStreamWrite
+  }});
 };
 module.exports.injectDependencies = true; // make it DI-friendly

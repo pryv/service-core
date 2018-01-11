@@ -31,7 +31,7 @@ function Accesses(database) {
 util.inherits(Accesses, BaseStorage);
 
 function createTokenIfMissing(access) {
-  access.token = access.token || generateId();
+  access.token = access.token || generateId();
   return access;
 }
 

@@ -2,7 +2,6 @@
 .project
 .settings
 .DS_Store
-analysis-output
 node_modules/
 components/*/node_modules/
 **/coverage.html
@@ -10,8 +9,10 @@ components/*/node_modules/
 **/profiling-output.txt
 **/v8.log
 !node_modules/components
-
 proxy/nginx.conf
 service-core.iml
-/lib
-dist/
+yarn-error.log
+/flow-coverage/
+/out
+.nyc_output/
+dist

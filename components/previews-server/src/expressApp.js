@@ -1,27 +1,32 @@
-var middleware = require('components/middleware');
+const middleware = require('components/middleware');
+const bodyParser = require('body-parser');
+
 
 /**
  * The Express app definition.
  */
-module.exports = function (express, commonHeadersMiddleware, errorsMiddleware,
-                           requestTraceMiddleware) {
+module.exports = function expressApp(express, commonHeadersMiddleware, errorsMiddleware,
+                           requestTraceMiddleware) {
   var app = express();
+  
+  /** Called once routes are defined on app, allows finalizing middleware stack
+   * with things like error handling. 
+   **/
+  function routesDefined() {
+    app.use(errorsMiddleware);
+  }
 
   app.disable('x-powered-by');
 
-  // put this before request tracing in order to see username in paths
-  // TODO: possibly improve by using a Paths object as done on api-server
-  //var ignoredPaths = _.filter(Paths, function (item) {
-  //  return _.isString(item) && item.indexOf(Paths.Params.Username) === -1;
-  //});
   app.use(middleware.subdomainToPath([]));
 
   app.use(requestTraceMiddleware);
-  app.use(express.bodyParser());
+  app.use(bodyParser.json());
   app.use(commonHeadersMiddleware);
-  app.use(app.router);
-  app.use(errorsMiddleware);
-
-  return app;
+  
+  return {
+    expressApp: app, 
+    routesDefined: routesDefined, 
+  };
 };
 module.exports.injectDependencies = true;

@@ -24,12 +24,12 @@ module.exports = function (expressApp, api) {
   });
 
   expressApp.put(Paths.Streams + '/:id', function (req, res, next) {
-    api.call('streams.update', req.context, { id: req.param('id'), update: req.body },
+    api.call('streams.update', req.context, { id: req.params.id, update: req.body },
         methodCallback(res, next, 200));
   });
 
-  expressApp.del(Paths.Streams + '/:id', function (req, res, next) {
-    var params = _.extend({id: req.param('id')}, req.query);
+  expressApp.delete(Paths.Streams + '/:id', function (req, res, next) {
+    var params = _.extend({id: req.params.id}, req.query);
     tryCoerceStringValues(params, {
       mergeEventsWithParent: 'boolean'
     });

@@ -1,73 +1,56 @@
-var events = require('events'),
-    util = require('util');
+// @flow
+
+const EventEmitter = require('events');
+
+// Notifications class distributes notifications inside the current process and
+// via NATS server to the other api-server processes. Notifications are also
+// sent to the axon PUB socket; this is mostly used by the tests. 
+// 
+class Notifications extends EventEmitter {
+  axonSocket: EventEmitter; 
+  
+  // Construct a notifications instance. Normally called by the application 
+  // start; one per process. 
+  // 
+  constructor(axonSocket: EventEmitter) {
+    super();
+    
+    if (axonSocket == null)
+      throw new Error('AF: axonSocket cannot be null');
+    
+    this.axonSocket = axonSocket;
+  }
+  
+  serverReady() {
+    this.dispatch('server-ready');
+  }
+  accountChanged(userName: string) {
+    this.dispatch('account-changed', userName);
+  }
+  accessesChanged(userName: string) {
+    this.dispatch('accesses-changed', userName);
+  }
+  followedSlicesChanged(userName: string) {
+    this.dispatch('followed-slices-changed', userName);
+  }
+  streamsChanged(userName: string) {
+    this.dispatch('streams-changed', userName);
+  }
+  eventsChanged(userName: string) {
+    this.dispatch('events-changed', userName);
+  }
+  
+  // Send the given `msg` to both internal and external listeners. This is an 
+  // internal API, you probably want to use one of the other methods here. 
+  //
+  dispatch(msg: string, ...msgParts: Array<mixed>) {
+    // Send the message to all listeners in-process
+    this.emit(msg, ...msgParts);
+    
+    // And to all listeners on the axon PUB socket
+    this.axonSocket.emit(msg, ...msgParts);
+  }
+}
 
 module.exports = Notifications;
 
-/**
- * Simple event emitter to dispatch notifications.
- * Notifications are sent to in-process listeners as well as other processes subscribing to the
- * server's TCP pub socket.
- */
-function Notifications(messagingSocket) {
-  Notifications.super_.call(this);
-  this.messagingSocket = messagingSocket;
-}
-util.inherits(Notifications, events);
-
-var Messages = {
-  ServerReady: 'server-ready',
-  AccountChanged: 'account-changed',
-  AccessesChanged: 'accesses-changed',
-  FollowedSlicesChanged: 'followed-slices-changed',
-  StreamsChanged: 'streams-changed',
-  EventsChanged: 'events-changed'
-};
-
-Notifications.prototype.serverReady = function () {
-  send.call(this, Messages.ServerReady);
-};
-
-/**
- * User-level notification.
- */
-Notifications.prototype.accountChanged = function (user) {
-  send.call(this, Messages.AccountChanged, user);
-};
-
-/**
- * User-level notification.
- */
-Notifications.prototype.accessesChanged = function (user) {
-  send.call(this, Messages.AccessesChanged, user);
-};
-
-/**
- * User-level notification.
- */
-Notifications.prototype.followedSlicesChanged = function (user) {
-  send.call(this, Messages.FollowedSlicesChanged, user);
-};
-
-/**
- * User-level notification.
- */
-Notifications.prototype.streamsChanged = function (user) {
-  send.call(this, Messages.StreamsChanged, user);
-};
-
-/**
- * User-level notification.
- */
-Notifications.prototype.eventsChanged = function (user) {
-  send.call(this, Messages.EventsChanged, user);
-};
-
-/**
- * @this {Notifications}
- * @param {String} message
- * @param {Object} user Optional
- */
-function send(/*message, user*/) {
-  this.emit.apply(this, arguments);
-  this.messagingSocket.emit.apply(this, arguments);
-}

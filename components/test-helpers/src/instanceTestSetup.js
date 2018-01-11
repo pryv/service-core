@@ -1,6 +1,9 @@
+// @flow
+
 /**
  * Helper functions for serializing/deserializing setup instructions for tests.
- * Added to support injecting mocks in server instance (separate process) from tests.
+ * Added to support injecting mocks in server instance (separate process) from
+ * tests.
  */
 
 /**
@@ -12,42 +15,45 @@
  *                       A `messagingSocket` property will be injected into `context` at execution
  *                       time to allow passing messages back to the test process.
  */
-exports.set = function (settings, setup) {
-  if (! settings || ! setup) {
+exports.set = function (settings: any, setup: any) {
+  if (!settings || !setup) {
     throw new Error('Expected config and setup object arguments');
   }
   settings.instanceTestSetup = stringify(setup);
 };
 
-exports.clear = function (settings) {
+exports.clear = function (settings: any) {
   delete settings.instanceTestSetup;
 };
 
 /**
  * @throws Any error encountered deserializing or calling the setup function
  */
-exports.executeIfAny = function (settings, messagingSocket) {
-  if (! settings.instanceTestSetup) { return; }
-
-  var obj = parse(settings.instanceTestSetup);
-  if (obj.context) {
+exports.execute = function (testSetup: string, messagingSocket: any) {
+  var obj = parse(testSetup);
+  
+  if (obj.context != null) {
     // inject TCP messaging socket to allow passing data back to test process
     obj.context.messagingSocket = messagingSocket;
   }
+  
   obj.execute();
 };
 
 function stringify(obj) {
   return JSON.stringify(obj, function (key, value) {
-    // stringify functions with their source, stripping CR/LF
-    return (typeof value === 'function') ? value.toString().replace(/\r?\n|\r/g, ' ') : value;
+    // stringify functions with their source, converting CRLF. 
+    // 
+    // NOTE If you strip CRLF here, any comment in the serialized function will
+    // comment out the rest of the line. 
+    // 
+    return (typeof value === 'function') ? value.toString().replace(/\r?\n|\n/g, '\n') : value;
   });
 }
 
 function parse(str) {
   return JSON.parse(str, function (key, value) {
     if (typeof value !== 'string') { return value; }
-    /*jshint -W061*/
     return (value.substring(0, 8) === 'function') ? eval('(' + value + ')') : value;
   });
 }

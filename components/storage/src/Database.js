@@ -20,8 +20,8 @@ module.exports = Database;
  * @param {Object} logging
  * @constructor
  */
-function Database(settings, logging) {
-  var authPart = settings.authUser ?
+function Database(settings, logger) {
+  var authPart = settings.authUser && settings.authUser.length>0 ?
       settings.authUser + ':' + settings.authPassword + '@' : '';
   this.connectionString = 'mongodb://' + authPart + settings.host + ':' + settings.port + '/' +
       settings.name;
@@ -36,7 +36,7 @@ function Database(settings, logging) {
 
   this.db = null;
   this.initializedCollections = {};
-  this.logger = logging.getLogger('database');
+  this.logger = logger; 
 }
 
 /**
@@ -68,10 +68,9 @@ Database.prototype.ensureConnect = function (callback) {
   if (this.db) {
     return callback();
   }
-
   this.logger.debug('Connecting to ' + this.connectionString);
   MongoClient.connect(this.connectionString, this.options, function (err, db) {
-    if (err) {
+    if (err) {
       this.logger.debug(err);
       return callback(err);
     }
@@ -211,7 +210,7 @@ Database.prototype.findStreamed = function (collectionInfo, query, options, call
 Database.prototype.findOne = function (collectionInfo, query, options, callback) {
   this.getCollection(collectionInfo, function (err, collection) {
     if (err) { return callback(err); }
-    collection.findOne(query, options || {}, callback);
+    collection.findOne(query, options || {}, callback);
   });
 };
 

@@ -4,23 +4,26 @@
 
 /*global describe, it */
 
-var helpers = require('components/test-helpers'),
-    storage = helpers.dependencies.storage,
-    converters = require('../src/converters'),
-    database = storage.database,
-    async = require('async'),
-    migrations = require('../src/migrations'),
-    should = require('should'), // explicit require to benefit from static functions
-    testData = helpers.data,
-    Versions = require('../src/Versions'),
-    wrench = require('wrench'),
-    _ = require('lodash');
+const helpers = require('components/test-helpers');
+const storage = helpers.dependencies.storage;
+const converters = require('../src/converters');
+const database = storage.database;
+const async = require('async');
+const migrations = require('../src/migrations');
+const should = require('should');
+const assert = require('chai').assert;
+const testData = helpers.data;
+const Versions = require('../src/Versions');
+const wrench = require('wrench');
+const _ = require('lodash');
 
 describe('Versions', function () {
+  this.timeout(20000);
 
-  var mongoFolder = __dirname + '/../../../../mongodb-osx-x86_64-3.4.4';
+  var mongoFolder = __dirname + '/../../../../../mongodb-osx-x86_64-3.4.4';
 
-  // older migration tests are skipped; they're kept for reference (e.g. when writing new tests)
+  // older migration tests are skipped; they're kept for reference (e.g. when
+  // writing new tests)
 
   it.skip('must handle data migration from v0.2.0 to v0.3.0 (skipped, obsolete)', function (done) {
     var versions = getVersions('0.2.0', '0.3.0'),
@@ -49,7 +52,7 @@ describe('Versions', function () {
     var expected = {
       accesses: require('../../test-helpers/src/data/migrated/0.3.0/accesses').slice(),
       events: require('../../test-helpers/src/data/migrated/0.3.0/events')
-          .concat(extraEventMigrated),
+        .concat(extraEventMigrated),
       streams: require('../../test-helpers/src/data/migrated/0.3.0/streams').slice(),
       attachments: require('../../test-helpers/src/data/migrated/0.3.0/attachments').slice()
     };
@@ -57,11 +60,11 @@ describe('Versions', function () {
     async.series({
       restore: testData.restoreFromDump.bind(null, '0.2.0', mongoFolder),
       insertExtraEvent: storage.user.events.insertMany.bind(storage.user.events, user,
-          [extraEvent]),
+        [extraEvent]),
       migrate: versions.migrateIfNeeded.bind(versions),
       // use raw database to avoid new indexes being applied on old data structure
       accesses: storage.database.find.bind(storage.database,
-          { name: user.id + '.accesses', indexes: [] }, {}, { fields: {}, sort: {name: 1} }),
+        { name: user.id + '.accesses', indexes: [] }, {}, { fields: {}, sort: {name: 1} }),
       streams: storage.user.streams.findAll.bind(storage.user.streams, user, {}),
       events: storage.user.events.findAll.bind(storage.user.events, user, {}),
       version: versions.getCurrent.bind(versions)
@@ -69,21 +72,21 @@ describe('Versions', function () {
       should.not.exist(err);
 
       results.accesses.forEach(converters.getRenamePropertyFn('_id', 'token').bind(null, null));
-      expected.accesses.sort(function (a, b) { return a.name.localeCompare(b.name); });
+      expected.accesses.sort(function (a, b) { return a.name.localeCompare(b.name); });
       results.accesses.should.eql(expected.accesses);
 
-      expected.streams.sort(function (a, b) { return a.name.localeCompare(b.name); });
+      expected.streams.sort(function (a, b) { return a.name.localeCompare(b.name); });
       results.streams.should.eql(expected.streams);
 
       expected.events.sort(function (a, b) {
         // HACK: empirically determined: sort by id if equal time
-        return (b.time - a.time) || b.id.localeCompare(a.id);
+        return (b.time - a.time) || b.id.localeCompare(a.id);
       });
       results.events.should.eql(expected.events);
 
       // check event files
       wrench.readdirSyncRecursive(helpers.dependencies.settings.eventFiles.attachmentsDirPath)
-          .should.eql(expected.attachments);
+        .should.eql(expected.attachments);
 
       results.version._id.should.eql('0.3.0');
       should.exist(results.version.migrationCompleted);
@@ -108,7 +111,7 @@ describe('Versions', function () {
     }, function (err, results) {
       should.not.exist(err);
 
-      expected.accesses.sort(function (a, b) { return a.name.localeCompare(b.name); });
+      expected.accesses.sort(function (a, b) { return a.name.localeCompare(b.name); });
       results.accesses.should.eql(expected.accesses);
 
       results.version._id.should.eql('0.4.0');
@@ -131,14 +134,14 @@ describe('Versions', function () {
       migrate: versions.migrateIfNeeded.bind(versions),
       events: storage.user.events.findAll.bind(storage.user.events, user, {}),
       followedSlices: storage.user.followedSlices.findAll.bind(storage.user.followedSlices, user,
-          {}),
+        {}),
       version: versions.getCurrent.bind(versions)
     }, function (err, results) {
       should.not.exist(err);
 
       expected.events.sort(function (a, b) {
         // HACK: empirically determined: sort by id if equal time
-        return (b.time - a.time) || b.id.localeCompare(a.id);
+        return (b.time - a.time) || b.id.localeCompare(a.id);
       });
       results.events.should.eql(expected.events);
 
@@ -200,8 +203,8 @@ describe('Versions', function () {
   });
 
   it.skip('must handle data migration from v0.7.1 to 1.2.0', function (done) {
-    const versions = getVersions('1.2.0'),
-      user = {id: 'u_0'};
+    const versions = getVersions('1.2.0');
+    const user = {id: 'u_0'};
 
     const indexes = testData.getStructure('0.7.1').indexes;
 
@@ -227,22 +230,31 @@ describe('Versions', function () {
   });
 
   it('must handle data migration from v1.2.0 to v1.2.5', function (done) {
-    const versions = getVersions('1.2.5'),
-      user = {id: 'u_0'};
-
+    const versions = getVersions('1.2.5');
     const indexes = testData.getStructure('1.2.4').indexes;
 
-    async.series({
-      restore: testData.restoreFromDump.bind(null, '1.2.4', mongoFolder),
-      indexEvents: applyPreviousIndexes.bind(null, 'events', indexes.events),
-      migrate: versions.migrateIfNeeded.bind(versions),
-      events: storage.user.events.listIndexes.bind(storage.user.events, user, {}),
-      version: versions.getCurrent.bind(versions)
-    }, function (err, results) {
-      should.not.exist(err);
-      (_.findIndex(results.events, (o) => {return o.key.endTime === 1;})).should.be.aboveOrEqual(0);
-      results.version._id.should.eql('1.2.5');
-      should.exist(results.version.migrationCompleted);
+    const user = {id: 'u_0'};
+    const userEvents = storage.user.events; 
+
+    async.series([
+      (cb) => testData.restoreFromDump('1.2.4', mongoFolder, cb), 
+      (cb) => applyPreviousIndexes('events', indexes.events, cb),
+      (cb) => versions.migrateIfNeeded(cb),
+      (cb) => userEvents.listIndexes(user, {}, cb), // (a), see below
+      (cb) => versions.getCurrent(cb), // (b), see below
+    ], function (err, res) {
+      assert.isNull(err, 'there was an error');
+      
+      const events = res[3]; // (a)
+      const version = res[4]; // (b)
+
+      const eventEndTimeIndex = 
+        _.findIndex(events, (o) => o.key.endTime === 1);
+      
+      assert.isAtLeast(eventEndTimeIndex, 0);
+      assert.strictEqual(version._id, '1.2.5');
+      assert.isNotNull(version.migrationCompleted);
+
       done();
     });
   });
@@ -253,7 +265,7 @@ describe('Versions', function () {
     var pickedMigrations = _.pick.apply(_, pickArgs);
     return new Versions(database,
         helpers.dependencies.settings.eventFiles.attachmentsDirPath,
-        helpers.dependencies.logging,
+        helpers.dependencies.logging.getLogger('versions'),
         pickedMigrations);
   }
 

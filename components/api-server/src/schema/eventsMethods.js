@@ -1,3 +1,6 @@
+'use strict';
+// @flow
+
 /**
  * JSON Schema specification of methods data for events.
  */

@@ -1,6 +1,6 @@
 /*global describe, before, beforeEach, it */
 
-require('./test-helpers');
+require('./test-helpers'); 
 var helpers = require('./helpers'),
     server = helpers.dependencies.instanceManager,
     async = require('async'),
@@ -76,7 +76,7 @@ describe('account', function () {
 
     it('must modify account details with the sent data, notifying register if e-mail changed',
       function (done) {
-        const settings = _.clone(helpers.dependencies.settings);
+        const settings = _.cloneDeep(helpers.dependencies.settings);
         const updatedData = {
           email: 'userzero.new@test.com',
           language: 'zh'
@@ -143,7 +143,9 @@ describe('account', function () {
     });
 
     it('must be forbidden to non-personal accesses', function (done) {
-      request.put(basePath, testData.accesses[4].token).send({language: 'zh'}).end(function (res) {
+      request
+        .put(basePath, testData.accesses[4].token)
+        .send({language: 'zh'}).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
@@ -183,6 +185,7 @@ describe('account', function () {
             should.not.exist(err);
             // hard to know what the exact difference should be, so we just expect it's bigger
             storageUsed.dbDocuments.should.be.above(initialStorageUsed.dbDocuments);
+            // SPURIOUS Comparison sometimes fails by more than 1024.
             storageUsed.attachedFiles.should.be.approximately(initialStorageUsed.attachedFiles +
                 newAtt.size, 1024);
             updatedStorageUsed = storageUsed;
@@ -228,7 +231,8 @@ describe('account', function () {
 
       // TODO: move all cron stuff to separate module (in common lib?) and call it from here
       function runNightlyScript(callback) {
-        var worker = childProcess.fork(__dirname + '/../src/runNightlyTasks.js',
+        var worker = childProcess.fork(
+            __dirname + '/../src/runNightlyTasks.js',
             process.argv.slice(2));
         worker.on('exit', function (code) {
           callback(code !== 0 ?
@@ -242,9 +246,9 @@ describe('account', function () {
           .field('event', JSON.stringify({ type: 'test/i', streamId: testData.streams[0].id }))
           .attach('image', attachment.path, attachment.filename)
           .end(function (res) {
-        validation.check(res, {status: 201});
-        callback();
-      });
+            validation.check(res, {status: 201});
+            callback();
+          });
     }
 
     it('must be approximately updated (diff) when adding an attached file', function (done) {
@@ -332,7 +336,7 @@ describe('account', function () {
           storage.findOne({id: user.id}, null, function (err, account) {
             account.storageUsed.dbDocuments.should.eql(initialStorageUsed.dbDocuments);
             account.storageUsed.attachedFiles.should.be.approximately(
-                initialStorageUsed.attachedFiles - getTotalAttachmentsSize(deletedEvt), 1024);
+              initialStorageUsed.attachedFiles - getTotalAttachmentsSize(deletedEvt), 1024);
             stepDone();
           });
         }
@@ -409,15 +413,17 @@ describe('account', function () {
 
     beforeEach(resetUsers);
 
-    var requestPath = basePath + '/request-password-reset',
-        resetPath = basePath + '/reset-password',
-        authData = {appId: 'pryv-test'};
+    const requestPath = basePath + '/request-password-reset';
+    const resetPath = basePath + '/reset-password';
+    const authData = {appId: 'pryv-test'};
 
     it('"request" must trigger an email with a reset token, store that token, ' +
        'then "reset" must reset the password to the given value', function (done) {
-      var settings = _.clone(helpers.dependencies.settings),
-          resetToken = null,
-          newPassword = 'Dr0ws$4p';
+      let settings = _.cloneDeep(helpers.dependencies.settings);
+      let resetToken;
+      const newPassword = 'Dr0ws$4p';
+      
+      settings.services.email.enabled = true;
 
       // setup mail server mock
 
@@ -425,11 +431,11 @@ describe('account', function () {
         context: settings.services.email,
         execute: function () {
           require('nock')(this.context.url).post(this.context.sendMessagePath)
-              .reply(200, function (uri, requestBody) {
-            var body = JSON.parse(requestBody);
-            var token = body.message.global_merge_vars[1].content; /* HACK, assume structure */
-            this.context.messagingSocket.emit('password-reset-token', token);
-          }.bind(this));
+            .reply(200, function (uri, requestBody) {
+              var body = JSON.parse(requestBody);
+              var token = body.message.global_merge_vars[1].content; /* HACK, assume structure */
+              this.context.messagingSocket.emit('password-reset-token', token);
+            }.bind(this));
         }
       });
       // fetch reset token from server process
@@ -439,17 +445,17 @@ describe('account', function () {
 
       async.series([
         server.ensureStarted.bind(server, settings),
-        function requestReset(stepDone) {
-	  request.post(requestPath)
-              .unset('authorization')
-              .set('Origin', 'http://test.pryv.local')
-	      .send(authData)
-              .end(function (res) {
-            validation.check(res, {
-              status: 200,
-              schema: methodsSchema.requestPasswordReset.result
-            }, stepDone);
-          });
+        function requestReset(stepDone) { 
+          request.post(requestPath)
+            .unset('authorization')
+            .set('Origin', 'http://test.pryv.local')
+            .send(authData)
+            .end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.requestPasswordReset.result
+              }, stepDone);
+            });
         },
         function verifyStoredRequest(stepDone) {
           should.exist(resetToken);
@@ -459,30 +465,20 @@ describe('account', function () {
           });
         },
         function doReset(stepDone) {
-          var data = _.defaults({
+          const data = _.defaults({
             resetToken: resetToken,
             newPassword: newPassword
           }, authData);
           request.post(resetPath).send(data)
-              .unset('authorization')
-              .set('Origin', 'http://test.pryv.local')
-              .end(function (res) {
-            validation.check(res, {
-              status: 200,
-              schema: methodsSchema.resetPassword.result
-            }, stepDone);
-          });
+            .unset('authorization')
+            .set('Origin', 'http://test.pryv.local')
+            .end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.resetPassword.result
+              }, stepDone);
+            });
         },
-        // IMPORTANT The superagent library currently has a bug where throws
-        // inside an 'end' callback would cause the callback to be raised a
-        // second time. Combined with async.series, anything below this comment
-        // cannot throw errors, otherwise it results in a double callback error
-        // on stepDone. Please use try/catch.
-        
-        // As soon as this PR: 
-        //  https://github.com/visionmedia/superagent/commit/6ff0493a1ebdb1d6fff6d71d1cafe080ec33e6fd#diff-c24ce7e3da4c0e4ff811a2b6a76f8bd9
-        // hits a released superagent version, remove the comment and the 
-        // try/catches.
         function verifyNewPassword(stepDone) {
           request.login(_.defaults({password: newPassword}, user), stepDone);
         }
@@ -490,13 +486,13 @@ describe('account', function () {
     });
     
     it('must not trigger a reset email if mailing is deactivated', function (done) {
-      var settings = _.clone(helpers.dependencies.settings);
+      let settings = _.cloneDeep(helpers.dependencies.settings);
       settings.services.email.enabled = false;
       testResetMailNotSent(settings, done);
     });
     
     it('must not trigger a reset email if reset mail is deactivated', function (done) {
-      var settings = _.clone(helpers.dependencies.settings);
+      let settings = _.cloneDeep(helpers.dependencies.settings);
       settings.services.email.enabled = {
         resetPassword: false
       };
@@ -504,7 +500,7 @@ describe('account', function () {
     });
     
     function testResetMailNotSent (settings, callback) {
-      var mailSent = false;
+      let mailSent = false;
           
       // setup mail server mock
       helpers.instanceTestSetup.set(settings, {
@@ -538,17 +534,6 @@ describe('account', function () {
               stepDone();
             });
         },
-        
-        // IMPORTANT The superagent library currently has a bug where throws
-        // inside an 'end' callback would cause the callback to be raised a
-        // second time. Combined with async.series, anything below this comment
-        // cannot throw errors, otherwise it results in a double callback error
-        // on stepDone. Please use try/catch.
-        
-        // As soon as this PR: 
-        //  https://github.com/visionmedia/superagent/commit/6ff0493a1ebdb1d6fff6d71d1cafe080ec33e6fd#diff-c24ce7e3da4c0e4ff811a2b6a76f8bd9
-        // hits a released superagent version, remove the comment and the 
-        // try/catches.
       ], callback);
     }
 

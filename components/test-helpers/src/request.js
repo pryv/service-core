@@ -1,14 +1,46 @@
-'use strict';
+// @flow
 
 const superagent = require('superagent');
 const url = require('url');
 const should = require('should');
+const assert = require('chai').assert;
 
 /**
  * Helper for HTTP requests (with access token authentication).
  */
 module.exports = request;
-function request(serverURL) {
+module.exports.unpatched = unpatchedRequest; 
+
+
+// --------------------------------- new usage, unpatched sa with helpers added
+function unpatchedRequest(serverURL: string) {
+  return new UnpatchedRequest(serverURL); 
+}
+
+class UnpatchedRequest {
+  serverURL: string; 
+  token: ?string; 
+  
+  constructor(serverURL: string) {
+    this.serverURL = serverURL;
+    this.token = null; 
+  }
+  
+  get(...args) {
+    return this.execute('GET', ...args);
+  }
+  
+  execute(method: string, path: string, token?: string) {
+    const authToken = token || this.token; 
+    const destUrl = url.resolve(this.serverURL, path);
+
+    return new superagent.Request(method, destUrl)
+      .set('authorization', authToken);
+  }
+}
+
+// -------------------------------------------------------- deprecated old usage
+function request(serverURL: string) {
   return new Request(serverURL);
 }
 
@@ -21,7 +53,8 @@ var methods = ['get', 'post', 'put', 'del', 'options'];
 methods.forEach(function (method) {
   Request.prototype[method] = function (path, token) {
     const destUrl = url.resolve(this.serverURL, path);
-    const authToken = token || this.token;
+    const authToken = token || this.token; 
+    
     return new IndifferentRequest(method, destUrl, authToken);
   };
 });
@@ -40,8 +73,8 @@ Request.prototype.login = function (user, callback) {
   return superagent.post(targetURL)
     .set('Origin', 'http://test.pryv.local')
     .send(authData).end(function (err, res) {
-      should(res).not.be.empty();
-
+      assert.isNull(err, 'Request must be a success');
+      assert.isDefined(res, 'Request has a result');
       res.statusCode.should.eql(200);
 
       if (! res.body.token) {
@@ -62,7 +95,7 @@ Request.prototype.login = function (user, callback) {
  * query. 
  * 
  * NOTE This is not a good idea, but most of our tests assume this behaviour
- *      because things used to be this way. Important right now, deprected as 
+ *      because things used to be this way. Important right now, deprecated as 
  *      well. 
  */ 
 class IndifferentRequest extends superagent.Request {
@@ -74,8 +107,8 @@ class IndifferentRequest extends superagent.Request {
    * @param  {string} method HTTP Method to use for this request
    * @param  {string|url.Url} url request url
    * @param  {string} token authentication token to use
-   */
-  constructor(method, url, token) {
+   */   
+  constructor(method: string, url, token) {
     // NOTE newer superagent versions don't know about delete; Let's pretend 
     // we do. 
     if (method === 'del') method = 'delete';
@@ -83,14 +116,11 @@ class IndifferentRequest extends superagent.Request {
     super(method, url)
       .set('authorization', token);
   }
-  end(callback) {
+  
+  end(callback: (res: any) => void) {
     super.end((err, res) => {
       callback(res || err);
     });
-  }
+  } 
 }
 
-/**
- * Expose the patched superagent for tests that don't need the wrapper.
- */
-request.superagent = superagent;

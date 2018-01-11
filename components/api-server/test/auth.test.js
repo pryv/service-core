@@ -1,12 +1,13 @@
+// @flow
+
 /*global describe, before, beforeEach, after, it */
 
+require('./test-helpers'); 
 var helpers = require('./helpers'),
     server = helpers.dependencies.instanceManager,
     async = require('async'),
     validation = helpers.validation,
     ErrorIds = require('components/errors').ErrorIds,
-//    nock = require('nock'),
-//    querystring = require('querystring'),
     should = require('should'), // explicit require to benefit from static functions
     request = require('superagent'),
     testData = helpers.data,
@@ -18,7 +19,6 @@ var helpers = require('./helpers'),
 describe('auth', function () {
 
   this.timeout(5000);
-
   function basePath(username) {
     return url.resolve(server.url, username + '/auth');
   }
@@ -51,143 +51,153 @@ describe('auth', function () {
     before(testData.resetAccesses);
 
     it('must authenticate the given credentials, open a session and return the access token',
-        function (done) {
-      async.series([
-        function login(stepDone) {
-          request.post(path(authData.username))
-            .set('Origin', trustedOrigin)
-            .send(authData).end(function (err, res) {
-            res.statusCode.should.eql(200);
+      function (done) {
+        async.series([
+          function login(stepDone) {
+            request.post(path(authData.username))
+              .set('Origin', trustedOrigin)
+              .send(authData).end(function (err, res) {
+                res.statusCode.should.eql(200);
 
-            should.exist(res.body.token);
-            checkNoUnwantedCookie(res);
-            should.exist(res.body.preferredLanguage);
-            res.body.preferredLanguage.should.eql(user.language);
+                should.exist(res.body.token);
+                checkNoUnwantedCookie(res);
+                should.exist(res.body.preferredLanguage);
+                res.body.preferredLanguage.should.eql(user.language);
 
-            stepDone();
-          });
-        },
-        function checkAccess(stepDone) {
-          helpers.dependencies.storage.user.accesses.findOne(user, {name: authData.appId}, null,
+                stepDone();
+              });
+          },
+          function checkAccess(stepDone) {
+            helpers.dependencies.storage.user.accesses.findOne(user, {name: authData.appId}, null,
               function (err, access) {
-            access.modifiedBy.should.eql('system');
-            stepDone();
-          });
-        }
-      ], done);
-    });
+                access.modifiedBy.should.eql('system');
+                stepDone();
+              });
+          }
+        ], done);
+      });
 
     it('must reuse the current session if already open', function (done) {
       var originalToken;
       async.series([
         function login(stepDone) {
           request.post(path(authData.username))
-              .set('Origin', trustedOrigin)
-              .send(authData).end(function (err, res) {
-            res.statusCode.should.eql(200);
-            originalToken = res.body.token;
-            stepDone();
-          });
+            .set('Origin', trustedOrigin)
+            .send(authData).end(function (err, res) {
+              res.statusCode.should.eql(200);
+              originalToken = res.body.token;
+              stepDone();
+            });
         },
         function loginAgain(stepDone) {
           request.post(path(authData.username))
-              .set('Origin', trustedOrigin)
-              .send(authData).end(function (err, res) {
-            res.statusCode.should.eql(200);
-            res.body.token.should.eql(originalToken);
-            stepDone();
-          });
+            .set('Origin', trustedOrigin)
+            .send(authData).end(function (err, res) {
+              res.statusCode.should.eql(200);
+              res.body.token.should.eql(originalToken);
+              stepDone();
+            });
         }
       ], done);
     });
 
     it('must accept "wildcarded" app ids and origins', function (done) {
       request.post(path(authData.username))
-          .set('Origin', 'https://test.rec.la:1234')
-          .send(authData).end(function (err, res) {
-        res.statusCode.should.eql(200);
-        done();
-      });
+        .set('Origin', 'https://test.rec.la:1234')
+        .send(authData).end(function (err, res) {
+          res.statusCode.should.eql(200);
+          done();
+        });
     });
 
     it('must accept "no origin" (i.e. not a CORS request) if authorized', function (done) {
       var authDataNoCORS = _.defaults({appId: 'pryv-test-no-cors'}, authData);
-      request.post(path(authDataNoCORS.username))
-          .send(authDataNoCORS).end(function (err, res) {
-        res.statusCode.should.eql(200);
-        done();
-      });
+      request
+        .post(path(authDataNoCORS.username))
+        .send(authDataNoCORS).end(function (err, res) {
+          res.statusCode.should.eql(200);
+          done();
+        });
+    });
+    
+    it('must also accept "referer" in place of "origin" (e.g. some browsers do not provide "origin")', function (done) {
+      request.post(path(authData.username))
+        .set('Referer', trustedOrigin)
+        .send(authData).end(function (err, res) {
+          res.statusCode.should.eql(200);
+          done();
+        });
     });
 
     it('must not be case-sensitive for the username', function (done) {
       request.post(path(authData.username))
-          .set('Origin', trustedOrigin)
-          .send(_.defaults({username: authData.username.toUpperCase()}, authData))
-          .end(function (err, res) {
-        res.statusCode.should.eql(200);
-        done();
-      });
+        .set('Origin', trustedOrigin)
+        .send(_.defaults({username: authData.username.toUpperCase()}, authData))
+        .end(function (err, res) {
+          res.statusCode.should.eql(200);
+          done();
+        });
     });
 
     it('must return a correct error when the local credentials are missing or invalid',
-        function (done) {
-      var data = _.defaults({
-        username: authData.username,
-        password: 'bad-password'
-      }, authData);
-      request.post(path(data.username))
+      function (done) {
+        var data = _.defaults({
+          username: authData.username,
+          password: 'bad-password'
+        }, authData);
+        request.post(path(data.username))
           .set('Origin', trustedOrigin)
           .send(data).end(function (err, res) {
-        validation.checkError(res, {
-          status: 401,
-          id: ErrorIds.InvalidCredentials
-        });
-        should.not.exist(res.body.token);
-        done();
+            validation.checkError(res, {
+              status: 401,
+              id: ErrorIds.InvalidCredentials
+            });
+            should.not.exist(res.body.token);
+            done();
+          });
       });
-    });
 
     it('must return a correct error if the app id is missing or untrusted', function (done) {
       var data = _.defaults({appId: 'untrusted-app-id'}, authData);
       request.post(path(data.username))
-          .set('Origin', trustedOrigin)
-          .send(data).end(function (err, res) {
-        validation.checkError(res, {
-          status: 401,
-          id: ErrorIds.InvalidCredentials
+        .set('Origin', trustedOrigin)
+        .send(data).end(function (err, res) {
+          validation.checkError(res, {
+            status: 401,
+            id: ErrorIds.InvalidCredentials
+          });
+          should.not.exist(res.body.token);
+          done();
         });
-        should.not.exist(res.body.token);
-        done();
-      });
     });
 
     it('must return a correct error if the origin is missing or does not match the app id',
-        function (done) {
-      request.post(path(authData.username))
+      function (done) {
+        request.post(path(authData.username))
           .set('Origin', 'http://mismatching.origin')
           .send(authData).end(function (err, res) {
-        validation.checkError(res, {
-          status: 401,
-          id: ErrorIds.InvalidCredentials
-        });
-        should.not.exist(res.body.token);
-        done();
+            validation.checkError(res, {
+              status: 401,
+              id: ErrorIds.InvalidCredentials
+            });
+            should.not.exist(res.body.token);
+            done();
+          });
       });
-    });
     
     it('must support concurrent login request',
-        function (done) {          
-          var loginCount = 2;
-          var randomId = 'pryv-test-' + Date.now();
-          
-          async.times(loginCount, function (n, next) {
-            parallelLogin(randomId, function(err) {
-              next(err);
-            });
-          }, function (error) {
-            done(error);
+      function (done) {          
+        var loginCount = 2;
+        var randomId = 'pryv-test-' + Date.now();
+        
+        async.times(loginCount, function (n, next) {
+          parallelLogin(randomId, function(err) {
+            next(err);
           });
-        }
+        }, function (error) {
+          done(error);
+        });
+      }
     );
 
     // cf. GH issue #57
@@ -195,17 +205,17 @@ describe('auth', function () {
       request.post(path(authData.username))
         .set('Origin', trustedOrigin)
         .send(authData).end(function (err, res) {
-        res.statusCode.should.eql(200);
+          res.statusCode.should.eql(200);
 
-        should.exist(res.body.token);
-        checkNoUnwantedCookie(res);
-        should.exist(res.body.preferredLanguage);
-        res.body.preferredLanguage.should.eql(user.language);
+          should.exist(res.body.token);
+          checkNoUnwantedCookie(res);
+          should.exist(res.body.preferredLanguage);
+          res.body.preferredLanguage.should.eql(user.language);
 
-        should.not.exist(res.body._private);
+          should.not.exist(res.body._private);
 
-        done();
-      });
+          done();
+        });
     });
 
     // cf. GH issue #3
@@ -223,7 +233,8 @@ describe('auth', function () {
 
       function ensureLogFileIsEmpty(stepDone) {
         if ( logFilePath.length <= 0 ) return stepDone();
-        fs.truncate(logFilePath, function (err) {
+        const truncateTo = 0; // default 
+        fs.truncate(logFilePath, truncateTo, function (err) {
           if (err && err.code === 'ENOENT') {
             return stepDone();
           } // ignore error if file doesn't exist
@@ -307,27 +318,26 @@ describe('auth', function () {
     });
     
     function parallelLogin(appId, callback) {
-       // We want our random appId to be trusted, so using recla as origin
+      // We want our random appId to be trusted, so using recla as origin
       request.post(path(authData.username))
-          .set('Origin', 'https://test.rec.la:1234')
-          .send({
-            username: user.username,
-            password: user.password,
-            appId: appId
-          })
-          .end(function (err, res) {
-            if(err) {
-              return callback(err);
-            }
-            should(res.statusCode).be.equal(200);
-            helpers.dependencies.storage.user.accesses.findOne(user, {name: appId, type: 'personal'}, null,
-                (err, access) => {
-                  should(access.token).be.equal(res.body.token);
-                  callback();
-                }
-            );
+        .set('Origin', 'https://test.rec.la:1234')
+        .send({
+          username: user.username,
+          password: user.password,
+          appId: appId
+        })
+        .end(function (err, res) {
+          if(err) {
+            return callback(err);
           }
-      );
+          should(res.statusCode).be.equal(200);
+          helpers.dependencies.storage.user.accesses.findOne(user, {name: appId, type: 'personal'}, null,
+            (err, access) => {
+              should(access.token).be.equal(res.body.token);
+              callback();
+            }
+          );
+        });
     }
 
     function checkNoUnwantedCookie(res) {

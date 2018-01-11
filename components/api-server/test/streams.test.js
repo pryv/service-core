@@ -1,5 +1,6 @@
 /*global describe, before, beforeEach, it */
 
+require('./test-helpers'); 
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
 const async = require('async');
@@ -617,75 +618,70 @@ describe('streams', function () {
           expectedChildDeletion;
 
       async.series([
-	  storage.updateOne.bind(storage, user, {id: id}, {trashed: true}),
-          function deleteStream(stepDone) {
-            request.del(path(id)).end(function (res) {
-              expectedDeletion = {
-                id: id,
-                deleted: timestamp.now()
-              };
-              expectedChildDeletion = {
-                id: childId,
-                deleted: timestamp.now()
-              };
+        storage.updateOne.bind(storage, user, {id: id}, {trashed: true}), function deleteStream(stepDone) {
+          request.del(path(id)).end(function (res) {
+            expectedDeletion = {
+              id: id,
+              deleted: timestamp.now()
+            };
+            expectedChildDeletion = {
+              id: childId,
+              deleted: timestamp.now()
+            };
 
-              validation.check(res, {
-                status: 200,
-                schema: methodsSchema.del.result
-              });
-              streamsNotifCount.should.eql(1, 'streams notifications');
-              stepDone();
+            validation.check(res, {
+              status: 200,
+              schema: methodsSchema.del.result
             });
-          },
-          function verifyStreamData(stepDone) {
-            storage.findAll(user, null, function (err, streams) {
-              treeUtils.findById(streams, parent.id).children.length
-                  .should.eql(testData.streams[2].children.length - 1, 'child streams');
+            streamsNotifCount.should.eql(1, 'streams notifications');
+            stepDone();
+          });
+        },
+        function verifyStreamData(stepDone) {
+          storage.findAll(user, null, function (err, streams) {
+            treeUtils.findById(streams, parent.id).children.length
+              .should.eql(testData.streams[2].children.length - 1, 'child streams');
 
-              var deletion = treeUtils.findById(streams, id);
-              should.exist(deletion);
-              validation.checkObjectEquality(deletion, expectedDeletion);
+            var deletion = treeUtils.findById(streams, id);
+            should.exist(deletion);
+            validation.checkObjectEquality(deletion, expectedDeletion);
 
-              var childDeletion = treeUtils.findById(streams, childId);
-              should.exist(childDeletion);
-              validation.checkObjectEquality(childDeletion, expectedChildDeletion);
+            var childDeletion = treeUtils.findById(streams, childId);
+            should.exist(childDeletion);
+            validation.checkObjectEquality(childDeletion, expectedChildDeletion);
 
-              stepDone();
-            });
-          }
-        ],
-        done
-      );
+            stepDone();
+          });
+        }
+      ],
+      done );
     });
 
     it('must return a correct error if there are linked events and the related parameter is ' +
         'missing', function (done) {
       var id = testData.streams[0].id;
       async.series([
-	  storage.updateOne.bind(storage, user, {id: id}, {trashed: true}),
-          function deleteStream(stepDone) {
-            request.del(path(testData.streams[0].id)).end(function (res) {
-              validation.checkError(res, {
-                status: 400,
-                id: ErrorIds.InvalidParametersFormat
-              }, stepDone);
-            });
-          }
-        ],
-        done
-      );
+        storage.updateOne.bind(storage, user, {id: id}, {trashed: true}), function deleteStream(stepDone) {
+          request.del(path(testData.streams[0].id)).end(function (res) {
+            validation.checkError(res, {
+              status: 400,
+              id: ErrorIds.InvalidParametersFormat
+            }, stepDone);
+          });
+        }
+      ],
+      done );
     });
 
-    it('must reassign the linked events to the deleted stream\'s parent when specified',
-        function (done) {
+    it('must reassign the linked events to the deleted stream\'s parent when specified', function (done) {
       var parentStream = testData.streams[0],
           deletedStream = parentStream.children[1];
 
       async.series([
-	  storage.updateOne.bind(storage, user, {id: deletedStream.id}, {trashed: true}),
-          function deleteStream(stepDone) {
-            request.del(path(deletedStream.id)).query({mergeEventsWithParent: true})
-                .end(function (res) {
+        storage.updateOne.bind(storage, user, {id: deletedStream.id}, {trashed: true}),
+        function deleteStream(stepDone) {
+          request.del(path(deletedStream.id)).query({mergeEventsWithParent: true})
+            .end(function (res) {
               validation.check(res, {
                 status: 200,
                 schema: methodsSchema.del.result
@@ -696,23 +692,21 @@ describe('streams', function () {
 
               stepDone();
             });
-          },
-          function verifyLinkedEvents(stepDone) {
-            eventsStorage.find(user, {streamId: parentStream.id}, null,
-                function (err, linkedEvents) {
-	      _.map(linkedEvents, 'id').should.eql([
-                testData.events[4].id,
-                testData.events[3].id,
-                testData.events[2].id,
-                testData.events[1].id
-              ]);
+        },
+        function verifyLinkedEvents(stepDone) {
+          eventsStorage.find(user, {streamId: parentStream.id}, null, function (err, linkedEvents) {
+            _.map(linkedEvents, 'id').should.eql([
+              testData.events[4].id,
+              testData.events[3].id,
+              testData.events[2].id,
+              testData.events[1].id
+            ]);
 
-              stepDone();
-            });
-          }
-        ],
-        done
-      );
+            stepDone();
+          });
+        }
+      ],
+      done );
     });
 
     it('must delete the linked events when mergeEventsWithParent is false', function (done) {
@@ -743,8 +737,8 @@ describe('streams', function () {
                 schema: methodsSchema.del.result
               });
 
-              streamsNotifCount.should.eql(1, 'streams notifications');
-              eventsNotifCount.should.eql(1, 'events notifications');
+              should(streamsNotifCount).eql(1, 'streams notifications');
+              should(eventsNotifCount).eql(1, 'events notifications');
 
               stepDone();
             });
@@ -764,12 +758,11 @@ describe('streams', function () {
 
             var dirPath = eventFilesStorage.getAttachedFilePath(user, deletedEventWithAtt.id);
 
-            // The 'streams.delete' method will delete the directory asynchronously
             // some time after returning to the client. Let's hang around and try 
             // this several times. 
             assertEventuallyTrue(
               () => ! fs.existsSync(dirPath), 
-              1, // second(s) 
+              2, // second(s) 
               'Event directory must be deleted', 
               stepDone
             );

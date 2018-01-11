@@ -1,0 +1,18 @@
+{
+  "logs": {
+    "console": {
+      "active": true, 
+      "level": "error", 
+      "colorize": false
+    }, 
+    "file": {
+      "active": false
+    }, 
+    "airbrake": {
+      "active": false
+    }
+  }, 
+  "mongodb": {
+    "host": "localhost",
+  }
+}

@@ -1,3 +1,4 @@
+
 var utils = require('components/utils'),
     errors = require('components/errors').factory,
     async = require('async'),
@@ -8,42 +9,44 @@ var utils = require('components/utils'),
     storage = require('components/storage'),
     timestamp = require('unix-timestamp'),
     treeUtils = utils.treeUtils,
-    validation = require('../schema/validation'),
     _ = require('lodash'),
     SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
+    
+const assert = require('assert');
+    
+const {TypeRepository, isSeriesType} = require('components/business').types;
+
+// Type repository that will contain information about what is allowed/known
+// for events. 
+const typeRepo = new TypeRepository(); 
 
 /**
  * Events API methods implementations.
- * TODO: refactor methods as chains of functions
- *
- * @param api
- * @param userEventsStorage
- * @param userEventFilesStorage
- * @param usersStorage
- * @param authSettings
  * @param auditSettings
- * @param updatesSettings
- * @param eventTypes
- * @param notifications
- * @param logging
  */
-module.exports = function (api, userEventsStorage, userEventFilesStorage, usersStorage, authSettings, 
-  auditSettings, updatesSettings, eventTypes, notifications, logging) {
-
+module.exports = function (
+  api, userEventsStorage, userEventFilesStorage, usersStorage,
+  authSettings, eventTypesSettings, notifications, logging,
+  auditSettings, updatesSettings, storageLayer,
+) {
+                             
+  // Update types and log error
+  typeRepo.tryUpdate(eventTypesSettings.sourceURL)
+    .catch((err) => logging.getLogger('typeRepo').warn(err));
+    
   const logger = logging.getLogger('methods/events');
-
   // COMMON
 
   api.register('events.*',
-      commonFns.loadAccess);
+    commonFns.loadAccess(storageLayer));
 
   // RETRIEVAL
 
   api.register('events.get',
-      commonFns.getParamsValidation(methodsSchema.get.params),
-      applyDefaultsForRetrieval,
-      findAccessibleEvents,
-      includeDeletionsIfRequested);
+    commonFns.getParamsValidation(methodsSchema.get.params),
+    applyDefaultsForRetrieval,
+    findAccessibleEvents,
+    includeDeletionsIfRequested);
 
   function applyDefaultsForRetrieval(context, params, result, next) {
     _.defaults(params, {
@@ -75,8 +78,10 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       var unknownIds = _.difference(params.streams, expandedStreamIds);
 
       if (unknownIds.length > 0) {
-        return next(errors.unknownReferencedResource('stream' + (unknownIds.length > 1 ? 's' : ''),
-            'streams', unknownIds));
+        return next(errors.unknownReferencedResource(
+          'stream' + (unknownIds.length > 1 ? 's' : ''),
+          'streams', 
+          unknownIds));
       }
 
       params.streams = expandedStreamIds;
@@ -87,19 +92,22 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
         treeUtils.filterTree(
           context.streams, false, (s) => { return ! s.trashed; }), 
         'id');
-      params.streams = params.streams ?
-          _.intersection(params.streams, nonTrashedStreamIds) : nonTrashedStreamIds;
+      params.streams = params.streams 
+        ? _.intersection(params.streams, nonTrashedStreamIds) 
+        : nonTrashedStreamIds;
     }
     if (! context.access.canReadAllStreams()) {
       var accessibleStreamIds = Object.keys(context.access.streamPermissionsMap);
-      params.streams = params.streams ?
-          _.intersection(params.streams, accessibleStreamIds) : accessibleStreamIds;
+      params.streams = params.streams 
+        ? _.intersection(params.streams, accessibleStreamIds) 
+        : accessibleStreamIds;
     }
 
     if (! context.access.canReadAllTags()) {
       var accessibleTags = Object.keys(context.access.tagPermissionsMap);
-      params.tags = params.tags ?
-          _.intersection(params.tags, accessibleTags) : accessibleTags;
+      params.tags = params.tags 
+        ? _.intersection(params.tags, accessibleTags) 
+        : accessibleTags;
     }
 
     next();
@@ -228,12 +236,12 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
       });
   }
 
-  // CREATION
+  // -------------------------------------------------------------------- CREATE
 
   api.register('events.create',
     commonFns.getParamsValidation(methodsSchema.create.params),
     applyPrerequisitesForCreation,
-    validateEventContent,
+    validateEventContentAndCoerce,
     checkExistingLaterPeriodIfNeeded,
     checkOverlappedPeriodsIfNeeded,
     verifyContext,
@@ -283,19 +291,53 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     next();
   }
 
-  function createEvent(context, params, result, next) {
-    userEventsStorage.insertOne(context.user, context.content, function (err, newEvent) {
-      if (err) {
-        if (storage.Database.isDuplicateError(err)) {
-          return next(errors.itemAlreadyExists('event', {id: params.id}, err));
-        } else {
-          return next(errors.unexpectedError(err));
-        }
-      }
+  function createEvent(
+    context, params, result, next) 
+  {
 
-      result.event = newEvent;
-      next();
-    });
+    if (isSeriesType(context.content.type)) {
+      try {
+        context.content.content = createSeriesEventContent(context);
+      }
+      catch (err) { return next(err); }
+        
+      // As long as there is no data, event duration is considered to be 0.
+      context.content.duration = 0; 
+    }
+
+    userEventsStorage.insertOne(
+      context.user, context.content, function (err, newEvent) {
+        if (err) {
+          if (storage.Database.isDuplicateError(err)) {
+            return next(errors.itemAlreadyExists('event', {id: params.id}, err));
+          } else {
+            return next(errors.unexpectedError(err));
+          }
+        }
+
+        result.event = newEvent;
+        next();
+      });
+  }
+
+  const FORMAT_FLAT_JSON = 'flatJSON';
+
+  /**
+   * Creates the event's body according to its type and context. 
+   */
+  function createSeriesEventContent(context) {
+    const seriesTypeName = context.content.type; 
+    const eventType = typeRepo.lookup(seriesTypeName); 
+    
+    // assert: Type is a series type, so this should be always true: 
+    assert.ok(eventType.isSeries()); 
+
+    return {
+      elementType: eventType.elementTypeName(), 
+      fields: eventType.fields(), 
+      required: eventType.requiredFields(),
+      format: FORMAT_FLAT_JSON,
+    };
   }
 
   function createAttachments(context, params, result, next) {
@@ -319,20 +361,20 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     });
   }
 
-  // UPDATE
+  // -------------------------------------------------------------------- UPDATE
 
   api.register('events.update',
-      commonFns.getParamsValidation(methodsSchema.update.params),
-      commonFns.catchForbiddenUpdate(eventSchema('update'), updatesSettings.ignoreProtectedFields, logger),
-      applyPrerequisitesForUpdate,
-      validateEventContent,
-      checkExistingLaterPeriodIfNeeded,
-      checkOverlappedPeriodsIfNeeded,
-      stopPreviousPeriodIfNeeded,
-      generateLogIfNeeded,
-      updateAttachments,
-      updateEvent,
-      notify);
+    commonFns.getParamsValidation(methodsSchema.update.params),
+    commonFns.catchForbiddenUpdate(eventSchema('update'), updatesSettings.ignoreProtectedFields, logger),
+    applyPrerequisitesForUpdate,
+    validateEventContentAndCoerce,
+    checkExistingLaterPeriodIfNeeded,
+    checkOverlappedPeriodsIfNeeded,
+    stopPreviousPeriodIfNeeded,
+    generateLogIfNeeded,
+    updateAttachments,
+    updateEvent,
+    notify);
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
     
@@ -448,29 +490,50 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
    * @param {Object} result
    * @param {Function} next
    */
-  function validateEventContent(context, params, result, next) {
+  function validateEventContentAndCoerce(context, params, result, next) {
+    const type = context.content.type;
+        
+    // Unknown types can just be created as normal events. 
+    if (! typeRepo.isKnown(type)) {
+      // We forbid the 'series' prefix for these free types. 
+      if (isSeriesType(type)) return next(errors.invalidEventType(type));
 
-    var knownType = eventTypes.types[context.content.type];
-    if (knownType) {
-      validation.validate(context.content.hasOwnProperty('content') ? context.content.content :
-          null, knownType,
-        function (err) {
-          if (err && knownType.type === 'number' && typeof context.content.content === 'string') {
-            var castedToNum = +context.content.content;
-            if (!isNaN(castedToNum)) {
-              context.content.content = castedToNum;
-              return validation.validate(context.content.content, knownType, next);
-            }
-          }
-          if (err) {
-            return next(errors.invalidParametersFormat('The event content\'s format is ' +
-            'invalid.', err));
-          }
-          next(null);
-        });
-    } else {
-      next(null);
+      // No further checks, let the user do what he wants. 
+      return next();
     }
+        
+    // assert: `type` is known
+    
+    const eventType = typeRepo.lookup(type);
+    if (eventType.isSeries()) {
+      // Series cannot have content on update, not here at least.
+      if (context.content.content != null) {
+        return next(errors.invalidParametersFormat(
+          'The event content\'s format is invalid.', 
+          'Events of type High-frequency have a read-only content'));
+      }
+      
+      return next(); 
+    }
+    
+    // assert: `type` is not a series but is known
+    
+    const content = context.content.hasOwnProperty('content') 
+      ? context.content.content
+      : null;
+
+    const validator = typeRepo.validator();
+    validator.validate(eventType, content)
+      .then((newContent) => {
+        // Store the coerced value. 
+        context.content.content = newContent; 
+        
+        next();
+      })
+      .catch(
+        (err) => next(errors.invalidParametersFormat(
+          'The event content\'s format is invalid.', err))
+      );
   }
 
   function cleanupEventTags(eventData) {      
@@ -643,8 +706,9 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
    */
   function findLastRunning(context, params, callback) {
     var query = {
-      streamId: params.singleActivity ?
-          {$in: context.getSingleActivityExpandedIds()} : context.stream.id,
+      streamId: params.singleActivity 
+        ? { $in: context.getSingleActivityExpandedIds()} 
+        : context.stream.id,
       time: {'$lt': params.time},
       duration: {'$type' : 10} // matches when duration exists and is null
     };
@@ -670,34 +734,34 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
 
     async.forEachSeries(Object.keys(files), saveFile, function (err) {
       if (err) {
-        //TODO: remove saved files if any
+        // TODO: remove saved files if any
         return callback(err);
       }
 
       // approximately update account storage size
       context.user.storageUsed.attachedFiles += sizeDelta;
       usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
-          function (err) {
-        if (err) { return callback(errors.unexpectedError(err)); }
-        callback(null, attachments);
-      });
+        function (err) {
+          if (err) { return callback(errors.unexpectedError(err)); }
+          callback(null, attachments);
+        });
     });
 
     function saveFile(name, done) {
       var fileInfo = files[name];
       userEventFilesStorage.saveAttachedFile(fileInfo.path, context.user, eventInfo.id, /*fileId,*/
-          function (err, fileId) {
-        if (err) { return done(errors.unexpectedError(err)); }
+        function (err, fileId) {
+          if (err) { return done(errors.unexpectedError(err)); }
 
-        attachments.push({
-          id: fileId,
-          fileName: fileInfo.name,
-          type: fileInfo.type,
-          size: fileInfo.size
+          attachments.push({
+            id: fileId,
+            fileName: fileInfo.originalname,
+            type: fileInfo.mimetype,
+            size: fileInfo.size
+          });
+          sizeDelta += fileInfo.size;
+          done();
         });
-        sizeDelta += fileInfo.size;
-        done();
-      });
     }
   }
 
@@ -840,14 +904,14 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     context.updateTrackingProperties(updatedData);
 
     userEventsStorage.updateOne(context.user, {id: params.id}, updatedData,
-        function (err, updatedEvent) {
-      if (err) { return next(errors.unexpectedError(err)); }
+      function (err, updatedEvent) {
+        if (err) { return next(errors.unexpectedError(err)); }
 
-      result.event = updatedEvent;
-      setFileReadToken(context.access, result.event);
-      notifications.eventsChanged(context.user);
-      next();
-    });
+        result.event = updatedEvent;
+        setFileReadToken(context.access, result.event);
+        notifications.eventsChanged(context.user);
+        next();
+      });
   }
 
   function deleteWithData(context, params, result, next) {
@@ -964,7 +1028,8 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
   function getTypeQueryValue(requestedType) {
     var wildcardIndex = requestedType.indexOf('/*');
     return wildcardIndex > 0 ?
-        new RegExp('^' + requestedType.substr(0, wildcardIndex + 1)) : requestedType;
+      new RegExp('^' + requestedType.substr(0, wildcardIndex + 1)) : 
+      requestedType;
   }
 
   function checkEventForWriting(context, eventId, callback) {
@@ -1005,7 +1070,7 @@ module.exports = function (api, userEventsStorage, userEventFilesStorage, usersS
     if (! event.attachments) { return; }
     event.attachments.forEach(function (att) {
       att.readToken = utils.encryption.fileReadToken(att.id, access,
-          authSettings.filesReadTokenSecret);
+        authSettings.filesReadTokenSecret);
     });
   }
 

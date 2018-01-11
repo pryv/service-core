@@ -1,3 +1,5 @@
+// @flow
+
 /**
  * Helper functions for error handling.
  */
@@ -7,6 +9,8 @@ var APIError = require('./APIError'),
 
 var errorHandling = module.exports = {};
 
+import type {Logger} from 'components/utils';
+
 /**
  * Logs the given error.
  *
@@ -14,7 +18,7 @@ var errorHandling = module.exports = {};
  * @param {Object} req The request context; expected properties: url, method, body
  * @param {Object} logger The logger object (expected methods: debug, info, warn, error)
  */
-errorHandling.logError = function (error, req, logger) {
+errorHandling.logError = function (error: any, req: express$Request, logger: Logger) {
   var metadata = {};
   if (req) {
     metadata.context = {
@@ -29,8 +33,8 @@ errorHandling.logError = function (error, req, logger) {
       metadata.errorData = error.data;
     }
     if (error.innerError) {
-        metadata.innerError = error.id === ErrorIds.UnexpectedError ?
-            (error.innerError.stack || error.innerError.message) : error.innerError.message;
+      metadata.innerError = error.id === ErrorIds.UnexpectedError ?
+        (error.innerError.stack || error.innerError.message) : error.innerError.message;
     }
 
     if (error.id === ErrorIds.UnexpectedError) {
@@ -46,15 +50,13 @@ errorHandling.logError = function (error, req, logger) {
 
 /**
  * Returns a public-safe error object from the given API error.
- *
- * @param {APIError} error
- * @return {Object}
  */
-errorHandling.getPublicErrorData = function (error) {
+errorHandling.getPublicErrorData = function (error: any) {
   if (error instanceof APIError) {
-    var publicError = {
+    let publicError = {
       id: error.id,
-      message: error.message
+      message: error.message, 
+      data: undefined, 
     };
     if (error.data) {
       publicError.data = error.data;

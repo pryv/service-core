@@ -1,7 +1,9 @@
-var winston = require('winston');
+// @flow
+
+const winston = require('winston');
 
 // setup logging levels (match logging methods below)
-var levels = Object.freeze({
+const levels = Object.freeze({
   debug: 3,
   info: 2,
   warn: 1,
@@ -21,16 +23,16 @@ winston.addColors({
  *
  * @param logsSettings
  */
-module.exports = function (logsSettings) {
+module.exports = function (logsSettings: Object) {
   // apply settings
 
   // (console transport is present by default)
-  var console = winston['default'].transports.console;
-  console.silent = ! logsSettings.console.active;
+  let consoleSettings = winston['default'].transports.console;
+  consoleSettings.silent = ! logsSettings.console.active;
   if (logsSettings.console.active) {
-    console.level = logsSettings.console.level;
-    console.colorize = logsSettings.console.colorize;
-    console.timestamp = logsSettings.console.timestamp;
+    consoleSettings.level = logsSettings.console.level;
+    consoleSettings.colorize = logsSettings.console.colorize;
+    consoleSettings.timestamp = logsSettings.console.timestamp || true;
   }
   if (winston['default'].transports.file) {
     // in production env it seems winston already includes a file transport...
@@ -49,43 +51,82 @@ module.exports = function (logsSettings) {
 
   // return singleton
 
-  var loggers = {},
+  var loggers: Map<string, Logger> = new Map(),
       prefix = logsSettings.prefix;
   return {
     /**
-     * Returns a logger for the given component.
-     * Keeps track of initialized loggers to only use one logger per component name.
+     * Returns a logger for the given component. Keeps track of initialized
+     * loggers to only use one logger per component name.
      *
      * @param {String} componentName
      */
-    getLogger: function (componentName) {
-      var context = prefix + componentName;
-      if (! loggers[context]) {
-        loggers[context] = new Logger(context);
-      }
-      return loggers[context];
-    }
+    getLogger: function (componentName: string): Logger {
+      const context = prefix + componentName;
+      
+      // Return memoized instance if we have produced it before.
+      const existingLogger = loggers.get(context);
+      if (existingLogger) return existingLogger;
+      
+      // Construct a new instance. We're passing winston as a logger here. 
+      const logger = new LoggerImpl(context, winston);
+      loggers.set(context, logger);
+      
+      return logger; 
+    }, 
   };
 };
 module.exports.injectDependencies = true; // make it DI-friendly
 
-/**
- * Creates a new logger for the given component.
- *
- * @param {String} context
- * @constructor
- */
-function Logger(context) {
-  this.messagePrefix = context ? '[' + context + '] ' : '';
+export interface Logger {
+  debug(msg: string, metaData?: {}): void; 
+  info(msg: string, metaData?: {}): void;
+  warn(msg: string, metaData?: {}): void; 
+  error(msg: string, metaData?: {}): void; 
 }
+export type LogFactory = (topic: string) => Logger; 
 
-// define logging methods
-Object.keys(levels).forEach(function (level) {
-  Logger.prototype[level] = function (message, metadata) {
-    return winston[level](this.messagePrefix + message, metadata || {});
-  };
-});
+class NullLogger implements Logger {
+  debug(msg: string, metaData?: {}) { // eslint-disable-line no-unused-vars
+  }
+  info(msg: string, metaData?: {}) { // eslint-disable-line no-unused-vars
+  }
+  warn(msg: string, metaData?: {}) { // eslint-disable-line no-unused-vars
+  }
+  error(msg: string, metaData?: {}) { // eslint-disable-line no-unused-vars
+  }
+}
+module.exports.NullLogger = NullLogger;
 
-Logger.prototype.isValidLevel = function (level) {
-  return levels.hasOwnProperty(level);
-};
+class LoggerImpl implements Logger {
+  messagePrefix: string; 
+  winstonLogger: any; 
+  
+  /**
+   * Creates a new logger for the given component.
+   *
+   * @param {String} context
+   * @constructor
+   */
+  constructor(context?: string, winstonLogger) {
+    this.messagePrefix = context ? '[' + context + '] ' : '';
+    this.winstonLogger = winstonLogger;
+  }
+  
+  debug(msg: string, metaData?: {}) {
+    this.log('debug', msg, metaData);
+  }
+  info(msg: string, metaData?: {}) {
+    this.log('info', msg, metaData);
+  }
+  warn(msg: string, metaData?: {}) {
+    this.log('warn', msg, metaData);
+  }
+  error(msg: string, metaData?: {}) {
+    this.log('error', msg, metaData);
+  }
+  
+  log(level: string, message: string, metaData?: {}) {
+    const msg = this.messagePrefix + message;
+    this.winstonLogger[level](msg, metaData || {});
+  }
+}

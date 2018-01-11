@@ -4,8 +4,12 @@
   },
   "logs": {
     "console": {
-      "active": false, 
+      "active": false,
+      "level": "info",
       "timestamp": false
     }
+  }, 
+  "tcpMessaging": {
+    "enabled": true
   }
 }

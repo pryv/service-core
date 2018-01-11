@@ -67,7 +67,7 @@ Result.prototype.isStreamResult = function() {
  */
 Result.prototype.writeToHttpResponse = function (res, successCode) {
   if (this.isStreamResult()) {
-   this.writeStreams(res, successCode);
+    this.writeStreams(res, successCode);
   } else {
     this.writeSingle(res, successCode);
   }
@@ -103,7 +103,9 @@ Result.prototype.writeStreams = function(res, successCode) {
 
 Result.prototype.writeSingle = function(res, successCode) {
   delete this._private;
-  res.json(addCommonMeta(this), successCode);
+  res
+    .status(successCode)
+    .json(addCommonMeta(this));
 };
 
 

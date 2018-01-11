@@ -1,11 +1,16 @@
 /**
  * Identifier constants for API errors.
  */
-var ErrorIds = module.exports = {
+const ErrorIds = module.exports = {
+  ApiUnavailable: 'api-unavailable',
   CorruptedData: 'corrupted-data',
   Forbidden: 'forbidden',
   InvalidAccessToken: 'invalid-access-token',
   InvalidCredentials: 'invalid-credentials',
+  /**
+   * Used for High-Frequency Series, allowing only known, simple types.
+   */
+  InvalidEventType: 'invalid-event-type',
   InvalidItemId: 'invalid-item-id',
   /**
    * Used for Socket.IO support.

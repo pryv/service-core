@@ -1,13 +1,20 @@
 var fs = require('fs'),
     path = require('path'),
     childProcess = require('child_process');
-
+    
+function pad(str) {
+  //                total len           - a space - the name
+  const targetLen = process.stdout.columns - 1 - str.length; 
+  
+  return str + ' ' + '-'.repeat(targetLen);
+}
+    
 var colors = false;
 try {
   colors = require('colors');
 } catch (e) {}
 
-var componentsPath = path.resolve(__dirname, '../components'),
+var componentsPath = path.resolve(__dirname, '../dist/components'),
     args = process.argv.slice(2);
 
 if (args.length === 0) {
@@ -21,7 +28,9 @@ fs.readdirSync(componentsPath).forEach(function (name) {
   if (! fs.existsSync(path.join(subPath, 'package.json'))) {
     return;
   }
-  console.log(colors ? name.green : name);
+  
+  name = pad(name);
+  console.log(colors ? name.green : name); // eslint-disable-line 
   var res = childProcess.spawnSync('npm', args, {
     env: process.env,
     cwd: subPath,
