@@ -82,7 +82,6 @@ module.exports = function (expressApp: express$Application, api: any, authSettin
         // some browsers provide origin, some provide only referer
         origin: req.headers.origin || req.headers.referer || ''
       };
-      hidePassword(req.body);
       
       api.call('auth.login', req.context, params, function (err, result) {
         if (err) return next(err);
@@ -90,12 +89,6 @@ module.exports = function (expressApp: express$Application, api: any, authSettin
         result.writeToHttpResponse(res, 200);
       });
 
-      // Replaces the field 'password' of `obj` with 'hidden' if the field is 
-      // not empty. 
-      function hidePassword(obj) {
-        if (obj.password == null) return; 
-        obj.password = '(hidden)';
-      }
     });
     router.post('/logout', function routeLogout(req: RequestWithContext, res, next) {
       clearSSOCookie(res);
