@@ -126,7 +126,15 @@ class LoggerImpl implements Logger {
   }
   
   log(level: string, message: string, metaData?: {}) {
-    const msg = this.messagePrefix + message;
-    this.winstonLogger[level](msg, metaData || {});
+    // Make sure not to print auth tokens in logs
+    const msg = hideAuthTokens(this.messagePrefix + message);
+    const meta = metaData ? hideAuthTokens(JSON.stringify(metaData)) : {};
+    
+    this.winstonLogger[level](msg, meta);
   }
+}
+
+function hideAuthTokens (msg) {
+  const regexp = /auth=(c[a-z0-9-]{24})/;
+  return msg.replace(regexp, 'auth=(hidden)');
 }
