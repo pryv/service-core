@@ -9,7 +9,6 @@ const dependencies = require('dependable').container({useFnAnnotations: true});
 const bluebird = require('bluebird');
 const EventEmitter = require('events');
 
-const errors = require('components/errors');
 const middleware = require('components/middleware');
 const storage = require('components/storage');
 const utils = require('components/utils');
@@ -20,7 +19,6 @@ const API = require('./API');
 import type { ConfigAccess } from './settings';
 
 import type { LogFactory, Logger } from 'components/utils';
-import type { ExpressAppLifecycle } from './expressApp';
 import type { StorageLayer } from 'components/storage';
 
 // Server class for api-server process. To use this, you 
@@ -116,7 +114,8 @@ class Server {
   // Start the server. 
   //
   async start() {
-    const settings = this.settings; 
+    const settings = this.settings;
+    const logger = this.logger;
     
     dependencies.register({
       api: this.api,
@@ -124,45 +123,53 @@ class Server {
       systemAPI: this.systemAPI 
     });
     
-    // register base dependencies (aka global variables)
-    dependencies.register({
-      // settings
-      authSettings: settings.get('auth').obj(),
-      auditSettings: settings.get('audit').obj(),
-      eventFilesSettings: settings.get('eventFiles').obj(),
-      eventTypesSettings: settings.get('eventTypes').obj(),
-      httpSettings: settings.get('http').obj(),
-      servicesSettings: settings.get('services').obj(),
-      updatesSettings: settings.get('updates').obj(),
-
-      // misc utility
-      serverInfo: require('../package.json'),
-    });
-    
-    const logger = this.logger; 
-    
+    this.publishLegacySettings(settings); 
     this.setupStorageLayer();
+    this.publishExpressMiddleware(settings);
     
-    const customAuthStepFn = settings.getCustomAuthFunction();
-    const initContextMiddleware = middleware.initContext(
-      this.storageLayer, customAuthStepFn);
-
-    dependencies.register({
-      // Express middleware
-      attachmentsAccessMiddleware: middleware.attachmentsAccess,
-      initContextMiddleware: initContextMiddleware,
-      
-      express: express, 
-    });
-
     const {app, lifecycle} = require('./expressApp')(dependencies);
     dependencies.register({expressApp: app});
 
     // start TCP pub messaging
-    const axonSocket = await this.openAxonSocket();
-    this.setupNotificationBus(axonSocket);
+    await this.setupNotificationBus();
 
     // register API methods
+    this.registerApiMethods();
+
+    // setup temp routes for handling requests during startup (incl. possible
+    // data migration)
+    lifecycle.appStartupBegin(); 
+
+    // Setup HTTP and register server; setup Socket.IO.
+    const server = http.createServer(app);
+    this.setupSocketIO(server); 
+    await this.startListen(server);
+
+    // Setup DB connection
+    await this.storageLayer.waitForConnection();
+    try {
+      await this.migrateIfNeeded();
+    }
+    catch(err) {
+      // TODO We need to do more, that's clear. An actual WIP. 
+      logger.error('Could not migrate.');
+    }
+    
+    // Finish booting the server, start accepting connections.
+    await this.addRoutes();
+    
+    // Let actual requests pass.
+    lifecycle.appStartupComplete(); 
+    
+    await this.setupNightlyScript(server);
+    
+    logger.info('Server ready.');
+    this.notificationBus.serverReady();
+  }
+  
+  // Requires and registers all API methods. 
+  // 
+  registerApiMethods() {
     [
       require('./methods/system'),
       require('./methods/utility'),
@@ -177,34 +184,41 @@ class Server {
     ].forEach(function (moduleDef) {
       dependencies.resolve(moduleDef);
     });
+  }
+  
+  // Publishes dependencies for legacy code that accesses whole parts of the 
+  // settings object. 
+  // 
+  publishLegacySettings(settings: ConfigAccess) {
+    // register base dependencies (aka global variables)
+    dependencies.register({
+      // settings
+      authSettings: settings.get('auth').obj(),
+      auditSettings: settings.get('audit').obj(),
+      eventFilesSettings: settings.get('eventFiles').obj(),
+      eventTypesSettings: settings.get('eventTypes').obj(),
+      httpSettings: settings.get('http').obj(),
+      servicesSettings: settings.get('services').obj(),
+      updatesSettings: settings.get('updates').obj(),
 
-    // setup temp routes for handling requests during startup (incl. possible
-    // data migration)
-    lifecycle.appStartupBegin(); 
+      // misc utility
+      serverInfo: require('../package.json'),
+    });
+  }
+  
+  // Publishes dependencies for express middleware setup. 
+  // 
+  publishExpressMiddleware(settings: ConfigAccess) {
+    const customAuthStepFn = settings.getCustomAuthFunction();
+    const initContextMiddleware = middleware.initContext(
+      this.storageLayer, customAuthStepFn);
 
-    // setup HTTP and register server
-    const server = http.createServer(app);
-    
-    // Allow everyone (and his dog) to access this server. 
-    module.exports = server;
-    dependencies.register({server: server});
-
-    this.setupSocketIO(server); 
-
-    // start listening to HTTP
-    try {
-      await this.startListen(server, axonSocket);
-      await this.storageLayer.waitForConnection();
-      await this.migrateIfNeeded();
-      await this.readyServer(lifecycle);
-      await this.setupNightlyScript(server);
-    }
-    catch (e) {
-      this.handleStartupFailure(e);
-    }
-
-    process.on('exit', function () {
-      logger.info('API server exiting.');
+    dependencies.register({
+      // Express middleware
+      attachmentsAccessMiddleware: middleware.attachmentsAccess,
+      initContextMiddleware: initContextMiddleware,
+      
+      express: express, 
     });
   }
   
@@ -225,7 +239,7 @@ class Server {
   
   // Open http/https port and listen to incoming connections. 
   //
-  async startListen(server: http$Server, axonSocket: EventEmitter) {
+  async startListen(server: http$Server) {
     const settings = this.settings; 
     const logger = this.logger; 
     
@@ -249,9 +263,6 @@ class Server {
     const serverUrl = protocol + '://' + address.address + ':' + address.port;
     logger.info(`Core Server (API module) listening on ${serverUrl}`);
     
-    // FLOW: For use during our testing (DEPRECATED)
-    server.url = serverUrl;
-        
     // Warning if ignoring forbidden updates
     if (settings.get('updates.ignoreProtectedFields').bool()) {
       logger.warn('Server configuration has "ignoreProtectedFieldUpdates" set to true: ' +
@@ -263,6 +274,7 @@ class Server {
     const instanceTestSetup = settings.get('instanceTestSetup'); 
     if (process.env.NODE_ENV === 'test' && instanceTestSetup.exists()) {
       try {
+        const axonSocket = this.notificationBus.axonSocket;
         require('components/test-helpers')
           .instanceTestSetup.execute(instanceTestSetup.str(), axonSocket);
       } catch (err) {
@@ -279,7 +291,11 @@ class Server {
   //    used to synchronize with the tests. 
   //  c) For communication with other api-server processes on the same core. 
   // 
-  async openAxonSocket(): EventEmitter {
+  // You can turn this off! If you set 'tcpMessaging.enabled' to false, no axon
+  // messaging will be performed. This method returns a plain EventEmitter 
+  // instead; allowing a) and c) to work. The power of interfaces. 
+  // 
+  async openNotificationBus(): EventEmitter {
     const logger = this.logger; 
     const settings = this.settings; 
 
@@ -305,8 +321,9 @@ class Server {
   
   // Sets up `Notifications` bus and registers it for everyone to consume. 
   // 
-  setupNotificationBus(messagingSocket: EventEmitter) {
-    const bus = this.notificationBus = new Notifications(messagingSocket);
+  async setupNotificationBus() {
+    const notificationEvents = await this.openNotificationBus();
+    const bus = this.notificationBus = new Notifications(notificationEvents);
     
     dependencies.register({
       notifications: bus,
@@ -315,12 +332,7 @@ class Server {
   
   // Installs actual routes in express and prints 'Server ready'.
   //
-  readyServer(lifecycle: ExpressAppLifecycle) {
-    const logger = this.logger; 
-    
-    // ok: setup proper API routes
-    lifecycle.appStartupComplete(); 
-
+  addRoutes() {
     [
       require('./routes/system'),
       require('./routes/root'),
@@ -334,24 +346,6 @@ class Server {
     ].forEach(function (moduleDef) {
       dependencies.resolve(moduleDef);
     });
-    
-    // ok: All routes setup. Add error handling middleware. 
-    
-    lifecycle.routesAdded(); 
-
-    // all right
-
-    logger.info('Server ready');
-    this.notificationBus.serverReady();
-  }
-  
-  // Prints out an error and aborts the process. 
-  // 
-  handleStartupFailure(error: mixed) {
-    const logger = this.logger; 
-    errors.errorHandling.logError(error, null, logger);
-    
-    process.exit(1);
   }
   
   // Migrates mongodb database to the latest version, if needed. 

@@ -39,7 +39,7 @@ type AirbrakeSettings = {
  * 
  * @see handleRequestDuringStartup
  */
-type Phase = 'init' | 'startupBegon' | 'startupComplete' | 'routesAdded';
+type Phase = 'init' | 'startupBegon' | 'startupComplete';
 class ExpressAppLifecycle {  
   // State for the state machine. 
   phase: Phase;
@@ -65,6 +65,15 @@ class ExpressAppLifecycle {
   /** Enter the phase given.  
    */
   go(phase: Phase): void {
+    const phaseOrder = ['init', 'startupBegon', 'startupComplete'];
+    
+    const oldIdx = phaseOrder.indexOf(this.phase);
+    const newIdx = phaseOrder.indexOf(phase);
+    
+    if (oldIdx < 0) throw new Error('AF: Old phase invalid.');
+    if (newIdx < 0) throw new Error('AF: New phase invalid.');
+    if (oldIdx+1 !== newIdx) throw new Error('AF: New phase cannot follow old one.');
+    
     this.phase = phase; 
   }
 
@@ -142,24 +151,16 @@ class ExpressAppLifecycle {
     });
   }
   
-  /** Called after we have a database connection and just before we define 
-   * the application routes. 
-   */
+  // Called once application setup is complete, database and routes and
+  // everything.  
+  // 
   appStartupComplete() {
     this.go('startupComplete');
-  }
-  
-  /** Called when all application routes have been added to `this.app`. 
-   */
-  routesAdded() {
+    
     const app = this.app; 
-    this.go('routesAdded');
-    
+
     app.use(middleware.notFound);
-    
-    // Activate Airbrake if needed
     this.activateAirbrake();
-    
     app.use(this.errorHandlingMiddleware);
   }
 }
@@ -184,7 +185,8 @@ function expressAppInit(dependencies: any) {
   app.use(middleware.subdomainToPath(ignoredPaths));
 
   // Parse JSON bodies: 
-  app.use(bodyParser.json());
+  app.use(bodyParser.json({
+    limit: '10mb'}));
 
   // This object will contain key-value pairs, where the value can be a string
   // or array (when extended is false), or any type (when extended is true).
