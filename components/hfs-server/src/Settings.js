@@ -252,6 +252,7 @@ class Settings {
           doc: 'Port to bind to.', 
           format: 'nat', 
           default: 9000, 
+          arg: 'http-port'
         }
       }
     });
