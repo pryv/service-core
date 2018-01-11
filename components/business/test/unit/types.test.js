@@ -6,6 +6,8 @@
 
 const should = require('should');
 const memo = require('memo-is');
+const chai = require('chai');
+const assert = chai.assert;
 
 const {TypeRepository} = require('../../src/types');
 
@@ -81,6 +83,27 @@ describe('business.types.TypeRepository', function () {
         'speed', 'bearing',
       ]);
       
+    });
+  });
+  describe('placeholder types like picture/attached', () => {
+    it('should be known', function () {
+      assert.isTrue(
+        repository().isKnown('picture/attached'));
+    });
+    it('should return a type instance allowing conversion', function () {
+      const eventType = repository().lookup('picture/attached');
+
+      assert.deepEqual(eventType.requiredFields(), ['value']);
+      assert.deepEqual(eventType.optionalFields(), []);
+      assert.deepEqual(eventType.fields(), ['value']);
+
+      // The type 'null' ignores content submitted to it and stores a 'null' 
+      // in the content field. 
+      const fieldType = eventType.forField('value'); 
+      assert.deepEqual(
+        fieldType.coerce('some value'), null);
+      assert.deepEqual(
+        fieldType.coerce(132136), null);
     });
   });
   describe('series types like series:mass/kg', function () {

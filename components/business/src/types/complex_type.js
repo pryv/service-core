@@ -58,7 +58,7 @@ class ComplexType implements EventType {
     return Object.keys(this._schema.properties); 
   }
   
-  forField(name: string): PropertyType {
+  forField(/* name: string */): PropertyType {
     // TODO
     return value_types('number');
   }

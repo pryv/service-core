@@ -38,7 +38,7 @@ function createContext(settings: Settings, logFactory: LogFactory): Context {
   const mongo = new storage.Database(
     settings.get('mongodb').obj(), logFactory('database'));
     
-  return new Context(influx, mongo);
+  return new Context(influx, mongo, logFactory('model'));
 }
 
 /** The HF application holds references to all subsystems and ties everything

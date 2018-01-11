@@ -1,4 +1,3 @@
-'use strict';
 // @flow
 
 const cookieParser = require('cookie-parser');

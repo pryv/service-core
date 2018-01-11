@@ -12,12 +12,12 @@ var async = require('async'),
  * @param userFollowedSlicesStorage
  * @param notifications
  */
-module.exports = function (api, userFollowedSlicesStorage, notifications){
+module.exports = function (api, userFollowedSlicesStorage, notifications, storageLayer){
 
   // COMMON
 
   api.register('followedSlices.*',
-    commonFns.loadAccess,
+    commonFns.loadAccess(storageLayer),
     commonFns.requirePersonalAccess);
 
   // RETRIEVAL

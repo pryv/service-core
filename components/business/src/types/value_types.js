@@ -39,10 +39,17 @@ class StringType implements ValueType {
   }
 }
 
+class NullType implements ValueType {
+  coerce(/* value: any */): null {
+    return null; 
+  }
+}
+
 function produceInner(type: string): ValueType {
   switch (type) {
     case 'number': return new NumberType(); 
     case 'string': return new StringType(); 
+    case 'null': return new NullType(); 
   }
   
   throw new Error(`Unknown inner type: '${type}'.`);

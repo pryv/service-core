@@ -15,17 +15,18 @@ var errors = require('components/errors').factory,
  * @param api The user-facing API, used to compute usage stats per method
  * @param logging
  */
-module.exports = function (systemAPI, usersStorage, userAccessesStorage, servicesSettings, api,
-                           logging) {
+module.exports = function (
+  systemAPI, usersStorage, userAccessesStorage, servicesSettings, api, logging
+) {
 
   var logger = logging.getLogger('methods/system');
 
   // ---------------------------------------------------------------- createUser
   systemAPI.register('system.createUser',
-      commonFns.getParamsValidation(methodsSchema.createUser.params),
-      applyDefaultsForCreation,
-      createUser,
-      sendWelcomeMail);
+    commonFns.getParamsValidation(methodsSchema.createUser.params),
+    applyDefaultsForCreation,
+    createUser,
+    sendWelcomeMail);
 
   function applyDefaultsForCreation(context, params, result, next) {
     params.storageUsed = {

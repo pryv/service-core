@@ -1,4 +1,4 @@
-// DISABLED flow
+// @flow
 
 const async = require('async');
 const R = require('ramda');
@@ -8,6 +8,8 @@ const storage = require('components/storage');
 const MethodContext = require('components/model').MethodContext;
 const errors = require('components/errors').factory;
 const APIError = require('components/errors').APIError;
+
+import type { Logger } from 'components/utils';
 
 /** A repository for meta data on series. 
  */
@@ -50,31 +52,31 @@ class MetadataCache implements MetadataRepository {
  */
 class MetadataLoader {
   databaseConn: storage.Database; 
-  storage: { events: storage.user.Events };
+  storage: storage.StorageLayer;
   
-  constructor(databaseConn: storage.Database) {
+  constructor(databaseConn: storage.Database, logger: Logger) {
     this.databaseConn = databaseConn; 
-    this.storage = {
-      users: new storage.Users(databaseConn),
-      sessions: new storage.Sessions(databaseConn),
-      
-      events: new storage.user.Events(databaseConn),
-      streams: new storage.user.Streams(databaseConn),
-      accesses: new storage.user.Accesses(databaseConn), 
-    };
+    // NOTE We pass bogus values to the last few arguments of StorageLayer - 
+    // we're not using anything but the 'events' collection. Anyhow - these 
+    // should be abstracted away from the storage. Also - this is currently  
+    // a prototype, so we are allowed to do this. 
+    this.storage = new storage.StorageLayer(
+      databaseConn, logger, 
+      'attachmentsDirPath', 'previewsDirPath', 10, 10);
   }
   
   forSeries(userName: string, eventId: string, accessToken: string): bluebird<SeriesMetadata> {
     const storage = this.storage; 
     
     // Retrieve Access (including accessLogic)
-    const methodContext = new MethodContext(userName, accessToken, storage);
+    const customAuthStep = null; // Not supported by this prototype. 
+    const methodContext = new MethodContext(userName, accessToken, customAuthStep);
     
     return bluebird.fromCallback((returnValueCallback) => {
       async.series(
         [
-          methodContext.retrieveUser.bind(methodContext),
-          methodContext.retrieveExpandedAccess.bind(methodContext), 
+          (next) => toCallback(methodContext.retrieveUser(storage), next),
+          (next) => toCallback(methodContext.retrieveExpandedAccess(storage), next), 
           function loadEvent(done) { // result is used in success handler!
             const user = methodContext.user; 
             const query = {id: eventId};
@@ -96,6 +98,11 @@ class MetadataLoader {
           const user = methodContext.user;
           const event = R.last(results);
 
+          // Because we called retrieveExpandedAccess above.
+          if (access == null) throw new Error('AF: access != null');
+          // Because we called retrieveUser above.
+          if (user == null) throw new Error('AF: user != null');
+          
           if (event === null) return returnValueCallback(errors.unknownResource('event', eventId));
 
           returnValueCallback(null,
@@ -103,6 +110,10 @@ class MetadataLoader {
         }
       );
     });
+    
+    function toCallback(promise, next) {
+      return bluebird.resolve(promise).asCallback(next);
+    }
   }
 }
 
