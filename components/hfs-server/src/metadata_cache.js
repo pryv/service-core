@@ -60,9 +60,10 @@ class MetadataLoader {
     // we're not using anything but the 'events' collection. Anyhow - these 
     // should be abstracted away from the storage. Also - this is currently  
     // a prototype, so we are allowed to do this. 
+    const sessionMaxAge = 3600 * 1000;
     this.storage = new storage.StorageLayer(
       databaseConn, logger, 
-      'attachmentsDirPath', 'previewsDirPath', 10, 10);
+      'attachmentsDirPath', 'previewsDirPath', 10, sessionMaxAge);
   }
   
   forSeries(userName: string, eventId: string, accessToken: string): bluebird<SeriesMetadata> {
