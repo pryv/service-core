@@ -282,8 +282,8 @@ describe('auth', function () {
               if (err) {
                 return stepDone(err);
               }
-              should(data.indexOf(wrongPasswordData.password) === -1).be.true();
-              should(data.indexOf('password=(hidden)') >= 0).be.true();
+              should(data.indexOf(wrongPasswordData.password)).be.equal(-1);
+              should(data.indexOf('password=(hidden)')).be.aboveOrEqual(0);
               stepDone();
             });
           }
@@ -308,7 +308,7 @@ describe('auth', function () {
               if (err) {
                 return stepDone(err);
               }
-              should(data.indexOf('password=') === -1).be.true();
+              should(data.indexOf('password=')).be.equal(-1);
               stepDone();
             });
           }

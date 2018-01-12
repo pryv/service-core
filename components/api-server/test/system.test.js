@@ -390,8 +390,8 @@ describe('system (ex-register)', function () {
           if (err) {
             return callback(err);
           }
-          should(data.indexOf(newUserData.passwordHash) === -1).be.true();
-          should(data.indexOf('passwordHash=(hidden)') >= 0).be.true();
+          should(data.indexOf(newUserData.passwordHash)).be.equal(-1);
+          should(data.indexOf('passwordHash=(hidden)')).be.aboveOrEqual(0);
           callback();
         });
       }
@@ -401,7 +401,7 @@ describe('system (ex-register)', function () {
           if (err) {
             return callback(err);
           }
-          should(data.indexOf('passwordHash=') === -1).be.true();
+          should(data.indexOf('passwordHash=')).be.equal(-1);
           callback();
         });
       }

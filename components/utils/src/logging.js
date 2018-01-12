@@ -126,7 +126,23 @@ class LoggerImpl implements Logger {
   }
   
   log(level: string, message: string, metaData?: {}) {
-    const msg = this.messagePrefix + message;
-    this.winstonLogger[level](msg, metaData || {});
+    // Security measure: We do not want any sensitive value to appear in logs
+    const msg = hideSensitiveValues(this.messagePrefix + message);
+    const meta = metaData ? hideSensitiveValues(JSON.stringify(metaData)) : {};
+    
+    this.winstonLogger[level](msg, meta);
   }
+}
+
+// Hides sensitive values (auth tokens and passwords) in log messages
+function hideSensitiveValues (msg) {
+  const tokenRegexp = /(auth)=(c[a-z0-9-]{24})/;
+  const passwordRegexp = /"(password|passwordHash)":"([^"]*)"/;
+  const mask = '(hidden)';
+
+  msg = msg
+    .replace(tokenRegexp, '$1='+mask)
+    .replace(passwordRegexp, '$1='+mask);
+  
+  return msg;
 }
