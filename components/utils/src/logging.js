@@ -126,7 +126,7 @@ class LoggerImpl implements Logger {
   }
   
   log(level: string, message: string, metaData?: {}) {
-    // Make sure not to print auth tokens in lgos
+    // Security measure: We do not any sensitive value to appear in logs
     const msg = hideSensitiveValues(this.messagePrefix + message);
     const meta = metaData ? hideSensitiveValues(JSON.stringify(metaData)) : {};
     
@@ -134,6 +134,7 @@ class LoggerImpl implements Logger {
   }
 }
 
+// Hides sensitive values (auth tokens and passwords) in log messages
 function hideSensitiveValues (msg) {
   const tokenRegexp = /(auth)=(c[a-z0-9-]{24})/;
   const passwordRegexp = /"(password|passwordHash)":"([^"]*)"/;
