@@ -126,7 +126,7 @@ class LoggerImpl implements Logger {
   }
   
   log(level: string, message: string, metaData?: {}) {
-    // Security measure: We do not any sensitive value to appear in logs
+    // Security measure: We do not want any sensitive value to appear in logs
     const msg = hideSensitiveValues(this.messagePrefix + message);
     const meta = metaData ? hideSensitiveValues(JSON.stringify(metaData)) : {};
     
