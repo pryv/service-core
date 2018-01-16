@@ -60,7 +60,10 @@ module.exports = function(
   function retrieveAccessFromReadToken(req, res, next) {
     if (req.query.auth) {
       // forbid using access tokens in the URL
-      delete req.context.accessToken;
+      return next(errors.invalidAccessToken(
+        'Query parameter "auth" is forbidden here, ' +
+        'please use the "readToken" instead ' +
+        'or provide the auth token in "Authorization" header.'));
     }
 
     if (! req.query.readToken) { return next(); }
