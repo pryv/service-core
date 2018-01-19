@@ -224,6 +224,25 @@ describe('events', function () {
         }, done);
       });
     });
+    
+    it('must take into account fromTime and toTime even if set to 0',
+      function (done) {
+        var params = {
+          fromTime: 0,
+          toTime: 0
+        };
+        request.get(basePath).query(params).end(function (res) {
+          validation.check(res, {
+            status: 200,
+            schema: methodsSchema.get.result,
+            sanitizeFn: validation.sanitizeEvents,
+            sanitizeTarget: 'events',
+            body: {
+              events: _.at(testData.events, 27)
+            }
+          }, done);
+        });
+      });
 
     it('must properly exclude period events completed before the given period', function (done) {
       var params = {

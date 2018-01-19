@@ -352,6 +352,17 @@ module.exports = [
     createdBy: 'test',
     modified: timestamp.now('-1h'),
     modifiedBy: 'test'
+  },
+  {
+    id: getTestEventId(27),
+    streamId: streams[7].children[0].id,
+    time: 0,
+    type: 'activity/pryv',
+    description: 'simple event with time 0',
+    created: timestamp.now('-1h'),
+    createdBy: 'test',
+    modified: timestamp.now('-1h'),
+    modifiedBy: 'test'
   }
 ];
 
