@@ -88,7 +88,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   }
 
   function includeDeletionsIfRequested(context, params, result, next) {
-    if (! params.includeDeletionsSince) { return next(); }
+    if (params.includeDeletionsSince == null || params.includeDeletionsSince === false) { return next(); }
 
     var options = {
       sort: { deleted: -1 }
