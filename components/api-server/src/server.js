@@ -5,20 +5,16 @@ const express = require('express');
 const http = require('http');
 const childProcess = require('child_process');
 const CronJob = require('cron').CronJob;
-const dependencies = require('dependable').container({useFnAnnotations: true});
 const bluebird = require('bluebird');
 const EventEmitter = require('events');
 
-const middleware = require('components/middleware');
-const storage = require('components/storage');
 const utils = require('components/utils');
 
 const Notifications = require('./Notifications');
-const API = require('./API');
+const Application = require('./application');
 
+import type { Logger } from 'components/utils';
 import type { ConfigAccess } from './settings';
-
-import type { LogFactory, Logger } from 'components/utils';
 
 // Server class for api-server process. To use this, you 
 // would 
@@ -27,93 +23,36 @@ import type { LogFactory, Logger } from 'components/utils';
 //    server.start(); 
 // 
 class Server {
-  settings: ConfigAccess; 
+  application: Application;
+  settings: ConfigAccess;
   
-  logFactory: LogFactory; 
   logger: Logger; 
-  
-  api: API; 
-  // API for system routes. 
-  systemAPI: API; 
   
   // Axon based internal notification and messaging bus. 
   notificationBus: Notifications;
-  
-  storageLayer: storage.StorageLayer; 
-  
+    
   // Load settings and setup base configuration. 
   //
-  constructor(settings: ConfigAccess) {
-    this.settings = settings;
+  constructor(application: Application) {
+    this.application = application;
     
-    const logging = utils.logging(settings.get('logs').obj()); 
-    this.logger = logging.getLogger('api-server');
-    this.logFactory = logging.getLogger;
-    
-    this.api = new API(); 
-    this.systemAPI = new API(); 
-    
-    // We're going to fade the use of 'logging' out, so we only store it there:
-    dependencies.register({ logging: logging });
-  }
-  
-  // Setup this.storageLayer.
-  //
-  setupStorageLayer() {
-    const settings = this.settings;
+    const settings = application.settings; 
+    this.settings = settings; 
 
-    const database = new storage.Database(
-      settings.get('database').obj(), 
-      this.logFactory('database'));
-
-    // 'StorageLayer' is a component that contains all the vertical registries
-    // for various database models. 
-    this.storageLayer = new storage.StorageLayer(database, 
-      this.logFactory('model'),
-      settings.get('eventFiles.attachmentsDirPath').str(), 
-      settings.get('eventFiles.previewsDirPath').str(), 
-      settings.get('auth.passwordResetRequestMaxAge').num(), 
-      settings.get('auth.sessionMaxAge').num(), 
-    );
-    
-    // Now map back to DI: We hope that this bit will eventually disappear. 
-    const sl = this.storageLayer;
-    dependencies.register({
-      // storage
-      versionsStorage: sl.versions,
-      passwordResetRequestsStorage: sl.passwordResetRequests,
-      sessionsStorage: sl.sessions,
-      usersStorage: sl.users,
-      userAccessesStorage: sl.accesses,
-      userEventFilesStorage: sl.eventFiles,
-      userEventsStorage: sl.events,
-      userFollowedSlicesStorage: sl.followedSlices,
-      userProfileStorage: sl.profile,
-      userStreamsStorage: sl.streams,
-      
-      // and finally, for code that is almost, but not quite there
-      storageLayer: sl, 
-    });
+    this.logger = application.logFactory('api-server');
   }
-  
+    
   // Start the server. 
   //
   async start() {
-    const settings = this.settings;
+    const app = this.application; 
+    const dependencies = app.dependencies;
     const logger = this.logger;
     
-    dependencies.register({
-      api: this.api,
-      // use separate API instance to avoid any possible security issue
-      systemAPI: this.systemAPI 
-    });
+    this.publishExpressMiddleware();
     
-    this.publishLegacySettings(settings); 
-    this.setupStorageLayer();
-    this.publishExpressMiddleware(settings);
-    
-    const {app, lifecycle} = require('./expressApp')(dependencies);
-    dependencies.register({expressApp: app});
+    const {expressApp, lifecycle} = require('./expressApp')(dependencies);
+    dependencies.register({expressApp: expressApp});
 
     // start TCP pub messaging
     await this.setupNotificationBus();
@@ -126,12 +65,12 @@ class Server {
     lifecycle.appStartupBegin(); 
 
     // Setup HTTP and register server; setup Socket.IO.
-    const server = http.createServer(app);
+    const server = http.createServer(expressApp);
     this.setupSocketIO(server); 
     await this.startListen(server);
 
     // Setup DB connection
-    await this.storageLayer.waitForConnection();
+    await app.storageLayer.waitForConnection();
     try {
       await this.migrateIfNeeded();
     }
@@ -141,7 +80,7 @@ class Server {
     }
     
     // Finish booting the server, start accepting connections.
-    await this.addRoutes();
+    await this.addRoutes(expressApp);
     
     // Let actual requests pass.
     lifecycle.appStartupComplete(); 
@@ -155,6 +94,8 @@ class Server {
   // Requires and registers all API methods. 
   // 
   registerApiMethods() {
+    const dependencies = this.application.dependencies;
+
     [
       require('./methods/system'),
       require('./methods/utility'),
@@ -171,53 +112,28 @@ class Server {
     });
   }
   
-  // Publishes dependencies for legacy code that accesses whole parts of the 
-  // settings object. 
-  // 
-  publishLegacySettings(settings: ConfigAccess) {
-    // register base dependencies (aka global variables)
-    dependencies.register({
-      // settings
-      authSettings: settings.get('auth').obj(),
-      auditSettings: settings.get('audit').obj(),
-      eventFilesSettings: settings.get('eventFiles').obj(),
-      eventTypesSettings: settings.get('eventTypes').obj(),
-      httpSettings: settings.get('http').obj(),
-      servicesSettings: settings.get('services').obj(),
-      updatesSettings: settings.get('updates').obj(),
-
-      // misc utility
-      serverInfo: require('../package.json'),
-    });
-  }
-  
   // Publishes dependencies for express middleware setup. 
   // 
-  publishExpressMiddleware(settings: ConfigAccess) {
-    const customAuthStepFn = settings.getCustomAuthFunction();
-    const initContextMiddleware = middleware.initContext(
-      this.storageLayer, customAuthStepFn);
+  publishExpressMiddleware() {
+    const dependencies = this.application.dependencies;
 
     dependencies.register({
-      // Express middleware
-      attachmentsAccessMiddleware: middleware.attachmentsAccess,
-      initContextMiddleware: initContextMiddleware,
-      
+      // TODO Do we still need this? Where? Try to eliminate it. 
       express: express, 
     });
   }
   
   setupSocketIO(server: http$Server) {
-    const logFactory = this.logFactory; 
+    const application = this.application; 
     const notificationBus = this.notificationBus;
-    const api = this.api; 
-    const storageLayer = this.storageLayer;
+    const api = application.api; 
+    const storageLayer = application.storageLayer;
     const settings = this.settings; 
     const customAuthStepFn = settings.getCustomAuthFunction();
         
     const socketIOsetup = require('./socket-io');
     socketIOsetup(
-      server, logFactory('socketIO'), 
+      server, application.logFactory('socketIO'), 
       notificationBus, api, 
       storageLayer, customAuthStepFn);
   }
@@ -276,7 +192,7 @@ class Server {
   //    used to synchronize with the tests. 
   //  c) For communication with other api-server processes on the same core. 
   // 
-  // You can turn this off! If you set 'tcpMessaging.enabled' to false, no axon
+  // You can turn this off! If you set 'tcpMessaging.enabled' to false, nstno axon
   // messaging will be performed. This method returns a plain EventEmitter 
   // instead; allowing a) and c) to work. The power of interfaces. 
   // 
@@ -307,6 +223,7 @@ class Server {
   // Sets up `Notifications` bus and registers it for everyone to consume. 
   // 
   async setupNotificationBus() {
+    const dependencies = this.application.dependencies;
     const notificationEvents = await this.openNotificationBus();
     const bus = this.notificationBus = new Notifications(notificationEvents);
     
@@ -317,10 +234,14 @@ class Server {
   
   // Installs actual routes in express and prints 'Server ready'.
   //
-  addRoutes() {
+  addRoutes(expressApp: express$Application) {
+    const application = this.application;
+    const dependencies = application.dependencies;
+    
+    dependencies.resolve(require('./routes/system'));
+    require('./routes/root')(expressApp, application);
+    
     [
-      require('./routes/system'),
-      require('./routes/root'),
       require('./routes/auth'),
       require('./routes/accesses'),
       require('./routes/account'),
@@ -337,7 +258,7 @@ class Server {
   // 
   migrateIfNeeded(): Promise<mixed> {
     return bluebird.fromCallback(
-      (cb) => this.storageLayer.versions.migrateIfNeeded(cb));
+      (cb) => this.application.storageLayer.versions.migrateIfNeeded(cb));
   }
   
   /**
@@ -389,4 +310,5 @@ class Server {
 
 }
 module.exports = Server; 
+
 

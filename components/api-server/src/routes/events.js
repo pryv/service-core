@@ -1,23 +1,24 @@
-var methodCallback = require('./methodCallback'),
-    encryption = require('components/utils').encryption,
-    errors = require('components/errors').factory,
-    express = require('express'),
-    Paths = require('./Paths'),
-    tryCoerceStringValues = require('../schema/validation').tryCoerceStringValues,
-    _ = require('lodash');
+const methodCallback = require('./methodCallback');
+const encryption = require('components/utils').encryption;
+const errors = require('components/errors').factory;
+const express = require('express');
+const Paths = require('./Paths');
+const tryCoerceStringValues = require('../schema/validation').tryCoerceStringValues;
+const _ = require('lodash');
 
 const bluebird = require('bluebird');  
-const hasFileUpload = require('../middleware/uploads').hasFileUpload;
 
+const hasFileUpload = require('../middleware/uploads').hasFileUpload;
+const attachmentsAccessMiddleware = require('../middleware/attachment_access');
 /**
  * Set up events route handling.
  */
 module.exports = function(
   expressApp, 
-  api, attachmentsAccessMiddleware, userAccessesStorage,
+  api, userAccessesStorage,
   authSettings, eventFilesSettings, storageLayer
 ) {
-
+  
   const attachmentsStatic = express.static(
     eventFilesSettings.attachmentsDirPath);
   const events = new express.Router();
@@ -54,7 +55,7 @@ module.exports = function(
   expressApp.get(Paths.Events + '/:id/:fileId/:fileName?', 
     retrieveAccessFromReadToken, 
     loadAccess,
-    attachmentsAccessMiddleware, 
+    attachmentsAccessMiddleware(storageLayer.events), 
     attachmentsStatic);
 
   function retrieveAccessFromReadToken(req, res, next) {
@@ -146,3 +147,4 @@ module.exports = function(
 
 };
 module.exports.injectDependencies = true;
+

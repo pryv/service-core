@@ -7,6 +7,7 @@
 /* eslint-disable no-console */
 
 const Server = require('../src/server');
+const Application = require('../src/application');
 const Settings = require('../src/settings');
 
 // This bit is useful to trace down promise rejections that aren't caught. 
@@ -24,19 +25,17 @@ process.on('SIGINT', () => {
 // Load settings
 const settings = Settings.load(); 
 
+// Construct application
+const application = new Application(settings);
+
 // Start the server
-try {
-  const server = new Server(settings); 
-  const result = server.start();
-  
-  // Make sure we catch top-level exceptions.
-  result
-    .then(() => console.info('Startup sequence complete, Server is running.')) 
-    .catch(e => console.error(e)); 
-}
-catch (err) {
-  // Catches synchronous errors that we might have. 
-  console.error(err);
-  console.trace(err);
-  process.exit(1);
-}
+const server = new Server(application); 
+const result = server.start();
+
+// Make sure we catch top-level exceptions.
+result
+  .then(() => console.info('Startup sequence complete, Server is running.')) 
+  .catch(e => {
+    console.error(e);
+    process.exit(1);
+  }); 

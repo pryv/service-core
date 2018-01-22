@@ -20,26 +20,7 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
    * Handle common parameters.
    */
   expressApp.all(Paths.System + '*', checkAuth);
-  // temp for backwards-compat, TODO: remove after all reg servers updated
-  expressApp.all('/register/*', checkAuth);
 
-  function checkAuth(req, res, next) {
-    var secret = req.headers.authorization;
-
-    if (! secret || secret !== authSettings.adminAccessKey) {
-
-      logger.warn('Unauthorized attempt to access system route', {
-        url: req.url,
-        ip: req.ip,
-        headers: req.headers,
-        body: req.body
-      });
-      // return "not found" to avoid encouraging retries
-      return next(errors.unknownResource());
-    }
-
-    next();
-  }
 
   expressApp.post(Paths.System + '/create-user', contentType.json, createUser);
   // temp for backwards-compat, TODO: remove after all reg servers updated
@@ -58,5 +39,24 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
     systemAPI.call('system.getUserInfo', {}, params, methodCallback(res, next, 200));
   });
 
+  // Checks if `req` contains valid authorization to access the system routes. 
+  // 
+  function checkAuth(req, res, next) {
+    var secret = req.headers.authorization;
+
+    if (secret==null || secret !== authSettings.adminAccessKey) {
+      logger.warn('Unauthorized attempt to access system route', {
+        url: req.url,
+        ip: req.ip,
+        headers: req.headers,
+        body: req.body });
+      
+      // return "not found" to avoid encouraging retries
+      return next(errors.unknownResource());
+    }
+
+    next();
+  }
 };
 module.exports.injectDependencies = true;
+
