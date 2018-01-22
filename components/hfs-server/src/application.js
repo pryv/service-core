@@ -8,7 +8,7 @@ const storage = require('components/storage');
 
 const Context = require('./context');
 const Settings = require('./Settings');
-const Server = require('./Server'); 
+const Server = require('./server'); 
 
 import type {LogFactory} from 'components/utils/src/logging';
 
@@ -32,8 +32,11 @@ function createLogFactory(settings): LogFactory {
   return logComponent(logSettings).getLogger;
 }
 function createContext(settings: Settings, logFactory: LogFactory): Context {
+  const host = settings.get('influxdb.host').str(); 
+  const port = settings.get('influxdb.port').num();
+  
   const influx = new business.series.InfluxConnection(
-    {host: 'localhost'}, logFactory('influx')); 
+    {host: host, port: port}, logFactory('influx')); 
   
   const mongo = new storage.Database(
     settings.get('mongodb').obj(), logFactory('database'));

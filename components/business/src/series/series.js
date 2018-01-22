@@ -88,7 +88,6 @@ class Series {
       SELECT * FROM "${measurementName}"
       ${wherePart}
       ORDER BY time ASC
-      LIMIT 10
     `;
 
     return this.connection
