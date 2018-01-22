@@ -180,7 +180,7 @@ describe('Socket.IO', function () {
         const chronologicalEvents = testEvents.sort( (a, b) => a.time - b.time );
         const expectedEvents = validation.removeDeletionsAndHistory(chronologicalEvents);
         result.events.should.eql(expectedEvents);
-    
+        
         // check deletions
         let deleted = R.filter(R.where({deleted: R.equals(true)}), testData.events);
         for (let el of deleted) {

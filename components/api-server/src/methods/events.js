@@ -62,18 +62,18 @@ module.exports = function (
       modifiedSince: null,
       includeDeletions: false
     });
-    if (params.fromTime === null && params.toTime !== null) {
+    if (params.fromTime == null && params.toTime != null) {
       params.fromTime = timestamp.add(params.toTime, -24 * 60 * 60);
     }
-    if (params.fromTime !== null && params.toTime === null) {
+    if (params.fromTime != null && params.toTime == null) {
       params.toTime = timestamp.now();
     }
-    if (params.fromTime === null && params.toTime === null && params.limit === null) {
+    if (params.fromTime == null && params.toTime == null && params.limit == null) {
       // limit to 20 items by default
       params.limit = 20;
     }
 
-    if (params.streams !== null) {
+    if (params.streams != null) {
       var expandedStreamIds = treeUtils.expandIds(context.streams, params.streams);
       var unknownIds = _.difference(params.streams, expandedStreamIds);
 
@@ -130,7 +130,7 @@ module.exports = function (
     if (params.running) {
       query.duration = {'$type' : 10}; // matches when duration exists and is null
     }
-    if (params.fromTime) {
+    if (params.fromTime != null) {
       query.$or = [
         { // Event started before fromTime, but finished inside from->to.
           time: {$lt: params.fromTime},
@@ -141,7 +141,7 @@ module.exports = function (
         },
       ];
     }
-    if (params.toTime) {
+    if (params.toTime != null) {
       _.defaults(query, {time: {}});
       query.time.$lte = params.toTime;
     }
@@ -155,6 +155,7 @@ module.exports = function (
       skip: params.skip,
       limit: params.limit
     };
+        
     userEventsStorage.findStreamed(context.user, query, options, function (err, eventsStream) {
       if (err) {
         return next(errors.unexpectedError(err));
