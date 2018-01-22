@@ -14,5 +14,8 @@
   }, 
   "mongodb": {
     "host": "localhost",
+  }, 
+  "influxdb": {
+    "host": "localhost",
   }
 }
