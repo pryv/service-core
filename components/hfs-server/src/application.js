@@ -32,8 +32,11 @@ function createLogFactory(settings): LogFactory {
   return logComponent(logSettings).getLogger;
 }
 function createContext(settings: Settings, logFactory: LogFactory): Context {
+  const host = settings.get('influxdb.host').str(); 
+  const port = settings.get('influxdb.port').num();
+  
   const influx = new business.series.InfluxConnection(
-    {host: 'localhost'}, logFactory('influx')); 
+    {host: host, port: port}, logFactory('influx')); 
   
   const mongo = new storage.Database(
     settings.get('mongodb').obj(), logFactory('database'));

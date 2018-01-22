@@ -159,11 +159,21 @@ class Settings {
         default: 'config/hfs-server.json', 
         arg: 'config', 
       },
+      influxdb: {
+        host: {
+          format: String, 
+          default: 'influxdb'
+        }, 
+        port: {
+          format: Number, 
+          default: 8086
+        }
+      },
       mongodb: {
         // These should be the production defaults. 
         host: {
           format: String, 
-          default: 'mongo'
+          default: 'mongodb'
         }, 
         port: {
           format: Number, 
