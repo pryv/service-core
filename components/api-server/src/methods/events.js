@@ -145,7 +145,7 @@ module.exports = function (
       _.defaults(query, {time: {}});
       query.time.$lte = params.toTime;
     }
-    if (params.modifiedSince) {
+    if (params.modifiedSince != null) {
       query.modified = {$gt: params.modifiedSince};
     }
 
@@ -173,7 +173,7 @@ module.exports = function (
 
   function includeDeletionsIfRequested(context, params, result, next) {
 
-    if (!params.modifiedSince || !params.includeDeletions) {
+    if (params.modifiedSince == null || !params.includeDeletions) {
       return next();
     }
 
