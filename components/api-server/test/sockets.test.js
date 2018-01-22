@@ -177,8 +177,9 @@ describe('Socket.IO', function () {
         validation.sanitizeEvents(result.events);
     
         const testEvents = _.clone(testData.events);
-        const chronologicalEvents = testEvents.sort( (a, b) => a.time - b.time );
+        const chronologicalEvents = _.sortBy(testEvents, 'time');
         const expectedEvents = validation.removeDeletionsAndHistory(chronologicalEvents);
+        
         result.events.should.eql(expectedEvents);
         
         // check deletions
