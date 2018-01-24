@@ -40,7 +40,11 @@
       "key": "OVERRIDE ME",
       "sendMessagePath": "/api/1.0/messages/send-template.json",
       "welcomeTemplate": "welcome-email",
-      "resetPasswordTemplate": "reset-password"
+      "resetPasswordTemplate": "reset-password",
+      "enabled": {
+        "welcome": true,
+        "resetPassword": true
+      }
     }
   },
   "logs": {
@@ -60,5 +64,8 @@
       "active": false,
       "key": "OVERRIDE ME"
     }
+  },
+  "updates": {
+    "ignoreProtectedFields": true
   }
 }
