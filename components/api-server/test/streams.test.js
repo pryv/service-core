@@ -672,6 +672,23 @@ describe('streams', function () {
       ],
       done );
     });
+    
+    it('must reject the deletion of a root stream with mergeEventsWithParent=true', function (done) {
+      var id = testData.streams[0].id;
+      async.series([
+        storage.updateOne.bind(storage, user, {id: id}, {trashed: true}), function deleteStream(stepDone) {
+          request.del(path(testData.streams[0].id)).query({mergeEventsWithParent: true})
+            .end(function (res) {
+              validation.checkError(res, {
+                status: 400,
+                id: ErrorIds.InvalidOperation,
+                data: {streamId: id}
+              }, stepDone);
+            });
+        }
+      ],
+      done );
+    });
 
     it('must reassign the linked events to the deleted stream\'s parent when specified', function (done) {
       var parentStream = testData.streams[0],
