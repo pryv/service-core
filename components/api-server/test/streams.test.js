@@ -224,7 +224,7 @@ describe('streams', function () {
     });
     
     it('must accept explicit null for optional fields', function (done) {
-      var data = {
+      const data = {
         id: 'nullable',
         name: 'New stream with null fields',
         parentId: null,
