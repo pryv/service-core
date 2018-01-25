@@ -222,7 +222,25 @@ describe('streams', function () {
         done();
       });
     });
-
+    
+    it('must accept explicit null for optional fields', function (done) {
+      var data = {
+        id: 'nullable',
+        name: 'New stream with null fields',
+        parentId: null,
+        singleActivity: null,
+        clientData: null,
+        children: null,
+        trashed: null
+      };
+      request.post(basePath).send(data).end(function (res) {
+        validation.check(res, {
+          status: 201,
+          schema: methodsSchema.create.result
+        }, done);
+      });
+    });
+    
     it('must fail if a sibling stream with the same name already exists', function (done) {
       var data = {name: testData.streams[0].name};
       request.post(basePath).send(data).end(function (res) {

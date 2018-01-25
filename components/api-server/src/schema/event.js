@@ -2,21 +2,24 @@
  * JSON Schema specification for events.
  */
 
-var Action = require('./Action'),
-    helpers = require('./helpers'),
-    object = helpers.object,
-    array = helpers.array,
-    string = helpers.string,
-    number = helpers.number,
-    boolean = helpers.boolean;
+const Action = require('./Action');
+const helpers = require('./helpers');
+const object = helpers.object;
+const array = helpers.array;
+const string = helpers.string;
+const number = helpers.number;
+const boolean = helpers.boolean;
 
 /**
  * @param {Action} action
  */
 exports = module.exports = function (action) {
-  if (action === Action.STORE) { action = Action.READ; } // read items === stored items
+  // read items === stored items
+  if (action === Action.STORE){
+    action = Action.READ;
+  }
 
-  var schema = object({
+  let schema = object({
     'id': string(),
     'time': number(),
     'duration': number({nullable: true}),
@@ -58,13 +61,13 @@ exports = module.exports = function (action) {
   }
 
   switch (action) {
-  case Action.READ:
-    schema.required = [ 'id', 'streamId', 'time', 'type',
-      'created', 'createdBy', 'modified', 'modifiedBy' ];
-    break;
-  case Action.CREATE:
-    schema.required = [ 'streamId', 'type' ];
-    break;
+    case Action.READ:
+      schema.required = [ 'id', 'streamId', 'time', 'type',
+        'created', 'createdBy', 'modified', 'modifiedBy' ];
+      break;
+    case Action.CREATE:
+      schema.required = [ 'streamId', 'type' ];
+      break;
   }
 
   return schema;

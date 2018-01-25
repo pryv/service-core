@@ -5,15 +5,15 @@
  * JSON Schema specification of methods data for events.
  */
 
-var Action = require('./Action'),
-    event = require('./event'),
-    itemDeletion = require('./itemDeletion'),
-    helpers = require('./helpers'),
-    object = helpers.object,
-    array = helpers.array,
-    string = helpers.string,
-    number = helpers.number,
-    boolean = helpers.boolean;
+const Action = require('./Action');
+const event = require('./event');
+const itemDeletion = require('./itemDeletion');
+const helpers = require('./helpers');
+const object = helpers.object;
+const array = helpers.array;
+const string = helpers.string;
+const number = helpers.number;
+const boolean = helpers.boolean;
 
 module.exports = {
   get: {
