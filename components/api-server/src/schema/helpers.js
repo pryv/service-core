@@ -62,8 +62,15 @@ exports.boolean = getBaseSchema.bind(null, 'boolean');
 exports.getBaseSchema = getBaseSchema;
 
 function getBaseSchema(type, options) {
-  var result = {type: type};
+  let result = {
+    type: [type]
+  };
+
   if (options) {
+    if(options.optional === true) {
+      result.type.push('null');
+      delete options.optional;
+    }
     _.extend(result, options);
   }
   return result;
@@ -75,8 +82,8 @@ function getBaseSchema(type, options) {
  * @param {Object} schema
  */
 exports.addTrackingProperties = function (schema) {
-  schema.properties.created = {type: 'number'};
-  schema.properties.createdBy = {type: 'string'};
-  schema.properties.modified = {type: 'number'};
-  schema.properties.modifiedBy = {type: 'string'};
+  schema.properties.created = {type: ['number', 'null']};
+  schema.properties.createdBy = {type: ['string', 'null']};
+  schema.properties.modified = {type: ['number', 'null']};
+  schema.properties.modifiedBy = {type: ['string', 'null']};
 };

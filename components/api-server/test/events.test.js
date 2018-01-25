@@ -622,6 +622,29 @@ describe('events', function () {
         done();
       });
     });
+    
+    it('must accept null for optional writable (not read-only) fields', function (done) {
+      var data = {
+        type: 'test/null',
+        streamId: testData.streams[2].id,
+        duration: null,
+        content: null,
+        description: null,
+        clientData: null,
+        tags: null,
+        trashed: null,
+        created: null,
+        createdBy: null,
+        modified: null,
+        modifiedBy: null
+      };
+      request.post(basePath).send(data).end(function (res) {
+        validation.check(res, {
+          status: 201,
+          schema: methodsSchema.create.result
+        }, done);
+      });
+    });
 
     it('must refuse events with no stream id', function (done) {
       request.post(basePath).send({type: testType}).end(function (res) {

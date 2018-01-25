@@ -92,7 +92,7 @@ module.exports = {
       additionalProperties: false
     }),
     result: object({
-      'stoppedId': helpers.getBaseSchema(['string', 'null'])
+      'stoppedId': string({optional:true})
     }, {
       required: [ 'stoppedId' ],
       additionalProperties: false
