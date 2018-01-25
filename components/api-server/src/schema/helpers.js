@@ -67,9 +67,9 @@ function getBaseSchema(type, options) {
   };
 
   if (options) {
-    if(options.optional === true) {
+    if(options.nullable === true) {
       result.type.push('null');
-      delete options.optional;
+      delete options.nullable;
     }
     _.extend(result, options);
   }
@@ -82,8 +82,8 @@ function getBaseSchema(type, options) {
  * @param {Object} schema
  */
 exports.addTrackingProperties = function (schema) {
-  schema.properties.created = {type: ['number', 'null']};
-  schema.properties.createdBy = {type: ['string', 'null']};
-  schema.properties.modified = {type: ['number', 'null']};
-  schema.properties.modifiedBy = {type: ['string', 'null']};
+  schema.properties.created = {type: 'number'};
+  schema.properties.createdBy = {type: 'string'};
+  schema.properties.modified = {type: 'number'};
+  schema.properties.modifiedBy = {type: 'string'};
 };

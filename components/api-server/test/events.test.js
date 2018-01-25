@@ -623,8 +623,8 @@ describe('events', function () {
       });
     });
     
-    it('must accept null for optional writable (not read-only) fields', function (done) {
-      var data = {
+    it('must accept explicit null for optional fields', function (done) {
+      const data = {
         type: 'test/null',
         streamId: testData.streams[2].id,
         duration: null,
@@ -632,11 +632,7 @@ describe('events', function () {
         description: null,
         clientData: null,
         tags: null,
-        trashed: null,
-        created: null,
-        createdBy: null,
-        modified: null,
-        modifiedBy: null
+        trashed: null
       };
       request.post(basePath).send(data).end(function (res) {
         validation.check(res, {

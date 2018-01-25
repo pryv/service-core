@@ -19,14 +19,14 @@ exports = module.exports = function (action) {
   var schema = object({
     'id': string(),
     'time': number(),
-    'duration': number({optional: true}),
+    'duration': number({nullable: true}),
     'streamId': string(),
-    'tags': array(string(), {optional: true}),
+    'tags': array(string(), {nullable: true}),
     'type': string({ pattern: '^(series:)?[a-z0-9-]+/[a-z0-9-]+$' }),
     'content': {},
-    'description': string({optional: true}),
-    'clientData': object({}, {optional: true}),
-    'trashed': boolean({optional: true})
+    'description': string({nullable: true}),
+    'clientData': object({}, {nullable: true}),
+    'trashed': boolean({nullable: true})
   }, {
     id: helpers.getTypeURI('event', action),
     additionalProperties: false
