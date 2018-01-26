@@ -287,6 +287,13 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         });
       },
       function checkIfLinkedEventsExist(stepDone) {
+        if(params.mergeEventsWithParent === true && parentId == null) {
+          return stepDone(errors.invalidOperation(
+            'Deleting a root stream with mergeEventsWithParent=true is rejected ' +
+            'since there is no parent stream to merge linked events in.',
+            {streamId: params.id}));
+        }
+        
         userEventsStorage.find(context.user, {streamId: {$in: streamAndDescendantIds}},
           {limit: 1}, function (err, events) {
             if (err) {
