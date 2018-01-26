@@ -5,6 +5,7 @@ const msgpack = require('msgpack5')();
 
 const Server = require('../../src/server');
 const Settings = require('../../src/settings');
+const Application = require('../../src/application');
 
 import type { CustomAuthFunction } from 'components/model';
 import type { ConfigAccess, ConfigValue } from '../../src/settings';
@@ -83,8 +84,9 @@ process.on('message', dispatchParentMessage);
 async function intStartServer(injectSettings: {}) {
   const settings = Settings.load(); 
   const masked = new ConfigMask(injectSettings, settings);
+  const app = new Application(masked);
   
-  const server = new Server(masked); 
+  const server = new Server(app); 
   await server.start(); 
   
   sendToParent('int_started');
