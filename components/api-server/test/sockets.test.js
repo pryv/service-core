@@ -13,7 +13,7 @@ const assert = require('chai').assert;
 const bluebird = require('bluebird');
 const async = require('async');
 const io = require('socket.io-client');
-// explicit require to benefit from static funcions
+// explicit require to benefit from static functions
 const should = require('should'); 
 const queryString = require('qs');
 
