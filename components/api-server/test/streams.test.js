@@ -412,6 +412,21 @@ describe('streams', function () {
         done();
       });
     });
+    
+    it('must accept explicit null for optional fields', function (done) {
+      const data = {
+        parentId: null,
+        singleActivity: null,
+        clientData: null,
+        trashed: null
+      };
+      request.put(path(testData.streams[0].id)).send(data).end(function (res) {
+        validation.check(res, {
+          status: 200,
+          schema: methodsSchema.update.result
+        }, done);
+      });
+    });
 
     it('must add/update/remove the specified client data fields without touching the others',
         function (done) {

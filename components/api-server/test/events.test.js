@@ -1346,6 +1346,25 @@ describe('events', function () {
         done();
       });
     });
+    
+    it('must accept explicit null for optional fields', function (done) {
+      const data = {
+        type: 'test/null',
+        duration: null,
+        content: null,
+        description: null,
+        clientData: null,
+        tags: null,
+        trashed: null
+      };
+      request.put(path(testData.events[10].id)).send(data)
+        .end(function (res) {
+          validation.check(res, {
+            status: 200,
+            schema: methodsSchema.update.result
+          }, done);
+        });
+    });
 
     it('must validate the event\'s content if its type is known', function (done) {
       var data = {

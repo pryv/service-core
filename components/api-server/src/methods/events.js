@@ -604,6 +604,7 @@ module.exports = function (
       if (err) { return next(errors.unexpectedError(err)); }
 
       if (periodEvent) {
+        console.log(params.duration);
         return next(errors.invalidOperation('At least one period event ("' + periodEvent.id +
           '") already exists at a later time', {conflictingEventId: periodEvent.id}
         ));
