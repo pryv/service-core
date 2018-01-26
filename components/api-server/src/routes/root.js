@@ -1,72 +1,72 @@
-var setCommonMeta = require('../methods/helpers/setCommonMeta'),
-    methodCallback = require('./methodCallback'),
-    Paths = require('./Paths'),
-    _ = require('lodash');
+// @flow
 
-/**
- * Root route :P handling.
- *
- * @param {Object} expressApp
- * @param api
- * @param {Function} initContextMiddleware
- */
-module.exports = function (expressApp, api, initContextMiddleware) {
+const _ = require('lodash');
 
-  // ROOT
+const middleware = require('components/middleware');
 
-  /**
-   * Accept `OPTIONS`.
-   */
-  expressApp.options('*', function (req, res) {
+const setCommonMeta = require('../methods/helpers/setCommonMeta');
+const methodCallback = require('./methodCallback');
+const Paths = require('./Paths');
+    
+import type Application from '../application';
+
+// Handlers for path roots at various places; handler for batch calls and 
+// access-info. 
+function root(expressApp: express$Application, app: Application) {
+  const settings = app.settings;
+  const api = app.api;
+  
+  const customAuthStepFn = settings.getCustomAuthFunction();
+  const initContextMiddleware = middleware.initContext(
+    app.storageLayer, customAuthStepFn);
+
+  // Allow CORS (Cross Origin Resource Sharing) by responding to and accepting
+  // all OPTIONS requests.
+  expressApp.options('*', function (req: express$Request, res) {
+    // The commonHeaders middleware takes care of all Access-Control-* 
+    // headers; all that remains here is to answer 200 OK. 
     res.sendStatus(200);
   });
 
-  /**
-   * Bootstrap to user's Pryv page (i.e. browser home).
-   */
+  // Bootstrap to user's Pryv page (i.e. browser home).
   expressApp.get('/', rootIndex);
-
-  // USER ROOT
-
-  /**
-   * Load user for all user API methods.
-   */
-  expressApp.get(Paths.UserRoot + '/*', initContextMiddleware);
-  expressApp.post(Paths.UserRoot + '/*', initContextMiddleware);
-  expressApp.put(Paths.UserRoot + '/*', initContextMiddleware);
-  expressApp.delete(Paths.UserRoot + '/*', initContextMiddleware);
-
   expressApp.get(Paths.UserRoot + '/', rootIndex);
 
-  /**
-   * Current access information.
-   */
-  expressApp.get(Paths.UserRoot + '/access-info', function (req, res, next) {
-    api.call('getAccessInfo', req.context, req.query, methodCallback(res, next, 200));
+  // Load user for all user API methods.
+  expressApp.all(Paths.UserRoot + '/*', initContextMiddleware);
+
+  // Current access information.
+  expressApp.get(Paths.UserRoot + '/access-info', function (req: express$Request, res, next) {
+    // FLOW More request.context...
+    api.call('getAccessInfo', req.context, req.query, 
+      methodCallback(res, next, 200));
   });
 
-  /**
-   * Batch request of multiple API method calls.
-   */
-  expressApp.post(Paths.UserRoot, initContextMiddleware, function (req, res, next) {
-    api.call('callBatch', req.context, req.body, methodCallback(res, next, 200));
+  // Batch request of multiple API method calls.
+  expressApp.post(Paths.UserRoot, initContextMiddleware, function (req: express$Request, res, next) {
+    // FLOW More request.context...
+    api.call('callBatch', req.context, req.body, 
+      methodCallback(res, next, 200));
   });
+}
+module.exports = root; 
 
-  var devSiteURL = 'https://api.pryv.com/';
-  function rootIndex(req, res) {
-    var result = setCommonMeta({});
-    if (req.accepts('application/json')) {
-      res.json(_.extend(result, {
-        cheersFrom: 'Pryv API',
-        learnMoreAt: devSiteURL
-      }));
-    } else {
-      res.send('# Cheers from the Pryv API!\n\n' +
-          '- API version: ' + result.meta.apiVersion + '\n' +
-          '- Server time: ' + result.meta.serverTime + '\n\n' +
-          'Learn more at ' + devSiteURL);
-    }
+// Renders a greeting message; this route is displayed on the various forms
+// of roots ('/', 'foo.pryv.me/')
+// 
+function rootIndex(req: express$Request, res) {
+  const devSiteURL = 'https://api.pryv.com/';
+  const result = setCommonMeta({});
+  
+  if (req.accepts('application/json')) {
+    res.json(_.extend(result, {
+      cheersFrom: 'Pryv API',
+      learnMoreAt: devSiteURL
+    }));
+  } else {
+    res.send('# Cheers from the Pryv API!\n\n' +
+        '- API version: ' + result.meta.apiVersion + '\n' +
+        '- Server time: ' + result.meta.serverTime + '\n\n' +
+        'Learn more at ' + devSiteURL);
   }
-
-};
-module.exports.injectDependencies = true;
+}

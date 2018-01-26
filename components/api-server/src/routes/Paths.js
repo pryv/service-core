@@ -2,12 +2,14 @@
  * Regroups the different URL paths served by this module.
  */
 
-var Params = {
+const Params = {
   Username: 'username'
 };
 Object.freeze(Params);
 
-var Paths = module.exports = {
+
+const username = param(Params.Username);
+const Paths = module.exports = {
   // expose params for URL parsing
   Params: Params,
 
@@ -15,15 +17,15 @@ var Paths = module.exports = {
   /* TODO remove: temporarily kept for backwards-compat */
   Register: path('register'),
 
-  UserRoot: path(param(Params.Username)),
+  UserRoot: path(username),
 
-  Accesses: path(param(Params.Username), 'accesses'),
-  Account: path(param(Params.Username), 'account'),
-  Auth: path(param(Params.Username), 'auth'),
-  FollowedSlices: path(param(Params.Username), 'followed-slices'),
-  Streams: path(param(Params.Username), 'streams'),
-  Events: path(param(Params.Username), 'events'),
-  Profile: path(param(Params.Username), 'profile'),
+  Accesses: path(username, 'accesses'),
+  Account: path(username, 'account'),
+  Auth: path(username, 'auth'),
+  FollowedSlices: path(username, 'followed-slices'),
+  Streams: path(username, 'streams'),
+  Events: path(username, 'events'),
+  Profile: path(username, 'profile'),
 
   SocketIO: path('socket.io'),
   Favicon: path('favicon.ico')

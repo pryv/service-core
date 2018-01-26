@@ -1,5 +1,4 @@
 module.exports = {
-  attachmentsAccess: require('./attachmentsAccess'),
   commonHeaders: require('./commonHeaders'),
   contentType: require('./contentType'),
   filesUploadSupport: require('./filesUploadSupport'),

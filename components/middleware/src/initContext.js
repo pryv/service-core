@@ -1,26 +1,19 @@
 // @flow
 
-const bluebird = require('bluebird');
-
 const model = require('components/model');
 const MethodContext = model.MethodContext;
 
 import type { CustomAuthFunction } from 'components/model';
 import type { StorageLayer } from 'components/storage';
 
-/**
- * Returns a middleware function that initializes the method context into
- * `req.context`. The context is initialized with the user (loaded from
- * username) and the access token. The access itself is **not** loaded from
- * token here as it may be modified in the course of method execution, for
- * example when calling a batch of methods. It is the API methods'
- * responsibility to load the access when needed.
- *
- * @param {Object} usersStorage
- * @param {Object} userAccessesStorage
- * @param {Object} sessionsStorage
- * @param {Object} userStreamsStorage
- */
+
+// returns a middleware function that initializes the method context into
+// `req.context`. the context is initialized with the user (loaded from
+// username) and the access token. the access itself is **not** loaded from
+// token here as it may be modified in the course of method execution, for
+// example when calling a batch of methods. it is the api methods'
+// responsibility to load the access when needed. 
+// 
 module.exports = function initContext(
   storageLayer: StorageLayer, customAuthStepFn: ?CustomAuthFunction
 ) {

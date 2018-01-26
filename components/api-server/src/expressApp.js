@@ -200,7 +200,7 @@ function expressAppInit(dependencies: any) {
 
   const lifecycle = new ExpressAppLifecycle(app, errorsMiddleware); 
   return {
-    app: app, 
+    expressApp: app, 
     lifecycle: lifecycle,
   };
 }
