@@ -13,7 +13,7 @@ const assert = require('chai').assert;
 const bluebird = require('bluebird');
 const async = require('async');
 const io = require('socket.io-client');
-// explicit require to benefit from static funcions
+// explicit require to benefit from static functions
 const should = require('should'); 
 const queryString = require('qs');
 
@@ -177,10 +177,11 @@ describe('Socket.IO', function () {
         validation.sanitizeEvents(result.events);
     
         const testEvents = _.clone(testData.events);
-        const chronologicalEvents = testEvents.sort( (a, b) => a.time - b.time );
+        const chronologicalEvents = _.sortBy(testEvents, 'time');
         const expectedEvents = validation.removeDeletionsAndHistory(chronologicalEvents);
+        
         result.events.should.eql(expectedEvents);
-    
+        
         // check deletions
         let deleted = R.filter(R.where({deleted: R.equals(true)}), testData.events);
         for (let el of deleted) {

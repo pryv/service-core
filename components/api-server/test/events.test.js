@@ -224,6 +224,42 @@ describe('events', function () {
         }, done);
       });
     });
+    
+    it('must take into account fromTime and toTime even if set to 0', function (done) {
+      const params = {
+        fromTime: 0,
+        toTime: 0
+      };
+      const events = testData.events.filter(function (e) {
+        return e.time == 0;
+      });
+      request.get(basePath).query(params).end(function (res) {
+        validation.check(res, {
+          status: 200,
+          schema: methodsSchema.get.result,
+          sanitizeFn: validation.sanitizeEvents,
+          sanitizeTarget: 'events',
+          body: {
+            events: events
+          }
+        }, done);
+      });
+    });
+    
+    it('must take into account modifiedSince even if set to 0', function (done) {
+      var params = {
+        modifiedSince: 0
+      };
+      
+      request.get(basePath).query(params).end(function (res) {
+        validation.check(res, {
+          status: 200,
+          schema: methodsSchema.get.result,
+        });
+        res.body.events.should.not.containEql(testData.events[27]);
+        done();
+      });
+    });
 
     it('must properly exclude period events completed before the given period', function (done) {
       var params = {
@@ -431,7 +467,7 @@ describe('events', function () {
           attIndex = 0;
       async.waterfall([
         function retrieveAttachmentInfo(stepDone) {
-          request.get(basePath).query({sortAscending: true}).end(function (res) {
+          request.get(basePath).query({sortAscending: true, streams: [event.streamId] }).end(function (res) {
             stepDone(null, res.body.events[0].attachments[attIndex]);
           });
         },
@@ -456,7 +492,7 @@ describe('events', function () {
           attIndex = 1;
       async.waterfall([
         function retrieveAttachmentInfo(stepDone) {
-          request.get(basePath).query({sortAscending: true}).end(function (res) {
+          request.get(basePath).query({sortAscending: true, streams: [event.streamId]}).end(function (res) {
             stepDone(null, res.body.events[0].attachments[attIndex]);
           });
         },
@@ -481,7 +517,7 @@ describe('events', function () {
           attIndex = 1;
       async.waterfall([
         function retrieveAttachmentInfo(stepDone) {
-          request.get(basePath).query({sortAscending: true}).end(function (res) {
+          request.get(basePath).query({sortAscending: true, streams: [event.streamId]}).end(function (res) {
             stepDone(null, res.body.events[0].attachments[attIndex]);
           });
         },

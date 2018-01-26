@@ -97,6 +97,18 @@ describe('streams', function () {
         done();
       });
     });
+    
+    it('must include stream deletions even when the given time is 0', function (done) {
+      var params = {includeDeletionsSince: 0};
+      request.get(basePath).query(params).end(function (res) {
+        validation.check(res, {
+          status: 200,
+          schema: methodsSchema.get.result
+        });
+        should.exist(res.body.streamDeletions);
+        done();
+      });
+    });
 
     it('must not keep stream deletions past a certain time ' +
         '(cannot test because cannot force-run Mongo\'s TTL cleanup task)');

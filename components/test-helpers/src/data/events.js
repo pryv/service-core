@@ -352,6 +352,18 @@ module.exports = [
     createdBy: 'test',
     modified: timestamp.now('-1h'),
     modifiedBy: 'test'
+  },
+  {
+    id: getTestEventId(27),
+    streamId: streams[8].id,
+    time: 0,
+    type: 'note/txt',
+    content: 'I am a simple event with time 0',
+    description: 'simple event with time 0',
+    created: 0,
+    createdBy: 'test',
+    modified: 0,
+    modifiedBy: 'test'
   }
 ];
 
