@@ -66,12 +66,13 @@ function getBaseSchema(type, options) {
     type: [type]
   };
 
-  if (options) {
+  if (options != null) {
     if(options.nullable === true) {
       result.type.push('null');
-      delete options.nullable;
     }
-    _.extend(result, options);
+    // We omit 'nullable' since we handled this particular option just above
+    const opt = _.omit(options, 'nullable');
+    _.extend(result, opt);
   }
   return result;
 }
