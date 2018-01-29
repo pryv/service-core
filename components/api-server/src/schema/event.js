@@ -19,7 +19,7 @@ exports = module.exports = function (action) {
     action = Action.READ;
   }
 
-  let schema = object({
+  const schema = object({
     'id': string(),
     'time': number(),
     'duration': number({nullable: true}),

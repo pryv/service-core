@@ -62,7 +62,7 @@ exports.boolean = getBaseSchema.bind(null, 'boolean');
 exports.getBaseSchema = getBaseSchema;
 
 function getBaseSchema(type, options) {
-  let result = {
+  const result = {
     type: [type]
   };
 
