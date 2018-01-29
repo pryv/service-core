@@ -1,3 +1,7 @@
+// @flow
+
+import type Result from '../Result';
+
 /**
  * Helper function for handling method responses.
  *
@@ -7,9 +11,9 @@
  *                                      and returning a number
  * @returns {Function}
  */
-module.exports = function (res, next, successCode) {
-  return function (err, result) {
-    if (err) {
+module.exports = function (res: express$Response, next: express$NextFunction, successCode: number) {
+  return function (err: ?Error, result: Result) {
+    if (err != null) {
       return next(err);
     }
 
