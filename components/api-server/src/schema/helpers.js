@@ -62,9 +62,17 @@ exports.boolean = getBaseSchema.bind(null, 'boolean');
 exports.getBaseSchema = getBaseSchema;
 
 function getBaseSchema(type, options) {
-  var result = {type: type};
-  if (options) {
-    _.extend(result, options);
+  const result = {
+    type: [type]
+  };
+
+  if (options != null) {
+    if(options.nullable === true) {
+      result.type.push('null');
+    }
+    // We omit 'nullable' since we handled this particular option just above
+    const opt = _.omit(options, 'nullable');
+    _.extend(result, opt);
   }
   return result;
 }

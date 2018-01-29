@@ -2,8 +2,12 @@
  * JSON Schema specification for event streams.
  */
 
-var Action = require('./Action'),
-    helpers = require('./helpers');
+const Action = require('./Action');
+const helpers = require('./helpers');
+const object = helpers.object;
+const array = helpers.array;
+const string = helpers.string;
+const boolean = helpers.boolean;
 
 /**
  * @param {Action} action
@@ -11,62 +15,44 @@ var Action = require('./Action'),
  * @param {String} refToStreamSchema
  */
 module.exports = function (action, ignoreChildren, refToStreamSchema) {
-  var schema = {
+  let schema = {
     id: helpers.getTypeURI('stream', action),
     type: 'object',
     additionalProperties: false,
     properties: {
-      'id': {
-        type: 'string',
-        minLength: 1
-      },
-      'name': {
-        type: 'string',
-        minLength: 1
-      },
-      'parentId': {
-        type: ['string', 'null'],
-        minLength: 1
-      },
-      'singleActivity': {
-        type: 'boolean'
-      },
-      'clientData': {
-        type: 'object'
-      },
-      'trashed': {
-        type: 'boolean'
-      },
+      'id': string({minLength: 1}),
+      'name': string({minLength: 1}),
+      'parentId': string({nullable: true, minLength: 1}),
+      'singleActivity': boolean({nullable: true}),
+      'clientData': object({}, {nullable: true}),
+      'trashed': boolean({nullable: true}),
       // ignored except on READ, accepted to simplify interaction with client frameworks
-      'children': {
-        type: 'array',
-        items: {
-          '$ref': refToStreamSchema || '#'
-        }
-      }
+      'children': array({'$ref': refToStreamSchema || '#'}, {nullable: true})
     }
   };
 
   helpers.addTrackingProperties(schema, action);
 
   switch (action) {
-  case Action.READ:
-    schema.required = [ 'id', 'name', 'parentId',
-      'created', 'createdBy', 'modified', 'modifiedBy' ];
-    if (! ignoreChildren) { schema.required.push('children'); }
-    break;
-  case Action.STORE:
-    schema.required = [ 'id', 'name', 'parentId',
-      'created', 'createdBy', 'modified', 'modifiedBy' ];
-    break;
-  case Action.CREATE:
-    schema.required = [ 'name' ];
-    break;
-  case Action.UPDATE:
-    // whitelist for properties that can be updated
-    schema.alterableProperties = ['name', 'parentId', 'singleActivity',
-      'clientData', 'trashed'];
-    break;
+    case Action.READ:
+      schema.required = [ 'id', 'name', 'parentId',
+        'created', 'createdBy', 'modified', 'modifiedBy' ];
+      if (! ignoreChildren){ 
+        schema.required.push('children');
+      }
+      break;
+    case Action.STORE:
+      schema.required = [ 'id', 'name', 'parentId',
+        'created', 'createdBy', 'modified', 'modifiedBy' ];
+      break;
+    case Action.CREATE:
+      schema.required = [ 'name' ];
+      break;
+    case Action.UPDATE:
+      // whitelist for properties that can be updated
+      schema.alterableProperties = ['name', 'parentId', 'singleActivity',
+        'clientData', 'trashed'];
+      break;
   }
 
   return schema;

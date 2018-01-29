@@ -2,35 +2,34 @@
  * JSON Schema specification for events.
  */
 
-var Action = require('./Action'),
-    helpers = require('./helpers'),
-    object = helpers.object,
-    array = helpers.array,
-    string = helpers.string,
-    number = helpers.number,
-    boolean = helpers.boolean;
+const Action = require('./Action');
+const helpers = require('./helpers');
+const object = helpers.object;
+const array = helpers.array;
+const string = helpers.string;
+const number = helpers.number;
+const boolean = helpers.boolean;
 
 /**
  * @param {Action} action
  */
 exports = module.exports = function (action) {
-  if (action === Action.STORE) { action = Action.READ; } // read items === stored items
+  // read items === stored items
+  if (action === Action.STORE){
+    action = Action.READ;
+  }
 
-  var schema = object({
+  const schema = object({
     'id': string(),
     'time': number(),
-    'duration': {
-      type: ['number', 'null']
-    },
+    'duration': number({nullable: true}),
     'streamId': string(),
-    'tags': array(string()),
-    'type': string({
-      pattern: '^(series:)?[a-z0-9-]+/[a-z0-9-]+$'
-    }),
+    'tags': array(string(), {nullable: true}),
+    'type': string({ pattern: '^(series:)?[a-z0-9-]+/[a-z0-9-]+$' }),
     'content': {},
-    'description': string(),
-    'clientData': object({}),
-    'trashed': boolean()
+    'description': string({nullable: true}),
+    'clientData': object({}, {nullable: true}),
+    'trashed': boolean({nullable: true})
   }, {
     id: helpers.getTypeURI('event', action),
     additionalProperties: false
@@ -62,13 +61,13 @@ exports = module.exports = function (action) {
   }
 
   switch (action) {
-  case Action.READ:
-    schema.required = [ 'id', 'streamId', 'time', 'type',
-      'created', 'createdBy', 'modified', 'modifiedBy' ];
-    break;
-  case Action.CREATE:
-    schema.required = [ 'streamId', 'type' ];
-    break;
+    case Action.READ:
+      schema.required = [ 'id', 'streamId', 'time', 'type',
+        'created', 'createdBy', 'modified', 'modifiedBy' ];
+      break;
+    case Action.CREATE:
+      schema.required = [ 'streamId', 'type' ];
+      break;
   }
 
   return schema;
