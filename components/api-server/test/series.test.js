@@ -1,9 +1,8 @@
 // @flow
 
-require('./test-helpers');
+const { context } = require('./test-helpers');
 
 /* global describe, it, before, after */
-const supertest = require('supertest');
 const chai = require('chai');
 const assert = chai.assert; 
 
@@ -13,10 +12,8 @@ const Settings = require('../src/settings');
 const Application = require('../src/application');
 
 const databaseFixture = require('./helpers/database_fixture');
-const { SpawnContext, Server, ConditionVariable } = require('./helpers/spawner');
 
-
-describe('High Frequency:', () => {
+describe('Series data:', () => {
   const settings = Settings.load(); 
   const application = new Application(settings);
   
@@ -27,13 +24,13 @@ describe('High Frequency:', () => {
 
   // Create MongoDB database content for the following tests.
   let userId, parentStreamId, eventId, accessToken; 
-  before(() => {
+  before(async () => {
     userId = cuid(); 
     parentStreamId = cuid(); 
     eventId = cuid(); 
     accessToken = cuid(); 
 
-    fixture.user(userId, {}, function (user) {
+    await fixture.user(userId, {}, function (user) {
       user.stream({id: parentStreamId}, function (stream) {
         stream.event({
           id: eventId, 
@@ -46,16 +43,13 @@ describe('High Frequency:', () => {
   });
   
   // Spawn an api-server for our tests to run against. 
-  let context, server, request; 
+  let server, request; 
   before(async () => {
-    context = new SpawnContext(); 
     server = await context.spawn(); 
-    
-    request = supertest(server.baseUrl);
+    request = server.request(); 
   });
-  // Teardown context
-  after(async () => {
-    await context.shutdown(); 
+  after(() => {
+    server.stop(); 
   });
   
   describe('POST /events/:event_id/series', () => {
@@ -68,7 +62,7 @@ describe('High Frequency:', () => {
         ]
       };
 
-      const response = await request.post(`/events/${eventId}/series`, data);
+      const response = await request.post(`/${userId}/events/${eventId}/series`, data);
       assert.strictEqual(response.statusCode, 200); 
     });
   });

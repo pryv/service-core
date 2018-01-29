@@ -7,6 +7,7 @@ const net = require('net');
 const lodash = require('lodash');
 const msgpack = require('msgpack5')();
 const bluebird = require('bluebird');
+const supertest = require('supertest');
 
 const { ConditionVariable, Fuse } = require('./condition_variable');
 
@@ -74,7 +75,7 @@ class SpawnContext {
     // Specialize the server we've started using the settings above.
     await process.startServer(settings);
     
-    const baseUrl = `http://localhost:${port}/`;
+    const baseUrl = `http://localhost:${port}`;
     debug(`spawned a child at ${baseUrl}`);
     
     // Return to our caller - server should be up and answering at this point. 
@@ -310,6 +311,10 @@ class Server {
   
   url(path?: string): string {
     return new url.URL(path || '', this.baseUrl).toString();
+  }
+
+  request() {
+    return supertest(this.baseUrl);
   }
 }
 

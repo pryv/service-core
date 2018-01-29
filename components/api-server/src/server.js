@@ -249,7 +249,10 @@ class Server {
     
     dependencies.resolve(require('./routes/system'));
     require('./routes/root')(expressApp, application);
-    
+
+    // NOTE We're in the process of getting rid of DI. See above for how these
+    // should look once that is done - we're handing each of these route 
+    // definers a fixed set of dependencies from which they get to choose. 
     [
       require('./routes/auth'),
       require('./routes/accesses'),
@@ -261,6 +264,8 @@ class Server {
     ].forEach(function (moduleDef) {
       dependencies.resolve(moduleDef);
     });
+    
+    require('./routes/series')(expressApp, application);
   }
   
   // Migrates mongodb database to the latest version, if needed. 

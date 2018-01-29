@@ -25,6 +25,7 @@ const Paths = module.exports = {
   FollowedSlices: path(username, 'followed-slices'),
   Streams: path(username, 'streams'),
   Events: path(username, 'events'),
+  Series: path(username, 'events/:event_id/series'),
   Profile: path(username, 'profile'),
 
   SocketIO: path('socket.io'),
