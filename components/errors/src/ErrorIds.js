@@ -1,7 +1,9 @@
+// @flow
+
 /**
  * Identifier constants for API errors.
  */
-const ErrorIds = module.exports = {
+const ErrorIds = {
   ApiUnavailable: 'api-unavailable',
   CorruptedData: 'corrupted-data',
   Forbidden: 'forbidden',
@@ -37,3 +39,5 @@ const ErrorIds = module.exports = {
   UserInterventionRequired: 'user-intervention-required'
 };
 Object.freeze(ErrorIds);
+
+module.exports = ErrorIds;

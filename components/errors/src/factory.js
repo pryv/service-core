@@ -4,6 +4,8 @@ const APIError = require('./APIError');
 const ErrorIds = require('./ErrorIds');
 const _ = require('lodash');
 
+import type { APIErrorOptions } from './APIError';
+
 /**
  * Helper "factory" methods for API errors (see error ids).
  */
@@ -57,15 +59,16 @@ factory.invalidEventType = function (type: string) {
 };
 
 factory.invalidItemId = function (message?: string) {
-  return new APIError(ErrorIds.InvalidItemId, message, {
+  return new APIError(ErrorIds.InvalidItemId, message || '', {
     httpStatus: 400,
     dontNotifyAirbrake: true
   });
 };
 
-factory.invalidMethod = function (methodId: string) {
-  return new APIError(ErrorIds.InvalidMethod, 'Invalid method id "' + methodId + '"',
-    'Invalid method id "' + methodId + '"', 
+factory.invalidMethod = function (methodId: string): APIError {
+  return new APIError(
+    ErrorIds.InvalidMethod, 
+    'Invalid method id "' + methodId + '"',
     {httpStatus: 404}
   );
 };
@@ -133,35 +136,40 @@ factory.periodsOverlap = function (message: string, data: Object, innerError: Er
 };
 
 factory.tooManyResults = function (limit: number) {
-  return new APIError(ErrorIds.tooManyResults,
+  return new APIError(
+    ErrorIds.TooManyResults,
     'Your request gave too many results (the limit is ' + limit + '. Directly calling ' +
     'the API method (i.e. not batching calls), narrowing request scope or paging can help.',
     {limit: limit, httpStatus: 413});
 };
 
 factory.unexpectedError = function (sourceError: mixed, message?: string) {
-  const opts = {
-    httpStatus: 500,
-    innerError: sourceError
-  };
-  
   // If a message was given: display it. 
   if (message != null)
     return produceError(message);
 
   // Sometimes people throw strings
-  if (typeof sourceError == 'string') 
+  if (typeof sourceError === 'string') 
     return produceError(sourceError);
     
   // Maybe this looks like an Error?
-  if (sourceError != null && typeof sourceError.message === 'string') 
-    return produceError(sourceError.message);
+  const error = sourceError;
+  if (error != null && error instanceof Error) {
+    // NOTE Could not get this path covered with type information. It looks sound...
+    return produceError(error.message, error);
+  }
 
   // Give up: 
   return produceError('(no message given)');
   
-  function produceError(msg: string): APIError {
+  function produceError(msg: string, error?: Error): APIError {
+    const opts: APIErrorOptions = {
+      httpStatus: 500,
+      innerError: error,
+    };
+    
     const text = `Unexpected error: ${msg}`;
+
     return new APIError(ErrorIds.UnexpectedError, text, opts);  
   }
 };
@@ -200,6 +208,6 @@ factory.unknownResource = function (resourceType: ?string, id: ?string, innerErr
 factory.unsupportedContentType = function (contentType: string) {
   return new APIError(
     ErrorIds.UnsupportedContentType, 
-    'If you think we should, please help us and report an issue!',
+    `If you think we should, please help us and report an issue! (You used ${contentType})`,
     { httpStatus: 415 });
 };

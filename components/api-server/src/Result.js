@@ -16,7 +16,11 @@ type StreamDescriptor = {
   name: string, 
   stream: stream$Readable,
 }
-type ToObjectCallback = (resOrError: mixed) => mixed;
+type APIResult = 
+  {[string]: Object} |
+  {[string]: Array<Object>};
+  
+type ToObjectCallback = (resOrError: APIResult) => mixed;
 
 
 // Result object used to store API call response body while it is processed.
@@ -33,6 +37,7 @@ class Result {
     arrayLimit: number, 
     isStreamResult: boolean, streamsArray: Array<StreamDescriptor>, 
   }
+  meta: ?Object;
   
   constructor(params?: ResultOptions) {
     this._private = { 
@@ -41,6 +46,8 @@ class Result {
       isStreamResult: false, 
       streamsArray: [],  
     };
+    
+    this.meta = null;
     
     if (params && params.arrayLimit != null && params.arrayLimit > 0) {
       this._private.arrayLimit = params.arrayLimit;
