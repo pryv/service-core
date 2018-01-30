@@ -136,12 +136,12 @@ class LoggerImpl implements Logger {
 
 // Hides sensitive values (auth tokens and passwords) in log messages
 function hideSensitiveValues (msg) {
-  const tokenRegexp = /(auth)=(c[a-z0-9-]{24})/;
-  const passwordRegexp = /"(password|passwordHash)":"([^"]*)"/;
+  const tokenRegexp = /c[a-z0-9-]{24}/g;
+  const passwordRegexp = /"(password|passwordHash)":"([^"]*)"/g;
   const mask = '(hidden)';
 
   msg = msg
-    .replace(tokenRegexp, '$1='+mask)
+    .replace(tokenRegexp, mask)
     .replace(passwordRegexp, '$1='+mask);
   
   return msg;
