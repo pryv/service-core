@@ -1,5 +1,5 @@
-// flow-typed signature: 9e23d348c0f292f06e676c94d43739cd
-// flow-typed version: 9accb22503/mongodb_v2.x.x/flow_>=v0.25.x
+// flow-typed signature: c650c8e39bface0f7ed9807d23413524
+// flow-typed version: ef63379e27/mongodb_v2.x.x/flow_>=v0.25.x
 
 declare class MongoDB$ObjectID {
   /**
@@ -61,6 +61,39 @@ declare class MongoDB$ObjectID {
 
 declare module "mongodb" {
   declare module.exports: {
-    ObjectId: Class<MongoDB$ObjectID>
+    // TODO: provide remaining definitions, currently using 'any' to avoid errors
+    Admin: any,
+    BSONRegExp: any,
+    Binary: any,
+    Chunk: any,
+    Code: any,
+    Collection: any,
+    connect: any,
+    CoreConnection: any,
+    CoreServer: any,
+    Cursor: any,
+    DBRef: any,
+    Db: any,
+    Decimal128: any,
+    Double: any,
+    GridFSBucket: any,
+    GridStore: any,
+    instrument: any,
+    Int32: any,
+    Logger: any,
+    Long: any,
+    Map: any,
+    MaxKey: any,
+    MinKey: any,
+    MongoClient: any,
+    MongoError: any,
+    Mongos: any,
+    ObjectID: Class<MongoDB$ObjectID>,
+    ObjectId: Class<MongoDB$ObjectID>,
+    ReadPreference: any,
+    ReplSet: any,
+    Server: any,
+    Symbol: any,
+    Timestamp: any
   };
 }

@@ -1,5 +1,5 @@
-// flow-typed signature: 88d2313c965c71ea202a84ce638ce5b1
-// flow-typed version: cfc9aef80e/chai_v4.x.x/flow_>=v0.15.0
+// flow-typed signature: 5ebfab521cce28c691a4fdfe8992f4e2
+// flow-typed version: da30fe6876/chai_v4.x.x/flow_>=v0.25.0
 
 declare module "chai" {
   declare type ExpectChain<T> = {
@@ -207,7 +207,6 @@ declare module "chai" {
 
     static include(exp: string, inc: mixed, msg?: string): void;
     static include<T>(exp: Array<T>, inc: T, msg?: string): void;
-    static deepInclude(exp: string, inc: mixed, msg?: string): void;
     static deepInclude<T>(exp: Array<T>, inc: T, msg?: string): void;
 
     static notInclude(exp: string, inc: mixed, msg?: string): void;
@@ -274,7 +273,7 @@ declare module "chai" {
       delta: number,
       msg?: string
     ): void;
-    
+
     // chai-immutable
     static sizeOf(val: mixed, length: number): void;
   }
