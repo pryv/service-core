@@ -264,8 +264,6 @@ class Server {
     ].forEach(function (moduleDef) {
       dependencies.resolve(moduleDef);
     });
-    
-    require('./routes/series')(expressApp, application);
   }
   
   // Migrates mongodb database to the latest version, if needed. 
