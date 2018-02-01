@@ -9,10 +9,6 @@ const controller = controllerFactory({});
 const APIError = require('../../../../errors/src/APIError');
 const ErrorIds = require('../../../../errors/src/ErrorIds');
 
-const ServiceNotAvailableError =
-  require('../../../../../node_modules/influx/lib/src/pool')
-    .ServiceNotAvailableError;
-
 describe('Controller', () => {
 
   describe('storeSeriesData', () => {
