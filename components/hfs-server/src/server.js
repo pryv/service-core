@@ -11,7 +11,7 @@ const middleware = require('components/middleware');
 const logging = require('components/utils/src/logging');
 const errorsMiddleware = require('./middleware/errors');
 
-const controller = require('./web/controller');
+const controllerFactory = require('./web/controller');
 
 const KEY_IP = 'http.ip';
 const KEY_PORT = 'http.port';  
@@ -138,13 +138,15 @@ class Server {
   /** Defines all the routes that we serve from this server. 
    */   
   defineApplication(app: express$Application) {
-    const c = controller; 
+    const ctx = this.context; 
+    const c = controllerFactory(ctx); 
     
     app.get('/system/status', systemStatus);
     
-    const ctx = this.context; 
-    app.post('/:user_name/events/:event_id/series', c.storeSeriesData(ctx)); 
-    app.get('/:user_name/events/:event_id/series', c.querySeriesData(ctx));
+    // app.post('/:user_name/events/:event_id/series', catchAndNext(c.storeSeriesData(ctx))); 
+    // app.get('/:user_name/events/:event_id/series', catchAndNext(c.querySeriesData(ctx)));
+    app.post('/:user_name/events/:event_id/series', c.storeSeriesData); 
+    app.get('/:user_name/events/:event_id/series', c.querySeriesData);
     
     // Allow CORS; access control is guaranteed by the authorization token which
     // when known - is the only means of authentication. 

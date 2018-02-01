@@ -16,11 +16,10 @@ const SeriesResponse = require('./SeriesResponse');
 const AUTH_HEADER = 'authorization';
 const FORMAT_FLAT_JSON = 'flatJSON';
 
-module.exports.storeSeriesData = R.curryN(4, storeSeriesData);
 
 /** POST /events/:event_id/series - Store data in a series. 
  */
-function storeSeriesData(ctx: Context, 
+async function storeSeriesData(ctx: Context, 
   req: express$Request, res: express$Response, next: express$NextFunction)
 {
   const series = ctx.series;
@@ -32,36 +31,34 @@ function storeSeriesData(ctx: Context,
   const accessToken = req.headers[AUTH_HEADER];
 
   // If params are not there, abort. 
-  if (accessToken == null) return next(errors.missingHeader(AUTH_HEADER));
-  if (eventId == null) return next(errors.invalidItemId());
+  if (accessToken == null) throw errors.missingHeader(AUTH_HEADER);
+  if (eventId == null) throw errors.invalidItemId();
   
   // Access check: Can user write to this series? 
-  const seriesMeta = metadata.forSeries(userName, eventId, accessToken);
-  return seriesMeta
-    // Not found: At this point an access problem.
-    .catch(() => { throw errors.forbidden(); })
-    .then((seriesMeta) => {
-      // No access permission: Abort.
-      if (!seriesMeta.canWrite()) throw errors.forbidden();
-      
-      // Parse request
-      const data = parseData(req.body);
-      if (data == null) {
-        return next(errors.invalidRequestStructure('Malformed request.'));
-      }
+  const seriesMeta = await metadata.forSeries(userName, eventId, accessToken);
+  
+  // No access permission: Abort.
+  if (!seriesMeta.canWrite()) throw errors.forbidden();
+  
+  // Parse request
+  const data = parseData(req.body);
+  if (data == null) {
+    return next(errors.invalidRequestStructure('Malformed request.'));
+  }
 
-      // assert: data != null
+  // assert: data != null
 
-      // Store data
-      return series.get(...seriesMeta.namespace())
-        .then((seriesInstance) => seriesInstance.append(data))
-        .then(() => {
-          res
-            .status(200)
-            .json({status: 'ok'});
-        });
-    })
-    .catch(dispatchErrors.bind(null, next));
+  // Store data
+  const seriesInstance = await series.get(...seriesMeta.namespace());
+  await seriesInstance.append(data);
+
+  res
+    .status(200)
+    .json({status: 'ok'});
+
+  // 
+  // 
+  // .catch(dispatchErrors.bind(null, next));
 }
 
 /** Handles errors that might happen during a controller execution that are 
@@ -132,8 +129,6 @@ function checkFields(val: any): ?Array<string> {
   
   return val;
 }
-
-module.exports.querySeriesData = R.curryN(4, querySeriesData);
 
 import type {Query, Repository} from 'components/business';
 import type {MetadataRepository, SeriesMetadata} from '../metadata_cache';
@@ -280,3 +275,34 @@ function retrievePoints(
       responseObj.answer(res);
     });
 }
+
+
+// ----------------------------------------------- (sync) express error handling
+
+type ControllerMethod = (ctx: Context, 
+  req: express$Request, res: express$Response, next: express$NextFunction) => mixed; 
+type ExpressHandler = (req: express$Request, res: express$Response, next: express$NextFunction) => mixed; 
+function mount(ctx: Context, handler: ControllerMethod): express$Middleware {
+  return catchAndNext(
+    handler.bind(null, ctx)); 
+}
+
+function catchAndNext(handler: ExpressHandler): express$Middleware {
+  return async (req: express$Request, res, next) => {
+    try {
+      return await handler(req, res, next);
+    }
+    catch (err) {
+      next(err);
+    }
+  };
+}
+
+// --------------------------------------------------------------------- factory
+
+module.exports = function (ctx: Context) {
+  return {
+    storeSeriesData: mount(ctx, storeSeriesData),
+    querySeriesData: mount(ctx, querySeriesData),
+  };
+};

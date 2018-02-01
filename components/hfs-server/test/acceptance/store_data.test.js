@@ -9,7 +9,7 @@ const cuid = require('cuid');
 const debug = require('debug')('store_data.test');
 
 const { spawnContext, produceMongoConnection, produceInfluxConnection } = require('./test-helpers');
-const databaseFixture = require('../support/database_fixture');
+const { databaseFixture } = require('components/test-helpers');
 
 import type {Response} from 'supertest';
 

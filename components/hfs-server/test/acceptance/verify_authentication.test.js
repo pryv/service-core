@@ -9,7 +9,7 @@ const { settings } = require('./test-helpers');
 
 const NullLogger = require('components/utils/src/logging').NullLogger;
 const storage = require('components/storage');
-const databaseFixture = require('../support/database_fixture');
+const { databaseFixture } = require('components/test-helpers');
 
 const { MetadataLoader } = require('../../src/metadata_cache');
 
