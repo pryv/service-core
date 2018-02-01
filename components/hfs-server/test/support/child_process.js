@@ -16,9 +16,12 @@ process.on('unhandledRejection', unhandledRejection);
 process.on('message', dispatchParentMessage);
 
 async function intStartServer(injectSettings: {}) {
-  debug(injectSettings);
-  
   const settings = new Settings(); 
+  settings.loadFromFile('config/dev.json');
+  settings.loadFromObject(injectSettings);
+  
+  debug(settings.get('http.port').num());
+  
   const app = new Application();
   app.init(settings);
   app.start(); 

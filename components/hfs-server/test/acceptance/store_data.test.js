@@ -1,4 +1,3 @@
-'use strict';
 // @flow
 
 // Tests pertaining to storing data in a hf series. 
@@ -8,6 +7,7 @@ const bluebird = require('bluebird');
 const should = require('should');
 const R = require('ramda');
 const cuid = require('cuid');
+const debug = require('debug')('store_data.test');
 
 const { spawnContext, produceMongoConnection, produceInfluxConnection } = require('./test-helpers');
 const databaseFixture = require('../support/database_fixture');
@@ -19,6 +19,7 @@ describe('Storing data in a HF series', function() {
 
   let server; 
   before(async () => {
+    debug('spawning');
     server = await spawnContext.spawn(); 
   });
   after(() => {
@@ -43,6 +44,7 @@ describe('Storing data in a HF series', function() {
       eventId = cuid(); 
       accessToken = cuid(); 
       
+      debug('build fixture');
       return pryv.user(userId, {}, function (user) {
         user.stream({id: parentStreamId}, function (stream) {
           stream.event({
@@ -56,6 +58,8 @@ describe('Storing data in a HF series', function() {
     });
     
     function storeData(data: {}): Response {
+      debug('storing some data', data);
+      
       // Insert some data into the events series:
       const postData = {
         format: 'flatJSON',
@@ -90,14 +94,15 @@ describe('Storing data in a HF series', function() {
       should(row.time.toNanoISOString()).be.eql('2016-12-14T01:10:45.000000000Z');
       should(row.value).be.eql(80.3);
     });
-    it('should return data once stored', function () {
-      const userName = userId(); // identical with id here, but will be user name in general. 
+    it('should return data once stored', async () => {
+      // identical with id here, but will be user name in general. 
+      const userName = userId; 
       const dbName = `user.${userName}`; 
-      const measurementName = `event.${eventId()}`;
+      const measurementName = `event.${eventId}`;
 
-      return cycleDatabase(dbName)
-        .then(() => storeSampleMeasurement(dbName, measurementName))
-        .then(() => queryData());
+      await cycleDatabase(dbName);
+      await storeSampleMeasurement(dbName, measurementName);
+      await queryData();
 
       function cycleDatabase(dbName: string) {
         return influx.dropDatabase(dbName).
@@ -116,9 +121,10 @@ describe('Storing data in a HF series', function() {
         return influx.writeMeasurement(measurementName, points, options);
       }
       function queryData() {
-        return request(app())
-          .get(`/${userId()}/events/${eventId()}/series`)
-          .set('authorization', accessToken())
+        const request = server.request();
+        return request
+          .get(`/${userId}/events/${eventId}/series`)
+          .set('authorization', accessToken)
           .query({
             fromTime: '1493647898', toTime: '1493647900' })
           // .then((res) => console.log(require('util').inspect(res.body, { depth: null })))
