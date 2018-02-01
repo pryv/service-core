@@ -5,6 +5,7 @@ import type Context from '../context';
 const { tryCoerceStringValues } = require('components/api-server').validation;
 
 const R = require('ramda');
+const lodash = require('lodash');
 const timestamp = require('unix-timestamp');
 const bluebird = require('bluebird');
 
@@ -55,24 +56,6 @@ async function storeSeriesData(ctx: Context,
   res
     .status(200)
     .json({status: 'ok'});
-
-  // 
-  // 
-  // .catch(dispatchErrors.bind(null, next));
-}
-
-/** Handles errors that might happen during a controller execution that are 
- * translated into a client error. 
- */
-function dispatchErrors(next: express$NextFunction, err: any) {
-  if (err.constructor.name === 'ServiceNotAvailableError') {
-    return next(errors.apiUnavailable(err.message));
-  }
-  if (err instanceof business.types.errors.InputTypeError) {
-    return next(errors.invalidRequestStructure(err.message));
-  }
-  
-  return next(err);
 }
 
 type DataMatrix = business.series.DataMatrix;
@@ -141,13 +124,12 @@ import type {MetadataRepository, SeriesMetadata} from '../metadata_cache';
  * @param  {type} next: express$NextFunction  description
  * @return {void}
  */
-function querySeriesData(
+async function querySeriesData(
   ctx: Context, req: express$Request,
   res: express$Response, next: express$NextFunction): mixed 
 {
-
-  const metadata: MetadataRepository = ctx.metadata;
-  const seriesRepo: Repository = ctx.series;
+  const metadata = ctx.metadata;
+  const seriesRepo = ctx.series;
 
   // Extract parameters from request:
   const username = req.params.user_name;
@@ -155,125 +137,67 @@ function querySeriesData(
   const accessToken: ?string = req.headers[AUTH_HEADER];
 
   // If required params are not there, abort.
-  if (accessToken == null) return next(errors.missingHeader(AUTH_HEADER));
-  // assert: eventId is not null
-  if (eventId == null) return next(errors.invalidItemId());
+  if (accessToken == null) throw errors.missingHeader(AUTH_HEADER);
+  if (eventId == null) throw errors.invalidItemId();
 
-  coerceStringParams(R.clone(req.query))
-    .then(applyDefaultValues)
-    .then(validateQuery)
-    .then(verifyAccess.bind(null, username, eventId, accessToken, metadata))
-    .then(retrievePoints.bind(null, seriesRepo, res))
-    .catch(dispatchErrors.bind(null, next));
-}
-
-function coerceStringParams(params: Object): bluebird<Query> {
-  return bluebird.try(() => {
-    tryCoerceStringValues(params, {
-      fromTime: 'number',
-      toTime: 'number',
-    });
-
-    const query = {
-      from: params.fromTime,
-      to: params.toTime,
-    };
-
-    return query;
-  });
-}
-
-// TODO decide if default values are meant to be & test this
-function applyDefaultValues(query: Object): bluebird<Query> {
-  // currently the default values are the same as for events.get, to review
-  return bluebird.try(() => {
-    if (query.from === null && query.to !== null) {
-      query.from = timestamp.add(query.to, -24 * 60 * 60);
-    }
-    if (query.from !== null && query.to === null) {
-      // default value: now, can omit this as it is the default value in
-      // influxDB
-      query.to = timestamp.now(); 
-    }
-    if (query.from === null && query.to === null) {
-      query.from = timestamp.now('-1h');
-    }
-    return query;
-  });
-}
-
-function validateQuery(query: Query): bluebird<Query> {
-  return bluebird.try(() => {
-
-    let errorsThrown = [];
-
-    if (query.from != null) {
-      if (isNaN(query.from)) {
-        errorsThrown.push({
-          message: 'Expected type number but found type ' + (typeof query.from),
-          parameter: 'fromTime',
-          method: 'series.get'
-        });
-      }
-    }
-
-    if (query.to != null) {
-      if (isNaN(query.to)) {
-        errorsThrown.push({
-          message: 'Expected type number but found type ' + (typeof query.to),
-          parameter: 'toTime',
-          method: 'series.get'
-        });
-      }
-    }
-
-    if (query.to != null && query.from != null) {
-      if (query.to < query.from) {
-        errorsThrown.push({
-          message: 'Parameter fromTime is bigger than toTime',
-          parameter: 'fromTime',
-          method: 'series.get',
-        });
-      }
-    }
-
-    if (errorsThrown.length > 0) {
-      throw errors.invalidParametersFormat(
-        'The parameters\' format is invalid.',
-        errorsThrown);
-    }
-    return query;
-  });
-}
-
-function verifyAccess(
-  username: string, eventId: string, authToken: string, 
-  metadata: MetadataRepository, query: Query): bluebird<[Query, SeriesMetadata]>
-{
-  return metadata.forSeries(username, eventId, authToken)
-    .catch((err) => {
-      throw err instanceof APIError ? err : errors.unexpectedError(err);
-    })
-    .then((seriesMeta) => {
-      if (!seriesMeta.canRead()) throw errors.forbidden();
-
-      return [query, seriesMeta];
-    });
-}
-
-function retrievePoints(
-  seriesRepo: Repository, res: express$Response,
-  queryAndSeriesMeta: [Query, SeriesMetadata]): mixed 
-{
-  // const query = queryAndSeriesMeta[0];
-  const seriesMeta = queryAndSeriesMeta[1];
+  const seriesMeta = await verifyAccess(username, eventId, accessToken, metadata);
   
-  return seriesRepo.get(...seriesMeta.namespace())
-    .then((seriesInstance) => seriesInstance.query(queryAndSeriesMeta[0]))
-    .then((data) => {
-      const responseObj = new SeriesResponse(data);
-      responseObj.answer(res);
-    });
+  const query = coerceStringParams(lodash.clone(req.query));
+  applyDefaultValues(query);
+  validateQuery(query);
+  
+  await retrievePoints(seriesRepo, res, query, seriesMeta);
+}
+
+function coerceStringParams(params: Object): Query {
+  tryCoerceStringValues(params, {
+    fromTime: 'number',
+    toTime: 'number',
+  });
+
+  const query = {
+    from: params.fromTime,
+    to: params.toTime,
+  };
+
+  return query;
+}
+
+function applyDefaultValues(query: Object) {
+  if (query.to == null) query.to = timestamp.now(); 
+}
+
+function validateQuery(query: Query) {
+  if (query.from != null && isNaN(query.from)) 
+    throw errors.invalidParametersFormat("'from' must contain seconds since epoch.");
+
+  if (isNaN(query.to)) 
+    throw errors.invalidParametersFormat("'to' must contain seconds since epoch.");
+    
+  if (query.from != null && query.to != null && query.to < query.from) 
+    throw errors.invalidParametersFormat("'to' must be >= 'from'.");
+}
+
+async function verifyAccess(
+  username: string, eventId: string, authToken: string, 
+  metadata: MetadataRepository): Promise<SeriesMetadata>
+{
+  const seriesMeta = await metadata.forSeries(username, eventId, authToken);
+  
+  if (!seriesMeta.canRead()) throw errors.forbidden();
+  
+  return seriesMeta;
+}
+
+async function retrievePoints(
+  seriesRepo: Repository, res: express$Response,
+  query: Query, seriesMeta: SeriesMetadata): Promise<void>
+{
+  const seriesInstance = await seriesRepo.get(...seriesMeta.namespace());
+  const data = await seriesInstance.query(query);
+  
+  const responseObj = new SeriesResponse(data);
+  responseObj.answer(res);
 }
 
 
@@ -293,6 +217,13 @@ function catchAndNext(handler: ExpressHandler): express$Middleware {
       return await handler(req, res, next);
     }
     catch (err) {
+      if (err.constructor.name === 'ServiceNotAvailableError') {
+        return next(errors.apiUnavailable(err.message));
+      }
+      if (err instanceof business.types.errors.InputTypeError) {
+        return next(errors.invalidRequestStructure(err.message));
+      }
+      
       next(err);
     }
   };

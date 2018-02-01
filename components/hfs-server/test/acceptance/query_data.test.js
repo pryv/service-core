@@ -111,11 +111,8 @@ describe('Querying data from a HF series', function() {
       .then((res) => {
         const err = res.body.error;
         assert.strictEqual(err.id, ErrorIds.InvalidParametersFormat);
-        assert.strictEqual(err.data[0].parameter, 'fromTime');
-        assert.strictEqual(err.data[1].parameter, 'toTime');
       });
   });
-
   it('should refuse a query when toTime is before fromTime', function () {
     return server.request()
       .get(`/${userId}/events/${eventId}/series`)
@@ -128,7 +125,6 @@ describe('Querying data from a HF series', function() {
       .then((res) => {
         const err = res.body.error;
         assert.strictEqual(err.id, ErrorIds.InvalidParametersFormat);
-        assert.strictEqual(err.data[0].message, 'Parameter fromTime is bigger than toTime');
       });
   });
 
