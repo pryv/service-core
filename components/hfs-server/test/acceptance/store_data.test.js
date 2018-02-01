@@ -3,57 +3,55 @@
 
 // Tests pertaining to storing data in a hf series. 
 
-/* global describe, it, beforeEach, afterEach */
+/* global describe, it, beforeEach, after, before */
 const bluebird = require('bluebird');
 const should = require('should');
-const request = require('supertest');
 const R = require('ramda');
 const cuid = require('cuid');
 
-const { settings, produceMongoConnection, define, produceInfluxConnection } = require('./test-helpers');
+const { spawnContext, produceMongoConnection, produceInfluxConnection } = require('./test-helpers');
 const databaseFixture = require('../support/database_fixture');
-
-const Application = require('../../src/Application');
 
 import type {MetadataRepository} from '../../src/metadata_cache';
 import type {Response} from 'supertest';
 
 describe('Storing data in a HF series', function() {
-  // Application, Context and Server are needed for influencing the way 
-  // authentication works in some of the tests here. 
-  const application = define(this, () => new Application().init(settings)); 
-  const context = define(this, () => application().context); 
-  const server = define(this, () => application().server); 
 
-  // Express app that we test against.
-  const app = define(this, () => server().setupExpress());
+  let server; 
+  before(async () => {
+    server = await spawnContext.spawn(); 
+  });
+  after(() => {
+    server.stop(); 
+  });
 
   describe('Use Case: Store data in InfluxDB, Verification on either half', function () {
     const database = produceMongoConnection(); 
     const influx = produceInfluxConnection(); 
 
     const pryv = databaseFixture(database);
-    afterEach(function () {
+    after(function () {
       pryv.clean(); 
     });
       
     // Set up a few ids that we'll use for testing. NOTE that these ids will
     // change on every test run. 
-    const userId = define(this, cuid);
-    const parentStreamId = define(this, cuid); 
-    const eventId = define(this, cuid); 
-    const accessToken = define(this, cuid);
-
-    define(this, () => {
-      return pryv.user(userId(), {}, function (user) {
-        user.stream({id: parentStreamId()}, function (stream) {
+    let userId, parentStreamId, eventId, accessToken; 
+    before(() => {
+      userId = cuid(); 
+      parentStreamId = cuid(); 
+      eventId = cuid(); 
+      accessToken = cuid(); 
+      
+      return pryv.user(userId, {}, function (user) {
+        user.stream({id: parentStreamId}, function (stream) {
           stream.event({
-            id: eventId(), 
+            id: eventId, 
             type: 'mass/kg'});
         });
 
-        user.access({token: accessToken(), type: 'personal'});
-        user.session(accessToken());
+        user.access({token: accessToken, type: 'personal'});
+        user.session(accessToken);
       });
     });
     
@@ -66,38 +64,31 @@ describe('Storing data in a HF series', function() {
           R.map(R.prop(R.__, data), Object.keys(data)),
         ]
       };
-      return request(app())
-        .post(`/${userId()}/events/${eventId()}/series`)
-        .set('authorization', accessToken())
+      const request = server.request(); 
+      return request
+        .post(`/${userId}/events/${eventId}/series`)
+        .set('authorization', accessToken)
         .send(postData)
         .expect(200);
     }
     
-    it('should store data correctly', function () {
-      return bluebird
-        // Store some data into InfluxDB
-        .try(() => storeData({timestamp: 1481677845, value: 80.3}))
+    it('should store data correctly', async () => {
+      await storeData({timestamp: 1481677845, value: 80.3});
+      
+      // Check if the data is really there
+      const userName = userId; // identical with id here, but will be user name in general. 
+      const options = { database: `user.${userName}` };
+      const query = `
+        SELECT * FROM "event.${eventId}"
+      `;
         
-        // Check if the data is really there (1/2)
-        .then(() => {
-          const userName = userId(); // identical with id here, but will be user name in general. 
-          const options = { database: `user.${userName}` };
-          const query = `
-            SELECT * FROM "event.${eventId()}"
-          `;
-          
-          return influx.query(query, options);
-        })
-        
-        // Check if the data is really there (2/2)
-        .then((res) => {
-          const row = res[0];
-          if (row.time == null || row.value == null) 
-            throw new Error('Should have time and value.');
-          
-          should(row.time.toNanoISOString()).be.eql('2016-12-14T01:10:45.000000000Z');
-          should(row.value).be.eql(80.3);
-        });
+      const result = await influx.query(query, options);
+      const row = result[0];
+      if (row.time == null || row.value == null) 
+        throw new Error('Should have time and value.');
+      
+      should(row.time.toNanoISOString()).be.eql('2016-12-14T01:10:45.000000000Z');
+      should(row.value).be.eql(80.3);
     });
     it('should return data once stored', function () {
       const userName = userId(); // identical with id here, but will be user name in general. 

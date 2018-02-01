@@ -8,5 +8,6 @@ exports = module.exports = {
   data: require('./data'),
   dependencies: require('./dependencies'),
   InstanceManager: require('./InstanceManager'),
-  instanceTestSetup: require('./instanceTestSetup')
+  instanceTestSetup: require('./instanceTestSetup'), 
+  spawner: require('./spawner'),
 };
