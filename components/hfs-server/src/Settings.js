@@ -211,7 +211,7 @@ class Settings {
           level: {
             doc: 'Log level for the console.',
             format: formats.logLevel,
-            default: 'debug'
+            default: 'warn'
           },
           colorize: {
             doc: 'Should console output be colorized?',

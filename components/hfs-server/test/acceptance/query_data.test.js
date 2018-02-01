@@ -6,7 +6,6 @@
 const timestamp = require('unix-timestamp');
 const { ErrorIds } = require('components/errors');
 const cuid = require('cuid');
-const bluebird = require('bluebird');
 const chai = require('chai');
 const assert = chai.assert; 
 
