@@ -3,7 +3,6 @@
 // Tests pertaining to storing data in a hf series. 
 
 /* global describe, it, beforeEach, after, before */
-const bluebird = require('bluebird');
 const should = require('should');
 const R = require('ramda');
 const cuid = require('cuid');
@@ -12,21 +11,20 @@ const debug = require('debug')('store_data.test');
 const { spawnContext, produceMongoConnection, produceInfluxConnection } = require('./test-helpers');
 const databaseFixture = require('../support/database_fixture');
 
-import type {MetadataRepository} from '../../src/metadata_cache';
 import type {Response} from 'supertest';
 
 describe('Storing data in a HF series', function() {
 
-  let server; 
-  before(async () => {
-    debug('spawning');
-    server = await spawnContext.spawn(); 
-  });
-  after(() => {
-    server.stop(); 
-  });
-
   describe('Use Case: Store data in InfluxDB, Verification on either half', function () {
+    let server; 
+    before(async () => {
+      debug('spawning');
+      server = await spawnContext.spawn(); 
+    });
+    after(() => {
+      server.stop(); 
+    });
+    
     const database = produceMongoConnection(); 
     const influx = produceInfluxConnection(); 
 
@@ -141,10 +139,20 @@ describe('Storing data in a HF series', function() {
   describe('POST /events/EVENT_ID/series', function() {
     const EVENT_ID = 'EVENTID';
     
+    let server; 
+    before(async () => {
+      debug('spawning');
+      server = await spawnContext.spawn(); 
+    });
+    after(() => {
+      server.stop(); 
+    });
+    
     // TODO Worry about deleting data that we stored in earlier tests.
     
     function storeData(data): Response {
-      const response = request(app())
+      const request = server.request(); 
+      const response = request
         .post(`/USERNAME/events/${EVENT_ID}/series`)
         .set('authorization', 'AUTH_TOKEN')
         .send(data);
@@ -152,7 +160,8 @@ describe('Storing data in a HF series', function() {
       return response;
     }
     function queryData(): Promise<Object> {
-      let response = request(app())
+      const request = server.request(); 
+      let response = request
         .get(`/USERNAME/events/${EVENT_ID}/series`)
         .set('authorization', 'KEN SENT ME')
         .query({
@@ -168,16 +177,6 @@ describe('Storing data in a HF series', function() {
         });
     }
     
-    function produceMetadataLoader(authTokenValid=true): MetadataRepository {
-      const seriesMeta = {
-        canWrite: () => authTokenValid,
-        canRead: () => authTokenValid, 
-        namespace: () => ['test', 'foo'],
-      };
-      return {
-        forSeries: function forSeries() { return bluebird.resolve(seriesMeta); }
-      };
-    }
     function produceData() {
       return {
         elementType: 'mass/kg',
@@ -194,7 +193,8 @@ describe('Storing data in a HF series', function() {
     describe('when bypassing authentication (succeed always)', function () {
       // Bypass authentication check: Succeed always
       beforeEach(function () {
-        context().metadata = produceMetadataLoader();
+        server.process.
+          sendToChild('mockAuthentication', true);
       });
       
       it('stores data into InfluxDB', function() {
@@ -218,7 +218,7 @@ describe('Storing data in a HF series', function() {
       });
 
       it('should reject non-JSON bodies', function () { 
-        const response = request(app())
+        const response = server.request()
           .post(`/USERNAME/events/${EVENT_ID}/series`)
           .set('authorization', 'AUTH_TOKEN')
           .type('form')
@@ -294,7 +294,8 @@ describe('Storing data in a HF series', function() {
     describe('when authentication fails', function () {
       // Bypass authentication check: Fail always
       beforeEach(function () {
-        context().metadata = produceMetadataLoader(false); 
+        server.process.
+          sendToChild('mockAuthentication', false);
       });
 
       it('refuses invalid/unauthorized accesses', function () {

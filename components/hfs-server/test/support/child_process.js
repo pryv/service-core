@@ -2,9 +2,12 @@
 
 const debug = require('debug')('test-child');
 const msgpack = require('msgpack5')();
+const bluebird = require('bluebird');
 
 const Application = require('../../src/application');
 const Settings = require('../../src/settings');
+
+import type {MetadataRepository} from '../../src/metadata_cache';
 
 // This bit is useful to trace down promise rejections that aren't caught. 
 //
@@ -15,6 +18,31 @@ process.on('unhandledRejection', unhandledRejection);
 //
 process.on('message', dispatchParentMessage);
 
+// The HFS application object that the tests interact with. 
+let app; 
+
+// Gets called by the test process to mock out authentication and allow everyone
+// access. 
+// 
+function mockAuthentication(allowAll: boolean) {
+  const context = app.context; 
+  
+  context.metadata = produceMetadataLoader(allowAll);
+  
+  sendToParent('mockAuthenticationDone');
+}
+function produceMetadataLoader(authTokenValid=true): MetadataRepository {
+  const seriesMeta = {
+    canWrite: () => authTokenValid,
+    canRead: () => authTokenValid, 
+    namespace: () => ['test', 'foo'],
+  };
+  return {
+    forSeries: function forSeries() { return bluebird.resolve(seriesMeta); }
+  };
+}
+
+
 async function intStartServer(injectSettings: {}) {
   const settings = new Settings(); 
   settings.loadFromFile('config/dev.json');
@@ -22,7 +50,7 @@ async function intStartServer(injectSettings: {}) {
   
   debug(settings.get('http.port').num());
   
-  const app = new Application();
+  app = new Application();
   app.init(settings);
   app.start(); 
   
@@ -36,6 +64,9 @@ function dispatchParentMessage(wireMessage: Buffer) {
   debug('received ', cmd, args);
   
   switch(cmd) {
+    case 'mockAuthentication': 
+      mockAuthentication(args[0]);
+      break;
     case 'int_startServer': 
       intStartServer(args[0]); 
       break; 
