@@ -384,8 +384,7 @@ describe('accesses (personal)', function () {
       req().post(basePath).send(data).end(function (res) {
         validation.checkError(res, {
           status: 400,
-          id: ErrorIds.ItemAlreadyExists,
-          data: {token: testData.accesses[1].token}
+          id: ErrorIds.ItemAlreadyExists
         }, done);
       });
     });
