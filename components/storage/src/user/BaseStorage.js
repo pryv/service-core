@@ -12,7 +12,7 @@ module.exports = BaseStorage;
  *
  * - **Must** override method `getCollectionInfo()`
  * - Can set data converters (see details below)
- * - Can set default options (structure: { fields: Object, sort: Object })
+ * - Can set default options (structure: { projection: Object, sort: Object })
  * - Can override/add other methods if needed
  *
  * **About converters**
@@ -41,7 +41,7 @@ function BaseStorage(database) {
     itemFromDB: [],
     itemsFromDB: []
   };
-  this.defaultOptions = { fields: {}, sort: {} };
+  this.defaultOptions = { sort: {} };
 }
 
 /**

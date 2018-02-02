@@ -25,7 +25,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
   notifications, logging, updatesSettings, storageLayer) {
 
   const logger = logging.getLogger('methods/accesses');
-  const dbFindOptions = {fields: {calls: 0}};
+  const dbFindOptions = {projection: {calls: 0}};
 
   // COMMON
 
@@ -101,8 +101,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
     if (params.token) {
       params.token = slugify(params.token);
       if (string.isReservedId(params.token)) {
-        return next(errors.invalidItemId('The specified token "' + params.token +
-            '" is not allowed.'));
+        return next(errors.invalidItemId('The specified token is not allowed.'));
       }
     } else {
       params.token = userAccessesStorage.generateToken();
@@ -212,7 +211,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
         if (Database.isDuplicateError(err)) {
           var conflictingKeys;
           if (isDBDuplicateToken(err)) {
-            conflictingKeys = {token: params.token};
+            conflictingKeys = {token: '(hidden)'};
           } else {
             conflictingKeys = { type: params.type, name: params.name };
             if (params.deviceName) {
@@ -220,7 +219,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
             }
           }
           return next(errors.itemAlreadyExists(
-            'access', conflictingKeys, err
+            'access', conflictingKeys
           ));
         } else {
           return next(errors.unexpectedError(err));
@@ -278,7 +277,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
         if (err) {
           if (Database.isDuplicateError(err)) {
             return next(errors.itemAlreadyExists('access',
-              { type: context.resource.type, name: params.update.name }, err));
+              { type: context.resource.type, name: params.update.name }));
           } else {
             return next(errors.unexpectedError(err));
           }

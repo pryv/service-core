@@ -150,7 +150,7 @@ module.exports = function (
     }
 
     var options = {
-      fields: params.returnOnlyIds ? {id: 1} : {},
+      projection: params.returnOnlyIds ? {id: 1} : {},
       sort: { time: params.sortAscending ? 1 : -1 },
       skip: params.skip,
       limit: params.limit
@@ -598,7 +598,7 @@ module.exports = function (
       ]
     };
     var options = {
-      fields: {id: 1},
+      projection: {id: 1},
       sort: {time: 1}
     };
     userEventsStorage.findOne(context.user, query, options, function (err, periodEvent) {
@@ -651,7 +651,7 @@ module.exports = function (
       ]
     };
     var options = {
-      fields: {id: 1},
+      projection: {id: 1},
       sort: {time: 1}
     };
     userEventsStorage.find(context.user, query, options, function (err, periodEvents) {

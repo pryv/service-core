@@ -38,7 +38,6 @@ function Events(database) {
   });
 
   this.defaultOptions = {
-    fields: {},
     sort: {time: -1}
   };
 }

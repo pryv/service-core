@@ -37,7 +37,7 @@
     "middleware": "file:components/middleware",
     "mkdirp": "0.5.x",
     "model": "file:components/model",
-    "mongodb": "^2.2.31",
+    "mongodb": "3.x",
     "morgan": "^1.8.1",
     "msgpack5": "^3.6.0",
     "multer": "^1.3.0",

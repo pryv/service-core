@@ -21,10 +21,10 @@ module.exports = Database;
  * @constructor
  */
 function Database(settings, logger) {
-  var authPart = settings.authUser && settings.authUser.length>0 ?
-      settings.authUser + ':' + settings.authPassword + '@' : '';
-  this.connectionString = 'mongodb://' + authPart + settings.host + ':' + settings.port + '/' +
-      settings.name;
+  const authPart = getAuthPart(settings);
+   
+  this.connectionString = `mongodb://${authPart}${settings.host}:${settings.port}/${settings.name}`;
+  this.databaseName = settings.name; 
       
   const s60 = 60000; // 60 seconds
   this.options = {
@@ -69,14 +69,15 @@ Database.prototype.ensureConnect = function (callback) {
     return callback();
   }
   this.logger.debug('Connecting to ' + this.connectionString);
-  MongoClient.connect(this.connectionString, this.options, function (err, db) {
+  MongoClient.connect(this.connectionString, this.options, function (err, client) {
     if (err) {
       this.logger.debug(err);
       return callback(err);
     }
 
     this.logger.debug('Connected');
-    this.db = db;
+    this.client = client;
+    this.db = client.db(this.databaseName);
     callback();
   }.bind(this));
 };
@@ -151,7 +152,7 @@ Database.prototype.count = function (collectionInfo, query, callback) {
  * @param {Object} collectionInfo
  * @param {Object} query Mongo-style query
  * @param {Object} options Properties:
- *    * {Object} fields Mongo-style fields inclusion/exclusion definition
+ *    * {Object} projection Mongo-style fields inclusion/exclusion definition
  *    * {Object} sort Mongo-style sorting definition
  *    * {Number} skip Number of records to skip (or `null`)
  *    * {Number} limit Number of records to return (or `null`)
@@ -160,8 +161,11 @@ Database.prototype.count = function (collectionInfo, query, callback) {
 Database.prototype.find = function (collectionInfo, query, options, callback) {
   this.getCollection(collectionInfo, function (err, collection) {
     if (err) { return callback(err); }
-
-    var cursor = collection.find(query, options.fields).sort(options.sort);
+    
+    const queryOptions = {
+      projection: options.projection,
+    };
+    var cursor = collection.find(query, queryOptions).sort(options.sort);
     if (options.skip) {
       cursor = cursor.skip(options.skip);
     }
@@ -178,7 +182,7 @@ Database.prototype.find = function (collectionInfo, query, options, callback) {
  * @param {Object} collectionInfo
  * @param {Object} query Mongo-style query
  * @param {Object} options Properties:
- *    * {Object} fields Mongo-style fields inclusion/exclusion definition
+ *    * {Object} projection Mongo-style fields inclusion/exclusion definition
  *    * {Object} sort Mongo-style sorting definition
  *    * {Number} skip Number of records to skip (or `null`)
  *    * {Number} limit Number of records to return (or `null`)
@@ -188,7 +192,10 @@ Database.prototype.findStreamed = function (collectionInfo, query, options, call
   this.getCollection(collectionInfo, function (err, collection) {
     if (err) { return callback(err); }
 
-    var cursor = collection.find(query, options.fields).sort(options.sort);
+    const queryOptions = {
+      projection: options.projection,
+    };
+    var cursor = collection.find(query, queryOptions).sort(options.sort);
     if (options.skip) {
       cursor = cursor.skip(options.skip);
     }
@@ -227,8 +234,10 @@ Database.prototype.findOne = function (collectionInfo, query, options, callback)
  *    * {Number} limit Number of records to return (or `null`)
  * @param {Function} callback
  */
-Database.prototype.aggregate = function (collectionInfo, query, projectExpression, groupExpression,
-                                         options, callback) {
+Database.prototype.aggregate = function (
+  collectionInfo, query, projectExpression, groupExpression,
+  options, callback) 
+{
   this.getCollection(collectionInfo, function (err, collection) {
     if (err) { return callback(err); }
 
@@ -450,3 +459,20 @@ Database.isDuplicateError = function (err) {
   var errorCode = err.code || (err.lastErrorObject ? err.lastErrorObject.code : null);
   return errorCode === 11000 || errorCode === 11001;
 };
+
+function getAuthPart(settings) {
+  const authUser = settings.authUser;
+  let authPart = '';
+  
+  if (authUser != null && typeof authUser === 'string' && authUser.length > 0) {
+    const authPassword = settings.authPassword || '';
+    
+    // See
+    //  https://github.com/mongodb/specifications/blob/master/source/connection-string/connection-string-spec.rst#key-value-pair
+    // 
+    authPart = encodeURIComponent(authUser) + ':' + 
+      encodeURIComponent(authPassword) + '@';
+  }
+  
+  return authPart;
+}
