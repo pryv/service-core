@@ -178,7 +178,7 @@ describe('Storing data in a HF series', function() {
       return response
         .expect(200)
         .then((res) => {
-          assert.instanceOf(res.body.elementType, String);
+          assert.typeOf(res.body.elementType, 'string');
           return res.body;
         });
     }
@@ -314,7 +314,7 @@ describe('Storing data in a HF series', function() {
           .then((res) => {
             const error = res.body.error; 
             assert.strictEqual(error.id, 'forbidden'); 
-            assert.instanceOf(error.message, String); 
+            assert.typeOf(error.message, 'string'); 
           });
       });
     });
@@ -329,7 +329,7 @@ describe('Storing data in a HF series', function() {
       it.skip('stores data of any basic type', () => {
         assert.isTrue(
           tryStore({ type: 'series:angular-speed/rad-s' }, [1, 2, 3])
-        )
+        );
       });
       it.skip('stores data of complex types', () => {
         
