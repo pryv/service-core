@@ -74,6 +74,10 @@ If you want to run tests in `components/`, you will need to start with a command
 This is something that should probably be a shell alias in your environment. I use 
 
     $ alias pm="../../node_modules/.bin/mocha --compilers js:babel-register test/**/*.test.js"
+    
+If you're running into a lot of test failures because mongoDB doesn't like you today, it's maybe because your database is empty so try to run the storage tests first:
+
+    $ cd dist/components/storage/ && yarn test
 
 ### Quick, run the servers
 
