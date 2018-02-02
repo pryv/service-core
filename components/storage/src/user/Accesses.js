@@ -24,7 +24,6 @@ function Accesses(database) {
   });
 
   this.defaultOptions = {
-    fields: {},
     sort: {name: 1}
   };
 }

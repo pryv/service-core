@@ -20,7 +20,6 @@ function Users(database) {
   });
 
   this.defaultOptions = {
-    fields: {},
     sort: {username: 1}
   };
 }
