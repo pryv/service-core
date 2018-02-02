@@ -32,6 +32,21 @@ function produceMongoConnection(): storage.Database {
 }
 exports.produceMongoConnection = produceMongoConnection;
 
+// Produces a StorageLayer instance
+// 
+function produceStorageLayer(connection: storage.Database): storage.StorageLayer {
+  const passwordResetRequestMaxAge = 60*1000;
+  const sessionMaxAge = 60*1000;
+  
+  return new storage.StorageLayer(
+    connection, 
+    new NullLogger(), 
+    'attachmetsDirPath', 'previewsDirPath', 
+    passwordResetRequestMaxAge,
+    sessionMaxAge);
+}
+exports.produceStorageLayer = produceStorageLayer;
+
 // Forward certain things that the top level helper defines, for convenience: 
 exports.settings = toplevelHelpers.settings;
 

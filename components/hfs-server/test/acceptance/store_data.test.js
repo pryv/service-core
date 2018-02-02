@@ -2,19 +2,25 @@
 
 // Tests pertaining to storing data in a hf series. 
 
-/* global describe, it, beforeEach, after, before */
+/* global describe, it, beforeEach, after, before, afterEach */
 const chai = require('chai');
 const assert = chai.assert; 
 const R = require('ramda');
 const cuid = require('cuid');
 const debug = require('debug')('store_data.test');
+const bluebird = require('bluebird');
+const lodash = require('lodash');
 
-const { spawnContext, produceMongoConnection, produceInfluxConnection } = require('./test-helpers');
+const { 
+  spawnContext, produceMongoConnection, 
+  produceInfluxConnection, produceStorageLayer } = require('./test-helpers');
 const { databaseFixture } = require('components/test-helpers');
 
 import type {Response} from 'supertest';
 
 describe('Storing data in a HF series', function() {
+  const database = produceMongoConnection(); 
+  const influx = produceInfluxConnection(); 
 
   describe('Use Case: Store data in InfluxDB, Verification on either half', function () {
     let server; 
@@ -26,9 +32,6 @@ describe('Storing data in a HF series', function() {
       server.stop(); 
     });
     
-    const database = produceMongoConnection(); 
-    const influx = produceInfluxConnection(); 
-
     const pryv = databaseFixture(database);
     after(function () {
       pryv.clean(); 
@@ -146,14 +149,7 @@ describe('Storing data in a HF series', function() {
     const EVENT_ID = 'EVENTID';
     
     let server; 
-    before(async () => {
-      debug('spawning');
-      server = await spawnContext.spawn(); 
-    });
-    after(() => {
-      server.stop(); 
-    });
-    
+        
     // TODO Worry about deleting data that we stored in earlier tests.
     
     function storeData(data): Response {
@@ -197,6 +193,14 @@ describe('Storing data in a HF series', function() {
     }
 
     describe('when bypassing authentication (succeed always)', function () {
+      before(async () => {
+        debug('spawning');
+        server = await spawnContext.spawn(); 
+      });
+      after(() => {
+        server.stop(); 
+      });
+      
       // Bypass authentication check: Succeed always
       beforeEach(function () {
         server.process.
@@ -300,6 +304,14 @@ describe('Storing data in a HF series', function() {
       });
     });
     describe('when authentication fails', function () {
+      before(async () => {
+        debug('spawning');
+        server = await spawnContext.spawn(); 
+      });
+      after(() => {
+        server.stop(); 
+      });
+      
       // Bypass authentication check: Fail always
       beforeEach(function () {
         server.process.
@@ -319,16 +331,73 @@ describe('Storing data in a HF series', function() {
       });
     });
     describe('storing data in different formats', () => {
+      before(async () => {
+        debug('spawning');
+        server = await spawnContext.spawn(); 
+      });
+      after(() => {
+        server.stop(); 
+      });
+      
+      const pryv = databaseFixture(database);
+      afterEach(function () {
+        pryv.clean(); 
+      });
+      
+      let userId, parentStreamId, accessToken; 
+      beforeEach(() => {
+        userId = cuid(); 
+        parentStreamId = cuid(); 
+        accessToken = cuid(); 
+        
+        debug('build fixture');
+        return pryv.user(userId, {}, function (user) {
+          user.stream({id: parentStreamId}, function () {});
+
+          user.access({token: accessToken, type: 'personal'});
+          user.session(accessToken);
+        });
+      });
+      
+      const storageLayer = produceStorageLayer(database);
+      
       // Tries to store `data` in an event with attributes `attrs`. Returns 
       // true if the whole operation is successful. 
       // 
-      function tryStore(attrs, data): boolean {
+      async function tryStore(attrs: Object, data: Array<number>): Promise<boolean> {
+        const userQuery = {id: userId};
+        const effectiveAttrs = lodash.merge(
+          { streamId: parentStreamId }, 
+          attrs
+        );
+
+        const user = await bluebird.fromCallback(
+          cb => storageLayer.users.findOne(userQuery, null, cb));
         
+        assert.isNotNull(user);
+          
+        const event = await bluebird.fromCallback(
+          cb => storageLayer.events.insertOne(user, effectiveAttrs, cb));
+          
+        const now = (new Date()) / 1000; 
+        const requestData = {
+          format: 'flatJSON',
+          fields: ['timestamp', 'value'], 
+          points: data.map(el => [now - Math.random()*1000, el]),
+        };
+        
+        const request = server.request(); 
+        const response = await request
+          .post(`/${userId}/events/${event.id}/series`)
+          .set('authorization', accessToken)
+          .send(requestData);
+          
+        return response.statusCode === 200;
       }
       
-      it.skip('stores data of any basic type', () => {
+      it('stores data of any basic type', async () => {
         assert.isTrue(
-          tryStore({ type: 'series:angular-speed/rad-s' }, [1, 2, 3])
+          await tryStore({ type: 'series:angular-speed/rad-s' }, [1, 2, 3])
         );
       });
       it.skip('stores data of complex types', () => {

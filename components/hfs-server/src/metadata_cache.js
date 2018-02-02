@@ -149,7 +149,7 @@ class SeriesMetadataImpl implements SeriesMetadata {
   
   constructor(access: AccessModel, user: UserModel, event: EventModel) {
     const streamId = event.streamId; 
-    
+
     this.permissions = {
       write: access.canContributeToStream(streamId),
       read: access.canReadStream(streamId),
