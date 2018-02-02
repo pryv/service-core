@@ -25,7 +25,7 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
   notifications, logging, updatesSettings, storageLayer) {
 
   const logger = logging.getLogger('methods/accesses');
-  const dbFindOptions = {fields: {calls: 0}};
+  const dbFindOptions = {projection: {calls: 0}};
 
   // COMMON
 

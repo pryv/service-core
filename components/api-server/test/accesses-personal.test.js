@@ -2,18 +2,18 @@
 
 /*global describe, before, beforeEach, it */
 require('./test-helpers'); 
-var helpers = require('./helpers'),
-    ErrorIds = require('components/errors').ErrorIds,
-    server = helpers.dependencies.instanceManager,
-    async = require('async'),
-    validation = helpers.validation,
-    methodsSchema = require('../src/schema/accessesMethods'),
-    should = require('should'), // explicit require to benefit from static functions
-    storage = helpers.dependencies.storage.user.accesses,
-    streamsStorage = helpers.dependencies.storage.user.streams,
-    testData = helpers.data,
-    timestamp = require('unix-timestamp'),
-    _ = require('lodash');
+const helpers = require('./helpers');
+const ErrorIds = require('components/errors').ErrorIds;
+const server = helpers.dependencies.instanceManager;
+const async = require('async');
+const validation = helpers.validation;
+const methodsSchema = require('../src/schema/accessesMethods');
+const should = require('should');
+const storage = helpers.dependencies.storage.user.accesses;
+const streamsStorage = helpers.dependencies.storage.user.streams;
+const testData = helpers.data;
+const timestamp = require('unix-timestamp');
+const _ = require('lodash');
 const R = require('ramda');
 
 describe('accesses (personal)', function () {
@@ -62,9 +62,10 @@ describe('accesses (personal)', function () {
 
     it('must return all accesses (including personal ones)', function (done) {
       req().get(basePath).end(function (res) {
-        var expected = validation.removeDeletions(testData.accesses).map(function (a) {
-          return _.omit(a, 'calls');
-        });
+        const expected = validation
+          .removeDeletions(testData.accesses)
+          .map(a => _.omit(a, 'calls'));
+
         validation.check(res, {
           status: 200,
           schema: methodsSchema.get.result,

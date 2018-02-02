@@ -12,6 +12,6 @@
   },
   "dependencies": {
     "cuid": "^1.2.5",
-    "mongodb": "^2.2.19"
+    "mongodb": "3.x"
   }
 }

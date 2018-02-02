@@ -376,7 +376,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
               } else if (auditSettings.deletionMode === 'keep-authors') {
 
                 userEventsStorage.findStreamed(context.user,
-                  {streamId: {$in: streamAndDescendantIds}}, {fields: {id: 1}},
+                  {streamId: {$in: streamAndDescendantIds}}, {projection: {id: 1}},
                   function (err, eventsStream) {
                     if (err) {
                       return subStepDone(errors.unexpectedError(err));
@@ -404,7 +404,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
                 userEventsStorage.findStreamed(context.user,
                   {streamId: {$in: streamAndDescendantIds}},
-                  {fields: {id: 1}},
+                  {projection: {id: 1}},
                   function (err, eventsStream) {
                     if (err) {
                       return subStepDone(errors.unexpectedError(err));
@@ -433,7 +433,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
               userEventsStorage.findStreamed(context.user,
                 {streamId: {$in: streamAndDescendantIds}, attachments: {$exists: true}},
-                {fields: {id: 1}}, function (err, eventsStream) {
+                {projection: {id: 1}}, function (err, eventsStream) {
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));
                   }
