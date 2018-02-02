@@ -4,13 +4,15 @@ const thisPackage = require('../../../package.json'),
       timestamp = require('unix-timestamp'),
       _ = require('lodash');
 
+import type Result from '../../Result';
+
 /**
  * Adds common metadata (API version, server time) in the `meta` field of the given result,
  * initializing `meta` if missing.
  *
  * @param result {Object} Current result. MODIFIED IN PLACE. 
  */
-module.exports = function (result: Object) {
+module.exports = function (result: Result | Object): Object {
   if (! result.meta) {
     result.meta = {};
   }

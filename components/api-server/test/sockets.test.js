@@ -17,7 +17,7 @@ const io = require('socket.io-client');
 const should = require('should'); 
 const queryString = require('qs');
 
-require('./test-helpers'); 
+const { context } = require('./test-helpers'); 
 const helpers = require('./helpers');
 const ErrorIds = require('components/errors').ErrorIds;
 const server = helpers.dependencies.instanceManager;
@@ -344,13 +344,6 @@ describe('Socket.IO', function () {
       }
     });
   
-    let context;
-  
-    // Sets up context
-    before(() => {
-      context = new SpawnContext(); 
-    });
-  
     // Spawns A and B. 
     beforeEach(async () => {
       // Stop a few servers here; this is just so that we can maybe reclaim 
@@ -360,11 +353,6 @@ describe('Socket.IO', function () {
   
       // Spawn two new servers.
       servers = await bluebird.all( context.spawn_multi(2) );
-    });
-  
-    // Teardown context
-    after(async () => {
-      await context.shutdown(); 
     });
   
     it('changes made in A notify clients of B', async () => {

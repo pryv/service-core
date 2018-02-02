@@ -21,7 +21,9 @@ module.exports = function(
   
   const attachmentsStatic = express.static(
     eventFilesSettings.attachmentsDirPath);
-  const events = new express.Router();
+  const events = new express.Router({
+    mergeParams: true
+  });
   
   // This is the path prefix for the routes in this file. 
   expressApp.use(Paths.Events, events);
@@ -43,7 +45,7 @@ module.exports = function(
     api.call('events.get', req.context, params, methodCallback(res, next, 200));
   });
 
-  expressApp.get(Paths.Events + '/:id', function (req, res, next) {
+  events.get('/:id', function (req, res, next) {
     var params = _.extend({id: req.params.id}, req.query);
     tryCoerceStringValues(params, {
       includeHistory: 'boolean'
@@ -52,11 +54,19 @@ module.exports = function(
   });
 
   // Access an events files
+  // 
+  // NOTE This `events.get('/:id/:fileId/:fileName?',`  doesn't work because 
+  //  using a Router will hide the username from the code here. It appears that 
+  //  the url is directly transformed into a file path in attachmentsAccessMiddleware
+  //  and thus if something is missing from the (router-)visible url, something 
+  //  will be missing upon file access. 
+  // 
   expressApp.get(Paths.Events + '/:id/:fileId/:fileName?', 
     retrieveAccessFromReadToken, 
     loadAccess,
     attachmentsAccessMiddleware(storageLayer.events), 
-    attachmentsStatic);
+    attachmentsStatic
+  );
 
   function retrieveAccessFromReadToken(req, res, next) {
     if (req.query.auth) {
@@ -96,8 +106,14 @@ module.exports = function(
   function loadAccess(req, res, next) {
     const context = req.context; 
     
-    return bluebird.resolve(
-      context.retrieveExpandedAccess(storageLayer)).asCallback(next);
+    nextify(context.retrieveExpandedAccess(storageLayer), next); 
+  }
+  
+  // Turns the promise given into a call to an express NextFunction. 
+  function nextify(promise, next) {
+    promise
+      .then(() => next())
+      .catch(err => next(err));
   }
 
   // Create an event.

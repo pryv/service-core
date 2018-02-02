@@ -2,18 +2,20 @@
 
 // Unit test for type repository
 
-/* global describe, it */
+/* global describe, it, beforeEach */
 
 const should = require('should');
-const memo = require('memo-is');
 const chai = require('chai');
 const assert = chai.assert;
 
 const {TypeRepository} = require('../../src/types');
 
 describe('business.types.TypeRepository', function () {
-  const repository = memo().is(() => new TypeRepository());
-  
+  let repository; 
+  beforeEach(() => {
+    repository = new TypeRepository(); 
+  });
+    
   describe('type list update', function () {
     const sourceURL = 'https://pryv.github.io/event-types/flat.json';
     
@@ -21,10 +23,10 @@ describe('business.types.TypeRepository', function () {
       // NOTE This test uses an internet URL. If internet is down, it will 
       // not work. Much like Pryv in general, also because of this function. 
        
-      return repository().tryUpdate(sourceURL);
+      return repository.tryUpdate(sourceURL);
     });
     it('should fail gracefully', function () {
-      return repository().tryUpdate('bahbahblacksheep')
+      return repository.tryUpdate('bahbahblacksheep')
         .catch(
           (err) => should(err.message).match(/Could not update event types/));
     });
@@ -32,11 +34,11 @@ describe('business.types.TypeRepository', function () {
   describe('basic types like mass/kg', function () {
     it('should be known', function () {
       should(
-        repository().isKnown('mass/kg')
+        repository.isKnown('mass/kg')
       ).be.true(); 
     });
     it('should return a type instance allowing conversion', function () {
-      const eventType = repository().lookup('mass/kg');
+      const eventType = repository.lookup('mass/kg');
       
       should(eventType.requiredFields()).be.eql(['value']);
       should(eventType.optionalFields()).be.eql([]);
@@ -47,14 +49,14 @@ describe('business.types.TypeRepository', function () {
       should(fieldType.coerce(1234)).be.eql(1234); 
     });
     it('should throw when conversion fails', function () {
-      const eventType = repository().lookup('mass/kg');
+      const eventType = repository.lookup('mass/kg');
       const fieldType = eventType.forField('value'); 
 
       should.throws(() => fieldType.coerce({}), Error); 
     });
     it('should coerce to number during validation', function () {
-      const eventType = repository().lookup('mass/kg');
-      const validator = repository().validator();
+      const eventType = repository.lookup('mass/kg');
+      const validator = repository.validator();
       
       return eventType.callValidator(validator, '123')
         .then((val) => should(val).be.eql(123));
@@ -63,11 +65,11 @@ describe('business.types.TypeRepository', function () {
   describe('complex types like position/wgs84', function () {
     it('should be known', function () {
       should(
-        repository().isKnown('position/wgs84')
+        repository.isKnown('position/wgs84')
       ).be.true(); 
     });
     it('should return a complex type instance', function () {
-      const eventType = repository().lookup('position/wgs84');
+      const eventType = repository.lookup('position/wgs84');
 
       should(eventType.requiredFields()).be.eql([
         'latitude',
@@ -88,10 +90,10 @@ describe('business.types.TypeRepository', function () {
   describe('placeholder types like picture/attached', () => {
     it('should be known', function () {
       assert.isTrue(
-        repository().isKnown('picture/attached'));
+        repository.isKnown('picture/attached'));
     });
     it('should return a type instance allowing conversion', function () {
-      const eventType = repository().lookup('picture/attached');
+      const eventType = repository.lookup('picture/attached');
 
       assert.deepEqual(eventType.requiredFields(), ['value']);
       assert.deepEqual(eventType.optionalFields(), []);
@@ -109,14 +111,14 @@ describe('business.types.TypeRepository', function () {
   describe('series types like series:mass/kg', function () {
     it('should be known', function () {
       should(
-        repository().isKnown('series:position/wgs84')
+        repository.isKnown('series:position/wgs84')
       ).be.true(); 
       should(
-        repository().isKnown('series:mass/kg')
+        repository.isKnown('series:mass/kg')
       ).be.true(); 
     });
     it('should inform about fields correctly', function () {
-      const eventType = repository().lookup('series:mass/kg');
+      const eventType = repository.lookup('series:mass/kg');
 
       should(eventType.requiredFields()).be.eql(['timestamp', 'value']);
       should(eventType.optionalFields()).be.eql([]);
@@ -126,21 +128,24 @@ describe('business.types.TypeRepository', function () {
 });
 
 describe('business.types.TypeValidator', function () {
-  const repository = memo().is(() => new TypeRepository());
+  let repository; 
+  beforeEach(() => {
+    repository = new TypeRepository(); 
+  });
 
   it('should be produced via a type repository', function () {
-    const validator = repository().validator(); 
+    const validator = repository.validator(); 
     
     should(validator.constructor.name).be.eql('TypeValidator');
   });
   it('should validate simple types', function () {
-    const validator = repository().validator(); 
+    const validator = repository.validator(); 
     const schema = { type: 'number' }; 
     
     return validator.validateWithSchema(1234, schema); 
   });
   it('should validate complex types', function () {
-    const validator = repository().validator(); 
+    const validator = repository.validator(); 
     const schema = { type: 'object', 
       properties: {
         a: { type: 'number' }, 

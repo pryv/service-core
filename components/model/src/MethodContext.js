@@ -43,6 +43,8 @@ class MethodContext {
   // Memoizes the result of #getSingleActivityExpandedIds.
   singleActivityExpandedIds: ?Array<string>;
   
+  calledMethodId: ?string;
+  
   constructor(
     username: string, auth: ?string, 
     customAuthStepFn: ?CustomAuthFunction
@@ -57,6 +59,8 @@ class MethodContext {
     
     this.accessToken = '';
     this.callerId = null; 
+    
+    this.calledMethodId = null; 
     
     if (auth != null) this.parseAuth(auth);
   }

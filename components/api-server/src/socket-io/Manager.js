@@ -369,6 +369,10 @@ class Connection {
       
     try {
       const result = await answer; 
+      
+      if (result == null) 
+        throw new Error('AF: either err or result must be non-null');
+      
       return result.toObject((obj) => callback(null, setCommonMeta(obj)));
     }
     catch (err) {

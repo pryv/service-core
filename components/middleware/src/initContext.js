@@ -7,8 +7,8 @@ import type { CustomAuthFunction } from 'components/model';
 import type { StorageLayer } from 'components/storage';
 
 
-// returns a middleware function that initializes the method context into
-// `req.context`. the context is initialized with the user (loaded from
+// Returns a middleware function that initializes the method context into
+// `req.context`. The context is initialized with the user (loaded from
 // username) and the access token. the access itself is **not** loaded from
 // token here as it may be modified in the course of method execution, for
 // example when calling a batch of methods. it is the api methods'

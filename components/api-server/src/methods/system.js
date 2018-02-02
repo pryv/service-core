@@ -171,12 +171,8 @@ module.exports = function (
     });
   }
 
-  var apiMethodKeys = null;
   function getAPIMethodKeys() {
-    if (! apiMethodKeys) {
-      apiMethodKeys = Object.keys(api.map).map(string.toMongoKey);
-    }
-    return apiMethodKeys;
+    return api.getMethodKeys().map(string.toMongoKey); 
   }
 
   function getAccessStatsKey(access) {

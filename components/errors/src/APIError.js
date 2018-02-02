@@ -1,23 +1,45 @@
-var util = require('util');
+// @flow
 
-/**
- * The constructor to use for all errors within the API.
- *
- * @constructor
- * @param {String} id
- * @param {String} message
- * @param {Object} options Possible options: {Number} httpStatus, {*} data, {Error} innerError, {Boolean} dontNotifyAirbrake
- */
-var APIError = module.exports = function (id, message, options) {
-  APIError.super_.call(this);
+export type APIErrorOptions = {
+  httpStatus?: number, 
+  data?: mixed, 
+  innerError?: Error, 
+  dontNotifyAirbrake?: boolean, 
+}
 
-  this.id = id;
-  this.message = message;
-  if (options.httpStatus) { this.httpStatus = options.httpStatus; }
-  if (options.data) { this.data = options.data; }
-  if (options.innerError) { this.innerError = options.innerError; }
-  if (options.dontNotifyAirbrake) { this.dontNotifyAirbrake = options.dontNotifyAirbrake; }
-};
+// The constructor to use for all errors within the API.
+// 
+class APIError extends Error {
+  id: string; 
+  message: string; 
+  httpStatus: ?number;
+  data: ?mixed; 
+  innerError: ?Error; 
+  dontNotifyAirbrake: boolean; 
+  
+  constructor(id: string, message: string, options: APIErrorOptions) {
+    super(); 
+    
+    this.id = id;
+    this.message = message;
+    
+    this.httpStatus = null; 
+    if (options.httpStatus != null) 
+      this.httpStatus = options.httpStatus;
+      
+    this.data = null; 
+    if (options.data != null) 
+      this.data = options.data;
+      
+    this.innerError = null; 
+    if (options.innerError != null) 
+      this.innerError = options.innerError;
+    
+    // We notify unless somebody tells us not to. 
+    this.dontNotifyAirbrake = false; 
+    if (options.dontNotifyAirbrake != null) 
+      this.dontNotifyAirbrake = options.dontNotifyAirbrake;
+  }
+}
 
-util.inherits(APIError, Error);
-APIError.prototype.name = 'APIError';
+module.exports = APIError;

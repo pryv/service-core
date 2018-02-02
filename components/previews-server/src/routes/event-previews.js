@@ -1,14 +1,13 @@
-var async = require('async'),
-    Cache = require('../Cache'),
-    childProcess = require('child_process'),
-    CronJob = require('cron').CronJob,
-    errors = require('components/errors').factory,
-    gm = require('gm'),
-    timestamp = require('unix-timestamp'),
-    xattr = require('fs-xattr'),
-    _ = require('lodash');
-
-const bluebird = require('bluebird');
+const async = require('async');
+const Cache = require('../Cache');
+const childProcess = require('child_process');
+const CronJob = require('cron').CronJob;
+const errors = require('components/errors').factory;
+const APIError = require('components/errors').APIError;
+const gm = require('gm');
+const timestamp = require('unix-timestamp');
+const xattr = require('fs-xattr');
+const _ = require('lodash');
 
 // constants
 var PreviewNotSupported = 'preview-not-supported',
@@ -35,8 +34,17 @@ module.exports = function (
   expressApp.all('/:username/events/*', initContextMiddleware, loadAccess);
 
   function loadAccess(req, res, next) {
-    return bluebird.resolve(
-      req.context.retrieveExpandedAccess(storageLayer)).asCallback(next);
+    return nextify(
+      req.context.retrieveExpandedAccess(storageLayer), 
+      next);
+  }
+  
+  // Resolves promise and calls (express) `next` correctly. 
+  // 
+  function nextify(promise, next) {
+    promise
+      .then(() => next())
+      .catch(err => next(err));
   }
 
   expressApp.get('/:username/events/:id:extension(.jpg|.jpeg|)', function (req, res, next) {
@@ -117,14 +125,14 @@ module.exports = function (
         if (cached) { return stepDone(); }
 
         gm(attachmentPath + '[0]') // to cover animated GIFs
-            .resize(targetSize.width, targetSize.height).noProfile()
-            .interlace('Line') // progressive JPEG
-            .write(previewPath, function setModifiedTime(err) {
-          if (err) {
-            return stepDone(adjustGMResultError(err));
-          }
-          xattr.set(previewPath, Cache.EventModifiedXattrKey, event.modified.toString(), stepDone);
-        });
+          .resize(targetSize.width, targetSize.height).noProfile()
+          .interlace('Line') // progressive JPEG
+          .write(previewPath, function setModifiedTime(err) {
+            if (err) {
+              return stepDone(adjustGMResultError(err));
+            }
+            xattr.set(previewPath, Cache.EventModifiedXattrKey, event.modified.toString(), stepDone);
+          });
       },
       function respond(stepDone) {
         res.sendFile(previewPath, stepDone);
@@ -132,16 +140,19 @@ module.exports = function (
     ], function handleError(err) {
       if (err) {
         switch (err) {
-        case PreviewNotSupported:
-          res.send(204);
-          break;
-        default:
-          next(err.name === 'APIError' ? err : errors.unexpectedError(err));
+          case PreviewNotSupported:
+            res.send(204);
+            break;
+          default:
+            if (err instanceof APIError) 
+              return next(err);
+            else 
+              return next(errors.unexpectedError(err));
         }
       } else {
         // update last accessed time (don't check result)
         xattr.set(previewPath, Cache.LastAccessedXattrKey, timestamp.now().toString(),
-            function () {});
+          function () {});
       }
     });
   });
@@ -158,7 +169,7 @@ module.exports = function (
   function adjustGMResultError(err) {
     // assume file not found if code = 1 (gm command result)
     return err.code === 1 ?
-        errors.corruptedData('Corrupt event data: expected an attached file.', err) : err;
+      errors.corruptedData('Corrupt event data: expected an attached file.', err) : err;
   }
 
   function getPreviewSize(original, desired) {

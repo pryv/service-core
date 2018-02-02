@@ -15,6 +15,7 @@ const Application = require('./application');
 
 import type { Logger } from 'components/utils';
 import type { ConfigAccess } from './settings';
+import type { ExpressAppLifecycle } from './expressApp';
 
 // Server class for api-server process. To use this, you 
 // would 
@@ -46,23 +47,17 @@ class Server {
   //
   async start() {
     const app = this.application; 
-    const dependencies = app.dependencies;
     const logger = this.logger;
     
     this.publishExpressMiddleware();
     
-    const {expressApp, lifecycle} = require('./expressApp')(dependencies);
-    dependencies.register({expressApp: expressApp});
+    const [expressApp, lifecycle] = this.createExpressApp(); 
 
     // start TCP pub messaging
     await this.setupNotificationBus();
 
     // register API methods
     this.registerApiMethods();
-
-    // setup temp routes for handling requests during startup (incl. possible
-    // data migration)
-    lifecycle.appStartupBegin(); 
 
     // Setup HTTP and register server; setup Socket.IO.
     const server = http.createServer(expressApp);
@@ -80,7 +75,7 @@ class Server {
     }
     
     // Finish booting the server, start accepting connections.
-    await this.addRoutes(expressApp);
+    this.addRoutes(expressApp);
     
     // Let actual requests pass.
     lifecycle.appStartupComplete(); 
@@ -89,6 +84,20 @@ class Server {
     
     logger.info('Server ready.');
     this.notificationBus.serverReady();
+  }
+  
+  createExpressApp(): [express$Application, ExpressAppLifecycle] {
+    const app = this.application;
+    const dependencies = app.dependencies;
+
+    const {expressApp, lifecycle} = require('./expressApp')(dependencies);
+    dependencies.register({expressApp: expressApp});
+    
+    // Make sure that when we receive requests at this point, they get notified 
+    // of startup API unavailability. 
+    lifecycle.appStartupBegin(); 
+    
+    return [expressApp, lifecycle];
   }
   
   // Requires and registers all API methods. 
@@ -240,7 +249,10 @@ class Server {
     
     dependencies.resolve(require('./routes/system'));
     require('./routes/root')(expressApp, application);
-    
+
+    // NOTE We're in the process of getting rid of DI. See above for how these
+    // should look once that is done - we're handing each of these route 
+    // definers a fixed set of dependencies from which they get to choose. 
     [
       require('./routes/auth'),
       require('./routes/accesses'),
