@@ -18,7 +18,6 @@ function FollowedSlices(database) {
   });
 
   this.defaultOptions = {
-    fields: {},
     sort: {name: 1}
   };
 }

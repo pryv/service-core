@@ -64,7 +64,7 @@ describe('Versions', function () {
       migrate: versions.migrateIfNeeded.bind(versions),
       // use raw database to avoid new indexes being applied on old data structure
       accesses: storage.database.find.bind(storage.database,
-        { name: user.id + '.accesses', indexes: [] }, {}, { fields: {}, sort: {name: 1} }),
+        { name: user.id + '.accesses', indexes: [] }, {}, { sort: {name: 1} }),
       streams: storage.user.streams.findAll.bind(storage.user.streams, user, {}),
       events: storage.user.events.findAll.bind(storage.user.events, user, {}),
       version: versions.getCurrent.bind(versions)

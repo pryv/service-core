@@ -35,7 +35,6 @@ function Streams(database) {
   });
 
   this.defaultOptions = {
-    fields: {},
     sort: {name: 1}
   };
 }

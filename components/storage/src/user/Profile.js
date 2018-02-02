@@ -18,7 +18,6 @@ function Profile(database) {
   });
 
   this.defaultOptions = {
-    fields: {},
     sort: {}
   };
 }
