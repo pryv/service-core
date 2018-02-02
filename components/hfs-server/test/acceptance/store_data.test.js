@@ -3,7 +3,8 @@
 // Tests pertaining to storing data in a hf series. 
 
 /* global describe, it, beforeEach, after, before */
-const should = require('should');
+const chai = require('chai');
+const assert = chai.assert; 
 const R = require('ramda');
 const cuid = require('cuid');
 const debug = require('debug')('store_data.test');
@@ -89,8 +90,10 @@ describe('Storing data in a HF series', function() {
       if (row.time == null || row.value == null) 
         throw new Error('Should have time and value.');
       
-      should(row.time.toNanoISOString()).be.eql('2016-12-14T01:10:45.000000000Z');
-      should(row.value).be.eql(80.3);
+      assert.strictEqual(
+        row.time.toNanoISOString(), 
+        '2016-12-14T01:10:45.000000000Z'); 
+      assert.strictEqual(row.value, 80.3);
     });
     it('should return data once stored', async () => {
       // identical with id here, but will be user name in general. 
@@ -129,8 +132,11 @@ describe('Storing data in a HF series', function() {
           .expect(200)
           .then((res) => {
             const points = res.body.points || [];
-            should(points).not.be.empty();
-            should(points[0]).be.eql([1493647899, 1234]);
+            
+            assert.isNotEmpty(points);
+            assert.deepEqual(
+              points[0], 
+              [1493647899, 1234]); 
           });
       }
     });
@@ -172,7 +178,7 @@ describe('Storing data in a HF series', function() {
       return response
         .expect(200)
         .then((res) => {
-          should(res.body.elementType).be.instanceof(String);
+          assert.instanceOf(res.body.elementType, String);
           return res.body;
         });
     }
@@ -205,14 +211,16 @@ describe('Storing data in a HF series', function() {
           .then(queryData)
           .then((response) => {
             // Verify HTTP response content
-            should(response).not.be.empty(); 
-            
-            should(response.fields).be.eql(['timestamp', 'value']);
+            assert.isNotNull(response);
+              
+            assert.deepEqual(
+              response.fields, 
+              ['timestamp', 'value']); 
             
             const pairEqual = ([given, expected]) => 
-              should(given).be.eql(expected);
-              
-            should(response.points.length).be.eql(data.points.length);
+              assert.deepEqual(given, expected);
+
+            assert.strictEqual(response.points.length, data.points.length);
             R.all(pairEqual, R.zip(response.points, data.points));
           });
       });
@@ -285,7 +293,7 @@ describe('Storing data in a HF series', function() {
             return storeData(data).expect(400)
               .then((res) => {
                 const error = res.body.error; 
-                should(error.id).be.eql('invalid-request-structure');
+                assert.strictEqual(error.id, 'invalid-request-structure'); 
               });
           });
         }
@@ -305,9 +313,26 @@ describe('Storing data in a HF series', function() {
           .expect(403)
           .then((res) => {
             const error = res.body.error; 
-            should(error.id).be.eql('forbidden');
-            should(error.message).be.instanceof(String);
+            assert.strictEqual(error.id, 'forbidden'); 
+            assert.instanceOf(error.message, String); 
           });
+      });
+    });
+    describe('storing data in different formats', () => {
+      // Tries to store `data` in an event with attributes `attrs`. Returns 
+      // true if the whole operation is successful. 
+      // 
+      function tryStore(attrs, data): boolean {
+        
+      }
+      
+      it.skip('stores data of any basic type', () => {
+        assert.isTrue(
+          tryStore({ type: 'series:angular-speed/rad-s' }, [1, 2, 3])
+        )
+      });
+      it.skip('stores data of complex types', () => {
+        
       });
     });
   }); 
