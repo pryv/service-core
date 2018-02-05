@@ -476,7 +476,7 @@ describe('Storing data in a HF series', function() {
           .post(`/${userId}/events/${eventId}/series`)
           .set('authorization', accessToken)
           .send(requestData);
-          
+                    
         return response.statusCode === 200;
       }
 
@@ -509,6 +509,16 @@ describe('Storing data in a HF series', function() {
               [now-3, 3, 1, 1], 
               [now-2, 2, 2, 2], 
               [now-1, 1, 3, 3] ]));
+      });
+      it("refuses to store when field names don't match the type", async () => {
+        const now = (new Date()) / 1000; 
+        assert.isFalse(
+          await tryStore({ type: 'series:ratio/generic' }, 
+            ['timestamp', 'value', 'relativeFrom'],
+            [
+              [now-3, 3, 1], 
+              [now-2, 2, 2], 
+              [now-1, 1, 3] ]));
       });
     });
   }); 
