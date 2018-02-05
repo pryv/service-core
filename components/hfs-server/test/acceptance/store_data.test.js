@@ -464,7 +464,7 @@ describe('Storing data in a HF series', function() {
       
       // Tries to store complex `data` in the event identified by `eventId`.
       // 
-      async function tryStore(attrs: Object, header: Header, data: Rows): Promise<boolean> {
+      async function tryStore(header: Header, data: Rows): Promise<boolean> {
         const requestData = {
           format: 'flatJSON',
           fields: header, 
@@ -483,7 +483,7 @@ describe('Storing data in a HF series', function() {
       it('refuses to store when not all required fields are given', async () => {
         const now = (new Date()) / 1000; 
         assert.isFalse(
-          await tryStore({ type: 'series:ratio/generic' }, 
+          await tryStore( 
             ['timestamp', 'value'],
             [
               [now-3, 1], 
@@ -493,7 +493,7 @@ describe('Storing data in a HF series', function() {
       it('refuses to store when timestamp is present twice (ambiguous!)', async () => {
         const now = (new Date()) / 1000; 
         assert.isFalse(
-          await tryStore({ type: 'series:ratio/generic' }, 
+          await tryStore(
             ['timestamp', 'timestamp', 'value', 'relativeTo'],
             [
               [now-3, now-6, 1, 1], 
@@ -503,7 +503,7 @@ describe('Storing data in a HF series', function() {
       it('refuses to store when other fields are present twice (ambiguous!)', async () => {
         const now = (new Date()) / 1000; 
         assert.isFalse(
-          await tryStore({ type: 'series:ratio/generic' }, 
+          await tryStore(
             ['timestamp', 'value', 'value', 'relativeTo'],
             [
               [now-3, 3, 1, 1], 
@@ -513,12 +513,97 @@ describe('Storing data in a HF series', function() {
       it("refuses to store when field names don't match the type", async () => {
         const now = (new Date()) / 1000; 
         assert.isFalse(
-          await tryStore({ type: 'series:ratio/generic' }, 
+          await tryStore(
             ['timestamp', 'value', 'relativeFrom'],
             [
               [now-3, 3, 1], 
               [now-2, 2, 2], 
               [now-1, 1, 3] ]));
+      });
+    });
+    describe('complex types such as position/wgs84', () => {
+      // Spawns a server.
+      before(async () => {
+        debug('spawning');
+        server = await spawnContext.spawn(); 
+      });
+      after(() => {
+        server.stop(); 
+      });
+
+      // Database fixture infrastructure
+      const pryv = databaseFixture(database);
+      after(function () {
+        pryv.clean(); 
+      });
+
+      // Database fixture: `eventId` will contain the event that has a type 
+      // 'series:ratio/generic'
+      let userId, parentStreamId, eventId, accessToken; 
+      before(() => {
+        userId = cuid(); 
+        parentStreamId = cuid(); 
+        eventId = cuid(); 
+        accessToken = cuid(); 
+        
+        debug('build fixture');
+        return pryv.user(userId, {}, function (user) {
+          user.stream({id: parentStreamId}, function (stream) {
+            stream.event({
+              id: eventId, 
+              type: 'series:position/wgs84'});
+          });
+
+          user.access({token: accessToken, type: 'personal'});
+          user.session(accessToken);
+        });
+      });
+      
+      // Tries to store complex `data` in the event identified by `eventId`.
+      // 
+      async function tryStore(header: Header, data: Rows): Promise<boolean> {
+        const requestData = {
+          format: 'flatJSON',
+          fields: header, 
+          points: data,
+        };
+        
+        const request = server.request(); 
+        const response = await request
+          .post(`/${userId}/events/${eventId}/series`)
+          .set('authorization', accessToken)
+          .send(requestData);
+                    
+        return response.statusCode === 200;
+      }
+
+      it('allows storing any number of optional fields, on each request', async () => {
+        const now = (new Date()) / 1000; 
+        assert.isTrue(
+          await tryStore(
+            ['timestamp', 'latitude', 'longitude', 'altitude'],
+            [
+              [now-3, 1, 2, 3], 
+              [now-2, 2, 3, 4], 
+              [now-1, 3, 4, 5] ]));
+
+        assert.isTrue(
+          await tryStore(
+            ['timestamp', 'latitude', 'longitude', 'altitude', 'speed'],
+            [
+              [now-3, 1, 2, 3, 160], 
+              [now-2, 2, 3, 4, 170], 
+              [now-1, 3, 4, 5, 180] ]));
+      });
+      it('refuses unknown fields', async () => {
+        const now = (new Date()) / 1000; 
+        assert.isFalse(
+          await tryStore(
+            ['timestamp', 'latitude', 'longitude', 'depth'],
+            [
+              [now-3, 1, 2, 3], 
+              [now-2, 2, 3, 4], 
+              [now-1, 3, 4, 5] ]));
       });
     });
   }); 
