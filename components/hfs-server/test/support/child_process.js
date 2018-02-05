@@ -6,8 +6,11 @@ const bluebird = require('bluebird');
 
 const Application = require('../../src/application');
 const Settings = require('../../src/settings');
+const { InfluxRowType, TypeRepository } = require('components/business').types;
 
 import type {MetadataRepository} from '../../src/metadata_cache';
+
+const typeRepo = new TypeRepository(); 
 
 // This bit is useful to trace down promise rejections that aren't caught. 
 //
@@ -36,6 +39,7 @@ function produceMetadataLoader(authTokenValid=true): MetadataRepository {
     canWrite: () => authTokenValid,
     canRead: () => authTokenValid, 
     namespace: () => ['test', 'foo'],
+    produceRowType: () => new InfluxRowType(typeRepo.lookup('mass/kg')),
   };
   return {
     forSeries: function forSeries() { return bluebird.resolve(seriesMeta); }

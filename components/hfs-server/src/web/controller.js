@@ -14,6 +14,10 @@ const SeriesResponse = require('./SeriesResponse');
 const AUTH_HEADER = 'authorization';
 const FORMAT_FLAT_JSON = 'flatJSON';
 
+// Repository for types that we know about. 
+const typeRepo = new business.types.TypeRepository(); 
+
+// TODO When is this type repository updated?
 
 /** POST /events/:event_id/series - Store data in a series. 
  */
@@ -39,7 +43,7 @@ async function storeSeriesData(ctx: Context,
   if (!seriesMeta.canWrite()) throw errors.forbidden();
   
   // Parse request
-  const data = parseData(req.body);
+  const data = parseData(req.body, seriesMeta);
   if (data == null) {
     return next(errors.invalidRequestStructure('Malformed request.'));
   }
@@ -63,7 +67,7 @@ type DataMatrix = business.series.DataMatrix;
  * @param createRequest {mixed} Deserialized JSON from the client
  * @return {DataMatrix, null} normalized data to be input to influx
  */
-function parseData(createRequest: mixed): ?DataMatrix {
+function parseData(createRequest: mixed, meta: SeriesMetadata): ?DataMatrix {
   if (createRequest == null) return null; 
   if (typeof createRequest !== 'object') return null; 
   
@@ -79,9 +83,7 @@ function parseData(createRequest: mixed): ?DataMatrix {
   
   // assert: fields, points are both arrays
   
-  const typeRepo = new business.types.TypeRepository(); 
-  const type = new business.types.InfluxRowType(
-    typeRepo.lookup('mass/kg')); // TODO
+  const type = meta.produceRowType(typeRepo);
     
   if (! type.validateColumns(fields)) return null; 
   if (! type.validateAllRows(points, fields)) return null; 
@@ -220,7 +222,7 @@ function catchAndNext(handler: ExpressHandler): express$Middleware {
       if (err instanceof business.types.errors.InputTypeError) {
         return next(errors.invalidRequestStructure(err.message));
       }
-      
+    
       next(err);
     }
   };

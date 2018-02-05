@@ -51,7 +51,7 @@ describe('Storing data in a HF series', function() {
         user.stream({id: parentStreamId}, function (stream) {
           stream.event({
             id: eventId, 
-            type: 'mass/kg'});
+            type: 'series:mass/kg'});
         });
 
         user.access({token: accessToken, type: 'personal'});
@@ -181,7 +181,6 @@ describe('Storing data in a HF series', function() {
     
     function produceData() {
       return {
-        elementType: 'mass/kg',
         format: 'flatJSON', 
         fields: ['timestamp', 'value'], 
         points: [
@@ -242,7 +241,6 @@ describe('Storing data in a HF series', function() {
 
       describe('when request is malformed', function () {
         malformed('format is not flatJSON', {
-          elementType: 'mass/kg',
           format: 'JSON', 
           fields: ['timestamp', 'value'], 
           points: [
@@ -252,7 +250,6 @@ describe('Storing data in a HF series', function() {
           ]
         });
         malformed('matrix is not square - not enough fields', {
-          elementType: 'mass/kg',
           format: 'flatJSON', 
           fields: ['timestamp', 'value'], 
           points: [
@@ -262,7 +259,6 @@ describe('Storing data in a HF series', function() {
           ]
         });
         malformed('value types are not all valid', {
-          elementType: 'mass/kg',
           format: 'flatJSON', 
           fields: ['timestamp', 'value'], 
           points: [
@@ -272,7 +268,6 @@ describe('Storing data in a HF series', function() {
           ]
         });
         malformed('missing timestamp column', {
-          elementType: 'mass/kg',
           format: 'flatJSON', 
           fields: ['value'], 
           points: [
@@ -282,7 +277,6 @@ describe('Storing data in a HF series', function() {
           ]
         });
         malformed('missing value column for a simple input', {
-          elementType: 'mass/kg',
           format: 'flatJSON', 
           fields: ['timestamp'], 
           points: [
@@ -340,12 +334,12 @@ describe('Storing data in a HF series', function() {
       });
       
       const pryv = databaseFixture(database);
-      afterEach(function () {
+      after(function () {
         pryv.clean(); 
       });
       
       let userId, parentStreamId, accessToken; 
-      beforeEach(() => {
+      before(() => {
         userId = cuid(); 
         parentStreamId = cuid(); 
         accessToken = cuid(); 
@@ -395,7 +389,6 @@ describe('Storing data in a HF series', function() {
           .set('authorization', accessToken)
           .send(requestData);
           
-        console.log(response.body);
         return response.statusCode === 200;
       }
       
@@ -418,6 +411,16 @@ describe('Storing data in a HF series', function() {
               [now-3, 1, 2], 
               [now-2, 2, 2], 
               [now-1, 3, 2] ]));
+      });
+      it("doesn't accept data in non-series format", async () => {
+        const now = (new Date()) / 1000; 
+        assert.isFalse(
+          await tryStore({ type: 'angular-speed/rad-s' }, 
+            ['timestamp', 'value'],
+            [
+              [now-3, 1], 
+              [now-2, 2], 
+              [now-1, 3] ]));
       });
     });
   }); 
