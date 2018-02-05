@@ -361,10 +361,14 @@ describe('Storing data in a HF series', function() {
       
       const storageLayer = produceStorageLayer(database);
       
+      type Header = Array<string>; 
+      type Rows   = Array<Row>; 
+      type Row    = Array<number>;
+      
       // Tries to store `data` in an event with attributes `attrs`. Returns 
       // true if the whole operation is successful. 
       // 
-      async function tryStore(attrs: Object, data: Array<number>): Promise<boolean> {
+      async function tryStore(attrs: Object, header: Header, data: Rows): Promise<boolean> {
         const userQuery = {id: userId};
         const effectiveAttrs = lodash.merge(
           { streamId: parentStreamId }, 
@@ -379,11 +383,10 @@ describe('Storing data in a HF series', function() {
         const event = await bluebird.fromCallback(
           cb => storageLayer.events.insertOne(user, effectiveAttrs, cb));
           
-        const now = (new Date()) / 1000; 
         const requestData = {
           format: 'flatJSON',
-          fields: ['timestamp', 'value'], 
-          points: data.map(el => [now - Math.random()*1000, el]),
+          fields: header, 
+          points: data,
         };
         
         const request = server.request(); 
@@ -392,16 +395,29 @@ describe('Storing data in a HF series', function() {
           .set('authorization', accessToken)
           .send(requestData);
           
+        console.log(response.body);
         return response.statusCode === 200;
       }
       
       it('stores data of any basic type', async () => {
+        const now = (new Date()) / 1000; 
         assert.isTrue(
-          await tryStore({ type: 'series:angular-speed/rad-s' }, [1, 2, 3])
-        );
+          await tryStore({ type: 'series:angular-speed/rad-s' }, 
+            ['timestamp', 'value'],
+            [
+              [now-3, 1], 
+              [now-2, 2], 
+              [now-1, 3] ]));
       });
-      it.skip('stores data of complex types', () => {
-        
+      it('stores data of complex types', async () => {
+        const now = (new Date()) / 1000; 
+        assert.isTrue(
+          await tryStore({ type: 'series:ratio/generic' }, 
+            ['timestamp', 'value', 'relativeTo'],
+            [
+              [now-3, 1, 2], 
+              [now-2, 2, 2], 
+              [now-1, 3, 2] ]));
       });
     });
   }); 
