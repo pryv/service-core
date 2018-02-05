@@ -8,3 +8,6 @@ module.exports = {
 import type { Query } from './series/series';
 import type Repository from './series/repository';
 export type { Query, Repository };
+
+import type { TypeRepository } from './types';
+export type { TypeRepository };

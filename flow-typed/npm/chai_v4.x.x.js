@@ -169,6 +169,9 @@ declare module "chai" {
     static isNull(val: mixed, msg?: string): void;
     static isNotNull(val: mixed, msg?: string): void;
 
+    static isEmpty(val: mixed, msg?: string): void;
+    static isNotEmpty(val: mixed, msg?: string): void;
+
     static isUndefined(val: mixed, msg?: string): void;
     static isDefined(val: mixed, msg?: string): void;
 

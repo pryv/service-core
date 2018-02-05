@@ -8,7 +8,9 @@ const storage = require('components/storage');
 const MethodContext = require('components/model').MethodContext;
 const errors = require('components/errors').factory;
 const APIError = require('components/errors').APIError;
+const { InfluxRowType } = require('components/business').types;
 
+import type { TypeRepository } from 'components/business';
 import type { Logger } from 'components/utils';
 
 /** A repository for meta data on series. 
@@ -28,6 +30,9 @@ export interface SeriesMetadata {
   
   // Returns a namespace/database name and a series name for use with InfluxDB. 
   namespace(): [string, string];
+  
+  // Return the InfluxDB row type for the given event. 
+  produceRowType(repo: TypeRepository): InfluxRowType; 
 }
 
 /** Holds metadata related to series for some time so that we don't have to 
@@ -124,7 +129,8 @@ type AccessModel = {
 };
 type EventModel = {
   id: string, 
-  streamId: string
+  streamId: string, 
+  type: string,
 }; 
 type UserModel = { 
   id: string, 
@@ -147,15 +153,19 @@ class SeriesMetadataImpl implements SeriesMetadata {
   userName: string; 
   eventId: string; 
   
+  eventType: string; 
+  
   constructor(access: AccessModel, user: UserModel, event: EventModel) {
     const streamId = event.streamId; 
-    
+
     this.permissions = {
       write: access.canContributeToStream(streamId),
       read: access.canReadStream(streamId),
     };
     this.userName = user.username; 
     this.eventId = event.id; 
+    
+    this.eventType = event.type; 
   }
   
   canWrite(): boolean {
@@ -170,6 +180,21 @@ class SeriesMetadataImpl implements SeriesMetadata {
       `user.${this.userName}`, 
       `event.${this.eventId}`,
     ];
+  }
+
+  // Return the InfluxDB row type for the given event. 
+  produceRowType(repo: TypeRepository): InfluxRowType {
+    const type = repo.lookup(this.eventType);
+    
+    // NOTE The instanceof check here serves to make flow-type happy about the
+    //  value we'll return from this function. If duck-typing via 'isSeries' is
+    //  ever needed, you'll need to find a different way of providing the same
+    //  static guarantee (think interfaces...).
+    if (! type.isSeries() || !(type instanceof InfluxRowType))
+      throw errors.invalidOperation(
+        "High Frequency data can only be stored in events whose type starts with 'series:'.");
+    
+    return type; 
   }
 }
 

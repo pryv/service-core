@@ -1,5 +1,3 @@
-
-'use strict';
 // @flow
 
 const convict = require('convict');
@@ -103,20 +101,27 @@ class Settings {
     
     return settings; 
   }
-
+  
   /** Class constructor. */
   constructor() {
     this.config = this.produceConfigInstance(); 
     this.config.validate(); 
   }
   
-  /** Loads configuration values from the file pointed to by `path`.
-   * 
-   * @throws {Error} `.code === ENOENT` if the configuration file doesn't exist. 
-   */
+  // Loads configuration values from the file pointed to by `path`.
+  //  
+  // @throws {Error} `.code === ENOENT` if the configuration file doesn't exist. 
+  // 
   loadFromFile(path: string) {
     const config = this.config; 
     config.loadFile(path);
+  }
+  
+  // Merges a javascript configuration object into the settings. 
+  //
+  loadFromObject(obj: Object) {
+    const config = this.config; 
+    config.load(obj);
   }
   
   /** Returns the value for the configuration key `key`.  
@@ -206,7 +211,7 @@ class Settings {
           level: {
             doc: 'Log level for the console.',
             format: formats.logLevel,
-            default: 'debug'
+            default: 'warn'
           },
           colorize: {
             doc: 'Should console output be colorized?',
