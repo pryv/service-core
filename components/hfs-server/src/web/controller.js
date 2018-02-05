@@ -4,14 +4,11 @@ import type Context from '../context';
 
 const { tryCoerceStringValues } = require('components/api-server').validation;
 
-const R = require('ramda');
 const lodash = require('lodash');
 const timestamp = require('unix-timestamp');
-const bluebird = require('bluebird');
 
 const business = require('components/business');
 const errors = require('components/errors').factory;
-const { APIError} = require('components/errors');
 const SeriesResponse = require('./SeriesResponse');
 
 const AUTH_HEADER = 'authorization';
@@ -126,7 +123,7 @@ import type {MetadataRepository, SeriesMetadata} from '../metadata_cache';
  */
 async function querySeriesData(
   ctx: Context, req: express$Request,
-  res: express$Response, next: express$NextFunction): mixed 
+  res: express$Response): mixed 
 {
   const metadata = ctx.metadata;
   const seriesRepo = ctx.series;
