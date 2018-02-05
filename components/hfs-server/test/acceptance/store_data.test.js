@@ -376,7 +376,7 @@ describe('Storing data in a HF series', function() {
           
         const event = await bluebird.fromCallback(
           cb => storageLayer.events.insertOne(user, effectiveAttrs, cb));
-          
+
         const requestData = {
           format: 'flatJSON',
           fields: header, 

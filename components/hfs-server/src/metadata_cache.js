@@ -8,8 +8,9 @@ const storage = require('components/storage');
 const MethodContext = require('components/model').MethodContext;
 const errors = require('components/errors').factory;
 const APIError = require('components/errors').APIError;
-const { TypeRepository, InfluxRowType } = require('components/business').types;
+const { InfluxRowType } = require('components/business').types;
 
+import type { TypeRepository } from 'components/business';
 import type { Logger } from 'components/utils';
 
 /** A repository for meta data on series. 
