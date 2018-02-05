@@ -490,6 +490,26 @@ describe('Storing data in a HF series', function() {
               [now-2, 2], 
               [now-1, 3] ]));
       });
+      it('refuses to store when timestamp is present twice (ambiguous!)', async () => {
+        const now = (new Date()) / 1000; 
+        assert.isFalse(
+          await tryStore({ type: 'series:ratio/generic' }, 
+            ['timestamp', 'timestamp', 'value', 'relativeTo'],
+            [
+              [now-3, now-6, 1, 1], 
+              [now-2, now-5, 2, 2], 
+              [now-1, now-4, 3, 3] ]));
+      });
+      it('refuses to store when other fields are present twice (ambiguous!)', async () => {
+        const now = (new Date()) / 1000; 
+        assert.isFalse(
+          await tryStore({ type: 'series:ratio/generic' }, 
+            ['timestamp', 'value', 'value', 'relativeTo'],
+            [
+              [now-3, 3, 1, 1], 
+              [now-2, 2, 2, 2], 
+              [now-1, 1, 3, 3] ]));
+      });
     });
   }); 
 });
