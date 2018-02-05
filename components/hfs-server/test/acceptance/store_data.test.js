@@ -2,7 +2,7 @@
 
 // Tests pertaining to storing data in a hf series. 
 
-/* global describe, it, beforeEach, after, before, afterEach */
+/* global describe, it, beforeEach, after, before */
 const chai = require('chai');
 const assert = chai.assert; 
 const R = require('ramda');
@@ -17,6 +17,10 @@ const {
 const { databaseFixture } = require('components/test-helpers');
 
 import type {Response} from 'supertest';
+
+type Header = Array<string>; 
+type Rows   = Array<Row>; 
+type Row    = Array<number>;
 
 describe('Storing data in a HF series', function() {
   const database = produceMongoConnection(); 
@@ -325,6 +329,7 @@ describe('Storing data in a HF series', function() {
       });
     });
     describe('storing data in different formats', () => {
+      // Spawns a server.
       before(async () => {
         debug('spawning');
         server = await spawnContext.spawn(); 
@@ -354,11 +359,7 @@ describe('Storing data in a HF series', function() {
       });
       
       const storageLayer = produceStorageLayer(database);
-      
-      type Header = Array<string>; 
-      type Rows   = Array<Row>; 
-      type Row    = Array<number>;
-      
+            
       // Tries to store `data` in an event with attributes `attrs`. Returns 
       // true if the whole operation is successful. 
       // 
@@ -416,6 +417,73 @@ describe('Storing data in a HF series', function() {
         const now = (new Date()) / 1000; 
         assert.isFalse(
           await tryStore({ type: 'angular-speed/rad-s' }, 
+            ['timestamp', 'value'],
+            [
+              [now-3, 1], 
+              [now-2, 2], 
+              [now-1, 3] ]));
+      });
+    });
+    describe('complex types such as ratio/generic', () => {
+      // Spawns a server.
+      before(async () => {
+        debug('spawning');
+        server = await spawnContext.spawn(); 
+      });
+      after(() => {
+        server.stop(); 
+      });
+
+      // Database fixture infrastructure
+      const pryv = databaseFixture(database);
+      after(function () {
+        pryv.clean(); 
+      });
+
+      // Database fixture: `eventId` will contain the event that has a type 
+      // 'series:ratio/generic'
+      let userId, parentStreamId, eventId, accessToken; 
+      before(() => {
+        userId = cuid(); 
+        parentStreamId = cuid(); 
+        eventId = cuid(); 
+        accessToken = cuid(); 
+        
+        debug('build fixture');
+        return pryv.user(userId, {}, function (user) {
+          user.stream({id: parentStreamId}, function (stream) {
+            stream.event({
+              id: eventId, 
+              type: 'series:ratio/generic'});
+          });
+
+          user.access({token: accessToken, type: 'personal'});
+          user.session(accessToken);
+        });
+      });
+      
+      // Tries to store complex `data` in the event identified by `eventId`.
+      // 
+      async function tryStore(attrs: Object, header: Header, data: Rows): Promise<boolean> {
+        const requestData = {
+          format: 'flatJSON',
+          fields: header, 
+          points: data,
+        };
+        
+        const request = server.request(); 
+        const response = await request
+          .post(`/${userId}/events/${eventId}/series`)
+          .set('authorization', accessToken)
+          .send(requestData);
+          
+        return response.statusCode === 200;
+      }
+
+      it('refuses to store when not all required fields are given', async () => {
+        const now = (new Date()) / 1000; 
+        assert.isFalse(
+          await tryStore({ type: 'series:ratio/generic' }, 
             ['timestamp', 'value'],
             [
               [now-3, 1], 
