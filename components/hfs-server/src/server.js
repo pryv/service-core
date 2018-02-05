@@ -143,8 +143,6 @@ class Server {
     
     app.get('/system/status', systemStatus);
     
-    // app.post('/:user_name/events/:event_id/series', catchAndNext(c.storeSeriesData(ctx))); 
-    // app.get('/:user_name/events/:event_id/series', catchAndNext(c.querySeriesData(ctx)));
     app.post('/:user_name/events/:event_id/series', c.storeSeriesData); 
     app.get('/:user_name/events/:event_id/series', c.querySeriesData);
     
