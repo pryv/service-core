@@ -270,7 +270,11 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
           // Check that the updated access can still be managed.
           // In other words, forbid any attempt to elevate the access permissions
           // beyond authorized level and context.
-          if(! context.access.canManageAccess(params.update)) {
+          
+          // Here we foresee what the updated access would look like
+          // in order to check if it is legit
+          const updatedAccess = _.merge(access, params.update);
+          if(! context.access.canManageAccess(updatedAccess)) {
             return next(errors.forbidden(
               'Your access token has insufficient permissions ' +
               'to perform this update.'
