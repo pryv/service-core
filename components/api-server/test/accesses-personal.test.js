@@ -599,6 +599,67 @@ describe('accesses (personal)', function () {
         server.ensureStarted.call(server, settings, stepDone);
       }
       
+      it('must forbid to elevate a read level into a manage level using a contribute access ', function (done) {
+        // In this test we reproduce a situation in which an attacker who
+        // was granted a contribute app access can elevate the privileges
+        // by creating a sub read access and then update it to manage.
+        // https://github.com/pryv/service-core/issues/108
+        
+        const streamId = testData.streams[0].id;
+        const read = {
+          name: 'Read Access',
+          permissions: [
+            {
+              streamId: streamId,
+              level: 'read'
+            }
+          ]
+        };
+        const contribute = {
+          name: 'Contribute Access',
+          type: 'app',
+          permissions: [
+            {
+              streamId: streamId,
+              level: 'contribute'
+            }
+          ]
+        };
+        
+        let readAccess;
+        let contributeAccess;
+
+        async.series([
+          function grantContributeAccess(stepDone) {
+            request.post(basePath).send(contribute).end(function (res) {
+              validation.check(res, {
+                status: 201,
+                schema: methodsSchema.create.result
+              });
+              contributeAccess = res.body.access;
+              stepDone();
+            });
+          },
+          function createSubReadAccess(stepDone) {
+            request.post(basePath, contributeAccess.token).send(read).end(function (res) {
+              validation.check(res, {
+                status: 201,
+                schema: methodsSchema.create.result
+              });
+              readAccess = res.body.access;
+              stepDone();
+            });
+          },
+          function elevateReadToManage(stepDone) {
+            request.put(path(readAccess.id), access.token).send({
+              'permissions': [{streamId: streamId, level: 'manage'}]
+            }).end(function (res) {
+              validation.checkErrorForbidden(res, stepDone);
+            });
+          }
+        ], done);
+      });
+      
     });
   });
 
