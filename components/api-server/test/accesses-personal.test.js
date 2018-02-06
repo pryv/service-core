@@ -603,6 +603,8 @@ describe('accesses (personal)', function () {
         // In this test we reproduce a situation in which an attacker who
         // was granted a contribute app access can elevate the privileges
         // by creating a sub read access and then update it to manage.
+        // Note that this can be combined with the other exploit below,
+        // which results in a manage access of every streams.
         // https://github.com/pryv/service-core/issues/108
         
         const streamId = testData.streams[0].id;
@@ -651,8 +653,71 @@ describe('accesses (personal)', function () {
             });
           },
           function elevateReadToManage(stepDone) {
-            request.put(path(readAccess.id), access.token).send({
+            request.put(path(readAccess.id), contributeAccess.token).send({
               'permissions': [{streamId: streamId, level: 'manage'}]
+            }).end(function (res) {
+              validation.checkErrorForbidden(res, stepDone);
+            });
+          }
+        ], done);
+      });
+      
+      it('must forbid to extend the permission streamIds beyond the authorized context ', function (done) {
+        // In this test we reproduce a situation in which an attacker who
+        // was granted a contribute app access can elevate the privileges
+        // by creating a sub read access and then update it to access all streams.
+        // Note that this can be combined with the other exploit above,
+        // which results in a manage access of every streams.
+        // https://github.com/pryv/service-core/issues/108
+        
+        const streamId = testData.streams[0].id;
+        const read = {
+          name: 'Read Access',
+          permissions: [
+            {
+              streamId: streamId,
+              level: 'read'
+            }
+          ]
+        };
+        const contribute = {
+          name: 'Contribute Access',
+          type: 'app',
+          permissions: [
+            {
+              streamId: streamId,
+              level: 'contribute'
+            }
+          ]
+        };
+        
+        let readAccess;
+        let contributeAccess;
+
+        async.series([
+          function grantContributeAccess(stepDone) {
+            request.post(basePath).send(contribute).end(function (res) {
+              validation.check(res, {
+                status: 201,
+                schema: methodsSchema.create.result
+              });
+              contributeAccess = res.body.access;
+              stepDone();
+            });
+          },
+          function createSubReadAccess(stepDone) {
+            request.post(basePath, contributeAccess.token).send(read).end(function (res) {
+              validation.check(res, {
+                status: 201,
+                schema: methodsSchema.create.result
+              });
+              readAccess = res.body.access;
+              stepDone();
+            });
+          },
+          function extendPermissions(stepDone) {
+            request.put(path(readAccess.id), contributeAccess.token).send({
+              'permissions': [{streamId: '*', level: 'read'}]
             }).end(function (res) {
               validation.checkErrorForbidden(res, stepDone);
             });
