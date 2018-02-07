@@ -258,12 +258,31 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
             'access', params.id
           ));
         }
-
-        if (! context.access.isPersonal() && ! context.access.canManageAccess(access)) {
-          return next(errors.forbidden(
-            'Your access token has insufficient permissions ' +
-            'to modify this access.'
-          ));
+        
+        // Personal accesses have full rights, otherwise further checks are needed
+        if (! context.access.isPersonal()) {
+          // Check that the current access can be managed
+          if(! context.access.canManageAccess(access)) {
+            // NOTE If we throw a different error here, an attacker might 
+            //  enumerate accesses that exist. Not being able to manage something
+            //  (in the case of accesses) = not have the right to list. 
+            return next(errors.unknownResource(
+              'access', params.id));
+          }
+          
+          // Check that the updated access can still be managed. In other words,
+          // forbid any attempt to elevate the access permissions beyond
+          // authorized level and context.
+          
+          // Here we foresee what the updated access would look like
+          // in order to check if it is legit
+          const updatedAccess = _.merge(access, params.update);
+          if(! context.access.canManageAccess(updatedAccess)) {
+            return next(errors.forbidden(
+              'Your access token has insufficient permissions ' +
+              'to perform this update.'
+            ));
+          }
         }
 
         context.resource = access;
