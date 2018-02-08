@@ -10,6 +10,7 @@ const bodyParser = require('body-parser');
 const middleware = require('components/middleware');
 const logging = require('components/utils/src/logging');
 const errorsMiddleware = require('./middleware/errors');
+const tracingMiddleware = require('./middleware/trace');
 
 const controllerFactory = require('./web/controller');
 
@@ -120,7 +121,8 @@ class Server {
     var app = express(); 
     
     app.disable('x-powered-by');
-
+    
+    app.use(tracingMiddleware(this.context));
     app.use(middleware.subdomainToPath([]));
     app.use(middleware.requestTrace(express, logging(logSettings)));
     app.use(bodyParser.json());

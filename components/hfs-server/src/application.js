@@ -12,6 +12,10 @@ const Server = require('./server');
 
 import type {LogFactory} from 'components/utils/src/logging';
 
+// const { Tags } = require('opentracing');
+const opentracing = require('opentracing');
+const initTracer = require('jaeger-client').initTracer;
+
 function createSettings(): Settings {
   try {
     return Settings.load(); 
@@ -41,7 +45,27 @@ function createContext(settings: Settings, logFactory: LogFactory): Context {
   const mongo = new storage.Database(
     settings.get('mongodb').obj(), logFactory('database'));
     
-  return new Context(influx, mongo, logFactory('model'));
+  const tracer = produceTracer(settings);
+    
+  return new Context(influx, mongo, logFactory('model'), tracer);
+}
+function produceTracer(settings) {
+  if (! settings.get('trace.enable').bool()) 
+    return new opentracing.Tracer();
+    
+  const traceConfig = {
+    'serviceName': 'hfs-server',
+    'reporter': {
+      'logSpans': true,
+      'agentHost': '127.0.0.1',
+      'agentPort': 6832
+    },
+    'sampler': {
+      'type': 'probabilistic',
+      'param': 1.0
+    }
+  };
+  return initTracer(traceConfig);
 }
 
 /** The HF application holds references to all subsystems and ties everything

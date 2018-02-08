@@ -59,6 +59,34 @@ class ConfigValue {
     throw this._typeError('object');
   }
   
+  // Returns the configuration value as a boolean. 
+  // 
+  bool(): boolean {
+    const value = this.value; 
+    if (typeof value === 'boolean') {
+      return value; 
+    }
+    
+    switch (value) {
+      case 'true':
+      case 'yes':
+      case 'on':
+        return true; 
+      
+      case 'false':
+      case 'no': 
+      case 'off': 
+        return false; 
+      
+      default: 
+        // FALLTHROUGH
+    }
+    
+    
+    throw this._typeError('boolean');
+  }
+  
+  
   _typeError(typeName: string) {
     const name = this.name; 
     
@@ -164,44 +192,23 @@ class Settings {
         default: 'config/hfs-server.json', 
         arg: 'config', 
       },
+      trace: {
+        enable: { default: false, format: Boolean },
+      },
       influxdb: {
-        host: {
-          format: String, 
-          default: 'influxdb'
-        }, 
-        port: {
-          format: Number, 
-          default: 8086
-        }
+        host: { format: String, default: 'influxdb' }, 
+        port: { format: Number, default: 8086 },
       },
       mongodb: {
         // These should be the production defaults. 
-        host: {
-          format: String, 
-          default: 'mongodb'
-        }, 
-        port: {
-          format: Number, 
-          default: 27017, 
-        }, 
-        name: {
-          format: String, 
-          default: 'pryv-node',
-        },
-        authUser: {
-          format: String, 
-          default: '', 
-        }, 
-        authPassword: {
-          format: String, 
-          default: '', 
-        }, 
+        host:         { format: String, default: 'mongodb' }, 
+        port:         { format: Number, default: 27017 }, 
+        name:         { format: String, default: 'pryv-node' },
+        authUser:     { format: String, default: '' }, 
+        authPassword: { format: String, default: '' }, 
       },
       logs: {
-        prefix: {
-          default: '', 
-          format: String, 
-        },
+        prefix: { default: '', format: String },
         console: {
           active: {
             doc: 'Should the server log to console?',

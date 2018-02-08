@@ -210,12 +210,26 @@ function mount(ctx: Context, handler: ControllerMethod): express$Middleware {
     handler.bind(null, ctx)); 
 }
 
+const opentracing = require('opentracing');
+opaque type RequestWithSpan = express$Request & {
+  span: opentracing.Span,
+}
+
 function catchAndNext(handler: ExpressHandler): express$Middleware {
-  return async (req: express$Request, res, next) => {
+  return async (req: RequestWithSpan, res, next) => {
+    const Tags = opentracing.Tags;
+    const span = req.span; 
+    
     try {
       return await handler(req, res, next);
     }
     catch (err) {
+      span.setTag(Tags.ERROR, true);
+      span.log({
+        event: 'error',
+        message: err.message,
+        err });
+        
       if (err.constructor.name === 'ServiceNotAvailableError') {
         return next(errors.apiUnavailable(err.message));
       }
