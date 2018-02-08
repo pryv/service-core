@@ -45,11 +45,11 @@ function createContext(settings: Settings, logFactory: LogFactory): Context {
   const mongo = new storage.Database(
     settings.get('mongodb').obj(), logFactory('database'));
     
-  const tracer = produceTracer(settings);
+  const tracer = produceTracer(settings, logFactory('jaeger'));
     
   return new Context(influx, mongo, logFactory('model'), tracer);
 }
-function produceTracer(settings) {
+function produceTracer(settings, logger) {
   if (! settings.get('trace.enable').bool()) 
     return new opentracing.Tracer();
     
@@ -58,10 +58,12 @@ function produceTracer(settings) {
     'reporter': {
       'logSpans': true,
       'agentHost': '127.0.0.1',
-      'agentPort': 6832
+      'agentPort': 6832, 
+      'flushIntervalMs': 2,
     },
+    'logger': logger,
     'sampler': {
-      'type': 'probabilistic',
+      'type': 'const',
       'param': 1.0
     }
   };

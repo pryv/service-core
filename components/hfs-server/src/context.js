@@ -1,5 +1,7 @@
 // @flow
 
+const lodash = require('lodash');
+
 const business = require('components/business');
 
 const {MetadataLoader, MetadataCache} = require('./metadata_cache');
@@ -46,6 +48,23 @@ class Context {
     const tracer = this.tracer; 
     
     return tracer.startSpan(...a);
+  }
+  
+  // Starts a child span below the request span. 
+  // 
+  childSpan(req: express$Request, name: string, opts?: Object): Span {
+    const tracer = this.tracer; 
+    
+    // FLOW Of type 'opentracing.Span?' - if it is null, startSpan ignores this.
+    const requestSpan = req.span; 
+    if (requestSpan == null) 
+      throw new Error("Current request doesn't have a span associated.");
+    
+    const spanOpts = lodash.extend({}, 
+      { childOf: requestSpan }, 
+      opts);
+    
+    return tracer.startSpan(name, spanOpts);
   }
 }
 

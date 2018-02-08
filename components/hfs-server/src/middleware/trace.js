@@ -17,12 +17,13 @@ function tracingMiddleware(
   ctx: Context,
   req: RequestWithSpan, res: express$Response, next: express$NextFunction): mixed // eslint-disable-line no-unused-vars
 {
+  const Tags = opentracing.Tags;
   const tracer = ctx.tracer;
   const pathname = url.parse(req.url).pathname;
-  const span = ctx.startSpan(pathname);
+  const span = ctx.startSpan(`${req.method} ${pathname || '(n/a)'}`);
     
-  span.setTag('http.method', req.method);
-  span.setTag('http.url', req.url);
+  span.setTag(Tags.HTTP_METHOD, req.method);
+  span.setTag(Tags.HTTP_URL, req.url);
 
   // include trace ID in headers so that we can debug slow requests we see in
   // the browser by looking up the trace ID found in response headers
@@ -33,21 +34,30 @@ function tracingMiddleware(
   // add the span to the request object for handlers to use
   req.span = span;
   
-  // Start request
-  next(); 
+  const originalEnd = res.end;
+  res.end = function(...a) {
+    res.end = originalEnd;
+    const returned = res.end.call(this, ...a);
+    
+    requestDone(span, res);
+    
+    return returned;
+  };
   
-  requestDone(span, res);
+  // Start request
+  return next(); 
 }
 
 function requestDone(span, res) {
-  span.logEvent('request/done');
-  
-  span.setTag('http.statusCode', res.statusCode);
+  const Tags = opentracing.Tags;
+
+  span.setTag(Tags.HTTP_STATUS_CODE, res.statusCode);
   
   if (res.statusCode >= 500) {
-    span.setTag('error', true);
+    span.setTag(Tags.ERROR, true);
     span.setTag('sampling.priority', 1);
   }
+  
   span.finish();
 }
 

@@ -37,23 +37,29 @@ async function storeSeriesData(ctx: Context,
   if (eventId == null) throw errors.invalidItemId();
   
   // Access check: Can user write to this series? 
+  const seriesLoadSpan = ctx.childSpan(req, 'seriesMeta/load');
   const seriesMeta = await metadata.forSeries(userName, eventId, accessToken);
+  seriesLoadSpan.finish(); 
   
   // No access permission: Abort.
   if (!seriesMeta.canWrite()) throw errors.forbidden();
   
   // Parse request
+  const parseDataSpan = ctx.childSpan(req, 'parseData');
   const data = parseData(req.body, seriesMeta);
   if (data == null) {
     return next(errors.invalidRequestStructure('Malformed request.'));
   }
+  parseDataSpan.finish();
 
   // assert: data != null
 
   // Store data
+  const appendSpan = ctx.childSpan(req, 'append');
   const seriesInstance = await series.get(...seriesMeta.namespace());
   await seriesInstance.append(data);
-
+  appendSpan.finish(); 
+  
   res
     .status(200)
     .json({status: 'ok'});
@@ -211,24 +217,28 @@ function mount(ctx: Context, handler: ControllerMethod): express$Middleware {
 }
 
 const opentracing = require('opentracing');
+import type { Span } from 'opentracing';
 opaque type RequestWithSpan = express$Request & {
-  span: opentracing.Span,
+  span: ?Span,
 }
+
 
 function catchAndNext(handler: ExpressHandler): express$Middleware {
   return async (req: RequestWithSpan, res, next) => {
     const Tags = opentracing.Tags;
-    const span = req.span; 
+    const span: ?Span = req.span; 
     
     try {
       return await handler(req, res, next);
     }
     catch (err) {
-      span.setTag(Tags.ERROR, true);
-      span.log({
-        event: 'error',
-        message: err.message,
-        err });
+      if (span != null) {
+        span.setTag(Tags.ERROR, true);
+        span.log({
+          event: 'error',
+          message: err.message,
+          err });
+      }
         
       if (err.constructor.name === 'ServiceNotAvailableError') {
         return next(errors.apiUnavailable(err.message));
