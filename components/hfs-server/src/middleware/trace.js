@@ -34,8 +34,11 @@ function tracingMiddleware(
   // add the span to the request object for handlers to use
   req.span = span;
   
+  // Hook the response 'end' function and install our handler to finish traces. 
   const originalEnd = res.end;
+  // FLOW (see above)
   res.end = function(...a) {
+    // FLOW (see above)
     res.end = originalEnd;
     const returned = res.end.call(this, ...a);
     
