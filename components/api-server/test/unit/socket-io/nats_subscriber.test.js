@@ -9,7 +9,7 @@ const NATS = require('nats');
 
 /* global describe, it, beforeEach, afterEach */
 
-const { ConditionVariable } = require('../../helpers/condition_variable');
+const { ConditionVariable } = require('components/test-helpers').syncPrimitives;
 
 const NatsSubscriber = require('../../../src/socket-io/nats_subscriber');
 const { encode } = require('../../../src/socket-io/nats_wire_message');
