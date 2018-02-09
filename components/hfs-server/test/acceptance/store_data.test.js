@@ -465,7 +465,7 @@ describe('Storing data in a HF series', function() {
         const now = (new Date()) / 1000; 
         
         const aHundredRandomFloats = lodash.times(100, 
-          idx => [now-100+idx, Math.random() * 1000]);
+          idx => [now-100+idx, Math.random() * 1e6]);
           
         const result = await tryStore({ type: 'series:mass/kg'}, 
           ['timestamp', 'value'], 
@@ -486,12 +486,6 @@ describe('Storing data in a HF series', function() {
           assert.strictEqual(exp[0], influxTimestamp); 
           assert.strictEqual(exp[1], act.value); 
         }
-      });
-      it('stores integers', () => {
-        
-      });
-      it('stores booleans', () => {
-        
       });
     });
     describe('complex types such as ratio/generic', () => {
