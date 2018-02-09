@@ -20,7 +20,8 @@ import type {Response} from 'supertest';
 
 type Header = Array<string>; 
 type Rows   = Array<Row>; 
-type Row    = Array<number>;
+type Row    = Array<DataPoint>;
+type DataPoint = string | number | boolean;
 
 describe('Storing data in a HF series', function() {
   const database = produceMongoConnection(); 
@@ -389,6 +390,16 @@ describe('Storing data in a HF series', function() {
           .post(`/${userId}/events/${event.id}/series`)
           .set('authorization', accessToken)
           .send(requestData);
+        
+        if (response.statusCode != 200) {
+          console.info('Failed to store data, debug report:')
+          console.info('response.body', response.body);
+        }
+        
+        console.log('Enter these commands into influx CLI to inspect the data:');
+        console.log(`  use "user.${user.id}"`);
+        console.log(`  select * from "event.${event.id}"`);
+        console.log(`  show field keys from "event.${event.id}"`);
           
         return response.statusCode === 200;
       }
@@ -422,6 +433,28 @@ describe('Storing data in a HF series', function() {
               [now-3, 1], 
               [now-2, 2], 
               [now-1, 3] ]));
+      });
+      
+      it('stores strings', async () => {
+        const aLargeString = '2222222'.repeat(100);
+        const now = (new Date()) / 1000; 
+        
+        assert.isTrue(
+          await tryStore({ type: 'series:call/telephone'}, 
+            ['timestamp', 'value'], 
+            [
+              [now-10, aLargeString]
+            ])
+        );
+      });
+      it('stores floats', () => {
+        
+      });
+      it('stores integers', () => {
+        
+      });
+      it('stores booleans', () => {
+        
       });
     });
     describe('complex types such as ratio/generic', () => {
