@@ -249,7 +249,7 @@ class ProcessProxy {
         break;
         
       case 'err': 
-        resolver.reject(retOrErr);
+        resolver.reject(new Error(`Remote exception: ${retOrErr}`));
         break;
         
       default: 
