@@ -318,8 +318,8 @@ describe('Storing data in a HF series', function() {
       });
       
       // Bypass authentication check: Fail always
-      beforeEach(function () {
-        server.process.
+      beforeEach(async function () {
+        await server.process.
           sendToChild('mockAuthentication', false);
       });
 

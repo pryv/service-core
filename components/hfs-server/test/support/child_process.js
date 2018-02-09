@@ -1,6 +1,6 @@
 // @flow
 
-const debug = require('debug')('test-child');
+const debug = require('debug')('child_process');
 const msgpack = require('msgpack5')();
 const bluebird = require('bluebird');
 
@@ -19,7 +19,7 @@ process.on('unhandledRejection', unhandledRejection);
 // Receives messages from the parent (spawner.js) and dispatches them to the 
 // handler functions below. 
 //
-process.on('message', dispatchParentMessage);
+process.on('message', handleParentMessage);
 
 // The HFS application object that the tests interact with. 
 let app; 
@@ -31,8 +31,6 @@ function mockAuthentication(allowAll: boolean) {
   const context = app.context; 
   
   context.metadata = produceMetadataLoader(allowAll);
-  
-  sendToParent('mockAuthenticationDone');
 }
 function produceMetadataLoader(authTokenValid=true): MetadataRepository {
   const seriesMeta = {
@@ -46,7 +44,6 @@ function produceMetadataLoader(authTokenValid=true): MetadataRepository {
   };
 }
 
-
 async function intStartServer(injectSettings: {}) {
   const settings = new Settings(); 
   settings.loadFromFile('config/dev.json');
@@ -57,37 +54,46 @@ async function intStartServer(injectSettings: {}) {
   app = new Application();
   app.init(settings);
   app.start(); 
-  
-  sendToParent('int_started');
 }
 
-function dispatchParentMessage(wireMessage: Buffer) {
+async function handleParentMessage(wireMessage: Buffer) {
   const message = msgpack.decode(wireMessage);
   
-  const [cmd, ...args] = message; 
-  debug('received ', cmd, args);
+  const [msgId, cmd, ...args] = message; 
+  debug('handleParentMessage/received ', msgId, cmd, args);
   
-  switch(cmd) {
-    case 'mockAuthentication': 
-      mockAuthentication(args[0]);
-      break;
-    case 'int_startServer': 
-      intStartServer(args[0]); 
-      break; 
-    default: 
-      throw new Error(
-        `Child has received unknown message, ignoring... (${cmd})`);
+  try {
+    let ret = await dispatchParentMessage(cmd, ...args);
+    
+    // msgpack cannot encode undefined.
+    if (ret === undefined) ret = null; 
+    
+    respondToParent(['ok', msgId, cmd, ret]);
   }
-  
-  debug('done', cmd);
+  catch (err) {
+    debug('handleParentMessage/catch', err.message);
+    respondToParent(['err', msgId, cmd, err]);
+  }
+    
+  debug('handleParentMessage/done', cmd);
 }
-
-// Helper function to answer something to the parent. This is the counterpart
-// to 'dispatchParentMessage' above. 
-function sendToParent(cmd, ...args) {
+function respondToParent(msg: Array<mixed>) {
+  debug('respondToParent', msg);
+  
   // FLOW Somehow flow-type doesn't know about process here. 
   process.send(
-    msgpack.encode([cmd, ...args]));
+    msgpack.encode(msg));
+}
+function dispatchParentMessage(cmd, ...args) {
+  switch(cmd) {
+    case 'mockAuthentication': 
+      return mockAuthentication(args[0]);
+    case 'int_startServer': 
+      return intStartServer(args[0]);
+    
+    default: 
+      throw new Error(`Unknown/unhandled message ${cmd}`);
+  }
 }
 
 // Handles promise rejections that aren't caught somewhere. This is very useful
