@@ -483,8 +483,12 @@ describe('Storing data in a HF series', function() {
           if (act.time == null) throw new Error('AF: time cannot be null');
           const influxTimestamp = Number(act.time.getNanoTime()) / 1e9;
           
-          assert.strictEqual(exp[0], influxTimestamp); 
-          assert.strictEqual(exp[1], act.value); 
+          if (typeof exp[1] !== 'number') throw new Error('AF: ridiculous flow inference removal');
+          
+          const expectedTs = exp[0];
+          const expectedValue: number = exp[1];  
+          assert.strictEqual(expectedTs, influxTimestamp); 
+          assert.approximately(expectedValue, act.value, 0.001); 
         }
       });
     });
