@@ -38,7 +38,8 @@ module.exports = function (expressApp, api, authSettings, httpSettings) {
       username: req.body.username,
       password: req.body.password,
       appId: req.body.appId,
-      origin: req.headers.origin || ''
+      // some browsers provide origin, some provide only referer
+      origin: req.headers.origin || req.headers.referer || ''
     };
     hidePasswordIfExists(req.body);
     api.call('auth.login', req.context, params, function (err, result) {
