@@ -10,6 +10,7 @@ exports = module.exports = {
   InstanceManager: require('./InstanceManager'),
   instanceTestSetup: require('./instanceTestSetup'), 
   spawner: require('./spawner'),
+  child_process: require('./child_process'),
   syncPrimitives: require('./condition_variable'),
   databaseFixture: require('./database_fixture'),
 };
