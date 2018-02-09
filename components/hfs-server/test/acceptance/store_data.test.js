@@ -23,6 +23,12 @@ type Rows   = Array<Row>;
 type Row    = Array<DataPoint>;
 type DataPoint = string | number | boolean;
 
+type TryOpResult = {
+  ok: boolean, 
+  user: { id: string }, 
+  event: { id: string },
+}
+
 describe('Storing data in a HF series', function() {
   const database = produceMongoConnection(); 
   const influx = produceInfluxConnection(); 
@@ -364,7 +370,7 @@ describe('Storing data in a HF series', function() {
       // Tries to store `data` in an event with attributes `attrs`. Returns 
       // true if the whole operation is successful. 
       // 
-      async function tryStore(attrs: Object, header: Header, data: Rows): Promise<boolean> {
+      async function tryStore(attrs: Object, header: Header, data: Rows): Promise<TryOpResult> {
         const userQuery = {id: userId};
         const effectiveAttrs = lodash.merge(
           { streamId: parentStreamId }, 
@@ -390,65 +396,96 @@ describe('Storing data in a HF series', function() {
           .post(`/${userId}/events/${event.id}/series`)
           .set('authorization', accessToken)
           .send(requestData);
-        
+          
         if (response.statusCode != 200) {
-          console.info('Failed to store data, debug report:')
-          console.info('response.body', response.body);
+          debug('Failed to store data, debug report:'); 
+          debug('response.body', response.body);
         }
         
-        console.log('Enter these commands into influx CLI to inspect the data:');
-        console.log(`  use "user.${user.id}"`);
-        console.log(`  select * from "event.${event.id}"`);
-        console.log(`  show field keys from "event.${event.id}"`);
+        debug('Enter these commands into influx CLI to inspect the data:');
+        debug(`  use "user.${user.id}"`);
+        debug(`  select * from "event.${event.id}"`);
+        debug(`  show field keys from "event.${event.id}"`);
           
-        return response.statusCode === 200;
+        return {
+          ok: response.statusCode === 200, 
+          user: user, 
+          event: event,
+        };
       }
       
       it('stores data of any basic type', async () => {
         const now = (new Date()) / 1000; 
-        assert.isTrue(
-          await tryStore({ type: 'series:angular-speed/rad-s' }, 
-            ['timestamp', 'value'],
-            [
-              [now-3, 1], 
-              [now-2, 2], 
-              [now-1, 3] ]));
+        
+        const result = await tryStore({ type: 'series:angular-speed/rad-s' }, 
+          ['timestamp', 'value'],
+          [
+            [now-3, 1], 
+            [now-2, 2], 
+            [now-1, 3] ]);
+        
+        assert.isTrue(result.ok); 
       });
       it('stores data of complex types', async () => {
         const now = (new Date()) / 1000; 
-        assert.isTrue(
-          await tryStore({ type: 'series:ratio/generic' }, 
-            ['timestamp', 'value', 'relativeTo'],
-            [
-              [now-3, 1, 2], 
-              [now-2, 2, 2], 
-              [now-1, 3, 2] ]));
+        const result = await tryStore({ type: 'series:ratio/generic' }, 
+          ['timestamp', 'value', 'relativeTo'],
+          [
+            [now-3, 1, 2], 
+            [now-2, 2, 2], 
+            [now-1, 3, 2] ]); 
+            
+        assert.isTrue(result.ok);
       });
       it("doesn't accept data in non-series format", async () => {
         const now = (new Date()) / 1000; 
-        assert.isFalse(
-          await tryStore({ type: 'angular-speed/rad-s' }, 
-            ['timestamp', 'value'],
-            [
-              [now-3, 1], 
-              [now-2, 2], 
-              [now-1, 3] ]));
+        const result = await tryStore({ type: 'angular-speed/rad-s' }, 
+          ['timestamp', 'value'],
+          [
+            [now-3, 1], 
+            [now-2, 2], 
+            [now-1, 3] ]);
+
+        assert.isFalse(result.ok);
       });
       
       it('stores strings', async () => {
         const aLargeString = '2222222'.repeat(100);
         const now = (new Date()) / 1000; 
         
-        assert.isTrue(
-          await tryStore({ type: 'series:call/telephone'}, 
-            ['timestamp', 'value'], 
-            [
-              [now-10, aLargeString]
-            ])
-        );
+        const result = await tryStore({ type: 'series:call/telephone'}, 
+          ['timestamp', 'value'], 
+          [
+            [now-10, aLargeString]
+          ]);
+          
+        assert.isTrue(result.ok);
       });
-      it('stores floats', () => {
+      it('stores floats', async () => {
+        const now = (new Date()) / 1000; 
         
+        const aHundredRandomFloats = lodash.times(100, 
+          idx => [now-100+idx, Math.random() * 1000]);
+          
+        const result = await tryStore({ type: 'series:mass/kg'}, 
+          ['timestamp', 'value'], 
+          aHundredRandomFloats);
+        
+        assert.isTrue(result.ok); 
+        
+        const query = `select * from "event.${result.event.id}"`;
+        const opts = {
+          database: `user.${result.user.id}` };
+        const rows = await influx.query(query, opts);
+        
+        assert.strictEqual(rows.length, aHundredRandomFloats.length);
+        for (const [exp, act] of lodash.zip(aHundredRandomFloats, rows)) {
+          if (act.time == null) throw new Error('AF: time cannot be null');
+          const influxTimestamp = Number(act.time.getNanoTime()) / 1e9;
+          
+          assert.strictEqual(exp[0], influxTimestamp); 
+          assert.strictEqual(exp[1], act.value); 
+        }
       });
       it('stores integers', () => {
         
