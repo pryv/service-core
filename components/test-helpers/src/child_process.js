@@ -90,7 +90,7 @@ class ChildProcess {
   async intStartServer(injectSettings: {}) {
     const launcher = this.launcher;
     
-    launcher.launch(injectSettings);
+    return launcher.launch(injectSettings);
   }
   
   // Main method to launch the child process.
