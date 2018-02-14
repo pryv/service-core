@@ -485,9 +485,9 @@ describe('Storing data in a HF series', function() {
           
           if (typeof exp[1] !== 'number') throw new Error('AF: ridiculous flow inference removal');
           
-          const expectedTs = exp[0];
-          const expectedValue: number = exp[1];  
-          assert.strictEqual(expectedTs, influxTimestamp); 
+          const expectedTs = Number(exp[0]);
+          const expectedValue = Number(exp[1]);  
+          assert.approximately(expectedTs, influxTimestamp, 0.1); 
           assert.approximately(expectedValue, act.value, 0.001); 
         }
       });
