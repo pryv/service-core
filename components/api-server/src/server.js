@@ -46,7 +46,6 @@ class Server {
   // Start the server. 
   //
   async start() {
-    const app = this.application; 
     const logger = this.logger;
     
     this.publishExpressMiddleware();
@@ -63,16 +62,6 @@ class Server {
     const server = http.createServer(expressApp);
     this.setupSocketIO(server); 
     await this.startListen(server);
-
-    // Setup DB connection
-    await app.storageLayer.waitForConnection();
-    try {
-      await this.migrateIfNeeded();
-    }
-    catch(err) {
-      // TODO We need to do more, that's clear. An actual WIP. 
-      logger.error('Could not migrate.');
-    }
     
     // Finish booting the server, start accepting connections.
     this.addRoutes(expressApp);
@@ -264,13 +253,6 @@ class Server {
     ].forEach(function (moduleDef) {
       dependencies.resolve(moduleDef);
     });
-  }
-  
-  // Migrates mongodb database to the latest version, if needed. 
-  // 
-  migrateIfNeeded(): Promise<mixed> {
-    return bluebird.fromCallback(
-      (cb) => this.application.storageLayer.versions.migrateIfNeeded(cb));
   }
   
   /**
