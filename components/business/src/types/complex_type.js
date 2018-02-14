@@ -58,9 +58,53 @@ class ComplexType implements EventType {
     return Object.keys(this._schema.properties); 
   }
   
-  forField(/* name: string */): PropertyType {
-    // TODO
-    return value_types('number');
+  forField(name: string): PropertyType {
+    const PATH_SEPARATOR = '.';
+    const parts = name.split(PATH_SEPARATOR);
+    
+    if (parts.length <= 0) 
+      throw new Error(`Cannot resolve field, path is empty for '${name}'.`);
+    
+    const schema = this._schema;
+    const outerType = this._outerType;
+    
+    let properties = schema.properties; 
+    while (parts.length > 0) {
+      let lookupField = parts.shift();
+      
+      if (properties == null || typeof properties !== 'object') 
+        throw new Error('AF: schema postulates an object here.');
+      
+      const isSafeForAccess = 
+        properties.hasOwnProperty(lookupField) &&
+        properties.propertyIsEnumerable(lookupField);
+      if (! isSafeForAccess)
+        throw new Error(`This type (${outerType}) has no such field (${name} @ ${lookupField})`);
+        
+      const fieldDescriptor = properties[lookupField];
+      const fieldType = fieldDescriptor.type; 
+      
+      if (fieldType !== 'object') {
+        if (parts.length === 0)
+          return value_types(fieldType);
+        else
+          throw new Error(`forField can only retrieve leaf (value) types (${name} @ ${lookupField})`);
+      }
+        
+      // assert: fieldType === 'object'
+      const fieldProperties = fieldDescriptor.properties;
+      if (fieldProperties == null)
+        throw new Error('AF: object type needs to have a properties object.');
+        
+      // Adjust loop invariant: properties contains the properties in which to 
+      // look up the next name. 
+      properties = fieldProperties;
+    }
+    
+    // NOTE the above loop should terminate early, returning a value type. If 
+    //  it doesn't (and reaches this point), we consider that condition an error. 
+    //  (You probably didn't specify a full path to a value type).
+    throw new Error('Field names must encode the full path up to a value type.');
   }
   
   isSeries(): false {
