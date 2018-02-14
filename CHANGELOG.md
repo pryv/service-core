@@ -1,6 +1,6 @@
 # API change log
 
-## 1.2.18
+## 1.2.18
 
 - Fix login with Firefox (and other browsers using Referer but no Origin)
 
