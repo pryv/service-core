@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+// Binary for launching the db migration process. 
+
 const Application = require('../src/application');
 const Settings = require('../src/settings');
 const bluebird = require('bluebird');
