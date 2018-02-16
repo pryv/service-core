@@ -24,29 +24,24 @@ const settings = Settings.load();
 // Construct application
 const application = new Application(settings);
 
-// Start Storage
-const connectionResult = bluebird.fromCallback(
-  (cb) => application.storageLayer.waitForConnection(cb));
-
-// Make sure we catch top-level exceptions.
-connectionResult
-  .then(() => console.info('Storage connected.')) 
-  .catch(e => {
-    console.error(e);
-    process.exit(1);
-  });
-
-// Migrate Storage if needed
-const migrationResult = bluebird.fromCallback(
-  (cb) => application.storageLayer.versions.migrateIfNeeded(cb));
-
-// Make sure we catch top-level exceptions.
-migrationResult
+connectAndMigrate(application)
   .then(() => {
     console.info('Storage migration complete.');
     process.exit(0);
-  }) 
+  })
   .catch(e => {
     console.error(e);
     process.exit(1);
   });
+
+async function connectAndMigrate(app) {
+
+  console.info('Connecting to storage...');
+  await app.storageLayer.waitForConnection();
+  
+  console.info('Storage connected.');
+  
+  console.info('Starting migration...');
+  return await bluebird.fromCallback(
+    (cb) => app.storageLayer.versions.migrateIfNeeded(cb));
+}
