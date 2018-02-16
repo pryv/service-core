@@ -1,6 +1,7 @@
 const async = require('async');
 const MongoClient = require('mongodb').MongoClient;
 const lodash = require('lodash');
+const bluebird = require('bluebird');
 
 module.exports = Database;
 
@@ -87,45 +88,45 @@ Database.prototype.ensureConnect = function (callback) {
 /**
  * @api private
  */
-Database.prototype.getCollection = function (collectionInfo, callback) {
-  this.ensureConnect(function (err) {
-    if (err) { return callback(err); }
-
-    this.db.collection(collectionInfo.name, function (err, collection) {
-      if (err) { return callback(err); }
-
-      ensureIndexes.call(this, collection, collectionInfo.indexes, function (err) {
-        if (err) { return callback(err); }
-        callback(null, collection);
-      });
-    }.bind(this));
-  }.bind(this));
-
+Database.prototype.getCollection = async function (collectionInfo, callback) {
+  try {    
+    // Make sure we have a connect
+    await bluebird.fromCallback( 
+      cb => this.ensureConnect(cb) ); 
+      
+    // Load the collection
+    const db = this.db; 
+    const collection = await db.collection(collectionInfo.name);
+      
+    // Ensure that proper indexing is initialized
+    await ensureIndexes.call(this, collection, collectionInfo.indexes);
+    
+    // returning the collection.
+    console.log(collection);
+    return callback(null, collection);
+  }
+  catch (err) {
+    return callback(err);
+  }
+  
   // Called with `this` set to the Database instance. 
   // 
-  async function ensureIndexes(collection, indexes, callback) {
+  async function ensureIndexes(collection, indexes) {
     const initializedCollections = this.initializedCollections; 
     const collectionName = collection.collectionName;
     
     if (indexes == null) return callback(); 
     if (initializedCollections[collectionName]) return callback(); 
     
-    try {
-      for (const item of indexes) {
-        console.log(item);
-        const options = lodash.merge({}, item.options, {
-          background: true
-        });
-        
-        await collection.createIndex(item.index, options);
-      }
+    for (const item of indexes) {
+      const options = lodash.merge({}, item.options, {
+        background: true
+      });
+      
+      await collection.createIndex(item.index, options);
+    }
 
-      initializedCollections[collectionName] = true;
-      return callback(); 
-    }
-    catch (err) {
-      return callback(err);
-    }
+    initializedCollections[collectionName] = true;
   }
 };
 
