@@ -44,7 +44,6 @@ const migrationResult = bluebird.fromCallback(
 migrationResult
   .then(() => {
     console.info('Storage migration complete.');
-    process.exit(0);
   }) 
   .catch(e => {
     console.error(e);
