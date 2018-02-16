@@ -96,13 +96,12 @@ Database.prototype.getCollection = async function (collectionInfo, callback) {
       
     // Load the collection
     const db = this.db; 
-    const collection = await db.collection(collectionInfo.name);
+    const collection = db.collection(collectionInfo.name);
       
     // Ensure that proper indexing is initialized
     await ensureIndexes.call(this, collection, collectionInfo.indexes);
     
     // returning the collection.
-    console.log(collection);
     return callback(null, collection);
   }
   catch (err) {
@@ -115,8 +114,8 @@ Database.prototype.getCollection = async function (collectionInfo, callback) {
     const initializedCollections = this.initializedCollections; 
     const collectionName = collection.collectionName;
     
-    if (indexes == null) return callback(); 
-    if (initializedCollections[collectionName]) return callback(); 
+    if (indexes == null) return; 
+    if (initializedCollections[collectionName]) return; 
     
     for (const item of indexes) {
       const options = lodash.merge({}, item.options, {
