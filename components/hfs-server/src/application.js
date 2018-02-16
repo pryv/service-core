@@ -56,18 +56,17 @@ function produceTracer(settings, logger) {
     return new opentracing.Tracer();
     
   const traceConfig = {
-    'disable': true, 
     'serviceName': 'hfs-server',
     'reporter': {
       'logSpans': true,
-      'agentHost': '127.0.0.1',
-      'agentPort': 6832, 
-      // 'flushIntervalMs': 10,
+      'agentHost': settings.get('trace.agent.host').str(),
+      'agentPort': settings.get('trace.agent.port').num(), 
+      'flushIntervalMs': settings.get('trace.sampler.flushIntervalMs').num(),
     },
     'logger': logger,
     'sampler': {
-      'type': 'const',
-      'param': 1.0
+      'type': settings.get('trace.sampler.type').str(),
+      'param': settings.get('trace.sampler.param').num(),
     }
   };
   return initTracer(traceConfig);

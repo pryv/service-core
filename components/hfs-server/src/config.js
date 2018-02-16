@@ -6,7 +6,8 @@ const convict = require('convict');
 
 function produce() {
   const formats = {
-    logLevel: [ 'debug', 'info', 'warn', 'error' ]
+    logLevel: [ 'debug', 'info', 'warn', 'error' ], 
+    samplerTypes: ['const', 'probabilistic', 'ratelimiting', 'lowerbound', 'remote']
   };
 
   return convict({
@@ -18,6 +19,15 @@ function produce() {
     },
     trace: {
       enable: { default: false, format: Boolean },
+      agent: {
+        host: { default: '127.0.0.1', format: String }, 
+        port: { default: 6832, format: Number },
+      }, 
+      sampler: {
+        type: { default: 'const', format: formats.samplerTypes }, 
+        param: { default: 1.0, format: Number },
+        flushIntervalMs: { default: 5000, format: Number },
+      }
     },
     influxdb: {
       host: { format: String, default: 'influxdb' }, 
