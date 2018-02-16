@@ -4,9 +4,6 @@ const requestModule = require('./request');
 exports = module.exports = {
   request: requestModule,
   unpatchedRequest: requestModule.unpatched, 
-  attachmentsCheck: require('./attachmentsCheck'),
-  data: require('./data'),
-  dependencies: require('./dependencies'),
   InstanceManager: require('./InstanceManager'),
   instanceTestSetup: require('./instanceTestSetup'), 
   spawner: require('./spawner'),
@@ -14,3 +11,22 @@ exports = module.exports = {
   syncPrimitives: require('./condition_variable'),
   databaseFixture: require('./database_fixture'),
 };
+
+// ---------------------------------------------------------- deprecated helpers
+
+// NOTE Below we define a few helpers as being lazily loaded attributes on the 
+//  exports object. This is because we don't want to load them each time we load
+//  the test helpers. Eventually, we'll write tests in a different style and not
+//  need these anymore. 
+
+Object.defineProperty(exports, 'attachmentsCheck', {
+  get: function () {
+    return require('./attachmentsCheck'); } });
+
+Object.defineProperty(exports, 'data', {
+  get: function () {
+    return require('./data'); } });
+
+Object.defineProperty(exports, 'dependencies', {
+  get: function () {
+    return require('./dependencies'); } });

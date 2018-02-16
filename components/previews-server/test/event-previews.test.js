@@ -144,7 +144,14 @@ describe('event previews', function () {
         function retrieveAgain(stepDone) {
           request.get(path(event.id), token).end(function (res) {
             res.statusCode.should.eql(200);
-            fs.statSync(cachedPath).should.eql(cachedStats);
+            
+            const newStats = fs.statSync(cachedPath);
+
+            // The file should not have been recreated. By comparing ino and 
+            // birthtimeMs, we assume that the file is the same. 
+            assert.strictEqual(newStats.ino, cachedStats.ino);
+            assert.strictEqual(newStats.birthtimeMs, cachedStats.birthtimeMs);
+            
             stepDone();
           });
         }

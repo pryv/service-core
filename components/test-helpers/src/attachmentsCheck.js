@@ -4,10 +4,10 @@
  * Test helper functions for attached files.
  */
 
-var childProcess = require('child_process'),
-    path = require('path'),
-    testData = require('./data'),
-    eventFilesStorage = require('./dependencies').storage.user.eventFiles;
+const childProcess = require('child_process');
+const path = require('path');
+const testData = require('./data');
+const eventFilesStorage = require('./dependencies').storage.user.eventFiles;
 
 // Returns an empty string if the tested file attached to the specified event
 // is identical to the original file. (Runs command-line util `cmp`
