@@ -14,10 +14,7 @@ const SeriesResponse = require('./SeriesResponse');
 const AUTH_HEADER = 'authorization';
 const FORMAT_FLAT_JSON = 'flatJSON';
 
-// Repository for types that we know about. 
-const typeRepo = new business.types.TypeRepository(); 
-
-// TODO When is this type repository updated?
+import type { TypeRepository } from 'components/business';
 
 /** POST /events/:event_id/series - Store data in a series. 
  */
@@ -46,7 +43,7 @@ async function storeSeriesData(ctx: Context,
   
   // Parse request
   const parseDataSpan = ctx.childSpan(req, 'parseData');
-  const data = parseData(req.body, seriesMeta);
+  const data = parseData(req.body, seriesMeta, ctx.typeRepository);
   if (data == null) {
     return next(errors.invalidRequestStructure('Malformed request.'));
   }
@@ -73,7 +70,7 @@ type DataMatrix = business.series.DataMatrix;
  * @param createRequest {mixed} Deserialized JSON from the client
  * @return {DataMatrix, null} normalized data to be input to influx
  */
-function parseData(createRequest: mixed, meta: SeriesMetadata): ?DataMatrix {
+function parseData(createRequest: mixed, meta: SeriesMetadata, typeRepo: TypeRepository): ?DataMatrix {
   if (createRequest == null) return null; 
   if (typeof createRequest !== 'object') return null; 
   

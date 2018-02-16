@@ -36,71 +36,59 @@ function produce() {
       console: {
         active: {
           doc: 'Should the server log to console?',
-          format: Boolean,
-          default: true
+          format: Boolean, default: true
         },
         level: {
           doc: 'Log level for the console.',
-          format: formats.logLevel,
-          default: 'warn'
+          format: formats.logLevel, default: 'warn'
         },
         colorize: {
           doc: 'Should console output be colorized?',
-          format: Boolean,
-          default: true
+          format: Boolean, default: true
         }
       },
       file: {
         active: {
           doc: 'Should the server log to a file?',
-          format: Boolean,
-          default: false
+          format: Boolean, default: false
         },
         level: {
           doc: 'Log level for the log file.',
-          format: formats.logLevel,
-          default: 'error'
+          format: formats.logLevel, default: 'error'
         },
         path: {
           doc: 'Where is the log file stored?', 
-          format: String,
-          default: 'server.log'
+          format: String, default: 'server.log'
         },
-        maxFileBytes: {
-          format: 'nat',
-          default: 4096
-        },
-        maxNbFiles: {
-          format: 'nat',
-          default: 20
-        }
+        maxFileBytes: { format: 'nat', default: 4096 },
+        maxNbFiles: { format: 'nat', default: 20 }
       },
       airbrake: {
         active: {
           doc: 'Should the server log to airbrake?',
-          format: Boolean,
-          default: false
+          format: Boolean, default: false
         },
         key: {
           doc: 'Airbrake API key.',
-          format: String,
-          default: '',
+          format: String, default: '',
         }
       }
     },
     http: {
       ip: {
         doc: 'IP address to bind the server to.', 
-        format: String, 
-        default: '127.0.0.1',
+        format: String, default: '127.0.0.1',
       }, 
       port: {
         doc: 'Port to bind to.', 
-        format: 'nat', 
-        default: 9000, 
-        arg: 'http-port'
+        format: 'nat', default: 9000, arg: 'http-port'
       }
-    }
+    }, 
+    eventTypes: {
+      sourceURL: {
+        format: 'url', default: 'https://pryv.github.io/event-types/flat.json'
+      }
+    },
   });
 }
 

@@ -27,14 +27,20 @@ class Context {
   // Application level performance and error tracing:
   tracer: Tracer; 
   
+  typeRepository: business.types.TypeRepository;
+  
   constructor(
     influxConn: InfluxConnection, mongoConn: Database, 
-    modelLogger: Logger, tracer: Tracer) 
+    modelLogger: Logger, tracer: Tracer, 
+    typeRepoUpdateUrl: string) 
   {
     this.series = new business.series.Repository(influxConn);
     this.metadata = this.produceMetadataCache(mongoConn, modelLogger);
     
     this.tracer = tracer;
+    
+    const typeRepo = this.typeRepository = new business.types.TypeRepository(); 
+    typeRepo.tryUpdate(typeRepoUpdateUrl);
   }
   
   produceMetadataCache(mongoConn: Database, logger: Logger): MetadataRepository {

@@ -46,8 +46,10 @@ function createContext(settings: Settings, logFactory: LogFactory): Context {
     settings.get('mongodb').obj(), logFactory('database'));
     
   const tracer = produceTracer(settings, logFactory('jaeger'));
+  
+  const typeRepoUpdateUrl = settings.get('eventTypes.sourceURL').str();
     
-  return new Context(influx, mongo, logFactory('model'), tracer);
+  return new Context(influx, mongo, logFactory('model'), tracer, typeRepoUpdateUrl);
 }
 function produceTracer(settings, logger) {
   if (! settings.get('trace.enable').bool()) 
