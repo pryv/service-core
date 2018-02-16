@@ -1,7 +1,9 @@
-var async = require('async'),
-    MongoClient = require('mongodb').MongoClient;
+const async = require('async');
+const MongoClient = require('mongodb').MongoClient;
+const lodash = require('lodash');
 
 module.exports = Database;
+
 /**
  * Handles actual interaction with the Mongo database.
  * It handles Mongo-specific tasks such as connecting, retrieving collections and applying indexes,
@@ -99,22 +101,30 @@ Database.prototype.getCollection = function (collectionInfo, callback) {
     }.bind(this));
   }.bind(this));
 
-  /**
-   * @this {Database}
-   */
-  function ensureIndexes(collection, indexes, callback) {
-    if (this.initializedCollections[collection.collectionName] || ! indexes) {
-      return callback();
+  // Called with `this` set to the Database instance. 
+  // 
+  async function ensureIndexes(collection, indexes, callback) {
+    const initializedCollections = this.initializedCollections; 
+    const collectionName = collection.collectionName;
+    
+    if (indexes == null) return callback(); 
+    if (initializedCollections[collectionName]) return callback(); 
+    
+    try {
+      for (const item of indexes) {
+        console.log(item);
+        const options = lodash.merge({}, item.options, {
+          background: true
+        });
+        
+        await collection.createIndex(item.index, options);
+      }
+
+      initializedCollections[collectionName] = true;
+      return callback(); 
     }
-
-    async.forEachSeries(indexes, ensureIndex, function (err) {
-      if (err) { return callback(err); }
-      this.initializedCollections[collection.collectionName] = true;
-      callback();
-    }.bind(this));
-
-    function ensureIndex(item, itemCallback) {
-      collection.ensureIndex(item.index, item.options, itemCallback);
+    catch (err) {
+      return callback(err);
     }
   }
 };
