@@ -116,15 +116,17 @@ class Server {
    * @return express application.
    */
   setupExpress(): express$Application {
+    const logger = this.logger;
     const settings = this.settings;
     const logSettings = settings.get('logs').obj();
     const traceEnabled = settings.get('trace.enable').bool(); 
-    
+        
     var app = express(); 
     
     app.disable('x-powered-by');
     
     if (traceEnabled) {
+      logger.info('Enabling opentracing features.');
       app.use(clsWrapFactory());
       app.use(tracingMiddlewareFactory(this.context));
     }

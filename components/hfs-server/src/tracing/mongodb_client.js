@@ -18,12 +18,12 @@ const OPERATION_NAME = 'mongodb';
 import typeof LibMongoDb from 'mongodb';
 import type { Tracer, Span } from 'opentracing';
 
-function nextWrapFactory (tracer: Tracer) {
-  return function nextWrap (next) {
-    return function nextTrace(cb) {
+function nextWrapFactory (tracer: Tracer) { // called by us
+  return function nextWrap (original) {     // called by shimmer
+    return function nextTrace(cb) {         // called by user code
       const rootSpan = cls.getRootSpan();
       if (rootSpan == null) 
-        return next.call(this, cb);
+        return original.call(this, cb);
       
       const operationName = `${OPERATION_NAME}_cursor`;
       const statement = JSON.stringify(this.cmd);
@@ -39,7 +39,7 @@ function nextWrapFactory (tracer: Tracer) {
       debug(`Operation started ${OPERATION_NAME}`, opts.tags);
 
       const span = tracer.startSpan(operationName, opts);
-      return next.call(this, wrapCallback(tracer, span, operationName, cb));
+      return original.call(this, wrapCallback(tracer, span, operationName, cb));
     };
   };
 }
@@ -113,12 +113,15 @@ function wrapFactory (tracer: Tracer, command: string) {
   };
 }
 
-function patch (mongodb: LibMongoDb, tracer: Tracer) {
-  shimmer.wrap(mongodb.Server.prototype, 'command', wrapFactory(tracer, 'command'));
-  shimmer.wrap(mongodb.Server.prototype, 'insert', wrapFactory(tracer, 'insert'));
-  shimmer.wrap(mongodb.Server.prototype, 'update', wrapFactory(tracer, 'update'));
-  shimmer.wrap(mongodb.Server.prototype, 'remove', wrapFactory(tracer, 'remove'));
-  shimmer.wrap(mongodb.Cursor.prototype, 'next', nextWrapFactory(tracer));
+function patch (tracer: Tracer) {
+  const mongoCore = require('mongodb-core');
+  shimmer.wrap(mongoCore.Server.prototype, 'command', wrapFactory(tracer, 'command'));
+  shimmer.wrap(mongoCore.Server.prototype, 'insert', wrapFactory(tracer, 'insert'));
+  shimmer.wrap(mongoCore.Server.prototype, 'update', wrapFactory(tracer, 'update'));
+  shimmer.wrap(mongoCore.Server.prototype, 'remove', wrapFactory(tracer, 'remove'));
+
+  const mongoPorcelain = require('mongodb');
+  shimmer.wrap(mongoPorcelain.Cursor.prototype, 'next', nextWrapFactory(tracer));
 
   debug('Patched');
 }

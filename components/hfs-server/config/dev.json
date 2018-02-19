@@ -1,6 +1,6 @@
 {
   "trace": {
-    "enable": "yes" 
+    "enable": false,
   },
   "mongodb": {
     "host": "127.0.0.1"

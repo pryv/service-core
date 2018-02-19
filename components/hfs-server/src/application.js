@@ -80,8 +80,7 @@ function produceTracer(settings, logger) {
   return tracer; 
 }
 function patchMongoDBDriver(tracer) {
-  const mongodb = require('mongodb-core');
-  patch(mongodb, tracer);
+  patch(tracer);
 }
 
 /** The HF application holds references to all subsystems and ties everything
