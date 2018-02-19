@@ -1,7 +1,10 @@
-var async = require('async'),
-    MongoClient = require('mongodb').MongoClient;
+const async = require('async');
+const MongoClient = require('mongodb').MongoClient;
+const lodash = require('lodash');
+const bluebird = require('bluebird');
 
 module.exports = Database;
+
 /**
  * Handles actual interaction with the Mongo database.
  * It handles Mongo-specific tasks such as connecting, retrieving collections and applying indexes,
@@ -85,37 +88,44 @@ Database.prototype.ensureConnect = function (callback) {
 /**
  * @api private
  */
-Database.prototype.getCollection = function (collectionInfo, callback) {
-  this.ensureConnect(function (err) {
-    if (err) { return callback(err); }
-
-    this.db.collection(collectionInfo.name, function (err, collection) {
-      if (err) { return callback(err); }
-
-      ensureIndexes.call(this, collection, collectionInfo.indexes, function (err) {
-        if (err) { return callback(err); }
-        callback(null, collection);
+Database.prototype.getCollection = async function (collectionInfo, callback) {
+  try {    
+    // Make sure we have a connect
+    await bluebird.fromCallback( 
+      cb => this.ensureConnect(cb) ); 
+      
+    // Load the collection
+    const db = this.db; 
+    const collection = db.collection(collectionInfo.name);
+      
+    // Ensure that proper indexing is initialized
+    await ensureIndexes.call(this, collection, collectionInfo.indexes);
+    
+    // returning the collection.
+    return callback(null, collection);
+  }
+  catch (err) {
+    return callback(err);
+  }
+  
+  // Called with `this` set to the Database instance. 
+  // 
+  async function ensureIndexes(collection, indexes) {
+    const initializedCollections = this.initializedCollections; 
+    const collectionName = collection.collectionName;
+    
+    if (indexes == null) return; 
+    if (initializedCollections[collectionName]) return; 
+    
+    for (const item of indexes) {
+      const options = lodash.merge({}, item.options, {
+        background: true
       });
-    }.bind(this));
-  }.bind(this));
-
-  /**
-   * @this {Database}
-   */
-  function ensureIndexes(collection, indexes, callback) {
-    if (this.initializedCollections[collection.collectionName] || ! indexes) {
-      return callback();
+      
+      await collection.createIndex(item.index, options);
     }
 
-    async.forEachSeries(indexes, ensureIndex, function (err) {
-      if (err) { return callback(err); }
-      this.initializedCollections[collection.collectionName] = true;
-      callback();
-    }.bind(this));
-
-    function ensureIndex(item, itemCallback) {
-      collection.ensureIndex(item.index, item.options, itemCallback);
-    }
+    initializedCollections[collectionName] = true;
   }
 };
 
