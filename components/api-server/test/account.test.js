@@ -202,6 +202,7 @@ describe('account', function () {
     });
 
     // test nightly job script
+    // TODO: should we keep/remove this test?
     it('must properly compute storage size for all users in nightly script', function (done) {
       var initialStorageUsed,
           newAtt = testData.attachments.image;

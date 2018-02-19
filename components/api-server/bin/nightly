@@ -1,0 +1,40 @@
+#!/usr/bin/env node
+
+// Binary for nightly cron-tasks setup. 
+
+const childProcess = require('child_process');
+const CronJob = require('cron').CronJob;
+const Settings = require('../src/settings');
+
+const settings = Settings.load(); 
+
+let workerRunning = false;
+// TODO: use actual cron from runit instead? how to load settings?
+const cronJob = new CronJob({
+  cronTime: settings.get('nightlyScriptCronTime').str() || '00 15 2 * * *',
+  onTick: function () {
+    if (workerRunning) {
+      return;
+    }
+
+    console.info('Starting nightly script (cron job)...');
+    runNightlyTasks();
+  }
+});
+
+console.info('Cron job setup for nightly script, time pattern: ' + cronJob.cronTime);
+cronJob.start();
+
+function runNightlyTasks() {
+  // TODO: keep runNightlyTasks.js or merge here? childProcess.fork necessary?
+  const worker = childProcess.fork(__dirname + '../src/runNightlyTasks.js', process.argv.slice(2));
+  workerRunning = true;
+  worker.on('exit', function (code) {
+    workerRunning = false;
+    
+    if (code !== 0) {
+      // TODO: should we process.exit(code)?
+      console.error('Nightly script unexpectedly failed');
+    }
+  });
+}

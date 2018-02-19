@@ -3,8 +3,6 @@
 const express = require('express');
 
 const http = require('http');
-const childProcess = require('child_process');
-const CronJob = require('cron').CronJob;
 const bluebird = require('bluebird');
 const EventEmitter = require('events');
 
@@ -253,53 +251,6 @@ class Server {
     ].forEach(function (moduleDef) {
       dependencies.resolve(moduleDef);
     });
-  }
-  
-  /**
-   * @param server The server object to expose function `runNightlyScript()` on
-   */
-  setupNightlyScript(server: http$Server) {
-    const logger = this.logger; 
-    const settings = this.settings;
-    
-    var workerRunning = false;
-    var cronJob = new CronJob({
-      cronTime: settings.get('nightlyScriptCronTime').str() || '00 15 2 * * *',
-      onTick: function () {
-        if (workerRunning) {
-          return;
-        }
-
-        logger.info('Starting nightly script (cron job)...');
-        runScript();
-      }
-    });
-
-    logger.info('Cron job setup for nightly script, time pattern: ' + cronJob.cronTime);
-    cronJob.start();
-    
-    // FLOW TODO Find some other way of connecting things apart from decorating 
-    // FLOW   base library objects. 
-    server.runNightlyScript = runScript;
-
-    /**
-     * @param {Function} callback Optional, will be passed an error on failure
-     */
-    function runScript(callback) {
-      var worker = childProcess.fork(__dirname + '/runNightlyTasks.js', process.argv.slice(2));
-      workerRunning = true;
-      worker.on('exit', function (code) {
-        workerRunning = false;
-        
-        if (! callback) { return; }
-        if (code !== 0) {
-          return callback(
-            new Error('Nightly script unexpectedly failed (see logs for details)'));
-        }
-
-        callback();
-      });
-    }
   }
 
 }
