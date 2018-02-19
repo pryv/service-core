@@ -16,6 +16,8 @@ import type {LogFactory} from 'components/utils/src/logging';
 const opentracing = require('opentracing');
 const initTracer = require('jaeger-client').initTracer;
 
+const { patch } = require('./tracing/mongodb_client');
+
 function createSettings(): Settings {
   try {
     return Settings.load(); 
@@ -69,7 +71,17 @@ function produceTracer(settings, logger) {
       'param': settings.get('trace.sampler.param').num(),
     }
   };
-  return initTracer(traceConfig);
+  const tracer = initTracer(traceConfig);
+  
+  // monkey-patch mongodb core driver to also log spans to this tracer. This 
+  // works via the 'cls' middleware. Not done when tracing is turned off. 
+  patchMongoDBDriver(tracer);
+
+  return tracer; 
+}
+function patchMongoDBDriver(tracer) {
+  const mongodb = require('mongodb-core');
+  patch(mongodb, tracer);
 }
 
 /** The HF application holds references to all subsystems and ties everything
