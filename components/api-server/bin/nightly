@@ -37,13 +37,14 @@ const cronJob = new CronJob({
     console.info('Starting nightly script (cron job)...');
     workerRunning = true;
     
-    runNightlyTasks()
+    bluebird.resolve(runNightlyTasks())
       .then(() => {
         console.info('Nightly tasks complete.');
-        workerRunning = false;
       })
       .catch(e => {
         console.error(e);
+      })
+      .finally(() => {
         workerRunning = false;
       });
   }
@@ -57,12 +58,13 @@ cronJob.start();
  */
 async function runNightlyTasks() {
   console.info('Starting update of storage size');
+  
   // Retrieve all existing users
   const users = await bluebird.fromCallback(
     (cb) => storageLayer.users.findAll(null, cb));
   
   // Compute storage size used by each user
-  return bluebird.each(users, async (user) => {
+  for (const user of users) {
     const computeForUser = bluebird.fromCallback(
       (cb) => storageSize.computeForUser(user, cb));
       
@@ -71,8 +73,7 @@ async function runNightlyTasks() {
         console.error('Error computing storage size for user "' +
           user.username + '" ' + '(' + user.id + '): ' + err);
       });
-  })
-    .then(() => {
-      console.info(users.length + ' users updated.');
-    });
+  }
+  
+  console.info(users.length + ' users updated.');
 }
