@@ -5,7 +5,7 @@
 const CronJob = require('cron').CronJob;
 const Settings = require('../src/settings');
 const settings = Settings.load(); 
-const async = require('async');
+const bluebird = require('bluebird');
 
 // Construct application
 const Application = require('../src/application');
@@ -35,7 +35,17 @@ const cronJob = new CronJob({
     }
 
     console.info('Starting nightly script (cron job)...');
-    runNightlyTasks();
+    workerRunning = true;
+    
+    runNightlyTasks()
+      .then(() => {
+        console.info('Nightly tasks complete.');
+        workerRunning = false;
+      })
+      .catch(e => {
+        console.error(e);
+        workerRunning = false;
+      });
   }
 });
 
@@ -44,32 +54,25 @@ cronJob.start();
 
 /**
  * Standalone script to perform nightly tasks (such as updating storage sizes for all users).
- * TODO: improve with promise/await?
  */
-function runNightlyTasks() {
+async function runNightlyTasks() {
   console.info('Starting update of storage size');
-  workerRunning = true;
+  // Retrieve all existing users
+  const users = await bluebird.fromCallback(
+    (cb) => storageLayer.users.findAll(null, cb));
   
-  storageLayer.users.findAll(null, function (err, users) {
-    if (err) {
-      console.error(err);
-    }
-    async.each(users, function (user, userDone) {
-      storageSize.computeForUser(user, function (err) {
-        if (err) {
-          console.warn('Error computing storage size for user "' + user.username + '" ' +
-              '(' + user.id + '): ' + err);
-        }
-        userDone();
-      });
-    }, function (err) {
-      workerRunning = false;
+  // Compute storage size used by each user
+  return bluebird.each(users, async (user) => {
+    const computeForUser = bluebird.fromCallback(
+      (cb) => storageSize.computeForUser(user, cb));
       
-      if (err) {
-        console.error(err);
-        return;
-      }
+    await computeForUser
+      .catch((err) => {
+        console.error('Error computing storage size for user "' +
+          user.username + '" ' + '(' + user.id + '): ' + err);
+      });
+  })
+    .then(() => {
       console.info(users.length + ' users updated.');
     });
-  });
 }
