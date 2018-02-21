@@ -66,9 +66,7 @@ class Server {
     
     // Let actual requests pass.
     lifecycle.appStartupComplete(); 
-    
-    await this.setupNightlyScript(server);
-    
+        
     logger.info('Server ready.');
     this.notificationBus.serverReady();
   }
