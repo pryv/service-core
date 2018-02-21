@@ -4,12 +4,15 @@
 
 const CronJob = require('cron').CronJob;
 const Settings = require('../src/settings');
-const settings = Settings.load(); 
 const bluebird = require('bluebird');
+const Application = require('../src/application');
+
+// Load settings
+const settings = Settings.load(); 
 
 // Construct application
-const Application = require('../src/application');
 const app = new Application(settings);
+const logger = app.logFactory('nightly-cron');
 
 // Construct storage size object
 const storage = require('../../storage');
@@ -26,13 +29,13 @@ const storageSize = new storage.Size(
 
 // This bit is useful to trace down promise rejections that aren't caught. 
 process.on('unhandledRejection', (reason, promise) => {
-  console.warn('Unhandled promise rejection:', promise, 'reason:', reason.stack || reason); 
+  logger.warn('Unhandled promise rejection:', promise, 'reason:', reason.stack || reason); 
 });
 process.on('exit', function () {
-  console.info('Server stopped.');
+  logger.info('Service stopped.');
 });
 process.on('SIGINT', () => {
-  console.warn('Received SIGINT. Exiting...');
+  logger.warn('Received SIGINT. Exiting...');
   process.exit(2);
 });
 
@@ -46,15 +49,15 @@ const cronJob = new CronJob({
       return;
     }
 
-    console.info('Starting nightly script (cron job)...');
+    logger.info('Starting nightly script (cron job)...');
     workerRunning = true;
     
     bluebird.resolve(runNightlyTasks())
       .then(() => {
-        console.info('Nightly tasks complete.');
+        logger.info('Nightly tasks complete.');
       })
       .catch(e => {
-        console.error(e);
+        logger.error(e);
       })
       .finally(() => {
         workerRunning = false;
@@ -62,14 +65,14 @@ const cronJob = new CronJob({
   }
 });
 
-console.info('Cron job setup for nightly script, time pattern: ' + cronJob.cronTime);
+logger.info('Cron job setup for nightly script, time pattern: ' + cronJob.cronTime);
 cronJob.start();
 
 /**
  * Standalone script to perform nightly tasks (such as updating storage sizes for all users).
  */
 async function runNightlyTasks() {
-  console.info('Starting update of storage size');
+  logger.info('Starting update of storage size');
   
   // Retrieve all existing users
   const users = await bluebird.fromCallback(
@@ -82,10 +85,10 @@ async function runNightlyTasks() {
       
     await computeForUser
       .catch((err) => {
-        console.error('Error computing storage size for user "' +
+        logger.error('Error computing storage size for user "' +
           user.username + '" ' + '(' + user.id + '): ' + err);
       });
   }
   
-  console.info(users.length + ' users updated.');
+  logger.info(users.length + ' users updated.');
 }
