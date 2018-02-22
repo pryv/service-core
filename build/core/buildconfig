@@ -1,8 +1,5 @@
 export LC_ALL=C
 export DEBIAN_FRONTEND=noninteractive
-
-# Default services
-# Set 1 to the service you want to disable
 export DISABLE_SYSLOG=0
 export DISABLE_SSH=1
 export DISABLE_CRON=1
