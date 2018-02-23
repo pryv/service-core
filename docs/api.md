@@ -114,7 +114,7 @@ The series data store will only store one set of values for any given timestamp.
 | -------: | -------------------- |
 | event_id | The id of the event. |
 
-#### BODY
+#### REQUEST BODY
 
 Your data should be formatted as series data in the 'flatJSON' format. 
 
@@ -159,15 +159,9 @@ When giving both "from" and "to" to this method, the timestamp indicated by "fro
 
 #### RESULT
 
-`HTTP 201 Created` 
+`HTTP 200 Ok` 
 
-A successful append operation will respond with a body formatted as JSON ("application/json"). The general form of this body will look like this: 
-
-~~~json
-{ 
-    "status": "ok" 
-}
-~~~
+A successful query will respond with the data selected by the query from the series raw data. The answer will be a "flatJSON" formatted message ("application/json").
 
 #### ERRORS
 
@@ -179,3 +173,89 @@ A successful append operation will respond with a body formatted as JSON ("appli
 | 404    | `"unknown-resource"`          | No such series exists.                                       |
 
 **Note 1** Since access permissions associated with a token are cached internally to speed up series access, you might get a `"invalid-access-token"` error even if you just adjusted the permissions on the token. There is a (configurable) delay during which the old access permissions will be retained. 
+
+## Append Data to Multiple Series (Batch)
+
+|      |                    |
+| ---- | ------------------ |
+| HTTP | POST /series/batch |
+
+Appends data to multiple series (stored in multiple events) in a single atomic operation. This is the fastest way to append data to Pryv; it allows transferring many data points in a single request.
+
+For this operation to be successful, all of the following conditions must be fulfilled: 
+
+* The access token needs write permissions to all series identified by `"eventId"`.
+* All events referred to must be series events (type starts with the string "series:").
+* Fields identified in each individual message must match those specified by the type of the series event; there must be no duplicates.
+* All the values in every data point must conform to the type specification. The data point matrix in every message must be rectangular. 
+
+If any part of the batch message is invalid, the entire batch is aborted and the returned result body identifies the error. 
+
+### PARAMETERS
+
+No parameters must be given. 
+
+### REQUEST BODY
+
+Request body should contain the data to be appended to the various series encoded as JSON text ("application/json"). The overall format of this message should be as follows: 
+
+~~~json
+{
+    "format": "seriesBatch",
+    "data": [
+    	// At least one BATCH_ENTRY.
+    ]
+}
+~~~
+
+A BATCH_ENTRY should be formatted as follows: 
+
+~~~json
+{
+    "eventId": "cjcrx6jy1000w8xpvjv9utxjx",
+    "data": { // exactly one MESSAGE
+        // data to store to the series identified by eventId.
+    }
+}
+~~~
+
+If we assume a "flatJSON" formatted data message, a full example would look like this: 
+
+~~~json
+{
+    "format": "seriesBatch",
+    "data": [
+    	{
+    		"eventId": "cjcrx6jy1000w8xpvjv9utxjx",
+		    "data": {
+                "format": "flatJSON", 
+                "fields": ["timestamp", "latitude", "longitude", "altitude"], 
+                "points": [
+                    [1519314345, 10.2, 11.2, 500], 
+                    [1519314346, 10.2, 11.2, 510],
+                    [1519314347, 10.2, 11.2, 520],
+                ]
+    		}
+		}
+    ]
+}
+~~~
+
+### RESULT
+
+`HTTP 201 Created`
+
+### RESPONSE BODY
+
+Response body will contain a single field `"status"` with the value `"ok"`.
+
+### ERRORS
+
+In the case of an error in any part of the batch message, a HTTP status in the 40X range is returned. 
+
+| Status | Error Code                    |                                                              |
+| ------ | ----------------------------- | ------------------------------------------------------------ |
+| 400    | `"invalid-request-structure"` | The request was malformed and could not be executed. The entire operation was aborted. |
+| 403    | `"forbidden"`                 | The authorization provided to Pryv was not valid or doesn't have the access rights to store series data. |
+
+**Debug Tip!** If you get a HTTP 400 status with the code `"invalid-request-structure"`, you should make sure that every element in the "seriesBatch" structure executes individually as part of a series append operation. 
