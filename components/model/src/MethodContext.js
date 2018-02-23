@@ -32,7 +32,7 @@ class MethodContext {
   access: ?Access; 
   streams: ?Array<Stream>; 
   
-  accessToken: string; 
+  accessToken: ?string; 
   callerId: ?string; 
   
   // Custom auth function, if one was configured. 
@@ -57,7 +57,7 @@ class MethodContext {
 
     this.customAuthStepFn = customAuthStepFn;
     
-    this.accessToken = '';
+    this.accessToken = null;
     this.callerId = null; 
     
     this.calledMethodId = null; 
@@ -146,7 +146,7 @@ class MethodContext {
   // Loads `this.access`.
   async retrieveAccess(storage: StorageLayer) {
     const token = this.accessToken;
-    
+
     if (token == null)
       throw errors.invalidAccessToken(
         'The access token is missing: expected an ' +

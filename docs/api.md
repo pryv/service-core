@@ -165,7 +165,7 @@ A successful append operation will respond with a body formatted as JSON ("appli
 
 ~~~json
 { 
-    status: 'ok' 
+    "status": "ok" 
 }
 ~~~
 
