@@ -371,8 +371,8 @@ describe('auth', function () {
           request.post(basePath(user.username) + '/login')
             .set('Origin', trustedOrigin)
             .send(authData).end(function (err, res) {
-              const token = res.body.token; 
-              if (typeof token !== 'string') throw new Error('AF: not a string');
+              token = res.body.token; 
+              if (typeof token !== 'string') return stepDone(new Error('AF: not a string'));
               
               stepDone();
             });
@@ -391,7 +391,7 @@ describe('auth', function () {
           request.post(path(user.username)).send({})
             .set('authorization', token).end(function (err, res) {
               validation.checkError(res, {
-                status: 401,
+                status: 403,
                 id: ErrorIds.InvalidAccessToken
               }, stepDone);
             });
