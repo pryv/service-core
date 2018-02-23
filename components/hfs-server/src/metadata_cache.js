@@ -7,7 +7,6 @@ const bluebird = require('bluebird');
 const storage = require('components/storage');
 const MethodContext = require('components/model').MethodContext;
 const errors = require('components/errors').factory;
-const APIError = require('components/errors').APIError;
 const { InfluxRowType } = require('components/business').types;
 
 import type { TypeRepository } from 'components/business';
@@ -75,7 +74,7 @@ class MetadataLoader {
     const storage = this.storage; 
     
     // Retrieve Access (including accessLogic)
-    const customAuthStep = null; // Not supported by this prototype. 
+    const customAuthStep = null;
     const methodContext = new MethodContext(userName, accessToken, customAuthStep);
     
     return bluebird.fromCallback((returnValueCallback) => {
@@ -92,13 +91,8 @@ class MetadataLoader {
           },
         ], 
         (err, results) => {
-          if (err) {
-            if (err instanceof APIError) {
-              return returnValueCallback(err);
-            } else {
-              return returnValueCallback(errors.unexpectedError(err));
-            }
-          }
+          if (err != null) return returnValueCallback(
+            mapErrors(err));
 
           const access = methodContext.access;
           const user = methodContext.user;
@@ -116,6 +110,14 @@ class MetadataLoader {
         }
       );
     });
+    
+    function mapErrors(err: mixed): Error {
+      if (! (err instanceof Error)) 
+        return new Error(err);
+      
+      // else
+      return err; 
+    }
     
     function toCallback(promise, next) {
       return bluebird.resolve(promise).asCallback(next);

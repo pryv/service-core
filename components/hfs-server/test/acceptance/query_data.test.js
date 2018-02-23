@@ -59,6 +59,7 @@ describe('Querying data from a HF series', function() {
     return server.request()
       .get('/some-user/events/some-eventId/series')
       .set('authorization', 'someToken')
+      .expect(404)
       .then((res) => {
         assert.isNotNull(res.body.error);
         assert.strictEqual(res.body.error.id, ErrorIds.UnknownResource);
@@ -67,7 +68,7 @@ describe('Querying data from a HF series', function() {
   it('should refuse a query missing the authorization token', function () {
     return server.request()
       .get(`/${userId}/events/${eventId}/series`)
-      .expect(400)
+      .expect(401)
       .then((res) => {
         assert.isNotNull(res.body.error);
         assert.strictEqual(res.body.error.id, ErrorIds.MissingHeader);
@@ -77,7 +78,7 @@ describe('Querying data from a HF series', function() {
     return server.request()
       .get(`/${userId}/events/${eventId}/series`)
       .set('authorization', 'invalid-auth')
-      .expect(401)
+      .expect(403)
       .then((res) => {
         assert.isNotNull(res.body.error);
         assert.strictEqual(res.body.error.id, ErrorIds.InvalidAccessToken);

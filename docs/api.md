@@ -106,6 +106,8 @@ The new event's data: see [Event](http://api.pryv.com/reference/#data-structure-
 
 Appends new data to a series event. 
 
+The series data store will only store one set of values for any given timestamp. This means you can update existing data points by 'appending' new data with the original timestamps. 
+
 #### PARAMETERS
 
 |          |                      |
@@ -135,3 +137,45 @@ A successful append operation will respond with a body formatted as JSON ("appli
 | 400    | `"invalid-operation"`         | Not a series,                                                |
 | 400    | `"invalid-request-structure"` | The request was malformed; please refer to the documentation above on how to construct an append request. |
 | 403    | `"forbidden"`                 | The authorization provided to Pryv was not valid or doesn't have the access rights to store series data. |
+
+## Query Series for Data
+
+
+|      |                                 |
+| ---- | ------------------------------- |
+| HTTP | `GET /events/{event_id}/series` |
+
+Queries data from a series event. Returns data in order of ascending timestamps between "from" and "to". Data is returned as input, no sampling or aggregation is performed. Data is returned in the "flatJSON" format. 
+
+#### PARAMETERS
+
+|          |                                                              |
+| -------: | ------------------------------------------------------------ |
+| event_id | The id of the event.                                         |
+|     from | timestamp (optional) – Only return data points later than this timestamp. If no value is given the query will return data starting at the earliest timestamp in the series. |
+|       to | timestamp (optional) – Only return data points earlier than this timestamp. If no value is given the server returns only data that is in the past. |
+
+When giving both "from" and "to" to this method, the timestamp indicated by "from" needs to be smaller or equal to the timestamp given by "to".
+
+#### RESULT
+
+`HTTP 201 Created` 
+
+A successful append operation will respond with a body formatted as JSON ("application/json"). The general form of this body will look like this: 
+
+~~~json
+{ 
+    status: 'ok' 
+}
+~~~
+
+#### ERRORS
+
+| Status | Error Code                    |                                                              |
+| ------ | ----------------------------- | ------------------------------------------------------------ |
+| 400    | `"invalid-parameters-format"` | The query parameters are in the wrong format. Please give numeric timestamps to this method, where "from" is earlier than "to". |
+| 401    | `"missing-header"`            | Access cannot be granted without a valid 'Authorization' header. |
+| 403    | `"invalid-access-token"`      | Access denied; your token has insufficient permissions to access the given series. |
+| 404    | `"unknown-resource"`          | No such series exists.                                       |
+
+**Note 1** Since access permissions associated with a token are cached internally to speed up series access, you might get a `"invalid-access-token"` error even if you just adjusted the permissions on the token. There is a (configurable) delay during which the old access permissions will be retained. 

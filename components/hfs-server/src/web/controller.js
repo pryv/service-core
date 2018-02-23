@@ -139,7 +139,7 @@ async function querySeriesData(
   const accessToken: ?string = req.headers[AUTH_HEADER];
 
   // If required params are not there, abort.
-  if (accessToken == null) throw errors.missingHeader(AUTH_HEADER);
+  if (accessToken == null) throw errors.missingHeader(AUTH_HEADER, 401);
   if (eventId == null) throw errors.invalidItemId();
 
   const seriesMeta = await verifyAccess(username, eventId, accessToken, metadata);
@@ -213,30 +213,12 @@ function mount(ctx: Context, handler: ControllerMethod): express$Middleware {
     handler.bind(null, ctx)); 
 }
 
-const opentracing = require('opentracing');
-import type { Span } from 'opentracing';
-opaque type RequestWithSpan = express$Request & {
-  span: ?Span,
-}
-
-
 function catchAndNext(handler: ExpressHandler): express$Middleware {
-  return async (req: RequestWithSpan, res, next) => {
-    const Tags = opentracing.Tags;
-    const span: ?Span = req.span; 
-    
+  return async (req: express$Request, res, next) => {
     try {
       return await handler(req, res, next);
     }
     catch (err) {
-      if (span != null) {
-        span.setTag(Tags.ERROR, true);
-        span.log({
-          event: 'error',
-          message: err.message,
-          err });
-      }
-        
       if (err.constructor.name === 'ServiceNotAvailableError') {
         return next(errors.apiUnavailable(err.message));
       }

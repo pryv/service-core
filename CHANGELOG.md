@@ -1,5 +1,9 @@
 # API change log
 
+## 1.3.X
+
+- Some invalid requests that used to return a HTTP status code of 401 (Unauthorized) now return a 403 (Forbidden). Only the requests that are missing some form of authentication will return a 401 code. 
+
 ## 1.2.14
 
 - Updates to latest nodejs version as a reaction to advisory https://nodejs.org/en/blog/vulnerability/oct-2017-dos/

@@ -34,10 +34,9 @@ factory.forbidden = function (message: string) {
   });
 };
 
-factory.invalidAccessToken = function (message: string, innerError: Error) {
+factory.invalidAccessToken = function (message: string, status: ?number) {
   return new APIError(ErrorIds.InvalidAccessToken, message, {
-    httpStatus: 401,
-    innerError: innerError,
+    httpStatus: status || 401,
     dontNotifyAirbrake: true
   });
 };
@@ -118,11 +117,11 @@ factory.itemAlreadyExists = function (
   });
 };
 
-factory.missingHeader = function (headerName: string) {
+factory.missingHeader = function (headerName: string, status: ?number) {
   return new APIError(
     ErrorIds.MissingHeader, 
     'Missing expected header "' + headerName + '"',
-    {httpStatus: 400}
+    {httpStatus: status || 400}
   );
 };
 

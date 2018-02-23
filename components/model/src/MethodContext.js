@@ -158,7 +158,7 @@ class MethodContext {
       
     if (access == null) 
       throw errors.invalidAccessToken(
-        `Cannot find access from token "${this.accessToken}".`);
+        'Cannot find access from token.', 403);
         
     this.access = access; 
   }
@@ -179,7 +179,7 @@ class MethodContext {
       cb => storage.sessions.get(token, cb));
       
     if (session == null)
-      throw errors.invalidAccessToken('Access session has expired.');
+      throw errors.invalidAccessToken('Access session has expired.', 403);
       
     // Keep the session alive (don't await, see below)
     // TODO Maybe delay/amortize this so that we don't write on every request?
