@@ -90,7 +90,13 @@ describe('Storing data in a HF series', function() {
     }
     
     it('should store data correctly', async () => {
-      await storeData({timestamp: 1481677845, value: 80.3});
+      const response = await storeData({timestamp: 1481677845, value: 80.3});
+
+      const body = response.body; 
+      assert.strictEqual(body.status, 'ok'); 
+
+      const headers = response.headers; 
+      assert.strictEqual(headers['api-version'], '1.0.0');
       
       // Check if the data is really there
       const userName = userId; // identical with id here, but will be user name in general. 
