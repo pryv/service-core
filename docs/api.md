@@ -21,6 +21,8 @@ See also [standard event types](http://api.pryv.com/event-types/#directory).
 
 Series are collections of homogenous data points. They should be used instead of events where the structure of the data doesn't change and you expect a high volume of data at possibly high speeds (O(1Hz)).
 
+To store a data series in Pryv, you first create an event that has the type "series:X". The created series will store many values that all have the type X. Then you can start adding data to the series. 
+
 Each data point in a series has a `"timestamp"` field containing the timestamp for the data point. For [types](http://api.pryv.com/event-types/#directory) that store a single value (like "mass/kg") they contain a single additional field called `"value"`. Types that contain multiple fields (like "position/wgs84") will possibly have many fields, whose name can be inferred from the [type reference](http://api.pryv.com/event-types/#position). In the above example ("position/wgs84") there would be the fields `"latitude"`, `"longitude"` and possibly one of the optional fields `"altitude"`, `"horizontalAccuracy"`, `"verticalAccuracy"`, `"speed"`, `"bearing"`.
 
 Series data can be encoded in transit in one of the following data formats.
@@ -114,20 +116,22 @@ Appends new data to a series event.
 
 Your data should be formatted as series data in the 'flatJSON' format. 
 
-
-
 #### RESULT
 
 `HTTP 201 Created` 
 
-|           |                                                              |
-| --------- | ------------------------------------------------------------ |
-| event     | [event](http://api.pryv.com/reference/#data-structure-event) - The created [event](http://api.pryv.com/reference/#data-structure-event). |
-| stoppedId | [identifier](http://api.pryv.com/reference/#data-structure-identifier) - Only in `singleActivity` streams. If set, indicates the id of the previously running period event that was stopped as a consequence of inserting the new event. |
+A successful append operation will respond with a body formatted as JSON ("application/json"). The general form of this body will look like this: 
+
+~~~json
+{ 
+    status: 'ok' 
+}
+~~~
 
 #### ERRORS
 
-| Status | Error Code            |                                                              |
-| ------ | --------------------- | ------------------------------------------------------------ |
-| 400    | `"invalid-operation"` | The referenced stream is in the trash, and we prevent the recording of new events into trashed streams. |
-| 400    | `"periods-overlap"`   | Only in `singleActivity` streams: the new event overlaps existing period events. The overlapped events' ids are listed as an array in the error's `data.overlappedIds`. |
+| Status | Error Code                    |                                                              |
+| ------ | ----------------------------- | ------------------------------------------------------------ |
+| 400    | `"invalid-operation"`         | Not a series,                                                |
+| 400    | `"invalid-request-structure"` | The request was malformed; please refer to the documentation above on how to construct an append request. |
+| 403    | `"forbidden"`                 | The authorization provided to Pryv was not valid or doesn't have the access rights to store series data. |
