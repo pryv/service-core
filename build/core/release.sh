@@ -47,5 +47,5 @@ run mkdir /etc/service/core
 run cp /pd_build/runit/core /etc/service/core/run
 
 # Install the script that runs the cron service
-run mkdir /etc/service/cron
-run cp /pd_build/runit/cron /etc/service/cron/run
+run mkdir /etc/service/nightly
+run cp /pd_build/runit/nightly /etc/service/nightly/run
