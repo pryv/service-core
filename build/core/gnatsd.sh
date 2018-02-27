@@ -15,7 +15,7 @@ run mkdir -p $SPOOLDIR/gnatsd && \
   run curl -L -O $SOURCE_URL && 
   run unzip $FILENAME
 
-run echo "d6f93ff2951524a49b8eec76b54c86f49616c65c5bbdd0d438d58b3cb6373022  $FILENAME" | \
+run echo "24446c1be57d08ccc386a240a8ab5b78668e4db5d0c7878d548d3f95b90cb76b  $FILENAME" | \
   run sha256sum -c -
 
 run mv $BASENAME/gnatsd /usr/local/bin/
