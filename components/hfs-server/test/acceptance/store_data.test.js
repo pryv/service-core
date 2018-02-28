@@ -197,7 +197,6 @@ describe('Storing data in a HF series', function() {
       return response
         .expect(200)
         .then((res) => {
-          assert.typeOf(res.body.elementType, 'string');
           return res.body;
         });
     }
