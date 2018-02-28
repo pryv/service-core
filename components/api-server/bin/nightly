@@ -41,10 +41,12 @@ process.on('SIGINT', () => {
 
 // Setup cron job
 let workerRunning = false;
-const minute = Math.floor(Math.random() * Math.floor(59));
-const hour = Math.floor(Math.random() * Math.floor(23));
+//const minute = Math.floor(Math.random() * Math.floor(59));
+//const hour = Math.floor(Math.random() * Math.floor(23));
+//const day = Math.floor(Math.random() * Math.floor(20));
 const cronJob = new CronJob({
-  cronTime: `* ${minute} ${hour} * * *`,
+  //cronTime: `${minute} ${hour} ${day} * * *`,
+  cronTime: '30 * * * * *', // test
   onTick: function () {
     if (workerRunning) {
       return;
