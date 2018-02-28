@@ -1,8 +1,5 @@
 export LC_ALL=C
 export DEBIAN_FRONTEND=noninteractive
-export DISABLE_SYSLOG=0
-export DISABLE_SSH=1
-export DISABLE_CRON=1
 
 if perl -v >/dev/null 2>/dev/null; then
   RESET=`perl -e 'print("\e[0m")'`
