@@ -44,7 +44,7 @@ let workerRunning = false;
 const minute = Math.floor(Math.random() * Math.floor(59));
 const hour = Math.floor(Math.random() * Math.floor(23));
 const cronJob = new CronJob({
-  cronTime: `${minute} ${hour} * * * *`,
+  cronTime: `* ${minute} ${hour} * * *`,
   onTick: function () {
     if (workerRunning) {
       return;
