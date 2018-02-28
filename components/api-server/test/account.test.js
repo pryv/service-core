@@ -1,19 +1,20 @@
 /*global describe, before, beforeEach, it */
 
 require('./test-helpers'); 
-var helpers = require('./helpers'),
-    server = helpers.dependencies.instanceManager,
-    async = require('async'),
-    childProcess = require('child_process'),
-    ErrorIds = require('components/errors').ErrorIds,
-    validation = helpers.validation,
-    methodsSchema = require('../src/schema/accountMethods'),
-    pwdResetReqsStorage = helpers.dependencies.storage.passwordResetRequests,
-    should = require('should'),
-    storage = helpers.dependencies.storage.users,
-    storageSize = helpers.dependencies.storage.size,
-    testData = helpers.data,
-    _ = require('lodash');
+
+const helpers = require('./helpers');
+const server = helpers.dependencies.instanceManager;
+const async = require('async');
+const ErrorIds = require('components/errors').ErrorIds;
+const validation = helpers.validation;
+const methodsSchema = require('../src/schema/accountMethods');
+const pwdResetReqsStorage = helpers.dependencies.storage.passwordResetRequests;
+const should = require('should');
+const storage = helpers.dependencies.storage.users;
+const storageSize = helpers.dependencies.storage.size;
+const testData = helpers.data;
+const _ = require('lodash');
+const bluebird = require('bluebird');
 
 describe('account', function () {
 
@@ -202,54 +203,45 @@ describe('account', function () {
     });
 
     // test nightly job script
-    // TODO: should we keep/remove this test?
-    it('must properly compute storage size for all users in nightly script', function (done) {
-      var initialStorageUsed,
-          newAtt = testData.attachments.image;
-      async.series([
-        runNightlyScript,
-        function verifyInitial(stepDone) {
-          storage.findAll(null, function (err, accounts) {
-            accounts.forEach(function (account) {
-              account.storageUsed.dbDocuments.should.be.above(0);
-            });
-            initialStorageUsed = _.find(accounts, {id: user.id}).storageUsed;
-            initialStorageUsed.attachedFiles.should.be.above(0);
-            stepDone();
-          });
-        },
-        addEventWithAttachment.bind(null, newAtt),
-        runNightlyScript,
-        function verifyUpdated(stepDone) {
-          storage.findOne({id: user.id}, null, function (err, account) {
-            account.storageUsed.dbDocuments.should.be.above(initialStorageUsed.dbDocuments);
-            account.storageUsed.attachedFiles.should.be.approximately(
-                initialStorageUsed.attachedFiles + newAtt.size, 1024);
-            stepDone();
-          });
-        }
-      ], done);
-
-      // TODO: move all cron stuff to separate module (in common lib?) and call it from here
-      function runNightlyScript(callback) {
-        var worker = childProcess.fork(
-            __dirname + '/../src/runNightlyTasks.js',
-            process.argv.slice(2));
-        worker.on('exit', function (code) {
-          callback(code !== 0 ?
-              new Error('Cache cleanup unexpectedly failed (see logs for details)') : null);
-        });
-      }
+    it('must properly compute storage size for all users in nightly script', async function () {
+      let initialStorageUsed;
+      const newAtt = testData.attachments.image;
+      const runNightlyTasks = require('../bin/nightly');
+      
+      // Initial nightly task
+      await runNightlyTasks();
+      
+      // Verify initial storage usage
+      const accounts = await bluebird.fromCallback(
+        (cb) => storage.findAll(null, cb));
+        
+      initialStorageUsed = _.find(accounts, {id: user.id}).storageUsed;
+      initialStorageUsed.attachedFiles.should.be.above(0);
+      
+      // Add an attachment
+      await bluebird.fromCallback(
+        (cb) => addEventWithAttachment(newAtt, cb));
+      
+      // Another nightly task
+      await runNightlyTasks();
+      
+      // Verify updated storage usage
+      const account = await bluebird.fromCallback(
+        (cb) => storage.findOne({id: user.id}, null, cb));
+        
+      account.storageUsed.dbDocuments.should.be.above(initialStorageUsed.dbDocuments);
+      account.storageUsed.attachedFiles.should.be.approximately(
+        initialStorageUsed.attachedFiles + newAtt.size, 1024);
     });
 
     function addEventWithAttachment(attachment, callback) {
       request.post('/' + user.username + '/events')
-          .field('event', JSON.stringify({ type: 'test/i', streamId: testData.streams[0].id }))
-          .attach('image', attachment.path, attachment.filename)
-          .end(function (res) {
-            validation.check(res, {status: 201});
-            callback();
-          });
+        .field('event', JSON.stringify({ type: 'test/i', streamId: testData.streams[0].id }))
+        .attach('image', attachment.path, attachment.filename)
+        .end(function (res) {
+          validation.check(res, {status: 201});
+          callback();
+        });
     }
 
     it('must be approximately updated (diff) when adding an attached file', function (done) {
