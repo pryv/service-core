@@ -41,13 +41,13 @@ process.on('SIGINT', () => {
 
 // Setup cron job
 let workerRunning = false;
-const minute = Math.floor(Math.random() * Math.floor(59));
-const hour = Math.floor(Math.random() * Math.floor(23));
+const minute = Math.floor(Math.random() * 59);
+const hour = Math.floor(Math.random() * 23);
 const cronJob = new CronJob({
   cronTime: `* ${minute} ${hour} * * *`,
   onTick: function () {
     if (workerRunning) {
-      return;
+      throw new Error('Previous nigthly script is still running, it is taking too long!');
     }
 
     logger.info('Starting nightly script (cron job)...');
