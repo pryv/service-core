@@ -4,6 +4,10 @@ set -e
 
 # Builds 'service-core' docker image with the version given below. 
 
+export DISABLE_SYSLOG=0
+export DISABLE_SSH=1
+export DISABLE_CRON=1
+
 # Determine the build_tag and whether we need to release.
 scripts/build_name
 
