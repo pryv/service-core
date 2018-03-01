@@ -2,40 +2,37 @@
 
 // Binary for launching the api-server process. 
 
-// Console logging is the weapon of choice here (since we might not have a
-// logger) - so disable warnings for the whole file. 
-/* eslint-disable no-console */
-
 const Server = require('../src/server');
 const Application = require('../src/application');
 const Settings = require('../src/settings');
-
-// This bit is useful to trace down promise rejections that aren't caught. 
-process.on('unhandledRejection', (reason, promise) => {
-  console.warn('Unhandled promise rejection:', promise, 'reason:', reason.stack || reason); 
-});
-process.on('exit', function () {
-  console.info('Server stopped.');
-});
-process.on('SIGINT', () => {
-  console.warn('Received SIGINT. Exiting...');
-  process.exit(2);
-});
 
 // Load settings
 const settings = Settings.load(); 
 
 // Construct application
-const application = new Application(settings);
+const app = new Application(settings);
+const logger = app.logFactory('api-server');
+
+// This bit is useful to trace down promise rejections that aren't caught. 
+process.on('unhandledRejection', (reason, promise) => {
+  logger.warn('Unhandled promise rejection:', promise, 'reason:', reason.stack || reason); 
+});
+process.on('exit', function () {
+  logger.info('Server stopped.');
+});
+process.on('SIGINT', () => {
+  logger.warn('Received SIGINT. Exiting...');
+  process.exit(2);
+});
 
 // Start the server
-const server = new Server(application); 
+const server = new Server(app); 
 const result = server.start();
 
 // Make sure we catch top-level exceptions.
 result
-  .then(() => console.info('Startup sequence complete, Server is running.')) 
+  .then(() => logger.info('Startup sequence complete, Server is running.')) 
   .catch(e => {
-    console.error(e);
+    logger.error(e);
     process.exit(1);
   }); 
