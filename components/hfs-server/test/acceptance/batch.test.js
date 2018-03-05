@@ -4,13 +4,27 @@
 const chai = require('chai');
 const assert = chai.assert; 
 const cuid = require('cuid');
-const R = require('ramda');
 
 const { 
   spawnContext, produceMongoConnection, 
   produceInfluxConnection } = require('./test-helpers');
 const { databaseFixture } = require('components/test-helpers');
 
+type DataValue = string | number;
+type Row = Array<DataValue>;
+type FlatJSONData = {
+  format: 'flatJSON', 
+  fields: Array<string>, 
+  points: Array<Row>, 
+};
+type SeriesEnvelope = {
+  eventId: string, 
+  data: FlatJSONData, 
+};
+type SeriesBatchEnvelope = {
+  format: 'seriesBatch', 
+  data: Array<SeriesEnvelope>; 
+};
 
 describe('Storing BATCH data in a HF series', function() {
   const database = produceMongoConnection(); 
@@ -30,8 +44,15 @@ describe('Storing BATCH data in a HF series', function() {
       pryv.clean(); 
     });
       
-    // Set up a few ids that we'll use for testing. NOTE that these ids will
-    // change on every test run. 
+    // Set up a basic object structure so that we can test. Ids will change with 
+    // every test run.
+    // 
+    // User(userId)
+    //  `- Stream(parentStreamId)
+    //  |   `- event(eventId, type='series:mass/kg')
+    //  |- Access(accessToken)
+    //  `- Session(accessToken)
+    // 
     let userId, parentStreamId, eventId, accessToken; 
     before(() => {
       userId = cuid(); 
@@ -51,25 +72,34 @@ describe('Storing BATCH data in a HF series', function() {
       });
     });
     
-    function storeData(data: {}): any {      
-      // Insert some data into the events series:
-      const postData = {
-        format: 'flatJSON',
-        fields: Object.keys(data), 
-        points: [ 
-          R.map(R.prop(R.__, data), Object.keys(data)),
-        ]
-      };
+    function storeData(data: SeriesBatchEnvelope): any {      
       const request = server.request(); 
       return request
-        .post(`/${userId}/events/${eventId}/series`)
+        .post(`/${userId}/series/batch`)
         .set('authorization', accessToken)
-        .send(postData)
+        .send(data)
         .expect(200);
     }
     
     it('should store data correctly', async () => {
-      const response = await storeData({timestamp: 1481677845, value: 80.3});
+      const data = {
+        'format': 'seriesBatch',
+        'data': [
+          {
+            'eventId': eventId,
+            'data': {
+              'format': 'flatJSON', 
+              'fields': ['timestamp', 'latitude', 'longitude', 'altitude'], 
+              'points': [
+                [1519314345, 10.2], 
+                [1519314346, 12.2],
+                [1519314347, 14.2],
+              ]
+            }   
+          }
+        ]
+      };
+      const response = await storeData(data);
 
       const body = response.body; 
       if (body == null || body.status == null) throw new Error(); 
@@ -86,16 +116,23 @@ describe('Storing BATCH data in a HF series', function() {
       `;
         
       const result = await influx.query(query, options);
-      const row = result[0];
-      if (row.time == null || row.value == null) 
-        throw new Error('Should have time and value.');
       
-      assert.strictEqual(
-        row.time.toNanoISOString(), 
-        '2016-12-14T01:10:45.000000000Z'); 
-      assert.strictEqual(row.value, 80.3);
+      const expectedValues = [
+        ['2016-12-14T01:10:45.000000000Z', 10.2],
+        ['2016-12-14T01:10:45.000000000Z', 12.2],
+        ['2016-12-14T01:10:45.000000000Z', 14.2],
+      ];
+      
+      for (const row of result) {
+        if (row.time == null || row.value == null) 
+          throw new Error('Should have time and value.');
+        
+        const [ expTime, expValue ] = expectedValues;
+        assert.strictEqual(row.time.toNanoISOString(), expTime); 
+        assert.strictEqual(row.value, expValue);
+      }
     });
-    it('should return data once stored', async () => {
+    it.skip('should return data once stored', async () => {
       // identical with id here, but will be user name in general. 
       const userName = userId; 
       const dbName = `user.${userName}`; 
