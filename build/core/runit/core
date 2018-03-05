@@ -7,6 +7,7 @@ cd /app/bin/dist/components/api-server
 chown -R app:app /app/data/
 chown -R app:app /app/log/
 
+# Migrate storage
 chpst -u app ./bin/migrate --config /app/conf/core.json
 
 # Sets $num_procs to 2 or the value of $NUM_PROCS, if set.
