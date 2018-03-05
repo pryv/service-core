@@ -64,7 +64,7 @@ describe('Metadata Cache', function () {
       forSeries: function() {
         n += 1;
         
-        // Use this as a value for now, it serves verification only
+        // FLOW Use this as a value for now, it serves verification only
         return Promise.resolve(n);
       }
     };
