@@ -2,6 +2,8 @@
 
 // Test helpers for all acceptance tests. 
 
+const debug = require('debug')('test-helpers');
+const testHelpers = require('components/test-helpers');
 const NullLogger = require('components/utils/src/logging').NullLogger;
 const storage = require('components/storage');
 const business = require('components/business');
@@ -30,53 +32,34 @@ function produceMongoConnection(): storage.Database {
 }
 exports.produceMongoConnection = produceMongoConnection;
 
-interface Suite {
-  beforeEach(() => mixed): void;
-}
-
-// Define a value that should be reset for each test execution (each 'it' in
-// your mocha suite). 
+// Produces a StorageLayer instance
 // 
-// Example: 
-//    const foo = define(this, () => {
-//      return bluebird.resolve(true)
-//    });
-// 
-// After the above example, `foo` will contain a function that, when called, 
-// returns true. The block given to `define` is executed for each 'it' in your 
-// test suite (`this`) - for isolation. 
-// 
-// We chose to have the define function to return a promise here since the
-// beforeEach of mocha must wait on the value to be available. 
-//  
-function define<T>(suite: Suite, generator: () => (Promise<T> | T)): () => T {
-  let value: ?T = null; 
+function produceStorageLayer(connection: storage.Database): storage.StorageLayer {
+  const passwordResetRequestMaxAge = 60*1000;
+  const sessionMaxAge = 60*1000;
   
-  suite.beforeEach(() => {
-    // Since flow will not be able to know what value we're treating here, let's
-    // give it a hint: 
-    const futureValue: any = (generator(): any); 
-
-    if (futureValue.then != null) {
-      // If generator returned a promise, return it so that mocha awaits it. 
-      // Also, once the value becomes available (after this awaiting), have 
-      // value contain it. 
-      // 
-      return futureValue.then((val) => value = val);
-    }
-    else {
-      // We'll assume that everything that doesn't have a 'then' method is 
-      // just an immediate value
-      value = futureValue; 
-    }
-  });
-  
-  return function() { 
-    if (value == null) 
-      throw new Error('beforeEach should have set this value.');
-    return value; }; 
+  return new storage.StorageLayer(
+    connection, 
+    new NullLogger(), 
+    'attachmetsDirPath', 'previewsDirPath', 
+    passwordResetRequestMaxAge,
+    sessionMaxAge);
 }
-exports.define = define; 
+exports.produceStorageLayer = produceStorageLayer;
 
 // Forward certain things that the top level helper defines, for convenience: 
 exports.settings = toplevelHelpers.settings;
+
+// --------------------------------------------------------- prespawning servers
+
+debug('creating new spawn context');
+const spawner = testHelpers.spawner;
+const spawnContext = new spawner.SpawnContext('test/support/child_process');
+
+/* global after */
+after(() => {
+  debug('shutting down spawn context');
+  spawnContext.shutdown(); 
+});
+
+exports.spawnContext = spawnContext;

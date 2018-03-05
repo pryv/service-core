@@ -1,6 +1,6 @@
 // @flow
 
-/* global describe, before, beforeEach, afterEach, it, after */
+/* global describe, before, beforeEach, afterEach, it */
 
 /**
  * Tests Socket.IO access to the API.
@@ -26,7 +26,7 @@ const eventsMethodsSchema = require('../src/schema/eventsMethods');
 const validation = helpers.validation;
 const testData = helpers.data;
 
-const { SpawnContext, Server, ConditionVariable } = require('./helpers/spawner');
+const { ConditionVariable } = require('components/test-helpers').syncPrimitives; 
 
 describe('Socket.IO', function () {
 
@@ -376,7 +376,8 @@ describe('Socket.IO', function () {
       }); 
   
       await addEvent(conn1);
-      await eventReceived.wait(1000);
+      if (msgs.length === 0)
+        await eventReceived.wait(1000);
   
       assert.deepEqual(msgs, ['ec']);
     });

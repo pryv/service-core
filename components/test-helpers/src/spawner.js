@@ -20,13 +20,21 @@ const PRESPAWN_LIMIT = 2;
 // settings are either default or what you pass into the #spawn function. 
 // 
 class SpawnContext {
+  childPath: string; 
+  
   basePort: number; 
   shuttingDown: boolean; 
   
   pool: Array<ProcessProxy>;
   allocated: Array<ProcessProxy>;
   
-  constructor() {
+  // Construct a spawn context. `childPath` should be a module require path to 
+  // the module that will be launched in the child process. Please see 
+  // components/api-server/test/helpers/child_process for an example of such 
+  // a module. 
+  // 
+  constructor(childPath: string = 'test/helpers/child_process') {
+    this.childPath = childPath;
     this.basePort = 3001;
 
     this.shuttingDown = false; 
@@ -42,11 +50,13 @@ class SpawnContext {
   // Prespawns processes up to PRESPAWN_LIMIT.
   //
   prespawn() {
+    const childPath = this.childPath;
+    
     while (this.pool.length < PRESPAWN_LIMIT) {
-      debug('Forking a new child...');
-      
-      const childProcess = child_process.fork('test/helpers/child_process');
+      const childProcess = child_process.fork(childPath);
       const proxy = new ProcessProxy(childProcess, this);
+
+      debug(`prespawned child pid ${childProcess.pid}`);
       
       this.pool.push(proxy);
     }
@@ -66,9 +76,6 @@ class SpawnContext {
     const settings = {
       http: {
         port: port,           // use this port for http/express
-      },
-      tcpMessaging: {
-        enabled: false,       // disable axon messaging
       },
     };
     
@@ -182,6 +189,14 @@ class SpawnContext {
   }
 }
 
+opaque type MessageId = number; 
+type ResolveFun = (val: mixed) => void;
+type RejectFun = (err: Error) => void;
+opaque type Resolver = {
+  resolve: ResolveFun, 
+  reject: RejectFun, 
+};
+
 // A proxy to the processes we launch. This class will care for the child
 // processes and manage their lifecycle. It also provides a type-safe interface
 // to messages that can be sent to the process. 
@@ -193,12 +208,16 @@ class ProcessProxy {
   started: Fuse; 
   exited: Fuse; 
   
+  pendingMessages: Map<MessageId, Resolver>;
+  
   constructor(childProcess: child_process.ChildProcess, pool: SpawnContext) {
     this.childProcess = childProcess;
     this.pool = pool; 
     
     this.started = new Fuse(); 
     this.exited = new Fuse(); 
+    
+    this.pendingMessages = new Map(); 
     
     this.registerEvents(); 
   }
@@ -213,14 +232,28 @@ class ProcessProxy {
   }
   
   dispatchChildMessage(wireMsg) {
-    const [cmd, ...a] = msgpack.decode(wireMsg);
+    const pendingMessages = this.pendingMessages;
+    const [status, msgId, cmd, retOrErr] = msgpack.decode(wireMsg);
+
+    debug('dispatchChildMessage/msg', status, msgId, cmd, retOrErr);
     
-    switch(cmd) {
-      case 'int_started': 
-        this.onChildStarted();
-        break; 
+    if (! pendingMessages.has(msgId))
+      throw new Error(`Received client process message (${msgId}/${cmd}) without counterpart.`);
+      
+    const resolver = pendingMessages.get(msgId);
+    if (resolver == null) throw new Error('AF: No pending message exists');
+    
+    switch (status) {
+      case 'ok': 
+        resolver.resolve(retOrErr);
+        break;
+        
+      case 'err': 
+        resolver.reject(new Error(`Remote exception: ${retOrErr}`));
+        break;
+        
       default: 
-        debug('received unknown message: ', cmd, a);
+        throw new Error(`Invalid status value '${status}'`);
     }
   }
   
@@ -234,18 +267,13 @@ class ProcessProxy {
     this.pool.onChildExit();
   }
   
-  onChildStarted() {
-    debug('child started');
-    this.started.burn(); 
-  }
-  
   // Starts the express/socket.io server with the settings given. 
   // 
   async startServer(settings: mixed): Promise<void> {
-    this.sendToChild('int_startServer', settings);
-
-    await this.started.wait(); 
-    return;
+    await this.sendToChild('int_startServer', settings);
+    
+    debug('child started');
+    this.started.burn(); 
   }
   
   // Terminates the associated child process; progressing from SIGTERM to SIGKILL. 
@@ -273,10 +301,41 @@ class ProcessProxy {
     }
   }
   
-  sendToChild(msg: string, ...args: any) {
-    const child = this.childProcess; 
-    child.send(
-      msgpack.encode([msg, ...args]));
+  sendToChild(msg: string, ...args: any): Promise<mixed> {
+    return new bluebird((resolve, reject) => {
+      const child = this.childProcess; 
+      
+      const msgId = this.createPendingMessage(resolve, reject);
+
+      // This is where things get async - the child will answer whenever it
+      // likes.  The answer is handled by dispatchChildMessage.
+      child.send(
+        msgpack.encode([msgId, msg, ...args]));
+    });
+  }
+  createPendingMessage(res: ResolveFun, rej: RejectFun): MessageId {
+    let remainingTries = 1000; 
+    const pendingMessages = this.pendingMessages;
+    const resolver = {
+      resolve: res, 
+      reject: rej, 
+    };
+    
+    while (remainingTries > 0) {
+      const candId: MessageId = Math.floor(Math.random() * 1e9); 
+      
+      if (! pendingMessages.has(candId)) {
+        pendingMessages.set(candId, resolver);
+        
+        // Success return.
+        return candId;
+      }
+      
+      remainingTries -= 1; 
+    }
+    
+    // assert: We haven't found a free message id in 1000 tries.. give up. 
+    throw new Error('AF: Could not find a free message id.');
   }
 }
 

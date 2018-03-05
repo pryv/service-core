@@ -44,9 +44,33 @@ class InfluxRowType implements EventType {
   /** Returns true if the columns given can be reconciled with this type. 
    */
   validateColumns(columnNames: Array<string>): boolean {
-    // TODO remove hard coding to simple types. 
-    if (columnNames.indexOf(FIELD_TIMESTAMP) < 0) return false; 
-    if (columnNames.indexOf('value') < 0) return false; 
+    const underlyingType = this.eventType;
+    
+    // These names are all allowed once:
+    const allowedFields = new Set(underlyingType.fields());
+    allowedFields.add(FIELD_TIMESTAMP);
+    
+    // Accumulator for the fields that we've already seen.
+    const seenFields = new Set(); 
+
+    for (const field of columnNames) {
+      if (! allowedFields.has(field)) return false; 
+      
+      // Fields are only allowed once; otherwise the storage op would be
+      // ambiguous.
+      if (seenFields.has(field)) return false; 
+      
+      seenFields.add(field);
+    }
+    
+    // Now this looks valid: Only allowed fields and every field just once. 
+    // Let's see if we have all required fields: 
+    const requiredFields = new Set(underlyingType.requiredFields());
+    requiredFields.add(FIELD_TIMESTAMP);
+    
+    for (const requiredField of requiredFields) {
+      if (! seenFields.has(requiredField)) return false;
+    }
     
     return true; 
   }

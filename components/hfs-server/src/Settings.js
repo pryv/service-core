@@ -1,5 +1,3 @@
-
-'use strict';
 // @flow
 
 const convict = require('convict');
@@ -61,6 +59,34 @@ class ConfigValue {
     throw this._typeError('object');
   }
   
+  // Returns the configuration value as a boolean. 
+  // 
+  bool(): boolean {
+    const value = this.value; 
+    if (typeof value === 'boolean') {
+      return value; 
+    }
+    
+    switch (value) {
+      case 'true':
+      case 'yes':
+      case 'on':
+        return true; 
+      
+      case 'false':
+      case 'no': 
+      case 'off': 
+        return false; 
+      
+      default: 
+        // FALLTHROUGH
+    }
+    
+    
+    throw this._typeError('boolean');
+  }
+  
+  
   _typeError(typeName: string) {
     const name = this.name; 
     
@@ -103,20 +129,27 @@ class Settings {
     
     return settings; 
   }
-
+  
   /** Class constructor. */
   constructor() {
     this.config = this.produceConfigInstance(); 
     this.config.validate(); 
   }
   
-  /** Loads configuration values from the file pointed to by `path`.
-   * 
-   * @throws {Error} `.code === ENOENT` if the configuration file doesn't exist. 
-   */
+  // Loads configuration values from the file pointed to by `path`.
+  //  
+  // @throws {Error} `.code === ENOENT` if the configuration file doesn't exist. 
+  // 
   loadFromFile(path: string) {
     const config = this.config; 
     config.loadFile(path);
+  }
+  
+  // Merges a javascript configuration object into the settings. 
+  //
+  loadFromObject(obj: Object) {
+    const config = this.config; 
+    config.load(obj);
   }
   
   /** Returns the value for the configuration key `key`.  
@@ -159,44 +192,23 @@ class Settings {
         default: 'config/hfs-server.json', 
         arg: 'config', 
       },
+      trace: {
+        enable: { default: false, format: Boolean },
+      },
       influxdb: {
-        host: {
-          format: String, 
-          default: 'influxdb'
-        }, 
-        port: {
-          format: Number, 
-          default: 8086
-        }
+        host: { format: String, default: 'influxdb' }, 
+        port: { format: Number, default: 8086 },
       },
       mongodb: {
         // These should be the production defaults. 
-        host: {
-          format: String, 
-          default: 'mongodb'
-        }, 
-        port: {
-          format: Number, 
-          default: 27017, 
-        }, 
-        name: {
-          format: String, 
-          default: 'pryv-node',
-        },
-        authUser: {
-          format: String, 
-          default: '', 
-        }, 
-        authPassword: {
-          format: String, 
-          default: '', 
-        }, 
+        host:         { format: String, default: 'mongodb' }, 
+        port:         { format: Number, default: 27017 }, 
+        name:         { format: String, default: 'pryv-node' },
+        authUser:     { format: String, default: '' }, 
+        authPassword: { format: String, default: '' }, 
       },
       logs: {
-        prefix: {
-          default: '', 
-          format: String, 
-        },
+        prefix: { default: '', format: String },
         console: {
           active: {
             doc: 'Should the server log to console?',
@@ -206,7 +218,7 @@ class Settings {
           level: {
             doc: 'Log level for the console.',
             format: formats.logLevel,
-            default: 'debug'
+            default: 'warn'
           },
           colorize: {
             doc: 'Should console output be colorized?',
