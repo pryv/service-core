@@ -30,7 +30,7 @@ export interface SeriesMetadata {
   canRead(): boolean;
   
   // Returns a namespace/database name and a series name for use with InfluxDB. 
-  namespace(): [string, string];
+  namespaceAndName(): [string, string];
   
   // Return the InfluxDB row type for the given event. 
   produceRowType(repo: TypeRepository): InfluxRowType; 
@@ -204,7 +204,7 @@ class SeriesMetadataImpl implements SeriesMetadata {
     return this.permissions.read;
   }
   
-  namespace(): [string, string] {
+  namespaceAndName(): [string, string] {
     return [
       `user.${this.userName}`, 
       `event.${this.eventId}`,

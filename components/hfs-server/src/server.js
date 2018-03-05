@@ -153,11 +153,13 @@ class Server {
     app.get('/system/status', systemStatus);
     
     app.post('/:user_name/events/:event_id/series', c.storeSeriesData); 
+    app.post('/:user_name/series/batch', c.storeSeriesBatch);
     app.get('/:user_name/events/:event_id/series', c.querySeriesData);
     
     // Allow CORS; access control is guaranteed by the authorization token which
     // when known - is the only means of authentication. 
     app.options('/:user_name/events/:event_id/series', handleCORS);
+    app.options('/:user_name/series/batch', handleCORS);
   }
 }
 

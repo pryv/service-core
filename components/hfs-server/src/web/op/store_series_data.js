@@ -5,18 +5,16 @@
 const errors = require('components/errors').factory;
 const business = require('components/business');
 
-const FORMAT_FLAT_JSON = 'flatJSON';
-const AUTH_HEADER = 'authorization';
+const Api = require('../../api_constants');
 
 import type { TypeRepository } from 'components/business';
 import type Context from '../../context';
 import type {SeriesMetadata} from '../../metadata_cache';
 
-
 /** POST /events/:event_id/series - Store data in a series. 
  */
 async function storeSeriesData(ctx: Context, 
-  req: express$Request, res: express$Response, next: express$NextFunction)
+  req: express$Request, res: express$Response)
 {
   const series = ctx.series;
   const metadata = ctx.metadata;
@@ -24,10 +22,10 @@ async function storeSeriesData(ctx: Context,
   // Extract parameters from request: 
   const userName = req.params.user_name;
   const eventId = req.params.event_id;
-  const accessToken = req.headers[AUTH_HEADER];
+  const accessToken = req.headers[Api.AUTH_HEADER];
 
   // If params are not there, abort. 
-  if (accessToken == null) throw errors.missingHeader(AUTH_HEADER);
+  if (accessToken == null) throw errors.missingHeader(Api.AUTH_HEADER);
   if (eventId == null) throw errors.invalidItemId();
   
   // Access check: Can user write to this series? 
@@ -42,7 +40,7 @@ async function storeSeriesData(ctx: Context,
   const parseDataSpan = ctx.childSpan(req, 'parseData');
   const data = parseData(req.body, seriesMeta, ctx.typeRepository);
   if (data == null) {
-    return next(errors.invalidRequestStructure('Malformed request.'));
+    throw errors.invalidRequestStructure('Malformed request.');
   }
   parseDataSpan.finish();
 
@@ -50,7 +48,7 @@ async function storeSeriesData(ctx: Context,
 
   // Store data
   const appendSpan = ctx.childSpan(req, 'append');
-  const seriesInstance = await series.get(...seriesMeta.namespace());
+  const seriesInstance = await series.get(...seriesMeta.namespaceAndName());
   await seriesInstance.append(data);
   appendSpan.finish(); 
   
@@ -73,7 +71,7 @@ function parseData(createRequest: mixed, meta: SeriesMetadata, typeRepo: TypeRep
   
   // assert: createRequest is a {}
   
-  if (createRequest.format !== FORMAT_FLAT_JSON) return null; 
+  if (createRequest.format !== Api.FORMAT_FLAT_JSON) return null; 
   
   const fields = checkFields(createRequest.fields);
   const points = createRequest.points; 

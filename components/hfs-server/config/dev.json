@@ -2,6 +2,11 @@
   "trace": {
     "enable": false,
   },
+  "logs": {
+    "console": {
+      "active": true,
+    }
+  },
   "mongodb": {
     "host": "127.0.0.1"
   }, 

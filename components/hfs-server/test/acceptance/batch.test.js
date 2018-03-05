@@ -178,4 +178,10 @@ describe('Storing BATCH data in a HF series', function() {
       }
     });
   });
+
+  describe('POST /:user_name/series/batch', () => {
+    it.skip("should fail without 'Authorization' header", () => {
+      
+    });
+  });
 });

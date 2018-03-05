@@ -39,5 +39,6 @@ module.exports = function (ctx: Context) {
   return {
     storeSeriesData: mount(ctx, require('./op/store_series_data')),
     querySeriesData: mount(ctx, require('./op/query_series_data')),
+    storeSeriesBatch: mount(ctx, require('./op/store_series_batch')),
   };
 };
