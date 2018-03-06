@@ -3,12 +3,90 @@
 // Tests pertaining to storing data in a hf series. 
 
 /* global describe, it */
-const { should } = require('../../test-helpers');
+const chai = require('chai');
+const assert = chai.assert;
 
 const DataMatrix = require('../../../src/series/data_matrix');
+const { ParseFailure } = require('../../../src/series/errors');
 const Row = require('../../../src/series/row');
 
+const { TypeRepository } = require('../../../src/types');
+const InfluxRowType = require('../../../src/types/influx_row_type');
+
 describe('DataMatrix', function () {
+  describe('.parse(obj)', () => {
+    const typeRepo = new TypeRepository(); 
+    const type: InfluxRowType = (typeRepo.lookup('series:position/wgs84'): any);
+    
+    it('should accept the happy path', () => {
+      good({
+        'format': 'flatJSON', 
+        'fields': ['timestamp', 'latitude', 'longitude', 'altitude'], 
+        'points': [
+          [1519314345, 10.2, 11.2, 500]
+        ]
+      });
+    });
+    
+    it('refuses if not an object', () => {
+      bad(null);
+      bad('a string');
+    });
+    it('refuses if format is not flatJSON', () => {
+      bad({
+        format: 'somethingElse'
+      });
+    });
+    it('refuses if fields are not strings', () => {
+      bad({
+        format: 'flatJSON', 
+        fields: null
+      });
+      bad({
+        format: 'flatJSON', 
+        fields: 42
+      });
+      bad({
+        format: 'flatJSON', 
+        fields: [ 13, 14 ]
+      });
+    });
+    it('refuses if points is not an array', () => {
+      bad({
+        format: 'flatJSON', 
+        fields: [ 'ts', 'foo' ], 
+        points: 42
+      });
+    });
+    it('refuses if field names are not correct', () => {
+      bad({
+        format: 'flatJSON', 
+        fields: [ 'ts', 'foo' ], 
+        points: []
+      });
+    });
+    it('refuses if data cannot be coerced', () => {
+      bad({
+        format: 'flatJSON', 
+        fields: [ 'timestamp', 'latitude' ], 
+        points: [
+          [1519314345, null],
+        ]
+      });
+    });
+
+    function good(obj: mixed) {
+      assert.doesNotThrow(() => {
+        DataMatrix.parse(obj, type);
+      });
+    }
+    function bad(obj: mixed) {
+      assert.throws(() => {
+        DataMatrix.parse(obj, type);
+      }, ParseFailure);
+    }
+  });
+
   describe('eachRow', function () {
     it('should iterate over all matrix rows', function () {
       const headers = ['a', 'b', 'c']; 
@@ -21,15 +99,15 @@ describe('DataMatrix', function () {
       
       let times = 0; 
       matrix.eachRow((row, idx) => {
-        if (idx == 0) should(row.values).be.eql([1,2,3]);
-        if (idx == 1) should(row.values).be.eql([4,5,6]);
-        
-        should(row.columnNames).be.eql(headers);
+        if (idx == 0) assert.deepEqual(row.values, [1,2,3]);
+        if (idx == 1) assert.deepEqual(row.values, [4,5,6]);
+
+        assert.strictEqual(row.columnNames, headers);
         
         times += 1; 
       });
-      
-      should(times).be.eql(2);
+
+      assert.strictEqual(times, 2);
     });
   });
   describe('transform', function () {
@@ -44,15 +122,15 @@ describe('DataMatrix', function () {
       
       let n = 0; 
       matrix.transform((name, value) => {
-        should(name).be.eql(headers[n % 3]);
-        should(value).be.eql(n+1);
+        assert.strictEqual(name, headers[n % 3]);
+        assert.strictEqual(value, n+1);
         
         n += 1; 
 
         return value; // satisfy the checker
       });
       
-      should(n).be.eql(6);
+      assert.strictEqual(n, 6);
     });
     it('should store the return value in the matrix', function () {
       const headers = ['a', 'b', 'c']; 
@@ -67,7 +145,7 @@ describe('DataMatrix', function () {
         return 42; // don't ask
       });
       
-      should(matrix.at(0)).assert == [42, 42, 42];
+      assert.deepEqual(matrix.at(0), [42, 42, 42]);
     });
   });
 });
@@ -79,9 +157,9 @@ describe('business.series.Row', function () {
       
       const obj = row.toStruct();
         
-      should(obj.a).be.eql(1);
-      should(obj.b).be.eql(2); 
-      should(Object.keys(obj).length).be.eql(2);
+      assert.strictEqual(obj.a, 1);
+      assert.strictEqual(obj.b, 2); 
+      assert.strictEqual(Object.keys(obj).length, 2);
     });
   });
 });

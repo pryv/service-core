@@ -2,6 +2,11 @@
 
 const assert = require('assert');
 
+const { error } = require('./errors');
+
+// 'series' layer depends on the 'types' layer.
+const InfluxRowType = require('../types/influx_row_type');
+
 export type Element = string | number; 
 export type RawRow = Array<Element>;
 
@@ -15,6 +20,19 @@ class DataMatrix {
   
   // @return {number} number of rows this data matrix has. 
   length: number; 
+  
+  // Parses a data matrix given a javascript object of the right form
+  // ('flatJSON'). This method will throw a ParseFailure if the internal
+  // structure of the object is not correct.   
+  // 
+  static parse(obj: mixed, type: InfluxRowType): DataMatrix {
+    const out = this.empty(); 
+    const parser = new Parser(out); 
+    
+    parser.parse(obj, type);
+    
+    return out; 
+  }
   
   /** Constructs an empty matrix. 
    */
@@ -68,14 +86,76 @@ class DataMatrix {
     });
   }
   
-  /** Transforms this matrix in place by calling `fn` for each cell, replacing
-   * its value with what fn returns. 
-   */
+  // Transforms this matrix in place by calling `fn` for each cell, replacing
+  // its value with what fn returns. 
+  // 
   transform(fn: (colName: string, cellVal: Element) => Element) {
     for (let row of this.data) {
       row.forEach((cell, idx) => 
         row[idx] = fn(this.columns[idx], cell));
     }
+  }
+}
+
+const FLAT_JSON = 'flatJSON';
+
+class Parser {
+  out: DataMatrix;
+  
+  constructor(out: DataMatrix) {
+    this.out = out; 
+  }
+  
+  parse(obj: mixed, type: InfluxRowType) {
+    const out = this.out; 
+    
+    if (obj == null || typeof obj !== 'object') 
+      throw error('flatJSON structure must be an object.'); 
+    
+    // assert: obj is a {}
+    
+    if (obj.format !== FLAT_JSON) 
+      throw error('"format" field must contain the string "flatJSON".');
+    
+    const fields = this.checkFields(obj.fields);
+    const points = obj.points; 
+
+    if (points == null || !Array.isArray(points)) 
+      throw error('"points" field must be a list of data points.');
+    
+    // assert: fields, points are both arrays
+          
+    if (! type.validateColumns(fields))
+      throw error('"fields" field must contain valid field names for the series type.');
+      
+    if (! type.validateAllRows(points, fields)) 
+      throw error('"points" matrix must contain correct data types according to series type.');
+
+    out.columns = fields; 
+    out.setData(points); 
+
+    try {
+      out.transform((columnName, cellValue) => {
+        const cellType = type.forField(columnName);
+    
+        const coercedValue = cellType.coerce(cellValue);
+        return coercedValue; 
+      });
+    }
+    catch (e) {
+      throw error(`Error during field coercion: ${e}`);
+    }
+  }
+  
+  checkFields(val: any): Array<string> {
+    if (val == null) throw error('Field names must be a list.');
+    if (! (Array.isArray(val))) throw error('Field names must be a list.');
+    
+    for (const el of val) {
+      if (typeof el !== 'string') throw error('Field names must be strings.');
+    }
+    
+    return val;
   }
 }
 
