@@ -19,7 +19,7 @@ See also [standard event types](http://api.pryv.com/event-types/#directory).
 
 ## Series
 
-Series are collections of homogenous data points. They should be used instead of events where the structure of the data doesn't change and you expect a high volume of data at possibly high speeds (O(1Hz)).
+Series are collections of homogenous data points. They should be used instead of events when the structure of the data doesn't change and you expect a high volume of data at possibly high speeds (O(1Hz)).
 
 To store a data series in Pryv, you first create an event that has the type "series:X". The created series will store many values that all have the type X. Then you can start adding data to the series. 
 
