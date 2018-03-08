@@ -603,7 +603,7 @@ describe('Storing data in a HF series', function() {
           
           assert.strictEqual(status, 400);
           assert.strictEqual(id, 'invalid-request-structure');
-          assert.strictEqual(message, 'Malformed request.');
+          assert.strictEqual(message, '"fields" field must contain valid field names for the series type.');
         });
       });
       it('refuses to store when timestamp is present twice (ambiguous!)', async () => {
@@ -645,7 +645,7 @@ describe('Storing data in a HF series', function() {
           
           assert.strictEqual(status, 400);
           assert.strictEqual(id, 'invalid-request-structure');
-          assert.strictEqual(message, 'Malformed request.');
+          assert.strictEqual(message, '"fields" field must contain valid field names for the series type.');
         });
       });
     });

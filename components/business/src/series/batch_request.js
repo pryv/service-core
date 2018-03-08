@@ -105,7 +105,6 @@ class ElementParser {
     if (typeof eventId !== 'string')
       throw error('Batch element must contain an eventId of the series event.');
       
-    console.log(resolver);
     const type = resolver(eventId);
     return new BatchRequestElement(
       eventId,
