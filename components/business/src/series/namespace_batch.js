@@ -21,12 +21,8 @@ class NamespaceBatch {
     this.namespace = namespace;
   }
   
-  append(batch: BatchRequest) {
-    
-  }
-  
-  async store(): Promise<*> {
-    throw new Error('Not Implemented');
+  async store(data: BatchRequest): Promise<*> {
+    console.log('store', data);
   }
 }
 

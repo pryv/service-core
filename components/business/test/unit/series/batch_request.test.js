@@ -15,9 +15,9 @@ describe('BatchRequest', () => {
   describe('.parse', () => {
     const typeRepo = new TypeRepository(); 
     const type: InfluxRowType = (typeRepo.lookup('series:position/wgs84'): any);
-    const resolver = () => type;
+    const resolver = () => Promise.resolve(type);
 
-    it('should parse the happy case', () => {
+    it('should parse the happy case', async () => {
       const happy = {
         format: 'seriesBatch', 
         data: [
@@ -36,7 +36,7 @@ describe('BatchRequest', () => {
         ] // seriesBatch
       };
       
-      const request = BatchRequest.parse(happy, resolver);
+      const request = await BatchRequest.parse(happy, resolver);
       assert.strictEqual(request.length(), 1); 
       
       const element = request.list[0];
@@ -82,7 +82,7 @@ describe('BatchRequestElement', () => {
   describe('.parse(obj)', () => {
     const typeRepo = new TypeRepository(); 
     const type: InfluxRowType = (typeRepo.lookup('series:position/wgs84'): any);
-    const resolver = () => type;
+    const resolver = () => Promise.resolve(type);
     
     // XXX A third object transforms 'eventId's into row types. It should cache
     // meta data by eventId.

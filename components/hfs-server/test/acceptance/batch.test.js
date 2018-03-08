@@ -89,7 +89,7 @@ describe('Storing BATCH data in a HF series', function() {
             'eventId': eventId,
             'data': {
               'format': 'flatJSON', 
-              'fields': ['timestamp', 'latitude', 'longitude', 'altitude'], 
+              'fields': ['timestamp', 'value'], 
               'points': [
                 [1519314345, 10.2], 
                 [1519314346, 12.2],

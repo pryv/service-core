@@ -174,3 +174,5 @@ module.exports = {
   errors: errors, 
 };
 
+export type { InfluxRowType };
+

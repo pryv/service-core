@@ -1,8 +1,13 @@
 // @flow
 
+const batchRequest = require('./series/batch_request');
+
 module.exports = {
-  Repository: require('./series/repository'), 
-  DataMatrix: require('./series/data_matrix'),
   InfluxConnection: require('./series/influx_connection'),
+  
+  Repository: require('./series/repository'), 
+
+  BatchRequest: batchRequest.BatchRequest,
+  DataMatrix: require('./series/data_matrix'),
   ParseFailure: require('./series/errors').ParseFailure,
 };

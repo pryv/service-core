@@ -5,7 +5,7 @@
 const errors = require('components/errors').factory;
 const business = require('components/business');
 
-const ApiConstants = require('../../api_constants');
+const ApiConstants = require('../api_constants');
 
 import type { TypeRepository } from 'components/business';
 import type Context from '../../context';
