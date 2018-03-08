@@ -2,6 +2,7 @@
 // @flow
 
 import type InfluxConnection from './influx_connection';
+import type { BatchRequest } from './batch_request';
 
 // A store operation that stores data for multiple series in one call to the
 // backend. 
@@ -20,7 +21,6 @@ class NamespaceBatch {
     this.namespace = namespace;
   }
   
-  // XXX Where should I define the BatchRequest structure?
   append(batch: BatchRequest) {
     
   }

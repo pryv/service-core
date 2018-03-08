@@ -13,6 +13,10 @@ const InfluxRowType = require('../../../src/types/influx_row_type');
 
 describe('BatchRequest', () => {
   describe('.parse', () => {
+    const typeRepo = new TypeRepository(); 
+    const type: InfluxRowType = (typeRepo.lookup('series:position/wgs84'): any);
+    const resolver = () => type;
+
     it('should parse the happy case', () => {
       const happy = {
         format: 'seriesBatch', 
@@ -32,7 +36,7 @@ describe('BatchRequest', () => {
         ] // seriesBatch
       };
       
-      const request = BatchRequest.parse(happy);
+      const request = BatchRequest.parse(happy, resolver);
       assert.strictEqual(request.length(), 1); 
       
       const element = request.list[0];
@@ -63,12 +67,12 @@ describe('BatchRequest', () => {
     
     function bad(obj: mixed) {
       assert.throws(() => {
-        BatchRequest.parse(obj);
+        BatchRequest.parse(obj, resolver);
       }, ParseFailure);
     }
     function good(obj: mixed) {
       assert.doesNotThrow(() => {
-        BatchRequest.parse(obj);
+        BatchRequest.parse(obj, resolver);
       });
     }
   });
@@ -78,6 +82,7 @@ describe('BatchRequestElement', () => {
   describe('.parse(obj)', () => {
     const typeRepo = new TypeRepository(); 
     const type: InfluxRowType = (typeRepo.lookup('series:position/wgs84'): any);
+    const resolver = () => type;
     
     // XXX A third object transforms 'eventId's into row types. It should cache
     // meta data by eventId.
@@ -108,12 +113,12 @@ describe('BatchRequestElement', () => {
 
     function bad(obj: mixed) {
       assert.throws(() => {
-        BatchRequestElement.parse(obj);
+        BatchRequestElement.parse(obj, resolver);
       }, ParseFailure);
     }
     function good(obj: mixed) {
       assert.doesNotThrow(() => {
-        BatchRequestElement.parse(obj);
+        BatchRequestElement.parse(obj, resolver);
       });
     }
   });

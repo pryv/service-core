@@ -4,6 +4,10 @@
 const DataMatrix = require('./data_matrix');
 const { error, ParseFailure } = require('./errors');
 
+import type InfluxRowType from '../types/influx_row_type';
+
+type TypeResolveFunction = (eventId: string) => InfluxRowType;
+
 // A `BatchRequest` is a collection of batch elements. Each of those in turn 
 // will contain a series meta data descriptor and a data matrix to input into
 // that series. 
@@ -15,9 +19,9 @@ class BatchRequest {
   // batch, as described in the documentation ('seriesBatch'). If the input
   // object contains an error, it is thrown as a `ParseFailure`. 
   // 
-  static parse(jsonObj: mixed): BatchRequest {
+  static parse(jsonObj: mixed, resolver: TypeResolveFunction): BatchRequest {
     const req = new BatchRequest(); 
-    const parser = new Parser(req);
+    const parser = new Parser(req, resolver);
     
     parser.parse(jsonObj);
     
@@ -44,9 +48,9 @@ class BatchRequestElement {
   eventId: string;
   data: DataMatrix;
   
-  static parse(obj: mixed): BatchRequestElement {
+  static parse(obj: mixed, resolver: TypeResolveFunction): BatchRequestElement {
     const parser = new ElementParser(); 
-    return parser.parse(obj);
+    return parser.parse(obj, resolver);
   }
 
   constructor(eventId: string, data: DataMatrix) {
@@ -62,9 +66,11 @@ const SERIES_BATCH = 'seriesBatch';
 // 
 class Parser {
   out: BatchRequest;
+  resolver: TypeResolveFunction;
     
-  constructor(out: BatchRequest) {
+  constructor(out: BatchRequest, resolver: TypeResolveFunction) {
     this.out = out; 
+    this.resolver = resolver;
   }
   
   parse(jsonObj: mixed) {
@@ -74,6 +80,7 @@ class Parser {
     this.parseSeriesBatch(jsonObj);
   }
   parseSeriesBatch(obj: Object) {
+    const resolver = this.resolver;
     const out = this.out; 
     
     if (obj.format !== SERIES_BATCH) 
@@ -84,22 +91,25 @@ class Parser {
     
     for (const elObj of obj.data) {
       out.append(
-        BatchRequestElement.parse(elObj));
+        BatchRequestElement.parse(elObj, resolver));
     }
   }
 }
 
 class ElementParser {
-  parse(obj: mixed): BatchRequestElement {
+  parse(obj: mixed, resolver: TypeResolveFunction): BatchRequestElement {
     if (obj == null || typeof obj !== 'object')
       throw error('Batch element must be an object with properties.');
       
-    if (typeof obj.eventId !== 'string')
+    const eventId = obj.eventId;
+    if (typeof eventId !== 'string')
       throw error('Batch element must contain an eventId of the series event.');
       
+    console.log(resolver);
+    const type = resolver(eventId);
     return new BatchRequestElement(
-      obj.eventId,
-      DataMatrix.parse(obj.data),
+      eventId,
+      DataMatrix.parse(obj.data, type),
     );
   }
 }
