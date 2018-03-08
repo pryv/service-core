@@ -4,6 +4,8 @@
 
 /* global describe, it, afterEach, beforeEach */
 const should = require('should');
+const chai = require('chai');
+const assert = chai.assert;
 
 const { settings } = require('./test-helpers');
 
@@ -11,7 +13,7 @@ const NullLogger = require('components/utils/src/logging').NullLogger;
 const storage = require('components/storage');
 const { databaseFixture } = require('components/test-helpers');
 
-const { MetadataLoader } = require('../../src/metadata_cache');
+const { MetadataLoader, MetadataCache } = require('../../src/metadata_cache');
 
 describe('Metadata Loader', function () {
   const database = new storage.Database(
@@ -56,5 +58,24 @@ describe('Metadata Loader', function () {
 });
 
 describe('Metadata Cache', function () {
-  
+  it('returns loaded metadata for N minutes', async () => {
+    let n = 0; 
+    const loaderStub = {
+      forSeries: function() {
+        n += 1;
+        
+        // Use this as a value for now, it serves verification only
+        return Promise.resolve(n);
+      }
+    };
+    
+    // FLOW stubbing the value of loader here.
+    const cache = new MetadataCache(loaderStub);
+    
+    const a = await cache.forSeries('foo', '1234', '5678');
+    const b = await cache.forSeries('foo', '1234', '5678');
+    
+    assert.strictEqual(a, 1);
+    assert.strictEqual(b, 1);
+  });
 });

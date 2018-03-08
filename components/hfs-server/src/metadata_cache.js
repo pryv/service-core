@@ -3,6 +3,8 @@
 const async = require('async');
 const R = require('ramda');
 const bluebird = require('bluebird');
+const LRU = require('lru-cache');
+const debug = require('debug')('metadata_cache');
 
 const storage = require('components/storage');
 const MethodContext = require('components/model').MethodContext;
@@ -15,7 +17,7 @@ import type { Logger } from 'components/utils';
 /** A repository for meta data on series. 
  */
 export interface MetadataRepository {
-  forSeries(userName: string, eventId: string, accessToken: string): bluebird<SeriesMetadata>;
+  forSeries(userName: string, eventId: string, accessToken: string): Promise<SeriesMetadata>;
 }
 
 /** Meta data on series. 
@@ -34,6 +36,12 @@ export interface SeriesMetadata {
   produceRowType(repo: TypeRepository): InfluxRowType; 
 }
 
+// TODO How should we size this? Configure it? We'll have one entry per data 
+//  collection, so this might even be a static value...
+const LRU_CACHE_SIZE = 10000;
+
+const LRU_CACHE_MAX_AGE_MS = 1000*60*5; // 5 mins (TODO)
+
 /** Holds metadata related to series for some time so that we don't have to 
  * compile it every time we store data in the server. 
  * 
@@ -41,14 +49,33 @@ export interface SeriesMetadata {
  * */
 class MetadataCache implements MetadataRepository {
   loader: MetadataRepository;
+  cache: LRU; 
   
   constructor(metadataLoader: MetadataRepository) {
     this.loader = metadataLoader;
+    
+    const options = {
+      max: LRU_CACHE_SIZE,
+      maxAge: LRU_CACHE_MAX_AGE_MS,
+    };
+    this.cache = new LRU(options);
   }
   
-  forSeries(userName: string, eventId: string, accessToken: string): bluebird<SeriesMetadata> {
-    // TODO implement caching
-    return this.loader.forSeries(userName, eventId, accessToken); 
+  async forSeries(userName: string, eventId: string, accessToken: string): Promise<SeriesMetadata> {
+    const key = [userName, eventId, accessToken].join('/'); 
+    const cache = this.cache; 
+    
+    const cachedValue = cache.get(key);
+    if (cachedValue !== undefined) {
+      debug(`Using cached credentials for ${userName} / ${eventId}.`);
+      return cachedValue;
+    }
+      
+    const newValue = await this.loader.forSeries(userName, eventId, accessToken); 
+    
+    cache.set(key, newValue);
+    
+    return newValue;
   }
 }
 
@@ -70,7 +97,7 @@ class MetadataLoader {
       'attachmentsDirPath', 'previewsDirPath', 10, sessionMaxAge);
   }
   
-  forSeries(userName: string, eventId: string, accessToken: string): bluebird<SeriesMetadata> {
+  forSeries(userName: string, eventId: string, accessToken: string): Promise<SeriesMetadata> {
     const storage = this.storage; 
     
     // Retrieve Access (including accessLogic)
