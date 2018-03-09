@@ -49,7 +49,7 @@ const LRU_CACHE_MAX_AGE_MS = 1000*60*5; // 5 mins (TODO)
  * */
 class MetadataCache implements MetadataRepository {
   loader: MetadataRepository;
-  cache: LRU; 
+  cache: LRU<string, SeriesMetadata>; 
   
   constructor(metadataLoader: MetadataRepository) {
     this.loader = metadataLoader;

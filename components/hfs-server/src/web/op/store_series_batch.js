@@ -2,6 +2,7 @@
 // @flow
 
 const bluebird = require('bluebird');
+const LRU = require('lru-cache');
 
 const errors = require('components/errors').factory;
 const business = require('components/business');
@@ -12,6 +13,7 @@ const ApiConstants = require('../api_constants');
 
 import type Context from '../../context';
 import type { InfluxRowType } from 'components/business'; 
+import type { SeriesMetadata } from '../../metadata_cache';
 
 async function storeSeriesBatch(ctx: Context, 
   req: express$Request, res: express$Response)
@@ -25,7 +27,7 @@ async function storeSeriesBatch(ctx: Context,
   if (accessToken == null) throw errors.missingHeader(ApiConstants.AUTH_HEADER);
   
   // Parse the data and resolve access rights and types.
-  const resolver = new EventTypeResolver(userName, accessToken, ctx);
+  const resolver = new EventMetaDataCache(userName, accessToken, ctx);
   const data = await parseData(req.body, resolver);
 
   // Iterate over all separate namespaces and store the data:
@@ -50,11 +52,19 @@ async function storeSeriesBatch(ctx: Context,
 // Parses the request body and transforms the data contained in it into the 
 // BatchRequest format. 
 // 
-function parseData(batchRequestBody: mixed, resolver: EventTypeResolver): Promise<BatchRequest> {
+function parseData(batchRequestBody: mixed, resolver: EventMetaDataCache): Promise<BatchRequest> {
   return BatchRequest.parse(
     batchRequestBody, 
     eventId => resolver.getRowType(eventId));
 }
+
+// This is how many eventId -> seriesMeta mappings we keep around in the 
+// EventMetaDataCache. Usually, batches will be about a small number of sensors, 
+// so setting this to around 100 will guarantee that events are loaded but once. 
+// 
+// NOTE that the metadata loader also caches and thus even missing this cache
+//  will not be a catastrophe. 
+const METADATA_CACHE_SIZE = 100; 
 
 // Resolves eventIds to types for matrix verification. 
 // 
@@ -63,16 +73,20 @@ function parseData(batchRequestBody: mixed, resolver: EventTypeResolver): Promis
 // below. This is not strictly  neccessary, but a good practice given the
 // requirements here (SOP).
 // 
-class EventTypeResolver {
+class EventMetaDataCache {
   userName: string; 
   accessToken: string; 
   
   ctx: Context;
   
+  cache: LRU<string, SeriesMetadata>; 
+  
   constructor(userName, accessToken, ctx) {
     this.userName = userName;
     this.accessToken = accessToken; 
     this.ctx = ctx;
+    
+    this.cache = LRU({ max: METADATA_CACHE_SIZE });
   }
   
   // Loads an event, checks access rights for the current token, then looks 
@@ -98,13 +112,34 @@ class EventTypeResolver {
     return name;
   }
   
-  async getSeriesMeta(eventId) {
+  // Returns the SeriesMetadata for the event designated by `eventId`.
+  // 
+  async getSeriesMeta(eventId): Promise<SeriesMetadata> {
     const ctx = this.ctx; 
-
     const loader = ctx.metadata;
+    
+    return this.fromCacheOrProduce(eventId, 
+      () => loader.forSeries(this.userName, eventId, this.accessToken));
+  }
+  
+  // Handles memoisation through the cache in `this.cache`.
+  // 
+  async fromCacheOrProduce(key: string, factory: () => Promise<SeriesMetadata>) {
+    const cache = this.cache; 
 
-    // TODO Cache
-    return loader.forSeries(this.userName, eventId, this.accessToken);
+    // From Cache
+    if (cache.has(key)) {
+      const cachedValue = cache.get(key);
+      if (cachedValue == null) throw new Error('AF: Value cannot be null here.');
+      
+      return cachedValue;
+    }
+
+    // Or Produce
+    const value = await factory();
+    cache.set(key, value);
+    
+    return value; 
   }
 }
 
