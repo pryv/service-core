@@ -35,7 +35,8 @@ async function storeSeriesBatch(ctx: Context,
     const batch = await seriesRepository.makeBatch(ns);
     
     results.push(
-      batch.store(data));
+      batch.store(data,
+        eventId => resolver.getMeasurementName(eventId)));
   }
   
   // Wait for all store operations to complete. 
@@ -52,7 +53,7 @@ async function storeSeriesBatch(ctx: Context,
 function parseData(batchRequestBody: mixed, resolver: EventTypeResolver): Promise<BatchRequest> {
   return BatchRequest.parse(
     batchRequestBody, 
-    resolver.resolverFun());
+    eventId => resolver.getRowType(eventId));
 }
 
 // Resolves eventIds to types for matrix verification. 
@@ -77,7 +78,7 @@ class EventTypeResolver {
   // Loads an event, checks access rights for the current token, then looks 
   // up the type of the event and returns it as an InfluxRowType.
   // 
-  async resolve(eventId: string): Promise<InfluxRowType> {
+  async getRowType(eventId: string): Promise<InfluxRowType> {
     const ctx = this.ctx; 
     const repo = ctx.typeRepository;
     
@@ -90,6 +91,13 @@ class EventTypeResolver {
     return seriesMeta.produceRowType(repo);
   }
   
+  async getMeasurementName(eventId: string): Promise<string> {
+    const seriesMeta = await this.getSeriesMeta(eventId);
+    const [namespace, name] = seriesMeta.namespaceAndName(); // eslint-disable-line no-unused-vars
+    
+    return name;
+  }
+  
   async getSeriesMeta(eventId) {
     const ctx = this.ctx; 
 
@@ -97,10 +105,6 @@ class EventTypeResolver {
 
     // TODO Cache
     return loader.forSeries(this.userName, eventId, this.accessToken);
-  }
-  
-  resolverFun() {
-    return (eventId) => this.resolve(eventId);
   }
 }
 

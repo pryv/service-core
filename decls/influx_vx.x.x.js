@@ -13,7 +13,9 @@ declare class InfluxDB {
   constructor(options: ISingleHostConfig | string): InfluxDB; 
   
   createDatabase(name: string): Promise<void>; 
-  dropDatabase(name: string): Promise<void>; 
+  dropDatabase(name: string): Promise<void>;
+  writeMeasurement(measurement: string, points: Array<IPoint>, options?: IWriteOptions): Promise<void>;
+  writePoints(points: Array<IPoint>, options?: IWriteOptions): Promise<void>;
 }
   
 declare class Expression {

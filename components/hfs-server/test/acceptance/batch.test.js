@@ -115,67 +115,22 @@ describe('Storing BATCH data in a HF series', function() {
         SELECT * FROM "event.${eventId}"
       `;
         
-      const result = await influx.query(query, options);
+      const result: IResults = await influx.query(query, options);
       assert.strictEqual(result.length, 3);
       
       const expectedValues = [
-        ['2016-12-14T01:10:45.000000000Z', 10.2],
-        ['2016-12-14T01:10:45.000000000Z', 12.2],
-        ['2016-12-14T01:10:45.000000000Z', 14.2],
+        ['2018-02-22T15:45:45.000000000Z', 10.2],
+        ['2018-02-22T15:45:46.000000000Z', 12.2],
+        ['2018-02-22T15:45:47.000000000Z', 14.2],
       ];
       
       for (const row of result) {
         if (row.time == null || row.value == null) 
           throw new Error('Should have time and value.');
         
-        const [ expTime, expValue ] = expectedValues;
-        assert.strictEqual(row.time.toNanoISOString(), expTime); 
+        const [ expTime, expValue ] = expectedValues.shift();
+        assert.strictEqual(row.time && row.time.toNanoISOString(), expTime); 
         assert.strictEqual(row.value, expValue);
-      }
-    });
-    it.skip('should return data once stored', async () => {
-      // identical with id here, but will be user name in general. 
-      const userName = userId; 
-      const dbName = `user.${userName}`; 
-      const measurementName = `event.${eventId}`;
-
-      await cycleDatabase(dbName);
-      await storeSampleMeasurement(dbName, measurementName);
-      await queryData();
-
-      function cycleDatabase(dbName: string) {
-        return influx.dropDatabase(dbName).
-          then(() => influx.createDatabase(dbName));
-      }
-      function storeSampleMeasurement(dbName: string, measurementName: string) {
-        const options = { database: dbName };
-
-        const points = [
-          {
-            fields: { value: 1234 }, 
-            timestamp: 1493647899000000000, 
-          }
-        ];
-        
-        return influx.writeMeasurement(measurementName, points, options);
-      }
-      function queryData() {
-        const request = server.request();
-        return request
-          .get(`/${userId}/events/${eventId}/series`)
-          .set('authorization', accessToken)
-          .query({
-            fromTime: '1493647898', toTime: '1493647900' })
-          // .then((res) => console.log(require('util').inspect(res.body, { depth: null })))
-          .expect(200)
-          .then((res) => {
-            const points = res.body.points || [];
-            
-            assert.isNotEmpty(points);
-            assert.deepEqual(
-              points[0], 
-              [1493647899, 1234]); 
-          });
       }
     });
   });
