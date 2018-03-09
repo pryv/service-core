@@ -116,6 +116,7 @@ describe('Storing BATCH data in a HF series', function() {
       `;
         
       const result = await influx.query(query, options);
+      assert.strictEqual(result.length, 3);
       
       const expectedValues = [
         ['2016-12-14T01:10:45.000000000Z', 10.2],
