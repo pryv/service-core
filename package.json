@@ -36,6 +36,7 @@
     "influx": "^5.0.6",
     "jaeger-client": "^3.8.0",
     "lodash": "^4.17.4",
+    "lru-cache": "^4.1.1",
     "middleware": "file:components/middleware",
     "mkdirp": "0.5.x",
     "model": "file:components/model",
