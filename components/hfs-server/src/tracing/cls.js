@@ -16,6 +16,8 @@ const session = createNamespace('tracing/cls');
 // 
 class Cls {
   setRootSpan(span: Span) {
+    if (session.active == null) return;
+    
     let roots = session.get(CLS_TRACE_SPAN); 
     if (roots == null) {
       debug('No existing roots array, installing...');
@@ -31,6 +33,8 @@ class Cls {
   }
   
   getRootSpan(): ?Span {
+    if (session.active == null) return null; 
+    
     const roots = session.get(CLS_TRACE_SPAN);
     if (roots == null || roots.length <= 0) 
       return null; 
