@@ -32,7 +32,7 @@ class MethodContext {
   access: ?Access; 
   streams: ?Array<Stream>; 
   
-  accessToken: string; 
+  accessToken: ?string; 
   callerId: ?string; 
   
   // Custom auth function, if one was configured. 
@@ -57,7 +57,7 @@ class MethodContext {
 
     this.customAuthStepFn = customAuthStepFn;
     
-    this.accessToken = '';
+    this.accessToken = null;
     this.callerId = null; 
     
     this.calledMethodId = null; 
@@ -146,7 +146,7 @@ class MethodContext {
   // Loads `this.access`.
   async retrieveAccess(storage: StorageLayer) {
     const token = this.accessToken;
-    
+
     if (token == null)
       throw errors.invalidAccessToken(
         'The access token is missing: expected an ' +
@@ -158,7 +158,7 @@ class MethodContext {
       
     if (access == null) 
       throw errors.invalidAccessToken(
-        `Cannot find access from token "${this.accessToken}".`);
+        'Cannot find access from token.', 403);
         
     this.access = access; 
   }
@@ -179,7 +179,7 @@ class MethodContext {
       cb => storage.sessions.get(token, cb));
       
     if (session == null)
-      throw errors.invalidAccessToken('Access session has expired.');
+      throw errors.invalidAccessToken('Access session has expired.', 403);
       
     // Keep the session alive (don't await, see below)
     // TODO Maybe delay/amortize this so that we don't write on every request?

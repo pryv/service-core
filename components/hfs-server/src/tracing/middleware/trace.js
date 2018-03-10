@@ -7,20 +7,18 @@ const lodash = require('lodash');
 const url = require('url');
 const opentracing = require('opentracing');
 
-import type Context from '../context';
+const cls = require('../cls');
 
-opaque type RequestWithSpan = express$Request & {
-  span: opentracing.Span,
-}
+import type Context from '../../context';
 
 function tracingMiddleware(
   ctx: Context,
-  req: RequestWithSpan, res: express$Response, next: express$NextFunction): mixed // eslint-disable-line no-unused-vars
+  req: express$Request, res: express$Response, next: express$NextFunction): mixed // eslint-disable-line no-unused-vars
 {
   const Tags = opentracing.Tags;
   const tracer = ctx.tracer;
   const pathname = url.parse(req.url).pathname;
-  const span = ctx.startSpan(`${req.method} ${pathname || '(n/a)'}`);
+  const span = tracer.startSpan(`${req.method} ${pathname || '(n/a)'}`);
     
   span.setTag(Tags.HTTP_METHOD, req.method);
   span.setTag(Tags.HTTP_URL, req.url);
@@ -30,10 +28,10 @@ function tracingMiddleware(
   const responseHeaders = {};
   tracer.inject(span, opentracing.FORMAT_TEXT_MAP, responseHeaders);
   Object.keys(responseHeaders).forEach(key => res.setHeader(key, responseHeaders[key]));
-  
-  // add the span to the request object for handlers to use
-  req.span = span;
-  
+
+  // Use cls to store the root span for code in this trace to use. 
+  cls.setRootSpan(span);
+    
   // Hook the response 'end' function and install our handler to finish traces. 
   const originalEnd = res.end;
   // FLOW (see above)

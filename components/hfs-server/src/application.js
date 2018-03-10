@@ -16,6 +16,8 @@ import type {LogFactory} from 'components/utils/src/logging';
 const opentracing = require('opentracing');
 const initTracer = require('jaeger-client').initTracer;
 
+const { patch } = require('./tracing/mongodb_client');
+
 function createSettings(): Settings {
   try {
     return Settings.load(); 
@@ -46,29 +48,39 @@ function createContext(settings: Settings, logFactory: LogFactory): Context {
     settings.get('mongodb').obj(), logFactory('database'));
     
   const tracer = produceTracer(settings, logFactory('jaeger'));
+  
+  const typeRepoUpdateUrl = settings.get('eventTypes.sourceURL').str();
     
-  return new Context(influx, mongo, logFactory('model'), tracer);
+  return new Context(influx, mongo, logFactory('model'), tracer, typeRepoUpdateUrl);
 }
 function produceTracer(settings, logger) {
   if (! settings.get('trace.enable').bool()) 
     return new opentracing.Tracer();
     
   const traceConfig = {
-    'disable': true, 
     'serviceName': 'hfs-server',
     'reporter': {
       'logSpans': true,
-      'agentHost': '127.0.0.1',
-      'agentPort': 6832, 
-      // 'flushIntervalMs': 10,
+      'agentHost': settings.get('trace.agent.host').str(),
+      'agentPort': settings.get('trace.agent.port').num(), 
+      'flushIntervalMs': settings.get('trace.sampler.flushIntervalMs').num(),
     },
     'logger': logger,
     'sampler': {
-      'type': 'const',
-      'param': 1.0
+      'type': settings.get('trace.sampler.type').str(),
+      'param': settings.get('trace.sampler.param').num(),
     }
   };
-  return initTracer(traceConfig);
+  const tracer = initTracer(traceConfig);
+  
+  // monkey-patch mongodb core driver to also log spans to this tracer. This 
+  // works via the 'cls' middleware. Not done when tracing is turned off. 
+  patchMongoDBDriver(tracer);
+
+  return tracer; 
+}
+function patchMongoDBDriver(tracer) {
+  patch(tracer);
 }
 
 /** The HF application holds references to all subsystems and ties everything

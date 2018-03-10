@@ -1,5 +1,5 @@
-// flow-typed signature: 5ebfab521cce28c691a4fdfe8992f4e2
-// flow-typed version: da30fe6876/chai_v4.x.x/flow_>=v0.25.0
+// flow-typed signature: 308b923163d321c5d8ef18be2a25e903
+// flow-typed version: 37b0393aaf/chai_v4.x.x/flow_>=v0.25.0
 
 declare module "chai" {
   declare type ExpectChain<T> = {
@@ -36,8 +36,12 @@ declare module "chai" {
     equals: (value: T) => ExpectChain<T>,
 
     above: (value: T & number) => ExpectChain<T>,
+    gt: (value: T & number) => ExpectChain<T>,
+    greaterThan: (value: T & number) => ExpectChain<T>,
     least: (value: T & number) => ExpectChain<T>,
     below: (value: T & number) => ExpectChain<T>,
+    lessThan: (value: T & number) => ExpectChain<T>,
+    lt: (value: T & number) => ExpectChain<T>,
     most: (value: T & number) => ExpectChain<T>,
     within: (start: T & number, finish: T & number) => ExpectChain<T>,
 
@@ -169,14 +173,14 @@ declare module "chai" {
     static isNull(val: mixed, msg?: string): void;
     static isNotNull(val: mixed, msg?: string): void;
 
-    static isEmpty(val: mixed, msg?: string): void;
-    static isNotEmpty(val: mixed, msg?: string): void;
-
     static isUndefined(val: mixed, msg?: string): void;
     static isDefined(val: mixed, msg?: string): void;
 
     static isNaN(val: mixed, msg?: string): void;
     static isNotNaN(val: mixed, msg?: string): void;
+
+    static isEmpty(val: mixed, msg?: string): void;
+    static isNotEmpty(val: mixed, msg?: string): void;
 
     static isAbove(val: number, abv: number, msg?: string): void;
     static isBelow(val: number, blw: number, msg?: string): void;
@@ -210,6 +214,8 @@ declare module "chai" {
 
     static include(exp: string, inc: mixed, msg?: string): void;
     static include<T>(exp: Array<T>, inc: T, msg?: string): void;
+
+    static deepInclude(exp: string, inc: mixed, msg?: string): void;
     static deepInclude<T>(exp: Array<T>, inc: T, msg?: string): void;
 
     static notInclude(exp: string, inc: mixed, msg?: string): void;

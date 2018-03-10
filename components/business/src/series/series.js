@@ -122,8 +122,6 @@ class Series {
   /** Builds an expression that can be used within `WHERE` from a query. 
    */
   buildExpression(query: Query): Array<string> {
-    // NOTE it looks as though exp is a value producing chain, but really, it
-    // stores the whole query internally (side effect).
     let subConditions = []; 
     
     // Replace double quotes with single quotes, since the influx library gets

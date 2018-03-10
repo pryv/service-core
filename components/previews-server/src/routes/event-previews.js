@@ -10,11 +10,11 @@ const xattr = require('fs-xattr');
 const _ = require('lodash');
 
 // constants
-var PreviewNotSupported = 'preview-not-supported',
-    StandardDimensions = [ 256, 512, 768, 1024 ],
-    SmallestStandardDimension = StandardDimensions[0],
-    BiggestStandardDimension = StandardDimensions[StandardDimensions.length - 1],
-    StandardDimensionsLength = StandardDimensions.length;
+const PreviewNotSupported = 'preview-not-supported';
+const StandardDimensions = [ 256, 512, 768, 1024 ];
+const SmallestStandardDimension = StandardDimensions[0];
+const BiggestStandardDimension = StandardDimensions[StandardDimensions.length - 1];
+const StandardDimensionsLength = StandardDimensions.length;
 
 /**
  * Routes for retrieving preview images for events.

@@ -5,7 +5,7 @@
 
 import type {EventType, Content} from './types/interfaces';
 
-const R = require('ramda');
+const lodash = require('lodash');
 const superagent = require('superagent');
 const bluebird = require('bluebird');
 const ZSchemaValidator = require('z-schema');
@@ -161,7 +161,7 @@ class TypeRepository {
             return invalidError(validator.lastReport);
             
           // Overwrite defaultTypes with the merged list of type schemata. 
-          defaultTypes = R.merge(defaultTypes, schema);
+          defaultTypes = lodash.merge(defaultTypes, schema);
         });
       });
   }

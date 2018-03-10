@@ -3,18 +3,20 @@
 /*global describe, before, beforeEach, after, it */
 
 require('./test-helpers'); 
-var helpers = require('./helpers'),
-    server = helpers.dependencies.instanceManager,
-    async = require('async'),
-    validation = helpers.validation,
-    ErrorIds = require('components/errors').ErrorIds,
-    should = require('should'), // explicit require to benefit from static functions
-    request = require('superagent'),
-    testData = helpers.data,
-    url = require('url'),
-    _ = require('lodash'),
-    fs = require('fs'),
-    os = require('os');
+const helpers = require('./helpers');
+const server = helpers.dependencies.instanceManager;
+const async = require('async');
+const validation = helpers.validation;
+const ErrorIds = require('components/errors').ErrorIds;
+const should = require('should'); 
+const chai = require('chai');
+const assert = chai.assert; 
+const request = require('superagent');
+const testData = helpers.data;
+const url = require('url');
+const _ = require('lodash');
+const fs = require('fs');
+const os = require('os');
 
 describe('auth', function () {
 
@@ -57,12 +59,13 @@ describe('auth', function () {
             request.post(path(authData.username))
               .set('Origin', trustedOrigin)
               .send(authData).end(function (err, res) {
-                res.statusCode.should.eql(200);
+                assert.strictEqual(res.statusCode, 200);
 
                 should.exist(res.body.token);
                 checkNoUnwantedCookie(res);
                 should.exist(res.body.preferredLanguage);
-                res.body.preferredLanguage.should.eql(user.language);
+                
+                assert.strictEqual(res.body.preferredLanguage, user.language);
 
                 stepDone();
               });
@@ -84,7 +87,7 @@ describe('auth', function () {
           request.post(path(authData.username))
             .set('Origin', trustedOrigin)
             .send(authData).end(function (err, res) {
-              res.statusCode.should.eql(200);
+              assert.strictEqual(res.statusCode, 200);
               originalToken = res.body.token;
               stepDone();
             });
@@ -93,8 +96,8 @@ describe('auth', function () {
           request.post(path(authData.username))
             .set('Origin', trustedOrigin)
             .send(authData).end(function (err, res) {
-              res.statusCode.should.eql(200);
-              res.body.token.should.eql(originalToken);
+              assert.strictEqual(res.statusCode, 200);
+              assert.strictEqual(res.body.token, originalToken);
               stepDone();
             });
         }
@@ -105,7 +108,8 @@ describe('auth', function () {
       request.post(path(authData.username))
         .set('Origin', 'https://test.rec.la:1234')
         .send(authData).end(function (err, res) {
-          res.statusCode.should.eql(200);
+          assert.strictEqual(res.statusCode, 200);
+
           done();
         });
     });
@@ -115,7 +119,8 @@ describe('auth', function () {
       request
         .post(path(authDataNoCORS.username))
         .send(authDataNoCORS).end(function (err, res) {
-          res.statusCode.should.eql(200);
+          assert.strictEqual(res.statusCode, 200);
+
           done();
         });
     });
@@ -124,7 +129,8 @@ describe('auth', function () {
       request.post(path(authData.username))
         .set('Referer', trustedOrigin)
         .send(authData).end(function (err, res) {
-          res.statusCode.should.eql(200);
+          assert.strictEqual(res.statusCode, 200);
+
           done();
         });
     });
@@ -134,7 +140,8 @@ describe('auth', function () {
         .set('Origin', trustedOrigin)
         .send(_.defaults({username: authData.username.toUpperCase()}, authData))
         .end(function (err, res) {
-          res.statusCode.should.eql(200);
+          assert.strictEqual(res.statusCode, 200);
+
           done();
         });
     });
@@ -205,12 +212,13 @@ describe('auth', function () {
       request.post(path(authData.username))
         .set('Origin', trustedOrigin)
         .send(authData).end(function (err, res) {
-          res.statusCode.should.eql(200);
+          assert.strictEqual(res.statusCode, 200);
+
 
           should.exist(res.body.token);
           checkNoUnwantedCookie(res);
           should.exist(res.body.preferredLanguage);
-          res.body.preferredLanguage.should.eql(user.language);
+          assert.strictEqual(res.body.preferredLanguage, user.language);
 
           should.not.exist(res.body._private);
 
@@ -273,7 +281,7 @@ describe('auth', function () {
             request.post(path(authData.username))
               .set('Origin', trustedOrigin)
               .send(wrongPasswordData).end(function (err, res) {
-                res.statusCode.should.eql(401);
+                assert.strictEqual(res.statusCode, 401);
                 stepDone();
               });
           },
@@ -299,9 +307,9 @@ describe('auth', function () {
             request.post(path(authData.username))
               .set('Origin', trustedOrigin)
               .send(wrongPasswordData).end(function (err, res) {
-              res.statusCode.should.eql(400);
-              stepDone();
-            });
+                assert.strictEqual(res.statusCode, 400);
+                stepDone();
+              });
           },
           function verifyNoPasswordFieldInLogs(stepDone) {
             fs.readFile(logFilePath, 'utf8', function (err, data) {
@@ -357,55 +365,58 @@ describe('auth', function () {
     }
 
     it('must terminate the access session and fail to logout a second time (session already expired)', function (done) {
-      var token;
+      let token;
       async.series([
-          function (stepDone) {
-            request.post(basePath(user.username) + '/login')
+        function (stepDone) {
+          request.post(basePath(user.username) + '/login')
             .set('Origin', trustedOrigin)
             .send(authData).end(function (err, res) {
-              token = res.body.token;
+              token = res.body.token; 
+              if (typeof token !== 'string') return stepDone(new Error('AF: not a string'));
+              
               stepDone();
             });
-          },
-          function (stepDone) {
-            request.post(path(user.username)).send({})
+        },
+        function (stepDone) {
+          request.post(path(user.username)).send({})
             .set('authorization', token).end(function (err, res) {
-              res.statusCode.should.eql(200);
+              assert.strictEqual(res.statusCode, 200);
+
               stepDone();
             });
-          },
-          function (stepDone) {
-            // Session was already closed
-            // Trying to logout a second time should fail
-            request.post(path(user.username)).send({})
+        },
+        function (stepDone) {
+          // Session was already closed
+          // Trying to logout a second time should fail
+          request.post(path(user.username)).send({})
             .set('authorization', token).end(function (err, res) {
               validation.checkError(res, {
-                status: 401,
+                status: 403,
                 id: ErrorIds.InvalidAccessToken
               }, stepDone);
             });
-          }
-        ],
-        done
+        }
+      ],
+      done
       );
     });
 
     it('(or any request) must alternatively accept the access token in the query string',
-        function (done) {
-      var testRequest = helpers.request(server.url);
-      async.series([
+      function (done) {
+        var testRequest = helpers.request(server.url);
+        async.series([
           testRequest.login.bind(testRequest, user),
           function (stepDone) {
             request.post(path(user.username)).query({auth: testRequest.token}).send({})
-            .end(function (err, res) {
-              res.statusCode.should.eql(200);
-              stepDone();
-            });
+              .end(function (err, res) {
+                assert.strictEqual(res.statusCode, 200);
+
+                stepDone();
+              });
           }
         ],
-        done
-      );
-    });
+        done);
+      });
 
   });
 
@@ -420,29 +431,34 @@ describe('auth', function () {
 
     it('must set the SSO cookie on /login with the access token', function (done) {
       persistentReq.post(basePath(authData.username) + '/login')
-          .set('Origin', trustedOrigin)
-          .send(authData).end(function (err, res) {
-            res.statusCode.should.eql(200);
+        .set('Origin', trustedOrigin)
+        .send(authData).end(function (err, res) {
+          assert.strictEqual(res.statusCode, 200);
 
-            var setCookie = res.headers['set-cookie'];
-            should.exist(setCookie);
-            setCookie.length.should.eql(1);
-            var parsed = cookie.parse(setCookie[0]);
-            parsed.should.have.property('sso');
-            var jsonMatch = /\{.+\}/.exec(parsed.sso);
-            should.exist(jsonMatch);
-            ssoInfo = {
-              username: authData.username,
-              token: res.body.token
-            };
-            JSON.parse(jsonMatch).should.eql(ssoInfo);
-            cookieOptions = {
-              Domain: parsed.Domain,
-              Path: parsed.Path
-            };
 
-            done();
-          });
+          var setCookie = res.headers['set-cookie'];
+          should.exist(setCookie);
+          setCookie.length.should.eql(1);
+          var parsed = cookie.parse(setCookie[0]);
+          parsed.should.have.property('sso');
+          var jsonMatch = /\{.+\}/.exec(parsed.sso);
+          should.exist(jsonMatch);
+          
+          const token = res.body.token;
+          if (typeof token !== 'string') throw new Error('AF: not a string');
+          
+          ssoInfo = {
+            username: authData.username,
+            token: token,
+          };
+          JSON.parse(jsonMatch).should.eql(ssoInfo);
+          cookieOptions = {
+            Domain: parsed.Domain,
+            Path: parsed.Path
+          };
+
+          done();
+        });
     });
 
     it('must answer /who-am-i with username and session details if session open', function (done) {
@@ -460,7 +476,8 @@ describe('auth', function () {
       persistentReq.post(basePath(authData.username) + '/logout').send({})
           .set('authorization', ssoInfo.token)
           .end(function (err, res) {
-        res.statusCode.should.eql(200);
+            assert.strictEqual(res.statusCode, 200);
+
 
         var setCookie = res.headers['set-cookie'];
         should.exist(setCookie);
@@ -478,7 +495,7 @@ describe('auth', function () {
 
     it('must respond /who-am-i with an "unauthorized" error if no cookie is sent', function (done) {
       persistentReq.get(basePath(authData.username) + '/who-am-i').end(function (err, res) {
-        res.statusCode.should.eql(401);
+        assert.strictEqual(res.statusCode, 401);
         should.not.exist(res.body.username);
         should.not.exist(res.body.token);
         done();

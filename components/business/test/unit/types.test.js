@@ -87,6 +87,32 @@ describe('business.types.TypeRepository', function () {
       
     });
   });
+  describe('complex types on several levels like message/facebook', () => {
+    let type; 
+    beforeEach(() => {
+      type = repository.lookup('message/facebook');
+    });
+    
+    it('should return the correct value type for all fields', () => {
+      assert.strictEqual(
+        type.forField('id').coerce('123'), 
+        '123');
+    });
+    it('should return the correct value type for optional fields', () => {
+      assert.strictEqual(
+        type.forField('source').coerce('123'), 
+        '123');
+    });
+    it('should resolve nested fields', () => {
+      const inner = type.forField('from.name'); 
+      assert.strictEqual(
+        inner.coerce('123'), 
+        '123');
+    });
+    it('does NOT handle requiredFields fully yet: only surface requirements are returned', () => {
+      assert.deepEqual(type.requiredFields(), ['id', 'message']);
+    });
+  });
   describe('placeholder types like picture/attached', () => {
     it('should be known', function () {
       assert.isTrue(

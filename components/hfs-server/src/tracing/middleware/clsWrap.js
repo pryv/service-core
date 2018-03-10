@@ -1,0 +1,16 @@
+
+// @flow
+
+// Express middleware that makes sure we have a continuation local storage 
+// context for each express request. 
+
+const cls = require('../cls');
+
+function clsWrap(req: express$Request, res: express$Response, next: express$NextFunction) {
+  return cls.startExpressContext(req, res, next);
+}
+
+function factory(): express$Middleware {
+  return clsWrap;
+}
+module.exports = factory;

@@ -16,8 +16,6 @@ const {
   produceInfluxConnection, produceStorageLayer } = require('./test-helpers');
 const { databaseFixture } = require('components/test-helpers');
 
-import type {Response} from 'supertest';
-
 type Header = Array<string>; 
 type Rows   = Array<Row>; 
 type Row    = Array<DataPoint>;
@@ -27,6 +25,13 @@ type TryOpResult = {
   ok: boolean, 
   user: { id: string }, 
   event: { id: string },
+  status: number, 
+  body: Object,
+}
+type ErrorDocument = {
+  status: number,
+  id: string, 
+  message: string, 
 }
 
 describe('Storing data in a HF series', function() {
@@ -70,7 +75,7 @@ describe('Storing data in a HF series', function() {
       });
     });
     
-    function storeData(data: {}): Response {
+    function storeData(data: {}): any {
       debug('storing some data', data);
       
       // Insert some data into the events series:
@@ -90,7 +95,14 @@ describe('Storing data in a HF series', function() {
     }
     
     it('should store data correctly', async () => {
-      await storeData({timestamp: 1481677845, value: 80.3});
+      const response = await storeData({timestamp: 1481677845, value: 80.3});
+
+      const body = response.body; 
+      if (body == null || body.status == null) throw new Error(); 
+      assert.strictEqual(body.status, 'ok'); 
+
+      const headers: {[string]: string} = response.headers; 
+      assert.strictEqual(headers['api-version'], '1.0.0');
       
       // Check if the data is really there
       const userName = userId; // identical with id here, but will be user name in general. 
@@ -163,7 +175,7 @@ describe('Storing data in a HF series', function() {
         
     // TODO Worry about deleting data that we stored in earlier tests.
     
-    function storeData(data): Response {
+    function storeData(data): any {
       const request = server.request(); 
       const response = request
         .post(`/USERNAME/events/${EVENT_ID}/series`)
@@ -185,7 +197,6 @@ describe('Storing data in a HF series', function() {
       return response
         .expect(200)
         .then((res) => {
-          assert.typeOf(res.body.elementType, 'string');
           return res.body;
         });
     }
@@ -406,11 +417,13 @@ describe('Storing data in a HF series', function() {
         debug(`  use "user.${user.id}"`);
         debug(`  select * from "event.${event.id}"`);
         debug(`  show field keys from "event.${event.id}"`);
-          
+        
         return {
           ok: response.statusCode === 200, 
           user: user, 
           event: event,
+          status: response.statusCode,
+          body: response.body,
         };
       }
       
@@ -428,25 +441,28 @@ describe('Storing data in a HF series', function() {
       });
       it('stores data of complex types', async () => {
         const now = (new Date()) / 1000; 
-        const result = await tryStore({ type: 'series:ratio/generic' }, 
+        const {ok} = await tryStore({ type: 'series:ratio/generic' }, 
           ['timestamp', 'value', 'relativeTo'],
           [
             [now-3, 1, 2], 
             [now-2, 2, 2], 
             [now-1, 3, 2] ]); 
             
-        assert.isTrue(result.ok);
+        assert.isTrue(ok);
       });
       it("doesn't accept data in non-series format", async () => {
         const now = (new Date()) / 1000; 
-        const result = await tryStore({ type: 'angular-speed/rad-s' }, 
+        const {ok, body} = await tryStore({ type: 'angular-speed/rad-s' }, 
           ['timestamp', 'value'],
           [
             [now-3, 1], 
             [now-2, 2], 
             [now-1, 3] ]);
-
-        assert.isFalse(result.ok);
+        
+        assert.isFalse(ok);
+        
+        const error = body.error;
+        assert.strictEqual(error.id, 'invalid-operation');
       });
       
       it('stores strings', async () => {
@@ -485,9 +501,9 @@ describe('Storing data in a HF series', function() {
           
           if (typeof exp[1] !== 'number') throw new Error('AF: ridiculous flow inference removal');
           
-          const expectedTs = exp[0];
-          const expectedValue: number = exp[1];  
-          assert.strictEqual(expectedTs, influxTimestamp); 
+          const expectedTs = Number(exp[0]);
+          const expectedValue = Number(exp[1]);  
+          assert.approximately(expectedTs, influxTimestamp, 0.1); 
           assert.approximately(expectedValue, act.value, 0.001); 
         }
       });
@@ -533,6 +549,26 @@ describe('Storing data in a HF series', function() {
       // Tries to store complex `data` in the event identified by `eventId`.
       // 
       async function tryStore(header: Header, data: Rows): Promise<boolean> {
+        const response = await storeOp(header, data);
+                    
+        return response.statusCode === 200;
+      }
+      // Attempts a store operation and expects to fail. Returns details on
+      // the error.
+      async function failStore(header: Header, data: Rows): Promise<ErrorDocument> {
+        const response = await storeOp(header, data);
+        
+        assert.notStrictEqual(response.statusCode, 200);
+              
+        const body = response.body;
+        const error = body.error; 
+        return {
+          status: response.statusCode,
+          id: error.id,
+          message: error.message,
+        };
+      }
+      async function storeOp(header: Header, data: Rows): Promise<any> {
         const requestData = {
           format: 'flatJSON',
           fields: header, 
@@ -544,19 +580,31 @@ describe('Storing data in a HF series', function() {
           .post(`/${userId}/events/${eventId}/series`)
           .set('authorization', accessToken)
           .send(requestData);
-                    
-        return response.statusCode === 200;
+        
+        return response;
       }
-
-      it('refuses to store when not all required fields are given', async () => {
-        const now = (new Date()) / 1000; 
-        assert.isFalse(
-          await tryStore( 
-            ['timestamp', 'value'],
-            [
-              [now-3, 1], 
-              [now-2, 2], 
-              [now-1, 3] ]));
+      
+      describe('when not all required fields are given', () => {
+        let now = (new Date()) / 1000;
+        let args = [
+          ['timestamp', 'value'],
+          [
+            [now-3, 1], 
+            [now-2, 2], 
+            [now-1, 3] ],
+        ];
+        
+        it('refuses to store when not all required fields are given', async () => {
+          assert.isFalse(
+            await tryStore(...args));
+        });
+        it('returns error id "invalid-request-structure"', async () => {
+          const { status, id, message } = await failStore(...args);
+          
+          assert.strictEqual(status, 400);
+          assert.strictEqual(id, 'invalid-request-structure');
+          assert.strictEqual(message, 'Malformed request.');
+        });
       });
       it('refuses to store when timestamp is present twice (ambiguous!)', async () => {
         const now = (new Date()) / 1000; 
@@ -578,15 +626,27 @@ describe('Storing data in a HF series', function() {
               [now-2, 2, 2, 2], 
               [now-1, 1, 3, 3] ]));
       });
-      it("refuses to store when field names don't match the type", async () => {
-        const now = (new Date()) / 1000; 
-        assert.isFalse(
-          await tryStore(
-            ['timestamp', 'value', 'relativeFrom'],
-            [
-              [now-3, 3, 1], 
-              [now-2, 2, 2], 
-              [now-1, 1, 3] ]));
+      describe("when field names don't match the type", () => {
+        const now = (new Date()) / 1000;
+        const args = [
+          ['timestamp', 'value', 'relativeFrom'],
+          [
+            [now-3, 3, 1], 
+            [now-2, 2, 2], 
+            [now-1, 1, 3] ],
+        ];
+        
+        it("refuses to store when field names don't match the type", async () => {
+          assert.isFalse(
+            await tryStore(...args));
+        });
+        it('returns the error message with the id "invalid-request-structure"', async () => {
+          const { status, id, message } = await failStore(...args);
+          
+          assert.strictEqual(status, 400);
+          assert.strictEqual(id, 'invalid-request-structure');
+          assert.strictEqual(message, 'Malformed request.');
+        });
       });
     });
     describe('complex types such as position/wgs84', () => {

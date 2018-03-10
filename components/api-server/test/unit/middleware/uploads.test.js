@@ -5,7 +5,6 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const supertest = require('supertest');
 const should = require('should');
-const R = require('ramda');
 
 const {fixturePath, fixtureFile} = require('../test-helper');
 const uploads = require('../../../src/middleware/uploads'); 
@@ -37,7 +36,11 @@ describe('uploads middleware', function() {
         .then((res) => {
           should(res.statusCode).be.eql(200); 
           
-          const file = R.head(res.body.files); 
+          const files = res.body.files; 
+          if (! Array.isArray(files)) throw new Error('AF: must be an array');
+          
+          const file = files[0];
+          if (file == null || file.originalname == null) throw new Error('AF: should not be null');
           should(file.originalname).be.eql('somefile');
         });
     });

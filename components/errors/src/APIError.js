@@ -23,7 +23,7 @@ class APIError extends Error {
     this.id = id;
     this.message = message;
     
-    this.httpStatus = null; 
+    this.httpStatus = 500; 
     if (options.httpStatus != null) 
       this.httpStatus = options.httpStatus;
       

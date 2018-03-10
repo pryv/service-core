@@ -27,7 +27,6 @@ class SeriesResponse {
    */
   toJSON() {
     return {
-      elementType: 'unknown/fake', 
       format: 'flatJSON', 
       fields: this.matrix.columns, 
       points: this.matrix.data, 
