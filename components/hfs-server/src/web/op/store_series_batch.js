@@ -15,6 +15,8 @@ import type Context from '../../context';
 import type { InfluxRowType } from 'components/business'; 
 import type { SeriesMetadata } from '../../metadata_cache';
 
+// POST /:user_name/series/batch
+// 
 async function storeSeriesBatch(ctx: Context, 
   req: express$Request, res: express$Response)
 {
@@ -52,7 +54,9 @@ async function storeSeriesBatch(ctx: Context,
 // Parses the request body and transforms the data contained in it into the 
 // BatchRequest format. 
 // 
-function parseData(batchRequestBody: mixed, resolver: EventMetaDataCache): Promise<BatchRequest> {
+function parseData(
+  batchRequestBody: mixed, resolver: EventMetaDataCache): Promise<BatchRequest> 
+{
   return BatchRequest.parse(
     batchRequestBody, 
     eventId => resolver.getRowType(eventId));
@@ -98,9 +102,8 @@ class EventMetaDataCache {
     
     const seriesMeta = await this.getSeriesMeta(eventId);
 
-    // TODO
-    // if (! seriesMeta.canWrite()) 
-    //   throw errors.forbidden(); 
+    if (! seriesMeta.canWrite()) 
+      throw errors.forbidden(); 
     
     return seriesMeta.produceRowType(repo);
   }

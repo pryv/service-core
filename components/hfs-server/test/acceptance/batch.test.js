@@ -136,8 +136,115 @@ describe('Storing BATCH data in a HF series', function() {
   });
 
   describe('POST /:user_name/series/batch', () => {
-    it.skip("should fail without 'Authorization' header", () => {
-      
+    let server; 
+    before(async () => {
+      server = await spawnContext.spawn(); 
     });
+    after(() => {
+      server.stop(); 
+    });
+    
+    const pryv = databaseFixture(database);
+    after(function () {
+      pryv.clean(); 
+    });
+      
+    // Set up a basic object structure so that we can test. Ids will change with 
+    // every test run.
+    // 
+    // User(userId)
+    //  `- Stream(parentStreamId)
+    //  |   `- event(eventId, type='series:mass/kg')
+    //  |- Access(accessToken)
+    //  `- Session(accessToken)
+    // 
+    let userId, parentStreamId, eventId, accessToken; 
+    before(() => {
+      userId = cuid(); 
+      parentStreamId = cuid(); 
+      eventId = cuid(); 
+      accessToken = cuid(); 
+      
+      return pryv.user(userId, {}, function (user) {
+        user.stream({id: parentStreamId}, function (stream) {
+          stream.event({
+            id: eventId, 
+            type: 'series:mass/kg'});
+        });
+
+        user.access({token: accessToken, type: 'personal'});
+        user.session(accessToken);
+      });
+    });
+    
+    it("should fail without 'Authorization' header", async () => {
+      const data = {
+        'format': 'seriesBatch',
+        'data': [
+          {
+            'eventId': eventId,
+            'data': {
+              'format': 'flatJSON', 
+              'fields': ['timestamp', 'value'], 
+              'points': [
+                [1519314345, 10.2], 
+                [1519314346, 12.2],
+                [1519314347, 14.2],
+              ]
+            }   
+          }
+        ]
+      };
+
+      const response = await server.request()
+        .post(`/${userId}/series/batch`)
+        .send(data);
+        
+      assert.strictEqual(response.statusCode, 400);
+      
+      const body = response.body; 
+      assert.strictEqual(body.error.id, 'missing-header');
+    });
+    describe('when the token has no permissions on the event', () => {
+      let server; 
+      before(async () => {
+        server = await spawnContext.spawn(); 
+        await server.process.
+          sendToChild('mockAuthentication', false);
+      });
+      after(() => {
+        server.stop(); 
+      });
+
+      it('fails', async () => {
+        const response = await storeData(server.request(), {
+          'format': 'seriesBatch',
+          'data': [
+            {
+              'eventId': eventId,
+              'data': {
+                'format': 'flatJSON', 
+                'fields': ['timestamp', 'value'], 
+                'points': [
+                  [1519314345, 10.2], 
+                  [1519314346, 12.2],
+                  [1519314347, 14.2],
+                ]
+              }   
+            }
+          ]
+        });
+        
+        assert.strictEqual(response.statusCode, 403);
+      });
+    });
+    
+    function storeData(request, data: SeriesBatchEnvelope): any {      
+      return request
+        .post(`/${userId}/series/batch`)
+        .set('authorization', accessToken)
+        .send(data);
+    }
+
   });
 });
