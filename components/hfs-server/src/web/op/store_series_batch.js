@@ -10,6 +10,7 @@ const business = require('components/business');
 const BatchRequest = business.series.BatchRequest;
 
 const ApiConstants = require('../api_constants');
+const TracedOperations = require('./traced_operations');
 
 import type Context from '../../context';
 import type { InfluxRowType } from 'components/business'; 
@@ -20,6 +21,7 @@ import type { SeriesMetadata } from '../../metadata_cache';
 async function storeSeriesBatch(ctx: Context, 
   req: express$Request, res: express$Response)
 {
+  const trace = new TracedOperations(ctx);
   const seriesRepository = ctx.series; 
   
   const userName = req.params.user_name;
@@ -29,10 +31,13 @@ async function storeSeriesBatch(ctx: Context,
   if (accessToken == null) throw errors.missingHeader(ApiConstants.AUTH_HEADER);
   
   // Parse the data and resolve access rights and types.
+  trace.start('parseData');
   const resolver = new EventMetaDataCache(userName, accessToken, ctx);
   const data = await parseData(req.body, resolver);
+  trace.finish('parseData');
 
   // Iterate over all separate namespaces and store the data:
+  trace.start('append');
   const dataByNamespace = await groupByNamespace(data, resolver);
   const results = [];
   for (const [ns, data] of dataByNamespace.entries()) {
@@ -45,6 +50,7 @@ async function storeSeriesBatch(ctx: Context,
   
   // Wait for all store operations to complete. 
   await bluebird.all(results);
+  trace.finish('append');
   
   res
     .status(200)
@@ -137,10 +143,15 @@ class EventMetaDataCache {
       
       return cachedValue;
     }
+    
+    const ctx = this.ctx;
+    const span = ctx.childSpan('orProduce');
 
     // Or Produce
     const value = await factory();
     cache.set(key, value);
+    
+    span.finish(); 
     
     return value; 
   }

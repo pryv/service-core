@@ -6,6 +6,7 @@ const errors = require('components/errors').factory;
 const business = require('components/business');
 
 const ApiConstants = require('../api_constants');
+const TracedOperations = require('./traced_operations');
 
 import type { TypeRepository } from 'components/business';
 import type Context from '../../context';
@@ -16,6 +17,7 @@ import type {SeriesMetadata} from '../../metadata_cache';
 async function storeSeriesData(ctx: Context, 
   req: express$Request, res: express$Response)
 {
+  const trace = new TracedOperations(ctx);
   const series = ctx.series;
   const metadata = ctx.metadata;
 
@@ -29,28 +31,28 @@ async function storeSeriesData(ctx: Context,
   if (eventId == null) throw errors.invalidItemId();
   
   // Access check: Can user write to this series? 
-  const seriesLoadSpan = ctx.childSpan(req, 'seriesMeta/load');
+  trace.start('seriesMeta/load');
   const seriesMeta = await metadata.forSeries(userName, eventId, accessToken);
-  seriesLoadSpan.finish(); 
+  trace.finish('seriesMeta/load');
   
   // No access permission: Abort.
   if (!seriesMeta.canWrite()) throw errors.forbidden();
   
   // Parse request
-  const parseDataSpan = ctx.childSpan(req, 'parseData');
+  trace.start('parseData');
   const data = parseData(req.body, seriesMeta, ctx.typeRepository);
   if (data == null) {
     throw errors.invalidRequestStructure('Malformed request.');
   }
-  parseDataSpan.finish();
+  trace.finish('parseData');
 
   // assert: data != null
 
   // Store data
-  const appendSpan = ctx.childSpan(req, 'append');
+  trace.start('append');
   const seriesInstance = await series.get(...seriesMeta.namespaceAndName());
   await seriesInstance.append(data);
-  appendSpan.finish(); 
+  trace.finish('append'); 
   
   res
     .status(200)

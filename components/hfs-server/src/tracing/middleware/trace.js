@@ -54,7 +54,7 @@ function requestDone(span, res) {
 
   span.setTag(Tags.HTTP_STATUS_CODE, res.statusCode);
   
-  if (res.statusCode >= 500) {
+  if (res.statusCode >= 400) {
     span.setTag(Tags.ERROR, true);
     span.setTag('sampling.priority', 1);
   }

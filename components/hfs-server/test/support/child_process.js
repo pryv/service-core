@@ -58,3 +58,12 @@ class ApplicationLauncher {
 const appLauncher = new ApplicationLauncher(); 
 const childProcess = new ChildProcess(appLauncher);
 childProcess.run();
+
+process.on('SIGTERM', () => {
+  // Delay actual exit for half a second, allowing our tracing code to submit
+  // all traces to jaeger. 
+  setTimeout(
+    () => process.exit(0), 
+    100
+  );
+});
