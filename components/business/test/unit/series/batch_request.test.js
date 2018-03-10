@@ -84,9 +84,6 @@ describe('BatchRequestElement', () => {
     const type: InfluxRowType = (typeRepo.lookup('series:position/wgs84'): any);
     const resolver = () => Promise.resolve(type);
     
-    // XXX A third object transforms 'eventId's into row types. It should cache
-    // meta data by eventId.
-
     it('should parse a good looking object', () => {
       good({
         eventId: 'cjcrx6jy1000w8xpvjv9utxjx', 
