@@ -35,8 +35,7 @@ class BatchRequest {
     this.list.push(element);
   }
   
-  // Returns the amount of individual series append requests
-  // (BatchRequestElements)  stored here. 
+  // Returns the amount of batch elements stored here. 
   // 
   length(): number {
     return this.list.length;
