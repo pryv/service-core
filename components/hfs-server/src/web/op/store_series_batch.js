@@ -41,10 +41,10 @@ async function storeSeriesBatch(ctx: Context,
   const dataByNamespace = await groupByNamespace(data, resolver);
   const results = [];
   for (const [ns, data] of dataByNamespace.entries()) {
-    const batch = await seriesRepository.makeBatch(ns);
+    const batchStoreOperation = await seriesRepository.makeBatch(ns);
     
     results.push(
-      batch.store(data,
+      batchStoreOperation.store(data,
         eventId => resolver.getMeasurementName(eventId)));
   }
   
