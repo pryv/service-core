@@ -30,7 +30,7 @@ export interface SeriesMetadata {
   canRead(): boolean;
   
   // Returns a namespace/database name and a series name for use with InfluxDB. 
-  namespace(): [string, string];
+  namespaceAndName(): [string, string];
   
   // Return the InfluxDB row type for the given event. 
   produceRowType(repo: TypeRepository): InfluxRowType; 
@@ -49,7 +49,7 @@ const LRU_CACHE_MAX_AGE_MS = 1000*60*5; // 5 mins (TODO)
  * */
 class MetadataCache implements MetadataRepository {
   loader: MetadataRepository;
-  cache: LRU; 
+  cache: LRU<string, SeriesMetadata>; 
   
   constructor(metadataLoader: MetadataRepository) {
     this.loader = metadataLoader;
@@ -204,7 +204,7 @@ class SeriesMetadataImpl implements SeriesMetadata {
     return this.permissions.read;
   }
   
-  namespace(): [string, string] {
+  namespaceAndName(): [string, string] {
     return [
       `user.${this.userName}`, 
       `event.${this.eventId}`,

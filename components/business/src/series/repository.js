@@ -2,6 +2,7 @@
 // 
 
 const Series = require('./series');
+const NamespaceBatch = require('./namespace_batch');
 import type InfluxConnection from './influx_connection';
 
 /** Repository of all series in this Pryv instance. 
@@ -16,7 +17,7 @@ class Repository {
   constructor(influxConnection: InfluxConnection) {
     this.connection = influxConnection;
   }
-
+  
   /** Return a series from a given namespace. 
    * 
    * In practice, we'll map namespaces to pryv users and series to events. Please
@@ -26,20 +27,32 @@ class Repository {
    * Example: 
    *    
    *    seriesRepo.get(...seriesMeta.namespace())
-   * 
-   * @param namespace {string} - namespace to look for series
-   * @param name {string} - name of the series
-   * @return {Series} - series instance that can be used to manipulate the data
    */
-  get(namespace: string, name: string): Promise<Series> {
+  async get(namespace: string, name: string): Promise<Series> {
     // TODO Cache all the setup checks we do here in an LRU cache. 
     
     // Make sure that the database exists:
-    const databaseCheck = this.connection
-      .createDatabase(namespace);
+    await this.connection.createDatabase(namespace);
 
-    return databaseCheck.then(() => new
-      Series(this.connection, namespace, name));
+    return new Series(this.connection, namespace, name);
+  }
+  
+  // Return a namespace batch that allows storing to multiple series at once. 
+  // 
+  // Example: 
+  // 
+  //    const batch = await seriesRepo.makeBatch('foo');
+  //    batch.append(batchRequest);
+  //    // ... as many times as you like
+  //    await batch.store(); 
+  //    
+  async makeBatch(namespace: string): Promise<NamespaceBatch> {
+    // TODO Cache all the setup checks we do here in an LRU cache. 
+    
+    // Make sure that the database exists:
+    await this.connection.createDatabase(namespace);
+
+    return new NamespaceBatch(this.connection, namespace);
   }
 }
 

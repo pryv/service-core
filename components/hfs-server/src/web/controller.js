@@ -3,6 +3,9 @@
 const errors = require('components/errors').factory;
 const business = require('components/business');
 
+const opentracing = require('opentracing');
+const cls = require('../tracing/cls');
+
 import type Context from '../context';
 
 // ----------------------------------------------- (sync) express error handling
@@ -21,6 +24,8 @@ function catchAndNext(handler: ExpressHandler): express$Middleware {
       return await handler(req, res, next);
     }
     catch (err) {
+      storeErrorInTrace(err);
+      
       if (err.constructor.name === 'ServiceNotAvailableError') {
         return next(errors.apiUnavailable(err.message));
       }
@@ -33,11 +38,36 @@ function catchAndNext(handler: ExpressHandler): express$Middleware {
   };
 }
 
+const TAG_ERROR_MESSAGE = 'error.message';
+
+// Tries to store the current error in the active trace. Traces are then 
+// all closed down by the 'trace' middleware, yielding a correct error trace
+// in every case. 
+// 
+// NOTE This method should not throw an error!
+// 
+function storeErrorInTrace(err: any) {
+  try {
+    const Tags = opentracing.Tags;
+
+    const root = cls.getRootSpan();
+    if (root == null) return; 
+    
+    root.setTag(Tags.ERROR, true);
+    if (err.message != null)
+      root.setTag(TAG_ERROR_MESSAGE, err.message);
+  }
+  catch (err) {
+    // IGNORE
+  }
+}
+
 // --------------------------------------------------------------------- factory
 
 module.exports = function (ctx: Context) {
   return {
     storeSeriesData: mount(ctx, require('./op/store_series_data')),
     querySeriesData: mount(ctx, require('./op/query_series_data')),
+    storeSeriesBatch: mount(ctx, require('./op/store_series_batch')),
   };
 };

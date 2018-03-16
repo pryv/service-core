@@ -37,6 +37,11 @@ class InfluxConnection {
     return this.conn.writeMeasurement(name, points, options);
   }
   
+  writePoints(points: Array<IPoint>, options?: IWriteOptions): Promise<void> {
+    this.logger.debug(`Write -> (multiple): ${points.length} points.`);
+    return this.conn.writePoints(points, options);
+  }
+  
   query(query: string, options?: IQueryOptions): Promise<IResults> {
     const singleLine = query.replace(/\s+/g, ' ');
     this.logger.debug(`Query: ${singleLine}`); 

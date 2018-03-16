@@ -9,7 +9,7 @@ import type { APIErrorOptions } from './APIError';
 /**
  * Helper "factory" methods for API errors (see error ids).
  */
-var factory = module.exports = {};
+const factory = module.exports = {};
 
 factory.apiUnavailable = (message: string) => {
   return new APIError(ErrorIds.ApiUnavailable, message, {

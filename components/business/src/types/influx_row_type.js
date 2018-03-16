@@ -1,6 +1,7 @@
 // @flow
 
 const R = require('ramda');
+const debug = require('debug')('influx_row_type');
 
 import type {EventType, PropertyType, Validator, Content} from './interfaces';
 
@@ -49,16 +50,23 @@ class InfluxRowType implements EventType {
     // These names are all allowed once:
     const allowedFields = new Set(underlyingType.fields());
     allowedFields.add(FIELD_TIMESTAMP);
+    debug('Allowed are ', allowedFields);
     
     // Accumulator for the fields that we've already seen.
     const seenFields = new Set(); 
 
     for (const field of columnNames) {
-      if (! allowedFields.has(field)) return false; 
+      if (! allowedFields.has(field)) {
+        debug(`Field '${field}' is not allowed.`);
+        return false; 
+      }
       
       // Fields are only allowed once; otherwise the storage op would be
       // ambiguous.
-      if (seenFields.has(field)) return false; 
+      if (seenFields.has(field)) {
+        debug(`Duplicate field '${field}'.`);
+        return false; 
+      }
       
       seenFields.add(field);
     }
@@ -69,7 +77,10 @@ class InfluxRowType implements EventType {
     requiredFields.add(FIELD_TIMESTAMP);
     
     for (const requiredField of requiredFields) {
-      if (! seenFields.has(requiredField)) return false;
+      if (! seenFields.has(requiredField)) {
+        debug(`Field '${requiredField}' is required, but was not present.`);
+        return false;
+      }
     }
     
     return true; 
@@ -80,7 +91,10 @@ class InfluxRowType implements EventType {
    */
   validateAllRows(rows: Array<any>, columnNames: Array<string>) {
     for (let row of rows) {
-      if (! this.isRowValid(row, columnNames)) return false; 
+      if (! this.isRowValid(row, columnNames)) {
+        debug('Invalid row: ', row, columnNames.length);
+        return false; 
+      }
     }
     
     return true; 

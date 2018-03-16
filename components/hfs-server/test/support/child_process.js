@@ -34,7 +34,7 @@ class ApplicationLauncher {
     const seriesMeta = {
       canWrite: () => authTokenValid,
       canRead: () => authTokenValid, 
-      namespace: () => ['test', 'foo'],
+      namespaceAndName: () => ['test', 'foo'],
       produceRowType: () => new InfluxRowType(typeRepo.lookup('mass/kg')),
     };
     return {
@@ -58,3 +58,12 @@ class ApplicationLauncher {
 const appLauncher = new ApplicationLauncher(); 
 const childProcess = new ChildProcess(appLauncher);
 childProcess.run();
+
+process.on('SIGTERM', () => {
+  // Delay actual exit for half a second, allowing our tracing code to submit
+  // all traces to jaeger. 
+  setTimeout(
+    () => process.exit(0), 
+    100
+  );
+});

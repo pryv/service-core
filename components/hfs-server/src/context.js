@@ -51,7 +51,7 @@ class Context {
   
   // Starts a child span below the request span. 
   // 
-  childSpan(req: express$Request, name: string, opts?: Object): Span {
+  childSpan(name: string, opts?: Object): Span {
     const tracer = this.tracer; 
     const rootSpan = cls.getRootSpan();
     
@@ -59,7 +59,12 @@ class Context {
       { childOf: rootSpan }, 
       opts);
     
-    return tracer.startSpan(name, spanOpts);
+    const span = tracer.startSpan(name, spanOpts);
+    
+    // It becomes our new root - setRootSpan hooks the span to detect an end. 
+    cls.setRootSpan(span);
+    
+    return span; 
   }
 }
 

@@ -92,7 +92,7 @@ async function retrievePoints(
   seriesRepo: Repository, res: express$Response,
   query: Query, seriesMeta: SeriesMetadata): Promise<void>
 {
-  const seriesInstance = await seriesRepo.get(...seriesMeta.namespace());
+  const seriesInstance = await seriesRepo.get(...seriesMeta.namespaceAndName());
   const data = await seriesInstance.query(query);
   
   const responseObj = new SeriesResponse(data);
