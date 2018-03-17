@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+// This is a sample from the google protobuf documentation located here:
+//    
+//    https://developers.google.com/protocol-buffers/docs/proto3#services
+// 
+
+// Here's how you can regenerate the products from this file: 
+// 
+//  # proto -> javascript module
+//  $ pbjs -t static-module test/fixtures/base.proto -o test/fixtures/base.js
+//  
+//  # javascript -> typescript type signature
+//  $ pbts test/fixtures/base.js test/fixtures/base.ts
+// 
+//  # typescript type signature -> flow-type type signature
+//  $ flowgen test/fixtures/base.ts -o test/fixtures/base.flow
+// 
+
+message SearchRequest {
+  string query = 1;
+  int32 page_number = 2;
+  int32 result_per_page = 3;
+  enum Corpus {
+    UNIVERSAL = 0;
+    WEB = 1;
+    IMAGES = 2;
+    LOCAL = 3;
+    NEWS = 4;
+    PRODUCTS = 5;
+    VIDEO = 6;
+  }
+  Corpus corpus = 4;
+}
+
+message SearchResponse {
+  repeated Result results = 1;
+}
+
+message Result {
+  string url = 1;
+  string title = 2;
+  repeated string snippets = 3;
+}
+
+service SearchService {
+  rpc Search (SearchRequest) returns (SearchResponse);
+}
+
