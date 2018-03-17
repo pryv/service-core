@@ -17,7 +17,7 @@ describe('Settings', () => {
     
     it('returns a settings object for the log subsystem', () => {
       const logSettings = settings.getLogSettingsObject();
-      assert.isTrue(logSettings.logs.console.active);
+      assert.isTrue(logSettings.console.active);
     });
   });
 });

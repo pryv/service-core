@@ -12,7 +12,14 @@ export interface ConfigAccess {
   get(key: string): ConfigValue;
 }
 
+// -----------------------------------------------------------------------------
+
 // Settings of an application. 
+// 
+// Example:
+//    
+//    const val = settings.get('foo.bar.baz') // => ConfigValue
+//    val.str()     // casts value to a string (or errors out).
 // 
 class Settings implements ConfigAccess {
   config: Object; 
@@ -23,6 +30,9 @@ class Settings implements ConfigAccess {
   defaults() {
     return {
       logs: {
+        // If you add something here, you might also want to include it into 
+        // the #getLogSettingsObject return value below.
+        prefix: '',
         console: { active: true, level: 'debug', colorize: true }, 
         file: { active: false },
       }
@@ -49,6 +59,7 @@ class Settings implements ConfigAccess {
   // 
   getLogSettingsObject(): Object {
     return l_map('logs', [
+      l_str('prefix'),
       l_bool('console.active'), 
       l_str('console.level'), 
       l_bool('console.colorize'), 
@@ -113,7 +124,7 @@ class LValue {
     const key = [prefix, this.key].join('.');
     const val = config.get(key);
     const mapper = this.mapper;
-    lodash.set(res, key, mapper(val));
+    lodash.set(res, this.key, mapper(val));
   }
 }
 

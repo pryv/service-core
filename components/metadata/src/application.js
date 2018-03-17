@@ -6,11 +6,14 @@ const assert = require('assert');
 
 const loggingSubsystem = require('components/utils/src/logging');
 
+const Settings = require('./settings');
+
 import type { Logger, LogFactory } from 'components/utils/src/logging';
 
 class Application {
   logFactory: LogFactory;
   logger: Logger; 
+  settings: Settings;
   
   constructor() {
     this.initSettings(); 
@@ -18,13 +21,15 @@ class Application {
     this.initTrace(); 
     
     assert(this.logger != null);
+    assert(this.settings != null);
   }
     
   initSettings() {
-    
+    this.settings = new Settings(); 
   }
   initLogger() {
-    const loggerSettings = {};
+    const settings = this.settings;
+    const loggerSettings = settings.getLogSettingsObject();
     const logFactory = this.logFactory = loggingSubsystem(loggerSettings).getLogger;
     
     this.logger = logFactory('application');
