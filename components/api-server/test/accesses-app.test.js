@@ -259,14 +259,14 @@ describe('accesses (app)', function () {
     it('must forbid trying to modify a non-shared access', function (done) {
       req().put(path(additionalTestAccesses[1].id), access.token)
           .send({name: 'Updated App Access'}).end(function (res) {
-        validation.checkErrorForbidden(res, done);
+        validation.checkErrorUnknown(res, done);
       });
     });
 
     it('must forbid trying to modify an access with greater permissions', function (done) {
       req().put(path(testData.accesses[1].id), access.token)
           .send({name: 'Updated Shared Access'}).end(function (res) {
-        validation.checkErrorForbidden(res, done);
+        validation.checkErrorUnknown(res, done);
       });
     });
 

@@ -13,6 +13,29 @@
 
 - Some invalid requests that used to return a HTTP status code of 401 (Unauthorized) now return a 403 (Forbidden). Only the requests that are missing some form of authentication will return a 401 code. 
 
+- `updates.ignoreProtectedFields` is now off by default. This means that updates
+  that address protected fields will result in an error being returned. 
+
+## 1.2.18
+
+- Fix login with Firefox (and other browsers using Referer but no Origin)
+
+## 1.2.17
+
+- Security fix 2018020801
+
+## 1.2.16:
+
+- Update of the API version in API responses
+
+## 1.2.15:
+
+- Blacklist usage errors from airbrake
+- Fix events.get JSON formatting bug when retrieving ArraySize+1 events
+- Improve tests stability: fix environment variable NODE_ENV
+- Add configuration options to disable resetPassword and welcome emails
+- Add configuration option to ignore updates of read-only fields
+
 ## 1.2.14
 
 - Updates to latest nodejs version as a reaction to advisory https://nodejs.org/en/blog/vulnerability/oct-2017-dos/
@@ -21,7 +44,7 @@
 
 - Please see Migration Guide for implications on your infrastructure. 
 
-## 1.2.12
+## 1.2.12, 1.2.13
 
 - Tags have a maximum length of 500 characters. An error is returned from the API when this limit is exceeded. 
 
