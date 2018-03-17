@@ -2,6 +2,15 @@
 
 ## 1.3.X
 
+- High Frequency events allow storing data at high frequency and high data 
+  density. Create them by using types that start with 'series:X', where X 
+  is a normal Pryv type. The API also supports inputting data into multiple 
+  series at once, this is called a 'seriesBatch' (POST /series/batch).
+  
+- The api is internally using multiple processes to offload request handling 
+  and json serialisation. This should allow much higher request rates, but your
+  mileage may vary. Storage IOPS matter. 
+
 - Some invalid requests that used to return a HTTP status code of 401 (Unauthorized) now return a 403 (Forbidden). Only the requests that are missing some form of authentication will return a 401 code. 
 
 ## 1.2.14
