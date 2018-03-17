@@ -1,5 +1,3 @@
-# API change log
-
 ## 1.3.X
 
 - High Frequency events allow storing data at high frequency and high data 
@@ -85,7 +83,7 @@ Major changes here towards more standardization and flexibility:
       example: `{ "event": {...} }`, `{ "error": {...} }`
     - `{ "{resources}": [ {...}, ... ] }` if an indeterminate number of items 
       is expected; for example: `{ "events": [ {...}, ... ] }`
-      
+    
 - All responses to resource creation and update calls now include the full 
   object instead of respectively its id and nothing; for example: `{ "stream": 
   {...} }`
