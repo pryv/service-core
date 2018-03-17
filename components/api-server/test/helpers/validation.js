@@ -172,6 +172,18 @@ exports.checkErrorForbidden = function (res, done) {
 };
 
 /**
+ * Specific error check for convenience.
+ */
+exports.checkErrorUnknown = function (res, done) {
+  res.statusCode.should.eql(404);
+
+  checkJSON(res, schemas.errorResult);
+  res.body.error.id.should.eql(ErrorIds.UnknownResource);
+
+  done();
+};
+
+/**
  * Checks equality between the given objects, allowing for a slight difference in `created` and
  * `modified` times.
  * If `expected` has no change tracking properties, those in `actual` are ignored in the check

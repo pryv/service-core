@@ -135,6 +135,15 @@ describe('auth', function () {
         });
     });
 
+    it('must also accept "referer" in place of "origin" (e.g. some browsers do not provide "origin")', function (done) {
+      request.post(path(authData.username))
+        .set('Referer', trustedOrigin)
+        .send(authData).end(function (err, res) {
+          res.statusCode.should.eql(200);
+          done();
+        });
+    });
+
     it('must not be case-sensitive for the username', function (done) {
       request.post(path(authData.username))
         .set('Origin', trustedOrigin)

@@ -53,7 +53,7 @@ var accessLogic = module.exports = {
     this.tagPermissionsMap = {};
 
     this.permissions.forEach(function (perm) {
-      if (perm.streamId) {
+      if (perm.streamId) {
         this._loadStreamPermission(perm);
       } else if (perm.tag) {
         this._loadTagPermission(perm);
@@ -71,7 +71,7 @@ var accessLogic = module.exports = {
   },
 
   _loadStreamPermission: function (perm) {
-    if (perm.streamId === '*') {
+    if (perm.streamId === '*') {
       this._registerStreamPermission(perm);
       return;
     }
@@ -109,7 +109,7 @@ var accessLogic = module.exports = {
   },
 
   canReadAllStreams: function () {
-    return this.isPersonal() || !! this.getStreamPermissionLevel('*');
+    return this.isPersonal() || !! this.getStreamPermissionLevel('*');
   },
 
   canReadStream: function (streamId) {
@@ -128,7 +128,7 @@ var accessLogic = module.exports = {
   },
 
   canReadAllTags: function () {
-    return this.isPersonal() || !! this.getTagPermissionLevel('*');
+    return this.isPersonal() || !! this.getTagPermissionLevel('*');
   },
 
   canReadTag: function (tag) {
@@ -146,43 +146,65 @@ var accessLogic = module.exports = {
     return level && isHigherOrEqualLevel(level, 'manage');
   },
 
-  /**
-   * Whether the current access (personal or app) can see and manage the given access.
-   */
+  // Whether the current access (personal or app) can see and manage the given
+  // access. 
+  //
   canManageAccess: function (access) {
     //TODO handle tags
-    if (this.isPersonal()) { return true; }
-    else if (this.isShared() || access.type !== 'shared') { return false; }
+    
+    // The account owner can do everything. 
+    if (this.isPersonal()) return true;
+    // Shared accesses don't manage anything. 
+    if (this.isShared()) return false; 
+    
+    // assert: this.isApp()
 
-    var loadedAccess = _.extend(_.cloneDeep(access), accessLogic);
+    // Augment the access with some logic.
+    const candidate = _.extend(_.cloneDeep(access), accessLogic);
+      
+    // App accesses can only manage shared accesses.
+    if (! candidate.isShared()) return false;
+    
+    // assert: candidate.isShared()
 
-    if (! loadedAccess.isShared() || ! hasPermissions(this) || ! hasPermissions(access)) {
+    if (! hasPermissions(this) || ! hasPermissions(candidate)) {
       // can only manage shared accesses with permissions
       return false;
     }
 
-    loadedAccess.loadPermissions(this._cachedStreams);
+    candidate.loadPermissions(this._cachedStreams);
 
-    var checkedPerm, ownPerm;
+    // Can candidate access streams that `this` cannot? Does it elevate the 
+    // permissions on common streams? If yes, abort. 
+    for (const candidateStreamPermission of candidate.streamPermissions) {
+      const candidateStreamId = candidateStreamPermission.streamId;
+      const myStreamPermission = this.streamPermissionsMap[candidateStreamId];
+        
+      // If `this` cannot access the candidate stream, then don't give access.
+      if (myStreamPermission == null) return false; 
+      
+      // The level of `this` must >= the level of candidate streams.
+      const myLevel = myStreamPermission.level; 
+      const candidateLevel = candidateStreamPermission.level; 
+      if (isLowerLevel(myLevel, candidateLevel)) return false; 
 
-    // check stream permissions
-    for (var is = 0, ns = loadedAccess.streamPermissions.length; is < ns; is++) {
-      checkedPerm = loadedAccess.streamPermissions[is];
-      ownPerm = this.streamPermissionsMap[checkedPerm.streamId];
-
-      if (! ownPerm || ! isHigherOrEqualLevel(ownPerm.level, checkedPerm.level)) {
-        return false;
-      }
+      // continue looking for problems...
     }
 
-    // check tag permissions
-    for (var it = 0, nt = loadedAccess.tagPermissions.length; it < nt; it++) {
-      checkedPerm = loadedAccess.tagPermissions[it];
-      ownPerm = this.tagPermissionsMap[checkedPerm.tag];
+    // Can candidate access tags that `this` cannot? Does it elevate the 
+    // permissions on common tags? If yes, abort. 
+    for (const candidateTagPermission of candidate.tagPermissions) {
+      const myTagPermission = this.tagPermissionsMap[candidateTagPermission.tag];
+      
+      // If `this` has no permission on tag, so doesn't candidate.
+      if (myTagPermission == null) return false; 
 
-      if (! ownPerm || ! isHigherOrEqualLevel(ownPerm.level, checkedPerm.level)) {
-        return false;
-      }
+      // The level of `this` must >= the level of candidate tags.
+      const myLevel = myTagPermission.level; 
+      const candidateLevel = candidateTagPermission.level; 
+      if (isLowerLevel(myLevel, candidateLevel)) return false; 
+      
+      // continue looking for problems...
     }
 
     return true;
@@ -195,7 +217,7 @@ var accessLogic = module.exports = {
     if (this.isPersonal()) {
       return 'manage';
     } else {
-      var permission = this.streamPermissionsMap[streamId] || this.streamPermissionsMap['*'];
+      var permission = this.streamPermissionsMap[streamId] || this.streamPermissionsMap['*'];
       return permission ? permission.level : null;
     }
   },
@@ -207,7 +229,7 @@ var accessLogic = module.exports = {
     if (this.isPersonal()) {
       return 'manage';
     } else {
-      var permission = this.tagPermissionsMap[tag] || this.tagPermissionsMap['*'];
+      var permission = this.tagPermissionsMap[tag] || this.tagPermissionsMap['*'];
       return permission ? permission.level : null;
     }
   }
@@ -216,6 +238,9 @@ var accessLogic = module.exports = {
 
 function isHigherOrEqualLevel(permissionLevelA, permissionLevelB) {
   return PermissionLevels[permissionLevelA] >= PermissionLevels[permissionLevelB];
+}
+function isLowerLevel(permissionLevelA, permissionLevelB) {
+  return ! isHigherOrEqualLevel(permissionLevelA, permissionLevelB);
 }
 
 function hasPermissions(access) {
