@@ -295,9 +295,8 @@ describe('accesses (personal)', function () {
       });
     });
 
-    it('must fail if a stream similar to that requested for creation already exists',
-        function (done) {
-      var data = {
+    it('must fail if a stream similar to that requested for creation already exists', (done) => {
+      const data = {
         name: 'my-sweet-app-id',
         type: 'app',
         permissions: [
@@ -437,9 +436,8 @@ describe('accesses (personal)', function () {
         });
       });
 
-    it('must return an error if the given predefined access\'s token is a reserved word',
-        function (done) {
-      var data = {
+    it('must return an error if the given predefined access\'s token is a reserved word', (done) => {
+      const data = {
         token: 'null',
         name: 'Badly Named Access',
         permissions: []
@@ -533,18 +531,17 @@ describe('accesses (personal)', function () {
       });
     });
 
-    it('must return an error if an access with the same name and type already exists',
-      function (done) {
-        req()
-          .put(path(testData.accesses[1].id))
-          .send({name: testData.accesses[2].name})
-          .end(function (res) {
-            validation.checkError(res, {
-              status: 400,
-              id: ErrorIds.ItemAlreadyExists,
-              data: { type: testData.accesses[2].type, name: testData.accesses[2].name }
-        }, done);
-      });
+    it('must return an error if an access with the same name and type already exists', (done) => {
+      req()
+        .put(path(testData.accesses[1].id))
+        .send({name: testData.accesses[2].name})
+        .end(function (res) {
+          validation.checkError(res, {
+            status: 400,
+            id: ErrorIds.ItemAlreadyExists,
+            data: { type: testData.accesses[2].type, name: testData.accesses[2].name }
+          }, done);
+        });
     });
     
     describe('forbidden updates of protected fields', function () {
@@ -672,7 +669,7 @@ describe('accesses (personal)', function () {
 
         async.series([
           function grantContributeAccess(stepDone) {
-            request.post(basePath).send(contribute).end(function (res) {
+            req().post(basePath).send(contribute).end(function (res) {
               validation.check(res, {
                 status: 201,
                 schema: methodsSchema.create.result
@@ -682,7 +679,7 @@ describe('accesses (personal)', function () {
             });
           },
           function createSubReadAccess(stepDone) {
-            request.post(basePath, contributeAccess.token).send(read).end(function (res) {
+            req().post(basePath, contributeAccess.token).send(read).end(function (res) {
               validation.check(res, {
                 status: 201,
                 schema: methodsSchema.create.result
@@ -692,7 +689,7 @@ describe('accesses (personal)', function () {
             });
           },
           function elevateReadToManage(stepDone) {
-            request.put(path(readAccess.id), contributeAccess.token).send({
+            req().put(path(readAccess.id), contributeAccess.token).send({
               'permissions': [{streamId: streamId, level: 'manage'}]
             }).end(function (res) {
               validation.checkErrorForbidden(res, stepDone);
@@ -735,7 +732,7 @@ describe('accesses (personal)', function () {
 
         async.series([
           function grantContributeAccess(stepDone) {
-            request.post(basePath).send(contribute).end(function (res) {
+            req().post(basePath).send(contribute).end(function (res) {
               validation.check(res, {
                 status: 201,
                 schema: methodsSchema.create.result
@@ -745,7 +742,7 @@ describe('accesses (personal)', function () {
             });
           },
           function createSubReadAccess(stepDone) {
-            request.post(basePath, contributeAccess.token).send(read).end(function (res) {
+            req().post(basePath, contributeAccess.token).send(read).end(function (res) {
               validation.check(res, {
                 status: 201,
                 schema: methodsSchema.create.result
@@ -755,7 +752,7 @@ describe('accesses (personal)', function () {
             });
           },
           function extendPermissions(stepDone) {
-            request.put(path(readAccess.id), contributeAccess.token).send({
+            req().put(path(readAccess.id), contributeAccess.token).send({
               'permissions': [{streamId: '*', level: 'read'}]
             }).end(function (res) {
               validation.checkErrorForbidden(res, stepDone);
@@ -771,40 +768,41 @@ describe('accesses (personal)', function () {
   
     beforeEach(resetAccesses);
   
-    it('must delete the shared access', function (done) {
-      var deletedAccess = testData.accesses[1],
-          deletionTime;
+    it('must delete the shared access', (done) => {
+      const deletedAccess = testData.accesses[1];
+      let deletionTime;
+      
       async.series([
-          function deleteAccess(stepDone) {
-            req().del(path(deletedAccess.id)).end(function (res) {
-              deletionTime = timestamp.now();
-              validation.check(res, {
-                status: 200,
-                schema: methodsSchema.del.result,
-                body: {accessDeletion: {id: deletedAccess.id}}
-              });
-              should(accessesNotifCount).be.eql(1, 'accesses notifications');
-              stepDone();
+        function deleteAccess(stepDone) {
+          req().del(path(deletedAccess.id)).end(function (res) {
+            deletionTime = timestamp.now();
+            validation.check(res, {
+              status: 200,
+              schema: methodsSchema.del.result,
+              body: {accessDeletion: {id: deletedAccess.id}}
             });
-          },
-          function verifyData(stepDone) {
-            storage.findAll(user, null, function (err, accesses) {
-              accesses.length.should.eql(testData.accesses.length, 'accesses');
-  
-              var expected = _.extend({
-                _token: deletedAccess.token,
-                _type: deletedAccess.type,
-                _name: deletedAccess.name,
-                deleted: deletionTime
-              }, _.omit(deletedAccess, 'token', 'type', 'name'));
-              var actual = _.find(accesses, {id: deletedAccess.id});
-              validation.checkObjectEquality(actual, expected);
-  
-              stepDone();
-            });
-          }
-        ],
-        done
+            should(accessesNotifCount).be.eql(1, 'accesses notifications');
+            stepDone();
+          });
+        },
+        function verifyData(stepDone) {
+          storage.findAll(user, null, function (err, accesses) {
+            accesses.length.should.eql(testData.accesses.length, 'accesses');
+
+            var expected = _.extend({
+              _token: deletedAccess.token,
+              _type: deletedAccess.type,
+              _name: deletedAccess.name,
+              deleted: deletionTime
+            }, _.omit(deletedAccess, 'token', 'type', 'name'));
+            var actual = _.find(accesses, {id: deletedAccess.id});
+            validation.checkObjectEquality(actual, expected);
+
+            stepDone();
+          });
+        }
+      ],
+      done
       );
     });
   
