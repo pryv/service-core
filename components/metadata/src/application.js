@@ -10,10 +10,16 @@ const Settings = require('./settings');
 
 import type { Logger, LogFactory } from 'components/utils/src/logging';
 
+const services = {
+  MetadataUpdater: require('./metadata_updater/service'),
+};
+
 class Application {
   logFactory: LogFactory;
   logger: Logger; 
   settings: Settings;
+  
+  metadataUpdaterService: ?services.MetadataUpdater;
   
   constructor() {
     this.initSettings(); 
@@ -35,15 +41,27 @@ class Application {
     this.logger = logFactory('application');
   }
   initTrace() {
-    
+    // TODO
   }
   
   // Runs the application. This method only ever exits once the service is 
   // killed. 
   // 
-  run() {    
+  async run() {    
     const logger = this.logger; 
     logger.info('Metadata service is starting...');
+    
+    await this.startMetadataUpdater(); 
+  }
+  
+  // Initializes and starts the metadata updater service. 
+  // 
+  async startMetadataUpdater() {
+    const lf = this.logFactory;
+    const service = new services.MetadataUpdater(lf('metadata_updater')); 
+    this.metadataUpdaterService = service; 
+    
+    await service.start();
   }
 }
 
