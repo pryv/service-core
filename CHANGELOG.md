@@ -6,7 +6,7 @@
 
 ## 1.2.17
 
-- Security fix 2018020801
+- Security fix 2018020801: update method for Accesses is not vulnerable to escalation of privilege anymore
 
 ## 1.2.16:
 
