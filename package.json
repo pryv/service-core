@@ -47,7 +47,6 @@
     "node-foreman": "git://github.com/pryv/node-foreman.git#4eb501d443432878491b2d0387ded96e7c4154d0",
     "previews-server": "file:components/previews-server",
     "pryvuser-cli": "file:components/pryvuser-cli",
-    "tprpc": "file:components/tprpc",
     "qs": "^6.3.0",
     "ramda": "^0.23.0",
     "rimraf": "^2.4.3",
@@ -58,6 +57,7 @@
     "superagent": "^3.8",
     "tchannel": "^3.9.12",
     "test-helpers": "file:components/test-helpers",
+    "tprpc": "file:components/tprpc",
     "unicode": "^0.6.1",
     "unix-timestamp": "^0.2.0",
     "utils": "file:components/utils"
@@ -93,6 +93,7 @@
     "socket.io-client": "^0.9",
     "supertest": "^3.0.0",
     "temp": "^0.8.3",
+    "tmp": "^0.0.33",
     "wrench": "latest"
   },
   "engines": {
