@@ -20,6 +20,8 @@ decls/
 <PROJECT_ROOT>/node_modules/middleware/.*
 <PROJECT_ROOT>/node_modules/utils/.*
 <PROJECT_ROOT>/node_modules/flow-coverage-report/.*
+<PROJECT_ROOT>/node_modules/tprpc/.*
+<PROJECT_ROOT>/node_modules/metadata/.*
 
 [options]
 module.use_strict=true
