@@ -12,8 +12,6 @@ const debug = require('debug')('compile.test');
 const rpc = require('../../src/index.js');
 
 describe('Type Compilation', function () {
-  this.timeout(100000);
-
   let tempdir; 
   
   beforeEach(() => {

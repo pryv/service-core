@@ -2,17 +2,21 @@
 
 const path = require('path');
 const fs = require('fs');
+const lodash = require('lodash');
 
 const bluebird = require('bluebird');
 
 const protobuf = require('protobufjs');
 const protobufLoad = bluebird.promisify(protobuf.load);
 
+type PBNamespace = any; 
+type PBType = any; 
+
 // Tools for interacting with a service definition written in protobuf 3. 
 // 
 class Definition {
   definitionPath: string;           // original load path for this definition
-  root: protobufjs$DefinitionRoot;  // protobuf root dictionary
+  root: PBNamespace;                // protobuf root dictionary
   
   // Loads a protobuf3 service definition file and returns an instance of
   // `Definition`.
@@ -22,7 +26,7 @@ class Definition {
     return new Definition(path, root); 
   }
 
-  constructor(path: string, root: protobufjs$DefinitionRoot) {
+  constructor(path: string, root: PBNamespace) {
     this.definitionPath = path; 
     this.root = root;
   }
@@ -67,6 +71,14 @@ class Definition {
       printTypes(file, json);
     });
   }
+
+  // Looks up the service given by name and returns a ServiceDefinition instance. 
+  // 
+  lookup(serviceName: string): PBType {
+    const root = this.root; 
+    const service = root.lookup(serviceName);
+    return service;
+  }
 }
 
 function printTypes(file, json) {
@@ -82,7 +94,7 @@ function printType(file, json) {
   });
 
   printObject(json.methods, (name, method) => {
-    file.writeln(`  ${name}(req: ${translateToInterface(method.requestType)}): ${translateToInterface(method.responseType)};`);
+    file.writeln(`  ${lodash.lowerFirst(name)}(req: ${translateToInterface(method.requestType)}): ${translateToInterface(method.responseType)};`);
   });
 }
 function printObject(obj, fn: (string, Object) => mixed) {
