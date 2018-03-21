@@ -120,8 +120,10 @@ factory.itemAlreadyExists = function (
 factory.missingHeader = function (headerName: string, status: ?number) {
   return new APIError(
     ErrorIds.MissingHeader, 
-    'Missing expected header "' + headerName + '"',
-    {httpStatus: status || 400}
+    'Missing expected header "' + headerName + '"', {
+      httpStatus: status || 400,
+      dontNotifyAirbrake: true
+    }
   );
 };
 
