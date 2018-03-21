@@ -69,24 +69,42 @@ async function assertContains(path: string, content: string) {
   debug('indent is', indent);
   
   // Now prepare to be awed by my api juggling skills. 
-  const inputLines = eachLine(path);
+  const inputLineStream = eachLine(path);
+  const inputLines = [];
   try {
-    let c = await inputLines.next(); 
+    let c = await inputLineStream.next(); 
     while (! c.done) {
-      console.log(c.value);
-      c = await inputLines.next();
+      inputLines.push(c.value);
+      c = await inputLineStream.next();
     }
   }
   finally {
-    inputLines.close();
+    inputLineStream.close();
   }
+  
+  // Insert implementation of Boyer-Moore here.
+  for (let i=0; i<inputLines.length; i++) {
+    match_attempt: {
+      for (let j=0; j<lines.length; j++) {
+        const line = inputLines[i+j];
+        const expected = lines[j];
+        
+        if (line !== expected) break match_attempt; 
+      }
+      
+      // We've matched all of lines against inputLines at position i. 
+      return;
+    }
+  }
+  
+  throw new Error(`File ${path} doesn't contain the string anywhere.`);
 }
 
-function eachLine(path: string): AsyncStreamReader<string> {
+function eachLine(path: string): EventEmitterIterator<string> {
   const lineReader = readline.createInterface({
     input: fs.createReadStream(path)
   });
-  const streamReader = new AsyncStreamReader(lineReader);
+  const streamReader = new EventEmitterIterator(lineReader);
   return streamReader;
 }
 
@@ -94,7 +112,15 @@ type Ok<T> = { status: true, value: T };
 type Err = { status: false, error: Error };
 type Event<T> = Ok<T> | Err;
 
-class AsyncStreamReader<T> /* implements AsyncIterator<T> */ {
+// An Iterator that allows iterating over the events in a stream. Once 
+// `for await` lands in nodejs, this can be used directly, for now, you'll
+// need to use it in a while loop. 
+// 
+// NOTE This doesn't (yet) pause the stream when the buffer is full. If 
+//  you have a slow consumer and a fast producer, you will consume a lot
+//  of memory. This implementation can easily be modified to do so. 
+// 
+class EventEmitterIterator<T> /* implements AsyncIterator<T> */ {
   emitter: EventEmitter; 
   buffer: Array<Event<T>>; 
   done: boolean; 
