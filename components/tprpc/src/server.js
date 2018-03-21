@@ -1,7 +1,5 @@
 // @flow
 
-const protobuf = require('protobufjs');
-
 type Handler = Object;
 
 class Server {
@@ -10,7 +8,7 @@ class Server {
     endpoint;
   }
   
-  add(description: protobuf.rpc.Service, handler: Handler) {
+  add(description: mixed, handler: Handler) {
     handler;
   }
   

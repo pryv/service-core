@@ -7,7 +7,6 @@ const path = require('path');
 const fs = require('fs');
 const chai = require('chai');
 const assert = chai.assert; 
-const bluebird = require('bluebird');
 const debug = require('debug')('compile.test');
 
 const rpc = require('../../src/index.js');
@@ -25,7 +24,8 @@ describe('Type Compilation', function () {
   });
   
   it('compiles a .proto 3 syntax file into a set of flow-type interfaces', async () => {
-    const definition = rpc.load('../fixtures/base.proto');
+    const fullPath = path.join(__dirname, '../fixtures/base.proto');
+    const definition = await rpc.load(fullPath);
     
     // Write the (flow type) signature to the tempdir
     definition.writeTypeSignature('base.js.flow', tempdir.name);
@@ -37,7 +37,7 @@ describe('Type Compilation', function () {
     
     await assertContains(typesigPath, `
       export interface ISearchResponse {
-        results: Array<IResult>;
+        results: Array<IResult>;  // id = 1
       }
     `);
   });
@@ -54,7 +54,7 @@ async function assertContains(path: string, content: string) {
   // remove blank lines from the head of lines
   while (lines.length > 0 && blank(lines[0])) lines.shift(); 
   // remove blank lines from the tail of lines
-  while (lines.length > 0 && blank(lines.slice(-1)[0])) lines.pop(); 
+  while (lines.length > 0 && blank(lines[lines.length-1])) lines.pop(); 
   
   // If nothing is left, the expectation was empty. That's an error, because
   // it makes no sense. 
@@ -81,7 +81,8 @@ async function assertContains(path: string, content: string) {
     match_attempt: {
       for (let j=0; j<lines.length; j++) {
         const line = inputLines[i+j];
-        const expected = lines[j];
+        const expectedRaw = lines[j];
+        const expected = expectedRaw.slice(indent, expectedRaw.length);
         
         if (line !== expected) break match_attempt; 
       }

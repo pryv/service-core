@@ -1,5 +1,5 @@
-// flow-typed signature: df358db676cf0e2268b09694d5a49186
-// flow-typed version: ca3d99cb5f/bluebird_v3.x.x/flow_>=v0.47.x
+// flow-typed signature: 69f47432b9a1b4cecc8ff725cc94d869
+// flow-typed version: 76dc0540fb/bluebird_v3.x.x/flow_>=v0.47.x
 
 type Bluebird$RangeError = Error;
 type Bluebird$CancellationErrors = Error;
@@ -300,6 +300,8 @@ declare class Bluebird$Promise<+R> extends Promise<R> {
     disposable: Bluebird$Disposable<T>,
     handler: (value: T) => $Promisable<A>
   ): Bluebird$Promise<A>;
+  
+  suppressUnhandledRejections(): void;
 }
 
 declare class Bluebird$Defer {
