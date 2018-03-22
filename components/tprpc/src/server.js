@@ -83,7 +83,8 @@ class Server {
   }
   
   async close() {
-    
+    const channel = this.channel; 
+    channel.close(); 
   }
 }
 

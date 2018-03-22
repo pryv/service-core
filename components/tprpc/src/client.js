@@ -3,6 +3,7 @@
 const TChannel = require('tchannel');
 
 const Definition = require('./definition');
+const { RemoteError } = require('./errors');
 
 // An rpc client connection; use this as a factory for 'proxy' objects that 
 // you can use to make calls on. 
@@ -63,7 +64,10 @@ class Client {
     err: ?Error, res: any, arg2: Buffer, arg3: Buffer) 
   {
     if (err != null) return cb(err);
-  
+
+    if (arg2.toString() === 'error') 
+      return cb(new RemoteError(arg3.toString()));
+      
     const answer = responseType.decode(arg3);
     cb(null, answer);
   }

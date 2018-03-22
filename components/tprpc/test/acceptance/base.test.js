@@ -53,4 +53,42 @@ describe('Base API', () => {
     
     server.close(); 
   });
+  it('failing a call (server-side)', async () => {
+    const definition = await rpc.load(__dirname + '/../fixtures/base.proto');
+    
+    const endpoint = '127.0.0.1:4020';
+  
+    const impl: ISearchService = {
+      search: () => {
+        throw new Error('server-side error');
+      }
+    };
+  
+    const server = new rpc.Server();
+    server.add(definition, 'SearchService', (impl: ISearchService));
+    await server.listen(endpoint);
+  
+    const client = new rpc.Client(definition);
+    const proxy: ISearchService = client.proxy('SearchService', endpoint); 
+      
+    let caught = false; 
+    try {
+      await proxy.search({
+        query: 'select content from events', 
+        pageNumber: 1, 
+        resultPerPage: 10, 
+        corpus: Corpus.WEB, 
+      });
+    }
+    catch (err) {
+      caught = true; 
+      
+      assert.strictEqual(err.message, 'Error: server-side error')
+    }
+    
+    assert.isTrue(caught);
+
+    server.close(); 
+  });
+  
 });
