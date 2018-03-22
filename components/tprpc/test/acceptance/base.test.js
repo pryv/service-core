@@ -7,6 +7,7 @@ const assert = chai.assert;
 
 const rpc = require('../../src/index.js');
 
+const { Corpus } = require('../fixtures/base');
 import type { ISearchService } from '../fixtures/base';
 
 describe('Base API', () => {
@@ -35,9 +36,9 @@ describe('Base API', () => {
   
     const response = await proxy.search({
       query: 'select content from events', 
-      page_number: 1, 
-      result_per_page: 10, 
-      corpus: CORPUS_WEB, 
+      pageNumber: 1, 
+      resultPerPage: 10, 
+      corpus: Corpus.WEB, 
     });
   
     // Don't think too hard about this, it's all hard coded.
