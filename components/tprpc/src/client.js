@@ -4,7 +4,6 @@ const TChannel = require('tchannel');
 
 const Definition = require('./definition');
 
-
 // An rpc client connection; use this as a factory for 'proxy' objects that 
 // you can use to make calls on. 
 // 

@@ -68,7 +68,9 @@ class Definition {
       
       const root = this.root; 
       const json = root.toJSON();
-      printTypes(file, json);
+      
+      const compiler = new Compiler(file); 
+      compiler.printFile(json);
     });
   }
 
@@ -81,40 +83,124 @@ class Definition {
   }
 }
 
-function printTypes(file, json) {
-  printObject(json.nested, (key, type) => {
-    file.writeln(`export interface ${translateToInterface(key)} {`);
-    printType(file, type);
-    file.writeln('}');
-  });
-}
-function printType(file, json) {
-  printObject(json.fields, (key, field) => {
-    file.writeln(`  ${key}: ${translateType(field)};  // id = ${field.id}`);
-  });
+// Compiles a json description of a .proto file to file output that can be
+// written into a .js file. 
+// 
+class Compiler {
+  enumValues: Map<string, Set<Object>>; // all enums we encounter
+  file: File;
+  
+  constructor(file) {
+    this.file = file;
+    this.enumValues = new Map(); 
+  }
+  
+  // Prints a whole .proto definition file
+  printFile(json) {
+    this.printTypes(json);
+    this.exportEnums(); 
+  }
+  // Prints a list of types that are nested in a definition. 
+  printTypes(json) {
+    this.printObject(json.nested, (key, type) => {
+      this.printType(key, type);
+    });
+  }
+  // Prints a single type. 
+  printType(name, json) {
+    if (json.nested != null) this.printTypes(json);
 
-  printObject(json.methods, (name, method) => {
-    file.writeln(`  ${lodash.lowerFirst(name)}(req: ${translateToInterface(method.requestType)}): ${translateToInterface(method.responseType)};`);
-  });
-}
-function printObject(obj, fn: (string, Object) => mixed) {
-  if (obj != null) {
-    for (const key of Object.keys(obj)) {
-      const value = obj[key];
+    if (json.values != null) 
+      this.printTypeAsEnum(name, json);
+    else // Assume any other type, output as an interface. 
+      this.printTypeAsInterface(name, json);
+  }
+  printTypeAsInterface(name, json) {
+    const file = this.file; 
+    
+    file.writeln(`export interface ${this.translateToInterface(name)} {`);
+
+    this.printObject(json.fields, (key, field) => {
+      file.writeln(`  ${key}: ${this.translateType(field)};  // id = ${field.id}`);
+    });
+
+    this.printObject(json.methods, (name, method) => {
+      file.writeln(`  ${lodash.lowerFirst(name)}(req: ${this.translateToInterface(method.requestType)}): ${this.translateToInterface(method.responseType)};`);
+    });
+
+    file.writeln('}');
+  }
+  printTypeAsEnum(name, json) {
+    const file = this.file; 
+    if (json.values == null) throw new Error("AF: doesn't look like an enum...");
+    
+    const values = []; 
+    
+    file.writeln(`const ${name} = {`);
+    this.printObject(json.values, (key, value) => {
+      file.writeln(`  ${key}: ${value.toString()},`);
       
-      fn(key, value);
+      values.push(value);
+    });
+    file.writeln('}');
+    
+    // Remember all enums here: 
+    this.enumValues.set(name, new Set(values));
+  }
+  // Generic object printer. 
+  printObject(obj, fn: (string, Object) => mixed) {
+    if (obj != null) {
+      for (const key of Object.keys(obj)) {
+        const value = obj[key];
+        
+        fn(key, value);
+      }
     }
   }
-}
-function translateToInterface(name: string): string {
-  return `I${name}`;
-}
-function translateType(field: Object): string {
-  let output = translateToInterface(field.type); 
-  if (field.rule === 'repeated') {
-    output = `Array<${output}>`;
+  // Translates a type to an interface, if needed. 
+  translateToInterface(name: string): string {
+    const enumValues = this.enumValues;
+    
+    if (enumValues.has(name)) {
+      const values = enumValues.get(name);
+      if (values == null) throw new Error('AF: Enum must not be empty.');
+      return this.allowedEnumValues(values);
+    }
+    
+    switch (name) {
+      case 'string': return 'string';
+      case 'int32': 
+      case 'int64': return 'number';
+      
+      default:
+      // Assuming name is a constructed type as well. 
+        return `I${name}`;  
+    }
+    // NOT REACHED
   }
-  return output;
+  // Translates a type to the aequivalent flow-type type. 
+  translateType(field: Object): string {
+    let output = this.translateToInterface(field.type); 
+    if (field.rule === 'repeated') {
+      output = `Array<${output}>`;
+    }
+    return output;
+  }
+  // Returns all the values that are allowed for an enum as a string. 
+  allowedEnumValues(values: Set<Object>) {
+    return Array.from(values)
+      .map(e => e.toString())
+      .join(' | ');
+  }
+
+  exportEnums() {
+    const file = this.file; 
+
+    if (this.enumValues.size > 0) {
+      const enums = Array.from(this.enumValues.keys()).join(', ');
+      file.writeln(`module.exports = { ${enums} };`);
+    }
+  }
 }
 
 // A thin wrapper around 'fs', doing resource disposal. 
