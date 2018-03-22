@@ -10,7 +10,8 @@ const protobuf = require('protobufjs');
 const protobufLoad = bluebird.promisify(protobuf.load);
 
 type PBNamespace = any; 
-type PBType = any; 
+type PBType = any;
+type MethodCallback = (name: string, req: PBType, res: PBType) => mixed;
 
 // Tools for interacting with a service definition written in protobuf 3. 
 // 
@@ -81,6 +82,25 @@ class Definition {
     const service = root.lookup(serviceName);
     return service;
   }
+
+  forEachMethod(serviceName: string, fn: MethodCallback): void {
+    const root = this.root; 
+    const service = root.lookup(serviceName);
+    const descriptor = service.toJSON();
+    const methods: Object = descriptor.methods; 
+    
+    if (methods == null) 
+      throw new Error(`No methods in service '${serviceName}', is this really a service?`);
+      
+    for (const key of Object.keys(methods)) {
+      const method = methods[key];
+      
+      const requestType = root.lookup(method.requestType); 
+      const responseType = root.lookup(method.responseType);
+      
+      fn(key, requestType, responseType);
+    }
+  }
 }
 
 // Compiles a json description of a .proto file to file output that can be
@@ -125,7 +145,11 @@ class Compiler {
     });
 
     this.printObject(json.methods, (name, method) => {
-      file.writeln(`  ${lodash.lowerFirst(name)}(req: ${this.translateToInterface(method.requestType)}): ${this.translateToInterface(method.responseType)};`);
+      const methodName = lodash.lowerFirst(name);
+      const requestType = this.translateToInterface(method.requestType);
+      const responseInnerType = this.translateToInterface(method.responseType);
+      
+      file.writeln(`  ${methodName}(req: ${requestType}): Promise<${responseInnerType}>;`);
     });
 
     file.writeln('}');
@@ -142,7 +166,7 @@ class Compiler {
       
       values.push(value);
     });
-    file.writeln('}');
+    file.writeln('};');
     
     // Remember all enums here: 
     this.enumValues.set(name, new Set(values));

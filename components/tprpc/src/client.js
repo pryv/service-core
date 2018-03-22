@@ -27,7 +27,8 @@ class Client {
       requestDefaults: {
         hasNoParent: true, 
         headers: {
-          as: 'raw', 
+          as: 'raw',
+          cn: 'tprpc-client'
         }
       }
     });

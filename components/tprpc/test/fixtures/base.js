@@ -11,7 +11,7 @@ const Corpus = {
   NEWS: 4,
   PRODUCTS: 5,
   VIDEO: 6,
-}
+};
 export interface ISearchRequest {
   query: string;  // id = 1
   pageNumber: number;  // id = 2
@@ -27,6 +27,6 @@ export interface IResult {
   snippets: Array<string>;  // id = 3
 }
 export interface ISearchService {
-  search(req: ISearchRequest): ISearchResponse;
+  search(req: ISearchRequest): Promise<ISearchResponse>;
 }
 module.exports = { Corpus };
