@@ -1,7 +1,7 @@
 {
   "name": "metadata",
   "version": "1.0.0",
-  "main": "bin/metadata",
+  "main": "src/index.js",
   "license": "MIT", 
   "scripts": {
     "test": "../../node_modules/.bin/mocha 'test/**/*.test.js'"

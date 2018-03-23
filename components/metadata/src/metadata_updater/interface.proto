@@ -1,5 +1,8 @@
 syntax = "proto3";
 
+// Timestamps are represented as integer number of nanoseconds, or 1e-9 of a
+// second.
+
 // Describes a request to update an event as a consequence of a series 
 // update on the event. 
 // 
