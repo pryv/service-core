@@ -17,7 +17,7 @@ const { ExistingValue, MissingValue } = require('components/utils/src/config/val
  * server instances and `.loadFromFile(path)` for loading a test configuration. 
  */
 class Settings {
-  config: Object; // TODO can we narrow this down?
+  config: Object;
   
   /** Constructs and loads settings from the file configured in 'config_file', 
    * which - by default - points to 'hfs-server.json' in the current directory. 
