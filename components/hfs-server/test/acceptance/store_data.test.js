@@ -2,7 +2,7 @@
 
 // Tests pertaining to storing data in a hf series. 
 
-/* global describe, it, beforeEach, after, before */
+/* global describe, it, beforeEach, after, before, afterEach */
 const chai = require('chai');
 const assert = chai.assert; 
 const R = require('ramda');
@@ -15,6 +15,11 @@ const {
   spawnContext, produceMongoConnection, 
   produceInfluxConnection, produceStorageLayer } = require('./test-helpers');
 const { databaseFixture } = require('components/test-helpers');
+
+const rpc = require('components/tprpc');
+const metadata = require('components/metadata');
+
+import type { IMetadataUpdaterService, IUpdateResponse } from 'components/metadata';
 
 type Header = Array<string>; 
 type Rows   = Array<Row>; 
@@ -320,8 +325,40 @@ describe('Storing data in a HF series', function() {
           }
         });
         describe('when using a metadata updater stub', () => {
-          it('should schedule a metadata update on every store', () => {
+          // A stub for the real service. Tests might replace parts of this to do 
+          // custom assertions.
+          let stub: IMetadataUpdaterService;
+          beforeEach(() => {
+            stub = {
+              scheduleUpdate: () => { return Promise.resolve({ deadline: 0}); },
+            };
+          });
+          
+          // Loads the definition for the MetadataUpdaterService.
+          let definition;
+          before(async () => {
+            definition = await metadata.updater.definition;
+          });
+          
+          // Constructs and launches an RPC server on port 14000.
+          let rpcServer;
+          before(async () => {
+            const endpoint = '127.0.0.1:14000';
             
+            rpcServer = new rpc.Server(); 
+            rpcServer.add(definition, 'MetadataUpdaterService', (stub: IMetadataUpdaterService));
+            await rpcServer.listen(endpoint);
+            
+            // Tell the server (already running) to use our rpc server. 
+            await server.process.sendToChild('useMetadataUpdater', endpoint);
+          });
+          after(() => {
+            rpcServer.close();
+          });
+          
+          it('should schedule a metadata update on every store', async () => {
+            const data = produceData(); 
+            await storeData(data).expect(200);
           });
         });
       });

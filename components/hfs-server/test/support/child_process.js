@@ -42,6 +42,11 @@ class ApplicationLauncher {
     };
   }
 
+  // Tells the server to use the metadata updater service located at `endpoint`
+  useMetadataUpdater(endpoint) {
+    console.log('Using MetadataUpdaterService endpoint', endpoint);
+  }
+
   launch(injectSettings: {}) {
     const settings = new Settings(); 
     settings.loadFromFile('config/dev.json');

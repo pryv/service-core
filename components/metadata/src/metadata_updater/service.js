@@ -4,14 +4,15 @@
 
 const rpc = require('components/tprpc');
 
+const definitionFactory = require('./definition');
+
 import type { Logger } from 'components/utils/src/logging';
-import type { IMetadataUpdaterService, IUpdateRequest, ITimeRange, IUpdateResponse } from './interface';
+import type { IMetadataUpdaterService, IUpdateRequest, IUpdateResponse } from './interface';
 
 class Service implements IMetadataUpdaterService {
   logger: Logger;
   
   server: rpc.Server;
-  
   
   constructor(logger: Logger) {
     this.logger = logger; 
@@ -23,7 +24,7 @@ class Service implements IMetadataUpdaterService {
     const server = this.server; 
     
     logger.info('starting...');
-    const definition = await rpc.load('./interface.proto');
+    const definition = await definitionFactory.produce();
     server.add(
       definition, 'MetadataUpdaterService', 
       (this: IMetadataUpdaterService));
