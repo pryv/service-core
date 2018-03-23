@@ -169,181 +169,188 @@ describe('Storing data in a HF series', function() {
   });
   
   describe('POST /events/EVENT_ID/series', function() {
-    const EVENT_ID = 'EVENTID';
-    
-    let server; 
         
     // TODO Worry about deleting data that we stored in earlier tests.
+    let server; 
     
-    function storeData(data): any {
-      const request = server.request(); 
-      const response = request
-        .post(`/USERNAME/events/${EVENT_ID}/series`)
-        .set('authorization', 'AUTH_TOKEN')
-        .send(data);
-        
-      return response;
-    }
-    function queryData(): Promise<Object> {
-      const request = server.request(); 
-      let response = request
-        .get(`/USERNAME/events/${EVENT_ID}/series`)
-        .set('authorization', 'KEN SENT ME')
-        .query({
-          fromTime: '1481677844', 
-          toTime: '1481677850',
-        });
+    describe('bypassing authentication', () => {
+      const EVENT_ID = 'EVENTID';
 
-      return response
-        .expect(200)
-        .then((res) => {
-          return res.body;
-        });
-    }
-    
-    function produceData() {
-      return {
-        format: 'flatJSON', 
-        fields: ['timestamp', 'value'], 
-        points: [
-          [1481677845, 14.1], 
-          [1481677846, 14.2], 
-          [1481677847, 14.3], 
-        ]
-      };
-    }
-
-    describe('when bypassing authentication (succeed always)', function () {
-      before(async () => {
-        debug('spawning');
-        server = await spawnContext.spawn(); 
-      });
-      after(() => {
-        server.stop(); 
-      });
-      
-      // Bypass authentication check: Succeed always
-      beforeEach(function () {
-        server.process.
-          sendToChild('mockAuthentication', true);
-      });
-      
-      it('stores data into InfluxDB', function() {
-        const data = produceData(); 
-        
-        return storeData(data)
-          .expect(200)
-          .then(queryData)
-          .then((response) => {
-            // Verify HTTP response content
-            assert.isNotNull(response);
-              
-            assert.deepEqual(
-              response.fields, 
-              ['timestamp', 'value']); 
-            
-            const pairEqual = ([given, expected]) => 
-              assert.deepEqual(given, expected);
-
-            assert.strictEqual(response.points.length, data.points.length);
-            R.all(pairEqual, R.zip(response.points, data.points));
-          });
-      });
-
-      it('should reject non-JSON bodies', function () { 
-        const response = server.request()
+      function storeData(data): any {
+        const request = server.request(); 
+        const response = request
           .post(`/USERNAME/events/${EVENT_ID}/series`)
           .set('authorization', 'AUTH_TOKEN')
-          .type('form')
-          .send({ format: 'flatJSON' });
+          .send(data);
           
-        return response
-          .expect(400);
-      });
+        return response;
+      }
+      function queryData(): Promise<Object> {
+        const request = server.request(); 
+        let response = request
+          .get(`/USERNAME/events/${EVENT_ID}/series`)
+          .set('authorization', 'KEN SENT ME')
+          .query({
+            fromTime: '1481677844', 
+            toTime: '1481677850',
+          });
 
-      describe('when request is malformed', function () {
-        malformed('format is not flatJSON', {
-          format: 'JSON', 
+        return response
+          .expect(200)
+          .then((res) => {
+            return res.body;
+          });
+      }
+      
+      function produceData() {
+        return {
+          format: 'flatJSON', 
           fields: ['timestamp', 'value'], 
           points: [
             [1481677845, 14.1], 
             [1481677846, 14.2], 
             [1481677847, 14.3], 
           ]
-        });
-        malformed('matrix is not square - not enough fields', {
-          format: 'flatJSON', 
-          fields: ['timestamp', 'value'], 
-          points: [
-            [1481677845, 14.1], 
-            [1481677846], 
-            [1481677847, 14.3], 
-          ]
-        });
-        malformed('value types are not all valid', {
-          format: 'flatJSON', 
-          fields: ['timestamp', 'value'], 
-          points: [
-            [1481677845, 14.1], 
-            [1481677846, 'foobar'], 
-            [1481677847, 14.3], 
-          ]
-        });
-        malformed('missing timestamp column', {
-          format: 'flatJSON', 
-          fields: ['value'], 
-          points: [
-            [14.1], 
-            [13.2], 
-            [14.3], 
-          ]
-        });
-        malformed('missing value column for a simple input', {
-          format: 'flatJSON', 
-          fields: ['timestamp'], 
-          points: [
-            [1481677845], 
-            [1481677846], 
-            [1481677847], 
-          ]
-        });
-        
-        function malformed(text, data) {
-          it(`should be rejected (${text})`, function () {
-            return storeData(data).expect(400)
-              .then((res) => {
-                const error = res.body.error; 
-                assert.strictEqual(error.id, 'invalid-request-structure'); 
-              });
-          });
-        }
-      });
-    });
-    describe('when authentication fails', function () {
-      before(async () => {
-        debug('spawning');
-        server = await spawnContext.spawn(); 
-      });
-      after(() => {
-        server.stop(); 
-      });
-      
-      // Bypass authentication check: Fail always
-      beforeEach(async function () {
-        await server.process.
-          sendToChild('mockAuthentication', false);
-      });
+        };
+      }
 
-      it('refuses invalid/unauthorized accesses', function () {
-        const data = produceData(); 
+      describe('with auth success', function () {
+        before(async () => {
+          debug('spawning');
+          server = await spawnContext.spawn(); 
+        });
+        after(() => {
+          server.stop(); 
+        });
         
-        return storeData(data)
-          .expect(403)
-          .then((res) => {
-            const error = res.body.error; 
-            assert.strictEqual(error.id, 'forbidden'); 
-            assert.typeOf(error.message, 'string'); 
+        // Bypass authentication check: Succeed always
+        beforeEach(function () {
+          server.process.
+            sendToChild('mockAuthentication', true);
+        });
+        
+        it('stores data into InfluxDB', function() {
+          const data = produceData(); 
+          
+          return storeData(data)
+            .expect(200)
+            .then(queryData)
+            .then((response) => {
+              // Verify HTTP response content
+              assert.isNotNull(response);
+                
+              assert.deepEqual(
+                response.fields, 
+                ['timestamp', 'value']); 
+              
+              const pairEqual = ([given, expected]) => 
+                assert.deepEqual(given, expected);
+
+              assert.strictEqual(response.points.length, data.points.length);
+              R.all(pairEqual, R.zip(response.points, data.points));
+            });
+        });
+
+        it('should reject non-JSON bodies', function () { 
+          const response = server.request()
+            .post(`/USERNAME/events/${EVENT_ID}/series`)
+            .set('authorization', 'AUTH_TOKEN')
+            .type('form')
+            .send({ format: 'flatJSON' });
+            
+          return response
+            .expect(400);
+        });
+
+        describe('when request is malformed', function () {
+          malformed('format is not flatJSON', {
+            format: 'JSON', 
+            fields: ['timestamp', 'value'], 
+            points: [
+              [1481677845, 14.1], 
+              [1481677846, 14.2], 
+              [1481677847, 14.3], 
+            ]
           });
+          malformed('matrix is not square - not enough fields', {
+            format: 'flatJSON', 
+            fields: ['timestamp', 'value'], 
+            points: [
+              [1481677845, 14.1], 
+              [1481677846], 
+              [1481677847, 14.3], 
+            ]
+          });
+          malformed('value types are not all valid', {
+            format: 'flatJSON', 
+            fields: ['timestamp', 'value'], 
+            points: [
+              [1481677845, 14.1], 
+              [1481677846, 'foobar'], 
+              [1481677847, 14.3], 
+            ]
+          });
+          malformed('missing timestamp column', {
+            format: 'flatJSON', 
+            fields: ['value'], 
+            points: [
+              [14.1], 
+              [13.2], 
+              [14.3], 
+            ]
+          });
+          malformed('missing value column for a simple input', {
+            format: 'flatJSON', 
+            fields: ['timestamp'], 
+            points: [
+              [1481677845], 
+              [1481677846], 
+              [1481677847], 
+            ]
+          });
+          
+          function malformed(text, data) {
+            it(`should be rejected (${text})`, function () {
+              return storeData(data).expect(400)
+                .then((res) => {
+                  const error = res.body.error; 
+                  assert.strictEqual(error.id, 'invalid-request-structure'); 
+                });
+            });
+          }
+        });
+        describe('when using a metadata updater stub', () => {
+          it('should schedule a metadata update on every store', () => {
+            
+          });
+        });
+      });
+      describe('with auth failure', function () {
+        before(async () => {
+          debug('spawning');
+          server = await spawnContext.spawn(); 
+        });
+        after(() => {
+          server.stop(); 
+        });
+        
+        // Bypass authentication check: Fail always
+        beforeEach(async function () {
+          await server.process.
+            sendToChild('mockAuthentication', false);
+        });
+
+        it('refuses invalid/unauthorized accesses', function () {
+          const data = produceData(); 
+          
+          return storeData(data)
+            .expect(403)
+            .then((res) => {
+              const error = res.body.error; 
+              assert.strictEqual(error.id, 'forbidden'); 
+              assert.typeOf(error.message, 'string'); 
+            });
+        });
       });
     });
     describe('storing data in different formats', () => {
