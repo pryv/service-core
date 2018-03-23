@@ -10,3 +10,5 @@ module.exports = {
   RemoteError,
   load: Definition.load, 
 };
+
+export type { Definition };
