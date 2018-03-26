@@ -69,7 +69,7 @@ class Server {
       if (impl == null) 
         throw new Error(`No such method '${methodName}'.`);
       
-      const result = await impl(request);
+      const result = await impl.call(this, request);
       debug('success');
       
       const encodedResult = resType.encode(result).finish();

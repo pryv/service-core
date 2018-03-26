@@ -24,8 +24,14 @@ export interface ConfigAccess {
 class Settings implements ConfigAccess {
   config: Object; 
   
-  constructor() {
+  // Constructs a settings object. If `override` is not null, it is merged 
+  // on top of the defaults that are in place. 
+  // 
+  constructor(override: ?Object) {
     this.config = this.defaults();
+    
+    if (override != null) 
+      lodash.merge(this.config, override);
   }
   defaults() {
     return {
@@ -33,7 +39,7 @@ class Settings implements ConfigAccess {
         // If you add something here, you might also want to include it into 
         // the #getLogSettingsObject return value below.
         prefix: '',
-        console: { active: true, level: 'debug', colorize: true }, 
+        console: { active: true, level: 'info', colorize: true }, 
         file: { active: false },
       }
     };

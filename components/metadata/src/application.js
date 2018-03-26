@@ -21,8 +21,8 @@ class Application {
   
   metadataUpdaterService: ?services.MetadataUpdater;
   
-  constructor() {
-    this.initSettings(); 
+  constructor(settings: ?Object) {
+    this.initSettings(settings); 
     this.initLogger(); 
     this.initTrace(); 
     
@@ -30,8 +30,8 @@ class Application {
     assert(this.settings != null);
   }
     
-  initSettings() {
-    this.settings = new Settings(); 
+  initSettings(settings: ?Object) {
+    this.settings = new Settings(settings); 
   }
   initLogger() {
     const settings = this.settings;
@@ -49,19 +49,26 @@ class Application {
   // 
   async run() {    
     const logger = this.logger; 
-    logger.info('Metadata service is starting...');
+    const settings = this.settings;
     
-    await this.startMetadataUpdater(); 
+    const host = settings.get('metadataUpdater.host').str(); 
+    const port = settings.get('metadataUpdater.port').num(); 
+    const endpoint = `${host}:${port}`;
+    
+    logger.info('Metadata service is starting...');
+    await this.startMetadataUpdater(endpoint); 
   }
   
-  // Initializes and starts the metadata updater service. 
+  // Initializes and starts the metadata updater service. The `endpoint`
+  // parameter should contain an endpoint the service binds to in the form of
+  // HOST:PORT.  
   // 
-  async startMetadataUpdater() {
+  async startMetadataUpdater(endpoint: string) {
     const lf = this.logFactory;
     const service = new services.MetadataUpdater(lf('metadata_updater')); 
     this.metadataUpdaterService = service; 
     
-    await service.start();
+    await service.start(endpoint);
   }
 }
 

@@ -88,11 +88,10 @@ class SpawnContext {
     // Specialize the server we've started using the settings above.
     await process.startServer(settings);
     
-    const baseUrl = `http://localhost:${port}`;
-    debug(`spawned a child at ${baseUrl}`);
+    debug(`spawned a child on port ${port}`);
     
     // Return to our caller - server should be up and answering at this point. 
-    return new Server(baseUrl, process);
+    return new Server(port, process);
   }
   
   // Returns the next free port to use for testing. 
@@ -351,11 +350,13 @@ class ProcessProxy {
 // Public facade to the servers we spawn. 
 //
 class Server {
+  port: number;
   baseUrl: string; 
   process: ProcessProxy;
   
-  constructor(baseUrl: string, proxy: ProcessProxy) {
-    this.baseUrl = baseUrl;
+  constructor(port: number, proxy: ProcessProxy) {
+    this.port = port; 
+    this.baseUrl = `http://localhost:${port}`;
     this.process = proxy; 
   }
   

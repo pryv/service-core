@@ -9,9 +9,7 @@ const helpers = require('./test-helpers');
 const rpc = require('components/tprpc');
 const metadata = require('components/metadata');
 
-describe('Metadata Updater', () => {
-  const endpoint = '127.0.0.1:14000';
-  
+describe('Metadata Updater', () => {  
   // Set up the server end
   let server; 
   before(async () => {
@@ -27,7 +25,7 @@ describe('Metadata Updater', () => {
     const definition = await metadata.updater.definition;
     const client = new rpc.Client(definition);
 
-    service = client.proxy('MetadataUpdaterService', endpoint);
+    service = client.proxy('MetadataUpdaterService', `127.0.0.1:${server.port}`);
   });
   
   it('allows scheduling an update', async () => {

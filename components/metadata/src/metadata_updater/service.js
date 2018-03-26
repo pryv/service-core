@@ -19,7 +19,7 @@ class Service implements IMetadataUpdaterService {
     this.server = new rpc.Server(); 
   }
   
-  async start() {
+  async start(endpoint: string) {
     const logger = this.logger; 
     const server = this.server; 
     
@@ -28,10 +28,15 @@ class Service implements IMetadataUpdaterService {
     server.add(
       definition, 'MetadataUpdaterService', 
       (this: IMetadataUpdaterService));
-    await server.listen('127.0.0.1:7020');
+    await server.listen(endpoint);
+    logger.info('started.');
   }
   
   async scheduleUpdate(req: IUpdateRequest): Promise<IUpdateResponse> {
+    const logger = this.logger; 
+    
+    logger.info('yes, did something');
+    
     req; 
     return {
       deadline: 1
