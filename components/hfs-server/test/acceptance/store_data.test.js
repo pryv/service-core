@@ -342,9 +342,9 @@ describe('Storing data in a HF series', function() {
           
           // Constructs and launches an RPC server on port 14000.
           let rpcServer;
-          before(async () => {
+          beforeEach(async () => {
             const endpoint = '127.0.0.1:14000';
-            
+
             rpcServer = new rpc.Server(); 
             rpcServer.add(definition, 'MetadataUpdaterService', (stub: IMetadataUpdaterService));
             await rpcServer.listen(endpoint);
@@ -352,13 +352,26 @@ describe('Storing data in a HF series', function() {
             // Tell the server (already running) to use our rpc server. 
             await server.process.sendToChild('useMetadataUpdater', endpoint);
           });
-          after(() => {
+          afterEach(async () => {
+            // Since we modified the test server, spawn a new one that is clean. 
+            server.stop(); 
+            server = await spawnContext.spawn(); 
+            
             rpcServer.close();
           });
           
           it('should schedule a metadata update on every store', async () => {
+            let updaterCalled = false; 
+            // FLOW This is ok, we're replacing the stub with something compatible.
+            stub.scheduleUpdate = () => {
+              updaterCalled = true;
+              return Promise.resolve({ deadline: 0});
+            };
+            
             const data = produceData(); 
             await storeData(data).expect(200);
+            
+            assert.isTrue(updaterCalled);
           });
         });
       });

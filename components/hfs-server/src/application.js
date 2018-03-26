@@ -11,7 +11,6 @@ const Settings = require('./Settings');
 const Server = require('./server'); 
 
 import type { LogFactory, Logger } from 'components/utils/src/logging';
-import type { IMetadataUpdaterService, IUpdateResponse } from 'components/metadata';
 
 // const { Tags } = require('opentracing');
 const opentracing = require('opentracing');
@@ -52,7 +51,7 @@ function createContext(settings: Settings, logFactory: LogFactory): Context {
   
   const typeRepoUpdateUrl = settings.get('eventTypes.sourceURL').str();
     
-  return new Context(influx, mongo, logFactory('model'), tracer, typeRepoUpdateUrl);
+  return new Context(influx, mongo, logFactory, tracer, typeRepoUpdateUrl);
 }
 
 // Produce a tracer that allows creating span trees for a subset of all calls. 
@@ -87,13 +86,6 @@ function patchMongoDBDriver(tracer) {
   patch(tracer);
 }
 
-// Produces an instance of Metadata#MetadataUpdaterService which will allow 
-// updating events in MongoDB out of band. 
-// 
-function produceMetadataUpdater(settings: Settings, logger: Logger): IMetadataUpdaterService {
-  return new MetadataForgetter(logger); 
-}
-
 // The HF application holds references to all subsystems and ties everything
 // together. 
 // 
@@ -101,15 +93,12 @@ class Application {
   settings: Settings; 
   logFactory: LogFactory; 
   context: Context; 
-  
-  metadataUpdater: IMetadataUpdaterService;
-  
+    
   server: Server; 
   
   init(settings?: Settings): Application {
     this.settings = settings || createSettings(); 
-    const lf = this.logFactory = createLogFactory(this.settings);
-    this.metadataUpdater = produceMetadataUpdater(this.settings, lf('metadata-updater'));
+    this.logFactory = createLogFactory(this.settings);
     
     this.context = createContext(this.settings, this.logFactory);
 
@@ -127,30 +116,6 @@ class Application {
   run() {
     this.init(); 
     this.start(); 
-  }
-}
-
-// A null object that implements the MetadataUpdaterService interface; if no
-// connection to an updater is configured in the configuration file, this will
-// be used - and no updates will be made. 
-// 
-class MetadataForgetter implements IMetadataUpdaterService {
-  logger: Logger; 
-  
-  constructor(logger: Logger) {
-    this.logger = logger; 
-  }
-  
-  async scheduleUpdate(/* req: IUpdateRequest */): Promise<IUpdateResponse> {
-    const logger = this.logger; 
-    
-    logger.warn('Metadata of events will NOT be updated; please configure the metadata update service.');
-    
-    // Returns the present instant as a deadline, since the operation is 
-    // considered complete. 
-    return {
-      deadline: new Date() * 1e9,
-    };
   }
 }
 

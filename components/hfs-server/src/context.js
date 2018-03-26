@@ -5,10 +5,14 @@ const lodash = require('lodash');
 const business = require('components/business');
 
 const {MetadataLoader, MetadataCache} = require('./metadata_cache');
+const metadataUpdater = require('./metadata_updater');
+
 const cls = require('./tracing/cls');
 
 import type {MetadataRepository} from './metadata_cache';
-import type {Logger} from 'components/utils';
+import type {LogFactory, Logger} from 'components/utils';
+
+import type { IMetadataUpdaterService } from 'components/metadata';
 
 type Repository = business.series.Repository;
 type InfluxConnection = business.series.InfluxConnection; 
@@ -17,13 +21,14 @@ type Database = {}; // NOTE anything but null for now.
 
 import type { Tracer, Span } from 'opentracing';
 
-/** Application context object, holding references to all major subsystems. 
- * Once the system is initialized, these instance references will not change 
- * any more and together make up the configuration of the system. 
- */
+// Application context object, holding references to all major subsystems. Once
+// the system is initialized, these instance references will not change  any
+// more and together make up the configuration of the system.  
+// 
 class Context {
   series: Repository; 
   metadata: MetadataRepository;
+  metadataUpdater: IMetadataUpdaterService;
   
   // Application level performance and error tracing:
   tracer: Tracer; 
@@ -32,21 +37,35 @@ class Context {
   
   constructor(
     influxConn: InfluxConnection, mongoConn: Database, 
-    modelLogger: Logger, tracer: Tracer, 
+    logFactory: LogFactory, tracer: Tracer, 
     typeRepoUpdateUrl: string) 
   {
     this.series = new business.series.Repository(influxConn);
-    this.metadata = this.produceMetadataCache(mongoConn, modelLogger);
-    
+    this.metadataUpdater = new metadataUpdater.MetadataForgetter(logFactory('metadata.update'));    
     this.tracer = tracer;
-    
-    const typeRepo = this.typeRepository = new business.types.TypeRepository(); 
-    typeRepo.tryUpdate(typeRepoUpdateUrl);
+
+    this.configureTypeRepository(typeRepoUpdateUrl); 
+    this.configureMetadataCache(mongoConn, logFactory('model'));
   }
   
-  produceMetadataCache(mongoConn: Database, logger: Logger): MetadataRepository {
-    return new MetadataCache(
+  configureTypeRepository(url: string) {
+    const typeRepo = new business.types.TypeRepository(); 
+    typeRepo.tryUpdate(url); // async
+    
+    this.typeRepository = typeRepo;
+  }
+  
+  configureMetadataCache(mongoConn: Database, logger: Logger) {
+    this.metadata = new MetadataCache(
       new MetadataLoader(mongoConn, logger));
+  }
+  
+  // Configures the metadata updater service. 
+  // 
+  async configureMetadataUpdater(endpoint: string) {
+    const updater = await metadataUpdater.produce(endpoint);
+    
+    this.metadataUpdater = updater;
   }
   
   // Starts a child span below the request span. 
@@ -67,5 +86,5 @@ class Context {
     return span; 
   }
 }
-
 module.exports = Context;
+

@@ -54,6 +54,20 @@ async function storeSeriesData(ctx: Context,
   await seriesInstance.append(data);
   trace.finish('append'); 
   
+  trace.start('metadataUpdate');
+  await ctx.metadataUpdater.scheduleUpdate({ // async, not waiting for answer
+    userId: userName, 
+    eventId: eventId, 
+    
+    author: accessToken, 
+    timestamp: new Date() * 1e9, 
+    dataExtent: {
+      from: new Date() * 1e9, // TODO WRONG
+      to: new Date() * 1e9, 
+    }
+  });
+  trace.finish('metadataUpdate');
+  
   res
     .status(200)
     .json({status: 'ok'});

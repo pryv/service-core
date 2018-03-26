@@ -43,8 +43,12 @@ class ApplicationLauncher {
   }
 
   // Tells the server to use the metadata updater service located at `endpoint`
-  useMetadataUpdater(endpoint) {
-    console.log('Using MetadataUpdaterService endpoint', endpoint);
+  async useMetadataUpdater(endpoint) {
+    const app = this.app; 
+    if (app == null) throw new Error('AF: app should not be null anymore');
+    
+    const context = app.context; 
+    await context.configureMetadataUpdater(endpoint);
   }
 
   launch(injectSettings: {}) {

@@ -83,7 +83,7 @@ describe('Base API', () => {
     catch (err) {
       caught = true; 
       
-      assert.strictEqual(err.message, 'Error: server-side error')
+      assert.strictEqual(err.message, 'Error: server-side error');
     }
     
     assert.isTrue(caught);
