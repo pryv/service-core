@@ -55,7 +55,7 @@ async function storeSeriesData(ctx: Context,
   trace.finish('append'); 
   
   trace.start('metadataUpdate');
-  await ctx.metadataUpdater.scheduleUpdate({ // async, not waiting for answer
+  await ctx.metadataUpdater.scheduleUpdate({
     userId: userName, 
     eventId: eventId, 
     

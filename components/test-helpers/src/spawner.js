@@ -53,6 +53,7 @@ class SpawnContext {
     const childPath = this.childPath;
     
     while (this.pool.length < PRESPAWN_LIMIT) {
+      debug('prespawn process');
       const childProcess = child_process.fork(childPath);
       const proxy = new ProcessProxy(childProcess, this);
 
@@ -64,7 +65,12 @@ class SpawnContext {
   
   // Spawns a server instance. 
   //
-  async spawn(): Promise<Server> {
+  async spawn (): Promise<Server> {
+    // If by any chance we exhausted our processes really quickly, make 
+    // sure to spawn a few now. 
+    if (this.pool.length <= 0)
+      this.prespawn();
+    
     // Find a port to use
     // TODO Free ports once done.
     const port = await this.allocatePort(); 
@@ -270,6 +276,9 @@ class ProcessProxy {
   // Starts the express/socket.io server with the settings given. 
   // 
   async startServer(settings: mixed): Promise<void> {
+    if (this.exited.isBurnt())
+      throw new Error('Child exited prematurely; please check your setup code.');
+    
     await this.sendToChild('int_startServer', settings);
     
     debug('child started');
