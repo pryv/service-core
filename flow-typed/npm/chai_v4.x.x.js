@@ -71,19 +71,21 @@ declare module "chai" {
       msg?: string
     ) => ExpectChain<T>,
 
-    respondTo: (method: string) => ExpectChain<T>,
+    respondTo: (method: string, message?: string) => ExpectChain<T>,
     itself: ExpectChain<T>,
 
-    satisfy: (method: (value: T) => boolean) => ExpectChain<T>,
+    satisfy: (method: (value: T) => boolean, message?: string) => ExpectChain<T>,
 
-    closeTo: (expected: T & number, delta: number) => ExpectChain<T>,
+    closeTo: (expected: T & number, delta: number, message?: string) => ExpectChain<T>,
 
-    members: (set: mixed) => ExpectChain<T>,
-    oneOf: (list: Array<T>) => ExpectChain<T>,
+    members: (set: mixed, message?: string) => ExpectChain<T>,
+    oneOf: (list: Array<T>, message?: string) => ExpectChain<T>,
 
-    change: (obj: mixed, key: string) => ExpectChain<T>,
-    increase: (obj: mixed, key: string) => ExpectChain<T>,
-    decrease: (obj: mixed, key: string) => ExpectChain<T>,
+    change: (obj: mixed, key: string, message?: string) => ExpectChain<T>,
+    increase: (obj: mixed, key: string, message?: string) => ExpectChain<T>,
+    decrease: (obj: mixed, key: string, message?: string) => ExpectChain<T>,
+
+    by: (delta: number, message?: string) => ExpectChain<T>,
 
     // dirty-chai
     ok: () => ExpectChain<T>,
@@ -137,7 +139,9 @@ declare module "chai" {
     data: (key: string, val?: any) => ExpectChain<T>,
     prop: (key: string, val?: any) => ExpectChain<T>,
     state: (key: string, val?: any) => ExpectChain<T>,
-    value: (val: string) => ExpectChain<T>
+    value: (val: string) => ExpectChain<T>,
+    className: (val: string) => ExpectChain<T>,
+    text: (val: string) => ExpectChain<T>
   };
 
   declare function expect<T>(actual: T, message?: string): ExpectChain<T>;
