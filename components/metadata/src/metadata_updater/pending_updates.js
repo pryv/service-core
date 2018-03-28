@@ -85,6 +85,9 @@ class PendingUpdate {
   }
   
   merge(other: PendingUpdate) {
+    if (this.key() !== other.key()) 
+      throw new Error('Attempting update with data for a different series.');
+      
     
   }
 }

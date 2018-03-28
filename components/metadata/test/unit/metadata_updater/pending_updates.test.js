@@ -62,3 +62,58 @@ describe('PendingUpdatesMap', () => {
     });
   });
 });
+
+describe('PendingUpdate', () => {
+  describe('#merge', () => {
+    const now = new Date() / 1e3; 
+    const update1: PendingUpdate = PendingUpdate.fromUpdateRequest({
+      userId: 'user', 
+      eventId: 'event', 
+      
+      author: 'token1', 
+      timestamp: now, 
+      dataExtent: {
+        from: now - 100, 
+        to: now, 
+      }
+    });
+    const update2: PendingUpdate = PendingUpdate.fromUpdateRequest({
+      userId: 'user', 
+      eventId: 'event', 
+      
+      author: 'token2', 
+      timestamp: now+10, 
+      dataExtent: {
+        from: now - 200, 
+        to: now - 20, 
+      }
+    });
+    
+    it('constructively merges two updates', () => {
+      update1.merge(update2);
+      
+      const req1 = update1.request;
+      assert.strictEqual(req1.userId, 'user');
+      assert.strictEqual(req1.eventId, 'event');
+      
+      // update2 is later (timestamp), and thus this is the last author
+      assert.strictEqual(req1.author, 'token2');
+      assert.approximately(req1.timestamp, now + 10, 1);
+    });
+    it('fails when key is not equal', () => {
+      const failing: PendingUpdate = PendingUpdate.fromUpdateRequest({
+        userId: 'user - no match', 
+        eventId: 'event', 
+        
+        author: 'token1', 
+        timestamp: now, 
+        dataExtent: {
+          from: now - 100, 
+          to: now, 
+        }
+      });
+      
+      assert.throws(() => update1.merge(failing));
+    });
+  });
+});
