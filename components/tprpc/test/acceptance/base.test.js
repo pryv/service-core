@@ -1,6 +1,6 @@
 // @flow
 
-/* global describe, it, before, after */
+/* global describe, it, before, after, beforeEach, afterEach */
 
 const chai = require('chai');
 const assert = chai.assert; 
@@ -21,7 +21,7 @@ describe('Base API', () => {
   });
   
   // If nothing else is done, this is the server implementation
-  const stub: ISearchService = {
+  const impl: ISearchService = {
     search: () => {
       return Promise.resolve({
         results: [
@@ -32,10 +32,21 @@ describe('Base API', () => {
     }
   };
   
+  // Stub allows using sinon-api on the impl#search function.
+  let stub;
+  beforeEach(() => {
+    stub = sinon.stub(impl, 'search');
+    stub.callThrough();
+  });
+  afterEach(() => {
+    stub.restore();
+  });
+  
+  // RPC server, serving impl
   let server; 
   before(async () => {
     server = new rpc.Server();
-    server.add(definition, 'SearchService', (stub: ISearchService));
+    server.add(definition, 'SearchService', (impl: ISearchService));
     await server.listen(endpoint);
   });
   after(() => {
@@ -50,8 +61,6 @@ describe('Base API', () => {
   });
   
   it('making a call', async () => {
-    sinon.spy(stub, 'search');
-    
     const response = await proxy.search({
       query: 'select content from events', 
       pageNumber: 1, 
@@ -59,11 +68,11 @@ describe('Base API', () => {
       corpus: Corpus.WEB, 
     });
   
-    sinon.assert.calledOnce(stub.search);
-    sinon.assert.calledWith(stub.search, 
+    sinon.assert.calledOnce(impl.search);
+    sinon.assert.calledWith(impl.search, 
       sinon.match({ query: 'select content from events' }));
 
-    sinon.assert.calledOn(stub.search, stub);
+    sinon.assert.calledOn(impl.search, impl);
   
     // Don't think too hard about this, it's all hard coded.
     assert.strictEqual(response.results.length, 2); 
@@ -73,24 +82,9 @@ describe('Base API', () => {
     const res1 = response.results[1];
     assert.strictEqual(res1.title, 'A title 2');
   });
-  it.skip('failing a call (server-side)', async () => {
-    const definition = await rpc.load(__dirname + '/../fixtures/base.proto');
-    
-    const endpoint = '127.0.0.1:4020';
-  
-    const impl: ISearchService = {
-      search: () => {
-        throw new Error('server-side error');
-      }
-    };
-  
-    const server = new rpc.Server();
-    server.add(definition, 'SearchService', (impl: ISearchService));
-    await server.listen(endpoint);
-  
-    const client = new rpc.Client(definition);
-    const proxy: ISearchService = client.proxy('SearchService', endpoint); 
-      
+  it('failing a call (server-side)', async () => {
+    stub.throws(new Error('server-side error'));
+          
     let caught = false; 
     try {
       await proxy.search({
@@ -107,8 +101,5 @@ describe('Base API', () => {
     }
     
     assert.isTrue(caught);
-
-    server.close(); 
   });
-  
 });
