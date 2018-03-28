@@ -88,7 +88,14 @@ class PendingUpdate {
     if (this.key() !== other.key()) 
       throw new Error('Attempting update with data for a different series.');
       
-    
+    const ts = (e: PendingUpdate) => e.request.timestamp;
+    const [earlier, later] = [this, other]
+      .sort((a, b) => ts(a) - ts(b));
+      
+    const request = this.request;
+    const latReq  = later.request; 
+    request.author = latReq.author;
+    request.timestamp = ts(later);
   }
 }
 
