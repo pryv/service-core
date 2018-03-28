@@ -4,8 +4,6 @@
 
 /* global describe, it, before, after */
 
-const Long = require('long');
-
 const chai = require('chai');
 const assert = chai.assert; 
 
@@ -57,8 +55,8 @@ describe('Metadata Updater', () => {
     
     assert.isTrue(update.found);
     
-    const deadline = Long.fromValue(update.deadline);
-    const min15 = 15 * 60;
-    assert.approximately(deadline, (now + min15), 2);
+    const deadline = update.deadline;
+    const min5 = 5 * 60;
+    assert.approximately(deadline, (now + min5), 2);
   });
 });

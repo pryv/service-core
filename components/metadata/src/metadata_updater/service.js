@@ -5,6 +5,7 @@
 const rpc = require('components/tprpc');
 
 const definitionFactory = require('./definition');
+const { PendingUpdatesMap, PendingUpdate } = require('./pending_updates');
 
 import type { Logger } from 'components/utils/src/logging';
 import type { IMetadataUpdaterService, IUpdateRequest, IUpdateResponse, 
@@ -15,9 +16,12 @@ class Service implements IMetadataUpdaterService {
   
   server: rpc.Server;
   
+  pending: PendingUpdatesMap; 
+  
   constructor(logger: Logger) {
     this.logger = logger; 
     this.server = new rpc.Server(); 
+    this.pending = new PendingUpdatesMap(); 
   }
   
   async start(endpoint: string) {
@@ -34,22 +38,34 @@ class Service implements IMetadataUpdaterService {
   }
   
   async scheduleUpdate(req: IUpdateRequest): Promise<IUpdateResponse> {
-    const logger = this.logger; 
+    const pending = this.pending; 
+    // const logger = this.logger; 
     
-    logger.info('yes, did something');
+    const update = PendingUpdate.fromUpdateRequest(req);
+    pending.merge(update);
     
-    req; 
     return {
       deadline: 1
     };
   }
   
   async getPendingUpdate(req: IUpdateId): Promise<IPendingUpdate> {
-    req; 
+    const pending = this.pending; 
+    
+    const update = pending.get(PendingUpdate.key(req));
+
+    if (update == null) {
+      return {
+        found: false, 
+        deadline: 0, 
+      };
+    }
+    
+    // assert: update != null
     
     return {
-      found: false, 
-      deadline: 1,
+      found: true, 
+      deadline: update.deadline,
     };
   }
 }
