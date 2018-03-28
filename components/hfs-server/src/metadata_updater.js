@@ -5,7 +5,7 @@
 const rpc = require('components/tprpc');
 const metadata = require('components/metadata');
 
-import type { IMetadataUpdaterService, IUpdateResponse } from 'components/metadata';
+import type { IMetadataUpdaterService, IUpdateResponse, IPendingUpdate } from 'components/metadata';
 import type { Logger } from 'components/utils';
 
 async function produceMetadataUpdater(endpoint: string): Promise<IMetadataUpdaterService> {
@@ -33,7 +33,14 @@ class MetadataForgetter implements IMetadataUpdaterService {
     // Returns the present instant as a deadline, since the operation is 
     // considered complete. 
     return {
-      deadline: new Date() * 1e9,
+      deadline: new Date() / 1e3,
+    };
+  }
+  
+  async getPendingUpdate(/* req: IUpdateId */): Promise<IPendingUpdate> {
+    return {
+      found: false, 
+      deadline: new Date() / 1e3,
     };
   }
 }

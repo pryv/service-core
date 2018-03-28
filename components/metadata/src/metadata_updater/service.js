@@ -7,7 +7,8 @@ const rpc = require('components/tprpc');
 const definitionFactory = require('./definition');
 
 import type { Logger } from 'components/utils/src/logging';
-import type { IMetadataUpdaterService, IUpdateRequest, IUpdateResponse } from './interface';
+import type { IMetadataUpdaterService, IUpdateRequest, IUpdateResponse, 
+  IUpdateId, IPendingUpdate } from './interface';
 
 class Service implements IMetadataUpdaterService {
   logger: Logger;
@@ -40,6 +41,15 @@ class Service implements IMetadataUpdaterService {
     req; 
     return {
       deadline: 1
+    };
+  }
+  
+  async getPendingUpdate(req: IUpdateId): Promise<IPendingUpdate> {
+    req; 
+    
+    return {
+      found: false, 
+      deadline: 1,
     };
   }
 }

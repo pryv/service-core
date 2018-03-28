@@ -55,15 +55,16 @@ async function storeSeriesData(ctx: Context,
   trace.finish('append'); 
   
   trace.start('metadataUpdate');
+  const now = new Date() / 1e3;
   await ctx.metadataUpdater.scheduleUpdate({
     userId: userName, 
     eventId: eventId, 
     
     author: accessToken, 
-    timestamp: new Date() * 1e9, 
+    timestamp: now, 
     dataExtent: {
-      from: new Date() * 1e9, // TODO WRONG
-      to: new Date() * 1e9, 
+      from: now, // TODO WRONG
+      to: now, 
     }
   });
   trace.finish('metadataUpdate');

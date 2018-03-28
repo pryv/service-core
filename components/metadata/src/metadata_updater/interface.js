@@ -17,6 +17,15 @@ export interface ITimeRange {
 export interface IUpdateResponse {
   deadline: number;  // id = 1
 }
+export interface IUpdateId {
+  userId: string;  // id = 1
+  eventId: string;  // id = 2
+}
+export interface IPendingUpdate {
+  found: boolean;  // id = 1
+  deadline: number;  // id = 2
+}
 export interface IMetadataUpdaterService {
   scheduleUpdate(req: IUpdateRequest): Promise<IUpdateResponse>;
+  getPendingUpdate(req: IUpdateId): Promise<IPendingUpdate>;
 }

@@ -12,15 +12,15 @@ message UpdateRequest {
   
   // Information about the update: 
   string author = 3;
-  uint64 timestamp = 4; 
+  double timestamp = 4; // in seconds
   TimeRange data_extent = 5; 
 }
 
 // Describes a time range starting at `from` through `to`, inclusively.
 // 
 message TimeRange {
-  uint64 from = 1; 
-  uint64 to = 2; 
+  double from = 1; // in seconds
+  double to = 2; // in seconds
 }
 
 // If the call is sucessful, the metadata updater responds with the deadline
@@ -28,10 +28,20 @@ message TimeRange {
 // configuration, since there might be other updates that need to be flushed.
 // 
 message UpdateResponse {
-  uint64 deadline = 1;
+  double deadline = 1;  // in seconds
+}
+
+message UpdateId {
+  string user_id = 1;
+  string event_id = 2; 
+}
+message PendingUpdate {
+  bool found = 1; 
+  double deadline = 2; // not set if found === false, in seconds
 }
 
 service MetadataUpdaterService {
   rpc ScheduleUpdate (UpdateRequest) returns (UpdateResponse);
+  rpc GetPendingUpdate (UpdateId) returns (PendingUpdate);
 }
 

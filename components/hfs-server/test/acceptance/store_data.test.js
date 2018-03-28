@@ -19,7 +19,7 @@ const { databaseFixture } = require('components/test-helpers');
 const rpc = require('components/tprpc');
 const metadata = require('components/metadata');
 
-import type { IMetadataUpdaterService, IUpdateResponse } from 'components/metadata';
+import type { IMetadataUpdaterService } from 'components/metadata';
 
 type Header = Array<string>; 
 type Rows   = Array<Row>; 
@@ -331,6 +331,7 @@ describe('Storing data in a HF series', function() {
           beforeEach(() => {
             stub = {
               scheduleUpdate: () => { return Promise.resolve({ deadline: 0}); },
+              getPendingUpdate: () => { return Promise.resolve({ found: false, deadline: 0 }); },
             };
           });
           

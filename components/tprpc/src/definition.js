@@ -193,10 +193,14 @@ class Compiler {
     
     switch (name) {
       case 'string': return 'string';
+      
       case 'int32': 
       case 'int64': 
       case 'uint32': 
       case 'uint64': return 'number';
+      case 'double': return 'number';
+      
+      case 'bool': return 'boolean';
       
       default:
       // Assuming name is a constructed type as well. 
