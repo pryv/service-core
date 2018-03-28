@@ -84,6 +84,10 @@ class PendingUpdate {
     return key(request.userId, request.eventId);
   }
   
+  // Merges two pending updates for a given key. Merges are done according 
+  // to the meaning of each update field; for example the update that is 
+  // later will determine the update author. This method modifies this. 
+  // 
   merge(other: PendingUpdate) {
     if (this.key() !== other.key()) 
       throw new Error('Attempting update with data for a different series.');
