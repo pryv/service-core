@@ -4,6 +4,10 @@
 
 /* global describe, it, beforeEach */
 
+const chai = require('chai');
+const assert = chai.assert;
+const sinon = require('sinon');
+
 const { PendingUpdatesMap, PendingUpdate } = 
   require('../../../src/metadata_updater/pending_updates');
 
@@ -19,11 +23,22 @@ describe('PendingUpdatesMap', () => {
       userId: 'user', 
       eventId: 'event', 
       
-      author: 'token', 
+      author: 'token1', 
       timestamp: now, 
       dataExtent: {
         from: now - 100, 
         to: now, 
+      }
+    });
+    const update2: PendingUpdate = PendingUpdate.fromUpdateRequest({
+      userId: 'user', 
+      eventId: 'event', 
+      
+      author: 'token2', 
+      timestamp: now+10, 
+      dataExtent: {
+        from: now - 200, 
+        to: now - 20, 
       }
     });
     
@@ -33,9 +48,17 @@ describe('PendingUpdatesMap', () => {
       
       if (value == null) 
         throw new Error('Should not be null.');
+        
+      assert.deepEqual(value, update1);
     });
     it('merges updates with preexisting updates via #merge', () => {
+      sinon.stub(update1, 'merge'); 
       
+      map.merge(update1);
+      map.merge(update2);
+
+      sinon.assert.calledOnce(update1.merge);
+      sinon.assert.calledWith(update1.merge, update2);
     });
   });
 });

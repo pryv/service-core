@@ -18,10 +18,22 @@ class PendingUpdatesMap {
   // is represented by our next update. See design document (HF Pryv) on how
   // updates are  merged in detail.  
   // 
+  // The collection takes ownership of the `update` parameter, meaning it may 
+  // well modify it down the line. 
+  // 
   merge(update: PendingUpdate) {
     const map = this.map; 
     
-    map.set(update.key(), update);
+    const key = update.key(); 
+    if (map.has(key)) {
+      const existing = map.get(key);
+      if (existing == null) throw new Error('AF: existing cannot be null');
+      
+      existing.merge(update);
+    }
+    else {
+      map.set(update.key(), update);
+    }
   }
   
   // Returns a pending update stored under `key` if such an update exists 
@@ -70,6 +82,10 @@ class PendingUpdate {
   key(): PendingUpdateKey {
     const request = this.request; 
     return key(request.userId, request.eventId);
+  }
+  
+  merge(other: PendingUpdate) {
+    
   }
 }
 
