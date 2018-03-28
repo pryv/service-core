@@ -87,15 +87,25 @@ class PendingUpdate {
   merge(other: PendingUpdate) {
     if (this.key() !== other.key()) 
       throw new Error('Attempting update with data for a different series.');
-      
+    
+    // The later update wins for timestamp and author
     const ts = (e: PendingUpdate) => e.request.timestamp;
-    const [earlier, later] = [this, other]
-      .sort((a, b) => ts(a) - ts(b));
+    const later = [this, other]
+      .sort((a, b) => ts(a) - ts(b))[1];
       
     const request = this.request;
     const latReq  = later.request; 
     request.author = latReq.author;
     request.timestamp = ts(later);
+    
+    // Take the union of the two dataExtents. 
+    const dataExtent = request.dataExtent;
+    const otherExtent = other.request.dataExtent;
+    dataExtent.from = Math.min(dataExtent.from, otherExtent.from);
+    dataExtent.to = Math.max(dataExtent.to, otherExtent.to); 
+    
+    // Earliest deadline wins.
+    this.deadline = Math.min(this.deadline, other.deadline);
   }
 }
 

@@ -66,30 +66,40 @@ describe('PendingUpdatesMap', () => {
 describe('PendingUpdate', () => {
   describe('#merge', () => {
     const now = new Date() / 1e3; 
-    const update1: PendingUpdate = PendingUpdate.fromUpdateRequest({
-      userId: 'user', 
-      eventId: 'event', 
-      
-      author: 'token1', 
-      timestamp: now, 
-      dataExtent: {
-        from: now - 100, 
-        to: now, 
-      }
+    
+    let update1: PendingUpdate;
+    beforeEach(() => {
+      update1 = PendingUpdate.fromUpdateRequest({
+        userId: 'user', 
+        eventId: 'event', 
+        
+        author: 'token1', 
+        timestamp: now, 
+        dataExtent: {
+          from: now - 100, 
+          to: now - 20, 
+        }
+      });
     });
-    const update2: PendingUpdate = PendingUpdate.fromUpdateRequest({
-      userId: 'user', 
-      eventId: 'event', 
-      
-      author: 'token2', 
-      timestamp: now+10, 
-      dataExtent: {
-        from: now - 200, 
-        to: now - 20, 
-      }
+    let update2: PendingUpdate;
+    beforeEach(() => {
+      update2 = PendingUpdate.fromUpdateRequest({
+        userId: 'user', 
+        eventId: 'event', 
+
+        author: 'token2', 
+        timestamp: now+10, 
+        dataExtent: {
+          from: now - 200, 
+          to: now, 
+        }
+      });
     });
     
     it('constructively merges two updates', () => {
+      update1.deadline = now + 30; 
+      update2.deadline = now + 20;
+      
       update1.merge(update2);
       
       const req1 = update1.request;
@@ -99,6 +109,14 @@ describe('PendingUpdate', () => {
       // update2 is later (timestamp), and thus this is the last author
       assert.strictEqual(req1.author, 'token2');
       assert.approximately(req1.timestamp, now + 10, 1);
+      
+      // dataExtent is merged by widening the range covered as far as possible. 
+      assert.approximately(req1.dataExtent.from, now-200, 1, 
+        'update2 covers more of the past, and thus wins for from');
+      assert.approximately(req1.dataExtent.to, now, 1, 
+        'update1 covers more in the present and wins');
+      
+      assert.approximately(update1.deadline, now + 20, 1, 'earlier deadline wins');
     });
     it('fails when key is not equal', () => {
       const failing: PendingUpdate = PendingUpdate.fromUpdateRequest({
