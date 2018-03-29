@@ -39,7 +39,7 @@ class Settings implements ConfigAccess {
         // If you add something here, you might also want to include it into 
         // the #getLogSettingsObject return value below.
         prefix: '',
-        console: { active: true, level: 'info', colorize: true }, 
+        console: { active: true, level: 'warn', colorize: true }, 
         file: { active: false },
       }
     };
