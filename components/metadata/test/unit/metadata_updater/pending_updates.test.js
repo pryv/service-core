@@ -11,7 +11,16 @@ const sinon = require('sinon');
 const { PendingUpdatesMap, PendingUpdate } = 
   require('../../../src/metadata_updater/pending_updates');
 
-describe('PendingUpdatesMap', () => {
+type UpdateAttrs = {
+  from?: number, 
+  to?: number, 
+  timestamp?: number, 
+  author?: string, 
+  userId?: string, 
+  eventId?: string, 
+};
+
+describe('PendingUpdatesMap', () => {  
   describe('#merge and #get', () => {
     let map: PendingUpdatesMap;
     beforeEach(() => {
@@ -19,29 +28,14 @@ describe('PendingUpdatesMap', () => {
     });
     
     const now = new Date() / 1e3; 
-    const update1: PendingUpdate = PendingUpdate.fromUpdateRequest({
-      userId: 'user', 
-      eventId: 'event', 
-      
-      author: 'token1', 
-      timestamp: now, 
-      dataExtent: {
-        from: now - 100, 
-        to: now, 
-      }
-    });
-    const update2: PendingUpdate = PendingUpdate.fromUpdateRequest({
-      userId: 'user', 
-      eventId: 'event', 
-      
+    const update1: PendingUpdate = makeUpdate(now);
+    const update2: PendingUpdate = makeUpdate(now, {
       author: 'token2', 
-      timestamp: now+10, 
-      dataExtent: {
-        from: now - 200, 
-        to: now - 20, 
-      }
+      timestamp: now + 10, 
+      from: now - 200, 
+      to: now - 20,
     });
-    
+        
     it('stores updates', () => {
       map.merge(update1); 
       const value = map.get(update1.key());
@@ -59,6 +53,40 @@ describe('PendingUpdatesMap', () => {
 
       sinon.assert.calledOnce(update1.merge);
       sinon.assert.calledWith(update1.merge, update2);
+    });
+  });
+  describe('#elapsed', () => {
+    let map: PendingUpdatesMap;
+    beforeEach(() => {
+      map = new PendingUpdatesMap(); 
+    });
+    
+    const now = new Date() / 1e3;
+    
+    // Populate the map with 10 updates, starting 10 minutes ago and entering an
+    // update every minute. 
+    let updates: Array<PendingUpdate>;
+    beforeEach(() => {
+      updates = [];
+      
+      let time = now - 10*60; 
+      for (let min=0; min<10; min++) {
+        updates.push(
+          makeUpdate(time + min*60, {
+            eventId: `event@${min}`,
+          }));
+      }
+      
+      // Store those all in the map
+      for (const update of updates) map.merge(update);
+    });
+    
+    it('returns all updates that should be flushed', () => {
+      // 5 minutes ago, half of the updates should have met their deadline.
+      const updates = map.getElapsed(now - 5*60);
+      
+      assert.strictEqual(updates.length, 5);
+      assert.strictEqual(map.size(), 5);
     });
   });
 });
@@ -135,3 +163,19 @@ describe('PendingUpdate', () => {
     });
   });
 });
+
+function makeUpdate(now: number, attrs: UpdateAttrs={}): PendingUpdate {
+  const myAttrs = {
+    userId: attrs.userId || 'user', 
+    eventId: attrs.eventId || 'event', 
+    
+    author: attrs.author || 'token1', 
+    timestamp: attrs.timestamp || now, 
+    dataExtent: {
+      from: attrs.from || (now - 100), 
+      to: attrs.to || now, 
+    }
+  };
+  
+  return PendingUpdate.fromUpdateRequest(myAttrs);
+}

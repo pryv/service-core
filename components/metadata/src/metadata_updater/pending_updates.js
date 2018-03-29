@@ -44,6 +44,20 @@ class PendingUpdatesMap {
 
     return map.get(key) || null;
   }
+
+  // Returns the amount of updates the map stores.
+  // 
+  size(): number {
+    return this.map.size;
+  }
+  
+  // Using the heap index, return all the updates that are past their deadline. 
+  // Ownership passes to the caller; the updates are deleted from all internal
+  // structures. 
+  // 
+  getElapsed(): Array<PendingUpdate> {
+    return [];
+  }
 }
 
 type UpdateStruct = {
