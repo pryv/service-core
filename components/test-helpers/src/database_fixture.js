@@ -5,6 +5,7 @@ const R = require('ramda');
 const lodash = require('lodash');
 const Charlatan = require('charlatan');
 const generateId = require('cuid');
+const debug = require('debug')('databaseFixture');
 
 const storage = require('components/storage');
 
@@ -59,12 +60,16 @@ class UserContext {
 
 interface ChildResource {
   create(): Promise<mixed>;
+  childs: ChildHolder;
+  attrs: Attributes;
 }
 class GenericChildHolder<T: ChildResource> {
   childs: Array<T>; 
+  pending: Array<Promise<*>>;
   
   constructor() {
     this.childs = []; 
+    this.pending = [];
   }
   
   push(child: T) {
@@ -84,13 +89,22 @@ class GenericChildHolder<T: ChildResource> {
   // (if given) needs to be of the same type, subclass of T. 
   // 
   create<U: T>(resource: U, cb?: (U) => mixed): Promise<U> {
-    return resource.create()
+    const name = resource.constructor.name;
+    debug('create', name, resource.attrs);
+    
+    const createdResource = resource.create();
+    this.pending.push(createdResource);
+    
+    return createdResource
       .then(() => {
         this.push(resource);
+        debug(name, 'entering cb');
         if (cb) cb(resource);
-                
-        return resource; 
-      });
+        debug(name, 'leaving cb, has ', this.pending.length, 'pending.');
+          
+        return bluebird.all(resource.childs.pending); 
+      })
+      .then(() => resource);
   }
 
   // Calls fun for each child, accumulating the promises returned by fun and 
@@ -179,9 +193,7 @@ class Fixture {
   }
 }
 
-class FixtureUser extends FixtureTreeNode implements ChildResource {
-  attrs: Attributes; 
-  
+class FixtureUser extends FixtureTreeNode implements ChildResource {  
   /** Internal constructor for a user fixture. */
   constructor(context: UserContext, name: string, attrs: {}) {
     super(
@@ -260,7 +272,6 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
   }
 }
 class FixtureStream extends FixtureTreeNode implements ChildResource {
-  attrs: Attributes; 
   parentId: ?string; 
   
   constructor(context: UserContext, attrs: {}, parentId: ?string) {
@@ -274,7 +285,8 @@ class FixtureStream extends FixtureTreeNode implements ChildResource {
 
     return this.childs.create(s, cb);
   }
-  event(attrs: {}) {
+  event(attrs: {}): Promise<FixtureEvent> {
+    debug('event', attrs);
     const e = new FixtureEvent(this.context, attrs, this.attrs.id); 
     
     return this.childs.create(e);
