@@ -70,7 +70,7 @@ type EpochTime = number; // time in seconds since epoch
 // A generalisation of something that executes and takes some time. FP people
 // would use a function here. 
 // 
-interface Operation {
+export interface Operation {
   run(): Promise<*>;
 }
 
