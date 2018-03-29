@@ -82,8 +82,9 @@ describe('PendingUpdatesMap', () => {
     });
     
     it('returns all updates that should be flushed', () => {
-      // 5 minutes ago, half of the updates should have met their deadline.
-      const updates = map.getElapsed(now - 5*60);
+      // 5 of the updates will have elapsed already, since they've been created
+      // > 5min ago. 
+      const updates = map.getElapsed(now-1);
       
       assert.strictEqual(updates.length, 5);
       assert.strictEqual(map.size(), 5);
@@ -97,7 +98,7 @@ describe('PendingUpdate', () => {
     
     let update1: PendingUpdate;
     beforeEach(() => {
-      update1 = PendingUpdate.fromUpdateRequest({
+      update1 = PendingUpdate.fromUpdateRequest(now, {
         userId: 'user', 
         eventId: 'event', 
         
@@ -111,7 +112,7 @@ describe('PendingUpdate', () => {
     });
     let update2: PendingUpdate;
     beforeEach(() => {
-      update2 = PendingUpdate.fromUpdateRequest({
+      update2 = PendingUpdate.fromUpdateRequest(now, {
         userId: 'user', 
         eventId: 'event', 
 
@@ -147,16 +148,8 @@ describe('PendingUpdate', () => {
       assert.approximately(update1.deadline, now + 20, 1, 'earlier deadline wins');
     });
     it('fails when key is not equal', () => {
-      const failing: PendingUpdate = PendingUpdate.fromUpdateRequest({
+      const failing = makeUpdate(now, {
         userId: 'user - no match', 
-        eventId: 'event', 
-        
-        author: 'token1', 
-        timestamp: now, 
-        dataExtent: {
-          from: now - 100, 
-          to: now, 
-        }
       });
       
       assert.throws(() => update1.merge(failing));
@@ -177,5 +170,5 @@ function makeUpdate(now: number, attrs: UpdateAttrs={}): PendingUpdate {
     }
   };
   
-  return PendingUpdate.fromUpdateRequest(myAttrs);
+  return PendingUpdate.fromUpdateRequest(now, myAttrs);
 }

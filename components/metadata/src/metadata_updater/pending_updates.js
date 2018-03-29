@@ -1,5 +1,8 @@
 // @flow
 
+const debug = require('debug')('PUM');
+const Heap = require('heap');
+
 // Code related to bookkeeping for pending updates. Will probably move. 
 
 import type { IUpdateRequest, IUpdateId } from './interface';
@@ -9,9 +12,11 @@ type EpochTime = number; // in seconds
 class PendingUpdatesMap {
   // Currently pending updates. 
   map: Map<PendingUpdateKey, PendingUpdate>; 
+  heap: Heap<PendingUpdate>;
   
   constructor() {
     this.map = new Map(); 
+    this.heap = new Heap(comparePendingUpdates);
   }
   
   // Merges the `update` into the map, so that in the end, the data in `update`
@@ -23,6 +28,7 @@ class PendingUpdatesMap {
   // 
   merge(update: PendingUpdate) {
     const map = this.map; 
+    const heap = this.heap;
     
     const key = update.key(); 
     if (map.has(key)) {
@@ -30,14 +36,19 @@ class PendingUpdatesMap {
       if (existing == null) throw new Error('AF: existing cannot be null');
       
       existing.merge(update);
+      
+      // Now that we've possibly modified the timestamps on `existing`, let's 
+      // rebuild the heap. 
+      heap.updateItem(existing);
     }
     else {
       map.set(update.key(), update);
+      heap.push(update);
     }
   }
   
   // Returns a pending update stored under `key` if such an update exists 
-  // currently. 
+  // currently. Ownership remains with the map.
   // 
   get(key: PendingUpdateKey): ?PendingUpdate {
     const map = this.map; 
@@ -55,8 +66,34 @@ class PendingUpdatesMap {
   // Ownership passes to the caller; the updates are deleted from all internal
   // structures. 
   // 
-  getElapsed(): Array<PendingUpdate> {
-    return [];
+  getElapsed(now: EpochTime): Array<PendingUpdate> {
+    const heap = this.heap;
+    const map = this.map;
+    const elapsed = [];
+    
+    debug(`getElapsed, heap is ${heap.size()} items.`);
+    
+    while (heap.size() > 0) {
+      const head = heap.peek(); 
+      if (head == null) throw new Error('AF: Heap is not empty, head must be an element');
+      
+      debug('Peek head has deadline', head.deadline, `(and it is now ${now} o'clock)`);
+      
+      if (head.deadline > now) break; 
+      
+      // assert: head has elapsed and the heap is not empty
+      
+      // Remove the element from both the map and the heap
+      const elapsedUpdate = heap.pop(); 
+      if (elapsedUpdate == null) throw new Error('AF: Heap is not empty, head must be an element');
+      
+      map.delete(elapsedUpdate.key());
+      
+      // And prepare to return it to the caller. 
+      elapsed.push(elapsedUpdate);
+    }
+    
+    return elapsed;
   }
 }
 
@@ -80,17 +117,16 @@ class PendingUpdate {
   
   deadline: EpochTime; // time from epoch, in seconds
   
-  static fromUpdateRequest(req: IUpdateRequest): PendingUpdate {
-    return new PendingUpdate(req);
+  static fromUpdateRequest(now: EpochTime, req: IUpdateRequest): PendingUpdate {
+    return new PendingUpdate(now, req);
   }
   static key(id: IUpdateId): PendingUpdateKey {
     return key(id.userId, id.eventId);
   }
   
-  constructor(req: UpdateStruct) {
+  constructor(now: EpochTime, req: UpdateStruct) {
     this.request = req; // flow has got our back here...
-    
-    this.deadline = (new Date() / 1e3) + STALE_LIMIT;
+    this.deadline = now + STALE_LIMIT;
   }
   
   key(): PendingUpdateKey {
@@ -129,6 +165,15 @@ class PendingUpdate {
 
 function key(a: string, b: string): PendingUpdateKey {
   return [a, b].join('/');
+}
+
+// Compares two pending updates for the purpose of sorting. 
+// 
+function comparePendingUpdates(a: PendingUpdate, b: PendingUpdate): number {
+  // For now, just use the deadline property.
+  const ts = (e) => e.deadline;
+  
+  return ts(a) - ts(b);
 }
 
 module.exports = {

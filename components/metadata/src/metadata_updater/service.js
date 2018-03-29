@@ -41,7 +41,8 @@ class Service implements IMetadataUpdaterService {
     const pending = this.pending; 
     // const logger = this.logger; 
     
-    const update = PendingUpdate.fromUpdateRequest(req);
+    const now = new Date() / 1e3;
+    const update = PendingUpdate.fromUpdateRequest(now, req);
     pending.merge(update);
     
     return {

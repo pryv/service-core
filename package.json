@@ -32,6 +32,7 @@
     "dependable": "attentif/dependable#0bb5c4a9ef2b32dded1b24d5d3c0ecccfb0bf7fd",
     "errors": "file:components/errors",
     "express": "^4",
+    "heap": "^0.2.6",
     "hfs-server": "file:components/hfs-server",
     "influx": "^5.0.6",
     "jaeger-client": "^3.8.0",
