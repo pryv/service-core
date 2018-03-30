@@ -106,7 +106,6 @@ describe('Flush', () => {
     
     it("doesn't destroy old earliest and latest", async () => {
       await op.run(); 
-
       const event = await loadEvent(db, userId, eventWithContentId);
 
       // See fixture above
@@ -114,7 +113,15 @@ describe('Flush', () => {
       assert.strictEqual(content.earliest, now - 100); 
       assert.strictEqual(content.latest, now + 100); 
     });
-    it('leaves base data intact');
+    it('leaves base data intact', async () => {
+      await op.run(); 
+      const event = await loadEvent(db, userId, eventWithContentId);
+
+      const content = event.content;
+      assert.strictEqual(content.elementType, 'mass/kg');
+      assert.deepEqual(content.fields, ['value']);
+      assert.deepEqual(content.required, ['value']);
+    });
   });
 });
 
