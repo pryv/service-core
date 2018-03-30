@@ -23,9 +23,9 @@ describe('Flush', () => {
   
   // Construct and clean a database fixture. 
   const pryv = databaseFixture(connection);
-  // after(function () {
-  //   pryv.clean(); 
-  // });
+  after(function () {
+    pryv.clean(); 
+  });
   
   // Construct a simple database fixture containing an event to update
   let userId, parentStreamId, eventId; 
@@ -67,9 +67,24 @@ describe('Flush', () => {
     assert.approximately(event.modified, now, 1);
   });
 });
+
 describe('UserRepository', () => {
   const connection = produceMongoConnection();
   const db = produceStorageLayer(connection);
+
+  // Construct and clean a database fixture. 
+  const pryv = databaseFixture(connection);
+  after(function () {
+    pryv.clean(); 
+  });
+
+  // Construct a simple database fixture containing an event to update
+  let userId;
+  before(() => {
+    userId = cuid(); 
+    
+    return pryv.user('user_name', { id: userId });
+  });
 
   let repository: UserRepository;
   beforeEach(() => {
@@ -79,8 +94,7 @@ describe('UserRepository', () => {
   describe('#resolve(name)', () => {
     it('returns the user id', async () => {
       const user = await repository.resolve('user_name'); 
-      
-      assert.strictEqual(user.id, 'userId');
+      assert.strictEqual(user.id, userId);
     });
     it('caches the user information for a while', async () => {
       // Prime the cache
@@ -92,7 +106,7 @@ describe('UserRepository', () => {
       repository.db = null; 
       
       const user = await repository.resolve('user_name'); 
-      assert.strictEqual(user.id, 'userId');
+      assert.strictEqual(user.id, userId);
     });
   });
 });
