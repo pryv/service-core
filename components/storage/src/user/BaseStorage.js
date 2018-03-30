@@ -446,6 +446,7 @@ BaseStorage.prototype.applyUpdateToDB = function(updatedData) {
   //    https://docs.mongodb.com/manual/reference/operator/update/
   
   data.$set = input;
+  data.$unset = {};       // code in 'converters.js' depends on this.
   
   var dbUpdate = applyConvertersToDB(
     data,
