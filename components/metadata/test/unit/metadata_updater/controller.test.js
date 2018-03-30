@@ -13,6 +13,7 @@ const awaiting = require('awaiting');
 const { PendingUpdate, PendingUpdatesMap } = 
   require('../../../src/metadata_updater/pending_updates');
 const { Controller } = require('../../../src/metadata_updater/controller');
+const { Flush } = require('../../../src/metadata_updater/flush');
 
 import type { StorageLayer } from 'components/storage';
 
@@ -46,7 +47,14 @@ describe('Metadata Updater/Controller', () => {
     });
   });
   describe('#flushOp(update)', () => {
-    it('constructs an Flush operation for the update and returns it'); 
+    const now = new Date() / 1e3;
+    const update = makeUpdate(now, {});
+
+    it('constructs an Flush operation for the update and returns it', () => {
+      const flush = controller.flushOp(update);
+      
+      assert.instanceOf(flush, Flush);
+    }); 
   });
   describe('#act', () => {
     const now = new Date() / 1e3;
