@@ -14,12 +14,19 @@ const { PendingUpdate, PendingUpdatesMap } =
   require('../../../src/metadata_updater/pending_updates');
 const { Controller } = require('../../../src/metadata_updater/controller');
 
+import type { StorageLayer } from 'components/storage';
+
 describe('Metadata Updater/Controller', () => {
   let map: PendingUpdatesMap;
   let controller: Controller; 
   beforeEach(() => {
+    // Replace the database connection here with a dummy. We're testing the 
+    // controller, not the database access. 
+    // FLOW
+    const db: StorageLayer = {};
+    
     map = new PendingUpdatesMap();
-    controller = new Controller(map); 
+    controller = new Controller(db, map); 
   });
   afterEach(() => {
     controller.stop(); 

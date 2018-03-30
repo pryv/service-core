@@ -4,6 +4,8 @@
 
 /* global describe, it, beforeEach, before, after */
 
+const chai = require('chai');
+const assert = chai.assert; 
 const cuid = require('cuid');
 const bluebird = require('bluebird');
 
@@ -13,7 +15,7 @@ const { databaseFixture } = require('components/test-helpers');
 
 const { PendingUpdate } = 
   require('../../../src/metadata_updater/pending_updates');
-const { Flush } = require('../../../src/metadata_updater/flush');
+const { Flush, UserRepository } = require('../../../src/metadata_updater/flush');
 
 describe('Flush', () => {
   const connection = produceMongoConnection();
@@ -40,24 +42,58 @@ describe('Flush', () => {
       });
     });
   });
+
+  const now = new Date() / 1e3;
   
   // Constructs a flush op from a fake update
   let op: Flush; 
   beforeEach(() => {
-    const now = new Date() / 1e3;
-    const update = makeUpdate(now, { userId: userId, eventId: eventId }); 
+    const update = makeUpdate(now, { 
+      userId: userId, eventId: eventId, 
+      author: 'author123', 
+    }); 
     op = new Flush(update, db);
   });
   
   it('writes event metadata to disk', async () => {
-    op.run(); 
+    await op.run(); 
     
     const user = { id: userId };
     const query = { id: eventId };
     const event = await bluebird.fromCallback(
       cb => db.events.findOne(user, query, null, cb));
+
+    assert.strictEqual(event.modifiedBy, 'author123');
+    assert.approximately(event.modified, now, 1);
+  });
+});
+describe('UserRepository', () => {
+  const connection = produceMongoConnection();
+  const db = produceStorageLayer(connection);
+
+  let repository: UserRepository;
+  beforeEach(() => {
+    repository = new UserRepository(db);
+  });
+  
+  describe('#resolve(name)', () => {
+    it('returns the user id', async () => {
+      const user = await repository.resolve('user_name'); 
       
-    console.log(event);
+      assert.strictEqual(user.id, 'userId');
+    });
+    it('caches the user information for a while', async () => {
+      // Prime the cache
+      await repository.resolve('user_name'); 
+      
+      // Disable the database access for now; results can only come from the
+      // cache. 
+      // FLOW (These are not the robots you're looking for).
+      repository.db = null; 
+      
+      const user = await repository.resolve('user_name'); 
+      assert.strictEqual(user.id, 'userId');
+    });
   });
 });
 

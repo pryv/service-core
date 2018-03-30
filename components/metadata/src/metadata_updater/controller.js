@@ -1,6 +1,9 @@
 // @flow
 
+const storage = require('components/storage');
+
 const { PendingUpdate, PendingUpdatesMap } = require('./pending_updates');
+const { Flush } = require('./flush');
 
 // Controller for the metadata updates. Manages operation timing and starts 
 // actual update flush operation. 
@@ -11,9 +14,13 @@ class Controller {
   // Reference to the updates map. This is where work comes from. 
   map: PendingUpdatesMap;
   
-  constructor(map: PendingUpdatesMap) {
+  // Database connection
+  db: storage.StorageLayer;
+  
+  constructor(db: storage.StorageLayer, map: PendingUpdatesMap) {
     this.timer = null; 
     this.map = map;
+    this.db = db;
   }
   
   // Runs the #act method every n miliseconds; act will perform the main
@@ -58,10 +65,7 @@ class Controller {
   // Returns a Flush operation for the update `update`. Acts as a producer. 
   // 
   flushOp(update: PendingUpdate): Operation {
-    update;
-    return {
-      run: () => Promise.resolve(1),
-    };
+    return new Flush(update, this.db);
   }
 }
 
