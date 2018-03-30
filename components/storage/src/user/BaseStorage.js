@@ -430,8 +430,25 @@ BaseStorage.prototype.applyItemsToDB = function(items) {
  * @api private
  */
 BaseStorage.prototype.applyUpdateToDB = function(updatedData) {
+  const input = _.cloneDeep(updatedData);
+  const data = {};
+
+  if (input.$min != null) { 
+    data.$min = input.$min;
+    delete input.$min;
+  }
+  if (input.$max != null) { 
+    data.$max = input.$max;
+    delete input.$max;
+  }
+  
+  // Maybe add more of these?
+  //    https://docs.mongodb.com/manual/reference/operator/update/
+  
+  data.$set = input;
+  
   var dbUpdate = applyConvertersToDB(
-    { $set: _.clone(updatedData), $unset: {} },
+    data,
     this.converters.updateToDB
   );
   if (_.isEmpty(dbUpdate.$set)) {

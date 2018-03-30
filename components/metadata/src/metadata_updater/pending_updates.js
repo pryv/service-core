@@ -127,6 +127,9 @@ class PendingUpdate {
   constructor(now: EpochTime, req: UpdateStruct) {
     this.request = req; // flow has got our back here...
     this.deadline = now + STALE_LIMIT;
+    
+    const { from, to } = req.dataExtent;
+    if (from > to) throw new Error('Invalid update, from > to.');
   }
   
   key(): PendingUpdateKey {

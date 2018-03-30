@@ -20,6 +20,10 @@ const { Flush, UserRepository } = require('../../../src/metadata_updater/flush')
 describe('Flush', () => {
   const connection = produceMongoConnection();
   const db = produceStorageLayer(connection);
+
+  const now = new Date() / 1e3;
+  const from = now - 10; 
+  const to = now - 1;
   
   // Construct and clean a database fixture. 
   const pryv = databaseFixture(connection);
@@ -28,43 +32,89 @@ describe('Flush', () => {
   });
   
   // Construct a simple database fixture containing an event to update
-  let userId, parentStreamId, eventId; 
+  let userId, parentStreamId, eventId, eventWithContentId; 
   before(async () => {
     userId = cuid(); 
     parentStreamId = cuid(); 
     eventId = cuid(); 
+    eventWithContentId = cuid(); 
     
     await pryv.user(userId, {}, (user) => {
       user.stream({id: parentStreamId}, (stream) => {
         stream.event({
           id: eventId, 
-          type: 'series:mass/kg'});
+          type: 'series:mass/kg', 
+          content: {
+            elementType: 'mass/kg', 
+            fields: ['value'], 
+            required: ['value'],
+          }
+        });
+        stream.event({
+          id: eventWithContentId, 
+          type: 'series:mass/kg', 
+          content: {
+            elementType: 'mass/kg', 
+            fields: ['value'], 
+            required: ['value'],
+            earliest: now - 100, // < `from`
+            latest: now + 100, // > `to`
+          }
+        });
       });
     });
   });
 
-  const now = new Date() / 1e3;
-  
-  // Constructs a flush op from a fake update
-  let op: Flush; 
-  beforeEach(() => {
-    const update = makeUpdate(now, { 
-      userId: userId, eventId: eventId, 
-      author: 'author123', 
-    }); 
-    op = new Flush(update, db);
-  });
-  
-  it('writes event metadata to disk', async () => {
-    await op.run(); 
+  describe('event with no existing metadata', () => {
+    // Constructs a flush op from a fake update
+    let op: Flush; 
+    beforeEach(() => {
+      const update = makeUpdate(now, { 
+        userId: userId, eventId: eventId, 
+        author: 'author123', 
+        from: from, 
+        to: to,
+      }); 
+      op = new Flush(update, db);
+    });
     
-    const user = { id: userId };
-    const query = { id: eventId };
-    const event = await bluebird.fromCallback(
-      cb => db.events.findOne(user, query, null, cb));
+    it('writes event metadata to disk', async () => {
+      await op.run(); 
+      
+      const event = await loadEvent(db, userId, eventId);
+      
+      assert.strictEqual(event.modifiedBy, 'author123');
+      assert.approximately(event.modified, now, 1);
+      
+      const content = event.content;
+      assert.strictEqual(content.earliest, from); 
+      assert.strictEqual(content.latest, to); 
+    });
+  });
+  describe('event with existing metadata', () => {
+    // Constructs a flush op from a fake update
+    let op: Flush; 
+    beforeEach(() => {
+      const update = makeUpdate(now, { 
+        userId: userId, eventId: eventWithContentId, 
+        author: 'author123', 
+        from: from, 
+        to: to,
+      }); 
+      op = new Flush(update, db);
+    });
+    
+    it("doesn't destroy old earliest and latest", async () => {
+      await op.run(); 
 
-    assert.strictEqual(event.modifiedBy, 'author123');
-    assert.approximately(event.modified, now, 1);
+      const event = await loadEvent(db, userId, eventWithContentId);
+
+      // See fixture above
+      const content = event.content;
+      assert.strictEqual(content.earliest, now - 100); 
+      assert.strictEqual(content.latest, now + 100); 
+    });
+    it('leaves base data intact');
   });
 });
 
@@ -162,4 +212,11 @@ function produceStorageLayer(connection: storage.Database): storage.StorageLayer
     'attachmetsDirPath', 'previewsDirPath', 
     passwordResetRequestMaxAge,
     sessionMaxAge);
+}
+
+function loadEvent(db: storage.StorageLayer, userId: string, eventId: string): Promise<any> {
+  const user = { id: userId };
+  const query = { id: eventId };
+  return bluebird.fromCallback(
+    cb => db.events.findOne(user, query, null, cb));
 }

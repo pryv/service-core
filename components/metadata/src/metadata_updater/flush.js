@@ -42,13 +42,26 @@ class Flush implements Operation {
     // first load the user and resolve his id. 
     const users = this.users; 
     const user = await users.resolve(request.userId);
+    
+    // NOTE We choose to update fields using $set (for the most) and $min/$max
+    // for the dataset  extent. This means we might _not_ change anything but
+    // overwrite modified/modifiedBy all  the same. 
+    // 
+    // The alternative would be load/modify/store here. But since there are no
+    // atomic transactions in MongoDB, we'd have a race condition all the same, 
+    // possibly destroying earliest/latest in the process.
+    // 
+    // The chosen option at least leaves earliest/latest correct.
 
     const query = {
       id: request.eventId,
     };
+    const { from, to } = request.dataExtent;
     const updatedData = {
+      $min: { 'content.earliest': from }, 
+      $max: { 'content.latest': to },
       modifiedBy: request.author, 
-      modified: request.timestamp, 
+      modified: request.timestamp,
     };
     await bluebird.fromCallback(
       cb => db.events.updateOne(user, query, updatedData, cb));
