@@ -24,8 +24,9 @@ class ApplicationLauncher {
       }
     };
     
-    const app = new Application(settingsOverride); 
+    const app = new Application(); 
     
+    await app.setup(settingsOverride);
     await app.run(); 
     
     this.app = app; 

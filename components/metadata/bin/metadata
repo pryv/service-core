@@ -5,7 +5,12 @@
 
 const Application = require('../src/application');
 
-const app = new Application(); 
-app.run()
+startup()
   .catch(err => console.error(err)); // eslint-disable-line no-console
 
+async function startup() {
+  const app = new Application(); 
+
+  await app.setup();
+  await app.run();
+}

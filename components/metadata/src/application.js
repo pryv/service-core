@@ -4,6 +4,8 @@
 
 const assert = require('assert');
 
+const yargs = require('yargs');
+
 const loggingSubsystem = require('components/utils/src/logging');
 
 const Settings = require('./settings');
@@ -21,8 +23,14 @@ class Application {
   
   metadataUpdaterService: ?services.MetadataUpdater;
   
-  constructor(settings: ?Object) {
-    this.initSettings(settings); 
+  async setup(overrideSettings: ?Object) {
+    this.initSettings(); 
+
+    await this.parseCommandLine(process.argv);
+
+    if (overrideSettings != null) 
+      this.settings.merge(overrideSettings);
+
     this.initLogger(); 
     this.initTrace(); 
     
@@ -30,8 +38,8 @@ class Application {
     assert(this.settings != null);
   }
     
-  initSettings(settings: ?Object) {
-    this.settings = new Settings(settings); 
+  initSettings() {
+    this.settings = new Settings(); 
   }
   initLogger() {
     const settings = this.settings;
@@ -43,6 +51,10 @@ class Application {
   initTrace() {
     // TODO
   }
+  async parseCommandLine(argv: Array<string>) {
+    const cliArgs = new CLIArgs(this.settings, this.logger); 
+    await cliArgs.parse(argv);
+  }
   
   // Runs the application. This method only ever exits once the service is 
   // killed. 
@@ -50,7 +62,7 @@ class Application {
   async run() {    
     const logger = this.logger; 
     const settings = this.settings;
-    
+        
     const host = settings.get('metadataUpdater.host').str(); 
     const port = settings.get('metadataUpdater.port').num(); 
     const endpoint = `${host}:${port}`;
@@ -69,6 +81,45 @@ class Application {
     this.metadataUpdaterService = service; 
     
     await service.start(endpoint);
+  }
+}
+
+// Handles command line argument parsing and help output. 
+// 
+class CLIArgs {
+  settings: Settings;
+  
+  constructor(settings: Settings) {
+    this.settings = settings;
+  }
+  
+  // Parses the configuration on the command line (arguments) and executes 
+  // actions against the `settings`.
+  // 
+  async parse(argv: Array<string>) {
+    const cli = yargs
+      .option('c', {
+        alias: 'config', 
+        type: 'string', 
+        describe: 'reads configuration file at PATH'
+      })
+      .usage('$0 [args] \n\n  starts a metadata service')
+      .help();      
+    
+    const out = cli.parse(argv);
+    
+    if (out.config != null) 
+      await this.parseConfigFile(out.config);
+  }
+  
+  async parseConfigFile(path: string) {
+    const settings = this.settings; 
+
+    await settings.loadFromFile(path);
+    
+    // NOTE Done after the fact, because maybe 'info' is only visible after
+    // configuration.
+    console.info(`Using configuration file at: ${path}`); // eslint-disable-line no-console
   }
 }
 

@@ -65,7 +65,8 @@
     "tprpc": "file:components/tprpc",
     "unicode": "^0.6.1",
     "unix-timestamp": "^0.2.0",
-    "utils": "file:components/utils"
+    "utils": "file:components/utils",
+    "yargs": "^11.0.0"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",

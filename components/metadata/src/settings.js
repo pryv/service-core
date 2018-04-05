@@ -72,6 +72,12 @@ class Settings implements ConfigAccess {
     lodash.merge(this.config, obj);
   }
   
+  // Merges settings in `other` with the settings stored here. 
+  // 
+  merge(other: Object) {
+    lodash.merge(this.config, other);
+  }
+  
   get(key: string): ConfigValue {
     const config = this.config;
     
