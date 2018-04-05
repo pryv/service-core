@@ -41,7 +41,8 @@ class Context {
     typeRepoUpdateUrl: string) 
   {
     this.series = new business.series.Repository(influxConn);
-    this.metadataUpdater = new metadataUpdater.MetadataForgetter(logFactory('metadata.update'));    
+    this.metadataUpdater = new metadataUpdater.MetadataForgetter(
+      logFactory('metadata.update'));    
     this.tracer = tracer;
 
     this.configureTypeRepository(typeRepoUpdateUrl); 

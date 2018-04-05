@@ -1,20 +1,25 @@
-'use strict';
 // @flow
+
+/* global describe, it, beforeEach, afterEach, before */
 
 const should = require('should');
 const superagent = require('superagent');
 const url = require('url');
-/* global describe, it, beforeEach, afterEach */
 
 const { settings } = require('./test-helpers');
 
 const Application = require('../../src/application');
 
-describe('Server', function() {
+describe('Server', () => {
   const request = superagent;
 
-  const application = new Application().init(settings); 
-  const server = application.server; 
+  let application, server;
+  before(async () => {
+    application = new Application();
+    await application.init(settings); 
+    server = application.server; 
+  }); 
+  
   
   function toUrl(path): string {
     const baseUrl = server.baseUrl; 

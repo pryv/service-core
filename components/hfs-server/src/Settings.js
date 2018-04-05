@@ -87,6 +87,11 @@ class Settings {
     const value = config.get(key);
     return new ExistingValue(key, value);
   }
+  
+  has(key: string): boolean {
+    const config = this.config; 
+    return config.has(key);
+  }
     
   /** Configures convict (https://www.npmjs.com/package/convict) to read this  
    * application's configuration file. 
