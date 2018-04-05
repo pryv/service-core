@@ -1,7 +1,12 @@
 
 // @flow
 
+const fs = require('fs');
+
+const bluebird = require('bluebird');
 const lodash = require('lodash');
+const Hjson = require('hjson');
+const YAML = require('js-yaml');
 
 const { ExistingValue, MissingValue } = require('components/utils/src/config/value');
 
@@ -43,6 +48,28 @@ class Settings implements ConfigAccess {
         file: { active: false },
       }
     };
+  }
+  
+  // Loads settings from the file `path` and merges them with the settings in 
+  // the current instance. 
+  // 
+  // This uses HJSON under the covers, but will also load from YAML files. 
+  //  
+  //    -> https://www.npmjs.com/package/hjson
+  //    -> https://www.npmjs.com/package/js-yaml
+  // 
+  async loadFromFile(path: string) {
+    const readFile = bluebird.promisify(fs.readFile);
+    const text = await readFile(path, { encoding: 'utf8' });
+
+    let obj;
+
+    if (path.endsWith('.yaml')) 
+      obj = YAML.safeLoad(text);
+    else 
+      obj = Hjson.parse(text);
+    
+    lodash.merge(this.config, obj);
   }
   
   get(key: string): ConfigValue {
