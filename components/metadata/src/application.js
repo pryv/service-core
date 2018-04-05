@@ -82,7 +82,7 @@ class Application {
     const endpoint = `${host}:${port}`;
     
     const lf = this.logFactory;
-    const service = new services.MetadataUpdater(lf('metadata_updater')); 
+    const service = new services.MetadataUpdater({}, lf('metadata_updater')); 
     this.metadataUpdaterService = service; 
     
     await service.start(endpoint);

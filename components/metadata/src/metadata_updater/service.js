@@ -6,27 +6,46 @@ const rpc = require('components/tprpc');
 
 const definitionFactory = require('./definition');
 const { PendingUpdatesMap, PendingUpdate } = require('./pending_updates');
+const { Controller } = require('./controller');
 
 import type { Logger } from 'components/utils/src/logging';
 import type { IMetadataUpdaterService, IUpdateRequest, IUpdateResponse, 
   IUpdateId, IPendingUpdate } from './interface';
+  
+import type { StorageLayer } from 'components/storage';
 
+// The metadata updater service receives 'scheduleUpdate' rpc messages on the
+// tchannel/protobuf3 interface (from the network). It then flushes these
+// updates every N ms to MongoDB.   
+// 
 class Service implements IMetadataUpdaterService {
+  db: StorageLayer;
   logger: Logger;
   
+  // Underlying transport and RPC dispatcher
   server: rpc.Server;
   
+  // Where we store incoming work, this is shared between this class and the
+  // controller.
   pending: PendingUpdatesMap; 
   
-  constructor(logger: Logger) {
+  // Controller for work done in this service. 
+  controller: Controller;
+  
+  constructor(db: StorageLayer, logger: Logger) {
+    this.db = db;
     this.logger = logger; 
+    
     this.server = new rpc.Server(); 
+
     this.pending = new PendingUpdatesMap(); 
+    this.controller = new Controller(db, this.pending);
   }
   
   async start(endpoint: string) {
     const logger = this.logger; 
     const server = this.server; 
+    const controller = this.controller;
     
     logger.info(`starting... (@ ${endpoint})`);
     const definition = await definitionFactory.produce();
@@ -35,11 +54,19 @@ class Service implements IMetadataUpdaterService {
       (this: IMetadataUpdaterService));
     await server.listen(endpoint);
     logger.info('started.');
+    
+    const runEachMs = 500;
+    logger.info(`Will flush every ${runEachMs}ms.`);
+    controller.runEach(runEachMs);
   }
+  
+  // --------------------------------------------------- IMetadataUpdaterService
   
   async scheduleUpdate(req: IUpdateRequest): Promise<IUpdateResponse> {
     const pending = this.pending; 
-    // const logger = this.logger; 
+    const logger = this.logger; 
+    
+    logger.info(`scheduleUpdate: ${req.userId}.${req.eventId}: [${req.dataExtent.from}, ${req.dataExtent.to}]`);
     
     const now = new Date() / 1e3;
     const update = PendingUpdate.fromUpdateRequest(now, req);
@@ -49,7 +76,6 @@ class Service implements IMetadataUpdaterService {
       deadline: 1
     };
   }
-  
   async getPendingUpdate(req: IUpdateId): Promise<IPendingUpdate> {
     const pending = this.pending; 
     
