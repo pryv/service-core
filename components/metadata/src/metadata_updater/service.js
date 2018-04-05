@@ -42,6 +42,8 @@ class Service implements IMetadataUpdaterService {
     this.controller = new Controller(db, this.pending);
   }
   
+  // Starts the service, including all subprocesses.
+  // 
   async start(endpoint: string) {
     const logger = this.logger; 
     const server = this.server; 

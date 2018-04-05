@@ -8,6 +8,7 @@ const path = require('path');
 const yargs = require('yargs');
 
 const loggingSubsystem = require('components/utils/src/logging');
+const storage = require('components/storage');
 
 const Settings = require('./settings');
 
@@ -76,18 +77,27 @@ class Application {
   // 
   async startMetadataUpdater() {
     const settings = this.settings;
+    const loggerFor = this.logFactory;
 
+    // Connect to MongoDB
+    const storageLayer = produceStorageLayer(
+      settings.getMongodbSettings(),
+      loggerFor('mongodb')
+    );
+    
+    // Construct the service
+    const service = new services.MetadataUpdater(storageLayer, loggerFor('metadata_updater')); 
+    this.metadataUpdaterService = service; 
+    
     const host = settings.get('metadataUpdater.host').str(); 
     const port = settings.get('metadataUpdater.port').num(); 
     const endpoint = `${host}:${port}`;
-    
-    const lf = this.logFactory;
-    const service = new services.MetadataUpdater({}, lf('metadata_updater')); 
-    this.metadataUpdaterService = service; 
-    
+
+    // And start it.
     await service.start(endpoint);
   }
 }
+module.exports = Application;
 
 // Handles command line argument parsing and help output. 
 // 
@@ -129,4 +139,22 @@ class CLIArgs {
   }
 }
 
-module.exports = Application;
+function produceStorageLayer(settings, logger) {
+  logger.info(`Connecting to MongoDB (@ ${settings.host}:${settings.port}/${settings.name}) (${settings.authUser})`);
+  
+  const mongoConn = new storage.Database(
+    settings, logger);
+    
+  // BUG These must be read from the configuration, probably.
+  const passwordResetRequestMaxAge = 60*1000;
+  const sessionMaxAge = 60*1000;
+      
+  const storageLayer = new storage.StorageLayer(
+    mongoConn, 
+    logger, 
+    'attachmentsDirPath', 'previewsDirPath', 
+    passwordResetRequestMaxAge,
+    sessionMaxAge);
+    
+  return storageLayer;
+}

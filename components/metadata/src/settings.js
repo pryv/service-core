@@ -46,6 +46,14 @@ class Settings implements ConfigAccess {
         prefix: '',
         console: { active: true, level: 'warn', colorize: true }, 
         file: { active: false },
+      }, 
+      
+      mongodb: {
+        host: '127.0.0.1', // production will need to override this.
+        port: 27017,
+        name: 'pryv-node',
+        authUser: '', 
+        authPassword: '',
       }
     };
   }
@@ -105,6 +113,18 @@ class Settings implements ConfigAccess {
       l_bool('file.active')
     ]).apply(this);
   }
+  
+  // Compatibility layer for setting up mongodb connections.
+  // 
+  getMongodbSettings(): Object {
+    return l_map('mongodb', [
+      l_str('host'), 
+      l_num('port'), 
+      l_str('name'),
+      l_str('authUser'),
+      l_str('authPassword'),
+    ]).apply(this);
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -123,6 +143,9 @@ function l_bool(key: string) {
 }
 function l_str(key: string) {
   return new LValue(key, cv => cv.str());
+}
+function l_num(key: string) {
+  return new LValue(key, cv => cv.num());
 }
 
 class LMap {

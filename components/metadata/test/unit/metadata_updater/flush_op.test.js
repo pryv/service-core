@@ -216,7 +216,7 @@ function produceStorageLayer(connection: storage.Database): storage.StorageLayer
   return new storage.StorageLayer(
     connection, 
     new NullLogger(), 
-    'attachmetsDirPath', 'previewsDirPath', 
+    'attachmentsDirPath', 'previewsDirPath', 
     passwordResetRequestMaxAge,
     sessionMaxAge);
 }
