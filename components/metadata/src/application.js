@@ -3,6 +3,7 @@
 // Main application class. Does all the work. 
 
 const assert = require('assert');
+const path = require('path');
 
 const yargs = require('yargs');
 
@@ -46,13 +47,16 @@ class Application {
     const loggerSettings = settings.getLogSettingsObject();
     const logFactory = this.logFactory = loggingSubsystem(loggerSettings).getLogger;
     
-    this.logger = logFactory('application');
+    const logger = this.logger = logFactory('application');
+    
+    const consoleLevel = settings.get('logs.console.level').str();
+    logger.info(`Console logging is configured at level '${consoleLevel}'`);
   }
   initTrace() {
     // TODO
   }
   async parseCommandLine(argv: Array<string>) {
-    const cliArgs = new CLIArgs(this.settings, this.logger); 
+    const cliArgs = new CLIArgs(this.settings); 
     await cliArgs.parse(argv);
   }
   
@@ -61,21 +65,22 @@ class Application {
   // 
   async run() {    
     const logger = this.logger; 
-    const settings = this.settings;
         
-    const host = settings.get('metadataUpdater.host').str(); 
-    const port = settings.get('metadataUpdater.port').num(); 
-    const endpoint = `${host}:${port}`;
-    
-    logger.info('Metadata service is starting...');
-    await this.startMetadataUpdater(endpoint); 
+    logger.info('Metadata service is mounting services:');
+    await this.startMetadataUpdater(); 
   }
   
   // Initializes and starts the metadata updater service. The `endpoint`
   // parameter should contain an endpoint the service binds to in the form of
   // HOST:PORT.  
   // 
-  async startMetadataUpdater(endpoint: string) {
+  async startMetadataUpdater() {
+    const settings = this.settings;
+
+    const host = settings.get('metadataUpdater.host').str(); 
+    const port = settings.get('metadataUpdater.port').num(); 
+    const endpoint = `${host}:${port}`;
+    
     const lf = this.logFactory;
     const service = new services.MetadataUpdater(lf('metadata_updater')); 
     this.metadataUpdaterService = service; 
@@ -112,14 +117,15 @@ class CLIArgs {
       await this.parseConfigFile(out.config);
   }
   
-  async parseConfigFile(path: string) {
+  async parseConfigFile(input: string) {
     const settings = this.settings; 
-
-    await settings.loadFromFile(path);
+    
+    const configPath = path.resolve(input);
+    await settings.loadFromFile(configPath);
     
     // NOTE Done after the fact, because maybe 'info' is only visible after
     // configuration.
-    console.info(`Using configuration file at: ${path}`); // eslint-disable-line no-console
+    console.info(`Using configuration file at: ${configPath}`); // eslint-disable-line no-console
   }
 }
 

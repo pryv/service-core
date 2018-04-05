@@ -28,7 +28,7 @@ class Service implements IMetadataUpdaterService {
     const logger = this.logger; 
     const server = this.server; 
     
-    logger.info('starting...');
+    logger.info(`starting... (@ ${endpoint})`);
     const definition = await definitionFactory.produce();
     server.add(
       definition, 'MetadataUpdaterService', 
