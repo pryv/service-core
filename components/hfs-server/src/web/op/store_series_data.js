@@ -62,10 +62,7 @@ async function storeSeriesData(ctx: Context,
     
     author: accessToken, 
     timestamp: now, 
-    dataExtent: {
-      from: now, // TODO WRONG
-      to: now, 
-    }
+    dataExtent: data.minmax(), 
   }]});
   trace.finish('metadataUpdate');
   

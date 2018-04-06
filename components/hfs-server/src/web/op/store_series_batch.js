@@ -63,10 +63,7 @@ async function storeSeriesBatch(ctx: Context,
       
       author: accessToken, 
       timestamp: now, 
-      dataExtent: {
-        from: now,  // TODO WRONG
-        to: now,
-      }
+      dataExtent: bre.data.minmax(), 
     });
   }
   await ctx.metadataUpdater.scheduleUpdate({ 

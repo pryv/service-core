@@ -158,9 +158,9 @@ describe('DataMatrix', function () {
         ]
       );
       
-      const [min, max] = matrix.minmax();
-      assert.strictEqual(min, 3);
-      assert.strictEqual(max, 6);
+      const { from, to } = matrix.minmax();
+      assert.strictEqual(from, 3);
+      assert.strictEqual(to, 6);
     });
     it('throws an error if the timestamp is missing', () => {
       const headers = ['a', 'b', 'c']; 

@@ -11,7 +11,7 @@ export type Element = string | number;
 export type RawRow = Array<Element>;
 
 type EpochTime = number; // in seconds since epoch
-export type DataExtent = [EpochTime, EpochTime];
+export type DataExtent = { from: EpochTime, to: EpochTime };
 
 const Row = require('./row');
 
@@ -125,7 +125,10 @@ class DataMatrix {
       max = Math.max(max, timestamp);
     });
     
-    return [min, max];
+    return {
+      from: min, 
+      to: max, 
+    };
   }
 }
 
