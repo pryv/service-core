@@ -39,7 +39,7 @@ class Service implements IMetadataUpdaterService {
     this.server = new rpc.Server(); 
 
     this.pending = new PendingUpdatesMap(); 
-    this.controller = new Controller(db, this.pending);
+    this.controller = new Controller(db, this.pending, logger);
   }
   
   // Starts the service, including all subprocesses.

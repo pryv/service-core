@@ -14,10 +14,13 @@ const { PendingUpdate, PendingUpdatesMap } =
   require('../../../src/metadata_updater/pending_updates');
 const { Controller } = require('../../../src/metadata_updater/controller');
 const { Flush } = require('../../../src/metadata_updater/flush');
+const { NullLogger } = require('components/utils/src/logging');
 
 import type { StorageLayer } from 'components/storage';
 
 describe('Metadata Updater/Controller', () => {
+  const logger = new NullLogger(); 
+  
   let map: PendingUpdatesMap;
   let controller: Controller; 
   beforeEach(() => {
@@ -27,7 +30,7 @@ describe('Metadata Updater/Controller', () => {
     const db: StorageLayer = {};
     
     map = new PendingUpdatesMap();
-    controller = new Controller(db, map); 
+    controller = new Controller(db, map, logger); 
   });
   afterEach(() => {
     controller.stop(); 

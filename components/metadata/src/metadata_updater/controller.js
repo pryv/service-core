@@ -5,9 +5,14 @@ const storage = require('components/storage');
 const { PendingUpdate, PendingUpdatesMap } = require('./pending_updates');
 const { Flush } = require('./flush');
 
+import type { Logger } from 'components/utils/src/logging';
+
 // Controller for the metadata updates. Manages operation timing and starts 
 // actual update flush operation. 
+// 
 class Controller {
+  logger: Logger;
+  
   // The timer set by #runEach.
   timer: ?number; 
   
@@ -16,11 +21,15 @@ class Controller {
   
   // Database connection
   db: storage.StorageLayer;
-  
-  constructor(db: storage.StorageLayer, map: PendingUpdatesMap) {
-    this.timer = null; 
-    this.map = map;
+    
+  constructor(
+    db: storage.StorageLayer, map: PendingUpdatesMap, logger: Logger) 
+  {
+    this.logger = logger; 
     this.db = db;
+    this.map = map;
+    
+    this.timer = null; 
   }
   
   // Runs the #act method every n miliseconds; act will perform the main
@@ -48,6 +57,10 @@ class Controller {
   
   // Reads updates from the updates map and flushes them to mongodb. 
   // 
+  // NOTE Updates are made serially for now; this may result in a lot of 
+  // requests to MongoDB. To optimise this, you might want to add batch calls
+  // at this point. 
+  // 
   async act(fixedNow?: EpochTime): Promise<*> {
     const map = this.map; 
     
@@ -55,17 +68,24 @@ class Controller {
     if (fixedNow != null) now = fixedNow;
     
     const updates = map.getElapsed(now);
+    if (updates.length <= 0) return;
+    
     const ops = updates.map(u => this.flushOp(u));
+        
+    const logger = this.logger;
+    logger.info(`Flushing ${updates.length} updates to disk...`);
     
     for (const op of ops) {
       await op.run(); 
     }
+    
+    logger.info('Flush done.');
   }
   
   // Returns a Flush operation for the update `update`. Acts as a producer. 
   // 
   flushOp(update: PendingUpdate): Operation {
-    return new Flush(update, this.db);
+    return new Flush(update, this.db, this.logger);
   }
 }
 

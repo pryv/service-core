@@ -9,9 +9,9 @@ const assert = chai.assert;
 const cuid = require('cuid');
 const bluebird = require('bluebird');
 
-const NullLogger = require('components/utils/src/logging').NullLogger;
 const storage = require('components/storage');
 const { databaseFixture } = require('components/test-helpers');
+const { NullLogger } = require('components/utils/src/logging');
 
 const { PendingUpdate } = 
   require('../../../src/metadata_updater/pending_updates');
@@ -20,6 +20,7 @@ const { Flush, UserRepository } = require('../../../src/metadata_updater/flush')
 describe('Flush', () => {
   const connection = produceMongoConnection();
   const db = produceStorageLayer(connection);
+  const logger = new NullLogger(); 
 
   const now = new Date() / 1e3;
   const from = now - 10; 
@@ -75,7 +76,7 @@ describe('Flush', () => {
         from: from, 
         to: to,
       }); 
-      op = new Flush(update, db);
+      op = new Flush(update, db, logger);
     });
     
     it('writes event metadata to disk', async () => {
@@ -101,7 +102,7 @@ describe('Flush', () => {
         from: from, 
         to: to,
       }); 
-      op = new Flush(update, db);
+      op = new Flush(update, db, logger);
     });
     
     it("doesn't destroy old earliest and latest", async () => {

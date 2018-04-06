@@ -8,6 +8,7 @@ const storage = require('components/storage');
 const { PendingUpdate } = require('./pending_updates');
 
 import type { LRUCache } from 'lru-cache';
+import type { Logger } from 'components/utils/src/logging';
 import type { Operation } from './controller';
 
 // TODO logging
@@ -15,6 +16,8 @@ import type { Operation } from './controller';
 // Operation that flushes the update to MongoDB. 
 // 
 class Flush implements Operation {
+  logger: Logger; 
+  
   // The update to flush when calling #run. 
   update: PendingUpdate;
   
@@ -24,9 +27,10 @@ class Flush implements Operation {
   // User lookup (name -> id)
   users: UserRepository;
   
-  constructor(update: PendingUpdate, db: storage.StorageLayer) {
+  constructor(update: PendingUpdate, db: storage.StorageLayer, logger: Logger) {
     this.update = update; 
     this.db = db;
+    this.logger = logger; 
     
     this.users = new UserRepository(db); 
   }
@@ -37,6 +41,9 @@ class Flush implements Operation {
     const update = this.update; 
     const request = update.request;
     const db = this.db; 
+    const logger = this.logger; 
+    
+    logger.debug(`Flushing update to ${request.userId}/${request.eventId}, author ${request.author}`);
     
     // update.userId contains the user _name_. To be able to update, we must 
     // first load the user and resolve his id. 
@@ -45,11 +52,10 @@ class Flush implements Operation {
     
     // NOTE We choose to update fields using $set (for the most) and $min/$max
     // for the dataset  extent. This means we might _not_ change anything but
-    // overwrite modified/modifiedBy all  the same. 
+    // overwrite modified/modifiedBy all the same. 
     // 
-    // The alternative would be load/modify/store here. But since there are no
-    // atomic transactions in MongoDB, we'd have a race condition all the same, 
-    // possibly destroying earliest/latest in the process.
+    // The alternative would be load/modify/store here. That would be racy too, 
+    // possibly destroying earliest/latest in the process. 
     // 
     // The chosen option at least leaves earliest/latest correct.
 
