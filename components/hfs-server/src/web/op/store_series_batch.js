@@ -53,6 +53,9 @@ async function storeSeriesBatch(ctx: Context,
   await bluebird.all(results);
   trace.finish('append');
   
+  trace.start('metadataUpdate');
+  trace.finish('metadataUpdate');
+  
   res
     .status(200)
     .json({status: 'ok'});

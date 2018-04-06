@@ -330,7 +330,7 @@ describe('Storing data in a HF series', function() {
           let stub: IMetadataUpdaterService;
           beforeEach(() => {
             stub = {
-              scheduleUpdate: () => { return Promise.resolve({ deadline: 0}); },
+              scheduleUpdate: () => { return Promise.resolve({ }); },
               getPendingUpdate: () => { return Promise.resolve({ found: false, deadline: 0 }); },
             };
           });
@@ -366,7 +366,7 @@ describe('Storing data in a HF series', function() {
             // FLOW This is ok, we're replacing the stub with something compatible.
             stub.scheduleUpdate = () => {
               updaterCalled = true;
-              return Promise.resolve({ deadline: 0});
+              return Promise.resolve({ });
             };
             
             const data = produceData(); 
