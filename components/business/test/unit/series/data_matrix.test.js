@@ -87,7 +87,7 @@ describe('DataMatrix', function () {
     }
   });
 
-  describe('eachRow', function () {
+  describe('#eachRow', function () {
     it('should iterate over all matrix rows', function () {
       const headers = ['a', 'b', 'c']; 
       const matrix = new DataMatrix(
@@ -110,7 +110,7 @@ describe('DataMatrix', function () {
       assert.strictEqual(times, 2);
     });
   });
-  describe('transform', function () {
+  describe('#transform', function () {
     it('should call fn for each cell', function () {
       const headers = ['a', 'b', 'c']; 
       const matrix = new DataMatrix(
@@ -148,6 +148,34 @@ describe('DataMatrix', function () {
       assert.deepEqual(matrix.at(0), [42, 42, 42]);
     });
   });
+  describe('#minmax()', () => {
+    it('returns the minimum and maximum timestamp used', () => {
+      const headers = ['a', 'b', 'timestamp']; 
+      const matrix = new DataMatrix(
+        headers,
+        [
+          [1,2,3], [4,5,6]
+        ]
+      );
+      
+      const [min, max] = matrix.minmax();
+      assert.strictEqual(min, 3);
+      assert.strictEqual(max, 6);
+    });
+    it('throws an error if the timestamp is missing', () => {
+      const headers = ['a', 'b', 'c']; 
+      const matrix = new DataMatrix(
+        headers,
+        [
+          [1,2,3], [4,5,6]
+        ]
+      );
+      
+      assert.throws(
+        () => matrix.minmax()
+      );
+    });
+  });
 });
 
 describe('business.series.Row', function () {
@@ -157,7 +185,9 @@ describe('business.series.Row', function () {
       
       const obj = row.toStruct();
         
+      // FLOW 
       assert.strictEqual(obj.a, 1);
+      // FLOW
       assert.strictEqual(obj.b, 2); 
       assert.strictEqual(Object.keys(obj).length, 2);
     });
