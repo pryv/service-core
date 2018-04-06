@@ -76,18 +76,33 @@ describe('PendingUpdatesMap', () => {
             eventId: `event@${min}`,
           }));
       }
-      
-      // Store those all in the map
-      for (const update of updates) map.merge(update);
     });
     
     it('returns all updates that should be flushed', () => {
+      // Store updates in the map, adjusting cooldown to be later than deadline
+      for (const update of updates) {
+        update.cooldown = update.deadline;
+        map.merge(update);
+      }
+
       // 5 of the updates will have elapsed already, since they've been created
       // > 5min ago. 
-      const updates = map.getElapsed(now-1);
+      const elapsed = map.getElapsed(now-1);
       
-      assert.strictEqual(updates.length, 5);
+      assert.strictEqual(elapsed.length, 5);
       assert.strictEqual(map.size(), 5);
+    });
+    it('uses #flushAt to determine deadlines', () => {
+      // Store updates in the map, adjusting cooldown to be later than deadline
+      for (const update of updates)
+        map.merge(update);
+        
+      // 5 of the updates will have elapsed already, since they've been created
+      // > 5min ago. 
+      const elapsed = map.getElapsed(now  );
+      
+      assert.strictEqual(elapsed.length, 10);
+      assert.strictEqual(map.size(), 0);
     });
   });
 });
@@ -129,6 +144,8 @@ describe('PendingUpdate', () => {
       update1.deadline = now + 30; 
       update2.deadline = now + 20;
       
+      update1.cooldown = now - 100;
+      
       update1.merge(update2);
       
       const req1 = update1.request;
@@ -146,6 +163,10 @@ describe('PendingUpdate', () => {
         'update1 covers more in the present and wins');
       
       assert.approximately(update1.deadline, now + 20, 1, 'earlier deadline wins');
+      
+      // Latter timestamp wins, so this is now + 10 + 10...
+      assert.approximately(update1.cooldown, now + 10 + 10, 1, 
+        'cooldown is reset to now+COOLDOWN_TIME on every merge');
     });
     it('fails when key is not equal', () => {
       const failing = makeUpdate(now, {
@@ -153,6 +174,38 @@ describe('PendingUpdate', () => {
       });
       
       assert.throws(() => update1.merge(failing));
+    });
+  });
+
+  describe('#flushAt()', () => {
+    const now = new Date() / 1e3; 
+
+    let update: PendingUpdate;
+    beforeEach(() => {
+      update = PendingUpdate.fromUpdateRequest(now, {
+        userId: 'user', 
+        eventId: 'event', 
+        
+        author: 'token1', 
+        timestamp: now, 
+        dataExtent: {
+          from: now - 100, 
+          to: now - 20, 
+        }
+      });
+    });
+
+    it('returns `cooldown` when deadline is far away', () => {
+      const flushAt = update.flushAt();
+      
+      assert.approximately(flushAt, update.cooldown, 1);
+    });
+    it('returns `deadline` when deadline is < `cooldown`', () => {
+      update.cooldown = update.deadline-1;
+      
+      const flushAt = update.flushAt();
+
+      assert.approximately(flushAt, update.cooldown, 1);
     });
   });
 });

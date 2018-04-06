@@ -7,7 +7,7 @@ const Heap = require('heap');
 
 import type { IUpdateRequest, IUpdateId } from './interface';
 
-type EpochTime = number; // in seconds
+type EpochTime = number; // time from epoch, in seconds
 
 class PendingUpdatesMap {
   // Currently pending updates. 
@@ -79,7 +79,7 @@ class PendingUpdatesMap {
       
       debug('Peek head has deadline', head.deadline, `(and it is now ${now} o'clock)`);
       
-      if (head.deadline > now) break; 
+      if (head.flushAt() > now) break; 
       
       // assert: head has elapsed and the heap is not empty
       
@@ -110,12 +110,17 @@ type UpdateStruct = {
 
 opaque type PendingUpdateKey = string;
 
-const STALE_LIMIT = 5 * 60;
+const STALE_LIMIT = 5 * 60; // how stale can data ever get?
+const COOLDOWN_TIME = 10;   // how long do we wait before flushing in general?
 
 class PendingUpdate {
   request: UpdateStruct;
   
-  deadline: EpochTime; // time from epoch, in seconds
+  // When should we flush this update at the latest?
+  deadline: EpochTime; 
+  
+  // Flush at the earliest; awaiting more updates with the same key
+  cooldown: EpochTime; 
   
   static fromUpdateRequest(now: EpochTime, req: IUpdateRequest): PendingUpdate {
     return new PendingUpdate(now, req);
@@ -127,6 +132,7 @@ class PendingUpdate {
   constructor(now: EpochTime, req: UpdateStruct) {
     this.request = req; // flow has got our back here...
     this.deadline = now + STALE_LIMIT;
+    this.cooldown = now + COOLDOWN_TIME;
     
     const { from, to } = req.dataExtent;
     if (from > to) throw new Error('Invalid update, from > to.');
@@ -163,6 +169,13 @@ class PendingUpdate {
     
     // Earliest deadline wins.
     this.deadline = Math.min(this.deadline, other.deadline);
+    
+    // Since we just touched this object, start a new cooldown period
+    this.cooldown = request.timestamp + COOLDOWN_TIME;
+  }
+
+  flushAt(): EpochTime {
+    return Math.min(this.deadline, this.cooldown);
   }
 }
 
@@ -174,7 +187,7 @@ function key(a: string, b: string): PendingUpdateKey {
 // 
 function comparePendingUpdates(a: PendingUpdate, b: PendingUpdate): number {
   // For now, just use the deadline property.
-  const ts = (e) => e.deadline;
+  const ts = (e) => e.flushAt();
   
   return ts(a) - ts(b);
 }
