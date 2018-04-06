@@ -1,9 +1,9 @@
 // @flow
 
-var errorHandling = require('components/errors').errorHandling;
+const errorHandling = require('components/errors').errorHandling;
+const { APIError } = require('components/errors');
 
-interface Logger {
-}
+import type { Logger } from 'components/utils';
 
 
 /** Produces a middleware function that will handle all errors and augment
@@ -19,16 +19,26 @@ interface Logger {
 module.exports = function produceErrorHandlingMiddleware(logger: Logger) {
   /*eslint-disable no-unused-vars*/
   return function handleError(
-    error: any, 
+    error: mixed, 
     req: express$Request, 
     res: express$Response, 
     next: express$NextFunction) 
   {
-    errorHandling.logError(error, req, logger);
+    let safeError: APIError; 
+    if (error != null && error instanceof APIError) 
+      safeError = error; 
+    else  {
+      // FLOW Assume that we can toString the mistery object
+      safeError = new APIError(error.toString()); 
+    }
+    
+    errorHandling.logError(safeError, req, logger);
+    
+    const status: number = safeError.httpStatus || 500;
     res
-      .status(error.httpStatus || 500)
+      .status(status)
       .json({
-        error: errorHandling.getPublicErrorData(error)
+        error: errorHandling.getPublicErrorData(safeError)
       });
   };
 };
