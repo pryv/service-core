@@ -54,6 +54,23 @@ async function storeSeriesBatch(ctx: Context,
   trace.finish('append');
   
   trace.start('metadataUpdate');
+  const entries = [];
+  const now = new Date() / 1e3;
+  for (const bre of data.elements()) {
+    entries.push({
+      userId: userName,
+      eventId: bre.eventId,
+      
+      author: accessToken, 
+      timestamp: now, 
+      dataExtent: {
+        from: now,  // TODO WRONG
+        to: now,
+      }
+    });
+  }
+  await ctx.metadataUpdater.scheduleUpdate({ 
+    entries: entries });
   trace.finish('metadataUpdate');
   
   res

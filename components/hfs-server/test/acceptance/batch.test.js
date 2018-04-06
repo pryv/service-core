@@ -319,12 +319,17 @@ describe('Storing BATCH data in a HF series', function() {
         
         let updaterCalled = false; 
         // FLOW This is ok, we're replacing the stub with something compatible.
-        stub.scheduleUpdate = () => {
+        stub.scheduleUpdate = (req) => {
           updaterCalled = true;
+          
+          assert.strictEqual(req.entries.length, 2);
+          
           return Promise.resolve({ });
         };
         
-        await storeData(server.request(), data).expect(200);
+        await storeData(server.request(), data)
+          // .then(res => console.log(res.body));
+          .expect(200);
         
         assert.isTrue(updaterCalled);
       });
