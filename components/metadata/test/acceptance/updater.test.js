@@ -36,7 +36,7 @@ describe('Metadata Updater', () => {
   it('allows scheduling an update', async () => {
     const now: number = new Date() / 1e3; // now in seconds
     
-    await service.scheduleUpdate({
+    await service.scheduleUpdate({ entries: [{
       userId: 'userName', 
       eventId: 'eventId', 
       
@@ -46,7 +46,7 @@ describe('Metadata Updater', () => {
         from: now,
         to: now, 
       }
-    });
+    }]});
     
     const update = await service.getPendingUpdate({
       userId: 'userName', 

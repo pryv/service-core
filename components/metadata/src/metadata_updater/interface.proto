@@ -6,6 +6,10 @@ syntax = "proto3";
 // Describes a request to update an event as a consequence of a series 
 // update on the event. 
 // 
+message UpdateRequests {
+  repeated UpdateRequest entries = 1; 
+}
+
 message UpdateRequest {
   string user_id = 1;
   string event_id = 2; 
@@ -23,12 +27,7 @@ message TimeRange {
   double to = 2; // in seconds
 }
 
-// If the call is sucessful, the metadata updater responds with the deadline
-// for the update. This might be smaller than the deadline setting in the 
-// configuration, since there might be other updates that need to be flushed.
-// 
 message UpdateResponse {
-  double deadline = 1;  // in seconds
 }
 
 message UpdateId {
@@ -41,7 +40,7 @@ message PendingUpdate {
 }
 
 service MetadataUpdaterService {
-  rpc ScheduleUpdate (UpdateRequest) returns (UpdateResponse);
+  rpc ScheduleUpdate (UpdateRequests) returns (UpdateResponse);
   rpc GetPendingUpdate (UpdateId) returns (PendingUpdate);
 }
 

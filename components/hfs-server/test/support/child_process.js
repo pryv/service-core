@@ -51,7 +51,7 @@ class ApplicationLauncher {
     await context.configureMetadataUpdater(endpoint);
   }
 
-  launch(injectSettings: {}) {
+  async launch(injectSettings: {}) {
     const settings = new Settings(); 
     settings.loadFromFile('config/dev.json');
     settings.loadFromObject(injectSettings);
@@ -59,7 +59,8 @@ class ApplicationLauncher {
     debug(settings.get('http.port').num());
     
     const app = this.app = new Application();
-    app.init(settings);
+    
+    await app.init(settings);
     app.start(); 
   }
 }

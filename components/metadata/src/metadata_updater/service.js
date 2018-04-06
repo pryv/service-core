@@ -9,7 +9,7 @@ const { PendingUpdatesMap, PendingUpdate } = require('./pending_updates');
 const { Controller } = require('./controller');
 
 import type { Logger } from 'components/utils/src/logging';
-import type { IMetadataUpdaterService, IUpdateRequest, IUpdateResponse, 
+import type { IMetadataUpdaterService, IUpdateRequests, IUpdateResponse, 
   IUpdateId, IPendingUpdate } from './interface';
   
 import type { StorageLayer } from 'components/storage';
@@ -64,19 +64,22 @@ class Service implements IMetadataUpdaterService {
   
   // --------------------------------------------------- IMetadataUpdaterService
   
-  async scheduleUpdate(req: IUpdateRequest): Promise<IUpdateResponse> {
+  async scheduleUpdate(req: IUpdateRequests): Promise<IUpdateResponse> {
     const pending = this.pending; 
     const logger = this.logger; 
     
-    logger.info(`scheduleUpdate: ${req.userId}.${req.eventId}: [${req.dataExtent.from}, ${req.dataExtent.to}]`);
+    logger.info(`scheduleUpdate: ${req.entries.length} updates.`);
     
-    const now = new Date() / 1e3;
-    const update = PendingUpdate.fromUpdateRequest(now, req);
-    pending.merge(update);
+    for (const entry of req.entries) {
+      logger.info(`scheduleUpdate/entry: ${entry.userId}.${entry.eventId}: [${entry.dataExtent.from}, ${entry.dataExtent.to}]`);
+      
+      const now = new Date() / 1e3;
+      const update = PendingUpdate.fromUpdateRequest(now, entry);
+      pending.merge(update);
+      
+    }
     
-    return {
-      deadline: 1
-    };
+    return {};
   }
   async getPendingUpdate(req: IUpdateId): Promise<IPendingUpdate> {
     const pending = this.pending; 

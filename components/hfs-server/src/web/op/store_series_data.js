@@ -56,7 +56,7 @@ async function storeSeriesData(ctx: Context,
   
   trace.start('metadataUpdate');
   const now = new Date() / 1e3;
-  await ctx.metadataUpdater.scheduleUpdate({
+  await ctx.metadataUpdater.scheduleUpdate({ entries: [{
     userId: userName, 
     eventId: eventId, 
     
@@ -66,7 +66,7 @@ async function storeSeriesData(ctx: Context,
       from: now, // TODO WRONG
       to: now, 
     }
-  });
+  }]});
   trace.finish('metadataUpdate');
   
   res
