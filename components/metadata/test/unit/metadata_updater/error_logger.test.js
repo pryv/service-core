@@ -54,18 +54,10 @@ describe('ErrorLogger', () => {
     const ret = subject.foo('a', 'b', 'c');
     assert.instanceOf(ret, Promise);
 
-    let rejected = false;
-    try {
-      await ret;
-    } 
-    catch (err) { 
-      rejected = true; 
+    await ret
+      .then(() => fail())
+      .catch(err => assert.strictEqual(err.toString(), 'foobar'));
       
-      assert.strictEqual(err.toString(), 'foobar');
-    }
-    
-    assert.isTrue(rejected);
-
     sinon.assert.calledOnce(logger.error);
     sinon.assert.calledWith(logger.error, 
       "Uncaught error: 'foobar' during call to Object#foo.");

@@ -53,10 +53,12 @@ class ErrorLogger<T: Object> {
         const retval = origMethod.apply(this, args);
         
         if (retval && retval.catch != null) 
+          // NOTE We return the original retval, not the return value from 
+          // catch here. This means that we fork the promise, returning the 
+          // original promise to the caller (and allow chaining off it) while
+          // still _also_ attaching our handler here. It's not simple. 
           retval.catch(err => {
             wrapper.handleException(err, target, propKey);
-            // Needed to allow chaining / recatching off this promise
-            return err;
           });
         
         return retval;
