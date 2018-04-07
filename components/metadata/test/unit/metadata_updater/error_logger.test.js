@@ -3,6 +3,8 @@
 /* global describe, it, beforeEach */
 
 const sinon = require('sinon');
+const chai = require('chai');
+const assert = chai.assert; 
 
 const { ErrorLogger } = require('../../../src/metadata_updater/error_logger');
 
@@ -35,14 +37,35 @@ describe('ErrorLogger', () => {
     target.foo.throws('foobar'); 
       
     // FLOW
-    try {
-      subject.foo('a', 'b', 'c');
-    }
-    catch (err) {
-      // IGNORE
-    }
+    assert.throws(
+      () => subject.foo('a', 'b', 'c')
+    );
 
     sinon.assert.threw(target.foo);
+    sinon.assert.calledOnce(logger.error);
+    sinon.assert.calledWith(logger.error, 
+      "Uncaught error: 'foobar' during call to Object#foo.");
+  });
+  it('also works for async methods, waiting for the eventual result', async () => {
+    target.foo = sinon.stub();
+    
+    target.foo.rejects('foobar'); 
+      
+    const ret = subject.foo('a', 'b', 'c');
+    assert.instanceOf(ret, Promise);
+
+    let rejected = false;
+    try {
+      await ret;
+    } 
+    catch (err) { 
+      rejected = true; 
+      
+      assert.strictEqual(err.toString(), 'foobar');
+    }
+    
+    assert.isTrue(rejected);
+
     sinon.assert.calledOnce(logger.error);
     sinon.assert.calledWith(logger.error, 
       "Uncaught error: 'foobar' during call to Object#foo.");

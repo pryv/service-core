@@ -7,6 +7,7 @@ const rpc = require('components/tprpc');
 const definitionFactory = require('./definition');
 const { PendingUpdatesMap, PendingUpdate } = require('./pending_updates');
 const { Controller } = require('./controller');
+const { ErrorLogger } = require('./error_logger');
 
 import type { Logger } from 'components/utils/src/logging';
 import type { IMetadataUpdaterService, IUpdateRequests, IUpdateResponse, 
@@ -50,11 +51,14 @@ class Service implements IMetadataUpdaterService {
     const controller = this.controller;
     
     logger.info(`starting... (@ ${endpoint})`);
+    
     const definition = await definitionFactory.produce();
     server.add(
       definition, 'MetadataUpdaterService', 
-      (this: IMetadataUpdaterService));
+      this.produceServiceImpl());
+        
     await server.listen(endpoint);
+    
     logger.info('started.');
     
     const runEachMs = 500;
@@ -62,12 +66,20 @@ class Service implements IMetadataUpdaterService {
     controller.runEach(runEachMs);
   }
   
+  produceServiceImpl(): IMetadataUpdaterService {
+    const logger = this.logger; 
+
+    return ErrorLogger.wrap(
+      (this: IMetadataUpdaterService), 
+      logger);
+  }
+  
   // --------------------------------------------------- IMetadataUpdaterService
   
   async scheduleUpdate(req: IUpdateRequests): Promise<IUpdateResponse> {
     const pending = this.pending; 
     const logger = this.logger; 
-    
+        
     logger.info(`scheduleUpdate: ${req.entries.length} updates.`);
     
     for (const entry of req.entries) {
