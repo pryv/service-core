@@ -55,7 +55,7 @@ describe('ErrorLogger', () => {
     assert.instanceOf(ret, Promise);
 
     await ret
-      .then(() => fail())
+      .then(() => assert.fail())
       .catch(err => assert.strictEqual(err.toString(), 'foobar'));
       
     sinon.assert.calledOnce(logger.error);
