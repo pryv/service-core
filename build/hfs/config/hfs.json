@@ -33,5 +33,9 @@
       "active": false,
       "key": "OVERRIDE ME"
     }
+  }, 
+  "metadataUpdater": {
+    "host": "127.0.0.1", 
+    "port": 9020,
   }
 }
