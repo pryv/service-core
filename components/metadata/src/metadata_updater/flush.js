@@ -11,8 +11,6 @@ import type { LRUCache } from 'lru-cache';
 import type { Logger } from 'components/utils/src/logging';
 import type { Operation } from './controller';
 
-// TODO logging
-
 // Operation that flushes the update to MongoDB. 
 // 
 class Flush implements Operation {
