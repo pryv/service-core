@@ -1,16 +1,16 @@
-# Pryv core service
+# Synopsis
 
 Pryv core server app components, ie. what runs on each server node and handles user data.
 
 
-## Usage
+# Usage
 
-### Install
+## Install
 
-_Prerequisites:_ Node v8.3.0, Yarn v1.1.0, Mongo DB v3.4+ (needs at least 4GB of free disk space for the initial database), Nginx (optional, skip if you don't need the proxy server), gnatsd. On a mac OS X system, you should be able to install these prerequisites by first installing homebrew and then running these commands: 
+_Prerequisites:_ Node v8.3.0, Yarn v1.1.0, Mongo DB v3.4+ (needs at least 4GB of free disk space for the initial database), InfluxDB, HAProxy (optional, skip if you don't need the proxy server), gnatsd. On a mac OS X system, you should be able to install these prerequisites by first installing homebrew and then running these commands: 
 
 ~~~bash
-$ brew install gnatsd mongodb nodenv node-build nginx
+$ brew install gnatsd mongodb nodenv node-build nginx influxdb
 # Follow post-install instructions by homebrew, especially for nodenv. 
 $ nodenv install 8.8.0
 ~~~
@@ -23,7 +23,7 @@ If you're blocking because 'unicode.org' doesn't like you today, here's what you
 
     $ NODE_UNICODETABLE_UNICODEDATA_TXT=$(pwd)/UnicodeData.txt yarn install
 
-### Top Level Directories
+## Top Level Directories
 
     .
     ├── CHANGELOG.md     Changelog
@@ -45,7 +45,7 @@ If you're blocking because 'unicode.org' doesn't like you today, here's what you
     ├── test             Top-Level Tests for Integration tests.
     └── yarn.lock        Lockfile for Yarn, locks down npm versions.
 
-### How to?
+## How to?
 
 | Task                              | Command                        |
 | --------------------------------- | ------------------------------ |
@@ -63,7 +63,7 @@ If you're blocking because 'unicode.org' doesn't like you today, here's what you
 
 **NOTE** that all binaries like `nf` or `flow` must be accessed by prepending `yarn run {nf,flow}`. Kaspar has a set of shell aliases that simplify this. 
 
-### Test Running
+## Test Running
 
 If you want to run tests in `components/`, you will need to start with a command like this: 
 
@@ -74,16 +74,14 @@ If you want to run tests in `components/`, you will need to start with a command
 This is something that should probably be a shell alias in your environment. I use 
 
     $ alias pm="../../node_modules/.bin/mocha --compilers js:babel-register test/**/*.test.js"
-    
+
 If you're running into a lot of test failures because mongoDB doesn't like you today, it's maybe because your database is empty so try to run the storage tests first:
 
     $ cd dist/components/storage/ && yarn test
 
-### Quick, run the servers
+## Quick, run the servers
 
-To run the servers, the source code needs to be transpiled from Flowtype to pure JS. Run `yarn release` at least once to get this done. 
-
-During development, use `yarn watch` to recompile all files immediately. Look out for compilation errors that might prevent the distribution from being updated. 
+To run the servers, the source code needs to be transpiled from Flowtype to pure JS. Run `yarn release` at least once to get this done. During development, use `yarn watch` to recompile all files immediately. Look out for compilation errors that might prevent the distribution from being updated. 
 
 To run the processes, use `nf` (javascript foreman), as documented [here](http://strongloop.github.io/node-foreman/).
 
@@ -93,15 +91,17 @@ The proxy runs on `https://{username}.rec.la:8080` (`{username}` can be anything
 - `/previews/{path}` proxies for `/{path}` on the previews server
 - `/{path}` serves files from `{static.root}` as defined in the Nginx config
 
-#### Components
+### Components
 
 Components supporting configuration load their settings from (last takes precedence):
 
 1. Default values, as defined in the [base configuration](https://github.com/pryv/service-core/blob/master/components/utils/src/config.js#L20) or the component's own
-2. A JSON file specified by setting `config`, defaulting to `config/{env}.json` (`env` can be `production`, `development` or `test`); typically used for per-environment settings
-3. An additional "overrides" JSON file specified by setting 'configOverrides'; typically used for confidential settings (e.g. keys, secrets).
-4. Environment variables; default naming scheme: `PRYV_SETTING_KEY_PATH` (for example, `PRYV_DATABASE_HOST` for `database`→`host`)
-5. Command-line options as `--key=value`; default naming scheme: `setting:key:path` (for example, `database:host` for `database`→`host`)
+2. A JSON file specified by setting `config`, defaulting to `config/{env}.json` (`env` can be `production`, `development` or `test`); typically used for per-environment settings. This variant is deprecated and will be faded out. 
+3. An additional "overrides" JSON file specified by setting 'configOverrides'; typically used for confidential settings (e.g. keys, secrets). This variant is deprecated and will be faded out. 
+4. Environment variables; default naming scheme: `PRYV_SETTING_KEY_PATH` (for example, `PRYV_DATABASE_HOST` for `database`→`host`). This variant is deprecated and will be faded out. 
+5. Command-line options as `--key=value`; default naming scheme: `setting:key:path` (for example, `database:host` for `database`→`host`). This variant is deprecated and will be faded out. 
+
+To specify a configuration file, please use `--config` with a relative or absolute path. This will be the way to configure Pryv.io for the near future. 
 
 Those components also accept the following command line options:
 
