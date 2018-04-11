@@ -32,15 +32,15 @@ class Controller {
     this.timer = null; 
   }
   
-  // Runs the #act method every n miliseconds; act will perform the main
+  // Runs the #act method every `frequency` miliseconds; act will perform the main
   // controller action.
   // 
-  runEach(n: number) {
-    if (n <= 0) throw new Error('Invalid arguments');
+  runEach(frequency: number) {
+    if (frequency <= 0) throw new Error('Precondition failure: frequency cannot be negative.');
     
     const timer = setInterval(
       () => this.act(), 
-      n);
+      frequency);
     
     this.timer = timer; 
   }
