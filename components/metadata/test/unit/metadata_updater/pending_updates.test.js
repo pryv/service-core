@@ -93,13 +93,13 @@ describe('PendingUpdatesMap', () => {
       assert.strictEqual(map.size(), 5);
     });
     it('uses #flushAt to determine deadlines', () => {
-      // Store updates in the map, adjusting cooldown to be later than deadline
+      // Store updates in the map, leaving cooldown as is (will be past due).
       for (const update of updates)
         map.merge(update);
         
       // 5 of the updates will have elapsed already, since they've been created
       // > 5min ago. 
-      const elapsed = map.getElapsed(now  );
+      const elapsed = map.getElapsed(now);
       
       assert.strictEqual(elapsed.length, 10);
       assert.strictEqual(map.size(), 0);
