@@ -145,7 +145,10 @@ function produceStorageLayer(settings, logger) {
   const mongoConn = new storage.Database(
     settings, logger);
     
-  // BUG These must be read from the configuration, probably.
+  // BUG These must be read from the configuration, probably. If we don't have 
+  // these values, we cannot instanciate StorageLayer, even though none of these
+  // is used here. So bad. To be changed.
+  // 
   const passwordResetRequestMaxAge = 60*1000;
   const sessionMaxAge = 60*1000;
       
