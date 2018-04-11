@@ -37,16 +37,26 @@ describe('Metadata Updater/Controller', () => {
   });
   
   describe('#runEach(ms)', () => {
-    it('starts a timer and runs #act every n ms', async () => {
-      sinon.stub(controller, 'act');
+    it('starts a timer and runs #act every n ms', (done) => {
+      const now = Number(new Date()); 
+      const callTimestamps = [];
+      
+      const stub = sinon.stub(controller, 'act');
+      stub.callsFake(() => {
+        callTimestamps.push(Number(new Date()));
+      
+        if (callTimestamps.length >= 2) {
+          // First call happens immediately. 
+          assert.approximately(now, callTimestamps[0], 15);
+
+          // And the second call 10 ms afterwards
+          assert.approximately(callTimestamps[0], callTimestamps[1], 15);
+          
+          done(); 
+        }
+      });
       
       controller.runEach(10);
-      
-      // wait for a bit, which should run act twice, once immediately and once
-      // after 10ms. 
-      await awaiting.delay(25);
-      
-      sinon.assert.callCount(controller.act, 2);
     });
   });
   describe('#flushOp(update)', () => {
