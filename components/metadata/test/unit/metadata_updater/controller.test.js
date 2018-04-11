@@ -42,7 +42,7 @@ describe('Metadata Updater/Controller', () => {
       
       controller.runEach(10);
       
-      // wait for 15ms, which should run act twice, once immediately and once
+      // wait for a bit, which should run act twice, once immediately and once
       // after 10ms. 
       await awaiting.delay(25);
       
