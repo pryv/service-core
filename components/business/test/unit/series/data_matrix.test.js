@@ -162,6 +162,15 @@ describe('DataMatrix', function () {
       assert.strictEqual(from, 3);
       assert.strictEqual(to, 6);
     });
+    it('throws an error if the matrix is empty', () => {
+      const headers = ['a', 'b', 'timestamp']; 
+      const matrix = new DataMatrix(
+        headers,
+        [ ]
+      );
+      
+      assert.throws( () => matrix.minmax() );
+    });
     it('throws an error if the timestamp is missing', () => {
       const headers = ['a', 'b', 'c']; 
       const matrix = new DataMatrix(
