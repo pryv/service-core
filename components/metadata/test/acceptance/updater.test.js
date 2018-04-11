@@ -56,7 +56,7 @@ describe('Metadata Updater', () => {
     assert.isTrue(update.found);
     
     const deadline = update.deadline;
-    const min5 = 5 * 60;
+    const min5 = 5 * 60;    // STALE_LIMIT
     assert.approximately(deadline, (now + min5), 2);
   });
 });
