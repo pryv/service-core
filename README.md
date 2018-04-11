@@ -10,7 +10,7 @@ Pryv core server app components, ie. what runs on each server node and handles u
 _Prerequisites:_ Node v8.3.0, Yarn v1.1.0, Mongo DB v3.4+ (needs at least 4GB of free disk space for the initial database), InfluxDB, HAProxy (optional, skip if you don't need the proxy server), gnatsd. On a mac OS X system, you should be able to install these prerequisites by first installing homebrew and then running these commands: 
 
 ~~~bash
-$ brew install gnatsd mongodb nodenv node-build nginx influxdb
+$ brew install gnatsd mongodb nodenv node-build nginx influxdb haproxy
 # Follow post-install instructions by homebrew, especially for nodenv. 
 $ nodenv install 8.8.0
 ~~~
