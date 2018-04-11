@@ -155,11 +155,6 @@ class Server {
     app.post('/:user_name/events/:event_id/series', c.storeSeriesData); 
     app.post('/:user_name/series/batch', c.storeSeriesBatch);
     app.get('/:user_name/events/:event_id/series', c.querySeriesData);
-    
-    // Allow CORS; access control is guaranteed by the authorization token which
-    // when known - is the only means of authentication. 
-    app.options('/:user_name/events/:event_id/series', handleCORS);
-    app.options('/:user_name/series/batch', handleCORS);
   }
 }
 
@@ -172,11 +167,6 @@ function systemStatus(req: express$Request, res: express$Response) {
     .json({
       status: 'ok',
     });
-}
-
-function handleCORS(req: express$Request, res: express$Response) {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.status(200).end();
 }
 
 module.exports = Server;
