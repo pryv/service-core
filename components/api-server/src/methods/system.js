@@ -1,8 +1,8 @@
 var errors = require('components/errors').factory,
     commonFns = require('./helpers/commonFunctions'),
+    mailing = require('./helpers/mailing'),
     errorHandling = require('components/errors').errorHandling,
     methodsSchema = require('../schema/systemMethods'),
-    request = require('superagent'),
     string = require('./helpers/string'),
     util = require('util'),
     _ = require('lodash');
@@ -56,52 +56,39 @@ module.exports = function (
     }
   }
 
-  var emailSettings = servicesSettings.email,
-      sendMailURL = emailSettings.url + emailSettings.sendMessagePath;
-
   function sendWelcomeMail(context, params, result, next) {
-    // skip this step if welcome mail is deactivated
+    const emailSettings = servicesSettings.email;
+
+    // Skip this step if welcome mail is deactivated
     const isMailActivated = emailSettings.enabled;
-    if(isMailActivated === false
-      || (isMailActivated != null && isMailActivated.welcome === false)) {
+    if (isMailActivated === false || 
+       (isMailActivated != null && isMailActivated.welcome === false)) {
       return next();
     }
-    var sendMailData = {
-      key: emailSettings.key,
-      template_name: emailSettings.welcomeTemplate,
-      template_content: [],
-      message: {
-        to: [
-          {
-            email: context.user.email,
-            name: context.user.username,
-            type: 'to'
-          }
-        ],
-        global_merge_vars: [
-          {
-            name: 'USERNAME',
-            content: context.user.username
-          },
-          {
-            name: 'EMAIL',
-            content: context.user.email
-          }
-        ],
-        tags: ['welcome']
-      }
+    
+    const recipient = {
+      email: context.user.email,
+      name: context.user.username,
+      type: 'to'
     };
-    request.post(sendMailURL).send(sendMailData).end(function (err, res) {
-      if (err || ! res.ok) {
-        if (! err) {
-          err = new Error('Sending welcome e-mail failed: ' + util.inspect(res.body));
+    
+    const substitutions = {
+      USERNAME: context.user.username,
+      EMAIL: context.user.email
+    };
+    
+    mailing.sendmail(emailSettings, emailSettings.welcomeTemplate, recipient, 
+      substitutions, context.user.language, (err, res) => {
+        if (err || ! res.ok) {
+          if (! err) {
+            err = new Error('Sending welcome e-mail failed: ' + util.inspect(res.body));
+          }
+          // Don't fail creation process itself (mail isn't critical), just log error
+          errorHandling.logError(err, null, logger);
         }
-        // don't fail creation process itself (mail isn't critical), just log error
-        errorHandling.logError(err, null, logger);
-      }
 
-      next();
-    });
+        next();
+      });
   }
 
   // --------------------------------------------------------------- getUserInfo

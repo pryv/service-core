@@ -38,11 +38,18 @@
       "key": "OVERRIDE ME"
     },
     "email": {
-      "url": "https://mandrillapp.com",
-      "key": "OVERRIDE ME",
-      "sendMessagePath": "/api/1.0/messages/send-template.json",
       "welcomeTemplate": "welcome-email",
-      "resetPasswordTemplate": "reset-password"
+      "resetPasswordTemplate": "reset-password",
+      "mandrill": {
+        "url": "https://mandrillapp.com",
+        "key": "OVERRIDE ME",
+        "sendMessagePath": "/api/1.0/messages/send-template.json"
+      },
+      "pryv": {
+        "active": true,
+        "endpoint": "127.0.0.1:9000/sendmail",
+        "key": "prZ9WM1!p_QASy^kG%9tGPYQhTTKy)wS#Zt(Fv%cHD4O7XJfPx4K*9080ulr2^jA"
+      }
     }
   },
   "logs": {

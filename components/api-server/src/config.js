@@ -100,18 +100,6 @@ _.merge(config.schema, {
           doc: 'Allows to activate/deactivate the sending of password reset emails.'
         }
       },
-      url: {
-        format: 'url',
-        default: 'https://mandrillapp.local'
-      },
-      key: {
-        format: String,
-        default: 'OVERRIDE ME'
-      },
-      sendMessagePath: {
-        format: String,
-        default: '/api/1.0/messages/send-template.json'
-      },
       welcomeTemplate: {
         format: String,
         default: 'welcome-email'
@@ -119,6 +107,36 @@ _.merge(config.schema, {
       resetPasswordTemplate: {
         format: String,
         default: 'reset-password'
+      },
+      mandrill: {
+        url: {
+          format: 'url',
+          default: 'https://mandrillapp.local'
+        },
+        key: {
+          format: String,
+          default: 'OVERRIDE ME'
+        },
+        sendMessagePath: {
+          format: String,
+          default: '/api/1.0/messages/send-template.json'
+        }
+      },
+      pryv: {
+        active: {
+          format: Boolean,
+          default: false,
+          doc: 'If set to true, emails will be sent through Pryv service-mail.'
+        },
+        endpoint: {
+          format: 'url',
+          doc: 'Address (ip+port+path) to the Pryv mail service'
+        },
+        key: {
+          format: String,
+          default: 'OVERRIDE ME',
+          doc: 'Shared key used to authenticate service-core against service-mail.'
+        }
       }
     }
   },
