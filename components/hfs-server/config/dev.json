@@ -5,6 +5,7 @@
   "logs": {
     "console": {
       "active": true,
+      "level": "warn",
     }
   },
   "mongodb": {

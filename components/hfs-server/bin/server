@@ -6,4 +6,5 @@
 const Application = require('../src/application');
 
 const app = new Application(); 
-app.run(); 
+app.run()
+  .catch(err => console.error(err)); // eslint-disable-line no-console

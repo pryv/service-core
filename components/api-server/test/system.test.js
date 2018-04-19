@@ -391,7 +391,8 @@ describe('system (ex-register)', function () {
             return callback(err);
           }
           should(data.indexOf(newUserData.passwordHash)).be.equal(-1);
-          should(data.indexOf('passwordHash=(hidden)')).be.aboveOrEqual(0);
+          if (/passwordHash/.test(data))
+            should(data.indexOf('passwordHash=(hidden)')).be.aboveOrEqual(0);
           callback();
         });
       }

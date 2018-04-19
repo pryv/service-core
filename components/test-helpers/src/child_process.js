@@ -61,7 +61,7 @@ class ChildProcess {
     process.send(
       msgpack.encode(msg));
   }
-  dispatchParentMessage(cmd: string, ...args: Array<mixed>) {
+  dispatchParentMessage(cmd: string, ...args: Array<mixed>): Promise<mixed> | mixed {
     if (! cmd.startsWith('int_')) {
       const launcher = this.launcher;
       

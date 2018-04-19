@@ -1,14 +1,19 @@
 // @flow
 
-/* global describe, it, after, before */
+/* global describe, it, after, before, beforeEach, afterEach*/
 const chai = require('chai');
 const assert = chai.assert; 
 const cuid = require('cuid');
+
+const rpc = require('components/tprpc');
+const metadata = require('components/metadata');
 
 const { 
   spawnContext, produceMongoConnection, 
   produceInfluxConnection } = require('./test-helpers');
 const { databaseFixture } = require('components/test-helpers');
+
+import type { IMetadataUpdaterService } from 'components/metadata';
 
 type DataValue = string | number;
 type Row = Array<DataValue>;
@@ -158,17 +163,21 @@ describe('Storing BATCH data in a HF series', function() {
     //  |- Access(accessToken)
     //  `- Session(accessToken)
     // 
-    let userId, parentStreamId, eventId, accessToken; 
+    let userId, parentStreamId, eventId1, eventId2, accessToken; 
     before(() => {
       userId = cuid(); 
       parentStreamId = cuid(); 
-      eventId = cuid(); 
+      eventId1 = cuid(); 
+      eventId2 = cuid(); 
       accessToken = cuid(); 
       
       return pryv.user(userId, {}, function (user) {
         user.stream({id: parentStreamId}, function (stream) {
           stream.event({
-            id: eventId, 
+            id: eventId1, 
+            type: 'series:mass/kg'});
+          stream.event({
+            id: eventId2, 
             type: 'series:mass/kg'});
         });
 
@@ -182,7 +191,7 @@ describe('Storing BATCH data in a HF series', function() {
         'format': 'seriesBatch',
         'data': [
           {
-            'eventId': eventId,
+            'eventId': eventId1,
             'data': {
               'format': 'flatJSON', 
               'fields': ['timestamp', 'value'], 
@@ -221,7 +230,7 @@ describe('Storing BATCH data in a HF series', function() {
           'format': 'seriesBatch',
           'data': [
             {
-              'eventId': eventId,
+              'eventId': eventId1,
               'data': {
                 'format': 'flatJSON', 
                 'fields': ['timestamp', 'value'], 
@@ -238,7 +247,94 @@ describe('Storing BATCH data in a HF series', function() {
         assert.strictEqual(response.statusCode, 403);
       });
     });
-    
+    describe('when using a metadata updater stub', () => {
+      // A stub for the real service. Tests might replace parts of this to do 
+      // custom assertions.
+      let stub: IMetadataUpdaterService;
+      beforeEach(() => {
+        stub = {
+          scheduleUpdate: () => { return Promise.resolve({ }); },
+          getPendingUpdate: () => { return Promise.resolve({ found: false, deadline: 0 }); },
+        };
+      });
+      
+      // Loads the definition for the MetadataUpdaterService.
+      let definition;
+      before(async () => {
+        definition = await metadata.updater.definition;
+      });
+      
+      // Constructs and launches an RPC server on port 14000.
+      let rpcServer;
+      beforeEach(async () => {
+        const endpoint = '127.0.0.1:14000';
+
+        rpcServer = new rpc.Server(); 
+        rpcServer.add(definition, 'MetadataUpdaterService', (stub: IMetadataUpdaterService));
+        await rpcServer.listen(endpoint);
+        
+        // Tell the server (already running) to use our rpc server. 
+        await server.process.sendToChild('useMetadataUpdater', endpoint);
+      });
+      afterEach(async () => {
+        // Since we modified the test server, spawn a new one that is clean. 
+        server.stop(); 
+        server = await spawnContext.spawn(); 
+        
+        rpcServer.close();
+      });
+            
+      it('should schedule a metadata update on every store', async () => {
+        // Formulates an update for 2 events, to test if we get two entries in
+        // the end.
+        const data = {
+          'format': 'seriesBatch',
+          'data': [
+            {
+              'eventId': eventId1,
+              'data': {
+                'format': 'flatJSON', 
+                'fields': ['timestamp', 'value'], 
+                'points': [
+                  [1519314345, 10.2], 
+                  [1519314346, 12.2],
+                  [1519314347, 14.2],
+                ]
+              }   
+            },
+            {
+              'eventId': eventId2,
+              'data': {
+                'format': 'flatJSON', 
+                'fields': ['timestamp', 'value'], 
+                'points': [
+                  [1519314345, 10.2], 
+                  [1519314346, 12.2],
+                  [1519314347, 14.2],
+                ]
+              }   
+            }
+          ]
+        };
+        
+        let updaterCalled = false; 
+        // FLOW This is ok, we're replacing the stub with something compatible.
+        stub.scheduleUpdate = (req) => {
+          updaterCalled = true;
+          
+          assert.strictEqual(req.entries.length, 2);
+          
+          return Promise.resolve({ });
+        };
+        
+        await storeData(server.request(), data)
+          // .then(res => console.log(res.body));
+          .expect(200);
+        
+        assert.isTrue(updaterCalled);
+      });
+    });
+
     function storeData(request, data: SeriesBatchEnvelope): any {      
       return request
         .post(`/${userId}/series/batch`)

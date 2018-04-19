@@ -3,7 +3,7 @@
 const R = require('ramda');
 const assert = require('assert');
 
-import type Element from './data_matrix';
+import type { Element } from './data_matrix';
 
 /** A single row of the data matrix. Stores a reference to the original 
  * matrix; this is like a pointer, not like a value. It is used during iteration
@@ -28,7 +28,7 @@ class Row {
    * 
    * @return {Object} The current row in object (struct) form. 
    */
-  toStruct() {
+  toStruct(): {} {
     const s = Object.create(null); // Avoid key collisions with Javascript base object. 
     const assoc = (s, [k, v]) => R.assoc(k, v, s);
     const createObj = R.reduce(assoc, s); 
@@ -49,6 +49,16 @@ class Row {
     assert.ok(idx >= 0);
     
     return this.values[idx];
+  }
+  
+  // Returns this rows timestamp. If the timestamp is not available, a runtime
+  // error is thrown. 
+  // 
+  timestamp(): number {
+    const value = this.get('timestamp');
+    if (typeof value !== 'number') throw new Error('Timestamp must be a number');
+    
+    return value;
   }
 }
 

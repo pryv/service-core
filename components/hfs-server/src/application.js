@@ -10,7 +10,7 @@ const Context = require('./context');
 const Settings = require('./Settings');
 const Server = require('./server'); 
 
-import type {LogFactory} from 'components/utils/src/logging';
+import type { LogFactory } from 'components/utils/src/logging';
 
 // const { Tags } = require('opentracing');
 const opentracing = require('opentracing');
@@ -37,7 +37,11 @@ function createLogFactory(settings): LogFactory {
   const logSettings = settings.get('logs').obj();
   return logComponent(logSettings).getLogger;
 }
-function createContext(settings: Settings, logFactory: LogFactory): Context {
+async function createContext(
+  settings: Settings, logFactory: LogFactory): Promise<Context> 
+{
+  const logger = logFactory('setup');
+  
   const host = settings.get('influxdb.host').str(); 
   const port = settings.get('influxdb.port').num();
   
@@ -51,8 +55,23 @@ function createContext(settings: Settings, logFactory: LogFactory): Context {
   
   const typeRepoUpdateUrl = settings.get('eventTypes.sourceURL').str();
     
-  return new Context(influx, mongo, logFactory('model'), tracer, typeRepoUpdateUrl);
+  const context = new Context(influx, mongo, logFactory, tracer, typeRepoUpdateUrl);
+
+  if (settings.has('metadataUpdater.host')) {
+    const mdHost = settings.get('metadataUpdater.host').str(); 
+    const mdPort = settings.get('metadataUpdater.port').num(); 
+    const metadataEndpoint = `${mdHost}:${mdPort}`;
+      
+    logger.info(`Connecting to metadata updater... (@ ${metadataEndpoint})`);
+      
+    await context.configureMetadataUpdater(metadataEndpoint);
+  }
+  
+  return context;
 }
+
+// Produce a tracer that allows creating span trees for a subset of all calls. 
+// 
 function produceTracer(settings, logger) {
   if (! settings.get('trace.enable').bool()) 
     return new opentracing.Tracer();
@@ -83,24 +102,23 @@ function patchMongoDBDriver(tracer) {
   patch(tracer);
 }
 
-/** The HF application holds references to all subsystems and ties everything
- * together. 
- */
+// The HF application holds references to all subsystems and ties everything
+// together. 
+// 
 class Application {
   settings: Settings; 
   logFactory: LogFactory; 
   context: Context; 
-  
+    
   server: Server; 
   
-  init(settings?: Settings): Application {
+  async init(settings?: Settings) {
     this.settings = settings || createSettings(); 
     this.logFactory = createLogFactory(this.settings);
-    this.context = createContext(this.settings, this.logFactory);
+    
+    this.context = await createContext(this.settings, this.logFactory);
 
     this.server = new Server(this.settings, this.context);
-    
-    return this; 
   }
   
   start(): Application {
@@ -109,8 +127,8 @@ class Application {
     return this; 
   }
   
-  run() {
-    this.init(); 
+  async run() {
+    await this.init(); 
     this.start(); 
   }
 }

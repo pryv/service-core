@@ -25,7 +25,8 @@ async function storeSeriesBatch(ctx: Context,
   const seriesRepository = ctx.series; 
   
   const userName = req.params.user_name;
-  const accessToken = req.headers[ApiConstants.AUTH_HEADER];
+  const accessToken: ?string = req.headers[ApiConstants.AUTH_HEADER];
+  const body: Object = req.body;
   
   // If params are not there, abort. 
   if (accessToken == null) throw errors.missingHeader(ApiConstants.AUTH_HEADER);
@@ -33,7 +34,7 @@ async function storeSeriesBatch(ctx: Context,
   // Parse the data and resolve access rights and types.
   trace.start('parseData');
   const resolver = new EventMetaDataCache(userName, accessToken, ctx);
-  const data = await parseData(req.body, resolver);
+  const data = await parseData(body, resolver);
   trace.finish('parseData');
 
   // Iterate over all separate namespaces and store the data:
@@ -51,6 +52,23 @@ async function storeSeriesBatch(ctx: Context,
   // Wait for all store operations to complete. 
   await bluebird.all(results);
   trace.finish('append');
+  
+  trace.start('metadataUpdate');
+  const entries = [];
+  const now = new Date() / 1e3;
+  for (const bre of data.elements()) {
+    entries.push({
+      userId: userName,
+      eventId: bre.eventId,
+      
+      author: accessToken, 
+      timestamp: now, 
+      dataExtent: bre.data.minmax(), 
+    });
+  }
+  await ctx.metadataUpdater.scheduleUpdate({ 
+    entries: entries });
+  trace.finish('metadataUpdate');
   
   res
     .status(200)

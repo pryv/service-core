@@ -10,6 +10,9 @@ const InfluxRowType = require('../types/influx_row_type');
 export type Element = string | number; 
 export type RawRow = Array<Element>;
 
+type EpochTime = number; // in seconds since epoch
+export type DataExtent = { from: EpochTime, to: EpochTime };
+
 const Row = require('./row');
 
 /** Data in matrix form. Columns have names, rows have numbers, starting at 0. 
@@ -77,6 +80,13 @@ class DataMatrix {
     return this.data[idx];
   }
   
+  // Returns the row at index `idx`. 
+  // 
+  atRow(idx: number): Row {
+    const raw = this.at(idx);
+    return new Row(raw, this.columns);
+  }
+  
   /** Iterates over each row of the data matrix. 
    */
   eachRow(fn: (row: Row, idx: number) => void) {
@@ -94,6 +104,31 @@ class DataMatrix {
       row.forEach((cell, idx) => 
         row[idx] = fn(this.columns[idx], cell));
     }
+  }
+
+  // Returns a tuple of [from, to] for the dataset in this matrix, indicating
+  // the earliest (`from`) and the latest (`to`) timestamp in the data set. 
+  // No assumptions are made about the order of the data. If the matrix is 
+  // empty, this method throws an error. 
+  // 
+  minmax(): DataExtent {
+    if (this.length <= 0) throw new Error('Precondition error: matrix is empty.');
+    
+    // assert: length > 0 => at least one row is available
+    const first = this.atRow(0).timestamp(); 
+    
+    let [min, max] = [first, first];
+    this.eachRow(row => {
+      const timestamp = row.timestamp();
+                  
+      min = Math.min(min, timestamp);
+      max = Math.max(max, timestamp);
+    });
+    
+    return {
+      from: min, 
+      to: max, 
+    };
   }
 }
 

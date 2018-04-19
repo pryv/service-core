@@ -26,7 +26,8 @@ run yarn release > /dev/null
 
 # Install the config file
 run mkdir -p $conf_dir && \
-  run cp /pd_build/config/hfs.json $conf_dir/hfs.json
+  run cp /pd_build/config/hfs.json $conf_dir/hfs.json && \
+  run cp /pd_build/config/metadata.hjson $conf_dir/
   
 # Install the procfile (for running node-foreman)
 run cp /pd_build/config/production.procfile \

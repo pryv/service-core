@@ -11,6 +11,8 @@ const MethodContext = require('components/model').MethodContext;
 const errors = require('components/errors').factory;
 const { InfluxRowType } = require('components/business').types;
 
+import type { LRUCache } from 'lru-cache';
+
 import type { TypeRepository } from 'components/business';
 import type { Logger } from 'components/utils';
 
@@ -49,7 +51,7 @@ const LRU_CACHE_MAX_AGE_MS = 1000*60*5; // 5 mins (TODO)
  * */
 class MetadataCache implements MetadataRepository {
   loader: MetadataRepository;
-  cache: LRU<string, SeriesMetadata>; 
+  cache: LRUCache<string, SeriesMetadata>; 
   
   constructor(metadataLoader: MetadataRepository) {
     this.loader = metadataLoader;
@@ -58,7 +60,7 @@ class MetadataCache implements MetadataRepository {
       max: LRU_CACHE_SIZE,
       maxAge: LRU_CACHE_MAX_AGE_MS,
     };
-    this.cache = new LRU(options);
+    this.cache = LRU(options);
   }
   
   async forSeries(userName: string, eventId: string, accessToken: string): Promise<SeriesMetadata> {

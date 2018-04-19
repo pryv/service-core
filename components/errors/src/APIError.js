@@ -17,27 +17,27 @@ class APIError extends Error {
   innerError: ?Error; 
   dontNotifyAirbrake: boolean; 
   
-  constructor(id: string, message: string, options: APIErrorOptions) {
+  constructor(id: string, message: string, options: ?APIErrorOptions) {
     super(); 
     
     this.id = id;
     this.message = message;
     
     this.httpStatus = 500; 
-    if (options.httpStatus != null) 
+    if (options != null && options.httpStatus != null) 
       this.httpStatus = options.httpStatus;
       
     this.data = null; 
-    if (options.data != null) 
+    if (options != null && options.data != null) 
       this.data = options.data;
       
     this.innerError = null; 
-    if (options.innerError != null) 
+    if (options != null && options.innerError != null) 
       this.innerError = options.innerError;
     
     // We notify unless somebody tells us not to. 
     this.dontNotifyAirbrake = false; 
-    if (options.dontNotifyAirbrake != null) 
+    if (options != null && options.dontNotifyAirbrake != null) 
       this.dontNotifyAirbrake = options.dontNotifyAirbrake;
   }
 }

@@ -321,8 +321,6 @@ module.exports = function (
       });
   }
 
-  const FORMAT_FLAT_JSON = 'flatJSON';
-
   /**
    * Creates the event's body according to its type and context. 
    */
@@ -337,7 +335,6 @@ module.exports = function (
       elementType: eventType.elementTypeName(), 
       fields: eventType.fields(), 
       required: eventType.requiredFields(),
-      format: FORMAT_FLAT_JSON,
     };
   }
 

@@ -38,7 +38,7 @@ module.exports = function (expressApp: express$Application, api: any, authSettin
     return true; 
   }
 
-  function setSSOCookie(data, res) {
+  function setSSOCookie(data: Object, res) {
     res.cookie('sso', data, {
       domain: ssoCookieDomain,
       maxAge: sessionMaxAge,

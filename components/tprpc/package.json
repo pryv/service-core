@@ -1,0 +1,14 @@
+{
+  "name": "tprpc",
+  "version": "1.0.0",
+  "description": "RPC via TChannel and protobuf3.",
+  "main": "src/index.js",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "protobufjs": "^6.8.6"
+  },
+  "devDependencies": {
+    "flowgen": "^1.2.1"
+  }
+}

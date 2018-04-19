@@ -1,0 +1,22 @@
+{
+  "trace": {
+    "enable": false,
+  },
+  "logs": {
+    "console": {
+      "active": true,
+      "level": "debug",
+    }
+  },
+  "mongodb": {
+    "host": "127.0.0.1"
+  }, 
+  "influxdb": {
+    "host": "127.0.0.1", 
+    "port": 8086
+  }, 
+  "metadataUpdater": {
+    "host": "127.0.0.1", 
+    "port": 9020,
+  }
+}

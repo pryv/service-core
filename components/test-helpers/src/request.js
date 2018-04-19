@@ -13,7 +13,7 @@ module.exports.unpatched = unpatchedRequest;
 
 
 // --------------------------------- new usage, unpatched sa with helpers added
-function unpatchedRequest(serverURL: string) {
+function unpatchedRequest(serverURL: string): UnpatchedRequest {
   return new UnpatchedRequest(serverURL); 
 }
 

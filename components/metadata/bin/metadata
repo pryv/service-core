@@ -1,0 +1,16 @@
+#!/usr/bin/env node
+
+// Service that receives requests from the hfs server and that caches / updates
+// metadata. 
+
+const Application = require('../src/application');
+
+startup()
+  .catch(err => console.error(err)); // eslint-disable-line no-console
+
+async function startup() {
+  const app = new Application(); 
+
+  await app.setup();
+  await app.run();
+}

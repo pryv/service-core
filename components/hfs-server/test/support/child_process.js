@@ -42,7 +42,16 @@ class ApplicationLauncher {
     };
   }
 
-  launch(injectSettings: {}) {
+  // Tells the server to use the metadata updater service located at `endpoint`
+  async useMetadataUpdater(endpoint) {
+    const app = this.app; 
+    if (app == null) throw new Error('AF: app should not be null anymore');
+    
+    const context = app.context; 
+    await context.configureMetadataUpdater(endpoint);
+  }
+
+  async launch(injectSettings: {}) {
     const settings = new Settings(); 
     settings.loadFromFile('config/dev.json');
     settings.loadFromObject(injectSettings);
@@ -50,7 +59,8 @@ class ApplicationLauncher {
     debug(settings.get('http.port').num());
     
     const app = this.app = new Application();
-    app.init(settings);
+    
+    await app.init(settings);
     app.start(); 
   }
 }

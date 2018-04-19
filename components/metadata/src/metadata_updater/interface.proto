@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+// Timestamps are represented as integer number of nanoseconds, or 1e-9 of a
+// second.
+
+// Describes a request to update an event as a consequence of a series 
+// update on the event. 
+// 
+message UpdateRequests {
+  repeated UpdateRequest entries = 1; 
+}
+
+message UpdateRequest {
+  string user_id = 1;
+  string event_id = 2; 
+  
+  // Information about the update: 
+  string author = 3;
+  double timestamp = 4; // in seconds
+  TimeRange data_extent = 5; 
+}
+
+// Describes a time range starting at `from` through `to`, inclusively.
+// 
+message TimeRange {
+  double from = 1; // in seconds
+  double to = 2; // in seconds
+}
+
+message UpdateResponse {
+}
+
+message UpdateId {
+  string user_id = 1;
+  string event_id = 2; 
+}
+message PendingUpdate {
+  bool found = 1; 
+  double deadline = 2; // not set if found === false, in seconds
+}
+
+service MetadataUpdaterService {
+  rpc ScheduleUpdate (UpdateRequests) returns (UpdateResponse);
+  rpc GetPendingUpdate (UpdateId) returns (PendingUpdate);
+}
+

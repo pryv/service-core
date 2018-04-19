@@ -24,8 +24,8 @@ factory.corruptedData = function (message: string, innerError: Error) {
   });
 };
 
-factory.forbidden = function (message: string) {
-  if (! message) {
+factory.forbidden = function (message?: string): Error {
+  if (message == null) {
     message = 'The given token\'s access permissions do not allow this operation.';
   }
   return new APIError(ErrorIds.Forbidden, message, {
@@ -72,7 +72,7 @@ factory.invalidMethod = function (methodId: string): APIError {
   );
 };
 
-factory.invalidOperation = function (message: string, data: Object, innerError: Error) {
+factory.invalidOperation = function (message: string, data?: Object, innerError?: Error): APIError {
   return new APIError(ErrorIds.InvalidOperation, message, {
     httpStatus: 400,
     data: data,
@@ -81,7 +81,7 @@ factory.invalidOperation = function (message: string, data: Object, innerError: 
   });
 };
 
-factory.invalidParametersFormat = function (message: string, data: Object, innerError: Error) {
+factory.invalidParametersFormat = function (message: string, data?: Object, innerError?: Error) {
   return new APIError(ErrorIds.InvalidParametersFormat, message, {
     httpStatus: 400,
     data: data,
@@ -90,7 +90,7 @@ factory.invalidParametersFormat = function (message: string, data: Object, inner
   });
 };
 
-factory.invalidRequestStructure = function (message: string, data: Object, innerError: Error) {
+factory.invalidRequestStructure = function (message: string, data?: Object, innerError?: Error): APIError {
   return new APIError(ErrorIds.InvalidRequestStructure, message, {
     httpStatus: 400,
     data: data,
@@ -117,7 +117,7 @@ factory.itemAlreadyExists = function (
   });
 };
 
-factory.missingHeader = function (headerName: string, status: ?number) {
+factory.missingHeader = function (headerName: string, status: ?number): APIError {
   return new APIError(
     ErrorIds.MissingHeader, 
     'Missing expected header "' + headerName + '"', {
@@ -155,7 +155,7 @@ factory.unexpectedError = function (sourceError: mixed, message?: string) {
     
   // Maybe this looks like an Error?
   const error = sourceError;
-  if (error != null && error instanceof Error) {
+  if (error != null && error instanceof Error && error.message != null) {
     // NOTE Could not get this path covered with type information. It looks sound...
     return produceError(error.message, error);
   }
@@ -197,7 +197,7 @@ factory.unknownReferencedResource = function (
   });
 };
 
-factory.unknownResource = function (resourceType: ?string, id: ?string, innerError: Error) {
+factory.unknownResource = function (resourceType: ?string, id: ?string, innerError?: Error): APIError {
   var message = 'Unknown ' + (resourceType || 'resource') + ' ' + (id ? '"' + id + '"' : '');
   return new APIError(ErrorIds.UnknownResource, message, {
     httpStatus: 404,

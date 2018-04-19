@@ -1,0 +1,13 @@
+{
+  // For development, we mount on 127.0.0.1 only. 
+  metadataUpdater: {
+    host: 127.0.0.1
+    port: 9020
+  }
+  
+  logs: {
+    console: {
+      level: info
+    }
+  }
+}

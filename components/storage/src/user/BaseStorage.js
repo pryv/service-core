@@ -39,7 +39,7 @@ function BaseStorage(database) {
     itemsToDB: [],
     updateToDB: [],
     itemFromDB: [],
-    itemsFromDB: []
+    itemsFromDB: [],
   };
   this.defaultOptions = { sort: {} };
 }
@@ -51,21 +51,25 @@ function BaseStorage(database) {
  * @param {Object} user The user owning the collection
  * @return {{name: string, indexes: Array}}
  */
-BaseStorage.prototype.getCollectionInfo = function (user) {
+BaseStorage.prototype.getCollectionInfo = function(user) {
   return new Error('Not implemented (user: ' + user + ')');
 };
 
-BaseStorage.prototype.countAll = function (user, callback) {
+BaseStorage.prototype.countAll = function(user, callback) {
   this.database.countAll(this.getCollectionInfo(user), callback);
 };
 
 /**
  * Ignores item deletions & history (i.e. documents with either `deleted` or `headId` field).
  */
-BaseStorage.prototype.count = function (user, query, callback) {
+BaseStorage.prototype.count = function(user, query, callback) {
   query.deleted = null;
   query.headId = null;
-  this.database.count(this.getCollectionInfo(user), this.applyQueryToDB(query), callback);
+  this.database.count(
+    this.getCollectionInfo(user),
+    this.applyQueryToDB(query),
+    callback
+  );
 };
 
 /**
@@ -73,27 +77,32 @@ BaseStorage.prototype.count = function (user, query, callback) {
  * history items (i.e. documents with `headId` field)
  * @see `findDeletions()`
  */
-BaseStorage.prototype.find = function (user, query, options, callback) {
+BaseStorage.prototype.find = function(user, query, options, callback) {
   query.deleted = null;
   query.headId = null;
-  this.database.find(this.getCollectionInfo(user), this.applyQueryToDB(query),
-      this.applyOptionsToDB(options), function (err, dbItems) {
-    if (err) { return callback(err); }
-    callback(null, this.applyItemsFromDB(dbItems));
-  }.bind(this));
+  this.database.find(
+    this.getCollectionInfo(user),
+    this.applyQueryToDB(query),
+    this.applyOptionsToDB(options),
+    function(err, dbItems) {
+      if (err) {
+        return callback(err);
+      }
+      callback(null, this.applyItemsFromDB(dbItems));
+    }.bind(this)
+  );
 };
 
-/* jshint -W098 */
+
 /**
  * Same as find(), but returns a readable stream
  */
-BaseStorage.prototype.findStreamed = function (user, query, options, callback) {
-  return new Error('Not implemented (user: ' + user + ')');
+BaseStorage.prototype.findStreamed = function(user, query, options, callback) {
+  callback( new Error('Not implemented (user: ' + user + ')') );
   // Implemented for Events only.
 };
-/* jshint +W098 */
 
-/* jshint -W098 */
+
 /**
  * Retrieves the history for a certain event
  *
@@ -103,69 +112,112 @@ BaseStorage.prototype.findStreamed = function (user, query, options, callback) {
  * @param callback {Function}
  * @returns {Error}
  */
-BaseStorage.prototype.findHistory = function (user, headId, options, callback) {
-  return new Error('Not implemented (user: ' + user + ')');
+BaseStorage.prototype.findHistory = function(user, headId, options, callback) {
+  callback( new Error('Not implemented (user: ' + user + ')') );
   // Implemented for Events only
 };
-/* jshint +W098 */
 
-BaseStorage.prototype.findDeletions = function (user, deletedSince, options, callback) {
-  var query = {deleted: {$gt: timestamp.toDate(deletedSince)}};
+BaseStorage.prototype.findDeletions = function(
+  user,
+  deletedSince,
+  options,
+  callback
+) {
+  var query = { deleted: { $gt: timestamp.toDate(deletedSince) } };
   query.headId = null;
-  this.database.find(this.getCollectionInfo(user), query, this.applyOptionsToDB(options),
-      function (err, dbItems) {
-    if (err) { return callback(err); }
-    callback(null, this.applyItemsFromDB(dbItems));
-  }.bind(this));
+  this.database.find(
+    this.getCollectionInfo(user),
+    query,
+    this.applyOptionsToDB(options),
+    function(err, dbItems) {
+      if (err) {
+        return callback(err);
+      }
+      callback(null, this.applyItemsFromDB(dbItems));
+    }.bind(this)
+  );
 };
 
-/* jshint -W098 */
 /**
  * Same as findDeletions(), but returns a readable stream
  */
-BaseStorage.prototype.findDeletionsStreamed = function (user, deletedSince, options, callback) {
-  return new Error('Not implemented (user: ' + user + ')');
+BaseStorage.prototype.findDeletionsStreamed = function(
+  user,
+  deletedSince,
+  options,
+  callback
+) {
+  callback( new Error('Not implemented (user: ' + user + ')') );
   // Implemented for Events only.
 };
-/* jshint +W098 */
 
-BaseStorage.prototype.findOne = function (user, query, options, callback) {
+BaseStorage.prototype.findOne = function(user, query, options, callback) {
   query.deleted = null;
-  this.database.findOne(this.getCollectionInfo(user), this.applyQueryToDB(query),
-      this.applyOptionsToDB(options), function (err, dbItem) {
-    if (err) { return callback(err); }
-    callback(null, this.applyItemFromDB(dbItem));
-  }.bind(this));
+  this.database.findOne(
+    this.getCollectionInfo(user),
+    this.applyQueryToDB(query),
+    this.applyOptionsToDB(options),
+    function(err, dbItem) {
+      if (err) {
+        return callback(err);
+      }
+      callback(null, this.applyItemFromDB(dbItem));
+    }.bind(this)
+  );
 };
 
-BaseStorage.prototype.findDeletion = function (user, query, options, callback) {
-  query.deleted = {$exists: true};
-  this.database.findOne(this.getCollectionInfo(user), this.applyQueryToDB(query),
-      this.applyOptionsToDB(options), function (err, dbItem) {
-    if (err) { return callback(err); }
-    callback(null, this.applyItemFromDB(dbItem));
-  }.bind(this));
+BaseStorage.prototype.findDeletion = function(user, query, options, callback) {
+  query.deleted = { $exists: true };
+  this.database.findOne(
+    this.getCollectionInfo(user),
+    this.applyQueryToDB(query),
+    this.applyOptionsToDB(options),
+    function(err, dbItem) {
+      if (err) {
+        return callback(err);
+      }
+      callback(null, this.applyItemFromDB(dbItem));
+    }.bind(this)
+  );
 };
 
-BaseStorage.prototype.aggregate = function (user, query, projectExpression, groupExpression,
-                                            options, callback) {
-  this.database.aggregate(this.getCollectionInfo(user), this.applyQueryToDB(query),
-      this.applyQueryToDB(projectExpression), this.applyQueryToDB(groupExpression),
-      this.applyOptionsToDB(options), function (err, dbItems) {
-    if (err) { return callback(err); }
-    callback(null, this.applyItemsFromDB(dbItems));
-  }.bind(this));
+BaseStorage.prototype.aggregate = function(
+  user,
+  query,
+  projectExpression,
+  groupExpression,
+  options,
+  callback
+) {
+  this.database.aggregate(
+    this.getCollectionInfo(user),
+    this.applyQueryToDB(query),
+    this.applyQueryToDB(projectExpression),
+    this.applyQueryToDB(groupExpression),
+    this.applyOptionsToDB(options),
+    function(err, dbItems) {
+      if (err) {
+        return callback(err);
+      }
+      callback(null, this.applyItemsFromDB(dbItems));
+    }.bind(this)
+  );
 };
 
-BaseStorage.prototype.insertOne = function (user, item, callback) {
-  this.database.insertOne(this.getCollectionInfo(user),
-      this.applyItemToDB(this.applyItemDefaults(item)), function (err) {
-    if (err) { return callback(err); }
-    callback(null, item);
-  });
+BaseStorage.prototype.insertOne = function(user, item, callback) {
+  this.database.insertOne(
+    this.getCollectionInfo(user),
+    this.applyItemToDB(this.applyItemDefaults(item)),
+    function(err) {
+      if (err) {
+        return callback(err);
+      }
+      callback(null, item);
+    }
+  );
 };
 
-/* jshint -W098 */
+
 /**
  * Minimizes an event's history, used when in 'keep-authors' deletionMode
  *
@@ -173,11 +225,10 @@ BaseStorage.prototype.insertOne = function (user, item, callback) {
  * @param headId {string} the id of the event whose history is minimized
  * @param callback {Function}
  */
-BaseStorage.prototype.minimizeEventsHistory = function (user, headId, callback) {
-  return new Error('Not implemented (user: ' + user + ')');
+BaseStorage.prototype.minimizeEventsHistory = function(user, headId, callback) {
+  callback( new Error('Not implemented (user: ' + user + ')') );
   // implemented for events only
 };
-/* jshint +W098 */
 
 /**
  * Updates the single document matching the given query, returning the updated document.
@@ -187,12 +238,18 @@ BaseStorage.prototype.minimizeEventsHistory = function (user, headId, callback) 
  * @param updatedData
  * @param callback
  */
-BaseStorage.prototype.updateOne = function (user, query, updatedData, callback) {
-  this.database.findOneAndUpdate(this.getCollectionInfo(user), this.applyQueryToDB(query),
-      this.applyUpdateToDB(updatedData), function (err, dbItem) {
-    if (err) { return callback(err); }
-    callback(null, this.applyItemFromDB(dbItem));
-  }.bind(this));
+BaseStorage.prototype.updateOne = function(user, query, updatedData, callback) {
+  this.database.findOneAndUpdate(
+    this.getCollectionInfo(user),
+    this.applyQueryToDB(query),
+    this.applyUpdateToDB(updatedData),
+    function(err, dbItem) {
+      if (err) {
+        return callback(err);
+      }
+      callback(null, this.applyItemFromDB(dbItem));
+    }.bind(this)
+  );
 };
 
 /**
@@ -203,9 +260,18 @@ BaseStorage.prototype.updateOne = function (user, query, updatedData, callback) 
  * @param updatedData
  * @param callback
  */
-BaseStorage.prototype.updateMany = function (user, query, updatedData, callback) {
-  this.database.updateMany(this.getCollectionInfo(user), this.applyQueryToDB(query),
-      this.applyUpdateToDB(updatedData), callback);
+BaseStorage.prototype.updateMany = function(
+  user,
+  query,
+  updatedData,
+  callback
+) {
+  this.database.updateMany(
+    this.getCollectionInfo(user),
+    this.applyQueryToDB(query),
+    this.applyUpdateToDB(updatedData),
+    callback
+  );
 };
 
 /* jshint -W024, -W098 */
@@ -222,26 +288,38 @@ BaseStorage.prototype.updateMany = function (user, query, updatedData, callback)
  * @param query
  * @param callback
  */
-BaseStorage.prototype.delete = function (user, query, callback) {
-  return new Error('Not implemented (user: ' + user + ')');
+BaseStorage.prototype.delete = function(user, query, callback) {
+  callback( new Error('Not implemented (user: ' + user + ')') );
   // a line like this could work when/if Mongo ever supports "replacement" update on multiple docs:
   //this.database.update(this.getCollectionInfo(user), this.applyQueryToDB(query),
   //    {deleted: new Date()}, callback);
 };
 
-BaseStorage.prototype.removeOne = function (user, query, callback) {
-  this.database.deleteOne(this.getCollectionInfo(user), this.applyQueryToDB(query), callback);
+BaseStorage.prototype.removeOne = function(user, query, callback) {
+  this.database.deleteOne(
+    this.getCollectionInfo(user),
+    this.applyQueryToDB(query),
+    callback
+  );
 };
 
-BaseStorage.prototype.removeMany = function (user, query, callback) {
-  this.database.deleteMany(this.getCollectionInfo(user), this.applyQueryToDB(query), callback);
+BaseStorage.prototype.removeMany = function(user, query, callback) {
+  this.database.deleteMany(
+    this.getCollectionInfo(user),
+    this.applyQueryToDB(query),
+    callback
+  );
 };
 
-BaseStorage.prototype.removeAll = function (user, callback) {
-  this.database.deleteMany(this.getCollectionInfo(user), this.applyQueryToDB({}), callback);
+BaseStorage.prototype.removeAll = function(user, callback) {
+  this.database.deleteMany(
+    this.getCollectionInfo(user),
+    this.applyQueryToDB({}),
+    callback
+  );
 };
 
-BaseStorage.prototype.dropCollection = function (user, callback) {
+BaseStorage.prototype.dropCollection = function(user, callback) {
   this.database.dropCollection(this.getCollectionInfo(user), callback);
 };
 
@@ -250,19 +328,29 @@ BaseStorage.prototype.dropCollection = function (user, callback) {
 /**
  * For tests only.
  */
-BaseStorage.prototype.findAll = function (user, options, callback) {
-  this.database.find(this.getCollectionInfo(user), this.applyQueryToDB({}),
-      this.applyOptionsToDB(options), function (err, dbItems) {
-    if (err) { return callback(err); }
-    callback(null, this.applyItemsFromDB(dbItems));
-  }.bind(this));
+BaseStorage.prototype.findAll = function(user, options, callback) {
+  this.database.find(
+    this.getCollectionInfo(user),
+    this.applyQueryToDB({}),
+    this.applyOptionsToDB(options),
+    function(err, dbItems) {
+      if (err) {
+        return callback(err);
+      }
+      callback(null, this.applyItemsFromDB(dbItems));
+    }.bind(this)
+  );
 };
 
 /**
  * Inserts an array of items; each item must have a valid id and data already. For tests only.
  */
-BaseStorage.prototype.insertMany = function (user, items, callback) {
-  this.database.insertMany(this.getCollectionInfo(user), this.applyItemsToDB(items), callback);
+BaseStorage.prototype.insertMany = function(user, items, callback) {
+  this.database.insertMany(
+    this.getCollectionInfo(user),
+    this.applyItemsToDB(items),
+    callback
+  );
 };
 
 /**
@@ -271,7 +359,7 @@ BaseStorage.prototype.insertMany = function (user, items, callback) {
  * @param {Object} user
  * @param {Function} callback
  */
-BaseStorage.prototype.getTotalSize = function (user, callback) {
+BaseStorage.prototype.getTotalSize = function(user, callback) {
   this.database.totalSize(this.getCollectionInfo(user), callback);
 };
 
@@ -282,7 +370,7 @@ BaseStorage.prototype.getTotalSize = function (user, callback) {
  * @param {Object} options
  * @param {Function} callback
  */
-BaseStorage.prototype.listIndexes = function (user, options, callback) {
+BaseStorage.prototype.listIndexes = function(user, options, callback) {
   this.database.listIndexes(this.getCollectionInfo(user), options, callback);
 };
 
@@ -291,7 +379,7 @@ BaseStorage.prototype.listIndexes = function (user, options, callback) {
 /**
  * @api private
  */
-BaseStorage.prototype.applyItemDefaults = function (item) {
+BaseStorage.prototype.applyItemDefaults = function(item) {
   // no cloning! we do want to alter the original object
   return applyConverters(item, this.converters.itemDefaults);
 };
@@ -299,59 +387,95 @@ BaseStorage.prototype.applyItemDefaults = function (item) {
 /**
  * @api private
  */
-BaseStorage.prototype.applyQueryToDB = function (query) {
+BaseStorage.prototype.applyQueryToDB = function(query) {
   return applyConvertersToDB(_.clone(query), this.converters.queryToDB);
 };
 
 /**
  * @api private
  */
-BaseStorage.prototype.applyOptionsToDB = function (options) {
-  var dbOptions = _.defaults(options ? _.clone(options) : {}, this.defaultOptions);
-  dbOptions.fields = applyConvertersToDB(dbOptions.fields, this.converters.fieldsToDB);
-  dbOptions.sort = applyConvertersToDB(dbOptions.sort, this.converters.fieldsToDB);
+BaseStorage.prototype.applyOptionsToDB = function(options) {
+  var dbOptions = _.defaults(
+    options ? _.clone(options) : {},
+    this.defaultOptions
+  );
+  dbOptions.fields = applyConvertersToDB(
+    dbOptions.fields,
+    this.converters.fieldsToDB
+  );
+  dbOptions.sort = applyConvertersToDB(
+    dbOptions.sort,
+    this.converters.fieldsToDB
+  );
   return dbOptions;
 };
 
 /**
  * @api private
  */
-BaseStorage.prototype.applyItemToDB = function (item) {
+BaseStorage.prototype.applyItemToDB = function(item) {
   return applyConvertersToDB(_.clone(item), this.converters.itemToDB);
 };
 
 /**
  * @api private
  */
-BaseStorage.prototype.applyItemsToDB = function (items) {
-  return applyConvertersToDB(items.slice(), this.converters.itemsToDB)
-      .map(this.applyItemToDB.bind(this));
+BaseStorage.prototype.applyItemsToDB = function(items) {
+  return applyConvertersToDB(items.slice(), this.converters.itemsToDB).map(
+    this.applyItemToDB.bind(this)
+  );
 };
 
 /**
  * @api private
  */
-BaseStorage.prototype.applyUpdateToDB = function (updatedData) {
-  var dbUpdate = applyConvertersToDB({ $set: _.clone(updatedData), $unset: {} },
-      this.converters.updateToDB);
-  if (_.isEmpty(dbUpdate.$set)) { delete dbUpdate.$set; }
-  if (_.isEmpty(dbUpdate.$unset)) { delete dbUpdate.$unset; }
+BaseStorage.prototype.applyUpdateToDB = function(updatedData) {
+  const input = _.cloneDeep(updatedData);
+  const data = {};
+
+  if (input.$min != null) { 
+    data.$min = input.$min;
+    delete input.$min;
+  }
+  if (input.$max != null) { 
+    data.$max = input.$max;
+    delete input.$max;
+  }
+  
+  // Maybe add more of these?
+  //    https://docs.mongodb.com/manual/reference/operator/update/
+  
+  data.$set = input;
+  data.$unset = {};       // code in 'converters.js' depends on this.
+  
+  var dbUpdate = applyConvertersToDB(
+    data,
+    this.converters.updateToDB
+  );
+  if (_.isEmpty(dbUpdate.$set)) {
+    delete dbUpdate.$set;
+  }
+  if (_.isEmpty(dbUpdate.$unset)) {
+    delete dbUpdate.$unset;
+  }
   return dbUpdate;
 };
 
 /**
  * @api private
  */
-BaseStorage.prototype.applyItemFromDB = function (dbItem) {
+BaseStorage.prototype.applyItemFromDB = function(dbItem) {
   return applyConvertersFromDB(dbItem, this.converters.itemFromDB);
 };
 
 /**
  * @api private
  */
-BaseStorage.prototype.applyItemsFromDB = function (dbItems) {
-  return applyConvertersFromDB(dbItems.map(this.applyItemFromDB.bind(this)),
-      this.converters.itemsFromDB);
+BaseStorage.prototype.applyItemsFromDB = function(dbItems) {
+  return applyConvertersFromDB(
+    dbItems.map(this.applyItemFromDB.bind(this)),
+    this.converters.itemsFromDB
+  );
 };
 
 var idToDB = converters.getRenamePropertyFn('id', '_id'),
@@ -366,6 +490,8 @@ function applyConvertersFromDB(object, converterFns) {
 }
 
 function applyConverters(object, converterFns) {
-  converterFns.forEach(function (fn) { object = fn(object); });
+  converterFns.forEach(function(fn) {
+    object = fn(object);
+  });
   return object;
 }

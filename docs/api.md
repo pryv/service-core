@@ -23,7 +23,7 @@ Series are collections of homogenous data points. They should be used instead of
 
 To store a data series in Pryv, you first create an event that has the type "series:X". The created series will store many values that all have the type X. Then you can start adding data to the series. 
 
-Each data point in a series has a `"timestamp"` field containing the timestamp for the data point. For [types](http://api.pryv.com/event-types/#directory) that store a single value (like "mass/kg") they contain a single additional field called `"value"`. Types that contain multiple fields (like "position/wgs84") will possibly have many fields, whose name can be inferred from the [type reference](http://api.pryv.com/event-types/#position). In the above example ("position/wgs84") there would be the fields `"latitude"`, `"longitude"` and possibly one of the optional fields `"altitude"`, `"horizontalAccuracy"`, `"verticalAccuracy"`, `"speed"`, `"bearing"`.
+Each data point in a series has a `"timestamp"` field containing the timestamp for the data point. For [types](http://api.pryv.com/event-types/#directory) that store a single value (like "mass/kg") they contain a single additional field called `"value"`. Types that contain multiple fields (like "position/wgs84") will possibly have many fields, whose names can be inferred from the [type reference](http://api.pryv.com/event-types/#position). In the above example ("position/wgs84") there would be the fields `"latitude"`, `"longitude"` and possibly one of the optional fields `"altitude"`, `"horizontalAccuracy"`, `"verticalAccuracy"`, `"speed"`, `"bearing"`. Optional fields can either be given or not; missing values will be returned as null. 
 
 Series data can be encoded in transit in one of the following data formats.
 
@@ -43,9 +43,9 @@ A single data point for the type "position/wgs84" would be encoded as follows:
 
 The `"fields"` array lists all the fields that you will be submitting, including the "timestamp" field. 
 
-The `"points"` array contains all the data points you'd like to submit. Each data point is represented by a simple array. This makes the bulk of the message (your data points) very space-efficienty; values are encoded positionally. The first value corresponds to the first field, and so on. 
+The `"points"` array contains all the data points you'd like to submit. Each data point is represented by a simple array. This makes the bulk of the message (your data points) very space-efficient; values are encoded positionally. The first value corresponds to the first field, and so on. 
 
-Whenever possible, you should submit multiple data points in a single API call to Pryv, as follows (For example when sampling the height of a drone that is in rapid ascension):
+You should submit multiple data points in a single API call to Pryv as follows (for example when sampling the height of a drone that is in rapid ascension):
 
 ~~~json
 {

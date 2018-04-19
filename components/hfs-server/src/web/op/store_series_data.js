@@ -54,6 +54,18 @@ async function storeSeriesData(ctx: Context,
   await seriesInstance.append(data);
   trace.finish('append'); 
   
+  trace.start('metadataUpdate');
+  const now = new Date() / 1e3;
+  await ctx.metadataUpdater.scheduleUpdate({ entries: [{
+    userId: userName, 
+    eventId: eventId, 
+    
+    author: accessToken, 
+    timestamp: now, 
+    dataExtent: data.minmax(), 
+  }]});
+  trace.finish('metadataUpdate');
+  
   res
     .status(200)
     .json({status: 'ok'});

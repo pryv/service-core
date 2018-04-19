@@ -53,6 +53,8 @@ class Series {
     // is done via toStruct in DataMatrix.Row.
     const toMeasurement = (row) => {
       const struct = row.toStruct(); 
+
+      // FLOW This cannot fail, but somehow flow things we access the timestamp. 
       delete struct.timestamp; 
       
       const timestamp = row.get('timestamp');

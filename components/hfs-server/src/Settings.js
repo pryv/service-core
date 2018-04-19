@@ -2,97 +2,8 @@
 
 const produceConvictInstance = require('./config');
 
-/** Encapsulates values that are obtained from the configuration (file/...) using
- * a convict configuration for this project. 
- *
- * Example: 
- * 
- *    var settings = Settings.load(); 
- *    var value = settings.get('logs.console.active');
- *    value.bool() //=> true (or a type error)
- */
-class ConfigValue {
-  name: string; 
-  value: mixed; 
-  
-  constructor(name: string, value: mixed) {
-    this.name = name; 
-    this.value = value; 
-  }
-  
-  /** 
-   * Returns the configuration value as a string. 
-   */
-  str(): string {
-    const value = this.value; 
-    if (typeof value === 'string') {
-      return value; 
-    }
-    
-    throw this._typeError('string');
-  }
-  
-  /** 
-   * Returns the configuration value as a number. 
-   */
-  num(): number {
-    const value = this.value; 
-    if (typeof value === 'number') {
-      return value; 
-    }
-    
-    throw this._typeError('number');
-  }
-  
-  /** 
-   * Returns the configuration value as an unspecified object. 
-   */
-  obj(): Object {
-    const value = this.value; 
-    
-    // NOTE Flow doesn't want values to be null, that's why the second check is
-    // also needed. (typeof null === 'object'...)
-    if (typeof value === 'object' && value != null) {
-      return value; 
-    }
-    
-    throw this._typeError('object');
-  }
-  
-  // Returns the configuration value as a boolean. 
-  // 
-  bool(): boolean {
-    const value = this.value; 
-    if (typeof value === 'boolean') {
-      return value; 
-    }
-    
-    switch (value) {
-      case 'true':
-      case 'yes':
-      case 'on':
-        return true; 
-      
-      case 'false':
-      case 'no': 
-      case 'off': 
-        return false; 
-      
-      default: 
-        // FALLTHROUGH
-    }
-    
-    
-    throw this._typeError('boolean');
-  }
-  
-  
-  _typeError(typeName: string) {
-    const name = this.name; 
-    
-    return new Error(`Configuration value type mismatch: ${name} should be of type ${typeName}, but isn't.`); 
-  }
-}
+import type { ConfigValue } from 'components/utils/src/config/value';
+const { ExistingValue, MissingValue } = require('components/utils/src/config/value');
 
 /** 
  * Handles loading and access to project settings. If you're looking for the 
@@ -106,7 +17,7 @@ class ConfigValue {
  * server instances and `.loadFromFile(path)` for loading a test configuration. 
  */
 class Settings {
-  config: Object; // TODO can we narrow this down?
+  config: Object;
   
   /** Constructs and loads settings from the file configured in 'config_file', 
    * which - by default - points to 'hfs-server.json' in the current directory. 
@@ -169,12 +80,17 @@ class Settings {
     const config = this.config; 
     
     if (! config.has(key)) {
-      throw new Error(`Configuration for '${key}' missing.`);
+      return new MissingValue(key); 
     }
     
     // assert: `config` contains a value for `key`
     const value = config.get(key);
-    return new ConfigValue(key, value);
+    return new ExistingValue(key, value);
+  }
+  
+  has(key: string): boolean {
+    const config = this.config; 
+    return config.has(key);
   }
     
   /** Configures convict (https://www.npmjs.com/package/convict) to read this  
