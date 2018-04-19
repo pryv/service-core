@@ -97,8 +97,7 @@ describe('PendingUpdatesMap', () => {
       for (const update of updates)
         map.merge(update);
         
-      // 5 of the updates will have elapsed already, since they've been created
-      // > 5min ago. 
+      // Cooldown will have elapsed for all of these updates. 
       const elapsed = map.getElapsed(now);
       
       assert.strictEqual(elapsed.length, 10);
