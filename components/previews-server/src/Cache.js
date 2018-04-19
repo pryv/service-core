@@ -27,56 +27,65 @@ Cache.LastAccessedXattrKey = 'user.pryv.lastAccessed';
  *
  * @param {Function} callback
  */
-Cache.prototype.cleanUp = function (callback) {
-  if (this.cleanUpInProgress) {
+Cache.prototype.cleanUp = function(callback) {
+  if (this.cleanUpInProgress) {
     return callback(new Error('Clean-up is already in progress.'));
   }
   this.cleanUpInProgress = true;
 
   var cutoffTime = timestamp.now() - this.settings.maxAge;
-  var processFile = function (path, stepDone) {
-    xattr.get(path, Cache.LastAccessedXattrKey, function (err, value) {
-      if (err) {
-        // log and ignore file
-        this.settings.logger.warn('Could not read extended attribute on file "' + path + '": ' +
-            err);
-        return stepDone();
-      }
-      value = value.toString();
-      if (! value || +value >= cutoffTime) {
-        return stepDone();
-      }
-      fs.unlink(path, stepDone);
-    }.bind(this));
+  var processFile = function(path, stepDone) {
+    xattr.get(
+      path,
+      Cache.LastAccessedXattrKey,
+      function(err, value) {
+        if (err) {
+          // log and ignore file
+          this.settings.logger.warn(
+            'Could not read extended attribute on file "' + path + '": ' + err
+          );
+          return stepDone();
+        }
+        value = value.toString();
+        if (!value || +value >= cutoffTime) {
+          return stepDone();
+        }
+        fs.unlink(path, stepDone);
+      }.bind(this)
+    );
   }.bind(this);
 
-  var done = function (err) {
+  var done = function(err) {
     this.cleanUpInProgress = false;
-    callback(err || null);
+    callback(err || null);
   }.bind(this);
 
-  walkDirectory(this.settings.rootPath, function (err, files) {
-    if (err) { return callback(err); }
+  walkDirectory(this.settings.rootPath, function(err, files) {
+    if (err) {
+      return callback(err);
+    }
     async.forEach(files, processFile, done);
   });
 };
 
 function walkDirectory(dir, done) {
   var results = [];
-  fs.readdir(dir, function (err, list) {
-    if (err) { return done(err); }
+  fs.readdir(dir, function(err, list) {
+    if (err) {
+      return done(err);
+    }
 
     var i = 0;
     (function next() {
       var file = list[i++];
-      if (! file) {
+      if (!file) {
         return done(null, results);
       }
       file = dir + '/' + file;
 
-      fs.stat(file, function (err, stat) {
+      fs.stat(file, function(err, stat) {
         if (stat && stat.isDirectory()) {
-          walkDirectory(file, function (err, res) {
+          walkDirectory(file, function(err, res) {
             results = results.concat(res);
             next();
           });
