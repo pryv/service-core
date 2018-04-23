@@ -91,12 +91,12 @@ _.merge(config.schema, {
       enabled: {
         welcome: {
           format: Boolean,
-          default: false,
+          default: true,
           doc: 'Allows to activate/deactivate the sending of welcome emails.'
         },
         resetPassword: {
           format: Boolean,
-          default: false,
+          default: true,
           doc: 'Allows to activate/deactivate the sending of password reset emails.'
         }
       },
@@ -125,16 +125,17 @@ _.merge(config.schema, {
       pryv: {
         active: {
           format: Boolean,
-          default: false,
+          default: true,
           doc: 'If set to true, emails will be sent through Pryv service-mail.'
         },
         endpoint: {
           format: 'url',
+          default: '127.0.0.1:9000/sendmail',
           doc: 'Address (ip+port+path) to the Pryv mail service'
         },
         key: {
           format: String,
-          default: 'OVERRIDE ME',
+          default: 'CHANGEME',
           doc: 'Shared key used to authenticate service-core against service-mail.'
         }
       }

@@ -10,7 +10,7 @@ const request = require('superagent');
 * @param lang: user prefered language
 * @param callback(err,res): called once the email is sent
 */
-exports.sendMail = function (emailSettings, template, recipient, subs, lang, callback) {
+exports.sendmail = function (emailSettings, template, recipient, subs, lang, callback) {
   const serviceMailSettings = emailSettings.pryv;
   const mandrillSettings = emailSettings.mandrill;
   
