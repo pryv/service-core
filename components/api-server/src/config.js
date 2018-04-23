@@ -91,12 +91,12 @@ _.merge(config.schema, {
       enabled: {
         welcome: {
           format: Boolean,
-          default: true,
+          default: false,
           doc: 'Allows to activate/deactivate the sending of welcome emails.'
         },
         resetPassword: {
           format: Boolean,
-          default: true,
+          default: false,
           doc: 'Allows to activate/deactivate the sending of password reset emails.'
         }
       },
