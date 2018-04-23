@@ -108,6 +108,12 @@ _.merge(config.schema, {
         format: String,
         default: 'reset-password'
       },
+      method: {
+        format: String,
+        default: 'microservice',
+        doc: 'Name of the service used to send emails, '
+        + 'It should match one of the entries provided below (mandrill, microservice)'
+      },
       mandrill: {
         url: {
           format: 'url',
@@ -122,16 +128,11 @@ _.merge(config.schema, {
           default: '/api/1.0/messages/send-template.json'
         }
       },
-      pryv: {
-        active: {
-          format: Boolean,
-          default: true,
-          doc: 'If set to true, emails will be sent through Pryv service-mail.'
-        },
-        endpoint: {
+      microservice: {
+        url: {
           format: 'url',
-          default: '127.0.0.1:9000/sendmail',
-          doc: 'Address (ip+port+path) to the Pryv mail service'
+          default: 'https://127.0.0.1:9000/sendmail',
+          doc: 'URL of the Pryv service-mail'
         },
         key: {
           format: String,
