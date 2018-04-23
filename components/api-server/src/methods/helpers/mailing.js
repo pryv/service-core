@@ -22,7 +22,7 @@ exports.sendmail = function (emailSettings, template, recipient, subs, lang, cal
     
     sendMailData = {
       key: serviceMailSettings.key,
-      to: recipient.email,
+      to: recipient,
       substitutions: subs
     };
   }
