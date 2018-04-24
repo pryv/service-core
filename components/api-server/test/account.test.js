@@ -417,16 +417,17 @@ describe('account', function () {
       const newPassword = 'Dr0ws$4p';
       
       settings.services.email.enabled = true;
-
+      settings.services.email.method = 'mandrill';
+      
       // setup mail server mock
 
       helpers.instanceTestSetup.set(settings, {
         context: settings.services.email,
         execute: function () {
-          require('nock')(this.context.url).post(this.context.sendMessagePath)
+          require('nock')(this.context.url).post('')
             .reply(200, function (uri, requestBody) {
               var body = JSON.parse(requestBody);
-              var token = body.message.global_merge_vars[1].content; /* HACK, assume structure */
+              var token = body.message.global_merge_vars[0].content; /* HACK, assume structure */
               this.context.messagingSocket.emit('password-reset-token', token);
             }.bind(this));
         }
@@ -497,7 +498,7 @@ describe('account', function () {
           
       // setup mail server mock
       helpers.instanceTestSetup.set(settings, {
-        context: settings.services.email,
+        context: settings.services.email.mandrill,
         execute: function () {
           require('nock')(this.context.url).post(this.context.sendMessagePath)
             .reply(200, function () {

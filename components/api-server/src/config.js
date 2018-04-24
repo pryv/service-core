@@ -111,34 +111,17 @@ _.merge(config.schema, {
       method: {
         format: String,
         default: 'microservice',
-        doc: 'Name of the service used to send emails, '
-        + 'It should match one of the entries provided below (mandrill, microservice)'
+        doc: 'Name of the service used to send emails (mandrill or microservice)'
       },
-      mandrill: {
-        url: {
-          format: 'url',
-          default: 'https://mandrillapp.local'
-        },
-        key: {
-          format: String,
-          default: 'OVERRIDE ME'
-        },
-        sendMessagePath: {
-          format: String,
-          default: '/api/1.0/messages/send-template.json'
-        }
+      url: {
+        format: 'url',
+        default: 'https://mandrillapp.local/api/1.0/messages/send-template.json',
+        doc: 'URL of the email delivery service.'
       },
-      microservice: {
-        url: {
-          format: 'url',
-          default: 'https://127.0.0.1:9000/sendmail',
-          doc: 'URL of the Pryv service-mail'
-        },
-        key: {
-          format: String,
-          default: 'CHANGEME',
-          doc: 'Shared key used to authenticate service-core against service-mail.'
-        }
+      key: {
+        format: String,
+        default: 'OVERRIDE ME',
+        doc: 'Shared key to authenticate against email service.'
       }
     }
   },

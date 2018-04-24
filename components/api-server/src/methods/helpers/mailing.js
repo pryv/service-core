@@ -12,16 +12,15 @@ const request = require('superagent');
 */
 exports.sendmail = function (emailSettings, template, recipient, subs, lang, callback) {
   const mailingMethod = emailSettings.method;
-  const mailingSettings = emailSettings[mailingMethod];
   
   let sendMailData, sendMailURL;
   
   // Sending via Pryv service-mail
   if (mailingMethod === 'microservice') {
-    sendMailURL = [mailingSettings.url, template, lang].join('/');
+    sendMailURL = [emailSettings.url, template, lang].join('/');
     
     sendMailData = {
-      key: mailingSettings.key,
+      key: emailSettings.key,
       to: recipient,
       substitutions: subs
     };
@@ -29,10 +28,7 @@ exports.sendmail = function (emailSettings, template, recipient, subs, lang, cal
   // Sending via Mandrill
   else if (mailingMethod === 'mandrill') {
     
-    sendMailURL = [
-      mailingSettings.url,
-      mailingSettings.sendMessagePath
-    ].join('/');
+    sendMailURL = emailSettings.url;
     
     const subsArray = [];
     for (const [key, value] of Object.entries(subs)) {
@@ -43,7 +39,7 @@ exports.sendmail = function (emailSettings, template, recipient, subs, lang, cal
     }
     
     sendMailData = {
-      key: mailingSettings.key,
+      key: emailSettings.key,
       template_name: template,
       template_content: [],
       message: {

@@ -67,6 +67,7 @@ describe('system (ex-register)', function () {
       it('must create a new user with the sent data, sending a welcome email', function (done) {
         let settings = _.cloneDeep(helpers.dependencies.settings);
         settings.services.email.enabled = true;
+        settings.services.email.method = 'mandrill';
         let mailSent = false;
         
         let originalCount;
@@ -77,16 +78,11 @@ describe('system (ex-register)', function () {
           context: settings.services.email,
           execute: function () {
             require('nock')(this.context.url)
-              .post(this.context.sendMessagePath)
+              .post('')
               .reply(200, function (uri, requestBody) {
                 var body = JSON.parse(requestBody);
-                if (body.message.global_merge_vars[0].content !== 'mr-dupotager' ||
-                  ! /welcome/.test(body.template_name)) 
-                {
-                  // MISMATCHED REQ BODY: require('util').inspect(body, {depth: null}));
-                  console.log( // eslint-disable-line no-console
-                    require('util').inspect(body, {depth: null})); 
-                }
+                body.message.global_merge_vars[0].content.should.be.equal('mr-dupotager');
+                body.template_name.should.match(/welcome/);
                 this.context.messagingSocket.emit('mail-sent1');
               }.bind(this));
           }
