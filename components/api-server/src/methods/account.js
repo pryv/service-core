@@ -107,15 +107,7 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
     };
 
     mailing.sendmail(emailSettings, emailSettings.resetPasswordTemplate,
-      recipient, substitutions, context.user.language, (err, res) => {
-        // Check if first argument is Error;
-        if (err instanceof Error || (res && ! res.ok)) {
-          if (! err) { err = new Error(util.inspect(res.body)); }
-          return next(errors.unexpectedError(err, 'Could not reach e-mail service.'));
-        }
-        
-        next();
-      });
+      recipient, substitutions, context.user.language, next);
   }
 
   // RESET PASSWORD

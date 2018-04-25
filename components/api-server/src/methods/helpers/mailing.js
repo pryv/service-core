@@ -1,6 +1,8 @@
 // @flow
 
 const request = require('superagent');
+const errors = require('../../../../errors').factory;
+const util = require('util');
 
 /**
 * Helper function that modularizes the sending of an email,
@@ -13,7 +15,7 @@ const request = require('superagent');
 * @param callback(err,res): called once the email is sent
 */
 
-type Callback = (error: Error | null, res: Object | null) => any;
+type Callback = (error: ?Error, res: ?Object) => any;
 
 type Recipient = {
   email: string,
@@ -57,7 +59,9 @@ type MicroserviceData = {
 
 type Substitutions = {[string]: string};
 
-exports.sendmail = function (emailSettings: EmailSettings, template: string, recipient: Recipient, subs: Substitutions, lang: string, callback: Callback): void {
+exports.sendmail = function (emailSettings: EmailSettings, template: string,
+  recipient: Recipient, subs: Substitutions, lang: string, callback: Callback): void {
+    
   const mailingMethod = emailSettings.method;
   
   // Sending via Pryv service-mail
@@ -102,12 +106,16 @@ exports.sendmail = function (emailSettings: EmailSettings, template: string, rec
     } break;
     
     default: {
-      callback(new Error('Missing or invalid email method.'));
+      callback(errors.unexpectedError('Missing or invalid email method.'));
     }
   }
-}
+};
 
 function _sendmail(url: string, data: MandrillData | MicroserviceData, cb: Callback): void {
-  request.post(url).send(data).end(cb);
+  request.post(url).send(data).end((err, res) => {
+    if (!err && !res.ok) {
+      err = errors.unexpectedError('Sending email failed: ' + util.inspect(res.body));
+    }
+    cb(err, res);
+  });
 }
-

@@ -4,7 +4,6 @@ var errors = require('components/errors').factory,
     errorHandling = require('components/errors').errorHandling,
     methodsSchema = require('../schema/systemMethods'),
     string = require('./helpers/string'),
-    util = require('util'),
     _ = require('lodash');
 
 /**
@@ -78,15 +77,12 @@ module.exports = function (
     };
     
     mailing.sendmail(emailSettings, emailSettings.welcomeTemplate, recipient, 
-      substitutions, context.user.language, (err, res) => {
-        if (err || ! res.ok) {
-          if (! err) {
-            err = new Error('Sending welcome e-mail failed: ' + util.inspect(res.body));
-          }
-          // Don't fail creation process itself (mail isn't critical), just log error
+      substitutions, context.user.language, (err) => {
+        // Don't fail creation process itself (mail isn't critical), just log error
+        if (err) {
           errorHandling.logError(err, null, logger);
         }
-
+        
         next();
       });
   }
