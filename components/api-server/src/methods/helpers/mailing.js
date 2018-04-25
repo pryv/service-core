@@ -83,10 +83,10 @@ exports.sendmail = function (emailSettings: EmailSettings, template: string,
       const url = emailSettings.url;
       
       const subsArray = [];
-      for (const [key, value] of Object.entries(subs)) {
+      for (const key of Object.keys(subs)) {
         subsArray.push({
           name: key,
-          content: value
+          content: subs[key]
         });
       }
       
