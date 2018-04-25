@@ -110,7 +110,7 @@ _.merge(config.schema, {
       },
       method: {
         format: String,
-        default: 'microservice',
+        default: 'mandrill',
         doc: 'Name of the service used to send emails (mandrill or microservice)'
       },
       url: {

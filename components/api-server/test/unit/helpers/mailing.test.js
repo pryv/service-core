@@ -17,6 +17,29 @@ describe('Mailing helper methods', () => {
     email: recipient.email
   };
   
+  it('should throw an error if mailing method is invalid', () => {
+    const emailSettings = {
+      method: 'invalid',
+      url: 'https://localhost:9000/sendmail',
+      key: 'v3ryStrongK3y'
+    };
+    
+    mailing.sendmail(emailSettings, template, recipient, substitutions, lang, (err) => {
+      assert.isNotNull(err);
+    });
+  });
+  
+  it('should throw an error if mailing method is missing', () => {
+    const emailSettings = {
+      url: 'https://localhost:9000/sendmail',
+      key: 'v3ryStrongK3y'
+    };
+    
+    mailing.sendmail(emailSettings, template, recipient, substitutions, lang, (err) => {
+      assert.isNotNull(err);
+    });
+  });
+  
   describe('using Mandrill', () => {
 
     const baseURL = 'https://mandrillapp.local';

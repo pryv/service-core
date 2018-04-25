@@ -67,7 +67,7 @@ describe('system (ex-register)', function () {
       it('must create a new user with the sent data, sending a welcome email', function (done) {
         let settings = _.cloneDeep(helpers.dependencies.settings);
         settings.services.email.enabled = true;
-        settings.services.email.method = 'mandrill';
+
         let mailSent = false;
         
         let originalCount;

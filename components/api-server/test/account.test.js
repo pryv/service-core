@@ -417,7 +417,6 @@ describe('account', function () {
       const newPassword = 'Dr0ws$4p';
       
       settings.services.email.enabled = true;
-      settings.services.email.method = 'mandrill';
       
       // setup mail server mock
 

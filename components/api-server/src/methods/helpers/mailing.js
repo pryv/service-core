@@ -49,6 +49,10 @@ exports.sendmail = function (emailSettings, template, recipient, subs, lang, cal
       }
     };
   }
+  // Invalid email method
+  else {
+    return callback(new Error('Missing or invalid email method.'));
+  }
   
   request.post(sendMailURL).send(sendMailData).end(callback);
 };
