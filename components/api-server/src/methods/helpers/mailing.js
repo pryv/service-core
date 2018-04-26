@@ -4,17 +4,6 @@ const request = require('superagent');
 const errors = require('../../../../errors').factory;
 const util = require('util');
 
-/**
-* Helper function that modularizes the sending of an email,
-* should it be via Mandrill or via Pryv service-mail
-* @param emailSettings: email settings object
-* @param template: email template (welcome or reset password)
-* @param recipient: email recipient (to)
-* @param subs: object containing the variables to be substituted in the email
-* @param lang: user prefered language
-* @param callback(err,res): called once the email is sent
-*/
-
 type Callback = (error: ?Error, res: ?Object) => any;
 
 type Recipient = {
@@ -59,6 +48,16 @@ type MicroserviceData = {
 
 type Substitutions = {[string]: string};
 
+/**
+* Helper function that modularizes the sending of an email,
+* should it be via Mandrill or via Pryv service-mail
+* @param emailSettings: email settings object
+* @param template: email template (welcome or reset password)
+* @param recipient: email recipient (to)
+* @param subs: object containing the variables to be substituted in the email
+* @param lang: user prefered language
+* @param callback(err,res): called once the email is sent
+*/
 exports.sendmail = function (emailSettings: EmailSettings, template: string,
   recipient: Recipient, subs: Substitutions, lang: string, callback: Callback): void {
     
