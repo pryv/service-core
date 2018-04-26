@@ -108,6 +108,7 @@ exports.sendmail = function (emailSettings: EmailSettings, template: string,
       callback(errors.unexpectedError('Missing or invalid email method.'));
     }
   }
+  // NOT REACHED
 };
 
 function _sendmail(url: string, data: MandrillData | MicroserviceData, cb: Callback): void {

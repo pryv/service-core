@@ -109,7 +109,7 @@ _.merge(config.schema, {
         default: 'reset-password'
       },
       method: {
-        format: String,
+        format: [ 'mandrill', 'microservice'],
         default: 'mandrill',
         doc: 'Name of the service used to send emails (mandrill or microservice)'
       },
