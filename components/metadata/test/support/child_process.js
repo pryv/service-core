@@ -1,7 +1,5 @@
 // @flow
 
-const debug = require('debug')('child_process');
-
 const ChildProcess = require('components/test-helpers').child_process;
 
 const Application = require('../../src/application');
@@ -13,7 +11,7 @@ class ApplicationLauncher {
     this.app = null; 
   }
   
-  async launch(injectSettings: {}) {
+  async launch(injectSettings: any) {
     if (injectSettings.http == null || injectSettings.http.port == null)
       throw new Error('AF: http.port must be set.');
       

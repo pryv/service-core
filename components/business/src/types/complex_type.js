@@ -52,7 +52,7 @@ class ComplexType implements EventType {
       (el) => R.indexOf(el, requiredKeys) >= 0,
       allKeys);
   }
-  fields() {
+  fields(): Array<string> {
     if (this._schema.properties == null) 
       throw new Error('Type Schema must have a properties object.');
     return Object.keys(this._schema.properties); 

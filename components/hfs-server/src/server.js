@@ -35,7 +35,7 @@ class Server {
   baseUrl: string; 
   
   // http server object
-  server: http$Server; 
+  server: net$Server; 
   
   // Logger used here.
   logger: Logger; 

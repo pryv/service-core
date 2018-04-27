@@ -51,7 +51,7 @@ function Request(serverURL) {
 
 var methods = ['get', 'post', 'put', 'del', 'options'];
 methods.forEach(function (method) {
-  Request.prototype[method] = function (path, token) {
+  Request.prototype[method] = function (path: any, token: any) {
     const destUrl = url.resolve(this.serverURL, path);
     const authToken = token || this.token; 
     
@@ -62,7 +62,7 @@ methods.forEach(function (method) {
 /**
  * @param {Function} callback (error)
  */
-Request.prototype.login = function (user, callback) {
+Request.prototype.login = function (user: any, callback: any) {
   var targetURL = url.resolve(this.serverURL, user.username + '/auth/login');
   var authData = {
     username: user.username,
@@ -108,7 +108,7 @@ class IndifferentRequest extends superagent.Request {
    * @param  {string|url.Url} url request url
    * @param  {string} token authentication token to use
    */   
-  constructor(method: string, url, token) {
+  constructor(method: string, url: string, token: string) {
     // NOTE newer superagent versions don't know about delete; Let's pretend 
     // we do. 
     if (method === 'del') method = 'delete';

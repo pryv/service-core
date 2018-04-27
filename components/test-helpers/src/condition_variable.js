@@ -6,7 +6,7 @@ class Waiter {
   promise: Promise<void>;
   resolve: () => void; 
   reject: (err: Error) => void; 
-  timeout: ?number;
+  timeout: ?TimeoutID;
   
   done: boolean; 
   

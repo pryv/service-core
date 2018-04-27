@@ -14,7 +14,7 @@ class Controller {
   logger: Logger;
   
   // The timer set by #runEach.
-  timer: ?number; 
+  timer: ?IntervalID; 
   
   // Reference to the updates map. This is where work comes from. 
   map: PendingUpdatesMap;

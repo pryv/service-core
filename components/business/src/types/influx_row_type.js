@@ -148,17 +148,17 @@ class InfluxRowType implements EventType {
   // What fields may be present? See `requiredFields` for a list of mandatory 
   // fields. 
   // 
-  optionalFields() {
+  optionalFields(): Array<string> {
     return this.eventType.optionalFields();
   }
   
   // What fields MUST be present? 
   // 
-  requiredFields() {
+  requiredFields(): Array<string> {
     return [FIELD_TIMESTAMP].concat(
       this.eventType.requiredFields());
   }
-  fields() {
+  fields(): Array<string> {
     return [FIELD_TIMESTAMP].concat(
       this.eventType.fields()); 
   }

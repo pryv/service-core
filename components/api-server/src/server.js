@@ -57,7 +57,7 @@ class Server {
     this.registerApiMethods();
 
     // Setup HTTP and register server; setup Socket.IO.
-    const server = http.createServer(expressApp);
+    const server: net$Server = http.createServer(expressApp);
     this.setupSocketIO(server); 
     await this.startListen(server);
     
@@ -117,7 +117,7 @@ class Server {
     });
   }
   
-  setupSocketIO(server: http$Server) {
+  setupSocketIO(server: net$Server) {
     const application = this.application; 
     const notificationBus = this.notificationBus;
     const api = application.api; 
@@ -132,9 +132,9 @@ class Server {
       storageLayer, customAuthStepFn);
   }
   
-  // Open http/https port and listen to incoming connections. 
+  // Open http port and listen to incoming connections. 
   //
-  async startListen(server: http$Server) {
+  async startListen(server: net$Server) {
     const settings = this.settings; 
     const logger = this.logger; 
     
@@ -153,7 +153,7 @@ class Server {
       (cb) => server.listen(port, hostname, backlog, cb));
       
     const address = server.address();
-    const protocol = server.key ? 'https' : 'http';
+    const protocol = 'http';
     
     const serverUrl = protocol + '://' + address.address + ':' + address.port;
     logger.info(`Core Server (API module) listening on ${serverUrl}`);

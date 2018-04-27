@@ -42,7 +42,7 @@ import type { SocketIO$Handshake } from './Manager';
 // Initializes the SocketIO subsystem. 
 //
 function setupSocketIO(
-  server: http$Server, logger: Logger, 
+  server: net$Server, logger: Logger, 
   notifications: EventEmitter, api: API, 
   storageLayer: StorageLayer, 
   customAuthStepFn: ?CustomAuthFunction, 

@@ -28,7 +28,7 @@ class Row {
    * 
    * @return {Object} The current row in object (struct) form. 
    */
-  toStruct(): {} {
+  toStruct(): Object {
     const s = Object.create(null); // Avoid key collisions with Javascript base object. 
     const assoc = (s, [k, v]) => R.assoc(k, v, s);
     const createObj = R.reduce(assoc, s); 
