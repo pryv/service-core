@@ -32,6 +32,7 @@
     "dependable": "attentif/dependable#0bb5c4a9ef2b32dded1b24d5d3c0ecccfb0bf7fd",
     "errors": "file:components/errors",
     "express": "^4",
+    "foreman": "git://github.com/pryv/node-foreman.git#4eb501d443432878491b2d0387ded96e7c4154d0",
     "heap": "^0.2.6",
     "hfs-server": "file:components/hfs-server",
     "hjson": "^3.1.1",
