@@ -40,15 +40,9 @@
     "email": {
       "welcomeTemplate": "welcome-email",
       "resetPasswordTemplate": "reset-password",
-      "method": "microservice",
-      "mandrill": {
-        "url": "https://mandrillapp.com/api/1.0/messages/send-template.json",
-        "key": "OVERRIDE ME"
-      },
-      "microservice": {
-        "url": "https://127.0.0.1:9000/sendmail",
-        "key": "CHANGEME"
-      }
+      "method": "mandrill",
+      "url": "https://mandrillapp.com/api/1.0/messages/send-template.json",
+      "key": "OVERRIDE ME"
     }
   },
   "logs": {
