@@ -19,4 +19,4 @@ export NODE_ENV=production
 export NODE_PATH=/app/bin/dist/
 exec chpst -u app /app/bin/dist/node_modules/.bin/nf -j production.procfile \
   -p 3000 \
-  start hfs=$num_procs, metadata
+  start hfs=$num_procs,metadata
