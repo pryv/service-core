@@ -38,11 +38,11 @@ export interface SeriesMetadata {
   produceRowType(repo: TypeRepository): InfluxRowType; 
 }
 
-// TODO How should we size this? Configure it? We'll have one entry per data 
-//  collection, so this might even be a static value...
+// A single HFS server will keep at maximum this many credentials in cache.
 const LRU_CACHE_SIZE = 10000;
 
-const LRU_CACHE_MAX_AGE_MS = 1000*60*5; // 5 mins (TODO)
+// Credentials will be cached for at most this many ms. 
+const LRU_CACHE_MAX_AGE_MS = 1000*60*5; // 5 mins
 
 /** Holds metadata related to series for some time so that we don't have to 
  * compile it every time we store data in the server. 
