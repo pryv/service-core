@@ -266,32 +266,36 @@ describe('Storing data in a HF series', function() {
           return response
             .expect(400);
         });
-      it('responds with headers that allow CORS on OPTIONS', async () => {
-        const request = server.request(); 
-        const response = await request
-          .options(`/USERNAME/events/${EVENT_ID}/series`)
-          .set('origin', 'https://foo.bar.baz')
-          .set('authorization', 'AUTH_TOKEN')
-          .send();
-        
-        const headers = response.headers;
-        assert.strictEqual(headers['access-control-allow-credentials'], 'true');
-        assert.strictEqual(headers['access-control-allow-origin'], 
-          'https://foo.bar.baz');
-      });
-      it('responds with headers that allow CORS on POST', async () => {
-        const request = server.request(); 
-        const response = await request
-          .post(`/USERNAME/events/${EVENT_ID}/series`)
-          .set('origin', 'https://foo.bar.baz')
-          .set('authorization', 'AUTH_TOKEN')
-          .send({});
-        
-        const headers = response.headers;
-        assert.strictEqual(headers['access-control-allow-credentials'], 'true');
-        assert.strictEqual(headers['access-control-allow-origin'], 
-          'https://foo.bar.baz');
-      });
+        it('responds with headers that allow CORS on OPTIONS', async () => {
+          const request = server.request(); 
+          const response = await request
+            .options(`/USERNAME/events/${EVENT_ID}/series`)
+            .set('origin', 'https://foo.bar.baz')
+            .set('authorization', 'AUTH_TOKEN')
+            .send();
+            
+          assert.strictEqual(response.statusCode, 200);
+          
+          const headers = response.headers;
+          assert.strictEqual(headers['access-control-allow-credentials'], 'true');
+          assert.strictEqual(headers['access-control-allow-origin'], 
+            'https://foo.bar.baz');
+        });
+        it('responds with headers that allow CORS on POST', async () => {
+          const request = server.request(); 
+          const response = await request
+            .post(`/USERNAME/events/${EVENT_ID}/series`)
+            .set('origin', 'https://foo.bar.baz')
+            .set('authorization', 'AUTH_TOKEN')
+            .send({});
+
+          assert.strictEqual(response.statusCode, 400);
+          
+          const headers = response.headers;
+          assert.strictEqual(headers['access-control-allow-credentials'], 'true');
+          assert.strictEqual(headers['access-control-allow-origin'], 
+            'https://foo.bar.baz');
+        });
 
         describe('when request is malformed', function () {
           malformed('format is not flatJSON', {
