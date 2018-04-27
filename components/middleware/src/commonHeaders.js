@@ -1,15 +1,15 @@
-/**
- * Tiny middleware to write headers common to all requests.
- */
+// @flow
+
+// Middleware to handle OPTIONS requests and to add CORS headers to all other 
+// requests. 
 
 /**
  * @param serverInfo Must contain `version`
  * @return {Function}
  */
 module.exports = function (serverInfo) {
-  return function (req, res, next) {
+  return function (req: express$Request, res: express$Response, next: express$NextFunction) {
     // allow cross-domain requests (CORS)
-    // TODO: those marked with * should only be necessary in preflight requests (OPTIONS)
     res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
     // *
     res.header('Access-Control-Allow-Methods', req.headers['access-control-request-method'] ||
@@ -19,11 +19,16 @@ module.exports = function (serverInfo) {
         'Authorization, Content-Type');
     res.header('Access-Control-Expose-Headers', 'API-Version');
     // *
-    res.header('Access-Control-Max-Age', 60 * 60 * 24 * 365);
+    res.header('Access-Control-Max-Age', (60 * 60 * 24 * 365).toString());
     res.header('Access-Control-Allow-Credentials', 'true');
 
     // keep API version in HTTP headers for now
     res.header('API-Version', serverInfo.version);
+    
+    if (req.method == 'OPTIONS') {
+      res.sendStatus(200);
+      return;
+    }
 
     next();
   };

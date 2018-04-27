@@ -20,14 +20,6 @@ function root(expressApp: express$Application, app: Application) {
   const initContextMiddleware = middleware.initContext(
     app.storageLayer, customAuthStepFn);
 
-  // Allow CORS (Cross Origin Resource Sharing) by responding to and accepting
-  // all OPTIONS requests.
-  expressApp.options('*', function (req: express$Request, res) {
-    // The commonHeaders middleware takes care of all Access-Control-* 
-    // headers; all that remains here is to answer 200 OK. 
-    res.sendStatus(200);
-  });
-
   // Bootstrap to user's Pryv page (i.e. browser home).
   expressApp.get('/', rootIndex);
   expressApp.get(Paths.UserRoot + '/', rootIndex);
