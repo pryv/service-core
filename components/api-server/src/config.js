@@ -100,18 +100,6 @@ _.merge(config.schema, {
           doc: 'Allows to activate/deactivate the sending of password reset emails.'
         }
       },
-      url: {
-        format: 'url',
-        default: 'https://mandrillapp.local'
-      },
-      key: {
-        format: String,
-        default: 'OVERRIDE ME'
-      },
-      sendMessagePath: {
-        format: String,
-        default: '/api/1.0/messages/send-template.json'
-      },
       welcomeTemplate: {
         format: String,
         default: 'welcome-email'
@@ -119,6 +107,21 @@ _.merge(config.schema, {
       resetPasswordTemplate: {
         format: String,
         default: 'reset-password'
+      },
+      method: {
+        format: [ 'mandrill', 'microservice'],
+        default: 'mandrill',
+        doc: 'Name of the service used to send emails (mandrill or microservice)'
+      },
+      url: {
+        format: 'url',
+        default: 'https://mandrillapp.local/api/1.0/messages/send-template.json',
+        doc: 'URL of the email delivery service.'
+      },
+      key: {
+        format: String,
+        default: 'OVERRIDE ME',
+        doc: 'Shared key to authenticate against email service.'
       }
     }
   },

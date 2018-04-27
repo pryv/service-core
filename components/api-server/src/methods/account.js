@@ -1,5 +1,6 @@
 var errors = require('components/errors').factory,
     commonFns = require('./helpers/commonFunctions'),
+    mailing = require('./helpers/mailing'),
     encryption = require('components/utils').encryption,
     methodsSchema = require('../schema/accountMethods'),
     request = require('superagent'),
@@ -86,51 +87,27 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
     });
   }
 
-  var sendMailURL = emailSettings.url + emailSettings.sendMessagePath;
-
   function sendPasswordResetMail(context, params, result, next) {
-    // skip this step if reset mail is deactivated
+    // Skip this step if reset mail is deactivated
     const isMailActivated = emailSettings.enabled;
-    if(isMailActivated === false
-      || (isMailActivated != null && isMailActivated.resetPassword === false)) {
+    if (isMailActivated === false ||
+       (isMailActivated != null && isMailActivated.resetPassword === false)) {
       return next();
     }
     
-    var sendMailData = {
-      key: emailSettings.key,
-      template_name: emailSettings.resetPasswordTemplate,
-      template_content: [],
-      message: {
-        to: [
-          {
-            email: context.user.email,
-            name: context.user.username,
-            type: 'to'
-          }
-        ],
-        global_merge_vars: [
-          {
-            name: 'RESET_URL',
-            content: authSettings.passwordResetPageURL
-          },
-          {
-            name: 'RESET_TOKEN',
-            content: context.resetToken
-          }
-        ],
-        tags: ['password reset']
-      }
+    const recipient = {
+      email: context.user.email,
+      name: context.user.username,
+      type: 'to'
     };
-    request.post(sendMailURL).send(sendMailData).end(function (err, res) {
-      // check if first argument is Error;
-      // for some reason superagent did return res as first argument on success
-      if (err instanceof Error || (res && ! res.ok)) {
-        if (! err) { err = new Error(util.inspect(res.body)); }
-        return next(errors.unexpectedError(err, 'Could not reach e-mail service.'));
-      }
+    
+    const substitutions = {
+      RESET_TOKEN: context.resetToken,
+      RESET_URL: authSettings.passwordResetPageURL
+    };
 
-      next();
-    });
+    mailing.sendmail(emailSettings, emailSettings.resetPasswordTemplate,
+      recipient, substitutions, context.user.language, next);
   }
 
   // RESET PASSWORD

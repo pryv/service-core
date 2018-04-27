@@ -38,11 +38,11 @@
       "key": "OVERRIDE ME"
     },
     "email": {
-      "url": "https://mandrillapp.com",
-      "key": "OVERRIDE ME",
-      "sendMessagePath": "/api/1.0/messages/send-template.json",
       "welcomeTemplate": "welcome-email",
-      "resetPasswordTemplate": "reset-password"
+      "resetPasswordTemplate": "reset-password",
+      "method": "mandrill",
+      "url": "https://mandrillapp.com/api/1.0/messages/send-template.json",
+      "key": "OVERRIDE ME"
     }
   },
   "logs": {
