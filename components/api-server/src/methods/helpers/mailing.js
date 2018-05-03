@@ -114,11 +114,31 @@ exports.sendmail = function (emailSettings: EmailSettings, template: string,
 
 function _sendmail(url: string, data: MandrillData | MicroserviceData, cb: Callback): void {
   request.post(url).send(data).end((err, res) => {
-    const errorMsg = 'Sending email failed: ';
+    
+    // Error handling
+    // 1.   Superagent failed
     if (err) {
-      err.message = errorMsg + err.message;
+      const baseError = `Sending email failed while trying to reach mail-service at: ${url}`;
+      const subError = err.message;
+
+      //  1.1 Because of SSL certificates
+      if (subError.match(/certificate/i)) {
+        err.message = `${baseError}:
+        Trying to do SSL but certificates are invalid, Superagent answered with: ${subError}`;
+      }
+      //  1.2 Because of unreachable url
+      else if (subError.match(/not found/i)) {
+        err.message = `${baseError}:
+        Endpoint seems unreachable, Superagent answered with: ${subError}`;
+      }
+      
       err = errors.unexpectedError(err);
-    } else if (!res.ok) {
+    }
+    // 2. Mail service failed
+    else if (!res.ok) {
+      const body = util.inspect(res.body);
+      const errorMsg = `Sending email failed, mail-service answered with the following error: ${body}.`;
+      
       err = errors.unexpectedError(errorMsg + util.inspect(res.body));
     }
     
