@@ -114,7 +114,7 @@ _.merge(config.schema, {
         doc: 'Name of the service used to send emails (mandrill or microservice)'
       },
       url: {
-        format: 'url',
+        format: String,
         default: 'https://mandrillapp.local/api/1.0/messages/send-template.json',
         doc: 'URL of the email delivery service.'
       },
