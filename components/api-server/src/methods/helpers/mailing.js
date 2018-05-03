@@ -3,6 +3,7 @@
 const request = require('superagent');
 const errors = require('../../../../errors').factory;
 const util = require('util');
+const URL = require('url');
 
 type Callback = (error: ?Error, res: ?Object) => any;
 
@@ -67,7 +68,7 @@ exports.sendmail = function (emailSettings: EmailSettings, template: string,
   
   switch (mailingMethod) {
     case 'microservice': {
-      const url = [emailSettings.url, template, lang].join('/');
+      const url = URL.resolve(emailSettings.url, template + '/' + lang);
       const data = {
         key: emailSettings.key,
         to: recipient,
@@ -113,9 +114,14 @@ exports.sendmail = function (emailSettings: EmailSettings, template: string,
 
 function _sendmail(url: string, data: MandrillData | MicroserviceData, cb: Callback): void {
   request.post(url).send(data).end((err, res) => {
-    if (!err && !res.ok) {
-      err = errors.unexpectedError('Sending email failed: ' + util.inspect(res.body));
+    const errorMsg = 'Sending email failed: ';
+    if (err) {
+      err.message = errorMsg + err.message;
+      err = errors.unexpectedError(err);
+    } else if (!res.ok) {
+      err = errors.unexpectedError(errorMsg + util.inspect(res.body));
     }
+    
     cb(err, res);
   });
 }
