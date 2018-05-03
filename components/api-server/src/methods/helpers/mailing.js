@@ -118,20 +118,19 @@ function _sendmail(url: string, data: MandrillData | MicroserviceData, cb: Callb
     // Error handling
     // 1.   Superagent failed
     if (err) {
-      const baseError = `Sending email failed while trying to reach mail-service at: ${url}`;
       const subError = err.message;
-
+      err.message = `Sending email failed while trying to reach mail-service at: ${url}.\n`;
+      
       //  1.1 Because of SSL certificates
       if (subError.match(/certificate/i)) {
-        err.message = `${baseError}:
-        Trying to do SSL but certificates are invalid, Superagent answered with: ${subError}`;
+        err.message += 'Trying to do SSL but certificates are invalid. ';
       }
       //  1.2 Because of unreachable url
       else if (subError.match(/not found/i)) {
-        err.message = `${baseError}:
-        Endpoint seems unreachable, Superagent answered with: ${subError}`;
+        err.message += 'Endpoint seems unreachable. ';
       }
       
+      err.message += `Superagent answered with: ${subError}`;
       err = errors.unexpectedError(err);
     }
     // 2. Mail service failed
