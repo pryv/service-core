@@ -2,7 +2,6 @@
 
 const request = require('superagent');
 const errors = require('../../../../errors').factory;
-const util = require('util');
 const URL = require('url');
 
 type Callback = (error: ?Error, res: ?Object) => any;
@@ -114,33 +113,32 @@ exports.sendmail = function (emailSettings: EmailSettings, template: string,
 
 function _sendmail(url: string, data: MandrillData | MicroserviceData, cb: Callback): void {
   request.post(url).send(data).end((err, res) => {
-    
-    // Error handling
-    // 1.   Superagent failed
-    if (err) {
-      const subError = err.message;
-      err.message = `Sending email failed while trying to reach mail-service at: ${url}.\n`;
-      
-      //  1.1 Because of SSL certificates
-      if (subError.match(/certificate/i)) {
-        err.message += 'Trying to do SSL but certificates are invalid. ';
-      }
-      //  1.2 Because of unreachable url
-      else if (subError.match(/not found/i)) {
-        err.message += 'Endpoint seems unreachable. ';
-      }
-      
-      err.message += `Superagent answered with: ${subError}`;
-      err = errors.unexpectedError(err);
+    if (err!=null || (res!=null && !res.ok)) {
+      return cb(parseError(url, err, res));
     }
-    // 2. Mail service failed
-    else if (!res.ok) {
-      const body = util.inspect(res.body);
-      const errorMsg = `Sending email failed, mail-service answered with the following error: ${body}.`;
-      
-      err = errors.unexpectedError(errorMsg + util.inspect(res.body));
-    }
-    
-    cb(err, res);
+    cb(null, res);
   });
+}
+
+function parseError(url, err, res) {
+  
+  // 1. Mail service failed
+  if (res!=null && res.body!=null && res.body.error!=null) {
+    const baseMsg = 'Sending email failed, mail-service answered with the following error:\n';
+    return errors.unexpectedError(baseMsg + res.body.error);
+  }
+  
+  // 2. Superagent failed
+  const errorMsg = err.message;
+  let baseMsg = `Sending email failed while trying to reach mail-service at: ${url}.\n`;
+  // 2.1 Because of SSL certificates
+  if (errorMsg.match(/certificate/i)) {
+    baseMsg += 'Trying to do SSL but certificates are invalid: ';
+  }
+  // 2.2 Because of unreachable url
+  else if (errorMsg.match(/not found/i)) {
+    baseMsg += 'Endpoint seems unreachable: ';
+  }
+  return errors.unexpectedError(baseMsg + errorMsg);
+  
 }
