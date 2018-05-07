@@ -106,9 +106,6 @@ describe('Storing data in a HF series', function() {
       if (body == null || body.status == null) throw new Error(); 
       assert.strictEqual(body.status, 'ok'); 
 
-      const headers: {[string]: string} = response.headers; 
-      assert.strictEqual(headers['api-version'], '1.0.0');
-      
       // Check if the data is really there
       const userName = userId; // identical with id here, but will be user name in general. 
       const options = { database: `user.${userName}` };

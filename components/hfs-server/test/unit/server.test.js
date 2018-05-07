@@ -32,8 +32,8 @@ describe('Server', () => {
   });
   
   describe('.start', function() {    
-    beforeEach(function() {
-      server.start(); 
+    beforeEach(async function() {
+      await server.start(); 
     });
     afterEach(function() {
       server.stop(); 

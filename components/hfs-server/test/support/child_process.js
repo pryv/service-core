@@ -61,7 +61,7 @@ class ApplicationLauncher {
     const app = this.app = new Application();
     
     await app.init(settings);
-    app.start(); 
+    await app.start(); 
   }
 }
 

@@ -11,7 +11,7 @@ const ExtensionLoader = utils.extension.ExtensionLoader;
 
 const { ProjectVersion } = require('components/middleware/src/project_version');
 
-import { Extension } from 'components/utils';
+import type { Extension } from 'components/utils';
 
 function loadCustomAuthStepFn(customExtensions): ?Extension {
   const defaultFolder = customExtensions.defaultFolder;
