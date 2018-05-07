@@ -1,3 +1,5 @@
+// @flow
+
 module.exports = {
   commonHeaders: require('./commonHeaders'),
   contentType: require('./contentType'),

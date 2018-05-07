@@ -10,6 +10,8 @@ const errorsMiddlewareMod = require('./middleware/errors');
 const Paths = require('./routes/Paths');
 const config = require('./config');
 
+const { ProjectVersion } = require('components/middleware/src/project_version');
+
 
 /** Handles requests during application startup. 
  */
@@ -167,8 +169,14 @@ class ExpressAppLifecycle {
 
 // ------------------------------------------------------------ express app init
 
-function expressAppInit(dependencies: any) {
-  const commonHeadersMiddleware = dependencies.resolve(middleware.commonHeaders); 
+// Creates and returns an express application with a standard set of middleware. 
+// `version` should be the version string you want to show to API clients. 
+// 
+async function expressAppInit(dependencies: any) {
+  const pv = new ProjectVersion(); 
+  const version = await pv.version(); 
+  
+  const commonHeadersMiddleware = middleware.commonHeaders(version);
   const requestTraceMiddleware = dependencies.resolve(middleware.requestTrace); 
   const errorsMiddleware = dependencies.resolve(errorsMiddlewareMod);
     
