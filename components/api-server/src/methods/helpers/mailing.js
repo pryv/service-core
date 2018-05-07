@@ -2,7 +2,7 @@
 
 const request = require('superagent');
 const errors = require('../../../../errors').factory;
-const util = require('util');
+const URL = require('url');
 
 type Callback = (error: ?Error, res: ?Object) => any;
 
@@ -67,7 +67,7 @@ exports.sendmail = function (emailSettings: EmailSettings, template: string,
   
   switch (mailingMethod) {
     case 'microservice': {
-      const url = [emailSettings.url, template, lang].join('/');
+      const url = URL.resolve(emailSettings.url, template + '/' + lang);
       const data = {
         key: emailSettings.key,
         to: recipient,
@@ -113,9 +113,32 @@ exports.sendmail = function (emailSettings: EmailSettings, template: string,
 
 function _sendmail(url: string, data: MandrillData | MicroserviceData, cb: Callback): void {
   request.post(url).send(data).end((err, res) => {
-    if (!err && !res.ok) {
-      err = errors.unexpectedError('Sending email failed: ' + util.inspect(res.body));
+    if (err!=null || (res!=null && !res.ok)) {
+      return cb(parseError(url, err, res));
     }
-    cb(err, res);
+    cb(null, res);
   });
+}
+
+function parseError(url, err, res) {
+  
+  // 1. Mail service failed
+  if (res!=null && res.body!=null && res.body.error!=null) {
+    const baseMsg = 'Sending email failed, mail-service answered with the following error:\n';
+    return errors.unexpectedError(baseMsg + res.body.error);
+  }
+  
+  // 2. Superagent failed
+  const errorMsg = err.message;
+  let baseMsg = `Sending email failed while trying to reach mail-service at: ${url}.\n`;
+  // 2.1 Because of SSL certificates
+  if (errorMsg.match(/certificate/i)) {
+    baseMsg += 'Trying to do SSL but certificates are invalid: ';
+  }
+  // 2.2 Because of unreachable url
+  else if (errorMsg.match(/not found/i)) {
+    baseMsg += 'Endpoint seems unreachable: ';
+  }
+  return errors.unexpectedError(baseMsg + errorMsg);
+  
 }
