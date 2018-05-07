@@ -35,16 +35,24 @@ class ProjectVersion {
     const version = this.readStaticVersion(); 
     if (version != null) return version; 
     
+    // NOTE If we get here, we better be in a development environment. Otherwise
+    // we will try to run git describe and fail, throwing an error in the 
+    // process. 
+    
     return await this.gitVersion(); 
   }
   
   async gitVersion(): Promise<string> {
-    const exec = (cmd) => bluebird.fromCallback(
-      cb => child_process.exec(cmd, cb));
-      
-    const version = await exec('git describe');
+    const version = await this.exec('git describe');
     
     return version.slice(0, -1);
+  }
+  
+  async exec(cmd: string): Promise<string> {
+    const exec = (cmd) => bluebird.fromCallback(
+      cb => child_process.exec(cmd, cb));
+
+    return exec(cmd);
   }
   
   readStaticVersion(): ?string {

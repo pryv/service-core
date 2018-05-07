@@ -4,6 +4,7 @@
 
 const chai = require('chai');
 const assert = chai.assert; 
+const sinon = require('sinon');
 
 const bluebird = require('bluebird');
 const child_process = require('child_process');
@@ -46,6 +47,22 @@ describe('ProjectVersion#version', () => {
     
     it('reads .api-version and returns that constant', async () => {
       assert.strictEqual(await pv.version(), '1.2.3');
+    });
+  });
+  describe('when neither method works', () => {
+    it('throws an error', async () => {
+      const failsAlways = sinon.stub(pv, 'exec');
+      failsAlways.throws(); 
+      
+      let thrown = false; 
+      try {
+        await pv.version();
+      }
+      catch(err) {
+        thrown = true;
+      }
+
+      assert.isTrue(thrown);
     });
   });
 });
