@@ -91,7 +91,7 @@ describe('Mailing helper methods', () => {
   
   describe('using Microservice', () => {
     
-    const baseURL = 'https://localhost:9000/sendmail';
+    const baseURL = 'https://localhost:9000/sendmail/';
     const path = '/' + template + '/' + lang;
     const emailSettings = {
       method: 'microservice',
