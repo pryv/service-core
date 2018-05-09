@@ -12,4 +12,7 @@ module.exports = {
 
 // Reexport the Logger interface for external declarations. 
 import type { Logger, LogFactory } from './logging';
-export type { Logger, LogFactory };
+import type { Extension } from './extension';
+export type { 
+  Logger, LogFactory, 
+  Extension };

@@ -11,6 +11,8 @@ const utils = require('components/utils');
 const Notifications = require('./Notifications');
 const Application = require('./application');
 
+const expressAppInit = require('./expressApp');
+
 import type { Logger } from 'components/utils';
 import type { ConfigAccess } from './settings';
 import type { ExpressAppLifecycle } from './expressApp';
@@ -48,7 +50,7 @@ class Server {
     
     this.publishExpressMiddleware();
     
-    const [expressApp, lifecycle] = this.createExpressApp(); 
+    const [expressApp, lifecycle] = await this.createExpressApp(); 
 
     // start TCP pub messaging
     await this.setupNotificationBus();
@@ -71,11 +73,11 @@ class Server {
     this.notificationBus.serverReady();
   }
   
-  createExpressApp(): [express$Application, ExpressAppLifecycle] {
+  async createExpressApp(): Promise<[express$Application, ExpressAppLifecycle]> {
     const app = this.application;
     const dependencies = app.dependencies;
 
-    const {expressApp, lifecycle} = require('./expressApp')(dependencies);
+    const {expressApp, lifecycle} = await expressAppInit(dependencies);
     dependencies.register({expressApp: expressApp});
     
     // Make sure that when we receive requests at this point, they get notified 

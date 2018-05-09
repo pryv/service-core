@@ -3,15 +3,7 @@
 // Middleware to handle OPTIONS requests and to add CORS headers to all other 
 // requests. 
 
-type ServerInfo = {
-  version: string
-}
-
-/**
- * @param serverInfo Must contain `version`
- * @return {Function}
- */
-module.exports = function (serverInfo: ServerInfo) {
+module.exports = function (version: string) {
   return function (req: express$Request, res: express$Response, next: express$NextFunction) {
     // allow cross-domain requests (CORS)
     res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
@@ -27,7 +19,7 @@ module.exports = function (serverInfo: ServerInfo) {
     res.header('Access-Control-Allow-Credentials', 'true');
 
     // keep API version in HTTP headers for now
-    res.header('API-Version', serverInfo.version);
+    res.header('API-Version', version);
     
     if (req.method == 'OPTIONS') {
       res.sendStatus(200);
@@ -37,4 +29,3 @@ module.exports = function (serverInfo: ServerInfo) {
     next();
   };
 };
-module.exports.injectDependencies = true; // make it DI-friendly

@@ -12,6 +12,10 @@ if [ -e release_build ]; then
   echo "This is a release build, it will update 'latest' tags."
 fi
 
+# Copy the release version to the project root, so we can later display it to
+# clients:
+cp ./build_tag ../.api-version
+
 function release {
   local host='pryvsa-docker-release.bintray.io'
   local service_name=$1

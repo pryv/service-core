@@ -121,15 +121,15 @@ class Application {
     this.server = new Server(this.settings, this.context);
   }
   
-  start(): Application {
-    this.server.start(); 
+  async start(): Promise<Application> {
+    await this.server.start(); 
     
     return this; 
   }
   
   async run() {
     await this.init(); 
-    this.start(); 
+    await this.start(); 
   }
 }
 

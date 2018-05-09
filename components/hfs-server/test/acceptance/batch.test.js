@@ -111,7 +111,7 @@ describe('Storing BATCH data in a HF series', function() {
       assert.strictEqual(body.status, 'ok'); 
 
       const headers: {[string]: string} = response.headers; 
-      assert.strictEqual(headers['api-version'], '1.0.0');
+      assert.match(headers['api-version'], /^\d+\.\d+\.\d+/);
       
       // Check if the data is really there
       const userName = userId; // identical with id here, but will be user name in general. 

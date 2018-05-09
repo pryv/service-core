@@ -6,8 +6,6 @@ const Paths = require('./Paths');
 const tryCoerceStringValues = require('../schema/validation').tryCoerceStringValues;
 const _ = require('lodash');
 
-const bluebird = require('bluebird');  
-
 const hasFileUpload = require('../middleware/uploads').hasFileUpload;
 const attachmentsAccessMiddleware = require('../middleware/attachment_access');
 /**

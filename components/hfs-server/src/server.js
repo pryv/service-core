@@ -13,6 +13,8 @@ const errorsMiddleware = require('./middleware/errors');
 const tracingMiddlewareFactory = require('./tracing/middleware/trace');
 const clsWrapFactory = require('./tracing/middleware/clsWrap');
 
+const { ProjectVersion } = require('components/middleware/src/project_version');
+
 const controllerFactory = require('./web/controller');
 
 const KEY_IP = 'http.ip';
@@ -29,7 +31,7 @@ class Server {
   settings: Settings;
   
   // The express application. 
-  expressApp: any; 
+  expressApp: express$Application; 
   
   // base url for any access to this server. 
   baseUrl: string; 
@@ -53,7 +55,6 @@ class Server {
     this.settings = settings; 
   
     this.context = context; 
-    this.expressApp = this.setupExpress();
     
     const ip = settings.get(KEY_IP).str(); 
     const port = settings.get(KEY_PORT).num(); 
@@ -68,11 +69,13 @@ class Server {
    * @return {Promise<true>} A promise that will resolve once the server is 
    *    started and accepts connections.
    */
-  start(): Promise<true> {
+  async start(): Promise<true> {
     this.logger.info('starting...');
     
     const settings = this.settings;
-    const app = this.expressApp;
+    const app = await this.setupExpress();
+    
+    this.expressApp = app;
     
     const ip = settings.get(KEY_IP).str(); 
     const port = settings.get(KEY_PORT).num(); 
@@ -115,11 +118,14 @@ class Server {
    * 
    * @return express application.
    */
-  setupExpress(): express$Application {
+  async setupExpress(): Promise<express$Application> {
     const logger = this.logger;
     const settings = this.settings;
     const logSettings = settings.get('logs').obj();
     const traceEnabled = settings.get('trace.enable').bool(); 
+    
+    const pv = new ProjectVersion(); 
+    const version = await pv.version(); 
         
     var app = express(); 
     
@@ -134,7 +140,7 @@ class Server {
     app.use(middleware.requestTrace(express, logging(logSettings)));
     app.use(bodyParser.json());
     app.use(middleware.override);
-    app.use(middleware.commonHeaders({version: '1.0.0'}));
+    app.use(middleware.commonHeaders(version));
     
     this.defineApplication(app); 
         
