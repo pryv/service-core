@@ -123,9 +123,8 @@ function checkMeta(parentObject) {
   expect(parentObject.meta).to.exist;
   
   const meta = parentObject.meta;
-  const expectVersion = require('../../package.json').version;
 
-  assert.strictEqual(meta.apiVersion, expectVersion);
+  assert.match(meta.apiVersion, /^\d+\.\d+\.\d+/);
   assert.match(meta.serverTime, /^\d+\.?\d*$/);
 }
 exports.checkMeta = checkMeta;
