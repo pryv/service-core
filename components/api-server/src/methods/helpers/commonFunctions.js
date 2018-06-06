@@ -1,5 +1,3 @@
-'use strict';
-
 var errors = require('components/errors').factory,
     validation = require('../../schema/validation');
     
@@ -71,6 +69,12 @@ exports.getTrustedAppCheck = function getTrustedAppCheck(authSettings) {
   }
 
   function getRegExp(origin) {
+    // BUG The blacklist approach taken here is probably wrong; we're assuming
+    //  that we can escape all the active parts of a string using a list of 
+    //  special chars; we're almost sure to miss something while doing that. A
+    //  better approach would be to whitelist all characters that are allowed 
+    //  in the input language. 
+    
     // first escape the origin string
     var rxString = origin.replace(/([.*+?^=!:${}()|[\]\/\\])/g, '\\$1');
     // then replace wildcards
