@@ -45,6 +45,8 @@ The `"fields"` array lists all the fields that you will be submitting, including
 
 The `"points"` array contains all the data points you'd like to submit. Each data point is represented by a simple array. This makes the bulk of the message (your data points) very space-efficient; values are encoded positionally. The first value corresponds to the first field, and so on. 
 
+Timestamps must be encoded as seconds (or fractions of seconds) since unix epoch. 
+
 You should submit multiple data points in a single API call to Pryv as follows (for example when sampling the height of a drone that is in rapid ascension):
 
 ~~~json
@@ -152,10 +154,10 @@ Queries data from a series event. Returns data in order of ascending timestamps 
 |          |                                                              |
 | -------: | ------------------------------------------------------------ |
 | event_id | The id of the event.                                         |
-|     from | timestamp (optional) – Only return data points later than this timestamp. If no value is given the query will return data starting at the earliest timestamp in the series. |
-|       to | timestamp (optional) – Only return data points earlier than this timestamp. If no value is given the server returns only data that is in the past. |
+| fromTime | timestamp (optional) – Only return data points later than this timestamp. If no value is given the query will return data starting at the earliest timestamp in the series. |
+|   toTime | timestamp (optional) – Only return data points earlier than this timestamp. If no value is given the server returns only data that is in the past. |
 
-When giving both "from" and "to" to this method, the timestamp indicated by "from" needs to be smaller or equal to the timestamp given by "to".
+When giving both "fromTime" and "toTime" to this method, the timestamp indicated by "fromTime" needs to be smaller or equal to the timestamp given by "toTime".
 
 #### RESULT
 
