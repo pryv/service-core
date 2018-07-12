@@ -138,9 +138,9 @@ module.exports = function produceAccessesApiMethods(
     next();
   }
 
-  /**
-   * Creates default data structure from permissions if needed, for app authorization.
-   */
+  // Creates default data structure from permissions if needed, for app
+  // authorization. 
+  // 
   function createDataStructureFromPermissions(context, params, result, next) {
     const access = context.access;
     if (access == null) 
@@ -152,7 +152,7 @@ module.exports = function produceAccessesApiMethods(
     async.forEachSeries(params.permissions, ensureStream, next);
 
     function ensureStream(permission, streamCallback) {
-      if (! permission.defaultName) { return streamCallback(); }
+      if (! permission.defaultName) return streamCallback();
 
       const streamsRepository = storageLayer.streams;
       const existingStream = treeUtils.findById(context.streams, permission.streamId);
@@ -302,30 +302,27 @@ module.exports = function produceAccessesApiMethods(
           ));
         }
         
-        // Personal accesses have full rights, otherwise further checks are needed
-        if (! currentAccess.isPersonal()) {
-          // Check that the current access can be managed
-          if(! currentAccess.canManageAccess(access)) {
-            // NOTE If we throw a different error here, an attacker might 
-            //  enumerate accesses that exist. Not being able to manage something
-            //  (in the case of accesses) = not have the right to list. 
-            return next(errors.unknownResource(
-              'access', params.id));
-          }
+        // Check that the current access can be managed
+        if(! currentAccess.canManageAccess(access)) {
+          // NOTE If we throw a different error here, an attacker might 
+          //  enumerate accesses that exist. Not being able to manage something
+          //  (in the case of accesses) = not have the right to list. 
+          return next(errors.unknownResource(
+            'access', params.id));
+        }
           
-          // Check that the updated access can still be managed. In other words,
-          // forbid any attempt to elevate the access permissions beyond
-          // authorized level and context.
-          
-          // Here we foresee what the updated access would look like
-          // in order to check if it is legit
-          const updatedAccess = _.merge(access, params.update);
-          if(! currentAccess.canManageAccess(updatedAccess)) {
-            return next(errors.forbidden(
-              'Your access token has insufficient permissions ' +
-              'to perform this update.'
-            ));
-          }
+        // Check that the updated access can still be managed. In other words,
+        // forbid any attempt to elevate the access permissions beyond
+        // authorized level and context.
+        
+        // Here we foresee what the updated access would look like
+        // in order to check if it is legit
+        const updatedAccess = _.merge(access, params.update);
+        if(! currentAccess.canManageAccess(updatedAccess)) {
+          return next(errors.forbidden(
+            'Your access token has insufficient permissions ' +
+            'to perform this update.'
+          ));
         }
         
         params.resource = access;
