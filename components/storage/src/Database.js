@@ -5,6 +5,8 @@ const MongoClient = require('mongodb').MongoClient;
 const lodash = require('lodash');
 const bluebird = require('bluebird');
 
+import type { Db as MongoDB, Collection } from 'mongodb';
+
 import type { Logger } from 'components/utils';
 
 type DatabaseOptions = {
@@ -34,10 +36,10 @@ class Database {
   databaseName: string;
   options: DatabaseOptions;
   
-  db: mixed; 
+  db: MongoDB; 
   client: MongoClient;
   
-  initializedCollections: mixed; 
+  initializedCollections: { [name: string]: boolean }; 
   
   logger: Logger; 
   
@@ -64,21 +66,24 @@ class Database {
    * Waits until DB engine is up. For use at startup.
    */
   waitForConnection(callback: DatabaseCallback) {
-    var connected = false;
-    async.doUntil(checkConnection.bind(this), function () { return connected; }, callback);
+    let connected = false;
+    const isConnected = () => connected;
+    
+    async.doUntil(
+      checkConnection.bind(this), isConnected, callback);
 
     /**
      * @this {Database}
      */
-    function checkConnection(checkDone) {
-      this.ensureConnect(function (err) {
-        if (err) {
+    function checkConnection(checkDone: () => mixed) {
+      this.ensureConnect((err) => {
+        if (err != null) {
           this.logger.warn('Cannot connect to ' + this.connectionString + ', retrying in a sec');
           return setTimeout(checkDone, 1000);
         }
         connected = true;
         checkDone();
-      }.bind(this));
+      });
     }
   }
 
@@ -90,8 +95,8 @@ class Database {
       return callback();
     }
     this.logger.debug('Connecting to ' + this.connectionString);
-    MongoClient.connect(this.connectionString, this.options, function (err, client) {
-      if (err) {
+    MongoClient.connect(this.connectionString, this.options, (err, client) => {
+      if (err != null) {
         this.logger.debug(err);
         return callback(err);
       }
@@ -100,13 +105,12 @@ class Database {
       this.client = client;
       this.db = client.db(this.databaseName);
       callback();
-    }.bind(this));
+    });
   }
 
-  /**
-   * @api private
-   */
-  async getCollection(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
+  // Internal function. 
+  // 
+  async getCollection(collectionInfo: CollectionInfo, callback: GetCollectionCallback) {
     try {    
       // Make sure we have a connect
       await bluebird.fromCallback( 
@@ -114,7 +118,7 @@ class Database {
         
       // Load the collection
       const db = this.db; 
-      const collection = db.collection(collectionInfo.name);
+      const collection: Collection = db.collection(collectionInfo.name);
         
       // Ensure that proper indexing is initialized
       await ensureIndexes.call(this, collection, collectionInfo.indexes);
@@ -128,9 +132,9 @@ class Database {
     
     // Called with `this` set to the Database instance. 
     // 
-    async function ensureIndexes(collection, indexes) {
+    async function ensureIndexes(collection: Collection, indexes) {
       const initializedCollections = this.initializedCollections; 
-      const collectionName = collection.collectionName;
+      const collectionName: string = collection.collectionName;
       
       if (indexes == null) return; 
       if (initializedCollections[collectionName]) return; 
@@ -147,15 +151,42 @@ class Database {
     }
   }
 
+  // Internal function. Does the same job as `getCollection` above, but calls `errCallback`
+  // when error would not be null. Otherwise it calls '`callback`, whose code can 
+  // assume that there has been no error. 
+  // 
+  // This should allow you to turn this bit of code: 
+  // 
+  //    this.getCollection(collectionInfo, (err, coll) => {
+  //      if (err) return callback(err);
+  //      ...
+  //    }
+  // 
+  // into this: 
+  // 
+  //    this.getCollectionSafe(collectionInfo, callback, (collection) => {
+  //      ...
+  //    }
+  // 
+  async getCollectionSafe(
+    collectionInfo: CollectionInfo, 
+    errCallback: DatabaseCallback, block: UsesCollectionBlock) 
+  {
+    return await this.getCollection(collectionInfo, (err, coll) => {
+      if (err != null) return errCallback(err);
+      
+      return block(coll);
+    });
+  }
+  
   /**
    * Counts all documents in the collection.
 
    * @param {Object} collectionInfo
    * @param {Function} callback
    */
-  countAll(collectionInfo, callback: DatabaseCallback) {
-    this.getCollection(collectionInfo, function (err, collection) {
-      if (err) { return callback(err); }
+  countAll(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
+    this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.count(callback);
     });
   }
@@ -167,7 +198,7 @@ class Database {
    * @param {Object} query
    * @param {Function} callback
    */
-  count(collectionInfo, query, callback) {
+  count(collectionInfo: CollectionInfo, query: {}, callback: DatabaseCallback) {
     this.getCollection(collectionInfo, function (err, collection) {
       if (err) { return callback(err); }
       collection.find(query).count(callback);
@@ -186,21 +217,25 @@ class Database {
    *    * {Number} limit Number of records to return (or `null`)
    * @param {Function} callback
    */
-  find(collectionInfo, query, options, callback: DatabaseCallback) {
+  find(collectionInfo: CollectionInfo, query: {}, options: FindOptions, callback: DatabaseCallback) {
     this.getCollection(collectionInfo, function (err, collection) {
       if (err) { return callback(err); }
       
       const queryOptions = {
         projection: options.projection,
       };
-      var cursor = collection.find(query, queryOptions).sort(options.sort);
-      if (options.skip) {
+      var cursor = collection
+        .find(query, queryOptions)
+        .sort(options.sort);
+      
+      if (options.skip != null) {
         cursor = cursor.skip(options.skip);
       }
-      if (options.limit) {
+      if (options.limit != null) {
         cursor = cursor.limit(options.limit);
       }
-      cursor.toArray(callback);
+      
+      return cursor.toArray(callback);
     });
   }
 
@@ -216,14 +251,21 @@ class Database {
    *    * {Number} limit Number of records to return (or `null`)
    * @param {Function} callback
    */
-  findStreamed(collectionInfo, query, options, callback: DatabaseCallback) {
+  findStreamed(
+    collectionInfo: CollectionInfo, 
+    query: mixed, options: FindOptions, 
+    callback: DatabaseCallback) 
+  {
     this.getCollection(collectionInfo, function (err, collection) {
-      if (err) { return callback(err); }
+      if (err != null) { return callback(err); }
 
       const queryOptions = {
         projection: options.projection,
       };
-      var cursor = collection.find(query, queryOptions).sort(options.sort);
+      let cursor = collection
+        .find(query, queryOptions)
+        .sort(options.sort);
+        
       if (options.skip) {
         cursor = cursor.skip(options.skip);
       }
@@ -242,9 +284,9 @@ class Database {
    * @param {Object} options Mongo-style options
    * @param {Function} callback
    */
-  findOne(collectionInfo, query, options, callback: DatabaseCallback) {
+  findOne(collectionInfo: CollectionInfo, query: Object, options: FindOptions, callback: DatabaseCallback) {
     this.getCollection(collectionInfo, function (err, collection) {
-      if (err) { return callback(err); }
+      if (err != null) { return callback(err); }
       collection.findOne(query, options || {}, callback);
     });
   }
@@ -307,7 +349,7 @@ class Database {
       if (err) { return callback(err); }
       collection.insertOne(item, {w: 1}, callback);
     });
-  };
+  }
 
   /**
    * Inserts an array of items (each item must have a valid id already).
@@ -321,7 +363,7 @@ class Database {
       if (err) { return callback(err); }
       collection.insertMany(items, {w: 1}, callback);
     });
-  };
+  }
 
   /**
    * Applies the given update to the document matching the given query.
@@ -337,7 +379,7 @@ class Database {
       if (err) { return callback(err); }
       collection.updateOne(query, update, {w: 1}, callback);
     });
-  };
+  }
 
   /**
    * Applies the given update to the document(s) matching the given query.
@@ -353,7 +395,7 @@ class Database {
       if (err) { return callback(err); }
       collection.updateMany(query, update, {w: 1}, callback);
     });
-  };
+  }
 
   /**
    * Applies the given update to the document matching the given query, returning the updated
@@ -371,7 +413,7 @@ class Database {
         callback(err, r ? r.value : null);
       });
     });
-  };
+  }
 
   /**
    * Inserts or update the document matching the query.
@@ -386,7 +428,7 @@ class Database {
       if (err) { return callback(err); }
       collection.updateOne(query, update, {w: 1, upsert: true}, callback);
     });
-  };
+  }
 
   /**
    * Deletes the document matching the given query.
@@ -400,7 +442,7 @@ class Database {
       if (err) { return callback(err); }
       collection.deleteOne(query, {w: 1}, callback);
     });
-  };
+  }
 
   /**
    * Deletes the document(s) matching the given query.
@@ -414,7 +456,7 @@ class Database {
       if (err) { return callback(err); }
       collection.deleteMany(query, {w: 1}, callback);
     });
-  };
+  }
 
   /**
    * Get collection total size.
@@ -422,7 +464,7 @@ class Database {
    * @param {Object} collectionInfo
    * @param {Function} callback
    */
-  totalSize(collectionInfo, callback: DatabaseCallback) {
+  totalSize(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
     this.getCollection(collectionInfo, function (err, collection) {
       if (err) { return callback(err); }
       collection.stats(function (err, stats) {
@@ -438,12 +480,11 @@ class Database {
   /**
    * @param {Function} callback
    */
-  dropCollection(collectionInfo, callback: DatabaseCallback) {
-    this.getCollection(collectionInfo, function (err, collection) {
-      if (err) { return callback(err); }
+  dropCollection(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
+    this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.drop(callback);
     });
-  };
+  }
 
   /**
    * Primarily meant for tests.
@@ -455,7 +496,7 @@ class Database {
       if (err) { return callback(err); }
       this.db.dropDatabase(callback);
     }.bind(this));
-  };
+  }
 
   /**
    * Primarily meant for tests
@@ -464,14 +505,11 @@ class Database {
    * @param {Object} options
    * @param {Function} callback
    */
-  listIndexes(collectionInfo, options, callback: DatabaseCallback) {
-    this.getCollection(collectionInfo, function (err, collection) {
-      if (err) {
-        return callback(err);
-      }
+  listIndexes(collectionInfo: CollectionInfo, options: {}, callback: DatabaseCallback) {
+    this.getCollectionSafe(collectionInfo, callback, (collection) => {
       collection.listIndexes(options).toArray(callback);
     });
-  };
+  }
 
   // class utility functions
 
@@ -489,7 +527,12 @@ type MongoDBError = {
   lastErrorObject?: MongoDBError,
 }
 
-type DatabaseCallback = (err?: Error) => mixed;
+type DatabaseCallback = (err?: Error | null, result?: mixed) => mixed;
+type GetCollectionCallback = 
+  (err?: ?Error, collection?: ?Collection) => mixed;
+
+
+type UsesCollectionBlock = (coll: Collection) => mixed; 
 
 // Information about a MongoDB collection. 
 type CollectionInfo = {
@@ -505,16 +548,14 @@ type IndexDefinition = {
 type IndexOptions = {
   unique?: boolean, 
 }
-  
-//   {
-//   *      name: 'collection-name',
-//   *      indexes: [
-//   *        { index: {'field-1': 1}, options: {unique: true} },
-//   *        { index: {'field-2': 1}, options: {} }
-//   *      ]
-//   *    }
-// }
 
+type FindOptions = {
+  projection: Object,
+  sort: Object, 
+  skip: ?number, 
+  limit: ?number, 
+}
+  
 function getAuthPart(settings) {
   const authUser = settings.authUser;
   let authPart = '';
