@@ -29,9 +29,6 @@ type UpdatesSettingsHolder = {
   ignoreProtectedFields: boolean,
 }
 
-/**
- * Accesses API methods implementations.
- */
 module.exports = function produceAccessesApiMethods(
   api: API, 
   logger: Logger, 
@@ -73,10 +70,8 @@ module.exports = function produceAccessesApiMethods(
     const accessesRepository = storageLayer.accesses;
     const query = {};
     
-    if (currentAccess == null) {
-      // Makes sure that the type checker recognises this as an exit.
+    if (currentAccess == null) 
       return next(new Error('AF: Access cannot be null at this point.'));
-    }
     
     if (! currentAccess.isPersonal()) {
       // app -> only shared accesses
@@ -86,12 +81,10 @@ module.exports = function produceAccessesApiMethods(
     accessesRepository.find(context.user, query, dbFindOptions, function (err, accesses) {
       if (err != null) return next(errors.unexpectedError(err)); 
 
-      if (! currentAccess.isPersonal()) {
-        // filter according to current permissions
-        accesses = _.filter(accesses, function (access) {
-          return currentAccess.canManageAccess(access);
-        });
-      }
+      // filter according to current permissions
+      accesses = _.filter(accesses, function (access) {
+        return currentAccess.canManageAccess(access);
+      });
 
       result.accesses = accesses;
       next();
@@ -125,7 +118,9 @@ module.exports = function produceAccessesApiMethods(
     if (access == null) 
       return next(errors.unexpectedError('AF: Access must not be null here.'));
     
-    if (! access.isPersonal() && ! access.canManageAccess(params)) {
+    // Personal: not taken: second term is false
+    // Not Personal: reduces to second term
+    if (! access.canManageAccess(params)) {
       return next(errors.forbidden(
         'Your access token has insufficient permissions ' +
         'to create this new access.'));
