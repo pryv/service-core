@@ -117,9 +117,7 @@ module.exports = function produceAccessesApiMethods(
     const access = context.access;
     if (access == null) 
       return next(errors.unexpectedError('AF: Access must not be null here.'));
-    
-    // Personal: not taken: second term is false
-    // Not Personal: reduces to second term
+
     if (! access.canManageAccess(params)) {
       return next(errors.forbidden(
         'Your access token has insufficient permissions ' +
@@ -148,9 +146,8 @@ module.exports = function produceAccessesApiMethods(
     if (access == null) 
       return next(errors.unexpectedError('AF: Access must not be null here.'));
 
-    if (! access.isPersonal() || params.permissions == null) {
-      return next();
-    }
+    if (! access.isPersonal()) return next();
+    if (params.permissions == null) return next(); 
 
     async.forEachSeries(params.permissions, ensureStream, next);
 
