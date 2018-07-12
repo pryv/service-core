@@ -382,10 +382,7 @@ module.exports = function produceAccessesApiMethods(
         if (access == null)
           return next(errors.unknownResource('access', params.id));
 
-        if (
-          !currentAccess.isPersonal() &&
-          !currentAccess.canManageAccess(access)
-        ) {
+        if (! currentAccess.canManageAccess(access)) {
           return next(
             errors.forbidden(
               'Your access token has insufficient permissions to ' +
@@ -462,21 +459,16 @@ module.exports = function produceAccessesApiMethods(
     });
   }
 
-  /**
-   * Tells whether the given access' permissions are the same as those requested.
-   *
-   * @param {Object} access
-   * @param {Array} requestedPermissions
-   * @return {Boolean}
-   */
-  function accessMatches(access, requestedPermissions) {
-    if (! access ||
+  // Returns true if the given access' permissions match the `requestedPermissions`.
+  // 
+  function accessMatches(access, requestedPermissions): boolean {
+    if (access == null ||
         access.type !== 'app' ||
         access.permissions.length !== requestedPermissions.length) {
       return false;
     }
 
-    var accessPerm, reqPerm;
+    let accessPerm, reqPerm;
     for (var i = 0, ni = access.permissions.length; i < ni; i++) {
       accessPerm = access.permissions[i];
       reqPerm = findByStreamId(requestedPermissions, accessPerm.streamId);
