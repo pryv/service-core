@@ -45,8 +45,8 @@ module.exports = function produceAccessesApiMethods(
   // COMMON
 
   api.register('accesses.*',
-      commonFns.loadAccess(storageLayer),
-      checkNoSharedAccess);
+    commonFns.loadAccess(storageLayer),
+    checkNoSharedAccess);
 
   function checkNoSharedAccess(
     context: MethodContext, params: mixed, result: Result, next: ApiCallback) 
@@ -65,8 +65,8 @@ module.exports = function produceAccessesApiMethods(
   // RETRIEVAL
 
   api.register('accesses.get',
-      commonFns.getParamsValidation(methodsSchema.get.params),
-      findAccessibleAccesses);
+    commonFns.getParamsValidation(methodsSchema.get.params),
+    findAccessibleAccesses);
 
   function findAccessibleAccesses(context, params, result, next) {
     const currentAccess = context.access;
@@ -102,12 +102,12 @@ module.exports = function produceAccessesApiMethods(
   // CREATION
 
   api.register('accesses.create',
-      applyDefaultsForCreation,
-      commonFns.getParamsValidation(methodsSchema.create.params),
-      applyPrerequisitesForCreation,
-      createDataStructureFromPermissions,
-      cleanupPermissions,
-      createAccess);
+    applyDefaultsForCreation,
+    commonFns.getParamsValidation(methodsSchema.create.params),
+    applyPrerequisitesForCreation,
+    createDataStructureFromPermissions,
+    cleanupPermissions,
+    createAccess);
 
   function applyDefaultsForCreation(context, params, result, next) {
     _.defaults(params, {type: 'shared'});
@@ -371,9 +371,9 @@ module.exports = function produceAccessesApiMethods(
   // DELETION
 
   api.register('accesses.delete',
-      commonFns.getParamsValidation(methodsSchema.del.params),
-      checkAccessForDeletion,
-      deleteAccess);
+    commonFns.getParamsValidation(methodsSchema.del.params),
+    checkAccessForDeletion,
+    deleteAccess);
 
   function checkAccessForDeletion(context, params, result, next) {
     const accessesRepository = storageLayer.accesses;
