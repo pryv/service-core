@@ -3,7 +3,7 @@
 export type APIErrorOptions = {
   httpStatus?: number, 
   data?: mixed, 
-  innerError?: Error, 
+  innerError?: ?Error, 
   dontNotifyAirbrake?: boolean, 
 }
 

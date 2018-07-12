@@ -100,7 +100,7 @@ factory.invalidRequestStructure = function (message: string, data?: Object, inne
 };
 
 factory.itemAlreadyExists = function (
-  resourceType: ?string, conflictingKeys: { [string]: string }, innerError: Error
+  resourceType: ?string, conflictingKeys: { [string]: string }, innerError: ?Error
 ) {
   resourceType = resourceType || 'resource';
   var article = _.includes(['a', 'e', 'i', 'o', 'u'], resourceType[0]) ? 'An ' : 'A ';
@@ -111,7 +111,7 @@ factory.itemAlreadyExists = function (
       ' already exists';
   return new APIError(ErrorIds.ItemAlreadyExists, message, {
     httpStatus: 400,
-    innerError: innerError,
+    innerError: innerError || null,
     data: conflictingKeys,
     dontNotifyAirbrake: true
   });

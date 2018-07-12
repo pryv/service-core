@@ -1,31 +1,46 @@
-var APIError = require('components/errors').APIError,
-    errors = require('components/errors').factory,
-    ErrorIds = require('components/errors').ErrorIds,
-    async = require('async'),
-    commonFns = require('./helpers/commonFunctions'),
-    Database = require('components/storage').Database,
-    methodsSchema = require('../schema/accessesMethods'),
-    accessSchema = require('../schema/access'),
-    slugify = require('slug'),
-    string = require('./helpers/string'),
-    treeUtils = require('components/utils').treeUtils,
-    _ = require('lodash');
+// @flow
+
+const async = require('async');
+const slugify = require('slug');
+const _ = require('lodash');
+
+const APIError = require('components/errors').APIError;
+const errors = require('components/errors').factory;
+const ErrorIds = require('components/errors').ErrorIds;
+
+const Database = require('components/storage').Database;
+const treeUtils = require('components/utils').treeUtils;
+
+const commonFns = require('./helpers/commonFunctions');
+const methodsSchema = require('../schema/accessesMethods');
+const accessSchema = require('../schema/access');
+const string = require('./helpers/string');
+
+import type { StorageLayer } from 'components/storage';
+import type { Logger } from 'components/utils';
+import type { MethodContext } from 'components/model';
+
+import type API from '../API';
+import type { ApiCallback } from '../API';
+import type Notifications from '../Notifications';
+import type Result from '../Result';
+
+type UpdatesSettingsHolder = {
+  ignoreProtectedFields: boolean,
+}
 
 /**
  * Accesses API methods implementations.
- *
- * @param api
- * @param userAccessesStorage
- * @param userStreamsStorage
- * @param notifications
- * @param logging
- * @param updatesSettings
  */
-module.exports = function (api, userAccessesStorage, userStreamsStorage, 
-  notifications, logging, updatesSettings, storageLayer) {
-
-  const logger = logging.getLogger('methods/accesses');
-  const dbFindOptions = {projection: {calls: 0}};
+module.exports = function produceAccessesApiMethods(
+  api: API, 
+  logger: Logger, 
+  notifications: Notifications, 
+  updatesSettings: UpdatesSettingsHolder, 
+  storageLayer: StorageLayer) 
+{
+  const dbFindOptions = { projection: 
+    { calls: 0 } };
 
   // COMMON
 
@@ -33,12 +48,17 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
       commonFns.loadAccess(storageLayer),
       checkNoSharedAccess);
 
-  function checkNoSharedAccess(context, params, result, next) {
-    if (context.access.isShared()) {
+  function checkNoSharedAccess(
+    context: MethodContext, params: mixed, result: Result, next: ApiCallback) 
+  {
+    const access = context.access;
+    
+    if (access == null || access.isShared()) {
       return next(errors.forbidden(
         'You cannot access this resource using a shared access token.')
       );
     }
+    
     next();
   }
 
@@ -49,18 +69,27 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
       findAccessibleAccesses);
 
   function findAccessibleAccesses(context, params, result, next) {
-    var query = {};
-    if (! context.access.isPersonal()) {
+    const access = context.access;
+    const accessesRepository = storageLayer.accesses;
+    const query = {};
+    
+    if (access == null) {
+      // Makes sure that the type checker recognises this as an exit.
+      return next(new Error('AF: Access cannot be null at this point.'));
+    }
+    
+    if (! access.isPersonal()) {
       // app -> only shared accesses
       query.type = 'shared';
     }
-    userAccessesStorage.find(context.user, query, dbFindOptions, function (err, accesses) {
-      if (err) { return next(errors.unexpectedError(err)); }
+    
+    accessesRepository.find(context.user, query, dbFindOptions, function (err, accesses) {
+      if (err != null) return next(errors.unexpectedError(err)); 
 
-      if (! context.access.isPersonal()) {
+      if (! access.isPersonal()) {
         // filter according to current permissions
         accesses = _.filter(accesses, function (access) {
-          return context.access.canManageAccess(access);
+          return access.canManageAccess(access);
         });
       }
 
@@ -91,8 +120,12 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
         'Personal accesses are created automatically on login.'
       ));
     }
-
-    if (! context.access.isPersonal() && ! context.access.canManageAccess(params)) {
+    
+    const access = context.access;
+    if (access == null) 
+      return next(errors.unexpectedError('AF: Access must not be null here.'));
+    
+    if (! access.isPersonal() && ! access.canManageAccess(params)) {
       return next(errors.forbidden(
         'Your access token has insufficient permissions ' +
         'to create this new access.'));
@@ -104,7 +137,8 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
         return next(errors.invalidItemId('The specified token is not allowed.'));
       }
     } else {
-      params.token = userAccessesStorage.generateToken();
+      const accessesRepository = storageLayer.accesses;
+      params.token = accessesRepository.generateToken();
     }
 
     context.initTrackingProperties(params);
@@ -115,7 +149,11 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
    * Creates default data structure from permissions if needed, for app authorization.
    */
   function createDataStructureFromPermissions(context, params, result, next) {
-    if (! context.access.isPersonal() || !params.permissions) {
+    const access = context.access;
+    if (access == null) 
+      return next(errors.unexpectedError('AF: Access must not be null here.'));
+
+    if (! access.isPersonal() || params.permissions == null) {
       return next();
     }
 
@@ -124,25 +162,28 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
     function ensureStream(permission, streamCallback) {
       if (! permission.defaultName) { return streamCallback(); }
 
-      var existingStream = treeUtils.findById(context.streams, permission.streamId);
+      const streamsRepository = storageLayer.streams;
+      const existingStream = treeUtils.findById(context.streams, permission.streamId);
 
       if (existingStream) {
         if (! existingStream.trashed) { return streamCallback(); }
 
-        var update = {trashed: false};
-        userStreamsStorage.updateOne(context.user, {id: existingStream.id}, update, function (err) {
+        const update = {trashed: false};
+        
+        streamsRepository.updateOne(context.user, {id: existingStream.id}, update, function (err) {
           if (err) { return streamCallback(errors.unexpectedError(err)); }
           streamCallback();
         });
       } else {
         // create new stream
-        var newStream = {
+        const newStream = {
           id: permission.streamId,
           name: permission.defaultName,
           parentId: null
         };
         context.initTrackingProperties(newStream);
-        userStreamsStorage.insertOne(context.user, newStream, function (err) {
+        
+        streamsRepository.insertOne(context.user, newStream, function (err) {
           if (err) {
             if (Database.isDuplicateError(err)) {
               if (isDBDuplicateId(err)) {
@@ -206,28 +247,33 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
   }
 
   function createAccess(context, params, result, next) {
-    userAccessesStorage.insertOne(context.user, params, function (err, newAccess) {
+    const accessesRepository = storageLayer.accesses;
+    
+    accessesRepository.insertOne(context.user, params, function (err, newAccess) {
       if (err) {
         if (Database.isDuplicateError(err)) {
-          var conflictingKeys;
+          let conflictingKeys;
           if (isDBDuplicateToken(err)) {
-            conflictingKeys = {token: '(hidden)'};
+            conflictingKeys = { token: '(hidden)' };
           } else {
-            conflictingKeys = { type: params.type, name: params.name };
-            if (params.deviceName) {
-              conflictingKeys.deviceName = params.deviceName;
-            }
+            conflictingKeys = { 
+              type: params.type, 
+              name: params.name,
+              deviceName: params.deviceName,
+            };
           }
           return next(errors.itemAlreadyExists(
             'access', conflictingKeys
           ));
-        } else {
-          return next(errors.unexpectedError(err));
-        }
+          
+          // NOT REACHED
+        } 
+        
+        return next(errors.unexpectedError(err));
       }
 
       result.access = newAccess;
-      notifications.accessesChanged(context.user);
+      notifications.accessesChanged(context.username);
       next();
     });
   }
@@ -236,11 +282,11 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
   // UPDATE
 
   api.register('accesses.update',
-      commonFns.getParamsValidation(methodsSchema.update.params),
-      commonFns.catchForbiddenUpdate(accessSchema('update'), updatesSettings.ignoreProtectedFields, logger),
-      applyPrerequisitesForUpdate,
-      checkAccessForUpdate,
-      updateAccess);
+    commonFns.getParamsValidation(methodsSchema.update.params),
+    commonFns.catchForbiddenUpdate(accessSchema('update'), updatesSettings.ignoreProtectedFields, logger),
+    applyPrerequisitesForUpdate,
+    checkAccessForUpdate,
+    updateAccess);
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
     context.updateTrackingProperties(params.update);
@@ -248,7 +294,13 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
   }
 
   function checkAccessForUpdate(context, params, result, next) {
-    userAccessesStorage.findOne(context.user, {id: params.id}, dbFindOptions,
+    const accessesRepository = storageLayer.accesses;
+    const access = context.access;
+    
+    if (access == null)
+      return next(new Error('AF: access must not be null'));
+    
+    accessesRepository.findOne(context.user, {id: params.id}, dbFindOptions,
       function (err, access) {
         if (err) { return next(errors.unexpectedError(err)); }
 
@@ -259,9 +311,9 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
         }
         
         // Personal accesses have full rights, otherwise further checks are needed
-        if (! context.access.isPersonal()) {
+        if (! access.isPersonal()) {
           // Check that the current access can be managed
-          if(! context.access.canManageAccess(access)) {
+          if(! access.canManageAccess(access)) {
             // NOTE If we throw a different error here, an attacker might 
             //  enumerate accesses that exist. Not being able to manage something
             //  (in the case of accesses) = not have the right to list. 
@@ -276,37 +328,33 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
           // Here we foresee what the updated access would look like
           // in order to check if it is legit
           const updatedAccess = _.merge(access, params.update);
-          if(! context.access.canManageAccess(updatedAccess)) {
+          if(! access.canManageAccess(updatedAccess)) {
             return next(errors.forbidden(
               'Your access token has insufficient permissions ' +
               'to perform this update.'
             ));
           }
         }
-
-        context.resource = access;
-
+        
         next();
       });
   }
 
+  // Updates the access in `params.id` with the attributes in `params.update`.
+  // 
   function updateAccess(context, params, result, next) {
-    userAccessesStorage.updateOne(context.user, {id: params.id}, params.update,
+    const accessesRepository = storageLayer.accesses;
+
+    accessesRepository.updateOne(context.user, {id: params.id}, params.update,
       function (err, updatedAccess) {
-        if (err) {
-          if (Database.isDuplicateError(err)) {
-            return next(errors.itemAlreadyExists('access',
-              { type: context.resource.type, name: params.update.name }));
-          } else {
-            return next(errors.unexpectedError(err));
-          }
-        }
+        if (err) 
+          return next(errors.unexpectedError(err));
 
         // cleanup internal fields
         delete updatedAccess.calls;
 
         result.access = updatedAccess;
-        notifications.accessesChanged(context.user);
+        notifications.accessesChanged(context.username);
         next();
       });
   }
@@ -320,31 +368,48 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
       deleteAccess);
 
   function checkAccessForDeletion(context, params, result, next) {
-    userAccessesStorage.findOne(context.user, {id: params.id}, dbFindOptions,
-        function (err, access) {
-      if (err) { return next(errors.unexpectedError(err)); }
+    const accessesRepository = storageLayer.accesses;
+    const currentAccess = context.access;
+    
+    if (currentAccess == null)
+      return next(new Error('AF: currentAccess cannot be null.'));
 
-      if (! access) {
-        return next(errors.unknownResource('access', params.id));
+    accessesRepository.findOne(
+      context.user,
+      { id: params.id },
+      dbFindOptions,
+      function(err, access) {
+        if (err != null) 
+          return next(errors.unexpectedError(err));
+
+        if (access == null)
+          return next(errors.unknownResource('access', params.id));
+
+        if (
+          !access.isPersonal() &&
+          !access.canManageAccess(access)
+        ) {
+          return next(
+            errors.forbidden(
+              'Your access token has insufficient permissions to ' +
+              'delete this access.'
+            )
+          );
+        }
+
+        next();
       }
-
-      if (! context.access.isPersonal() && ! context.access.canManageAccess(access)) {
-        return next(errors.forbidden(
-            'Your access token has insufficient permissions to ' +
-            'delete this access.'));
-      }
-
-      next();
-    });
+    );
   }
 
   function deleteAccess(context, params, result, next) {
-    /* jshint -W024 */
-    userAccessesStorage.delete(context.user, {id: params.id}, function (err) {
+    const accessesRepository = storageLayer.accesses;
+
+    accessesRepository.delete(context.user, {id: params.id}, function (err) {
       if (err) { return next(errors.unexpectedError(err)); }
 
       result.accessDeletion = {id: params.id};
-      notifications.accessesChanged(context.user);
+      notifications.accessesChanged(context.username);
       next();
     });
   }
@@ -357,38 +422,46 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
     checkApp);
 
   function checkApp(context, params, result, next) {
-    if (! context.access.isPersonal()) {
+    const currentAccess = context.access;
+    if (currentAccess == null)
+      return next(new Error('AF: currentAccess cannot be null.'));
+
+    if (! currentAccess.isPersonal()) {
       return next(errors.forbidden(
         'Your access token has insufficient permissions to access this resource.'
       ));
     }
 
-    var query = {
+    const accessesRepository = storageLayer.accesses;
+    const query = {
       type: 'app',
       name: params.requestingAppId,
       deviceName: params.deviceName || null
     };
-    userAccessesStorage.findOne(context.user, query, dbFindOptions, function (err, access) {
-      if (err) { return next(errors.unexpectedError(err)); }
+    accessesRepository.findOne(context.user, query, dbFindOptions, function (err, access) {
+      if (err != null) 
+        return next(errors.unexpectedError(err));
 
       if (accessMatches(access, params.requestedPermissions)) {
         result.matchingAccess = access;
-        next();
-      } else {
-        if (access) {
-          result.mismatchingAccess = access;
-        }
-        checkPermissions(context, params.requestedPermissions,
-            function (err, checkedPermissions, checkError) {
-          if (err) { return next(err); } // it's an APIError already
+        return next();
+      } 
+      
+      if (access != null) 
+        result.mismatchingAccess = access;
+      
+      checkPermissions(context, params.requestedPermissions, function(
+        err, checkedPermissions, checkError
+      ) {
+        if (err != null) 
+          return next(err);
 
-          result.checkedPermissions = checkedPermissions;
-          if (checkError) {
-            result.error = checkError;
-          }
-          next();
-        });
-      }
+        result.checkedPermissions = checkedPermissions;
+        if (checkError != null) {
+          result.error = checkError;
+        }
+        next();
+      });
     });
   }
 
@@ -424,25 +497,27 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
     }
   }
 
-  /**
-   * Iterates over the given permissions, replacing `defaultName` properties with the actual `name`
-   * of existing streams. When defined, the callback's `checkError` param signals issues
-   * with the requested permissions.
-   *
-   * @param {Object} context
-   * @param {Array} permissions
-   * @param {Function} callback ({ApiError} error, {Array} checkedPermissions, {Object} checkError)
-   */
+  // Iterates over the given permissions, replacing `defaultName` properties
+  // with the actual `name` of existing streams. When defined, the callback's
+  // `checkError` param signals issues with the requested permissions.
+  // 
   function checkPermissions(context, permissions, callback) {
-    var checkedPermissions = permissions, // modify permissions in-place, assume no side fx
-        checkError = null;
-    async.forEachSeries(checkedPermissions, checkPermission, function (err) {
-      if (err) {
-        return (err instanceof APIError) ?
-            callback(err) : callback(errors.unexpectedError(err));
+    // modify permissions in-place, assume no side fx
+    const checkedPermissions = permissions; 
+    let checkError = null;
+    
+    async.forEachSeries(checkedPermissions, checkPermission, function(err) {
+      if (err != null) {
+        return err instanceof APIError
+          ? callback(err)
+          : callback(errors.unexpectedError(err));
       }
+      
       callback(null, checkedPermissions, checkError);
     });
+    return;
+    
+    // NOT REACHED
 
     function checkPermission(permission, done) {
       if (permission.streamId === '*') {
@@ -451,67 +526,98 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
         return done();
       }
 
-      if (! permission.defaultName) {
-        return done(errors.invalidParametersFormat('The parameters\' format is invalid.',
-            'The permission for stream "' + permission.streamId + '" (and maybe others) is ' +
-                'missing the required "defaultName".'));
+      if (permission.defaultName == null) {
+        return done(
+          errors.invalidParametersFormat(
+            "The parameters' format is invalid.",
+            'The permission for stream "' +
+              permission.streamId +
+              '" (and maybe others) is ' +
+              'missing the required "defaultName".'
+          )
+        );
       }
 
-      var permissionStream;
-      async.series([
-        function checkId(stepDone) {
-          // NOT-OPTIMIZED: could return only necessary fields
-          userStreamsStorage.findOne(context.user, {id: permission.streamId}, null,
-              function (err, stream) {
-            if (err) { return stepDone(err); }
+      let permissionStream;
+      const streamsRepository = storageLayer.streams;
+      
+      async.series(
+        [
+          function checkId(stepDone) {
+            // NOT-OPTIMIZED: could return only necessary fields
+            streamsRepository.findOne(
+              context.user,
+              { id: permission.streamId },
+              null,
+              function(err, stream) {
+                if (err != null) 
+                  return stepDone(err);
 
-            permissionStream = stream;
+                permissionStream = stream;
+                if (permissionStream != null) {
+                  permission.name = permissionStream.name;
+                  delete permission.defaultName;
+                }
 
-            if (permissionStream) {
-              permission.name = permissionStream.name;
-              delete permission.defaultName;
-            }
-
-            stepDone();
-          });
-        },
-        function checkSimilar(stepDone) {
-          if (permissionStream) { return stepDone(); }
-
-          var nameIsUnique = false,
-              curSuffixNum = 0;
-          async.until(function () { return nameIsUnique; }, checkName, stepDone);
-
-          function checkName(checkDone) {
-            var checkedName = getAlternativeName(permission.defaultName, curSuffixNum);
-            userStreamsStorage.findOne(context.user, { name: checkedName, parentId: null }, null,
-                function (err, stream) {
-              if (err) { return checkDone(err); }
-
-              if (! stream) {
-                nameIsUnique = true;
-                permission.defaultName = checkedName;
-              } else {
-                curSuffixNum++;
-                setCheckError();
+                stepDone();
               }
+            );
+          },
+          function checkSimilar(stepDone) {
+            if (permissionStream != null) 
+              return stepDone();
 
-              checkDone();
-            });
-          }
-        }
-      ], done);
+            let nameIsUnique = false;
+            let curSuffixNum = 0;
+            
+            async.until(
+              () => nameIsUnique,
+              checkName,
+              stepDone
+            );
+
+            // Checks if a stream with a name of `defaultName` combined with 
+            // `curSuffixNum` exists. Sets `nameIsUnique` to true if not. 
+            function checkName(checkDone) {
+              var checkedName = getAlternativeName(
+                permission.defaultName,
+                curSuffixNum
+              );
+              streamsRepository.findOne(
+                context.user,
+                { name: checkedName, parentId: null },
+                null,
+                function(err, stream) {
+                  if (err != null)
+                    return checkDone(err);
+                    
+                  // Is the name still free?
+                  if (stream == null) {
+                    nameIsUnique = true;
+                    permission.defaultName = checkedName;
+                  } else {
+                    curSuffixNum++;
+                    checkError = produceCheckError();
+                  }
+
+                  checkDone();
+                }
+              );
+            }
+          },
+        ],
+        done
+      );
     }
 
-    function setCheckError() {
-      if (! checkError) {
-        checkError = {
-          id: ErrorIds.ItemAlreadyExists,
-          message: 'One or more requested streams have the same names as existing streams ' +
-              'with different ids. The "defaultName" of the streams concerned have been updated ' +
-              'with valid alternative proposals.'
-        };
-      }
+    function produceCheckError() {
+      return {
+        id: ErrorIds.ItemAlreadyExists,
+        message:
+          'One or more requested streams have the same names as existing streams ' +
+          'with different ids. The "defaultName" of the streams concerned have been updated ' +
+          'with valid alternative proposals.',
+      };
     }
 
     /**
@@ -523,7 +629,9 @@ module.exports = function (api, userAccessesStorage, userStreamsStorage,
      * @return {string}
      */
     function getAlternativeName(name, suffixNum) {
-      return suffixNum === 0 ? name : (name + ' (' + suffixNum + ')');
+      if (suffixNum === 0) return name; 
+      
+      return `${name}(${suffixNum})`;
     }
   }
 

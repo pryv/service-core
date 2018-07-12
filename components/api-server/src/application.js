@@ -10,10 +10,15 @@ const API = require('./API');
 
 import type { ConfigAccess } from './settings';
 import type { LogFactory } from 'components/utils';
+import type { Logger } from 'components/utils';
 
 // While we're transitioning to manual DI, we still need to inject some of the 
 // stuff here the old way. Hence: 
 const dependencies = require('dependable').container({useFnAnnotations: true});
+
+type UpdatesSettingsHolder = {
+  ignoreProtectedFields: boolean,
+}
 
 // Application is a grab bag of singletons / system services with not many 
 // methods of its own. It is the type-safe version of DI. 
@@ -115,6 +120,22 @@ class Application {
       settings.get('auth.passwordResetRequestMaxAge').num(), 
       settings.get('auth.sessionMaxAge').num(), 
     );
+  }
+  
+  // Returns the settings for updating entities
+  // 
+  getUpdatesSettings(): UpdatesSettingsHolder {
+    const settings = this.settings;
+    
+    return {
+      ignoreProtectedFields: settings.get('updates.ignoreProtectedFields').bool(),
+    };
+  }
+  
+  // Produces and returns a new logger for a given `topic`.
+  // 
+  getLogger(topic: string): Logger {
+    return this.logFactory.getLogger(topic);
   }
 }
 
