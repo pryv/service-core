@@ -69,16 +69,16 @@ module.exports = function produceAccessesApiMethods(
       findAccessibleAccesses);
 
   function findAccessibleAccesses(context, params, result, next) {
-    const access = context.access;
+    const currentAccess = context.access;
     const accessesRepository = storageLayer.accesses;
     const query = {};
     
-    if (access == null) {
+    if (currentAccess == null) {
       // Makes sure that the type checker recognises this as an exit.
       return next(new Error('AF: Access cannot be null at this point.'));
     }
     
-    if (! access.isPersonal()) {
+    if (! currentAccess.isPersonal()) {
       // app -> only shared accesses
       query.type = 'shared';
     }
@@ -86,10 +86,10 @@ module.exports = function produceAccessesApiMethods(
     accessesRepository.find(context.user, query, dbFindOptions, function (err, accesses) {
       if (err != null) return next(errors.unexpectedError(err)); 
 
-      if (! access.isPersonal()) {
+      if (! currentAccess.isPersonal()) {
         // filter according to current permissions
         accesses = _.filter(accesses, function (access) {
-          return access.canManageAccess(access);
+          return currentAccess.canManageAccess(access);
         });
       }
 
@@ -295,9 +295,9 @@ module.exports = function produceAccessesApiMethods(
 
   function checkAccessForUpdate(context, params, result, next) {
     const accessesRepository = storageLayer.accesses;
-    const access = context.access;
+    const currentAccess = context.access;
     
-    if (access == null)
+    if (currentAccess == null)
       return next(new Error('AF: access must not be null'));
     
     accessesRepository.findOne(context.user, {id: params.id}, dbFindOptions,
@@ -311,9 +311,9 @@ module.exports = function produceAccessesApiMethods(
         }
         
         // Personal accesses have full rights, otherwise further checks are needed
-        if (! access.isPersonal()) {
+        if (! currentAccess.isPersonal()) {
           // Check that the current access can be managed
-          if(! access.canManageAccess(access)) {
+          if(! currentAccess.canManageAccess(access)) {
             // NOTE If we throw a different error here, an attacker might 
             //  enumerate accesses that exist. Not being able to manage something
             //  (in the case of accesses) = not have the right to list. 
@@ -328,13 +328,15 @@ module.exports = function produceAccessesApiMethods(
           // Here we foresee what the updated access would look like
           // in order to check if it is legit
           const updatedAccess = _.merge(access, params.update);
-          if(! access.canManageAccess(updatedAccess)) {
+          if(! currentAccess.canManageAccess(updatedAccess)) {
             return next(errors.forbidden(
               'Your access token has insufficient permissions ' +
               'to perform this update.'
             ));
           }
         }
+        
+        params.resource = access;
         
         next();
       });
@@ -347,8 +349,14 @@ module.exports = function produceAccessesApiMethods(
 
     accessesRepository.updateOne(context.user, {id: params.id}, params.update,
       function (err, updatedAccess) {
-        if (err) 
+        if (err != null) {
+          if (Database.isDuplicateError(err)) {
+            return next(errors.itemAlreadyExists('access',
+              { type: params.resource.type, name: params.update.name }));
+          }
+
           return next(errors.unexpectedError(err));
+        }
 
         // cleanup internal fields
         delete updatedAccess.calls;
@@ -386,8 +394,8 @@ module.exports = function produceAccessesApiMethods(
           return next(errors.unknownResource('access', params.id));
 
         if (
-          !access.isPersonal() &&
-          !access.canManageAccess(access)
+          !currentAccess.isPersonal() &&
+          !currentAccess.canManageAccess(access)
         ) {
           return next(
             errors.forbidden(
@@ -631,7 +639,7 @@ module.exports = function produceAccessesApiMethods(
     function getAlternativeName(name, suffixNum) {
       if (suffixNum === 0) return name; 
       
-      return `${name}(${suffixNum})`;
+      return `${name} (${suffixNum})`;
     }
   }
 

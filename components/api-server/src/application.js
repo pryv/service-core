@@ -135,7 +135,7 @@ class Application {
   // Produces and returns a new logger for a given `topic`.
   // 
   getLogger(topic: string): Logger {
-    return this.logFactory.getLogger(topic);
+    return this.logFactory(topic)
   }
 }
 
