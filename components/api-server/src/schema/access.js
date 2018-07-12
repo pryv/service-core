@@ -13,7 +13,7 @@ var Action = require('./Action'),
  * @param {Action} action
  */
 exports = module.exports = function (action) {
-  if (action === Action.STORE) { action = Action.READ; } // read items === stored items
+  if (action === Action.STORE) { action = Action.READ; } // read items === stored items
 
   var base = object({
     'token': string({minLength: 1}),
