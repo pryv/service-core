@@ -93,6 +93,10 @@ class Server {
     const application = this.application;
     const dependencies = this.application.dependencies;
     const l = (topic) => application.getLogger(topic);
+    
+    // Open Heart Surgery ahead: Trying to get rid of DI here, file by file. 
+    // This means that what we want is in the middle there; all the 
+    // dependencies.resolves must go. 
 
     [
       require('./methods/system'),
