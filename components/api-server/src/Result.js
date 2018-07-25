@@ -39,6 +39,17 @@ class Result {
   }
   meta: ?Object;
   
+  // These are used by the various methods to store the result objects. 
+  // Never assume these are filled in...
+  // Exercise to the reader: How can we get rid of this mixed bag of things?
+  accesses: ?Array<mixed>;
+  access: mixed;
+  accessDeletion: mixed;
+  matchingAccess: mixed;
+  mismatchingAccess: mixed;
+  checkedPermissions: mixed;
+  error: mixed;
+  
   constructor(params?: ResultOptions) {
     this._private = { 
       init: false, first: true, 

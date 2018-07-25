@@ -146,9 +146,8 @@ var accessLogic = module.exports = {
     return level && isHigherOrEqualLevel(level, 'manage');
   },
 
-  // Whether the current access (personal or app) can see and manage the given
-  // access. 
-  //
+  // Whether the current access can see and manage the given access. 
+  // 
   canManageAccess: function (access) {
     //TODO handle tags
     

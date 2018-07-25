@@ -90,13 +90,29 @@ class Server {
   // Requires and registers all API methods. 
   // 
   registerApiMethods() {
+    const application = this.application;
     const dependencies = this.application.dependencies;
+    const l = (topic) => application.getLogger(topic);
+    
+    // Open Heart Surgery ahead: Trying to get rid of DI here, file by file. 
+    // This means that what we want is in the middle there; all the 
+    // dependencies.resolves must go. 
 
     [
       require('./methods/system'),
       require('./methods/utility'),
       require('./methods/auth'),
-      require('./methods/accesses'),
+    ].forEach(function (moduleDef) {
+      dependencies.resolve(moduleDef);
+    });
+
+    require('./methods/accesses')(
+      application.api, l('methods/accesses'), 
+      this.notificationBus, 
+      application.getUpdatesSettings(), 
+      application.storageLayer);
+
+    [
       require('./methods/account'),
       require('./methods/followedSlices'),
       require('./methods/profile'),

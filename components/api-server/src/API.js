@@ -17,7 +17,8 @@ type Filter = {
   idFilter: string, 
   fns: Array<ApiFunction>, 
 }
-type ApiFunction = string | () => mixed; 
+type ApiFunction = string | 
+  (context: MethodContext, params: Object, result: Result, next: ApiCallback) => mixed; 
 
 export type ApiCallback = 
   (err: ?Error, result: ?Result) => mixed;
