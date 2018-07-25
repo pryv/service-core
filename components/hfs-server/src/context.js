@@ -14,10 +14,10 @@ import type {LogFactory, Logger} from 'components/utils';
 
 import type { IMetadataUpdaterService } from 'components/metadata';
 
+import type { Database } from 'components/storage';
+
 type Repository = business.series.Repository;
 type InfluxConnection = business.series.InfluxConnection; 
-
-type Database = {}; // NOTE anything but null for now.
 
 import type { Tracer, Span } from 'opentracing';
 

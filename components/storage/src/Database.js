@@ -199,8 +199,7 @@ class Database {
    * @param {Function} callback
    */
   count(collectionInfo: CollectionInfo, query: {}, callback: DatabaseCallback) {
-    this.getCollection(collectionInfo, function (err, collection) {
-      if (err) { return callback(err); }
+    this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.find(query).count(callback);
     });
   }
@@ -218,9 +217,7 @@ class Database {
    * @param {Function} callback
    */
   find(collectionInfo: CollectionInfo, query: {}, options: FindOptions, callback: DatabaseCallback) {
-    this.getCollection(collectionInfo, function (err, collection) {
-      if (err) { return callback(err); }
-      
+    this.getCollectionSafe(collectionInfo, callback, collection => {
       const queryOptions = {
         projection: options.projection,
       };
@@ -256,9 +253,7 @@ class Database {
     query: mixed, options: FindOptions, 
     callback: DatabaseCallback) 
   {
-    this.getCollection(collectionInfo, function (err, collection) {
-      if (err != null) { return callback(err); }
-
+    this.getCollectionSafe(collectionInfo, callback, collection => {
       const queryOptions = {
         projection: options.projection,
       };
@@ -285,8 +280,7 @@ class Database {
    * @param {Function} callback
    */
   findOne(collectionInfo: CollectionInfo, query: Object, options: FindOptions, callback: DatabaseCallback) {
-    this.getCollection(collectionInfo, function (err, collection) {
-      if (err != null) { return callback(err); }
+    this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.findOne(query, options || {}, callback);
     });
   }
@@ -305,12 +299,11 @@ class Database {
    * @param {Function} callback
    */
   aggregate(
-    collectionInfo, query, projectExpression, groupExpression,
-    options, callback: DatabaseCallback) 
+    collectionInfo: CollectionInfo, query: Object, 
+    projectExpression: Object, groupExpression: Object,
+    options: Object, callback: DatabaseCallback) 
   {
-    this.getCollection(collectionInfo, function (err, collection) {
-      if (err) { return callback(err); }
-
+    this.getCollectionSafe(collectionInfo, callback, collection => {
       var aggregationCmds = [];
       if (query) {
         aggregationCmds.push({$match: query});
@@ -335,7 +328,7 @@ class Database {
         callback(null, results);
       });
     });
-  };
+  }
 
   /**
    * Inserts a single item (must have a valid id).
@@ -344,23 +337,17 @@ class Database {
    * @param {Object} item
    * @param {Function} callback
    */
-  insertOne(collectionInfo, item, callback: DatabaseCallback) {
-    this.getCollection(collectionInfo, function (err, collection) {
-      if (err) { return callback(err); }
+  insertOne(collectionInfo: CollectionInfo, item: Object, callback: DatabaseCallback) {
+    this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.insertOne(item, {w: 1}, callback);
     });
   }
 
   /**
    * Inserts an array of items (each item must have a valid id already).
-   *
-   * @param {Object} collectionInfo
-   * @param {Array} items
-   * @param {Function} callback
    */
-  insertMany(collectionInfo, items, callback: DatabaseCallback) {
-    this.getCollection(collectionInfo, function (err, collection) {
-      if (err) { return callback(err); }
+  insertMany(collectionInfo: CollectionInfo, items: Array<Object>, callback: DatabaseCallback) {
+    this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.insertMany(items, {w: 1}, callback);
     });
   }
@@ -374,9 +361,8 @@ class Database {
    * @param {Object} update
    * @param {Function} callback
    */
-  updateOne(collectionInfo, query, update, callback: DatabaseCallback) {
-    this.getCollection(collectionInfo, function (err, collection) {
-      if (err) { return callback(err); }
+  updateOne(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
+    this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateOne(query, update, {w: 1}, callback);
     });
   }
@@ -390,9 +376,8 @@ class Database {
    * @param {Object} update
    * @param {Function} callback
    */
-  updateMany(collectionInfo, query, update, callback: DatabaseCallback) {
-    this.getCollection(collectionInfo, function (err, collection) {
-      if (err) { return callback(err); }
+  updateMany(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
+    this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateMany(query, update, {w: 1}, callback);
     });
   }
@@ -406,11 +391,12 @@ class Database {
    * @param {Object} update
    * @param {Function} callback
    */
-  findOneAndUpdate(collectionInfo, query, update, callback: DatabaseCallback) {
-    this.getCollection(collectionInfo, function (err, collection) {
-      if (err) { return callback(err); }
+  findOneAndUpdate(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
+    this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.findOneAndUpdate(query, update, {returnOriginal: false}, function (err, r) {
-        callback(err, r ? r.value : null);
+        if (err != null) return callback(err);
+        
+        callback(null, r && r.value);
       });
     });
   }
@@ -423,9 +409,8 @@ class Database {
    * @param {Object} update
    * @param {Function} callback
    */
-  upsertOne(collectionInfo, query, update, callback: DatabaseCallback) {
-    this.getCollection(collectionInfo, function (err, collection) {
-      if (err) { return callback(err); }
+  upsertOne(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
+    this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateOne(query, update, {w: 1, upsert: true}, callback);
     });
   }
@@ -437,9 +422,8 @@ class Database {
    * @param {Object} query
    * @param {Function} callback
    */
-  deleteOne(collectionInfo, query, callback: DatabaseCallback) {
-    this.getCollection(collectionInfo, function (err, collection) {
-      if (err) { return callback(err); }
+  deleteOne(collectionInfo: CollectionInfo, query: Object, callback: DatabaseCallback) {
+    this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.deleteOne(query, {w: 1}, callback);
     });
   }
@@ -451,9 +435,8 @@ class Database {
    * @param {Object} query
    * @param {Function} callback
    */
-  deleteMany(collectionInfo, query, callback: DatabaseCallback) {
-    this.getCollection(collectionInfo, function (err, collection) {
-      if (err) { return callback(err); }
+  deleteMany(collectionInfo: CollectionInfo, query: Object, callback: DatabaseCallback) {
+    this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.deleteMany(query, {w: 1}, callback);
     });
   }
@@ -465,17 +448,16 @@ class Database {
    * @param {Function} callback
    */
   totalSize(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
-    this.getCollection(collectionInfo, function (err, collection) {
-      if (err) { return callback(err); }
+    this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.stats(function (err, stats) {
-        if (err) {
+        if (err != null) {
           // assume collection doesn't exist
           return callback(null, 0);
         }
         callback(null, getTotalSizeFromStats(stats));
       });
     });
-  };
+  }
 
   /**
    * @param {Function} callback
