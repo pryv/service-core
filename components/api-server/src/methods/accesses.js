@@ -3,6 +3,7 @@
 const async = require('async');
 const slugify = require('slug');
 const _ = require('lodash');
+const timestamp = require('unix-timestamp');
 
 const APIError = require('components/errors').APIError;
 const errors = require('components/errors').factory;
@@ -77,16 +78,20 @@ module.exports = function produceAccessesApiMethods(
       // app -> only shared accesses
       query.type = 'shared';
     }
-    
     accessesRepository.find(context.user, query, dbFindOptions, function (err, accesses) {
       if (err != null) return next(errors.unexpectedError(err)); 
+      
+      // TODO Push the business logic into the business layer? What are we 
+      // distributing this all over the project for? 
+      
+      const now = timestamp.now(); 
+      const isNotExpired = a => !a.expires || a.expires > now; 
+      
+      result.accesses = _.chain(accesses)
+        .filter(a => currentAccess.canManageAccess(a))
+        .filter(isNotExpired)
+        .value();
 
-      // filter according to current permissions
-      accesses = _.filter(accesses, function (access) {
-        return currentAccess.canManageAccess(access);
-      });
-
-      result.accesses = accesses;
       next();
     });
   }
