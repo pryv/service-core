@@ -88,6 +88,7 @@ module.exports = function produceAccessesApiMethods(
       const isNotExpired = a => !a.expires || a.expires > now; 
       
       result.accesses = _.chain(accesses)
+        // A series of conditions we can only assert once the objects are loaded:
         .filter(a => currentAccess.canManageAccess(a))
         .filter(isNotExpired)
         .value();
