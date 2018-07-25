@@ -24,5 +24,8 @@ module.exports = {
   StorageLayer: StorageLayer,
 };
 
+import type { IndexDefinition } from './Database';
+export type { IndexDefinition };
+
 export type {  
   Access, User, Stream };

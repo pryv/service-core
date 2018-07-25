@@ -523,7 +523,7 @@ type CollectionInfo = {
 }
 
 // Information about an index we create in a mongodb collection. 
-type IndexDefinition = {
+export type IndexDefinition = {
   index: { [field: string]: number }, 
   options: IndexOptions,
 }

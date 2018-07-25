@@ -410,10 +410,13 @@ class FixtureSession extends FixtureTreeNode implements ChildResource {
     };
   }
 }
+
+import type { IndexDefinition } from 'components/storage';
+
 class Sessions {
   collectionInfo: {
     name: string, 
-    indexes: Array<{}>, 
+    indexes: Array<IndexDefinition>, 
   }
   databaseConn: storage.Database; 
   
