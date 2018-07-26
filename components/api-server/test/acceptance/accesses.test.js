@@ -22,11 +22,12 @@ describe('accesses', () => {
   
   // Set up a few ids that we'll use for testing. NOTE that these ids will
   // change on every test run.
-  let userId, streamId, accessToken; 
+  let userId, streamId, accessToken, expiredToken; 
   before(() => {
     userId = cuid(); 
     streamId = cuid();
     accessToken = cuid(); 
+    expiredToken = cuid(); 
   });
 
   describe('when given a few existing accesses', () => {
@@ -37,7 +38,7 @@ describe('accesses', () => {
         
         // A token that expired one day ago
         user.access({
-          type: 'app', token: cuid(), 
+          type: 'app', token: expiredToken, 
           expires: timestamp.now('-1d'),
           name: 'expired access',
         });
@@ -111,6 +112,35 @@ describe('accesses', () => {
         });
         it('includes expired accesses', () => {
           assert.isAbove(lodash.filter(accesses, isExpired).length, 0);
+        });
+      });
+    });
+    describe('other API accesses', () => {
+      
+      function apiAccess(token) {
+        return server.request()
+          .get(`/${userId}/events`)
+          .set('Authorization', token);
+      }
+      
+      describe('using an expired access', () => {
+        let res;
+        beforeEach(async () => {
+          res = await apiAccess(expiredToken);
+        });
+        
+        it('fails', () => {
+          assert.strictEqual(res.status, 403);
+        });
+      });
+      describe('using a valid access', () => {
+        let res;
+        beforeEach(async () => {
+          res = await apiAccess(accessToken);
+        });
+          
+        it('succeeds', () => {
+          assert.strictEqual(res.status, 200);
         });
       });
     });

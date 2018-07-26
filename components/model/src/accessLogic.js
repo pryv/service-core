@@ -18,7 +18,7 @@ Object.freeze(PermissionLevels);
 /**
  * Usage example: _.extend(plainAccessObject, accessLogic);
  */
-var accessLogic = module.exports = {
+const accessLogic = module.exports = {
 
   isPersonal: function () {
     return this.type === 'personal';

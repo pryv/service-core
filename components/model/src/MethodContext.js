@@ -160,6 +160,10 @@ class MethodContext {
       throw errors.invalidAccessToken(
         'Cannot find access from token.', 403);
         
+    if (access.expires && access.expires < timestamp.now())
+      throw errors.forbidden(
+        'Access has expired.');
+        
     this.access = access; 
   }
   
