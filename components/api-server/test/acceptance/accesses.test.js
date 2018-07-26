@@ -1,6 +1,6 @@
 // @flow
 
-/* global describe, it, before, after, beforeEach, afterEach */
+/* global describe, it, before, after, beforeEach */
 
 const { databaseFixture } = require('components/test-helpers');
 
@@ -131,6 +131,13 @@ describe('accesses', () => {
         
         it('fails', () => {
           assert.strictEqual(res.status, 403);
+        });
+        it('returns a proper error message', () => {
+          const error = res.body.error; 
+          
+          assert.isNotNull(error);
+          assert.strictEqual(error.id, 'forbidden');
+          assert.strictEqual(error.message, 'Access has expired.');
         });
       });
       describe('using a valid access', () => {
