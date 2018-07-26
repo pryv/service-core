@@ -27,8 +27,10 @@ SetFileReadTokenStream.prototype._transform = function (event, encoding, callbac
     this.push(event);
   } else {
     event.attachments.forEach(function (att) {
-      att.readToken = utils.encryption.fileReadToken(att.id, this.access,
-        this.filesReadTokenSecret);
+      att.readToken = utils.encryption
+        .fileReadToken(
+          att.id, this.access.id, this.access.token,
+          this.filesReadTokenSecret);
     }.bind(this));
     this.push(event);
   }
