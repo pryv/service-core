@@ -13,7 +13,7 @@ const assert = chai.assert;
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
 
-describe('accesses', () => {
+describe('access expiry', () => {
   // Uses dynamic fixtures:
   const mongoFixtures = databaseFixture(produceMongoConnection());
   after(() => {
