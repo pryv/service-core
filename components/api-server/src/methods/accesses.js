@@ -327,6 +327,17 @@ module.exports = function produceAccessesApiMethods(
     
     if (currentAccess == null)
       return next(new Error('AF: access must not be null'));
+      
+    const update = params.update;
+
+    // Deal with access expiry
+    const expireAfter = update.expireAfter;
+    delete update.expireAfter;
+    
+    if (expireAfter != null) {
+      if (expireAfter >= 0)
+        update.expires = timestamp.now() + expireAfter;
+    }
     
     accessesRepository.findOne(context.user, {id: params.id}, dbFindOptions,
       function (err, access) {

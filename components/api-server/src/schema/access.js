@@ -2,12 +2,12 @@
  * JSON Schema specification for accesses.
  */
 
-var Action = require('./Action'),
-    helpers = require('./helpers'),
-    object = helpers.object,
-    array = helpers.array,
-    string = helpers.string,
-    _ = require('lodash');
+const Action = require('./Action');
+const helpers = require('./helpers');
+const object = helpers.object;
+const array = helpers.array;
+const string = helpers.string;
+const _ = require('lodash');
 
 /**
  * @param {Action} action
@@ -60,6 +60,7 @@ exports = module.exports = function (action) {
       shared.required = [ 'id', 'token', 'name', 'type', 'permissions',
         'created', 'createdBy', 'modified', 'modifiedBy' ];
       break;
+      
     case Action.CREATE:
       personal.required = [ 'name' ];
       app.required = [ 'name', 'permissions' ];
@@ -68,6 +69,16 @@ exports = module.exports = function (action) {
       // Allow expireAfter to set expiry on new access
       app.properties.expireAfter = helpers.number(); 
       shared.properties.expireAfter = helpers.number(); 
+      
+      break;
+      
+    case Action.UPDATE:
+      // Allow expireAfter to set expiry on access
+      app.properties.expireAfter = helpers.number(); 
+      app.properties.expires = helpers.null(); 
+
+      shared.properties.expireAfter = helpers.number(); 
+      shared.properties.expires = helpers.null(); 
       
       break;
   }
@@ -79,7 +90,8 @@ exports = module.exports = function (action) {
   
   // whitelist for properties that can be updated
   if (action === Action.UPDATE) {
-    res.alterableProperties = ['name', 'deviceName', 'permissions'];
+    res.alterableProperties = [
+      'name', 'deviceName', 'permissions', 'expireAfter', 'expires'];
   }
   
   return res;

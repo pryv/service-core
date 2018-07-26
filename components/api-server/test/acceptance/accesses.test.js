@@ -22,12 +22,14 @@ describe('access expiry', () => {
   
   // Set up a few ids that we'll use for testing. NOTE that these ids will
   // change on every test run.
-  let userId, streamId, accessToken, expiredToken; 
+  let userId, streamId, accessToken, expiredToken, validId, hasExpiryId; 
   before(() => {
     userId = cuid(); 
     streamId = cuid();
     accessToken = cuid(); 
     expiredToken = cuid(); 
+    validId = cuid(); 
+    hasExpiryId = cuid(); 
   });
 
   describe('when given a few existing accesses', () => {
@@ -45,6 +47,7 @@ describe('access expiry', () => {
         
         // A token that is still valid
         user.access({
+          id: hasExpiryId, 
           type: 'app', token: cuid(), 
           expires: timestamp.now('1d'),
           name: 'valid access',
@@ -52,6 +55,7 @@ describe('access expiry', () => {
           
         // A token that did never expire
         user.access({
+          id: validId,
           type: 'app', token: cuid(), 
           name: 'doesnt expire',
         });
@@ -140,7 +144,7 @@ describe('access expiry', () => {
           
           if (! res.ok && res.body.error != null) {
             console.error(res.body.error);  // eslint-disable-line no-console
-            console.dir(res.body.error.data[0].inner);
+            // console.dir(res.body.error.data[0].inner);
           }
         });
         
@@ -173,7 +177,7 @@ describe('access expiry', () => {
           
           if (! res.ok && res.body.error != null) {
             console.error(res.body.error);  // eslint-disable-line no-console
-            console.dir(res.body.error.data[0].inner);
+            // console.dir(res.body.error.data[0].inner);
           }
         });
         
@@ -206,6 +210,73 @@ describe('access expiry', () => {
         it('fails', () => {
           assert.strictEqual(res.status, 400);
           assert.strictEqual(res.body.error.message, 'expireAfter cannot be negative.');
+        });
+      });
+    });
+    describe('accesses.update', () => {
+      describe('with expireAfter>0', () => {
+        let res, access; 
+        beforeEach(async () => {
+          res = await server.request()
+            .put(`/${userId}/accesses/${validId}`)
+            .set('Authorization', accessToken)
+            .send({ expireAfter: 3700 });
+            
+          access = res.body.access;
+          
+          if (! res.ok && res.body.error) {
+            console.error(res.body.error); // eslint-disable-line no-console
+            // console.dir(res.body.error.data[0].inner);
+          }
+        });
+
+        it("sets the 'expires' attribute", () => {
+          assert.isTrue(res.ok);
+          assert.isNotNull(access.expires);
+          assert.isAbove(access.expires, timestamp.now('+1h'));
+        });
+      });
+      describe('with expireAfter=0', () => {
+        let res, access; 
+        beforeEach(async () => {
+          res = await server.request()
+            .put(`/${userId}/accesses/${validId}`)
+            .set('Authorization', accessToken)
+            .send({ expireAfter: 0 });
+            
+          access = res.body.access;
+          
+          if (! res.ok && res.body.error) {
+            console.error(res.body.error); // eslint-disable-line no-console
+            // console.dir(res.body.error.data[0].inner);
+          }
+        });
+
+        it('expires the access immediately', () => {
+          assert.isTrue(res.ok);
+          assert.isNotNull(access.expires);
+          assert.isAbove(timestamp.now(), access.expires);
+        });
+      });
+      describe('with expires=null', () => {
+        let res, access; 
+        beforeEach(async () => {
+          res = await server.request()
+            .put(`/${userId}/accesses/${hasExpiryId}`)
+            .set('Authorization', accessToken)
+            .send({ expires: null });
+            
+          access = res.body.access;
+          
+          if (! res.ok && res.body.error) {
+            console.error(res.body.error); // eslint-disable-line no-console
+            // console.dir(res.body.error.data[0].inner);
+          }
+        });
+
+        it('removes expiry', () => {
+          assert.isTrue(res.ok);
+          assert.isNull(access.expires);
         });
       });
     });
