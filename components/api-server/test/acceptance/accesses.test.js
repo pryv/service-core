@@ -115,6 +115,100 @@ describe('accesses', () => {
         });
       });
     });
+    describe('accesses.create', () => {
+      describe('when called with expireAfter>0', () => {
+        const attrs = {
+          name: 'For colleagues (1)',
+          type: 'app',
+          expireAfter: 3600, // in seconds
+          permissions: [
+            {
+              streamId: 'work',
+              level: 'read',
+            },
+          ],
+        };
+        
+        let res, access;
+        beforeEach(async () => {
+          res = await server.request()
+            .post(`/${userId}/accesses`)
+            .set('Authorization', accessToken)
+            .send(attrs);
+          
+          access = res.body.access;
+          
+          if (! res.ok && res.body.error != null) {
+            console.error(res.body.error);  // eslint-disable-line no-console
+            console.dir(res.body.error.data[0].inner);
+          }
+        });
+        
+        it('creates an access with set expiry timestamp', () => {
+          assert.strictEqual(res.status, 201);
+          assert.isAbove(access.expires, timestamp.now());
+        });
+      });
+      describe('when called with expireAfter=0', () => {
+        const attrs = {
+          name: 'For colleagues (2)',
+          expireAfter: 0, // in seconds
+          type: 'app',
+          permissions: [
+            {
+              streamId: 'work',
+              level: 'read',
+            },
+          ],
+        };
+        
+        let res, access;
+        beforeEach(async () => {
+          res = await server.request()
+            .post(`/${userId}/accesses`)
+            .set('Authorization', accessToken)
+            .send(attrs);
+          
+          access = res.body.access;
+          
+          if (! res.ok && res.body.error != null) {
+            console.error(res.body.error);  // eslint-disable-line no-console
+            console.dir(res.body.error.data[0].inner);
+          }
+        });
+        
+        it('creates an expired access', () => {
+          assert.strictEqual(res.status, 201);
+          assert.isAbove(timestamp.now(), access.expires);
+        });
+      });
+      describe('when called with expireAfter<0', () => {
+        const attrs = {
+          name: 'For colleagues (3)',
+          expireAfter: -100, // in seconds
+          type: 'app',
+          permissions: [
+            {
+              streamId: 'work',
+              level: 'read',
+            },
+          ],
+        };
+        
+        let res;
+        beforeEach(async () => {
+          res = await server.request()
+            .post(`/${userId}/accesses`)
+            .set('Authorization', accessToken)
+            .send(attrs);
+        });
+                
+        it('fails', () => {
+          assert.strictEqual(res.status, 400);
+          assert.strictEqual(res.body.error.message, 'expireAfter cannot be negative.');
+        });
+      });
+    });
     describe('other API accesses', () => {
       
       function apiAccess(token) {

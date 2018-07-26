@@ -148,7 +148,7 @@ module.exports = function produceAccessesApiMethods(
         'to create this new access.'));
     }
 
-    if (params.token) {
+    if (params.token != null) {
       params.token = slugify(params.token);
       if (string.isReservedId(params.token)) {
         return next(errors.invalidItemId('The specified token is not allowed.'));
@@ -157,9 +157,21 @@ module.exports = function produceAccessesApiMethods(
       const accessesRepository = storageLayer.accesses;
       params.token = accessesRepository.generateToken();
     }
+    
+    const expireAfter = params.expireAfter; 
+    delete params.expireAfter;
+    
+    if (expireAfter != null) {
+      if (expireAfter >= 0) 
+        params.expires = timestamp.now() + expireAfter;
+      else 
+        return next(
+          errors.invalidParametersFormat('expireAfter cannot be negative.'));
+    }
 
     context.initTrackingProperties(params);
-    next();
+    
+    return next();
   }
 
   // Creates default data structure from permissions if needed, for app

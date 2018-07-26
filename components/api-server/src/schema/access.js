@@ -52,19 +52,24 @@ exports = module.exports = function (action) {
   });
 
   switch (action) {
-  case Action.READ:
-    personal.required = [ 'id', 'token', 'name', 'type',
-      'created', 'createdBy', 'modified', 'modifiedBy' ];
-    app.required = [ 'id', 'token', 'name', 'type', 'permissions',
-      'created', 'createdBy', 'modified', 'modifiedBy' ];
-    shared.required = [ 'id', 'token', 'name', 'type', 'permissions',
-      'created', 'createdBy', 'modified', 'modifiedBy' ];
-    break;
-  case Action.CREATE:
-    personal.required = [ 'name' ];
-    app.required = [ 'name', 'permissions' ];
-    shared.required = [ 'name', 'permissions' ];
-    break;
+    case Action.READ:
+      personal.required = [ 'id', 'token', 'name', 'type',
+        'created', 'createdBy', 'modified', 'modifiedBy' ];
+      app.required = [ 'id', 'token', 'name', 'type', 'permissions',
+        'created', 'createdBy', 'modified', 'modifiedBy' ];
+      shared.required = [ 'id', 'token', 'name', 'type', 'permissions',
+        'created', 'createdBy', 'modified', 'modifiedBy' ];
+      break;
+    case Action.CREATE:
+      personal.required = [ 'name' ];
+      app.required = [ 'name', 'permissions' ];
+      shared.required = [ 'name', 'permissions' ];
+      
+      // Allow expireAfter to set expiry on new access
+      app.properties.expireAfter = helpers.number(); 
+      shared.properties.expireAfter = helpers.number(); 
+      
+      break;
   }
     
   var res = {
