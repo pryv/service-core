@@ -6,6 +6,7 @@ const { databaseFixture } = require('components/test-helpers');
 
 const { produceMongoConnection, context } = require('../test-helpers');
 
+const lodash = require('lodash');
 const chai = require('chai');
 const assert = chai.assert; 
 
@@ -67,20 +68,50 @@ describe('accesses', () => {
       server.stop(); 
     });
 
+    const isExpired = e => !! e.expires && e.expires < timestamp.now();
+
     describe('accesses.get', () => {
-      it('returns only active accesses', async () => {
-        const res = await server.request()
-          .get(`/${userId}/accesses`)
-          .set('Authorization', accessToken);
+      describe('vanilla version', () => {
+        let res; 
+        let accesses; 
         
-        assert.isNotNull(res.body.accesses);
+        beforeEach(async () => {
+          res = await server.request()
+            .get(`/${userId}/accesses`)
+            .set('Authorization', accessToken);
+            
+          accesses = res.body.accesses;
+        });
+
+        it('succeeds', () => {
+          assert.isNotNull(accesses);
+        });
+        it('contains only active accesses', () => {
+          for (const a of accesses) 
+            assert.isFalse(isExpired(a), 
+              `Access '${a.name}' is expired`);
+        });
+      });
+
+      describe('when given the includeExpired=true parameter', () => {
+        let res; 
+        let accesses; 
         
-        // No returned accesses are expired: 
-        const isExpired = e => !! e.expires && e.expires < timestamp.now();
+        beforeEach(async () => {
+          res = await server.request()
+            .get(`/${userId}/accesses`)
+            .set('Authorization', accessToken)
+            .query('includeExpired=true');
+            
+          accesses = res.body.accesses;
+        });
         
-        for (const a of res.body.accesses) 
-          assert.isFalse(isExpired(a), 
-            `Access '${a.name}' is expired`);
+        it('succeeds', () => {
+          assert.isNotNull(accesses);
+        });
+        it('includes expired accesses', () => {
+          assert.isAbove(lodash.filter(accesses, isExpired).length, 0);
+        });
       });
     });
   });

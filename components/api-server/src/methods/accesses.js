@@ -84,17 +84,35 @@ module.exports = function produceAccessesApiMethods(
       // TODO Push the business logic into the business layer? What are we 
       // distributing this all over the project for? 
       
-      const now = timestamp.now(); 
-      const isNotExpired = a => !a.expires || a.expires > now; 
+      let chain = _.chain(accesses);
       
-      result.accesses = _.chain(accesses)
-        // A series of conditions we can only assert once the objects are loaded:
-        .filter(a => currentAccess.canManageAccess(a))
-        .filter(isNotExpired)
-        .value();
-
+      // Filter accesses that we cannot manage
+      chain = chain.filter(a => currentAccess.canManageAccess(a));
+        
+      // Filter expired accesses (maybe)
+      chain = maybeFilterExpired(params, chain);
+      
+      // Return the chain result.
+      result.accesses = chain.value();
+      
       next();
     });
+    
+    // Depending on 'includeExpired' in the query string, adds a filter to
+    // `chain` that filters expired accesses.
+    // 
+    function maybeFilterExpired(params, chain) {
+      const includeExpiredParam = params.includeExpired;
+      
+      const now = timestamp.now(); 
+      const isNotExpired = a => !a.expires || a.expires > now; 
+            
+      // If we also want to see expired accesses, don't filter them.
+      if (includeExpiredParam === 'true' || includeExpiredParam === '0') 
+        return chain;
+        
+      return chain.filter(isNotExpired);
+    }
   }
 
 
