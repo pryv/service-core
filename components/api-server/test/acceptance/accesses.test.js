@@ -45,6 +45,7 @@ describe('access expiry', () => {
           type: 'app', token: expiredToken, 
           expires: timestamp.now('-1d'),
           name: 'expired access',
+          permissions: [], 
         });
         
         // A token that is still valid
@@ -53,6 +54,13 @@ describe('access expiry', () => {
           type: 'app', token: hasExpiryToken, 
           expires: timestamp.now('1d'),
           name: 'valid access',
+          permissions: [
+            {
+              'streamId': 'diary',
+              'defaultName': 'Diary',
+              'level': 'read'
+            }
+          ]
         });
           
         // A token that did never expire
@@ -297,6 +305,55 @@ describe('access expiry', () => {
         });
       });
     });
+    describe('accesses.checkApp', () => {
+      describe('when the matching access is not expired', () => {
+        let res; 
+        beforeEach(async () => {
+          res = await server.request()
+            .post(`/${userId}/accesses/check-app`)
+            .set('Authorization', accessToken)
+            .send({ 
+              requestingAppId: 'valid access', 
+              requestedPermissions: [
+                {
+                  "streamId": "diary",
+                  "defaultName": "Diary",
+                  "level": "read"
+                }
+              ] 
+            });
+        });
+        
+        it('returns the matching access', () => {
+          assert.isTrue(res.ok);
+          assert.strictEqual(res.body.matchingAccess.token, hasExpiryToken);
+        });
+      });
+      describe('when the matching access is expired', () => {
+        let res; 
+        beforeEach(async () => {
+          res = await server.request()
+            .post(`/${userId}/accesses/check-app`)
+            .set('Authorization', accessToken)
+            .send({ 
+              requestingAppId: 'expired access', 
+              requestedPermissions: [] 
+            });
+            
+          // NOTE It is important that the reason why we have a mismatch here is
+          // that the access is expired, not that we're asking for different 
+          // permissions. 
+        });
+        
+        it('returns no match', () => {
+          assert.isUndefined(res.body.matchingAccess);
+          
+          const mismatching = res.body.mismatchingAccess;
+          assert.strictEqual(mismatching.token, expiredToken);
+        });
+      });
+    });
+    
     describe('other API accesses', () => {
       
       function apiAccess(token) {

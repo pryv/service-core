@@ -478,14 +478,16 @@ module.exports = function produceAccessesApiMethods(
       deviceName: params.deviceName || null
     };
     accessesRepository.findOne(context.user, query, dbFindOptions, function (err, access) {
-      if (err != null) 
-        return next(errors.unexpectedError(err));
+      if (err != null) return next(errors.unexpectedError(err));
 
+      // Do we have a match?
       if (accessMatches(access, params.requestedPermissions)) {
         result.matchingAccess = access;
         return next();
       } 
       
+      // No, we don't have a match. Return other information:
+
       if (access != null) 
         result.mismatchingAccess = access;
       
@@ -512,6 +514,10 @@ module.exports = function produceAccessesApiMethods(
         access.permissions.length !== requestedPermissions.length) {
       return false;
     }
+    
+    // If the access is there but is expired, we consider it a mismatch. 
+    if (access.expires != null && access.expires < timestamp.now()) 
+      return false; 
 
     let accessPerm, reqPerm;
     for (var i = 0, ni = access.permissions.length; i < ni; i++) {
