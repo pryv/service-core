@@ -81,9 +81,7 @@ module.exports = function produceAccessesApiMethods(
     accessesRepository.find(context.user, query, dbFindOptions, function (err, accesses) {
       if (err != null) return next(errors.unexpectedError(err)); 
       
-      // TODO Push the business logic into the business layer? What are we 
-      // distributing this all over the project for? 
-      
+      // We'll perform a few filter steps on this list, so let's start a chain.
       let chain = _.chain(accesses);
       
       // Filter accesses that we cannot manage
