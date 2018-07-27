@@ -103,7 +103,7 @@ module.exports = function(
       })
       .catch( err => next(errors.unexpectedError(err)) );
     
-    return;
+    return; // The promise chain above calls next on all branches.
   }
 
   function loadAccess(req, res, next) {
