@@ -106,7 +106,7 @@ module.exports = function produceAccessesApiMethods(
       const isNotExpired = a => !a.expires || a.expires > now; 
             
       // If we also want to see expired accesses, don't filter them.
-      if (includeExpiredParam === 'true' || includeExpiredParam === '0') 
+      if (includeExpiredParam === 'true' || includeExpiredParam === '1') 
         return chain;
         
       return chain.filter(isNotExpired);
