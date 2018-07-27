@@ -22,7 +22,8 @@ describe('access expiry', () => {
   
   // Set up a few ids that we'll use for testing. NOTE that these ids will
   // change on every test run.
-  let userId, streamId, accessToken, expiredToken, validId, hasExpiryId; 
+  let userId, streamId, accessToken, expiredToken, validId;
+  let hasExpiryId, hasExpiryToken;
   before(() => {
     userId = cuid(); 
     streamId = cuid();
@@ -30,6 +31,7 @@ describe('access expiry', () => {
     expiredToken = cuid(); 
     validId = cuid(); 
     hasExpiryId = cuid(); 
+    hasExpiryToken = cuid(); 
   });
 
   describe('when given a few existing accesses', () => {
@@ -48,7 +50,7 @@ describe('access expiry', () => {
         // A token that is still valid
         user.access({
           id: hasExpiryId, 
-          type: 'app', token: cuid(), 
+          type: 'app', token: hasExpiryToken, 
           expires: timestamp.now('1d'),
           name: 'valid access',
         });
@@ -277,6 +279,21 @@ describe('access expiry', () => {
         it('removes expiry', () => {
           assert.isTrue(res.ok);
           assert.isNull(access.expires);
+        });
+      });
+      
+      describe('when trying to update itself with a longer expiration', () => {
+        let res; 
+        beforeEach(async () => {
+          res = await server.request()
+            .put(`/${userId}/accesses/${hasExpiryId}`)
+            .set('Authorization', hasExpiryToken)
+            .send({ expireAfter: 3700 });
+        });
+        
+        it('fails', () => {
+          assert.isFalse(res.ok);
+          assert.match(res.body.error.message, /^Unknown access/);
         });
       });
     });
