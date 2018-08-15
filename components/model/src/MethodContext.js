@@ -143,7 +143,8 @@ class MethodContext {
     }
   }
   
-  // Loads `this.access`.
+  // Internal: Loads `this.access`. 
+  // 
   async retrieveAccess(storage: StorageLayer) {
     const token = this.accessToken;
 
@@ -160,7 +161,41 @@ class MethodContext {
       throw errors.invalidAccessToken(
         'Cannot find access from token.', 403);
         
+    this.checkAccessValid(access);
+                
     this.access = access; 
+  }
+  
+  // Performs validity checks on the given access. You must call this after
+  // every access load that needs to return a valid access. Internal function, 
+  // since all the 'retrieveAccess*' methods call it. 
+  // 
+  // Returns nothing but throws if an error is detected.
+  // 
+  checkAccessValid(access: Access) {
+    const now = timestamp.now(); 
+    if (access.expires != null && now > access.expires)
+      throw errors.forbidden(
+        'Access has expired.');
+  }
+  
+  // Loads an access by id or throw an error. On success, assigns to
+  // `this.access` and `this.accessToken`. 
+  // 
+  async retrieveAccessFromId(storage: StorageLayer, accessId: string): Promise<Access> {
+    const query = { id: accessId };
+    const access = await bluebird.fromCallback(
+      cb => storage.accesses.findOne(this.user, query, null, cb));
+      
+    if (access == null)
+      throw errors.invalidAccessToken('Cannot find access matching id.');
+      
+    this.checkAccessValid(access);
+
+    this.access = access;
+    this.accessToken = access.token;
+    
+    return access;
   }
   
   // Loads session and touches it (personal sessions only)

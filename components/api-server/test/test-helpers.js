@@ -14,12 +14,28 @@ function unhandledRejection(reason, promise) {
 
 // Set up a context for spawning api-servers.
 const { SpawnContext } = require('components/test-helpers').spawner;
-const context = new SpawnContext(); 
+const context: SpawnContext = new SpawnContext(); 
 /* global after */
 after(async () => {
   await context.shutdown(); 
 });
 
+const { Database } = require('components/storage');
+const Settings = require('../src/settings');
+const NullLogger = require('components/utils/src/logging').NullLogger;
+
+// Produces and returns a connection to MongoDB. 
+// 
+function produceMongoConnection(): Database {
+  const settings = Settings.load();
+  const database = new Database(
+    settings.get('database').obj(), 
+    new NullLogger()); 
+  
+  return database; 
+}
+
 module.exports = {
-  context: context,
+  context,                // the spawn context for manipulating child instances
+  produceMongoConnection, // for using fixtures
 };

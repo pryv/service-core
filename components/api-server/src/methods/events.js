@@ -1067,8 +1067,10 @@ module.exports = function (
   function setFileReadToken(access, event) {
     if (! event.attachments) { return; }
     event.attachments.forEach(function (att) {
-      att.readToken = utils.encryption.fileReadToken(att.id, access,
-        authSettings.filesReadTokenSecret);
+      att.readToken = utils.encryption
+        .fileReadToken(att.id, 
+          access.id, access.token,
+          authSettings.filesReadTokenSecret);
     });
   }
 

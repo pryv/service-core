@@ -13,8 +13,7 @@ const attachmentsAccessMiddleware = require('../middleware/attachment_access');
  */
 module.exports = function(
   expressApp, 
-  api, userAccessesStorage,
-  authSettings, eventFilesSettings, storageLayer
+  api, authSettings, eventFilesSettings, storageLayer
 ) {
   
   const attachmentsStatic = express.static(
@@ -66,38 +65,45 @@ module.exports = function(
     attachmentsStatic
   );
 
+  // Parses the 'readToken' and verifies that the access referred to by id in 
+  // the token corresponds to a real access and that the signature is valid. 
+  // 
   function retrieveAccessFromReadToken(req, res, next) {
-    if (req.query.auth) {
-      // forbid using access tokens in the URL
+    // forbid using access tokens in the URL
+    if (req.query.auth != null)
       return next(errors.invalidAccessToken(
         'Query parameter "auth" is forbidden here, ' +
         'please use the "readToken" instead ' +
         'or provide the auth token in "Authorization" header.'));
-    }
 
-    if (! req.query.readToken) { return next(); }
+    const readToken = req.query.readToken;
 
-    var tokenParts = encryption.parseFileReadToken(req.query.readToken);
-    if (! tokenParts.accessId) {
-      return next(errors.invalidAccessToken(
-        'Invalid read token.'));
-    }
+    // If no readToken was given, continue without checking.
+    if (readToken == null) return next();
+    
+    const tokenParts = encryption.parseFileReadToken(readToken);
+    const accessId = tokenParts.accessId;
+    
+    if (accessId == null)
+      return next(errors.invalidAccessToken('Invalid read token.'));
+      
+    // Now load the access through the context; then verify the HMAC.
+    const context = req.context; 
+    context.retrieveAccessFromId(storageLayer, accessId)
+      .then(access => {
+        const hmacValid = encryption
+          .isFileReadTokenHMACValid(
+            tokenParts.hmac, req.params.fileId, 
+            access.token, authSettings.filesReadTokenSecret);
 
-    userAccessesStorage.findOne(req.context.user, {id: tokenParts.accessId}, null,
-      function (err, access) {
-        if (err) { return next(errors.unexpectedError(err)); }
-
-        if (! access) {
-          return next(errors.invalidAccessToken('Cannot find access matching read token.'));
-        }
-
-        if (! encryption.isFileReadTokenHMACValid(tokenParts.hmac, req.params.fileId, access, authSettings.filesReadTokenSecret)) {
+        if (! hmacValid) 
           return next(errors.invalidAccessToken('Invalid read token.'));
-        }
-
-        req.context.access = access;
+          
         next();
-      });
+      })
+      .catch( err => next(errors.unexpectedError(err)) );
+    
+    return; // The promise chain above calls next on all branches.
   }
 
   function loadAccess(req, res, next) {
