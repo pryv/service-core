@@ -292,7 +292,7 @@ exports.checkFilesReadToken = function (eventOrEvents, access, secret) {
     if (! evt.attachments) { return; }
 
     evt.attachments.forEach(function (att) {
-      att.readToken.should.eql(encryption.fileReadToken(att.id, access, secret));
+      att.readToken.should.eql(encryption.fileReadToken(att.id, access.id, access.token, secret));
     });
   }
 };

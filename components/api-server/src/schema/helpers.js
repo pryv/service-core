@@ -41,9 +41,11 @@ exports.array = function (itemsDef, options) {
  */
 exports.string = getBaseSchema.bind(null, 'string');
 
+exports.null = getBaseSchema.bind(null, 'null');
+
 exports.email = getBaseSchema('string', {pattern: '^[^@]+@[a-zA-Z0-9._-]+\\.[a-zA-Z]+$'});
 
-exports.language = getBaseSchema('string', {pattern: '^[a-z]{2}$'});
+exports.language = getBaseSchema('string', { maxLength: 5, minLength: 1 });
 
 /**
  * Returns a 'number' schema definition.

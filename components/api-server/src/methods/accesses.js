@@ -3,6 +3,7 @@
 const async = require('async');
 const slugify = require('slug');
 const _ = require('lodash');
+const timestamp = require('unix-timestamp');
 
 const APIError = require('components/errors').APIError;
 const errors = require('components/errors').factory;
@@ -24,6 +25,16 @@ import type API from '../API';
 import type { ApiCallback } from '../API';
 import type Notifications from '../Notifications';
 import type Result from '../Result';
+
+type Permission = {
+  streamId: string, 
+  level: 'manage' | 'contribute' | 'read',
+};
+type Access = {
+  type: 'personal' | 'app' | 'shared',
+  permissions: Array<Permission>,
+  expires: ?number, 
+};
 
 type UpdatesSettingsHolder = {
   ignoreProtectedFields: boolean,
@@ -77,18 +88,37 @@ module.exports = function produceAccessesApiMethods(
       // app -> only shared accesses
       query.type = 'shared';
     }
-    
     accessesRepository.find(context.user, query, dbFindOptions, function (err, accesses) {
       if (err != null) return next(errors.unexpectedError(err)); 
-
-      // filter according to current permissions
-      accesses = _.filter(accesses, function (access) {
-        return currentAccess.canManageAccess(access);
-      });
-
-      result.accesses = accesses;
+      
+      // We'll perform a few filter steps on this list, so let's start a chain.
+      let chain = _.chain(accesses);
+      
+      // Filter accesses that we cannot manage
+      chain = chain.filter(a => currentAccess.canManageAccess(a));
+        
+      // Filter expired accesses (maybe)
+      chain = maybeFilterExpired(params, chain);
+      
+      // Return the chain result.
+      result.accesses = chain.value();
+      
       next();
     });
+    
+    // Depending on 'includeExpired' in the query string, adds a filter to
+    // `chain` that filters expired accesses.
+    // 
+    function maybeFilterExpired(params, chain) {
+      const includeExpiredParam = params.includeExpired;
+                  
+      // If we also want to see expired accesses, don't filter them.
+      if (includeExpiredParam === 'true' || includeExpiredParam === '1') 
+        return chain;
+        
+      return chain.reject(
+        a => isAccessExpired(a));
+    }
   }
 
 
@@ -124,7 +154,7 @@ module.exports = function produceAccessesApiMethods(
         'to create this new access.'));
     }
 
-    if (params.token) {
+    if (params.token != null) {
       params.token = slugify(params.token);
       if (string.isReservedId(params.token)) {
         return next(errors.invalidItemId('The specified token is not allowed.'));
@@ -133,9 +163,21 @@ module.exports = function produceAccessesApiMethods(
       const accessesRepository = storageLayer.accesses;
       params.token = accessesRepository.generateToken();
     }
+    
+    const expireAfter = params.expireAfter; 
+    delete params.expireAfter;
+    
+    if (expireAfter != null) {
+      if (expireAfter >= 0) 
+        params.expires = timestamp.now() + expireAfter;
+      else 
+        return next(
+          errors.invalidParametersFormat('expireAfter cannot be negative.'));
+    }
 
     context.initTrackingProperties(params);
-    next();
+    
+    return next();
   }
 
   // Creates default data structure from permissions if needed, for app
@@ -291,6 +333,17 @@ module.exports = function produceAccessesApiMethods(
     
     if (currentAccess == null)
       return next(new Error('AF: access must not be null'));
+      
+    const update = params.update;
+
+    // Deal with access expiry
+    const expireAfter = update.expireAfter;
+    delete update.expireAfter;
+    
+    if (expireAfter != null) {
+      if (expireAfter >= 0)
+        update.expires = timestamp.now() + expireAfter;
+    }
     
     accessesRepository.findOne(context.user, {id: params.id}, dbFindOptions,
       function (err, access) {
@@ -433,14 +486,16 @@ module.exports = function produceAccessesApiMethods(
       deviceName: params.deviceName || null
     };
     accessesRepository.findOne(context.user, query, dbFindOptions, function (err, access) {
-      if (err != null) 
-        return next(errors.unexpectedError(err));
+      if (err != null) return next(errors.unexpectedError(err));
 
+      // Do we have a match?
       if (accessMatches(access, params.requestedPermissions)) {
         result.matchingAccess = access;
         return next();
       } 
       
+      // No, we don't have a match. Return other information:
+
       if (access != null) 
         result.mismatchingAccess = access;
       
@@ -461,12 +516,15 @@ module.exports = function produceAccessesApiMethods(
 
   // Returns true if the given access' permissions match the `requestedPermissions`.
   // 
-  function accessMatches(access, requestedPermissions): boolean {
+  function accessMatches(access: Access, requestedPermissions): boolean {
     if (access == null ||
         access.type !== 'app' ||
         access.permissions.length !== requestedPermissions.length) {
       return false;
     }
+    
+    // If the access is there but is expired, we consider it a mismatch. 
+    if (isAccessExpired(access)) return false; 
 
     let accessPerm, reqPerm;
     for (var i = 0, ni = access.permissions.length; i < ni; i++) {
@@ -622,6 +680,15 @@ module.exports = function produceAccessesApiMethods(
       
       return `${name} (${suffixNum})`;
     }
+  }
+
+  // Centralises the check for access expiry; yes, this should be part of some
+  // business model about accesses. There is one more such check in MethodContext, 
+  // called `checkAccessValid`.
+  //
+  function isAccessExpired(access: Access, nowParam?: number): boolean {
+    const now = nowParam || timestamp.now(); 
+    return access.expires != null && now > access.expires;
   }
 
 };

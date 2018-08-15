@@ -33,6 +33,7 @@ const result = server.start();
 result
   .then(() => logger.info('Startup sequence complete, Server is running.')) 
   .catch(e => {
+    console.dir(e);
     logger.error(e);
     process.exit(1);
   }); 

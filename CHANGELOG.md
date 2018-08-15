@@ -16,6 +16,10 @@
 - `updates.ignoreProtectedFields` is now off by default. This means that updates
   that address protected fields will result in an error being returned. 
 
+- Accesses can now be set to expire via the `expireAfter` attribute. Expiry for 
+  accesses gives you an easy way of limiting the damage that can be done using 
+  a stolen access. 
+
 ## 1.2.18
 
 - Fix login with Firefox (and other browsers using Referer but no Origin)

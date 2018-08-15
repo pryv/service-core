@@ -512,26 +512,37 @@ describe('events', function () {
       ], done);
     });
 
-    it('must allow any filename (including special characters)', function (done) {
+    it('must allow any filename (including special characters)', function(done) {
       var event = testData.events[0],
           attIndex = 1;
-      async.waterfall([
-        function retrieveAttachmentInfo(stepDone) {
-          request.get(basePath).query({sortAscending: true, streams: [event.streamId]}).end(function (res) {
-            stepDone(null, res.body.events[0].attachments[attIndex]);
-          });
-        },
-        function retrieveAttachedFile(att, stepDone) {
-          request.get(path(event.id) + '/' + att.id +
-              '/1Q84%20%28Livre%201%20-%20Avril-juin%29%20-%20Murakami%2CHaruki.mobi')
+      async.waterfall(
+        [
+          function retrieveAttachmentInfo(stepDone) {
+            request
+              .get(`/${user.username}/events`)
+              .query({ sortAscending: true, streams: [event.streamId] })
+              .end(function(res) {
+                stepDone(null, res.body.events[0].attachments[attIndex]);
+              });
+          },
+          function retrieveAttachedFile(att, stepDone) {
+            request
+              .get(
+                path(event.id) +
+                  '/' +
+                  att.id +
+                  '/1Q84%20%28Livre%201%20-%20Avril-juin%29%20-%20Murakami%2CHaruki.mobi'
+              )
               .unset('Authorization')
-              .query({readToken: att.readToken})
-              .end(function (res) {
-            res.statusCode.should.eql(200);
-            stepDone();
-          });
-        }
-      ], done);
+              .query({ readToken: att.readToken })
+              .end(function(res) {
+                res.statusCode.should.eql(200);
+                stepDone();
+              });
+          },
+        ],
+        done
+      );
     });
 
     it('must refuse an invalid file read token', function (done) {

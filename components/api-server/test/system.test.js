@@ -247,6 +247,18 @@ describe('system (ex-register)', function () {
           validation.checkErrorInvalidParams(res, done);
         });
       });
+
+      it('must return a correct 400 error if the language property is above 5 characters', function (done) {
+        post(_.assignIn(newUserData, { language: 'abcdef' }), function (err, res) {
+          validation.checkErrorInvalidParams(res, done);
+        });
+      });
+
+      it('must return a correct 400 error if the language property is the empty string', function (done) {
+        post(_.assignIn(newUserData, { language: '' }), function (err, res) {
+          validation.checkErrorInvalidParams(res, done);
+        });
+      });
     
       it('must return a correct 400 error if a user with the same user name already exists',
         function (done) {
