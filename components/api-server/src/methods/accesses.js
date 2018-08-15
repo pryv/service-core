@@ -116,7 +116,8 @@ module.exports = function produceAccessesApiMethods(
       if (includeExpiredParam === 'true' || includeExpiredParam === '1') 
         return chain;
         
-      return chain.reject(isAccessExpired);
+      return chain.reject(
+        a => isAccessExpired(a));
     }
   }
 

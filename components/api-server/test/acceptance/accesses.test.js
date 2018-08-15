@@ -83,7 +83,7 @@ describe('access expiry', () => {
       server.stop(); 
     });
 
-    const isExpired = e => !! e.expires && e.expires < timestamp.now();
+    const isExpired = e => e.expires != null && timestamp.now() > e.expires;
 
     describe('accesses.get', () => {
       describe('vanilla version', () => {
