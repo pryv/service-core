@@ -173,7 +173,8 @@ class MethodContext {
   // Returns nothing but throws if an error is detected.
   // 
   checkAccessValid(access: Access) {
-    if (access.expires && access.expires < timestamp.now())
+    const now = timestamp.now(); 
+    if (access.expires != null && now > access.expires)
       throw errors.forbidden(
         'Access has expired.');
   }

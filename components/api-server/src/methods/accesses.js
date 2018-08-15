@@ -26,6 +26,16 @@ import type { ApiCallback } from '../API';
 import type Notifications from '../Notifications';
 import type Result from '../Result';
 
+type Permission = {
+  streamId: string, 
+  level: 'manage' | 'contribute' | 'read',
+};
+type Access = {
+  type: 'personal' | 'app' | 'shared',
+  permissions: Array<Permission>,
+  expires: ?number, 
+};
+
 type UpdatesSettingsHolder = {
   ignoreProtectedFields: boolean,
 }
@@ -101,15 +111,12 @@ module.exports = function produceAccessesApiMethods(
     // 
     function maybeFilterExpired(params, chain) {
       const includeExpiredParam = params.includeExpired;
-      
-      const now = timestamp.now(); 
-      const isNotExpired = a => a.expires==null || a.expires > now; 
-            
+                  
       // If we also want to see expired accesses, don't filter them.
       if (includeExpiredParam === 'true' || includeExpiredParam === '1') 
         return chain;
         
-      return chain.filter(isNotExpired);
+      return chain.reject(isAccessExpired);
     }
   }
 
@@ -508,7 +515,7 @@ module.exports = function produceAccessesApiMethods(
 
   // Returns true if the given access' permissions match the `requestedPermissions`.
   // 
-  function accessMatches(access, requestedPermissions): boolean {
+  function accessMatches(access: Access, requestedPermissions): boolean {
     if (access == null ||
         access.type !== 'app' ||
         access.permissions.length !== requestedPermissions.length) {
@@ -516,8 +523,7 @@ module.exports = function produceAccessesApiMethods(
     }
     
     // If the access is there but is expired, we consider it a mismatch. 
-    if (access.expires != null && access.expires < timestamp.now()) 
-      return false; 
+    if (isAccessExpired(access)) return false; 
 
     let accessPerm, reqPerm;
     for (var i = 0, ni = access.permissions.length; i < ni; i++) {
@@ -673,6 +679,15 @@ module.exports = function produceAccessesApiMethods(
       
       return `${name} (${suffixNum})`;
     }
+  }
+
+  // Centralises the check for access expiry; yes, this should be part of some
+  // business model about accesses. There is one more such check in MethodContext, 
+  // called `checkAccessValid`.
+  //
+  function isAccessExpired(access: Access, nowParam?: number): boolean {
+    const now = nowParam || timestamp.now(); 
+    return access.expires != null && now > access.expires;
   }
 
 };
