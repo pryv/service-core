@@ -103,7 +103,7 @@ module.exports = function produceAccessesApiMethods(
       const includeExpiredParam = params.includeExpired;
       
       const now = timestamp.now(); 
-      const isNotExpired = a => !a.expires || a.expires > now; 
+      const isNotExpired = a => a.expires==null || a.expires > now; 
             
       // If we also want to see expired accesses, don't filter them.
       if (includeExpiredParam === 'true' || includeExpiredParam === '1') 
