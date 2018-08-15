@@ -109,13 +109,13 @@ module.exports = function produceAccessesApiMethods(
     // Depending on 'includeExpired' in the query string, adds a filter to
     // `chain` that filters expired accesses.
     // 
-    function maybeFilterExpired(params, chain) {
+    function maybeFilterExpired(params, chain: lodash$Chain<Access>) {
       const includeExpiredParam = params.includeExpired;
                   
       // If we also want to see expired accesses, don't filter them.
       if (includeExpiredParam === 'true' || includeExpiredParam === '1') 
         return chain;
-        
+      
       return chain.reject(
         a => isAccessExpired(a));
     }

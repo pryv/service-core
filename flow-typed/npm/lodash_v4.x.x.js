@@ -1,6 +1,23 @@
 // flow-typed signature: 9b30c25bfb40dd9968c9c9f32b43ce75
 // flow-typed version: 6aad05d35e/lodash_v4.x.x/flow_>=v0.63.x
 
+// A copy of the predicate below
+declare type matchesIterateeShorthand = Object;
+declare type matchesPropertyIterateeShorthand = [string, any];
+declare type propertyIterateeShorthand = string;
+declare type Predicate<T> =
+  | ((value: T, index: number, array: Array<T>) => any)
+  | matchesIterateeShorthand
+  | matchesPropertyIterateeShorthand
+  | propertyIterateeShorthand;
+
+declare class lodash$Chain<T> {
+  filter<T>(predicate?: ?Predicate<T>): lodash$Chain<T>;
+  reject<T>(predicate?: Predicate<T>): lodash$Chain<T>;
+
+  value(): Array<T>;
+}
+
 declare module "lodash" {
   declare type __CurriedFunction1<A, R, AA: A> = (...r: [AA]) => R;
   declare type CurriedFunction1<A, R> = __CurriedFunction1<A, R, *>;
@@ -1287,7 +1304,7 @@ declare module "lodash" {
     // Seq
     // harder to read, but this is _()
     (value: any): any;
-    chain<T>(value: T): any;
+    chain<T>(value: T): lodash$Chain<T>;
     tap<T>(value: T, interceptor: (value: T) => any): T;
     thru<T1, T2>(value: T1, interceptor: (value: T1) => T2): T2;
     // TODO: _.prototype.*

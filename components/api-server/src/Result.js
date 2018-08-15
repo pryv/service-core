@@ -42,7 +42,7 @@ class Result {
   // These are used by the various methods to store the result objects. 
   // Never assume these are filled in...
   // Exercise to the reader: How can we get rid of this mixed bag of things?
-  accesses: ?Array<mixed>;
+  accesses: ?Array<any>;
   access: mixed;
   accessDeletion: mixed;
   matchingAccess: mixed;
