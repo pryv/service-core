@@ -77,8 +77,11 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
     sendPasswordResetMail);
 
   function generatePasswordResetRequest(context, params, result, next) {
-    var requestData = {};
-    passwordResetRequestsStorage.generate(requestData, function (err, token) {
+    const username = context.user.username;
+    if (username == null) {
+      return next(errors.unexpectedError('AF: username is not empty.'));
+    }
+    passwordResetRequestsStorage.generate(username, function (err, token) {
       if (err) { return next(errors.unexpectedError(err)); }
 
       context.resetToken = token;
@@ -144,14 +147,22 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
     cleanupResult);
 
   function checkResetToken(context, params, result, next) {
-    passwordResetRequestsStorage.get(params.resetToken, function (err, reqData) {
-      if (err) { return next(errors.unexpectedError(err)); }
+    const username = context.user.username;
+    if (username == null) {
+      return next(errors.unexpectedError('AF: username is not empty.'));
+    }
+    passwordResetRequestsStorage.get(
+      params.resetToken,
+      username,
+      function (err, reqData) {
+        if (err) { return next(errors.unexpectedError(err)); }
 
-      if (! reqData) {
-        return next(errors.invalidAccessToken('The reset token is invalid or expired'));
+        if (! reqData) {
+          return next(errors.invalidAccessToken('The reset token is invalid or expired'));
+        }
+        next();
       }
-      next();
-    });
+    );
   }
 
   function encryptNewPassword(context, params, result, next) {
