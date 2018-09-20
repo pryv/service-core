@@ -452,12 +452,16 @@ describe('account', function () {
         },
         function verifyStoredRequest(stepDone) {
           should.exist(resetToken);
-          pwdResetReqsStorage.get(resetToken, function (err, resetReq) {
-            should.exist(resetReq);
-            should(resetReq._id).be.equal(resetToken);
-            should(resetReq.username).be.equal(user.username);
-            stepDone();
-          });
+          pwdResetReqsStorage.get(
+            resetToken,
+            user.username,
+            function (err, resetReq) {
+              should.exist(resetReq);
+              should(resetReq._id).be.equal(resetToken);
+              should(resetReq.username).be.equal(user.username);
+              stepDone();
+            }
+          );
         },
         function doReset(stepDone) {
           const data = _.defaults({
@@ -540,11 +544,14 @@ describe('account', function () {
       async.series([
         function generateResetToken(stepDone) {
           // generate a reset token for user1
-          pwdResetReqsStorage.generate(user1.username, function (err, token) {
-            should.exist(token);
-            resetToken = token;
-            stepDone();
-          });
+          pwdResetReqsStorage.generate(
+            user1.username,
+            function (err, token) {
+              should.exist(token);
+              resetToken = token;
+              stepDone();
+            }
+          );
         },
         function doReset(stepDone) {
           var data = _.defaults({
@@ -558,7 +565,7 @@ describe('account', function () {
             .end(function (res) {
               validation.checkError(res, {
                 status: 401,
-                id: ErrorIds.InvalidCredentials
+                id: ErrorIds.InvalidAccessToken
               }, stepDone);
             });
         }
