@@ -210,7 +210,7 @@ module.exports = function (
         return next(errors.unknownResource('event', params.id));
       }
 
-      if (! context.canContributeToContext(event.streamId, event.tags)) {
+      if (! context.canReadContext(event.streamId, event.tags)) {
         return next(errors.forbidden());
       }
       result.event = event;

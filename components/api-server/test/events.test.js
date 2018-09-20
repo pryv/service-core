@@ -1,21 +1,27 @@
 /*global describe, before, beforeEach, it */
 
 require('./test-helpers'); 
-var helpers = require('./helpers'),
-    server = helpers.dependencies.instanceManager,
-    async = require('async'),
-    attachmentsCheck = helpers.attachmentsCheck,
-    commonTests = helpers.commonTests,
-    validation = helpers.validation,
-    ErrorIds = require('components/errors').ErrorIds,
-    eventFilesStorage = helpers.dependencies.storage.user.eventFiles,
-    methodsSchema = require('../src/schema/eventsMethods'),
-    fs = require('fs'),
-    should = require('should'), // explicit require to benefit from static functions
-    storage = helpers.dependencies.storage.user.events,
-    testData = helpers.data,
-    timestamp = require('unix-timestamp'),
-    _ = require('lodash');
+
+const helpers = require('./helpers');
+const server = helpers.dependencies.instanceManager;
+const async = require('async');
+const attachmentsCheck = helpers.attachmentsCheck;
+const commonTests = helpers.commonTests;
+const validation = helpers.validation;
+const ErrorIds = require('components/errors').ErrorIds;
+const eventFilesStorage = helpers.dependencies.storage.user.eventFiles;
+const methodsSchema = require('../src/schema/eventsMethods');
+const fs = require('fs');
+const should = require('should'); // explicit require to benefit from static function
+const storage = helpers.dependencies.storage.user.events;
+const testData = helpers.data;
+const timestamp = require('unix-timestamp');
+const _ = require('lodash');
+
+const chai = require('chai');
+const assert = chai.assert;
+const supertest = require('supertest');
+
 require('date-utils');
 
 describe('events', function () {
@@ -61,65 +67,65 @@ describe('events', function () {
     before(resetEvents);
 
     it('must return the last 20 non-trashed events (sorted descending) by default',
-        function (done) {
-      var additionalEvents = [];
-      for (var i = 0; i < 50; i++) {
-        additionalEvents.push({
-          id: (100 + i).toString(),
-          time: timestamp.now('-' + (48 + i) + 'h'),
-          type: testType,
-          streamId: testData.streams[i % 2].id,
-          created: timestamp.now('-' + (48 + i) + 'h'),
-          createdBy: 'test',
-          modified: timestamp.now('-' + (48 + i) + 'h'),
-          modifiedBy: 'test'
-        });
-      }
-      async.series([
-        storage.insertMany.bind(storage, user, additionalEvents),
-        function getDefault(stepDone) {
-          request.get(basePath).end(function (res) {
-            var allEvents = additionalEvents
-              .concat(validation.removeDeletionsAndHistory(testData.events))
+      function (done) {
+        var additionalEvents = [];
+        for (var i = 0; i < 50; i++) {
+          additionalEvents.push({
+            id: (100 + i).toString(),
+            time: timestamp.now('-' + (48 + i) + 'h'),
+            type: testType,
+            streamId: testData.streams[i % 2].id,
+            created: timestamp.now('-' + (48 + i) + 'h'),
+            createdBy: 'test',
+            modified: timestamp.now('-' + (48 + i) + 'h'),
+            modifiedBy: 'test'
+          });
+        }
+        async.series([
+          storage.insertMany.bind(storage, user, additionalEvents),
+          function getDefault(stepDone) {
+            request.get(basePath).end(function (res) {
+              var allEvents = additionalEvents
+                .concat(validation.removeDeletionsAndHistory(testData.events))
                 .filter(function (e) {
-                  return ! e.trashed && ! _.some(testData.streams, containsTrashedEventStream);
+                  return !e.trashed && !_.some(testData.streams, containsTrashedEventStream);
                   function containsTrashedEventStream(stream) {
                     return stream.trashed && stream.id === e.streamId ||
-                        _.some(stream.children, containsTrashedEventStream);
+                      _.some(stream.children, containsTrashedEventStream);
                   }
                 });
-            validation.check(res, {
-              status: 200,
-              schema: methodsSchema.get.result,
-              sanitizeFn: validation.sanitizeEvents,
-              sanitizeTarget: 'events',
-	      body: {events: _.take(_.sortBy(allEvents, 'time').reverse(), 20)}
-            }, stepDone);
-          });
-        },
-        testData.resetEvents
-      ], done);
-    });
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.get.result,
+                sanitizeFn: validation.sanitizeEvents,
+                sanitizeTarget: 'events',
+                body: { events: _.take(_.sortBy(allEvents, 'time').reverse(), 20) }
+              }, stepDone);
+            });
+          },
+          testData.resetEvents
+        ], done);
+      });
 
     it('must only return events for the given streams (incl. sub-streams) when set',
-        function (done) {
-      var params = {
-        streams: [ testData.streams[0].id, testData.streams[2].id ],
-        fromTime: timestamp.now('-48h'),
-        sortAscending: false // explicitly set default value to check it works too...
-      };
-      request.get(basePath).query(params).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.get.result,
-          sanitizeFn: validation.sanitizeEvents,
-          sanitizeTarget: 'events',
-          body: {
-            events: _.at(testData.events, 9, 7, 6, 4, 3, 2, 1, 0)
-          }
-        }, done);
+      function (done) {
+        var params = {
+          streams: [testData.streams[0].id, testData.streams[2].id],
+          fromTime: timestamp.now('-48h'),
+          sortAscending: false // explicitly set default value to check it works too...
+        };
+        request.get(basePath).query(params).end(function (res) {
+          validation.check(res, {
+            status: 200,
+            schema: methodsSchema.get.result,
+            sanitizeFn: validation.sanitizeEvents,
+            sanitizeTarget: 'events',
+            body: {
+              events: _.at(testData.events, 9, 7, 6, 4, 3, 2, 1, 0)
+            }
+          }, done);
+        });
       });
-    });
 
     it('must return an error if some of the given streams do not exist', function (done) {
       var params = {streams: ['bad-id-A', 'bad-id-B']};
@@ -1290,6 +1296,31 @@ describe('events', function () {
           });
       });
 
+  });
+
+  describe('GET /<id>', () => {
+    beforeEach(resetEvents);
+    
+    it('allows access at level=read', async () => {
+      const request = supertest(server.url);
+      const access = _.find(testData.accesses, (v) => v.id === 'a_2');
+      const event = testData.events[0];
+
+      const response = await request.get(path(event.id))
+        .set('authorization', access.token);
+
+      assert.isTrue(response.ok);
+      assert.strictEqual(response.body.event.id, event.id);
+    });
+    it('denies access without authorization', async () => {
+      const request = supertest(server.url);
+      const event = testData.events[0];
+
+      const response = await request
+        .get(path(event.id));
+
+      assert.strictEqual(response.status, 401);
+    });
   });
 
   describe('PUT /<id>', function () {

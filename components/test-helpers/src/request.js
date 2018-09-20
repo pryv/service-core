@@ -77,12 +77,10 @@ Request.prototype.login = function (user: any, callback: any) {
       assert.isDefined(res, 'Request has a result');
       res.statusCode.should.eql(200);
 
-      if (! res.body.token) {
+      if (res.body.token == null) {
         return callback(new Error('Expected "token" in login response body.'));
       }
-      should(
-        /[^A-Za-z0-9\-_.!~*'()%]/.test(res.body.token)
-      ).be.false('Token must be URI-encoded');
+
       this.token = res.body.token;
 
       callback();
