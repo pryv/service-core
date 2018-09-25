@@ -80,7 +80,7 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
   function generatePasswordResetRequest(context, params, result, next) {
     const username = context.user.username;
     if (username == null) {
-      return next(errors.unexpectedError('AF: username is not empty.'));
+      throw new Error('AF: username is not empty.');
     }
     passwordResetRequestsStorage.generate(username, function (err, token) {
       if (err) { return next(errors.unexpectedError(err)); }
@@ -126,7 +126,7 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
   function checkResetToken(context, params, result, next) {
     const username = context.user.username;
     if (username == null) {
-      return next(errors.unexpectedError('AF: username is not empty.'));
+      throw new Error('AF: username is not empty.');
     }
     passwordResetRequestsStorage.get(
       params.resetToken,
