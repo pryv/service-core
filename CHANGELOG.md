@@ -1,5 +1,9 @@
 # API change log
 
+## 1.2.20
+
+- Security fix 2018091401
+
 ## 1.2.19
 
 - No change
