@@ -452,10 +452,16 @@ describe('account', function () {
         },
         function verifyStoredRequest(stepDone) {
           should.exist(resetToken);
-          pwdResetReqsStorage.get(resetToken, function (err, resetReq) {
-            should.exist(resetReq);
-            stepDone();
-          });
+          pwdResetReqsStorage.get(
+            resetToken,
+            user.username,
+            function (err, resetReq) {
+              should.exist(resetReq);
+              should(resetReq._id).be.equal(resetToken);
+              should(resetReq.username).be.equal(user.username);
+              stepDone();
+            }
+          );
         },
         function doReset(stepDone) {
           const data = _.defaults({
@@ -529,6 +535,42 @@ describe('account', function () {
         },
       ], callback);
     }
+
+    it('must not be possible to use a reset token to illegally change password of another user', function (done) {
+      let resetToken = null;
+      const newPassword = 'hackingYourPassword';
+      const user1 = testData.users[1];
+
+      async.series([
+        function generateResetToken(stepDone) {
+          // generate a reset token for user1
+          pwdResetReqsStorage.generate(
+            user1.username,
+            function (err, token) {
+              should.exist(token);
+              resetToken = token;
+              stepDone();
+            }
+          );
+        },
+        function doReset(stepDone) {
+          var data = _.defaults({
+            resetToken: resetToken,
+            newPassword: newPassword
+          }, authData);
+          // use user1's resetToken to reset user0's password
+          request.post(resetPath).send(data)
+            .unset('authorization')
+            .set('Origin', 'http://test.pryv.local')
+            .end(function (res) {
+              validation.checkError(res, {
+                status: 401,
+                id: ErrorIds.InvalidAccessToken
+              }, stepDone);
+            });
+        }
+      ], done);
+    });
 
     it('"request" must return an error if the requesting app is not trusted', function (done) {
       request.post(requestPath).send({appId: 'bad-app-id'})
