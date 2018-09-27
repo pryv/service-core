@@ -20,13 +20,20 @@
   accesses gives you an easy way of limiting the damage that can be done using 
   a stolen access. 
 
+- Critical Security Fixes: 
+
+  - 2018022101, 2018022102: Fixes to DNS server closing minor vulnerabilities: 
+      DNS could be - under certain circumstances - used to exploit other systems. 
+
+  - 2018091401: Details will be disclosed after Nov/18
+
 ## 1.2.18
 
 - Fix login with Firefox (and other browsers using Referer but no Origin)
 
 ## 1.2.17
 
-- Security fix 2018020801
+- Security fix 2018020801: 'accesses.update' was missing an authorisation check. 
 
 ## 1.2.16:
 
