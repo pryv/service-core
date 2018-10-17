@@ -10,7 +10,12 @@ class App {
   }
 
   run() {
-    this.program.parse(process.argv);
+    const program = this.program;
+    const params = program.parse(process.argv);
+
+    if (!process.argv.slice(2).length) {
+      program.outputHelp();
+    }
   }
 }
 
