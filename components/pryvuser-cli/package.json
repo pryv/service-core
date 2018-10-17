@@ -1,19 +1,13 @@
 {
   "name": "pryvuser-cli",
-  "version": "1.2.18",
+  "version": "0.1.0",
   "private": true,
   "bin": {
-    "pryvuser": "./src/cli.js"
+    "pryvioctl": "./bin/cli"
   },
   "scripts": {
-    "test": "npm run _test -- --logs:console:active=false",
-    "test-detailed": "npm run _test -- --reporter=spec",
-    "test-debug": "npm run _test -- --timeout 3600000 --reporter=spec --debug-brk",
-    "test-profile": "npm run _test -- --profile=true --logs:console:active=false && tick-processor > profiling-output.txt && open profiling-output.txt",
-    "_test": "NODE_ENV=test ../../node_modules/.bin/mocha --timeout 10000 --reporter=dot test/*.js"
   },
   "dependencies": {
-    "co-prompt": "^1.0.0",
-    "commander": "^2.8.1"
+    "commander": "^2.19"
   }
 }

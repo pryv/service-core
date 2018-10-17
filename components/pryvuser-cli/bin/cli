@@ -1,0 +1,9 @@
+#!/usr/bin/env node
+
+// NOTE Caution, this file is not transpiled; make sure it works with node 8.11.
+
+const App = require('../src/app').App;
+
+const app = new App(); 
+app.run();
+

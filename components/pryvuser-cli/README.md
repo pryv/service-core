@@ -1,25 +1,31 @@
-# pryvuser CLI
+# SYNOPSIS
 
-Utility to locally manage user accounts.
+Utility to manage user accounts by running a tool on a Pryv.IO 'core' machine. 
+
+```shell
+$ bin/cli -h
+# Provides subcommand overview and help
+
+$ bin/cli delete-user jsmith
+```
+
+# DESCRIPTION
+
+## Delete User
+
+```shell
+$ bin/cli delete-user [options] USERNAME
+```
+
+Deletes user identified by his username. This will only work for a user that 
+has his/her data on the current machine. Valid options are: 
+
+  * `--no-interaction`: 
+    In normal operation, the tool will ask for confirmation of the username 
+    before starting the actual deletion. This flag turns off the confirmation, 
+    allowing to run the script as part of a bigger automated procedure. 
 
 
-## Usage
+# LICENSE
 
-Currently the only command implemented is `pryvuser delete <username>`.
-
-`pryvuser --help` gives usage details. The tool expects a config file either to be passed in via `--config [path]` or to be present in `<working directory>/api-server.config.json`.
-
-
-## Contribute
-
-Make sure to check the root README first.
-
-
-### Tests
-
-Prerequisite: install command locally with `npm link`.
-
-- `npm run test` (or `npm test`) for quiet output
-- `npm run test-detailed` for detailed test specs and debug log output
-- `npm run test-profile` for profiling the tested server instance and opening the processed output with `tick-processor`
-- `npm run test-debug` is similar as `npm run test-detailed` but in debug mode; it will wait for a debugger to be attached on port 5858
+Copyright 2013-2018, Pryv SA. All rights reserved. 
