@@ -5,7 +5,8 @@
     ["env", { 
       "targets": {
         "node": "8.11"
-      }
+      }, 
+      "modules": false
     }]
   ]
 }
