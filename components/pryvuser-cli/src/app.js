@@ -2,8 +2,43 @@
 
 const stdout = console; 
 
-export class App {
-  run() {
-    stdout.info('pryvctl says hello');
+class App {
+  program: any; 
+
+  constructor() {
+    this.program = setupCommander(); 
   }
+
+  run() {
+    this.program.parse(process.argv);
+  }
+}
+
+module.exports = App; 
+
+function setupCommander(): any {
+  const program = require('commander');
+
+  program
+    .version('1.3.0')
+    .option('-n, --no-interaction', 'Runs without prompting for confirmation.');
+
+  // Register all subcommands in the list below. The files must export a class
+  // as their sole export and the class must have a method #subcommandOf(program)
+  // that registers the subcommand in the commander DSL object. 
+
+  const subcommandKlasses = [
+    require('./sub/delete')
+  ];
+
+  for (let klass of subcommandKlasses) {
+    const instance = new klass();
+    instance.subcommandOf(program);
+  }
+
+  return program; 
+}
+
+export type CommonParams = {
+  interaction: boolean, // --no-interaction
 }
