@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const CoreSettings = require('components/api-server/src/settings');
+const HfsSettings = require('components/hfs-server/src/Settings');
 
 export interface ConfigurationLoader {
   load: (basePath: string) => Promise<Configuration>,
@@ -48,6 +49,7 @@ class Configuration {
   _corePath: string;
   _hfsPath: string;
   _coreConfig: ?CoreSettings; 
+  _hfsConfig: ?HfsSettings;
 
   constructor(corePath: string, hfsPath: string) {
     this._corePath = corePath;
@@ -76,6 +78,15 @@ class Configuration {
     };
   }
 
+  influxDbSettings(): InfluxDbSettings {
+    const hfsConfig = this.hfsConfig(); 
+
+    return {
+      host: hfsConfig.get('influxdb.host').str(), 
+      port: hfsConfig.get('influxdb.port').num(), 
+    };
+  }
+
   /// Loads and memoises core configuration. 
   /// 
   coreConfig(): CoreSettings {
@@ -87,14 +98,23 @@ class Configuration {
 
     return newConfig;
   }
+
+  hfsConfig(): HfsSettings {
+    if (this._hfsConfig != null) return this._hfsConfig;
+
+    const config = HfsSettings.loadFromFile(this.hfsConfigPath()); 
+    this._hfsConfig = config; 
+
+    return config; 
+  }
 }
 
-type RegisterSettings = {
+export type RegisterSettings = {
   url: string, 
   key: string, 
 };
 
-type MongoDbSettings = {
+export type MongoDbSettings = {
   host: string, 
   port: number, 
   dbname: string, 

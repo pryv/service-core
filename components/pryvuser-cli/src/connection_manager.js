@@ -2,7 +2,14 @@
 
 import type Configuration from './configuration';
 
-class MongoDB { }
+import type { MongoDbSettings } from './configuration';
+
+class MongoDB { 
+  constructor(config: MongoDbSettings) {
+    config; 
+  }
+}
+
 class InfluxDB { }
 class Registry { }
 
@@ -14,12 +21,23 @@ export type InfluxDBConnection = InfluxDB;
 export type RegistryConnection = Registry; 
 
 class ConnectionManager {
+  config: Configuration;
+  
+  mongoDbConn: MongoDB;
+
   constructor(config: Configuration) {
-    config;
+    this.config = config; 
   }
 
-  mongoDbConnection(): Promise<MongoDBConnection> {
-    throw new Error('Not Implemented');
+  async mongoDbConnection(): Promise<MongoDBConnection> {
+    if (this.mongoDbConn != null) return this.mongoDbConn;
+
+    const config = this.config; 
+    const conn = new MongoDB(config.mongoDbSettings());
+
+    this.mongoDbConn = conn; 
+
+    return conn;
   }
 
   influxDbConnection(): Promise<InfluxDBConnection> {

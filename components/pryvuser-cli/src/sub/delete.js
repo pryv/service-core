@@ -153,21 +153,24 @@ class Interaction {
   /// 
   printConfigSummary(config: Configuration) {
     config;
-    throw new Error('Not Implemented');
+    
+    const i = this; 
+    i.println('Found the following configuration files: ');
+    i.println(`core: ${config.coreConfigPath()}`);
+    i.println(`hfs: ${config.hfsConfigPath()}`);
+    i.println(''); 
   }  
 
   /// Simply prints a string.
   /// 
   print(str: string) {
-    str;
-    throw new Error('Not Implemented');
+    process.stdout.write(str);
   }
 
   /// Prints a string followed by a newline (\n).
   /// 
   println(str: string) {
-    str;
-    throw new Error('Not Implemented');
+    console.log(str); // eslint-disable-line no-console
   }
 
   /// Prints an error, possibly using color. 

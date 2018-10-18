@@ -42,5 +42,11 @@ describe('Configuration', () => {
       assert.strictEqual(mongodb.host, 'mongodb');
       assert.strictEqual(mongodb.port, 27017); // from defaults
     });
+    it('has the right influxdb settings', async () => {
+      const influxdb = config.influxDbSettings(); 
+       
+      assert.strictEqual(influxdb.host, 'influxdb');
+      assert.strictEqual(influxdb.port, 8086);
+    });
   });
 });
