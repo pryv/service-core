@@ -22,7 +22,7 @@ async function cli(...args: Array<string>): Promise<string> {
   const opts = {}; 
 
   const stdout = await bluebird.fromCallback(cb => {
-    child_process.exec(cmd, opts, (err, stdout, stderr) => {
+    child_process.exec(cmd, opts, (err, stdout, stderr) => { // eslint-disable-line no-unused-vars
       return cb(err, stdout);
     });
   });
