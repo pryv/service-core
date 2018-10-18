@@ -1,7 +1,8 @@
 // @flow
 
 import type { CommonParams } from '../app'; 
-import type { ConfigurationLoader, Configuration } from '../configuration';
+import type { ConfigurationLoader } from '../configuration';
+import type Configuration from '../configuration';
 
 type DeleteParams = {
   parent: CommonParams,
@@ -21,7 +22,7 @@ class OpDeleteUser {
     params;
     // Prototype Code v
     const i = new Interaction(); 
-    const config = this.loadConfiguration(); 
+    const config = await this.loadConfiguration(); 
 
     i.printConfigSummary(config);  
     
@@ -66,9 +67,9 @@ class OpDeleteUser {
 
   /// Loads the configuration files and returns a `Configuration` instance. 
   /// 
-  loadConfiguration(): Configuration {
+  async loadConfiguration(): Promise<Configuration> {
     const configLoader = this.configurationLoader;
-    const config = configLoader.load(process.cwd());
+    const config = await configLoader.load(process.cwd());
 
     return config; 
   }

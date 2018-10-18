@@ -10,7 +10,7 @@ export interface ConfigurationLoader {
 ///   const config = Configuration.load(basePath);
 ///   config.getMongoDBConnSettings(); 
 /// 
-export class Configuration {
+class Configuration {
 
   /// Loads the configuration by looking for various files below `basePath`. 
   /// Implements the `ConfigurationLoader` interface. 
