@@ -2,7 +2,7 @@
 
 import type Configuration from './configuration';
 
-import type { MongoDbSettings } from './configuration';
+import type { MongoDbSettings, InfluxDbSettings, RegisterSettings } from './configuration';
 
 class MongoDB { 
   constructor(config: MongoDbSettings) {
@@ -10,8 +10,16 @@ class MongoDB {
   }
 }
 
-class InfluxDB { }
-class Registry { }
+class InfluxDB { 
+  constructor(config: InfluxDbSettings) {
+    config;
+  }
+}
+class Registry { 
+  constructor(config: RegisterSettings) {
+    config;
+  }
+}
 
 // Since the 'export' keyword now triggers es6 module loader autodetection and 
 // cannot be used anymore to declare a class type and export it at the same 
@@ -24,6 +32,8 @@ class ConnectionManager {
   config: Configuration;
   
   mongoDbConn: MongoDB;
+  influxDbConn: InfluxDB;
+  registerConn: Registry;
 
   constructor(config: Configuration) {
     this.config = config; 
@@ -40,12 +50,26 @@ class ConnectionManager {
     return conn;
   }
 
-  influxDbConnection(): Promise<InfluxDBConnection> {
-    throw new Error('Not Implemented');
+  async influxDbConnection(): Promise<InfluxDBConnection> {
+    if (this.influxDbConn != null) return this.influxDbConn;
+
+    const config = this.config;
+    const conn = new InfluxDB(config.influxDbSettings());
+
+    this.influxDbConn = conn;
+
+    return conn;
   }
 
-  registryConnection(): Promise<RegistryConnection> {
-    throw new Error('Not Implemented');
+  async registryConnection(): Promise<RegistryConnection> {
+    if (this.registerConn != null) return this.registerConn;
+
+    const config = this.config;
+    const conn = new Registry(config.registerSettings());
+
+    this.registerConn = conn;
+
+    return conn;
   }
 }
 

@@ -120,4 +120,9 @@ export type MongoDbSettings = {
   dbname: string, 
 };
 
+export type InfluxDbSettings = {
+  host: string, 
+  port: number, 
+};
+
 module.exports = Configuration;
