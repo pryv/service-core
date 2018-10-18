@@ -10,9 +10,11 @@ type DeleteParams = {
 
 class OpDeleteUser {
   configurationLoader: $ReadOnly<ConfigurationLoader>; 
+  interaction: Interaction; 
 
   constructor(configLoader: $ReadOnly<ConfigurationLoader>) {
     this.configurationLoader = configLoader;
+    this.interaction = new Interaction(); 
   }
 
   /// Delete a user completely, provided the checks are all green. This is 
@@ -20,27 +22,32 @@ class OpDeleteUser {
   /// 
   async run(username: string, params: DeleteParams) {
     params;
-    // Prototype Code v
-    const i = new Interaction(); 
-    const config = await this.loadConfiguration(); 
 
-    i.printConfigSummary(config);  
-    
-    const connManager = new ConnectionManager(config);
-    await this.preflightChecks(connManager, i); 
+    const i = this.interaction;
 
-    // Now connections in `connManager` are good and the user consents to 
-    // deletion. Let's go!
+    try {
+      const config = await this.loadConfiguration();
 
-    await this.deleteUser(username, connManager, i);    
-    // Prototype Code ^
+      i.printConfigSummary(config);
+
+      const connManager = new ConnectionManager(config);
+      await this.preflightChecks(connManager, i);
+
+      // Now connections in `connManager` are good and the user consents to 
+      // deletion. Let's go!
+
+      await this.deleteUser(username, connManager, i);    
+    }
+    catch (error) {
+      i.error(`Unknown error: ${error.toString()}`);
+    }
   }
 
   async deleteUser(username: string, connManager: ConnectionManager, i: Interaction) {
     const deleteActions: Array<[string, Operation]> = [
-      ['InfluxDB', new InfluxDBDeleteUser(connManager.influxDbConnection())],
-      ['MongoDB', new MongoDBDeleteUser(connManager.mongoDbConnection())],
-      ['Pryv.IO Registry', new RegistryDeleteUser(connManager.registryConnection())],
+      ['InfluxDB', new InfluxDBDeleteUser(await connManager.influxDbConnection())],
+      ['MongoDB', new MongoDBDeleteUser(await connManager.mongoDbConnection())],
+      ['Pryv.IO Registry', new RegistryDeleteUser(await connManager.registryConnection())],
     ];
 
     for (const [systemName, operation] of deleteActions) {
@@ -79,9 +86,9 @@ class OpDeleteUser {
   /// 
   async preflightChecks(connManager: ConnectionManager, i: Interaction) {
     const preflightChecks: Array<[string, Operation]> = [
-      ['MongoDB', new MongoDBConnectionCheck(connManager.mongoDbConnection())],
-      ['InfluxDB', new InfluxDBConnectionCheck(connManager.influxDbConnection())],
-      ['Pryv.IO Registry', new RegistryConnectionCheck(connManager.registryConnection())],
+      ['MongoDB', new MongoDBConnectionCheck(await connManager.mongoDbConnection())],
+      ['InfluxDB', new InfluxDBConnectionCheck(await connManager.influxDbConnection())],
+      ['Pryv.IO Registry', new RegistryConnectionCheck(await connManager.registryConnection())],
     ];
 
     for (const [systemName, check] of preflightChecks) {
@@ -179,32 +186,38 @@ interface Operation {
 }
 
 class MongoDBConnectionCheck implements Operation {
+  constructor(conn: MongoDBConnection) { conn; }
   run(): Promise<void> {
     throw new Error('Not Implemented');
   }
 }
 class InfluxDBConnectionCheck implements Operation {
+  constructor(conn: InfluxDBConnection) { conn; }
   run(): Promise<void> {
     throw new Error('Not Implemented');
   }
 }
 class RegistryConnectionCheck implements Operation {
+  constructor(conn: RegistryConnection) { conn; }
   run(): Promise<void> {
     throw new Error('Not Implemented');
   }
 }
 
 class MongoDBDeleteUser implements Operation {
+  constructor(conn: MongoDBConnection) { conn; }
   run(): Promise<void> {
     throw new Error('Not Implemented');
   }
 }
 class InfluxDBDeleteUser implements Operation {
+  constructor(conn: InfluxDBConnection) { conn; }
   run(): Promise<void> {
     throw new Error('Not Implemented');
   }
 }
 class RegistryDeleteUser implements Operation {
+  constructor(conn: RegistryConnection) { conn; }
   run(): Promise<void> {
     throw new Error('Not Implemented');
   }
