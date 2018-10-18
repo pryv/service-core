@@ -1,8 +1,9 @@
 // @flow
 
+const path = require('path');
 const Configuration = require('../../src/configuration');
 
-/* global describe, it */
+/* global describe, it, beforeEach */
 
 const { fixturePath } = require('./test-helpers');
 const chai = require('chai');
@@ -12,13 +13,34 @@ describe('Configuration', () => {
   describe('.load(basePath)', () => {
     describe('when started in fixture 1', () => {
       it('finds all configuration files', async () => {
-        const config = await Configuration.load(fixturePath('fileLocations1'));
+        const fixture = fixturePath('fileLocations1');
+        const config = await Configuration.load(fixture);
 
-        assert.strictEqual(config.coreConfigPath(), 'conf/core/conf/core.json');
-        assert.strictEqual(config.hfsConfigPath(), 'conf/hfs/conf/hfs.json');
+        assert.strictEqual(config.coreConfigPath(), 
+          path.join(fixture, 'conf/core/conf/core.json'));
+        assert.strictEqual(config.hfsConfigPath(), 
+          path.join(fixture, 'conf/hfs/conf/hfs.json'));
       });
     });
   });
 
-  
+  describe('with fileLocations1 fixture config', () => {
+    let config; 
+    beforeEach(async () => {
+      config = await Configuration.load(fixturePath('fileLocations1'));
+    });
+
+    it('has the right register url and key', async () => {  
+      const reg = config.registerSettings(); 
+
+      assert.strictEqual(reg.url, 'https://reg.preview.pryv.tech');
+      assert.strictEqual(reg.key, 'OVERRIDE ME');
+    });
+    it('has mongodb configured correctly (including defaults)', () => {
+      const mongodb = config.mongoDbSettings(); 
+
+      assert.strictEqual(mongodb.host, 'mongodb');
+      assert.strictEqual(mongodb.port, 27017); // from defaults
+    });
+  });
 });

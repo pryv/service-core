@@ -7,8 +7,6 @@
   },
   "database": {
     "host": "mongodb",
-    "port": 27017,
-    "name": "pryv-node"
   },
   "eventFiles": {
     "attachmentsDirPath": "/app/data/attachments",
@@ -16,9 +14,6 @@
   },
   "eventTypes": {
     "sourceURL": "https://pryv.github.io/event-types/flat.json"
-  },
-  "register": {
-    "secret": "OVERRIDE ME"
   },
   "auth": {
     "adminAccessKey": "OVERRIDE ME",
