@@ -4,9 +4,14 @@ import type { CommonParams } from '../app';
 import type { ConfigurationLoader } from '../configuration';
 import type Configuration from '../configuration';
 
+import type { MongoDBConnection, InfluxDBConnection, RegistryConnection } 
+  from '../connection_manager';
+
 type DeleteParams = {
   parent: CommonParams,
 }
+
+const ConnectionManager = require('../connection_manager');
 
 class OpDeleteUser {
   configurationLoader: $ReadOnly<ConfigurationLoader>; 
@@ -182,28 +187,6 @@ class Interaction {
   /// 
   async askYN(question: string, def: boolean=false): Promise<boolean> {
     return def; 
-  }
-}
-
-class MongoDBConnection { }
-class InfluxDBConnection { }
-class RegistryConnection { }
-
-class ConnectionManager {
-  constructor(config: Configuration) {
-    config;
-  }
-
-  mongoDbConnection(): Promise<MongoDBConnection> {
-    throw new Error('Not Implemented');
-  }
-
-  influxDbConnection(): Promise<InfluxDBConnection> {
-    throw new Error('Not Implemented');
-  }
-
-  registryConnection(): Promise<RegistryConnection> {
-    throw new Error('Not Implemented');
   }
 }
 
