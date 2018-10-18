@@ -167,8 +167,7 @@ class Interaction {
   /// Prints an error, possibly using color. 
   /// 
   error(str: string) {
-    str;
-    throw new Error('Not Implemented');
+    console.error(str);
   }
 
   /// Prints something good, possibly in green. 
