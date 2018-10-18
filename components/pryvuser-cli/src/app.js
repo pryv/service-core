@@ -1,6 +1,6 @@
 // @flow
 
-const stdout = console; 
+const Configuration = require('./configuration');
 
 class App {
   program: any; 
@@ -11,16 +11,22 @@ class App {
 
   run() {
     const program = this.program;
-    const params = program.parse(process.argv);
-
+    
+    // If no arguments were given, default to printing the help. 
     if (!process.argv.slice(2).length) {
       program.outputHelp();
+      process.exit(0);
     }
+
+    // Parse the command line arguments; triggers subcommand actions.
+    program.parse(process.argv);
   }
 }
 
 module.exports = App; 
 
+/// Configures the commander instance. 
+/// 
 function setupCommander(): any {
   const program = require('commander');
 
@@ -37,7 +43,7 @@ function setupCommander(): any {
   ];
 
   for (let klass of subcommandKlasses) {
-    const instance = new klass();
+    const instance = new klass(Configuration);
     instance.subcommandOf(program);
   }
 
