@@ -46,7 +46,8 @@ class OpDeleteUser {
       await this.deleteUser(username, connManager);    
     }
     catch (error) {
-      i.error(`Unknown error: ${error.toString()}`);
+      i.error(`Unknown error: ${error.message}`);
+      i.trace(error);
     }
   }
 
@@ -172,7 +173,11 @@ class Interaction {
   /// Prints an error, possibly using color. 
   /// 
   error(str: string) {
-    console.error(str);
+    console.error(str); // eslint-disable-line no-console
+  }
+
+  trace(error: Error) {
+    console.trace(error); // eslint-disable-line no-console
   }
 
   /// Prints something good, possibly in green. 

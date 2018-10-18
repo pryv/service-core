@@ -38,6 +38,7 @@ describe('OpDeleteUser', () => {
       println: sinon.spy(), 
       itsOk: sinon.spy(), 
       error: sinon.spy(), 
+      trace: sinon.spy(), 
     };
   });
 

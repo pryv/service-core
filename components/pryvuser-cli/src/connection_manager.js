@@ -2,9 +2,16 @@
 
 import type Configuration from './configuration';
 
-export class MongoDBConnection { }
-export class InfluxDBConnection { }
-export class RegistryConnection { }
+class MongoDB { }
+class InfluxDB { }
+class Registry { }
+
+// Since the 'export' keyword now triggers es6 module loader autodetection and 
+// cannot be used anymore to declare a class type and export it at the same 
+// time, we'll use this hack for now: 
+export type MongoDBConnection = MongoDB; 
+export type InfluxDBConnection = InfluxDB; 
+export type RegistryConnection = Registry; 
 
 class ConnectionManager {
   constructor(config: Configuration) {
@@ -25,4 +32,3 @@ class ConnectionManager {
 }
 
 module.exports = ConnectionManager;
-
