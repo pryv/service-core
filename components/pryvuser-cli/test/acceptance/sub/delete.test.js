@@ -45,6 +45,8 @@ describe('OpDeleteUser', () => {
     // FLOW Forbidden assignment - used for mocking.
     op.preflightChecks = sinon.fake.resolves();
     // FLOW Forbidden assignment - used for mocking.
+    op.getUserConfirmation = sinon.fake.resolves();
+    // FLOW Forbidden assignment - used for mocking.
     op.deleteUser = sinon.fake.resolves();
 
     // Mock out the actual actions, see if things are called
@@ -53,9 +55,25 @@ describe('OpDeleteUser', () => {
     assert.strictEqual(op.preflightChecks.callCount, 1);
     assert.strictEqual(op.deleteUser.callCount, 1);
   });
-  it('stops after preflight if user says no', async () => {
+  it('stops after preflight if preflight fails', async () => {
     // FLOW Forbidden assignment - used for mocking.
-    op.preflightChecks = sinon.fake.rejects(new Error('Test Error'));
+    op.preflightChecks = sinon.fake.rejects(new Error('Preflight says no'));
+    // FLOW Forbidden assignment - used for mocking.
+    op.getUserConfirmation = sinon.fake.resolves();
+    // FLOW Forbidden assignment - used for mocking.
+    op.deleteUser = sinon.fake.resolves();
+
+    // Mock out the actual actions, see if things are called
+    await op.run('jsmith', deleteParams);
+
+    assert.strictEqual(op.preflightChecks.callCount, 1);
+    assert.strictEqual(op.deleteUser.callCount, 0);
+  });
+  it('stops if user doesnt confirm', async () => {
+    // FLOW Forbidden assignment - used for mocking.
+    op.preflightChecks = sinon.fake.resolves();
+    // FLOW Forbidden assignment - used for mocking.
+    op.getUserConfirmation = sinon.fake.rejects(new Error('Simon says no'));
     // FLOW Forbidden assignment - used for mocking.
     op.deleteUser = sinon.fake.resolves();
 

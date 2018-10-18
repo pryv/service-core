@@ -31,19 +31,26 @@ class OpDeleteUser {
       i.printConfigSummary(config);
 
       const connManager = new ConnectionManager(config);
-      await this.preflightChecks(connManager, i);
+      await this.preflightChecks(connManager);
+
+      await this.getUserConfirmation(username); 
 
       // Now connections in `connManager` are good and the user consents to 
       // deletion. Let's go!
 
-      await this.deleteUser(username, connManager, i);    
+      await this.deleteUser(username, connManager);    
     }
     catch (error) {
       i.error(`Unknown error: ${error.toString()}`);
     }
   }
 
-  async deleteUser(username: string, connManager: ConnectionManager, i: Interaction) {
+  /// Performs actual deletion. If the deletion fails, the process exits with 
+  /// exit code 3. 
+  /// 
+  async deleteUser(username: string, connManager: ConnectionManager) {
+    const i = this.interaction;
+
     const deleteActions: Array<[string, Operation]> = [
       ['InfluxDB', new InfluxDBDeleteUser(await connManager.influxDbConnection())],
       ['MongoDB', new MongoDBDeleteUser(await connManager.mongoDbConnection())],
@@ -60,7 +67,7 @@ class OpDeleteUser {
       catch (error) {
         i.error(`Operation failed: ${error}`);
         i.println('Operation aborts.');
-        process.exit(2);
+        process.exit(3);
 
         // NOT REACHED
       }
@@ -70,6 +77,17 @@ class OpDeleteUser {
 
     // NOTE Exactly like preflightChecks for now. Not extracting the pattern 
     //  at this stage. 
+  }
+
+  /// Asks the user to confirm deletion. If the user says no, the process
+  /// exits with code 2. 
+  /// 
+  async getUserConfirmation(username: string) {
+    const i = this.interaction;
+    i.println(`About to delete the user '${username}'.`);
+
+    const userConfirms = await i.askYN('Do you confirm?', false);
+    if (! userConfirms) process.exit(2);
   }
 
   /// Loads the configuration files and returns a `Configuration` instance. 
@@ -84,7 +102,9 @@ class OpDeleteUser {
   /// Performs preflight checks on all connections; if any check fails, the
   /// process is exited with code 1. 
   /// 
-  async preflightChecks(connManager: ConnectionManager, i: Interaction) {
+  async preflightChecks(connManager: ConnectionManager) {
+    const i = this.interaction;
+
     const preflightChecks: Array<[string, Operation]> = [
       ['MongoDB', new MongoDBConnectionCheck(await connManager.mongoDbConnection())],
       ['InfluxDB', new InfluxDBConnectionCheck(await connManager.influxDbConnection())],
@@ -156,6 +176,13 @@ class Interaction {
   itsOk(str: string) {
     str;
     throw new Error('Not Implemented');
+  }
+
+  /// Asks the user a question, accepting answers Yes and No. If
+  /// the user just presses enter, the default (`def`) answer will be given. 
+  /// 
+  async askYN(question: string, def: boolean=false): Promise<boolean> {
+    return def; 
   }
 }
 
