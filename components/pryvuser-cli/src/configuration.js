@@ -7,10 +7,6 @@ export interface ConfigurationLoader {
   load: (basePath: string) => Promise<Configuration>,
 }
 
-type ConfigKinds = 'core' | 'hfs';
-type PathCandidates = {[kind: ConfigKinds]: Array<string>};
-type FoundPaths = { [kind: ConfigKinds]: ?string };
-
 /// Loads and manages configuration files from all components that we access 
 /// from the command line. Typical usage would look like this: 
 /// 
@@ -23,34 +19,16 @@ class Configuration {
   /// Implements the `ConfigurationLoader` interface. 
   /// 
   static async load(basePath: string): Promise<Configuration> {
-    const candidates: PathCandidates = {
-      core: [
-        'conf/core/conf/core.json',
-      ], 
-      hfs: [
-        'conf/hfs/conf/hfs.json',
-      ],
-    };
+    const hfsConfigPath = tryFind(basePath, [
+      'conf/hfs/conf/hfs.json',
+    ]);
 
-    const foundPaths: FoundPaths = {
-      core: null, 
-      hfs: null, 
-    };
-    for (const configKind of Object.keys(candidates)) {
-      const pathCandidates = candidates[configKind];
-      const found = tryFind(basePath, pathCandidates);
+    const coreConfigPath = tryFind(basePath, [
+      'conf/core/conf/core.json',
+    ]);
 
-      if (found == null)
-        throw new Error(
-          `Could not find ${configKind} configuration after looking in all candidate locations.`);
 
-      foundPaths[configKind] = found;
-    }
-
-    if (foundPaths.core == null || foundPaths.hfs == null)
-      throw new Error('AF: All paths have been found here.');
-
-    return new Configuration(foundPaths.core, foundPaths.hfs); 
+    return new Configuration(coreConfigPath, hfsConfigPath); 
 
     // -- Helpers: -------------------------------------------------------------
 
