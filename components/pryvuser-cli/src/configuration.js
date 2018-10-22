@@ -87,6 +87,15 @@ class Configuration {
     };
   }
 
+  fileStoreSettings(): FileStoreSettings {
+    const coreConfig = this.coreConfig();
+
+    return {
+      attachmentsPath: coreConfig.get('eventFiles.attachmentsDirPath').str(),
+      previewsPath: coreConfig.get('eventFiles.previewsDirPath').str(),
+    };
+  }
+
   /// Loads and memoises core configuration. 
   /// 
   coreConfig(): CoreSettings {
@@ -124,5 +133,10 @@ export type InfluxDbSettings = {
   host: string, 
   port: number, 
 };
+
+export type FileStoreSettings = {
+  attachmentsPath: string, 
+  previewsPath: string, 
+}
 
 module.exports = Configuration;

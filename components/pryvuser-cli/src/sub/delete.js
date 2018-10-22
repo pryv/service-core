@@ -4,51 +4,72 @@ import type { CommonParams } from '../app';
 import type { ConfigurationLoader } from '../configuration';
 import type Configuration from '../configuration';
 
-import type { MongoDBConnection, InfluxDBConnection, RegistryConnection } 
-  from '../connection_manager';
-
 type DeleteParams = {
   parent: CommonParams,
 }
 
+const assert = require('assert');
 const ConnectionManager = require('../connection_manager');
 
 class OpDeleteUser {
   configurationLoader: $ReadOnly<ConfigurationLoader>; 
   interaction: Interaction; 
 
+  subsystems: Array<Subsystem>;
+
   constructor(configLoader: $ReadOnly<ConfigurationLoader>) {
     this.configurationLoader = configLoader;
     this.interaction = new Interaction(); 
+
+    this.subsystems = []; 
   }
 
   /// Delete a user completely, provided the checks are all green. This is 
   /// the main entry point used by tests and the commander interface. 
   /// 
   async run(username: string, params: DeleteParams) {
-    params;
-
     const i = this.interaction;
-
     try {
-      const config = await this.loadConfiguration();
-
-      i.printConfigSummary(config);
-
-      const connManager = new ConnectionManager(config);
-      await this.preflightChecks(connManager);
-
-      await this.getUserConfirmation(username); 
-
-      // Now connections in `connManager` are good and the user consents to 
-      // deletion. Let's go!
-
-      await this.deleteUser(username, connManager);    
+      this.runWithoutErrorHandling(username);
     }
     catch (error) {
       i.error(`Unknown error: ${error.message}`);
       i.trace(error);
     }
+  }
+
+  async runWithoutErrorHandling(username: string) {
+    const i = this.interaction;
+
+    const config = await this.loadConfiguration();
+
+    i.printConfigSummary(config);
+
+    const connManager = new ConnectionManager(config);
+
+    await this.initSubsystems(connManager);
+
+    await this.preflightChecks(username);
+
+    await this.getUserConfirmation(username);
+
+    // Now connections in `connManager` are good and the user consents to 
+    // deletion. Let's go!
+
+    await this.deleteUser(username, connManager);    
+  }
+
+  async initSubsystems(connManager: ConnectionManager) {
+    const subsystems = this.subsystems;
+
+    assert(subsystems.length <= 0, "You shouldn't reuse OpDeleteUser");
+
+    subsystems.push(
+      new Thin('MongoDB', await connManager.mongoDbConnection()), 
+      new Thin('InfluxDB', await connManager.influxDbConnection()),
+      new Thin('File Store', await connManager.fileStoreConnection()), 
+      new Thin('Registry', await connManager.registryConnection()),
+    );
   }
 
   /// Performs actual deletion. If the deletion fails, the process exits with 
@@ -57,29 +78,29 @@ class OpDeleteUser {
   async deleteUser(username: string, connManager: ConnectionManager) {
     const i = this.interaction;
 
-    const deleteActions: Array<[string, Operation]> = [
-      ['InfluxDB', new InfluxDBDeleteUser(await connManager.influxDbConnection())],
-      ['MongoDB', new MongoDBDeleteUser(await connManager.mongoDbConnection())],
-      ['Pryv.IO Registry', new RegistryDeleteUser(await connManager.registryConnection())],
-    ];
+    // const deleteActions: Array<[string, Operation]> = [
+    //   ['InfluxDB', new InfluxDBDeleteUser(await connManager.influxDbConnection())],
+    //   ['MongoDB', new MongoDBDeleteUser(await connManager.mongoDbConnection())],
+    //   ['Pryv.IO Registry', new RegistryDeleteUser(await connManager.registryConnection())],
+    // ];
 
-    for (const [systemName, operation] of deleteActions) {
-      i.print(`[${systemName}] Deleting '${username}'...`);
+    // for (const [systemName, operation] of deleteActions) {
+    //   i.print(`[${systemName}] Deleting '${username}'...`);
 
-      try {
-        await operation.run(); 
-        i.println('done.');
-      }
-      catch (error) {
-        i.error(`Operation failed: ${error}`);
-        i.println('Operation aborts.');
-        process.exit(3);
+    //   try {
+    //     await operation.run(); 
+    //     i.println('done.');
+    //   }
+    //   catch (error) {
+    //     i.error(`Operation failed: ${error}`);
+    //     i.println('Operation aborts.');
+    //     process.exit(3);
 
-        // NOT REACHED
-      }
-    }
+    //     // NOT REACHED
+    //   }
+    // }
 
-    i.itsOk(`User '${username}' was sucessfully deleted.`);
+    // i.itsOk(`User '${username}' was sucessfully deleted.`);
 
     // NOTE Exactly like preflightChecks for now. Not extracting the pattern 
     //  at this stage. 
@@ -108,20 +129,17 @@ class OpDeleteUser {
   /// Performs preflight checks on all connections; if any check fails, the
   /// process is exited with code 1. 
   /// 
-  async preflightChecks(connManager: ConnectionManager) {
+  async preflightChecks(username: string) {
     const i = this.interaction;
+    const subsystems = this.subsystems;
 
-    const preflightChecks: Array<[string, Operation]> = [
-      ['MongoDB', new MongoDBConnectionCheck(await connManager.mongoDbConnection())],
-      ['InfluxDB', new InfluxDBConnectionCheck(await connManager.influxDbConnection())],
-      ['Pryv.IO Registry', new RegistryConnectionCheck(await connManager.registryConnection())],
-    ];
+    for (const system of subsystems) {
+      i.print(`[preflight] Checking ${system.name}...`);
 
-    for (const [systemName, check] of preflightChecks) {
-      i.print(`[preflight] Checking ${systemName}...`);
-
-      const error = await check.run();
-      if (error != null) {
+      try {
+        await system.preflight(username);
+      }
+      catch (error) {
         i.error(`Check failed: ${error}`);
         process.exit(1);
         // NOT REACHED
@@ -198,44 +216,26 @@ class Interaction {
   }
 }
 
-interface Operation {
-  run(): Promise<void>,
+interface Subsystem {
+  name: string; 
+  preflight(username: string): Promise<void>;
 }
 
-class MongoDBConnectionCheck implements Operation {
-  constructor(conn: MongoDBConnection) { conn; }
-  run(): Promise<void> {
-    throw new Error('Not Implemented');
-  }
-}
-class InfluxDBConnectionCheck implements Operation {
-  constructor(conn: InfluxDBConnection) { conn; }
-  run(): Promise<void> {
-    throw new Error('Not Implemented');
-  }
-}
-class RegistryConnectionCheck implements Operation {
-  constructor(conn: RegistryConnection) { conn; }
-  run(): Promise<void> {
-    throw new Error('Not Implemented');
-  }
+interface PreflightConnection {
+  preflight(username: string): Promise<void>;
 }
 
-class MongoDBDeleteUser implements Operation {
-  constructor(conn: MongoDBConnection) { conn; }
-  run(): Promise<void> {
-    throw new Error('Not Implemented');
+class Thin implements Subsystem {
+  name: string; 
+  conn: *; 
+  constructor(name: string, conn: PreflightConnection) {
+    this.name = name;
+    this.conn = conn;
   }
-}
-class InfluxDBDeleteUser implements Operation {
-  constructor(conn: InfluxDBConnection) { conn; }
-  run(): Promise<void> {
-    throw new Error('Not Implemented');
-  }
-}
-class RegistryDeleteUser implements Operation {
-  constructor(conn: RegistryConnection) { conn; }
-  run(): Promise<void> {
-    throw new Error('Not Implemented');
+
+  preflight(username: string): Promise<void> {
+    const conn = this.conn; 
+    
+    return conn.preflight(username);
   }
 }

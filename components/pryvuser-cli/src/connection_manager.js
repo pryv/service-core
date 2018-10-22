@@ -2,11 +2,18 @@
 
 import type Configuration from './configuration';
 
-import type { MongoDbSettings, InfluxDbSettings, RegisterSettings } from './configuration';
+import type { 
+  MongoDbSettings, InfluxDbSettings, RegisterSettings,
+  FileStoreSettings } 
+  from './configuration';
 
 class MongoDB { 
   constructor(config: MongoDbSettings) {
     config; 
+  }
+
+  preflight(username: string): Promise<void> {
+    throw new Error('Not Implemented');
   }
 }
 
@@ -14,32 +21,44 @@ class InfluxDB {
   constructor(config: InfluxDbSettings) {
     config;
   }
+
+  preflight(username: string): Promise<void> {
+    throw new Error('Not Implemented');
+  }
 }
 class Registry { 
   constructor(config: RegisterSettings) {
     config;
   }
+
+  preflight(username: string): Promise<void> {
+    throw new Error('Not Implemented');
+  }
+}
+class FileStore { 
+  constructor(config: FileStoreSettings) {
+    config;
+  }
+
+  preflight(username: string): Promise<void> {
+    throw new Error('Not Implemented');
+  }
 }
 
-// Since the 'export' keyword now triggers es6 module loader autodetection and 
-// cannot be used anymore to declare a class type and export it at the same 
-// time, we'll use this hack for now: 
-export type MongoDBConnection = MongoDB; 
-export type InfluxDBConnection = InfluxDB; 
-export type RegistryConnection = Registry; 
 
 class ConnectionManager {
   config: Configuration;
   
-  mongoDbConn: MongoDB;
-  influxDbConn: InfluxDB;
-  registerConn: Registry;
+  mongoDbConn: ?MongoDB;
+  influxDbConn: ?InfluxDB;
+  registerConn: ?Registry;
+  fileStore: ?FileStore;
 
   constructor(config: Configuration) {
     this.config = config; 
   }
 
-  async mongoDbConnection(): Promise<MongoDBConnection> {
+  async mongoDbConnection(): Promise<MongoDB> {
     if (this.mongoDbConn != null) return this.mongoDbConn;
 
     const config = this.config; 
@@ -50,7 +69,7 @@ class ConnectionManager {
     return conn;
   }
 
-  async influxDbConnection(): Promise<InfluxDBConnection> {
+  async influxDbConnection(): Promise<InfluxDB> {
     if (this.influxDbConn != null) return this.influxDbConn;
 
     const config = this.config;
@@ -61,13 +80,24 @@ class ConnectionManager {
     return conn;
   }
 
-  async registryConnection(): Promise<RegistryConnection> {
+  async registryConnection(): Promise<Registry> {
     if (this.registerConn != null) return this.registerConn;
 
     const config = this.config;
     const conn = new Registry(config.registerSettings());
 
     this.registerConn = conn;
+
+    return conn;
+  }
+
+  async fileStoreConnection(): Promise<FileStore> {
+    if (this.fileStore != null) return this.fileStore;
+
+    const config = this.config;
+    const conn = new FileStore(config.fileStoreSettings());
+
+    this.fileStore = conn;
 
     return conn;
   }
