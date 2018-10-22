@@ -56,7 +56,7 @@ class OpDeleteUser {
     // Now connections in `connManager` are good and the user consents to 
     // deletion. Let's go!
 
-    await this.deleteUser(username, connManager);    
+    await this.deleteUser(username);    
   }
 
   async initSubsystems(connManager: ConnectionManager) {
@@ -75,35 +75,26 @@ class OpDeleteUser {
   /// Performs actual deletion. If the deletion fails, the process exits with 
   /// exit code 3. 
   /// 
-  async deleteUser(username: string, connManager: ConnectionManager) {
+  async deleteUser(username: string) {
     const i = this.interaction;
+    const subsystems = this.subsystems;
 
-    // const deleteActions: Array<[string, Operation]> = [
-    //   ['InfluxDB', new InfluxDBDeleteUser(await connManager.influxDbConnection())],
-    //   ['MongoDB', new MongoDBDeleteUser(await connManager.mongoDbConnection())],
-    //   ['Pryv.IO Registry', new RegistryDeleteUser(await connManager.registryConnection())],
-    // ];
+    for (const system of subsystems) {
+      i.print(`[${system.name}] Deleting '${username}'...`);
 
-    // for (const [systemName, operation] of deleteActions) {
-    //   i.print(`[${systemName}] Deleting '${username}'...`);
+      try {
+        await system.deleteUser(username);
+        i.println('done.');
+      }
+      catch (error) {
+        i.error(`Operation failed: ${error}`);
+        i.println('Operation aborts.');
+        process.exit(3);
+        // NOT REACHED
+      }
+    }
 
-    //   try {
-    //     await operation.run(); 
-    //     i.println('done.');
-    //   }
-    //   catch (error) {
-    //     i.error(`Operation failed: ${error}`);
-    //     i.println('Operation aborts.');
-    //     process.exit(3);
-
-    //     // NOT REACHED
-    //   }
-    // }
-
-    // i.itsOk(`User '${username}' was sucessfully deleted.`);
-
-    // NOTE Exactly like preflightChecks for now. Not extracting the pattern 
-    //  at this stage. 
+    i.itsOk(`User '${username}' was sucessfully deleted.`);
   }
 
   /// Asks the user to confirm deletion. If the user says no, the process
@@ -204,8 +195,7 @@ class Interaction {
   /// Prints something good, possibly in green. 
   /// 
   itsOk(str: string) {
-    str;
-    throw new Error('Not Implemented');
+    console.info(str); // eslint-disable-line no-console
   }
 
   /// Asks the user a question, accepting answers Yes and No. If
@@ -219,16 +209,18 @@ class Interaction {
 interface Subsystem {
   name: string; 
   preflight(username: string): Promise<void>;
+  deleteUser(username: string): Promise<void>;
 }
 
-interface PreflightConnection {
+interface GenericConnection {
   preflight(username: string): Promise<void>;
+  deleteUser(username: string): Promise<void>;
 }
 
 class Thin implements Subsystem {
   name: string; 
   conn: *; 
-  constructor(name: string, conn: PreflightConnection) {
+  constructor(name: string, conn: GenericConnection) {
     this.name = name;
     this.conn = conn;
   }
@@ -237,5 +229,11 @@ class Thin implements Subsystem {
     const conn = this.conn; 
     
     return conn.preflight(username);
+  }
+
+  deleteUser(username: string): Promise<void> {
+    const conn = this.conn;
+
+    return conn.deleteUser(username);
   }
 }

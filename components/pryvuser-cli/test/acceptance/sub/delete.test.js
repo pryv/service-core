@@ -134,7 +134,20 @@ describe('OpDeleteUser', () => {
       }
     });
     it('deletes the user', async () => {
+      for (const conn of connections) {
+        conn.deleteUser = sinon.fake.resolves();
+      }
 
+      await op.initSubsystems(connManager);
+      await op.deleteUser('jsmith');
+
+      // If the above line doesn't throw, the test succeeds. 
+
+      // Also, make sure we did indeed call 'deleteUser' on all connections. This
+      // is ugly, I know. 
+      for (const conn of connections) {
+        assert.isNotNull(conn.deleteUser.lastCall);
+      }
     });
   });
 
