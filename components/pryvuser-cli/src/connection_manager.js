@@ -13,16 +13,25 @@ class MongoDB {
   }
 
   preflight(username: string): Promise<void> {
+    username; 
+    throw new Error('Not Implemented');
+  }
+  deleteUser(username: string): Promise<void> {
+    username;
     throw new Error('Not Implemented');
   }
 }
-
 class InfluxDB { 
   constructor(config: InfluxDbSettings) {
     config;
   }
 
   preflight(username: string): Promise<void> {
+    username; 
+    throw new Error('Not Implemented');
+  }
+  deleteUser(username: string): Promise<void> {
+    username;
     throw new Error('Not Implemented');
   }
 }
@@ -32,6 +41,11 @@ class Registry {
   }
 
   preflight(username: string): Promise<void> {
+    username; 
+    throw new Error('Not Implemented');
+  }
+  deleteUser(username: string): Promise<void> {
+    username;
     throw new Error('Not Implemented');
   }
 }
@@ -41,6 +55,11 @@ class FileStore {
   }
 
   preflight(username: string): Promise<void> {
+    username; 
+    throw new Error('Not Implemented');
+  }
+  deleteUser(username: string): Promise<void> {
+    username;
     throw new Error('Not Implemented');
   }
 }

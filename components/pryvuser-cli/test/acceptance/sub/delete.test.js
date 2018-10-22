@@ -14,12 +14,6 @@ const assert = chai.assert;
 const sinon = require('sinon');
 
 describe('OpDeleteUser', () => {
-  const deleteParams = {
-    parent: {
-      interaction: false, 
-    },
-  };
-
   const config = {
     mongoDbSettings: () => {},
     influxDbSettings: () => {},
@@ -70,7 +64,7 @@ describe('OpDeleteUser', () => {
     // FLOW Forbidden assignment - used for mocking.
     op.deleteUser = sinon.fake.resolves();
 
-    assertRejects(() => op.runWithoutErrorHandling('jsmith'))
+    assertRejects(() => op.runWithoutErrorHandling('jsmith'));
   });
   it('stops if user doesnt confirm', async () => {
     // FLOW Forbidden assignment - used for mocking.
@@ -80,7 +74,7 @@ describe('OpDeleteUser', () => {
     // FLOW Forbidden assignment - used for mocking.
     op.deleteUser = sinon.fake.resolves();
 
-    assertRejects(() => op.runWithoutErrorHandling('jsmith'))
+    assertRejects(() => op.runWithoutErrorHandling('jsmith'));
   });
 
   describe('when stubbing connections to all subsystems', () => {

@@ -28,6 +28,8 @@ class OpDeleteUser {
   /// the main entry point used by tests and the commander interface. 
   /// 
   async run(username: string, params: DeleteParams) {
+    params; 
+
     const i = this.interaction;
     try {
       this.runWithoutErrorHandling(username);
@@ -242,6 +244,6 @@ class Thin implements Subsystem {
   deleteUser(username: string): Promise<void> {
     const conn = this.conn;
 
-    // return conn.deleteUser(username);
+    return conn.deleteUser(username);
   }
 }

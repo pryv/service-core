@@ -6,10 +6,10 @@ function fixturePath(...elements) {
     __dirname,
     '../fixtures/',
     ...elements
-  )
+  );
 }
 
 module.exports = {
   fixturePath,
-}
+};
 
