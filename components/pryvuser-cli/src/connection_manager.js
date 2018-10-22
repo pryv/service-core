@@ -3,24 +3,13 @@
 import type Configuration from './configuration';
 
 import type { 
-  MongoDbSettings, InfluxDbSettings, RegisterSettings,
+  InfluxDbSettings, RegisterSettings,
   FileStoreSettings } 
   from './configuration';
 
-class MongoDB { 
-  constructor(config: MongoDbSettings) {
-    config; 
-  }
 
-  preflight(username: string): Promise<void> {
-    username; 
-    throw new Error('Not Implemented');
-  }
-  deleteUser(username: string): Promise<void> {
-    username;
-    throw new Error('Not Implemented');
-  }
-}
+const MongoDB = require('./connection/mongodb');
+
 class InfluxDB { 
   constructor(config: InfluxDbSettings) {
     config;
