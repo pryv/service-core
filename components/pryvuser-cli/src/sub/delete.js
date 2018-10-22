@@ -217,6 +217,14 @@ interface GenericConnection {
   deleteUser(username: string): Promise<void>;
 }
 
+// Represents a backend system that we perform user deletion on. Right now, 
+// all the backends can be treated the same way; no specialised code is needed
+// in this 'subsystem' layer. As a consequence, we use this 'generic' Thin
+// subsystem to replace the layer for now. 
+// 
+// Behaviour that would go into this layer: Anything more complex than letting
+// a single data backend handle the operation. 
+// 
 class Thin implements Subsystem {
   name: string; 
   conn: *; 
@@ -234,6 +242,6 @@ class Thin implements Subsystem {
   deleteUser(username: string): Promise<void> {
     const conn = this.conn;
 
-    return conn.deleteUser(username);
+    // return conn.deleteUser(username);
   }
 }

@@ -146,7 +146,7 @@ describe('OpDeleteUser', () => {
       // Also, make sure we did indeed call 'deleteUser' on all connections. This
       // is ugly, I know. 
       for (const conn of connections) {
-        assert.isNotNull(conn.deleteUser.lastCall);
+        assert.isNotNull(conn.deleteUser.lastCall, '#deleteUser should have been called.');
       }
     });
   });
