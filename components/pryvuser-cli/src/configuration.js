@@ -75,6 +75,8 @@ class Configuration {
       host: coreConfig.get('database.host').str(), 
       port: coreConfig.get('database.port').num(),
       dbname: coreConfig.get('database.name').str(),  
+
+      fileStore: this.fileStoreSettings(), 
     };
   }
 
@@ -127,6 +129,8 @@ export type MongoDbSettings = {
   host: string, 
   port: number, 
   dbname: string, 
+
+  fileStore: FileStoreSettings,
 };
 
 export type InfluxDbSettings = {

@@ -15,7 +15,9 @@ const sinon = require('sinon');
 
 describe('OpDeleteUser', () => {
   const config = {
-    mongoDbSettings: () => {},
+    mongoDbSettings: () => {
+      return { fileStore: {} };
+    },
     influxDbSettings: () => {},
     registerSettings: () => {},
     fileStoreSettings: () => {},

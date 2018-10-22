@@ -12,6 +12,9 @@ const NullLogger = require('components/utils/src/logging').NullLogger;
 import type { MongoDbSettings } from '../../../src/configuration';
 const MongoDB = require('../../../src/connection/mongodb');
 
+const chai = require('chai');
+const assert = chai.assert;
+
 const { databaseFixture } = require('components/test-helpers');
 
 describe('Connection/MongoDB', () => {
@@ -19,6 +22,10 @@ describe('Connection/MongoDB', () => {
     host: 'localhost',
     port: 27017,
     dbname: 'pryv-node',
+    fileStore: {
+      attachmentsPath: '/tmp/', 
+      previewsPath: '/tmp/',
+    },
   };
 
   describe('when given a user fixture', () => {
@@ -91,7 +98,13 @@ describe('Connection/MongoDB', () => {
       });
     });
     describe('#deleteUser(username)', () => {
-      it('deletes the user from MongoDB');
+      it('deletes the user from MongoDB', async () => {
+        await mongodb.deleteUser(userId);
+
+        const user = await mongodb.findUser(userId);
+        
+        assert.isNull(user);
+      });
     });
   });
   
