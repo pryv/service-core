@@ -26,6 +26,13 @@ has his/her data on the current machine. Valid options are:
     allowing to run the script as part of a bigger automated procedure. 
 
 
+# HACKING
+
+To run the tests: 
+
+* Start MongoDB and InfluxDB locally
+* Run `yarn test`
+
 # LICENSE
 
 Copyright 2013-2018, Pryv SA. All rights reserved. 

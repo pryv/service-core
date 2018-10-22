@@ -1,0 +1,8 @@
+
+
+# 0.2
+
+* Adds InfluxDB and Registry deletion; refactors most of the code to conform to 
+  our current standards. 
+
+  
