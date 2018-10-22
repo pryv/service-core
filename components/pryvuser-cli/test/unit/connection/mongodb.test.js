@@ -6,19 +6,22 @@ const lodash = require('lodash');
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
 
+const { Database } = require('components/storage');
+const NullLogger = require('components/utils/src/logging').NullLogger;
+
 import type { MongoDbSettings } from '../../../src/configuration';
 const MongoDB = require('../../../src/connection/mongodb');
 
 const { databaseFixture } = require('components/test-helpers');
 
 describe('Connection/MongoDB', () => {
-  describe('when given a user fixture', () => {
-    const settings: MongoDbSettings = {
-      host: 'localhost',
-      port: 27017,
-      dbname: 'pryv-node',
-    };
+  const settings: MongoDbSettings = {
+    host: 'localhost',
+    port: 27017,
+    dbname: 'pryv-node',
+  };
 
+  describe('when given a user fixture', () => {
     // Uses dynamic fixtures:
     const mongoFixtures = databaseFixture(
       produceMongoConnection(
@@ -91,21 +94,18 @@ describe('Connection/MongoDB', () => {
       it('deletes the user from MongoDB');
     });
   });
+  
+  // Produces and returns a connection to MongoDB. 
+  // 
+  function produceMongoConnection(settings: Object): Database {
+    const copy = lodash.cloneDeep(settings);
+    copy.name = copy.dbname;
+
+    const database = new Database(
+      copy,
+      new NullLogger());
+
+    return database;
+  }
 });
 
-
-const { Database } = require('components/storage');
-const NullLogger = require('components/utils/src/logging').NullLogger;
-
-// Produces and returns a connection to MongoDB. 
-// 
-function produceMongoConnection(settings: Object): Database {
-  const copy = lodash.cloneDeep(settings);
-  copy.name = copy.dbname;
-
-  const database = new Database(
-    copy,
-    new NullLogger());
-
-  return database;
-}

@@ -4,7 +4,7 @@ const path = require('path');
 function fixturePath(...elements) {
   return path.join(
     __dirname,
-    '../fixtures/',
+    './fixtures/',
     ...elements
   );
 }
