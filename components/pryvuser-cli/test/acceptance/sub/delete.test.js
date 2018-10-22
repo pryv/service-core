@@ -151,6 +151,9 @@ describe('OpDeleteUser', () => {
     });
   });
 
+  // Calls `fun`; throws an AssertionError if fun doesn't return a promise that 
+  // rejects (or throws a synchronous Error).
+  // 
   async function assertRejects(fun) {
     let throws = false; 
 
