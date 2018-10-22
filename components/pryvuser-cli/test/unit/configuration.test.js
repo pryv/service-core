@@ -5,7 +5,7 @@ const Configuration = require('../../src/configuration');
 
 /* global describe, it, beforeEach */
 
-const { fixturePath } = require('./test-helpers');
+const { fixturePath } = require('../test-helpers');
 const chai = require('chai');
 const assert = chai.assert;
 
