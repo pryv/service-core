@@ -23,7 +23,8 @@ describe('Connection/InfluxDB', () => {
       });
     });
     describe('#deleteUser(username)', () => {
-      it.skip("deletes the user's database", () => {
+      it("deletes the user's database", async () => {
+        await influxdb.deleteUser('jsmith');
       });
     });
   });  

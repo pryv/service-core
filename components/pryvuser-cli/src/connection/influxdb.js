@@ -1,9 +1,16 @@
 // @flow
 
+const bluebird = require('bluebird');
 const Influx = require('influx');
 const assert = require('assert');
 
 import type { InfluxDbSettings } from '../configuration';
+
+/// Controls how many 'drop measurement' statements are issued concurrently. 
+/// A high number will probably speed up user deletion at the expense of 
+/// increased load on InfluxDB. 
+/// 
+const DROP_CONCURRENCY = 5; 
 
 class InfluxDB {
   conn: *; 
@@ -12,10 +19,9 @@ class InfluxDB {
     this.conn = new Influx.InfluxDB(config);
   }
 
-  async preflight(username: string): Promise<void> {
-    const influx = this.conn; 
-
+  dbFromUsername(username: string): string {
     // InfluxDB databases are currently named after this schema: 
+    // 
     //  user.cjnkfpx3a000516jn1my5wmdd
     //  ^    ^
     //  |    `- user name
@@ -23,14 +29,28 @@ class InfluxDB {
     // 
     // I know this because I read hfs-server/src/metadata_cache.js. 
 
-    const measurements = await influx.getMeasurements(username);
+    return `user.${username}`;
+  }
+
+  async preflight(username: string): Promise<void> {
+    const influx = this.conn; 
+
+    const measurements = await influx.getMeasurements(
+      this.dbFromUsername(username));
 
     // We just require 'measurements' to be an array, whatever its size. 
     assert(Array.isArray(measurements));
   }
-  deleteUser(username: string): Promise<void> {
-    username;
-    throw new Error('Not Implemented');
+  async deleteUser(username: string): Promise<void> {
+    const influx = this.conn; 
+    const dbName = this.dbFromUsername(username);
+
+    const measurements = await influx.getMeasurements(
+      dbName);
+
+    await bluebird.map(measurements, 
+      name => influx.dropMeasurement(name, dbName), 
+      { concurrency: DROP_CONCURRENCY });
   }
 }
 
