@@ -9,20 +9,13 @@ const express = require('express');
 
 const authMod = require('../../../src/routes/auth');
 
+const settings = require('../../../src/settings').load();
+
 describe('Authentication', function() {
-  const authSettings = {
-    sessionMaxAge: 3600*1000, 
-  };
-  const httpSettings = {
-    ip: '127.0.0.1',
-  };
-  // if this is not initialized, the authMod() constructor for accessing to properties of undefined object deprecatedSettings
-  const deprecatedSettings = {
-    auth: {}
-  };
+  
   
   describe('hasProperties', function() {
-    const {hasProperties} = authMod(express(), null, authSettings, httpSettings, deprecatedSettings);
+    const {hasProperties} = authMod(express(), null, settings);
     const obj = { a: 1, b: 2 };
     const keys = ['a', 'b'];
     
