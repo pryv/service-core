@@ -1,16 +1,9 @@
 // @flow
 
-const bluebird = require('bluebird');
 const Influx = require('influx');
 const assert = require('assert');
 
 import type { InfluxDbSettings } from '../configuration';
-
-/// Controls how many 'drop measurement' statements are issued concurrently. 
-/// A high number will probably speed up user deletion at the expense of 
-/// increased load on InfluxDB. 
-/// 
-const DROP_CONCURRENCY = 5; 
 
 class InfluxDB {
   conn: *; 
