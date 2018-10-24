@@ -43,14 +43,9 @@ class InfluxDB {
   }
   async deleteUser(username: string): Promise<void> {
     const influx = this.conn; 
-    const dbName = this.dbFromUsername(username);
 
-    const measurements = await influx.getMeasurements(
-      dbName);
-
-    await bluebird.map(measurements, 
-      name => influx.dropMeasurement(name, dbName), 
-      { concurrency: DROP_CONCURRENCY });
+    await influx.dropDatabase(
+      this.dbFromUsername(username));
   }
 }
 
