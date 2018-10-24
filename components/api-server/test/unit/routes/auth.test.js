@@ -16,9 +16,13 @@ describe('Authentication', function() {
   const httpSettings = {
     ip: '127.0.0.1',
   };
+  // if this is not initialized, the authMod() constructor for accessing to properties of undefined object deprecatedSettings
+  const deprecatedSettings = {
+    auth: {}
+  };
   
   describe('hasProperties', function() {
-    const {hasProperties} = authMod(express(), null, authSettings, httpSettings);
+    const {hasProperties} = authMod(express(), null, authSettings, httpSettings, deprecatedSettings);
     const obj = { a: 1, b: 2 };
     const keys = ['a', 'b'];
     

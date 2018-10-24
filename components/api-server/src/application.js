@@ -82,6 +82,7 @@ class Application {
       httpSettings: settings.get('http').obj(),
       servicesSettings: settings.get('services').obj(),
       updatesSettings: settings.get('updates').obj(),
+      deprecatedSettings: settings.get('deprecated').obj(),
     });
     
     // DI on the topic of storage and MongoDB access

@@ -187,6 +187,16 @@ config.schema = {
       default: false,
       doc: 'Used for tests to reverse the pub-sub init order'
     }
+  },
+  deprecated: {
+    auth: {
+      ssoIsWhoamiActivated: {
+        format: Boolean,
+        default: false,
+        doc: 'Used to activate route `GET /auth/who-am-i` which has been deactivated ' +
+          'by default because of a security vulnerability',
+      }
+    }
   }
 };
 

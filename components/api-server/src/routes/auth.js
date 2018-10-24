@@ -18,12 +18,13 @@ declare class RequestWithContext extends express$Request {
  *
  * @param {Object} api The API object for registering methods
  */
-module.exports = function (expressApp: express$Application, api: any, authSettings: Object, httpSettings: Object) {
+module.exports = function (expressApp: express$Application, api: any, authSettings: Object, httpSettings: Object,     deprecatedSettings: Object) {
   const ms14days = 1000 * 60 * 60 * 24 * 14;
   const sessionMaxAge = authSettings.sessionMaxAge || ms14days;
   const ssoCookieDomain = authSettings.ssoCookieDomain || httpSettings.ip;
   const ssoCookieSignSecret = authSettings.ssoCookieSignSecret || 'Hallowed Be Thy Name, O Node';
   const ssoCookieSecure = process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'test';
+  const ssoIsWhoamiActivated: boolean = deprecatedSettings.auth.ssoIsWhoamiActivated;
 
   // Returns true if the given `obj` has all of the property values identified
   // by the names contained in `keys`.
@@ -58,6 +59,10 @@ module.exports = function (expressApp: express$Application, api: any, authSettin
     // Define local routes
     router.all('*', cookieParser(ssoCookieSignSecret));
     router.get('/who-am-i', function routeWhoAmI(req: express$Request, res, next) {
+      if (! ssoIsWhoamiActivated) {
+        return next(errors.unknownResource());
+      }
+
       var ssoCookie = req.signedCookies.sso;
       if (! ssoCookie || typeof ssoCookie !== 'object') {
         return next(errors.invalidCredentials('Not signed-on'));
