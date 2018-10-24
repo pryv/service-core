@@ -100,7 +100,7 @@ EventFiles.prototype.saveAttachedFile = function (tempPath, user, eventId, fileI
     writeStream.on('error', callback);
     writeStream.on('close', function () {
       fs.unlink(tempPath, function (err) {
-        if (err) { return callback(err); }
+        if (err) { return callback(err); }
         callback(null, fileId);
       });
     });

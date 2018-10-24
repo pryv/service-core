@@ -3,13 +3,13 @@
 import type Configuration from './configuration';
 
 import type { 
-  RegisterSettings,
-  FileStoreSettings } 
+  RegisterSettings } 
   from './configuration';
 
 
 const MongoDB = require('./connection/mongodb');
 const InfluxDB = require('./connection/influxdb');
+const FileStore = require('./connection/file_store');
 
 class Registry { 
   constructor(config: RegisterSettings) {
@@ -25,21 +25,6 @@ class Registry {
     throw new Error('Not Implemented');
   }
 }
-class FileStore { 
-  constructor(config: FileStoreSettings) {
-    config;
-  }
-
-  preflight(username: string): Promise<void> {
-    username; 
-    throw new Error('Not Implemented');
-  }
-  deleteUser(username: string): Promise<void> {
-    username;
-    throw new Error('Not Implemented');
-  }
-}
-
 
 class ConnectionManager {
   config: Configuration;
