@@ -27,6 +27,8 @@
 
   - 2018091401: Details will be disclosed after Nov/18
 
+  - 2018102401: Details will be disclosed ???
+
 ## 1.2.18
 
 - Fix login with Firefox (and other browsers using Referer but no Origin)
