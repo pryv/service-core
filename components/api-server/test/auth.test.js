@@ -498,10 +498,10 @@ describe('auth', function() {
   describe('SSO support', function() {
     // WARNING: exceptionally, tests in here are interdependent and their sequence matters
 
-    var cookie = require('cookie'),
-        persistentReq = request.agent(),
-        ssoInfo,
-        cookieOptions;
+    const cookie = require('cookie');
+    const persistentReq = request.agent();
+    let ssoInfo;
+    let cookieOptions;
     const persistentReq2 = request.agent();
 
     before(function (done) {
