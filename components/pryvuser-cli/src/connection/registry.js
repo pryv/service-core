@@ -49,10 +49,6 @@ class Registry {
     // On success, return null
     if (res.status == 200) return null; 
 
-    switch (res.status) {
-      case 403: return 'Cannot access registry, forbidden.'; 
-    }
-
     return 'Unknown error.';
   }
 }
