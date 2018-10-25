@@ -59,28 +59,17 @@ describe('Connection/FileStore', () => {
       it('works', async () => {
         await fileStore.preflight('jsmith');
       });
-      it.skip("fails when this process doesn't have the right kind of access", () => {
-        resolvesWithError(
-          () => fileStore.preflight('jsmith')
-        );
-      });
     });
     describe('#deleteUser(username)', () => {
-      it.skip("deletes the user's files", () => {
-        
+      it("deletes the user's files", async () => {
+        await fileStore.deleteUser('jsmith');        
+
+        // jsmith's user.id happens to be 'foobar': 
+        assert.throws(
+          () => fs.statSync(path.join(attachmentsPath.name, 'foobar')) );
+        assert.throws(
+          () => fs.statSync(path.join(previewsPath.name, 'foobar')) );
       });
     });
   });
 });
-
-async function resolvesWithError(fun: () => Promise<void>) {
-  let erroredOut = false; 
-  try {
-    fun(); 
-  }
-  catch (err) {
-    erroredOut = true; 
-  }
-
-  assert.isTrue(erroredOut);
-}

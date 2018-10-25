@@ -1,14 +1,20 @@
 // @flow
 
+// NOTE I've chosen to implement directory path construction using the base API
+//  (path, fs) and not the API in EventFiles. As soon as path creation gets more
+//  complex than 'path.join(a, b)', we should consider merging these bits. 
+
 import type { FileStoreSettings } from '../configuration'; 
 
+const bluebird = require('bluebird');
+const rimraf = require('rimraf');
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 
 interface UserAttributes {
   id: string, 
-};
+}
 interface UserLoader {
   findUser(username: string): Promise<?UserAttributes>; 
 }
@@ -31,7 +37,6 @@ class FileStore {
     //  we'll be able to delete it. 
 
     const config = this.config; 
-    const mongodb = this.mongodb;
     const paths = [config.attachmentsPath, config.previewsPath]; 
 
     // Check if the base directories exist. 
@@ -43,6 +48,7 @@ class FileStore {
     // `paths` constant above. I know this because I read EventFiles#getXPath(...)
     // in components/storage/src/user/EventFiles.js.
 
+    const mongodb = this.mongodb;
     const user = await mongodb.findUser(username);
     if (user == null) 
       throw new Error(`Could not find user '${username}' in main database.`);
@@ -64,9 +70,22 @@ class FileStore {
     if (inaccessibleDirectory != null) 
       throw new Error(`Directory '${inaccessibleDirectory}' is inaccessible or missing.`);
   }
-  deleteUser(username: string): Promise<void> {
-    username;
-    throw new Error('Not Implemented');
+  async deleteUser(username: string): Promise<void> {
+    const config = this.config; 
+    const paths = [config.attachmentsPath, config.previewsPath]; 
+
+    const mongodb = this.mongodb;
+    const user = await mongodb.findUser(username);
+    if (user == null)
+      throw new Error(`Could not find user '${username}' in main database.`);
+
+    const userPaths =  paths.map(p => path.join(p, user.id));
+    const opts = {
+      disableGlob: true, 
+    };
+
+    await bluebird.map(userPaths, 
+      path => bluebird.fromCallback(cb => rimraf(path, opts, cb)));
   }
 }
 
