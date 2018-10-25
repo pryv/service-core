@@ -2,29 +2,10 @@
 
 import type Configuration from './configuration';
 
-import type { 
-  RegisterSettings } 
-  from './configuration';
-
-
 const MongoDB = require('./connection/mongodb');
 const InfluxDB = require('./connection/influxdb');
 const FileStore = require('./connection/file_store');
-
-class Registry { 
-  constructor(config: RegisterSettings) {
-    config;
-  }
-
-  preflight(username: string): Promise<void> {
-    username; 
-    throw new Error('Not Implemented');
-  }
-  deleteUser(username: string): Promise<void> {
-    username;
-    throw new Error('Not Implemented');
-  }
-}
+const Registry = require('./connection/registry');
 
 class ConnectionManager {
   config: Configuration;
