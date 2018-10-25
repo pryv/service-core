@@ -94,7 +94,7 @@ class MongoDB {
 }
 
 type UserAttributes = {
-  _id: string, 
+  id: string, 
   username: string, 
   passwordHash: string, 
 }

@@ -75,7 +75,8 @@ class ConnectionManager {
     if (this.fileStore != null) return this.fileStore;
 
     const config = this.config;
-    const conn = new FileStore(config.fileStoreSettings());
+    const mongodb = await this.mongoDbConnection();
+    const conn = new FileStore(config.fileStoreSettings(), mongodb);
 
     this.fileStore = conn;
 

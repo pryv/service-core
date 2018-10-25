@@ -74,7 +74,9 @@ function getSizeRecursive(filePath, callback) {
  * @param {String} filePath
  * @returns {String}
  */
-EventFiles.prototype.generateFileId = function (/*jshint -W098*/filePath) {
+EventFiles.prototype.generateFileId = function (filePath) {
+  filePath;
+  
   // for now we just generate a random id (in the future we could do a SHA digest)
   return generateId();
 };

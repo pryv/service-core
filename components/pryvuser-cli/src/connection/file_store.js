@@ -2,13 +2,27 @@
 
 import type { FileStoreSettings } from '../configuration'; 
 
+const assert = require('assert');
 const fs = require('fs');
+const path = require('path');
+
+interface UserAttributes {
+  id: string, 
+};
+interface UserLoader {
+  findUser(username: string): Promise<?UserAttributes>; 
+}
 
 class FileStore {
   config: *; 
+  mongodb: *; 
 
-  constructor(config: FileStoreSettings) {
+  /// Constructs a file store connection; uses `mongodb` to retrieve metadata 
+  /// about the user. 
+  /// 
+  constructor(config: FileStoreSettings, mongodb: UserLoader) {
     this.config = config;
+    this.mongodb = mongodb;
   }
 
   async preflight(username: string): Promise<void> {
@@ -17,43 +31,38 @@ class FileStore {
     //  we'll be able to delete it. 
 
     const config = this.config; 
+    const mongodb = this.mongodb;
     const paths = [config.attachmentsPath, config.previewsPath]; 
 
     // Check if the base directories exist. 
-    for (let path of paths) {
-      try {
-        fs.statSync(path);
-      }
-      catch (err) {
-        // (Base) directory doesn't exist. This is a problem...
-        throw new Error(`Base directory '${path}' doesn't seem to exist.`);
-      }
-    }
+    const missingBaseDirectory = firstThrow(paths, path => fs.statSync(path));
+    if (missingBaseDirectory != null) 
+      throw new Error(`Base directory '${missingBaseDirectory}' doesn't seem to exist.`);
 
-    // Check if the user has files in any of these. WIP
-    for (let path of paths) {
-      let stat; 
-      try {
-        stat = fs.statSync(path);
-      }
-      catch (err) { 
-        // If the directory doesn't exist, skip it. 
-        continue; 
-      }
+    // NOTE User specific paths are constructed by appending the user _id_ to the
+    // `paths` constant above. I know this because I read EventFiles#getXPath(...)
+    // in components/storage/src/user/EventFiles.js.
 
-      // assert: path returned a stat, exists in some form. 
-      if (! stat.isDirectory())
-        throw new Error(`Path '${path}' exists, but is not a directory.`);
+    const user = await mongodb.findUser(username);
+    if (user == null) 
+      throw new Error(`Could not find user '${username}' in main database.`);
 
-      // Now: Can we remove this path and all the files it contains? 
-      try {
-        fs.accessSync(path, fs.constants.W_OK | fs.constants.X_OK); 
-      }
-      catch (err) {
-        // path is not accessible, abort: 
-        throw new Error(`Path '${path}': Access denied.`);
-      }
-    }
+    assert(user.id != null);
+    
+    // Let's check if we can change into and write into the user's paths: 
+    const inaccessibleDirectory = firstThrow(
+      paths.map(p => path.join(p, user.id)),
+      userPath => {
+        const stat = fs.statSync(userPath); // throws if userPath doesn't exist
+
+        if (!stat.isDirectory())
+          throw new Error(`Path '${userPath}' exists, but is not a directory.`);
+
+        fs.accessSync(userPath, fs.constants.W_OK + fs.constants.X_OK);
+      });
+
+    if (inaccessibleDirectory != null) 
+      throw new Error(`Directory '${inaccessibleDirectory}' is inaccessible or missing.`);
   }
   deleteUser(username: string): Promise<void> {
     username;
@@ -62,3 +71,20 @@ class FileStore {
 }
 
 module.exports = FileStore;
+
+/// Calls `fun` on each element of `collection`. Returns the first offending
+/// element or `null` if none of the function calls throw an error. Yes, `null`
+/// is the success value here. 
+/// 
+function firstThrow<T>(collection: Array<T>, fun: (T) => mixed): ?T {
+  for (const el of collection) {
+    try {
+      fun(el);
+    }
+    catch (err) {
+      return el; 
+    }
+  }
+
+  return null; 
+}
