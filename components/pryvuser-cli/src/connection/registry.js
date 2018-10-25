@@ -22,9 +22,11 @@ class Registry {
     if (errorMsg != null)
       throw new Error(errorMsg);
   }
-  deleteUser(username: string): Promise<void> {
-    username;
-    throw new Error('Not Implemented');
+  async deleteUser(username: string): Promise<void> {
+    const errorMsg = await this.userDeleteRequest(username);
+
+    if (errorMsg != null)
+      throw new Error(errorMsg);
   }
 
   /// Calls registry (DELETE /user/id) to delete the user. Retries the call 
@@ -35,14 +37,14 @@ class Registry {
   /// all is well, returns `null`.
   /// 
   async userDeleteRequest(
-    username: string, opts: DeleteRequestOptions
+    username: string, opts?: DeleteRequestOptions
   ): Promise<?string> {
     opts; 
     const config = this.config;
     const url = new urllib.URL(`/users/${username}`, config.url);
 
     const res = await superagent.delete(url)
-      .query({ dryRun: opts.dryRun === true });
+      .query({ dryRun: opts != null && opts.dryRun === true });
 
     // On success, return null
     if (res.status == 200) return null; 
