@@ -59,7 +59,7 @@ class Configuration {
   coreConfigPath(): string { return this._corePath; }
   hfsConfigPath(): string { return this._hfsPath; }
 
-  registerSettings(): RegisterSettings {
+  registrySettings(): RegistrySettings {
     const coreConfig = this.coreConfig(); 
 
     return {
@@ -120,7 +120,7 @@ class Configuration {
   }
 }
 
-export type RegisterSettings = {
+export type RegistrySettings = {
   url: string, 
   key: string, 
 };

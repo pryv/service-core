@@ -3,7 +3,7 @@
 const urllib = require('url');
 const superagent = require('superagent');
 
-import type { RegisterSettings } from '../configuration';
+import type { RegistrySettings } from '../configuration';
 
 export type DeleteRequestOptions = {
   dryRun?: boolean, 
@@ -12,7 +12,7 @@ export type DeleteRequestOptions = {
 class Registry {
   config: *; 
 
-  constructor(config: RegisterSettings) {
+  constructor(config: RegistrySettings) {
     this.config = config; 
   }
 
@@ -37,10 +37,12 @@ class Registry {
   async userDeleteRequest(
     username: string, opts: DeleteRequestOptions
   ): Promise<?string> {
+    opts; 
     const config = this.config;
-    const url = new urllib.URL(`/user/${username}`, config.url);
+    const url = new urllib.URL(`/users/${username}`, config.url);
 
-    const res = await superagent.delete(url);
+    const res = await superagent.delete(url)
+      .query({ dryRun: opts.dryRun === true });
 
     // On success, return null
     if (res.status == 200) return null; 

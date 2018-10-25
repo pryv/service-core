@@ -31,7 +31,7 @@ describe('Configuration', () => {
     });
 
     it('has the right register url and key', async () => {  
-      const reg = config.registerSettings(); 
+      const reg = config.registrySettings(); 
 
       assert.strictEqual(reg.url, 'https://reg.preview.pryv.tech');
       assert.strictEqual(reg.key, 'OVERRIDE ME');
@@ -47,6 +47,12 @@ describe('Configuration', () => {
        
       assert.strictEqual(influxdb.host, 'influxdb');
       assert.strictEqual(influxdb.port, 8086);
+    });
+    it('has the right file store settings', () => {
+      const fileStore = config.fileStoreSettings(); 
+
+      assert.strictEqual(fileStore.attachmentsPath, '/app/data/attachments'); 
+      assert.strictEqual(fileStore.previewsPath, '/app/data/previews'); 
     });
   });
 });

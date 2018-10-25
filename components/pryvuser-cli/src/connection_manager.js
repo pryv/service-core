@@ -45,7 +45,7 @@ class ConnectionManager {
     if (this.registerConn != null) return this.registerConn;
 
     const config = this.config;
-    const conn = new Registry(config.registerSettings());
+    const conn = new Registry(config.registrySettings());
 
     this.registerConn = conn;
 

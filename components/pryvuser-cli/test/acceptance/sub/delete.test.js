@@ -19,7 +19,7 @@ describe('OpDeleteUser', () => {
       return { fileStore: {} };
     },
     influxDbSettings: () => {},
-    registerSettings: () => {},
+    registrySettings: () => {},
     fileStoreSettings: () => {},
   };
   const configLoader = {
