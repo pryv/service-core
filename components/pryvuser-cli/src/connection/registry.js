@@ -39,12 +39,12 @@ class Registry {
   async userDeleteRequest(
     username: string, opts?: DeleteRequestOptions
   ): Promise<?string> {
-    opts; 
     const config = this.config;
     const url = new urllib.URL(`/users/${username}`, config.url);
 
     const res = await superagent.delete(url)
-      .query({ dryRun: opts != null && opts.dryRun === true });
+      .query({ dryRun: opts != null && opts.dryRun === true })
+      .set('Authorization', config.key);
 
     // On success, return null
     if (res.status == 200) return null; 

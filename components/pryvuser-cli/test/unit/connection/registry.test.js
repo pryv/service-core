@@ -2,6 +2,7 @@
 
 /* global describe, it, beforeEach, afterEach */
 
+const lodash = require('lodash');
 const bluebird = require('bluebird');
 
 import type { RegistrySettings } from '../../../src/configuration';
@@ -44,6 +45,26 @@ describe('Connection/Registry', () => {
 
         assert.isTrue(registryMock.sedsDead, "Sed's dead baby, sed's dead.");
       });
+
+      describe('when given the wrong system key', () => {
+        beforeEach(() => {
+          registry = new Registry(
+            lodash.merge({}, settings, { key: 'wrong_key' }));
+        });
+
+        it("returns 'Authentication error'", async () => {
+          let erroredOut = false; 
+          try {
+            await registry.deleteUser('jsmith');
+          }
+          catch (err) {
+            assert.strictEqual(err.message, 'Forbidden');            
+            erroredOut = true; 
+          }
+
+          assert.isTrue(erroredOut);
+        });
+      });
     });
   });
 });
@@ -63,7 +84,13 @@ class MockRegistry {
     
     app.delete('/users/jsmith', (req: express$Request, res) => {
       const dryRun = req.query.dryRun === 'true';
+      const secret = req.header('authorization');
       
+      if (secret !== '0123456789') {
+        res.status(403).send({});
+        return;
+      }
+
       if (! dryRun) this.sedsDead = true; 
 
       res.status(200).send({});
