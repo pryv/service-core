@@ -32,18 +32,27 @@ class OpDeleteUser {
 
     const i = this.interaction;
     try {
-      this.runWithoutErrorHandling(username);
+      await this.runWithoutErrorHandling(username);
     }
     catch (error) {
-      i.error(`Unknown error: ${error.message}`);
+      i.error(
+        'An error has occurred. This was not expected; please file a bug '
+        +'report to the nice people at Pryv: \n\n    > mailto:tech@pryv.com <\n');
+      i.println(
+        'Be sure to mention these details to them: \n\n'
+        +'------snip------------------------');
       i.trace(error);
+      i.println('------snip------------------------\n');
+
+      i.println('Thank you.');
     }
   }
 
   async runWithoutErrorHandling(username: string) {
     const i = this.interaction;
 
-    const config = await this.loadConfiguration();
+    const config = await this.loadConfiguration()
+      .catch(e => this.handleErrors(e));
 
     i.printConfigSummary(config);
 
@@ -59,6 +68,23 @@ class OpDeleteUser {
     // deletion. Let's go!
 
     await this.deleteUser(username);    
+  }
+
+  handleErrors(e: Error) {
+    switch (e.code) {
+      case 'ENOENT': this.terminateWithError(
+        'One or more configuration files could not be found. Please make sure '
+        +'to change to the Pryv.IO\n  configuration root before starting a user '
+        +'deletion.\n\n'
+        +'Make sure you change into the correct directory and relaunch the '
+        +'command.\n', 4);
+    }
+  }
+  terminateWithError(msg: string, exitcode: number) {
+    const i = this.interaction;
+    i.error(`An error occurred:\n\n  ${msg}`);
+
+    process.exit(exitcode);
   }
 
   async initSubsystems(connManager: ConnectionManager) {
@@ -114,6 +140,7 @@ class OpDeleteUser {
   /// 
   async loadConfiguration(): Promise<Configuration> {
     const configLoader = this.configurationLoader;
+
     const config = await configLoader.load(process.cwd());
 
     return config; 

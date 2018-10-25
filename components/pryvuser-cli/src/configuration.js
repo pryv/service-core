@@ -28,7 +28,7 @@ class Configuration {
     const coreConfigPath = tryFind('core', basePath, [
       'conf/core/conf/core.json',
     ]);
-
+    
 
     return new Configuration(coreConfigPath, hfsConfigPath); 
 
@@ -37,6 +37,7 @@ class Configuration {
     function tryFind(topic: string, base: string, candidates: Array<string>): string {
       for (const candidate of candidates) {
         const full = path.join(base, candidate);
+                
         const stat = fs.statSync(full);
 
         if (stat.isFile()) return full;
