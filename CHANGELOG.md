@@ -27,7 +27,7 @@
 
   - 2018091401: Details will be disclosed after Nov/18
 
-  - 2018102401: Details will be disclosed ???
+  - 2018102401: Details will be disclosed after Dec/18
 
 ## 1.2.18
 
