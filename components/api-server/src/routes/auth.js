@@ -13,14 +13,14 @@ declare class RequestWithContext extends express$Request {
   context: any; 
 }
 
-import type Settings from '../settings';
+import type { ConfigAccess } from '../settings';
 
 /**
  * Auth routes.
  *
  * @param {Object} api The API object for registering methods
  */
-module.exports = function (expressApp: express$Application, api: any, settings: Settings) {
+module.exports = function (expressApp: express$Application, api: any, settings: ConfigAccess) {
   const ms14days: number = 1000 * 60 * 60 * 24 * 14;
   const sessionMaxAge: number = settings.get('auth.sessionMaxAge').num() || ms14days;
   const ssoCookieDomain: string = settings.get('auth.ssoCookieDomain').str() || settings.get('http.ip').str();

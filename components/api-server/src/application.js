@@ -82,7 +82,6 @@ class Application {
       httpSettings: settings.get('http').obj(),
       servicesSettings: settings.get('services').obj(),
       updatesSettings: settings.get('updates').obj(),
-      settings: settings,
     });
     
     // DI on the topic of storage and MongoDB access
