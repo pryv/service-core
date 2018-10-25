@@ -582,10 +582,6 @@ describe('auth', function() {
           });
       });
 
-      it(
-        'TODO: must update the SSO cookie expiration date as well when extending the session'
-      );
-
       it('must clear the SSO cookie on /logout', function (done) {
         persistentReq
           .post(basePath(authData.username) + '/logout')
