@@ -9,8 +9,6 @@ const express = require('express');
 
 const authMod = require('../../../src/routes/auth');
 
-import type { ConfigAccess } from '../../../src/settings';
-
 describe('Authentication', function() {
   
   const settings = {
@@ -27,7 +25,7 @@ describe('Authentication', function() {
       return {
         str: () => { return ''; },
         num: () => { return 0; },
-        bool: () => { return true; },
+        bool: () => { return false; },
       };
     },
     has: () => { return true; },
@@ -35,7 +33,8 @@ describe('Authentication', function() {
   };
   
   describe('hasProperties', function() {
-    const {hasProperties} = authMod(express(), null, ((settings: any): ConfigAccess));
+    // FLOW Mock out the settings object for this unit test
+    const {hasProperties} = authMod(express(), null, settings);
     const obj = { a: 1, b: 2 };
     const keys = ['a', 'b'];
     
