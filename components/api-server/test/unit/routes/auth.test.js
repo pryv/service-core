@@ -9,13 +9,33 @@ const express = require('express');
 
 const authMod = require('../../../src/routes/auth');
 
-const settings = require('../../../src/settings').load();
+import type { ConfigAccess } from '../../../src/settings';
 
 describe('Authentication', function() {
   
+  const settings = {
+    auth: {
+      sessionMaxAge: 3600 * 1000,
+    },
+    http: {
+      ip: '127.0.0.1',
+    },
+    deprecated: {
+      auth: {}
+    },
+    get: () => { 
+      return {
+        str: () => { return ''; },
+        num: () => { return 0; },
+        bool: () => { return true; },
+      };
+    },
+    has: () => { return true; },
+    getCustomAuthFunction: () => { },
+  };
   
   describe('hasProperties', function() {
-    const {hasProperties} = authMod(express(), null, settings);
+    const {hasProperties} = authMod(express(), null, ((settings: any): ConfigAccess));
     const obj = { a: 1, b: 2 };
     const keys = ['a', 'b'];
     
