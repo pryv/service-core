@@ -93,10 +93,10 @@ class OpDeleteUser {
     assert(subsystems.length <= 0, "You shouldn't reuse OpDeleteUser");
 
     subsystems.push(
-      new Thin('MongoDB', await connManager.mongoDbConnection()), 
       new Thin('InfluxDB', await connManager.influxDbConnection()),
       new Thin('File Store', await connManager.fileStoreConnection()), 
       new Thin('Registry', await connManager.registryConnection()),
+      new Thin('MongoDB', await connManager.mongoDbConnection()), 
     );
   }
 
