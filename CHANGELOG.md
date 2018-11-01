@@ -20,6 +20,9 @@
   accesses gives you an easy way of limiting the damage that can be done using 
   a stolen access. 
 
+- We've rehauled the 'delete-user' command of the Pryv.IO cli admin tool. It 
+  now operates more explicitly and allows automation. 
+
 - Critical Security Fixes: 
 
   - 2018022101, 2018022102: Fixes to DNS server closing minor vulnerabilities: 
