@@ -30,27 +30,23 @@
 
   - 2018091401: Details will be disclosed after Nov/18
 
-## 1.2.18
+## 1.2.X
 
 - Fix login with Firefox (and other browsers using Referer but no Origin)
 
-## 1.2.17
-
 - Security fix 2018020801: 'accesses.update' was missing an authorisation check. 
-
-## 1.2.16:
 
 - Update of the API version in API responses
 
-## 1.2.15:
-
 - Blacklist usage errors from airbrake
-- Fix events.get JSON formatting bug when retrieving ArraySize+1 events
-- Improve tests stability: fix environment variable NODE_ENV
-- Add configuration options to disable resetPassword and welcome emails
-- Add configuration option to ignore updates of read-only fields
 
-## 1.2.14
+- Fix events.get JSON formatting bug when retrieving ArraySize+1 events
+
+- Improve tests stability: fix environment variable NODE_ENV
+
+- Add configuration options to disable resetPassword and welcome emails
+
+- Add configuration option to ignore updates of read-only fields
 
 - Updates to latest nodejs version as a reaction to advisory 
   https://nodejs.org/en/blog/vulnerability/oct-2017-dos/
@@ -59,8 +55,6 @@
   hashes as part of normal operation. 
 
 - Please see Migration Guide for implications on your infrastructure. 
-
-## 1.2.12, 1.2.13
 
 - Tags have a maximum length of 500 characters. An error is returned from the 
   API when this limit is exceeded. 
