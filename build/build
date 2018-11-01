@@ -55,10 +55,16 @@ sudo docker build -f Dockerfile -t pryv/preview:$version .
 release "pryv/preview" $version
 popd
 
-# Temporary addition: Tech preview of HFS server
 echo "---------------------------- building hfs --------------------------------"
 pushd hfs
 cp ../release.tar .
 sudo docker build -f Dockerfile -t pryv/hfs:$version .
 release "pryv/hfs" $version
+popd
+
+echo "---------------------------- building cli --------------------------------"
+pushd cli
+cp ../release.tar .
+sudo docker build -f Dockerfile -t pryv/cli:$version .
+release "pryv/cli" $version
 popd
