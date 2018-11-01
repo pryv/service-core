@@ -91,6 +91,10 @@ class MongoDB {
     return bluebird.fromCallback(
       cb => storage.users.findOne(query, options, cb)); 
   }
+
+  async close(): Promise<mixed> {
+    this.database.close(); 
+  }
 }
 
 type UserAttributes = {

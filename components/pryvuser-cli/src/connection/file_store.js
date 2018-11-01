@@ -101,6 +101,9 @@ class FileStore {
     await bluebird.map(userPaths, 
       path => bluebird.fromCallback(cb => rimraf(path, opts, cb)));
   }
+
+  async close(): Promise<mixed> {
+  }
 }
 
 module.exports = FileStore;

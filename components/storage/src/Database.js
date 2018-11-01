@@ -500,6 +500,13 @@ class Database {
     var errorCode = err.code || (err.lastErrorObject ? err.lastErrorObject.code : null);
     return errorCode === 11000 || errorCode === 11001;
   }
+
+  /// Closes this database connection. After calling this, all other methods 
+  /// will produce undefined behaviour. 
+  /// 
+  async close() {
+    this.client.close();
+  }
 }
 
 module.exports = Database;

@@ -40,6 +40,9 @@ class InfluxDB {
     await influx.dropDatabase(
       this.dbFromUsername(username));
   }
+
+  async close(): Promise<mixed> {
+  }
 }
 
 module.exports = InfluxDB;

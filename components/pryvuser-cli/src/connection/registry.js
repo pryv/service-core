@@ -70,6 +70,9 @@ class Registry {
     // Looks like we did succeed.
     return null;
   }
+
+  async close(): Promise<mixed> {
+  }
 }
 
 module.exports = Registry;

@@ -8,6 +8,7 @@ type DeleteParams = {
   parent: CommonParams,
 }
 
+const bluebird = require('bluebird');
 const inquirer = require('inquirer');
 const chalk = require('chalk');
 const assert = require('assert');
@@ -68,7 +69,9 @@ class OpDeleteUser {
     // Now connections in `connManager` are good and the user consents to 
     // deletion. Let's go!
 
-    await this.deleteUser(username);    
+    await this.deleteUser(username);
+
+    await this.closeSubsystems();
   }
 
   handleErrors(e: ErrnoError) {
@@ -101,6 +104,16 @@ class OpDeleteUser {
       new Thin('Registry', await connManager.registryConnection()),
       new Thin('MongoDB', await connManager.mongoDbConnection()), 
     );
+  }
+  async closeSubsystems(): Promise<mixed> {
+    const subsystems = this.subsystems;
+    
+    // Prevent access to a partially closed subsystems collection. 
+    this.subsystems = null; 
+
+    return bluebird.map(
+      subsystems, 
+      system => system.close());
   }
 
   /// Performs actual deletion. If the deletion fails, the process exits with 
@@ -252,11 +265,15 @@ interface Subsystem {
   name: string; 
   preflight(username: string): Promise<void>;
   deleteUser(username: string): Promise<void>;
+
+  close(): Promise<mixed>;
 }
 
 interface GenericConnection {
   preflight(username: string): Promise<void>;
   deleteUser(username: string): Promise<void>;
+
+  close(): Promise<mixed>;
 }
 
 // Represents a backend system that we perform user deletion on. Right now, 
@@ -285,5 +302,9 @@ class Thin implements Subsystem {
     const conn = this.conn;
 
     return conn.deleteUser(username);
+  }
+
+  close(): Promise<mixed> {
+    return this.conn.close();
   }
 }
