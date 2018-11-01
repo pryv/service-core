@@ -30,11 +30,9 @@ class OpDeleteUser {
   /// the main entry point used by tests and the commander interface. 
   /// 
   async run(username: string, params: DeleteParams) {
-    params; 
-
     const i = this.interaction;
     try {
-      await this.runWithoutErrorHandling(username);
+      await this.runWithoutErrorHandling(username, params.parent.interaction);
     }
     catch (error) {
       i.error(
@@ -50,8 +48,8 @@ class OpDeleteUser {
     }
   }
 
-  async runWithoutErrorHandling(username: string) {
-    const i = this.interaction;
+  async runWithoutErrorHandling(username: string, runInteractive: boolean) {
+    const i = this.interaction;    
 
     const config = await this.loadConfiguration()
       .catch(e => this.handleErrors(e));
@@ -64,7 +62,8 @@ class OpDeleteUser {
 
     await this.preflightChecks(username);
 
-    await this.getUserConfirmation(username);
+    if (runInteractive)
+      await this.getUserConfirmation(username);
 
     // Now connections in `connManager` are good and the user consents to 
     // deletion. Let's go!
@@ -72,7 +71,7 @@ class OpDeleteUser {
     await this.deleteUser(username);    
   }
 
-  handleErrors(e: Error) {
+  handleErrors(e: ErrnoError) {
     switch (e.code) {
       case 'ENOENT': this.terminateWithError(
         'One or more configuration files could not be found. Please make sure '
@@ -134,7 +133,7 @@ class OpDeleteUser {
   /// 
   async getUserConfirmation(username: string) {
     const i = this.interaction;
-    i.print(`\nDelete the user '${username}`);
+    i.print(`\nDelete the user '${username}'`);
 
     const userConfirms = await i.askYN('Do you confirm?', false);
     if (! userConfirms) process.exit(2);

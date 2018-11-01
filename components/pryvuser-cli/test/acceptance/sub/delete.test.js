@@ -53,7 +53,7 @@ describe('OpDeleteUser', () => {
     op.deleteUser = sinon.fake.resolves();
 
     // Mock out the actual actions, see if things are called
-    await op.runWithoutErrorHandling('jsmith');
+    await op.runWithoutErrorHandling('jsmith', false);
 
     assert.strictEqual(op.preflightChecks.callCount, 1);
     assert.strictEqual(op.deleteUser.callCount, 1);
@@ -66,7 +66,7 @@ describe('OpDeleteUser', () => {
     // FLOW Forbidden assignment - used for mocking.
     op.deleteUser = sinon.fake.resolves();
 
-    assertRejects(() => op.runWithoutErrorHandling('jsmith'));
+    assertRejects(() => op.runWithoutErrorHandling('jsmith', false));
   });
   it('stops if user doesnt confirm', async () => {
     // FLOW Forbidden assignment - used for mocking.
@@ -76,7 +76,7 @@ describe('OpDeleteUser', () => {
     // FLOW Forbidden assignment - used for mocking.
     op.deleteUser = sinon.fake.resolves();
 
-    assertRejects(() => op.runWithoutErrorHandling('jsmith'));
+    assertRejects(() => op.runWithoutErrorHandling('jsmith', false));
   });
 
   describe('when stubbing connections to all subsystems', () => {
