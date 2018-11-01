@@ -10,4 +10,4 @@ RUN /pd_build/install.sh
 WORKDIR /app/conf/
 
 # Run the right command:
-CMD [ "/app/bin/dist/components/pryvuser-cli/bin/cli" ]
+ENTRYPOINT [ "/app/bin/dist/components/pryvuser-cli/bin/cli" ]
