@@ -44,6 +44,7 @@ class Registry {
 
     const res = await superagent.delete(url)
       .query({ dryRun: opts != null && opts.dryRun === true })
+      .query({ onlyReg: true })
       .set('Authorization', config.key);
 
     // On success, return null

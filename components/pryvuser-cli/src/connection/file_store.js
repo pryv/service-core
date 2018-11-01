@@ -48,6 +48,9 @@ class FileStore {
     // `paths` constant above. I know this because I read EventFiles#getXPath(...)
     // in components/storage/src/user/EventFiles.js.
 
+    // NOTE Since user specific paths are created lazily, we should not expect 
+    //  them to be there. But _if_ they are, they need be accessible. 
+
     const mongodb = this.mongodb;
     const user = await mongodb.findUser(username);
     if (user == null) 
@@ -59,7 +62,18 @@ class FileStore {
     const inaccessibleDirectory = firstThrow(
       paths.map(p => path.join(p, user.id)),
       userPath => {
-        const stat = fs.statSync(userPath); // throws if userPath doesn't exist
+        let stat; 
+        try {
+          stat = fs.statSync(userPath); // throws if userPath doesn't exist
+        }
+        catch (err) {
+          // We accept that the user specific directory may be missing from the
+          // disk, see above. 
+          if (err.code === 'ENOENT') 
+            return; 
+          else
+            throw err; 
+        }
 
         if (!stat.isDirectory())
           throw new Error(`Path '${userPath}' exists, but is not a directory.`);

@@ -9,6 +9,8 @@
     "test": "../../node_modules/.bin/mocha 'test/**/*.test.js'"
   },
   "dependencies": {
-    "commander": "^2.19"
+    "commander": "^2.19", 
+    "chalk": "^2.4.1",
+    "inquirer": "^6.2.0"
   }
 }

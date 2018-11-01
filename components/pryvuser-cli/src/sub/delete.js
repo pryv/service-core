@@ -8,6 +8,8 @@ type DeleteParams = {
   parent: CommonParams,
 }
 
+const inquirer = require('inquirer');
+const chalk = require('chalk');
 const assert = require('assert');
 const ConnectionManager = require('../connection_manager');
 
@@ -79,6 +81,8 @@ class OpDeleteUser {
         +'Make sure you change into the correct directory and relaunch the '
         +'command.\n', 4);
     }
+
+    throw e;
   }
   terminateWithError(msg: string, exitcode: number) {
     const i = this.interaction;
@@ -130,7 +134,7 @@ class OpDeleteUser {
   /// 
   async getUserConfirmation(username: string) {
     const i = this.interaction;
-    i.println(`About to delete the user '${username}'.`);
+    i.print(`\nDelete the user '${username}`);
 
     const userConfirms = await i.askYN('Do you confirm?', false);
     if (! userConfirms) process.exit(2);
@@ -193,10 +197,10 @@ class Interaction {
     config;
     
     const i = this; 
-    i.println('Found the following configuration files: ');
-    i.println(`core: ${config.coreConfigPath()}`);
-    i.println(`hfs: ${config.hfsConfigPath()}`);
-    i.println(''); 
+    i.println('Found the following configuration files: \n');
+    i.println(`  [core] ${config.coreConfigPath()}`);
+    i.println(`  [hfs] ${config.hfsConfigPath()}`);
+    i.println('') ; 
   }  
 
   /// Simply prints a string.
@@ -214,7 +218,7 @@ class Interaction {
   /// Prints an error, possibly using color. 
   /// 
   error(str: string) {
-    console.error(str); // eslint-disable-line no-console
+    console.error(chalk.red(str)); // eslint-disable-line no-console
   }
 
   trace(error: Error) {
@@ -224,14 +228,24 @@ class Interaction {
   /// Prints something good, possibly in green. 
   /// 
   itsOk(str: string) {
-    console.info(str); // eslint-disable-line no-console
+    console.info(chalk.green(str)); // eslint-disable-line no-console
   }
 
   /// Asks the user a question, accepting answers Yes and No. If
   /// the user just presses enter, the default (`def`) answer will be given. 
   /// 
   async askYN(question: string, def: boolean=false): Promise<boolean> {
-    return def; 
+    const questionMeta = {
+      type: 'confirm',
+      name: 'ok',
+      message: question,
+      default: def, 
+      choices: ['yes', 'no'],
+    };
+
+    const answer = await inquirer.prompt(questionMeta);
+
+    return answer.ok; 
   }
 }
 
