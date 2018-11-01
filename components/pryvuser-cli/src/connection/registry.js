@@ -41,16 +41,34 @@ class Registry {
   ): Promise<?string> {
     const config = this.config;
     const url = new urllib.URL(`/users/${username}`, config.url);
+    const isDryRun = (
+      opts != null && 
+      opts.dryRun === true);
 
     const res = await superagent.delete(url)
-      .query({ dryRun: opts != null && opts.dryRun === true })
+      .query({ dryRun: isDryRun })
       .query({ onlyReg: true })
       .set('Authorization', config.key);
 
     // On success, return null
-    if (res.status == 200) return null; 
+    if (res.status != 200) return `Unknown error: status was ${res.status}.`;
+    const body = res.body; 
+    if (body.result != null) {
+      const result = body.result;
+      const shouldDelete = ! isDryRun;
 
-    return 'Unknown error.';
+      if (result.deleted !== shouldDelete) {
+        let expect = `should have deleted '${username}', but did not.`;
+        
+        if (! shouldDelete) 
+          expect = `should not have deleted '${username}', but did so anyway.`;
+
+        return `Unexpected result; server ${expect}`;
+      }
+    }
+
+    // Looks like we did succeed.
+    return null;
   }
 }
 
