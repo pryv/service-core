@@ -182,6 +182,13 @@ class Server {
         'This means updates to protected fields will be ignored and operations will succeed. ' +
         'We recommend turning this off, but please be aware of the implications for your code.');
     }
+
+
+    if (settings.get('deprecated.auth.ssoIsWhoamiActivated').bool()) {
+      logger.warn('Server configuration has "ssoIsWhoamiActivated" set to true: ' + 
+        'This means that the API method "GET /auth/who-am-i" is activated. ' + 
+        'We recommend turning this off as this method might be removed in the next major release.');
+    }
     
     // TEST: execute test setup instructions if any
     const instanceTestSetup = settings.get('instanceTestSetup'); 
@@ -248,16 +255,17 @@ class Server {
   //
   addRoutes(expressApp: express$Application) {
     const application = this.application;
+    const settings = this.settings;
     const dependencies = application.dependencies;
     
     dependencies.resolve(require('./routes/system'));
     require('./routes/root')(expressApp, application);
+    require('./routes/auth')(expressApp, application.api, settings);
 
     // NOTE We're in the process of getting rid of DI. See above for how these
     // should look once that is done - we're handing each of these route 
     // definers a fixed set of dependencies from which they get to choose. 
     [
-      require('./routes/auth'),
       require('./routes/accesses'),
       require('./routes/account'),
       require('./routes/followed-slices'),
