@@ -10,15 +10,31 @@ const express = require('express');
 const authMod = require('../../../src/routes/auth');
 
 describe('Authentication', function() {
-  const authSettings = {
-    sessionMaxAge: 3600*1000, 
-  };
-  const httpSettings = {
-    ip: '127.0.0.1',
+  
+  const settings = {
+    auth: {
+      sessionMaxAge: 3600 * 1000,
+    },
+    http: {
+      ip: '127.0.0.1',
+    },
+    deprecated: {
+      auth: {}
+    },
+    get: () => { 
+      return {
+        str: () => { return ''; },
+        num: () => { return 0; },
+        bool: () => { return false; },
+      };
+    },
+    has: () => { return true; },
+    getCustomAuthFunction: () => { },
   };
   
   describe('hasProperties', function() {
-    const {hasProperties} = authMod(express(), null, authSettings, httpSettings);
+    // FLOW Mock out the settings object for this unit test
+    const {hasProperties} = authMod(express(), null, settings);
     const obj = { a: 1, b: 2 };
     const keys = ['a', 'b'];
     

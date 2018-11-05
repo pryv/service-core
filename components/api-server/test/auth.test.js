@@ -498,92 +498,121 @@ describe('auth', function() {
   describe('SSO support', function() {
     // WARNING: exceptionally, tests in here are interdependent and their sequence matters
 
-    var cookie = require('cookie'),
-        persistentReq = request.agent(),
-        ssoInfo,
-        cookieOptions;
+    const cookie = require('cookie');
+    const persistentReq = request.agent();
+    let ssoInfo;
+    let cookieOptions;
+    const persistentReq2 = request.agent();
 
-    it('must set the SSO cookie on /login with the access token', function(done) {
-      persistentReq
+    before(function (done) {
+      persistentReq2
         .post(basePath(authData.username) + '/login')
         .set('Origin', trustedOrigin)
         .send(authData)
-        .end(function(err, res) {
-          assert.strictEqual(res.statusCode, 200);
-
-          var setCookie = res.headers['set-cookie'];
-          should.exist(setCookie);
-          setCookie.length.should.eql(1);
-          var parsed = cookie.parse(setCookie[0]);
-          assert.property(parsed, 'sso');
-          var jsonMatch = /\{.+\}/.exec(parsed.sso);
-          should.exist(jsonMatch);
-
-          const token = res.body.token;
-          if (typeof token !== 'string') throw new Error('AF: not a string');
-
-          ssoInfo = {
-            username: authData.username,
-            token: token,
-          };
-          JSON.parse(jsonMatch).should.eql(ssoInfo);
-          cookieOptions = {
-            Domain: parsed.Domain,
-            Path: parsed.Path,
-          };
-
+        .end(function () {
           done();
         });
     });
 
-    it('must answer /who-am-i with username and session details if session open', function(done) {
-      persistentReq
-        .get(basePath(authData.username) + '/who-am-i')
-        .end(function(err, res) {
-          validation.check(
-            res,
-            {
-              status: 200,
-              body: ssoInfo,
-            },
-            done
-          );
-        });
-    });
-
-    it(
-      'TODO: must update the SSO cookie expiration date as well when extending the session'
-    );
-
-    it('must clear the SSO cookie on /logout', function(done) {
-      persistentReq
-        .post(basePath(authData.username) + '/logout')
-        .send({})
-        .set('authorization', ssoInfo.token)
-        .end(function(err, res) {
-          assert.strictEqual(res.statusCode, 200);
-
-          var setCookie = res.headers['set-cookie'];
-          should.exist(setCookie);
-          setCookie.length.should.eql(1);
-          var parsed = cookie.parse(setCookie[0]);
-          assert.propertyVal(parsed, 'sso', '');
-          assert.property(parsed, 'Expires');
-          assert.strictEqual(parsed.Domain, cookieOptions.Domain);
-          assert.strictEqual(parsed.Path, cookieOptions.Path);
+    it('GET /who-am-i must return a 404 as it has been deprecated', function (done) {
+      persistentReq2.get(basePath(authData.username) + '/who-am-i')
+        .end(function (err, res) {
+          assert.strictEqual(res.statusCode, 404);
           done();
         });
     });
 
-    it('must respond /who-am-i with an "unauthorized" error if no cookie is sent', function(done) {
-      persistentReq
-        .get(basePath(authData.username) + '/who-am-i')
-        .end(function(err, res) {
-          assert.strictEqual(res.statusCode, 401);
-          should.not.exist(res.body.username);
-          should.not.exist(res.body.token);
-          done();
-        });
+    describe('when deprecated.auth.ssoIsWhoamiActivated is set', function() {
+
+      before(function (done) {
+        const settings = _.cloneDeep(helpers.dependencies.settings);
+        settings.deprecated.auth.ssoIsWhoamiActivated = true;
+        server.ensureStarted(settings, done);
+      });
+
+      after(function (done) {
+        server.ensureStarted(helpers.dependencies.settings, done);
+      });
+
+      it('must set the SSO cookie on /login with the access token', function (done) {
+        persistentReq
+          .post(basePath(authData.username) + '/login')
+          .set('Origin', trustedOrigin)
+          .send(authData)
+          .end(function (err, res) {
+            assert.strictEqual(res.statusCode, 200);
+
+            var setCookie = res.headers['set-cookie'];
+            should.exist(setCookie);
+            setCookie.length.should.eql(1);
+            var parsed = cookie.parse(setCookie[0]);
+            assert.property(parsed, 'sso');
+            var jsonMatch = /\{.+\}/.exec(parsed.sso);
+            should.exist(jsonMatch);
+
+            const token = res.body.token;
+            if (typeof token !== 'string') throw new Error('AF: not a string');
+
+            ssoInfo = {
+              username: authData.username,
+              token: token,
+            };
+            JSON.parse(jsonMatch).should.eql(ssoInfo);
+            cookieOptions = {
+              Domain: parsed.Domain,
+              Path: parsed.Path,
+            };
+
+            done();
+          });
+      });
+
+      it('must answer /who-am-i with username and session details if session open', function (done) {
+        persistentReq
+          .get(basePath(authData.username) + '/who-am-i')
+          .end(function (err, res) {
+            validation.check(
+              res,
+              {
+                status: 200,
+                body: ssoInfo,
+              },
+              done
+            );
+          });
+      });
+
+      it('must clear the SSO cookie on /logout', function (done) {
+        persistentReq
+          .post(basePath(authData.username) + '/logout')
+          .send({})
+          .set('authorization', ssoInfo.token)
+          .end(function (err, res) {
+            assert.strictEqual(res.statusCode, 200);
+
+            var setCookie = res.headers['set-cookie'];
+            should.exist(setCookie);
+            setCookie.length.should.eql(1);
+            var parsed = cookie.parse(setCookie[0]);
+            assert.propertyVal(parsed, 'sso', '');
+            assert.property(parsed, 'Expires');
+            assert.strictEqual(parsed.Domain, cookieOptions.Domain);
+            assert.strictEqual(parsed.Path, cookieOptions.Path);
+            done();
+          });
+      });
+
+      it('must respond /who-am-i with an "unauthorized" error if no cookie is sent', function (done) {
+        persistentReq
+          .get(basePath(authData.username) + '/who-am-i')
+          .end(function (err, res) {
+            assert.strictEqual(res.statusCode, 401);
+            should.not.exist(res.body.username);
+            should.not.exist(res.body.token);
+            done();
+          });
+      });
     });
+    
   });
 });

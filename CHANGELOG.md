@@ -28,7 +28,11 @@
   - 2018022101, 2018022102: Fixes to DNS server closing minor vulnerabilities: 
       DNS could be - under certain circumstances - used to exploit other systems. 
 
-  - 2018091401: Details will be disclosed after Nov/18
+  - 2018091401: Fixes to the password reset mechanism; a bug would allow an 
+      attacker to change passwords under certain circumstances. 
+
+  - 2018102401: Details will be disclosed after Dec/18
+
 
 ## 1.2.X
 

@@ -1,6 +1,10 @@
+// @flow
+
 /**
  * Regroups the different URL paths served by this module.
  */
+
+const path = require('path');
 
 const Params = {
   Username: 'username'
@@ -13,29 +17,29 @@ const Paths = module.exports = {
   // expose params for URL parsing
   Params: Params,
 
-  System: path('system'),
+  System: makePath('system'),
   /* TODO remove: temporarily kept for backwards-compat */
-  Register: path('register'),
+  Register: makePath('register'),
 
-  UserRoot: path(username),
+  UserRoot: makePath(username),
 
-  Accesses: path(username, 'accesses'),
-  Account: path(username, 'account'),
-  Auth: path(username, 'auth'),
-  FollowedSlices: path(username, 'followed-slices'),
-  Streams: path(username, 'streams'),
-  Events: path(username, 'events'),
-  Profile: path(username, 'profile'),
+  Accesses: makePath(username, 'accesses'),
+  Account: makePath(username, 'account'),
+  Auth: makePath(username, 'auth'),
+  FollowedSlices: makePath(username, 'followed-slices'),
+  Streams: makePath(username, 'streams'),
+  Events: makePath(username, 'events'),
+  Profile: makePath(username, 'profile'),
 
-  SocketIO: path('socket.io'),
-  Favicon: path('favicon.ico')
+  SocketIO: makePath('socket.io'),
+  Favicon: makePath('favicon.ico')
 };
 Object.freeze(Paths);
 
-function path(/* path elements */) {
-  var args = [].slice.call(arguments);
-  args.unshift('/');
-  return require('path').join.apply(null, args);
+function makePath(...a: Array<string>): string {
+  a.unshift('/');
+
+  return path.join(...a);
 }
 
 function param(name) {
