@@ -109,7 +109,7 @@ class OpDeleteUser {
     const subsystems = this.subsystems;
     
     // Prevent access to a partially closed subsystems collection. 
-    this.subsystems = null; 
+    this.subsystems = []; 
 
     return bluebird.map(
       subsystems, 
