@@ -28,6 +28,28 @@ describe('Connection/MongoDB', () => {
     },
   };
 
+  describe("when the user doesn't exist", () => {
+    let mongodb;
+    beforeEach(() => {
+      mongodb = new MongoDB(settings);
+    });
+
+    describe('#preflight(username)', () => {
+      it('throws', async () => {
+        try {
+          await mongodb.preflight('somerandomstringthatisnotauser');
+        }
+        catch (err) {
+          assert.match(err.message, /No such user/);
+
+          return;
+        }
+
+        assert.fail('preflight throws an error');
+      });
+    });
+  });
+
   describe('when given a user fixture', () => {
     // Uses dynamic fixtures:
     const mongoFixtures = databaseFixture(
