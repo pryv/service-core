@@ -4119,10 +4119,10 @@ nixt@^0.5.0:
     clone "^1.0.2"
     shell-quote "^1.4.1"
 
-nock@^9.0.9:
-  version "9.6.1"
-  resolved "https://registry.yarnpkg.com/nock/-/nock-9.6.1.tgz#d96e099be9bc1d0189a77f4490bbbb265c381b49"
-  integrity sha512-EDgl/WgNQ0C1BZZlASOQkQdE6tAWXJi8QQlugqzN64JJkvZ7ILijZuG24r4vCC7yOfnm6HKpne5AGExLGCeBWg==
+nock@9.4.0:
+  version "9.4.0"
+  resolved "https://registry.yarnpkg.com/nock/-/nock-9.4.0.tgz#d151c0020c9c10fe2f139c4bc7498457959eddc8"
+  integrity sha512-uSBTclJ8Nmp/E3173s4KUHd5SAdxcuNjpwwWILhODBev67vftqt540kwYQBxR43z8//42ImFbSPrStgDAVxA4A==
   dependencies:
     chai "^4.1.2"
     debug "^3.1.0"
