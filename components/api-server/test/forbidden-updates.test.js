@@ -7,6 +7,9 @@ const accessesSchema = require('../src/schema/access');
 const should = require('should');
 const async = require('async');
 
+const chai = require('chai');
+const assert = chai.assert; 
+
 describe('methods/helpers/commonFunctions.js: catchForbiddenUpdate(schema)', function () {
   
   describe('with streams schema', function () {
@@ -89,11 +92,11 @@ describe('methods/helpers/commonFunctions.js: catchForbiddenUpdate(schema)', fun
           }
           // Non-strict mode: we do not expect an error but a warning log
           else {
-            if(err) return stepDone(err);
+            if (err != null) return stepDone(err);
+            
             // From here we expect a warning log to be triggered (see logger above).
             // We throw an explicit error if this is not the case
-            if (! warningLogged) 
-              throw new Error('Warning was not logged.');
+            assert.isTrue(warningLogged, 'Warning was not logged.');
 
             return stepDone();
           }
