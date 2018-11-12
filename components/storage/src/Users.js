@@ -98,13 +98,13 @@ Users.prototype.insertMany = function (users, callback) {
  * @param {Function} callback (error, dbUser) `dbUser` is a clone of the original user.
  */
 function encryptPassword(user, callback) {
-  var dbUser = _.clone(user);
+  const dbUser = _.clone(user);
   if (! dbUser.password && dbUser.passwordHash) {
     // OK: assume it's been hashed in registration-server already
     callback(null, dbUser);
   } else {
     encryption.hash(dbUser.password, function (err, hash) {
-      if (err) { return callback(err); }
+      if (err != null) return callback(err);
 
       dbUser.passwordHash = hash;
       delete dbUser.password;

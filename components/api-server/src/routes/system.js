@@ -23,7 +23,7 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
 
 
   expressApp.post(Paths.System + '/create-user', contentType.json, createUser);
-  // temp for backwards-compat, TODO: remove after all reg servers updated
+  // DEPRECATED: remove after all reg servers updated
   expressApp.post('/register/create-user', contentType.json, createUser);
 
   function createUser(req, res, next) {
