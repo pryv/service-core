@@ -25,12 +25,15 @@ class Settings implements ConfigAccess {
   customAuthStepFn: ?Extension; 
   
   // Loads the settings for production use. This means that we follow the order
-  // defined in config.load.
+  // defined in config.load. 
+  // 
+  // Additionally, you can pass `configLocation` which will override the env
+  // and the command line arguments. 
   //
-  static load(): Settings {
+  static load(configLocation: ?string): Settings {
     config.printSchemaAndExitIfNeeded();
 
-    const ourConfig = config.setup();
+    const ourConfig = config.setup(configLocation);
     
     const settings = new Settings(ourConfig);
     

@@ -131,3 +131,15 @@ Sessions.prototype.clearAll = function (callback) {
 Sessions.prototype.getNewExpirationDate = function () {
   return new Date((new Date()).getTime() + this.options.maxAge);
 };
+
+/**
+ * Override.
+ */
+Sessions.prototype.remove = function (query, callback) {
+  this.database.deleteMany(
+    collectionInfo,
+    query,
+    callback
+  );
+};
+

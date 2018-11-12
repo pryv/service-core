@@ -10,5 +10,8 @@
   },
   "devDependencies": {
     "flowgen": "^1.2.1"
+  }, 
+  "scripts": {
+    "test": "../../node_modules/.bin/mocha test/**/*.test.js"
   }
 }

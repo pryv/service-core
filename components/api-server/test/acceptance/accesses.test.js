@@ -316,9 +316,9 @@ describe('access expiry', () => {
               requestingAppId: 'valid access', 
               requestedPermissions: [
                 {
-                  "streamId": "diary",
-                  "defaultName": "Diary",
-                  "level": "read"
+                  'streamId': 'diary',
+                  'defaultName': 'Diary',
+                  'level': 'read'
                 }
               ] 
             });

@@ -186,11 +186,16 @@ async function expressAppInit(dependencies: any) {
 
   app.disable('x-powered-by');
 
-  // put this before request tracing in order to see username in paths
-  var ignoredPaths = _.filter(Paths, function (item) {
-    return _.isString(item) && item.indexOf(Paths.Params.Username) === -1;
-  });
-  app.use(middleware.subdomainToPath(ignoredPaths));
+  // Install middleware to hoist the username into the request path. 
+  // 
+  // NOTE Insert this bit in front of 'requestTraceMiddleware' to also see 
+  //  username in logged paths. 
+  // 
+  const ignorePaths = _.chain(Paths)
+    .filter(e => _.isString(e))
+    .filter(e => e.indexOf(Paths.Params.Username) < 0)
+    .value(); 
+  app.use(middleware.subdomainToPath(ignorePaths));
 
   // Parse JSON bodies: 
   app.use(bodyParser.json({
