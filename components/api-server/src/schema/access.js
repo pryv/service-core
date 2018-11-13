@@ -70,6 +70,11 @@ exports = module.exports = function (action) {
       app.properties.expireAfter = helpers.number(); 
       shared.properties.expireAfter = helpers.number(); 
       
+      // Allow to attach clientData to new access
+      personal.properties.clientData = helpers.object({}); 
+      app.properties.clientData = helpers.object({}); 
+      shared.properties.clientData = helpers.object({}); 
+
       break;
       
     case Action.UPDATE:
@@ -80,6 +85,11 @@ exports = module.exports = function (action) {
       shared.properties.expireAfter = helpers.number(); 
       shared.properties.expires = helpers.null(); 
       
+      // Allow to attach clientData to access
+      personal.properties.clientData = helpers.object({}); 
+      app.properties.clientData = helpers.object({}); 
+      shared.properties.clientData = helpers.object({}); 
+
       break;
   }
     
@@ -91,7 +101,7 @@ exports = module.exports = function (action) {
   // whitelist for properties that can be updated
   if (action === Action.UPDATE) {
     res.alterableProperties = [
-      'name', 'deviceName', 'permissions', 'expireAfter', 'expires'];
+      'name', 'deviceName', 'permissions', 'expireAfter', 'expires', 'clientData'];
   }
   
   return res;

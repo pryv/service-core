@@ -83,7 +83,8 @@ module.exports = {
     params: object({
       'requestingAppId': string(),
       'deviceName': string(),
-      'requestedPermissions': access.permissions(Action.CREATE)
+      'requestedPermissions': access.permissions(Action.CREATE),
+      'clientData': object({}),
     }, {
       id: 'accesses.checkApp',
       required: [ 'requestingAppId', 'requestedPermissions' ],
