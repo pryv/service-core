@@ -276,6 +276,21 @@ describe('system (ex-register)', function () {
             }, done);
           });
         });
+      it('must return a correct 400 error if a user with the same email address already exists', function (done) {
+        const data = {
+          username: testData.users[0].username + '1',
+          passwordHash: '$-1s-b4d-f0r-U',
+          email: 'zero@test.com',
+          language: 'fr'
+        };
+        post(data, function (err, res) {
+          validation.checkError(res, {
+            status: 400,
+            id: ErrorIds.ItemAlreadyExists,
+            data: {email: data.email}
+          }, done);
+        });
+      });
     
       it('must return a correct 404 error when authentication is invalid', function (done) {
         request
