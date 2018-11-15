@@ -92,8 +92,8 @@ class MongoDB {
       cb => storage.users.findOne(query, options, cb)); 
   }
 
-  async close(): Promise<mixed> {
-    this.database.close(); 
+  close(): Promise<void> {
+    return this.database.close(); 
   }
 }
 

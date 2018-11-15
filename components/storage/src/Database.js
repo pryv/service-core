@@ -505,7 +505,7 @@ class Database {
   /// will produce undefined behaviour. 
   /// 
   async close() {
-    this.client.close();
+    return this.client.close();
   }
 }
 

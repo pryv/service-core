@@ -52,6 +52,9 @@ describe('OpDeleteUser', () => {
     // FLOW Forbidden assignment - used for mocking.
     op.deleteUser = sinon.fake.resolves();
 
+    // FLOW Stub this out to not cause issues with real code being executed
+    op.closeSubsystems = sinon.fake.resolves(); 
+
     // Mock out the actual actions, see if things are called
     await op.runWithoutErrorHandling('jsmith', false);
 
