@@ -314,7 +314,7 @@ describe('streams', function () {
                 assert.strictEqual(count, originalCount + 1,
                   'Created a child stream.');
               }
-              catch (err) { return stepDone(err) }
+              catch (err) { return stepDone(err); }
 
               stepDone();
             });

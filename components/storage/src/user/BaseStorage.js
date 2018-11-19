@@ -403,7 +403,7 @@ BaseStorage.prototype.applyOptionsToDB = function(options) {
   );
 
   if (dbOptions.fields != null) 
-    throw new Error("AF: fields key is deprecated; we're not using it anymore.")
+    throw new Error("AF: fields key is deprecated; we're not using it anymore.");
 
   if (dbOptions.projection != null)
     dbOptions.projection = applyConvertersToDB(
