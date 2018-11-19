@@ -59,9 +59,10 @@ BaseStorage.prototype.countAll = function(user, callback) {
   this.database.countAll(this.getCollectionInfo(user), callback);
 };
 
-/**
- * Ignores item deletions & history (i.e. documents with either `deleted` or `headId` field).
- */
+/// Returns the number of documents in the collection, minus those that are 
+/// either `deleted` or have a `headId`, aka the number of live / trashed 
+/// documents. 
+/// 
 BaseStorage.prototype.count = function(user, query, callback) {
   query.deleted = null;
   query.headId = null;
