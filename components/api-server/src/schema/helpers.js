@@ -43,7 +43,16 @@ exports.string = getBaseSchema.bind(null, 'string');
 
 exports.null = getBaseSchema.bind(null, 'null');
 
-exports.email = getBaseSchema('string', {pattern: '^[^@]+@[a-zA-Z0-9._-]+\\.[a-zA-Z]+$'});
+/// NOTE (similarly as in service-register):
+///   We do very little verification on the outer form of the addresses here
+///   for two reasons :
+///
+///   a) Our clients might want to store a different kind of address in this
+///     field, one that doesn't look like an email address.
+///   b) Validating emails is hard _and_ useless:
+///     https://hackernoon.com/the-100-correct-way-to-validate-email-addresses-7c4818f24643
+///
+exports.email = getBaseSchema('string', {maxLength: 300});
 
 exports.language = getBaseSchema('string', { maxLength: 5, minLength: 1 });
 
