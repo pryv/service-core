@@ -33,7 +33,7 @@ module.exports = function (context, callback) {
             return stepDone(err);
           }
 
-          eventsCol.dropAllIndexes(ignoreNSError.bind(null,
+          eventsCol.dropIndexes(ignoreNSError.bind(null,
             context.stepCallbackFn('resetting indexes on events collection', stepDone)));
         });
       }

@@ -55,6 +55,8 @@ class Database {
       autoReconnect: true, 
       connectTimeoutMS: s60, 
       socketTimeoutMS: s60,
+      useNewUrlParser: true,
+      appname: 'pryv.io core',
     };
 
     this.db = null;
@@ -187,7 +189,7 @@ class Database {
    */
   countAll(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.count(callback);
+      collection.countDocuments(callback);
     });
   }
 
@@ -539,7 +541,7 @@ type IndexOptions = {
 }
 
 type FindOptions = {
-  projection: Object,
+  projection: { [key: string]: (0 | 1) },
   sort: Object, 
   skip: ?number, 
   limit: ?number, 

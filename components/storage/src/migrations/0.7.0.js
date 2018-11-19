@@ -32,7 +32,7 @@ module.exports = function (context, callback) {
             return stepDone(err);
           }
 
-          accessesCol.dropAllIndexes(ignoreNSError.bind(null,
+          accessesCol.dropIndexes(ignoreNSError.bind(null,
               context.stepCallbackFn('resetting indexes on accesses collection', stepDone)));
         });
       },
@@ -43,7 +43,7 @@ module.exports = function (context, callback) {
             return stepDone(err);
           }
 
-          streamsCol.dropAllIndexes(ignoreNSError.bind(null,
+          streamsCol.dropIndexes(ignoreNSError.bind(null,
               context.stepCallbackFn('resetting indexes on streams collection', stepDone)));
         });
       }
