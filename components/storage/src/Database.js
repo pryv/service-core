@@ -189,7 +189,7 @@ class Database {
    */
   countAll(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.count(callback);
+      collection.countDocuments(callback);
     });
   }
 
@@ -202,7 +202,7 @@ class Database {
    */
   count(collectionInfo: CollectionInfo, query: {}, callback: DatabaseCallback) {
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.find(query).count(callback);
+      collection.find(query).countDocuments(callback);
     });
   }
 
