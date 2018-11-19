@@ -541,7 +541,7 @@ type IndexOptions = {
 }
 
 type FindOptions = {
-  projection: Object,
+  projection: { [key: string]: (0 | 1) },
   sort: Object, 
   skip: ?number, 
   limit: ?number, 

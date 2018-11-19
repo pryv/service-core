@@ -396,18 +396,23 @@ BaseStorage.prototype.applyQueryToDB = function(query) {
  * @api private
  */
 BaseStorage.prototype.applyOptionsToDB = function(options) {
-  var dbOptions = _.defaults(
+  const dbOptions = _.defaults(
     options ? _.clone(options) : {},
     this.defaultOptions
   );
-  dbOptions.fields = applyConvertersToDB(
-    dbOptions.fields,
-    this.converters.fieldsToDB
-  );
+
+  if (dbOptions.fields != null) 
+    throw new Error("AF: fields key is deprecated; we're not using it anymore.")
+
+  if (dbOptions.projection != null)
+    dbOptions.projection = applyConvertersToDB(
+      dbOptions.projection,
+      this.converters.fieldsToDB);
+
   dbOptions.sort = applyConvertersToDB(
     dbOptions.sort,
-    this.converters.fieldsToDB
-  );
+    this.converters.fieldsToDB);
+
   return dbOptions;
 };
 
