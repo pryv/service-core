@@ -277,10 +277,10 @@ describe('streams', function () {
     });
 
     it('must create a new child stream (with predefined id) when providing a parent stream id',
-        function (done) {
-      var originalCount;
+      (done) => {
+        var originalCount;
 
-      async.series([
+        async.series([
           function countInitialChildStreams(stepDone) {
             storage.count(user, {parentId: initialRootStreamId}, function (err, count) {
               originalCount = count;
@@ -311,9 +311,8 @@ describe('streams', function () {
             });
           }
         ],
-        done
-      );
-    });
+        done);
+      });
 
     // Test added to verify fix of issue#29
     it('must return an error if the new stream\'s parentId ' +
