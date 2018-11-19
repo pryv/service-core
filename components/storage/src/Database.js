@@ -55,6 +55,8 @@ class Database {
       autoReconnect: true, 
       connectTimeoutMS: s60, 
       socketTimeoutMS: s60,
+      useNewUrlParser: true,
+      appname: 'pryv.io core',
     };
 
     this.db = null;
