@@ -4,7 +4,7 @@
   "private": true,
   "main": "./src/index.js",
   "scripts": {
-    "dump-test-data": "node scripts/dump-test-data",
+    "dump-test-data": "../../node_modules/.bin/babel-node scripts/dump-test-data",
     "restore-test-data": "node scripts/restore-test-data"
   }
 }

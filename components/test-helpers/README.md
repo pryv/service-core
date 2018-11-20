@@ -2,5 +2,5 @@ Shared utilities and data for testing.
 
 ## Scripts
 
-- `npm run dump-test-data`
-- `npm run restore-test-data {version}`
+- `yarn dump-test-data`
+- `yarn restore-test-data {version}`
