@@ -74,7 +74,9 @@ module.exports = function produceAccessesApiMethods(
 
   api.register('accesses.get',
     commonFns.getParamsValidation(methodsSchema.get.params),
-    findAccessibleAccesses);
+    findAccessibleAccesses,
+    includeDeletionsIfRequested
+  );
 
   function findAccessibleAccesses(context, params, result, next) {
     const currentAccess = context.access;
@@ -99,7 +101,7 @@ module.exports = function produceAccessesApiMethods(
         
       // Filter expired accesses (maybe)
       chain = maybeFilterExpired(params, chain);
-      
+
       // Return the chain result.
       result.accesses = chain.value();
       
@@ -119,6 +121,21 @@ module.exports = function produceAccessesApiMethods(
       return chain.reject(
         a => isAccessExpired(a));
     }
+  }
+
+  function includeDeletionsIfRequested(context, params, result, next) {
+    if (params.includeDeletions == null) { return next(); }
+
+    const currentAccess = context.access;
+    const accessesRepository = storageLayer.accesses;
+
+    accessesRepository.findDeletions(context.user, dbFindOptions,
+      function (err, deletions) {
+        if (err) { return next(errors.unexpectedError(err)); }
+
+        result.accessDeletions = deletions.filter(a => currentAccess.canManageAccess(a));
+        next();
+      });
   }
 
 

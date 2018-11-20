@@ -13,6 +13,86 @@ const assert = chai.assert;
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
 
+describe('access deletions', () => {
+
+  const mongoFixtures = databaseFixture(produceMongoConnection());
+  after(() => {
+    mongoFixtures.clean();
+  });
+
+  let userId, streamId, activeToken, deletedToken, accessToken;
+  before(() => {
+    userId = cuid();
+    streamId = cuid();
+    activeToken = cuid();
+    deletedToken = cuid();
+    accessToken = cuid();
+  });
+
+  describe('when given a few existing accesses', () => {
+    
+    before(() => {
+      return mongoFixtures.user(userId, {}, (user) => {
+        user.stream({ id: streamId }, () => {});
+
+        user.access({
+          type: 'app', token: activeToken,
+          name: 'active access', permissions: []
+        });
+        user.access({
+          type: 'app', token: deletedToken,
+          name: 'deleted access', permissions: [],
+          deleted: timestamp.now('-1h')
+        });
+
+        user.access({ token: accessToken, type: 'personal' });
+        user.session(accessToken);
+      });
+    });
+
+    let server;
+    before(async () => {
+      server = await context.spawn();
+    });
+    after(() => {
+      server.stop();
+    });
+
+    describe('accesses.get', () => {
+      let res, accesses, deletions;
+
+      before(async () => {
+        res = await server.request()
+          .get(`/${userId}/accesses?includeDeletions=true`)
+          .set('Authorization', accessToken);
+        accesses = res.body.accesses;
+        deletions = res.body.accessDeletions;
+      });
+
+      it('should contain deletions', () => {
+        assert.isNotNull(deletions);
+      })
+
+      it('contains active accesses', () => {
+        assert.equal(accesses.length, 2);
+        let activeAccess;
+        for (const a of accesses) {
+          if (a.token === activeToken) {
+            activeAccess = a;
+          }
+        }
+        assert.isNotNull(activeAccess);
+      });
+
+      it('contains deleted accesses as well', () => {
+        assert.equal(deletions.length, 1);
+        assert.equal(deletions[0].token, deletedToken);
+      });
+    });
+
+  });
+});
+
 describe('access expiry', () => {
   // Uses dynamic fixtures:
   const mongoFixtures = databaseFixture(produceMongoConnection());

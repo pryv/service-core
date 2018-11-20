@@ -45,6 +45,25 @@ var indexes = [
   }
 ];
 
+Accesses.prototype.findDeletions = function (
+  user,
+  options,
+  callback
+) {
+  var query = { deleted: { $exists: true } };
+  this.database.find(
+    this.getCollectionInfo(user),
+    query,
+    this.applyOptionsToDB(options),
+    function (err, dbItems) {
+      if (err) {
+        return callback(err);
+      }
+      callback(null, this.applyItemsFromDB(dbItems));
+    }.bind(this)
+  );
+};
+
 /**
  * Implementation.
  */
