@@ -229,7 +229,7 @@ describe('Versions', function () {
     });
   });
 
-  it('must handle data migration from v1.2.0 to v1.2.5', function (done) {
+  it.skip('must handle data migration from v1.2.0 to v1.2.5', function (done) {
     const versions = getVersions('1.2.5');
     const indexes = testData.getStructure('1.2.4').indexes;
 
@@ -253,6 +253,50 @@ describe('Versions', function () {
       
       assert.isAtLeast(eventEndTimeIndex, 0);
       assert.strictEqual(version._id, '1.2.5');
+      assert.isNotNull(version.migrationCompleted);
+
+      done();
+    });
+  });
+
+  it('must handle data migration from v1.3.37 to 1.3.38', function (done) {
+    const versions = getVersions('1.3.38');
+    const indexes = testData.getStructure('1.3.37').indexes;
+
+    const user = {id: 'u_0'};
+    const userAccesses = storage.user.accesses; 
+
+    async.series([
+      (cb) => testData.restoreFromDump('1.3.37', mongoFolder, cb), 
+      (cb) => applyPreviousIndexes('accesses', indexes.accesses, cb),
+      (cb) => versions.migrateIfNeeded(cb),
+      (cb) => userAccesses.listIndexes(user, {}, cb), // (a), see below
+      (cb) => versions.getCurrent(cb), // (b), see below
+    ], function (err, res) {
+      assert.isNull(err, 'there was an error');
+      
+      const accessIndexes = res[3]; // (a)
+      const version = res[4]; // (b)
+
+      const tokenIndex = 
+        _.findIndex(accessIndexes, (o) => o.key.token === 1);
+      const otherIndex =
+        _.findIndex(accessIndexes, (o) => {
+          return o.key.name === 1 &&
+          o.key.type === 1 &&
+          o.key.deviceName === 1
+      });
+
+      assert.isAtLeast(tokenIndex, 0, 'token index not found');
+      assert.isAtLeast(otherIndex, 0, 'other index not found');
+
+      const tokenPartialFilter = accessIndexes[tokenIndex].partialFilterExpression;
+      const otherPartialFilter = accessIndexes[otherIndex].partialFilterExpression;
+      
+      assert.isNotNull(tokenPartialFilter.deleted)
+      assert.isNotNull(otherPartialFilter.deleted)
+    
+      assert.strictEqual(version._id, '1.3.38');
       assert.isNotNull(version.migrationCompleted);
 
       done();

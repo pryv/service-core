@@ -37,11 +37,17 @@ function createTokenIfMissing(access) {
 var indexes = [
   {
     index: {token: 1},
-    options: { unique: true, sparse: true }
+    options: { 
+      unique: true,
+      partialFilterExpression: { deleted: { $type: 'null' } }
+    }
   },
   {
     index: { name: 1, type: 1, deviceName: 1 },
-    options: { unique: true, sparse: true }
+    options: { 
+      unique: true,
+      partialFilterExpression: { deleted: { $type: 'null' } }
+    }
   }
 ];
 
@@ -80,14 +86,7 @@ Accesses.prototype.getCollectionInfo = function (user) {
  */
 Accesses.prototype.delete = function (user, query, callback) {
   var update = {
-    $set: {deleted: new Date()},
-    $rename: {
-      // rename fields in unique indexes to avoid collisions
-      token: '_token',
-      type: '_type',
-      name: '_name',
-      deviceName: '_deviceName'
-    }
+    $set: {deleted: new Date()}
   };
   this.database.updateMany(this.getCollectionInfo(user), this.applyQueryToDB(query), update,
       callback);
