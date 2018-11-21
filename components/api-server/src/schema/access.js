@@ -86,9 +86,9 @@ exports = module.exports = function (action) {
       shared.properties.expires = helpers.null(); 
       
       // Allow to attach clientData to access
-      personal.properties.clientData = helpers.object({}); 
-      app.properties.clientData = helpers.object({}); 
-      shared.properties.clientData = helpers.object({}); 
+      personal.properties.clientData = helpers.object({}, {nullable: true}); 
+      app.properties.clientData = helpers.object({}, {nullable: true}); 
+      shared.properties.clientData = helpers.object({}, {nullable: true}); 
 
       break;
   }
