@@ -20,36 +20,37 @@
   accesses gives you an easy way of limiting the damage that can be done using 
   a stolen access. 
 
+- We've rehauled the 'delete-user' command of the Pryv.IO cli admin tool. It 
+  now operates more explicitly and allows automation. 
+
 - Critical Security Fixes: 
 
   - 2018022101, 2018022102: Fixes to DNS server closing minor vulnerabilities: 
       DNS could be - under certain circumstances - used to exploit other systems. 
 
-  - 2018091401: Details will be disclosed after Nov/18
+  - 2018091401: Fixes to the password reset mechanism; a bug would allow an 
+      attacker to change passwords under certain circumstances. 
 
   - 2018102401: Details will be disclosed after Dec/18
 
-## 1.2.18
+
+## 1.2.X
 
 - Fix login with Firefox (and other browsers using Referer but no Origin)
 
-## 1.2.17
-
 - Security fix 2018020801: 'accesses.update' was missing an authorisation check. 
-
-## 1.2.16:
 
 - Update of the API version in API responses
 
-## 1.2.15:
-
 - Blacklist usage errors from airbrake
-- Fix events.get JSON formatting bug when retrieving ArraySize+1 events
-- Improve tests stability: fix environment variable NODE_ENV
-- Add configuration options to disable resetPassword and welcome emails
-- Add configuration option to ignore updates of read-only fields
 
-## 1.2.14
+- Fix events.get JSON formatting bug when retrieving ArraySize+1 events
+
+- Improve tests stability: fix environment variable NODE_ENV
+
+- Add configuration options to disable resetPassword and welcome emails
+
+- Add configuration option to ignore updates of read-only fields
 
 - Updates to latest nodejs version as a reaction to advisory 
   https://nodejs.org/en/blog/vulnerability/oct-2017-dos/
@@ -58,8 +59,6 @@
   hashes as part of normal operation. 
 
 - Please see Migration Guide for implications on your infrastructure. 
-
-## 1.2.12, 1.2.13
 
 - Tags have a maximum length of 500 characters. An error is returned from the 
   API when this limit is exceeded. 

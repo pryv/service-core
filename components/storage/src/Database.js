@@ -55,6 +55,8 @@ class Database {
       autoReconnect: true, 
       connectTimeoutMS: s60, 
       socketTimeoutMS: s60,
+      useNewUrlParser: true,
+      appname: 'pryv.io core',
     };
 
     this.db = null;
@@ -187,7 +189,7 @@ class Database {
    */
   countAll(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.count(callback);
+      collection.countDocuments(callback);
     });
   }
 
@@ -500,6 +502,13 @@ class Database {
     var errorCode = err.code || (err.lastErrorObject ? err.lastErrorObject.code : null);
     return errorCode === 11000 || errorCode === 11001;
   }
+
+  /// Closes this database connection. After calling this, all other methods 
+  /// will produce undefined behaviour. 
+  /// 
+  async close() {
+    return this.client.close();
+  }
 }
 
 module.exports = Database;
@@ -532,7 +541,7 @@ type IndexOptions = {
 }
 
 type FindOptions = {
-  projection: Object,
+  projection: { [key: string]: (0 | 1) },
   sort: Object, 
   skip: ?number, 
   limit: ?number, 

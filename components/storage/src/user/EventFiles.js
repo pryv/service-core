@@ -74,7 +74,9 @@ function getSizeRecursive(filePath, callback) {
  * @param {String} filePath
  * @returns {String}
  */
-EventFiles.prototype.generateFileId = function (/*jshint -W098*/filePath) {
+EventFiles.prototype.generateFileId = function (filePath) {
+  filePath;
+  
   // for now we just generate a random id (in the future we could do a SHA digest)
   return generateId();
 };
@@ -100,7 +102,7 @@ EventFiles.prototype.saveAttachedFile = function (tempPath, user, eventId, fileI
     writeStream.on('error', callback);
     writeStream.on('close', function () {
       fs.unlink(tempPath, function (err) {
-        if (err) { return callback(err); }
+        if (err) { return callback(err); }
         callback(null, fileId);
       });
     });

@@ -277,17 +277,19 @@ describe('streams', function () {
     });
 
     it('must create a new child stream (with predefined id) when providing a parent stream id',
-        function (done) {
-      var originalCount;
+      (done) => {
+        let originalCount;
 
-      async.series([
-          function countInitialChildStreams(stepDone) {
+        async.series([
+          function _countInitialChildStreams(stepDone) {
             storage.count(user, {parentId: initialRootStreamId}, function (err, count) {
+              if (err != null) return stepDone(err);
+
               originalCount = count;
               stepDone();
             });
           },
-          function addNewStream(stepDone) {
+          function _addNewStream(stepDone) {
             var data = {
               id: 'predefined-stream-id',
               name: 'New Child Stream',
@@ -298,22 +300,28 @@ describe('streams', function () {
                 status: 201,
                 schema: methodsSchema.create.result
               });
-              res.body.stream.id.should.eql(data.id);
-              streamsNotifCount.should.eql(1, 'streams notifications');
+              assert.strictEqual(res.body.stream.id, data.id);
+              assert.strictEqual(streamsNotifCount, 1);
+
               stepDone();
             });
           },
-          function recountChildStreams(stepDone) {
+          function _recountChildStreams(stepDone) {
             storage.count(user, {parentId: initialRootStreamId}, function (err, count) {
-              count.should.eql(originalCount + 1);
+              if (err != null) return stepDone(err);
+
+              try {
+                assert.strictEqual(count, originalCount + 1,
+                  'Created a child stream.');
+              }
+              catch (err) { return stepDone(err); }
 
               stepDone();
             });
           }
         ],
-        done
-      );
-    });
+        done);
+      });
 
     // Test added to verify fix of issue#29
     it('must return an error if the new stream\'s parentId ' +

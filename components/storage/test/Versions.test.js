@@ -278,7 +278,7 @@ describe('Versions', function () {
 
     function ensureIndex(item, itemCallback) {
       database.db.collection(collectionName)
-        .ensureIndex(item.index, item.options, itemCallback);
+        .createIndex(item.index, item.options, itemCallback);
     }
   }
 

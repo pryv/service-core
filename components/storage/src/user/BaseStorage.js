@@ -59,9 +59,10 @@ BaseStorage.prototype.countAll = function(user, callback) {
   this.database.countAll(this.getCollectionInfo(user), callback);
 };
 
-/**
- * Ignores item deletions & history (i.e. documents with either `deleted` or `headId` field).
- */
+/// Returns the number of documents in the collection, minus those that are 
+/// either `deleted` or have a `headId`, aka the number of live / trashed 
+/// documents. 
+/// 
 BaseStorage.prototype.count = function(user, query, callback) {
   query.deleted = null;
   query.headId = null;
@@ -153,6 +154,7 @@ BaseStorage.prototype.findDeletionsStreamed = function(
 
 BaseStorage.prototype.findOne = function(user, query, options, callback) {
   query.deleted = null;
+  
   this.database.findOne(
     this.getCollectionInfo(user),
     this.applyQueryToDB(query),
@@ -395,18 +397,23 @@ BaseStorage.prototype.applyQueryToDB = function(query) {
  * @api private
  */
 BaseStorage.prototype.applyOptionsToDB = function(options) {
-  var dbOptions = _.defaults(
+  const dbOptions = _.defaults(
     options ? _.clone(options) : {},
     this.defaultOptions
   );
-  dbOptions.fields = applyConvertersToDB(
-    dbOptions.fields,
-    this.converters.fieldsToDB
-  );
+
+  if (dbOptions.fields != null) 
+    throw new Error("AF: fields key is deprecated; we're not using it anymore.");
+
+  if (dbOptions.projection != null)
+    dbOptions.projection = applyConvertersToDB(
+      dbOptions.projection,
+      this.converters.fieldsToDB);
+
   dbOptions.sort = applyConvertersToDB(
     dbOptions.sort,
-    this.converters.fieldsToDB
-  );
+    this.converters.fieldsToDB);
+
   return dbOptions;
 };
 
