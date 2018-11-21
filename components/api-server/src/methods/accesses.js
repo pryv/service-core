@@ -371,7 +371,7 @@ module.exports = function produceAccessesApiMethods(
         
         // Here we foresee what the updated access would look like
         // in order to check if it is legit
-        const updatedAccess = _.merge(access, params.update);
+        const updatedAccess = _.merge({}, access, params.update);
         if(! currentAccess.canManageAccess(updatedAccess)) {
           return next(errors.forbidden(
             'Your access token has insufficient permissions ' +
@@ -379,6 +379,8 @@ module.exports = function produceAccessesApiMethods(
           ));
         }
         
+        // NOTE We store the access loaded here for error reporting later. Don't 
+        //  use this for more than that. 
         params.resource = access;
         
         next();
