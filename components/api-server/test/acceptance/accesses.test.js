@@ -392,3 +392,316 @@ describe('access expiry', () => {
     });
   });
 });
+
+describe('access client data', () => {
+  // Uses dynamic fixtures:
+  const mongoFixtures = databaseFixture(produceMongoConnection());
+  after(() => {
+    mongoFixtures.clean(); 
+  });
+
+  function sampleAccess(name, clientData) {
+    return {
+      id: cuid(),
+      type: 'app',
+      name: name,
+      permissions: [],
+      clientData: clientData,
+    };
+  }
+  
+  // Set up a few ids that we'll use for testing. NOTE that these ids will
+  // change on every test run.
+  let userId, streamId, accessToken, complexClientData, existingAccess;
+  let toBeUpdateAccess1, toBeUpdateAccess2, toBeUpdateAccess3, emptyClientDataAccess;
+  let fixtureAccesses;
+  before(() => {
+    userId = cuid(); 
+    streamId = cuid();
+    accessToken = cuid();
+    complexClientData = {
+      aString: 'a random string',
+      aNumber: 42,
+      anArray: ['what', 'a', 'big', 'array', 'you', 'got'],
+      anObject: {child: 'I feel empty', leaf: 42}
+    };
+    existingAccess = sampleAccess('Access with complex clientData', complexClientData);
+    toBeUpdateAccess1 = sampleAccess('Access to be updated 1', complexClientData);
+    toBeUpdateAccess2 = sampleAccess('Access to be updated 2', complexClientData);
+    toBeUpdateAccess3 = sampleAccess('Access to be updated 3', complexClientData);
+    emptyClientDataAccess = sampleAccess('Access with empty clientData', null);
+    fixtureAccesses = [existingAccess, toBeUpdateAccess1, toBeUpdateAccess2, toBeUpdateAccess3, emptyClientDataAccess];
+  });
+
+  describe('when given a few existing accesses', () => {
+
+    // Build the fixture
+    before(() => {
+      return mongoFixtures.user(userId, {}, function (user) {
+        user.stream({id: streamId}, () => { });
+        user.access({token: accessToken, type: 'personal'});
+        user.access(existingAccess);
+        user.access(toBeUpdateAccess1);
+        user.access(toBeUpdateAccess2);
+        user.access(toBeUpdateAccess3);
+        user.access(emptyClientDataAccess);
+        user.session(accessToken);
+      });
+    });
+
+    let server;
+    before(async () => {
+      server = await context.spawn();
+    });
+    after(() => {
+      server.stop(); 
+    });
+
+    describe('accesses.get', () => {
+      let res, accesses; 
+      before(async () => {
+        res = await server.request()
+          .get(`/${userId}/accesses`)
+          .set('Authorization', accessToken);
+          
+        accesses = res.body.accesses;
+      });
+
+      it('succeeds', () => {
+        assert.exists(accesses);
+      });
+
+      it('contains existing accesses with clientData', () => {
+        for (const a of accesses) {
+          const fixtureAccess =
+            fixtureAccesses.find(f => {return f.id === a.id;});
+          if (fixtureAccess != null)
+            assert.deepEqual(a.clientData, fixtureAccess.clientData);
+        }
+      });
+    });
+
+    describe('accesses.create', () => {
+
+      function sampleAccess (name, clientData) {
+        return {
+          name: name,
+          type: 'app',
+          permissions: [
+            {
+              streamId: 'work',
+              level: 'read',
+            },
+          ],
+          clientData: clientData,
+        };
+      }
+
+      function checkResultingAccess (res) {
+        const access = res.body.access;
+        assert.isTrue(res.ok);
+        assert.notExists(res.body.error);
+        assert.exists(access);
+        return access;
+      }
+
+      describe('when called with clientData={}', () => {
+        let res, access;
+        before(async () => {
+          res = await server.request()
+            .post(`/${userId}/accesses`)
+            .set('Authorization', accessToken)
+            .send(sampleAccess('With empty clientData', {}));
+          
+          access = checkResultingAccess(res);
+        });
+        
+        it('creates an access with empty clientData', () => {
+          assert.strictEqual(res.status, 201);
+          assert.deepEqual(access.clientData, {});
+        });
+      });
+
+      describe('when called with clientData=null', () => {
+        let res;
+        before(async () => {
+          res = await server.request()
+            .post(`/${userId}/accesses`)
+            .set('Authorization', accessToken)
+            .send(sampleAccess('With null clientData', null));
+        });
+        
+        it('throws a schema error', () => {
+          assert.isFalse(res.ok);
+          assert.exists(res.body.error);
+        });
+      });
+
+      describe('when called with complex clientData', () => {
+        let res, access;
+        before(async () => {
+          res = await server.request()
+            .post(`/${userId}/accesses`)
+            .set('Authorization', accessToken)
+            .send(sampleAccess('With complex clientData', complexClientData));
+
+          access = checkResultingAccess(res);
+        });
+                
+        it('creates an access with complex clientData', () => {
+          assert.strictEqual(res.status, 201);
+          assert.deepEqual(access.clientData, complexClientData);
+        });
+      });
+    });
+
+    describe('accesses.update', () => {
+
+      function checkResultingAccess (res) {
+        const access = res.body.access;
+        assert.isTrue(res.ok);
+        assert.notExists(res.body.error);
+        assert.exists(access);
+        return access;
+      }
+
+      describe('if existing clientData was not empty', () => {
+        const clientDataUpdate = {
+          aString: null,
+          aNumber: 'it was a number',
+          anArray: ['big', 'array', 'you', 'got'],
+          anObject: {child: 'I feel really empty', leaf: null, newProp: 42},
+          aNewProp: 42
+        };
+
+        let res, access; 
+        before(async () => {
+          res = await server.request()
+            .put(`/${userId}/accesses/${toBeUpdateAccess1.id}`)
+            .set('Authorization', accessToken)
+            .send({ clientData: clientDataUpdate});
+            
+          access = checkResultingAccess(res);
+        });
+
+        it('updates previous clientData with new clientData', () => {
+          assert.exists(access.clientData);
+          assert.deepEqual(access.clientData, clientDataUpdate);
+        });
+      });
+
+      describe('if clientData is not provided', () => {
+        let res, access; 
+        before(async () => {
+          res = await server.request()
+            .put(`/${userId}/accesses/${toBeUpdateAccess2.id}`)
+            .set('Authorization', accessToken)
+            .send({ name: 'Updated access' });
+            
+          access = checkResultingAccess(res);
+        });
+
+        it('keeps existing clientData untouched', () => {
+          assert.exists(access.clientData);
+          assert.deepEqual(access.clientData, toBeUpdateAccess2.clientData);
+        });
+      });
+      
+      describe('if existing clientData was empty', () => {
+
+        let res, access; 
+        before(async () => {
+          res = await server.request()
+            .put(`/${userId}/accesses/${emptyClientDataAccess.id}`)
+            .set('Authorization', accessToken)
+            .send({ clientData: complexClientData});
+            
+          access = checkResultingAccess(res);
+        });
+
+        it('sets clientData to provided clientData', () => {
+          assert.exists(access.clientData);
+          assert.deepEqual(access.clientData, complexClientData);
+        });
+      });
+      
+      describe('if provided clientData is explicitely null', () => {
+        let res, access; 
+        before(async () => {
+          res = await server.request()
+            .put(`/${userId}/accesses/${toBeUpdateAccess3.id}`)
+            .set('Authorization', accessToken)
+            .send({ clientData: null });
+
+          access = checkResultingAccess(res);
+        });
+        
+        it('removes existing clientData', () => {
+          assert.notExists(access.clientData);
+        });
+      });
+    });
+
+    describe('accesses.checkApp', () => {
+
+      async function checkAppRequest(req) {
+        const res = await server.request()
+          .post(`/${userId}/accesses/check-app`)
+          .set('Authorization', accessToken)
+          .send(req);
+
+        assert.isTrue(res.ok);
+        assert.exists(res.body);
+        assert.notExists(res.body.error);
+        return res.body;
+      }
+
+      describe('when the provided clientData matches the existing clientData', () => {
+        let body;
+        before(async () => {
+          body = await checkAppRequest({ 
+            requestingAppId: existingAccess.name,
+            requestedPermissions: existingAccess.permissions,
+            clientData: existingAccess.clientData,
+          });
+        });
+        
+        it('returns the matching access', () => {
+          assert.exists(body.matchingAccess);
+          assert.strictEqual(body.matchingAccess.id, existingAccess.id);
+        });
+      });
+      
+      describe('when the provided clientData does not match the existing clientData', () => {
+        let body; 
+        before(async () => {
+          body = await checkAppRequest({
+            requestingAppId: existingAccess.name,
+            requestedPermissions: existingAccess.permissions,
+            clientData: {},
+          });
+        });
+        
+        it('returns no match', () => {
+          assert.exists(body.mismatchingAccess);
+          assert.strictEqual(body.mismatchingAccess.id, existingAccess.id);
+        });
+      });
+
+      describe('when no clientData is provided but existing access has one', () => {
+        let body; 
+        before(async () => {
+          body = await checkAppRequest({
+            requestingAppId: existingAccess.name,
+            requestedPermissions: existingAccess.permissions,
+          });
+        });
+        
+        it('returns no match', () => {
+          assert.exists(body.mismatchingAccess);
+          assert.strictEqual(body.mismatchingAccess.id, existingAccess.id);
+        });
+      });
+    });
+  });
+});

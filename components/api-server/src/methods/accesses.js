@@ -33,7 +33,8 @@ type Permission = {
 type Access = {
   type: 'personal' | 'app' | 'shared',
   permissions: Array<Permission>,
-  expires: ?number, 
+  expires: ?number,
+  clientData: ?{},
 };
 
 type UpdatesSettingsHolder = {
@@ -370,7 +371,7 @@ module.exports = function produceAccessesApiMethods(
         
         // Here we foresee what the updated access would look like
         // in order to check if it is legit
-        const updatedAccess = _.merge(access, params.update);
+        const updatedAccess = _.merge({}, access, params.update);
         if(! currentAccess.canManageAccess(updatedAccess)) {
           return next(errors.forbidden(
             'Your access token has insufficient permissions ' +
@@ -378,6 +379,8 @@ module.exports = function produceAccessesApiMethods(
           ));
         }
         
+        // NOTE We store the access loaded here for error reporting later. Don't 
+        //  use this for more than that. 
         params.resource = access;
         
         next();
@@ -489,7 +492,7 @@ module.exports = function produceAccessesApiMethods(
       if (err != null) return next(errors.unexpectedError(err));
 
       // Do we have a match?
-      if (accessMatches(access, params.requestedPermissions)) {
+      if (accessMatches(access, params.requestedPermissions, params.clientData)) {
         result.matchingAccess = access;
         return next();
       } 
@@ -516,7 +519,7 @@ module.exports = function produceAccessesApiMethods(
 
   // Returns true if the given access' permissions match the `requestedPermissions`.
   // 
-  function accessMatches(access: Access, requestedPermissions): boolean {
+  function accessMatches(access: Access, requestedPermissions, clientData): boolean {
     if (access == null ||
         access.type !== 'app' ||
         access.permissions.length !== requestedPermissions.length) {
@@ -526,6 +529,7 @@ module.exports = function produceAccessesApiMethods(
     // If the access is there but is expired, we consider it a mismatch. 
     if (isAccessExpired(access)) return false; 
 
+    // Compare permissions
     let accessPerm, reqPerm;
     for (var i = 0, ni = access.permissions.length; i < ni; i++) {
       accessPerm = access.permissions[i];
@@ -535,6 +539,11 @@ module.exports = function produceAccessesApiMethods(
           reqPerm.level !== accessPerm.level) {
         return false;
       }
+    }
+
+    // Compare clientData
+    if(! _.isEqual(access.clientData, clientData)) {
+      return false;
     }
 
     return true;
