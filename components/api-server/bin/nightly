@@ -44,7 +44,7 @@ let workerRunning = false;
 const minute = Math.floor(Math.random() * 59);
 const hour = Math.floor(Math.random() * 23);
 const cronJob = new CronJob({
-  cronTime: `* ${minute} ${hour} * * *`,
+  cronTime: `0 ${minute} ${hour} * * *`,
   onTick: function () {
     if (workerRunning) {
       throw new Error('Previous nigthly script is still running, it is taking too long!');
