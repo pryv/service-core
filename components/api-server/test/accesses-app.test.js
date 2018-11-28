@@ -333,12 +333,9 @@ describe('accesses (app)', function () {
             accesses.length.should.eql(testData.accesses.length + additionalTestAccesses.length,
                                        'accesses');
 
-            var expected = _.extend({
-              _token: deletedAccess.token,
-              _type: deletedAccess.type,
-              _name: deletedAccess.name,
+            var expected = _.assign({
               deleted: deletionTime
-            }, _.omit(deletedAccess, 'token', 'type', 'name'));
+            }, deletedAccess);
             var actual = _.find(accesses, {id: deletedAccess.id});
             validation.checkObjectEquality(actual, expected);
 

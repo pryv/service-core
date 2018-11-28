@@ -272,11 +272,13 @@ describe('Versions', function () {
       (cb) => versions.migrateIfNeeded(cb),
       (cb) => userAccesses.listIndexes(user, {}, cb), // (a), see below
       (cb) => versions.getCurrent(cb), // (b), see below
+      (cb) => userAccesses.findAll(user, {}, cb), // (c), see below
     ], function (err, res) {
       assert.isNull(err, 'there was an error');
       
       const accessIndexes = res[3]; // (a)
       const version = res[4]; // (b)
+      const accesses = res[5]; // (c)
 
       const tokenIndex = 
         _.findIndex(accessIndexes, (o) => o.key.token === 1);
@@ -293,11 +295,15 @@ describe('Versions', function () {
       const tokenPartialFilter = accessIndexes[tokenIndex].partialFilterExpression;
       const otherPartialFilter = accessIndexes[otherIndex].partialFilterExpression;
       
-      assert.isNotNull(tokenPartialFilter.deleted)
-      assert.isNotNull(otherPartialFilter.deleted)
+      assert.isNotNull(tokenPartialFilter.deleted);
+      assert.isNotNull(otherPartialFilter.deleted);
     
       assert.strictEqual(version._id, '1.3.38');
       assert.isNotNull(version.migrationCompleted);
+
+      accesses.forEach((a) => {
+        if (a.deleted === undefined) throw new Error('all accesses should either be set to a date or be null');
+      });
 
       done();
     });

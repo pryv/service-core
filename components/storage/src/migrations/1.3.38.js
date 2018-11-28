@@ -26,6 +26,45 @@ module.exports = function (context, callback) {
   function migrateUser(user, callback) {
     context.logInfo('Migrating user ' + toString.user(user) + '...');
     async.series([
+      function _setDeletedToNullIfUndefined(stepDone) {
+        context.database.getCollection({ name: user._id + '.accesses' }, function (err, accessesCol) {
+          if (err) {
+            context.logError(err, 'retrieving accesses collection');
+            return stepDone(err);
+          }
+
+          const accessesCursor = accessesCol.find();
+          let completed = false;
+          async.until(function () { return completed; }, migrateAccesss,
+            context.stepCallbackFn('migrating accesss structure', stepDone));
+
+          function migrateAccesss(accessDone) {
+            accessesCursor.next(function (err, access) {
+              if (err) { return setImmediate(accessDone.bind(null, err)); }
+              if (access == null) {
+                completed = true;
+                return setImmediate(accessDone);
+              }
+
+              if (access.deleted !== undefined) {
+                return setImmediate(accessDone);
+              }
+
+              var update = {
+                $set: {
+                  deleted: null
+                }
+              };
+              accessesCol.updateOne({ _id: access._id }, update, function (err) {
+                if (err) {
+                  return accessDone(err);
+                }
+                accessDone();
+              });
+            });
+          }
+        });
+      },
       function _updateAccessesStructure(stepDone) {
         context.database.getCollection({name: user._id + '.accesses'}, function (err, accessesCol) {
           if (err) {

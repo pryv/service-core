@@ -48,7 +48,7 @@ module.exports = function produceAccessesApiMethods(
   storageLayer: StorageLayer) 
 {
   const dbFindOptions = { projection: 
-    { calls: 0 } };
+    { calls: 0, deleted: 0 } };
 
   // COMMON
 
@@ -419,6 +419,9 @@ module.exports = function produceAccessesApiMethods(
 
         // cleanup internal fields
         delete updatedAccess.calls;
+
+        // cleanup deleted
+        delete updatedAccess.deleted;
 
         result.access = updatedAccess;
         notifications.accessesChanged(context.username);

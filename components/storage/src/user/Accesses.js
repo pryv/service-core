@@ -56,7 +56,7 @@ Accesses.prototype.findDeletions = function (
   options,
   callback
 ) {
-  var query = { deleted: { $exists: true } };
+  var query = { deleted: { $type: 'date' } };
   this.database.find(
     this.getCollectionInfo(user),
     query,
@@ -99,4 +99,41 @@ Accesses.prototype.delete = function (user, query, callback) {
  */
 Accesses.prototype.generateToken = function () {
   return generateId();
+};
+
+/**
+ * Override base method to set deleted:null
+ * 
+ * @param {*} user 
+ * @param {*} item 
+ * @param {*} callback 
+ */
+Accesses.prototype.insertOne = function (user, access, callback) {
+  let accessToCreate = _.clone(access);
+  if (accessToCreate.deleted === undefined) accessToCreate.deleted = null;
+  this.database.insertOne(
+    this.getCollectionInfo(user),
+    this.applyItemToDB(this.applyItemDefaults(accessToCreate)),
+    function (err) {
+      if (err) {
+        return callback(err);
+      }
+      callback(null, _.omit(accessToCreate, 'deleted'));
+    }
+  );
+};
+
+/**
+ * Inserts an array of accesses; each item must have a valid id and data already. For tests only.
+ */
+Accesses.prototype.insertMany = function (user, accesses, callback) {
+  const accessesToCreate = accesses.map((a) => {
+    if (a.deleted === undefined) return _.assign({deleted: null}, a);
+    return a;
+  });
+  this.database.insertMany(
+    this.getCollectionInfo(user),
+    this.applyItemsToDB(accessesToCreate),
+    callback
+  );
 };

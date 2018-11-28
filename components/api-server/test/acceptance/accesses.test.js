@@ -12,6 +12,9 @@ const assert = chai.assert;
 
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
+const _ = require('lodash');
+
+const storage = require('components/test-helpers').dependencies.storage.user.accesses;
 
 describe('access deletions', () => {
 
@@ -71,7 +74,7 @@ describe('access deletions', () => {
 
       it('should contain deletions', () => {
         assert.isNotNull(deletions);
-      })
+      });
 
       it('contains active accesses', () => {
         assert.equal(accesses.length, 2);
@@ -87,6 +90,49 @@ describe('access deletions', () => {
       it('contains deleted accesses as well', () => {
         assert.equal(deletions.length, 1);
         assert.equal(deletions[0].token, deletedToken);
+      });
+    });
+
+    describe('accesses.create', () => {
+      let res, createdAccess;
+
+      const access = {
+        name: 'whatever',
+        type: 'app',
+        permissions: [
+          {
+            streamId: 'stream',
+            level: 'read'
+          }
+        ]
+      };
+
+      before(async () => {
+        res = await server.request()
+          .post(`/${userId}/accesses`)
+          .set('Authorization', accessToken)
+          .send(access);
+        createdAccess = res.body.access;
+      });
+
+      it('should contain an access', () => {
+        assert.isNotNull(createdAccess);
+      });
+
+      it('should contain the set values, but no "deleted" field in the API response', () => {
+        assert.deepEqual(access, _.pick(createdAccess,
+          ['name', 'permissions', 'type']
+        ));
+        assert.notExists(createdAccess.deleted);
+      });
+
+      it('should contain the field "deleted:null" in the database', (done) => {
+        storage.findAll({id: userId}, {}, (err, accesses) => {
+          
+          const index = _.findIndex(accesses, (a) => { return a.name === access.name });
+          assert.equal(accesses[index].deleted, null);
+          done();
+        });
       });
     });
 
