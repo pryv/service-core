@@ -76,9 +76,6 @@ describe('accesses (personal)', function () {
       });
     });
 
-    it('must not keep accesses deletions past a certain time ' +
-        '(cannot test because cannot force-run Mongo\'s TTL cleanup task)');
-
   });
 
   describe('POST /', function () {
