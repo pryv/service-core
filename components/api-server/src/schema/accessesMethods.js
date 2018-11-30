@@ -19,7 +19,11 @@ module.exports = {
       'accesses': {
         type: 'array',
         items: access(Action.READ)
-      }
+      },
+      'accessDeletions': {
+        type: 'array',
+        items: access(Action.READ)
+      },
     }, {
       required: [ 'accesses' ]
     })

@@ -8,12 +8,12 @@ const { produceMongoConnection, context } = require('../test-helpers');
 
 const lodash = require('lodash');
 const chai = require('chai');
-const assert = chai.assert; 
-
+const assert = chai.assert;
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 
+const { ErrorIds } = require('components/errors/src');
 const storage = require('components/test-helpers').dependencies.storage.user.accesses;
 
 describe('access deletions', () => {
@@ -89,45 +89,107 @@ describe('access deletions', () => {
     });
 
     describe('accesses.create', () => {
-      let res, createdAccess;
 
-      const access = {
-        name: 'whatever',
-        type: 'app',
-        permissions: [
-          {
+      describe('for a valid access', () => {
+        let createdAccess;
+
+        const access = {
+          name: 'whatever',
+          type: 'app',
+          permissions: [
+            {
+              streamId: 'stream',
+              level: 'read'
+            }
+          ]
+        };
+
+        before(async () => {
+          const res = await server.request()
+            .post(`/${userId}/accesses`)
+            .set('Authorization', accessToken)
+            .send(access);
+          createdAccess = res.body.access;
+        });
+
+        it('should contain an access', () => {
+          assert.isNotNull(createdAccess);
+        });
+
+        it('should contain the set values, but no "deleted" field in the API response', () => {
+          assert.deepEqual(access, _.pick(createdAccess,
+            ['name', 'permissions', 'type']
+          ));
+          assert.notExists(createdAccess.deleted);
+        });
+
+        it('should contain the field "deleted:null" in the database', (done) => {
+          storage.findAll({ id: userId }, {}, (err, accesses) => {
+            const deletedAccess = accesses.find(a => a.name === access.name);
+            assert.equal(deletedAccess.deleted, null);
+            done();
+          });
+        });
+      });
+
+      describe('for a deleted access', () => {
+        let res, error;
+
+        const deletedAccess = {
+          name: 'whatever',
+          type: 'app',
+          permissions: [{
             streamId: 'stream',
             level: 'read'
-          }
-        ]
-      };
+          }],
+          deleted: new Date()
+        };
+
+        before(async () => {
+          res = await server.request()
+            .post(`/${userId}/accesses`)
+            .set('Authorization', accessToken)
+            .send(deletedAccess);
+        });
+
+        it('should return an error', () => {
+          error = res.body.error;
+          assert.isNotNull(error);
+        });
+
+        it('error should say that the deleted field is forbidden upon creation', () => {
+          assert.equal(error.id, ErrorIds.InvalidParametersFormat);
+        });
+
+      });
+      
+    });
+
+    describe('accesses.update', () => {
+      let res, error, activeAccess;
 
       before(async () => {
         res = await server.request()
-          .post(`/${userId}/accesses`)
+          .get(`/${userId}/accesses`)
+          .set('Authorization', accessToken);
+        activeAccess = res.body.accesses.find( a => a.token === activeToken );
+        res = await server.request()
+          .put(`/${userId}/accesses/${activeAccess.id}`)
           .set('Authorization', accessToken)
-          .send(access);
-        createdAccess = res.body.access;
+          .send({
+            update: { deleted: new Date() }
+          });
       });
 
-      it('should contain an access', () => {
-        assert.isNotNull(createdAccess);
+      it('should return an error', () => {
+        error = res.body.error;
+        assert.isNotNull(error);
       });
 
-      it('should contain the set values, but no "deleted" field in the API response', () => {
-        assert.deepEqual(access, _.pick(createdAccess,
-          ['name', 'permissions', 'type']
-        ));
-        assert.notExists(createdAccess.deleted);
+      it('error should say that the deleted field is forbidden upon update', () => {
+        assert.equal(error.id, ErrorIds.InvalidParametersFormat);
       });
 
-      it('should contain the field "deleted:null" in the database', (done) => {
-        storage.findAll({id: userId}, {}, (err, accesses) => {
-          const deletedAccess = accesses.find( a => a.name === access.name );
-          assert.equal(deletedAccess.deleted, null);
-          done();
-        });
-      });
     });
 
   });
