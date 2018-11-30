@@ -78,12 +78,7 @@ describe('access deletions', () => {
 
       it('contains active accesses', () => {
         assert.equal(accesses.length, 2);
-        let activeAccess;
-        for (const a of accesses) {
-          if (a.token === activeToken) {
-            activeAccess = a;
-          }
-        }
+        const activeAccess = accesses.find( a => a.token === activeToken );
         assert.isNotNull(activeAccess);
       });
 
@@ -128,9 +123,8 @@ describe('access deletions', () => {
 
       it('should contain the field "deleted:null" in the database', (done) => {
         storage.findAll({id: userId}, {}, (err, accesses) => {
-          
-          const index = _.findIndex(accesses, (a) => { return a.name === access.name });
-          assert.equal(accesses[index].deleted, null);
+          const deletedAccess = accesses.find( a => a.name === access.name );
+          assert.equal(deletedAccess.deleted, null);
           done();
         });
       });
