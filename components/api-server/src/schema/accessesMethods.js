@@ -9,11 +9,14 @@ var Action = require('./Action'),
     itemDeletion = require('./itemDeletion'),
     object = helpers.object,
     string = helpers.string;
+const boolean = helpers.boolean;
 
 module.exports = {
   get: {
     params: object({}, {
-      id: 'accesses.get'
+      id: 'accesses.get',
+      includeDeletions: boolean(),
+      includeExpired: boolean(),
     }),
     result: object({
       'accesses': {
