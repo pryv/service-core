@@ -33,6 +33,8 @@ describe('access deletions', () => {
   });
 
   describe('when given a few existing accesses', () => {
+
+    const deletedTimestamp = timestamp.now('-1h');
     
     before(() => {
       return mongoFixtures.user(userId, {}, (user) => {
@@ -45,7 +47,7 @@ describe('access deletions', () => {
         user.access({
           type: 'app', token: deletedToken,
           name: 'deleted access', permissions: [],
-          deleted: timestamp.now('-1h')
+          deleted: deletedTimestamp
         });
 
         user.access({ token: accessToken, type: 'personal' });
@@ -89,7 +91,7 @@ describe('access deletions', () => {
 
       it('deleted access are in UTC (seconds) format', () => {
         const deletedAccess = deletions[0];
-        assert.typeOf(deletedAccess.deleted, 'number');
+        assert.equal(deletedAccess.deleted, deletedTimestamp);
       });
     });
 
