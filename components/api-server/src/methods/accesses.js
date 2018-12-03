@@ -129,7 +129,7 @@ module.exports = function produceAccessesApiMethods(
     const currentAccess = context.access;
     const accessesRepository = storageLayer.accesses;
 
-    accessesRepository.findDeletions(context.user, dbFindOptions,
+    accessesRepository.findDeletions(context.user, { projection: { calls: 0 } },
       function (err, deletions) {
         if (err) { return next(errors.unexpectedError(err)); }
 

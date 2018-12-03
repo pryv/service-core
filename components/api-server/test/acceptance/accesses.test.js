@@ -86,6 +86,11 @@ describe('access deletions', () => {
         assert.equal(deletions.length, 1);
         assert.equal(deletions[0].token, deletedToken);
       });
+
+      it('deleted access are in UTC (seconds) format', () => {
+        const deletedAccess = deletions[0];
+        assert.typeOf(deletedAccess.deleted, 'number');
+      });
     });
 
     describe('accesses.create', () => {
