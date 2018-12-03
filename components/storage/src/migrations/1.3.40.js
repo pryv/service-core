@@ -1,11 +1,13 @@
-var async = require('async'),
-  toString = require('components/utils').toString;
+const async = require('async');
+const toString = require('components/utils').toString;
 
 /**
- * v1.3.38:
+ * v1.3.40:
  *
  * - Changes { token } and { name, type, deviceName } accesses indexes from sparse
  *    to having a partialFilter on the "deleted" field which is more performant.
+ * - Reverses hack: renames deleted fields "_token", "_name", "_type", "_deviceName"
+ *    to their previous names without the "_" prefix.
  */
 module.exports = function (context, callback) {
   context.database.getCollection({name: 'users'}, function (err, usersCol) {
@@ -46,15 +48,25 @@ module.exports = function (context, callback) {
                 return setImmediate(accessDone);
               }
 
-              if (access.deleted !== undefined) {
-                return setImmediate(accessDone);
+              let update;
+              
+              if (access.deleted === undefined) {
+                update = {
+                  $set: {
+                    deleted: null
+                  }
+                };
+              } else {
+                update = {
+                  $rename: {
+                    '_token': 'token',
+                    '_type': 'type',
+                    '_name': 'name',
+                    '_deviceName': 'deviceName',
+                  }
+                };
               }
 
-              var update = {
-                $set: {
-                  deleted: null
-                }
-              };
               accessesCol.updateOne({ _id: access._id }, update, function (err) {
                 if (err) {
                   return accessDone(err);

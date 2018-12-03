@@ -303,6 +303,13 @@ describe('Versions', function () {
 
       accesses.forEach((a) => {
         if (a.deleted === undefined) throw new Error('all access.deleted fields should either be set to a date or be null');
+
+        if (a.deleted !== null) {
+          if (a['_token'] != null) throw new Error('all deleted accesses should have "token" parameter and not "_token"');
+          if (a['_type'] != null) throw new Error('all deleted accesses should have "type" parameter and not "_type"');
+          if (a['_name'] != null) throw new Error('all deleted accesses should have "name" parameter and not "_name"');
+          if (a['_deviceName'] != null) throw new Error('all deleted accesses should have "deviceName" parameter and not "_deviceName"');
+        }
       });
 
       done();
