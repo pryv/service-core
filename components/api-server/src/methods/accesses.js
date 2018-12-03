@@ -547,7 +547,7 @@ module.exports = function produceAccessesApiMethods(
     if (isAccessExpired(access)) return false; 
 
     let accessPerm, reqPerm;
-    for (var i = 0, ni = access.permissions.length; i < ni; i++) {
+    for (let i = 0, ni = access.permissions.length; i < ni; i++) {
       accessPerm = access.permissions[i];
       reqPerm = findByStreamId(requestedPermissions, accessPerm.streamId);
 
@@ -646,7 +646,7 @@ module.exports = function produceAccessesApiMethods(
             // Checks if a stream with a name of `defaultName` combined with 
             // `curSuffixNum` exists. Sets `nameIsUnique` to true if not. 
             function checkName(checkDone) {
-              var checkedName = getAlternativeName(
+              const checkedName = getAlternativeName(
                 permission.defaultName,
                 curSuffixNum
               );

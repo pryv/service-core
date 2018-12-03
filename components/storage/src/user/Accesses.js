@@ -1,8 +1,8 @@
-var BaseStorage = require('./BaseStorage'),
-    converters = require('./../converters'),
-    generateId = require('cuid'),
-    util = require('util'),
-    _ = require('lodash');
+const BaseStorage = require('./BaseStorage');
+const converters = require('./../converters');
+const generateId = require('cuid');
+const util = require('util');
+const _ = require('lodash');
 
 module.exports = Accesses;
 /**
@@ -34,7 +34,7 @@ function createTokenIfMissing(access) {
   return access;
 }
 
-var indexes = [
+const indexes = [
   {
     index: {token: 1},
     options: { 
@@ -56,7 +56,7 @@ Accesses.prototype.findDeletions = function (
   options,
   callback
 ) {
-  var query = { deleted: { $type: 'date' } };
+  const query = { deleted: { $type: 'date' } };
   this.database.find(
     this.getCollectionInfo(user),
     query,
@@ -85,7 +85,7 @@ Accesses.prototype.getCollectionInfo = function (user) {
  * Implementation.
  */
 Accesses.prototype.delete = function (user, query, callback) {
-  var update = {
+  const update = {
     $set: {deleted: new Date()}
   };
   this.database.updateMany(this.getCollectionInfo(user), this.applyQueryToDB(query), update,

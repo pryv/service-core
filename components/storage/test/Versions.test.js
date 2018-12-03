@@ -20,7 +20,7 @@ const _ = require('lodash');
 describe('Versions', function () {
   this.timeout(20000);
 
-  var mongoFolder = __dirname + '/../../../../../mongodb-osx-x86_64-3.4.4';
+  const mongoFolder = __dirname + '/../../../../../mongodb-osx-x86_64-3.4.4';
 
   // older migration tests are skipped; they're kept for reference (e.g. when
   // writing new tests)
@@ -317,9 +317,9 @@ describe('Versions', function () {
   });
 
   function getVersions(/* migration1Id, migration2Id, ... */) {
-    var pickArgs = [].slice.call(arguments);
+    const pickArgs = [].slice.call(arguments);
     pickArgs.unshift(migrations);
-    var pickedMigrations = _.pick.apply(_, pickArgs);
+    const pickedMigrations = _.pick.apply(_, pickArgs);
     return new Versions(database,
         helpers.dependencies.settings.eventFiles.attachmentsDirPath,
         helpers.dependencies.logging.getLogger('versions'),
