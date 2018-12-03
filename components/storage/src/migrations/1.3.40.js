@@ -4,7 +4,7 @@ var async = require('async'),
 /**
  * v1.3.38:
  *
- * - Changes { token } and { name, type, deviceName } indexes from sparse
+ * - Changes { token } and { name, type, deviceName } accesses indexes from sparse
  *    to having a partialFilter on the "deleted" field which is more performant.
  */
 module.exports = function (context, callback) {

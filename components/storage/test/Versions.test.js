@@ -259,8 +259,8 @@ describe('Versions', function () {
     });
   });
 
-  it('must handle data migration from v1.3.37 to 1.3.38', function (done) {
-    const versions = getVersions('1.3.38');
+  it('must handle data migration from v1.3.37 to 1.3.40', function (done) {
+    const versions = getVersions('1.3.40');
     const indexes = testData.getStructure('1.3.37').indexes;
 
     const user = {id: 'u_0'};
@@ -298,11 +298,11 @@ describe('Versions', function () {
       assert.isNotNull(tokenPartialFilter.deleted);
       assert.isNotNull(otherPartialFilter.deleted);
     
-      assert.strictEqual(version._id, '1.3.38');
+      assert.strictEqual(version._id, '1.3.40');
       assert.isNotNull(version.migrationCompleted);
 
       accesses.forEach((a) => {
-        if (a.deleted === undefined) throw new Error('all accesses should either be set to a date or be null');
+        if (a.deleted === undefined) throw new Error('all access.deleted fields should either be set to a date or be null');
       });
 
       done();
