@@ -140,16 +140,16 @@ function copyAttachmentFn(attachmentInfo, user, eventId) {
 // data dump & restore (for testing data migration)
 
 /**
- * Dumps test data (current version) into a `data` subfolder named after the package version.
+ * Dumps test data into a `data` subfolder named after the provided version.
  * DB data is mongodumped, attachments data is tarballed.
  * The output folder will be overwritten if it already exists.
  *
  * @param {String} mongoFolder Path to MongoDB base folder
  * @param {Function} callback
  */
-exports.dumpCurrent = function (mongoFolder, callback) {
+exports.dumpCurrent = function (mongoFolder, version, callback) {
   var mongodump = path.resolve(mongoFolder, 'bin/mongodump'),
-      outputFolder = getDumpFolder(require('../../../package.json').version);
+      outputFolder = getDumpFolder(version);
 
   console.log('Dumping current test data to ' + outputFolder);
 
