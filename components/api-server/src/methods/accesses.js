@@ -49,7 +49,7 @@ module.exports = function produceAccessesApiMethods(
   storageLayer: StorageLayer) 
 {
   const dbFindOptions = { projection: 
-    { calls: 0 } };
+    { calls: 0, deleted: 0 } };
 
   // COMMON
 
@@ -75,7 +75,9 @@ module.exports = function produceAccessesApiMethods(
 
   api.register('accesses.get',
     commonFns.getParamsValidation(methodsSchema.get.params),
-    findAccessibleAccesses);
+    findAccessibleAccesses,
+    includeDeletionsIfRequested
+  );
 
   function findAccessibleAccesses(context, params, result, next) {
     const currentAccess = context.access;
@@ -100,7 +102,7 @@ module.exports = function produceAccessesApiMethods(
         
       // Filter expired accesses (maybe)
       chain = maybeFilterExpired(params, chain);
-      
+
       // Return the chain result.
       result.accesses = chain.value();
       
@@ -120,6 +122,21 @@ module.exports = function produceAccessesApiMethods(
       return chain.reject(
         a => isAccessExpired(a));
     }
+  }
+
+  function includeDeletionsIfRequested(context, params, result, next) {
+    if (params.includeDeletions == null) { return next(); }
+
+    const currentAccess = context.access;
+    const accessesRepository = storageLayer.accesses;
+
+    accessesRepository.findDeletions(context.user, { projection: { calls: 0 } },
+      function (err, deletions) {
+        if (err) { return next(errors.unexpectedError(err)); }
+
+        result.accessDeletions = deletions.filter(a => currentAccess.canManageAccess(a));
+        next();
+      });
   }
 
 
@@ -406,6 +423,9 @@ module.exports = function produceAccessesApiMethods(
         // cleanup internal fields
         delete updatedAccess.calls;
 
+        // cleanup deleted
+        delete updatedAccess.deleted;
+
         result.access = updatedAccess;
         notifications.accessesChanged(context.username);
         next();
@@ -531,7 +551,7 @@ module.exports = function produceAccessesApiMethods(
 
     // Compare permissions
     let accessPerm, reqPerm;
-    for (var i = 0, ni = access.permissions.length; i < ni; i++) {
+    for (let i = 0, ni = access.permissions.length; i < ni; i++) {
       accessPerm = access.permissions[i];
       reqPerm = findByStreamId(requestedPermissions, accessPerm.streamId);
 
@@ -635,7 +655,7 @@ module.exports = function produceAccessesApiMethods(
             // Checks if a stream with a name of `defaultName` combined with 
             // `curSuffixNum` exists. Sets `nameIsUnique` to true if not. 
             function checkName(checkDone) {
-              var checkedName = getAlternativeName(
+              const checkedName = getAlternativeName(
                 permission.defaultName,
                 curSuffixNum
               );

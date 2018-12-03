@@ -1,10 +1,10 @@
 // @flow
 
-var addCommonMeta = require('./methods/helpers/setCommonMeta'),
-    MultiStream = require('multistream'),
-    DrainStream = require('./methods/streams/DrainStream'),
-    ArrayStream = require('./methods/streams/ArrayStream'),
-    async = require('async');
+const addCommonMeta = require('./methods/helpers/setCommonMeta');
+const MultiStream = require('multistream');
+const DrainStream = require('./methods/streams/DrainStream');
+const ArrayStream = require('./methods/streams/ArrayStream');
+const async = require('async');
 
 
 const Transform = require('stream').Transform;
@@ -45,6 +45,7 @@ class Result {
   accesses: ?Array<any>;
   access: mixed;
   accessDeletion: mixed;
+  accessDeletions: mixed;
   matchingAccess: mixed;
   mismatchingAccess: mixed;
   checkedPermissions: mixed;
@@ -93,7 +94,7 @@ class Result {
     res.setHeader('Transfer-Encoding', 'chunked');
     res.statusCode = successCode;
 
-    var streamsArray = this._private.streamsArray;
+    const streamsArray = this._private.streamsArray;
 
     if (! this._private.isStreamResult)
       throw new Error('AF: not a stream result.');
@@ -102,7 +103,7 @@ class Result {
 
     // Are we handling a single stream?
     if (streamsArray.length === 1) {
-      var first = streamsArray[0];
+      const first = streamsArray[0];
       return first.stream
         .pipe(new ArrayStream(first.name, true))
         .pipe(new ResultStream())
@@ -110,9 +111,9 @@ class Result {
     }
 
     // assert: streamsArray.length > 1
-    var streams = [];
-    for (var i=0; i<streamsArray.length; i++) {
-      var s = streamsArray[i];
+    const streams = [];
+    for (let i=0; i<streamsArray.length; i++) {
+      const s = streamsArray[i];
       streams.push(s.stream.pipe(new ArrayStream(s.name, i === 0)));
     }
 
@@ -138,12 +139,12 @@ class Result {
   }
   
   toObjectStream(callback: ToObjectCallback) {
-    var _private = this._private;
-    var streamsArray = _private.streamsArray;
+    const _private = this._private;
+    const streamsArray = _private.streamsArray;
 
-    var resultObj = {};
+    const resultObj = {};
     async.forEachOfSeries(streamsArray, (elementDef, i, done) => {
-      var drain = new DrainStream({limit: _private.arrayLimit}, (err, list) => {
+      const drain = new DrainStream({limit: _private.arrayLimit}, (err, list) => {
         if (err) {
           return done(err);
         }

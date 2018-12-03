@@ -1,6 +1,6 @@
-var _ = require('lodash'),
-    converters = require('./../converters'),
-    timestamp = require('unix-timestamp');
+const _ = require('lodash');
+const converters = require('./../converters');
+const timestamp = require('unix-timestamp');
 
 module.exports = BaseStorage;
 /**
@@ -124,7 +124,7 @@ BaseStorage.prototype.findDeletions = function(
   options,
   callback
 ) {
-  var query = { deleted: { $gt: timestamp.toDate(deletedSince) } };
+  const query = { deleted: { $gt: timestamp.toDate(deletedSince) } };
   query.headId = null;
   this.database.find(
     this.getCollectionInfo(user),
@@ -485,8 +485,8 @@ BaseStorage.prototype.applyItemsFromDB = function(dbItems) {
   );
 };
 
-var idToDB = converters.getRenamePropertyFn('id', '_id'),
-    idFromDB = converters.getRenamePropertyFn('_id', 'id');
+const idToDB = converters.getRenamePropertyFn('id', '_id');
+const idFromDB = converters.getRenamePropertyFn('_id', 'id');
 
 function applyConvertersToDB(object, converterFns) {
   return idToDB(applyConverters(object, converterFns));

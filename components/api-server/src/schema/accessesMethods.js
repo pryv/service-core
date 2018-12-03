@@ -2,24 +2,31 @@
  * JSON Schema specification of methods data for accesses.
  */
 
-var Action = require('./Action'),
-    access = require('./access'),
-    error = require('./methodError'),
-    helpers = require('./helpers'),
-    itemDeletion = require('./itemDeletion'),
-    object = helpers.object,
-    string = helpers.string;
+const Action = require('./Action');
+const access = require('./access');
+const error = require('./methodError');
+const helpers = require('./helpers');
+const itemDeletion = require('./itemDeletion');
+const object = helpers.object;
+const string = helpers.string;
+const boolean = helpers.boolean;
 
 module.exports = {
   get: {
     params: object({}, {
-      id: 'accesses.get'
+      id: 'accesses.get',
+      includeDeletions: boolean(),
+      includeExpired: boolean(),
     }),
     result: object({
       'accesses': {
         type: 'array',
         items: access(Action.READ)
-      }
+      },
+      'accessDeletions': {
+        type: 'array',
+        items: access(Action.READ)
+      },
     }, {
       required: [ 'accesses' ]
     })

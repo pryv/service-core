@@ -76,9 +76,6 @@ describe('accesses (personal)', function () {
       });
     });
 
-    it('must not keep accesses deletions past a certain time ' +
-        '(cannot test because cannot force-run Mongo\'s TTL cleanup task)');
-
   });
 
   describe('POST /', function () {
@@ -789,12 +786,9 @@ describe('accesses (personal)', function () {
           storage.findAll(user, null, function (err, accesses) {
             accesses.length.should.eql(testData.accesses.length, 'accesses');
 
-            var expected = _.extend({
-              _token: deletedAccess.token,
-              _type: deletedAccess.type,
-              _name: deletedAccess.name,
+            var expected = _.assign({
               deleted: deletionTime
-            }, _.omit(deletedAccess, 'token', 'type', 'name'));
+            }, deletedAccess);
             var actual = _.find(accesses, {id: deletedAccess.id});
             validation.checkObjectEquality(actual, expected);
 

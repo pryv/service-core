@@ -3,23 +3,23 @@
 /*global describe, before, beforeEach, it */
 
 require('./test-helpers'); 
-var helpers = require('./helpers'),
-    ErrorIds = require('components/errors').ErrorIds,
-    server = helpers.dependencies.instanceManager,
-    async = require('async'),
-    validation = helpers.validation,
-    methodsSchema = require('../src/schema/accessesMethods'),
-    storage = helpers.dependencies.storage.user.accesses,
-    testData = helpers.data,
-    timestamp = require('unix-timestamp'),
-    _ = require('lodash');
+const helpers = require('./helpers');
+const ErrorIds = require('components/errors').ErrorIds;
+const server = helpers.dependencies.instanceManager;
+const async = require('async');
+const validation = helpers.validation;
+const methodsSchema = require('../src/schema/accessesMethods');
+const storage = helpers.dependencies.storage.user.accesses;
+const testData = helpers.data;
+const timestamp = require('unix-timestamp');
+const _ = require('lodash');
 const should = require('should');
 
 import type Request from './helpers';
 
 describe('accesses (app)', function () {
 
-  var additionalTestAccesses = [
+  const additionalTestAccesses = [
     {
       id: 'app_A',
       token: 'app_A_token',
@@ -85,10 +85,10 @@ describe('accesses (app)', function () {
       modifiedBy: 'test'
     }
   ];
-  var user = testData.users[0],
-      access = additionalTestAccesses[0],
-      basePath = '/' + user.username + '/accesses',
-      request: ?Request = null; // must be set after server instance started
+  const user = testData.users[0];
+  const access = additionalTestAccesses[0];
+  const basePath = '/' + user.username + '/accesses';
+  let request: ?Request = null; // must be set after server instance started
 
   function path(id) {
     return basePath + '/' + id;
@@ -99,7 +99,7 @@ describe('accesses (app)', function () {
   }
   
   // to verify data change notifications
-  var accessesNotifCount;
+  let accessesNotifCount;
   server.on('accesses-changed', function () { accessesNotifCount++; });
 
   before(function (done) {
@@ -127,7 +127,7 @@ describe('accesses (app)', function () {
       });
 
     it('must be forbidden to requests with a shared access token', function (done) {
-      var sharedAccess = testData.accesses[1];
+      const sharedAccess = testData.accesses[1];
       req().get(basePath, sharedAccess.token).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
@@ -140,7 +140,7 @@ describe('accesses (app)', function () {
     beforeEach(resetAccesses);
 
     it('must create a new shared access with the sent data and return it', function (done) {
-      var data = {
+      const  data = {
         name: 'New Access',
         permissions: [
           {
@@ -161,7 +161,7 @@ describe('accesses (app)', function () {
           schema: methodsSchema.create.result
         });
 
-        var expected: {[key: string]: any} = _.cloneDeep(data);
+        const expected: {[key: string]: any} = _.cloneDeep(data);
         expected.id = res.body.access.id;
         expected.token = res.body.access.token;
         expected.type = 'shared';
@@ -175,7 +175,7 @@ describe('accesses (app)', function () {
     });
 
     it('must forbid trying to create a non-shared access', function (done) {
-      var data = {
+      const data = {
         name: 'New Access',
         type: 'app',
         permissions: [
@@ -191,7 +191,7 @@ describe('accesses (app)', function () {
     });
 
     it('must forbid trying to create an access with greater permissions', function (done) {
-      var data = {
+      const data = {
         name: 'New Access',
         permissions: [
           {
@@ -206,7 +206,7 @@ describe('accesses (app)', function () {
     });
 
     it('must return a correct error if the sent data is badly formatted', function (done) {
-      var data = {
+      const data = {
         name: 'New Access',
         permissions: [
           {
@@ -227,8 +227,8 @@ describe('accesses (app)', function () {
     beforeEach(resetAccesses);
 
     it('must modify the access with the sent data', function (done) {
-      var original = additionalTestAccesses[2];
-      var data = {
+      const original = additionalTestAccesses[2];
+      const data = {
         name: 'Updated Shared Access A',
         permissions: [
           {
@@ -243,7 +243,7 @@ describe('accesses (app)', function () {
           schema: methodsSchema.update.result
         });
 
-        var expected: {[key: string]: any} = _.clone(data);
+        const expected: {[key: string]: any} = _.clone(data);
         expected.modifiedBy = access.id;
         delete expected.token;
         delete expected.type;
@@ -280,7 +280,7 @@ describe('accesses (app)', function () {
     });
 
     it('must return a correct error if the sent data is badly formatted', function (done) {
-      var data = {
+      const data = {
         permissions: [
           {
             streamId: testData.streams[0].id,
@@ -313,8 +313,8 @@ describe('accesses (app)', function () {
     beforeEach(resetAccesses);
 
     it('must delete the shared access', function (done) {
-      var deletedAccess = additionalTestAccesses[2],
-          deletionTime;
+      const deletedAccess = additionalTestAccesses[2];
+      let deletionTime;
       async.series([
         function deleteAccess(stepDone) {
           deletionTime = timestamp.now();
@@ -333,13 +333,10 @@ describe('accesses (app)', function () {
             accesses.length.should.eql(testData.accesses.length + additionalTestAccesses.length,
                                        'accesses');
 
-            var expected = _.extend({
-              _token: deletedAccess.token,
-              _type: deletedAccess.type,
-              _name: deletedAccess.name,
+            const expected = _.assign({
               deleted: deletionTime
-            }, _.omit(deletedAccess, 'token', 'type', 'name'));
-            var actual = _.find(accesses, {id: deletedAccess.id});
+            }, deletedAccess);
+            const actual = _.find(accesses, {id: deletedAccess.id});
             validation.checkObjectEquality(actual, expected);
 
             stepDone();

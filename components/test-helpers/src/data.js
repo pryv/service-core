@@ -2,20 +2,20 @@
  * Regroups shared test data and related  helper functions.
  */
 
-var async = require('async'),
-    childProcess = require('child_process'),
-    dependencies = require('./dependencies'),
-    mkdirp = require('mkdirp'),
-    settings = dependencies.settings,
-    storage = dependencies.storage,
-    fs = require('fs'),
-    path = require('path'),
-    rimraf = require('rimraf');
+const async = require('async');
+const childProcess = require('child_process');
+const dependencies = require('./dependencies');
+const mkdirp = require('mkdirp');
+const settings = dependencies.settings;
+const storage = dependencies.storage;
+const fs = require('fs');
+const path = require('path');
+const rimraf = require('rimraf');
 
 // users
 
-var users = exports.users = require('./data/users'),
-    defaultUser = users[0];
+const users = exports.users = require('./data/users');
+const defaultUser = users[0];
 
 exports.resetUsers = function (done) {
   async.series([
@@ -30,7 +30,7 @@ exports.resetUsers = function (done) {
 
 // accesses
 
-var accesses = exports.accesses = require('./data/accesses');
+const accesses = exports.accesses = require('./data/accesses');
 
 exports.resetAccesses = function (done, user, personalAccessToken) {
   if (personalAccessToken) {
@@ -41,7 +41,7 @@ exports.resetAccesses = function (done, user, personalAccessToken) {
 
 // profile
 
-var profile = exports.profile = require('./data/profile');
+const profile = exports.profile = require('./data/profile');
 
 exports.resetProfile = function (done, user) {
   resetData(storage.user.profile, user || defaultUser, profile, done);
@@ -49,9 +49,9 @@ exports.resetProfile = function (done, user) {
 
 // followed slices
 
-var followedSlicesURL = 'http://' + settings.http.ip + ':' + settings.http.port + '/' +
+const followedSlicesURL = 'http://' + settings.http.ip + ':' + settings.http.port + '/' +
     users[0].username;
-var followedSlices = exports.followedSlices = require('./data/followedSlices')(followedSlicesURL);
+const followedSlices = exports.followedSlices = require('./data/followedSlices')(followedSlicesURL);
 
 exports.resetFollowedSlices = function (done, user) {
   resetData(storage.user.followedSlices, user || defaultUser, followedSlices, done);
@@ -59,7 +59,7 @@ exports.resetFollowedSlices = function (done, user) {
 
 // events
 
-var events = exports.events = require('./data/events');
+const events = exports.events = require('./data/events');
 
 exports.resetEvents = function (done, user) {
   resetData(storage.user.events, user || defaultUser, events, done);
@@ -67,7 +67,7 @@ exports.resetEvents = function (done, user) {
 
 // streams
 
-var streams = exports.streams = require('./data/streams');
+const streams = exports.streams = require('./data/streams');
 
 exports.resetStreams = function (done, user) {
   resetData(storage.user.streams, user || defaultUser, streams, done);
@@ -86,9 +86,9 @@ function resetData(storage, user, items, done) {
 /**
  * Source attachments directory path (!= server storage path)
  */
-var attachmentsDirPath = exports.attachmentsDirPath = __dirname + '/data/attachments/';
+const attachmentsDirPath = exports.attachmentsDirPath = __dirname + '/data/attachments/';
 
-var attachments = exports.attachments = {
+const attachments = exports.attachments = {
   animatedGif: getAttachmentInfo('animatedGif', 'animated.gif', 'image/gif'),
   document: getAttachmentInfo('document', 'document.pdf', 'application/pdf'),
   document_modified: getAttachmentInfo('document', 'document.modified.pdf', 'application/pdf'),
@@ -98,8 +98,8 @@ var attachments = exports.attachments = {
 };
 
 function getAttachmentInfo(id, filename, type) {
-  var filePath = path.join(attachmentsDirPath, filename),
-      data = fs.readFileSync(filePath);
+  const filePath = path.join(attachmentsDirPath, filename);
+  const data = fs.readFileSync(filePath);
   return {
     id: id,
     filename: filename,
@@ -127,7 +127,7 @@ exports.resetAttachments = function (done, user) {
 
 function copyAttachmentFn(attachmentInfo, user, eventId) {
   return function (callback) {
-    var tmpPath = '/tmp/' + attachmentInfo.filename;
+    const tmpPath = '/tmp/' + attachmentInfo.filename;
     try {
       childProcess.execSync('cp "' + attachmentInfo.path + '" "' + tmpPath + '"');
     } catch (e) {
@@ -140,16 +140,16 @@ function copyAttachmentFn(attachmentInfo, user, eventId) {
 // data dump & restore (for testing data migration)
 
 /**
- * Dumps test data (current version) into a `data` subfolder named after the package version.
+ * Dumps test data into a `data` subfolder named after the provided version.
  * DB data is mongodumped, attachments data is tarballed.
  * The output folder will be overwritten if it already exists.
  *
  * @param {String} mongoFolder Path to MongoDB base folder
  * @param {Function} callback
  */
-exports.dumpCurrent = function (mongoFolder, callback) {
-  var mongodump = path.resolve(mongoFolder, 'bin/mongodump'),
-      outputFolder = getDumpFolder(require('../../../package.json').version);
+exports.dumpCurrent = function (mongoFolder, version, callback) {
+  const mongodump = path.resolve(mongoFolder, 'bin/mongodump');
+  const outputFolder = getDumpFolder(version);
 
   console.log('Dumping current test data to ' + outputFolder);
 
@@ -186,10 +186,10 @@ exports.dumpCurrent = function (mongoFolder, callback) {
  * @param callback
  */
 exports.restoreFromDump = function (versionNum, mongoFolder, callback) {
-  var mongorestore = path.resolve(mongoFolder, 'bin/mongorestore'),
-      sourceFolder = getDumpFolder(versionNum),
-      sourceDBFolder = getDumpDBSubfolder(sourceFolder),
-      sourceFilesArchive = getDumpFilesArchive(sourceFolder);
+  const mongorestore = path.resolve(mongoFolder, 'bin/mongorestore');
+  const sourceFolder = getDumpFolder(versionNum);
+  const sourceDBFolder = getDumpDBSubfolder(sourceFolder);
+  const sourceFilesArchive = getDumpFilesArchive(sourceFolder);
 
   console.log('Restoring v' + versionNum + ' data from ' + sourceFolder);
 

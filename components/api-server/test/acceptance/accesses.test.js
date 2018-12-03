@@ -8,10 +8,199 @@ const { produceMongoConnection, context } = require('../test-helpers');
 
 const lodash = require('lodash');
 const chai = require('chai');
-const assert = chai.assert; 
-
+const assert = chai.assert;
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
+const _ = require('lodash');
+
+const { ErrorIds } = require('components/errors/src');
+const storage = require('components/test-helpers').dependencies.storage.user.accesses;
+
+describe('access deletions', () => {
+
+  const mongoFixtures = databaseFixture(produceMongoConnection());
+  after(() => {
+    mongoFixtures.clean();
+  });
+
+  let userId, streamId, activeToken, deletedToken, accessToken;
+  before(() => {
+    userId = cuid();
+    streamId = cuid();
+    activeToken = cuid();
+    deletedToken = cuid();
+    accessToken = cuid();
+  });
+
+  describe('when given a few existing accesses', () => {
+
+    const deletedTimestamp = timestamp.now('-1h');
+    
+    before(() => {
+      return mongoFixtures.user(userId, {}, (user) => {
+        user.stream({ id: streamId }, () => {});
+
+        user.access({
+          type: 'app', token: activeToken,
+          name: 'active access', permissions: []
+        });
+        user.access({
+          type: 'app', token: deletedToken,
+          name: 'deleted access', permissions: [],
+          deleted: deletedTimestamp
+        });
+
+        user.access({ token: accessToken, type: 'personal' });
+        user.session(accessToken);
+      });
+    });
+
+    let server;
+    before(async () => {
+      server = await context.spawn();
+    });
+    after(() => {
+      server.stop();
+    });
+
+    describe('accesses.get', () => {
+      let res, accesses, deletions;
+
+      before(async () => {
+        res = await server.request()
+          .get(`/${userId}/accesses?includeDeletions=true`)
+          .set('Authorization', accessToken);
+        accesses = res.body.accesses;
+        deletions = res.body.accessDeletions;
+      });
+
+      it('should contain deletions', () => {
+        assert.isNotNull(deletions);
+      });
+
+      it('contains active accesses', () => {
+        assert.equal(accesses.length, 2);
+        const activeAccess = accesses.find( a => a.token === activeToken );
+        assert.isNotNull(activeAccess);
+      });
+
+      it('contains deleted accesses as well', () => {
+        assert.equal(deletions.length, 1);
+        assert.equal(deletions[0].token, deletedToken);
+      });
+
+      it('deleted access are in UTC (seconds) format', () => {
+        const deletedAccess = deletions[0];
+        assert.equal(deletedAccess.deleted, deletedTimestamp);
+      });
+    });
+
+    describe('accesses.create', () => {
+
+      describe('for a valid access', () => {
+        let createdAccess;
+
+        const access = {
+          name: 'whatever',
+          type: 'app',
+          permissions: [
+            {
+              streamId: 'stream',
+              level: 'read'
+            }
+          ]
+        };
+
+        before(async () => {
+          const res = await server.request()
+            .post(`/${userId}/accesses`)
+            .set('Authorization', accessToken)
+            .send(access);
+          createdAccess = res.body.access;
+        });
+
+        it('should contain an access', () => {
+          assert.isNotNull(createdAccess);
+        });
+
+        it('should contain the set values, but no "deleted" field in the API response', () => {
+          assert.deepEqual(access, _.pick(createdAccess,
+            ['name', 'permissions', 'type']
+          ));
+          assert.notExists(createdAccess.deleted);
+        });
+
+        it('should contain the field "deleted:null" in the database', (done) => {
+          storage.findAll({ id: userId }, {}, (err, accesses) => {
+            const deletedAccess = accesses.find(a => a.name === access.name);
+            assert.equal(deletedAccess.deleted, null);
+            done();
+          });
+        });
+      });
+
+      describe('for a deleted access', () => {
+        let res, error;
+
+        const deletedAccess = {
+          name: 'whatever',
+          type: 'app',
+          permissions: [{
+            streamId: 'stream',
+            level: 'read'
+          }],
+          deleted: new Date()
+        };
+
+        before(async () => {
+          res = await server.request()
+            .post(`/${userId}/accesses`)
+            .set('Authorization', accessToken)
+            .send(deletedAccess);
+        });
+
+        it('should return an error', () => {
+          error = res.body.error;
+          assert.isNotNull(error);
+        });
+
+        it('error should say that the deleted field is forbidden upon creation', () => {
+          assert.equal(error.id, ErrorIds.InvalidParametersFormat);
+        });
+
+      });
+      
+    });
+
+    describe('accesses.update', () => {
+      let res, error, activeAccess;
+
+      before(async () => {
+        res = await server.request()
+          .get(`/${userId}/accesses`)
+          .set('Authorization', accessToken);
+        activeAccess = res.body.accesses.find( a => a.token === activeToken );
+        res = await server.request()
+          .put(`/${userId}/accesses/${activeAccess.id}`)
+          .set('Authorization', accessToken)
+          .send({
+            update: { deleted: new Date() }
+          });
+      });
+
+      it('should return an error', () => {
+        error = res.body.error;
+        assert.isNotNull(error);
+      });
+
+      it('error should say that the deleted field is forbidden upon update', () => {
+        assert.equal(error.id, ErrorIds.InvalidParametersFormat);
+      });
+
+    });
+
+  });
+});
 
 describe('access expiry', () => {
   // Uses dynamic fixtures:

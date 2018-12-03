@@ -1,5 +1,5 @@
-var streams = require('./streams'),
-    timestamp = require('unix-timestamp');
+const streams = require('./streams');
+const timestamp = require('unix-timestamp');
 
 module.exports = [
   {
