@@ -17,7 +17,7 @@ module.exports = function (context, callback) {
       async.forEachSeries(users, migrateUser, function (err) {
         if (err) { return callback(err); }
 
-        context.logInfo('Data version is now 1.3.38');
+        context.logInfo('Data version is now 1.3.40');
         callback();
       });
     });
