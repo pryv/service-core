@@ -28,7 +28,18 @@ module.exports = function (context, callback) {
   function migrateUser(user, callback) {
     context.logInfo('Migrating user ' + toString.user(user) + '...');
     async.series([
-      function _setDeletedToNullIfUndefined(stepDone) {
+      function _updateAccessesStructure(stepDone) {
+        context.database.getCollection({ name: user._id + '.accesses' }, function (err, accessesCol) {
+          if (err) {
+            context.logError(err, 'retrieving accesses collection');
+            return stepDone(err);
+          }
+
+          accessesCol.dropIndexes(ignoreNSError.bind(null,
+            context.stepCallbackFn('resetting indexes on accesses collection', stepDone)));
+        });
+      },
+      function _updateAccessData(stepDone) {
         context.database.getCollection({ name: user._id + '.accesses' }, function (err, accessesCol) {
           if (err) {
             context.logError(err, 'retrieving accesses collection');
@@ -75,17 +86,6 @@ module.exports = function (context, callback) {
               });
             });
           }
-        });
-      },
-      function _updateAccessesStructure(stepDone) {
-        context.database.getCollection({name: user._id + '.accesses'}, function (err, accessesCol) {
-          if (err) {
-            context.logError(err, 'retrieving accesses collection');
-            return stepDone(err);
-          }
-
-          accessesCol.dropIndexes(ignoreNSError.bind(null,
-            context.stepCallbackFn('resetting indexes on accesses collection', stepDone)));
         });
       }
     ], function (err) {
