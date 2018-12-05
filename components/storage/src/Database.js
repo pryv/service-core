@@ -10,6 +10,7 @@ import type { Db as MongoDB, Collection } from 'mongodb';
 import type { Logger } from 'components/utils';
 
 type DatabaseOptions = {
+  j?: boolean,
   w?: number, 
   autoReconnect?: boolean,
   connectTimeoutMS?: number, 
@@ -51,6 +52,7 @@ class Database {
         
     const s60 = 60000; // 60 seconds
     this.options = {
+      j: true, // Requests acknowledgement that the write operation has been written to the journal.
       w: 1,   // Requests acknowledgement that the write operation has propagated.
       autoReconnect: true, 
       connectTimeoutMS: s60, 
@@ -341,7 +343,7 @@ class Database {
    */
   insertOne(collectionInfo: CollectionInfo, item: Object, callback: DatabaseCallback) {
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.insertOne(item, {w: 1}, callback);
+      collection.insertOne(item, {w: 1, j: true}, callback);
     });
   }
 
@@ -350,7 +352,7 @@ class Database {
    */
   insertMany(collectionInfo: CollectionInfo, items: Array<Object>, callback: DatabaseCallback) {
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.insertMany(items, {w: 1}, callback);
+      collection.insertMany(items, {w: 1, j: true}, callback);
     });
   }
 
@@ -365,7 +367,7 @@ class Database {
    */
   updateOne(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.updateOne(query, update, {w: 1}, callback);
+      collection.updateOne(query, update, {w: 1, j: true}, callback);
     });
   }
 
@@ -380,7 +382,7 @@ class Database {
    */
   updateMany(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.updateMany(query, update, {w: 1}, callback);
+      collection.updateMany(query, update, {w: 1, j:true}, callback);
     });
   }
 
@@ -413,7 +415,7 @@ class Database {
    */
   upsertOne(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.updateOne(query, update, {w: 1, upsert: true}, callback);
+      collection.updateOne(query, update, {w: 1, upsert: true, j: true}, callback);
     });
   }
 
@@ -426,7 +428,7 @@ class Database {
    */
   deleteOne(collectionInfo: CollectionInfo, query: Object, callback: DatabaseCallback) {
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.deleteOne(query, {w: 1}, callback);
+      collection.deleteOne(query, {w: 1, j: true}, callback);
     });
   }
 
@@ -439,7 +441,7 @@ class Database {
    */
   deleteMany(collectionInfo: CollectionInfo, query: Object, callback: DatabaseCallback) {
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.deleteMany(query, {w: 1}, callback);
+      collection.deleteMany(query, {w: 1, j: true}, callback);
     });
   }
 
