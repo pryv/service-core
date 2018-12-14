@@ -7,12 +7,14 @@ const { context } = require('../test-helpers');
 const chai = require('chai');
 const assert = chai.assert;
 const url = require('url');
+const helpers = require('../helpers');
 
 //const helpers = require('./helpers');
 
 //helpers.dependencies.settings.auth.adminAccessKey
 
 describe('users pool', () => {
+  const adminKey = helpers.dependencies.settings.auth.adminAccessKey;
   let server;
   before(async () => {
     server = await context.spawn();
@@ -24,15 +26,11 @@ describe('users pool', () => {
   describe('create pool user', () => {
     let res;
     let poolUser;
-
-    function basePath() {
-      return url.resolve(null, '/system');
-    }
     
     beforeEach(async () => {
       res = await server.request()
-        .post(basePath()+'/pool/create-user')
-        //.set('Authorization', adminKey);
+        .post('/system/pool/create-user')
+        .set('Authorization', adminKey)
         .send({});
         
       poolUser = res.body.newUser;
@@ -55,8 +53,8 @@ describe('users pool', () => {
     
     beforeEach(async () => {
       res = await server.request()
-        .get(basePath()+'/poll/get-size');
-        //.set('Authorization', adminKey);
+        .get('/system/poll/get-size')
+        .set('Authorization', adminKey);
       
       poolSize = res.body.poolSize;
     });

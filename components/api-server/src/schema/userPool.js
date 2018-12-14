@@ -42,7 +42,7 @@ module.exports = function (action) {
     schema.required = [ 'id', 'username', 'passwordHash', 'email', 'language', 'storageUsed' ];
     break;
   case Action.CREATE:
-    schema.required = [];
+    // nothing required
     break;
   }
 
