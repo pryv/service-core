@@ -27,7 +27,7 @@ describe('users pool', () => {
     let res;
     let poolUser;
     
-    beforeEach(async () => {
+    before(async () => {
       res = await server.request()
         .post('/system/pool/create-user')
         .set('Authorization', adminKey)
@@ -50,7 +50,7 @@ describe('users pool', () => {
     let res;
     let poolSize;
     
-    beforeEach(async () => {
+    before(async () => {
       res = await server.request()
         .post('/system/pool/size')
         .set('Authorization', adminKey)
