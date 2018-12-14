@@ -6,7 +6,10 @@ var async = require('async'),
     _ = require('lodash');
 
 const cuid = require('cuid');
-const USERNAME_POOL = 'pool';
+
+
+const POOL_USERNAME = 'pool@';
+const POLL_REGEX = new Regex( '^'  + POOL_USERNAME);
 
 module.exports = Users;
 /**
@@ -71,7 +74,7 @@ Users.prototype.findOne = function (query, options, callback) {
  */
 Users.prototype.insertOne = function (user, callback) {
   var self = this;
-  if (user.username == USERNAME_POOL) { 
+  if (user.username == POOL_USERNAME) { 
     preparePoolUser(user, function (err, dbUser) {
       if (err) { return callback(err); }
       Users.super_.prototype.insertOne.call(self, null, dbUser, callback);
@@ -111,11 +114,13 @@ Users.prototype.insertMany = function (users, callback) {
 function preparePoolUser(user, callback) {
   const dbUser = _.clone(user);
   const randomString = cuid();
+
   delete dbUser.password;
-  dbUser.username = USERNAME_POOL + '--' + randomString;
+  dbUser.username = POOL_USERNAME + randomString;
   dbUser.passwordHash = 'dummy';
   dbUser.language = 'en';
-  dbUser.email = randomString + '@dummy.dum';
+  dbUser.email = dbUser.username + '.bogus';
+
   callback(null, dbUser);
 }
 
@@ -138,7 +143,7 @@ function encryptPassword(user, callback) {
     });
   }
 }
-console.log("XXXXXXXXXXXXXX");
+
 /**
  * Override.
  */
@@ -160,3 +165,11 @@ Users.prototype.findAll = function (options, callback) {
 Users.prototype.removeAll = function (callback) {
   Users.super_.prototype.removeAll.call(this, null, callback);
 };
+
+
+// ------------------ pool tools -------------//
+
+Users.prototype.countPool = function (callback) {
+  const query = {username: { $regex : POOL_REGEX}};
+  Users.super_.prototype.count.call(this, null, query, callback);
+}
