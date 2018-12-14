@@ -147,7 +147,7 @@ const cuid = require('cuid');
 
 
 const POOL_USERNAME = 'pool@';
-const POOL_REGEX = new Regex( '^'  + POOL_USERNAME);
+const POOL_REGEX = new RegExp( '^'  + POOL_USERNAME);
 
 
 Users.prototype.insertOnePool = function (callback) {
