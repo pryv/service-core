@@ -4,11 +4,26 @@
 
 var Action = require('./Action'),
     helpers = require('./helpers'),
-    user = require('./user');
+    user = require('./user'),
+    userPool = require('./userPool');
 
 module.exports = {
   createUser: {
     params: user(Action.CREATE),
+    result: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        'id': {
+          type: 'string'
+        }
+      },
+      required: [ 'id' ]
+    }
+  },
+
+  createPoolUser: {
+    params: userPool(Action.CREATE),
     result: {
       type: 'object',
       additionalProperties: false,

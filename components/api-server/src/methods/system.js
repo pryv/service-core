@@ -110,6 +110,39 @@ module.exports = function (
       });
   }
 
+  // ------------------------------------------------------------ createPoolUser
+  systemAPI.register('system.createPoolUser',
+    commonFns.getParamsValidation(methodsSchema.createPoolUser.params),
+    applyDefaultsForCreation,
+    createPoolUser);
+
+  function createPoolUser(context, params, result, next) {
+    console.log('XXXX coucou');
+    usersStorage.insertOnePool(function (err, newUser) {
+      if (err != null) return next(handleCreationErrors(err, params));
+      console.log('XXXX salut');
+
+      result.id = newUser.id;
+      context.user = newUser;
+      next();
+    });
+  }
+
+  // ---------------------------------------------------------- getUsersPoolSize
+  systemAPI.register('system.getUsersPoolSize',
+    commonFns.getParamsValidation(methodsSchema.createPoolUser.params),
+    applyDefaultsForCreation,
+    getUsersPoolSize);
+
+  function getUsersPoolSize(context, params, result, next) {
+    usersStorage.count(params, function (err, size) {
+      if (err != null || size == null) { return next(errors.unexpectedError(err)); }
+
+      context.poolSize = size;
+      next();
+    });
+  }
+
   // --------------------------------------------------------------- getUserInfo
   systemAPI.register('system.getUserInfo',
     commonFns.getParamsValidation(methodsSchema.getUserInfo.params),
