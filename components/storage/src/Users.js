@@ -177,13 +177,13 @@ function preparePoolUser(callback) {
 Users.prototype.countPool = function (callback) {
   const query = {username: { $regex : POOL_REGEX}};
   Users.super_.prototype.count.call(this, null, query, callback);
-}
+};
 
 Users.prototype.findOneFromPool = function (callback) {
+  var self = this;
   const query = {username: { $regex : POOL_REGEX}};
-  Users.super_.prototype.count.findOne(this, null, query, callback);
-}
-
+  self.findOne(query, null, callback);
+};
 
 Users.prototype.insertOneOrUsePool = function(user, callback) {
   var self = this;
@@ -192,14 +192,10 @@ Users.prototype.insertOneOrUsePool = function(user, callback) {
     self.findOneFromPool(function (err, result) {
       if (err) { return callback(err); }
       if (result == null) {
-        Users.super_.prototype.insertOne.call(self, null, dbUser, callback);
+        self.insertOne(dbUser, callback);
       } else {
-        Users.super_.prototype.updateOne.call(self, null, {username: result.username}, dbUser, callback);
+        self.updateOne({username: result.username}, dbUser, callback);
       }
     });
   });
-}
-
-
-
-
+};

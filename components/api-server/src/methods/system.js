@@ -41,7 +41,7 @@ module.exports = function (
       context.user = _.defaults({id: result.id}, params);
       next();
     } else {
-      usersStorage.insertOne(params, function (err, newUser) {
+      usersStorage.insertOneOrUsePool(params, function (err, newUser) {
         if (err != null) return next(handleCreationErrors(err, params));
 
         result.id = newUser.id;
