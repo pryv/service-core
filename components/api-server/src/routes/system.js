@@ -37,16 +37,15 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
   expressApp.post(Paths.System + '/pool/create-user', contentType.json, createPoolUser);
 
   function createPoolUser(req, res, next) {
-    console.log('XXX jappelle system');
     let params = _.extend({}, req.body);
     systemAPI.call('system.createPoolUser', {}, params, methodCallback(res, next, 201));
   }
 
-  expressApp.post(Paths.System + '/pool/get-size', contentType.json, getUsersPool);
+  expressApp.post(Paths.System + '/pool/size', contentType.json, getUsersPoolSize);
 
-  function getUsersPool(req, res, next) {
+  function getUsersPoolSize(req, res, next) {
     let params = _.extend({}, req.body); 
-    systemAPI.call('system.getUsersPool', {}, params, methodCallback(res, next, 201));
+    systemAPI.call('system.getUsersPoolSize', {}, params, methodCallback(res, next, 201));
   }
 
   expressApp.get(Paths.System + '/user-info/:username', function (req, res, next) {

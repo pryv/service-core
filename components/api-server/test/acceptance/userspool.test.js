@@ -33,11 +33,10 @@ describe('users pool', () => {
         .set('Authorization', adminKey)
         .send({});
         
-      poolUser = res.body.newUser;
+      poolUser = res.body;
     });
 
     it('succeeds', () => {
-      console.log(res.body.error);
       assert.notExists(res.body.error);
       assert.isTrue(res.ok);
       assert.exists(poolUser);
@@ -53,16 +52,18 @@ describe('users pool', () => {
     
     beforeEach(async () => {
       res = await server.request()
-        .get('/system/poll/get-size')
-        .set('Authorization', adminKey);
+        .post('/system/pool/size')
+        .set('Authorization', adminKey)
+        .send({});
       
-      poolSize = res.body.poolSize;
+      poolSize = res.body.size;
     });
 
     it('succeeds', () => {
       assert.isTrue(res.ok);
       assert.notExists(res.body.error);
       assert.exists(poolSize);
+      assert.isTrue(poolSize>=0);
     });
   });
 });

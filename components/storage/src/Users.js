@@ -154,7 +154,7 @@ Users.prototype.insertOnePool = function (callback) {
   var self = this;
   preparePoolUser(function (err, dbUser) {
     if (err) { return callback(err); }
-    self.insertOne.call(dbUser, callback);
+    self.insertOne(dbUser, callback);
   });
 };
 

@@ -117,10 +117,8 @@ module.exports = function (
     createPoolUser);
 
   function createPoolUser(context, params, result, next) {
-    console.log('XXXX coucou');
     usersStorage.insertOnePool(function (err, newUser) {
       if (err != null) return next(handleCreationErrors(err, params));
-      console.log('XXXX salut');
 
       result.id = newUser.id;
       context.user = newUser;
@@ -130,15 +128,15 @@ module.exports = function (
 
   // ---------------------------------------------------------- getUsersPoolSize
   systemAPI.register('system.getUsersPoolSize',
-    commonFns.getParamsValidation(methodsSchema.createPoolUser.params),
+    //commonFns.getParamsValidation(methodsSchema.createPoolUser.params),
     applyDefaultsForCreation,
     getUsersPoolSize);
 
   function getUsersPoolSize(context, params, result, next) {
-    usersStorage.count(params, function (err, size) {
+    usersStorage.countPool(function (err, size) {
       if (err != null || size == null) { return next(errors.unexpectedError(err)); }
 
-      context.poolSize = size;
+      result.size = size;
       next();
     });
   }
