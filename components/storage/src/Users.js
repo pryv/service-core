@@ -5,12 +5,6 @@ var async = require('async'),
     util = require('util'),
     _ = require('lodash');
 
-const cuid = require('cuid');
-
-
-const POOL_USERNAME = 'pool@';
-const POLL_REGEX = new Regex( '^'  + POOL_USERNAME);
-
 module.exports = Users;
 /**
  * DB persistence for users.
@@ -74,17 +68,10 @@ Users.prototype.findOne = function (query, options, callback) {
  */
 Users.prototype.insertOne = function (user, callback) {
   var self = this;
-  if (user.username == POOL_USERNAME) { 
-    preparePoolUser(user, function (err, dbUser) {
-      if (err) { return callback(err); }
-      Users.super_.prototype.insertOne.call(self, null, dbUser, callback);
-    });
-  } else { 
-    encryptPassword(user, function (err, dbUser) {
-      if (err) { return callback(err); }
-      Users.super_.prototype.insertOne.call(self, null, dbUser, callback);
-    });
-  }
+  encryptPassword(user, function (err, dbUser) {
+    if (err) { return callback(err); }
+    Users.super_.prototype.insertOne.call(self, null, dbUser, callback);
+  });
 };
 
 /**
@@ -108,21 +95,6 @@ Users.prototype.insertMany = function (users, callback) {
 };
 
 
-/**
- * @param {Function} callback (error, dbUser) `dbUser` is a clone of the original user.
- */
-function preparePoolUser(user, callback) {
-  const dbUser = _.clone(user);
-  const randomString = cuid();
-
-  delete dbUser.password;
-  dbUser.username = POOL_USERNAME + randomString;
-  dbUser.passwordHash = 'dummy';
-  dbUser.language = 'en';
-  dbUser.email = dbUser.username + '.bogus';
-
-  callback(null, dbUser);
-}
 
 /**
  * @param {Function} callback (error, dbUser) `dbUser` is a clone of the original user.
@@ -168,8 +140,67 @@ Users.prototype.removeAll = function (callback) {
 
 
 // ------------------ pool tools -------------//
+// ----- to be moved out of Storage ----------//
+// -------------------------------------------//
+
+const cuid = require('cuid');
+
+
+const POOL_USERNAME = 'pool@';
+const POOL_REGEX = new Regex( '^'  + POOL_USERNAME);
+
+
+Users.prototype.insertOnePool = function ( callback) {
+  var self = this;
+  preparePoolUser(user, function (err, dbUser) {
+    if (err) { return callback(err); }
+    self.insertOne.call(dbUser, callback);
+  });
+};
+
+/**
+ * @param {Function} callback (error, dbUser) `dbUser` is a clone of the original user.
+ */
+function preparePoolUser(user, callback) {
+  const dbUser = _.clone(user);
+  const randomString = cuid();
+
+  delete dbUser.password;
+  dbUser.username = POOL_USERNAME + randomString;
+  dbUser.passwordHash = 'dummy';
+  dbUser.language = 'en';
+  dbUser.email = dbUser.username + '.bogus';
+
+  callback(null, dbUser);
+}
 
 Users.prototype.countPool = function (callback) {
   const query = {username: { $regex : POOL_REGEX}};
   Users.super_.prototype.count.call(this, null, query, callback);
 }
+
+Users.prototype.findOneFromPool = function (callback) {
+  const query = {username: { $regex : POOL_REGEX}};
+  Users.super_.prototype.count.findOne(this, null, query, callback);
+}
+
+
+Users.prototype.insertOneOrUsePool(user, callback) {
+  var self = this;
+  encryptPassword(user, function (err, dbUser) {
+    if (err) { return callback(err); }
+
+    self.findOneFromPool(function (err, result) { 
+      if (err) { return callback(err); }
+      if (result == null) {
+        Users.super_.prototype.insertOne.call(self, null, dbUser, callback);
+      } else {
+        Users.super_.prototype.updateOne.call(self, null, {username: result.username}, dbUser, callback);
+      }
+    });
+  });
+}
+
+
+
+
