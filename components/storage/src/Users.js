@@ -185,7 +185,7 @@ Users.prototype.findOneFromPool = function (callback) {
 }
 
 
-Users.prototype.insertOneOrUsePool(user, callback) {
+Users.prototype.insertOneOrUsePool = function(user, callback) {
   var self = this;
   encryptPassword(user, function (err, dbUser) {
     if (err) { return callback(err); }
