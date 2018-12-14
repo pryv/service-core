@@ -150,9 +150,9 @@ const POOL_USERNAME = 'pool@';
 const POOL_REGEX = new Regex( '^'  + POOL_USERNAME);
 
 
-Users.prototype.insertOnePool = function ( callback) {
+Users.prototype.insertOnePool = function (callback) {
   var self = this;
-  preparePoolUser(user, function (err, dbUser) {
+  preparePoolUser(function (err, dbUser) {
     if (err) { return callback(err); }
     self.insertOne.call(dbUser, callback);
   });
@@ -161,8 +161,8 @@ Users.prototype.insertOnePool = function ( callback) {
 /**
  * @param {Function} callback (error, dbUser) `dbUser` is a clone of the original user.
  */
-function preparePoolUser(user, callback) {
-  const dbUser = _.clone(user);
+function preparePoolUser(callback) {
+  const dbUser = {};
   const randomString = cuid();
 
   delete dbUser.password;
