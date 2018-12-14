@@ -5,6 +5,9 @@ var async = require('async'),
     util = require('util'),
     _ = require('lodash');
 
+const cuid = require('cuid');
+const USERNAME_POOL = 'pool';
+
 module.exports = Users;
 /**
  * DB persistence for users.
@@ -68,10 +71,17 @@ Users.prototype.findOne = function (query, options, callback) {
  */
 Users.prototype.insertOne = function (user, callback) {
   var self = this;
-  encryptPassword(user, function (err, dbUser) {
-    if (err) { return callback(err); }
-    Users.super_.prototype.insertOne.call(self, null, dbUser, callback);
-  });
+  if (user.username == USERNAME_POOL) { 
+    preparePoolUser(user, function (err, dbUser) {
+      if (err) { return callback(err); }
+      Users.super_.prototype.insertOne.call(self, null, dbUser, callback);
+    });
+  } else { 
+    encryptPassword(user, function (err, dbUser) {
+      if (err) { return callback(err); }
+      Users.super_.prototype.insertOne.call(self, null, dbUser, callback);
+    });
+  }
 };
 
 /**
@@ -94,6 +104,21 @@ Users.prototype.insertMany = function (users, callback) {
   });
 };
 
+
+/**
+ * @param {Function} callback (error, dbUser) `dbUser` is a clone of the original user.
+ */
+function preparePoolUser(user, callback) {
+  const dbUser = _.clone(user);
+  const randomString = cuid();
+  delete dbUser.password;
+  dbUser.username = USERNAME_POOL + '--' + randomString;
+  dbUser.passwordHash = 'dummy';
+  dbUser.language = 'en';
+  dbUser.email = randomString + '@dummy.dum';
+  callback(null, dbUser);
+}
+
 /**
  * @param {Function} callback (error, dbUser) `dbUser` is a clone of the original user.
  */
@@ -113,7 +138,7 @@ function encryptPassword(user, callback) {
     });
   }
 }
-
+console.log("XXXXXXXXXXXXXX");
 /**
  * Override.
  */
