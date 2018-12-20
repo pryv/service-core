@@ -85,7 +85,11 @@ Users.prototype.insertOne = function (user, callback) {
  * Override.
  */
 Users.prototype.updateOne = function (query, updatedData, callback) {
-  Users.super_.prototype.updateOne.call(this, null, query, updatedData, callback);
+  var self = this;
+  encryptPassword(updatedData, function (err, update) {
+    if (err) { return callback(err); }
+    Users.super_.prototype.updateOne.call(self, null, query, update, callback);
+  });
 };
 
 /**
@@ -108,10 +112,7 @@ Users.prototype.insertMany = function (users, callback) {
  */
 function encryptPassword(user, callback) {
   const dbUser = _.clone(user);
-  if (! dbUser.password && dbUser.passwordHash) {
-    // OK: assume it's been hashed in registration-server already
-    callback(null, dbUser);
-  } else {
+  if (dbUser.password != null) {
     encryption.hash(dbUser.password, function (err, hash) {
       if (err != null) return callback(err);
 
@@ -120,6 +121,9 @@ function encryptPassword(user, callback) {
 
       callback(null, dbUser);
     });
+  } else {
+    // Nothing to encrypt
+    callback(null, dbUser);
   }
 }
 
