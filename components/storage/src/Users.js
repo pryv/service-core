@@ -49,6 +49,13 @@ Users.prototype.getCollectionInfo = function () {
 /**
  * Override.
  */
+Users.prototype.count = function (query, callback) {
+  Users.super_.prototype.count.call(this, null, query, callback);
+};
+
+/**
+ * Override.
+ */
 Users.prototype.countAll = function (callback) {
   Users.super_.prototype.countAll.call(this, null, callback);
 };
@@ -136,66 +143,4 @@ Users.prototype.findAll = function (options, callback) {
  */
 Users.prototype.removeAll = function (callback) {
   Users.super_.prototype.removeAll.call(this, null, callback);
-};
-
-
-// ------------------ pool tools -------------//
-// ----- to be moved out of Storage ----------//
-// -------------------------------------------//
-
-const cuid = require('cuid');
-
-
-const POOL_USERNAME = 'pool@';
-const POOL_REGEX = new RegExp( '^'  + POOL_USERNAME);
-
-
-Users.prototype.insertOnePool = function (callback) {
-  var self = this;
-  preparePoolUser(function (err, dbUser) {
-    if (err) { return callback(err); }
-    self.insertOne(dbUser, callback);
-  });
-};
-
-/**
- * @param {Function} callback (error, dbUser) `dbUser` is a clone of the original user.
- */
-function preparePoolUser(callback) {
-  const dbUser = {};
-  const randomString = cuid();
-
-  delete dbUser.password;
-  dbUser.username = POOL_USERNAME + randomString;
-  dbUser.passwordHash = 'dummy';
-  dbUser.language = 'en';
-  dbUser.email = dbUser.username + '.bogus';
-
-  callback(null, dbUser);
-}
-
-Users.prototype.countPool = function (callback) {
-  const query = {username: { $regex : POOL_REGEX}};
-  Users.super_.prototype.count.call(this, null, query, callback);
-};
-
-Users.prototype.findOneFromPool = function (callback) {
-  var self = this;
-  const query = {username: { $regex : POOL_REGEX}};
-  self.findOne(query, null, callback);
-};
-
-Users.prototype.insertOneOrUsePool = function(user, callback) {
-  var self = this;
-  encryptPassword(user, function (err, dbUser) {
-    if (err) { return callback(err); }
-    self.findOneFromPool(function (err, result) {
-      if (err) { return callback(err); }
-      if (result == null) {
-        self.insertOne(dbUser, callback);
-      } else {
-        self.updateOne({username: result.username}, dbUser, callback);
-      }
-    });
-  });
 };

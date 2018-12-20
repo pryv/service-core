@@ -6,6 +6,7 @@ const methodsSchema = require('../schema/systemMethods');
 const string = require('./helpers/string');
 const _ = require('lodash');
 const async = require('async');
+const cuid = require('cuid');
 
 /**
  * @param systemAPI
@@ -21,6 +22,8 @@ module.exports = function (
 ) {
 
   var logger = logging.getLogger('methods/system');
+  const POOL_USERNAME = 'pool@';
+  const POOL_REGEX = new RegExp( '^'  + POOL_USERNAME);
 
   // ---------------------------------------------------------------- createUser
   systemAPI.register('system.createUser',
@@ -43,23 +46,50 @@ module.exports = function (
       context.user = _.defaults({id: result.id}, params);
       next();
     } else {
-      usersStorage.insertOneOrUsePool(params, function (err, newUser) {
+      // Consume a pool user if available or use default creation
+      createUserOrConsumePool(params, (err, user) => {
         if (err != null) return next(handleCreationErrors(err, params));
-
-        const repositories = [storageLayer.accesses, storageLayer.events,
-          storageLayer.followedSlices, storageLayer.profile, storageLayer.streams];
-        // Init user's repositories (create collections and indexes)
-        async.each(repositories, (repository, stepDone) => {
-          repository.initCollection(newUser, stepDone);
-        }, (err) => {
-          if (err != null) return next(handleCreationErrors(err, params));
-
-          result.id = newUser.id;
-          context.user = newUser;
-          next();
-        });
+        result.id = user.id;
+        context.user = user;
+        next();
       });
     }
+  }
+
+  function createUserOrConsumePool(userInfo, callback) {
+    // Check if a user is available in the pool
+    usersStorage.findOne({username: {$regex : POOL_REGEX}}, null,
+      (err, poolUser) => {
+        if (err != null) return callback(err);
+        // No user in the pool
+        if (poolUser == null) {
+          // Fallback to default user creation
+          usersStorage.insertOne(userInfo, (err, newUser) => {
+            if (err != null) return callback(err);
+            // Init user's repositories (create collections and indexes)
+            initUserRepositories(newUser, (err) => {
+              if (err != null) return callback(err);
+              callback(null, newUser);
+            });
+          });
+        } else {
+          // Consume user from pool
+          usersStorage.updateOne({username: poolUser.username}, userInfo,
+            (err, updatedUser) => {
+              if (err != null) return callback(err);
+              callback(null, updatedUser);
+            });
+        }
+      });
+  }
+
+  function initUserRepositories (user, callback) {
+    const repositories = [storageLayer.accesses, storageLayer.events,
+      storageLayer.followedSlices, storageLayer.profile, storageLayer.streams];
+    // Init user's repositories (create collections and indexes)
+    async.each(repositories, (repository, stepDone) => {
+      repository.initCollection(user, stepDone);
+    }, callback);
   }
 
   function handleCreationErrors(err, params) {
@@ -126,9 +156,15 @@ module.exports = function (
     commonFns.getParamsValidation(methodsSchema.createPoolUser.params),
     applyDefaultsForCreation,
     createPoolUser);
-
+  
   function createPoolUser(context, params, result, next) {
-    usersStorage.insertOnePool(function (err, newUser) {
+    const poolUser = {
+      username: POOL_USERNAME + cuid(),
+      passwordHash: 'changeMe',
+      language: 'en',
+      email: 'changeMe'
+    };
+    usersStorage.insertOne(poolUser, (err, newUser) => {
       if (err != null) return next(handleCreationErrors(err, params));
 
       result.id = newUser.id;
@@ -141,15 +177,16 @@ module.exports = function (
   systemAPI.register('system.getUsersPoolSize',
     //commonFns.getParamsValidation(methodsSchema.createPoolUser.params),
     applyDefaultsForCreation,
-    getUsersPoolSize);
+    countPoolUsers);
 
-  function getUsersPoolSize(context, params, result, next) {
-    usersStorage.countPool(function (err, size) {
-      if (err != null || size == null) { return next(errors.unexpectedError(err)); }
+  function countPoolUsers(context, params, result, next) {
+    usersStorage.count({username: { $regex : POOL_REGEX}},
+      (err, size) => {
+        if (err != null || size == null) return next(errors.unexpectedError(err));
 
-      result.size = size;
-      next();
-    });
+        result.size = size;
+        next();
+      });
   }
 
   // --------------------------------------------------------------- getUserInfo
