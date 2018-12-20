@@ -111,6 +111,11 @@ Events.prototype.getCollectionInfo = function(user) {
   };
 };
 
+Events.prototype.initCollection = function (user, callback) {
+  const self = this;
+  Events.super_.prototype.getCollection.call(self, self.getCollectionInfo(user), callback);
+};
+
 /**
  * Implementation
  */

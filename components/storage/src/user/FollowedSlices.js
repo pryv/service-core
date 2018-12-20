@@ -43,3 +43,8 @@ FollowedSlices.prototype.getCollectionInfo = function (user) {
     indexes: indexes
   };
 };
+
+FollowedSlices.prototype.initCollection = function (user, callback) {
+  const self = this;
+  FollowedSlices.super_.prototype.getCollection.call(self, self.getCollectionInfo(user), callback);
+};

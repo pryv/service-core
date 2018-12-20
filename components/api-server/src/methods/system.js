@@ -5,6 +5,7 @@ const errorHandling = require('components/errors').errorHandling;
 const methodsSchema = require('../schema/systemMethods');
 const string = require('./helpers/string');
 const _ = require('lodash');
+const async = require('async');
 
 /**
  * @param systemAPI
@@ -13,9 +14,10 @@ const _ = require('lodash');
  * @param servicesSettings Must contain `email`
  * @param api The user-facing API, used to compute usage stats per method
  * @param logging
+ * @param storageLayer
  */
 module.exports = function (
-  systemAPI, usersStorage, userAccessesStorage, servicesSettings, api, logging
+  systemAPI, usersStorage, userAccessesStorage, servicesSettings, api, logging, storageLayer
 ) {
 
   var logger = logging.getLogger('methods/system');
@@ -44,9 +46,18 @@ module.exports = function (
       usersStorage.insertOneOrUsePool(params, function (err, newUser) {
         if (err != null) return next(handleCreationErrors(err, params));
 
-        result.id = newUser.id;
-        context.user = newUser;
-        next();
+        const repositories = [storageLayer.accesses, storageLayer.events,
+          storageLayer.followedSlices, storageLayer.profile, storageLayer.streams];
+        // Init user's repositories (create collections and indexes)
+        async.each(repositories, (repository, stepDone) => {
+          repository.initCollection(newUser, stepDone);
+        }, (err) => {
+          if (err != null) return next(handleCreationErrors(err, params));
+
+          result.id = newUser.id;
+          context.user = newUser;
+          next();
+        });
       });
     }
   }
@@ -178,7 +189,7 @@ module.exports = function (
     getAPIMethodKeys().forEach(function (methodKey) {
       info.callsDetail[methodKey] = 0;
     });
-
+    const userAccessesStorage = storageLayer.accesses;
     userAccessesStorage.find(context.user, {}, null, function (err, accesses) {
       if (err) { return next(errors.unexpectedError(err)); }
 
