@@ -158,11 +158,12 @@ module.exports = function (
     createPoolUser);
   
   function createPoolUser(context, params, result, next) {
+    const username = POOL_USERNAME + cuid();
     const poolUser = {
-      username: POOL_USERNAME + cuid(),
+      username: username,
       passwordHash: 'changeMe',
       language: 'en',
-      email: 'changeMe'
+      email: username+'@email'
     };
     usersStorage.insertOne(poolUser, (err, newUser) => {
       if (err != null) return next(handleCreationErrors(err, params));
