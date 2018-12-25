@@ -71,7 +71,11 @@ Users.prototype.findOne = function (query, options, callback) {
  * Override.
  */
 Users.prototype.findOneAndUpdate = function (query, updatedData, callback) {
-  Users.super_.prototype.findOneAndUpdate.call(this, null, query, updatedData, callback);
+  var self = this;
+  encryptPassword(updatedData, function (err, update) {
+    if (err) { return callback(err); }
+    Users.super_.prototype.findOneAndUpdate.call(self, null, query, update, callback);
+  });
 };
 
 /**
