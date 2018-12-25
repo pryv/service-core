@@ -69,6 +69,13 @@ Users.prototype.findOne = function (query, options, callback) {
 
 /**
  * Override.
+ */
+Users.prototype.findOneAndUpdate = function (query, updatedData, callback) {
+  Users.super_.prototype.findOneAndUpdate.call(this, null, query, updatedData, callback);
+};
+
+/**
+ * Override.
  * Inserts a single item, encrypting `password` into `passwordHash`.
  *
  * @param {Function} callback ({Error}, {String})

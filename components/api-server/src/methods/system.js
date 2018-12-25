@@ -57,30 +57,27 @@ module.exports = function (
   }
 
   function createUserOrConsumePool(userInfo, callback) {
-    // Check if a user is available in the pool
-    usersStorage.findOne({username: {$regex : POOL_REGEX}}, null,
-      (err, poolUser) => {
-        if (err != null) return callback(err);
-        // No user in the pool
-        if (poolUser == null) {
-          // Fallback to default user creation
+    // Try to consume a user from pool
+    usersStorage.findOneAndUpdate({username: {$regex : POOL_REGEX}},
+      userInfo, (err, updatedUser) => {
+        // Fallback to default user creation in case of error or empty pool
+        if (err != null || updatedUser == null) {
           usersStorage.insertOne(userInfo, (err, newUser) => {
             if (err != null) return callback(err);
             // Init user's repositories (create collections and indexes)
             initUserRepositories(newUser, (err) => {
               if (err != null) return callback(err);
+              // Return new user
               callback(null, newUser);
             });
           });
-        } else {
-          // Consume user from pool
-          usersStorage.updateOne({username: poolUser.username}, userInfo,
-            (err, updatedUser) => {
-              if (err != null) return callback(err);
-              callback(null, updatedUser);
-            });
         }
-      });
+        // Return updated pool user
+        else {
+          callback(null, updatedUser);
+        }
+      }
+    );
   }
 
   function initUserRepositories (user, callback) {
