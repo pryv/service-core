@@ -22,8 +22,8 @@ module.exports = function (
 ) {
 
   var logger = logging.getLogger('methods/system');
-  const POOL_USERNAME = 'pool@';
-  const POOL_REGEX = new RegExp( '^'  + POOL_USERNAME);
+  const POOL_USERNAME_PREFIX = 'pool@';
+  const POOL_REGEX = new RegExp( '^'  + POOL_USERNAME_PREFIX);
 
   // ---------------------------------------------------------------- createUser
   systemAPI.register('system.createUser',
@@ -65,28 +65,28 @@ module.exports = function (
           usersStorage.insertOne(userInfo, (err, newUser) => {
             if (err != null) return callback(err);
             // Init user's repositories (create collections and indexes)
-            initUserRepositories(newUser, (err) => {
-              if (err != null) return callback(err);
-              // Return new user
-              callback(null, newUser);
-            });
+            initUserRepositories(newUser, callback);
           });
         }
-        // Return updated pool user
         else {
-          callback(null, updatedUser);
+          // Init and return updated pool user
+          initUserRepositories(updatedUser, callback);
         }
       }
     );
   }
 
-  function initUserRepositories (user, callback) {
+  function initUserRepositories(user, callback) {
     const repositories = [storageLayer.accesses, storageLayer.events,
       storageLayer.followedSlices, storageLayer.profile, storageLayer.streams];
     // Init user's repositories (create collections and indexes)
     async.each(repositories, (repository, stepDone) => {
       repository.initCollection(user, stepDone);
-    }, callback);
+    }, (err) => {
+      if (err != null) return callback(err);
+      // Return initialized user
+      callback(null, user);
+    });
   }
 
   function handleCreationErrors(err, params) {
