@@ -68,9 +68,8 @@ module.exports = function (
             initUserRepositories(newUser, callback);
           });
         }
-        else {
-          // Init and return updated pool user
-          initUserRepositories(updatedUser, callback);
+        else {        
+          callback(null, updatedUser);
         }
       }
     );
@@ -155,7 +154,7 @@ module.exports = function (
     createPoolUser);
   
   function createPoolUser(context, params, result, next) {
-    const username = POOL_USERNAME + cuid();
+    const username = POOL_USERNAME_PREFIX + cuid();
     const poolUser = {
       username: username,
       passwordHash: 'changeMe',
@@ -165,9 +164,12 @@ module.exports = function (
     usersStorage.insertOne(poolUser, (err, newUser) => {
       if (err != null) return next(handleCreationErrors(err, params));
 
-      result.id = newUser.id;
-      context.user = newUser;
-      next();
+      initUserRepositories(newUser, function (err, user) {
+        if (err) return next(err);
+        result.id = user.id;
+        context.user = newUser;
+        return next();
+      });
     });
   }
 
