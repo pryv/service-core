@@ -64,7 +64,7 @@ module.exports = function (
         if (err != null || updatedUser == null) {
           usersStorage.insertOne(userInfo, (err, newUser) => {
             if (err != null) return callback(err);
-            // Init user's repositories (create collections and indexes)
+            // Init and return new user
             initUserRepositories(newUser, callback);
           });
         }
