@@ -189,7 +189,7 @@ module.exports = function (
   function countPoolUsers(context, params, result, next) {
     usersStorage.count({username: { $regex : POOL_REGEX}},
       (err, size) => {
-        if (err != null || size == null) return next(errors.unexpectedError(err));
+        if (err != null) return next(errors.unexpectedError(err));
 
         result.size = size;
         next();
