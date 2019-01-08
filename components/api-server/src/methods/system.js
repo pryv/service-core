@@ -157,7 +157,6 @@ module.exports = function (
 
   // ------------------------------------------------------------ createPoolUser
   systemAPI.register('system.createPoolUser',
-    commonFns.getParamsValidation(methodsSchema.createPoolUser.params),
     applyDefaultsForCreation,
     createPoolUser);
   
@@ -185,8 +184,6 @@ module.exports = function (
 
   // ---------------------------------------------------------- getUsersPoolSize
   systemAPI.register('system.getUsersPoolSize',
-    //commonFns.getParamsValidation(methodsSchema.createPoolUser.params),
-    applyDefaultsForCreation,
     countPoolUsers);
 
   function countPoolUsers(context, params, result, next) {
