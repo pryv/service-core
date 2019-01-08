@@ -1,17 +1,12 @@
 // @flow
 
-/* global describe, it, before, after, beforeEach */
+/* global describe, it, before, after */
 
 const { context } = require('../test-helpers');
 
 const chai = require('chai');
 const assert = chai.assert;
-const url = require('url');
 const helpers = require('../helpers');
-
-//const helpers = require('./helpers');
-
-//helpers.dependencies.settings.auth.adminAccessKey
 
 describe('users pool', () => {
   const adminKey = helpers.dependencies.settings.auth.adminAccessKey;
@@ -52,9 +47,8 @@ describe('users pool', () => {
     
     before(async () => {
       res = await server.request()
-        .post('/system/pool/size')
-        .set('Authorization', adminKey)
-        .send({});
+        .get('/system/pool/size')
+        .set('Authorization', adminKey);
       
       poolSize = res.body.size;
     });

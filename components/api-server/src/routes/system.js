@@ -41,12 +41,9 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
     systemAPI.call('system.createPoolUser', {}, params, methodCallback(res, next, 201));
   }
 
-  expressApp.post(Paths.System + '/pool/size', contentType.json, getUsersPoolSize);
-
-  function getUsersPoolSize(req, res, next) {
-    let params = _.extend({}, req.body); 
-    systemAPI.call('system.getUsersPoolSize', {}, params, methodCallback(res, next, 201));
-  }
+  expressApp.get(Paths.System + '/pool/size', function (req, res, next) {
+    systemAPI.call('system.getUsersPoolSize', {}, {}, methodCallback(res, next, 200));
+  });
 
   expressApp.get(Paths.System + '/user-info/:username', function (req, res, next) {
     var params = {
