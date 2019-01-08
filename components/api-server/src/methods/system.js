@@ -23,6 +23,7 @@ module.exports = function (
 
   var logger = logging.getLogger('methods/system');
   const POOL_USERNAME_PREFIX = 'pool@';
+  const TEMP_USERNAME_PREFIX = 'temp@';
   const POOL_REGEX = new RegExp( '^'  + POOL_USERNAME_PREFIX);
 
   // ---------------------------------------------------------------- createUser
@@ -58,33 +59,40 @@ module.exports = function (
 
   function createUserOrConsumePool(userInfo, callback) {
     // Try to consume a user from pool
-    usersStorage.findOneAndUpdate({username: {$regex : POOL_REGEX}},
-      userInfo, (err, updatedUser) => {
+    usersStorage.findOneAndUpdate({username: {$regex : POOL_REGEX}}, userInfo,
+      (err, updatedUser) => {
         // Fallback to default user creation in case of error or empty pool
         if (err != null || updatedUser == null) {
-          usersStorage.insertOne(userInfo, (err, newUser) => {
+          // First create a temp user
+          const tempUser = _.clone(userInfo);
+          tempUser.username = TEMP_USERNAME_PREFIX + cuid();
+          usersStorage.insertOne(tempUser, (err, newUser) => {
             if (err != null) return callback(err);
-            // Init and return new user
-            initUserRepositories(newUser, callback);
+            // Convert temp to final user
+            return initUser(newUser, userInfo.username, callback);
           });
         }
-        else {        
-          callback(null, updatedUser);
+        else {
+          return callback(null, updatedUser);
         }
       }
     );
   }
 
-  function initUserRepositories(user, callback) {
+  function initUser(tempUser, username, callback) {
     const repositories = [storageLayer.accesses, storageLayer.events,
       storageLayer.followedSlices, storageLayer.profile, storageLayer.streams];
     // Init user's repositories (create collections and indexes)
     async.each(repositories, (repository, stepDone) => {
-      repository.initCollection(user, stepDone);
+      repository.initCollection(tempUser, stepDone);
     }, (err) => {
       if (err != null) return callback(err);
-      // Return initialized user
-      callback(null, user);
+      // Rename temp username
+      usersStorage.updateOne({username: tempUser.username}, {username: username},
+        (err, finalUser) => {
+          if (err != null) return callback(err);
+          return callback(null, finalUser);
+        });
     });
   }
 
@@ -154,20 +162,22 @@ module.exports = function (
     createPoolUser);
   
   function createPoolUser(context, params, result, next) {
-    const username = POOL_USERNAME_PREFIX + cuid();
+    const postfix = cuid();
+    const username = POOL_USERNAME_PREFIX + postfix;
+    const tempUsername = TEMP_USERNAME_PREFIX + postfix;
     const poolUser = {
-      username: username,
+      username: tempUsername,
       passwordHash: 'changeMe',
       language: 'en',
       email: username+'@email'
     };
-    usersStorage.insertOne(poolUser, (err, newUser) => {
+    usersStorage.insertOne(poolUser, (err, tempUser) => {
       if (err != null) return next(handleCreationErrors(err, params));
 
-      initUserRepositories(newUser, function (err, user) {
-        if (err) return next(err);
-        result.id = user.id;
-        context.user = newUser;
+      return initUser(tempUser, username, (err, finalUser) => {
+        if (err != null) return next(handleCreationErrors(err, params));
+        result.id = finalUser.id;
+        context.user = finalUser;
         return next();
       });
     });
