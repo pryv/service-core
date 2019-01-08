@@ -83,7 +83,7 @@ module.exports = function (
     const repositories = [storageLayer.accesses, storageLayer.events,
       storageLayer.followedSlices, storageLayer.profile, storageLayer.streams];
     // Init user's repositories (create collections and indexes)
-    async.each(repositories, (repository, stepDone) => {
+    async.eachSeries(repositories, (repository, stepDone) => {
       repository.initCollection(tempUser, stepDone);
     }, (err) => {
       if (err != null) return callback(err);
