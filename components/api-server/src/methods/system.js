@@ -236,7 +236,7 @@ module.exports = function (
     getAPIMethodKeys().forEach(function (methodKey) {
       info.callsDetail[methodKey] = 0;
     });
-    const userAccessesStorage = storageLayer.accesses;
+
     userAccessesStorage.find(context.user, {}, null, function (err, accesses) {
       if (err) { return next(errors.unexpectedError(err)); }
 
