@@ -75,11 +75,6 @@ Streams.prototype.getCollectionInfo = function (user) {
   };
 };
 
-Streams.prototype.initCollection = function (user, callback) {
-  const self = this;
-  Streams.super_.prototype.getCollection.call(self, self.getCollectionInfo(user), callback);
-};
-
 Streams.prototype.countAll = function (user, callback) {
   this.count(user, {}, callback);
 };

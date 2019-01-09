@@ -80,11 +80,6 @@ Accesses.prototype.getCollectionInfo = function (user) {
   };
 };
 
-Accesses.prototype.initCollection = function (user, callback) {
-  const self = this;
-  Accesses.super_.prototype.getCollection.call(self, self.getCollectionInfo(user), callback);
-};
-
 /* jshint -W024 */
 /**
  * Implementation.

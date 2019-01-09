@@ -63,6 +63,10 @@ BaseStorage.prototype.getCollection = function(collectionInfo, callback) {
   this.database.getCollection(collectionInfo, callback);
 };
 
+BaseStorage.prototype.initCollection = function (user, callback) {
+  this.getCollection(this.getCollectionInfo(user), callback);
+};
+
 /// Returns the number of documents in the collection, minus those that are 
 /// either `deleted` or have a `headId`, aka the number of live / trashed 
 /// documents. 
