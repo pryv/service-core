@@ -207,11 +207,12 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
             return next(errors.itemAlreadyExists(
               'sibling stream', {name: params.update.name}, err
             ));
-          } else {
-            // for now we just assume the parent is unknown
+          } else if (params.update.parentId != null) {
             return next(errors.unknownReferencedResource(
               'parent stream', 'parentId', params.update.parentId, err
             ));
+          } else {
+            return next(errors.unexpectedError(err));
           }
         }
 
