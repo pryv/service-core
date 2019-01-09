@@ -39,6 +39,12 @@ describe('users pool', () => {
     it('contains a generated pool user id', () => {
       assert.isNotNull(poolUser.id);
     });
+    it('created a user in the database', () => {
+      storage.findOne({ username: { $regex: new RegExp('^' + 'pool@') }}, null, (err, user) => {
+        assert.isNull(err);
+        assert.isNotNull(user);
+      });
+    });
   });
 
   describe('get pool size', () => {

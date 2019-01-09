@@ -37,8 +37,7 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
   expressApp.post(Paths.System + '/pool/create-user', contentType.json, createPoolUser);
 
   function createPoolUser(req, res, next) {
-    let params = _.extend({}, req.body);
-    systemAPI.call('system.createPoolUser', {}, params, methodCallback(res, next, 201));
+    systemAPI.call('system.createPoolUser', {}, {}, methodCallback(res, next, 201));
   }
 
   expressApp.get(Paths.System + '/pool/size', function (req, res, next) {

@@ -72,7 +72,7 @@ module.exports = function (
             return initUser(newUser, userInfo.username, callback);
           });
         }
-        else {
+        else {        
           return callback(null, updatedUser);
         }
       }
@@ -161,9 +161,9 @@ module.exports = function (
     createPoolUser);
   
   function createPoolUser(context, params, result, next) {
-    const postfix = cuid();
-    const username = POOL_USERNAME_PREFIX + postfix;
-    const tempUsername = TEMP_USERNAME_PREFIX + postfix;
+    const uniqueId = cuid();
+    const username = POOL_USERNAME_PREFIX + uniqueId;
+    const tempUsername = TEMP_USERNAME_PREFIX + uniqueId;
     const poolUser = {
       username: tempUsername,
       passwordHash: 'changeMe',
@@ -191,8 +191,8 @@ module.exports = function (
       (err, size) => {
         if (err != null) return next(errors.unexpectedError(err));
 
-        result.size = size;
-        next();
+        result.size = size ? size : 0;
+        return next();
       });
   }
 
