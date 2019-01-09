@@ -152,11 +152,12 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
               'sibling stream', {name: params.name}, err
             );
           return next(apiError);
-        } else {
-          // for now we just assume the parent is unknown
+        } else if (params.parentId != null) {
           return next(errors.unknownReferencedResource(
             'parent stream', 'parentId', params.parentId, err
           ));
+        } else {
+          return next(errors.unexpectedError(err));
         }
       }
 
