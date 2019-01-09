@@ -67,7 +67,6 @@ var indexes = [
 /**
  * Implementation.
  */
-
 Streams.prototype.getCollectionInfo = function (user) {
   return {
     name: user.id + '.streams',

@@ -59,12 +59,8 @@ BaseStorage.prototype.countAll = function(user, callback) {
   this.database.countAll(this.getCollectionInfo(user), callback);
 };
 
-BaseStorage.prototype.getCollection = function(collectionInfo, callback) {
-  this.database.getCollection(collectionInfo, callback);
-};
-
 BaseStorage.prototype.initCollection = function (user, callback) {
-  this.getCollection(this.getCollectionInfo(user), callback);
+  this.database.getCollection(this.getCollectionInfo(user), callback);
 };
 
 /// Returns the number of documents in the collection, minus those that are 
