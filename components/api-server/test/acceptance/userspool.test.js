@@ -8,6 +8,8 @@ const chai = require('chai');
 const assert = chai.assert;
 const helpers = require('../helpers');
 
+const storage = require('components/test-helpers').dependencies.storage.users;
+
 describe('users pool', () => {
   const adminKey = helpers.dependencies.settings.auth.adminAccessKey;
   let server;
@@ -18,17 +20,18 @@ describe('users pool', () => {
     server.stop(); 
   });
 
+
   describe('create pool user', () => {
     let res;
     let poolUser;
     
     before(async () => {
-      res = await server.request()
-        .post('/system/pool/create-user')
-        .set('Authorization', adminKey)
-        .send({});
-        
+      res = await createPoolUser(); 
       poolUser = res.body;
+    });
+
+    after((done) => {
+      storage.removeAll(done);
     });
 
     it('succeeds', () => {
@@ -45,25 +48,73 @@ describe('users pool', () => {
         assert.isNotNull(user);
       });
     });
+    it('created the related collections', () => {
+
+    });
+    it('created the related indexes', () => {
+
+    });
   });
 
   describe('get pool size', () => {
     let res;
     let poolSize;
-    
-    before(async () => {
-      res = await server.request()
-        .get('/system/pool/size')
-        .set('Authorization', adminKey);
+
+    describe('when empty', () => {
+
+      before(async () => {
+        res = await server.request()
+          .get('/system/pool/size')
+          .set('Authorization', adminKey);
+        poolSize = res.body.size;
+      });
+
+      it('must succeed', () => {
+        assert.isTrue(res.ok);
+      });
       
-      poolSize = res.body.size;
+      it('must return 0', () => {
+        assert.exists(poolSize);
+        assert.equal(poolSize, 0);
+      });
     });
 
-    it('succeeds', () => {
-      assert.isTrue(res.ok);
-      assert.notExists(res.body.error);
-      assert.exists(poolSize);
-      assert.isTrue(poolSize>=0);
+    describe('when adding pool users', () => {
+
+      before(async () => {
+        await createPoolUser();
+        await createPoolUser();
+        await createPoolUser();
+
+        res = await server.request()
+          .get('/system/pool/size')
+          .set('Authorization', adminKey);
+
+        poolSize = res.body.size;
+      });
+
+      after((done) => {
+        storage.removeAll(done);
+      });
+
+      it('succeeds', () => {
+        assert.isTrue(res.ok, 'response not ok');
+        assert.notExists(res.body.error, 'response contains an error');
+      });
+
+      it('has the right number of pool users', () => {
+        assert.exists(poolSize, 'there is not pool size');
+        assert.isTrue(poolSize === 3, 'the poolSize number is not as expected');
+      });
+
     });
+    
   });
+
+  function createPoolUser() {
+    return server.request()
+      .post('/system/pool/create-user')
+      .set('Authorization', adminKey)
+      .send({});
+  }
 });

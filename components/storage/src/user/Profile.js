@@ -29,8 +29,3 @@ Profile.prototype.getCollectionInfo = function (user) {
     indexes: []
   };
 };
-
-Profile.prototype.initCollection = function (user, callback) {
-  const self = this;
-  Profile.super_.prototype.getCollection.call(self, self.getCollectionInfo(user), callback);
-};
