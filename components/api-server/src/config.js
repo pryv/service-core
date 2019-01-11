@@ -9,8 +9,8 @@ module.exports = config;
 
 _.merge(config.schema, {
   nightlyScriptCronTime: {
-    format: String,
-    default: '00 15 2 * * *' // i.e. every day at 2:15 AM
+    format: String, // e.g. '00 15 2 * * *' = every day at 2:15 AM
+    default: ''
   },
   eventTypes: {
     sourceURL: {

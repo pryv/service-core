@@ -154,6 +154,13 @@ Users.prototype.findAll = function (options, callback) {
 
 /**
  * Override.
+ */
+Users.prototype.find = function (query, options, callback) {
+  Users.super_.prototype.find.call(this, null, query, options, callback);
+};
+
+/**
+ * Override.
  * For tests only.
  */
 Users.prototype.removeAll = function (callback) {
