@@ -44,7 +44,7 @@ let workerRunning = false;
 let cronTimeSetting = settings.get('nightlyScriptCronTime').str();
 if (cronTimeSetting === '') {
   logger.info('Nightly script not activated.');
-  return;
+  process.exit(0);
 }
 const cronJob = new CronJob({
   cronTime: cronTimeSetting,
