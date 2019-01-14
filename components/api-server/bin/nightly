@@ -72,5 +72,3 @@ async function runNightlyTasks() {
   
   logger.info(users.length + ' users updated.');
 }
-
-module.exports = runNightlyTasks;
