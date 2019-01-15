@@ -41,10 +41,13 @@ process.on('SIGINT', () => {
 
 // Setup cron job
 let workerRunning = false;
-const minute = Math.floor(Math.random() * 59);
-const hour = Math.floor(Math.random() * 23);
+let cronTimeSetting = settings.get('nightlyScriptCronTime').str();
+if (cronTimeSetting === '') {
+  logger.info('Nightly script not activated.');
+  process.exit(0);
+}
 const cronJob = new CronJob({
-  cronTime: `0 ${minute} ${hour} * * *`,
+  cronTime: cronTimeSetting,
   onTick: function () {
     if (workerRunning) {
       throw new Error('Previous nigthly script is still running, it is taking too long!');
@@ -77,8 +80,9 @@ async function runNightlyTasks() {
   
   // Retrieve all existing users
   const users = await bluebird.fromCallback(
-    (cb) => storageLayer.users.findAll(null, cb));
-  
+    (cb) => storageLayer.users.find(
+      {$nor: [{username: /^pool@.*/}, {username: /^temp@.*/}]}, null, cb));
+
   // Compute storage size used by each user
   for (const user of users) {
     const computeForUser = bluebird.fromCallback(
