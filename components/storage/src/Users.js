@@ -49,6 +49,13 @@ Users.prototype.getCollectionInfo = function () {
 /**
  * Override.
  */
+Users.prototype.count = function (query, callback) {
+  Users.super_.prototype.count.call(this, null, query, callback);
+};
+
+/**
+ * Override.
+ */
 Users.prototype.countAll = function (callback) {
   Users.super_.prototype.countAll.call(this, null, callback);
 };
@@ -58,6 +65,17 @@ Users.prototype.countAll = function (callback) {
  */
 Users.prototype.findOne = function (query, options, callback) {
   Users.super_.prototype.findOne.call(this, null, query, options, callback);
+};
+
+/**
+ * Override.
+ */
+Users.prototype.findOneAndUpdate = function (query, updatedData, callback) {
+  var self = this;
+  encryptPassword(updatedData, function (err, update) {
+    if (err) { return callback(err); }
+    Users.super_.prototype.findOneAndUpdate.call(self, null, query, update, callback);
+  });
 };
 
 /**
@@ -78,7 +96,11 @@ Users.prototype.insertOne = function (user, callback) {
  * Override.
  */
 Users.prototype.updateOne = function (query, updatedData, callback) {
-  Users.super_.prototype.updateOne.call(this, null, query, updatedData, callback);
+  var self = this;
+  encryptPassword(updatedData, function (err, update) {
+    if (err) { return callback(err); }
+    Users.super_.prototype.updateOne.call(self, null, query, update, callback);
+  });
 };
 
 /**
@@ -94,15 +116,14 @@ Users.prototype.insertMany = function (users, callback) {
   });
 };
 
+
+
 /**
  * @param {Function} callback (error, dbUser) `dbUser` is a clone of the original user.
  */
 function encryptPassword(user, callback) {
   const dbUser = _.clone(user);
-  if (! dbUser.password && dbUser.passwordHash) {
-    // OK: assume it's been hashed in registration-server already
-    callback(null, dbUser);
-  } else {
+  if (dbUser.password != null) {
     encryption.hash(dbUser.password, function (err, hash) {
       if (err != null) return callback(err);
 
@@ -111,6 +132,9 @@ function encryptPassword(user, callback) {
 
       callback(null, dbUser);
     });
+  } else {
+    // Nothing to encrypt
+    callback(null, dbUser);
   }
 }
 
@@ -126,6 +150,13 @@ Users.prototype.remove = function (query, callback) {
  */
 Users.prototype.findAll = function (options, callback) {
   Users.super_.prototype.findAll.call(this, null, options, callback);
+};
+
+/**
+ * Override.
+ */
+Users.prototype.find = function (query, options, callback) {
+  Users.super_.prototype.find.call(this, null, query, options, callback);
 };
 
 /**
