@@ -75,9 +75,13 @@ This is something that should probably be a shell alias in your environment. I u
 
     $ alias pm="../../node_modules/.bin/mocha --compilers js:babel-register test/**/*.test.js"
 
+### Troubleshooting
+
 If you're running into a lot of test failures because mongoDB doesn't like you today, it's maybe because your database is empty so try to run the storage tests first:
 
     $ cd dist/components/storage/ && yarn test
+
+If you are getting multiple seamingly unrelated errors following a branch switch, rebuild the `dist/` folder using `rm -rf dist/ && yarn release`.
 
 ## Quick, run the servers
 

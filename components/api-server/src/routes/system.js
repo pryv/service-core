@@ -23,6 +23,7 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
 
 
   expressApp.post(Paths.System + '/create-user', contentType.json, createUser);
+
   // DEPRECATED: remove after all reg servers updated
   expressApp.post('/register/create-user', contentType.json, createUser);
 
@@ -31,6 +32,17 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
     let params = _.extend({}, req.body); 
     systemAPI.call('system.createUser', {}, params, methodCallback(res, next, 201));
   }
+
+  // Specific routes for managing users pool
+  expressApp.post(Paths.System + '/pool/create-user', contentType.json, createPoolUser);
+
+  function createPoolUser(req, res, next) {
+    systemAPI.call('system.createPoolUser', {}, {}, methodCallback(res, next, 201));
+  }
+
+  expressApp.get(Paths.System + '/pool/size', function (req, res, next) {
+    systemAPI.call('system.getUsersPoolSize', {}, {}, methodCallback(res, next, 200));
+  });
 
   expressApp.get(Paths.System + '/user-info/:username', function (req, res, next) {
     var params = {

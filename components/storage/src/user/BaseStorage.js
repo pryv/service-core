@@ -59,6 +59,10 @@ BaseStorage.prototype.countAll = function(user, callback) {
   this.database.countAll(this.getCollectionInfo(user), callback);
 };
 
+BaseStorage.prototype.initCollection = function (user, callback) {
+  this.database.getCollection(this.getCollectionInfo(user), callback);
+};
+
 /// Returns the number of documents in the collection, minus those that are 
 /// either `deleted` or have a `headId`, aka the number of live / trashed 
 /// documents. 
@@ -230,6 +234,28 @@ BaseStorage.prototype.insertOne = function(user, item, callback) {
 BaseStorage.prototype.minimizeEventsHistory = function(user, headId, callback) {
   callback( new Error('Not implemented (user: ' + user + ')') );
   // implemented for events only
+};
+
+/**
+ * Finds and updates atomically a single document matching the given query,
+ * returning the updated document.
+ * @param user
+ * @param query
+ * @param updatedData
+ * @param callback
+ */
+BaseStorage.prototype.findOneAndUpdate = function(user, query, updatedData, callback) {
+  this.database.findOneAndUpdate(
+    this.getCollectionInfo(user),
+    this.applyQueryToDB(query),
+    this.applyUpdateToDB(updatedData),
+    function(err, dbItem) {
+      if (err) {
+        return callback(err);
+      }
+      callback(null, this.applyItemFromDB(dbItem));
+    }.bind(this)
+  );
 };
 
 /**

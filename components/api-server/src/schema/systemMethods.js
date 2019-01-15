@@ -20,7 +20,6 @@ module.exports = {
       required: [ 'id' ]
     }
   },
-
   getUserInfo: {
     params: helpers.object({
       username: helpers.string()

@@ -10,6 +10,9 @@ chown -R app:app /app/log/
 # Migrate storage
 chpst -u app ./bin/migrate --config /app/conf/core.json
 
+# Setup nightly cron-tasks
+exec chpst -u app ./bin/nightly --config /app/conf/core.json
+
 # Sets $num_procs to 2 or the value of $NUM_PROCS, if set.
 if [ -z ${NUM_PROCS+x} ]
 then
