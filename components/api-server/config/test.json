@@ -1,5 +1,4 @@
 {
-  "nightlyScriptCronTime": "00 15 2 * * *",
   "auth": {
     "trustedApps": "pryv-test@http://test.pryv.local, pryv-test-no-cors@*, *@https://*.rec.la*"
   },
