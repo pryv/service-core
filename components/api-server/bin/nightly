@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 
-// Binary for nightly cron-tasks setup. 
+// Binary for nightly tasks setup. 
 
-const CronJob = require('cron').CronJob;
 const Settings = require('../src/settings');
 const bluebird = require('bluebird');
 const Application = require('../src/application');
@@ -12,7 +11,7 @@ const settings = Settings.load();
 
 // Construct application
 const app = new Application(settings);
-const logger = app.logFactory('nightly-cron');
+const logger = app.logFactory('nightly-tasks');
 
 // Construct storage size object
 const storage = require('../../storage');
@@ -39,38 +38,15 @@ process.on('SIGINT', () => {
   process.exit(2);
 });
 
-// Setup cron job
-let workerRunning = false;
-let cronTimeSetting = settings.get('nightlyScriptCronTime').str();
-if (cronTimeSetting === '') {
-  logger.info('Nightly script not activated.');
-  process.exit(0);
-}
-const cronJob = new CronJob({
-  cronTime: cronTimeSetting,
-  onTick: function () {
-    if (workerRunning) {
-      throw new Error('Previous nigthly script is still running, it is taking too long!');
-    }
-
-    logger.info('Starting nightly script (cron job)...');
-    workerRunning = true;
-    
-    bluebird.resolve(runNightlyTasks())
-      .then(() => {
-        logger.info('Nightly tasks complete.');
-      })
-      .catch(e => {
-        logger.error(e);
-      })
-      .finally(() => {
-        workerRunning = false;
-      });
-  }
-});
-
-logger.info('Cron job setup for nightly script, time pattern: ' + cronJob.cronTime);
-cronJob.start();
+runNightlyTasks()
+  .then(() => {
+    logger.info('Nightly tasks completed.');
+    process.exit(0);
+  })
+  .catch(e => {
+    logger.error(e);
+    process.exit(1);
+  });
 
 /**
  * Standalone script to perform nightly tasks (such as updating storage sizes for all users).
@@ -97,5 +73,3 @@ async function runNightlyTasks() {
   
   logger.info(users.length + ' users updated.');
 }
-
-module.exports = runNightlyTasks;

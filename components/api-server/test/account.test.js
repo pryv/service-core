@@ -206,10 +206,10 @@ describe('account', function () {
     it('must properly compute storage size for all users in nightly script', async function () {
       let initialStorageUsed;
       const newAtt = testData.attachments.image;
-      const runNightlyTasks = require('../bin/nightly');
-      
+      const execSync = require('child_process').execSync;
+
       // Initial nightly task
-      await runNightlyTasks();
+      execSync('node ./bin/nightly');
       
       // Verify initial storage usage
       const accounts = await bluebird.fromCallback(
@@ -223,7 +223,7 @@ describe('account', function () {
         (cb) => addEventWithAttachment(newAtt, cb));
       
       // Another nightly task
-      await runNightlyTasks();
+      execSync('node ./bin/nightly');
       
       // Verify updated storage usage
       const account = await bluebird.fromCallback(
