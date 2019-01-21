@@ -6,10 +6,10 @@ pryv-cli(1) -- manages user accounts on a Pryv.IO 'core' machine.
 
 ```shell
 # Provides subcommand overview and help
-$ bin/cli -h
+$ pryv-cli -h
 
 # Deletes the user 'jsmith' on the current machine. 
-$ bin/cli delete-user jsmith
+$ pryv-cli delete-user jsmith
 ```
 
 ## DESCRIPTION
@@ -62,7 +62,7 @@ platform; time to grab a coffee! All subsequent runs will be instant.
 ### Delete User
 
 ```shell
-$ bin/cli delete-user [options] USERNAME
+$ pryv-cli delete-user [options] USERNAME
 ```
 
 Deletes user identified by his username. This will only work for a user that 
