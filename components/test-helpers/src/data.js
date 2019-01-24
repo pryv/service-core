@@ -11,6 +11,7 @@ const storage = dependencies.storage;
 const fs = require('fs');
 const path = require('path');
 const rimraf = require('rimraf');
+const _ = require('lodash');
 
 // users
 
@@ -32,11 +33,20 @@ exports.resetUsers = function (done) {
 
 const accesses = exports.accesses = require('./data/accesses');
 
-exports.resetAccesses = function (done, user, personalAccessToken) {
+exports.resetAccesses = function (done, user, personalAccessToken, addToId) {
+  var u = user || defaultUser;
   if (personalAccessToken) {
     accesses[0].token = personalAccessToken;
   }
-  resetData(storage.user.accesses, user || defaultUser, accesses, done);
+  if (addToId) {
+    var data = JSON.parse(JSON.stringify(accesses));
+    for (var i=0; i < data.length; i++) {
+      data[i].id += u.id;
+    }
+    resetData(storage.user.accesses, u, data, done);
+    return;
+  }
+  resetData(storage.user.accesses, u, accesses, done);
 };
 
 // profile

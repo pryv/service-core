@@ -259,7 +259,7 @@ describe('Versions', function () {
     });
   });
 
-  it('must handle data migration from v1.3.37 to 1.3.40', function (done) {
+  it.skip('must handle data migration from v1.3.37 to 1.3.40', function (done) {
     const versions = getVersions('1.3.40');
     const indexes = testData.getStructure('1.3.37').indexes;
 
@@ -311,6 +311,21 @@ describe('Versions', function () {
           if (a['_deviceName'] != null) throw new Error('all deleted accesses should have "deviceName" parameter and not "_deviceName"');
         }
       });
+
+      done();
+    });
+  });
+
+
+  it('must handle data migration from v1.3.40 to 1.4.0', function (done) {
+    const versions = getVersions('1.4.0');
+    this.timeout(120000000);
+
+    async.series([
+      //(cb) => testData.restoreFromDump('1.3.40', mongoFolder, cb),
+      (cb) => versions.migrateIfNeeded(cb),
+    ], function (err, res) {
+      assert.isNull(err, 'there was an error');
 
       done();
     });

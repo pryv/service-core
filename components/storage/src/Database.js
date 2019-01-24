@@ -112,6 +112,17 @@ class Database {
     });
   }
 
+   addUserIdToIndexIfNeeded(collectionInfo) {
+    // force all indexes to have userId - QUESTION is order important
+    if (collectionInfo.useUserId) {
+      collectionInfo.indexes.unshift({index: {}, options: {}});
+      for (var i = 0; i < collectionInfo.indexes.length; i++) {
+        collectionInfo.indexes[i].index.userId = 1;
+      }
+    }
+    return collectionInfo;
+  }
+
   // Internal function. 
   // 
   async getCollection(collectionInfo: CollectionInfo, callback: GetCollectionCallback) {
@@ -123,7 +134,10 @@ class Database {
       // Load the collection
       const db = this.db; 
       const collection: Collection = db.collection(collectionInfo.name);
-        
+
+      this.addUserIdToIndexIfNeeded(collectionInfo);
+
+
       // Ensure that proper indexing is initialized
       await ensureIndexes.call(this, collection, collectionInfo.indexes);
       
@@ -190,10 +204,41 @@ class Database {
    * @param {Function} callback
    */
   countAll(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
+
+    if (collectionInfo.useUserId) {
+      return this.count(collectionInfo, {}, callback);
+    }
+
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.countDocuments(callback);
     });
   }
+
+  /**
+   * Add User Id to Object or To all Items of an Array
+   *
+   * @param collectionInfo
+   * @param {Object|Array} mixed
+   */
+  addUserAndSoftIdIfneed(collectionInfo: CollectionInfo, mixed, infos) {
+
+    function addUserIdProperty(object) {
+      object.userId = collectionInfo.useUserId;
+    }
+
+    if (collectionInfo.useUserId) {
+      if (mixed.constructor === Array) {
+        for (var i = 0; i < mixed.length; i++) {
+          addUserIdProperty(mixed[i]);
+        }
+      } else {
+        addUserIdProperty(mixed);
+      }
+    }
+
+
+   // infos = infos || '#';  console.log('=>> [' + collectionInfo.name +']- ' + infos + ' ', mixed, 'end');
+  };
 
   /**
    * Counts documents matching the given query.
@@ -203,6 +248,7 @@ class Database {
    * @param {Function} callback
    */
   count(collectionInfo: CollectionInfo, query: {}, callback: DatabaseCallback) {
+    this.addUserAndSoftIdIfneed(collectionInfo, query, 'count');
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.find(query).count(callback);
     });
@@ -221,6 +267,7 @@ class Database {
    * @param {Function} callback
    */
   find(collectionInfo: CollectionInfo, query: {}, options: FindOptions, callback: DatabaseCallback) {
+    this.addUserAndSoftIdIfneed(collectionInfo, query, 'find');
     this.getCollectionSafe(collectionInfo, callback, collection => {
       const queryOptions = {
         projection: options.projection,
@@ -257,6 +304,7 @@ class Database {
     query: mixed, options: FindOptions, 
     callback: DatabaseCallback) 
   {
+    this.addUserAndSoftIdIfneed(collectionInfo, query, 'findStreamed');
     this.getCollectionSafe(collectionInfo, callback, collection => {
       const queryOptions = {
         projection: options.projection,
@@ -284,6 +332,7 @@ class Database {
    * @param {Function} callback
    */
   findOne(collectionInfo: CollectionInfo, query: Object, options: FindOptions, callback: DatabaseCallback) {
+    this.addUserAndSoftIdIfneed(collectionInfo, query, 'findOne');
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.findOne(query, options || {}, callback);
     });
@@ -307,6 +356,7 @@ class Database {
     projectExpression: Object, groupExpression: Object,
     options: Object, callback: DatabaseCallback) 
   {
+    this.addUserAndSoftIdIfneed(collectionInfo, query, 'aggregate');
     this.getCollectionSafe(collectionInfo, callback, collection => {
       var aggregationCmds = [];
       if (query) {
@@ -342,8 +392,10 @@ class Database {
    * @param {Function} callback
    */
   insertOne(collectionInfo: CollectionInfo, item: Object, callback: DatabaseCallback) {
+    this.addUserAndSoftIdIfneed(collectionInfo, item, 'insertOne');
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.insertOne(item, {w: 1, j: true}, callback);
+
     });
   }
 
@@ -351,6 +403,7 @@ class Database {
    * Inserts an array of items (each item must have a valid id already).
    */
   insertMany(collectionInfo: CollectionInfo, items: Array<Object>, callback: DatabaseCallback) {
+    this.addUserAndSoftIdIfneed(collectionInfo, items, 'insertMany');
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.insertMany(items, {w: 1, j: true}, callback);
     });
@@ -366,6 +419,7 @@ class Database {
    * @param {Function} callback
    */
   updateOne(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
+    this.addUserAndSoftIdIfneed(collectionInfo, query, 'updateOne');
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateOne(query, update, {w: 1, j: true}, callback);
     });
@@ -381,6 +435,7 @@ class Database {
    * @param {Function} callback
    */
   updateMany(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
+    this.addUserAndSoftIdIfneed(collectionInfo, query, 'updateMany');
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateMany(query, update, {w: 1, j:true}, callback);
     });
@@ -396,6 +451,7 @@ class Database {
    * @param {Function} callback
    */
   findOneAndUpdate(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
+    this.addUserAndSoftIdIfneed(collectionInfo, query, 'findOneAndUpdate');
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.findOneAndUpdate(query, update, {returnOriginal: false}, function (err, r) {
         if (err != null) return callback(err);
@@ -414,6 +470,7 @@ class Database {
    * @param {Function} callback
    */
   upsertOne(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
+    this.addUserAndSoftIdIfneed(collectionInfo, query, 'upsertOne');
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateOne(query, update, {w: 1, upsert: true, j: true}, callback);
     });
@@ -427,6 +484,7 @@ class Database {
    * @param {Function} callback
    */
   deleteOne(collectionInfo: CollectionInfo, query: Object, callback: DatabaseCallback) {
+    this.addUserAndSoftIdIfneed(collectionInfo, query, 'deleteOne');
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.deleteOne(query, {w: 1, j: true}, callback);
     });
@@ -440,6 +498,7 @@ class Database {
    * @param {Function} callback
    */
   deleteMany(collectionInfo: CollectionInfo, query: Object, callback: DatabaseCallback) {
+    this.addUserAndSoftIdIfneed(collectionInfo, query, 'deleteMany');
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.deleteMany(query, {w: 1, j: true}, callback);
     });
@@ -447,11 +506,16 @@ class Database {
 
   /**
    * Get collection total size.
+   * In case of singleCollectionMode count the number of documents
    *
    * @param {Object} collectionInfo
    * @param {Function} callback
    */
   totalSize(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
+    if (collectionInfo.useUserId) {
+      this.countAll(collectionInfo, callback);
+      return;
+    }
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.stats(function (err, stats) {
         if (err != null) {
@@ -467,9 +531,13 @@ class Database {
    * @param {Function} callback
    */
   dropCollection(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
-    this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.drop(callback);
-    });
+    if (collectionInfo.useUserId) {
+      this.deleteMany(collectionInfo, {}, callback);
+    } else {
+      this.getCollectionSafe(collectionInfo, callback, collection => {
+        collection.drop(callback);
+      });
+    }
   }
 
   /**

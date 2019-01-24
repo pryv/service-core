@@ -44,6 +44,8 @@ module.exports = function (api, userFollowedSlicesStorage, notifications, storag
   api.register('followedSlices.create',
     commonFns.getParamsValidation(methodsSchema.create.params),
     function (context, params, result, next) {
+
+
       if (! context.access.isPersonal()) {
         return process.nextTick(next.bind(null,
           errors.forbidden(
@@ -51,11 +53,11 @@ module.exports = function (api, userFollowedSlicesStorage, notifications, storag
           )
         ));
       }
-
       userFollowedSlicesStorage.insertOne(context.user, params, function (err, newSlice) {
         if (err) {
           return next(getCreationOrUpdateError(err, params));
         }
+
 
         result.followedSlice = newSlice;
         notifications.followedSlicesChanged(context.user);
@@ -116,7 +118,7 @@ module.exports = function (api, userFollowedSlicesStorage, notifications, storag
     // assert: dbError isDuplicateError
     
     const message = dbError.message; 
-    const nameKeyDuplicate = message.match(/index: name_1 dup key:/);
+    const nameKeyDuplicate = message.match(/index: name_1_userId_1 dup key:/);
     
     const conflictingKeys = nameKeyDuplicate ?
       {name: params.name} : { url: params.url, accessToken: params.accessToken };

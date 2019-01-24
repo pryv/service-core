@@ -106,8 +106,9 @@ var indexes = [
  */
 Events.prototype.getCollectionInfo = function(user) {
   return {
-    name: user.id + '.events',
+    name: 'events',
     indexes: indexes,
+    useUserId: user.id
   };
 };
 

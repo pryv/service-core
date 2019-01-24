@@ -40,6 +40,7 @@ function BaseStorage(database) {
     updateToDB: [],
     itemFromDB: [],
     itemsFromDB: [],
+    convertIdToItemId: null
   };
   this.defaultOptions = { sort: {} };
 }
@@ -169,7 +170,7 @@ BaseStorage.prototype.findOne = function(user, query, options, callback) {
 };
 
 BaseStorage.prototype.findDeletion = function(user, query, options, callback) {
-  query.deleted = { $exists: true };
+  query.deleted = { $ne: null };
   this.database.findOne(
     this.getCollectionInfo(user),
     this.applyQueryToDB(query),
@@ -390,6 +391,7 @@ BaseStorage.prototype.applyItemDefaults = function(item) {
  * @api private
  */
 BaseStorage.prototype.applyQueryToDB = function(query) {
+  this.addIdConvertion();
   return applyConvertersToDB(_.clone(query), this.converters.queryToDB);
 };
 
@@ -418,9 +420,26 @@ BaseStorage.prototype.applyOptionsToDB = function(options) {
 };
 
 /**
+ *  @api private
+ *  Add needed converters when this.converters.convertIdToItemId
+ */
+BaseStorage.prototype.addIdConvertion = function() {
+  if (this.idConvertionSetupDone) return;
+  const idToItemIdToDB = converters.getRenamePropertyFn('id',this.converters.convertIdToItemId);
+  const itemIdToIdFromDB = converters.getRenamePropertyFn(this.converters.convertIdToItemId,'id');
+  if (this.converters.convertIdToItemId) {
+    this.converters.itemToDB.unshift(idToItemIdToDB);
+    this.converters.queryToDB.unshift(idToItemIdToDB);
+    this.converters.itemFromDB.unshift(itemIdToIdFromDB);
+  }
+  this.idConvertionSetupDone = true;
+}
+
+/**
  * @api private
  */
 BaseStorage.prototype.applyItemToDB = function(item) {
+  this.addIdConvertion();
   return applyConvertersToDB(_.clone(item), this.converters.itemToDB);
 };
 
@@ -472,6 +491,7 @@ BaseStorage.prototype.applyUpdateToDB = function(updatedData) {
  * @api private
  */
 BaseStorage.prototype.applyItemFromDB = function(dbItem) {
+  this.addIdConvertion();
   return applyConvertersFromDB(dbItem, this.converters.itemFromDB);
 };
 
@@ -479,6 +499,7 @@ BaseStorage.prototype.applyItemFromDB = function(dbItem) {
  * @api private
  */
 BaseStorage.prototype.applyItemsFromDB = function(dbItems) {
+
   return applyConvertersFromDB(
     dbItems.map(this.applyItemFromDB.bind(this)),
     this.converters.itemsFromDB
@@ -493,6 +514,19 @@ function applyConvertersToDB(object, converterFns) {
 }
 
 function applyConvertersFromDB(object, converterFns) {
+  if (object) {
+    if (object.constructor == Array) {
+      for (var i = 0; i < object.length; i++) {
+        if (object[i].userId) {
+          delete object[i].userId;
+        }
+      }
+    } else {
+      if (object.userId) {
+        delete object.userId;
+      }
+    }
+  };
   return applyConverters(idFromDB(object), converterFns);
 }
 

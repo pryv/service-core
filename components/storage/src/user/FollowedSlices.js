@@ -14,7 +14,7 @@ function FollowedSlices(database) {
   FollowedSlices.super_.call(this, database);
 
   _.extend(this.converters, {
-    itemDefaults: [converters.createIdIfMissing]
+    itemDefaults: [converters.createIdIfMissing],
   });
 
   this.defaultOptions = {
@@ -39,7 +39,8 @@ var indexes = [
  */
 FollowedSlices.prototype.getCollectionInfo = function (user) {
   return {
-    name: user.id + '.followedSlices',
-    indexes: indexes
+    name: 'followedSlices',
+    indexes: indexes,
+    useUserId: user.id
   };
 };

@@ -62,9 +62,12 @@ exports.getKeyValueSetUpdateFn = function (propertyName) {
   };
 };
 
+
 exports.deletionToDB = function (item) {
   if (item.deleted) {
     item.deleted = timestamp.toDate(item.deleted);
+  } else {
+    item.deleted = null;
   }
   return item;
 };
@@ -72,9 +75,14 @@ exports.deletionToDB = function (item) {
 exports.deletionFromDB = function (dbItem) {
   if (! dbItem) { return dbItem; }
 
+  if (dbItem.deleted == null) {
+    delete dbItem.deleted;
+  }
+
   if (dbItem.deleted) {
     dbItem.deleted = timestamp.fromDate(dbItem.deleted);
   }
   return dbItem;
 };
+
 

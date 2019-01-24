@@ -7,6 +7,9 @@ var async = require('async'),
     _ = require('lodash');
 
 module.exports = Streams;
+
+const switchIdWith = 'streamId';
+
 /**
  * DB persistence for event streams.
  *
@@ -17,7 +20,9 @@ function Streams(database) {
   Streams.super_.call(this, database);
 
   _.extend(this.converters, {
-    itemDefaults: [converters.createIdIfMissing],
+    itemDefaults: [
+      converters.createIdIfMissing,
+    ],
     itemToDB: [
       converters.deletionToDB,
       converters.stateToDB
@@ -31,7 +36,8 @@ function Streams(database) {
       converters.getKeyValueSetUpdateFn('clientData')
     ],
     itemFromDB: [converters.deletionFromDB],
-    itemsFromDB: [treeUtils.buildTree]
+    itemsFromDB: [treeUtils.buildTree],
+    convertIdToItemId: 'streamId'
   });
 
   this.defaultOptions = {
@@ -51,12 +57,18 @@ function cleanupDeletions(streams) {
 
 var indexes = [
   {
+    index: {streamId: 1},
+    options: {unique: true}
+  },
+ {
     index: {name: 1},
     options: {}
   },
   {
     index: { name: 1, parentId: 1 },
-    options: { unique: true, sparse: true }
+    options: { unique: true, partialFilterExpression: {
+      deleted: { $type: 'null'}
+    } }
   },
   {
     index: {trashed: 1},
@@ -69,10 +81,12 @@ var indexes = [
  */
 Streams.prototype.getCollectionInfo = function (user) {
   return {
-    name: user.id + '.streams',
-    indexes: indexes
+    name: 'streams',
+    indexes: indexes,
+    useUserId: user.id
   };
 };
+
 
 Streams.prototype.countAll = function (user, callback) {
   this.count(user, {}, callback);
@@ -86,7 +100,7 @@ Streams.prototype.insertOne = function (user, stream, callback) {
       this.findDeletion(user, {id: stream.id}, null, function (err, deletion) {
         if (err) { return stepDone(err); }
         if (! deletion) { return stepDone(); }
-	this.removeOne(user, {id: stream.id}, stepDone);
+        this.removeOne(user, {id: stream.id}, stepDone);
       }.bind(this));
     }.bind(this),
     function checkParent(stepDone) {
@@ -101,7 +115,6 @@ Streams.prototype.insertOne = function (user, stream, callback) {
 
 Streams.prototype.updateOne = function (user, query, updatedData, callback) {
   var self = this;
-
   if (! updatedData.parentId) {
     doUpdate();
   } else {
