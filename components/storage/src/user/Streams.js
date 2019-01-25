@@ -8,8 +8,6 @@ var async = require('async'),
 
 module.exports = Streams;
 
-const switchIdWith = 'streamId';
-
 /**
  * DB persistence for event streams.
  *
