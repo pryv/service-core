@@ -118,7 +118,7 @@ module.exports = function (api, userFollowedSlicesStorage, notifications, storag
     // assert: dbError isDuplicateError
     
     const message = dbError.message; 
-    const nameKeyDuplicate = message.match(/index: name_1_userId_1 dup key:/);
+    const nameKeyDuplicate = message.match(/index: userId_1_name_1 dup key:/);
     
     const conflictingKeys = nameKeyDuplicate ?
       {name: params.name} : { url: params.url, accessToken: params.accessToken };
