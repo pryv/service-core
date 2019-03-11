@@ -31,6 +31,6 @@ Profile.prototype.getCollectionInfo = function (user) {
       index: {profileId: 1},
       options: {unique: true}
     } ],
-    useUserId: user.id
+    useUserId: user.id,
   };
 };

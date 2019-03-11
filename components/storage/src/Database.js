@@ -233,15 +233,12 @@ class Database {
    * @param collectionInfo
    * @param {Object|Array} mixed
    */
-  addUserAndSoftIdIfneed(collectionInfo: CollectionInfo, mixed, infos) {
-
-    function addUserIdProperty(object) {
-      object.userId = collectionInfo.useUserId;
-    }
+  addUserIdIfneed(collectionInfo: CollectionInfo, mixed) {
 
     if (collectionInfo.useUserId) {
       if (mixed.constructor === Array) {
-        for (var i = 0; i < mixed.length; i++) {
+        const length = mixed.length;
+        for (var i = 0; i < length; i++) {
           addUserIdProperty(mixed[i]);
         }
       } else {
@@ -249,9 +246,10 @@ class Database {
       }
     }
 
-
-   // infos = infos || '#';  console.log('=>> [' + collectionInfo.name +']- ' + infos + ' ', mixed, 'end');
-  };
+    function addUserIdProperty(object) {
+      object.userId = collectionInfo.useUserId;
+    }
+}
 
   /**
    * Counts documents matching the given query.
@@ -261,7 +259,7 @@ class Database {
    * @param {Function} callback
    */
   count(collectionInfo: CollectionInfo, query: {}, callback: DatabaseCallback) {
-    this.addUserAndSoftIdIfneed(collectionInfo, query, 'count');
+    this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.find(query).count(callback);
     });
@@ -280,7 +278,7 @@ class Database {
    * @param {Function} callback
    */
   find(collectionInfo: CollectionInfo, query: {}, options: FindOptions, callback: DatabaseCallback) {
-    this.addUserAndSoftIdIfneed(collectionInfo, query, 'find');
+    this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       const queryOptions = {
         projection: options.projection,
@@ -317,7 +315,7 @@ class Database {
     query: mixed, options: FindOptions, 
     callback: DatabaseCallback) 
   {
-    this.addUserAndSoftIdIfneed(collectionInfo, query, 'findStreamed');
+    this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       const queryOptions = {
         projection: options.projection,
@@ -345,7 +343,7 @@ class Database {
    * @param {Function} callback
    */
   findOne(collectionInfo: CollectionInfo, query: Object, options: FindOptions, callback: DatabaseCallback) {
-    this.addUserAndSoftIdIfneed(collectionInfo, query, 'findOne');
+    this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.findOne(query, options || {}, callback);
     });
@@ -369,7 +367,7 @@ class Database {
     projectExpression: Object, groupExpression: Object,
     options: Object, callback: DatabaseCallback) 
   {
-    this.addUserAndSoftIdIfneed(collectionInfo, query, 'aggregate');
+    this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       var aggregationCmds = [];
       if (query) {
@@ -405,7 +403,7 @@ class Database {
    * @param {Function} callback
    */
   insertOne(collectionInfo: CollectionInfo, item: Object, callback: DatabaseCallback) {
-    this.addUserAndSoftIdIfneed(collectionInfo, item, 'insertOne');
+    this.addUserIdIfneed(collectionInfo, item);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.insertOne(item, {w: 1, j: true}, callback);
 
@@ -416,7 +414,7 @@ class Database {
    * Inserts an array of items (each item must have a valid id already).
    */
   insertMany(collectionInfo: CollectionInfo, items: Array<Object>, callback: DatabaseCallback) {
-    this.addUserAndSoftIdIfneed(collectionInfo, items, 'insertMany');
+    this.addUserIdIfneed(collectionInfo, items);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.insertMany(items, {w: 1, j: true}, callback);
     });
@@ -432,7 +430,7 @@ class Database {
    * @param {Function} callback
    */
   updateOne(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
-    this.addUserAndSoftIdIfneed(collectionInfo, query, 'updateOne');
+    this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateOne(query, update, {w: 1, j: true}, callback);
     });
@@ -448,7 +446,7 @@ class Database {
    * @param {Function} callback
    */
   updateMany(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
-    this.addUserAndSoftIdIfneed(collectionInfo, query, 'updateMany');
+    this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateMany(query, update, {w: 1, j:true}, callback);
     });
@@ -464,7 +462,7 @@ class Database {
    * @param {Function} callback
    */
   findOneAndUpdate(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
-    this.addUserAndSoftIdIfneed(collectionInfo, query, 'findOneAndUpdate');
+    this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.findOneAndUpdate(query, update, {returnOriginal: false}, function (err, r) {
         if (err != null) return callback(err);
@@ -483,7 +481,7 @@ class Database {
    * @param {Function} callback
    */
   upsertOne(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
-    this.addUserAndSoftIdIfneed(collectionInfo, query, 'upsertOne');
+    this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateOne(query, update, {w: 1, upsert: true, j: true}, callback);
     });
@@ -497,7 +495,7 @@ class Database {
    * @param {Function} callback
    */
   deleteOne(collectionInfo: CollectionInfo, query: Object, callback: DatabaseCallback) {
-    this.addUserAndSoftIdIfneed(collectionInfo, query, 'deleteOne');
+    this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.deleteOne(query, {w: 1, j: true}, callback);
     });
@@ -511,7 +509,7 @@ class Database {
    * @param {Function} callback
    */
   deleteMany(collectionInfo: CollectionInfo, query: Object, callback: DatabaseCallback) {
-    this.addUserAndSoftIdIfneed(collectionInfo, query, 'deleteMany');
+    this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.deleteMany(query, {w: 1, j: true}, callback);
     });
