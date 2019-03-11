@@ -516,7 +516,8 @@ function applyConvertersToDB(object, converterFns) {
 function applyConvertersFromDB(object, converterFns) {
   if (object) {
     if (object.constructor == Array) {
-      for (var i = 0; i < object.length; i++) {
+      const length = object.length;
+      for (let i = 0; i < length; i++) {
         if (object[i].userId) {
           delete object[i].userId;
         }
@@ -526,7 +527,7 @@ function applyConvertersFromDB(object, converterFns) {
         delete object.userId;
       }
     }
-  };
+  }
   return applyConverters(idFromDB(object), converterFns);
 }
 

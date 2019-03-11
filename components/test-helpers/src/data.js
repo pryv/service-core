@@ -34,7 +34,7 @@ exports.resetUsers = function (done) {
 const accesses = exports.accesses = require('./data/accesses');
 
 exports.resetAccesses = function (done, user, personalAccessToken, addToId) {
-  var u = user || defaultUser;
+  const u = user || defaultUser;
   if (personalAccessToken) {
     accesses[0].token = personalAccessToken;
   }
