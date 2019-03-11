@@ -63,7 +63,9 @@ class Database {
 
     this.db = null;
     this.initializedCollections = {};
-    this.logger = logger; 
+    this.logger = logger;
+
+    this.collectionConnectionsCache = {};
   }
 
   /**
@@ -113,12 +115,19 @@ class Database {
   }
 
    addUserIdToIndexIfNeeded(collectionInfo) {
-    // force all indexes to have userId - QUESTION is order important
+    // force all indexes to have userId -- ! Order is important
     if (collectionInfo.useUserId) {
-      collectionInfo.indexes.unshift({index: {}, options: {}});
+      const newIndexes = [{index: { userId : 1}, options: {}}];
       for (var i = 0; i < collectionInfo.indexes.length; i++) {
-        collectionInfo.indexes[i].index.userId = 1;
+        const tempIndex = {userId: 1};
+        for (var property in collectionInfo.indexes[i].index) {
+          if (collectionInfo.indexes[i].index.hasOwnProperty(property)) {
+            tempIndex[property] = collectionInfo.indexes[i].index[property];
+          }
+        }
+        newIndexes.push({index: tempIndex, options: collectionInfo.indexes[i].options});
       }
+      collectionInfo.indexes = newIndexes;
     }
     return collectionInfo;
   }
@@ -126,6 +135,9 @@ class Database {
   // Internal function. 
   // 
   async getCollection(collectionInfo: CollectionInfo, callback: GetCollectionCallback) {
+    if (this.collectionConnectionsCache[collectionInfo.name]) {
+      return callback(null, this.collectionConnectionsCache[collectionInfo.name]);
+    }
     try {    
       // Make sure we have a connect
       await bluebird.fromCallback( 
@@ -140,7 +152,8 @@ class Database {
 
       // Ensure that proper indexing is initialized
       await ensureIndexes.call(this, collection, collectionInfo.indexes);
-      
+
+      this.collectionConnectionsCache[collectionInfo.name] = collection;
       // returning the collection.
       return callback(null, collection);
     }

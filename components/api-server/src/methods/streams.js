@@ -145,7 +145,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         if (storage.Database.isDuplicateError(err)) {
           // HACK: relying on error text as nothing else available to differentiate
 
-          const apiError = err.message.indexOf('streamId_1_userId_1') > 0 ?
+          const apiError = err.message.indexOf('userId_1_streamId_1') > 0 ?
             errors.itemAlreadyExists(
               'stream', {id: params.id}, err
             ) :
