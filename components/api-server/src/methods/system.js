@@ -103,20 +103,15 @@ module.exports = function (
       /duplicate key error/.test(message);
 
     if (isKeyCollision) {
-      // Extract the field that we collided in
-      const md = message.match(/index: (\w+) dup key:/);
-      const field = md[1];
 
-      switch (field) {
-        // MongoError: E11000 duplicate key error collection: pryv-node.users index: email_1 dup key: { : "zero@test.com" }
-        case 'email_1':
-          return errors.itemAlreadyExists('user', { email: params.email }, err);
+      // E11000 duplicate key error collection: pryv-node.users index: email_1 dup key: { : "zero@test.com" }
+      if (message.includes('email')) {
+        return errors.itemAlreadyExists('user', { email: params.email }, err);
+      }
 
-        // E11000 duplicate key error collection: pryv-node.users index: username_1 dup key: { : "userzero" }
-        case 'username_1': 
-          return errors.itemAlreadyExists('user', { username: params.username }, err);
-
-        // FALLTHROUGH
+      // E11000 duplicate key error collection: pryv-node.users index: username_1 dup key: { : "userzero" }
+      if (message.includes('username')) {
+        return errors.itemAlreadyExists('user', { username: params.username }, err);
       }
     }
 
