@@ -177,7 +177,11 @@ const accessLogic = module.exports = {
     // permissions on common streams? If yes, abort. 
     for (const candidateStreamPermission of candidate.streamPermissions) {
       const candidateStreamId = candidateStreamPermission.streamId;
-      const myStreamPermission = this.streamPermissionsMap[candidateStreamId];
+
+      // Check if `this` contains a permission on the candidate streamId.
+      // A permission on the root stream (*) matches any candidate streamId and takes precedence.
+      const rootPermission = this.streamPermissionsMap['*'];
+      const myStreamPermission = rootPermission || this.streamPermissionsMap[candidateStreamId];
         
       // If `this` cannot access the candidate stream, then don't give access.
       if (myStreamPermission == null) return false; 
