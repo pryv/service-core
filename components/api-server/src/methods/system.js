@@ -7,6 +7,7 @@ const string = require('./helpers/string');
 const _ = require('lodash');
 const async = require('async');
 const cuid = require('cuid');
+const Database = require('components/storage').Database;
 
 /**
  * @param systemAPI
@@ -94,6 +95,23 @@ module.exports = function (
           return callback(null, finalUser);
         });
     });
+  }
+
+  function handleCreationErrors (err, params) {
+    if (Database.isDuplicateError(err)) {
+
+      const message = err.message;
+
+      if (message.includes('email')) {
+        return errors.itemAlreadyExists('user', { email: params.email }, err);
+      }
+
+      if (message.includes('username')) {
+        return errors.itemAlreadyExists('user', { username: params.username }, err);
+      }
+    }
+
+    return errors.unexpectedError(err, 'Unexpected error while saving user.');
   }
 
   function sendWelcomeMail(context, params, result, next) {
@@ -251,27 +269,4 @@ module.exports = function (
 
 };
 
-const handleCreationErrors = function (err, params) {
-  const message = err.message;
-  const isKeyCollision = 
-    /^E11000/.test(message) && 
-    /duplicate key error/.test(message);
-
-  if (isKeyCollision) {
-
-    // E11000 duplicate key error collection: pryv-node.users index: email_1 dup key: { : "zero@test.com" }
-    if (message.includes('email')) {
-      return errors.itemAlreadyExists('user', { email: params.email }, err);
-    }
-
-    // E11000 duplicate key error collection: pryv-node.users index: username_1 dup key: { : "userzero" }
-    if (message.includes('username')) {
-      return errors.itemAlreadyExists('user', { username: params.username }, err);
-    }
-  }
-
-  return errors.unexpectedError(err, 'Unexpected error while saving user.');
-};
-
 module.exports.injectDependencies = true;
-module.exports.handleCreationErrors = handleCreationErrors;

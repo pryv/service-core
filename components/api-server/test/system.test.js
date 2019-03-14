@@ -291,43 +291,6 @@ describe('system (ex-register)', function () {
           }, done);
         });
       });
-
-      // cf. GH issue #163
-      it('must match various mongo duplicate error messages correctly', function (done) {
-        const handleCreationErrors = require('../src/methods/system').handleCreationErrors;
-        const params = {
-          username: testData.users[0].username,
-          email: 'zero@test.com',
-        };
-
-        // This contains all variations of mongo duplicate error messages we encountered yet.
-        const potentialMongoErrors = [
-          {
-            message: `E11000 duplicate key error collection: pryv-node.users index: email_1 dup key: { : "${params.email}" }`,
-            dupKey: {email: params.email}
-          },
-          {
-            message: `E11000 duplicate key error collection: pryv-node.users index: username_1 dup key: { : "${params.username}" }`,
-            dupKey: {username: params.username}
-          },
-          {
-            message: `E11000 duplicate key error index: pryv-node.users.$email_1 dup key: { : "${params.email}" }`,
-            dupKey: {email: params.email}
-          },
-          {
-            message: `E11000 duplicate key error index: pryv-node.users.$username_1 dup key: { : "${params.username}" }`,
-            dupKey: {username: params.username}
-          },
-        ];
-
-        potentialMongoErrors.forEach((error) => {
-          const err = handleCreationErrors(error, params);
-          assert.equal(err.httpStatus, 400);
-          assert.equal(err.id, ErrorIds.ItemAlreadyExists);
-          assert.deepEqual(err.data, error.dupKey);
-        });
-        done();
-      });
     
       it('must return a correct 404 error when authentication is invalid', function (done) {
         request
