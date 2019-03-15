@@ -2,12 +2,24 @@ const async = require('async');
 const toString = require('components/utils').toString;
 
 /**
- * v1.3.40:
- *
- * - Changes { token } and { name, type, deviceName } accesses indexes from sparse
- *    to having a partialFilter on the "deleted" field which is more performant.
- * - Reverses hack: renames deleted fields "_token", "_name", "_type", "_deviceName"
- *    to their previous names without the "_" prefix.
+ * v1.4.0: Merges user-related collections: events, streams, accesses, profiles, followedSlices
+ * 
+ * - all: 
+ *  - Add a new index on userId
+ *  - Add userId to all compound indexes in the first position
+ *  - Collections {userId}.{collection} have all their documents extended with a `userId` field containing the userId.
+ *  - {collection} is filled with the data of all users
+ *  - when a {userId}.{collection} content is fully transfered it is deleted
+ *  - In case of interruption, the following migration launch will start by deleting the partially transferred {userId}.{collection} data from {collection} before resuming the transfer.
+ * 
+ * - streams:
+ *  - field `id` is now called `streamId`
+ *  - the `_id` field is now handled by MongoDB
+ * 
+ * - profiles:
+ *  - field `id` is now called `profileId`
+ *  - the `_id` field is now handled by MongoDB
+ * 
  */
 module.exports = function (context, callback) {
 
@@ -38,7 +50,6 @@ module.exports = function (context, callback) {
   var collectionList = {};
   // -- List All collections
   function listCollections(done) {
-    //console.log(context.database);
     context.database.db.listCollections().toArray( function (err, collectionInfos) {
         collectionInfos.map(function (col) {
           collectionList[col.name] = col;
@@ -150,7 +161,8 @@ module.exports = function (context, callback) {
             doc.userId = user._id;
             if (changeIdTo) {
               doc[changeIdTo] = doc._id;
-              doc._id = user._id + '.' + doc._id;
+              delete doc._id;
+              //doc._id = user._id + '.' + doc._id;
             }
             batch.push(doc);
             if (batch.length > 10000) {
