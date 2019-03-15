@@ -20,7 +20,3 @@ Make sure to check the root README first.
 - `npm run test-detailed` for detailed test specs and debug log output
 - `npm run test-profile` for profiling the tested server instance and opening the processed output with `tick-processor`
 - `npm run test-debug` is similar as `npm run test-detailed` but in debug mode; it will wait for a debugger to be attached on port 5858
-
-### Known issues
-
-- `Error: Cannot find module 'components/...'`: Ensure that symlink `node_modules/components` pointing to `../components` exists
