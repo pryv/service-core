@@ -499,7 +499,7 @@ class Database {
 
   // class utility functions
 
-  static isDuplicateError(err: MongoDBError) {
+  static isDuplicateError(err: ?MongoDBError) {
     if (! err) { return false; }
     var errorCode = err.code || (err.lastErrorObject ? err.lastErrorObject.code : null);
     return errorCode === 11000 || errorCode === 11001;
@@ -516,6 +516,7 @@ class Database {
 module.exports = Database;
 
 type MongoDBError = {
+  errmsg?: string,
   code?: number, 
   lastErrorObject?: MongoDBError,
 }

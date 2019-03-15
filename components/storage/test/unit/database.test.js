@@ -4,7 +4,6 @@
 
 const chai = require('chai');
 const assert = chai.assert;
-const bluebird = require('bluebird');
 
 const Database = require('../../src/Database');
 
@@ -44,21 +43,27 @@ describe('Database', () => {
       });
     });
 
-    // cf. GH issue #163
-    it('must detect mongo duplicate errors correctly', async () => {
+    it('must detect mongo duplicate errors correctly', (done) => {
 
       const duplicateMsg = `E11000 duplicate key error collection: ${connectionSettings.name}.${collectionInfo.name} index:`;
+      const duplicateEntry = {duplicateKey: 'duplicate'};
 
       // First insert, should succeed
-      database.insertOne(collectionInfo, {duplicateKey: 'duplicate'}, (err, res) => {
-        assert.exists(res);
-        assert.notExists(err);
+      database.insertOne(collectionInfo, duplicateEntry, (err, res) => {
+        assert.isNotNull(res);
+        assert.isNull(err);
         // Second insert, should lead to duplicate error
-        database.insertOne(collectionInfo, {duplicateKey: 'duplicate'}, (err, res) => {
-          assert.exists(err);
+        database.insertOne(collectionInfo, duplicateEntry, (err, res) => {
           assert.isTrue(Database.isDuplicateError(err));
-          assert.include(err.errmsg, duplicateMsg, 'Mongo duplicate error message changed!');
-          assert.notExists(res);
+          assert.isNotNull(err);
+          assert.isNull(res);
+          // This helps detecting if Mongo decides to change the error message format,
+          // which may break our regular expression matchings, cf. GH issue #163.
+          // FLOW We ensure that err is defined and has string property 'errmsg' thanks to assert
+          const errMsg = err.errmsg;
+          assert.isString(errMsg);
+          assert.include(errMsg, duplicateMsg, 'Mongo duplicate error message changed!');
+          done();
         });
       }); 
     });
