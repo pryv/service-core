@@ -45,7 +45,6 @@
 
 - Add clientData field to Accesses and create/update methods
 
-- Fix a bug which prevented accesses with root ("streamId":"*") permission from managing sub-accesses correctly
 
 ## 1.2.X
 
