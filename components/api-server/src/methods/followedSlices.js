@@ -1,8 +1,7 @@
 var async = require('async'),
     commonFns = require('./helpers/commonFunctions'),
     errors = require('components/errors').factory,
-    methodsSchema = require('../schema/followedSlicesMethods'),
-    storage = require('components/storage');
+    methodsSchema = require('../schema/followedSlicesMethods');
 
 /**
  * Followed slices methods implementations.

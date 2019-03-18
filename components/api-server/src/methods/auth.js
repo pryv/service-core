@@ -1,5 +1,4 @@
 var commonFns = require('./helpers/commonFunctions'),
-    Database = require('components/storage').Database,
     utils = require('components/utils'),
     encryption = utils.encryption,
     errors = require('components/errors').factory,

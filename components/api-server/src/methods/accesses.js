@@ -9,7 +9,6 @@ const APIError = require('components/errors').APIError;
 const errors = require('components/errors').factory;
 const ErrorIds = require('components/errors').ErrorIds;
 
-const Database = require('components/storage').Database;
 const treeUtils = require('components/utils').treeUtils;
 
 const commonFns = require('./helpers/commonFunctions');
