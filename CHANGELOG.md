@@ -41,6 +41,11 @@
 
   - 2018102401: Details will be disclosed after Dec/18
 
+- Implement fetch deleted accesses using `includeDeletions` in accesses.get API method
+
+- Add clientData field to Accesses and create/update methods
+
+- Fix a bug which prevented accesses with root ("streamId":"*") permission from managing sub-accesses correctly
 
 ## 1.2.X
 
