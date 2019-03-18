@@ -36,7 +36,7 @@ describe('Database', () => {
         options: {unique: true}
       }]
     };
-    const duplicateEntry = {duplicateKey: 'duplicate'};
+    const duplicateEntry = {duplicateKey: 1};
 
     beforeEach((done) => {
       database.dropCollection(collectionInfo, () => {
@@ -68,7 +68,7 @@ describe('Database', () => {
     // This helps detecting if Mongo decides to change the error message format,
     // which may break our regular expression matchings, cf. GH issue #163.
     it('must fail if mongo duplicate error message changed', (done) => {
-      const duplicateMsg = `E11000 duplicate key error collection: ${connectionSettings.name}.${collectionInfo.name} index:`;
+      const duplicateMsg = `E11000 duplicate key error collection: ${connectionSettings.name}.${collectionInfo.name} index: _id_ dup key:`;
       database.insertOne(collectionInfo, duplicateEntry, (err) => {
         // FLOW: we ensure that err contains the string errmsg with assert
         const errMsg = err.errmsg;
