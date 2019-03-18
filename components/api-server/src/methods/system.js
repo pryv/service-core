@@ -97,7 +97,8 @@ module.exports = function (
   }
 
   function handleCreationErrors (err, params) {
-    const duplicate = err.dupIndex;
+    // expecting duplicate error
+    const duplicate = err.duplicateIndex;
     if (duplicate != null) {
       if (duplicate.includes('email')) {
         return errors.itemAlreadyExists('user', { email: params.email }, err);
@@ -106,7 +107,7 @@ module.exports = function (
         return errors.itemAlreadyExists('user', { username: params.username }, err);
       }
     }
-
+    // any other error
     return errors.unexpectedError(err, 'Unexpected error while saving user.');
   }
 

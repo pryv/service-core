@@ -110,14 +110,13 @@ module.exports = function (api, userFollowedSlicesStorage, notifications, storag
    * Returns the error to propagate given `dbError` and `params` as input. 
    */
   function getCreationOrUpdateError(dbError, params) {
-    if (! storage.Database.isDuplicateError(dbError)) {
+    // expecting duplicate error
+    const duplicate = dbError.duplicateIndex;
+    if (duplicate == null) {
       return errors.unexpectedError(dbError);
     }
     // assert: dbError isDuplicateError
-    
-    const message = dbError.message; 
-    const nameKeyDuplicate = message.match(/index: name_1 dup key:/);
-    
+    const nameKeyDuplicate = duplicate.match(/^name/);
     const conflictingKeys = nameKeyDuplicate ?
       {name: params.name} : { url: params.url, accessToken: params.accessToken };
     return errors.itemAlreadyExists(

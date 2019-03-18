@@ -520,10 +520,9 @@ class Database {
   static handleDuplicateError(err: ?MongoDBError) {
     if (err != null && err.errmsg != null && this.isDuplicateError(err)) {
       const match = err.errmsg.match(/index: (.+) dup key:/);
-      if (Array.isArray(match) && match.length >= 2) {
-        const index = match[1];
-        err.dupIndex = index;
-      }
+      const index = Array.isArray(match) && match.length >= 2 ?
+        match[1]: 'unmatched duplicate index';
+      err.duplicateIndex = index;
     }
   }
 
@@ -541,7 +540,7 @@ type MongoDBError = {
   errmsg?: string,
   code?: number, 
   lastErrorObject?: MongoDBError,
-  dupIndex?: string,
+  duplicateIndex?: string,
 }
 
 type DatabaseCallback = (err?: Error | null, result?: mixed) => mixed;

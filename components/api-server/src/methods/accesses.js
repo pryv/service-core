@@ -236,52 +236,28 @@ module.exports = function produceAccessesApiMethods(
         context.initTrackingProperties(newStream);
         
         streamsRepository.insertOne(context.user, newStream, function (err) {
-          if (err) {
-            if (Database.isDuplicateError(err)) {
-              if (isDBDuplicateId(err)) {
-                // stream already exists, log & proceed
-                logger.info('accesses.create: stream "' + newStream.id + '" already exists: ' +
-                    err.message);
-              } else {
-                // not OK: stream exists with same unique key but different id
-                return streamCallback(errors.itemAlreadyExists(
-                  'stream', {name: newStream.name}, err
-                ));
-              }
-            } else {
+          if (err != null) {
+            // expecting a duplicate error
+            const duplicate = err.duplicateIndex;
+            if (duplicate == null) {
               return streamCallback(errors.unexpectedError(err));
+            }
+
+            if (duplicate.includes('_id_')) {
+              // stream already exists, log & proceed
+              logger.info('accesses.create: stream "' + newStream.id + '" already exists: ' +
+                  err.message);
+            } else {
+              // not OK: stream exists with same unique key but different id
+              return streamCallback(errors.itemAlreadyExists(
+                'stream', {name: newStream.name}, err
+              ));
             }
           }
           streamCallback();
         });
       }
     }
-  }
-
-  /**
-   * Returns `true` if the given error is a DB "duplicate key" error caused by a duplicate id.
-   * Returns `false` otherwise (e.g. if caused by another unique key like the name).
-   *
-   * @param {Error} dbError
-   */
-  function isDBDuplicateId(dbError) {
-    // HACK: relying on error text as nothing else available to differentiate
-    if (! dbError.message) { return false; }
-    return dbError.message.indexOf('_id_') > 0;
-  }
-
-  /**
-   * Returns true if `dbError` was caused by a 'duplicate key' error (E11000)
-   * and the key that conflicted was named 'token_1'.
-   *
-   * @param {Error} dbError
-   */
-  function isDBDuplicateToken(dbError) {
-    if (dbError.message == null) { return false; }
-    
-    const message = dbError.message; 
-    return message.match(/^E11000 duplicate key error collection/) && 
-      message.match(/index: token_1 dup key:/);
   }
 
   /**
@@ -302,26 +278,26 @@ module.exports = function produceAccessesApiMethods(
     const accessesRepository = storageLayer.accesses;
     
     accessesRepository.insertOne(context.user, params, function (err, newAccess) {
-      if (err) {
-        if (Database.isDuplicateError(err)) {
-          let conflictingKeys;
-          if (isDBDuplicateToken(err)) {
-            conflictingKeys = { token: '(hidden)' };
-          } else {
-            conflictingKeys = { 
-              type: params.type, 
-              name: params.name,
-              deviceName: params.deviceName,
-            };
-          }
-          return next(errors.itemAlreadyExists(
-            'access', conflictingKeys
-          ));
-          
-          // NOT REACHED
-        } 
+      if (err != null) {
+        // expecting a duplicate error
+        const duplicate = err.duplicateIndex;
+        if (duplicate == null) {
+          return next(errors.unexpectedError(err));
+        }
+
+        let conflictingKeys;
         
-        return next(errors.unexpectedError(err));
+        if (duplicate.includes('token')) {
+          conflictingKeys = { token: '(hidden)' };
+        } else {
+          conflictingKeys = { 
+            type: params.type, 
+            name: params.name,
+            deviceName: params.deviceName,
+          };
+        }
+        
+        return next(errors.itemAlreadyExists('access', conflictingKeys));
       }
 
       result.access = newAccess;
@@ -412,12 +388,13 @@ module.exports = function produceAccessesApiMethods(
     accessesRepository.updateOne(context.user, {id: params.id}, params.update,
       function (err, updatedAccess) {
         if (err != null) {
-          if (Database.isDuplicateError(err)) {
-            return next(errors.itemAlreadyExists('access',
-              { type: params.resource.type, name: params.update.name }));
+          // expecting a duplicate error
+          if (err.duplicateIndex == null) {
+            return next(errors.unexpectedError(err));
           }
 
-          return next(errors.unexpectedError(err));
+          return next(errors.itemAlreadyExists('access',
+            { type: params.resource.type, name: params.update.name }));
         }
 
         // cleanup internal fields

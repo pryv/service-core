@@ -308,12 +308,12 @@ module.exports = function (
 
     userEventsStorage.insertOne(
       context.user, context.content, function (err, newEvent) {
-        if (err) {
-          if (storage.Database.isDuplicateError(err)) {
-            return next(errors.itemAlreadyExists('event', {id: params.id}, err));
-          } else {
+        if (err != null) {
+          // expecting a duplicate error
+          if (err.duplicateIndex == null) {
             return next(errors.unexpectedError(err));
           }
+          return next(errors.itemAlreadyExists('event', {id: params.id}, err));
         }
 
         result.event = newEvent;

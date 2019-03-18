@@ -57,8 +57,8 @@ describe('Database', () => {
           assert.isNull(res);
           assert.isTrue(Database.isDuplicateError(err));
           // FLOW
-          const dupIndex = err.dupIndex;
-          assert.equal(dupIndex, '_id_');
+          const duplicateIndex = err.duplicateIndex;
+          assert.equal(duplicateIndex, '_id_');
           // This helps detecting if Mongo decides to change the error message format,
           // which may break our regular expression matchings, cf. GH issue #163.
           // FLOW

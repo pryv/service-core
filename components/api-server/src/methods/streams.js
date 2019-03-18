@@ -141,24 +141,28 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
   function createStream(context, params, result, next) {
     userStreamsStorage.insertOne(context.user, params, function (err, newStream) {
-      if (err) {
-        if (storage.Database.isDuplicateError(err)) {
-          // HACK: relying on error text as nothing else available to differentiate
-          const apiError = err.message.indexOf('_id_') > 0 ?
-            errors.itemAlreadyExists(
+      if (err != null) {
+        // duplicate error
+        const duplicate = err.duplicateIndex;
+        if (duplicate != null) {
+          if (duplicate.includes('_id_')) {
+            return next(errors.itemAlreadyExists(
               'stream', {id: params.id}, err
-            ) :
-            errors.itemAlreadyExists(
+            ));
+          } else {
+            return next(errors.itemAlreadyExists(
               'sibling stream', {name: params.name}, err
-            );
-          return next(apiError);
-        } else if (params.parentId != null) {
+            ));
+          }
+        }
+        // unknown parent stream error
+        if (params.parentId != null) {
           return next(errors.unknownReferencedResource(
             'parent stream', 'parentId', params.parentId, err
           ));
-        } else {
-          return next(errors.unexpectedError(err));
         }
+        // any other error
+        return next(errors.unexpectedError(err));
       }
 
       result.stream = newStream;
@@ -202,18 +206,21 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   function updateStream(context, params, result, next) {
     userStreamsStorage.updateOne(context.user, {id: params.id}, params.update,
       function (err, updatedStream) {
-        if (err) {
-          if (storage.Database.isDuplicateError(err)) {
+        if (err != null) {
+          // duplicate error
+          if (err.duplicateIndex != null) {
             return next(errors.itemAlreadyExists(
               'sibling stream', {name: params.update.name}, err
             ));
-          } else if (params.update.parentId != null) {
+          }
+          // unknown parent stream error
+          if (params.update.parentId != null) {
             return next(errors.unknownReferencedResource(
               'parent stream', 'parentId', params.update.parentId, err
             ));
-          } else {
-            return next(errors.unexpectedError(err));
           }
+          // any other error
+          return next(errors.unexpectedError(err));
         }
 
         result.stream = updatedStream;
