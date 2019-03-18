@@ -83,6 +83,22 @@ describe('accesses (app)', function () {
       createdBy: 'test',
       modified: timestamp.now(),
       modifiedBy: 'test'
+    },
+    {
+      id: 'root_A',
+      token: 'root_A_token',
+      name: 'Root token',
+      type: 'app',
+      permissions: [
+        {
+          streamId: '*',
+          level: 'manage'
+        }
+      ],
+      created: timestamp.now(),
+      createdBy: 'test',
+      modified: timestamp.now(),
+      modifiedBy: 'test'
     }
   ];
   const user = testData.users[0];
@@ -217,6 +233,26 @@ describe('accesses (app)', function () {
       };
       req().post(basePath, access.token).send(data).end(function (res) {
         validation.checkErrorInvalidParams(res, done);
+      });
+    });
+
+    it('must allow creation of shared accesses with an access that has superior permission on root stream (*)', function (done) {
+      const access = additionalTestAccesses[3];
+
+      const data = {
+        name: 'New Access',
+        permissions: [
+          {
+            streamId: testData.streams[0].id,
+            level: 'read'
+          }
+        ]
+      };
+      req().post(basePath, access.token).send(data).end(function (res) {
+        should.exist(res.body);
+        should.not.exist(res.body.error);
+        should(res.statusCode).be.eql(201);
+        done();
       });
     });
 
