@@ -16,6 +16,7 @@ const testData = helpers.data;
 const Versions = require('../src/Versions');
 const wrench = require('wrench');
 const _ = require('lodash');
+const buildTree = require('components/utils').treeUtils.buildTree;
 
 describe('Versions', function () {
   this.timeout(20000);
@@ -259,7 +260,7 @@ describe('Versions', function () {
     });
   });
 
-  it('must handle data migration from v1.3.37 to 1.3.40', function (done) {
+  it.skip('must handle data migration from v1.3.37 to 1.3.40', function (done) {
     const versions = getVersions('1.3.40');
     const indexes = testData.getStructure('1.3.37').indexes;
 
@@ -315,6 +316,150 @@ describe('Versions', function () {
       done();
     });
   });
+
+
+  it('must handle data migration from v1.3.40 to 1.4.0', function (done) {
+    const versions = getVersions('1.4.0');
+    const oldIndexes = testData.getStructure('1.3.40').indexes;
+
+    const user = { id: 'u_0' };
+    const userEvents = storage.user.events;
+    const userStreams = storage.user.streams;
+    const userAccesses = storage.user.accesses;
+    const userProfile = storage.user.profile;
+    const userFollowedSlices = storage.user.followedSlices;
+
+    async.series([
+      (cb) => testData.restoreFromDump('1.3.40', mongoFolder, cb),
+
+      (cb) => getResourcesOld(user, 'events', cb), // (a), see below
+      (cb) => getResourcesOld(user, 'streams', cb), // (b), see below
+      (cb) => getResourcesOld(user, 'accesses', cb), // (c), see below
+      (cb) => getResourcesOld(user, 'profile', cb), // (d), see below
+      (cb) => getResourcesOld(user, 'followedSlices', cb), // (e), see below
+
+      (cb) => versions.migrateIfNeeded(cb),
+
+      (cb) => userEvents.listIndexes(user, {}, cb), // (f), see below
+      (cb) => userStreams.listIndexes(user, {}, cb), // (g), see below
+      (cb) => userAccesses.listIndexes(user, {}, cb), // (h), see below
+      (cb) => userProfile.listIndexes(user, {}, cb), // (i), see below
+      (cb) => userFollowedSlices.listIndexes(user, {}, cb), // (j), see below
+
+      (cb) => userEvents.findAll(user, {}, cb), // (k), see below
+      (cb) => userStreams.findAll(user, {}, cb), // (l), see below
+      (cb) => userAccesses.findAll(user, {}, cb), // (m), see below
+      (cb) => userProfile.findAll(user, {}, cb), // (n), see below
+      (cb) => userFollowedSlices.findAll(user, {}, cb), // (o), see below
+
+      (cb) => versions.getCurrent(cb), // (p), see below
+    ], function (err, res) {
+      assert.isNull(err, 'there was an error');
+
+      const oldEvents = fixProperties(res[1]); // (a)
+      const oldStreams = fixProperties(res[2], 'streams'); // (b)
+      const oldAccesses = fixProperties(res[3], 'accesses'); // (c)
+      const oldProfile = fixProperties(res[4], 'profile'); // (d)
+      const oldFollowedSlices = fixProperties(res[5]); // (e)
+
+      const eventsIndexes = res[7]; // (f)
+      const streamsIndexes = res[8]; // (g)
+      const accessesIndexes = res[9]; // (h)
+      const profileIndexes = res[10]; // (i)
+      const followedSlicesIndexes = res[11]; // (j)
+
+      const events = res[12]; // (k)
+      const streams = res[13]; // (l)
+      const accesses = res[14]; // (m)
+      const profile = res[15]; // (n)
+      const followedSlices = res[16]; // (o)
+
+      const version = res[17]; // (p)
+      
+
+      compareIndexes(oldIndexes.events, eventsIndexes);
+      compareIndexes(oldIndexes.streams, streamsIndexes);
+      compareIndexes(oldIndexes.accesses, accessesIndexes);
+      compareIndexes(oldIndexes.profile, profileIndexes);
+      compareIndexes(oldIndexes.followedSlices, followedSlicesIndexes);
+      
+      compareData(oldEvents, events);
+      compareData(oldStreams, streams);
+      compareData(oldAccesses, accesses);
+      compareData(oldProfile, profile);
+      compareData(oldFollowedSlices, followedSlices);
+
+      assert.strictEqual(version._id, '1.4.0');
+      assert.isNotNull(version.migrationCompleted);
+
+      done();
+    });
+  });
+
+  function fixProperties(items, resourceName) {
+
+    items.forEach((item) => {
+      item.id = item._id;
+      delete item._id;
+      delete item.endTime;
+      if (item.deleted != null) item.deleted = new Date(item.deleted) / 1000;
+
+      if (resourceName == 'accesses') {
+        if (item.deleted === null) {
+          
+          delete item.deleted;
+        }
+      }
+    });
+
+    if (resourceName == 'streams') {
+      items = buildTree(items);
+    }
+
+    return items;
+  }
+
+  function compareData(oldData, newData) {
+    oldData.forEach((oldResource) => {
+      let found = false;
+      newData.forEach((resource) => {
+        if (_.isEqual(resource, oldResource)) {
+          found = true;
+        }
+      });
+      assert.isTrue(found);
+    });
+  }
+
+  function compareIndexes(oldIndexes, newIndexes) {
+    oldIndexes.forEach((index) => {
+      index.index = _.extend(index.index, { userId: 1 });
+    });
+    oldIndexes.push({ index: { userId: 1 }, options: {} });
+
+    oldIndexes.forEach((oldIndex) => {
+      let found = false;
+      newIndexes.forEach((index) => {
+        if (_.isEqual(index.key, oldIndex.index)) {
+          found = true;
+        }
+      });
+      assert.isTrue(found);
+    });
+  }
+
+  async function getResourcesOld(user, resourceName, callback) {
+    let resourceCol;
+    await database.getCollection({
+      name: user.id + '.' + resourceName
+    }, (err, col) => {
+      if (err) return callback(err);
+      resourceCol = col;
+    });
+    const resources = await resourceCol.find({}).toArray();
+    return callback(null, resources);
+  }
+
 
   function getVersions(/* migration1Id, migration2Id, ... */) {
     const pickArgs = [].slice.call(arguments);

@@ -92,7 +92,7 @@ describe('Socket.IO', function () {
       testData.resetAccesses,
       function (stepDone) {
         // have some accesses ready for another account to check notifications
-        testData.resetAccesses(stepDone, otherUser);
+        testData.resetAccesses(stepDone, otherUser, null, true);
       },
       server.ensureStarted.bind(server, helpers.dependencies.settings),
       function (stepDone) {
@@ -133,7 +133,7 @@ describe('Socket.IO', function () {
   
     async.series([
       function (stepDone) {
-        testData.resetAccesses(stepDone, dashUser);
+        testData.resetAccesses(stepDone, dashUser, null, true);
       },
       function (stepDone) {
         dashRequest = helpers.request(server.url);

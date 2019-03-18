@@ -75,8 +75,9 @@ Accesses.prototype.findDeletions = function (
  */
 Accesses.prototype.getCollectionInfo = function (user) {
   return {
-    name: user.id + '.accesses',
-    indexes: indexes
+    name: 'accesses',
+    indexes: indexes,
+    useUserId: user.id
   };
 };
 

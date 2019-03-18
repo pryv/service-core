@@ -62,19 +62,27 @@ exports.getKeyValueSetUpdateFn = function (propertyName) {
   };
 };
 
+
 exports.deletionToDB = function (item) {
-  if (item.deleted) {
+  if (item.deleted != null) {
     item.deleted = timestamp.toDate(item.deleted);
+  } else {
+    item.deleted = null;
   }
   return item;
 };
 
 exports.deletionFromDB = function (dbItem) {
-  if (! dbItem) { return dbItem; }
+  if (dbItem == null) { return dbItem; }
 
-  if (dbItem.deleted) {
+  if (dbItem.deleted == null) {
+    delete dbItem.deleted;
+  }
+
+  if (dbItem.deleted != null) {
     dbItem.deleted = timestamp.fromDate(dbItem.deleted);
   }
   return dbItem;
 };
+
 

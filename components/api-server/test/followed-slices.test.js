@@ -14,7 +14,7 @@ var helpers = require('./helpers'),
 
 describe('followed slices', function () {
 
-  var user = testData.users[1],
+  var user = testData.users[0],
       basePath = '/' + user.username + '/followed-slices',
       request = null; // must be set after server instance started
 
@@ -258,7 +258,7 @@ describe('followed slices', function () {
 
   function resetFollowedSlices(done) {
     followedSlicesNotifCount = 0;
-    testData.resetFollowedSlices(done, testData.users[1]);
+    testData.resetFollowedSlices(done, testData.users[0]);
   }
 
 });

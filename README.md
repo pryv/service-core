@@ -164,4 +164,7 @@ _Prerequisite:_ MongoDB must be running on the default port; you can use `nf sta
 `yarn test` runs tests on each component. See individual components for things like detailed output and other options.
 `yarn test-root` runs root tests combining multiple components (e.g., High-Frequency series).
 
+## Known issues
 
+When running tests in single components:
+- `Error: Cannot find module 'components/...'`: Ensure that symlink `node_modules/components` pointing to `../components` exists

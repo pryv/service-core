@@ -63,7 +63,9 @@ class Database {
 
     this.db = null;
     this.initializedCollections = {};
-    this.logger = logger; 
+    this.logger = logger;
+
+    this.collectionConnectionsCache = {};
   }
 
   /**
@@ -112,9 +114,30 @@ class Database {
     });
   }
 
+   addUserIdToIndexIfNeeded(collectionInfo) {
+    // force all indexes to have userId -- ! Order is important
+    if (collectionInfo.useUserId) {
+      const newIndexes = [{index: { userId : 1}, options: {}}];
+      for (var i = 0; i < collectionInfo.indexes.length; i++) {
+        const tempIndex = {userId: 1};
+        for (var property in collectionInfo.indexes[i].index) {
+          if (collectionInfo.indexes[i].index.hasOwnProperty(property)) {
+            tempIndex[property] = collectionInfo.indexes[i].index[property];
+          }
+        }
+        newIndexes.push({index: tempIndex, options: collectionInfo.indexes[i].options});
+      }
+      collectionInfo.indexes = newIndexes;
+    }
+    return collectionInfo;
+  }
+
   // Internal function. 
   // 
   async getCollection(collectionInfo: CollectionInfo, callback: GetCollectionCallback) {
+    if (this.collectionConnectionsCache[collectionInfo.name]) {
+      return callback(null, this.collectionConnectionsCache[collectionInfo.name]);
+    }
     try {    
       // Make sure we have a connect
       await bluebird.fromCallback( 
@@ -123,10 +146,14 @@ class Database {
       // Load the collection
       const db = this.db; 
       const collection: Collection = db.collection(collectionInfo.name);
-        
+
+      this.addUserIdToIndexIfNeeded(collectionInfo);
+
+
       // Ensure that proper indexing is initialized
       await ensureIndexes.call(this, collection, collectionInfo.indexes);
-      
+
+      this.collectionConnectionsCache[collectionInfo.name] = collection;
       // returning the collection.
       return callback(null, collection);
     }
@@ -190,10 +217,39 @@ class Database {
    * @param {Function} callback
    */
   countAll(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
+
+    if (collectionInfo.useUserId) {
+      return this.count(collectionInfo, {}, callback);
+    }
+
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.countDocuments(callback);
     });
   }
+
+  /**
+   * Add User Id to Object or To all Items of an Array
+   *
+   * @param collectionInfo
+   * @param {Object|Array} mixed
+   */
+  addUserIdIfneed(collectionInfo: CollectionInfo, mixed) {
+
+    if (collectionInfo.useUserId) {
+      if (mixed.constructor === Array) {
+        const length = mixed.length;
+        for (var i = 0; i < length; i++) {
+          addUserIdProperty(mixed[i]);
+        }
+      } else {
+        addUserIdProperty(mixed);
+      }
+    }
+
+    function addUserIdProperty(object) {
+      object.userId = collectionInfo.useUserId;
+    }
+}
 
   /**
    * Counts documents matching the given query.
@@ -203,6 +259,7 @@ class Database {
    * @param {Function} callback
    */
   count(collectionInfo: CollectionInfo, query: {}, callback: DatabaseCallback) {
+    this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.find(query).count(callback);
     });
@@ -221,6 +278,7 @@ class Database {
    * @param {Function} callback
    */
   find(collectionInfo: CollectionInfo, query: {}, options: FindOptions, callback: DatabaseCallback) {
+    this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       const queryOptions = {
         projection: options.projection,
@@ -257,6 +315,7 @@ class Database {
     query: mixed, options: FindOptions, 
     callback: DatabaseCallback) 
   {
+    this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       const queryOptions = {
         projection: options.projection,
@@ -284,6 +343,7 @@ class Database {
    * @param {Function} callback
    */
   findOne(collectionInfo: CollectionInfo, query: Object, options: FindOptions, callback: DatabaseCallback) {
+    this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.findOne(query, options || {}, callback);
     });
@@ -307,6 +367,7 @@ class Database {
     projectExpression: Object, groupExpression: Object,
     options: Object, callback: DatabaseCallback) 
   {
+    this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       var aggregationCmds = [];
       if (query) {
@@ -342,8 +403,10 @@ class Database {
    * @param {Function} callback
    */
   insertOne(collectionInfo: CollectionInfo, item: Object, callback: DatabaseCallback) {
+    this.addUserIdIfneed(collectionInfo, item);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.insertOne(item, {w: 1, j: true}, callback);
+
     });
   }
 
@@ -351,6 +414,7 @@ class Database {
    * Inserts an array of items (each item must have a valid id already).
    */
   insertMany(collectionInfo: CollectionInfo, items: Array<Object>, callback: DatabaseCallback) {
+    this.addUserIdIfneed(collectionInfo, items);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.insertMany(items, {w: 1, j: true}, callback);
     });
@@ -366,6 +430,7 @@ class Database {
    * @param {Function} callback
    */
   updateOne(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
+    this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateOne(query, update, {w: 1, j: true}, callback);
     });
@@ -381,6 +446,7 @@ class Database {
    * @param {Function} callback
    */
   updateMany(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
+    this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateMany(query, update, {w: 1, j:true}, callback);
     });
@@ -396,6 +462,7 @@ class Database {
    * @param {Function} callback
    */
   findOneAndUpdate(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
+    this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.findOneAndUpdate(query, update, {returnOriginal: false}, function (err, r) {
         if (err != null) return callback(err);
@@ -414,6 +481,7 @@ class Database {
    * @param {Function} callback
    */
   upsertOne(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
+    this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateOne(query, update, {w: 1, upsert: true, j: true}, callback);
     });
@@ -427,6 +495,7 @@ class Database {
    * @param {Function} callback
    */
   deleteOne(collectionInfo: CollectionInfo, query: Object, callback: DatabaseCallback) {
+    this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.deleteOne(query, {w: 1, j: true}, callback);
     });
@@ -440,6 +509,7 @@ class Database {
    * @param {Function} callback
    */
   deleteMany(collectionInfo: CollectionInfo, query: Object, callback: DatabaseCallback) {
+    this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.deleteMany(query, {w: 1, j: true}, callback);
     });
@@ -447,11 +517,16 @@ class Database {
 
   /**
    * Get collection total size.
+   * In case of singleCollectionMode count the number of documents
    *
    * @param {Object} collectionInfo
    * @param {Function} callback
    */
   totalSize(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
+    if (collectionInfo.useUserId) {
+      this.countAll(collectionInfo, callback);
+      return;
+    }
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.stats(function (err, stats) {
         if (err != null) {
@@ -467,9 +542,13 @@ class Database {
    * @param {Function} callback
    */
   dropCollection(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
-    this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.drop(callback);
-    });
+    if (collectionInfo.useUserId) {
+      this.deleteMany(collectionInfo, {}, callback);
+    } else {
+      this.getCollectionSafe(collectionInfo, callback, collection => {
+        collection.drop(callback);
+      });
+    }
   }
 
   /**

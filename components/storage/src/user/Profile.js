@@ -14,7 +14,8 @@ function Profile(database) {
   Profile.super_.call(this, database);
 
   _.extend(this.converters, {
-    updateToDB: [converters.getKeyValueSetUpdateFn('data')]
+    updateToDB: [converters.getKeyValueSetUpdateFn('data')],
+    convertIdToItemId: 'profileId'
   });
 
   this.defaultOptions = {
@@ -25,7 +26,11 @@ util.inherits(Profile, BaseStorage);
 
 Profile.prototype.getCollectionInfo = function (user) {
   return {
-    name: user.id + '.profile',
-    indexes: []
+    name: 'profile',
+    indexes: [ {
+      index: {profileId: 1},
+      options: {unique: true}
+    } ],
+    useUserId: user.id,
   };
 };
