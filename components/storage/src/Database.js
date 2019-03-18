@@ -525,7 +525,6 @@ class Database {
         err.dupIndex = index;
       }
     }
-    return err;
   }
 
   /// Closes this database connection. After calling this, all other methods 

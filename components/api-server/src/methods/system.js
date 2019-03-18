@@ -7,7 +7,6 @@ const string = require('./helpers/string');
 const _ = require('lodash');
 const async = require('async');
 const cuid = require('cuid');
-const Database = require('components/storage').Database;
 
 /**
  * @param systemAPI
@@ -99,7 +98,6 @@ module.exports = function (
 
   function handleCreationErrors (err, params) {
     const duplicate = err.dupIndex;
-    console.log(duplicate);
     if (duplicate != null) {
       if (duplicate.includes('email')) {
         return errors.itemAlreadyExists('user', { email: params.email }, err);
