@@ -98,15 +98,13 @@ module.exports = function (
   }
 
   function handleCreationErrors (err, params) {
-    if (Database.isDuplicateError(err)) {
-
-      const message = err.message;
-
-      if (message.includes('email')) {
+    const duplicate = err.dupIndex;
+    console.log(duplicate);
+    if (duplicate != null) {
+      if (duplicate.includes('email')) {
         return errors.itemAlreadyExists('user', { email: params.email }, err);
       }
-
-      if (message.includes('username')) {
+      if (duplicate.includes('username')) {
         return errors.itemAlreadyExists('user', { username: params.username }, err);
       }
     }

@@ -44,7 +44,6 @@ describe('Database', () => {
     });
 
     it('must detect mongo duplicate errors correctly', (done) => {
-
       const duplicateMsg = `E11000 duplicate key error collection: ${connectionSettings.name}.${collectionInfo.name} index:`;
       const duplicateEntry = {duplicateKey: 'duplicate'};
 
@@ -54,12 +53,15 @@ describe('Database', () => {
         assert.isNull(err);
         // Second insert, should lead to duplicate error
         database.insertOne(collectionInfo, duplicateEntry, (err, res) => {
-          assert.isTrue(Database.isDuplicateError(err));
           assert.isNotNull(err);
           assert.isNull(res);
+          assert.isTrue(Database.isDuplicateError(err));
+          // FLOW
+          const dupIndex = err.dupIndex;
+          assert.equal(dupIndex, '_id_');
           // This helps detecting if Mongo decides to change the error message format,
           // which may break our regular expression matchings, cf. GH issue #163.
-          // FLOW We ensure that err is defined and has string property 'errmsg' thanks to assert
+          // FLOW
           const errMsg = err.errmsg;
           assert.isString(errMsg);
           assert.include(errMsg, duplicateMsg, 'Mongo duplicate error message changed!');

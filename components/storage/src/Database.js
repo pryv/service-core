@@ -343,7 +343,12 @@ class Database {
    */
   insertOne(collectionInfo: CollectionInfo, item: Object, callback: DatabaseCallback) {
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.insertOne(item, {w: 1, j: true}, callback);
+      collection.insertOne(item, {w: 1, j: true}, (err, res) => {
+        if (err != null) {
+          Database.handleDuplicateError(err);
+        }
+        callback(err,res);
+      });
     });
   }
 
@@ -367,7 +372,12 @@ class Database {
    */
   updateOne(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.updateOne(query, update, {w: 1, j: true}, callback);
+      collection.updateOne(query, update, {w: 1, j: true}, (err, res) => {
+        if (err != null) {
+          Database.handleDuplicateError(err);
+        }
+        callback(err,res);
+      });
     });
   }
 
@@ -398,8 +408,10 @@ class Database {
   findOneAndUpdate(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.findOneAndUpdate(query, update, {returnOriginal: false}, function (err, r) {
-        if (err != null) return callback(err);
-        
+        if (err != null) {
+          Database.handleDuplicateError(err);
+          return callback(err);
+        }
         callback(null, r && r.value);
       });
     });
@@ -505,6 +517,17 @@ class Database {
     return errorCode === 11000 || errorCode === 11001;
   }
 
+  static handleDuplicateError(err: ?MongoDBError) {
+    if (err != null && err.errmsg != null && this.isDuplicateError(err)) {
+      const match = err.errmsg.match(/index: (.+) dup key:/);
+      if (Array.isArray(match) && match.length >= 2) {
+        const index = match[1];
+        err.dupIndex = index;
+      }
+    }
+    return err;
+  }
+
   /// Closes this database connection. After calling this, all other methods 
   /// will produce undefined behaviour. 
   /// 
@@ -519,6 +542,7 @@ type MongoDBError = {
   errmsg?: string,
   code?: number, 
   lastErrorObject?: MongoDBError,
+  dupIndex?: string,
 }
 
 type DatabaseCallback = (err?: Error | null, result?: mixed) => mixed;
