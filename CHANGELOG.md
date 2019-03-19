@@ -47,6 +47,7 @@
 
 - Fix a bug which prevented accesses with root ("streamId":"*") permission from managing sub-accesses correctly
 
+- Remove some chown -R commands in our boot scripts, since it had the effect of delaying the start of the core node processes, for example if the data folder contains a lot of files (attachments). From now on, the recommendation is to run these commands independently in a sanitization script when installing or updating of the platform.
 
 ## 1.2.X
 

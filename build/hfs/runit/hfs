@@ -4,9 +4,6 @@ set -e
 
 cd /app/bin/dist/components/hfs-server
 
-chown -R app:app /app/data/
-chown -R app:app /app/log/
-
 # Sets $num_procs to 2 or the value of $NUM_PROCS, if set.
 if [ -z ${NUM_PROCS+x} ]
 then

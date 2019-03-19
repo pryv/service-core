@@ -4,9 +4,6 @@ set -e
 
 cd /app/bin/dist/components/api-server
 
-chown -R app:app /app/data/
-chown -R app:app /app/log/
-
 # Migrate storage
 chpst -u app ./bin/migrate --config /app/conf/core.json
 
