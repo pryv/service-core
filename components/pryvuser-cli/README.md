@@ -16,52 +16,9 @@ $ pryv-cli delete-user jsmith
 
 ### Setup
 
-**pryv-cli** is meant to run on a Pryv.IO 'core' machine. We'll assume that 
-your installation is based on docker and runs - among other things - a 'mongodb' 
-and a 'influxdb' instance. 
-
-The 'core' machine should also have a configuration directory where all Pryv.IO
-configuration files reside. The following instructions assume that these files 
-are located below a PRYVIO_BASE_DIR. 
-
-Also, note that the version of the pryv/cli docker image,
-referred to as ${LATEST_VERSION} below, has to match the version
-of the pryv/core docker image currently deployed.
-
-Run this command to find the backend network bridge for the Pryv.IO 
-installation:
-
-```shell
-$ docker network ls
-```
-
-This will list a few networks; the network you're looking for combines the 
-name for your installation with the postfix '**_backend**'. We refer to this network
-as NETWORK in the following instructions.
-
-We further assume that you hold a valid Pryv.IO license and that you're 
-authorised to operate on the machine. Some operations - especially deleting 
-users - are permanent. Please exercise proper care. 
-
-The easiest way to run **pryv-cli** is through a docker container. To make this 
-easier in day to day life, here's a useful shell alias: 
-
-```shell
-$ alias pryv-cli='docker run --read-only \
-  -v ${PRYVIO_BASE_DIR}/core:/app/conf/:ro \
-  -v ${PRYVIO_BASE_DIR}/core/core/data/:/app/data/ \
-  --network ${NETWORK} -ti \
-  pryvsa-docker-release.bintray.io/pryv/cli:${LATEST_VERSION} $*'
-```
-
-With this, you can invoke **pryv-cli** like so: 
-
-```shell
-$ pryv-cli -h
-```
-
-The first time you run it, it will download the docker image from the distribution
-platform; time to grab a coffee! All subsequent runs will be instant. 
+For a setup in our docker environment, see the following instructions:
+  - [cluster](https://github.com/pryv/config-template-pryv.io/blob/master/pryv.io/cluster/delete-user.md)
+  - [single-node](https://github.com/pryv/config-template-pryv.io/blob/master/pryv.io/single%20node/delete-user.md)
 
 ### Delete User
 
