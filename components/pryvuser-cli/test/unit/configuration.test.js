@@ -17,9 +17,9 @@ describe('Configuration', () => {
         const config = await Configuration.load(fixture);
 
         assert.strictEqual(config.coreConfigPath(), 
-          path.join(fixture, 'conf/core/conf/core.json'));
+          path.join(fixture, 'core/conf/core.json'));
         assert.strictEqual(config.hfsConfigPath(), 
-          path.join(fixture, 'conf/hfs/conf/hfs.json'));
+          path.join(fixture, 'hfs/conf/hfs.json'));
       });
     });
   });

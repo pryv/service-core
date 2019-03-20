@@ -24,6 +24,10 @@ The 'core' machine should also have a configuration directory where all Pryv.IO
 configuration files reside. The following instructions assume that these files 
 are located below a PRYVIO_BASE_DIR. 
 
+Also, note that the version of the pryv/cli docker image,
+refered to ${LATEST_VERSION} below, has to match the version
+of the pryv/core docker image currently deployed.
+
 Run this command to find the backend network bridge for the Pryv.IO 
 installation:
 
@@ -44,10 +48,10 @@ easier in day to day life, here's a useful shell alias:
 
 ```shell
 $ alias pryv-cli='docker run --read-only \
-  -v ${PRYVIO_BASE_DIR}:/app/conf/:ro \
-  -v ${PRYVIO_BASE_DIR}/conf/core/data/:/app/data/ \
+  -v ${PRYVIO_BASE_DIR}/core:/app/conf/:ro \
+  -v ${PRYVIO_BASE_DIR}/core/core/data/:/app/data/ \
   --network ${NETWORK} -ti \
-  pryvsa-docker-release.bintray.io/pryv/cli:1.3.35 $*'
+  pryvsa-docker-release.bintray.io/pryv/cli:${LATEST_VERSION} $*'
 ```
 
 With this, you can invoke **pryv-cli** like so: 

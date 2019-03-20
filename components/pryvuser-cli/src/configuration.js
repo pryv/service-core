@@ -22,11 +22,11 @@ class Configuration {
   /// 
   static async load(basePath: string): Promise<Configuration> {
     const hfsConfigPath = tryFind('hfs', basePath, [
-      'conf/hfs/conf/hfs.json',
+      'hfs/conf/hfs.json',
     ]);
 
     const coreConfigPath = tryFind('core', basePath, [
-      'conf/core/conf/core.json',
+      'core/conf/core.json',
     ]);
     
 
