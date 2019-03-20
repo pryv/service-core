@@ -25,8 +25,9 @@ module.exports = function (expressApp: express$Application, api: any, settings: 
   const sessionMaxAge: number = settings.get('auth.sessionMaxAge').num() || ms14days;
   const ssoCookieDomain: string = settings.get('auth.ssoCookieDomain').str() || settings.get('http.ip').str();
   const ssoCookieSignSecret: string = settings.get('auth.ssoCookieSignSecret').str() || 'Hallowed Be Thy Name, O Node';
-  const ssoCookieSecure: boolean = process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'test';
+  const ssoCookieSecure: boolean = process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'test' ;
   const ssoIsWhoamiActivated: boolean = settings.get('deprecated.auth.ssoIsWhoamiActivated').bool();
+  const ssoHttpOnly: boolean = true ;
 
   // Returns true if the given `obj` has all of the property values identified
   // by the names contained in `keys`.
@@ -47,14 +48,14 @@ module.exports = function (expressApp: express$Application, api: any, settings: 
       maxAge: sessionMaxAge,
       secure: ssoCookieSecure,
       signed: true,
-      httpOnly: false
+      httpOnly: ssoHttpOnly
     });
   }
   function clearSSOCookie(res) {
     res.clearCookie('sso', {
       domain: ssoCookieDomain,
       secure: ssoCookieSecure,
-      httpOnly: false
+      httpOnly: ssoHttpOnly
     });
   }
   function defineRoutes(router) {
@@ -66,6 +67,8 @@ module.exports = function (expressApp: express$Application, api: any, settings: 
       }
 
       var ssoCookie = req.signedCookies.sso;
+
+
       if (! ssoCookie || typeof ssoCookie !== 'object') {
         return next(errors.invalidCredentials('Not signed-on'));
       }

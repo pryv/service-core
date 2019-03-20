@@ -3,7 +3,6 @@
 set -e
 
 cd /app/bin/dist/components/previews-server
-chown app:app /app/log/
 
 export NODE_ENV=production
 export NODE_PATH=/app/bin/dist/

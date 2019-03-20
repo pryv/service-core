@@ -545,6 +545,13 @@ describe('auth', function() {
             var setCookie = res.headers['set-cookie'];
             should.exist(setCookie);
             setCookie.length.should.eql(1);
+            // cookie properties
+            var cookieProps = setCookie[0].split('; ');
+            cookieProps.should.containEql('HttpOnly');
+            /** test removed as long as superagent complies to not sending back "Unsecure" cookies **/
+            // cookieProps.should.containEql('Secure');
+
+            // sso properties
             var parsed = cookie.parse(setCookie[0]);
             assert.property(parsed, 'sso');
             var jsonMatch = /\{.+\}/.exec(parsed.sso);
