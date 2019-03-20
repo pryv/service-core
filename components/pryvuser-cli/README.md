@@ -25,7 +25,7 @@ configuration files reside. The following instructions assume that these files
 are located below a PRYVIO_BASE_DIR. 
 
 Also, note that the version of the pryv/cli docker image,
-refered to ${LATEST_VERSION} below, has to match the version
+referred to as ${LATEST_VERSION} below, has to match the version
 of the pryv/core docker image currently deployed.
 
 Run this command to find the backend network bridge for the Pryv.IO 
