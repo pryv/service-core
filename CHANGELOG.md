@@ -49,6 +49,8 @@
 
 - Remove some chown -R commands in our boot scripts, since it had the effect of delaying the start of the core node processes, for example if the data folder contains a lot of files (attachments). From now on, the recommendation is to run these commands independently in a sanitization script when installing or updating of the platform.
 
+- Add `httpOnly` flag to server-side cookie sent in response to successful `/auth/login` request.
+
 ## 1.2.X
 
 - Fix login with Firefox (and other browsers using Referer but no Origin)
