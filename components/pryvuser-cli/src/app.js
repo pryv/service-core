@@ -31,7 +31,6 @@ function setupCommander(): any {
   const program = require('commander');
 
   program
-    .version('1.3.0')
     .option('-n, --no-interaction', 'Runs without prompting for confirmation.');
 
   // Register all subcommands in the list below. The files must export a class
