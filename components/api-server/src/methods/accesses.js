@@ -388,7 +388,8 @@ module.exports = function produceAccessesApiMethods(
       function (err, updatedAccess) {
         if (err != null) {
           // expecting a duplicate error
-          if (err.duplicateIndex == null) {
+          const duplicate = err.duplicateIndex; 
+          if (duplicate == null) {
             return next(errors.unexpectedError(err));
           }
 

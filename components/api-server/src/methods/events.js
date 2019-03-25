@@ -309,7 +309,8 @@ module.exports = function (
       context.user, context.content, function (err, newEvent) {
         if (err != null) {
           // expecting a duplicate error
-          if (err.duplicateIndex == null) {
+          const duplicate = err.duplicateIndex;
+          if (duplicate == null) {
             return next(errors.unexpectedError(err));
           }
           return next(errors.itemAlreadyExists('event', {id: params.id}, err));

@@ -207,7 +207,8 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
       function (err, updatedStream) {
         if (err != null) {
           // duplicate error
-          if (err.duplicateIndex != null) {
+          const duplicate = err.duplicateIndex;
+          if (duplicate != null) {
             return next(errors.itemAlreadyExists(
               'sibling stream', {name: params.update.name}, err
             ));

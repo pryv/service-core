@@ -80,10 +80,11 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
       // Access not found, creating it
       else {
         createAccess(accessData, context, (err) => {
-          if (err !=null) {
+          if (err != null) {
             // Concurrency issue, the access is already created
             // by a simultaneous login, retrieving and updating it
-            if (err.duplicateIndex != null) {
+            const duplicate = err.duplicateIndex;
+            if (duplicate != null) {
               findAccess(context, (err, access) => {
                 if (err || access == null) { return next(errors.unexpectedError(err)); }
                 result.token = access.token;
