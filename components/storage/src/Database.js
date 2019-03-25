@@ -520,8 +520,10 @@ class Database {
   static handleDuplicateError(err: ?MongoDBError) {
     if (err != null && err.errmsg != null && this.isDuplicateError(err)) {
       const match = err.errmsg.match(/index: (.+) dup key:/);
-      const index = Array.isArray(match) && match.length >= 2 ?
-        match[1]: 'unmatched duplicate index';
+      let index = 'unmatched duplicate index';
+      if (Array.isArray(match) && match.length >= 2) {
+        index = match[1];
+      }
       err.duplicateIndex = index;
     }
   }
