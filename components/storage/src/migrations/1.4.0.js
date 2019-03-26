@@ -77,7 +77,7 @@ module.exports = function (context, callback) {
             return done(err);
           }
 
-          context.logInfo('Data version is now 1.3.40');
+          context.logInfo('Data version is now 1.4.0');
           done();
         });
       });
@@ -136,7 +136,7 @@ module.exports = function (context, callback) {
         function cleanDest(next) {
           if (counts == 0) { return next(); }
           destination.deleteMany({'userId': user._id},function (err, res) {
-            next(err)
+            next(err);
           });
         },
 
