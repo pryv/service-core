@@ -519,6 +519,8 @@ class Database {
 
   static handleDuplicateError(err: ?MongoDBError) {
     if (err != null && err.errmsg != null && this.isDuplicateError(err)) {
+      // This check depends on the MongoDB storage engine
+      // We assume WiredTiger here (and not MMapV1).
       const match = err.errmsg.match(/index: (.+) dup key:/);
       let index = 'unmatched duplicate index';
       if (Array.isArray(match) && match.length >= 2) {
