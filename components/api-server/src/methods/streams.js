@@ -146,12 +146,10 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         if (duplicate != null) {
           if (duplicate.includes('_id_')) {
             return next(errors.itemAlreadyExists(
-              'stream', {id: params.id}, err
-            ));
+              'stream', {id: params.id}, err));
           } else {
             return next(errors.itemAlreadyExists(
-              'sibling stream', {name: params.name}, err
-            ));
+              'sibling stream', {name: params.name}, err));
           }
         }
         // unknown parent stream error
