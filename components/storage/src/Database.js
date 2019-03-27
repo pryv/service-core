@@ -512,7 +512,7 @@ class Database {
   // class utility functions
 
   static isDuplicateError(err: ?MongoDBError) {
-    if (! err) { return false; }
+    if (err == null) { return false; }
     var errorCode = err.code || (err.lastErrorObject ? err.lastErrorObject.code : null);
     return errorCode === 11000 || errorCode === 11001;
   }
