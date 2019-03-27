@@ -115,9 +115,12 @@ module.exports = function (api, userFollowedSlicesStorage, notifications, storag
       return errors.unexpectedError(dbError);
     }
     // assert: dbError isDuplicateError
-    const nameKeyDuplicate = duplicate.match(/^name/);
-    const conflictingKeys = nameKeyDuplicate ?
-      {name: params.name} : { url: params.url, accessToken: params.accessToken };
+    let conflictingKeys;
+    if (duplicate.match(/^name/)) {
+      conflictingKeys = {name: params.name};
+    } else {
+      conflictingKeys = { url: params.url, accessToken: params.accessToken };
+    }
     return errors.itemAlreadyExists(
       'followed slice', conflictingKeys, dbError
     );
