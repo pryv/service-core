@@ -2,7 +2,7 @@
 
 ### 1.4.4
 
-- Events, Streams, Accesses, Profiles and FollowedSlices are now stored in single collections on MongoDB. This results in stable RAM usage on `core` machines instead of growing linearly with the user count in the previous data storage model.
+- Events, Streams, Accesses, Profiles and FollowedSlices are now stored in single collections on MongoDB. This results in smaller per-user RAM usage.
 
 ## 1.3.X
 
