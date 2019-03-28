@@ -547,7 +547,7 @@ type MongoDBError = {
   errmsg?: string,
   code?: number, 
   lastErrorObject?: MongoDBError,
-  duplicateIndex?: string,
+  isDuplicate?: (key: string) => boolean,
 }
 
 type DatabaseCallback = (err?: Error | null, result?: mixed) => mixed;
