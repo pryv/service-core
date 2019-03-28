@@ -521,12 +521,15 @@ class Database {
     if (err != null && err.errmsg != null && this.isDuplicateError(err)) {
       // This check depends on the MongoDB storage engine
       // We assume WiredTiger here (and not MMapV1).
-      const match = err.errmsg.match(/index: (.+) dup key:/);
-      let index = 'unmatched duplicate index';
-      if (Array.isArray(match) && match.length >= 2) {
-        index = match[1];
-      }
-      err.duplicateIndex = index;
+      const matching = err.errmsg.match(/index:(.+) dup key:/);
+      err.isDuplicate = (key) => {
+        if (!Array.isArray(matching) || matching.length < 2) {
+          // Cannot find duplicate key since the index field did not match the expected format.
+          return false;
+        }
+        const matchingKeys = matching[1];
+        return matchingKeys.includes(` ${key}`) || matchingKeys.includes(`_${key}_`);
+      };
     }
   }
 
