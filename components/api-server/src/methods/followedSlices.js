@@ -110,13 +110,12 @@ module.exports = function (api, userFollowedSlicesStorage, notifications, storag
    */
   function getCreationOrUpdateError(dbError, params) {
     // expecting duplicate error
-    const duplicate = dbError.duplicateIndex;
-    if (duplicate == null) {
+    if (dbError.isDuplicate == null) {
       return errors.unexpectedError(dbError);
     }
     // assert: dbError isDuplicateError
     let conflictingKeys;
-    if (duplicate.match(/^name/)) {
+    if (dbError.isDuplicate('name')) {
       conflictingKeys = {name: params.name};
     } else {
       conflictingKeys = { url: params.url, accessToken: params.accessToken };

@@ -237,12 +237,11 @@ module.exports = function produceAccessesApiMethods(
         streamsRepository.insertOne(context.user, newStream, function (err) {
           if (err != null) {
             // expecting a duplicate error
-            const duplicate = err.duplicateIndex;
-            if (duplicate == null) {
+            if (err.isDuplicate == null) {
               return streamCallback(errors.unexpectedError(err));
             }
 
-            if (duplicate.includes('_id_')) {
+            if (err.isDuplicate('_id_')) {
               // stream already exists, log & proceed
               logger.info('accesses.create: stream "' + newStream.id + '" already exists: ' +
                   err.message);
@@ -279,14 +278,13 @@ module.exports = function produceAccessesApiMethods(
     accessesRepository.insertOne(context.user, params, function (err, newAccess) {
       if (err != null) {
         // expecting a duplicate error
-        const duplicate = err.duplicateIndex;
-        if (duplicate == null) {
+        if (err.isDuplicate == null) {
           return next(errors.unexpectedError(err));
         }
 
         let conflictingKeys;
         
-        if (duplicate.includes('token')) {
+        if (err.isDuplicate('token')) {
           conflictingKeys = { token: '(hidden)' };
         } else {
           conflictingKeys = { 
@@ -388,8 +386,7 @@ module.exports = function produceAccessesApiMethods(
       function (err, updatedAccess) {
         if (err != null) {
           // expecting a duplicate error
-          const duplicate = err.duplicateIndex; 
-          if (duplicate == null) {
+          if (err.isDuplicate == null) {
             return next(errors.unexpectedError(err));
           }
 

@@ -83,8 +83,7 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
           if (err != null) {
             // Concurrency issue, the access is already created
             // by a simultaneous login, retrieving and updating it
-            const duplicate = err.duplicateIndex;
-            if (duplicate != null) {
+            if (err.isDuplicate != null) {
               findAccess(context, (err, access) => {
                 if (err || access == null) { return next(errors.unexpectedError(err)); }
                 result.token = access.token;

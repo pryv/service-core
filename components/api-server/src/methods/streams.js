@@ -142,9 +142,8 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     userStreamsStorage.insertOne(context.user, params, function (err, newStream) {
       if (err != null) {
         // duplicate error
-        const duplicate = err.duplicateIndex;
-        if (duplicate != null) {
-          if (duplicate.includes('_id_')) {
+        if (err.isDuplicate != null) {
+          if (err.isDuplicate('_id_')) {
             return next(errors.itemAlreadyExists(
               'stream', {id: params.id}, err));
           } else {
@@ -205,8 +204,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
       function (err, updatedStream) {
         if (err != null) {
           // duplicate error
-          const duplicate = err.duplicateIndex;
-          if (duplicate != null) {
+          if (err.isDuplicate != null) {
             return next(errors.itemAlreadyExists(
               'sibling stream', {name: params.update.name}, err
             ));
