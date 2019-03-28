@@ -19,8 +19,8 @@ ApplyEventsFromDbStream.prototype._transform = function (event, encoding, callba
     delete event.endTime;
 
     // SingleCollectionsMode - start
-    delete event.userId; // delete all event.userId found
-    if (event.deleted == null) { // due to the global change involved
+    delete event.userId;
+    if (event.deleted == null) {
       delete event.deleted;
     }
     // SingleCollectionsModes - end

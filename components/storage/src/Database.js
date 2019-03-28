@@ -524,8 +524,7 @@ class Database {
    */
   totalSize(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
     if (collectionInfo.useUserId) {
-      this.countAll(collectionInfo, callback);
-      return;
+      return this.countAll(collectionInfo, callback);
     }
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.stats(function (err, stats) {
@@ -543,9 +542,9 @@ class Database {
    */
   dropCollection(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
     if (collectionInfo.useUserId) {
-      this.deleteMany(collectionInfo, {}, callback);
+      return this.deleteMany(collectionInfo, {}, callback);
     } else {
-      this.getCollectionSafe(collectionInfo, callback, collection => {
+      return this.getCollectionSafe(collectionInfo, callback, collection => {
         collection.drop(callback);
       });
     }
