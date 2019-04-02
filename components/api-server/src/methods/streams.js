@@ -143,7 +143,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
       if (err != null) {
         // Duplicate error
         if (err.isDuplicate != null) {
-          if (err.isDuplicate('_id_')) {
+          if (err.isDuplicate('id')) {
             return next(errors.itemAlreadyExists(
               'stream', {id: params.id}, err));
           }

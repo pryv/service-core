@@ -241,7 +241,7 @@ module.exports = function produceAccessesApiMethods(
               return streamCallback(errors.unexpectedError(err));
             }
 
-            if (err.isDuplicate('_id_')) {
+            if (err.isDuplicate('id')) {
               // Stream already exists, log & proceed
               logger.info('accesses.create: stream "' + newStream.id + '" already exists: ' +
                   err.message);
