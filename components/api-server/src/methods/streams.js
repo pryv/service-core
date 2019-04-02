@@ -141,23 +141,24 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   function createStream(context, params, result, next) {
     userStreamsStorage.insertOne(context.user, params, function (err, newStream) {
       if (err != null) {
-        // duplicate error
+        // Duplicate error
         if (err.isDuplicate != null) {
           if (err.isDuplicate('_id_')) {
             return next(errors.itemAlreadyExists(
               'stream', {id: params.id}, err));
-          } else {
+          }
+          if (err.isDuplicate('name')) {
             return next(errors.itemAlreadyExists(
               'sibling stream', {name: params.name}, err));
           }
         }
-        // unknown parent stream error
-        if (params.parentId != null) {
+        // Unknown parent stream error
+        else if (params.parentId != null) {
           return next(errors.unknownReferencedResource(
             'parent stream', 'parentId', params.parentId, err
           ));
         }
-        // any other error
+        // Any other error
         return next(errors.unexpectedError(err));
       }
 

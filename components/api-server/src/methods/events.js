@@ -308,7 +308,7 @@ module.exports = function (
     userEventsStorage.insertOne(
       context.user, context.content, function (err, newEvent) {
         if (err != null) {
-          // expecting a duplicate error
+          // Expecting a duplicate error
           if (err.isDuplicate == null) {
             return next(errors.unexpectedError(err));
           }
