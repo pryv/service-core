@@ -236,28 +236,22 @@ module.exports = function produceAccessesApiMethods(
         
         streamsRepository.insertOne(context.user, newStream, function (err) {
           if (err != null) {
-            // Expecting a duplicate error
-            if (err.isDuplicate == null) {
-              return streamCallback(errors.unexpectedError(err));
-            }
-
-            if (err.isDuplicate('id')) {
+            // Duplicate errors
+            if (err.isDuplicateIndex('id')) {
               // Stream already exists, log & proceed
               logger.info('accesses.create: stream "' + newStream.id + '" already exists: ' +
                   err.message);
             }
-            
-            else if (err.isDuplicate('name')) {
+            else if (err.isDuplicateIndex('name')) {
               // Not OK: stream exists with same unique key but different id
               return streamCallback(errors.itemAlreadyExists(
                 'stream', {name: newStream.name}, err
               ));
             }
-
             else {
-              // Unexpected duplicate
+              // Any other error
               return streamCallback(errors.unexpectedError(err));
-            } 
+            }
           }
           streamCallback();
         });
@@ -285,21 +279,17 @@ module.exports = function produceAccessesApiMethods(
     accessesRepository.insertOne(context.user, params, function (err, newAccess) {
       if (err != null) {
         // Duplicate errors
-        if (err.isDuplicate != null) {
-          
-          if (err.isDuplicate('token')) {
-            return next(errors.itemAlreadyExists('access', { token: '(hidden)' }));
-          } 
-          
-          if (err.isDuplicate('type') && err.isDuplicate('name') && err.isDuplicate('deviceName')) {
-            return next(errors.itemAlreadyExists('access', { 
-              type: params.type, 
-              name: params.name,
-              deviceName: params.deviceName,
-            }));
-          }
+        if (err.isDuplicateIndex('token')) {
+          return next(errors.itemAlreadyExists('access', { token: '(hidden)' }));
         }
-        // Any other errors
+        if (err.isDuplicateIndex('type') && err.isDuplicateIndex('name') && err.isDuplicateIndex('deviceName')) {
+          return next(errors.itemAlreadyExists('access', { 
+            type: params.type,
+            name: params.name,
+            deviceName: params.deviceName,
+          }));
+        }
+        // Any other error
         return next(errors.unexpectedError(err));
       }
 
@@ -392,12 +382,12 @@ module.exports = function produceAccessesApiMethods(
       function (err, updatedAccess) {
         if (err != null) {
           // Expecting a duplicate error
-          if (err.isDuplicate == null) {
-            return next(errors.unexpectedError(err));
+          if (err.isDuplicate) {
+            return next(errors.itemAlreadyExists('access',
+              { type: params.resource.type, name: params.update.name }));
           }
-
-          return next(errors.itemAlreadyExists('access',
-            { type: params.resource.type, name: params.update.name }));
+          // Any other error
+          return next(errors.unexpectedError(err));
         }
 
         // cleanup internal fields

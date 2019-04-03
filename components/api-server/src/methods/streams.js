@@ -141,13 +141,13 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   function createStream(context, params, result, next) {
     userStreamsStorage.insertOne(context.user, params, function (err, newStream) {
       if (err != null) {
-        // Duplicate error
-        if (err.isDuplicate != null) {
-          if (err.isDuplicate('id')) {
+        // Duplicate errors
+        if (err.isDuplicate) {
+          if (err.isDuplicateIndex('id')) {
             return next(errors.itemAlreadyExists(
               'stream', {id: params.id}, err));
           }
-          if (err.isDuplicate('name')) {
+          if (err.isDuplicateIndex('name')) {
             return next(errors.itemAlreadyExists(
               'sibling stream', {name: params.name}, err));
           }
@@ -204,19 +204,19 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     userStreamsStorage.updateOne(context.user, {id: params.id}, params.update,
       function (err, updatedStream) {
         if (err != null) {
-          // duplicate error
-          if (err.isDuplicate != null) {
+          // Duplicate error
+          if (err.isDuplicate) {
             return next(errors.itemAlreadyExists(
               'sibling stream', {name: params.update.name}, err
             ));
           }
-          // unknown parent stream error
+          // Unknown parent stream error
           if (params.update.parentId != null) {
             return next(errors.unknownReferencedResource(
               'parent stream', 'parentId', params.update.parentId, err
             ));
           }
-          // any other error
+          // Any other error
           return next(errors.unexpectedError(err));
         }
 

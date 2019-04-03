@@ -517,20 +517,20 @@ class Database {
     return errorCode === 11000 || errorCode === 11001;
   }
 
-  static handleDuplicateError(err: ?MongoDBError) {
-    if (err != null && err.errmsg != null && this.isDuplicateError(err)) {
-      // This check depends on the MongoDB storage engine
-      // We assume WiredTiger here (and not MMapV1).
-      const matching = err.errmsg.match(/index:(.+) dup key:/);
-      err.isDuplicate = (key) => {
-        if (!Array.isArray(matching) || matching.length < 2) {
-          // Cannot find duplicate key since the index field did not match the expected format.
-          return false;
+  static handleDuplicateError(err: MongoDBError) {
+    err.isDuplicate = this.isDuplicateError(err);
+    err.isDuplicateIndex = (key) => {
+      if (err != null && err.errmsg != null && err.isDuplicate) {
+        // This check depends on the MongoDB storage engine
+        // We assume WiredTiger here (and not MMapV1).
+        const matching = err.errmsg.match(/index:(.+) dup key:/);
+        if (Array.isArray(matching) && matching.length >= 2) {
+          const matchingKeys = matching[1];
+          return matchingKeys.includes(` ${key}`) || matchingKeys.includes(`_${key}_`);
         }
-        const matchingKeys = matching[1];
-        return matchingKeys.includes(` ${key}`) || matchingKeys.includes(`_${key}_`);
-      };
-    }
+      }
+      return false;
+    };
   }
 
   /// Closes this database connection. After calling this, all other methods 
@@ -547,7 +547,8 @@ type MongoDBError = {
   errmsg?: string,
   code?: number, 
   lastErrorObject?: MongoDBError,
-  isDuplicate?: (key: string) => boolean,
+  isDuplicate?: boolean,
+  isDuplicateIndex?: (key: string) => boolean,
 }
 
 type DatabaseCallback = (err?: Error | null, result?: mixed) => mixed;

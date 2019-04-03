@@ -83,7 +83,7 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
           if (err != null) {
             // Concurrency issue, the access is already created
             // by a simultaneous login, retrieving and updating it
-            if (err.isDuplicate != null) {
+            if (err.isDuplicate) {
               findAccess(context, (err, access) => {
                 if (err || access == null) { return next(errors.unexpectedError(err)); }
                 result.token = access.token;
@@ -91,6 +91,7 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
                 updateAccess(accessData, context, next);
               });
             } else {
+              // Any other error
               return next(errors.unexpectedError(err));
             }
           } else {

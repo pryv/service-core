@@ -97,14 +97,12 @@ module.exports = function (
   }
 
   function handleCreationErrors (err, params) {
-    // Expecting duplicate error
-    if (err.isDuplicate != null) {
-      if (err.isDuplicate('email')) {
-        return errors.itemAlreadyExists('user', { email: params.email }, err);
-      }
-      if (err.isDuplicate('username')) {
-        return errors.itemAlreadyExists('user', { username: params.username }, err);
-      }
+    // Duplicate errors
+    if (err.isDuplicateIndex('email')) {
+      return errors.itemAlreadyExists('user', { email: params.email }, err);
+    }
+    if (err.isDuplicateIndex('username')) {
+      return errors.itemAlreadyExists('user', { username: params.username }, err);
     }
     // Any other error
     return errors.unexpectedError(err, 'Unexpected error while saving user.');

@@ -109,17 +109,14 @@ module.exports = function (api, userFollowedSlicesStorage, notifications, storag
    * Returns the error to propagate given `dbError` and `params` as input. 
    */
   function getCreationOrUpdateError(dbError, params) {
-    // Expecting duplicate error
-    if (dbError.isDuplicate != null) {
-      if (dbError.isDuplicate('name')) {
-        return errors.itemAlreadyExists('followed slice',
-          {name: params.name}, dbError);
-      } 
-      
-      if (dbError.isDuplicate('username') && dbError.isDuplicate('accessToken')) {
-        return errors.itemAlreadyExists('followed slice',
-          { url: params.url, accessToken: params.accessToken }, dbError);
-      }
+    // Duplicate errors
+    if (dbError.isDuplicateIndex('name')) {
+      return errors.itemAlreadyExists('followed slice',
+        {name: params.name}, dbError);
+    } 
+    if (dbError.isDuplicateIndex('username') && dbError.isDuplicateIndex('accessToken')) {
+      return errors.itemAlreadyExists('followed slice',
+        { url: params.url, accessToken: params.accessToken }, dbError);
     }
     // Any other error
     return errors.unexpectedError(dbError);

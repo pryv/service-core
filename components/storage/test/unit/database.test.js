@@ -57,15 +57,19 @@ describe('Database', () => {
       });
     });
 
-    it('must augment mongo duplicate errors with a duplicate check function', (done) => {
+    it('must augment mongo duplicate errors with duplicate check utilities', (done) => {
       database.insertOne(collectionInfo, {name: 'toto', username: 'mrtoto', age: 22}, (err) => {
         assert.isNotNull(err);
-        // FLOW: we ensure that err contains the isDuplicate function with assert
+        // FLOW: we ensure that err contains the isDuplicate boolean with assert
         const isDuplicate = err.isDuplicate;
-        assert.isFunction(isDuplicate);
-        assert.isTrue(isDuplicate('name'));
-        assert.isTrue(isDuplicate('username'));
-        assert.isFalse(isDuplicate('age'));
+        assert.isBoolean(isDuplicate);
+        assert.isTrue(isDuplicate);
+        // FLOW: we ensure that err contains the isDuplicateIndex function with assert
+        const isDuplicateIndex = err.isDuplicateIndex;
+        assert.isFunction(isDuplicateIndex);
+        assert.isTrue(isDuplicateIndex('name'));
+        assert.isTrue(isDuplicateIndex('username'));
+        assert.isFalse(isDuplicateIndex('age'));
         done();
       });
     });
