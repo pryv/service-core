@@ -206,12 +206,14 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         if (err != null) {
           // Duplicate error
           if (err.isDuplicate) {
-            return next(errors.itemAlreadyExists(
-              'sibling stream', {name: params.update.name}, err
-            ));
+            if (err.isDuplicateIndex('name')) {
+              return next(errors.itemAlreadyExists(
+                'sibling stream', {name: params.update.name}, err
+              ));
+            }
           }
           // Unknown parent stream error
-          if (params.update.parentId != null) {
+          else if (params.update.parentId != null) {
             return next(errors.unknownReferencedResource(
               'parent stream', 'parentId', params.update.parentId, err
             ));

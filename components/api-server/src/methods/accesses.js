@@ -382,7 +382,7 @@ module.exports = function produceAccessesApiMethods(
       function (err, updatedAccess) {
         if (err != null) {
           // Expecting a duplicate error
-          if (err.isDuplicate) {
+          if (err.isDuplicateIndex('type') && err.isDuplicateIndex('name')) {
             return next(errors.itemAlreadyExists('access',
               { type: params.resource.type, name: params.update.name }));
           }
