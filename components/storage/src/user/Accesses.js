@@ -88,8 +88,8 @@ Accesses.prototype.delete = function (user, query, callback) {
   const update = {
     $set: {deleted: new Date()}
   };
-  this.database.updateMany(this.getCollectionInfo(user), this.applyQueryToDB(query), update,
-      callback);
+  this.database.updateMany(this.getCollectionInfo(user),
+    this.applyQueryToDB(query), update, callback);
 };
 
 /**

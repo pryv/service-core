@@ -5,7 +5,6 @@ var errors = require('components/errors').factory,
     methodsSchema = require('../schema/streamsMethods'),
     streamSchema = require('../schema/stream'),
     slugify = require('slug'),
-    storage = require('components/storage'),
     string = require('./helpers/string'),
     utils = require('components/utils'),
     treeUtils = utils.treeUtils,
@@ -31,15 +30,15 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   // COMMON
 
   api.register('streams.*',
-      commonFns.loadAccess(storageLayer));
+    commonFns.loadAccess(storageLayer));
 
   // RETRIEVAL
 
   api.register('streams.get',
-      commonFns.getParamsValidation(methodsSchema.get.params),
-      applyDefaultsForRetrieval,
-      findAccessibleStreams,
-      includeDeletionsIfRequested);
+    commonFns.getParamsValidation(methodsSchema.get.params),
+    applyDefaultsForRetrieval,
+    findAccessibleStreams,
+    includeDeletionsIfRequested);
 
   function applyDefaultsForRetrieval(context, params, result, next) {
     _.defaults(params, {
@@ -95,21 +94,21 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     };
 
     userStreamsStorage.findDeletions(context.user, params.includeDeletionsSince, options,
-        function (err, deletions) {
-      if (err) { return next(errors.unexpectedError(err)); }
+      function (err, deletions) {
+        if (err) { return next(errors.unexpectedError(err)); }
 
-      result.streamDeletions = deletions;
-      next();
-    });
+        result.streamDeletions = deletions;
+        next();
+      });
   }
 
   // CREATION
 
   api.register('streams.create',
-      commonFns.getParamsValidation(methodsSchema.create.params),
-      applyDefaultsForCreation,
-      applyPrerequisitesForCreation,
-      createStream);
+    commonFns.getParamsValidation(methodsSchema.create.params),
+    applyDefaultsForCreation,
+    applyPrerequisitesForCreation,
+    createStream);
 
   function applyDefaultsForCreation(context, params, result, next) {
     _.defaults(params, {parentId: null});
@@ -141,24 +140,26 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
   function createStream(context, params, result, next) {
     userStreamsStorage.insertOne(context.user, params, function (err, newStream) {
-      if (err) {
-        if (storage.Database.isDuplicateError(err)) {
-          // HACK: relying on error text as nothing else available to differentiate
-          const apiError = err.message.indexOf('_id_') > 0 ?
-            errors.itemAlreadyExists(
-              'stream', {id: params.id}, err
-            ) :
-            errors.itemAlreadyExists(
-              'sibling stream', {name: params.name}, err
-            );
-          return next(apiError);
-        } else if (params.parentId != null) {
+      if (err != null) {
+        // Duplicate errors
+        if (err.isDuplicate) {
+          if (err.isDuplicateIndex('id')) {
+            return next(errors.itemAlreadyExists(
+              'stream', {id: params.id}, err));
+          }
+          if (err.isDuplicateIndex('name')) {
+            return next(errors.itemAlreadyExists(
+              'sibling stream', {name: params.name}, err));
+          }
+        }
+        // Unknown parent stream error
+        else if (params.parentId != null) {
           return next(errors.unknownReferencedResource(
             'parent stream', 'parentId', params.parentId, err
           ));
-        } else {
-          return next(errors.unexpectedError(err));
         }
+        // Any other error
+        return next(errors.unexpectedError(err));
       }
 
       result.stream = newStream;
@@ -170,10 +171,10 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   // UPDATE
 
   api.register('streams.update',
-      commonFns.getParamsValidation(methodsSchema.update.params),
-      commonFns.catchForbiddenUpdate(streamSchema('update'), updatesSettings.ignoreProtectedFields, logger),
-      applyPrerequisitesForUpdate,
-      updateStream);
+    commonFns.getParamsValidation(methodsSchema.update.params),
+    commonFns.catchForbiddenUpdate(streamSchema('update'), updatesSettings.ignoreProtectedFields, logger),
+    applyPrerequisitesForUpdate,
+    updateStream);
 
   function applyPrerequisitesForUpdate(context, params, result, next) {    
     // check stream
@@ -202,18 +203,23 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   function updateStream(context, params, result, next) {
     userStreamsStorage.updateOne(context.user, {id: params.id}, params.update,
       function (err, updatedStream) {
-        if (err) {
-          if (storage.Database.isDuplicateError(err)) {
-            return next(errors.itemAlreadyExists(
-              'sibling stream', {name: params.update.name}, err
-            ));
-          } else if (params.update.parentId != null) {
+        if (err != null) {
+          // Duplicate error
+          if (err.isDuplicate) {
+            if (err.isDuplicateIndex('name')) {
+              return next(errors.itemAlreadyExists(
+                'sibling stream', {name: params.update.name}, err
+              ));
+            }
+          }
+          // Unknown parent stream error
+          else if (params.update.parentId != null) {
             return next(errors.unknownReferencedResource(
               'parent stream', 'parentId', params.update.parentId, err
             ));
-          } else {
-            return next(errors.unexpectedError(err));
           }
+          // Any other error
+          return next(errors.unexpectedError(err));
         }
 
         result.stream = updatedStream;
@@ -225,9 +231,9 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   // DELETION
 
   api.register('streams.delete',
-      commonFns.getParamsValidation(methodsSchema.del.params),
-      applyPrerequisitesForDeletion,
-      deleteStream);
+    commonFns.getParamsValidation(methodsSchema.del.params),
+    applyPrerequisitesForDeletion,
+    deleteStream);
 
   function applyPrerequisitesForDeletion(context, params, result, next) {
     _.defaults(params, { mergeEventsWithParent: null });
@@ -236,7 +242,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     context.stream = treeUtils.findById(context.streams, params.id);
     if (! context.stream) {
       return process.nextTick(next.bind(null,
-          errors.unknownResource('stream', params.id)));
+        errors.unknownResource('stream', params.id)));
     }
     if (! context.canManageStream(context.stream.id)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
@@ -260,19 +266,19 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     context.updateTrackingProperties(updatedData);
 
     userStreamsStorage.updateOne(context.user, {id: params.id}, updatedData,
-        function (err, updatedStream) {
-      if (err) { return next(errors.unexpectedError(err)); }
+      function (err, updatedStream) {
+        if (err) { return next(errors.unexpectedError(err)); }
 
-      result.stream = updatedStream;
-      notifications.streamsChanged(context.user);
-      next();
-    });
+        result.stream = updatedStream;
+        notifications.streamsChanged(context.user);
+        next();
+      });
   }
 
   function deleteWithData(context, params, result, next) {
     let streamAndDescendantIds,
-      parentId,
-      hasLinkedEvents;
+        parentId,
+        hasLinkedEvents;
     async.series([
       function retrieveStreamIdsToDelete(stepDone) {
         userStreamsStorage.find(context.user, {}, null, function (err, streams) {

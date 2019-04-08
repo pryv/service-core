@@ -6,7 +6,6 @@ var utils = require('components/utils'),
     methodsSchema = require('../schema/eventsMethods'),
     eventSchema = require('../schema/event'),
     querying = require('./helpers/querying'),
-    storage = require('components/storage'),
     timestamp = require('unix-timestamp'),
     treeUtils = utils.treeUtils,
     _ = require('lodash'),
@@ -308,12 +307,13 @@ module.exports = function (
 
     userEventsStorage.insertOne(
       context.user, context.content, function (err, newEvent) {
-        if (err) {
-          if (storage.Database.isDuplicateError(err)) {
+        if (err != null) {
+          // Expecting a duplicate error
+          if (err.isDuplicateIndex('id')) {
             return next(errors.itemAlreadyExists('event', {id: params.id}, err));
-          } else {
-            return next(errors.unexpectedError(err));
           }
+          // Any other error
+          return next(errors.unexpectedError(err));
         }
 
         result.event = newEvent;

@@ -343,7 +343,12 @@ class Database {
    */
   insertOne(collectionInfo: CollectionInfo, item: Object, callback: DatabaseCallback) {
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.insertOne(item, {w: 1, j: true}, callback);
+      collection.insertOne(item, {w: 1, j: true}, (err, res) => {
+        if (err != null) {
+          Database.handleDuplicateError(err);
+        }
+        callback(err,res);
+      });
     });
   }
 
@@ -367,7 +372,12 @@ class Database {
    */
   updateOne(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.updateOne(query, update, {w: 1, j: true}, callback);
+      collection.updateOne(query, update, {w: 1, j: true}, (err, res) => {
+        if (err != null) {
+          Database.handleDuplicateError(err);
+        }
+        callback(err,res);
+      });
     });
   }
 
@@ -398,8 +408,10 @@ class Database {
   findOneAndUpdate(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.findOneAndUpdate(query, update, {returnOriginal: false}, function (err, r) {
-        if (err != null) return callback(err);
-        
+        if (err != null) {
+          Database.handleDuplicateError(err);
+          return callback(err);
+        }
         callback(null, r && r.value);
       });
     });
@@ -499,10 +511,26 @@ class Database {
 
   // class utility functions
 
-  static isDuplicateError(err: MongoDBError) {
-    if (! err) { return false; }
+  static isDuplicateError(err: ?MongoDBError) {
+    if (err == null) { return false; }
     var errorCode = err.code || (err.lastErrorObject ? err.lastErrorObject.code : null);
     return errorCode === 11000 || errorCode === 11001;
+  }
+
+  static handleDuplicateError(err: MongoDBError) {
+    err.isDuplicate = this.isDuplicateError(err);
+    err.isDuplicateIndex = (key) => {
+      if (err != null && err.errmsg != null && err.isDuplicate) {
+        // This check depends on the MongoDB storage engine
+        // We assume WiredTiger here (and not MMapV1).
+        const matching = err.errmsg.match(/index:(.+) dup key:/);
+        if (Array.isArray(matching) && matching.length >= 2) {
+          const matchingKeys = matching[1];
+          return matchingKeys.includes(` ${key}`) || matchingKeys.includes(`_${key}_`);
+        }
+      }
+      return false;
+    };
   }
 
   /// Closes this database connection. After calling this, all other methods 
@@ -516,8 +544,11 @@ class Database {
 module.exports = Database;
 
 type MongoDBError = {
+  errmsg?: string,
   code?: number, 
   lastErrorObject?: MongoDBError,
+  isDuplicate?: boolean,
+  isDuplicateIndex?: (key: string) => boolean,
 }
 
 type DatabaseCallback = (err?: Error | null, result?: mixed) => mixed;

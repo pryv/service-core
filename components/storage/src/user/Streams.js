@@ -86,7 +86,7 @@ Streams.prototype.insertOne = function (user, stream, callback) {
       this.findDeletion(user, {id: stream.id}, null, function (err, deletion) {
         if (err) { return stepDone(err); }
         if (! deletion) { return stepDone(); }
-	this.removeOne(user, {id: stream.id}, stepDone);
+        this.removeOne(user, {id: stream.id}, stepDone);
       }.bind(this));
     }.bind(this),
     function checkParent(stepDone) {
@@ -149,7 +149,7 @@ Streams.prototype.delete = function (user, query, callback) {
       modifiedBy: 1
     }
   };
-  this.database.updateMany(this.getCollectionInfo(user), this.applyQueryToDB(query), update,
-      callback);
+  this.database.updateMany(this.getCollectionInfo(user),
+    this.applyQueryToDB(query), update, callback);
 };
 
