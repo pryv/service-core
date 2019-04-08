@@ -451,15 +451,16 @@ BaseStorage.prototype.applyOptionsToDB = function(options) {
  */
 BaseStorage.prototype.addIdConvertion = function() {
   if (this.idConvertionSetupDone) return;
-  const idToItemIdToDB = converters.getRenamePropertyFn('id',this.converters.convertIdToItemId);
-  const itemIdToIdFromDB = converters.getRenamePropertyFn(this.converters.convertIdToItemId,'id');
-  if (this.converters.convertIdToItemId) {
+
+  if (this.converters.convertIdToItemId != null) {
+    const idToItemIdToDB = converters.getRenamePropertyFn('id', this.converters.convertIdToItemId);
+    const itemIdToIdFromDB = converters.getRenamePropertyFn(this.converters.convertIdToItemId, 'id');
     this.converters.itemToDB.unshift(idToItemIdToDB);
     this.converters.queryToDB.unshift(idToItemIdToDB);
     this.converters.itemFromDB.unshift(itemIdToIdFromDB);
   }
   this.idConvertionSetupDone = true;
-}
+};
 
 /**
  * @api private
