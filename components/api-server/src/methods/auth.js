@@ -1,5 +1,4 @@
 var commonFns = require('./helpers/commonFunctions'),
-    Database = require('components/storage').Database,
     utils = require('components/utils'),
     encryption = utils.encryption,
     errors = require('components/errors').factory,
@@ -81,10 +80,10 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
       // Access not found, creating it
       else {
         createAccess(accessData, context, (err) => {
-          if (err) {
+          if (err != null) {
             // Concurrency issue, the access is already created
             // by a simultaneous login, retrieving and updating it
-            if (Database.isDuplicateError(err)) {
+            if (err.isDuplicate) {
               findAccess(context, (err, access) => {
                 if (err || access == null) { return next(errors.unexpectedError(err)); }
                 result.token = access.token;
@@ -92,6 +91,7 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
                 updateAccess(accessData, context, next);
               });
             } else {
+              // Any other error
               return next(errors.unexpectedError(err));
             }
           } else {

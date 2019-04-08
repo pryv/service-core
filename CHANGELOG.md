@@ -57,6 +57,8 @@
 
 - Add `httpOnly` flag to server-side cookie sent in response to successful `/auth/login` request.
 
+- Refactor mongo duplicates management into storage layer and make the related checks consistent among all the api-server methods.
+
 ## 1.2.X
 
 - Fix login with Firefox (and other browsers using Referer but no Origin)

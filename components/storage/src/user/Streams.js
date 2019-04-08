@@ -160,7 +160,7 @@ Streams.prototype.delete = function (user, query, callback) {
       modifiedBy: 1
     }
   };
-  this.database.updateMany(this.getCollectionInfo(user), this.applyQueryToDB(query), update,
-      callback);
+  this.database.updateMany(this.getCollectionInfo(user),
+    this.applyQueryToDB(query), update, callback);
 };
 

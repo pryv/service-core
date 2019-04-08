@@ -1,8 +1,7 @@
 var async = require('async'),
     commonFns = require('./helpers/commonFunctions'),
     errors = require('components/errors').factory,
-    methodsSchema = require('../schema/followedSlicesMethods'),
-    storage = require('components/storage');
+    methodsSchema = require('../schema/followedSlicesMethods');
 
 /**
  * Followed slices methods implementations.
@@ -112,19 +111,17 @@ module.exports = function (api, userFollowedSlicesStorage, notifications, storag
    * Returns the error to propagate given `dbError` and `params` as input. 
    */
   function getCreationOrUpdateError(dbError, params) {
-    if (! storage.Database.isDuplicateError(dbError)) {
-      return errors.unexpectedError(dbError);
+    // Duplicate errors
+    if (dbError.isDuplicateIndex('name')) {
+      return errors.itemAlreadyExists('followed slice',
+        {name: params.name}, dbError);
+    } 
+    if (dbError.isDuplicateIndex('username') && dbError.isDuplicateIndex('accessToken')) {
+      return errors.itemAlreadyExists('followed slice',
+        { url: params.url, accessToken: params.accessToken }, dbError);
     }
-    // assert: dbError isDuplicateError
-    
-    const message = dbError.message; 
-    const nameKeyDuplicate = message.match(/index: userId_1_name_1 dup key:/);
-    
-    const conflictingKeys = nameKeyDuplicate ?
-      {name: params.name} : { url: params.url, accessToken: params.accessToken };
-    return errors.itemAlreadyExists(
-      'followed slice', conflictingKeys, dbError
-    );
+    // Any other error
+    return errors.unexpectedError(dbError);
   }
 
   // DELETION

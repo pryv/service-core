@@ -9,7 +9,6 @@ const APIError = require('components/errors').APIError;
 const errors = require('components/errors').factory;
 const ErrorIds = require('components/errors').ErrorIds;
 
-const Database = require('components/storage').Database;
 const treeUtils = require('components/utils').treeUtils;
 
 const commonFns = require('./helpers/commonFunctions');
@@ -236,19 +235,21 @@ module.exports = function produceAccessesApiMethods(
         context.initTrackingProperties(newStream);
         
         streamsRepository.insertOne(context.user, newStream, function (err) {
-          if (err) {
-            if (Database.isDuplicateError(err)) {
-              if (isDBDuplicateId(err)) {
-                // stream already exists, log & proceed
-                logger.info('accesses.create: stream "' + newStream.id + '" already exists: ' +
-                    err.message);
-              } else {
-                // not OK: stream exists with same unique key but different id
-                return streamCallback(errors.itemAlreadyExists(
-                  'stream', {name: newStream.name}, err
-                ));
-              }
-            } else {
+          if (err != null) {
+            // Duplicate errors
+            if (err.isDuplicateIndex('id')) {
+              // Stream already exists, log & proceed
+              logger.info('accesses.create: stream "' + newStream.id + '" already exists: ' +
+                  err.message);
+            }
+            else if (err.isDuplicateIndex('name')) {
+              // Not OK: stream exists with same unique key but different id
+              return streamCallback(errors.itemAlreadyExists(
+                'stream', {name: newStream.name}, err
+              ));
+            }
+            else {
+              // Any other error
               return streamCallback(errors.unexpectedError(err));
             }
           }
@@ -256,32 +257,6 @@ module.exports = function produceAccessesApiMethods(
         });
       }
     }
-  }
-
-  /**
-   * Returns `true` if the given error is a DB "duplicate key" error caused by a duplicate id.
-   * Returns `false` otherwise (e.g. if caused by another unique key like the name).
-   *
-   * @param {Error} dbError
-   */
-  function isDBDuplicateId(dbError) {
-    // HACK: relying on error text as nothing else available to differentiate
-    if (! dbError.message) { return false; }
-    return dbError.message.indexOf('_id_') > 0;
-  }
-
-  /**
-   * Returns true if `dbError` was caused by a 'duplicate key' error (E11000)
-   * and the key that conflicted was named 'token_1'.
-   *
-   * @param {Error} dbError
-   */
-  function isDBDuplicateToken(dbError) {
-    if (dbError.message == null) { return false; }
-    
-    const message = dbError.message; 
-    return message.match(/^E11000 duplicate key error collection/) && 
-      message.match(/index: token_1 dup key:/);
   }
 
   /**
@@ -302,25 +277,19 @@ module.exports = function produceAccessesApiMethods(
     const accessesRepository = storageLayer.accesses;
     
     accessesRepository.insertOne(context.user, params, function (err, newAccess) {
-      if (err) {
-        if (Database.isDuplicateError(err)) {
-          let conflictingKeys;
-          if (isDBDuplicateToken(err)) {
-            conflictingKeys = { token: '(hidden)' };
-          } else {
-            conflictingKeys = { 
-              type: params.type, 
-              name: params.name,
-              deviceName: params.deviceName,
-            };
-          }
-          return next(errors.itemAlreadyExists(
-            'access', conflictingKeys
-          ));
-          
-          // NOT REACHED
-        } 
-        
+      if (err != null) {
+        // Duplicate errors
+        if (err.isDuplicateIndex('token')) {
+          return next(errors.itemAlreadyExists('access', { token: '(hidden)' }));
+        }
+        if (err.isDuplicateIndex('type') && err.isDuplicateIndex('name') && err.isDuplicateIndex('deviceName')) {
+          return next(errors.itemAlreadyExists('access', { 
+            type: params.type,
+            name: params.name,
+            deviceName: params.deviceName,
+          }));
+        }
+        // Any other error
         return next(errors.unexpectedError(err));
       }
 
@@ -412,11 +381,12 @@ module.exports = function produceAccessesApiMethods(
     accessesRepository.updateOne(context.user, {id: params.id}, params.update,
       function (err, updatedAccess) {
         if (err != null) {
-          if (Database.isDuplicateError(err)) {
+          // Expecting a duplicate error
+          if (err.isDuplicateIndex('type') && err.isDuplicateIndex('name')) {
             return next(errors.itemAlreadyExists('access',
               { type: params.resource.type, name: params.update.name }));
           }
-
+          // Any other error
           return next(errors.unexpectedError(err));
         }
 

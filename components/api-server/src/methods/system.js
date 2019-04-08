@@ -96,30 +96,15 @@ module.exports = function (
     });
   }
 
-  function handleCreationErrors(err, params) {
-    const message = err.message;
-    const isKeyCollision = 
-      /^E11000/.test(message) && 
-      /duplicate key error/.test(message);
-
-    if (isKeyCollision) {
-      // Extract the field that we collided in
-      const md = message.match(/index: (\w+) dup key:/);
-      const field = md[1];
-
-      switch (field) {
-        // MongoError: E11000 duplicate key error collection: pryv-node.users index: email_1 dup key: { : "zero@test.com" }
-        case 'email_1':
-          return errors.itemAlreadyExists('user', { email: params.email }, err);
-
-        // E11000 duplicate key error collection: pryv-node.users index: username_1 dup key: { : "userzero" }
-        case 'username_1': 
-          return errors.itemAlreadyExists('user', { username: params.username }, err);
-
-        // FALLTHROUGH
-      }
+  function handleCreationErrors (err, params) {
+    // Duplicate errors
+    if (err.isDuplicateIndex('email')) {
+      return errors.itemAlreadyExists('user', { email: params.email }, err);
     }
-
+    if (err.isDuplicateIndex('username')) {
+      return errors.itemAlreadyExists('user', { username: params.username }, err);
+    }
+    // Any other error
     return errors.unexpectedError(err, 'Unexpected error while saving user.');
   }
 
@@ -277,4 +262,5 @@ module.exports = function (
   }
 
 };
+
 module.exports.injectDependencies = true;
