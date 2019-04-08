@@ -1,5 +1,9 @@
 ## 1.4
 
+### 1.4.5
+
+- Refactor mongo duplicates management into storage layer.
+
 ### 1.4.4
 
 - Events, Streams, Accesses, Profiles and FollowedSlices are now stored in single collections on MongoDB. This results in smaller per-user RAM usage.
