@@ -30,15 +30,15 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   // COMMON
 
   api.register('streams.*',
-      commonFns.loadAccess(storageLayer));
+    commonFns.loadAccess(storageLayer));
 
   // RETRIEVAL
 
   api.register('streams.get',
-      commonFns.getParamsValidation(methodsSchema.get.params),
-      applyDefaultsForRetrieval,
-      findAccessibleStreams,
-      includeDeletionsIfRequested);
+    commonFns.getParamsValidation(methodsSchema.get.params),
+    applyDefaultsForRetrieval,
+    findAccessibleStreams,
+    includeDeletionsIfRequested);
 
   function applyDefaultsForRetrieval(context, params, result, next) {
     _.defaults(params, {
@@ -94,21 +94,21 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     };
 
     userStreamsStorage.findDeletions(context.user, params.includeDeletionsSince, options,
-        function (err, deletions) {
-      if (err) { return next(errors.unexpectedError(err)); }
+      function (err, deletions) {
+        if (err) { return next(errors.unexpectedError(err)); }
 
-      result.streamDeletions = deletions;
-      next();
-    });
+        result.streamDeletions = deletions;
+        next();
+      });
   }
 
   // CREATION
 
   api.register('streams.create',
-      commonFns.getParamsValidation(methodsSchema.create.params),
-      applyDefaultsForCreation,
-      applyPrerequisitesForCreation,
-      createStream);
+    commonFns.getParamsValidation(methodsSchema.create.params),
+    applyDefaultsForCreation,
+    applyPrerequisitesForCreation,
+    createStream);
 
   function applyDefaultsForCreation(context, params, result, next) {
     _.defaults(params, {parentId: null});
@@ -171,10 +171,10 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   // UPDATE
 
   api.register('streams.update',
-      commonFns.getParamsValidation(methodsSchema.update.params),
-      commonFns.catchForbiddenUpdate(streamSchema('update'), updatesSettings.ignoreProtectedFields, logger),
-      applyPrerequisitesForUpdate,
-      updateStream);
+    commonFns.getParamsValidation(methodsSchema.update.params),
+    commonFns.catchForbiddenUpdate(streamSchema('update'), updatesSettings.ignoreProtectedFields, logger),
+    applyPrerequisitesForUpdate,
+    updateStream);
 
   function applyPrerequisitesForUpdate(context, params, result, next) {    
     // check stream
@@ -231,9 +231,9 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   // DELETION
 
   api.register('streams.delete',
-      commonFns.getParamsValidation(methodsSchema.del.params),
-      applyPrerequisitesForDeletion,
-      deleteStream);
+    commonFns.getParamsValidation(methodsSchema.del.params),
+    applyPrerequisitesForDeletion,
+    deleteStream);
 
   function applyPrerequisitesForDeletion(context, params, result, next) {
     _.defaults(params, { mergeEventsWithParent: null });
@@ -242,7 +242,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     context.stream = treeUtils.findById(context.streams, params.id);
     if (! context.stream) {
       return process.nextTick(next.bind(null,
-          errors.unknownResource('stream', params.id)));
+        errors.unknownResource('stream', params.id)));
     }
     if (! context.canManageStream(context.stream.id)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
@@ -266,19 +266,19 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     context.updateTrackingProperties(updatedData);
 
     userStreamsStorage.updateOne(context.user, {id: params.id}, updatedData,
-        function (err, updatedStream) {
-      if (err) { return next(errors.unexpectedError(err)); }
+      function (err, updatedStream) {
+        if (err) { return next(errors.unexpectedError(err)); }
 
-      result.stream = updatedStream;
-      notifications.streamsChanged(context.user);
-      next();
-    });
+        result.stream = updatedStream;
+        notifications.streamsChanged(context.user);
+        next();
+      });
   }
 
   function deleteWithData(context, params, result, next) {
     let streamAndDescendantIds,
-      parentId,
-      hasLinkedEvents;
+        parentId,
+        hasLinkedEvents;
     async.series([
       function retrieveStreamIdsToDelete(stepDone) {
         userStreamsStorage.find(context.user, {}, null, function (err, streams) {
