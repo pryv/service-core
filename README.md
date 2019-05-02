@@ -120,7 +120,9 @@ Those components also accept the following command line options:
 
 ## Nginx proxy - to verify and probably fix
 
-The proxy runs on `https://{username}.rec.la:8080` (`{username}` can be anything; see [Nginx proxy config below](#nginx-proxy)) and is configured as follows:
+*Prerequisite:* NGINX
+
+The proxy runs on `https://{username}.rec.la:8080` (`{username}` can be anything and is configured as follows:
 
 - `/api/{path}` proxies for `/{path}` on the API server
 - `/previews/{path}` proxies for `/{path}` on the previews server
