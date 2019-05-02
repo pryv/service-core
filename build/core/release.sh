@@ -29,10 +29,6 @@ run yarn release > /dev/null
 run mkdir -p $conf_dir && \
   run cp /pd_build/config/core.json $conf_dir/core.json
   
-# Install the procfile (for running node-foreman)
-run cp /pd_build/config/production.procfile \
-  dist/components/api-server/production.procfile
-
 # Create the log
 run mkdir -p $log_dir && \
   run touch $log_dir/core.log && run chown -R app:app $log_dir
@@ -43,5 +39,6 @@ run mkdir -p $data_dir/attachments && \
   run chown -R app:app $data_dir
 
 # Install the script that runs the api service
-run mkdir /etc/service/core
-run cp /pd_build/runit/core /etc/service/core/run
+run mkdir /etc/runit
+run cp -r /pd_build/runit/* /etc/runit/
+run /etc/runit/runit.sh start

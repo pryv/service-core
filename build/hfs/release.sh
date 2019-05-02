@@ -29,15 +29,12 @@ run mkdir -p $conf_dir && \
   run cp /pd_build/config/hfs.json $conf_dir/hfs.json && \
   run cp /pd_build/config/metadata.hjson $conf_dir/
   
-# Install the procfile (for running node-foreman)
-run cp /pd_build/config/production.procfile \
-  dist/components/hfs-server/production.procfile
-
 # Create the log
 run mkdir -p $log_dir && \
   run chown -R app:app $log_dir && \
   run touch $log_dir/hfs.log
 
 # Install the script that runs the api service
-run mkdir /etc/service/hfs
-run cp /pd_build/runit/hfs /etc/service/hfs/run
+run mkdir /etc/runit
+run cp /pd_build/runit/* /etc/runit/
+run /etc/runit/runit.sh start

@@ -34,8 +34,9 @@ run mkdir -p $log_dir && \
   run touch $log_dir/preview.log
 
 # Install the script that runs the api service
-run mkdir /etc/service/preview
-run cp /pd_build/runit/preview /etc/service/preview/run
+run mkdir /etc/runit
+run cp /pd_build/runit/* /etc/runit/
+run /etc/runit/runit.sh start
 
 # Have CRON run in this container
 run rm /etc/service/cron/down

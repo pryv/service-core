@@ -1,3 +1,0 @@
-hfs: bin/server --config /app/conf/hfs.json --http-port $PORT
-metadata: ../metadata/bin/metadata --config /app/conf/metadata.hjson
-
