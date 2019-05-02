@@ -4,7 +4,7 @@
  */
 
 const testData = require('../src/data');
-const mongoFolder = __dirname + '/../../../../mongodb-osx-x86_64-3.4.4';
+const mongoFolder = __dirname + '/../../../../mongodb';
 
 const version = process.argv[2];
 if (version == null) {

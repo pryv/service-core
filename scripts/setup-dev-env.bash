@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Sets up the dev environment on a 64-bit OSX system.
+# Sets up the dev environment on a 64-bit OSX or GNU/Linux system.
 # Re-run to update e.g. the node version (from the new default) or the JSHint config (from the master).
 
 # working dir fix
@@ -9,10 +9,19 @@ cd $SCRIPT_FOLDER/.. # root
 
 export DATA_FOLDER=$SCRIPT_FOLDER/../..
 export LOGS_FOLDER=${DATA_FOLDER}/logs
-export MONGO_NAME=mongodb-linux-x86_64-3.4.20
-export MONGO_DL_BASE_URL=https://fastdl.mongodb.org/linux
 export MONGO_BASE_FOLDER=$DATA_FOLDER
 export MONGO_DATA_FOLDER=$DATA_FOLDER/mongodb-data
+
+if [ `uname` = "Linux" ]; then
+  export MONGO_NAME=mongodb-linux-x86_64-3.4.20
+  export MONGO_DL_BASE_URL=https://fastdl.mongodb.org/linux
+elif [ `uname` = "Darwin" ]; then # OSX
+  export MONGO_NAME=mongodb-osx-x86_64-3.4.4
+  export MONGO_DL_BASE_URL=http://fastdl.mongodb.org/osx
+else
+  echo "Installation is meant to be on Linux or OSX"
+  exit 1
+fi
 
 # file structure
 
