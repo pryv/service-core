@@ -140,13 +140,14 @@ class Database {
   // Internal function. 
   // 
   async getCollection(collectionInfo: CollectionInfo, callback: GetCollectionCallback) {
-    if (this.collectionConnectionsCache[collectionInfo.name]) {
-      return callback(null, this.collectionConnectionsCache[collectionInfo.name]);
-    }
     try {    
       // Make sure we have a connect
       await bluebird.fromCallback( 
         cb => this.ensureConnect(cb) ); 
+
+      if (this.collectionConnectionsCache[collectionInfo.name]) {
+        return callback(null, this.collectionConnectionsCache[collectionInfo.name]);
+      }
         
       // Load the collection
       const db = this.db; 
