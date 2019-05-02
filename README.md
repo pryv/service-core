@@ -7,11 +7,20 @@ Pryv core server app components, ie. what runs on each server node and handles u
 
 ## Install
 
-_Prerequisites:_ Node v8.3.0, Yarn v1.1.0, Mongo DB v3.4+ (needs at least 4GB of free disk space for the initial database), InfluxDB, HAProxy (optional, skip if you don't need the proxy server), gnatsd. On a mac OS X system, you should be able to install these prerequisites by first installing homebrew and then running these commands: 
+_Prerequisites:_ 
+- Node v8+
+- Yarn v1+
+- Mongo DB v3.4+ (needs at least 4GB of free disk space for the initial database)
+- InfluxDB v1.2+
+- gnatsd
+
+For node, you may use [nvm](https://github.com/nvm-sh/nvm) or [nodenv](https://github.com/nodenv/nodenv) to manage multiple nodeJS versions.
+
+On a mac OS X system, you should be able to install these prerequisites by first installing homebrew and then running these commands: 
 
 ~~~bash
-$ brew install gnatsd mongodb nodenv node-build nginx influxdb haproxy
-# Follow post-install instructions by homebrew, especially for nodenv. 
+$ brew install gnatsd mongodb node-build influxdb nodenv/nvm
+# Follow post-install instructions by homebrew, especially for nodenv/nvm. 
 $ nodenv install 8.8.0
 ~~~
 
@@ -19,31 +28,27 @@ You will need to install 'node-gyp' globally as well: `yarn global add node-gyp`
 
 Then just `yarn install`.
 
-If you're blocking because 'unicode.org' doesn't like you today, here's what you do: 
-
-    $ NODE_UNICODETABLE_UNICODEDATA_TXT=$(pwd)/UnicodeData.txt yarn install
-
 ## Top Level Directories
 
     .
-    ├── CHANGELOG.md     Changelog
-    ├── Jenkinsfile      Used by Jenkins to identify and run the build
-    ├── Procfile         Used by foreman (`nf`) to identify processes 
-    ├── README.md        This README
-    ├── build            Contains files needed for Docker release build
-    ├── components       Source code for all components 
-    ├── custom-extensions  Custom auth steps, during tests mainly.
-    ├── decls            Flow-Type annotations, managed by us
-    ├── dist             Once you run 'npm run release', this is created
-    ├── docs             Documentation in Markdown format 
-    ├── flow-typed       Flow-Type annotations, managed by flow-typed
-    ├── jsdoc.json       JSDoc configuration, `npm run jsdoc`
-    ├── node_modules     Package installation, `yarn install`
-    ├── package.json     Yarn package file
-    ├── proxy            Proxy configuration
-    ├── scripts          Scripts used to manage the repository
-    ├── test             Top-Level Tests for Integration tests.
-    └── yarn.lock        Lockfile for Yarn, locks down npm versions.
+    ├── CHANGELOG.md        Changelog
+    ├── Jenkinsfile          Used by Jenkins to identify and run the build
+    ├── Procfile             Used by foreman (`nf`) to identify processes 
+    ├── README.md           This README
+    ├── build               Contains files needed for Docker release build
+    ├── components          Source code for all components 
+    ├── custom-extensions   Custom auth steps, during tests mainly.
+    ├── decls               Flow-Type annotations, managed by us
+    ├── dist                Once you run 'yarn release', this is created
+    ├── docs                Documentation in Markdown format 
+    ├── flow-typed           Flow-Type annotations, managed by flow-typed
+    ├── jsdoc.json          JSDoc configuration, `yarn jsdoc`
+    ├── node_modules        Package installation, `yarn install`
+    ├── package.json        Yarn package file
+    ├── proxy               Proxy configuration
+    ├── scripts             Scripts used to manage the repository
+    ├── test                Top-Level Tests for Integration tests.
+    └── yarn.lock           Lockfile for Yarn, locks down dependencies versions.
 
 ## How to?
 
@@ -61,11 +66,30 @@ If you're blocking because 'unicode.org' doesn't like you today, here's what you
 | Get a list of available processes | `cat Procfile`                 |
 | Run flow checker                  | `watch -c flow --color=always` |
 
-**NOTE** that all binaries like `nf` or `flow` must be accessed by prepending `yarn run {nf,flow}`. Kaspar has a set of shell aliases that simplify this. 
+**NOTE** that all binaries like `nf` or `flow` must be accessed by prepending `yarn {nf,flow}`, as documented [here](http://strongloop.github.io/node-foreman/).
+
+## Setup
+
+### Flowtype transpilation
+
+**First execution**: Run at least once `yarn release` before running the servers or tests. The source code needs to be transpiled from Flowtype to pure JS.
+
+During development, use `yarn watch` to recompile all files after each saved change. Look out for compilation errors that might prevent the distribution from being updated. 
+
+### MongoDB
+
+`./scripts/setup-dev-env.bash` installs MongoDB in the parent folder and runs `yarn install`.
 
 ## Test Running
 
-If you want to run tests in `components/`, you will need to start with a command like this: 
+_Prerequisite:_ MongoDB must be running on the default port; you can use `yarn nf start database`.
+
+`yarn test` runs tests on each component. See individual components for things like detailed output and other options.
+`yarn test-root` runs root tests combining multiple components (e.g., High-Frequency series).
+
+If you want to run tests for a specific component, you can run them against the transpiled files by going into `dist/${COMPONENT_NAME}` then running `yarn test` there.
+
+If you want to run tests directly against the source files in `components/`, you will need to start with a command like this: 
 
     $ ../../node_modules/.bin/mocha \
       --compilers js:babel-register \
@@ -75,27 +99,8 @@ This is something that should probably be a shell alias in your environment. I u
 
     $ alias pm="../../node_modules/.bin/mocha --compilers js:babel-register test/**/*.test.js"
 
-### Troubleshooting
 
-If you're running into a lot of test failures because mongoDB doesn't like you today, it's maybe because your database is empty so try to run the storage tests first:
-
-    $ cd dist/components/storage/ && yarn test
-
-If you are getting multiple seamingly unrelated errors following a branch switch, rebuild the `dist/` folder using `rm -rf dist/ && yarn release`.
-
-## Quick, run the servers
-
-To run the servers, the source code needs to be transpiled from Flowtype to pure JS. Run `yarn release` at least once to get this done. During development, use `yarn watch` to recompile all files immediately. Look out for compilation errors that might prevent the distribution from being updated. 
-
-To run the processes, use `nf` (javascript foreman), as documented [here](http://strongloop.github.io/node-foreman/).
-
-The proxy runs on `https://{username}.rec.la:8080` (`{username}` can be anything; see [Nginx proxy config below](#nginx-proxy)) and is configured as follows:
-
-- `/api/{path}` proxies for `/{path}` on the API server
-- `/previews/{path}` proxies for `/{path}` on the previews server
-- `/{path}` serves files from `{static.root}` as defined in the Nginx config
-
-### Components
+## App Configuration
 
 Components supporting configuration load their settings from (last takes precedence):
 
@@ -113,14 +118,20 @@ Those components also accept the following command line options:
 - `--printConfig` prints the configuration settings actually loaded (e.g. for debugging purposes)
 
 
-#### Nginx proxy
+## Nginx proxy - to verify and probably fix
 
-The `proxy` folder contains a Nginx configuration template (`nginx.conf.template`) as well as corresponding variables for `development` and `production` in `vars.{environment}.js`. To generate a `nginx.conf`, do `node scripts/compile-proxy-config {variables file}` (this is automatically done for development when running the proxy with `npm run proxy`).
+The proxy runs on `https://{username}.rec.la:8080` (`{username}` can be anything; see [Nginx proxy config below](#nginx-proxy)) and is configured as follows:
+
+- `/api/{path}` proxies for `/{path}` on the API server
+- `/previews/{path}` proxies for `/{path}` on the previews server
+- `/{path}` serves files from `{static.root}` as defined in the Nginx config
+
+The `proxy` folder contains a Nginx configuration template (`nginx.conf.template`) as well as corresponding variables for `development` and `production` in `vars.{environment}.js`. To generate a `nginx.conf`, do `node scripts/compile-proxy-config {variables file}` (this is automatically done for development when running the proxy with `yarn proxy`).
 
 In development, Nginx runs on HTTPS with a "dev" SSL certificate on domain `*.rec.la` (where `*` is whatever Pryv username you like), whose DNS entry points to `127.0.0.1`. This little trick enables HTTPS connections to the local server via wildcard subdomains, without having to rely on additional tools like Dnsmasq.
 
 
-#### Customizing server behaviour
+## Customizing server behaviour
 
 It is possible to extend the API and previews servers with your own code, via the configuration keys defined under `customExtensions`:
 
@@ -149,22 +160,23 @@ It is possible to extend the API and previews servers with your own code, via th
     - `access` (object): the access object (see [API doc](https://api.pryv.com/reference/#access) for structure) 
 
 
-## Contribute
+## Troubleshooting
 
-### Setup the dev environment
+### Test failures
 
-`./scripts/setup-dev-env.bash` installs MongoDB in the parent folder and `yarn install`s if needed.
+If you're running into a lot of test failures because mongoDB doesn't like you today, it's maybe because your database is empty so try to run the storage tests first:
 
-This might be broken right now. Sorry.
+    $ cd dist/components/storage/ && yarn test
 
-### Tests
+If you are getting multiple seamingly unrelated errors following a branch switch, rebuild the `dist/` folder using `rm -rf dist/ && yarn release`.
 
-_Prerequisite:_ MongoDB must be running on the default port; you can use `nf start database`.
-
-`yarn test` runs tests on each component. See individual components for things like detailed output and other options.
-`yarn test-root` runs root tests combining multiple components (e.g., High-Frequency series).
-
-## Known issues
+### Cannot find module components
 
 When running tests in single components:
 - `Error: Cannot find module 'components/...'`: Ensure that symlink `node_modules/components` pointing to `../components` exists
+
+### Unicode
+
+If you're blocking because 'unicode.org' doesn't like you today, here's what you do: 
+
+    $ NODE_UNICODETABLE_UNICODEDATA_TXT=$(pwd)/UnicodeData.txt yarn install
