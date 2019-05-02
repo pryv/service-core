@@ -50,7 +50,9 @@ class Database {
     this.connectionString = `mongodb://${authPart}${settings.host}:${settings.port}/${settings.name}`;
     this.databaseName = settings.name; 
         
+    const m30 = 1800; // seconds in 30min
     const s60 = 60000; // 60 seconds
+    const s1 = 1000; // 1 second
     this.options = {
       j: true, // Requests acknowledgement that the write operation has been written to the journal.
       w: 1,   // Requests acknowledgement that the write operation has propagated.
@@ -59,6 +61,8 @@ class Database {
       socketTimeoutMS: s60,
       useNewUrlParser: true,
       appname: 'pryv.io core',
+      reconnectInterval: s1,
+      reconnectTries: m30,
     };
 
     this.db = null;
