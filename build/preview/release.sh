@@ -35,8 +35,9 @@ run mkdir -p $log_dir && \
 
 # Install the script that runs the api service
 run mkdir /etc/runit
-run cp /pd_build/runit/* /etc/runit/
-run /etc/runit/runit.sh start
+run cp -r /pd_build/runit/* /etc/runit/
+run mv /etc/runit/runit.sh /etc/init.d/
+run /etc/init.d/runit.sh start
 
 # Have CRON run in this container
 run rm /etc/service/cron/down
