@@ -101,6 +101,7 @@ class Database {
    * @api private
    */
   ensureConnect(callback: DatabaseCallback) {
+    // this check does not work.
     if (this.db) {
       return callback();
     }
