@@ -23,10 +23,12 @@ create_links() {
 	do
 		port=$((starting_port + i - 1)) #increment port number
 		cp -R /etc/runit/app /etc/runit/app_$i #duplicate app script.
+		chmod +x /etc/runit/app_$i/run # make the script executable
 		sed -i "s/#PORT_NUM/$port/g" /etc/runit/app_$i/run #replace port number with current port in the duplicated script
 		ln -s /etc/runit/app_$i /etc/service/app_$i #make a link to /etc/service (will be run with runit).
 	done
 
+	chmod +x /etc/runit/metadata/run # make the script executable
 	ln -s /etc/runit/metadata /etc/service/metadata
 }
 
