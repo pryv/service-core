@@ -182,3 +182,19 @@ When running tests in single components:
 If you're blocking because 'unicode.org' doesn't like you today, here's what you do: 
 
     $ NODE_UNICODETABLE_UNICODEDATA_TXT=$(pwd)/UnicodeData.txt yarn install
+
+### Docker installation on Linux
+
+If you are trying to run `docker SOME_COMMAND` and get the following error:  
+
+```
+docker: Got permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Post http://%2Fvar%2Frun%2Fdocker.sock/v1.26/containers/create: dial unix /var/run/docker.sock: connect: permission denied.
+See 'docker run --help'.
+```
+
+You should add the current user to the `docker` group: `sudo usermod -a -G docker $USER`  
+
+After running this command, in your shell, log out of your account and log back in, reboot if needed.  
+Run `docker run hello-world` to check if it works.
+
+[reference](https://techoverflow.net/2017/03/01/solving-docker-permission-denied-while-trying-to-connect-to-the-docker-daemon-socket/)
