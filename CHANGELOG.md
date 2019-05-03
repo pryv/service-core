@@ -1,5 +1,9 @@
 ## 1.4
 
+### 1.4.6
+
+- Increase MongoDB driver reconnection window.
+
 ### 1.4.5
 
 - Refactor mongo duplicates management into storage layer.
