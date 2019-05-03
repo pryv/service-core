@@ -18,7 +18,7 @@ var componentsPath = path.resolve(__dirname, '../dist/components'),
     args = process.argv.slice(2);
 
 if (args.length === 0) {
-  console.error('npm command (like "install") required');
+  console.error('yarn command (like "install") required');
   process.exit(1);
 }
 
@@ -31,7 +31,7 @@ fs.readdirSync(componentsPath).forEach(function (name) {
   
   name = pad(name);
   console.log(colors ? name.green : name); // eslint-disable-line 
-  var res = childProcess.spawnSync('npm', args, {
+  var res = childProcess.spawnSync('yarn', args, {
     env: process.env,
     cwd: subPath,
     stdio: 'inherit'
