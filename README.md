@@ -161,6 +161,14 @@ It is possible to extend the API and previews servers with your own code, via th
     - `callerId` (string): optional additional id passed after `accessToken` in auth after a separating space (auth format is thus `<access-token>[ <caller-id>]`)
     - `access` (object): the access object (see [API doc](https://api.pryv.com/reference/#access) for structure) 
 
+## Test Results
+
+Test results are kept in the [test-results-pryv.io](https://github.com/pryv/test-results-pryv.io) repository.
+
+- Checkout the repository locally: `yarn init-test-results-repo`
+- Run the test suite, printing the results in `test_results/service-core/${TAG_VERSION}/${TIMESTAMP}-service-core.json` using: `yarn output-test-results`
+- Upload the results: `yarn upload-test-results`
+
 
 ## Troubleshooting
 
