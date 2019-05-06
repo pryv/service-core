@@ -60,7 +60,7 @@ describe('accesses (personal)', function () {
 
     before(resetAccesses);
 
-    it('must return all accesses (including personal ones)', function (done) {
+    it('DV3U-must return all accesses (including personal ones)', function (done) {
       req().get(basePath).end(function (res) {
         const expected = validation
           .removeDeletions(testData.accesses)
@@ -87,7 +87,7 @@ describe('accesses (personal)', function () {
       ], done);
     });
 
-    it('must create a new shared access with the sent data, returning it', (done) => {
+    it('12SU-must create a new shared access with the sent data, returning it', (done) => {
       const data = {
         name: 'New Access',
         permissions: [
@@ -155,7 +155,7 @@ describe('accesses (personal)', function () {
       ], done);
     });
 
-    it('must create a new app access with the sent data, creating/restoring requested streams',
+    it('DD60-must create a new app access with the sent data, creating/restoring requested streams',
       function (done) {
         var data = {
           id: undefined, 
@@ -239,7 +239,7 @@ describe('accesses (personal)', function () {
         ], done);
       });
 
-    it('must accept two app accesses with the same name (app ids) but different device names',
+    it('79QY-must accept two app accesses with the same name (app ids) but different device names',
       function (done) {
         var data = {
           name: testData.accesses[4].name,
@@ -261,7 +261,7 @@ describe('accesses (personal)', function () {
         });
       });
 
-    it('must ignore erroneous requests to create new streams', function (done) {
+    it('50AM-must ignore erroneous requests to create new streams', function (done) {
       var data = {
         id: undefined,          // declare property for flow
         token: undefined,       // declare property for flow 
@@ -292,7 +292,7 @@ describe('accesses (personal)', function () {
       });
     });
 
-    it('must fail if a stream similar to that requested for creation already exists', (done) => {
+    it('6BL2-must fail if a stream similar to that requested for creation already exists', (done) => {
       const data = {
         name: 'my-sweet-app-id',
         type: 'app',
@@ -313,7 +313,7 @@ describe('accesses (personal)', function () {
       });
     });
 
-    it('must refuse to create new personal accesses (obtained via login only)', function (done) {
+    it('UFE7-must refuse to create new personal accesses (obtained via login only)', function (done) {
       var data = {
         token: 'client-defined-token',
         name: 'New Personal Access',
@@ -324,7 +324,7 @@ describe('accesses (personal)', function () {
       });
     });
 
-    it('must slugify the new access\' predefined token', function (done) {
+    it('YTMG-must slugify the new access\' predefined token', function (done) {
       var data = {
         token: 'pas encodé de bleu!',
         name: 'Genevois, cette fois',
@@ -341,7 +341,7 @@ describe('accesses (personal)', function () {
       });
     });
 
-    it('must return an error if the sent data is badly formatted', function (done) {
+    it('3F4D-must return an error if the sent data is badly formatted', function (done) {
       var data = {
         name: 'New Access',
         permissions: [
@@ -356,7 +356,7 @@ describe('accesses (personal)', function () {
       });
     });
 
-    it('must refuse empty `defaultName` values for streams', function (done) {
+    it('1ELC-must refuse empty `defaultName` values for streams', function (done) {
       var data = {
         name: 'New Access',
         permissions: [
@@ -372,7 +372,7 @@ describe('accesses (personal)', function () {
       });
     });
 
-    it('must return an error if an access with the same token already exists', function (done) {
+    it('ZZSC-must return an error if an access with the same token already exists', function (done) {
       var data = {
         token: testData.accesses[1].token,
         name: 'Duplicate',
@@ -386,7 +386,7 @@ describe('accesses (personal)', function () {
       });
     });
 
-    it('must return an error if an access with the same name already exists',
+    it('MSFK-must return an error if an access with the same name already exists',
       function (done) {
         var data = {
           name: testData.accesses[2].name,
@@ -401,7 +401,7 @@ describe('accesses (personal)', function () {
         });
       });
 
-    it('must return an error if an "app" access with the same name (app id) and device ' +
+    it('9ICB-must return an error if an "app" access with the same name (app id) and device ' +
         'name already exists', function (done) {
       var existing = testData.accesses[4];
       var data = {
@@ -419,7 +419,7 @@ describe('accesses (personal)', function () {
       });
     });
 
-    it('must return an error if the device name is set for a non-app access',
+    it('WRSP-must return an error if the device name is set for a non-app access',
       function (done) {
         var data = {
           name: 'Yikki-yikki',
@@ -433,7 +433,7 @@ describe('accesses (personal)', function () {
         });
       });
 
-    it('must return an error if the given predefined access\'s token is a reserved word', (done) => {
+    it('IHSE-must return an error if the given predefined access\'s token is a reserved word', (done) => {
       const data = {
         token: 'null',
         name: 'Badly Named Access',
@@ -453,7 +453,7 @@ describe('accesses (personal)', function () {
 
     beforeEach(resetAccesses);
 
-    it('must modify the shared access with the sent data', function (done) {
+    it('6TU5-must modify the shared access with the sent data', function (done) {
       var original = _.omit(testData.accesses[1], 'calls'),
           time;
       var data = {
@@ -494,7 +494,7 @@ describe('accesses (personal)', function () {
       });
     });
 
-    it('must modify the personal access with the specified data', function (done) {
+    it('1O8N-must modify the personal access with the specified data', function (done) {
       req().put(path(testData.accesses[0].id)).send({name: 'Updated!'}).end(function (res) {
         validation.check(res, {
           status: 200,
@@ -505,7 +505,7 @@ describe('accesses (personal)', function () {
       });
     });
 
-    it('must return an error if the access does not exist', function (done) {
+    it('7S5L-must return an error if the access does not exist', function (done) {
       req().put(path('unknown-id')).send({name: '?'}).end(function (res) {
         validation.checkError(res, {
           status: 404,
@@ -514,7 +514,7 @@ describe('accesses (personal)', function () {
       });
     });
 
-    it('must return an error if the sent data is badly formatted', function (done) {
+    it('RUMK-must return an error if the sent data is badly formatted', function (done) {
       var data = {
         permissions: [
           {
@@ -528,7 +528,7 @@ describe('accesses (personal)', function () {
       });
     });
 
-    it('must return an error if an access with the same name and type already exists', (done) => {
+    it('M8FO-must return an error if an access with the same name and type already exists', (done) => {
       req()
         .put(path(testData.accesses[1].id))
         .send({name: testData.accesses[2].name})
@@ -562,7 +562,7 @@ describe('accesses (personal)', function () {
         });
       });
     
-      it('must prevent update of protected fields and throw a forbidden error in strict mode', function (done) {
+      it('N41N-must prevent update of protected fields and throw a forbidden error in strict mode', function (done) {
         const forbiddenUpdate = {
           id: 'forbidden',
           token: 'forbidden',
@@ -589,7 +589,7 @@ describe('accesses (personal)', function () {
         ], done);
       });
       
-      it('must prevent update of protected fields and log a warning in non-strict mode', function (done) {
+      it('PKRK-must prevent update of protected fields and log a warning in non-strict mode', function (done) {
         const forbiddenUpdate = {
           id: 'forbidden',
           token: 'forbidden',
@@ -632,7 +632,7 @@ describe('accesses (personal)', function () {
         server.ensureStarted.call(server, settings, stepDone);
       }
       
-      it('must forbid to elevate a read level into a manage level using a contribute access ', function (done) {
+      it('15VH-must forbid to elevate a read level into a manage level using a contribute access ', function (done) {
         // In this test we reproduce a situation in which an attacker who
         // was granted a contribute app access can elevate the privileges
         // by creating a sub read access and then update it to manage.
@@ -695,7 +695,7 @@ describe('accesses (personal)', function () {
         ], done);
       });
       
-      it('must forbid to extend the permission streamIds beyond the authorized context ', function (done) {
+      it('7K7Q-must forbid to extend the permission streamIds beyond the authorized context ', function (done) {
         // In this test we reproduce a situation in which an attacker who
         // was granted a contribute app access can elevate the privileges
         // by creating a sub read access and then update it to access all streams.
@@ -765,7 +765,7 @@ describe('accesses (personal)', function () {
   
     beforeEach(resetAccesses);
   
-    it('must delete the shared access', (done) => {
+    it('DP0O-must delete the shared access', (done) => {
       const deletedAccess = testData.accesses[1];
       let deletionTime;
       
@@ -800,7 +800,7 @@ describe('accesses (personal)', function () {
       );
     });
   
-    it('must delete the personal access', function (done) {
+    it('A9OM-must delete the personal access', function (done) {
       req().del(path(testData.accesses[0].id)).end(function (res) {
         validation.check(res, {
           status: 200,
@@ -811,7 +811,7 @@ describe('accesses (personal)', function () {
       });
     });
   
-    it('must return an error if the access does not exist', function (done) {
+    it('FG96-must return an error if the access does not exist', function (done) {
       req().del(path('unknown-id')).end(function (res) {
         validation.checkError(res, {
           status: 404,
@@ -828,7 +828,7 @@ describe('accesses (personal)', function () {
 
     var path = basePath + '/check-app';
 
-    it('must return the adjusted permissions structure if no access exists', function (done) {
+    it('8VWR-must return the adjusted permissions structure if no access exists', function (done) {
       var data = {
         requestingAppId: 'the-love-generator',
         deviceName: 'It\'s a washing machine that sends tender e-mails to your grandmother!',
@@ -864,7 +864,7 @@ describe('accesses (personal)', function () {
       });
     });
 
-    it('must accept requested permissions with "*" for "all streams"', function (done) {
+    it('F2K1-must accept requested permissions with "*" for "all streams"', function (done) {
       var data = {
         requestingAppId: 'lobabble-dabidabble',
         deviceName: 'It\'s a matchbox that sings the entire repertoire of Maria Callas!',
@@ -901,7 +901,7 @@ describe('accesses (personal)', function () {
       });
     });
 
-    it('must return the existing app access if matching', function (done) {
+    it('CF5M-must return the existing app access if matching', function (done) {
       var data = {
         requestingAppId: testData.accesses[4].name,
         deviceName: testData.accesses[4].deviceName,
@@ -929,7 +929,7 @@ describe('accesses (personal)', function () {
       });
     });
 
-    it('must also return the token of the existing mismatching access if any', function (done) {
+    it('3AL2-must also return the token of the existing mismatching access if any', function (done) {
       var data = {
         requestingAppId: testData.accesses[4].name,
         deviceName: testData.accesses[4].deviceName,
@@ -965,7 +965,7 @@ describe('accesses (personal)', function () {
       });
     });
 
-    it('must propose fixes to duplicate ids of streams and signal an error when appropriate',
+    it('B9T5-must propose fixes to duplicate ids of streams and signal an error when appropriate',
       function (done) {
         var data = {
           requestingAppId: 'the-love-generator',
@@ -997,7 +997,7 @@ describe('accesses (personal)', function () {
           });
       });
 
-    it('must return an error if the sent data is badly formatted', function (done) {
+    it('ZK2S-must return an error if the sent data is badly formatted', function (done) {
       var data = {
         requestingAppId: testData.accesses[4].name,
         requestedPermissions: [
@@ -1013,7 +1013,7 @@ describe('accesses (personal)', function () {
       });
     });
 
-    it('must be forbidden to non-personal accesses', function (done) {
+    it('7FUV-must be forbidden to non-personal accesses', function (done) {
       var data = {
         requestingAppId: testData.accesses[4].name,
         requestedPermissions: []

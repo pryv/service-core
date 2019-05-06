@@ -16,15 +16,15 @@ describe('methods/helpers/commonFunctions.js: catchForbiddenUpdate(schema)', fun
     
     const protectedFields = ['id', 'children', 'created', 'createdBy', 'modified', 'modifiedBy'];
     
-    it('must throw a forbidden error if "ignoreProtectedFieldUpdates" is null', function (done) {
+    it('DTMW-must throw a forbidden error if "ignoreProtectedFieldUpdates" is null', function (done) {
       testForbiddenUpdate(streamSchema, protectedFields, null, done);
     });
     
-    it('must throw a forbidden error if "ignoreProtectedFieldUpdates" is false', function (done) {
+    it('6OH8-must throw a forbidden error if "ignoreProtectedFieldUpdates" is false', function (done) {
       testForbiddenUpdate(streamSchema, protectedFields, false, done);
     });
     
-    it('must not throw any error if "ignoreProtectedFieldUpdates" is true but print a warn log', function (done) {
+    it('IRA9-must not throw any error if "ignoreProtectedFieldUpdates" is true but print a warn log', function (done) {
       testForbiddenUpdate(streamSchema, protectedFields, true, done);
     });
   });
@@ -33,15 +33,15 @@ describe('methods/helpers/commonFunctions.js: catchForbiddenUpdate(schema)', fun
     
     const protectedFields = ['id', 'attachments', 'created', 'createdBy', 'modified', 'modifiedBy'];
 
-    it('must throw a forbidden error if "ignoreProtectedFieldUpdates" is null', function (done) {
+    it('PTBI-must throw a forbidden error if "ignoreProtectedFieldUpdates" is null', function (done) {
       testForbiddenUpdate(eventsSchema, protectedFields, null, done);
     });
     
-    it('must throw a forbidden error if "ignoreProtectedFieldUpdates" is false', function (done) {
+    it('EHBW-must throw a forbidden error if "ignoreProtectedFieldUpdates" is false', function (done) {
       testForbiddenUpdate(eventsSchema, protectedFields, false, done);
     });
     
-    it('must not throw any error if "ignoreProtectedFieldUpdates" is true but print a warn log', function (done) {
+    it('BLN8-must not throw any error if "ignoreProtectedFieldUpdates" is true but print a warn log', function (done) {
       testForbiddenUpdate(eventsSchema, protectedFields, true, done);
     });
   });
@@ -50,15 +50,15 @@ describe('methods/helpers/commonFunctions.js: catchForbiddenUpdate(schema)', fun
     
     const protectedFields = ['id', 'token', 'type', 'lastUsed', 'created', 'createdBy', 'modified', 'modifiedBy'];
 
-    it('must throw a forbidden error if "ignoreProtectedFieldUpdates" is null', function (done) {
+    it('II0R-must throw a forbidden error if "ignoreProtectedFieldUpdates" is null', function (done) {
       testForbiddenUpdate(accessesSchema, protectedFields, null, done);
     });
     
-    it('must throw a forbidden error if "ignoreProtectedFieldUpdates" is false', function (done) {
+    it('FQVL-must throw a forbidden error if "ignoreProtectedFieldUpdates" is false', function (done) {
       testForbiddenUpdate(accessesSchema, protectedFields, false, done);
     });
     
-    it('must not throw any error if "ignoreProtectedFieldUpdates" is true but print a warn log', function (done) {
+    it('VIJQ-must not throw any error if "ignoreProtectedFieldUpdates" is true but print a warn log', function (done) {
       testForbiddenUpdate(accessesSchema, protectedFields, true, done);
     });
   });

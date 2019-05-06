@@ -35,7 +35,7 @@ describe('Connection/MongoDB', () => {
     });
 
     describe('#preflight(username)', () => {
-      it('throws', async () => {
+      it('4BYZ-throws', async () => {
         try {
           await mongodb.preflight('somerandomstringthatisnotauser');
         }
@@ -120,7 +120,7 @@ describe('Connection/MongoDB', () => {
       });
     });
     describe('#deleteUser(username)', () => {
-      it('deletes the user from MongoDB', async () => {
+      it('CKME-deletes the user from MongoDB', async () => {
         await mongodb.deleteUser(userId);
 
         const user = await mongodb.findUser(userId);

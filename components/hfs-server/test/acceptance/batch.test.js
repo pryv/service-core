@@ -86,7 +86,7 @@ describe('Storing BATCH data in a HF series', function() {
         .expect(200);
     }
     
-    it('should store data correctly', async () => {
+    it('6A9P-should store data correctly', async () => {
       const data = {
         'format': 'seriesBatch',
         'data': [
@@ -225,7 +225,7 @@ describe('Storing BATCH data in a HF series', function() {
         server.stop(); 
       });
 
-      it('fails', async () => {
+      it('74OF-fails', async () => {
         const response = await storeData(server.request(), {
           'format': 'seriesBatch',
           'data': [
@@ -284,7 +284,7 @@ describe('Storing BATCH data in a HF series', function() {
         rpcServer.close();
       });
             
-      it('should schedule a metadata update on every store', async () => {
+      it('J2B4-should schedule a metadata update on every store', async () => {
         // Formulates an update for 2 events, to test if we get two entries in
         // the end.
         const data = {

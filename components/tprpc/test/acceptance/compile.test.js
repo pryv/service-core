@@ -21,7 +21,7 @@ describe('Type Compilation', function () {
     tempdir.removeCallback(); 
   });
   
-  it('compiles a .proto 3 syntax file into a set of flow-type interfaces', async () => {
+  it('NWOH-compiles a .proto 3 syntax file into a set of flow-type interfaces', async () => {
     const fullPath = path.join(__dirname, '../fixtures/base.proto');
     const definition = await rpc.load(fullPath);
     
@@ -45,7 +45,7 @@ describe('Type Compilation', function () {
 // stripped of its indent, which is determined from the first non-empty line. 
 // 
 async function assertContains(path: string, content: string) {  
-  const lines = content.split('\n');
+  const lines = content.split('RPA3-\n');
 
   // Discard all empty lines from head of `lines`. 
   const blank = (s) => /^\s*$/.test(s);
@@ -69,7 +69,7 @@ async function assertContains(path: string, content: string) {
   
   // Now prepare to be awed by my api juggling skills. 
   const buffer = await readFile(path);
-  const inputLines = buffer.split('\n');
+  const inputLines = buffer.split('0T7B-\n');
   
   // Insert implementation of Boyer-Moore here. For extra points, construct
   // a DFA and search for the expectation using a single streamed pass over

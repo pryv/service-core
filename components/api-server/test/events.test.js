@@ -66,7 +66,7 @@ describe('events', function () {
 
     before(resetEvents);
 
-    it('must return the last 20 non-trashed events (sorted descending) by default',
+    it('5K9P-must return the last 20 non-trashed events (sorted descending) by default',
       function (done) {
         var additionalEvents = [];
         for (var i = 0; i < 50; i++) {
@@ -107,7 +107,7 @@ describe('events', function () {
         ], done);
       });
 
-    it('must only return events for the given streams (incl. sub-streams) when set',
+    it('2VRD-must only return events for the given streams (incl. sub-streams) when set',
       function (done) {
         var params = {
           streams: [testData.streams[0].id, testData.streams[2].id],
@@ -127,7 +127,7 @@ describe('events', function () {
         });
       });
 
-    it('must return an error if some of the given streams do not exist', function (done) {
+    it('SUE7-must return an error if some of the given streams do not exist', function (done) {
       var params = {streams: ['bad-id-A', 'bad-id-B']};
       request.get(basePath).query(params).end(function (res) {
         validation.checkError(res, {
@@ -138,7 +138,7 @@ describe('events', function () {
       });
     });
 
-    it('must only return events with the given tag when set', function (done) {
+    it('E24N-must only return events with the given tag when set', function (done) {
       var params = {
         tags: ['super'],
         fromTime: timestamp.now('-48h')
@@ -156,7 +156,7 @@ describe('events', function () {
       });
     });
 
-    it('must only return events with any of the given tags when set', function (done) {
+    it('7Z4W-must only return events with any of the given tags when set', function (done) {
       var params = {
         tags: ['super', 'fragilistic'],
         fromTime: timestamp.now('-48h')
@@ -174,7 +174,7 @@ describe('events', function () {
       });
     });
 
-    it('must only return events of any of the given types when set', function (done) {
+    it('S1AF-must only return events of any of the given types when set', function (done) {
       var params = {
         types: ['picture/attached', 'note/webclip'],
         state: 'all'
@@ -192,7 +192,7 @@ describe('events', function () {
       });
     });
 
-    it('must (unofficially) support a wildcard for event types', function (done) {
+    it('ZE0Y-must (unofficially) support a wildcard for event types', function (done) {
       var params = {
         types: ['activity/*'],
         state: 'all'
@@ -210,7 +210,7 @@ describe('events', function () {
       });
     });
 
-    it('must only return events in the given time period sorted ascending when set',
+    it('0TPP-must only return events in the given time period sorted ascending when set',
         function (done) {
       var params = {
         // must also include already started but overlapping events
@@ -231,7 +231,7 @@ describe('events', function () {
       });
     });
     
-    it('must take into account fromTime and toTime even if set to 0', function (done) {
+    it('SMH2-must take into account fromTime and toTime even if set to 0', function (done) {
       const params = {
         fromTime: 0,
         toTime: 0
@@ -252,7 +252,7 @@ describe('events', function () {
       });
     });
     
-    it('must take into account modifiedSince even if set to 0', function (done) {
+    it('OZRH-must take into account modifiedSince even if set to 0', function (done) {
       var params = {
         modifiedSince: 0
       };
@@ -267,7 +267,7 @@ describe('events', function () {
       });
     });
 
-    it('must properly exclude period events completed before the given period', function (done) {
+    it('7R98-must properly exclude period events completed before the given period', function (done) {
       var params = {
         fromTime: testData.events[1].time + testData.events[1].duration + 1,
         toTime: timestamp.add(testData.events[3].time, '-1m')
@@ -285,7 +285,7 @@ describe('events', function () {
       });
     });
 
-    it('must return ongoing events started before the given time period', function (done) {
+    it('6I0H-must return ongoing events started before the given time period', function (done) {
       var params = {
         streams: [testData.streams[0].id],
         fromTime: testData.events[9].time + 1,
@@ -304,7 +304,7 @@ describe('events', function () {
       });
     });
 
-    it('must only return events in the given paging range when set', function (done) {
+    it('3RO1-must only return events in the given paging range when set', function (done) {
       request.get(basePath).query({state: 'all', skip: 1, limit: 3}).end(function (res) {
         var events = (validation.removeDeletionsAndHistory(testData.events)).sort(function (a, b) {
           return (b.time - a.time);
@@ -321,7 +321,7 @@ describe('events', function () {
       });
     });
 
-    it('must return only trashed events when requested', function (done) {
+    it('9HDG-must return only trashed events when requested', function (done) {
       request.get(basePath).query({state: 'trashed'}).end(function (res) {
         var events = (validation.removeDeletionsAndHistory(testData.events)).sort(function (a, b) {
           return (b.time - a.time);
@@ -336,7 +336,7 @@ describe('events', function () {
       });
     });
 
-    it('must return all events (trashed or not) when requested', function (done) {
+    it('DK1G-must return all events (trashed or not) when requested', function (done) {
       request.get(basePath).query({state: 'all'}).end(function (res) {
         validation.check(res, {
           status: 200,
@@ -349,7 +349,7 @@ describe('events', function () {
       });
     });
 
-    it('must return only events modified since the given time when requested', function (done) {
+    it('SSNE-must return only events modified since the given time when requested', function (done) {
       var params = {
         state: 'all',
         modifiedSince: timestamp.now('-45m')
@@ -373,7 +373,7 @@ describe('events', function () {
       });
     });
 
-    it('must include event deletions (since that time) when requested', function (done) {
+    it('IHBE-must include event deletions (since that time) when requested', function (done) {
       var params = {
         state: 'all',
         modifiedSince: timestamp.now('-45m'),
@@ -402,7 +402,7 @@ describe('events', function () {
       });
     });
 
-    it('must not keep event deletions past a certain time ' +
+    it('QFMP-must not keep event deletions past a certain time ' +
         '(cannot test because cannot force-run Mongo\'s TTL cleanup task)'
       //TODO do this test when cleanup is delegated to nightlyTask
     /*, function (done) {
@@ -421,7 +421,7 @@ describe('events', function () {
       });
     }*/);
 
-    it('must only return running period event(s) when requested', function (done) {
+    it('SGTU-must only return running period event(s) when requested', function (done) {
       var params = {
         running: true
       };
@@ -443,7 +443,7 @@ describe('events', function () {
       });
     });
 
-    it('must return an error if no access token is provided', function (done) {
+    it('TCYF-must return an error if no access token is provided', function (done) {
       commonTests.checkAccessTokenAuthentication(server.url, basePath, done);
     });
 
@@ -453,7 +453,7 @@ describe('events', function () {
 
     before(resetEvents);
 
-    it('must return the attached file with the correct headers', function (done) {
+    it('3R0I-must return the attached file with the correct headers', function (done) {
       var event = testData.events[0],
           attachment = event.attachments[0];
 
@@ -467,7 +467,7 @@ describe('events', function () {
       });
     });
 
-    it('must accept a secure read token in the query string instead of the `"Authorization" header',
+    it('TP1E-must accept a secure read token in the query string instead of the `"Authorization" header',
         function (done) {
       var event = testData.events[0],
           attIndex = 0;
@@ -493,7 +493,7 @@ describe('events', function () {
       ], done);
     });
 
-    it('must allow a filename path suffix after the file id', function (done) {
+    it('H1OS-must allow a filename path suffix after the file id', function (done) {
       var event = testData.events[0],
           attIndex = 1;
       async.waterfall([
@@ -518,7 +518,7 @@ describe('events', function () {
       ], done);
     });
 
-    it('must allow any filename (including special characters)', function(done) {
+    it('3O6C-must allow any filename (including special characters)', function(done) {
       var event = testData.events[0],
           attIndex = 1;
       async.waterfall(
@@ -551,7 +551,7 @@ describe('events', function () {
       );
     });
 
-    it('must refuse an invalid file read token', function (done) {
+    it('RC93-must refuse an invalid file read token', function (done) {
       var event = testData.events[0];
       request.get(path(event.id) + '/' + event.attachments[0].id)
           .unset('Authorization')
@@ -564,7 +564,7 @@ describe('events', function () {
       });
     });
 
-    it('must refuse auth via the regular "auth" query string parameter', function (done) {
+    it('QQPC-must refuse auth via the regular "auth" query string parameter', function (done) {
       var event = testData.events[0];
       request.get(path(event.id) + '/' + event.attachments[0].id)
           .unset('Authorization')
@@ -577,7 +577,7 @@ describe('events', function () {
           });
     });
 
-    it('must return a proper error if trying to get an unknown attachment', function (done) {
+    it('Y5Q5-must return a proper error if trying to get an unknown attachment', function (done) {
       var event = testData.events[0];
       request.get(path(event.id) + '/unknown-file-id').end(function (res) {
         validation.checkError(res, {
@@ -593,7 +593,7 @@ describe('events', function () {
 
     beforeEach(resetEvents);
 
-    it('must create an event with the sent data, returning it', function (done) {
+    it('ZIN3-must create an event with the sent data, returning it', function (done) {
       var data = {
         time: timestamp.fromDate('2012-03-22T10:00'),
         duration: timestamp.duration('55m'),
@@ -655,7 +655,7 @@ describe('events', function () {
       ], done);
     });
 
-    it('must set the event\'s time to "now" if missing', function (done) {
+    it('92ST-must set the event\'s time to "now" if missing', function (done) {
       var data = {
         streamId: testData.streams[2].id,
         type: 'mass/kg',
@@ -676,7 +676,7 @@ describe('events', function () {
       });
     });
     
-    it('must accept explicit null for optional fields', function (done) {
+    it('BSWJ-must accept explicit null for optional fields', function (done) {
       const data = {
         type: 'test/null',
         streamId: testData.streams[2].id,
@@ -695,7 +695,7 @@ describe('events', function () {
       });
     });
 
-    it('must refuse events with no stream id', function (done) {
+    it('Q2N2-must refuse events with no stream id', function (done) {
       request.post(basePath).send({type: testType}).end(function (res) {
         validation.checkErrorInvalidParams(res, done);
       });
@@ -703,7 +703,7 @@ describe('events', function () {
 
 
 
-    it('must return a correct error if an event with the same id already exists', function (done) {
+    it('AD23-must return a correct error if an event with the same id already exists', function (done) {
       var data = {
         id: testData.events[0].id,
         streamId: testData.streams[2].id,
@@ -718,7 +718,7 @@ describe('events', function () {
       });
     });
 
-    it('must not allow reuse of deleted ids (unlike streams)', function (done) {
+    it('CIJL-must not allow reuse of deleted ids (unlike streams)', function (done) {
       var data = {
         id: testData.events[13].id, // existing deletion
         streamId: testData.streams[2].id,
@@ -733,7 +733,7 @@ describe('events', function () {
       });
     });
 
-    it('must only allow ids that are formatted like cuids', function (done) {
+    it('HTDW-must only allow ids that are formatted like cuids', function (done) {
       var data = {
         id: 'man, this is a baaad id',
         streamId: testData.streams[2].id,
@@ -744,7 +744,7 @@ describe('events', function () {
       });
     });
     
-    it('must reject tags that are too long', function (done) {
+    it('8VUB-must reject tags that are too long', function (done) {
       var bigTag = new Array(600).join('a');
       var data = {
         streamId: testData.streams[2].id,
@@ -761,7 +761,7 @@ describe('events', function () {
       });
     });
 
-    it('must fix the tags to an empty array if not set', function (done) {
+    it('CO58-must fix the tags to an empty array if not set', function (done) {
       var data = { streamId: testData.streams[1].id, type: testType };
 
       request.post(basePath).send(data).end(function (res) {
@@ -775,7 +775,7 @@ describe('events', function () {
       });
     });
 
-    it('must try casting string event content to number if appropriate', function (done) {
+    it('9SIM-must try casting string event content to number if appropriate', function (done) {
       var data = {
         streamId: testData.streams[2].id,
         type: 'mass/kg',
@@ -793,7 +793,7 @@ describe('events', function () {
       });
     });
 
-    it('must not stop the running period event if the new event is a mark event (single activity)',
+    it('A3RJ-must not stop the running period event if the new event is a mark event (single activity)',
         function (done) {
       var data = { streamId: testData.streams[0].id, type: testType };
       async.series([
@@ -819,7 +819,7 @@ describe('events', function () {
       ], done);
     });
 
-    it('must not stop the running period event if the stream allows overlapping', function (done) {
+    it('NYSQ-must not stop the running period event if the stream allows overlapping', function (done) {
       var data = {
         streamId: testData.streams[1].id,
         duration: timestamp.duration('1h'),
@@ -845,7 +845,7 @@ describe('events', function () {
       ], done);
     });
 
-    it('must validate the event\'s content if its type is known', function (done) {
+    it('393N-must validate the event\'s content if its type is known', function (done) {
       var data = {
         streamId: testData.streams[1].id,
         type: 'note/webclip',
@@ -862,7 +862,7 @@ describe('events', function () {
     });
 
     // cf. GH issue #42
-    it('must not fail when validating the content if passing a string instead of an object',
+    it('G3CY-must not fail when validating the content if passing a string instead of an object',
         function (done) {
       var data = {
         streamId: testData.streams[1].id,
@@ -874,13 +874,13 @@ describe('events', function () {
       });
     });
 
-    it('must return an error if the sent data is badly formatted', function (done) {
+    it('FY8A-must return an error if the sent data is badly formatted', function (done) {
       request.post(basePath).send({badProperty: 'bad value'}).end(function (res) {
         validation.checkErrorInvalidParams(res, done);
       });
     });
 
-    it('must return an error if the associated stream is unknown', function (done) {
+    it('AKLS-must return an error if the associated stream is unknown', function (done) {
       var data = {
         time: timestamp.fromDate('2012-03-22T10:00'),
         type: testType,
@@ -895,7 +895,7 @@ describe('events', function () {
       });
     });
 
-    it('must return an error if the event\'s period overlaps existing periods (single activity)',
+    it('IF20-must return an error if the event\'s period overlaps existing periods (single activity)',
         function (done) {
       var data = {
         time: timestamp.add(testData.events[1].time, '15m'),
@@ -915,7 +915,7 @@ describe('events', function () {
       });
     });
 
-    it('must allow the event\'s period overlapping existing periods when the stream allows it',
+    it('C5VJ-must allow the event\'s period overlapping existing periods when the stream allows it',
         function (done) {
       var data = {
         streamId: testData.streams[1].id,
@@ -931,7 +931,7 @@ describe('events', function () {
       });
     });
 
-    it('must return an error if the assigned stream is trashed', function (done) {
+    it('1KW4-must return an error if the assigned stream is trashed', function (done) {
       var data = {
         type: testType,
         streamId: testData.streams[3].id
@@ -945,7 +945,7 @@ describe('events', function () {
       });
     });
 
-    it('must not fail (500) when sending an array instead of an object', function (done) {
+    it('FW03-must not fail (500) when sending an array instead of an object', function (done) {
       request.post(basePath).send([{}]).end(function (res) {
         validation.checkError(res, {
           status: 400,
@@ -962,7 +962,7 @@ describe('events', function () {
 
     var path = basePath + '/start';
 
-    it('must create a running period event stopping any previously running event (single activity)',
+    it('KVUN-must create a running period event stopping any previously running event (single activity)',
         function (done) {
       var data = {
         // 15 minutes ago to make sure the previous duration is set accordingly
@@ -1012,7 +1012,7 @@ describe('events', function () {
       );
     });
 
-    it('must return an error if a period event already exists later (single activity)',
+    it('MCBW-must return an error if a period event already exists later (single activity)',
         function (done) {
       var data = {
         time: timestamp.now('-1h05m'),
@@ -1028,7 +1028,7 @@ describe('events', function () {
       });
     });
 
-    it('must allow starting an event before an existing period when the stream allows overlapping',
+    it('21A4-must allow starting an event before an existing period when the stream allows overlapping',
         function (done) {
       var data = {
         streamId: testData.streams[1].id,
@@ -1050,7 +1050,7 @@ describe('events', function () {
 
     beforeEach(resetEvents);
 
-    it('must create a new event with the uploaded files', function (done) {
+    it('JEPP-must create a new event with the uploaded files', function (done) {
       var data = {
         time: timestamp.now(),
         type: 'wisdom/test',
@@ -1111,7 +1111,7 @@ describe('events', function () {
         });
     });
 
-    it('must properly handle part names containing special chars (e.g. ".", "$")', function (done) {
+    it('ABQF-must properly handle part names containing special chars (e.g. ".", "$")', function (done) {
       var data = {
         time: timestamp.now(),
         type: 'wisdom/test',
@@ -1158,7 +1158,7 @@ describe('events', function () {
       });
     });
 
-    it('must return an error if the non-file content part is not JSON', function (done) {
+    it('TRM2-must return an error if the non-file content part is not JSON', function (done) {
       request.post(basePath)
           .field('event', '<bad>data</bad>')
           .attach('file', testData.attachments.text.path, testData.attachments.text.fileName)
@@ -1170,7 +1170,7 @@ describe('events', function () {
       });
     });
     
-    it('must return an error if there is more than one non-file content part', function (done) {
+    it('0VE8-must return an error if there is more than one non-file content part', function (done) {
       request.post(basePath)
         .field('event', 
           JSON.stringify({ streamId: testData.streams[0].id, type: testType }))
@@ -1188,7 +1188,7 @@ describe('events', function () {
 
     beforeEach(resetEvents);
 
-    it('must add the uploaded files to the event as attachments', function (done) {
+    it('MSZM-must add the uploaded files to the event as attachments', function (done) {
       var event = testData.events[1],
           time;
 
@@ -1257,7 +1257,7 @@ describe('events', function () {
           });
     });
 
-    it('must add the uploaded files to the event without replacing existing attachments',
+    it('G1KN-must add the uploaded files to the event without replacing existing attachments',
       function (done) {
         var event = testData.events[0];
 
@@ -1301,7 +1301,7 @@ describe('events', function () {
   describe('GET /<id>', () => {
     beforeEach(resetEvents);
     
-    it('allows access at level=read', async () => {
+    it('18ZN-allows access at level=read', async () => {
       const request = supertest(server.url);
       const access = _.find(testData.accesses, (v) => v.id === 'a_2');
       const event = testData.events[0];
@@ -1312,7 +1312,7 @@ describe('events', function () {
       assert.isTrue(response.ok);
       assert.strictEqual(response.body.event.id, event.id);
     });
-    it('denies access without authorization', async () => {
+    it('0UCG-denies access without authorization', async () => {
       const request = supertest(server.url);
       const event = testData.events[0];
 
@@ -1327,7 +1327,7 @@ describe('events', function () {
 
     beforeEach(resetEvents);
 
-    it('must modify the event with the sent data', function (done) {
+    it('JW9T-must modify the event with the sent data', function (done) {
       var original = testData.events[0],
           time;
       var data = {
@@ -1376,7 +1376,7 @@ describe('events', function () {
       ], done);
     });
 
-    it('must add/update/remove the specified client data fields without touching the others',
+    it('5MS6-must add/update/remove the specified client data fields without touching the others',
         function (done) {
       var original = testData.events[1],
           time;
@@ -1411,7 +1411,7 @@ describe('events', function () {
       });
     });
 
-    it('must return the id of the stopped previously running event if any (single activity)',
+    it('SSPW-must return the id of the stopped previously running event if any (single activity)',
         function (done) {
       request.put(path(testData.events[3].id)).send({time: timestamp.now()})
           .end(function (res) {
@@ -1425,7 +1425,7 @@ describe('events', function () {
       });
     });
     
-    it('must accept explicit null for optional fields', function (done) {
+    it('SEE6-must accept explicit null for optional fields', function (done) {
       const data = {
         type: 'test/null',
         duration: null,
@@ -1444,7 +1444,7 @@ describe('events', function () {
         });
     });
 
-    it('must validate the event\'s content if its type is known', function (done) {
+    it('4PIR-must validate the event\'s content if its type is known', function (done) {
       var data = {
         type: 'position/wgs84',
         content: {
@@ -1457,7 +1457,7 @@ describe('events', function () {
       });
     });
 
-    it('must return an error if the event does not exist', function (done) {
+    it('FQDI-must return an error if the event does not exist', function (done) {
       request.put(path('unknown-id')).send({time: timestamp.now()}).end(function (res) {
         validation.checkError(res, {
           status: 404,
@@ -1466,14 +1466,14 @@ describe('events', function () {
       });
     });
 
-    it('must return an error if the sent data is badly formatted', function (done) {
+    it('YPBZ-must return an error if the sent data is badly formatted', function (done) {
       request.put(path(testData.events[3].id)).send({badProperty: 'bad value'})
           .end(function (res) {
         validation.checkErrorInvalidParams(res, done);
       });
     });
 
-    it('must return an error if the associated stream is unknown', function (done) {
+    it('PMYO-must return an error if the associated stream is unknown', function (done) {
       request.put(path(testData.events[3].id)).send({streamId: 'unknown-stream-id'})
           .end(function (res) {
         validation.checkError(res, {
@@ -1484,7 +1484,7 @@ describe('events', function () {
       });
     });
 
-    it('must return an error if moving a running period event before another existing ' +
+    it('G2Z3-must return an error if moving a running period event before another existing ' +
         'period event (single activity)', function (done) {
       var data = { time: timestamp.add(testData.events[3].time, '-5m') };
       request.put(path(testData.events[9].id)).send(data).end(function (res) {
@@ -1496,7 +1496,7 @@ describe('events', function () {
       });
     });
 
-    it('must return an error if the event\'s new period overlaps other events\'s (single activity)',
+    it('RHRV-must return an error if the event\'s new period overlaps other events\'s (single activity)',
         function (done) {
       request.put(path(testData.events[1].id)).send({duration: timestamp.duration('5h')})
           .end(function (res) {
@@ -1527,7 +1527,7 @@ describe('events', function () {
         });
       });
     
-      it('must prevent update of protected fields and throw a forbidden error in strict mode',
+      it('YKLK-must prevent update of protected fields and throw a forbidden error in strict mode',
         function (done) {
           const forbiddenUpdate = {
             id: 'forbidden',
@@ -1554,7 +1554,7 @@ describe('events', function () {
           ], done);
         });
         
-      it('must prevent update of protected fields and log a warning in non-strict mode',
+      it('5CG1-must prevent update of protected fields and log a warning in non-strict mode',
         function (done) {
           const forbiddenUpdate = {
             id: 'forbidden',
@@ -1595,7 +1595,7 @@ describe('events', function () {
         
     });
     
-    it('must reject tags that are too long', function (done) {
+    it('YJNJ-must reject tags that are too long', function (done) {
       var bigTag = new Array(600).join('a');
       
       request.put(path(testData.events[1].id)).send({tags: [bigTag]})
@@ -1616,7 +1616,7 @@ describe('events', function () {
 
     var path = basePath + '/stop';
 
-    it('must stop the previously running period event, returning its id (single activity)',
+    it('8WTB-must stop the previously running period event, returning its id (single activity)',
         function (done) {
       var stopTime = timestamp.now('-5m'),
           stoppedEvent = testData.events[9],
@@ -1654,7 +1654,7 @@ describe('events', function () {
       ], done);
     });
 
-    it('must stop the last running event of the given type when specified', function (done) {
+    it('QFF4-must stop the last running event of the given type when specified', function (done) {
       var stoppedEvent = testData.events[11],
           stopTime;
       async.series([
@@ -1696,7 +1696,7 @@ describe('events', function () {
       ], done);
     });
 
-    it('must accept an `id` param to specify the event to stop', function (done) {
+    it('OR7I-must accept an `id` param to specify the event to stop', function (done) {
       async.series([
         function addOtherRunning(stepDone) {
           var data = {
@@ -1724,7 +1724,7 @@ describe('events', function () {
       ], done);
     });
 
-    it('must return an error if the specified event does not exist', function (done) {
+    it('M12G-must return an error if the specified event does not exist', function (done) {
       var data = {id: 'unknown'};
       request.post(basePath + '/stop').send(data)
           .end(function (res) {
@@ -1736,7 +1736,7 @@ describe('events', function () {
       });
     });
 
-    it('must return an error if the specified event is not running', function (done) {
+    it('5B5E-must return an error if the specified event is not running', function (done) {
       var data = {id: testData.events[6].id};
       request.post(basePath + '/stop').send(data)
           .end(function (res) {
@@ -1747,7 +1747,7 @@ describe('events', function () {
       });
     });
 
-    it('must return an error if no event is specified and the stream allows overlapping',
+    it('ORQD-must return an error if no event is specified and the stream allows overlapping',
         function (done) {
       var data = {streamId: testData.streams[1].id};
       request.post(basePath + '/stop').send(data).end(function (res) {
@@ -1758,7 +1758,7 @@ describe('events', function () {
       });
     });
 
-    it('must return an error if neither stream nor event is specified', function (done) {
+    it('E13L-must return an error if neither stream nor event is specified', function (done) {
       request.post(basePath + '/stop').send({}).end(function (res) {
         validation.checkError(res, {
           status: 400,
@@ -1773,7 +1773,7 @@ describe('events', function () {
 
     beforeEach(resetEvents);
 
-    it('must delete the attachment (reference in event + file)', function (done) {
+    it('7PQP-must delete the attachment (reference in event + file)', function (done) {
       var event = testData.events[0];
       var fPath = path(event.id) + '/' + event.attachments[0].id;
       request.del(fPath).end(function (res) {
@@ -1808,7 +1808,7 @@ describe('events', function () {
       });
     });
 
-    it('must return an error if not existing', function (done) {
+    it('19AV-must return an error if not existing', function (done) {
       request.del(path(testData.events[0].id) + '/unknown.file').end(function (res) {
         validation.checkError(res, {
           status: 404,
@@ -1823,7 +1823,7 @@ describe('events', function () {
 
     beforeEach(resetEvents);
 
-    it('must flag the event as trashed', function (done) {
+    it('6LNU-must flag the event as trashed', function (done) {
       var id = testData.events[0].id,
           time;
 
@@ -1845,7 +1845,7 @@ describe('events', function () {
       });
     });
 
-    it('must delete the event when already trashed including all its attachments', function (done) {
+    it('0PS1-must delete the event when already trashed including all its attachments', function (done) {
       var id = testData.events[0].id,
           deletionTime;
 

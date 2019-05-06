@@ -74,22 +74,22 @@ describe('access deletions', () => {
         deletions = res.body.accessDeletions;
       });
 
-      it('should contain deletions', () => {
+      it('MMH1-should contain deletions', () => {
         assert.isNotNull(deletions);
       });
 
-      it('contains active accesses', () => {
+      it('8LTG-contains active accesses', () => {
         assert.equal(accesses.length, 2);
         const activeAccess = accesses.find( a => a.token === activeToken );
         assert.isNotNull(activeAccess);
       });
 
-      it('contains deleted accesses as well', () => {
+      it('2EL2-contains deleted accesses as well', () => {
         assert.equal(deletions.length, 1);
         assert.equal(deletions[0].token, deletedToken);
       });
 
-      it('deleted access are in UTC (seconds) format', () => {
+      it('A4NV-deleted access are in UTC (seconds) format', () => {
         const deletedAccess = deletions[0];
         assert.equal(deletedAccess.deleted, deletedTimestamp);
       });
@@ -119,18 +119,18 @@ describe('access deletions', () => {
           createdAccess = res.body.access;
         });
 
-        it('should contain an access', () => {
+        it('WGQO-should contain an access', () => {
           assert.isNotNull(createdAccess);
         });
 
-        it('should contain the set values, but no "deleted" field in the API response', () => {
+        it('5BD9-should contain the set values, but no "deleted" field in the API response', () => {
           assert.deepEqual(access, _.pick(createdAccess,
             ['name', 'permissions', 'type']
           ));
           assert.notExists(createdAccess.deleted);
         });
 
-        it('should contain the field "deleted:null" in the database', (done) => {
+        it('YJFH-should contain the field "deleted:null" in the database', (done) => {
           storage.findAll({ id: userId }, {}, (err, accesses) => {
             const deletedAccess = accesses.find(a => a.name === access.name);
             assert.equal(deletedAccess.deleted, null);
@@ -159,12 +159,12 @@ describe('access deletions', () => {
             .send(deletedAccess);
         });
 
-        it('should return an error', () => {
+        it('ESAS-should return an error', () => {
           error = res.body.error;
           assert.isNotNull(error);
         });
 
-        it('error should say that the deleted field is forbidden upon creation', () => {
+        it('ICMY-error should say that the deleted field is forbidden upon creation', () => {
           assert.equal(error.id, ErrorIds.InvalidParametersFormat);
         });
 
@@ -188,12 +188,12 @@ describe('access deletions', () => {
           });
       });
 
-      it('should return an error', () => {
+      it('B3P6-should return an error', () => {
         error = res.body.error;
         assert.isNotNull(error);
       });
 
-      it('error should say that the deleted field is forbidden upon update', () => {
+      it('3CVD-error should say that the deleted field is forbidden upon update', () => {
         assert.equal(error.id, ErrorIds.InvalidParametersFormat);
       });
 
@@ -287,10 +287,10 @@ describe('access expiry', () => {
           accesses = res.body.accesses;
         });
 
-        it('succeeds', () => {
+        it('LB3J-succeeds', () => {
           assert.isNotNull(accesses);
         });
-        it('contains only active accesses', () => {
+        it('L1GF-contains only active accesses', () => {
           for (const a of accesses) 
             assert.isFalse(isExpired(a), 
               `Access '${a.name}' is expired`);
@@ -310,10 +310,10 @@ describe('access expiry', () => {
           accesses = res.body.accesses;
         });
         
-        it('succeeds', () => {
+        it('88Q2-succeeds', () => {
           assert.isNotNull(accesses);
         });
-        it('includes expired accesses', () => {
+        it('8TPS-includes expired accesses', () => {
           assert.isAbove(lodash.filter(accesses, isExpired).length, 0);
         });
       });
@@ -347,7 +347,7 @@ describe('access expiry', () => {
           }
         });
         
-        it('creates an access with set expiry timestamp', () => {
+        it('T6BJ-creates an access with set expiry timestamp', () => {
           assert.strictEqual(res.status, 201);
           assert.isAbove(access.expires, timestamp.now());
         });
@@ -380,7 +380,7 @@ describe('access expiry', () => {
           }
         });
         
-        it('creates an expired access', () => {
+        it('6YGV-creates an expired access', () => {
           assert.strictEqual(res.status, 201);
           assert.isAbove(timestamp.now(), access.expires);
         });
@@ -406,7 +406,7 @@ describe('access expiry', () => {
             .send(attrs);
         });
                 
-        it('fails', () => {
+        it('GTZN-fails', () => {
           assert.strictEqual(res.status, 400);
           assert.strictEqual(res.body.error.message, 'expireAfter cannot be negative.');
         });
@@ -451,7 +451,7 @@ describe('access expiry', () => {
           }
         });
 
-        it('expires the access immediately', () => {
+        it('C6EK-expires the access immediately', () => {
           assert.isTrue(res.ok);
           assert.isNotNull(access.expires);
           assert.isAbove(timestamp.now(), access.expires);
@@ -473,7 +473,7 @@ describe('access expiry', () => {
           }
         });
 
-        it('removes expiry', () => {
+        it('FKWN-removes expiry', () => {
           assert.isTrue(res.ok);
           assert.isNull(access.expires);
         });
@@ -488,7 +488,7 @@ describe('access expiry', () => {
             .send({ expireAfter: 3700 });
         });
         
-        it('fails', () => {
+        it('TFPD-fails', () => {
           assert.isFalse(res.ok);
           assert.match(res.body.error.message, /^Unknown access/);
         });
@@ -513,7 +513,7 @@ describe('access expiry', () => {
             });
         });
         
-        it('returns the matching access', () => {
+        it('7CI5-returns the matching access', () => {
           assert.isTrue(res.ok);
           assert.strictEqual(res.body.matchingAccess.token, hasExpiryToken);
         });
@@ -534,7 +534,7 @@ describe('access expiry', () => {
           // permissions. 
         });
         
-        it('returns no match', () => {
+        it('6M7U-returns no match', () => {
           assert.isUndefined(res.body.matchingAccess);
           
           const mismatching = res.body.mismatchingAccess;
@@ -557,10 +557,10 @@ describe('access expiry', () => {
           res = await apiAccess(expiredToken);
         });
         
-        it('fails', () => {
+        it('WJOI-fails', () => {
           assert.strictEqual(res.status, 403);
         });
-        it('returns a proper error message', () => {
+        it('HTH3-returns a proper error message', () => {
           const error = res.body.error; 
           
           assert.isNotNull(error);
@@ -574,7 +574,7 @@ describe('access expiry', () => {
           res = await apiAccess(accessToken);
         });
           
-        it('succeeds', () => {
+        it('0UVW-succeeds', () => {
           assert.strictEqual(res.status, 200);
         });
       });
@@ -656,11 +656,11 @@ describe('access client data', () => {
         accesses = res.body.accesses;
       });
 
-      it('succeeds', () => {
+      it('QO82-succeeds', () => {
         assert.exists(accesses);
       });
 
-      it('contains existing accesses with clientData', () => {
+      it('HTGE-contains existing accesses with clientData', () => {
         for (const a of accesses) {
           const fixtureAccess =
             fixtureAccesses.find(f => {return f.id === a.id;});
@@ -705,7 +705,7 @@ describe('access client data', () => {
           access = checkResultingAccess(res);
         });
         
-        it('creates an access with empty clientData', () => {
+        it('R2W2-creates an access with empty clientData', () => {
           assert.strictEqual(res.status, 201);
           assert.deepEqual(access.clientData, {});
         });
@@ -720,7 +720,7 @@ describe('access client data', () => {
             .send(sampleAccess('With null clientData', null));
         });
         
-        it('throws a schema error', () => {
+        it('8LCQ-throws a schema error', () => {
           assert.isFalse(res.ok);
           assert.exists(res.body.error);
         });
@@ -737,7 +737,7 @@ describe('access client data', () => {
           access = checkResultingAccess(res);
         });
                 
-        it('creates an access with complex clientData', () => {
+        it('0Z61-creates an access with complex clientData', () => {
           assert.strictEqual(res.status, 201);
           assert.deepEqual(access.clientData, complexClientData);
         });
@@ -773,7 +773,7 @@ describe('access client data', () => {
           access = checkResultingAccess(res);
         });
 
-        it('updates previous clientData with new clientData', () => {
+        it('W20A-updates previous clientData with new clientData', () => {
           assert.exists(access.clientData);
           assert.deepEqual(access.clientData, clientDataUpdate);
         });
@@ -790,7 +790,7 @@ describe('access client data', () => {
           access = checkResultingAccess(res);
         });
 
-        it('keeps existing clientData untouched', () => {
+        it('AVR2-keeps existing clientData untouched', () => {
           assert.exists(access.clientData);
           assert.deepEqual(access.clientData, toBeUpdateAccess2.clientData);
         });
@@ -808,7 +808,7 @@ describe('access client data', () => {
           access = checkResultingAccess(res);
         });
 
-        it('sets clientData to provided clientData', () => {
+        it('W2AQ-sets clientData to provided clientData', () => {
           assert.exists(access.clientData);
           assert.deepEqual(access.clientData, complexClientData);
         });
@@ -825,7 +825,7 @@ describe('access client data', () => {
           access = checkResultingAccess(res);
         });
         
-        it('removes existing clientData', () => {
+        it('PKFH-removes existing clientData', () => {
           assert.notExists(access.clientData);
         });
       });
@@ -855,7 +855,7 @@ describe('access client data', () => {
           });
         });
         
-        it('returns the matching access', () => {
+        it('39KP-returns the matching access', () => {
           assert.exists(body.matchingAccess);
           assert.strictEqual(body.matchingAccess.id, existingAccess.id);
         });
@@ -871,7 +871,7 @@ describe('access client data', () => {
           });
         });
         
-        it('returns no match', () => {
+        it('RK72-returns no match', () => {
           assert.exists(body.mismatchingAccess);
           assert.strictEqual(body.mismatchingAccess.id, existingAccess.id);
         });
@@ -886,7 +886,7 @@ describe('access client data', () => {
           });
         });
         
-        it('returns no match', () => {
+        it('QP2B-returns no match', () => {
           assert.exists(body.mismatchingAccess);
           assert.strictEqual(body.mismatchingAccess.id, existingAccess.id);
         });

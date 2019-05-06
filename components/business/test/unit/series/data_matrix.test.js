@@ -18,7 +18,7 @@ describe('DataMatrix', function () {
     const typeRepo = new TypeRepository(); 
     const type: InfluxRowType = (typeRepo.lookup('series:position/wgs84'): any);
     
-    it('should accept the happy path', () => {
+    it('8PJY-should accept the happy path', () => {
       good({
         'format': 'flatJSON', 
         'fields': ['timestamp', 'latitude', 'longitude', 'altitude'], 
@@ -28,16 +28,16 @@ describe('DataMatrix', function () {
       });
     });
     
-    it('refuses if not an object', () => {
+    it('69VW-refuses if not an object', () => {
       bad(null);
       bad('a string');
     });
-    it('refuses if format is not flatJSON', () => {
+    it('JRF6-refuses if format is not flatJSON', () => {
       bad({
         format: 'somethingElse'
       });
     });
-    it('refuses if fields are not strings', () => {
+    it('62B5-refuses if fields are not strings', () => {
       bad({
         format: 'flatJSON', 
         fields: null
@@ -51,21 +51,21 @@ describe('DataMatrix', function () {
         fields: [ 13, 14 ]
       });
     });
-    it('refuses if points is not an array', () => {
+    it('59NH-refuses if points is not an array', () => {
       bad({
         format: 'flatJSON', 
         fields: [ 'ts', 'foo' ], 
         points: 42
       });
     });
-    it('refuses if field names are not correct', () => {
+    it('REEQ-refuses if field names are not correct', () => {
       bad({
         format: 'flatJSON', 
         fields: [ 'ts', 'foo' ], 
         points: []
       });
     });
-    it('refuses if data cannot be coerced', () => {
+    it('PAMT-refuses if data cannot be coerced', () => {
       bad({
         format: 'flatJSON', 
         fields: [ 'timestamp', 'latitude' ], 
@@ -88,7 +88,7 @@ describe('DataMatrix', function () {
   });
 
   describe('#eachRow', function () {
-    it('should iterate over all matrix rows', function () {
+    it('UQ5A-should iterate over all matrix rows', function () {
       const headers = ['a', 'b', 'c']; 
       const matrix = new DataMatrix(
         headers,
@@ -111,7 +111,7 @@ describe('DataMatrix', function () {
     });
   });
   describe('#transform', function () {
-    it('should call fn for each cell', function () {
+    it('EM4R-should call fn for each cell', function () {
       const headers = ['a', 'b', 'c']; 
       const matrix = new DataMatrix(
         headers,
@@ -132,7 +132,7 @@ describe('DataMatrix', function () {
       
       assert.strictEqual(n, 6);
     });
-    it('should store the return value in the matrix', function () {
+    it('7A37-should store the return value in the matrix', function () {
       const headers = ['a', 'b', 'c']; 
       const matrix = new DataMatrix(
         headers,
@@ -149,7 +149,7 @@ describe('DataMatrix', function () {
     });
   });
   describe('#minmax()', () => {
-    it('returns the minimum and maximum timestamp used', () => {
+    it('FGKE-returns the minimum and maximum timestamp used', () => {
       const headers = ['a', 'b', 'timestamp']; 
       const matrix = new DataMatrix(
         headers,
@@ -162,7 +162,7 @@ describe('DataMatrix', function () {
       assert.strictEqual(from, 3);
       assert.strictEqual(to, 6);
     });
-    it('throws an error if the matrix is empty', () => {
+    it('U4NZ-throws an error if the matrix is empty', () => {
       const headers = ['a', 'b', 'timestamp']; 
       const matrix = new DataMatrix(
         headers,
@@ -171,7 +171,7 @@ describe('DataMatrix', function () {
       
       assert.throws( () => matrix.minmax() );
     });
-    it('throws an error if the timestamp is missing', () => {
+    it('JO46-throws an error if the timestamp is missing', () => {
       const headers = ['a', 'b', 'c']; 
       const matrix = new DataMatrix(
         headers,
@@ -189,7 +189,7 @@ describe('DataMatrix', function () {
 
 describe('business.series.Row', function () {
   describe('toStruct', function () {
-    it('should return a js object for the row', function () {
+    it('MJ3G-should return a js object for the row', function () {
       const row = new Row([1, 2], ['a', 'b']);
       
       const obj = row.toStruct();

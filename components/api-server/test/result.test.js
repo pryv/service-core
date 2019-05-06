@@ -13,7 +13,7 @@ describe('Result', function () {
 
   describe('toObject()', function () {
 
-    it('must return the result\'s content when not storing streams', function (done) {
+    it('D6BK-must return the result\'s content when not storing streams', function (done) {
       var res = new Result();
       res.a = 'a';
 
@@ -25,7 +25,7 @@ describe('Result', function () {
       res.toObject(expectation);
     });
 
-    it('must return the result content when storing streams', function (done) {
+    it('UHUE-must return the result content when storing streams', function (done) {
       var res = new Result(),
           arrayName1 = 'items',
           array1 = [{a: 'a'}, {b: 'b'}, {c: 'c'}],
@@ -45,7 +45,7 @@ describe('Result', function () {
       res.toObject(expectation);
     });
 
-    it('must return an error object when attempting to serialize streams containing an amount' +
+    it('VYMB-must return an error object when attempting to serialize streams containing an amount' +
       'of objects exceeding the limit', function (done) {
       var res = new Result({arrayLimit: 2}),
           arrayName1 = 'items',
@@ -65,7 +65,7 @@ describe('Result', function () {
       res.toObject(expectation);
     });
 
-    it('must return an error when storing piped streams', function (done) {
+    it('TNHH-must return an error when storing piped streams', function (done) {
       var res = new Result({arrayLimit: 2}),
           arrayName1 = 'items',
           array1 = [{a: 'a'}, {b: 'b'}, {c: 'c'}],

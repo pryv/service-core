@@ -131,7 +131,7 @@ describe('accesses (app)', function () {
 
     before(resetAccesses);
 
-    it('must return shared accesses whose permissions are a subset of the current one\'s',
+    it('SIHH-must return shared accesses whose permissions are a subset of the current one\'s',
       function (done) {
         req().get(basePath, access.token).end(function (res) {
           validation.check(res, {
@@ -142,7 +142,7 @@ describe('accesses (app)', function () {
         });
       });
 
-    it('must be forbidden to requests with a shared access token', function (done) {
+    it('RN9L-must be forbidden to requests with a shared access token', function (done) {
       const sharedAccess = testData.accesses[1];
       req().get(basePath, sharedAccess.token).end(function (res) {
         validation.checkErrorForbidden(res, done);
@@ -155,7 +155,7 @@ describe('accesses (app)', function () {
 
     beforeEach(resetAccesses);
 
-    it('must create a new shared access with the sent data and return it', function (done) {
+    it('E2PG-must create a new shared access with the sent data and return it', function (done) {
       const  data = {
         name: 'New Access',
         permissions: [
@@ -190,7 +190,7 @@ describe('accesses (app)', function () {
       });
     });
 
-    it('must forbid trying to create a non-shared access', function (done) {
+    it('SW9W-must forbid trying to create a non-shared access', function (done) {
       const data = {
         name: 'New Access',
         type: 'app',
@@ -206,7 +206,7 @@ describe('accesses (app)', function () {
       });
     });
 
-    it('must forbid trying to create an access with greater permissions', function (done) {
+    it('ASPN-must forbid trying to create an access with greater permissions', function (done) {
       const data = {
         name: 'New Access',
         permissions: [
@@ -221,7 +221,7 @@ describe('accesses (app)', function () {
       });
     });
 
-    it('must return a correct error if the sent data is badly formatted', function (done) {
+    it('MC7E-must return a correct error if the sent data is badly formatted', function (done) {
       const data = {
         name: 'New Access',
         permissions: [
@@ -236,7 +236,7 @@ describe('accesses (app)', function () {
       });
     });
 
-    it('must allow creation of shared accesses with an access that has superior permission on root stream (*)', function (done) {
+    it('SPOB-must allow creation of shared accesses with an access that has superior permission on root stream (*)', function (done) {
       const access = additionalTestAccesses[3];
 
       const data = {
@@ -262,7 +262,7 @@ describe('accesses (app)', function () {
 
     beforeEach(resetAccesses);
 
-    it('must modify the access with the sent data', function (done) {
+    it('Q0HC-must modify the access with the sent data', function (done) {
       const original = additionalTestAccesses[2];
       const data = {
         name: 'Updated Shared Access A',
@@ -292,21 +292,21 @@ describe('accesses (app)', function () {
       });
     });
 
-    it('must forbid trying to modify a non-shared access', function (done) {
+    it('QCFM-must forbid trying to modify a non-shared access', function (done) {
       req().put(path(additionalTestAccesses[1].id), access.token)
           .send({name: 'Updated App Access'}).end(function (res) {
         validation.checkErrorUnknown(res, done);
       });
     });
 
-    it('must forbid trying to modify an access with greater permissions', function (done) {
+    it('ECJY-must forbid trying to modify an access with greater permissions', function (done) {
       req().put(path(testData.accesses[1].id), access.token)
           .send({name: 'Updated Shared Access'}).end(function (res) {
         validation.checkErrorUnknown(res, done);
       });
     });
 
-    it('must return a correct error if the access does not exist', function (done) {
+    it('MCGU-must return a correct error if the access does not exist', function (done) {
       req().put(path('unknown-id'), access.token).send({name: '?'}).end(function (res) {
         validation.checkError(res, {
           status: 404,
@@ -315,7 +315,7 @@ describe('accesses (app)', function () {
       });
     });
 
-    it('must return a correct error if the sent data is badly formatted', function (done) {
+    it('NAGF-must return a correct error if the sent data is badly formatted', function (done) {
       const data = {
         permissions: [
           {
@@ -330,7 +330,7 @@ describe('accesses (app)', function () {
       });
     });
 
-    it('must return a correct error if an access with the same name already exists', (done) => {
+    it('SO5Y-must return a correct error if an access with the same name already exists', (done) => {
       req()
         .put(path(additionalTestAccesses[2].id), access.token)
         .send({name: testData.accesses[1].name}).end((res) => {
@@ -348,7 +348,7 @@ describe('accesses (app)', function () {
 
     beforeEach(resetAccesses);
 
-    it('must delete the shared access', function (done) {
+    it('FISP-must delete the shared access', function (done) {
       const deletedAccess = additionalTestAccesses[2];
       let deletionTime;
       async.series([
@@ -383,19 +383,19 @@ describe('accesses (app)', function () {
       );
     });
 
-    it('must forbid trying to delete a non-shared access', function (done) {
+    it('K1AC-must forbid trying to delete a non-shared access', function (done) {
       req().del(path(additionalTestAccesses[1].id), access.token).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
-    it('must forbid trying to delete an access with greater permissions', function (done) {
+    it('8YJS-must forbid trying to delete an access with greater permissions', function (done) {
       req().del(path(testData.accesses[1].id), access.token).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
-    it('must return a correct error if the access does not exist', function (done) {
+    it('MG1Q-must return a correct error if the access does not exist', function (done) {
       req().del(path('unknown-id'), access.token).end(function (res) {
         validation.checkError(res, {
           status: 404,

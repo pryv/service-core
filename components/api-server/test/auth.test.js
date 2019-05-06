@@ -53,7 +53,7 @@ describe('auth', function() {
 
     before(testData.resetAccesses);
 
-    it('must authenticate the given credentials, open a session and return the access token', function(done) {
+    it('JN84-must authenticate the given credentials, open a session and return the access token', function(done) {
       async.series(
         [
           function login(stepDone) {
@@ -89,7 +89,7 @@ describe('auth', function() {
       );
     });
 
-    it('must reuse the current session if already open', function(done) {
+    it('VIE9-must reuse the current session if already open', function(done) {
       var originalToken;
       async.series(
         [
@@ -120,7 +120,7 @@ describe('auth', function() {
       );
     });
 
-    it('must accept "wildcarded" app ids and origins', function(done) {
+    it('6TFI-must accept "wildcarded" app ids and origins', function(done) {
       request
         .post(path(authData.username))
         .set('Origin', 'https://test.rec.la:1234')
@@ -132,7 +132,7 @@ describe('auth', function() {
         });
     });
 
-    it('must accept "no origin" (i.e. not a CORS request) if authorized', function(done) {
+    it('47H4-must accept "no origin" (i.e. not a CORS request) if authorized', function(done) {
       var authDataNoCORS = _.defaults({ appId: 'pryv-test-no-cors' }, authData);
       request
         .post(path(authDataNoCORS.username))
@@ -144,7 +144,7 @@ describe('auth', function() {
         });
     });
 
-    it('must also accept "referer" in place of "origin" (e.g. some browsers do not provide "origin")', function(done) {
+    it('IO2V-must also accept "referer" in place of "origin" (e.g. some browsers do not provide "origin")', function(done) {
       request
         .post(path(authData.username))
         .set('Referer', trustedOrigin)
@@ -156,7 +156,7 @@ describe('auth', function() {
         });
     });
 
-    it('must also accept "referer" in place of "origin" (e.g. some browsers do not provide "origin")', function(done) {
+    it('6OT4-must also accept "referer" in place of "origin" (e.g. some browsers do not provide "origin")', function(done) {
       request
         .post(path(authData.username))
         .set('Referer', trustedOrigin)
@@ -167,7 +167,7 @@ describe('auth', function() {
         });
     });
 
-    it('must not be case-sensitive for the username', function(done) {
+    it('9NOB-must not be case-sensitive for the username', function(done) {
       request
         .post(path(authData.username))
         .set('Origin', trustedOrigin)
@@ -181,7 +181,7 @@ describe('auth', function() {
         });
     });
 
-    it('must return a correct error when the local credentials are missing or invalid', function(done) {
+    it('74QM-must return a correct error when the local credentials are missing or invalid', function(done) {
       var data = _.defaults(
         {
           username: authData.username,
@@ -203,7 +203,7 @@ describe('auth', function() {
         });
     });
 
-    it('must return a correct error if the app id is missing or untrusted', function(done) {
+    it('3IRI-must return a correct error if the app id is missing or untrusted', function(done) {
       var data = _.defaults({ appId: 'untrusted-app-id' }, authData);
       request
         .post(path(data.username))
@@ -219,7 +219,7 @@ describe('auth', function() {
         });
     });
 
-    it('must return a correct error if the origin is missing or does not match the app id', function(done) {
+    it('MFTJ-must return a correct error if the origin is missing or does not match the app id', function(done) {
       request
         .post(path(authData.username))
         .set('Origin', 'http://mismatching.origin')
@@ -234,7 +234,7 @@ describe('auth', function() {
         });
     });
 
-    it('must support concurrent login request', function(done) {
+    it('FE9I-must support concurrent login request', function(done) {
       var loginCount = 2;
       var randomId = 'pryv-test-' + Date.now();
 
@@ -252,7 +252,7 @@ describe('auth', function() {
     });
 
     // cf. GH issue #57
-    it('must not leak _private object from Result', function(done) {
+    it('JAVF-must not leak _private object from Result', function(done) {
       request
         .post(path(authData.username))
         .set('Origin', trustedOrigin)
@@ -315,7 +315,7 @@ describe('auth', function() {
 
       after(server.ensureStarted.bind(server, helpers.dependencies.settings));
 
-      it('must replace the password in the logs by (hidden) when an error occurs', function(done) {
+      it('WAJ8-must replace the password in the logs by (hidden) when an error occurs', function(done) {
         let wrongPasswordData = _.cloneDeep(authData);
         wrongPasswordData.password = 'wrongPassword';
 
@@ -346,7 +346,7 @@ describe('auth', function() {
         );
       });
 
-      it('must not mention the password in the logs when none is provided', function(done) {
+      it('9BW0-must not mention the password in the logs when none is provided', function(done) {
         let wrongPasswordData = _.cloneDeep(authData);
         delete wrongPasswordData.password;
 
@@ -422,7 +422,7 @@ describe('auth', function() {
       return basePath(username) + '/logout';
     }
 
-    it('must terminate the access session and fail to logout a second time (session already expired)', function(done) {
+    it('8LZC-must terminate the access session and fail to logout a second time (session already expired)', function(done) {
       let token;
       async.series(
         [
@@ -473,7 +473,7 @@ describe('auth', function() {
       );
     });
 
-    it('(or any request) must alternatively accept the access token in the query string', function(done) {
+    it('FY6R-(or any request) must alternatively accept the access token in the query string', function(done) {
       var testRequest = helpers.request(server.url);
       async.series(
         [
@@ -514,7 +514,7 @@ describe('auth', function() {
         });
     });
 
-    it('GET /who-am-i must return a 404 as it has been deprecated', function (done) {
+    it('FCSL-GET /who-am-i must return a 404 as it has been deprecated', function (done) {
       persistentReq2.get(basePath(authData.username) + '/who-am-i')
         .end(function (err, res) {
           assert.strictEqual(res.statusCode, 404);
@@ -534,7 +534,7 @@ describe('auth', function() {
         server.ensureStarted(helpers.dependencies.settings, done);
       });
 
-      it('must set the SSO cookie on /login with the access token', function (done) {
+      it('EKFY-must set the SSO cookie on /login with the access token', function (done) {
         persistentReq
           .post(basePath(authData.username) + '/login')
           .set('Origin', trustedOrigin)
@@ -546,7 +546,7 @@ describe('auth', function() {
             should.exist(setCookie);
             setCookie.length.should.eql(1);
             // cookie properties
-            var cookieProps = setCookie[0].split('; ');
+            var cookieProps = setCookie[0].split('AC2P-; ');
             cookieProps.should.containEql('HttpOnly');
             /** test removed as long as superagent complies to not sending back "Unsecure" cookies **/
             // cookieProps.should.containEql('Secure');
@@ -574,7 +574,7 @@ describe('auth', function() {
           });
       });
 
-      it('must answer /who-am-i with username and session details if session open', function (done) {
+      it('KGV1-must answer /who-am-i with username and session details if session open', function (done) {
         persistentReq
           .get(basePath(authData.username) + '/who-am-i')
           .end(function (err, res) {
@@ -589,7 +589,7 @@ describe('auth', function() {
           });
       });
 
-      it('must clear the SSO cookie on /logout', function (done) {
+      it('FIN1-must clear the SSO cookie on /logout', function (done) {
         persistentReq
           .post(basePath(authData.username) + '/logout')
           .send({})
@@ -609,7 +609,7 @@ describe('auth', function() {
           });
       });
 
-      it('must respond /who-am-i with an "unauthorized" error if no cookie is sent', function (done) {
+      it('MS07-must respond /who-am-i with an "unauthorized" error if no cookie is sent', function (done) {
         persistentReq
           .get(basePath(authData.username) + '/who-am-i')
           .end(function (err, res) {

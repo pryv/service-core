@@ -56,7 +56,7 @@ describe('Connection/FileStore', () => {
 
 
     describe('#preflight(username)', () => {
-      it('works', async () => {
+      it('UVAH-works', async () => {
         await fileStore.preflight('jsmith');
       });
     });

@@ -28,13 +28,13 @@ describe('subdomainToPath middleware', function() {
         });
     }
     
-    it('should not transform illegal usernames', function () {
+    it('63V0-should not transform illegal usernames', function () {
       return ok('user/name.pryv.li', '');
     });
-    it('should transform username into a path segment', function () {
+    it('BHBD-should transform username into a path segment', function () {
       return ok('username.pryv.li', '/username');
     });
-    it('should accept dashes', function () {
+    it('31II-should accept dashes', function () {
       return ok('a---0.pryv.li', '/a---0');
     });
   });

@@ -33,7 +33,7 @@ describe('Metadata Updater', () => {
     service = client.proxy('MetadataUpdaterService', `127.0.0.1:${server.port}`);
   });
   
-  it('allows scheduling an update', async () => {
+  it('V8Q1-allows scheduling an update', async () => {
     const now: number = new Date() / 1e3; // now in seconds
     
     await service.scheduleUpdate({ entries: [{

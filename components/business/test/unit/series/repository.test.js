@@ -25,7 +25,7 @@ describe('business.series.Repository', function () {
       writeMeasurement: () => Promise.resolve(true), 
     };
 
-    it('should produce series objects for events', function () {
+    it('J0DY-should produce series objects for events', function () {
       const repository = new Repository(influxConnection);
       const series = repository.get(namespace, seriesName);
       

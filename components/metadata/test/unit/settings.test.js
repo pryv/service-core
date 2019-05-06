@@ -15,7 +15,7 @@ describe('Settings', () => {
       settings = new Settings(); 
     });
     
-    it('returns a settings object for the log subsystem', () => {
+    it('3E2R-returns a settings object for the log subsystem', () => {
       const logSettings = settings.getLogSettingsObject();
       assert.isTrue(logSettings.console.active);
     });
@@ -27,19 +27,19 @@ describe('Settings', () => {
       settings = new Settings(); 
     });
 
-    it('loads settings from an extended JSON file', async () => {
+    it('14CF-loads settings from an extended JSON file', async () => {
       await settings.loadFromFile(fixture_path('settings/extended.json'));
       
       const format = settings.get('format').str();
       assert.strictEqual(format, 'Normal JSON');
     });
-    it('loads settings from an extended HJSON file', async () => {
+    it('RVF9-loads settings from an extended HJSON file', async () => {
       await settings.loadFromFile(fixture_path('settings/extended.hjson'));
       
       const format = settings.get('format').str();
       assert.strictEqual(format, 'HJSON');
     });
-    it('loads settings from an extended YAML file', async () => {
+    it('MOFW-loads settings from an extended YAML file', async () => {
       await settings.loadFromFile(fixture_path('settings/extended.yaml'));
       
       const format = settings.get('format').str();

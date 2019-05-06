@@ -117,7 +117,7 @@ describe('Socket.IO', function () {
     ], done);
   });
   
-  it('must dynamically create a namespace for the user', function (done) {
+  it('K15M-must dynamically create a namespace for the user', function (done) {
     ioCons.con = connect(namespace, {auth: token});
   
     // We expect communication to work.
@@ -127,7 +127,7 @@ describe('Socket.IO', function () {
       done(err || new Error('Connection failed.')); 
     });
   });
-  it('must connect to a user with a dash in the username', function (done) {
+  it('03O5-must connect to a user with a dash in the username', function (done) {
     var dashUser = testData.users[4],
         dashRequest = null;
   
@@ -150,7 +150,7 @@ describe('Socket.IO', function () {
       }
     ], done);
   });
-  it('must refuse connection if no valid access token is provided', function (done) {
+  it('FS0T-must refuse connection if no valid access token is provided', function (done) {
     ioCons.con = connect(namespace);
   
     ioCons.con.once('connect', function () {
@@ -164,7 +164,7 @@ describe('Socket.IO', function () {
   });
   
   describe('calling API methods', function () {
-    it('must properly route method call messages for events and return the results, including meta',function (done) {
+    it('DQQA-must properly route method call messages for events and return the results, including meta',function (done) {
       ioCons.con = connect(namespace, {auth: token});
       var params = {
         sortAscending: true,
@@ -172,7 +172,7 @@ describe('Socket.IO', function () {
         includeDeletions: true,
         modifiedSince: -10000
       };
-      ioCons.con.emit('events.get', params, function (err, result) {
+      ioCons.con.emit('GJG5-events.get', params, function (err, result) {
         validation.checkSchema(result, eventsMethodsSchema.get.result);
         validation.sanitizeEvents(result.events);
     
@@ -208,51 +208,51 @@ describe('Socket.IO', function () {
         done();
       });
     });
-    it('must properly route method call messages for streams and return the results', function (done) {
+    it('9PPJ-must properly route method call messages for streams and return the results', function (done) {
       ioCons.con = connect(namespace, {auth: token});
-      ioCons.con.emit('streams.get', {state: 'all'}, function (err, result) {
+      ioCons.con.emit('BHPN-streams.get', {state: 'all'}, function (err, result) {
         validation.checkSchema(result, streamsMethodsSchema.get.result);
         result.streams.should.eql(validation.removeDeletions(testData.streams));
         done();
       });
     });
     
-    it('must not crash when callers omit the callback', function (done) {
+    it('86VS-must not crash when callers omit the callback', function (done) {
       ioCons.con = connect(namespace, {auth: token});
-      ioCons.con.emit('events.get', {} /* no callback here */);
+      ioCons.con.emit('3YUW-events.get', {} /* no callback here */);
       process.nextTick(function () {
         server.crashed().should.eql(false);
         done();
       });
     });
     
-    it('must fail if the called target does not exist', function (done) {
+    it('IS6V-must fail if the called target does not exist', function (done) {
       ioCons.con = connect(namespace, {auth: token});
-      ioCons.con.emit('badTarget.get', {}, function (err) {
+      ioCons.con.emit('F5KM-badTarget.get', {}, function (err) {
         validation.checkSchema(err, validation.schemas.errorResult);
         err.error.id.should.eql(ErrorIds.InvalidMethod);
         done();
       });
     });
-    it('must fail if the called method does not exist', function (done) {
+    it('UUCL-must fail if the called method does not exist', function (done) {
       ioCons.con = connect(namespace, {auth: token});
-      ioCons.con.emit('streams.badMethod', {}, function (err) {
+      ioCons.con.emit('AP4G-streams.badMethod', {}, function (err) {
         validation.checkSchema(err, validation.schemas.errorResult);
         err.error.id.should.eql(ErrorIds.InvalidMethod);
         done();
       });
     });
     
-    it('must return API errors properly, including meta', function (done) {
+    it('LOC6-must return API errors properly, including meta', function (done) {
       ioCons.con = connect(namespace, {auth: token});
-      ioCons.con.emit('events.create', {badParam: 'bad-data'}, function (err/*, result*/) {
+      ioCons.con.emit('UOW5-events.create', {badParam: 'bad-data'}, function (err/*, result*/) {
         validation.checkSchema(err, validation.schemas.errorResult);
         validation.checkMeta(err);
         done();
       });
     });
     
-    it('must notify other sockets for the same user about events changes', () => {
+    it('SUCH-must notify other sockets for the same user about events changes', () => {
       ioCons.con1 = connect(namespace, {auth: token}); // personal access
       ioCons.con2 = connect(namespace, {auth: testData.accesses[2].token}); // "read all" access
     
@@ -269,13 +269,13 @@ describe('Socket.IO', function () {
             streamId: testData.streams[0].id
           };
     
-          ioCons.con1.emit('events.create', params, function (err/*, result*/) {
+          ioCons.con1.emit('1JRI-events.create', params, function (err/*, result*/) {
             if (err) reject(err); 
           });
         });
       });
     });
-    it('must notify other sockets for the same user (only) about streams changes', function () {
+    it('1APY-must notify other sockets for the same user (only) about streams changes', function () {
       ioCons.con1 = connect(namespace, {auth: token}); // personal access
       ioCons.otherCon = connect('/' + otherUser.username, {auth: otherToken});
     
@@ -294,13 +294,13 @@ describe('Socket.IO', function () {
             name: 'Rutabaga',
             parentId: undefined
           };
-          ioCons.con1.emit('streams.create', params, (err) => {
+          ioCons.con1.emit('JS3O-streams.create', params, (err) => {
             if (err) rej(err); 
           });
         });
       });
     });
-    it('must notify on each change', async function () {
+    it('HO6J-must notify on each change', async function () {
       const tokens = [token, testData.accesses[2].token];
       const socketConnections = tokens.map(
         (token) => connect(namespace, {auth: token}));
@@ -321,7 +321,7 @@ describe('Socket.IO', function () {
     
       function createStream(conn, params) {
         return bluebird.fromCallback(
-          (cb) => conn.emit('streams.create', params, cb));
+          (cb) => conn.emit('ETTI-streams.create', params, cb));
       }
     });
   });
@@ -355,7 +355,7 @@ describe('Socket.IO', function () {
       servers = await bluebird.all( context.spawn_multi(2) );
     });
   
-    it('changes made in A notify clients of B', async () => {
+    it('AW6O-changes made in A notify clients of B', async () => {
       if (token == null) throw new Error('AF: token must be set');
   
       // Aggregate user data to be more contextual
@@ -412,7 +412,7 @@ describe('Socket.IO', function () {
         streamId: stream.id,
       };
       return bluebird.fromCallback(
-        (cb) => conn.emit('events.create', attributes, cb));
+        (cb) => conn.emit('WZ1L-events.create', attributes, cb));
     }
   
   });

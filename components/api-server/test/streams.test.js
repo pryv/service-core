@@ -63,7 +63,7 @@ describe('streams', function () {
 
     before(resetData);
 
-    it('must return non-trashed streams (as a tree) by default', function (done) {
+    it('LJZE-must return non-trashed streams (as a tree) by default', function (done) {
       request.get(basePath).end(function (res) {
         // manually filter out trashed items
         var expected = treeUtils.filterTree(validation.removeDeletionsAndHistory(testData.streams),
@@ -76,7 +76,7 @@ describe('streams', function () {
       });
     });
 
-    it('must return all streams (trashed or not) when requested', function (done) {
+    it('EBKA-must return all streams (trashed or not) when requested', function (done) {
       request.get(basePath).query({state: 'all'}).end(function (res) {
         validation.check(res, {
           status: 200,
@@ -86,7 +86,7 @@ describe('streams', function () {
       });
     });
 
-    it('must include stream deletions (since the given time) when requested', function (done) {
+    it('4W0O-must include stream deletions (since the given time) when requested', function (done) {
       var params = {includeDeletionsSince: timestamp.now('-45m')};
       request.get(basePath).query(params).end(function (res) {
         validation.check(res, {
@@ -98,7 +98,7 @@ describe('streams', function () {
       });
     });
     
-    it('must include stream deletions even when the given time is 0', function (done) {
+    it('4DHP-must include stream deletions even when the given time is 0', function (done) {
       var params = {includeDeletionsSince: 0};
       request.get(basePath).query(params).end(function (res) {
         validation.check(res, {
@@ -110,14 +110,14 @@ describe('streams', function () {
       });
     });
 
-    it('must not keep stream deletions past a certain time ' +
+    it('2EC7-must not keep stream deletions past a certain time ' +
         '(cannot test because cannot force-run Mongo\'s TTL cleanup task)');
 
-    it('must return a correct 401 error if no access token is provided', function (done) {
+    it('I3H8-must return a correct 401 error if no access token is provided', function (done) {
       commonTests.checkAccessTokenAuthentication(server.url, basePath, done);
     });
 
-    it('must return child streams when providing a parent stream id', function (done) {
+    it('GC44-must return child streams when providing a parent stream id', function (done) {
       request.get(basePath).query({parentId: initialRootStreamId}).end(function (res) {
         validation.check(res, {
           status: 200,
@@ -127,7 +127,7 @@ describe('streams', function () {
       });
     });
 
-    it('must return a correct error if the parent stream is unknown', function (done) {
+    it('C75O-must return a correct error if the parent stream is unknown', function (done) {
       request.get(basePath).query({parentId: 'unknownStreamId'}).end(function (res) {
         validation.checkError(res, {
           status: 400,
@@ -143,7 +143,7 @@ describe('streams', function () {
 
     beforeEach(resetData);
 
-    it('must create a new "root" stream with the sent data, returning it', function (done) {
+    it('4R74-must create a new "root" stream with the sent data, returning it', function (done) {
       var data = {
         name: 'Test Root Stream',
         clientData: {
@@ -202,13 +202,13 @@ describe('streams', function () {
       ], done);
     });
 
-    it('must return a correct error if the sent data is badly formatted', function (done) {
+    it('NOF6-must return a correct error if the sent data is badly formatted', function (done) {
       request.post(basePath).send({badProperty: 'bad value'}).end(function (res) {
         validation.checkErrorInvalidParams(res, done);
       });
     });
 
-    it('must return a correct error if a stream with the same id already exists', function (done) {
+    it('G630-must return a correct error if a stream with the same id already exists', function (done) {
       var data = { id: testData.streams[0].id, name: 'Duplicate' };
       request.post(basePath).send(data).end(function (res) {
         validation.checkError(res, {
@@ -219,7 +219,7 @@ describe('streams', function () {
       });
     });
 
-    it('must allow reuse of deleted ids', function (done) {
+    it('N58V-must allow reuse of deleted ids', function (done) {
       var data = {
         id: testData.streams[4].id,
         name: 'New stream reusing previously deleted id',
@@ -235,7 +235,7 @@ describe('streams', function () {
       });
     });
     
-    it('must accept explicit null for optional fields', function (done) {
+    it('2277-must accept explicit null for optional fields', function (done) {
       const data = {
         id: 'nullable',
         name: 'New stream with null fields',
@@ -253,7 +253,7 @@ describe('streams', function () {
       });
     });
     
-    it('must fail if a sibling stream with the same name already exists', function (done) {
+    it('W9C3-must fail if a sibling stream with the same name already exists', function (done) {
       var data = {name: testData.streams[0].name};
       request.post(basePath).send(data).end(function (res) {
         validation.checkError(res, {
@@ -266,7 +266,7 @@ describe('streams', function () {
 
     // this test doesn't apply to streams in particular, but the bug was found here and there's
     // no better location at the moment
-    it('must return a correct error if the sent data is not valid JSON', function (done) {
+    it('UBGO-must return a correct error if the sent data is not valid JSON', function (done) {
       request.post(basePath).type('json').send('{"someProperty": ”<- bad opening quote"}')
           .end(function (res) {
         validation.checkError(res, {
@@ -276,7 +276,7 @@ describe('streams', function () {
       });
     });
 
-    it('must create a new child stream (with predefined id) when providing a parent stream id',
+    it('IPQT-must create a new child stream (with predefined id) when providing a parent stream id',
       (done) => {
         let originalCount;
 
@@ -324,7 +324,7 @@ describe('streams', function () {
       });
 
     // Test added to verify fix of issue#29
-    it('must return an error if the new stream\'s parentId ' +
+    it('6Z4R-must return an error if the new stream\'s parentId ' +
       'is the empty string', function (done) {
       var data = {
         name: 'zero-length parentId string Stream',
@@ -338,7 +338,7 @@ describe('streams', function () {
       });
     });
 
-    it('must slugify the new stream\'s predefined id', function (done) {
+    it('5883-must slugify the new stream\'s predefined id', function (done) {
       var data = {
         id: 'pas encodé de bleu!',
         name: 'Genevois, cette fois'
@@ -354,7 +354,7 @@ describe('streams', function () {
       });
     });
 
-    it('must return a correct error if the parent stream is unknown', function (done) {
+    it('30KQ-must return a correct error if the parent stream is unknown', function (done) {
       var data = {
         name: 'New Child Stream',
         parentId: 'unknown-stream-id'
@@ -368,7 +368,7 @@ describe('streams', function () {
       });
     });
 
-    it('must return a correct error if the given predefined stream\'s id is "null"',
+    it('BWMD-must return a correct error if the given predefined stream\'s id is "null"',
         function (done) {
       var data = {
         id: 'null',
@@ -382,7 +382,7 @@ describe('streams', function () {
       });
     });
 
-    it('must return a correct error if the given predefined stream\'s id is "*"',
+    it('UTKQ-must return a correct error if the given predefined stream\'s id is "*"',
         function (done) {
       var data = {
         id: '*',
@@ -402,7 +402,7 @@ describe('streams', function () {
 
     beforeEach(resetData);
 
-    it('must modify the stream with the sent data', function (done) {
+    it('72EI-must modify the stream with the sent data', function (done) {
       var original = testData.streams[0],
           time;
       var data = {
@@ -433,7 +433,7 @@ describe('streams', function () {
       });
     });
     
-    it('must accept explicit null for optional fields', function (done) {
+    it('DB8F-must accept explicit null for optional fields', function (done) {
       const data = {
         parentId: null,
         singleActivity: null,
@@ -448,7 +448,7 @@ describe('streams', function () {
       });
     });
 
-    it('must add/update/remove the specified client data fields without touching the others',
+    it('QF7E-must add/update/remove the specified client data fields without touching the others',
         function (done) {
       var original = testData.streams[1];
       var data = {
@@ -478,7 +478,7 @@ describe('streams', function () {
       });
     });
 
-    it('must return a correct error if the stream does not exist', function (done) {
+    it('0IIT-must return a correct error if the stream does not exist', function (done) {
       request.put(path('unknown-id')).send({name: '?'}).end(function (res) {
         validation.checkError(res, {
           status: 404,
@@ -487,14 +487,14 @@ describe('streams', function () {
       });
     });
 
-    it('must return a correct error if the sent data is badly formatted', function (done) {
+    it('9223-must return a correct error if the sent data is badly formatted', function (done) {
       request.put(path(testData.streams[1].id)).send({badProperty: 'bad value'})
           .end(function (res) {
         validation.checkErrorInvalidParams(res, done);
       });
     });
 
-    it('must fail if a sibling stream with the same name already exists', function (done) {
+    it('2W6H-must fail if a sibling stream with the same name already exists', function (done) {
       var update = {name: testData.streams[0].name};
       request.put(path(testData.streams[1].id)).send(update).end(function (res) {
         validation.checkError(res, {
@@ -505,7 +505,7 @@ describe('streams', function () {
       });
     });
 
-    it('must move the stream under the given parent when specified', function (done) {
+    it('WIKH-must move the stream under the given parent when specified', function (done) {
       var original = testData.streams[0].children[1],
           newParent = testData.streams[1];
 
@@ -542,7 +542,7 @@ describe('streams', function () {
       ], done);
     });
 
-    it('must return a correct error if the new parent stream is unknown', function (done) {
+    it('5GBZ-must return a correct error if the new parent stream is unknown', function (done) {
       request.put(path(testData.streams[1].id)).send({parentId: 'unknown-id'})
           .end(function (res) {
         validation.checkError(res, {
@@ -569,7 +569,7 @@ describe('streams', function () {
         });
       });
       
-      it('must fail and throw a forbidden error in strict mode', function (done) {
+      it('ORLT-must fail and throw a forbidden error in strict mode', function (done) {
         const forbiddenUpdate = {
           id: 'forbidden',
           children: [],
@@ -594,7 +594,7 @@ describe('streams', function () {
         ], done);
       });
       
-      it('must succeed by ignoring protected fields and log a warning in non-strict mode', function (done) {
+      it('HIQF-must succeed by ignoring protected fields and log a warning in non-strict mode', function (done) {
         const forbiddenUpdate = {
           id: 'forbidden',
           children: [],
@@ -640,7 +640,7 @@ describe('streams', function () {
 
     beforeEach(resetData);
 
-    it('must flag the specified stream as trashed', function (done) {
+    it('5CVU-must flag the specified stream as trashed', function (done) {
       var trashedId = testData.streams[0].id,
           time;
 
@@ -661,7 +661,7 @@ describe('streams', function () {
       });
     });
 
-    it('must delete the stream when already trashed with its descendants if there are no linked ' +
+    it('HGMR-must delete the stream when already trashed with its descendants if there are no linked ' +
         'events', function (done) {
       var parent = testData.streams[2],
           deletedStream = parent.children[1],
@@ -710,7 +710,7 @@ describe('streams', function () {
       done );
     });
 
-    it('must return a correct error if there are linked events and the related parameter is ' +
+    it('23YT-must return a correct error if there are linked events and the related parameter is ' +
         'missing', function (done) {
       var id = testData.streams[0].id;
       async.series([
@@ -726,7 +726,7 @@ describe('streams', function () {
       done );
     });
     
-    it('must reject the deletion of a root stream with mergeEventsWithParent=true', function (done) {
+    it('4D0P-must reject the deletion of a root stream with mergeEventsWithParent=true', function (done) {
       var id = testData.streams[0].id;
       async.series([
         storage.updateOne.bind(storage, user, {id: id}, {trashed: true}), function deleteStream(stepDone) {
@@ -743,7 +743,7 @@ describe('streams', function () {
       done );
     });
 
-    it('must reassign the linked events to the deleted stream\'s parent when specified', function (done) {
+    it('Z3TP-must reassign the linked events to the deleted stream\'s parent when specified', function (done) {
       var parentStream = testData.streams[0],
           deletedStream = parentStream.children[1];
 
@@ -779,7 +779,7 @@ describe('streams', function () {
       done );
     });
 
-    it('must delete the linked events when mergeEventsWithParent is false', function (done) {
+    it('VANV-must delete the linked events when mergeEventsWithParent is false', function (done) {
       const id = testData.streams[0].children[1].id;
       const deletedEvents = testData.events.filter(function (e) { return e.streamId === id; });
       const deletedEventWithAtt = deletedEvents[0];
@@ -859,7 +859,7 @@ describe('streams', function () {
       }
     });
 
-    it('must return a correct error if the item is unknown', function (done) {
+    it('U4H9-must return a correct error if the item is unknown', function (done) {
       request.del(path('unknown_id')).end(function (res) {
         validation.checkError(res, {
           status: 404,

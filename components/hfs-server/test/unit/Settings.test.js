@@ -7,7 +7,7 @@ const should = require('should');
 const { settings } = require('./test-helpers');
 
 describe('Settings', function() {
-  it('should have been loaded for test execution', function() {
+  it('M4DI-should have been loaded for test execution', function() {
     should.exist(settings);
   });
 });

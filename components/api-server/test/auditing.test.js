@@ -73,7 +73,7 @@ describe('Auditing', function () {
 
   describe('Events', function () {
 
-    it('must not return history when calling events.get', function (done) {
+    it('LOWP-must not return history when calling events.get', function (done) {
 
       var queryParams = {limit: 100};
 
@@ -95,7 +95,7 @@ describe('Auditing', function () {
 
       beforeEach(testData.resetEvents);
 
-      it('must delete the event\'s history when deleting it with deletionMode=keep-nothing',
+      it('OKAZ-must delete the event\'s history when deleting it with deletionMode=keep-nothing',
         function (done) {
           var settings = _.cloneDeep(helpers.dependencies.settings);
           settings.audit.deletionMode = 'keep-nothing';
@@ -138,7 +138,7 @@ describe('Auditing', function () {
           ], done);
         });
 
-      it('must minimize the event\'s history when deleting it with deletionMode=keep-authors',
+      it('BH4Z-must minimize the event\'s history when deleting it with deletionMode=keep-authors',
         function (done) {
           var settings = _.cloneDeep(helpers.dependencies.settings);
           settings.audit.deletionMode = 'keep-authors';
@@ -189,7 +189,7 @@ describe('Auditing', function () {
           ], done);
         });
 
-      it('must not modify the event\'s history when deleting it with ' +
+      it('HGOV-must not modify the event\'s history when deleting it with ' +
         'deletionMode=keep-everything',
         function (done) {
           var settings = _.cloneDeep(helpers.dependencies.settings);
@@ -245,7 +245,7 @@ describe('Auditing', function () {
 
     describe('getOne', function () {
 
-      it('must not return an event\'s history when calling getOne with includeHistory flag off',
+      it('OD57-must not return an event\'s history when calling getOne with includeHistory flag off',
         function (done) {
           request.get(pathToEvent(eventWithHistory.id)).query({includeHistory: false}).end(
             function (res) {
@@ -259,7 +259,7 @@ describe('Auditing', function () {
           );
         });
 
-      it('must return an event\'s history when calling getOne with includeHistory flag on',
+      it('7M01-must return an event\'s history when calling getOne with includeHistory flag on',
         function (done) {
           request.get(pathToEvent(eventWithHistory.id)).query({includeHistory: true}).end(
             function (res) {
@@ -285,7 +285,7 @@ describe('Auditing', function () {
 
       beforeEach(testData.resetEvents);
 
-      it('must not generate history when updating an event', function (done) {
+      it('ZIUC-must not generate history when updating an event', function (done) {
         var updateData = {
           content: 'updated content'
         };
@@ -314,7 +314,7 @@ describe('Auditing', function () {
         ], done);
       });
 
-      it('must not generate history of the running event that was stopped ' +
+      it('8C1P-must not generate history of the running event that was stopped ' +
         'because of the start call on another event',
         function (done) {
           var data = {
@@ -354,7 +354,7 @@ describe('Auditing', function () {
           ], done);
         });
 
-      it('must not generate history when no event was stopped in the procedure of the start call ' +
+      it('M2MF-must not generate history when no event was stopped in the procedure of the start call ' +
         'on another event',
         function (done) {
           var data = {
@@ -394,7 +394,7 @@ describe('Auditing', function () {
           ], done);
         });
 
-      it('must not generate history when calling stop on a running event', function (done) {
+      it('CI18-must not generate history when calling stop on a running event', function (done) {
         var data = {
           streamId: normalStream.id,
           id: runningEventOnNormalStream.id,
@@ -442,7 +442,7 @@ describe('Auditing', function () {
         ], done);
       });
 
-      it('must generate history when updating an event', function (done) {
+      it('5IDV-must generate history when updating an event', function (done) {
         var updateData = {
           content: 'first updated content'
         };
@@ -496,7 +496,7 @@ describe('Auditing', function () {
         ], done);
       });
 
-      it('must generate history of the running event that was stopped because of the start call ' +
+      it('1Q30-must generate history of the running event that was stopped because of the start call ' +
         'on another event',
         function (done) {
           var data = {
@@ -539,7 +539,7 @@ describe('Auditing', function () {
         });
 
 
-      it('must not generate history when no event was stopped in the procedure of the start call ' +
+      it('LFAP-must not generate history when no event was stopped in the procedure of the start call ' +
         'on another event',
         function (done) {
           var data = {
@@ -579,7 +579,7 @@ describe('Auditing', function () {
           ], done);
         });
 
-      it('must generate history when calling stop on a running event', function (done) {
+      it('S5R8-must generate history when calling stop on a running event', function (done) {
         var data = {
           streamId: normalStream.id,
           id: runningEventOnNormalStream.id,
@@ -636,7 +636,7 @@ describe('Auditing', function () {
       ], done);
     });
 
-    it('must generate events\' history when their stream is deleted with ' +
+    it('9QUV-must generate events\' history when their stream is deleted with ' +
     ' mergeEventsWithParents=true since their streamId is modified', function (done) {
       async.series([
         function deleteStream(stepDone) {
@@ -672,7 +672,7 @@ describe('Auditing', function () {
       ], done);
     });
 
-    it('must delete the events\' history when their stream is deleted with ' +
+    it('HLL1-must delete the events\' history when their stream is deleted with ' +
     ' mergeEventsWithParents=false and deletionMode=\'keep-nothing\'', function (done) {
       var settings = _.cloneDeep(helpers.dependencies.settings);
       settings.audit = {
@@ -716,7 +716,7 @@ describe('Auditing', function () {
       ], done);
     });
 
-    it('must keep the events\' minimal history when their stream is deleted with ' +
+    it('04SG-must keep the events\' minimal history when their stream is deleted with ' +
     ' mergeEventsWithParents=false and deletionMode=\'keep-authors\'', function (done) {
       var settings = _.cloneDeep(helpers.dependencies.settings);
       settings.audit = {
@@ -770,7 +770,7 @@ describe('Auditing', function () {
       ], done);
     });
 
-    it('must not delete the events\' history when their stream is deleted with ' +
+    it('D7K8-must not delete the events\' history when their stream is deleted with ' +
     ' mergeEventsWithParents=false and deletionMode=\'keep-everything\'', function (done) {
       var settings = _.cloneDeep(helpers.dependencies.settings);
       settings.audit = {
@@ -827,7 +827,7 @@ describe('Auditing', function () {
 
     before(testData.resetEvents);
 
-    it('must delete history data from the storage', function (done) {
+    it('53QQ-must delete history data from the storage', function (done) {
       async.series([
         function fetchHistoryEventsFromStorage(stepDone) {
           stepDone();

@@ -38,7 +38,7 @@ describe('Connection/InfluxDB', () => {
       ], opts);
     });
 
-    it('produces smoke', async () => {
+    it('L3YV-produces smoke', async () => {
       const opts = { database: DATABASE_NAME };
       const conn = new Influx.InfluxDB(settings);
 
@@ -55,7 +55,7 @@ describe('Connection/InfluxDB', () => {
       ], opts);
     });
     describe('#preflight', () => {
-      it('checks the connection and exits', async () => {
+      it('U5U7-checks the connection and exits', async () => {
         await influxdb.preflight('jsmith');
       });
     });

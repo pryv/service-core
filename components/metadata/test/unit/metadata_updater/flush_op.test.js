@@ -79,7 +79,7 @@ describe('Flush', () => {
       op = new Flush(update, db, logger);
     });
     
-    it('writes event metadata to disk', async () => {
+    it('UK53-writes event metadata to disk', async () => {
       await op.run(); 
       
       const event = await loadEvent(db, userId, eventId);
@@ -114,7 +114,7 @@ describe('Flush', () => {
       assert.strictEqual(content.earliest, now - 100); 
       assert.strictEqual(content.latest, now + 100); 
     });
-    it('leaves base data intact', async () => {
+    it('WPUG-leaves base data intact', async () => {
       await op.run(); 
       const event = await loadEvent(db, userId, eventWithContentId);
 
@@ -150,11 +150,11 @@ describe('UserRepository', () => {
   });
   
   describe('#resolve(name)', () => {
-    it('returns the user id', async () => {
+    it('SRLQ-returns the user id', async () => {
       const user = await repository.resolve('user_name'); 
       assert.strictEqual(user.id, userId);
     });
-    it('caches the user information for a while', async () => {
+    it('HTIY-caches the user information for a while', async () => {
       // Prime the cache
       await repository.resolve('user_name'); 
       

@@ -40,7 +40,7 @@ describe('Connection/Registry', () => {
       });
     });
     describe('#deleteUser(username)', () => {
-      it('deletes the user', async () => {
+      it('RMP1-deletes the user', async () => {
         await registry.deleteUser('jsmith');
 
         assert.isTrue(registryMock.sedsDead, "Sed's dead baby, sed's dead.");

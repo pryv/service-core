@@ -14,7 +14,7 @@ describe('ArrayStream', function () {
   describe('testing around the array size limit', function () {
     for (let i = -3; i <= 3; i++) {
       const sign = i < 0 ? '' : '+';
-      it('must return a valid array when receiving limit' + sign + i +' items',
+      it('ZK91-must return a valid array when receiving limit' + sign + i +' items',
         function (done) {
           const n = arraySize+i;
           n.should.be.above(0);
@@ -26,7 +26,7 @@ describe('ArrayStream', function () {
   
   describe('testing with small number of items', function () {
     for (let i = 0; i <= 3; i++) {
-      it('must return a valid array when receiving ' + i + ' item(s)',
+      it('NZYH-must return a valid array when receiving ' + i + ' item(s)',
         function (done) {
           pipeAndCheck(i, true, null, done);
         }
@@ -34,7 +34,7 @@ describe('ArrayStream', function () {
     }
   });
 
-  it('must return an array preceded by a comma when called with parameter isFirst=false',
+  it('N7RH-must return an array preceded by a comma when called with parameter isFirst=false',
     function (done) {
       const n = 10;
 

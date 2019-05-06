@@ -17,7 +17,7 @@ describe('Mailing helper methods', () => {
     email: recipient.email
   };
   
-  it('should throw an error if mailing method is invalid', () => {
+  it('RW79-should throw an error if mailing method is invalid', () => {
     const emailSettings = {
       method: 'invalid',
       url: 'https://localhost:9000/sendmail',
@@ -29,7 +29,7 @@ describe('Mailing helper methods', () => {
     });
   });
   
-  it('should throw an error if mailing method is missing', () => {
+  it('QZTA-should throw an error if mailing method is missing', () => {
     const emailSettings = {
       url: 'https://localhost:9000/sendmail',
       key: 'v3ryStrongK3y'
@@ -62,26 +62,26 @@ describe('Mailing helper methods', () => {
         mailing.sendmail(emailSettings, template, recipient, substitutions, lang, done);
       });
       
-      it('should not be empty', () => {
+      it('L7HW-should not be empty', () => {
         assert.isNotNull(requestBody);
       });
       
-      it('should contain a valid auth key', () => {
+      it('7171-should contain a valid auth key', () => {
         assert.strictEqual(requestBody.key, emailSettings.key);
       });
       
-      it('should contain a valid recipient', () => {
+      it('NUW0-should contain a valid recipient', () => {
         assert.deepEqual(requestBody.message.to, [recipient]);
       });
 
-      it('should contain a valid substitution of variables', () => {
+      it('OEFA-should contain a valid substitution of variables', () => {
         assert.deepEqual(requestBody.message.global_merge_vars, [
           {name: 'name', content: recipient.name},
           {name: 'email', content: recipient.email},
         ]);
       });
       
-      it('should contain valid tags', () => {
+      it('H6D2-should contain valid tags', () => {
         assert.deepEqual(requestBody.message.tags, [template]);
       });
       
@@ -111,20 +111,20 @@ describe('Mailing helper methods', () => {
         mailing.sendmail(emailSettings, template, recipient, substitutions, lang, done);
       });
       
-      it('should not be empty', () => {
+      it('SMDT-should not be empty', () => {
         assert.isNotNull(requestBody);
       });
       
-      it('should contain a valid auth key', () => {
+      it('R89N-should contain a valid auth key', () => {
         assert.strictEqual(requestBody.key, emailSettings.key);
       });
       
-      it('should contain a valid recipient', () => {
+      it('LWKE-should contain a valid recipient', () => {
         assert.strictEqual(requestBody.to.name, recipient.name);
         assert.strictEqual(requestBody.to.email, recipient.email);
       });
       
-      it('should contain a valid substitution of variables', () => {
+      it('9PT7-should contain a valid substitution of variables', () => {
         assert.deepEqual(requestBody.substitutions, substitutions);
       });
       

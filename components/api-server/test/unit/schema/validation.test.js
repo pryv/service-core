@@ -7,7 +7,7 @@ const assert = require('chai').assert;
 const { tryCoerceStringValues } = require('../../../src/schema/validation');
 
 describe('tryCoerceStringValues', () => {
-  it('should behave as documented in the method', () => {
+  it('038D-should behave as documented in the method', () => {
     const object = { a: 'true', 'b': '2343', c: 'foobar' };
     const types = { a: 'boolean', b: 'number' };
     tryCoerceStringValues(object, types);
@@ -24,14 +24,14 @@ describe('tryCoerceStringValues', () => {
     
     assert.lengthOf(Object.keys(o), 0, "Keys have been created in target.");
   });
-  it('should convert to array', () => {
+  it('M2EI-should convert to array', () => {
     const obj = { a: '1', b: 'test' };
     
     tryCoerceStringValues(obj, { a: 'array', b: 'array' });
     
     assert.deepEqual(obj, {a: ['1'], b: ['test']});
   });
-  it('number conversion works', () => {
+  it('992Z-number conversion works', () => {
     
     ok('123', 123); 
     ok('123.45', 123.45); 

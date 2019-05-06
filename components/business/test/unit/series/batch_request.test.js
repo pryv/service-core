@@ -17,7 +17,7 @@ describe('BatchRequest', () => {
     const type: InfluxRowType = (typeRepo.lookup('series:position/wgs84'): any);
     const resolver = () => Promise.resolve(type);
 
-    it('should parse the happy case', async () => {
+    it('5724-should parse the happy case', async () => {
       const happy = {
         format: 'seriesBatch', 
         data: [
@@ -42,18 +42,18 @@ describe('BatchRequest', () => {
       const element = request.list[0];
       assert.strictEqual(element.eventId, 'cjcrx6jy1000w8xpvjv9utxjx');
     });
-    it('accepts an empty batch', () => {
+    it('9U0M-accepts an empty batch', () => {
       good({
         format: 'seriesBatch', 
         data: [], 
       });
     });
   
-    it('throws if format is missing or wrong', () => {
+    it('LH04-throws if format is missing or wrong', () => {
       bad({format: 'something else'});
       bad({});
     });
-    it('throws if another type is passed in', () => {
+    it('BLQV-throws if another type is passed in', () => {
       bad(null);
       bad('a string');
       bad(42);
@@ -84,7 +84,7 @@ describe('BatchRequestElement', () => {
     const type: InfluxRowType = (typeRepo.lookup('series:position/wgs84'): any);
     const resolver = () => Promise.resolve(type);
     
-    it('should parse a good looking object', () => {
+    it('PK4K-should parse a good looking object', () => {
       good({
         eventId: 'cjcrx6jy1000w8xpvjv9utxjx', 
         data: {
@@ -99,11 +99,11 @@ describe('BatchRequestElement', () => {
       });
     });
     
-    it('fails if input is not an Object', () => {
+    it('AAOY-fails if input is not an Object', () => {
       bad(null);
       bad('string');
     }); 
-    it('fails if eventId is missing or the wrong type', () => {
+    it('H43Q-fails if eventId is missing or the wrong type', () => {
       bad({ foo: 'bar' });
       bad({ eventId: 42 });
     });

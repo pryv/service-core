@@ -82,16 +82,16 @@ describe('tree utils', function () {
 
   describe('buildTree()', function () {
 
-    it('must build a correct tree for a given consistent array', function () {
+    it('TVE9-must build a correct tree for a given consistent array', function () {
       treeUtils.buildTree(testArray, true /*strip parent ids*/).should.eql(testTree);
     });
 
-    it('must throw an error if objects do not contain the necessary properties', function () {
+    it('GP0U-must throw an error if objects do not contain the necessary properties', function () {
       /*jshint -W068 */
       (function () { treeUtils.buildTree(invalidArray); }).should.throw();
     });
 
-    it('must throw an error if the object in argument is not an array', function () {
+    it('JBM2-must throw an error if the object in argument is not an array', function () {
       /*jshint -W068 */
       (function () { treeUtils.buildTree(testArray[0]); }).should.throw();
     });
@@ -100,11 +100,11 @@ describe('tree utils', function () {
 
   describe('flattenTree()', function () {
 
-    it('must build a correct array for a given tree', function () {
+    it('DJ72-must build a correct array for a given tree', function () {
       treeUtils.flattenTree(testTree).should.eql(testArray);
     });
 
-    it('must throw an error if the object in argument is not an array', function () {
+    it('R7FH-must throw an error if the object in argument is not an array', function () {
       /*jshint -W068 */
       (function () { treeUtils.flattenTree(testTree[0]); }).should.throw();
     });
@@ -113,14 +113,14 @@ describe('tree utils', function () {
 
   describe('findInTree()', function () {
 
-    it('must return the first item matching the given iterator function', function () {
+    it('9BO4-must return the first item matching the given iterator function', function () {
       var foundItem = treeUtils.findInTree(testTree, function (item) {
         return item.someProperty === true;
       });
       foundItem.should.eql(testTree[0].children[1]);
     });
 
-    it('must return null if no item matches the given iterator function', function () {
+    it('HDYE-must return null if no item matches the given iterator function', function () {
       var foundItem = treeUtils.findInTree(testTree, function (item) {
         return item.someProperty === 'missing value';
       });
@@ -131,7 +131,7 @@ describe('tree utils', function () {
 
   describe('filterTree()', function () {
 
-    it('must return only items matching the given iterator function', function () {
+    it('2MOZ-must return only items matching the given iterator function', function () {
       var filteredTree = treeUtils.filterTree(testTree, true /*keep orphans*/, function (item) {
         return item.someProperty === false;
       });
@@ -166,7 +166,7 @@ describe('tree utils', function () {
 
   describe('collect()', function () {
 
-    it('must return an array with values matching the iterator function for each item in the tree',
+    it('LBVZ-must return an array with values matching the iterator function for each item in the tree',
         function () {
       var ids = treeUtils.collect(testTree, function (item) {
         return item.id;
@@ -182,7 +182,7 @@ describe('tree utils', function () {
 
   describe('expandIds()', function () {
 
-    it('must return an array with the ids passed in argument plus those of all their descendants',
+    it('4CVJ-must return an array with the ids passed in argument plus those of all their descendants',
         function () {
       treeUtils.expandIds(testTree, ['root-1']).should.eql([
         'root-1', 'child-1.1', 'child-1.1.1', 'child-1.2'

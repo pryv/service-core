@@ -61,7 +61,7 @@ describe('Access permissions', function () {
       return basePath + '/' + id;
     }
 
-    it('`get` must only return events in accessible streams', function (done) {
+    it('JJVD-`get` must only return events in accessible streams', function (done) {
       var params = {
         limit: 100, // i.e. all
         state: 'all'
@@ -82,7 +82,7 @@ describe('Access permissions', function () {
       });
     });
 
-    it('`get` must return all events when permissions are defined for "all streams" (*)',
+    it('DF9T-`get` must return all events when permissions are defined for "all streams" (*)',
       function (done) {
         var params = {
           limit: 100, // i.e. all
@@ -101,7 +101,7 @@ describe('Access permissions', function () {
         });
       });
 
-    it('`get` must only return events with accessible tags', function (done) {
+    it('BDV5-`get` must only return events with accessible tags', function (done) {
       var tags = getAllTagsByToken(5);
       var events = [];
       validation.removeDeletionsAndHistory(testData.events).sort(
@@ -119,7 +119,7 @@ describe('Access permissions', function () {
       });
     });
 
-    it('`get` must only return events in accessible streams *and* with accessible tags when both ' +
+    it('KB7H-`get` must only return events in accessible streams *and* with accessible tags when both ' +
         'are defined', function (done) {
       request.get(basePath, token(6)).end(function (res) {
         validation.sanitizeEvents(res.body.events);
@@ -128,7 +128,7 @@ describe('Access permissions', function () {
       });
     });
 
-    it('`get` (or any request) must alternatively accept the access token in the query string',
+    it('UF1Y-`get` (or any request) must alternatively accept the access token in the query string',
         function (done) {
       var query = {
         auth: token(1),
@@ -141,7 +141,7 @@ describe('Access permissions', function () {
       });
     });
 
-    it('must forbid getting an attached file if permissions are insufficient', function (done) {
+    it('5489-must forbid getting an attached file if permissions are insufficient', function (done) {
       var event = testData.events[0],
           attachment = event.attachments[0];
       request.get(reqPath(event.id) + '/' + attachment.id, token(3)).end(function (res) {
@@ -149,7 +149,7 @@ describe('Access permissions', function () {
       });
     });
 
-    it('must forbid creating events for \'read-only\' streams', function (done) {
+    it('S6FY-must forbid creating events for \'read-only\' streams', function (done) {
       var params = {
         type: 'test/test',
         streamId: testData.streams[0].id
@@ -159,7 +159,7 @@ describe('Access permissions', function () {
       });
     });
 
-    it('must forbid creating events for \'read-only\' tags', function (done) {
+    it('U1H0-must forbid creating events for \'read-only\' tags', function (done) {
       var params = {
         type: 'test/test',
         streamId: testData.streams[0].id,
@@ -170,47 +170,47 @@ describe('Access permissions', function () {
       });
     });
 
-    it('must forbid updating events for \'read-only\' streams', function (done) {
+    it('NC61-must forbid updating events for \'read-only\' streams', function (done) {
       // also check recursive permissions
       request.put(reqPath(testData.events[0].id), token(1)).send({content: {}}).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
-    it('must forbid updating events for \'read-only\' tags', function (done) {
+    it('BG1P-must forbid updating events for \'read-only\' tags', function (done) {
       request.put(reqPath(testData.events[11].id), token(5)).send({content: {}})
           .end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
-    it('must forbid stopping events for \'read-only\' streams', function (done) {
+    it('GGLO-must forbid stopping events for \'read-only\' streams', function (done) {
       request.post(basePath + '/stop', token(2)).send({id: testData.events[9].id})
           .end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
-    it('must forbid stopping events for \'read-only\' tags', function (done) {
+    it('2TVO-must forbid stopping events for \'read-only\' tags', function (done) {
       request.post(basePath + '/stop', token(5)).send({id: testData.events[11].id})
           .end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
-    it('must forbid deleting events for \'read-only\' streams', function (done) {
+    it('ZMJ3-must forbid deleting events for \'read-only\' streams', function (done) {
       request.del(reqPath(testData.events[1].id), token(1)).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
-    it('must forbid deleting events for \'read-only\' tags', function (done) {
+    it('KOUQ-must forbid deleting events for \'read-only\' tags', function (done) {
       request.del(reqPath(testData.events[11].id), token(5)).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
-    it('must allow creating events for \'contribute\' streams', function (done) {
+    it('GSIC-must allow creating events for \'contribute\' streams', function (done) {
       var data = {
         time: timestamp.now('-5h'),
         duration: timestamp.duration('1h'),
@@ -223,7 +223,7 @@ describe('Access permissions', function () {
       });
     });
 
-    it('must allow creating events for \'contribute\' tags', function (done) {
+    it('0G3R-must allow creating events for \'contribute\' tags', function (done) {
       var data = {
         type: 'test/test',
         streamId: testData.streams[1].id,
@@ -251,7 +251,7 @@ describe('Access permissions', function () {
 
     // note: personal (i.e. full) access is implicitly covered by streams/events tests
 
-    it('`get` must only return streams for which permissions are defined', function (done) {
+    it('BF14-`get` must only return streams for which permissions are defined', function (done) {
       request.get(basePath, token(1)).query({state: 'all'}).end(function (res) {
         res.body.streams.should.eql([
           // must not include inaccessible parentIds
@@ -264,7 +264,7 @@ describe('Access permissions', function () {
       });
     });
 
-    it('must forbid creating child streams in \'read-only\' streams', function (done) {
+    it('WTHV-must forbid creating child streams in \'read-only\' streams', function (done) {
       var data = {
         name: 'Tai Ji',
         parentId: testData.streams[0].id
@@ -274,7 +274,7 @@ describe('Access permissions', function () {
       });
     });
 
-    it('must forbid creating child streams in \'contribute\' streams', function (done) {
+    it('JRNH-must forbid creating child streams in \'contribute\' streams', function (done) {
       var data = {
         name: 'Xing Yi',
         parentId: testData.streams[1].id
@@ -284,27 +284,27 @@ describe('Access permissions', function () {
       });
     });
 
-    it('must forbid deleting child streams in \'contribute\' streams', function (done) {
+    it('0NZ3-must forbid deleting child streams in \'contribute\' streams', function (done) {
       request.del(reqPath(testData.streams[1].children[0].id), token(1)).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
-    it('must forbid updating \'contribute\' streams', function (done) {
+    it('B2KJ-must forbid updating \'contribute\' streams', function (done) {
       request.put(reqPath(testData.streams[1].id), token(1)).send({name: 'Ba Gua'})
           .end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
-    it('must forbid deleting \'contribute\' streams', function (done) {
+    it('JF6L-must forbid deleting \'contribute\' streams', function (done) {
       request.del(reqPath(testData.streams[1].id), token(1)).query({mergeEventsWithParent: true})
           .end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
-    it('must allow creating child streams in \'managed\' streams', function (done) {
+    it('BT1V-must allow creating child streams in \'managed\' streams', function (done) {
       var data = {
         name: 'Dzogchen',
         parentId: testData.streams[2].children[0].id
@@ -315,7 +315,7 @@ describe('Access permissions', function () {
       });
     });
 
-    it('must forbid moving streams into non-\'managed\' parent streams', function (done) {
+    it('3HV6-must forbid moving streams into non-\'managed\' parent streams', function (done) {
       var update = {parentId: testData.streams[1].id};
       request.put(reqPath(testData.streams[2].children[0].id), token(1))
           .send(update).end(function (res) {
@@ -323,7 +323,7 @@ describe('Access permissions', function () {
       });
     });
 
-    it('must allow deleting child streams in \'managed\' streams', function (done) {
+    it('C8J2-must allow deleting child streams in \'managed\' streams', function (done) {
       request.del(reqPath(testData.streams[2].children[0].children[0].id), token(1))
       .end(function (res) {
         res.statusCode.should.eql(200); // trashed -> considered an update
@@ -331,7 +331,7 @@ describe('Access permissions', function () {
       });
     });
 
-    it('must recursively apply permissions to the streams\' child streams', function (done) {
+    it('RL35-must recursively apply permissions to the streams\' child streams', function (done) {
       var data = {
         name: 'Zen',
         parentId: testData.streams[0].children[0].id
@@ -341,7 +341,7 @@ describe('Access permissions', function () {
       });
     });
 
-    it('must allow access to all streams when no specific stream permissions are defined',
+    it('70J2-must allow access to all streams when no specific stream permissions are defined',
         function (done) {
       request.get(basePath, token(2)).query({state: 'all'}).end(function (res) {
         res.body.streams.should.eql(validation.removeDeletions(testData.streams));
@@ -349,14 +349,14 @@ describe('Access permissions', function () {
       });
     });
 
-    it('must allow access to all streams when only tag permissions are defined', function (done) {
+    it('H0UN-must allow access to all streams when only tag permissions are defined', function (done) {
       request.get(basePath, token(5)).query({state: 'all'}).end(function (res) {
         res.body.streams.should.eql(validation.removeDeletionsAndHistory(testData.streams));
         done();
       });
     });
 
-    it('must only allow access to set streams when both tag and stream permissions are defined',
+    it('JMHU-must only allow access to set streams when both tag and stream permissions are defined',
         function (done) {
       request.get(basePath, token(6)).end(function (res) {
         res.body.streams.should.eql([_.omit(testData.streams[0], 'parentId')]);
@@ -381,7 +381,7 @@ describe('Access permissions', function () {
       streamId: testData.streams[1].id
     };
 
-    it('must handle optional caller id in auth (in addition to token)', function (done) {
+    it('K2BU-must handle optional caller id in auth (in addition to token)', function (done) {
       request.post(basePath, auth).send(newEventData).end(function (res) {
         res.statusCode.should.eql(201);
         var event = res.body.event,
@@ -428,13 +428,13 @@ describe('Access permissions', function () {
         ], done);
       });
 
-      it('must be supported and deny access when failing', function (done) {
+      it('ZZNY-must be supported and deny access when failing', function (done) {
         request.post(basePath, auth).send(newEventData).end(function (res) {
           validation.checkErrorInvalidAccess(res, done);
         });
       });
 
-      it('must allow access when successful', function (done) {
+      it('20YL-must allow access when successful', function (done) {
         var successAuth = token(sharedAccessIndex) + ' Georges (unparsed)';
         request.post(basePath, successAuth).send(newEventData).end(function (res) {
           res.statusCode.should.eql(201);
@@ -446,7 +446,7 @@ describe('Access permissions', function () {
         });
       });
 
-      it('must fail properly (i.e. not granting access) when the custom function crashes', function (done) {
+      it('DWUP-must fail properly (i.e. not granting access) when the custom function crashes', function (done) {
         var crashAuth = token(sharedAccessIndex) + ' Please Crash';
         request.post(basePath, crashAuth).send(newEventData).end(function (res) {
           res.statusCode.should.eql(500);
@@ -454,7 +454,7 @@ describe('Access permissions', function () {
         });
       });
 
-      it('must validate the custom function at startup time', function (done) {
+      it('4W6M-must validate the custom function at startup time', function (done) {
         async.series([
           function setupCustomAuthStep(stepDone) {
             var srcPath = path.join(__dirname, 'permissions.fixtures', 'customAuthStepFn.invalid');
