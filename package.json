@@ -13,7 +13,10 @@
     "test-root": "node_modules/.bin/mocha --compilers js:babel-register --timeout 10000 --reporter=dot test/**/*.test.js",
     "watch": "node_modules/.bin/babel --watch=./components --out-dir=dist/components --copy-files",
     "release": "scripts/prepare_dist && node_modules/.bin/babel ./components --out-dir=dist/components --copy-files",
-    "flow-coverage": "node_modules/.bin/flow-coverage-report -i 'components/**/*.js' -t html"
+    "flow-coverage": "node_modules/.bin/flow-coverage-report -i 'components/**/*.js' -t html",
+    "init-test-results-repo": "scripts/test-results/init_repo.sh",
+    "output-test-results": "node scripts/test-results/test-results.js",
+    "upload-test-results": "scripts/test-results/upload.sh"
   },
   "dependencies": {
     "airbrake": "^2.1.1",
@@ -94,6 +97,7 @@
     "jsdoc": "^3.4.3",
     "jsdoc-babel": "^0.3.0",
     "mocha": "^5.0.0",
+    "moment": "^2.24.0",
     "nixt": "^0.5.0",
     "nock": "9.4.0",
     "parallelshell": "^2.0.0",
