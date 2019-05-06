@@ -53,7 +53,7 @@ fs.readdirSync(componentsPath).forEach(function (name) {
   test_results.push(componentResults);
 });
 
-console.log('writing test output to:', OUTPUT_FILENAME); // eslint-disable-line
+console.log('writing test output to:', FULL_OUTPUT_FILENAME); // eslint-disable-line
 fs.writeFileSync(FULL_OUTPUT_FILENAME, JSON.stringify(test_results, null, 2));
 
 linkToLatestResult();
