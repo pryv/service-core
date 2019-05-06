@@ -27,7 +27,7 @@ describe('Server', () => {
     return url.resolve(baseUrl, path);
   }
 
-  it('can be constructed', function() {
+  it('[O84I] can be constructed', function() {
     should.exist(server);
   });
   
@@ -39,7 +39,7 @@ describe('Server', () => {
       server.stop(); 
     });
     
-    it('starts a http server on configured port', function() {
+    it('[1VEL] starts a http server on configured port', function() {
       // Now we should have a local server running. 
       const statusUrl = toUrl('/system/status');
       var response = request.get(statusUrl);

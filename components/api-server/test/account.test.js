@@ -47,7 +47,7 @@ describe('account', function () {
 
     before(resetUsers);
 
-    it('must return the user\'s account details', function (done) {
+    it('[PHSB] must return the user\'s account details', function (done) {
       request.get(basePath).end(function (res) {
         var expected = _.clone(user);
         delete expected.id;
@@ -63,7 +63,7 @@ describe('account', function () {
       });
     });
 
-    it('must be forbidden to non-personal accesses', function (done) {
+    it('[K5EI] must be forbidden to non-personal accesses', function (done) {
       request.get(basePath, testData.accesses[4].token).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
@@ -75,7 +75,7 @@ describe('account', function () {
 
     beforeEach(resetUsers);
 
-    it('must modify account details with the sent data, notifying register if e-mail changed',
+    it('[0PPV] must modify account details with the sent data, notifying register if e-mail changed',
       function (done) {
         const settings = _.cloneDeep(helpers.dependencies.settings);
         const updatedData = {
@@ -137,13 +137,13 @@ describe('account', function () {
         ], done);
       });
 
-    it('must return a correct error if the sent data is badly formatted', function (done) {
+    it('[AT0V] must return a correct error if the sent data is badly formatted', function (done) {
       request.put(basePath).send({badProperty: 'bad value'}).end(function (res) {
         validation.checkErrorInvalidParams(res, done);
       });
     });
 
-    it('must be forbidden to non-personal accesses', function (done) {
+    it('[NZE2] must be forbidden to non-personal accesses', function (done) {
       request
         .put(basePath, testData.accesses[4].token)
         .send({language: 'zh'}).end(function (res) {
@@ -159,7 +159,7 @@ describe('account', function () {
 
     // tests the computation of user storage size which is used from different API methods
     // (so we're not directly testing an API method here)
-    it('must properly compute used storage size for a given user when called', function (done) {
+    it('[NFJQ] must properly compute used storage size for a given user when called', function (done) {
       var initialStorageUsed,
           updatedStorageUsed,
           newAtt = testData.attachments.image;
@@ -203,7 +203,7 @@ describe('account', function () {
     });
 
     // test nightly job script
-    it('must properly compute storage size for all users in nightly script', async function () {
+    it('[Y445] must properly compute storage size for all users in nightly script', async function () {
       let initialStorageUsed;
       const newAtt = testData.attachments.image;
       const execSync = require('child_process').execSync;
@@ -244,7 +244,7 @@ describe('account', function () {
         });
     }
 
-    it('must be approximately updated (diff) when adding an attached file', function (done) {
+    it('[0QVH] must be approximately updated (diff) when adding an attached file', function (done) {
       var initialStorageUsed,
           newAtt = testData.attachments.image;
       async.series([
@@ -273,7 +273,7 @@ describe('account', function () {
       ], done);
     });
 
-    it('must be approximately updated (diff) when deleting an attached file', function (done) {
+    it('[93AP] must be approximately updated (diff) when deleting an attached file', function (done) {
       var initialStorageUsed,
           deletedAtt = testData.events[0].attachments[0];
       async.series([
@@ -302,7 +302,7 @@ describe('account', function () {
       ], done);
     });
 
-    it('must be approximately updated (diff) when deleting an event', function (done) {
+    it('[5WO0] must be approximately updated (diff) when deleting an event', function (done) {
       var initialStorageUsed,
           deletedEvt = testData.events[2],
           deletedEvtPath = '/' + user.username + '/events/' + deletedEvt.id;
@@ -353,7 +353,7 @@ describe('account', function () {
 
     var path = basePath + '/change-password';
 
-    it('must change the password to the given value', function (done) {
+    it('[6041] must change the password to the given value', function (done) {
       var data = {
         oldPassword: user.password,
         newPassword: 'Dr0ws$4p'
@@ -375,7 +375,7 @@ describe('account', function () {
       ], done);
     });
 
-    it('must return an error if the given old password does not match', function (done) {
+    it('[STWH] must return an error if the given old password does not match', function (done) {
       var data = {
         oldPassword: 'bad-password',
         newPassword: 'Dr0ws$4p'
@@ -388,13 +388,13 @@ describe('account', function () {
       });
     });
 
-    it('must return a correct error if the sent data is badly formatted', function (done) {
+    it('[8I1N] must return a correct error if the sent data is badly formatted', function (done) {
       request.post(path).send({badProperty: 'bad value'}).end(function (res) {
         validation.checkErrorInvalidParams(res, done);
       });
     });
 
-    it('must be forbidden to non-personal accesses', function (done) {
+    it('[J5VH] must be forbidden to non-personal accesses', function (done) {
       request.post(path, testData.accesses[4].token).send({some: 'data'}).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
@@ -410,7 +410,7 @@ describe('account', function () {
     const resetPath = basePath + '/reset-password';
     const authData = {appId: 'pryv-test'};
 
-    it('"request" must trigger an email with a reset token, store that token, ' +
+    it('[G1VN] "request" must trigger an email with a reset token, store that token, ' +
        'then "reset" must reset the password to the given value', function (done) {
       let settings = _.cloneDeep(helpers.dependencies.settings);
       let resetToken;
@@ -484,13 +484,13 @@ describe('account', function () {
       ], done);
     });
     
-    it('must not trigger a reset email if mailing is deactivated', function (done) {
+    it('[HV0V] must not trigger a reset email if mailing is deactivated', function (done) {
       let settings = _.cloneDeep(helpers.dependencies.settings);
       settings.services.email.enabled = false;
       testResetMailNotSent(settings, done);
     });
     
-    it('must not trigger a reset email if reset mail is deactivated', function (done) {
+    it('[VZ1W] must not trigger a reset email if reset mail is deactivated', function (done) {
       let settings = _.cloneDeep(helpers.dependencies.settings);
       settings.services.email.enabled = {
         resetPassword: false
@@ -536,7 +536,7 @@ describe('account', function () {
       ], callback);
     }
 
-    it('must not be possible to use a reset token to illegally change password of another user', function (done) {
+    it('[3P2N] must not be possible to use a reset token to illegally change password of another user', function (done) {
       let resetToken = null;
       const newPassword = 'hackingYourPassword';
       const user1 = testData.users[1];
@@ -572,7 +572,7 @@ describe('account', function () {
       ], done);
     });
 
-    it('"request" must return an error if the requesting app is not trusted', function (done) {
+    it('[J6GB] "request" must return an error if the requesting app is not trusted', function (done) {
       request.post(requestPath).send({appId: 'bad-app-id'})
           .unset('authorization')
           .set('Origin', 'http://test.pryv.local')
@@ -584,7 +584,7 @@ describe('account', function () {
       });
     });
 
-    it('"request" must return an error if sent data is badly formatted', function (done) {
+    it('[5K14] "request" must return an error if sent data is badly formatted', function (done) {
       request.post(requestPath).send({badParam: '?'})
           .unset('authorization')
           .end(function (res) {
@@ -592,7 +592,7 @@ describe('account', function () {
       });
     });
 
-    it('"reset" must return an error if the reset token is invalid/expired', function (done) {
+    it('[PKBP] "reset" must return an error if the reset token is invalid/expired', function (done) {
       var data = _.defaults({
         resetToken: 'bad-token',
         newPassword: '>-=(♥️)=-<'
@@ -608,7 +608,7 @@ describe('account', function () {
       });
     });
 
-    it('"reset" must return an error if the requesting app is not trusted', function (done) {
+    it('[ON9V] "reset" must return an error if the requesting app is not trusted', function (done) {
       request.post(resetPath).send({ resetToken: '?', newPassword: '123456', appId: 'bad-app-id' })
           .unset('authorization')
           .set('Origin', 'http://test.pryv.local')
@@ -620,7 +620,7 @@ describe('account', function () {
       });
     });
 
-    it('"reset" must return an error if sent data is badly formatted', function (done) {
+    it('[T5L9] "reset" must return an error if sent data is badly formatted', function (done) {
       request.post(resetPath).send({badParam: '?'})
           .unset('authorization')
           .end(function (res) {

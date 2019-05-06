@@ -16,13 +16,13 @@ describe('Heap', () => {
   });
   
   describe('#pop', () => {
-    it('pops an item', () => {
+    it('[CW89] pops an item', () => {
       heap.push(1);
       const v = heap.pop(); 
       
       assert.strictEqual(v, 1);
     });
-    it('returns null if the heap is empty', () => {
+    it('[S15J] returns null if the heap is empty', () => {
       assert.isUndefined(heap.pop());
     });
   });

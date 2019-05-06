@@ -41,10 +41,10 @@ describe('Notifications', () => {
       notifications.serverReady();
     });
 
-    it('notifies internal listeners', () => {
+    it('[B76G] notifies internal listeners', () => {
       assert.deepInclude(emittedMsgs, ['server-ready']);
     });
-    it('notifies axon listeners', () => {
+    it('[SRAU] notifies axon listeners', () => {
       assert.deepInclude(axonMsgs, ['server-ready']);
     });
   });
@@ -53,10 +53,10 @@ describe('Notifications', () => {
       notifications.accountChanged('USERNAME');
     });
 
-    it('notifies internal listeners', () => {
+    it('[P6ZD] notifies internal listeners', () => {
       assert.deepInclude(emittedMsgs, [ 'account-changed', 'USERNAME' ]);
     });
-    it('notifies axon listeners', () => {
+    it('[Q96S] notifies axon listeners', () => {
       assert.deepInclude(axonMsgs, [ 'account-changed', 'USERNAME' ]);
     });
   });
@@ -65,10 +65,10 @@ describe('Notifications', () => {
       notifications.accessesChanged('USERNAME');
     });
 
-    it('notifies internal listeners', () => {
+    it('[P5CG] notifies internal listeners', () => {
       assert.deepInclude(emittedMsgs, [ 'accesses-changed', 'USERNAME' ]);
     });
-    it('notifies axon listeners', () => {
+    it('[VSN6] notifies axon listeners', () => {
       assert.deepInclude(axonMsgs, [ 'accesses-changed', 'USERNAME' ]);
     });
   });
@@ -77,10 +77,10 @@ describe('Notifications', () => {
       notifications.followedSlicesChanged('USERNAME');
     });
 
-    it('notifies internal listeners', () => {
+    it('[VU4A] notifies internal listeners', () => {
       assert.deepInclude(emittedMsgs, [ 'followed-slices-changed', 'USERNAME' ]);
     });
-    it('notifies axon listeners', () => {
+    it('[UD2B] notifies axon listeners', () => {
       assert.deepInclude(axonMsgs, [ 'followed-slices-changed', 'USERNAME' ]);
     });
   });
@@ -89,10 +89,10 @@ describe('Notifications', () => {
       notifications.streamsChanged('USERNAME');
     });
 
-    it('notifies internal listeners', () => {
+    it('[LDUQ] notifies internal listeners', () => {
       assert.deepInclude(emittedMsgs, [ 'streams-changed', 'USERNAME' ]);
     });
-    it('notifies axon listeners', () => {
+    it('[BUR1] notifies axon listeners', () => {
       assert.deepInclude(axonMsgs, [ 'streams-changed', 'USERNAME' ]);
     });
   });
@@ -101,10 +101,10 @@ describe('Notifications', () => {
       notifications.eventsChanged('USERNAME');
     });
 
-    it('notifies internal listeners', () => {
+    it('[N8RI] notifies internal listeners', () => {
       assert.deepInclude(emittedMsgs, [ 'events-changed', 'USERNAME' ]);
     });
-    it('notifies axon listeners', () => {
+    it('[TRMW] notifies axon listeners', () => {
       assert.deepInclude(axonMsgs, [ 'events-changed', 'USERNAME' ]);
     });
   });

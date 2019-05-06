@@ -117,7 +117,7 @@ describe('Socket.IO', function () {
     ], done);
   });
   
-  it('must dynamically create a namespace for the user', function (done) {
+  it('[25M0] must dynamically create a namespace for the user', function (done) {
     ioCons.con = connect(namespace, {auth: token});
   
     // We expect communication to work.
@@ -127,7 +127,7 @@ describe('Socket.IO', function () {
       done(err || new Error('Connection failed.')); 
     });
   });
-  it('must connect to a user with a dash in the username', function (done) {
+  it('[VGKH] must connect to a user with a dash in the username', function (done) {
     var dashUser = testData.users[4],
         dashRequest = null;
   
@@ -150,7 +150,7 @@ describe('Socket.IO', function () {
       }
     ], done);
   });
-  it('must refuse connection if no valid access token is provided', function (done) {
+  it('[OSOT] must refuse connection if no valid access token is provided', function (done) {
     ioCons.con = connect(namespace);
   
     ioCons.con.once('connect', function () {
@@ -164,7 +164,7 @@ describe('Socket.IO', function () {
   });
   
   describe('calling API methods', function () {
-    it('must properly route method call messages for events and return the results, including meta',function (done) {
+    it('[FI6F] must properly route method call messages for events and return the results, including meta',function (done) {
       ioCons.con = connect(namespace, {auth: token});
       var params = {
         sortAscending: true,
@@ -208,7 +208,7 @@ describe('Socket.IO', function () {
         done();
       });
     });
-    it('must properly route method call messages for streams and return the results', function (done) {
+    it('[O3SW] must properly route method call messages for streams and return the results', function (done) {
       ioCons.con = connect(namespace, {auth: token});
       ioCons.con.emit('streams.get', {state: 'all'}, function (err, result) {
         validation.checkSchema(result, streamsMethodsSchema.get.result);
@@ -217,7 +217,7 @@ describe('Socket.IO', function () {
       });
     });
     
-    it('must not crash when callers omit the callback', function (done) {
+    it('[NGUZ] must not crash when callers omit the callback', function (done) {
       ioCons.con = connect(namespace, {auth: token});
       ioCons.con.emit('events.get', {} /* no callback here */);
       process.nextTick(function () {
@@ -226,7 +226,7 @@ describe('Socket.IO', function () {
       });
     });
     
-    it('must fail if the called target does not exist', function (done) {
+    it('[ACA3] must fail if the called target does not exist', function (done) {
       ioCons.con = connect(namespace, {auth: token});
       ioCons.con.emit('badTarget.get', {}, function (err) {
         validation.checkSchema(err, validation.schemas.errorResult);
@@ -234,7 +234,7 @@ describe('Socket.IO', function () {
         done();
       });
     });
-    it('must fail if the called method does not exist', function (done) {
+    it('[L8WJ] must fail if the called method does not exist', function (done) {
       ioCons.con = connect(namespace, {auth: token});
       ioCons.con.emit('streams.badMethod', {}, function (err) {
         validation.checkSchema(err, validation.schemas.errorResult);
@@ -243,7 +243,7 @@ describe('Socket.IO', function () {
       });
     });
     
-    it('must return API errors properly, including meta', function (done) {
+    it('[SNCW] must return API errors properly, including meta', function (done) {
       ioCons.con = connect(namespace, {auth: token});
       ioCons.con.emit('events.create', {badParam: 'bad-data'}, function (err/*, result*/) {
         validation.checkSchema(err, validation.schemas.errorResult);
@@ -252,7 +252,7 @@ describe('Socket.IO', function () {
       });
     });
     
-    it('must notify other sockets for the same user about events changes', () => {
+    it('[744Z] must notify other sockets for the same user about events changes', () => {
       ioCons.con1 = connect(namespace, {auth: token}); // personal access
       ioCons.con2 = connect(namespace, {auth: testData.accesses[2].token}); // "read all" access
     
@@ -275,7 +275,7 @@ describe('Socket.IO', function () {
         });
       });
     });
-    it('must notify other sockets for the same user (only) about streams changes', function () {
+    it('[GJLT] must notify other sockets for the same user (only) about streams changes', function () {
       ioCons.con1 = connect(namespace, {auth: token}); // personal access
       ioCons.otherCon = connect('/' + otherUser.username, {auth: otherToken});
     
@@ -300,7 +300,7 @@ describe('Socket.IO', function () {
         });
       });
     });
-    it('must notify on each change', async function () {
+    it('[JC99] must notify on each change', async function () {
       const tokens = [token, testData.accesses[2].token];
       const socketConnections = tokens.map(
         (token) => connect(namespace, {auth: token}));
@@ -355,7 +355,7 @@ describe('Socket.IO', function () {
       servers = await bluebird.all( context.spawn_multi(2) );
     });
   
-    it('changes made in A notify clients of B', async () => {
+    it('[JJRA] changes made in A notify clients of B', async () => {
       if (token == null) throw new Error('AF: token must be set');
   
       // Aggregate user data to be more contextual

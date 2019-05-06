@@ -20,11 +20,11 @@ describe('ProjectVersion#version', () => {
   });
   
   describe('when no ".api-version" file is available', () => {
-    it('returns a version-string', async () => {
+    it('[W2BC] returns a version-string', async () => {
       const version = await pv.version();
       assert.match(version, /^\d+\.\d+\.\d+(-\d+-[0-9a-z]+)?$/);
     });
-    it('returns a git describe string', async () => {
+    it('[EGO7] returns a git describe string', async () => {
       const exec = (cmd) => bluebird.fromCallback(
         cb => child_process.exec(cmd, cb));
         
@@ -45,12 +45,12 @@ describe('ProjectVersion#version', () => {
       fs.unlinkSync(versionFilePath);
     });
     
-    it('reads .api-version and returns that constant', async () => {
+    it('[HV40] reads .api-version and returns that constant', async () => {
       assert.strictEqual(await pv.version(), '1.2.3');
     });
   });
   describe('when neither method works', () => {
-    it('throws an error', async () => {
+    it('[KTG9] throws an error', async () => {
       const failsAlways = sinon.stub(pv, 'exec');
       failsAlways.throws(); 
       

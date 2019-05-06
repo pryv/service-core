@@ -37,7 +37,7 @@ describe('Metadata Updater/Controller', () => {
   });
   
   describe('#runEach(ms)', () => {
-    it('starts a timer and runs #act every n ms', (done) => {
+    it('[9TJ0] starts a timer and runs #act every n ms', (done) => {
       const now = Number(new Date()); 
       const callTimestamps = [];
       
@@ -63,7 +63,7 @@ describe('Metadata Updater/Controller', () => {
     const now = new Date() / 1e3;
     const update = makeUpdate(now, {});
 
-    it('constructs an Flush operation for the update and returns it', () => {
+    it('[2W9C] constructs an Flush operation for the update and returns it', () => {
       const flush = controller.flushOp(update);
       
       assert.instanceOf(flush, Flush);
@@ -78,7 +78,7 @@ describe('Metadata Updater/Controller', () => {
       map.merge( makeUpdate(now - 10*60, { eventId: 'event2' }) );
     });
     
-    it('pulls elapsed updates and flushes them to MongoDB', async () => {
+    it('[CIPH] pulls elapsed updates and flushes them to MongoDB', async () => {
       const flushOps = [];
       
       // Stub out the flushOp producer

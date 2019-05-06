@@ -56,7 +56,7 @@ describe('root', function() {
   }
 
   describe('GET /', function() {
-    it('should return basic server meta information as JSON when requested', function(done) {
+    it('[UA7B] should return basic server meta information as JSON when requested', function(done) {
       superagent
         .get(path())
         .set('Accept', 'application/json')
@@ -69,7 +69,7 @@ describe('root', function() {
         });
     });
 
-    it('should return basic server meta information as text otherwise', function(done) {
+    it('[TO50] should return basic server meta information as text otherwise', function(done) {
       superagent
         .get(path())
         .set('Accept', 'text/html')
@@ -82,7 +82,7 @@ describe('root', function() {
         });
     });
 
-    it('should return an error if trying to access an unknown user account', function(done) {
+    it('[TS3D] should return an error if trying to access an unknown user account', function(done) {
       superagent.get(path() + 'unknown_user/events').end(function(err, res) {
         res.status.should.eql(404);
         done();
@@ -94,7 +94,7 @@ describe('root', function() {
   // is done in the previous test above
 
   describe('All requests:', function() {
-    it('should return correct common HTTP headers + meta data in response body', function(done) {
+    it('[TJHO] should return correct common HTTP headers + meta data in response body', function(done) {
       var origin = 'https://test.pryv.io',
           allowMethod = 'GET',
           allowHeaders = 'Content-Type';
@@ -128,7 +128,7 @@ describe('root', function() {
         });
     });
 
-    it('should return meta data in response body for errors as well', function(done) {
+    it('[OQ3G] should return meta data in response body for errors as well', function(done) {
       request.get(path() + user.username + '/bad-path').end(function(res) {
         res.statusCode.should.eql(404);
         validation.checkMeta(res.body);
@@ -136,7 +136,7 @@ describe('root', function() {
       });
     });
 
-    it("should properly translate the Host header's username (i.e. subdomain)", function(done) {
+    it('[P06Y] should properly translate the Host header\'s username (i.e. subdomain)', function(done) {
       request
         .get(path() + 'events')
         .set('Host', user.username + '.pryv.local')
@@ -146,7 +146,7 @@ describe('root', function() {
         });
     });
 
-    it('should translate the username in subdomain also when it only contains numbers', function(done) {
+    it('[R3H5] should translate the username in subdomain also when it only contains numbers', function(done) {
       var u = testData.users[2];
       superagent
         .post(path() + 'auth/login')
@@ -164,7 +164,7 @@ describe('root', function() {
         });
     });
 
-    it('should support POSTing "urlencoded" content with _json and _auth fields', function() {
+    it('[5IQK] should support POSTing "urlencoded" content with _json and _auth fields', function() {
       return request
         .post(path() + user.username + '/streams')
         .type('form')
@@ -176,7 +176,7 @@ describe('root', function() {
         });
     });
 
-    it('should support POSTing "urlencoded" content with _json, _method (PUT) and _auth fields', function(done) {
+    it('[2YEI] should support POSTing "urlencoded" content with _json, _method (PUT) and _auth fields', function(done) {
       request
         .post(path() + user.username + '/streams/' + testData.streams[3].id)
         .type('form')
@@ -190,7 +190,7 @@ describe('root', function() {
         });
     });
 
-    it('should support POSTing "urlencoded" content with _json, _method (DELETE) and _auth fields', function(done) {
+    it('[VJTP] should support POSTing "urlencoded" content with _json, _method (DELETE) and _auth fields', function(done) {
       request
         .post(path() + user.username + '/streams/' + testData.streams[3].id)
         .type('form')
@@ -204,7 +204,7 @@ describe('root', function() {
         });
     });
 
-    it('should properly handle JSON errors when POSTing "urlencoded" content with _json field', function(done) {
+    it('[6D5O] should properly handle JSON errors when POSTing "urlencoded" content with _json field', function(done) {
       request
         .post(path() + user.username + '/streams')
         .type('form')
@@ -217,7 +217,7 @@ describe('root', function() {
         });
     });
 
-    it('should update the access\'s "last used" time and *internal* request counters', function(done) {
+    it('[J2WP] should update the access\'s "last used" time and *internal* request counters', function(done) {
       var expectedTime,
           calledMethodKey = 'events:get',
           originalCallCount;
@@ -281,7 +281,7 @@ describe('root', function() {
   });
 
   describe('OPTIONS /', function() {
-    it('should return OK', function(done) {
+    it('[PDMA] should return OK', function(done) {
       superagent.options(path()).end(function(err, res) {
         should.not.exist(err);
         res.statusCode.should.eql(200);
@@ -293,7 +293,7 @@ describe('root', function() {
   describe('GET /access-info', function() {
     var infoAccess = testData.accesses[1];
 
-    it('must return current access information', function(done) {
+    it('[0MI8] must return current access information', function(done) {
       request
         .get('/' + user.username + '/access-info', infoAccess.token)
         .end(function(res) {
@@ -324,7 +324,7 @@ describe('root', function() {
       eventsNotifCount++;
     });
 
-    it('must execute the given method calls and return the results', function(done) {
+    it('[ORT3] must execute the given method calls and return the results', function(done) {
       var calls = [
         {
           method: 'events.create',
@@ -404,7 +404,7 @@ describe('root', function() {
     });
 
     it(
-      'must execute the method calls containing events.get and ' +
+      '[TVPI] must execute the method calls containing events.get and ' +
         'return the results',
       function(done) {
         const streamId = 'batch-call-streamId';
@@ -475,7 +475,7 @@ describe('root', function() {
       }
     );
 
-    it('must return an error if the sent data is badly formatted', function(done) {
+    it('[WGVY] must return an error if the sent data is badly formatted', function(done) {
       var calls = [
         {
           method: 'events.create',

@@ -33,14 +33,14 @@ describe('Connection/Registry', () => {
     });
 
     describe('#preflight(username)', () => {
-      it("calls deleteUser in dryRun mode and doesn't reject", async () => {
+      it('[AVED] calls deleteUser in dryRun mode and doesn\'t reject', async () => {
         await registry.preflight('jsmith');
 
         assert.isFalse(registryMock.sedsDead, 'Sed should not be dead after preflight');
       });
     });
     describe('#deleteUser(username)', () => {
-      it('deletes the user', async () => {
+      it('[BYAZ] deletes the user', async () => {
         await registry.deleteUser('jsmith');
 
         assert.isTrue(registryMock.sedsDead, "Sed's dead baby, sed's dead.");
@@ -52,7 +52,7 @@ describe('Connection/Registry', () => {
             lodash.merge({}, settings, { key: 'wrong_key' }));
         });
 
-        it("returns 'Authentication error'", async () => {
+        it('[I09L] returns \'Authentication error\'', async () => {
           let erroredOut = false; 
           try {
             await registry.deleteUser('jsmith');

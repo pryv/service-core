@@ -14,7 +14,7 @@ describe('(index)', function () {
   before(server.ensureStarted.bind(server, helpers.dependencies.settings));
 
   describe('OPTIONS /', function () {
-    it('should return OK', function (done) {
+    it('[E5MW] should return OK', function (done) {
       request.options(path()).end(function (err, res) {
         res.statusCode.should.eql(200);
         done();

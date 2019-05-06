@@ -64,7 +64,7 @@ describe('system (ex-register)', function () {
     };
 
     describe('when email sending really works', function() {
-      it('must create a new user with the sent data, sending a welcome email', function (done) {
+      it('[FUTR] must create a new user with the sent data, sending a welcome email', function (done) {
         let settings = _.cloneDeep(helpers.dependencies.settings);
         settings.services.email.enabled = true;
 
@@ -131,12 +131,12 @@ describe('system (ex-register)', function () {
       });
     });
     
-    it('must not send a welcome email if mailing is deactivated', function (done) {
+    it('[0G7C] must not send a welcome email if mailing is deactivated', function (done) {
       let settings = _.cloneDeep(helpers.dependencies.settings);
       settings.services.email.enabled = false;
       testWelcomeMailNotSent(settings, done);
     });
-    it('must not send a welcome email if welcome mail is deactivated', function (done) {
+    it('[TWBF] must not send a welcome email if welcome mail is deactivated', function (done) {
       let settings = _.cloneDeep(helpers.dependencies.settings);
       settings.services.email.enabled = {
         welcome : false
@@ -179,7 +179,7 @@ describe('system (ex-register)', function () {
     describe('when it just replies OK', function() {
       before(server.ensureStarted.bind(server, helpers.dependencies.settings));
     
-      it('must run the process but not save anything for test username "recla"', 
+      it('[9K71] must run the process but not save anything for test username "recla"', 
         function (done) {
           var originalCount,
               createdUserId,
@@ -231,7 +231,7 @@ describe('system (ex-register)', function () {
           ], done);
         });
     
-      it('must support the old "/register" path for backwards-compatibility', function (done) {
+      it('[ZG1L] must support the old "/register" path for backwards-compatibility', function (done) {
         request.post(url.resolve(server.url, '/register/create-user'))
           .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
           .send(newUserData)
@@ -242,25 +242,25 @@ describe('system (ex-register)', function () {
           });
       });
     
-      it('must return a correct 400 error if the sent data is badly formatted', function (done) {
+      it('[VGF5] must return a correct 400 error if the sent data is badly formatted', function (done) {
         post({ badProperty: 'bad value' }, function (err, res) {
           validation.checkErrorInvalidParams(res, done);
         });
       });
 
-      it('must return a correct 400 error if the language property is above 5 characters', function (done) {
+      it('[ABI5] must return a correct 400 error if the language property is above 5 characters', function (done) {
         post(_.assignIn(newUserData, { language: 'abcdef' }), function (err, res) {
           validation.checkErrorInvalidParams(res, done);
         });
       });
 
-      it('must return a correct 400 error if the language property is the empty string', function (done) {
+      it('[OVI4] must return a correct 400 error if the language property is the empty string', function (done) {
         post(_.assignIn(newUserData, { language: '' }), function (err, res) {
           validation.checkErrorInvalidParams(res, done);
         });
       });
     
-      it('must return a correct 400 error if a user with the same user name already exists',
+      it('[RD10] must return a correct 400 error if a user with the same user name already exists',
         function (done) {
           var data = {
             username: testData.users[0].username,
@@ -276,7 +276,7 @@ describe('system (ex-register)', function () {
             }, done);
           });
         });
-      it('must return a correct 400 error if a user with the same email address already exists', function (done) {
+      it('[NPJE] must return a correct 400 error if a user with the same email address already exists', function (done) {
         const data = {
           username: testData.users[0].username + '1',
           passwordHash: '$-1s-b4d-f0r-U',
@@ -292,7 +292,7 @@ describe('system (ex-register)', function () {
         });
       });
     
-      it('must return a correct 404 error when authentication is invalid', function (done) {
+      it('[Y5JB] must return a correct 404 error when authentication is invalid', function (done) {
         request
           .post(path())
           .set('authorization', 'bad-key').send(newUserData)
@@ -304,7 +304,7 @@ describe('system (ex-register)', function () {
           });
       });
     
-      it('must return a correct error if the content type is wrong', function (done) {
+      it('[GF3L] must return a correct error if the content type is wrong', function (done) {
         request.post(path())
           .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
           .set('Content-Type', 'application/Jssdlfkjslkjfon') // <-- case error
@@ -361,7 +361,7 @@ describe('system (ex-register)', function () {
       after(server.ensureStarted.bind(server,helpers.dependencies.settings));
     
       // cf. GH issue #64
-      it('must replace the passwordHash in the logs by (hidden) when the authentication is invalid', function (done) {
+      it('[Y69B] must replace the passwordHash in the logs by (hidden) when the authentication is invalid', function (done) {
         async.series([
           function failCreateUser(stepDone) {
             request.post(path()).set('authorization', 'bad-key').send(newUserData)
@@ -377,7 +377,7 @@ describe('system (ex-register)', function () {
       });
     
       // cf. GH issue #64 too
-      it('must replace the passwordHash in the logs by (hidden) when the payload is invalid (here parameters)', function (done) {
+      it('[MEJ9] must replace the passwordHash in the logs by (hidden) when the payload is invalid (here parameters)', function (done) {
         async.series([
           function failCreateUser(stepDone) {
             post(_.extend({invalidParam: 'yolo'}, newUserData), function (err, res) {
@@ -391,7 +391,7 @@ describe('system (ex-register)', function () {
         ], done);
       });
     
-      it('must not mention the passwordHash in the logs when none is provided', function (done) {
+      it('[CO6H] must not mention the passwordHash in the logs when none is provided', function (done) {
         async.series([
           function failCreateUser(stepDone) {
             let dataWithNoPasswordHash = _.cloneDeep(newUserData);
@@ -443,7 +443,7 @@ describe('system (ex-register)', function () {
 
     before(server.ensureStarted.bind(server, helpers.dependencies.settings));
 
-    it('must return user information (including time of last account use)', function (done) {
+    it('[9C1A] must return user information (including time of last account use)', function (done) {
       var originalInfo,
           expectedTime;
       async.series([
@@ -504,7 +504,7 @@ describe('system (ex-register)', function () {
         }
       ], done);
     });
-    it('must return a correct 404 error when authentication is invalid', function (done) {
+    it('[FNJ5] must return a correct 404 error when authentication is invalid', function (done) {
       request.get(path(user.username)).set('authorization', 'bad-key').end(function (err, res) {
         validation.checkError(res, {
           status: 404,

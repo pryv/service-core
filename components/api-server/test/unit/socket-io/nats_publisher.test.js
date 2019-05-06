@@ -14,7 +14,7 @@ const NatsPublisher = require('../../../src/socket-io/nats_publisher');
 const { decode } = require('../../../src/socket-io/nats_wire_message');
 
 describe('NatsPublisher', () => {
-  it('should construct', () => {
+  it('[S386] should construct', () => {
     // For this to work, you must run the 'gnatsd' service on localhost. 
     new NatsPublisher('nats://127.0.0.1:4222');
   });
@@ -30,7 +30,7 @@ describe('NatsPublisher', () => {
     });
   }
   
-  it('delivers messages to "USERNAME.sok1"', (done) => {
+  it('[I21M] delivers messages to "USERNAME.sok1"', (done) => {
     const p = connect();
     const rawClient = NATS.connect({
       url: 'nats://127.0.0.1:4222', 

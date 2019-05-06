@@ -17,7 +17,7 @@ const { encode } = require('../../../src/socket-io/nats_wire_message');
 import type { MessageSink } from '../../../src/socket-io/message_sink';
 
 describe('NatsSubscriber', () => {
-  it('should construct', () => {
+  it('[DMMP] should construct', () => {
     // For this to work, you must run the 'gnatsd' service on localhost. 
     new NatsSubscriber('nats://127.0.0.1:4222', new ArraySink());
   });
@@ -54,14 +54,14 @@ describe('NatsSubscriber', () => {
     });
     
     describe('subscribe("USERNAME")', () => {
-      it('accepts messages from USERNAME.sok1 and dispatches them to sinks', async () => {
+      it('[4MAI] accepts messages from USERNAME.sok1 and dispatches them to sinks', async () => {
         rawClient.publish('foobar.sok1', encode('onTestMessage'));
         
         await arySink.notEmpty();
         
         assert.deepEqual(arySink.msgs, ['onTestMessage']);
       });
-      it('ignores messages from other users', async () => {
+      it('[47BP] ignores messages from other users', async () => {
         rawClient.publish('barbaz.sok1', encode('onTestMessage1'));
         rawClient.publish('foobar.sok1', encode('onTestMessage2'));
         
@@ -74,7 +74,7 @@ describe('NatsSubscriber', () => {
       });
     });
     describe('unsubscribe()', () => {
-      it('should unsubscribe from NATS', async () => {
+      it('[L49E] should unsubscribe from NATS', async () => {
         rawClient.publish('foobar.sok1', encode('onTestMessage1'));
         
         await arySink.notEmpty();

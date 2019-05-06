@@ -60,7 +60,7 @@ describe('Base API', () => {
     proxy = client.proxy('SearchService', endpoint); 
   });
   
-  it('making a call', async () => {
+  it('[GZFK] making a call', async () => {
     const response = await proxy.search({
       query: 'select content from events', 
       pageNumber: 1, 
@@ -82,7 +82,7 @@ describe('Base API', () => {
     const res1 = response.results[1];
     assert.strictEqual(res1.title, 'A title 2');
   });
-  it('failing a call (server-side)', async () => {
+  it('[V7MJ] failing a call (server-side)', async () => {
     stub.throws(new Error('server-side error'));
           
     let caught = false; 

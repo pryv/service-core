@@ -10,7 +10,7 @@ const chai = require('chai');
 const assert = chai.assert;
 
 describe('CLI application', () => {
-  it('prints help and usage when called with no arguments', async () => {
+  it('[EWLG] prints help and usage when called with no arguments', async () => {
     const output = await cli();
     assert.match(output, /Commands:/); 
     assert.match(output, /delete-user <username>/); 

@@ -35,7 +35,7 @@ describe('Connection/MongoDB', () => {
     });
 
     describe('#preflight(username)', () => {
-      it('throws', async () => {
+      it('[YU38] throws', async () => {
         try {
           await mongodb.preflight('somerandomstringthatisnotauser');
         }
@@ -115,12 +115,12 @@ describe('Connection/MongoDB', () => {
     });
  
     describe('#preflight(username)', () => {
-      it("checks the connection and doesn't throw", async () => {
+      it('[K52O] checks the connection and doesn\'t throw', async () => {
         await mongodb.preflight(userId); 
       });
     });
     describe('#deleteUser(username)', () => {
-      it('deletes the user from MongoDB', async () => {
+      it('[5NSD] deletes the user from MongoDB', async () => {
         await mongodb.deleteUser(userId);
 
         const user = await mongodb.findUser(userId);

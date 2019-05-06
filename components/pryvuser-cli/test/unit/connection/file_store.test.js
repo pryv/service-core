@@ -56,12 +56,12 @@ describe('Connection/FileStore', () => {
 
 
     describe('#preflight(username)', () => {
-      it('works', async () => {
+      it('[V2SN] works', async () => {
         await fileStore.preflight('jsmith');
       });
     });
     describe('#deleteUser(username)', () => {
-      it("deletes the user's files", async () => {
+      it('[2BUQ] deletes the user\'s files', async () => {
         await fileStore.deleteUser('jsmith');        
 
         // jsmith's user.id happens to be 'foobar': 

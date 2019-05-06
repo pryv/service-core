@@ -46,7 +46,7 @@ describe('followed slices', function () {
 
     before(resetFollowedSlices);
 
-    it('must return all followed slices (ordered by user name, then access token)',
+    it('[TNKS] must return all followed slices (ordered by user name, then access token)',
         function (done) {
       request.get(basePath).end(function (res) {
         validation.check(res, {
@@ -57,7 +57,7 @@ describe('followed slices', function () {
       });
     });
 
-    it('must be forbidden to non-personal accesses', function (done) {
+    it('[U9M4] must be forbidden to non-personal accesses', function (done) {
       request.get(basePath, testData.accesses[4].token).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
@@ -69,7 +69,7 @@ describe('followed slices', function () {
 
     beforeEach(resetFollowedSlices);
 
-    it('must create a new followed slice with the sent data, returning it', function (done) {
+    it('[HVYA] must create a new followed slice with the sent data, returning it', function (done) {
       var data = {
         name: 'Some followed slice',
         url: 'https://mirza.pryv.io/',
@@ -116,13 +116,13 @@ describe('followed slices', function () {
       );
     });
 
-    it('must return a correct error if the sent data is badly formatted', function (done) {
+    it('[BULL] must return a correct error if the sent data is badly formatted', function (done) {
       request.post(basePath).send({badProperty: 'bad value'}).end(function (res) {
         validation.checkErrorInvalidParams(res, done);
       });
     });
 
-    it('must return a correct error if the same followed slice (url and token) already exists',
+    it('[GPZK] must return a correct error if the same followed slice (url and token) already exists',
         function (done) {
       var data = {
         name: 'New name',
@@ -138,7 +138,7 @@ describe('followed slices', function () {
       });
     });
 
-    it('must return a correct error if a followed slice with the same name already exists',
+    it('[RYNB] must return a correct error if a followed slice with the same name already exists',
         function (done) {
       var data = {
         name: testData.followedSlices[0].name,
@@ -160,7 +160,7 @@ describe('followed slices', function () {
 
     beforeEach(resetFollowedSlices);
 
-    it('must modify the followed slice with the sent data', function (done) {
+    it('[LM08] must modify the followed slice with the sent data', function (done) {
       var original = testData.followedSlices[0];
       var newSliceData = {
         name: 'Updated Slice 0'
@@ -181,7 +181,7 @@ describe('followed slices', function () {
       });
     });
 
-    it('must return a correct error if the followed slice does not exist', function (done) {
+    it('[QFGH] must return a correct error if the followed slice does not exist', function (done) {
       request.put(path('unknown-id')).send({name: '?'}).end(function (res) {
         validation.checkError(res, {
           status: 404,
@@ -190,14 +190,14 @@ describe('followed slices', function () {
       });
     });
 
-    it('must return a correct error if the sent data is badly formatted', function (done) {
+    it('[RUQE] must return a correct error if the sent data is badly formatted', function (done) {
       request.put(path(testData.followedSlices[1].id)).send({badProperty: 'bad value'})
           .end(function (res) {
         validation.checkErrorInvalidParams(res, done);
       });
     });
 
-    it('must return a correct error if a followed slice with the same name already exists',
+    it('[T256] must return a correct error if a followed slice with the same name already exists',
         function (done) {
       var update = {name: testData.followedSlices[0].name};
       request.put(path(testData.followedSlices[1].id)).send(update).end(function (res) {
@@ -215,7 +215,7 @@ describe('followed slices', function () {
 
     beforeEach(resetFollowedSlices);
 
-    it('must delete the followed slice', function (done) {
+    it('[U7LY] must delete the followed slice', function (done) {
       var deletedId = testData.followedSlices[2].id;
       async.series([
           function deleteSlice(stepDone) {
@@ -245,7 +245,7 @@ describe('followed slices', function () {
       );
     });
 
-    it('must return a correct error if the followed slice does not exist', function (done) {
+    it('[UATV] must return a correct error if the followed slice does not exist', function (done) {
       request.del(path('unknown-id')).end(function (res) {
         validation.checkError(res, {
           status: 404,

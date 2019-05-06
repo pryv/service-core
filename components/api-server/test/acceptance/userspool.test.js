@@ -34,24 +34,24 @@ describe('users pool', () => {
       storage.removeAll(done);
     });
 
-    it('succeeds', () => {
+    it('[80HI] succeeds', () => {
       assert.notExists(res.body.error);
       assert.isTrue(res.ok);
       assert.exists(poolUser);
     });
-    it('contains a generated pool user id', () => {
+    it('[Y95U] contains a generated pool user id', () => {
       assert.isNotNull(poolUser.id);
     });
-    it('created a user in the database', () => {
+    it('[JKN6] created a user in the database', () => {
       storage.findOne({ username: { $regex: new RegExp('^' + 'pool@') }}, null, (err, user) => {
         assert.isNull(err);
         assert.isNotNull(user);
       });
     });
-    it('created the related collections', () => {
+    it('[YB72] created the related collections', () => {
 
     });
-    it('created the related indexes', () => {
+    it('[WBCJ] created the related indexes', () => {
 
     });
   });
@@ -69,11 +69,11 @@ describe('users pool', () => {
         poolSize = res.body.size;
       });
 
-      it('must succeed', () => {
+      it('[DHID] must succeed', () => {
         assert.isTrue(res.ok);
       });
       
-      it('must return 0', () => {
+      it('[LH6N] must return 0', () => {
         assert.exists(poolSize);
         assert.equal(poolSize, 0);
       });
@@ -97,12 +97,12 @@ describe('users pool', () => {
         storage.removeAll(done);
       });
 
-      it('succeeds', () => {
+      it('[CTP7] succeeds', () => {
         assert.isTrue(res.ok, 'response not ok');
         assert.notExists(res.body.error, 'response contains an error');
       });
 
-      it('has the right number of pool users', () => {
+      it('[APQS] has the right number of pool users', () => {
         assert.exists(poolSize, 'there is not pool size');
         assert.isTrue(poolSize === 3, 'the poolSize number is not as expected');
       });

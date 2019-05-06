@@ -38,22 +38,22 @@ describe('Authentication', function() {
     const obj = { a: 1, b: 2 };
     const keys = ['a', 'b'];
     
-    it('returns true if all properties exist', function() {
+    it('[IKAI] returns true if all properties exist', function() {
       should(
         hasProperties(obj, keys)
       ).be.ok();
     });
-    it('returns false if not all properties exist', function() {
+    it('[K2PZ] returns false if not all properties exist', function() {
       should(
         hasProperties(obj, ['a', 'c'])
       ).be.false(); 
     });
-    it('returns false if null is given', function() {
+    it('[U2NA] returns false if null is given', function() {
       should(
         hasProperties(null, ['a', 'c'])
       ).be.false(); 
     });
-    it('returns false if a string is given', function() {
+    it('[WJ7J] returns false if a string is given', function() {
       should(
         hasProperties('a string', ['a', 'c'])
       ).be.false(); 

@@ -13,7 +13,7 @@ describe('Controller', () => {
 
   describe('storeSeriesData', () => {
 
-    it('should reject queries if the authorization header is missing', (done) => {
+    it('[3BYC] should reject queries if the authorization header is missing', (done) => {
       const req = {
         params: {},
         headers: {}
@@ -28,7 +28,7 @@ describe('Controller', () => {
       });
     });
 
-    it('should reject queries if the eventId is missing', (done) => {
+    it('[U0WB] should reject queries if the eventId is missing', (done) => {
       const req = {
         params: {},
         headers: {authorization: 'token'}

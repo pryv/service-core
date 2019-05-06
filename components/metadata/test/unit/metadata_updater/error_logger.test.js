@@ -22,7 +22,7 @@ describe('ErrorLogger', () => {
     subject = ErrorLogger.wrap(target, logger);
   });
 
-  it('forwards calls', () => {
+  it('[9UOR] forwards calls', () => {
     target.foo = sinon.spy();
       
     // FLOW
@@ -31,7 +31,7 @@ describe('ErrorLogger', () => {
     sinon.assert.calledOnce(target.foo); 
     sinon.assert.calledWith(target.foo, 'a', 'b', 'c');
   });
-  it('catches and logs all exceptions, rethrowing afterwards', () => {
+  it('[5AVE] catches and logs all exceptions, rethrowing afterwards', () => {
     target.foo = sinon.stub();
     
     target.foo.throws('foobar'); 
@@ -46,7 +46,7 @@ describe('ErrorLogger', () => {
     sinon.assert.calledWith(logger.error, 
       "Uncaught error: 'foobar' during call to Object#foo.");
   });
-  it('also works for async methods, waiting for the eventual result', async () => {
+  it('[9J9U] also works for async methods, waiting for the eventual result', async () => {
     target.foo = sinon.stub();
     
     target.foo.rejects('foobar'); 

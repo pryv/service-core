@@ -12,9 +12,12 @@ describe('ArrayStream', function () {
   const arraySize = new ArrayStream('getSize', true).size;
   
   describe('testing around the array size limit', function () {
+
+    const testIDs = ['U21Z', 'MKNL', 'MUPF', 'CM4Q', 'F8S9', '6T4V', 'QBOS', 'BY67', 'JNVS', 'N9HG'];
+
     for (let i = -3; i <= 3; i++) {
       const sign = i < 0 ? '' : '+';
-      it('must return a valid array when receiving limit' + sign + i +' items',
+      it('[' + testIDs[i+3] + '] must return a valid array when receiving limit' + sign + i +' items',
         function (done) {
           const n = arraySize+i;
           n.should.be.above(0);
@@ -25,8 +28,11 @@ describe('ArrayStream', function () {
   });
   
   describe('testing with small number of items', function () {
+
+    const testIDs = ['69F6', 'BJRT', 'YJI0', 'EKQQ', '5SUK', 'FPL8', 'ZMO9', 'WFSL', '1YQS', '25IQ'];
+
     for (let i = 0; i <= 3; i++) {
-      it('must return a valid array when receiving ' + i + ' item(s)',
+      it('[' + testIDs[i] + '] must return a valid array when receiving ' + i + ' item(s)',
         function (done) {
           pipeAndCheck(i, true, null, done);
         }
@@ -34,7 +40,7 @@ describe('ArrayStream', function () {
     }
   });
 
-  it('must return an array preceded by a comma when called with parameter isFirst=false',
+  it('[TWNI] must return an array preceded by a comma when called with parameter isFirst=false',
     function (done) {
       const n = 10;
 

@@ -34,7 +34,7 @@ describe('profile (app)', function () {
 
     var path = basePath + '/public';
 
-    it('must return publicly shared key-value profile info', function (done) {
+    it('[FWG1] must return publicly shared key-value profile info', function (done) {
       request.get(path, appAccess.token).end(function (res) {
         validation.check(res, {
           status: 200,
@@ -52,7 +52,7 @@ describe('profile (app)', function () {
 
     var path = basePath + '/app';
 
-    it('must return key-value settings for the current app', function (done) {
+    it('[13DL] must return key-value settings for the current app', function (done) {
       request.get(path, appAccess.token).end(function (res) {
         validation.check(res, {
           status: 200,
@@ -62,7 +62,7 @@ describe('profile (app)', function () {
       });
     });
 
-    it('must refuse requests with a shared access token', function (done) {
+    it('[J37U] must refuse requests with a shared access token', function (done) {
       request.get(path, sharedAccess.token).end(function (res) {
         validation.checkError(res, {
           status: 400,
@@ -71,7 +71,7 @@ describe('profile (app)', function () {
       });
     });
 
-    it('must refuse requests with a personal access token', function (done) {
+    it('[GYBN] must refuse requests with a personal access token', function (done) {
       var personalRequest = helpers.request(server.url);
       async.series([
         personalRequest.login.bind(personalRequest, user),
@@ -94,7 +94,7 @@ describe('profile (app)', function () {
 
     var path = basePath + '/app';
 
-    it('must add/update/remove the specified keys without touching the others', function (done) {
+    it('[1QFB] must add/update/remove the specified keys without touching the others', function (done) {
       var data = {
         newKey: 'New Value', // add
         keyOne: 'No One', // update
@@ -114,7 +114,7 @@ describe('profile (app)', function () {
       });
     });
 
-    it('must refuse requests with a shared access token', function (done) {
+    it('[0H9A] must refuse requests with a shared access token', function (done) {
       request.put(path, sharedAccess.token).send({any: 'thing'}).end(function (res) {
         validation.checkError(res, {
           status: 400,
@@ -123,7 +123,7 @@ describe('profile (app)', function () {
       });
     });
 
-    it('must refuse requests with a personal access token', function (done) {
+    it('[JC5F] must refuse requests with a personal access token', function (done) {
       var personalRequest = helpers.request(server.url);
       async.series([
         personalRequest.login.bind(personalRequest, user),

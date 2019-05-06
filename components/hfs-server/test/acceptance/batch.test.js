@@ -86,7 +86,7 @@ describe('Storing BATCH data in a HF series', function() {
         .expect(200);
     }
     
-    it('should store data correctly', async () => {
+    it('[Q2IS] should store data correctly', async () => {
       const data = {
         'format': 'seriesBatch',
         'data': [
@@ -186,7 +186,7 @@ describe('Storing BATCH data in a HF series', function() {
       });
     });
     
-    it("should fail without 'Authorization' header", async () => {
+    it("[QHM5] should fail without 'Authorization' header", async () => {
       const data = {
         'format': 'seriesBatch',
         'data': [
@@ -225,7 +225,7 @@ describe('Storing BATCH data in a HF series', function() {
         server.stop(); 
       });
 
-      it('fails', async () => {
+      it('[R57L] fails', async () => {
         const response = await storeData(server.request(), {
           'format': 'seriesBatch',
           'data': [
@@ -284,7 +284,7 @@ describe('Storing BATCH data in a HF series', function() {
         rpcServer.close();
       });
             
-      it('should schedule a metadata update on every store', async () => {
+      it('[OO01] should schedule a metadata update on every store', async () => {
         // Formulates an update for 2 events, to test if we get two entries in
         // the end.
         const data = {

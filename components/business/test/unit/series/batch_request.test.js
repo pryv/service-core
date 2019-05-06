@@ -17,7 +17,7 @@ describe('BatchRequest', () => {
     const type: InfluxRowType = (typeRepo.lookup('series:position/wgs84'): any);
     const resolver = () => Promise.resolve(type);
 
-    it('should parse the happy case', async () => {
+    it('[QJ6L] should parse the happy case', async () => {
       const happy = {
         format: 'seriesBatch', 
         data: [
@@ -42,23 +42,23 @@ describe('BatchRequest', () => {
       const element = request.list[0];
       assert.strictEqual(element.eventId, 'cjcrx6jy1000w8xpvjv9utxjx');
     });
-    it('accepts an empty batch', () => {
+    it('[VV2O] accepts an empty batch', () => {
       good({
         format: 'seriesBatch', 
         data: [], 
       });
     });
   
-    it('throws if format is missing or wrong', () => {
+    it('[0NWO] throws if format is missing or wrong', () => {
       bad({format: 'something else'});
       bad({});
     });
-    it('throws if another type is passed in', () => {
+    it('[881Y] throws if another type is passed in', () => {
       bad(null);
       bad('a string');
       bad(42);
     });
-    it("throws if envelope doesn't have a data attribute", () => {
+    it('[2PZ0] throws if envelope doesn\'t have a data attribute', () => {
       bad({
         format: 'seriesBatch', 
         foo: 'bar',
@@ -84,7 +84,7 @@ describe('BatchRequestElement', () => {
     const type: InfluxRowType = (typeRepo.lookup('series:position/wgs84'): any);
     const resolver = () => Promise.resolve(type);
     
-    it('should parse a good looking object', () => {
+    it('[AGQK] should parse a good looking object', () => {
       good({
         eventId: 'cjcrx6jy1000w8xpvjv9utxjx', 
         data: {
@@ -99,11 +99,11 @@ describe('BatchRequestElement', () => {
       });
     });
     
-    it('fails if input is not an Object', () => {
+    it('[LWME] fails if input is not an Object', () => {
       bad(null);
       bad('string');
     }); 
-    it('fails if eventId is missing or the wrong type', () => {
+    it('[BU7Q] fails if eventId is missing or the wrong type', () => {
       bad({ foo: 'bar' });
       bad({ eventId: 42 });
     });

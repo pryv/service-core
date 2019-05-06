@@ -79,7 +79,7 @@ describe('Flush', () => {
       op = new Flush(update, db, logger);
     });
     
-    it('writes event metadata to disk', async () => {
+    it('[D5N1] writes event metadata to disk', async () => {
       await op.run(); 
       
       const event = await loadEvent(db, userId, eventId);
@@ -105,7 +105,7 @@ describe('Flush', () => {
       op = new Flush(update, db, logger);
     });
     
-    it("doesn't destroy old earliest and latest", async () => {
+    it('[5QO0] doesn\'t destroy old earliest and latest', async () => {
       await op.run(); 
       const event = await loadEvent(db, userId, eventWithContentId);
 
@@ -114,7 +114,7 @@ describe('Flush', () => {
       assert.strictEqual(content.earliest, now - 100); 
       assert.strictEqual(content.latest, now + 100); 
     });
-    it('leaves base data intact', async () => {
+    it('[Z70F] leaves base data intact', async () => {
       await op.run(); 
       const event = await loadEvent(db, userId, eventWithContentId);
 
@@ -150,11 +150,11 @@ describe('UserRepository', () => {
   });
   
   describe('#resolve(name)', () => {
-    it('returns the user id', async () => {
+    it('[80TC] returns the user id', async () => {
       const user = await repository.resolve('user_name'); 
       assert.strictEqual(user.id, userId);
     });
-    it('caches the user information for a while', async () => {
+    it('[8K9H] caches the user information for a while', async () => {
       // Prime the cache
       await repository.resolve('user_name'); 
       

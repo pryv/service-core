@@ -36,7 +36,7 @@ describe('PendingUpdatesMap', () => {
       to: now - 20,
     });
         
-    it('stores updates', () => {
+    it('[RE2D] stores updates', () => {
       map.merge(update1); 
       const value = map.get(update1.key());
       
@@ -45,7 +45,7 @@ describe('PendingUpdatesMap', () => {
         
       assert.deepEqual(value, update1);
     });
-    it('merges updates with preexisting updates via #merge', () => {
+    it('[JJ2Y] merges updates with preexisting updates via #merge', () => {
       sinon.stub(update1, 'merge'); 
       
       map.merge(update1);
@@ -78,7 +78,7 @@ describe('PendingUpdatesMap', () => {
       }
     });
     
-    it('returns all updates that should be flushed', () => {
+    it('[O55W] returns all updates that should be flushed', () => {
       // Store updates in the map, adjusting cooldown to be later than deadline
       for (const update of updates) {
         update.cooldown = update.deadline;
@@ -92,7 +92,7 @@ describe('PendingUpdatesMap', () => {
       assert.strictEqual(elapsed.length, 5);
       assert.strictEqual(map.size(), 5);
     });
-    it('uses #flushAt to determine deadlines', () => {
+    it('[HWPP] uses #flushAt to determine deadlines', () => {
       // Store updates in the map, leaving cooldown as is (will be past due).
       for (const update of updates)
         map.merge(update);
@@ -139,7 +139,7 @@ describe('PendingUpdate', () => {
       });
     });
     
-    it('constructively merges two updates', () => {
+    it('[412V] constructively merges two updates', () => {
       update1.deadline = now + 30; 
       update2.deadline = now + 20;
       
@@ -167,7 +167,7 @@ describe('PendingUpdate', () => {
       assert.approximately(update1.cooldown, now + 10 + 10, 1, 
         'cooldown is reset to now+COOLDOWN_TIME on every merge');
     });
-    it('fails when key is not equal', () => {
+    it('[HS79] fails when key is not equal', () => {
       const failing = makeUpdate(now, {
         userId: 'user - no match', 
       });
@@ -194,12 +194,12 @@ describe('PendingUpdate', () => {
       });
     });
 
-    it('returns `cooldown` when deadline is far away', () => {
+    it('[79JJ] returns `cooldown` when deadline is far away', () => {
       const flushAt = update.flushAt();
       
       assert.approximately(flushAt, update.cooldown, 1);
     });
-    it('returns `deadline` when deadline is < `cooldown`', () => {
+    it('[OQLP] returns `deadline` when deadline is < `cooldown`', () => {
       update.cooldown = update.deadline-1;
       
       const flushAt = update.flushAt();

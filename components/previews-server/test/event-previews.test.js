@@ -47,7 +47,7 @@ describe('event previews', function () {
       rimraf(storage.user.eventFiles.settings.previewsDirPath, done);
     });
 
-    it('must return JPEG previews for "picture/attached" events and cache the result', 
+    it('[NRT9] must return JPEG previews for "picture/attached" events and cache the result', 
       async function() {
         const request = helpers.unpatchedRequest(server.url);
         const event = testData.events[2];
@@ -68,7 +68,7 @@ describe('event previews', function () {
         modified.toString().should.eql(event.modified.toString());
       });
 
-    it('must accept ".jpg" extension in the path (backwards-compatibility)', function (done) {
+    it('[FEWU] must accept ".jpg" extension in the path (backwards-compatibility)', function (done) {
       var event = testData.events[2];
       request
         .get(path(event.id) + '.jpg', token)
@@ -78,7 +78,7 @@ describe('event previews', function () {
         });
     });
 
-    it('must adjust the desired size to the bigger standard size (if exists)', async function () {
+    it('[PBC1] must adjust the desired size to the bigger standard size (if exists)', async function () {
       const request = helpers.unpatchedRequest(server.url);
       var event = testData.events[2];
 
@@ -90,7 +90,7 @@ describe('event previews', function () {
       res.header['content-type'].should.eql('image/jpeg');
     });
 
-    it('must limit the desired size to the biggest standard size if too big', async function () {
+    it('[415L] must limit the desired size to the biggest standard size if too big', async function () {
       const request = helpers.unpatchedRequest(server.url);
       var event = testData.events[2];
 
@@ -128,7 +128,7 @@ describe('event previews', function () {
       );
     }
 
-    it('must serve the cached file if available', function (done) {
+    it('[CWTQ] must serve the cached file if available', function (done) {
       var event = testData.events[2],
           cachedPath,
           cachedStats;
@@ -158,7 +158,7 @@ describe('event previews', function () {
       ], done);
     });
 
-    it('must regenerate the cached file if obsolete', function (done) {
+    it('[2MME] must regenerate the cached file if obsolete', function (done) {
       var event = testData.events[2],
           cachedPath,
           cachedFileModified,
@@ -199,21 +199,21 @@ describe('event previews', function () {
       ], done);
     });
 
-    it('must respond with "no content" if the event type is not supported', function (done) {
+    it('[7Y91] must respond with "no content" if the event type is not supported', function (done) {
       request.get(path(testData.events[1].id), token).end(function (res) {
         res.statusCode.should.eql(204);
         done();
       });
     });
 
-    it('must return a proper error if the event does not exist', function (done) {
+    it('[61N8] must return a proper error if the event does not exist', function (done) {
       request.get(path('unknown-event'), token).end(function (res) {
         res.statusCode.should.eql(404);
         done();
       });
     });
 
-    it('must forbid requests missing an access token', function (done) {
+    it('[VIJO] must forbid requests missing an access token', function (done) {
       var url = require('url').resolve(server.url, path(testData.events[2].id));
       require('superagent').get(url).end((res) => {
         assert.strictEqual(res.status, 401);
@@ -221,7 +221,7 @@ describe('event previews', function () {
       });
     });
 
-    it('must forbid requests with unauthorized accesses', function (done) {
+    it('[FAK4] must forbid requests with unauthorized accesses', function (done) {
       var unauthToken = testData.accesses[3].token;
       request.get(path(testData.events[2].id), unauthToken).end(function (res) {
         res.statusCode.should.eql(403);
@@ -229,7 +229,7 @@ describe('event previews', function () {
       });
     });
 
-    it('must return a proper error if event data is corrupted (no attachment object)', (done) => {
+    it('[QUM3] must return a proper error if event data is corrupted (no attachment object)', (done) => {
       var data = { streamId: testData.streams[2].id, type: 'picture/attached' },
           createdEvent;
       async.series([
@@ -249,7 +249,7 @@ describe('event previews', function () {
       ], done);
     });
 
-    it('must return a proper error if event data is corrupted (no attached file)', function (done) {
+    it('[DQF6] must return a proper error if event data is corrupted (no attached file)', function (done) {
       var event = testData.events[2],
           filePath = storage.user.eventFiles.getAttachedFilePath(user, event.id,
             event.attachments[0].id),
@@ -271,7 +271,7 @@ describe('event previews', function () {
       ], done);
     });
 
-    it('must work with animated GIFs too', function (done) {
+    it('[GSDF] must work with animated GIFs too', function (done) {
       var event = testData.events[12];
       request.get(path(event.id), token).end(function (res) {
         res.statusCode.should.eql(200);
@@ -285,7 +285,7 @@ describe('event previews', function () {
 
     var basePath = '/' + user.username + '/clean-up-cache';
 
-    it('must clean up cached previews not accessed for one week by default', function (done) {
+    it('[FUYE] must clean up cached previews not accessed for one week by default', function (done) {
       var event = testData.events[2],
           aCachedPath,
           anotherCachedPath;
@@ -329,7 +329,7 @@ describe('event previews', function () {
       ], done);
     });
 
-    it('must ignore files with no readable extended attribute', function (done) {
+    it('[G5JR] must ignore files with no readable extended attribute', function (done) {
       var event = testData.events[2],
           cachedPath;
       async.series([

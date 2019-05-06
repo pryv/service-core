@@ -44,7 +44,7 @@ describe('OpDeleteUser', () => {
     };
   });
 
-  it('executes preflight and then deletes the user', async () => {
+  it('[LAEA] executes preflight and then deletes the user', async () => {
     // FLOW Forbidden assignment - used for mocking.
     op.preflightChecks = sinon.fake.resolves();
     // FLOW Forbidden assignment - used for mocking.
@@ -61,7 +61,7 @@ describe('OpDeleteUser', () => {
     assert.strictEqual(op.preflightChecks.callCount, 1);
     assert.strictEqual(op.deleteUser.callCount, 1);
   });
-  it('stops after preflight if preflight fails', async () => {
+  it('[YGIE] stops after preflight if preflight fails', async () => {
     // FLOW Forbidden assignment - used for mocking.
     op.preflightChecks = sinon.fake.rejects(new Error('Preflight says no'));
     // FLOW Forbidden assignment - used for mocking.
@@ -71,7 +71,7 @@ describe('OpDeleteUser', () => {
 
     assertRejects(() => op.runWithoutErrorHandling('jsmith', false));
   });
-  it('stops if user doesnt confirm', async () => {
+  it('[P2M8] stops if user doesnt confirm', async () => {
     // FLOW Forbidden assignment - used for mocking.
     op.preflightChecks = sinon.fake.resolves();
     // FLOW Forbidden assignment - used for mocking.
@@ -116,7 +116,7 @@ describe('OpDeleteUser', () => {
       sinon.stub(connManager, 'fileStoreConnection').returns(fakeFileStore);
     });
     
-    it('completes preflight successfully', async () => {
+    it('[CCQY] completes preflight successfully', async () => {
       for (const conn of connections) {
         conn.preflight = sinon.fake.resolves(); 
       }
@@ -132,7 +132,7 @@ describe('OpDeleteUser', () => {
         assert.isNotNull(conn.preflight.lastCall);
       }
     });
-    it('deletes the user', async () => {
+    it('[EPJG] deletes the user', async () => {
       for (const conn of connections) {
         conn.deleteUser = sinon.fake.resolves();
       }

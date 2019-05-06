@@ -16,12 +16,12 @@ describe('MethodContext', () => {
     const username = 'USERNAME';
     const customAuthStep = null; 
     
-    it('should parse token out', () => {
+    it('[ZRW8] should parse token out', () => {
       const mc = new MethodContext(username, 'TOKEN', customAuthStep);
       assert.strictEqual(mc.accessToken, 'TOKEN');
       assert.isNull(mc.callerId);
     });
-    it('should also parse the callerId when available', () => {
+    it('[AUIY] should also parse the callerId when available', () => {
       const mc = new MethodContext(username, 'TOKEN CALLERID', customAuthStep);
       assert.strictEqual(mc.accessToken, 'TOKEN');
       assert.strictEqual(mc.callerId, 'CALLERID');
@@ -51,7 +51,7 @@ describe('MethodContext', () => {
       };
     });
 
-    it('checks expiry of the access', async () => {
+    it('[OJW2] checks expiry of the access', async () => {
       access.expires = timestamp.now('-1d');
 
       let caught = false; 
@@ -65,7 +65,7 @@ describe('MethodContext', () => {
       
       assert.isTrue(caught);
     });
-    it('loads the access', async () => {
+    it('[D0RZ] loads the access', async () => {
       // FLOW storage is a fake
       const result = await mc.retrieveAccessFromId(storage, 'accessId');
       

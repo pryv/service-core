@@ -55,7 +55,7 @@ describe('Querying data from a HF series', function() {
     server.stop(); 
   });
 
-  it('should refuse a query for an unknown user', function () {
+  it('[I2ZH] should refuse a query for an unknown user', function () {
     return server.request()
       .get('/some-user/events/some-eventId/series')
       .set('authorization', 'someToken')
@@ -65,7 +65,7 @@ describe('Querying data from a HF series', function() {
         assert.strictEqual(res.body.error.id, ErrorIds.UnknownResource);
       });
   });
-  it('should refuse a query missing the authorization token', function () {
+  it('[EYCA] should refuse a query missing the authorization token', function () {
     return server.request()
       .get(`/${userId}/events/${eventId}/series`)
       .expect(401)
@@ -74,7 +74,7 @@ describe('Querying data from a HF series', function() {
         assert.strictEqual(res.body.error.id, ErrorIds.MissingHeader);
       });
   });
-  it('should refuse a query containing an unauthorized token', function () {
+  it('[OINY] should refuse a query containing an unauthorized token', function () {
     return server.request()
       .get(`/${userId}/events/${eventId}/series`)
       .set('authorization', 'invalid-auth')
@@ -84,7 +84,7 @@ describe('Querying data from a HF series', function() {
         assert.strictEqual(res.body.error.id, ErrorIds.InvalidAccessToken);
       });
   });
-  it('should return an unknown resource error when querying data ' +
+  it('[Q991] should return an unknown resource error when querying data ' +
     'for an nonexistent event id', function () {
     const nonexistentEventId = 'nonexistent-event-id';
 
@@ -100,7 +100,7 @@ describe('Querying data from a HF series', function() {
       });
   });
 
-  it('should refuse a query containing parameters with the wrong format', function () {
+  it('[QMC7] should refuse a query containing parameters with the wrong format', function () {
     return server.request()
       .get(`/${userId}/events/${eventId}/series`)
       .set('authorization', accessToken)
@@ -114,7 +114,7 @@ describe('Querying data from a HF series', function() {
         assert.strictEqual(err.id, ErrorIds.InvalidParametersFormat);
       });
   });
-  it('should refuse a query when toTime is before fromTime', function () {
+  it('[HGVV] should refuse a query when toTime is before fromTime', function () {
     return server.request()
       .get(`/${userId}/events/${eventId}/series`)
       .set('authorization', accessToken)

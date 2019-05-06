@@ -18,7 +18,7 @@ describe('Manage InfluxDB data (business.series.*)', function () {
   
   // TODO beforeEach delete the measurement
   
-  it('should allow writing to a series', function () {
+  it('[8GFH] should allow writing to a series', function () {
     const seriesName = 'series1';
     const repository = new Repository(connection);
     const series = repository.get('test.manage_influx_data', seriesName);

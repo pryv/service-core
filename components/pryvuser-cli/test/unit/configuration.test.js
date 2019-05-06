@@ -12,7 +12,7 @@ const assert = chai.assert;
 describe('Configuration', () => {
   describe('.load(basePath)', () => {
     describe('when started in fixture 1', () => {
-      it('finds all configuration files', async () => {
+      it('[5RLS] finds all configuration files', async () => {
         const fixture = fixturePath('fileLocations1');
         const config = await Configuration.load(fixture);
 
@@ -30,25 +30,25 @@ describe('Configuration', () => {
       config = await Configuration.load(fixturePath('fileLocations1'));
     });
 
-    it('has the right register url and key', async () => {  
+    it('[0Y2F] has the right register url and key', async () => {  
       const reg = config.registrySettings(); 
 
       assert.strictEqual(reg.url, 'https://reg.preview.pryv.tech');
       assert.strictEqual(reg.key, 'OVERRIDE ME');
     });
-    it('has mongodb configured correctly (including defaults)', () => {
+    it('[1KYM] has mongodb configured correctly (including defaults)', () => {
       const mongodb = config.mongoDbSettings(); 
 
       assert.strictEqual(mongodb.host, 'mongodb');
       assert.strictEqual(mongodb.port, 27017); // from defaults
     });
-    it('has the right influxdb settings', async () => {
+    it('[T9FK] has the right influxdb settings', async () => {
       const influxdb = config.influxDbSettings(); 
        
       assert.strictEqual(influxdb.host, 'influxdb');
       assert.strictEqual(influxdb.port, 8086);
     });
-    it('has the right file store settings', () => {
+    it('[1QDH] has the right file store settings', () => {
       const fileStore = config.fileStoreSettings(); 
 
       assert.strictEqual(fileStore.attachmentsPath, '/app/data/attachments'); 

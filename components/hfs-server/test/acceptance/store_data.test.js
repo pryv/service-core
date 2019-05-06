@@ -99,7 +99,7 @@ describe('Storing data in a HF series', function() {
         .expect(200);
     }
     
-    it('should store data correctly', async () => {
+    it('[GZIZ] should store data correctly', async () => {
       const response = await storeData({timestamp: 1481677845, value: 80.3});
 
       const body = response.body; 
@@ -123,7 +123,7 @@ describe('Storing data in a HF series', function() {
         '2016-12-14T01:10:45.000000000Z'); 
       assert.strictEqual(row.value, 80.3);
     });
-    it('should return data once stored', async () => {
+    it('[KC15] should return data once stored', async () => {
       // identical with id here, but will be user name in general. 
       const userName = userId; 
       const dbName = `user.${userName}`; 
@@ -231,7 +231,7 @@ describe('Storing data in a HF series', function() {
             sendToChild('mockAuthentication', true);
         });
         
-        it('stores data into InfluxDB', function() {
+        it('[N3PM] stores data into InfluxDB', function() {
           const data = produceData(); 
           
           return storeData(data)
@@ -253,7 +253,7 @@ describe('Storing data in a HF series', function() {
             });
         });
 
-        it('should reject non-JSON bodies', function () { 
+        it('[RESC] should reject non-JSON bodies', function () { 
           const response = server.request()
             .post(`/USERNAME/events/${EVENT_ID}/series`)
             .set('authorization', 'AUTH_TOKEN')
@@ -263,7 +263,7 @@ describe('Storing data in a HF series', function() {
           return response
             .expect(400);
         });
-        it('responds with headers that allow CORS on OPTIONS', async () => {
+        it('[KT1R] responds with headers that allow CORS on OPTIONS', async () => {
           const request = server.request(); 
           const response = await request
             .options(`/USERNAME/events/${EVENT_ID}/series`)
@@ -278,7 +278,7 @@ describe('Storing data in a HF series', function() {
           assert.strictEqual(headers['access-control-allow-origin'], 
             'https://foo.bar.baz');
         });
-        it('responds with headers that allow CORS on POST', async () => {
+        it('[H1CG] responds with headers that allow CORS on POST', async () => {
           const request = server.request(); 
           const response = await request
             .post(`/USERNAME/events/${EVENT_ID}/series`)
@@ -303,7 +303,7 @@ describe('Storing data in a HF series', function() {
               [1481677846, 14.2], 
               [1481677847, 14.3], 
             ]
-          });
+          }, '96HC');
           malformed('matrix is not square - not enough fields', {
             format: 'flatJSON', 
             fields: ['timestamp', 'value'], 
@@ -312,7 +312,7 @@ describe('Storing data in a HF series', function() {
               [1481677846], 
               [1481677847, 14.3], 
             ]
-          });
+          }, '38W3');
           malformed('value types are not all valid', {
             format: 'flatJSON', 
             fields: ['timestamp', 'value'], 
@@ -321,7 +321,7 @@ describe('Storing data in a HF series', function() {
               [1481677846, 'foobar'], 
               [1481677847, 14.3], 
             ]
-          });
+          }, 'GJL4');
           malformed('missing timestamp column', {
             format: 'flatJSON', 
             fields: ['value'], 
@@ -330,7 +330,7 @@ describe('Storing data in a HF series', function() {
               [13.2], 
               [14.3], 
             ]
-          });
+          }, 'JJRO');
           malformed('missing value column for a simple input', {
             format: 'flatJSON', 
             fields: ['timestamp'], 
@@ -339,10 +339,10 @@ describe('Storing data in a HF series', function() {
               [1481677846], 
               [1481677847], 
             ]
-          });
+          }, 'LKFG');
           
-          function malformed(text, data) {
-            it(`should be rejected (${text})`, function () {
+          function malformed(text, data, testID) {
+            it(`[${testID}] should be rejected (${text})`, function () {
               return storeData(data).expect(400)
                 .then((res) => {
                   const error = res.body.error; 
@@ -388,7 +388,7 @@ describe('Storing data in a HF series', function() {
             rpcServer.close();
           });
           
-          it('should schedule a metadata update on every store', async () => {
+          it('[GU3L] should schedule a metadata update on every store', async () => {
             let updaterCalled = false; 
             // FLOW This is ok, we're replacing the stub with something compatible.
             stub.scheduleUpdate = () => {
@@ -418,7 +418,7 @@ describe('Storing data in a HF series', function() {
             sendToChild('mockAuthentication', false);
         });
 
-        it('refuses invalid/unauthorized accesses', function () {
+        it('[NLAW] refuses invalid/unauthorized accesses', function () {
           const data = produceData(); 
           
           return storeData(data)
@@ -512,7 +512,7 @@ describe('Storing data in a HF series', function() {
         };
       }
       
-      it('stores data of any basic type', async () => {
+      it('[Y3BL] stores data of any basic type', async () => {
         const now = (new Date()) / 1000; 
         
         const result = await tryStore({ type: 'series:angular-speed/rad-s' }, 
@@ -524,7 +524,7 @@ describe('Storing data in a HF series', function() {
         
         assert.isTrue(result.ok); 
       });
-      it('stores data of complex types', async () => {
+      it('[3WGH] stores data of complex types', async () => {
         const now = (new Date()) / 1000; 
         const {ok} = await tryStore({ type: 'series:ratio/generic' }, 
           ['timestamp', 'value', 'relativeTo'],
@@ -535,7 +535,7 @@ describe('Storing data in a HF series', function() {
             
         assert.isTrue(ok);
       });
-      it("doesn't accept data in non-series format", async () => {
+      it('[1NDB] doesn\'t accept data in non-series format', async () => {
         const now = (new Date()) / 1000; 
         const {ok, body} = await tryStore({ type: 'angular-speed/rad-s' }, 
           ['timestamp', 'value'],
@@ -550,7 +550,7 @@ describe('Storing data in a HF series', function() {
         assert.strictEqual(error.id, 'invalid-operation');
       });
       
-      it('stores strings', async () => {
+      it('[YMHK] stores strings', async () => {
         const aLargeString = '2222222'.repeat(100);
         const now = (new Date()) / 1000; 
         
@@ -562,7 +562,7 @@ describe('Storing data in a HF series', function() {
           
         assert.isTrue(result.ok);
       });
-      it('stores floats', async () => {
+      it('[ZL7C] stores floats', async () => {
         const now = (new Date()) / 1000; 
         
         const aHundredRandomFloats = lodash.times(100, 
@@ -679,11 +679,11 @@ describe('Storing data in a HF series', function() {
             [now-1, 3] ],
         ];
         
-        it('refuses to store when not all required fields are given', async () => {
+        it('[FNDT] refuses to store when not all required fields are given', async () => {
           assert.isFalse(
             await tryStore(...args));
         });
-        it('returns error id "invalid-request-structure"', async () => {
+        it('[H525] returns error id "invalid-request-structure"', async () => {
           const { status, id, message } = await failStore(...args);
           
           assert.strictEqual(status, 400);
@@ -691,7 +691,7 @@ describe('Storing data in a HF series', function() {
           assert.strictEqual(message, '"fields" field must contain valid field names for the series type.');
         });
       });
-      it('refuses to store when timestamp is present twice (ambiguous!)', async () => {
+      it('[DTZ2] refuses to store when timestamp is present twice (ambiguous!)', async () => {
         const now = (new Date()) / 1000; 
         assert.isFalse(
           await tryStore(
@@ -701,7 +701,7 @@ describe('Storing data in a HF series', function() {
               [now-2, now-5, 2, 2], 
               [now-1, now-4, 3, 3] ]));
       });
-      it('refuses to store when other fields are present twice (ambiguous!)', async () => {
+      it('[UU4R] refuses to store when other fields are present twice (ambiguous!)', async () => {
         const now = (new Date()) / 1000; 
         assert.isFalse(
           await tryStore(
@@ -721,11 +721,11 @@ describe('Storing data in a HF series', function() {
             [now-1, 1, 3] ],
         ];
         
-        it("refuses to store when field names don't match the type", async () => {
+        it('[AJMS] refuses to store when field names don\'t match the type', async () => {
           assert.isFalse(
             await tryStore(...args));
         });
-        it('returns the error message with the id "invalid-request-structure"', async () => {
+        it('[7CR7] returns the error message with the id "invalid-request-structure"', async () => {
           const { status, id, message } = await failStore(...args);
           
           assert.strictEqual(status, 400);
@@ -790,7 +790,7 @@ describe('Storing data in a HF series', function() {
         return response.statusCode === 200;
       }
 
-      it('allows storing any number of optional fields, on each request', async () => {
+      it('[UDHO] allows storing any number of optional fields, on each request', async () => {
         const now = (new Date()) / 1000; 
         assert.isTrue(
           await tryStore(
@@ -808,7 +808,7 @@ describe('Storing data in a HF series', function() {
               [now-2, 2, 3, 4, 170], 
               [now-1, 3, 4, 5, 180] ]));
       });
-      it('refuses unknown fields', async () => {
+      it('[JDTH] refuses unknown fields', async () => {
         const now = (new Date()) / 1000; 
         assert.isFalse(
           await tryStore(

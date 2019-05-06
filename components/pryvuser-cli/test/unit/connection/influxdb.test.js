@@ -38,7 +38,7 @@ describe('Connection/InfluxDB', () => {
       ], opts);
     });
 
-    it('produces smoke', async () => {
+    it('[D0PO] produces smoke', async () => {
       const opts = { database: DATABASE_NAME };
       const conn = new Influx.InfluxDB(settings);
 
@@ -55,12 +55,12 @@ describe('Connection/InfluxDB', () => {
       ], opts);
     });
     describe('#preflight', () => {
-      it('checks the connection and exits', async () => {
+      it('[AYEK] checks the connection and exits', async () => {
         await influxdb.preflight('jsmith');
       });
     });
     describe('#deleteUser(username)', () => {
-      it("deletes the user's database", async () => {
+      it('[RYOE] deletes the user\'s database', async () => {
         await influxdb.deleteUser('jsmith');
 
         const conn = new Influx.InfluxDB(settings);

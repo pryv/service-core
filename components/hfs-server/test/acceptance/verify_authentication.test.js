@@ -47,7 +47,7 @@ describe('Metadata Loader', function () {
   });
   
   
-  it('should allow write access to series', function () {
+  it('[U6F2] should allow write access to series', function () {
     const metadata = loader.forSeries(USER_NAME, EVENT_ID, ACCESS_TOKEN);
     
     return metadata
@@ -58,7 +58,7 @@ describe('Metadata Loader', function () {
 });
 
 describe('Metadata Cache', function () {
-  it('returns loaded metadata for N minutes', async () => {
+  it('[O8AE] returns loaded metadata for N minutes', async () => {
     let n = 0; 
     const loaderStub = {
       forSeries: function() {

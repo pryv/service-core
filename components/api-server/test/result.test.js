@@ -13,7 +13,7 @@ describe('Result', function () {
 
   describe('toObject()', function () {
 
-    it('must return the result\'s content when not storing streams', function (done) {
+    it('[NKHF] must return the result\'s content when not storing streams', function (done) {
       var res = new Result();
       res.a = 'a';
 
@@ -25,7 +25,7 @@ describe('Result', function () {
       res.toObject(expectation);
     });
 
-    it('must return the result content when storing streams', function (done) {
+    it('[MHAS] must return the result content when storing streams', function (done) {
       var res = new Result(),
           arrayName1 = 'items',
           array1 = [{a: 'a'}, {b: 'b'}, {c: 'c'}],
@@ -45,7 +45,7 @@ describe('Result', function () {
       res.toObject(expectation);
     });
 
-    it('must return an error object when attempting to serialize streams containing an amount' +
+    it('[6P4Z] must return an error object when attempting to serialize streams containing an amount' +
       'of objects exceeding the limit', function (done) {
       var res = new Result({arrayLimit: 2}),
           arrayName1 = 'items',
@@ -65,7 +65,7 @@ describe('Result', function () {
       res.toObject(expectation);
     });
 
-    it('must return an error when storing piped streams', function (done) {
+    it('[TTEL] must return an error when storing piped streams', function (done) {
       var res = new Result({arrayLimit: 2}),
           arrayName1 = 'items',
           array1 = [{a: 'a'}, {b: 'b'}, {c: 'c'}],
@@ -81,7 +81,7 @@ describe('Result', function () {
       res.toObject(expectation);
     });
 
-    it.skip('must return an error when the core pipeline crashes because of size', function () {
+    it.skip('[H2GC] must return an error when the core pipeline crashes because of size', function () {
     });
 
   });

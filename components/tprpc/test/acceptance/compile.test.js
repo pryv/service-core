@@ -21,7 +21,7 @@ describe('Type Compilation', function () {
     tempdir.removeCallback(); 
   });
   
-  it('compiles a .proto 3 syntax file into a set of flow-type interfaces', async () => {
+  it('[0YBR] compiles a .proto 3 syntax file into a set of flow-type interfaces', async () => {
     const fullPath = path.join(__dirname, '../fixtures/base.proto');
     const definition = await rpc.load(fullPath);
     
