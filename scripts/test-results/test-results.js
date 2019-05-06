@@ -4,7 +4,7 @@ const childProcess = require('child_process');
 const moment = require('moment');
 const mkdirp = require('mkdirp');
 
-const RESULTS_FOLDER = __dirname + '/../../test_results/service-core/';
+const RESULTS_FOLDER = path.join(__dirname, '/../../test_results/service-core/');
 
 try {
   fs.statSync(RESULTS_FOLDER);
@@ -13,14 +13,13 @@ try {
   process.exit(1);
 }
 
-const gitTag = getReleaseVersion();
-
-const VERSION_FOLDER = gitTag + '/';
-const FULL_VERSION_FOLDER = RESULTS_FOLDER + VERSION_FOLDER;
+const VERSION_FOLDER = getReleaseVersion();
+const FULL_VERSION_FOLDER = path.join(RESULTS_FOLDER, VERSION_FOLDER);
 mkdirp(FULL_VERSION_FOLDER);
 
 const time = moment().format('YYYYMMDD-hhmmss');
 const OUTPUT_FILENAME =  time + '-service-core.json';
+const FULL_OUTPUT_FILENAME = path.join(FULL_VERSION_FOLDER, OUTPUT_FILENAME);
 
 const componentsPath = path.resolve(__dirname, '../../dist/components');
 
@@ -31,7 +30,7 @@ fs.readdirSync(componentsPath).forEach(function (name) {
   if (!fs.existsSync(path.join(subPath, 'package.json'))) {
     return;
   }
-
+  
   // produces stdout output - makes output unparsable as JSON
   if (name === 'pryvuser-cli' || name === 'storage') return;
 
@@ -55,6 +54,7 @@ fs.readdirSync(componentsPath).forEach(function (name) {
 });
 
 console.log('writing test output to:', OUTPUT_FILENAME); // eslint-disable-line
+fs.writeFileSync(FULL_OUTPUT_FILENAME, JSON.stringify(test_results, null, 2));
 
 linkToLatestResult();
 linkToLatestVersion();
@@ -68,7 +68,7 @@ function pad(str) {
 function getReleaseVersion() {
   const res = childProcess.spawnSync('git', ['describe'], {
     env: process.env,
-    cwd: RESULTS_FOLDER + '/..',
+    cwd: path.join(RESULTS_FOLDER, '/..'),
   });
 
   const gitTagDirty = res.stdout.toString();
@@ -76,19 +76,11 @@ function getReleaseVersion() {
 }
 
 function linkToLatestResult() {
-  childProcess.spawnSync('rm', [VERSION_FOLDER + 'latest']);
-  childProcess.spawnSync('ln', ['-s', OUTPUT_FILENAME, 'latest'],
-    {
-      env: process.env,
-      cwd: VERSION_FOLDER,
-    });
+  childProcess.spawnSync('rm', ['latest'], { cwd: FULL_VERSION_FOLDER, });
+  childProcess.spawnSync('ln', ['-s', OUTPUT_FILENAME, 'latest'], { cwd: FULL_VERSION_FOLDER });
 }
 
 function linkToLatestVersion() {
-  childProcess.spawnSync('rm', [RESULTS_FOLDER + 'latest']);
-  childProcess.spawnSync('ln', ['-s', VERSION_FOLDER, 'latest'],
-    {
-      env: process.env,
-      cwd: RESULTS_FOLDER,
-    });
+  childProcess.spawnSync('rm', ['latest'], { cwd: RESULTS_FOLDER });
+  childProcess.spawnSync('ln', ['-s', VERSION_FOLDER, 'latest'], { cwd: RESULTS_FOLDER });
 }
