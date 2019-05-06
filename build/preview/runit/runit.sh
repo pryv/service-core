@@ -15,7 +15,7 @@ create_links() {
 
 remove_links() {
 	#When removing link from /etc/service Runit will stop the processes
-	rm -Rf /etc/runit/app
+	rm -Rf /etc/service/app
 }
 
 case "$1" in 
