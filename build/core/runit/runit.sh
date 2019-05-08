@@ -1,22 +1,24 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
-
-cd /app/bin/dist/components/api-server
-
-# Migrate storage
-chpst -u app ./bin/migrate --config /app/conf/core.json
 
 # Sets $num_procs to 2 or the value of $NUM_PROCS, if set.
 if [ -z ${NUM_PROCS+x} ]
 then
-  num_procs=2
+	num_procs=2
 else
-  num_procs=$NUM_PROCS
+	num_procs=$NUM_PROCS
 fi
 
 export NODE_ENV=production
 export NODE_PATH=/app/bin/dist/
+
+# Migrate storage
+migrate_db() {
+	pushd /app/bin/dist/components/api-server
+	chpst -u app ./bin/migrate --config /app/conf/core.json
+	popd
+}
 
 create_links() {
 	remove_links # Remove all existing service, if any
@@ -33,6 +35,8 @@ create_links() {
 
 	chmod +x /etc/runit/gnats/run # make the script executable
 	ln -s /etc/runit/gnats /etc/service/gnats #make a link to /etc/service (will be run with runit).
+
+	rm -Rf /etc/service/runit # Remove link to this script in /etc/service so it will be run only once at container startup
 }
 
 remove_links() {
@@ -47,7 +51,8 @@ case "$1" in
     start)   create_links ;;
     stop)    remove_links ;;
     restart) create_links ;; # no need to call remove_link, it will be called by create_links
-    *) echo "usage: $0 start|stop|restart" >&2
-       exit 1
-       ;;
+		migrate) migrate_db   ;;
+    *)       echo "No parameters (or wrong one). Launching migration and creating links with 'start'"
+						 migrate_db
+		         create_links ;;
 esac

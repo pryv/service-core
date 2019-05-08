@@ -37,7 +37,8 @@ run mkdir -p $log_dir && \
 run mkdir /etc/runit
 run cp -r /pd_build/runit/* /etc/runit/
 run mv /etc/runit/runit.sh /etc/init.d/
-run /etc/init.d/runit.sh start
+run mkdir /etc/service/runit
+run ln -s /etc/init.d/runit.sh /etc/service/runit/run #make a link to /etc/service (will be run with runit).
 
 # Have CRON run in this container
 run rm /etc/service/cron/down
