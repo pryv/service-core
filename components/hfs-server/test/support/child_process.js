@@ -4,7 +4,7 @@ const debug = require('debug')('child_process');
 const bluebird = require('bluebird');
 
 const Application = require('../../src/application');
-const Settings = require('../../src/settings');
+const Settings = require('../../src/Settings');
 const { InfluxRowType, TypeRepository } = require('components/business').types;
 const ChildProcess = require('components/test-helpers').child_process;
 

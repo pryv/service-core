@@ -21,7 +21,7 @@ const buildTree = require('components/utils').treeUtils.buildTree;
 describe('Versions', function () {
   this.timeout(20000);
 
-  const mongoFolder = __dirname + '/../../../../../mongodb-osx-x86_64-3.4.4';
+  const mongoFolder = __dirname + '/../../../../../mongo-bin';
 
   // older migration tests are skipped; they're kept for reference (e.g. when
   // writing new tests)
