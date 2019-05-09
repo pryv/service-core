@@ -10,6 +10,14 @@ else
 	num_procs=$NUM_PROCS
 fi
 
+# Sets $starting_port to 3000 or the value of $STARTING_PORT, if set.
+if [ -z ${STARTING_PORT+x} ]
+then
+	starting_port=3000
+else
+	starting_port=$STARTING_PORT
+fi
+
 export NODE_ENV=production
 export NODE_PATH=/app/bin/dist/
 
@@ -23,12 +31,11 @@ migrate_db() {
 create_links() {
 	remove_links # Remove all existing service, if any
 
-	starting_port=3000 #Hardcoded for now
 	for i in $( seq 1 $num_procs ) #create as many app as needed
 	do
 		port=$((starting_port + i - 1)) #increment port number
 		cp -R /etc/runit/app /etc/runit/app_$i #duplicate app script.
-		sed -i "s/#PORT_NUM/$port/g" /etc/runit/app_$i/run #replace port number with current port in the duplicated script
+		sed -i "s/\${PORT_NUM}/$port/g" /etc/runit/app_$i/run #replace port number with current port in the duplicated script
 		chmod +x /etc/runit/app_$i/run # make the script executable
 		ln -s /etc/runit/app_$i /etc/service/app_$i #make a link to /etc/service (will be run with runit).
 	done
