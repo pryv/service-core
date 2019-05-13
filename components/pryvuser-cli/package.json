@@ -6,7 +6,7 @@
     "pryvioctl": "./bin/cli"
   },
   "scripts": {
-    "test": "../../node_modules/.bin/mocha 'test/**/*.test.js'"
+    "test": "../../node_modules/.bin/mocha -R dot 'test/**/*.test.js'"
   },
   "dependencies": {
     "commander": "^2.19", 
