@@ -3,6 +3,7 @@
 const errorHandling = require('components/errors').errorHandling;
 const setCommonMeta = require('../methods/helpers/setCommonMeta');
 const bluebird = require('bluebird');
+const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
 
 const NatsSubscriber = require('./nats_subscriber');
     
@@ -11,9 +12,6 @@ import type { MethodContext } from 'components/model';
 import type API from '../API';
 
 import type { MessageSink } from './message_sink';
-
-// Uri for internal NATS connection.
-const NATS_CONNECTION_URI = 'nats://127.0.0.1:4222';
 
 type SocketIO$SocketId = string; 
 export type SocketIO$Handshake = {

@@ -4,6 +4,8 @@
 
 var axon = require('axon');
 
+exports.NATS_CONNECTION_URI = 'nats://127.0.0.1:4222';
+
 /**
  * @param {{host: String, port: Number, pubConnectInsteadOfBind: Boolean}} settings
  * @param {Function({Error}, {Object})} callback Called passing the `EventEmitter` for TCP messages

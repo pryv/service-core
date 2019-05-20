@@ -4,6 +4,7 @@ const bluebird = require('bluebird');
 const socketIO = require('socket.io');
 
 const MethodContext = require('components/model').MethodContext;
+const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
 
 const Manager = require('./Manager');
 const Paths = require('../routes/Paths');
@@ -57,7 +58,7 @@ function setupSocketIO(
   const manager: Manager = new Manager(logger, io, api);
   
   // Setup the chain from notifications -> NATS
-  const natsPublisher = new NatsPublisher('nats://127.0.0.1:4222');
+  const natsPublisher = new NatsPublisher(NATS_CONNECTION_URI);
   const changeNotifier = new ChangeNotifier(natsPublisher);
   changeNotifier.listenTo(notifications);
   
@@ -87,7 +88,7 @@ function setupSocketIO(
       // FLOW We should not piggy-back on the method context here.
       .then(() => {
         if (context.user == null) throw new Error('AF: context.user != null');
-        
+        logger.info('ensureInitNamespace for nsName:' + nsName + 'and user:' + JSON.stringify(context.user, null, 2));
         manager.ensureInitNamespace(nsName, context.user); 
         return true; 
       });

@@ -1,6 +1,7 @@
 // @flow
 
 require('../test-helper');
+const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
 
 const chai = require('chai');
 const assert = chai.assert;
@@ -19,11 +20,11 @@ import type { MessageSink } from '../../../src/socket-io/message_sink';
 describe('NatsSubscriber', () => {
   it('[DMMP] should construct', () => {
     // For this to work, you must run the 'gnatsd' service on localhost. 
-    new NatsSubscriber('nats://127.0.0.1:4222', new ArraySink());
+    new NatsSubscriber(NATS_CONNECTION_URI, new ArraySink());
   });
   
   async function subscriber(username: string, sink: MessageSink): Promise<NatsSubscriber> {
-    const sub = new NatsSubscriber('nats://127.0.0.1:4222', sink);
+    const sub = new NatsSubscriber(NATS_CONNECTION_URI, sink);
     
     await sub.subscribe(username);
     
@@ -44,7 +45,7 @@ describe('NatsSubscriber', () => {
     // Connects rawClient to NATS
     beforeEach(() => {
       rawClient = NATS.connect({
-        url: 'nats://127.0.0.1:4222', 
+        url: NATS_CONNECTION_URI, 
         'preserveBuffers': true 
       });
     });
