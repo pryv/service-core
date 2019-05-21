@@ -169,13 +169,14 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
       .end(function (err, res) {
 
         if (err != null || (res && ! res.ok)) {
-          let errMsg = err.message;
+          let errMsg = 'Failed to update email on register. ';
           // for some reason register returns error message within res.body
           if (res != null && res.body != null && res.body.message != null) {
-            errMsg = res.body.message;
+            errMsg += res.body.message;
+          } else if (err != null && err.message) {
+            errMsg += err.message;
           }
-          return next(errors.invalidOperation(
-            'Failed to update email on register: ' + errMsg, {email: newEmail}, err));
+          return next(errors.invalidOperation(errMsg, {email: newEmail}, err));
         }
 
         next();
