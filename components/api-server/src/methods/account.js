@@ -173,7 +173,7 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
           // for some reason register returns error message within res.body
           if (res != null && res.body != null && res.body.message != null) {
             errMsg += res.body.message;
-          } else if (err != null && err.message) {
+          } else if (err != null && err.message != null) {
             errMsg += err.message;
           }
           return next(errors.invalidOperation(errMsg, {email: newEmail}, err));
