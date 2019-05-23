@@ -4,24 +4,38 @@ const NatsSubscriber = require('components/api-server/src/socket-io/nats_subscri
 const NATS_CONNECTION_URI: string = require('components/utils').messaging.NATS_CONNECTION_URI;
 
 import type { MessageSink } from 'components/api-server/src/socket-io/message_sink';
+import type { StorageLayer } from 'components/storage';
+import type { Logger } from 'components/utils/src/logging';
 
-const Webhook = require('./Webhook');
+const Webhook = require('components/business/src/webhooks/Webhook');
+const WebhooksRepository = require('components/business/src/webhooks/repository');
 
-class WebhooksServer implements MessageSink {
+class WebhooksService implements MessageSink {
 
   natsSubscribers: any;
   webhooks: Map<string, Array<Webhook>>;
 
-  constructor() {
-    this.webhooks = this.loadWebhooks();
+  repository: WebhooksRepository;
+  db: StorageLayer;
+  logger: Logger;
+
+  constructor(db: StorageLayer, logger: Logger) {
+    this.logger = logger;
+    this.repository = new WebhooksRepository(db.webhooks, db.users);
+    
   }
 
-  listen() {
+  async start() {
+    console.log('started Yo');
+    await this.loadWebhooks();
+    let num = 0;
     this.webhooks.forEach((webhooks, username) => {
       webhooks.forEach((webhook) => {
         this.initSubscriber(username, webhook);
+        num++;
       });
     });
+    console.log('loaded', num, 'webhooks');
   }
 
   initSubscriber(username: string, webhook: Webhook) {
@@ -51,16 +65,18 @@ class WebhooksServer implements MessageSink {
 
 
 
-  loadWebhooks(): Map<string, Array<Webhook>> {
+  async loadWebhooks(): Promise<void> {
+    this.webhooks = await this.repository.getAll();
+    /*
     const map = new Map();
-    return map.set(
+    this.webhooks = map.set(
       'testuser', 
       [ new Webhook({
         accessId: 'ca123',
         url: 'https://salut.rec.la/hook',
       }) ]
-    );
+    );*/
   }
 
 }
-module.exports = WebhooksServer;
+module.exports = WebhooksService;

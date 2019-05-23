@@ -4,6 +4,7 @@ database: scripts/start-database.sh
 api: cd dist/components/api-server && bin/server --http-port=$PORT
 previews: cd dist/components/previews-server && npm start
 metadata: cd dist/components/metadata && bin/metadata
+webhooks: cd dist/components/webhooks-server && bin/main.js
 
 gnat: gnatsd
 influx: influxd -config /usr/local/etc/influxdb.conf
