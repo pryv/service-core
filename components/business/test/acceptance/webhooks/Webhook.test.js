@@ -2,7 +2,7 @@
 
 const assert = require('chai').assert;
 
-const Webhook = require('../src/Webhook');
+const Webhook = require('../../../src/webhooks/Webhook');
 
 const HttpServer = require('./support/httpServer');
 
@@ -33,10 +33,24 @@ describe('Webhook', () => {
       });
       await webhook.send(message);
       assert.equal(notificationsServer.getMessage().message, message, 'Webhook sent wrong message.');
-      const runs = webhook.runsArray;
+      const runs = webhook.runs;
       assert.equal(runs.length, 1);
       assert.equal(runs[0].statusCode, 200);
       assert.equal(webhook.runCount, 1);
+      assert.equal(webhook.failCount, 0);
+    });
+
+    it('should note failures correctly', async () => {
+      const webhook = new Webhook({
+        accessId: 'doesnmatter',
+        url: 'unexistant'
+      });
+      await webhook.send('doesntmatter');
+      const runs = webhook.runs;
+      assert.equal(runs.length, 1);
+      assert.equal(runs[0].statusCode, 0);
+      assert.equal(webhook.runCount, 1, 'runCount should be 1');
+      assert.equal(webhook.failCount, 1, 'failCount should be 1');
     });
   });
 });

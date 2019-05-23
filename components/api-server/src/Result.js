@@ -6,8 +6,9 @@ const DrainStream = require('./methods/streams/DrainStream');
 const ArrayStream = require('./methods/streams/ArrayStream');
 const async = require('async');
 
-
 const Transform = require('stream').Transform;
+
+import type { Webhook } from 'components/business/webhooks';
 
 type ResultOptions = {
   arrayLimit?: number, 
@@ -50,6 +51,9 @@ class Result {
   mismatchingAccess: mixed;
   checkedPermissions: mixed;
   error: mixed;
+
+  webhook: Webhook;
+  webhooks: Array<Webhook>;
   
   constructor(params?: ResultOptions) {
     this._private = { 

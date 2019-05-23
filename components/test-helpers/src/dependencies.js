@@ -27,7 +27,8 @@ var deps = module.exports = {
       events: new storage.user.Events(database),
       followedSlices: new storage.user.FollowedSlices(database),
       streams: new storage.user.Streams(database),
-      profile: new storage.user.Profile(database)
+      profile: new storage.user.Profile(database),
+      webhooks: new storage.user.Webhooks(database),
     }
   }
 };

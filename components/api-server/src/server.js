@@ -112,6 +112,12 @@ class Server {
       application.getUpdatesSettings(), 
       application.storageLayer);
 
+    require('./methods/webhooks')(
+      application.api, l('methods/webhooks'),
+      application.getWebhooksSettings(),
+      application.storageLayer,
+    );
+
     [
       require('./methods/account'),
       require('./methods/followedSlices'),
@@ -272,6 +278,7 @@ class Server {
       require('./routes/profile'),
       require('./routes/streams'),
       require('./routes/events'),
+      require('./routes/webhooks'),
     ].forEach(function (moduleDef) {
       dependencies.resolve(moduleDef);
     });

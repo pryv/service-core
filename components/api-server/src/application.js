@@ -9,6 +9,7 @@ const storage = require('components/storage');
 const API = require('./API');
 
 import type { ConfigAccess } from './settings';
+import type { WebhooksSettingsHolder } from './methods/webhooks';
 import type { LogFactory } from 'components/utils';
 import type { Logger } from 'components/utils';
 
@@ -129,6 +130,15 @@ class Application {
     
     return {
       ignoreProtectedFields: settings.get('updates.ignoreProtectedFields').bool(),
+    };
+  }
+
+  getWebhooksSettings(): WebhooksSettingsHolder {
+    //const settings = this.settings;
+
+    return {
+      minIntervalMs: 5000,
+      maxRetries: 5,
     };
   }
   

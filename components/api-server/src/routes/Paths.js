@@ -30,6 +30,7 @@ const Paths = module.exports = {
   Streams: makePath(username, 'streams'),
   Events: makePath(username, 'events'),
   Profile: makePath(username, 'profile'),
+  Webhooks: makePath(username, 'webhooks'),
 
   SocketIO: makePath('socket.io'),
   Favicon: makePath('favicon.ico')
