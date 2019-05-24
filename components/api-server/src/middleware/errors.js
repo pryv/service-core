@@ -20,6 +20,11 @@ function produceHandleErrorMiddleware(logging: any) {
     }
 
     errorHandling.logError(error, req, logger);
+
+    if (req.context != null && req.context.access != null) {
+      res.header('Access-Id', req.context.access.id);
+    }
+    
     res
       .status(error.httpStatus || 500)
       .json(

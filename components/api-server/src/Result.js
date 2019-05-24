@@ -82,6 +82,10 @@ class Result {
   // Sends the content of Result to the HttpResponse stream passed in parameters.
   // 
   writeToHttpResponse(res: express$Response, successCode: number) {
+    if (res.req.context && res.req.context.access) {
+      res.header('Access-id', res.req.context.access.id);
+    }
+
     if (this.isStreamResult()) {
       this.writeStreams(res, successCode);
     } else {
