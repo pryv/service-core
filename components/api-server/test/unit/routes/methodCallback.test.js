@@ -31,6 +31,8 @@ describe('methodCallback', function() {
     });
 
     it('[IKA1] adds the access id in a specific header in case of success', function(done) {
+      // In this case we expect the 'writeToHttpResponse' function to be called with the API result
+      // and the 'res' containing the access id header.
       const result = new Result(res);
       // FLOW Mocking the writeToHttpResponse method
       result.writeToHttpResponse = (res) => {
@@ -38,13 +40,15 @@ describe('methodCallback', function() {
       };
       const next = () => {
         done('Next should not be called in the success case.');
-      }
+      };
       // FLOW Mocking express$Response and express$NextFunction
       const cb = methodCallback(res, next, 200);
       cb(null, result);
     });
 
     it('[IKA2] adds the access id in a specific header in case of error', function(done) {
+      // In this case we expect the 'next' function to be called with the API error
+      // but also with the 'res' containing the access id header.
       const next = (err) => {
         should.exist(err);
         expectAccessIdHeader(res, done);
