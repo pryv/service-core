@@ -97,12 +97,10 @@ module.exports = function produceAccessesApiMethods(
 
   async function createWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
 
-    const webhookParams = _.cloneDeep(params);
-
-    const webhook = new Webhook (_.extend(webhookParams, {
+    const webhook = new Webhook (_.extend({
       accessId: context.access.id,
       webhooksStorage: storageLayer.webhooks,
-    }));
+    }, params));
 
     try {
       await webhook.save(context.user);
