@@ -25,25 +25,30 @@ class Repository {
     
     const usersQuery = {};
     const usersOptions = { projection: { username: 1 } };
-    const usernames = await bluebird.fromCallback(
+    const users = await bluebird.fromCallback(
       (cb) => this.usersStorage.find(usersQuery, usersOptions, cb)
     );
 
     const allWebhooks = new Map();
-    const webhooksQuery = {};
-    const webhooksOptions = {};
-    usernames.forEach(async (u) => {
+    
+    await bluebird.all(users.map(retrieveWebhooks, this));
+    return allWebhooks;
+
+    async function retrieveWebhooks(user): Promise<void> {
+      const webhooksQuery = {};
+      const webhooksOptions = {};
+
       const webhooks = await bluebird.fromCallback(
-        (cb) => this.storage.find(u, webhooksQuery, webhooksOptions, cb)
+        (cb) => this.storage.find(user, webhooksQuery, webhooksOptions, cb)
       );
+      if (webhooks != null && webhooks.length > 0)
+        console.log('retrieved webhooks for', user);
       const userWebhooks = [];
       webhooks.forEach((w) => {
         userWebhooks.push(new Webhook(w));
       });
-      allWebhooks.set(u, userWebhooks);
-    });
-    
-    return allWebhooks;
+      allWebhooks.set(user.username, userWebhooks);
+    }
   }
 
   /** Return webhooks for a given User and Access. 

@@ -33,7 +33,7 @@ class SpawnContext {
   // components/api-server/test/helpers/child_process for an example of such 
   // a module. 
   // 
-  constructor(childPath: string = 'test/helpers/child_process') {
+  constructor(childPath: string = __dirname + '/../../api-server/test/helpers/child_process') {
     this.childPath = childPath;
     this.basePort = 3001;
 

@@ -16,9 +16,9 @@ describe('Webhook', () => {
     const postPath = '/notifications';
     const url = 'http://localhost:' + PORT + postPath;
 
-    before((done) => {
+    before(async () => {
       notificationsServer = new HttpServer(postPath, 200);
-      notificationsServer.listen(done);
+      await notificationsServer.listen();
     });
 
     after(() => {

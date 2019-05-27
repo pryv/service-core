@@ -1,9 +1,12 @@
 // @flow
 
+const bluebird = require('bluebird');
+const _ = require('lodash');
+
 const NatsSubscriber = require('components/api-server/src/socket-io/nats_subscriber');
 const NATS_CONNECTION_URI: string = require('components/utils').messaging.NATS_CONNECTION_URI;
 
-import type { MessageSink } from 'components/api-server/src/socket-io/message_sink';
+
 import type { StorageLayer } from 'components/storage';
 import type { Logger } from 'components/utils/src/logging';
 
@@ -26,32 +29,37 @@ class WebhooksService implements MessageSink {
   }
 
   async start() {
-    console.log('started Yo');
+    console.log('starting Yo');
     await this.loadWebhooks();
-    let num = 0;
-    this.webhooks.forEach((webhooks, username) => {
-      webhooks.forEach((webhook) => {
-        this.initSubscriber(username, webhook);
-        num++;
-      });
-    });
-    console.log('loaded', num, 'webhooks');
+    await this.initSubscribers();
   }
 
-  initSubscriber(username: string, webhook: Webhook) {
-    const natsSubscriber = new NatsSubscriber(NATS_CONNECTION_URI, this);
-    natsSubscriber.subscribe(username);
-    webhook.setNatsSubscriber(natsSubscriber);
+  async initSubscribers(): Promise<void> {
+    for(const entry of this.webhooks) {
+      const f = initSubscriberForWebhook.bind(this, entry[0]);
+      await bluebird.all(entry[1].map(f));
+    };
   }
 
-  addWebhook(username: string, webhook: Webhook) {
+  
+
+  async addWebhook(username: string, webhook: Webhook): Promise<void> {
     let userWebhooks: ?Array<Webhook> = this.webhooks.get(username);
     if (userWebhooks == null) {
       userWebhooks = [];
       this.webhooks.set(username, userWebhooks);
     }
     userWebhooks.push(webhook);
-    this.initSubscriber(username, webhook);
+    await initSubscriberForWebhook(username, webhook);
+  }
+
+  stop() {
+    console.log('stoppin webhooks');
+    for (const usernameWebhooks of this.webhooks) {
+      usernameWebhooks[1].forEach(w => {
+        w.stopNatsSubscriber();
+      });
+    }
   }
 
   deliver(userName: string, message: string): void {
@@ -79,4 +87,12 @@ class WebhooksService implements MessageSink {
   }
 
 }
+
+async function initSubscriberForWebhook(username: string, webhook: Webhook): Promise<void> {
+  console.log('initiating subscriber for', username, '@', webhook.url);
+  const natsSubscriber = new NatsSubscriber(NATS_CONNECTION_URI, webhook);
+  await natsSubscriber.subscribe(username);
+  webhook.setNatsSubscriber(natsSubscriber);
+}
+
 module.exports = WebhooksService;

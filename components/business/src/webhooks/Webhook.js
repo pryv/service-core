@@ -7,6 +7,7 @@ const cuid = require('cuid');
 
 const WebhooksStorage = require('components/storage').user.Webhooks;
 const NatsSubscriber = require('components/api-server/src/socket-io/nats_subscriber');
+import type { MessageSink } from 'components/api-server/src/socket-io/message_sink';
 
 
 export type Run = {
@@ -16,7 +17,7 @@ export type Run = {
 
 export type WebhookState = 'Active' | 'Invactive';
 
-class Webhook {
+class Webhook implements MessageSink {
 
   id: string;
   accessId: string;
@@ -76,6 +77,15 @@ class Webhook {
 
   setNatsSubscriber(nsub: NatsSubscriber): void {
     this.NatsSubscriber = nsub;
+  }
+
+  stopNatsSubscriber(): void {
+    if (this.NatsSubscriber == null) return;
+    this.NatsSubscriber.close();
+  }
+
+  async deliver(message: string) {
+    await this.send(message);
   }
 
   async send(message: string): Promise<void> {

@@ -21,7 +21,7 @@ after(async () => {
 });
 
 const { Database } = require('components/storage');
-const Settings = require('../src/settings');
+const Settings = require(__dirname + '/../src/settings');
 const NullLogger = require('components/utils/src/logging').NullLogger;
 
 // Produces and returns a connection to MongoDB. 

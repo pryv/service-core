@@ -9,6 +9,8 @@ const debug = require('debug')('databaseFixture');
 
 const storage = require('components/storage');
 
+const Webhook = require('components/business/src/webhooks/Webhook');
+
 class Context {
   databaseConn: storage.Database; 
   
@@ -380,16 +382,15 @@ class FixtureWebhook extends FixtureTreeNode implements ChildResource {
     const db = this.db;
     const user = this.context.user;
     const attributes = this.attrs;
+    const webhook = new Webhook(attributes).forStorage();
     return bluebird.fromCallback(
-      (cb) => db.webhooks.insertOne(user, attributes, cb)
+      (cb) => db.webhooks.insertOne(user, webhook, cb)
     );
   }
 
   fakeAttributes() {
     return {
-      id: `c${Charlatan.Number.number(15)}`,
       url: `https://${Charlatan.Internet.domainName()}/notifications`,
-
     };
   }
 }

@@ -15,7 +15,7 @@ const Settings = require('./settings');
 import type { Logger, LogFactory } from 'components/utils/src/logging';
 
 const services = {
-  WebhooksService: require('./service'),
+  WebhooksService: require('components/webhooks/src/service'),
 };
 
 class Application {
@@ -23,7 +23,7 @@ class Application {
   logger: Logger;
   settings: Settings;
 
-  webhooksService: ?services.WebhooksService;
+  webhooksService: services.WebhooksService;
 
   async setup(overrideSettings: ?Object) {
     this.initSettings();
@@ -69,6 +69,10 @@ class Application {
 
     logger.info('Webhooks service is mounting services:');
     await this.startWebhooksService();
+  }
+
+  stop() {
+    this.webhooksService.stop();
   }
 
   // Initializes and starts the webhooks service. The `endpoint`

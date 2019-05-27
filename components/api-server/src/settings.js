@@ -1,7 +1,7 @@
 // @flow
 
 const { Extension, ExtensionLoader } = require('components/utils').extension;
-const config = require('./config');
+const config = require(__dirname + '/config');
 
 const { ExistingValue, MissingValue } = require('components/utils/src/config/value');
 
