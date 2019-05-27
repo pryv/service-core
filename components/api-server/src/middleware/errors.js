@@ -5,7 +5,6 @@ const errorsFactory = errors.factory;
 const APIError = errors.APIError;
 const errorHandling = errors.errorHandling;
 const setCommonMeta = require('../methods/helpers/setCommonMeta');
-const addAccessIdHeader = require('../methods/helpers/setAccessIdHeader');
 
 /** Error route handling.
  */
@@ -21,8 +20,6 @@ function produceHandleErrorMiddleware(logging: any) {
     }
 
     errorHandling.logError(error, req, logger);
-
-    addAccessIdHeader(res);
     
     res
       .status(error.httpStatus || 500)

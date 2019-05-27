@@ -1,7 +1,6 @@
 // @flow
 
 const addCommonMeta = require('./methods/helpers/setCommonMeta');
-const addAccessIdHeader = require('./methods/helpers/setAccessIdHeader');
 const MultiStream = require('multistream');
 const DrainStream = require('./methods/streams/DrainStream');
 const ArrayStream = require('./methods/streams/ArrayStream');
@@ -83,8 +82,6 @@ class Result {
   // Sends the content of Result to the HttpResponse stream passed in parameters.
   // 
   writeToHttpResponse(res: express$Response, successCode: number) {
-    addAccessIdHeader(res);
-
     if (this.isStreamResult()) {
       this.writeStreams(res, successCode);
     } else {
