@@ -15,7 +15,7 @@ export type Run = {
   timestamp: number,
 };
 
-export type WebhookState = 'Active' | 'Invactive';
+export type WebhookState = 'active' | 'inactive';
 
 class Webhook implements MessageSink {
 
@@ -39,7 +39,7 @@ class Webhook implements MessageSink {
   modified: number;
   modifiedBy: string;
 
-  storage: WebhooksStorage;
+  storage: ?WebhooksStorage;
   NatsSubscriber: ?NatsSubscriber;
 
   constructor(params: {
@@ -63,7 +63,7 @@ class Webhook implements MessageSink {
     this.runCount = params.runCount || 0;
     this.failCount = params.failCount || 0;
     this.runs = params.runs || [];
-    this.state = params.state || 'Active';
+    this.state = params.state || 'active';
     this.currentRetries = params.currentRetries || 0;
     this.maxRetries = 5;
     this.minIntervalMs = 5000;
@@ -119,12 +119,20 @@ class Webhook implements MessageSink {
   }
 
   async save(user: any): Promise<void> {
+    if (this.storage == null) {
+      throw new Error('storage not set for Webhook object.');
+    }
+
     await bluebird.fromCallback(
       (cb) => this.storage.insertOne(user, this.forStorage(), cb)
     );
   }
 
   async update(user: any): Promise<void> {
+    if (this.storage == null) {
+      throw new Error('storage not set for Webhook object.');
+    }
+
     const query = {};
     await bluebird.fromCallback(
       (cb) => this.storage.updateOne(user, query, this.forStorage(), cb)

@@ -1,5 +1,5 @@
 {
-  "name": "webhooks-server",
+  "name": "webhooks-service",
   "version": "1.0.0",
   "description": "Service that receives notifications from NATS and sends them to existing Webhooks",
   "main": "./src/index.js",

@@ -229,7 +229,7 @@ describe('webhooks', () => {
           assert.typeOf(webhook.runs, 'Array');
           assert.equal(webhook.runs.length, 0);
           assert.equal(webhook.currentRetries, 0);
-          assert.equal(webhook.state, 'Active');
+          assert.equal(webhook.state, 'active');
           assert.exists(webhook.created);
           assert.exists(webhook.createdBy);
           assert.exists(webhook.modified);

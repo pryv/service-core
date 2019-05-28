@@ -10,12 +10,14 @@ import type { MessageSink } from './message_sink';
 //
 class NatsPublisher implements MessageSink {
   conn: NATS.Client;
-  channelFormat: Function;
+
+  // Provides a function to apply to the channel name
+  channelFormat: (string) => string;
   
   // Connects to the NATS server on `natsUri` (in the form of
   // 'nats://nats.io:4222') 
   //
-  constructor(natsUri: string, channelFormat?: Function) {
+  constructor(natsUri: string, channelFormat?: (string) => string) {
     this.conn = NATS.connect({
       url: natsUri, 
       'preserveBuffers': true,

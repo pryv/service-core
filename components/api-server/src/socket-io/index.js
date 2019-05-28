@@ -59,17 +59,14 @@ function setupSocketIO(
   
   // Setup the chain from notifications -> NATS
   const natsPublisher = new NatsPublisher(NATS_CONNECTION_URI, 
-    function(userName: string): string {
-      return `${userName}.sok1`;}
+    (userName: string): string => { return `${userName}.sok1`; }
   );
   const changeNotifier = new ChangeNotifier(natsPublisher);
   changeNotifier.listenTo(notifications);
 
   // Webhooks nats publisher - could be moved if there is a more convenient place.
   const whNatsPublisher = new NatsPublisher(NATS_CONNECTION_URI,
-    function (userName: string): string {
-      return `${userName}.wh1`;
-    }
+    (userName: string): string => { return `${userName}.wh1`; }
   );
   const webhooksChangeNotifier = new ChangeNotifier(whNatsPublisher);
   webhooksChangeNotifier.listenTo(notifications);
@@ -100,7 +97,6 @@ function setupSocketIO(
       // FLOW We should not piggy-back on the method context here.
       .then(() => {
         if (context.user == null) throw new Error('AF: context.user != null');
-        logger.info('ensureInitNamespace for nsName:' + nsName + 'and user:' + JSON.stringify(context.user, null, 2));
         manager.ensureInitNamespace(nsName, context.user); 
         return true; 
       });

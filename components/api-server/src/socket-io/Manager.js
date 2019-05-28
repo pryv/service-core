@@ -245,7 +245,7 @@ class NamespaceContext {
     const natsSubscriber = new NatsSubscriber(
       NATS_CONNECTION_URI, 
       sink,
-      function (username: string): string {
+      (username: string): string => {
         return `${username}.sok1`;
       }
     );

@@ -21,16 +21,14 @@ describe('NatsSubscriber', () => {
   it('[DMMP] should construct', () => {
     // For this to work, you must run the 'gnatsd' service on localhost. 
     new NatsSubscriber(NATS_CONNECTION_URI, new ArraySink(), 
-      function channelForUser(username: string): string {
-        return `${username}.sok1`;
-      });
+      (username) => { return `${username}.sok1`; }
+    );
   });
   
   async function subscriber(username: string, sink: MessageSink): Promise<NatsSubscriber> {
     const sub = new NatsSubscriber(NATS_CONNECTION_URI, sink,
-      function channelForUser(username: string): string {
-        return `${username}.sok1`;
-      });
+      (username) => { return `${username}.sok1`; }
+    );
     
     await sub.subscribe(username);
     

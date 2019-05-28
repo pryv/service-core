@@ -17,7 +17,7 @@ class NatsSubscriber {
   subscriptionUser: ?string; 
 
   // Provides a function to apply to the channel name
-  channelFormat: Function;
+  channelFormat: (string) => string;
   
   // Connects to the NATS server on `natsUri` (in the form of
   // 'nats://nats.io:4222'). Messages that arrive here via subscriptions made 
@@ -28,7 +28,7 @@ class NatsSubscriber {
   //    const subscriber = new NatsSubscriber(natsUrl, sink); 
   //    await subscriber.subscribe('USERNAME')
   // 
-  constructor(natsUri: string, sink: MessageSink, channelFormat?: Function) {
+  constructor(natsUri: string, sink: MessageSink, channelFormat?: (string) => string) {
     this.conn = NATS.connect({
       url: natsUri, 
       'preserveBuffers': true,
