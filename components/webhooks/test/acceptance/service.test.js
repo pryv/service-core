@@ -3,6 +3,7 @@
 const cuid = require('cuid');
 const assert = require('chai').assert;
 const bluebird = require('bluebird');
+const awaiting = require('awaiting');
 
 const { databaseFixture } = require('components/test-helpers');
 
@@ -51,7 +52,7 @@ describe('webhooks', () => {
   });
 
   let apiServer, mongoFixtures,
-    notificationsServer, webhooksApp;
+      notificationsServer, webhooksApp;
   before(async () => {
     apiServer = await context.spawn();
 
@@ -68,28 +69,61 @@ describe('webhooks', () => {
     webhooksApp.stop();
   });
 
-  describe('1 notification', () => {
+  describe('when loading Webhooks on startup', () => {
 
+    describe('when creating an event in a Webhook scope', () => {
+      
+      before(async () => {
+        await apiServer.request()
+          .post(`/${username}/events`)
+          .set('Authorization', appAccessToken)
+          .send({
+            streamId: streamId,
+            type: 'note/txt',
+            content: 'salut',
+          });
+      });
+
+      it('should be sent to the notifications server', async () => {
+        await new bluebird((resolve, reject) => {
+          notificationsServer.on('received', resolve);
+          notificationsServer.on('close', () => { });
+          notificationsServer.on('error', reject);
+        });
+        assert.isTrue(notificationsServer.isMessageReceived());
+      });
+    });
+
+  
+  });
+
+  describe('when creating a Webhook through API server', () => {
+
+    const url = 'doesntmatter';
+
+    let webhookId;
     before(async () => {
-      await apiServer.request()
-        .post(`/${username}/events`)
+      const res = await apiServer.request()
+        .post(`/${username}/webhooks`)
         .set('Authorization', appAccessToken)
         .send({
-          streamId: streamId,
-          type: 'note/txt',
-          content: 'salut',
+          url: url,
         });
+      webhookId = res.body.webhook.id;
     });
 
-    it('should be received', async () => {
-      await new bluebird((resolve, reject) => {
-        notificationsServer.on('received', resolve);
-        notificationsServer.on('close', () => { });
-        notificationsServer.on('error', reject);
-      });
-      assert.isTrue(notificationsServer.isMessageReceived());
+    it('should send a NATS message to the Webhooks service', async () => {
+      let isWebhookActive = false;
+      while (! isWebhookActive) {
+        const webhooks = webhooksApp.webhooksService.webhooks.get(username);
+        webhooks.forEach( w => {
+          console.log('comparin', w.id, webhookId);
+          if (w.id === webhookId) isWebhookActive = true;
+        });
+        await awaiting.delay(50);
+      }
+      assert.isTrue(isWebhookActive);
     });
-
   });
 
 });

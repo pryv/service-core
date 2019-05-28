@@ -13,6 +13,11 @@ const methodsSchema = require('../schema/webhooksMethods');
 const Webhook = require('components/business').webhooks.Webhook;
 const WebhooksRepository = require('components/business').webhooks.Repository;
 
+const NatsPublisher = require('../socket-io/nats_publisher');
+const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
+const NATS_WEBHOOKS_CREATE_CHANNEL = require('components/utils').messaging.NATS_WEBHOOKS_CREATE;
+const NATS_WEBHOOKS_DELETE_CHANNEL = require('components/utils').messaging.NATS_WEBHOOKS_DELETE;
+
 import type { StorageLayer } from 'components/storage';
 import type { Logger } from 'components/utils';
 import type { MethodContext } from 'components/model';
@@ -33,6 +38,7 @@ module.exports = function produceAccessesApiMethods(
   storageLayer: StorageLayer) {
 
   const webhooksRepository = new WebhooksRepository(storageLayer.webhooks);
+  const natsPublisher = new NatsPublisher(NATS_CONNECTION_URI);
 
   // COMMON
 
@@ -66,7 +72,6 @@ module.exports = function produceAccessesApiMethods(
     } catch (error) {
       //return next(errors.unexpectedError);
     }
-
     next();
   }
 
@@ -75,7 +80,9 @@ module.exports = function produceAccessesApiMethods(
   api.register('webhooks.create',
     commonFns.getParamsValidation(methodsSchema.create.params),
     applyPrerequisitesForCreation,
-    createWebhook);
+    createWebhook,
+    loadWebhook,
+  );
 
   function applyPrerequisitesForCreation(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     const currentAccess = context.access;
@@ -91,7 +98,6 @@ module.exports = function produceAccessesApiMethods(
     }
 
     context.initTrackingProperties(params);
-    
     return next();
   }
 
@@ -114,6 +120,14 @@ module.exports = function produceAccessesApiMethods(
       return next(errors.unexpectedError(error));
     }
 
+    return next();
+  }
+
+  async function loadWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
+    natsPublisher.deliver(NATS_WEBHOOKS_CREATE_CHANNEL, _.extend(
+      { username: context.user.username }, 
+      { webhook: result.webhook })
+    );
     return next();
   }
 

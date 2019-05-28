@@ -79,8 +79,6 @@ class NatsSubscriber {
       throw new Error('AF: subscriptionUser may not be null here.');
     
     const msg = decode(buf);
-    if (typeof msg !== 'string') 
-      throw new Error('AF: messages are simple strings in sok1.');
       
     sink.deliver(subscriptionUser, msg);
   }

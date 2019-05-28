@@ -76,5 +76,17 @@ class Repository {
     return webhookObjects;
   }
 
+  async getById(user: any, webhookId: string): Promise<Webhook> {
+    const query = {
+      id: { $eq: webhookId }
+    };
+    const options = {};
+
+    const webhook = await bluebird.fromCallback(
+      cb => this.storage.findOne(user, query, options, cb)
+    );
+    return new Webhook(webhook);
+  }
+
 }
 module.exports = Repository;

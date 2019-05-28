@@ -64,6 +64,15 @@ function setupSocketIO(
   );
   const changeNotifier = new ChangeNotifier(natsPublisher);
   changeNotifier.listenTo(notifications);
+
+  // Webhooks nats publisher - could be moved if there is a more convenient place.
+  const whNatsPublisher = new NatsPublisher(NATS_CONNECTION_URI,
+    function (userName: string): string {
+      return `${userName}.wh1`;
+    }
+  );
+  const webhooksChangeNotifier = new ChangeNotifier(whNatsPublisher);
+  webhooksChangeNotifier.listenTo(notifications);
   
   function authorizeUserMiddleware(
     handshake: SocketIO$Handshake, callback: (err: any, res: any) => mixed

@@ -25,14 +25,14 @@ class NatsPublisher implements MessageSink {
 
   // Delivers a message to the subject 'USERNAME.sok1'. 
   //
-  deliver(userName: string, message: string): void {
+  deliver(userName: string, message: string | Object): void {
     const subject = this.channelFormat(userName);
     const wireMsg = this.serialize(message);
     
     this.conn.publish(subject, wireMsg);
   }
   
-  serialize(msg: string): Buffer {
+  serialize(msg: string | Object): Buffer {
     return encode(msg);
   }
 }
