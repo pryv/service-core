@@ -22,7 +22,11 @@ describe('NatsPublisher', () => {
   
   function connect() {
     return new NatsPublisher(
-      NATS_CONNECTION_URI);
+      NATS_CONNECTION_URI,
+      function(userName: string): string {
+        return `${userName}.sok1`;
+      }
+    );
   }
   function waitForConnect(natsConnection): Promise<void> {
     return new bluebird((resolve, reject) => {

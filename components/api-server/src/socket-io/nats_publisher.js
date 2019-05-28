@@ -10,29 +10,28 @@ import type { MessageSink } from './message_sink';
 //
 class NatsPublisher implements MessageSink {
   conn: NATS.Client;
+  channelFormat: Function;
   
   // Connects to the NATS server on `natsUri` (in the form of
   // 'nats://nats.io:4222') 
   //
-  constructor(natsUri: string) {
+  constructor(natsUri: string, channelFormat?: Function) {
     this.conn = NATS.connect({
       url: natsUri, 
       'preserveBuffers': true,
     });
+    this.channelFormat = channelFormat || (a => {return a;});
   }
 
   // Delivers a message to the subject 'USERNAME.sok1'. 
   //
   deliver(userName: string, message: string): void {
-    const subject = this.subjectForUserName(userName);
+    const subject = this.channelFormat(userName);
     const wireMsg = this.serialize(message);
     
     this.conn.publish(subject, wireMsg);
   }
   
-  subjectForUserName(userName: string): string {
-    return `${userName}.sok1`; 
-  }
   serialize(msg: string): Buffer {
     return encode(msg);
   }

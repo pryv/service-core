@@ -58,7 +58,10 @@ function setupSocketIO(
   const manager: Manager = new Manager(logger, io, api);
   
   // Setup the chain from notifications -> NATS
-  const natsPublisher = new NatsPublisher(NATS_CONNECTION_URI);
+  const natsPublisher = new NatsPublisher(NATS_CONNECTION_URI, 
+    function(userName: string): string {
+      return `${userName}.sok1`;}
+  );
   const changeNotifier = new ChangeNotifier(natsPublisher);
   changeNotifier.listenTo(notifications);
   

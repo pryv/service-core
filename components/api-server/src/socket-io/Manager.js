@@ -244,7 +244,11 @@ class NamespaceContext {
 
     const natsSubscriber = new NatsSubscriber(
       NATS_CONNECTION_URI, 
-      sink);
+      sink,
+      function (username: string): string {
+        return `${username}.sok1`;
+      }
+    );
           
     // We'll await this, since the user will want a connection that has
     // notifications turned on immediately. 
