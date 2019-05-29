@@ -34,7 +34,7 @@ module.exports = function (res: express$Response, next: express$NextFunction, su
  *
  * @param res {express$Response} Current express response. MODIFIED IN PLACE. 
  */
-function addAccessIdHeader <T: express$Response>(res: T): T {
+function addAccessIdHeader (res: express$Response): express$Response {
   const request = res.req;
   if (request != null) {
     const requestCtx = request.context;
