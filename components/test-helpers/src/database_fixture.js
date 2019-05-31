@@ -193,7 +193,9 @@ class Fixture {
   //
   clean(): Promise<mixed> {
     return this.childs.all(
-      (child) => child.remove());
+      (child) => {
+        return child.remove();
+      });
   }
 }
 
@@ -244,6 +246,7 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
       db.streams, 
       db.events,
       db.accesses, 
+      db.webhooks,
     ];
         
     // NOTE username in context will be the same as the one stored in
@@ -312,7 +315,7 @@ class FixtureStream extends FixtureTreeNode implements ChildResource {
   fakeAttributes() {
     return {
       id: `c${Charlatan.Number.number(15)}`,
-      name: Charlatan.Internet.domainName(), 
+      name: Charlatan.App.name(), 
       parentId: this.parentId, 
     };
   }
@@ -367,7 +370,7 @@ class FixtureAccess extends FixtureTreeNode implements ChildResource {
     return {
       id: `c${Charlatan.Number.number(15)}`,
       token: Charlatan.Internet.deviceToken(), 
-      name: Charlatan.Commerce.productName(), 
+      name: Charlatan.Internet.userName(),
       type: Charlatan.Helpers.sample(['personal', 'shared']), 
     };
   }
