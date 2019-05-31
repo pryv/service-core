@@ -4,8 +4,10 @@ const cuid = require('cuid');
 const assert = require('chai').assert;
 const bluebird = require('bluebird');
 const awaiting = require('awaiting');
+const timestamp = require('unix-timestamp');
 
 const { databaseFixture } = require('components/test-helpers');
+const { usersStorage, webhooksStorage } = require('../test-helpers');
 
 require('components/api-server/test/test-helpers');
 const { produceMongoConnection, context } = require('components/api-server/test/test-helpers');
@@ -26,7 +28,6 @@ describe('webhooks', () => {
 
   before(() => {
     mongoFixtures = databaseFixture(produceMongoConnection());
-    mongoFixtures.clean();
   });
 
   const port = 5123;
@@ -36,10 +37,10 @@ describe('webhooks', () => {
 
   before(() => {
     return mongoFixtures.user(username, {}, async (user) => {
-      user.stream({
+      await user.stream({
         id: streamId,
       });
-      user.access({
+      await user.access({
         id: appAccessId,
         type: 'app', token: appAccessToken,
         permissions: [{
@@ -47,25 +48,23 @@ describe('webhooks', () => {
           level: 'manage',
         }]
       });
-      user.webhook({ url: url }, appAccessId);
+      await user.webhook({ url: url }, appAccessId);
     });
   });
 
-  let apiServer, mongoFixtures,
-      notificationsServer, webhooksApp;
+  let apiServer, mongoFixtures, webhooksApp;
   before(async () => {
     apiServer = await context.spawn();
 
-    notificationsServer = new HttpServer(postPath, 200);
-    await notificationsServer.listen(port);
+    
 
     webhooksApp = new WebhooksApp();
     await webhooksApp.setup();
     await webhooksApp.run();
   });
-  after(() => {
-    apiServer.stop();
-    notificationsServer.close();
+  after(async () => {
+    await mongoFixtures.clean();
+    await apiServer.stop();
     webhooksApp.stop();
   });
 
@@ -73,27 +72,98 @@ describe('webhooks', () => {
 
     describe('when creating an event in a Webhook scope', () => {
       
-      before(async () => {
-        await apiServer.request()
-          .post(`/${username}/events`)
-          .set('Authorization', appAccessToken)
-          .send({
-            streamId: streamId,
-            type: 'note/txt',
-            content: 'salut',
+      describe('when the notifications server is running', () => {
+
+        let notificationsServer;
+        before(async () => {
+          notificationsServer = new HttpServer(postPath, 200);
+          await notificationsServer.listen(port);
+        });
+
+        after(async () => {
+          await notificationsServer.close();
+        });
+
+        let requestTimestamp;
+
+        before(async () => {
+          requestTimestamp = timestamp.now();
+          await apiServer.request()
+            .post(`/${username}/events`)
+            .set('Authorization', appAccessToken)
+            .send({
+              streamId: streamId,
+              type: 'note/txt',
+              content: 'salut',
+            });
+        });
+
+        it('should send API call to the notifications server', async () => {
+          await new bluebird((resolve, reject) => {
+            notificationsServer.on('received', resolve);
+            notificationsServer.on('close', () => { });
+            notificationsServer.on('error', reject);
           });
+          assert.isTrue(notificationsServer.isMessageReceived());
+        });
+
+        it('should update the Webhook\'s data to the storage', async () => {
+          const webhooks = await bluebird.fromCallback((cb) => webhooksStorage.find({ username: username }, {}, {}, cb));
+          assert.exists(webhooks);
+          assert.equal(webhooks.length, 1, 'Incorrect webhooks length');
+          const updatedWebhook = webhooks[0];
+          assert.equal(updatedWebhook.runCount, 1);
+          const runs = updatedWebhook.runs;
+          assert.equal(runs.length, 1);
+          const run = runs[0];
+          assert.equal(run.status, 200);
+          assert.approximately(run.timestamp, requestTimestamp, 0.5);
+        });
       });
 
-      it('should be sent to the notifications server', async () => {
-        await new bluebird((resolve, reject) => {
-          notificationsServer.on('received', resolve);
-          notificationsServer.on('close', () => { });
-          notificationsServer.on('error', reject);
+      describe('when the notifications server is unavailable first', () => {
+
+        let notificationsServer;
+        before(async () => {
+          notificationsServer = new HttpServer(postPath, 400);
+          await notificationsServer.listen();
         });
-        assert.isTrue(notificationsServer.isMessageReceived());
+
+        after(async () => {
+          await notificationsServer.close();
+        });
+
+        let requestTimestamp;
+
+        before(async () => {
+          requestTimestamp = timestamp.now();
+          await apiServer.request()
+            .post(`/${username}/events`)
+            .set('Authorization', appAccessToken)
+            .send({
+              streamId: streamId,
+              type: 'note/txt',
+              content: 'salut',
+            });
+        });
+
+        describe('when sending a webhook call', () => {
+
+          it('should fail');
+
+          it('should be scheduled for a retry');
+
+        });
+
+        describe('when the notifications server answers correctly', () => {
+
+
+          
+
+        })
+
       });
     });
-
   
   });
 
@@ -112,15 +182,14 @@ describe('webhooks', () => {
       webhookId = res.body.webhook.id;
     });
 
-    it('should send a NATS message to the Webhooks service', async () => {
+    it('should register a new webhook in the service through NATS', async () => {
       let isWebhookActive = false;
       while (! isWebhookActive) {
         const webhooks = webhooksApp.webhooksService.webhooks.get(username);
         webhooks.forEach( w => {
-          console.log('comparin', w.id, webhookId);
           if (w.id === webhookId) isWebhookActive = true;
         });
-        await awaiting.delay(50);
+        await awaiting.delay(10);
       }
       assert.isTrue(isWebhookActive);
     });

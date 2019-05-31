@@ -71,8 +71,8 @@ class Application {
     await this.startWebhooksService();
   }
 
-  stop() {
-    this.webhooksService.stop();
+  stop(): void {
+    return this.webhooksService.stop();
   }
 
   // Initializes and starts the webhooks service. The `endpoint`

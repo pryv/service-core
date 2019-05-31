@@ -1,6 +1,7 @@
 // @flow
 
 const bluebird = require('bluebird');
+const _ = require('lodash');
 
 const Webhook = require('./Webhook');
 const WebhooksStorage = require('components/storage').StorageLayer.webhooks;
@@ -45,7 +46,10 @@ class Repository {
         console.log('retrieved webhooks for', user);
       const userWebhooks = [];
       webhooks.forEach((w) => {
-        userWebhooks.push(new Webhook(w));
+        userWebhooks.push(new Webhook(_.merge({
+          webhooksStorage: this.storage,
+          user: user,
+        }, w)));
       });
       allWebhooks.set(user.username, userWebhooks);
     }

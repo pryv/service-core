@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const EventEmitter = require('events');
+const bluebird = require('bluebird');
 const PORT = 6123;
 
 class HttpServer extends EventEmitter {
@@ -42,7 +43,8 @@ class HttpServer extends EventEmitter {
   }
 
   close() {
-    return this.server.close(); 
+    return bluebird.fromCallback(
+      (cb) => { this.server.close(cb); });
   }
 }
 module.exports = HttpServer;

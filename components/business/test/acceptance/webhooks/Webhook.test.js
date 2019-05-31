@@ -48,7 +48,7 @@ describe('Webhook', () => {
         assert.equal(runs.length, 1);
       });
       it('should add the correct status to the last run', () => {
-        assert.equal(runs[0].statusCode, 200);
+        assert.equal(runs[0].status, 200);
       });
       it('should add the correct timestamp to the last run', () => {
         assert.approximately(runs[0].timestamp, requestTimestamp, 0.5, 'Timestamp is unsynced.');
@@ -80,7 +80,7 @@ describe('Webhook', () => {
         assert.equal(runs.length, 1);
       });
       it('should add the no status to the last run', () => {
-        assert.equal(runs[0].statusCode, 0);
+        assert.equal(runs[0].status, 0);
       });
       it('should add the correct timestamp to the last run', () => {
         assert.approximately(runs[0].timestamp, requestTimestamp, 0.5, 'Timestamp is unsynced.');

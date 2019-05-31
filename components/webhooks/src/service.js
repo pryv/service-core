@@ -37,7 +37,6 @@ class WebhooksService implements MessageSink {
   }
 
   async start() {
-    console.log('starting Yo');
     await this.subscribeToDeleteListener();
     await this.subscribeToCreateListener();
     await this.loadWebhooks();
@@ -62,7 +61,7 @@ class WebhooksService implements MessageSink {
   }
 
   deliver(channel: string, usernameWebhook: UsernameWebhook): void {
-    console.log('received notification for', channel, 'with', usernameWebhook);
+    //console.log('received notification for', channel, 'with', usernameWebhook);
 
     switch(channel) {
       case WEBHOOKS_CREATE_CHANNEL:
@@ -84,7 +83,7 @@ class WebhooksService implements MessageSink {
     await initSubscriberForWebhook(username, webhook);
   }
 
-  stop() {
+  stop(): void {
     console.log('stoppin webhooks');
     for (const usernameWebhooks of this.webhooks) {
       usernameWebhooks[1].forEach(w => {

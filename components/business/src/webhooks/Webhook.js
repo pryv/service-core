@@ -11,13 +11,15 @@ import type { MessageSink } from 'components/api-server/src/socket-io/message_si
 
 
 export type Run = {
-  statusCode: number,
+  status: number,
   timestamp: number,
 };
 
 export type WebhookState = 'active' | 'inactive';
 
 class Webhook implements MessageSink {
+
+  user: {};
 
   id: string;
   accessId: string;
@@ -43,6 +45,7 @@ class Webhook implements MessageSink {
   NatsSubscriber: ?NatsSubscriber;
 
   constructor(params: {
+    user?: {},
     id?: string,
     accessId: string,
     url: string,
@@ -57,6 +60,7 @@ class Webhook implements MessageSink {
     modifiedBy?: string,
     webhooksStorage?: WebhooksStorage,
   }) {
+    this.user = params.user;
     this.id = params.id || cuid();
     this.accessId = params.accessId;
     this.url = params.url;
@@ -86,6 +90,7 @@ class Webhook implements MessageSink {
 
   async deliver(message: string) {
     await this.send(message);
+    await this.update();
   }
 
   async send(message: string): Promise<void> {
@@ -109,7 +114,7 @@ class Webhook implements MessageSink {
       status = handleError.call(this, e.response);
     }
     this.runCount++;
-    this.runs.push({ statusCode: status, timestamp: Date.now() / 1000 });
+    this.runs.push({ status: status, timestamp: Date.now() / 1000 });
 
     function handleError(response) {
       this.failCount++;
@@ -128,14 +133,14 @@ class Webhook implements MessageSink {
     );
   }
 
-  async update(user: any): Promise<void> {
+  async update(): Promise<void> {
     if (this.storage == null) {
       throw new Error('storage not set for Webhook object.');
     }
 
     const query = {};
     await bluebird.fromCallback(
-      (cb) => this.storage.updateOne(user, query, this.forStorage(), cb)
+      (cb) => this.storage.updateOne(this.user, query, this.forStorage(), cb)
     );
   }
 
