@@ -1,6 +1,7 @@
 /*global describe, it, before, after*/
 
 const assert = require('chai').assert;
+const timestamp = require('unix-timestamp');
 
 const Webhook = require('../../../src/webhooks/Webhook');
 
@@ -25,32 +26,72 @@ describe('Webhook', () => {
       notificationsServer.close();
     });
 
-    it('should send a message to the provided URL', async () => {
-      const message = 'hi';
-      const webhook = new Webhook({
-        accessId: 'doesntmatter',
-        url: url,
+    describe('when sending to an existing endpoint', () => {
+
+      let webhook, runs, message, requestTimestamp;
+
+      before(async () => {
+        message = 'hi';
+        webhook = new Webhook({
+          accessId: 'doesntmatter',
+          url: url,
+        });
+        requestTimestamp = timestamp.now();
+        await webhook.send(message);
+        runs = webhook.runs;
       });
-      await webhook.send(message);
-      assert.equal(notificationsServer.getMessage().message, message, 'Webhook sent wrong message.');
-      const runs = webhook.runs;
-      assert.equal(runs.length, 1);
-      assert.equal(runs[0].statusCode, 200);
-      assert.equal(webhook.runCount, 1);
-      assert.equal(webhook.failCount, 0);
+
+      it('should send it', () => {
+        assert.equal(notificationsServer.getMessage().message, message, 'Webhook sent wrong message.');
+      });
+      it('should add a log to runs', () => {
+        assert.equal(runs.length, 1);
+      });
+      it('should add the correct status to the last run', () => {
+        assert.equal(runs[0].statusCode, 200);
+      });
+      it('should add the correct timestamp to the last run', () => {
+        assert.approximately(runs[0].timestamp, requestTimestamp, 0.5, 'Timestamp is unsynced.');
+      });
+      it('should increment runCount', () => {
+        assert.equal(webhook.runCount, 1);
+      });
+      it('should not increment failCount', () => {
+        assert.equal(webhook.failCount, 0);
+      });
+
     });
 
-    it('should note failures correctly', async () => {
-      const webhook = new Webhook({
-        accessId: 'doesnmatter',
-        url: 'unexistant'
+    describe('when sending to an unexistant', () => {
+
+      let webhook, runs, requestTimestamp;
+
+      before(async () => {
+        webhook = new Webhook({
+          accessId: 'doesnmatter',
+          url: 'unexistant'
+        });
+        requestTimestamp = timestamp.now();
+        await webhook.send('doesntmatter');
+        runs = webhook.runs;
       });
-      await webhook.send('doesntmatter');
-      const runs = webhook.runs;
-      assert.equal(runs.length, 1);
-      assert.equal(runs[0].statusCode, 0);
-      assert.equal(webhook.runCount, 1, 'runCount should be 1');
-      assert.equal(webhook.failCount, 1, 'failCount should be 1');
+
+      it('should add a log to runs', () => {
+        assert.equal(runs.length, 1);
+      });
+      it('should add the no status to the last run', () => {
+        assert.equal(runs[0].statusCode, 0);
+      });
+      it('should add the correct timestamp to the last run', () => {
+        assert.approximately(runs[0].timestamp, requestTimestamp, 0.5, 'Timestamp is unsynced.');
+      });
+      it('should increment runCount', () => {
+        assert.equal(webhook.runCount, 1, 'runCount should be 1');
+      });
+      it('should increment failCount', () => {
+        assert.equal(webhook.failCount, 1, 'failCount should be 1');
+      });
+
     });
   });
 });
