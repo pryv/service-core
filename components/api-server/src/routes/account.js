@@ -2,6 +2,7 @@
 
 const methodCallback = require('./methodCallback');
 const Paths = require('./Paths');
+const middleware = require('components/middleware');
 
 import type Application from '../application';
 
@@ -9,18 +10,25 @@ import type Application from '../application';
 module.exports = function (expressApp: express$Application, app: Application) {
 
   const api = app.api;
+  const loadAccessMiddleware = middleware.loadAccess(app.storageLayer);
 
-  expressApp.get(Paths.Account, function (req: express$Request, res, next) {
-    api.call('account.get', req.context, req.query, methodCallback(res, next, 200));
-  });
+  expressApp.get(Paths.Account,
+    loadAccessMiddleware,
+    function (req: express$Request, res, next) {
+      api.call('account.get', req.context, req.query, methodCallback(res, next, 200));
+    });
 
-  expressApp.put(Paths.Account, function (req: express$Request, res, next) {
-    api.call('account.update', req.context, {update: req.body}, methodCallback(res, next, 200));
-  });
+  expressApp.put(Paths.Account,
+    loadAccessMiddleware,
+    function (req: express$Request, res, next) {
+      api.call('account.update', req.context, {update: req.body}, methodCallback(res, next, 200));
+    });
 
-  expressApp.post(Paths.Account + '/change-password', function (req: express$Request, res, next) {
-    api.call('account.changePassword', req.context, req.body, methodCallback(res, next, 200));
-  });
+  expressApp.post(Paths.Account + '/change-password',
+    loadAccessMiddleware,
+    function (req: express$Request, res, next) {
+      api.call('account.changePassword', req.context, req.body, methodCallback(res, next, 200));
+    });
 
   expressApp.post(Paths.Account + '/request-password-reset', function (req: express$Request, res, next) {
     var params = req.body;
