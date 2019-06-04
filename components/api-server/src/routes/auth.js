@@ -5,6 +5,7 @@ const lodash = require('lodash');
 const express = require('express');
 
 const errors = require('components/errors').factory;
+const middleware = require('components/middleware');
 
 const methodCallback = require('./methodCallback');
 const Paths = require('./Paths');
@@ -31,6 +32,8 @@ module.exports = function (expressApp: express$Application, app: Application) {
   const ssoCookieSecure: boolean = process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'test' ;
   const ssoIsWhoamiActivated: boolean = settings.get('deprecated.auth.ssoIsWhoamiActivated').bool();
   const ssoHttpOnly: boolean = true ;
+
+  const loadAccessMiddleware = middleware.loadAccess(app.storageLayer);
 
   // Returns true if the given `obj` has all of the property values identified
   // by the names contained in `keys`.
@@ -103,10 +106,12 @@ module.exports = function (expressApp: express$Application, app: Application) {
       });
 
     });
-    router.post('/logout', function routeLogout(req: RequestWithContext, res, next) {
-      clearSSOCookie(res);
-      api.call('auth.logout', req.context, {}, methodCallback(res, next, 200));
-    });
+    router.post('/logout',
+      loadAccessMiddleware,
+      function routeLogout(req: RequestWithContext, res, next) {
+        clearSSOCookie(res);
+        api.call('auth.logout', req.context, {}, methodCallback(res, next, 200));
+      });
   }
   
   // Create a router that is relative to /:username/auth/
