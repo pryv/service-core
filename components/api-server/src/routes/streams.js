@@ -4,6 +4,7 @@ const methodCallback = require('./methodCallback');
 const Paths = require('./Paths');
 const tryCoerceStringValues = require('../schema/validation').tryCoerceStringValues;
 const _ = require('lodash');
+const middleware = require('components/middleware');
 
 import type Application from '../application';
 
@@ -11,6 +12,10 @@ import type Application from '../application';
 module.exports = function (expressApp: express$Application, app: Application) {
 
   const api = app.api;
+  const loadAccessMiddleware = middleware.loadAccess(app.storageLayer);
+
+  // Require access for all Streams API methods.
+  expressApp.all(Paths.Streams + '*', loadAccessMiddleware);
 
   expressApp.get(Paths.Streams, function (req: express$Request, res, next) {
     var params = _.extend({}, req.query);
