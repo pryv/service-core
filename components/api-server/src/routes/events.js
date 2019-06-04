@@ -65,7 +65,6 @@ module.exports = function(expressApp: express$Application, app: Application) {
   // 
   expressApp.get(Paths.Events + '/:id/:fileId/:fileName?', 
     retrieveAccessFromReadToken, 
-    loadAccess,
     attachmentsAccessMiddleware(storage.events), 
     attachmentsStatic
   );
@@ -109,19 +108,6 @@ module.exports = function(expressApp: express$Application, app: Application) {
       .catch( err => next(errors.unexpectedError(err)) );
     
     return; // The promise chain above calls next on all branches.
-  }
-
-  function loadAccess(req: express$Request, res, next) {
-    const context = req.context; 
-    
-    nextify(context.retrieveExpandedAccess(storage), next); 
-  }
-  
-  // Turns the promise given into a call to an express NextFunction. 
-  function nextify(promise, next) {
-    promise
-      .then(() => next())
-      .catch(err => next(err));
   }
 
   // Create an event.

@@ -26,7 +26,7 @@ const typeRepo = new TypeRepository();
 module.exports = function (
   api, userEventsStorage, userEventFilesStorage, usersStorage,
   authSettings, eventTypesSettings, notifications, logging,
-  auditSettings, updatesSettings, storageLayer,
+  auditSettings, updatesSettings,
 ) {
                              
   // Update types and log error
@@ -34,10 +34,6 @@ module.exports = function (
     .catch((err) => logging.getLogger('typeRepo').warn(err));
     
   const logger = logging.getLogger('methods/events');
-  // COMMON
-
-  api.register('events.*',
-    commonFns.loadAccess(storageLayer));
 
   // RETRIEVAL
 

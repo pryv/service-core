@@ -53,7 +53,6 @@ module.exports = function produceAccessesApiMethods(
   // COMMON
 
   api.register('accesses.*',
-    commonFns.loadAccess(storageLayer),
     checkNoSharedAccess);
 
   function checkNoSharedAccess(

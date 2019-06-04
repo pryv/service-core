@@ -13,7 +13,7 @@ var commonFns = require('./helpers/commonFunctions'),
  * @param sessionsStorage
  * @param authSettings
  */
-module.exports = function (api, userAccessesStorage, sessionsStorage, authSettings, storageLayer) {
+module.exports = function (api, userAccessesStorage, sessionsStorage, authSettings) {
   // LOGIN
 
   api.register('auth.login',
@@ -125,7 +125,6 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
   // LOGOUT
 
   api.register('auth.logout',
-    commonFns.loadAccess(storageLayer),
     commonFns.getParamsValidation(methodsSchema.logout.params),
     destroySession);
 

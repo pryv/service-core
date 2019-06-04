@@ -9,14 +9,13 @@ var async = require('async'),
  *
  * @param api
  */
-module.exports = function (api, logging, storageLayer) {
+module.exports = function (api, logging) {
 
   var logger = logging.getLogger('methods/batch');
 
   api.register('getAccessInfo',
-      commonFns.loadAccess(storageLayer),
-      commonFns.getParamsValidation(methodsSchema.getAccessInfo.params),
-      getAccessInfo);
+    commonFns.getParamsValidation(methodsSchema.getAccessInfo.params),
+    getAccessInfo);
 
   function getAccessInfo(context, params, result, next) {
     result.type = context.access.type;
@@ -28,8 +27,8 @@ module.exports = function (api, logging, storageLayer) {
   }
 
   api.register('callBatch',
-      commonFns.getParamsValidation(methodsSchema.callBatch.params),
-      callBatch);
+    commonFns.getParamsValidation(methodsSchema.callBatch.params),
+    callBatch);
 
   function callBatch(context, params, results, next) {
     results.results = [];
