@@ -9,7 +9,7 @@ var async = require('async'),
  *
  * @param api
  */
-module.exports = function (api, logging) {
+module.exports = function (api, logging, storageLayer) {
 
   var logger = logging.getLogger('methods/batch');
 
@@ -37,22 +37,24 @@ module.exports = function (api, logging) {
     function executeCall(call, done) {
       // clone context to avoid potential side FX
       var freshContext = _.extend(Object.create(Object.getPrototypeOf(context)), context);
-      api.call(call.method, freshContext, call.params, function (err, result) {
-        if (err) {
-          // provide custom request context as we're outside of the usual error handling logic
-          var reqContext = {
-            method: call.method + ' (within batch)',
-            url: 'pryv://' + context.username
-          };
-          errorHandling.logError(err, reqContext, logger);
-          results.results.push({error: errorHandling.getPublicErrorData(err)});
-          done();
-        } else {
-          result.toObject(function (object) {
-            results.results.push(object);
+      freshContext.retrieveStreams(storageLayer).then(() => {
+        api.call(call.method, freshContext, call.params, function (err, result) {
+          if (err) {
+            // provide custom request context as we're outside of the usual error handling logic
+            var reqContext = {
+              method: call.method + ' (within batch)',
+              url: 'pryv://' + context.username
+            };
+            errorHandling.logError(err, reqContext, logger);
+            results.results.push({error: errorHandling.getPublicErrorData(err)});
             done();
-          });
-        }
+          } else {
+            result.toObject(function (object) {
+              results.results.push(object);
+              done();
+            });
+          }
+        });
       });
     }
   }
