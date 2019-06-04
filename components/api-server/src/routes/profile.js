@@ -3,6 +3,7 @@
 const methodCallback = require('./methodCallback');
 const Paths = require('./Paths');
 const _ = require('lodash');
+const middleware = require('components/middleware');
 
 import type Application from '../application';
 
@@ -10,6 +11,10 @@ import type Application from '../application';
 module.exports = function (expressApp: express$Application, app: Application) {
 
   const api = app.api;
+  const loadAccessMiddleware = middleware.loadAccess(app.storageLayer);
+
+  // Require access for all Profile API methods.
+  expressApp.all(Paths.Profile + '*', loadAccessMiddleware);
 
   expressApp.get(Paths.Profile + '/public', function (req: express$Request, res, next) {
     api.call('profile.getPublic', req.context, req.query, methodCallback(res, next, 200));
