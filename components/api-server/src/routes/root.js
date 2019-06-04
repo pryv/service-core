@@ -35,11 +35,13 @@ function root(expressApp: express$Application, app: Application) {
   });
 
   // Batch request of multiple API method calls.
-  expressApp.post(Paths.UserRoot, initContextMiddleware, function (req: express$Request, res, next) {
-    // FLOW More request.context...
-    api.call('callBatch', req.context, req.body, 
-      methodCallback(res, next, 200));
-  });
+  expressApp.post(Paths.UserRoot, initContextMiddleware,
+    function (req: express$Request, res, next) {
+      // FLOW More request.context...
+      api.call('callBatch', req.context, req.body, 
+        methodCallback(res, next, 200));
+    }
+  );
 }
 module.exports = root; 
 

@@ -1,26 +1,25 @@
-var methodCallback = require('./methodCallback'),
-    Paths = require('./Paths'),
-    _ = require('lodash');
+// @flow
 
-/**
- * Profile route handling.
- *
- * @param expressApp
- * @param api
- */
-module.exports = function (expressApp, api) {
+const methodCallback = require('./methodCallback');
+const Paths = require('./Paths');
+const _ = require('lodash');
 
-  expressApp.get(Paths.Profile + '/public', function (req, res, next) {
+import type API from '../API';
+
+// Profile route handling.
+module.exports = function (expressApp: express$Application, api: API) {
+
+  expressApp.get(Paths.Profile + '/public', function (req: express$Request, res, next) {
     api.call('profile.getPublic', req.context, req.query, methodCallback(res, next, 200));
   });
 
   expressApp.put(Paths.Profile + '/public', update('public'));
 
-  expressApp.get(Paths.Profile + '/app', function (req, res, next) {
+  expressApp.get(Paths.Profile + '/app', function (req: express$Request, res, next) {
     api.call('profile.getApp', req.context, req.query, methodCallback(res, next, 200));
   });
 
-  expressApp.put(Paths.Profile + '/app', function (req, res, next) {
+  expressApp.put(Paths.Profile + '/app', function (req: express$Request, res, next) {
     var params = {update: req.body};
     api.call('profile.updateApp', req.context, params, methodCallback(res, next, 200));
   });
@@ -29,18 +28,17 @@ module.exports = function (expressApp, api) {
   expressApp.put(Paths.Profile + '/private', update('private'));
 
   function get(id) {
-    return function (req, res, next) {
+    return function (req: express$Request, res, next) {
       api.call('profile.get', req.context, _.extend(req.query, {id: id}),
-          methodCallback(res, next, 200));
+        methodCallback(res, next, 200));
     };
   }
 
   function update(id) {
-    return function (req, res, next) {
+    return function (req: express$Request, res, next) {
       api.call('profile.update', req.context, { id: id, update: req.body },
-          methodCallback(res, next, 200));
+        methodCallback(res, next, 200));
     };
   }
 
 };
-module.exports.injectDependencies = true;

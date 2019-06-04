@@ -1,3 +1,5 @@
+// @flow
+
 const methodCallback = require('./methodCallback');
 const encryption = require('components/utils').encryption;
 const errors = require('components/errors').factory;
@@ -8,16 +10,19 @@ const _ = require('lodash');
 
 const hasFileUpload = require('../middleware/uploads').hasFileUpload;
 const attachmentsAccessMiddleware = require('../middleware/attachment_access');
-/**
- * Set up events route handling.
- */
-module.exports = function(
-  expressApp, 
-  api, authSettings, eventFilesSettings, storageLayer
-) {
-  
-  const attachmentsStatic = express.static(
-    eventFilesSettings.attachmentsDirPath);
+
+import type Application from '../application';
+
+// Set up events route handling.
+module.exports = function(expressApp: express$Application, app: Application) {
+  const api = app.api;
+  const settings = app.settings;
+  const storage = app.storageLayer;
+
+  const attachmentsDirPath = settings.get('eventFiles.attachmentsDirPath').str();
+  const filesReadTokenSecret = settings.get('auth.filesReadTokenSecret').str();
+
+  const attachmentsStatic = express.static(attachmentsDirPath);
   const events = new express.Router({
     mergeParams: true
   });
@@ -25,7 +30,7 @@ module.exports = function(
   // This is the path prefix for the routes in this file. 
   expressApp.use(Paths.Events, events);
 
-  events.get('/', function (req, res, next) {
+  events.get('/', function (req: express$Request, res, next) {
     var params = _.extend({}, req.query);
     tryCoerceStringValues(params, {
       fromTime: 'number',
@@ -42,7 +47,7 @@ module.exports = function(
     api.call('events.get', req.context, params, methodCallback(res, next, 200));
   });
 
-  events.get('/:id', function (req, res, next) {
+  events.get('/:id', function (req: express$Request, res, next) {
     var params = _.extend({id: req.params.id}, req.query);
     tryCoerceStringValues(params, {
       includeHistory: 'boolean'
@@ -61,14 +66,14 @@ module.exports = function(
   expressApp.get(Paths.Events + '/:id/:fileId/:fileName?', 
     retrieveAccessFromReadToken, 
     loadAccess,
-    attachmentsAccessMiddleware(storageLayer.events), 
+    attachmentsAccessMiddleware(storage.events), 
     attachmentsStatic
   );
 
   // Parses the 'readToken' and verifies that the access referred to by id in 
   // the token corresponds to a real access and that the signature is valid. 
   // 
-  function retrieveAccessFromReadToken(req, res, next) {
+  function retrieveAccessFromReadToken(req: express$Request, res, next) {
     // forbid using access tokens in the URL
     if (req.query.auth != null)
       return next(errors.invalidAccessToken(
@@ -89,12 +94,12 @@ module.exports = function(
       
     // Now load the access through the context; then verify the HMAC.
     const context = req.context; 
-    context.retrieveAccessFromId(storageLayer, accessId)
+    context.retrieveAccessFromId(storage, accessId)
       .then(access => {
         const hmacValid = encryption
           .isFileReadTokenHMACValid(
             tokenParts.hmac, req.params.fileId, 
-            access.token, authSettings.filesReadTokenSecret);
+            access.token, filesReadTokenSecret);
 
         if (! hmacValid) 
           return next(errors.invalidAccessToken('Invalid read token.'));
@@ -106,10 +111,10 @@ module.exports = function(
     return; // The promise chain above calls next on all branches.
   }
 
-  function loadAccess(req, res, next) {
+  function loadAccess(req: express$Request, res, next) {
     const context = req.context; 
     
-    nextify(context.retrieveExpandedAccess(storageLayer), next); 
+    nextify(context.retrieveExpandedAccess(storage), next); 
   }
   
   // Turns the promise given into a call to an express NextFunction. 
@@ -122,7 +127,7 @@ module.exports = function(
   // Create an event.
   events.post('/', 
     hasFileUpload,
-    function (req, res, next) {
+    function (req: express$Request, res, next) {
       const params = req.body;
       if (req.files) {
         params.files = req.files;
@@ -130,40 +135,40 @@ module.exports = function(
       api.call('events.create', req.context, params, methodCallback(res, next, 201));
     });
 
-  events.post('/start', function (req, res, next) {
+  events.post('/start', function (req: express$Request, res, next) {
     api.call('events.start', req.context, req.body, methodCallback(res, next, 201));
   });
 
-  expressApp.put(Paths.Events + '/:id', function (req, res, next) {
+  expressApp.put(Paths.Events + '/:id', function (req: express$Request, res, next) {
     api.call('events.update', req.context, { id: req.param('id'), update: req.body }, methodCallback(res, next, 200));
   });
 
-  events.post('/stop', function (req, res, next) {
+  events.post('/stop', function (req: express$Request, res, next) {
     api.call('events.stop', req.context, _.extend({}, req.body), methodCallback(res, next, 200));
   });
   
   // Update an event
-  events.post('/:id', hasFileUpload, function (req, res, next) {
-    var params = {
-      id: req.params.id,
-      update: {}
-    };
-    if (req.files) {
-      params.files = req.files;
-    } else {
-      delete params.files; // close possible hole
-    }
-    api.call('events.update', req.context, params, methodCallback(res, next, 200));
-  });
+  events.post('/:id',
+    hasFileUpload,
+    function (req: express$Request, res, next) {
+      const params = {
+        id: req.params.id,
+        update: {}
+      };
+      if (req.files) {
+        params.files = req.files;
+      } else {
+        delete params.files; // close possible hole
+      }
+      api.call('events.update', req.context, params, methodCallback(res, next, 200));
+    });
 
-  events.delete('/:id', function (req, res, next) {
+  events.delete('/:id', function (req: express$Request, res, next) {
     api.call('events.delete', req.context, {id: req.params.id}, methodCallback(res, next, 200));
   });
 
-  events.delete('/:id/:fileId', function (req, res, next) {
+  events.delete('/:id/:fileId', function (req: express$Request, res, next) {
     api.call('events.deleteAttachment', req.context, {id: req.params.id, fileId: req.params.fileId}, methodCallback(res, next, 200));
   });
 
 };
-module.exports.injectDependencies = true;
-
