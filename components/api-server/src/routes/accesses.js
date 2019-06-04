@@ -4,10 +4,12 @@ const methodCallback = require('./methodCallback');
 const Paths = require('./Paths');
 const _ = require('lodash');
 
-import type API from '../API';
+import type Application from '../application';
 
 // Shared accesses route handling.
-module.exports = function (expressApp: express$Application, api: API) {
+module.exports = function (expressApp: express$Application, app: Application) {
+
+  const api = app.api;
 
   expressApp.get(Paths.Accesses, function (req: express$Request, res, next) {
     api.call('accesses.get', req.context, req.query, methodCallback(res, next, 200));

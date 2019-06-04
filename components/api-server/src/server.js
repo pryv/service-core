@@ -255,18 +255,16 @@ class Server {
   //
   addRoutes(expressApp: express$Application) {
     const application = this.application;
-    const api = application.api;
-    const dependencies = application.dependencies;
     
     require('./routes/system')(expressApp, application);
     require('./routes/root')(expressApp, application);
     require('./routes/auth')(expressApp, application);
     require('./routes/events')(expressApp, application);
-    require('./routes/accesses')(expressApp, api);
-    require('./routes/account')(expressApp, api);
-    require('./routes/followed-slices')(expressApp, api);
-    require('./routes/streams')(expressApp, api);
-    require('./routes/profile')(expressApp, api);
+    require('./routes/accesses')(expressApp, application);
+    require('./routes/account')(expressApp, application);
+    require('./routes/followed-slices')(expressApp, application);
+    require('./routes/streams')(expressApp, application);
+    require('./routes/profile')(expressApp, application);
   }
 
 }

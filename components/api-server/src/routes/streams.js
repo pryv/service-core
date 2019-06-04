@@ -5,10 +5,12 @@ const Paths = require('./Paths');
 const tryCoerceStringValues = require('../schema/validation').tryCoerceStringValues;
 const _ = require('lodash');
 
-import type API from '../API';
+import type Application from '../application';
 
 // Event streams route handling.
-module.exports = function (expressApp: express$Application, api: API) {
+module.exports = function (expressApp: express$Application, app: Application) {
+
+  const api = app.api;
 
   expressApp.get(Paths.Streams, function (req: express$Request, res, next) {
     var params = _.extend({}, req.query);

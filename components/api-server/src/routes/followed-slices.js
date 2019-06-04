@@ -3,11 +3,18 @@
 const methodCallback = require('./methodCallback');
 const Paths = require('./Paths');
 const _ = require('lodash');
+const middleware = require('components/middleware');
 
-import type API from '../API';
+import type Application from '../application';
 
 // Followed slices route handling.
-module.exports = function (expressApp: express$Application, api: API) {
+module.exports = function (expressApp: express$Application, app: Application) {
+  
+  const api = app.api;
+  const loadAccessMiddleware = middleware.loadAccess(app.storageLayer);
+
+  // Require access for all FollowedSlices API methods.
+  expressApp.all(Paths.FollowedSlices + '*', loadAccessMiddleware);
 
   expressApp.get(Paths.FollowedSlices, function (req: express$Request, res, next) {
     api.call('followedSlices.get', req.context, req.query, methodCallback(res, next, 200));
