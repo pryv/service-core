@@ -12,11 +12,32 @@ module.exports = function loadAccess(storageLayer: StorageLayer) {
   ) {
     req.context.retrieveExpandedAccess(storageLayer)
       .then(() => {
-        if (req.context.access != null) {
-          res.header('Pryv-Access-Id', req.context.access.id);
-        }
+        setAccessIdHeader(req, res);
         next();
       })
-      .catch(next);
+      .catch(err => {
+        // Also set the header in case of error
+        setAccessIdHeader(req, res);
+        next(err);
+      });
   };
 };
+
+/**
+ * Adds the id of the access (if any was used during API call)
+ * within the `Pryv-Access-Id` header of the given result.
+ * It is extracted from the request context.
+ *
+ * @param req {express$Request} Current express request.
+ * @param res {express$Response} Current express response. MODIFIED IN PLACE.
+ */
+function setAccessIdHeader (req: express$Request, res: express$Response): express$Response {
+  if (req != null) {
+    const requestCtx = req.context;
+    if (requestCtx != null && requestCtx.access != null) {
+      res.header('Pryv-Access-Id', requestCtx.access.id);
+    }
+  }
+
+  return res;
+}
