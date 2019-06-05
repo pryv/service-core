@@ -62,7 +62,7 @@ describe('Webhook', () => {
 
     });
 
-    describe('when sending to an unexistant', () => {
+    describe('when sending to an unexistant endpoint', () => {
 
       let webhook, runs, requestTimestamp;
 

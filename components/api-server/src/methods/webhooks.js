@@ -104,12 +104,13 @@ module.exports = function produceAccessesApiMethods(
   async function createWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
 
     const webhook = new Webhook (_.extend({
+      user: context.user,
       accessId: context.access.id,
       webhooksStorage: storageLayer.webhooks,
     }, params));
 
     try {
-      await webhook.save(context.user);
+      await webhook.save();
       result.webhook = webhook.forApi();
     } catch (error) {
       // Expecting a duplicate error

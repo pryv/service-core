@@ -123,24 +123,32 @@ class Webhook implements MessageSink {
     }
   }
 
-  async save(user: any): Promise<void> {
+  async save(): Promise<void> {
     if (this.storage == null) {
       throw new Error('storage not set for Webhook object.');
     }
 
     await bluebird.fromCallback(
-      (cb) => this.storage.insertOne(user, this.forStorage(), cb)
+      (cb) => this.storage.insertOne(this.user, this.forStorage(), cb)
     );
   }
 
-  async update(): Promise<void> {
+  async update(fields?: Array<string>): Promise<void> {
     if (this.storage == null) {
       throw new Error('storage not set for Webhook object.');
+    }
+
+    let update;
+
+    if (fields == null) {
+      update = this.forStorage();
+    } else {
+      update = _.pick(this.forStorage(), fields);
     }
 
     const query = {};
     await bluebird.fromCallback(
-      (cb) => this.storage.updateOne(this.user, query, this.forStorage(), cb)
+      (cb) => this.storage.updateOne(this.user, query, update, cb)
     );
   }
 
