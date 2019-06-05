@@ -21,17 +21,18 @@ const StandardDimensionsLength = StandardDimensions.length;
  *
  * @param expressApp
  * @param initContextMiddleware
+ * @param loadAccessMiddleware
  * @param userEventsStorage
  * @param userEventFilesStorage
  * @param logging
  */
 module.exports = function (
-  expressApp, initContextMiddleware, userEventsStorage,
+  expressApp, initContextMiddleware, loadAccessMiddleware, userEventsStorage,
   userEventFilesStorage, logging) {
 
   // SERVING PREVIEWS
 
-  expressApp.all('/:username/events/*', initContextMiddleware);
+  expressApp.all('/:username/events/*', initContextMiddleware, loadAccessMiddleware);
 
   expressApp.get('/:username/events/:id:extension(.jpg|.jpeg|)', function (req, res, next) {
     var event,
