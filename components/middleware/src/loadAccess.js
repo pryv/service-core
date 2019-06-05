@@ -1,5 +1,7 @@
 // @flow
 
+const bluebird = require('bluebird');
+
 import type { StorageLayer } from 'components/storage';
 
 // Returns a middleware function that loads the access into `req.context.access`.
@@ -10,16 +12,14 @@ module.exports = function loadAccess(storageLayer: StorageLayer) {
   return function (
     req: express$Request, res: express$Response, next: express$NextFunction
   ) {
-    req.context.retrieveExpandedAccess(storageLayer)
-      .then(() => {
-        setAccessIdHeader(req, res);
-        next();
-      })
-      .catch(err => {
-        // Also set the header in case of error
-        setAccessIdHeader(req, res);
-        next(err);
-      });
+
+    const accessLoaded = req.context.retrieveExpandedAccess(storageLayer);
+
+    return bluebird.resolve(accessLoaded).asCallback((err) => {
+      // Add access id header regardless of success or error case
+      setAccessIdHeader(req, res);
+      next(err);
+    });
   };
 };
 
