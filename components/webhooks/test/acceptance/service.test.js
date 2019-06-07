@@ -55,9 +55,6 @@ describe('webhooks', () => {
   let apiServer, mongoFixtures, webhooksApp;
   before(async () => {
     apiServer = await context.spawn();
-
-    
-
     webhooksApp = new WebhooksApp();
     await webhooksApp.setup();
     await webhooksApp.run();
@@ -119,49 +116,6 @@ describe('webhooks', () => {
           assert.equal(run.status, 200);
           assert.approximately(run.timestamp, requestTimestamp, 0.5);
         });
-      });
-
-      describe('when the notifications server is unavailable first', () => {
-
-        let notificationsServer;
-        before(async () => {
-          notificationsServer = new HttpServer(postPath, 400);
-          await notificationsServer.listen();
-        });
-
-        after(async () => {
-          await notificationsServer.close();
-        });
-
-        let requestTimestamp;
-
-        before(async () => {
-          requestTimestamp = timestamp.now();
-          await apiServer.request()
-            .post(`/${username}/events`)
-            .set('Authorization', appAccessToken)
-            .send({
-              streamId: streamId,
-              type: 'note/txt',
-              content: 'salut',
-            });
-        });
-
-        describe('when sending a webhook call', () => {
-
-          it('should fail');
-
-          it('should be scheduled for a retry');
-
-        });
-
-        describe('when the notifications server answers correctly', () => {
-
-
-          
-
-        })
-
       });
     });
   

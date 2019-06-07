@@ -1,6 +1,7 @@
 // @flow
 
 module.exports = {
-  server: require('./server'),
-  Webhook: require('./Webhook'),
+  application: require('./application'),
+  server: require('./service'),
+  Webhook: require('./settings'),
 };

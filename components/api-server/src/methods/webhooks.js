@@ -62,7 +62,7 @@ module.exports = function produceAccessesApiMethods(
 
     if (currentAccess.isShared()) {
       return next(errors.forbidden(
-        'Shared Accesses cannot create Webhooks. Please use an App Access'
+        'Shared Accesses cannot create Webhooks. Please use an App or Personnal Access'
       ));
     }
 

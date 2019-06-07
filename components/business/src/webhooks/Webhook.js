@@ -19,8 +19,6 @@ export type WebhookState = 'active' | 'inactive';
 
 class Webhook implements MessageSink {
 
-  user: {};
-
   id: string;
   accessId: string;
   url: string;
@@ -32,6 +30,7 @@ class Webhook implements MessageSink {
   failCount: number;
 
   currentRetries: number;
+  timeout: ?Timeout;
 
   maxRetries: number;
   minIntervalMs: number;
@@ -41,11 +40,11 @@ class Webhook implements MessageSink {
   modified: number;
   modifiedBy: string;
 
+  user: {};
   storage: ?WebhooksStorage;
   NatsSubscriber: ?NatsSubscriber;
 
   constructor(params: {
-    user?: {},
     id?: string,
     accessId: string,
     url: string,
@@ -58,9 +57,9 @@ class Webhook implements MessageSink {
     createdBy?: string,
     modified?: number,
     modifiedBy?: string,
+    user?: {},
     webhooksStorage?: WebhooksStorage,
-  }) {
-    this.user = params.user;
+  }) {    
     this.id = params.id || cuid();
     this.accessId = params.accessId;
     this.url = params.url;
@@ -75,27 +74,30 @@ class Webhook implements MessageSink {
     this.createdBy = params.createdBy;
     this.modified = params.modified;
     this.modifiedBy = params.modifiedBy;
-    this.NatsSubscriber = null;
+    this.user = params.user;
     this.storage = params.webhooksStorage;
+    this.NatsSubscriber = null;
+    this.timeout = null;
   }
 
   setNatsSubscriber(nsub: NatsSubscriber): void {
     this.NatsSubscriber = nsub;
   }
 
-  stopNatsSubscriber(): void {
-    if (this.NatsSubscriber == null) return;
-    this.NatsSubscriber.close();
-  }
-
   async deliver(message: string) {
     await this.send(message);
-    await this.update();
+    await this.update([
+      'runs',
+      'runCount',
+      'failCount',
+      'currentRetries',
+    ]);
   }
 
   async send(message: string): Promise<void> {
 
     let status: ?number;
+    console.log('calling send on', message);
 
     try {
       const res = await request.post(this.url)
@@ -118,10 +120,35 @@ class Webhook implements MessageSink {
 
     function handleError(response) {
       this.failCount++;
+      handleRetry.call(this, message);
       if (response == null) return 0;
       return response.status;
     }
+
+    function handleRetry(message) {
+      if (this.currentRetries > this.maxRetries || this.state === 'inactive') {
+        return this.state = 'inactive';
+      }
+      this.currentRetries++;
+
+      const delay = this.minIntervalMs * this.currentRetries;
+      console.log('settin timer for', delay);
+      this.timeout = setTimeout(async () => {
+        await this.send(message);
+      }, delay);
+    }
   }
+
+  stop(): void {
+    if (this.timeout != null) {
+      clearTimeout(this.timeout);
+    }
+    if (this.NatsSubscriber != null) {
+      this.NatsSubscriber.close();
+    }
+  }
+
+  
 
   async save(): Promise<void> {
     if (this.storage == null) {

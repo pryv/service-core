@@ -62,7 +62,6 @@ class WebhooksService implements MessageSink {
 
   deliver(channel: string, usernameWebhook: UsernameWebhook): void {
     //console.log('received notification for', channel, 'with', usernameWebhook);
-
     switch(channel) {
       case WEBHOOKS_CREATE_CHANNEL:
         this.addWebhook(usernameWebhook.username, new Webhook(usernameWebhook.webhook));
@@ -87,7 +86,7 @@ class WebhooksService implements MessageSink {
     console.log('stoppin webhooks');
     for (const usernameWebhooks of this.webhooks) {
       usernameWebhooks[1].forEach(w => {
-        w.stopNatsSubscriber();
+        w.stop();
       });
     }
   }
