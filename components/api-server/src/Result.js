@@ -130,15 +130,16 @@ class Result {
   // Returns the content of the Result object in a JS object.
   // In case the Result contains a streamsArray, it will drain them in arrays.
   // 
-  toObject(callback: ToObjectCallback) {
+  toObject(err, callback: ToObjectCallback) {
+    console.log('objectifyying')
     if (this.isStreamResult()) {
-      this.toObjectStream(callback);
+      this.toObjectStream(err, callback);
     } else {
-      this.toObjectSingle(callback);
+      this.toObjectSingle(err, callback);
     }
   }
   
-  toObjectStream(callback: ToObjectCallback) {
+  toObjectStream(err, callback: ToObjectCallback) {
     const _private = this._private;
     const streamsArray = _private.streamsArray;
 
@@ -156,13 +157,13 @@ class Result {
       if (err) {
         return callback(err);
       }
-      callback(resultObj);
+      callback(null, resultObj);
     });
   }
   
-  toObjectSingle(callback: ToObjectCallback) {
+  toObjectSingle(err, callback: ToObjectCallback) {
     delete this._private;
-    callback(this);
+    callback(null, this);
   }
 }
 
