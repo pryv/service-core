@@ -20,7 +20,7 @@ type APIResult =
   {[string]: Object} |
   {[string]: Array<Object>};
   
-type ToObjectCallback = (resOrError: APIResult) => mixed;
+type ToObjectCallback = (err: ?Error, res: ?APIResult) => mixed;
 
 
 // Result object used to store API call response body while it is processed.
@@ -130,16 +130,15 @@ class Result {
   // Returns the content of the Result object in a JS object.
   // In case the Result contains a streamsArray, it will drain them in arrays.
   // 
-  toObject(err, callback: ToObjectCallback) {
-    console.log('objectifyying')
+  toObject(callback: ToObjectCallback) {
     if (this.isStreamResult()) {
-      this.toObjectStream(err, callback);
+      this.toObjectStream(callback);
     } else {
-      this.toObjectSingle(err, callback);
+      this.toObjectSingle(callback);
     }
   }
   
-  toObjectStream(err, callback: ToObjectCallback) {
+  toObjectStream(callback: ToObjectCallback) {
     const _private = this._private;
     const streamsArray = _private.streamsArray;
 
@@ -161,7 +160,7 @@ class Result {
     });
   }
   
-  toObjectSingle(err, callback: ToObjectCallback) {
+  toObjectSingle(callback: ToObjectCallback) {
     delete this._private;
     callback(null, this);
   }

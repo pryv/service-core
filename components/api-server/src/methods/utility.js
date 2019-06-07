@@ -43,20 +43,14 @@ module.exports = function (api, logging, storageLayer) {
       try {
         // Reload streams tree since a previous call in this batch
         // may have created a new stream.
-        console.log('retrieveStreams');
         await freshContext.retrieveStreams(storageLayer);
         // Perform API call
-        console.log('api.call');
         const result = await bluebird.fromCallback(
           (cb) => api.call(call.method, freshContext, call.params, cb));
-        console.log('result.toObject for', result);
         
         const object = await bluebird.fromCallback(
-          (cb) => result.toObject(null, cb));
-        console.log('objez8g87ctified', object)
+          (cb) => result.toObject(cb));
         results.results.push(object);
-
-        
       } catch(err) {
         // Batchcalls have specific error handling hence the custom request context
         const reqContext = {

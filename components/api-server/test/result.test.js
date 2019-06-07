@@ -17,7 +17,8 @@ describe('Result', function () {
       var res = new Result();
       res.a = 'a';
 
-      function expectation(content) {
+      function expectation(err, content) {
+        should.not.exist(err);
         content.a.should.eql('a');
         done();
       }
