@@ -70,7 +70,7 @@ module.exports = function produceAccessesApiMethods(
       const webhooks = await webhooksRepository.get(context.user, currentAccess);
       result.webhooks = webhooks;
     } catch (error) {
-      //return next(errors.unexpectedError);
+      return next(errors.unexpectedError(error));
     }
     next();
   }
