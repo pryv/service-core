@@ -1,3 +1,5 @@
+// @flow
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const EventEmitter = require('events');
@@ -6,26 +8,30 @@ const PORT = 6123;
 
 class HttpServer extends EventEmitter {
 
-  app;
-  server;
-  message;
-  messageReceived;
-  status;
+  app: Express$app;
+  server: HttpServer;
+  messages: Array<string>;
+  messageReceived: boolean;
+  messageCount: number;
+  responseStatus: number;
 
   constructor(path, statusCode, responseBody) {
     super();
     const app = express();
 
+    this.messages = [];
     this.messageReceived = false;
-    this.status = statusCode || 200;
+    this.messageCount = 0;
+    this.responseStatus = statusCode || 200;
 
     const that = this;
     app.use(bodyParser.json());
     app.post(path, (req, res) => {
-      that.message = req.body;
+      that.messages = that.messages.concat(req.body.messages);
       that.messageReceived = true;
+      that.messageCount++;
       this.emit('received');
-      res.status(that.status)
+      res.status(that.responseStatus)
         .json(responseBody || { ok: '1'});
     });
 
@@ -36,16 +42,24 @@ class HttpServer extends EventEmitter {
     this.server = await this.app.listen(port || PORT);
   }
 
-  getMessage() {
-    return this.message;
+  getMessages() {
+    return this.messages;
   }
 
   isMessageReceived() {
     return this.messageReceived;
   }
 
+  resetMessageReceived() {
+    this.messageReceived = false;
+  }
+
+  getMessageCount() {
+    return this.messageCount;
+  }
+
   setResponseStatus(newStatus) {
-    this.status = newStatus;
+    this.responseStatus = newStatus;
   }
 
   close() {
