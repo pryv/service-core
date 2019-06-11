@@ -35,7 +35,8 @@ describe('Result', function () {
           array2 = [{d: 'd'}, {e: 'e'}, {f: 'f'}],
           s2 = new Source(array2);
 
-      function expectation(content) {
+      function expectation(err, content) {
+        should.not.exist(err);
         (content[arrayName1]).should.eql(array1);
         (content[arrayName2]).should.eql(array2);
         done();
@@ -56,8 +57,9 @@ describe('Result', function () {
           array2 = [{d: 'd'}, {e: 'e'}, {f: 'f'}],
           s2 = new Source(array2);
 
-      function expectation(content) {
-        should.exist(content);
+      function expectation(err, content) {
+        should.exist(err);
+        should.not.exist(content);
         done();
       }
 
@@ -73,8 +75,9 @@ describe('Result', function () {
           s1 = new Source(array1);
       var p1 = s1.pipe(new SimpleTransformStream());
 
-      function expectation(content) {
-        should.exist(content);
+      function expectation(err, content) {
+        should.exist(err);
+        should.not.exist(content);
         done();
       }
 
