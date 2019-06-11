@@ -28,7 +28,7 @@ util.inherits(Webhooks, BaseStorage);
 
 const indexes = [
   {
-    index: { webhookId: 1, url: 1 },
+    index: { accessId: 1, url: 1 },
     options: {
       unique: true,
       partialFilterExpression: { deleted: { $type: 'null' } }
