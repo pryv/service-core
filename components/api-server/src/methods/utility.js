@@ -5,7 +5,6 @@ const errorHandling = require('components/errors').errorHandling;
 const methodsSchema = require('../schema/generalMethods');
 const _ = require('lodash');
 const bluebird = require('bluebird');
-const async = require('async');
 
 /**
  * Utility API methods implementations.
@@ -33,9 +32,9 @@ module.exports = function (api, logging, storageLayer) {
     commonFns.getParamsValidation(methodsSchema.callBatch.params),
     callBatch);
 
-  function callBatch(context, calls, results, next) {
-    results.results = [];
-    async.forEachSeries(calls, executeCall, next);
+  async function callBatch(context, calls, results, next) {
+    results.results = await bluebird.mapSeries(calls, executeCall);
+    next();
   
     async function executeCall(call) {
       // Clone context to avoid potential side effects
@@ -48,9 +47,8 @@ module.exports = function (api, logging, storageLayer) {
         const result = await bluebird.fromCallback(
           (cb) => api.call(call.method, freshContext, call.params, cb));
         
-        const object = await bluebird.fromCallback(
+        return await bluebird.fromCallback(
           (cb) => result.toObject(cb));
-        results.results.push(object);
       } catch(err) {
         // Batchcalls have specific error handling hence the custom request context
         const reqContext = {
@@ -58,7 +56,8 @@ module.exports = function (api, logging, storageLayer) {
           url: 'pryv://' + context.username
         };
         errorHandling.logError(err, reqContext, logger);
-        results.results.push({error: errorHandling.getPublicErrorData(err)});
+        
+        return {error: errorHandling.getPublicErrorData(err)};
       }
     }
   }
