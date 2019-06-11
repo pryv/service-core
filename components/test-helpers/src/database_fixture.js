@@ -393,6 +393,7 @@ class FixtureWebhook extends FixtureTreeNode implements ChildResource {
 
   fakeAttributes() {
     return {
+      id: generateId(),
       url: `https://${Charlatan.Internet.domainName()}/notifications`,
     };
   }

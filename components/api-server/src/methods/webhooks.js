@@ -50,25 +50,50 @@ module.exports = function produceAccessesApiMethods(
 
   api.register('webhooks.get',
     commonFns.getParamsValidation(methodsSchema.get.params),
+    validateRetrievalAccess,
     findAccessibleWebhooks,
   );
 
-  async function findAccessibleWebhooks(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  function validateRetrievalAccess(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     const currentAccess = context.access;
 
     if (currentAccess == null) {
       return next(new Error('AF: Access cannot be null at this point.'));
     }
-
     if (currentAccess.isShared()) {
       return next(errors.forbidden(
         'Shared Accesses cannot create Webhooks. Please use an App or Personnal Access'
       ));
     }
+    next();
+  }
 
+  async function findAccessibleWebhooks(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    const currentAccess = context.access;
     try {
       const webhooks = await webhooksRepository.get(context.user, currentAccess);
       result.webhooks = webhooks;
+    } catch (error) {
+      return next(errors.unexpectedError(error));
+    }
+    next();
+  }
+
+  api.register('webhooks.getOne',
+    commonFns.getParamsValidation(methodsSchema.get.params),
+    validateRetrievalAccess,
+    findWebhook,
+  );
+
+  async function findWebhook(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    const currentAccess = context.access;
+
+    try {
+      const webhook = await webhooksRepository.getById(context.user, params.id, currentAccess);
+      if (webhook == null) {
+        return next(errors.unknownResource('webhook', params.id));
+      }
+      result.webhook = webhook.forApi();
     } catch (error) {
       return next(errors.unexpectedError(error));
     }

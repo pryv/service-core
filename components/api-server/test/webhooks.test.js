@@ -22,7 +22,8 @@ describe('webhooks', () => {
   let username, streamId, personalAccessToken, 
       appAccessToken1, appAccessToken2,
       appAccessId1, appAccessId2,
-      sharedAccessToken;
+      sharedAccessToken,
+      webhookId1, webhookId2;
   before(() => {
     username = cuid();
     streamId = cuid();
@@ -43,10 +44,6 @@ describe('webhooks', () => {
   });
 
   describe('GET /', () => {
-
-    before(() => {
-      mongoFixtures.clean();
-    });
 
     before(() => {
       return mongoFixtures.user(username, {}, async (user) => {
@@ -70,6 +67,10 @@ describe('webhooks', () => {
         user.webhook({}, appAccessId2);
       });
     });
+    
+    after(async () => {
+      await mongoFixtures.clean();
+    });
 
     describe('when using an app token', () => {
       
@@ -85,18 +86,15 @@ describe('webhooks', () => {
       it('should return a status 200', () => {
         assert.equal(status, 200);
       });
-
       it('should return a webhooks object which is an array', () => {
         assert.exists(webhooks);
         assert.typeOf(webhooks, 'Array');
       });
-
       it('should fetch all webhooks reachable by an app token', () => {
         webhooks.forEach(w => {
           assert.equal(w.accessId, appAccessId1);
         });
       });
-
       it('should not fetch any Webhook outside its scope', () => {
         webhooks.forEach(w => {
           assert.notEqual(w.accessId, appAccessId2);
@@ -145,9 +143,10 @@ describe('webhooks', () => {
       it('should return a status 403 forbidden', () => {
         assert.equal(status, 403);
       });
-      it('should return an error object as it is forbidden', () => {
+      it('should return an error object', () => {
         assert.notExists(webhooks);
         assert.exists(error);
+        assert.typeOf(error, 'Object');
       });
       it('error should say that it is forbidden to use a shared access', () => {
         assert.equal(error.id, ErrorIds.Forbidden);
@@ -157,17 +156,193 @@ describe('webhooks', () => {
   });
 
   describe('GET /:webhookId', () => {
-    it('should return the requested webhook');
 
-    it('should fail to fetch an unexistant webhook');
+    const url = 'yololo';
+    const minIntervalMs = 10000;
+    const maxRetries = 5;
 
-    it('should fail to fetch a webhook outside of the token\'s rights');
+    before(() => {
+      personalAccessToken = cuid();
+      appAccessId1 = cuid();
+      appAccessToken1 = cuid();
+      sharedAccessToken = cuid();
+      webhookId1 = cuid();
+      webhookId2 = cuid();
+    });
+
+    before(() => {
+      return mongoFixtures.user(username, {}, async (user) => {
+        user.access({
+          type: 'personal', token: personalAccessToken,
+        });
+        user.access({
+          id: appAccessId1,
+          type: 'app', token: appAccessToken1,
+        });
+        user.access({
+          type: 'shared', token: sharedAccessToken,
+        });
+        user.session(personalAccessToken);
+        user.webhook({
+          id: webhookId1,
+          url: url,
+          minIntervalMs: minIntervalMs,
+          maxRetries: maxRetries,
+        }, appAccessId1);
+        user.webhook({
+          id: webhookId2,
+        });
+      });
+    });
+
+    after(async () => {
+      await mongoFixtures.clean();
+    });
+
+    describe('when using an app token', () => {
+
+      describe('when fetching an existing webhook inside its scope', () => {
+
+        let webhook, status;
+        before(async () => {
+          const res = await server.request()
+            .get(`/${username}/webhooks/${webhookId1}`)
+            .set('Authorization', appAccessToken1);
+          webhook = res.body.webhook;
+          status = res.status;
+        });
+
+        it('should return a status 200', () => {
+          assert.equal(status, 200);
+        });
+        it('should return a webhook object', () => {
+          assert.exists(webhook);
+          assert.typeOf(webhook, 'Object');
+        });
+        it('should have correct fields', () => {
+          assert.equal(webhook.id, webhookId1);
+          assert.equal(webhook.url, url);
+          assert.equal(webhook.minIntervalMs, minIntervalMs);
+          assert.equal(webhook.maxRetries, maxRetries);
+          assert.equal(webhook.currentRetries, 0);
+          assert.deepEqual(webhook.runs, []);
+          assert.deepEqual(webhook.lastRun, { status: 0, timestamp: 0});
+          assert.equal(webhook.runCount, 0);
+          assert.equal(webhook.failCount, 0);
+        });
+        it('should not have internal fields', () => {
+          assert.notExists(webhook.timeout);
+          assert.notExists(webhook.user);
+          assert.notExists(webhook.NatsSubscriber);
+          assert.notExists(webhook.messageBuffer);
+          assert.notExists(webhook.storage);
+        });
+      });
+
+      describe('when fetching an existing webhook outside of its scope', () => {
+
+        let webhook, status, error;
+        before(async () => {
+          const res = await server.request()
+            .get(`/${username}/webhooks/${webhookId2}`)
+            .set('Authorization', appAccessToken1);
+          webhook = res.body.webhook;
+          status = res.status;
+          error = res.body.error;
+        });
+
+        it('should return a status 404 not found', () => {
+          assert.equal(status, 404);
+        });
+        it('should return an error object', () => {
+          assert.notExists(webhook);
+          assert.exists(error);
+          assert.typeOf(error, 'Object');
+        });
+        it('error should say that it is an unknown id', () => {
+          assert.equal(error.id, ErrorIds.UnknownResource);
+        });
+      });
+
+      describe('when fetching an unexistant webhook', () => {
+
+        let webhook, status, error;
+        before(async () => {
+          const res = await server.request()
+            .get(`/${username}/webhooks/doesnotexist`)
+            .set('Authorization', appAccessToken1);
+          webhook = res.body.webhook;
+          status = res.status;
+          error = res.body.error;
+        });
+
+        it('should return a status 404 not found', () => {
+          assert.equal(status, 404);
+        });
+        it('should return an error object', () => {
+          assert.notExists(webhook);
+          assert.exists(error);
+          assert.typeOf(error, 'Object');
+        });
+        it('error should say that it is an unknown id', () => {
+          assert.equal(error.id, ErrorIds.UnknownResource);
+        });
+      });
+    
+    });
+
+    describe('when using a personnal token', () => {
+
+      let webhook, status;
+      before(async () => {
+        const res = await server.request()
+          .get(`/${username}/webhooks/${webhookId2}`)
+          .set('Authorization', personalAccessToken);
+        webhook = res.body.webhook;
+        status = res.status;
+      });
+
+      it('should return a status 200', () => {
+        assert.equal(status, 200);
+      });
+      it('should return a webhook object', () => {
+        assert.exists(webhook);
+        assert.typeOf(webhook, 'Object');
+      });
+    });
+
+    describe('when using a shared token', () => {
+
+      let webhook, status, error;
+      before(async () => {
+        const res = await server.request()
+          .get(`/${username}/webhooks/doesnotmatter`)
+          .set('Authorization', sharedAccessToken);
+        webhook = res.body.webhook;
+        status = res.status;
+        error = res.body.error;
+      });
+
+      it('should return a status 403 forbidden', () => {
+        assert.equal(status, 403);
+      });
+      it('should return an error object', () => {
+        assert.notExists(webhook);
+        assert.exists(error);
+        assert.typeOf(error, 'Object');
+      });
+      it('error should say that it is forbidden to use a shared access', () => {
+        assert.equal(error.id, ErrorIds.Forbidden);
+      });
+
+    });
+    
   });
 
   describe('POST /', () => {
 
-    before(() => {
-      mongoFixtures.clean();
+    before(async () => {
+      await mongoFixtures.clean();
       username = cuid();
       personalAccessToken = cuid();
       appAccessId1 = cuid();
@@ -356,7 +531,7 @@ describe('webhooks', () => {
               id: appAccessId1,
               type: 'app', token: appAccessToken1,
             });
-            user.webhook({ url: url }, appAccessId1);
+            user.webhook({ url: 'someurl' }, appAccessId1);
           });
         });
 
@@ -378,7 +553,7 @@ describe('webhooks', () => {
           assert.exists(error);
           assert.notExists(webhook);
         });
-        it('error should indicate that there is a collision', () => {
+        it('error should indicate that parameters are invalid', () => {
           assert.equal(error.id, ErrorIds.InvalidParametersFormat);
         });
       });

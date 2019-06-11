@@ -19,7 +19,8 @@ module.exports = function (expressApp: express$Application, api: API) {
   });
 
   expressApp.get(Paths.Webhooks + '/:id', function (req: express$Request, res: express$Response, next: express$NextFunction) {
-    api.call('webhooks.getOne', req.context, req.query, methodCallback(res, next, 200));
+    const params = _.extend({ id: req.params.id }, req.query);
+    api.call('webhooks.getOne', req.context, params, methodCallback(res, next, 200));
   });
 
   expressApp.post(Paths.Webhooks, function (req: express$Request, res: express$Response, next: express$NextFunction) {

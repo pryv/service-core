@@ -55,8 +55,10 @@ class Repository {
     }
   }
 
-  /** Return webhooks for a given User and Access. 
-   * 
+  /** 
+   * Return webhooks for a given User and Access.
+   * Personal access: returns all webhooks
+   * App access: all those created by the access
    */
   async get(user: any, access: any): Promise<Array<Webhook>> {
 
@@ -80,7 +82,13 @@ class Repository {
     return webhookObjects;
   }
 
-  async getById(user: any, webhookId: string): Promise<Webhook> {
+  /**
+   * Returns a webhook for a user, fetched by its id and for an access
+   * Personal access: returns it if it exists
+   * App access: returns it if it exists and the accessId matches
+   * 
+   */
+  async getById(user: any, webhookId: string, access: {}): Promise<Webhook> {
     const query = {
       id: { $eq: webhookId }
     };
@@ -89,7 +97,16 @@ class Repository {
     const webhook = await bluebird.fromCallback(
       cb => this.storage.findOne(user, query, options, cb)
     );
+
+    if ((webhook == null) || !isInScope(webhook)) {
+      return null;
+    }
     return new Webhook(webhook);
+
+    function isInScope(webhook: {}): boolean {
+      if (access.isPersonal()) return true;
+      return access.isApp() && (access.id === webhook.accessId);
+    }
   }
 
 }
