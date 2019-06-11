@@ -4,6 +4,7 @@ const bluebird = require('bluebird');
 const request = require('superagent');
 const _ = require('lodash');
 const cuid = require('cuid');
+const timestamp = require('unix-timestamp');
 
 const WebhooksStorage = require('components/storage').user.Webhooks;
 const NatsSubscriber = require('components/api-server/src/socket-io/nats_subscriber');
@@ -24,16 +25,18 @@ class Webhook implements MessageSink {
   url: string;
   state: WebhookState;
 
-  runs: Array<Run>
+  runs: Array<Run>;
+  lastRun: Run;
 
   runCount: number;
   failCount: number;
 
   currentRetries: number;
-  timeout: ?Timeout;
+  timeout: Timeout;
 
   maxRetries: number;
   minIntervalMs: number;
+  messageBuffer: Set<string>;
 
   created: number;
   createdBy: string;
@@ -51,14 +54,18 @@ class Webhook implements MessageSink {
     runCount?: number,
     failCount?: number,
     runs?: Array<Run>,
+    lastRun: Run,
     state?: WebhookState,
     currentRetries?: number,
+    minIntervalMs?: number,
+    maxRetries?: number,
     created?: number,
     createdBy?: string,
     modified?: number,
     modifiedBy?: string,
     user?: {},
     webhooksStorage?: WebhooksStorage,
+    messageBuffer?: Set<string>,
   }) {    
     this.id = params.id || cuid();
     this.accessId = params.accessId;
@@ -66,10 +73,11 @@ class Webhook implements MessageSink {
     this.runCount = params.runCount || 0;
     this.failCount = params.failCount || 0;
     this.runs = params.runs || [];
+    this.lastRun = params.lastRun || {status: 0, timestamp: 0};
     this.state = params.state || 'active';
     this.currentRetries = params.currentRetries || 0;
-    this.maxRetries = 5;
-    this.minIntervalMs = 5000;
+    this.maxRetries = params.maxRetries || 5;
+    this.minIntervalMs = params.minIntervalMs || 5000;
     this.created = params.created;
     this.createdBy = params.createdBy;
     this.modified = params.modified;
@@ -78,6 +86,7 @@ class Webhook implements MessageSink {
     this.storage = params.webhooksStorage;
     this.NatsSubscriber = null;
     this.timeout = null;
+    this.messageBuffer = params.messageBuffer || new Set();
   }
 
   setNatsSubscriber(nsub: NatsSubscriber): void {
@@ -94,48 +103,76 @@ class Webhook implements MessageSink {
     ]);
   }
 
-  async send(message: string): Promise<void> {
+  async send(message: string, isRescheduled?: boolean): Promise<void> {
+    if (isRescheduled != null && isRescheduled == true) {
+      this.timeout = null;
+    }
+
+    this.messageBuffer.add(message);
+
+    if (tooSoon.call(this)) {
+      return reschedule.call(this, message);
+    }
 
     let status: ?number;
-    console.log('calling send on', message);
-
+    const sentBuffer: Array<string> = Array.from(this.messageBuffer);
+    this.messageBuffer.clear();
     try {
+      const messages = sentBuffer;
       const res = await request.post(this.url)
         .send({
-          message: message,
+          messages: messages,
           meta: {
             apiVersion: '1.2.3'
           }
         });
-      //console.log('res', res)
       status = res.status;
-      if (status >= 300) handleError.call(this, res);
-
+      if (status >= 300) handleError.call(this, res, sentBuffer);
     } catch (e) {
-      //console.log('got err', e)
-      status = handleError.call(this, e.response);
+      status = handleError.call(this, e.response, sentBuffer);
     }
-    this.runCount++;
-    this.runs.push({ status: status, timestamp: Date.now() / 1000 });
+    if (status >= 200 && status < 300) {
+      this.currentRetries = 0;
+    }
 
-    function handleError(response) {
+    this.runCount++;
+    this.lastRun = { status: status, timestamp: Date.now() / 1000 };
+    this.runs.push(this.lastRun);
+
+    function handleError(response: number, sentBuffer: Array<string>): number {
+      sentBuffer.forEach(m => {
+        this.messageBuffer.add(m);
+      });
       this.failCount++;
       handleRetry.call(this, message);
       if (response == null) return 0;
       return response.status;
     }
 
-    function handleRetry(message) {
+    function handleRetry(message): void {
       if (this.currentRetries > this.maxRetries || this.state === 'inactive') {
-        return this.state = 'inactive';
+        this.state = 'inactive';
+        return;
       }
       this.currentRetries++;
+      reschedule.call(this, message);
+    }
 
-      const delay = this.minIntervalMs * this.currentRetries;
-      console.log('settin timer for', delay);
+    function reschedule(message: string, ): void {
+      if (this.timeout != null) return;
+      const delay = this.minIntervalMs * (this.currentRetries || 1);
       this.timeout = setTimeout(async () => {
-        await this.send(message);
+        await this.send(message, true);
       }, delay);
+    }
+
+    function tooSoon(): boolean {
+      const now = timestamp.now();
+      if (((now - this.lastRun.timestamp) * 1000) < this.minIntervalMs) {
+        return true;
+      } else {
+        return false;
+      }
     }
   }
 
@@ -179,6 +216,10 @@ class Webhook implements MessageSink {
     );
   }
 
+  getMessageBuffer(): Array<string> {
+    return Array.from(this.messageBuffer);
+  }
+
   forStorage(): {} {
     return _.pick(this, [
       'id',
@@ -186,6 +227,7 @@ class Webhook implements MessageSink {
       'url',
       'runCount',
       'failCount',
+      'lastRun',
       'runs',
       'state',
       'currentRetries',
@@ -205,6 +247,7 @@ class Webhook implements MessageSink {
       'url',
       'runCount',
       'failCount',
+      'lastRun',
       'runs',
       'state',
       'currentRetries',

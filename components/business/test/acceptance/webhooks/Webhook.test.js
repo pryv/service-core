@@ -2,6 +2,7 @@
 
 const assert = require('chai').assert;
 const timestamp = require('unix-timestamp');
+const bluebird = require('bluebird');
 
 const Webhook = require('../../../src/webhooks/Webhook');
 
@@ -42,7 +43,7 @@ describe('Webhook', () => {
       });
 
       it('should send it', () => {
-        assert.equal(notificationsServer.getMessage().message, message, 'Webhook sent wrong message.');
+        assert.equal(notificationsServer.getMessages()[0], message, 'Webhook sent wrong message.');
       });
       it('should add a log to runs', () => {
         assert.equal(runs.length, 1);
@@ -74,6 +75,9 @@ describe('Webhook', () => {
         requestTimestamp = timestamp.now();
         await webhook.send('doesntmatter');
         runs = webhook.runs;
+      });
+
+      after(() => {
         webhook.stop();
       });
 
@@ -108,18 +112,22 @@ describe('Webhook', () => {
         });
 
         after(() => {
+          webhook.stop();
           notificationsServer.close();
         });
 
         let webhook, run, requestTimestamp;
+        const firstMessage = 'hello';
+        const secondMessage = 'hello2';
 
         before(async () => {
           webhook = new Webhook({
             accessId: 'doesntmatter',
             url: url,
+            minIntervalMs: 100,
           });
           requestTimestamp = timestamp.now();
-          await webhook.send('hello');
+          await webhook.send(firstMessage);
           run = webhook.runs[0];
         });
 
@@ -130,9 +138,24 @@ describe('Webhook', () => {
         it('should increment currentRetries', () => {
           assert.equal(webhook.currentRetries, 1);
         });
-        it('should reschedule for a retry', () => {
+        it('should schedule for a retry after minInterval', () => {
           assert.exists(webhook.timeout);
-          webhook.stop();
+          webhook.send(secondMessage);
+        });
+        it('should send scheduled messages after an interval', async () => {
+          notificationsServer.setResponseStatus(201);
+          await new bluebird((resolve, reject) => {
+            notificationsServer.on('received', resolve);
+            notificationsServer.on('close', () => { });
+            notificationsServer.on('error', reject);
+          });
+          assert.isTrue(notificationsServer.isMessageReceived());
+          // firstMessage is received the first time although it returns a 503.
+          assert.deepEqual(notificationsServer.getMessages(),
+            [firstMessage, firstMessage, secondMessage]);
+        });
+        it('should remove the timeout afterwards', () => {
+          assert.notExists(webhook.timeout);
         });
         
       });
@@ -146,10 +169,53 @@ describe('Webhook', () => {
       });
 
       after(() => {
+        webhook.stop();
         notificationsServer.close();
       });
 
-      
+      let webhook, runs;
+        
+      const firstMessage = 'hello';
+      const secondMessage = 'hello2';
+      const thirdMessage = 'hello3';
+
+      before(async () => {
+        webhook = new Webhook({
+          accessId: 'doesntmatter',
+          url: url,
+          minIntervalMs: 100,
+        });
+        await webhook.send(firstMessage);
+        await webhook.send(firstMessage);
+        await webhook.send(secondMessage);
+        await webhook.send(thirdMessage);
+        runs = webhook.runs;
+      });
+
+      it('should only send the message once', () => {
+        assert.equal(notificationsServer.getMessageCount(), 1, 'server should receive the message once');
+        assert.equal(runs.length, 1, 'Webhook should have 1 run');
+      });
+      it('should accumulate messages', () => {
+        assert.deepEqual(webhook.getMessageBuffer(), 
+          [firstMessage, secondMessage, thirdMessage]);
+      });
+      it('should schedule for a retry after minInterval', () => {
+        assert.exists(webhook.timeout);
+      });
+      it('should send scheduled messages after an interval', async () => {
+        await new bluebird((resolve, reject) => {
+          notificationsServer.on('received', resolve);
+          notificationsServer.on('close', () => { });
+          notificationsServer.on('error', reject);
+        });
+        assert.isTrue(notificationsServer.isMessageReceived());
+        assert.deepEqual(notificationsServer.getMessages(), 
+          [firstMessage, firstMessage, secondMessage, thirdMessage]);
+      });
+      it('should remove the timeout afterwards', () => {
+        assert.notExists(webhook.timeout);
+      });
 
     });
   });
