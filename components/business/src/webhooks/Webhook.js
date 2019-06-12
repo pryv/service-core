@@ -66,14 +66,14 @@ class Webhook implements MessageSink {
     user?: {},
     webhooksStorage?: WebhooksStorage,
     messageBuffer?: Set<string>,
-  }) {    
+  }) {
     this.id = params.id || cuid();
     this.accessId = params.accessId;
     this.url = params.url;
     this.runCount = params.runCount || 0;
     this.failCount = params.failCount || 0;
     this.runs = params.runs || [];
-    this.lastRun = params.lastRun || {status: 0, timestamp: 0};
+    this.lastRun = params.lastRun || { status: 0, timestamp: 0 };
     this.state = params.state || 'active';
     this.currentRetries = params.currentRetries || 0;
     this.maxRetries = params.maxRetries || 5;
@@ -95,12 +95,12 @@ class Webhook implements MessageSink {
 
   async deliver(message: string) {
     await this.send(message);
-    await this.update([
+    await makeUpdate([
       'runs',
       'runCount',
       'failCount',
       'currentRetries',
-    ]);
+    ], this);
   }
 
   async send(message: string, isRescheduled?: boolean): Promise<void> {
@@ -185,8 +185,6 @@ class Webhook implements MessageSink {
     }
   }
 
-  
-
   async save(): Promise<void> {
     if (this.storage == null) {
       throw new Error('storage not set for Webhook object.');
@@ -197,23 +195,10 @@ class Webhook implements MessageSink {
     );
   }
 
-  async update(fields?: Array<string>): Promise<void> {
-    if (this.storage == null) {
-      throw new Error('storage not set for Webhook object.');
-    }
-
-    let update;
-
-    if (fields == null) {
-      update = this.forStorage();
-    } else {
-      update = _.pick(this.forStorage(), fields);
-    }
-
-    const query = {};
-    await bluebird.fromCallback(
-      (cb) => this.storage.updateOne(this.user, query, update, cb)
-    );
+  async update(fieldsToUpdate: {}): Promise<void> {
+    const fields = Object.keys(fieldsToUpdate);
+    _.merge(this, fieldsToUpdate);
+    await makeUpdate(fields, this);
   }
 
   getMessageBuffer(): Array<string> {
@@ -263,3 +248,22 @@ class Webhook implements MessageSink {
 
 }
 module.exports = Webhook;
+
+async function makeUpdate(fields?: Array<string>, webhook: Webhook): Promise<void> {
+  if (webhook.storage == null) {
+    throw new Error('storage not set for Webhook object.');
+  }
+
+  let update;
+
+  if (fields == null) {
+    update = webhook.forStorage();
+  } else {
+    update = _.pick(webhook.forStorage(), fields);
+  }
+
+  const query = {};
+  await bluebird.fromCallback(
+    (cb) => webhook.storage.updateOne(webhook.user, query, update, cb)
+  );
+}

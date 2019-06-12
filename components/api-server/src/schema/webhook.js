@@ -32,8 +32,20 @@ exports = module.exports = function (action) {
 
   switch (action) {
     case Action.READ:
-      base.required = ['id', 'accessId', 'url', 'state',
-        'runCount', 'failCount', 'runs', 'minIntervalMs', 'maxRetries'];
+      base.required = [
+        'id', 
+        'accessId',
+        'url',
+        'state',
+        'runCount',
+        'failCount',
+        'runs',
+        'minIntervalMs',
+        'maxRetries',
+        'created',
+        'createdBy',
+        'modified',
+        'modifiedBy'];
       break;
 
     case Action.CREATE:

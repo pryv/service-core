@@ -86,13 +86,19 @@ module.exports = function produceAccessesApiMethods(
   );
 
   async function findWebhook(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    const user = context.user;
     const currentAccess = context.access;
-
+    const webhookId = params.id;
     try {
-      const webhook = await webhooksRepository.getById(context.user, params.id, currentAccess);
+      const webhook = await webhooksRepository.getById(user, webhookId);
+
       if (webhook == null) {
         return next(errors.unknownResource('webhook', params.id));
       }
+      if (!isWebhookInScope(webhook, currentAccess)) {
+        return next(errors.forbidden());
+      }
+
       result.webhook = webhook.forApi();
     } catch (error) {
       return next(errors.unexpectedError(error));
@@ -128,7 +134,7 @@ module.exports = function produceAccessesApiMethods(
 
   async function createWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
 
-    const webhook = new Webhook (_.extend({
+    const webhook = new Webhook(_.extend({
       user: context.user,
       accessId: context.access.id,
       webhooksStorage: storageLayer.webhooks,
@@ -156,6 +162,53 @@ module.exports = function produceAccessesApiMethods(
     );
     return next();
   }
+
+  // UPDATE
+
+  api.register('webhooks.update',
+    commonFns.getParamsValidation(methodsSchema.update.params),
+    validateRetrievalAccess,
+    applyPrerequisitesForUpdate,
+    updateWebhook);
+
+  function applyPrerequisitesForUpdate(context, params, result, next) {
+    context.updateTrackingProperties(params.update);
+    next();
+  }
+
+  async function updateWebhook(context, params, result, next) {
+    const user = context.user;
+    const currentAccess = context.access;
+    const update = params.update;
+    const webhookId = params.id;
+
+    try {
+      const webhook = await webhooksRepository.getById(user, webhookId);
+      if (webhook == null) {
+        return next(errors.unknownResource('webhook', params.id));
+      }
+      if (!isWebhookInScope(webhook, currentAccess)) {
+        return next(errors.forbidden());
+      }
+
+      await webhook.update(update);
+      result.webhook = webhook.forApi();
+    } catch (e) {
+      return next(errors.unexpectedError(e));
+    }
+    next();
+  }
+
+  /**
+   * checks if the webhook is allowed to be handled by the access
+   * If Personnal: yes
+   * If App: only if it was used to create the webhook
+   */
+  function isWebhookInScope(webhook: {}, access: {}): boolean {
+    if (access.isPersonal()) return true;
+    return access.isApp() && (access.id === webhook.accessId);
+  }
+
 
 };
 module.exports.injectDependencies = true;

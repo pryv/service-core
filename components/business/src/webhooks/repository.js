@@ -42,14 +42,12 @@ class Repository {
       const webhooks = await bluebird.fromCallback(
         (cb) => this.storage.find(user, webhooksQuery, webhooksOptions, cb)
       );
-      if (webhooks != null && webhooks.length > 0)
+      if (webhooks != null && webhooks.length > 0) {
         console.log('retrieved webhooks for', user);
+      }
       const userWebhooks = [];
       webhooks.forEach((w) => {
-        userWebhooks.push(new Webhook(_.merge({
-          webhooksStorage: this.storage,
-          user: user,
-        }, w)));
+        userWebhooks.push(initWebhook(user, this.storage, w));
       });
       allWebhooks.set(user.username, userWebhooks);
     }
@@ -75,7 +73,7 @@ class Repository {
 
     const webhookObjects = [];
     webhooks.forEach((w) => {
-      const webhook = new Webhook(w);
+      const webhook = initWebhook(user, this.storage, w);
       webhookObjects.push(webhook.forApi());
     });
 
@@ -83,12 +81,9 @@ class Repository {
   }
 
   /**
-   * Returns a webhook for a user, fetched by its id and for an access
-   * Personal access: returns it if it exists
-   * App access: returns it if it exists and the accessId matches
-   * 
+   * Returns a webhook for a user, fetched by its id
    */
-  async getById(user: any, webhookId: string, access: {}): Promise<Webhook> {
+  async getById(user: any, webhookId: string): Promise<Webhook> {
     const query = {
       id: { $eq: webhookId }
     };
@@ -98,16 +93,17 @@ class Repository {
       cb => this.storage.findOne(user, query, options, cb)
     );
 
-    if ((webhook == null) || !isInScope(webhook)) {
-      return null;
-    }
-    return new Webhook(webhook);
+    if (webhook == null) return null;
 
-    function isInScope(webhook: {}): boolean {
-      if (access.isPersonal()) return true;
-      return access.isApp() && (access.id === webhook.accessId);
-    }
+    return initWebhook(user, this.storage, webhook);
   }
 
 }
 module.exports = Repository;
+
+function initWebhook(user: {}, storage: WebhooksStorage, webhook: {}): Webhook {
+  return new Webhook(_.merge({
+    webhooksStorage: storage,
+    user: user,
+  }, webhook));
+}
