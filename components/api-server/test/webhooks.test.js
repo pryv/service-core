@@ -345,50 +345,32 @@ describe('webhooks', () => {
       });
 
       describe('when using a Shared Access', () => {
-        let webhook, error, status;
+        let response;
         before(async () => {
           const res = await server.request()
             .post(`/${username}/webhooks`)
             .set('Authorization', sharedAccessToken)
             .send({ url: 'doesntmatter' });
-          error = res.body.error;
-          webhook = res.body.webhook;
-          status = res.status;
+          response = res;
         });
 
-        it('should return a status 403', () => {
-          assert.equal(status, 403);
-        });
-        it('should return an error object as it is forbidden', () => {
-          assert.notExists(webhook);
-          assert.exists(error);
-        });
-        it('error should say that it is forbidden to use a Shared Access', () => {
-          assert.equal(error.id, ErrorIds.Forbidden);
+        it('should return a status 403 with a forbidden error', () => {
+          validation.checkErrorForbidden(response);
         });
       });
 
       describe('when using a Personal Access', () => {
-        let webhook, error, status;
+        let response;
         before(async () => {
           const res = await server.request()
             .post(`/${username}/webhooks`)
             .set('Authorization', personalAccessToken)
             .send({ url: 'doesntmatter' });
-          error = res.body.error;
-          webhook = res.body.webhook;
-          status = res.status;
+          response = res;
         });
 
         it('should return a status 403', () => {
-          assert.equal(status, 403);
-        });
-        it('should return an error object as it is forbidden', () => {
-          assert.notExists(webhook);
-          assert.exists(error);
-        });
-        it('error should say that it is forbidden to use a Personal Access', () => {
-          assert.equal(error.id, ErrorIds.Forbidden);
+          validation.checkErrorForbidden(response);
         });
       });
     });
@@ -414,26 +396,20 @@ describe('webhooks', () => {
         });
       });
 
-      let webhook, error, status;
+      let response;
       before(async () => {
         const res = await server.request()
           .post(`/${username}/webhooks`)
           .set('Authorization', appAccessToken1)
           .send({ url: url });
-        webhook = res.body.webhook;
-        error = res.body.error;
-        status = res.status;
+        response = res;
       });
 
-      it('should return a status 400', () => {
-        assert.equal(status, 400);
-      });
-      it('should contain an error field', () => {
-        assert.exists(error);
-        assert.notExists(webhook);
-      });
-      it('error should indicate that there is a collision', () => {
-        assert.equal(error.id, ErrorIds.ItemAlreadyExists);
+      it('should return a status 400 with a collision error error', () => {
+        validation.checkError(response, {
+          status: 400,
+          id: ErrorIds.ItemAlreadyExists
+        });
       });
     });
 
@@ -460,26 +436,17 @@ describe('webhooks', () => {
           });
         });
 
-        let webhook, error, status;
+        let response;
         before(async () => {
           const res = await server.request()
             .post(`/${username}/webhooks`)
             .set('Authorization', appAccessToken1)
             .send({ url: url });
-          webhook = res.body.webhook;
-          error = res.body.error;
-          status = res.status;
+          response = res;
         });
 
-        it('should return a status 400', () => {
-          assert.equal(status, 400);
-        });
-        it('should contain an error field', () => {
-          assert.exists(error);
-          assert.notExists(webhook);
-        });
-        it('error should indicate that parameters are invalid', () => {
-          assert.equal(error.id, ErrorIds.InvalidParametersFormat);
+        it('should return a status 400 with a invalid parameters error', () => {
+          validation.checkErrorInvalidParams(response);
         });
       });
 
@@ -589,7 +556,7 @@ describe('webhooks', () => {
 
         describe('when changing a readonly parameter', () => {
 
-          let webhook, status, error;
+          let response;
           before(async () => {
             const res = await server.request()
               .put(`/${username}/webhooks/${webhookId1}`)
@@ -600,51 +567,103 @@ describe('webhooks', () => {
                   timestamp: timestamp.now(),
                 }
               });
-            webhook = res.body.webhook;
-            status = res.status;
-            error = res.body.error;
+            response = res;
           });
 
-          it('should return a 403 status', () => {
-            assert.equal(status, 403);
+          it('should return a 400 status with an invalid parameter error', () => {
+            validation.checkErrorInvalidParams(response);
           });
-
-          it('should return an error object', () => {
-            assert.exists(error);
-            assert.isObject(error);
-            assert.notExists(webhook);
-          });
-
-          it('should return an error ');
-
         });
 
       });
 
-      describe('when updating an unexistant webhook', () => {
+      describe('when updating a webhook outside its scope', () => {
 
+        let response;
+        before(async () => {
+          const res = await server.request()
+            .put(`/${username}/webhooks/${webhookId2}`)
+            .set('Authorization', appAccessToken1)
+            .send({
+              state: 'inactive',
+            });
+          response = res;
+        });
+
+        it('should return a 403 status with a forbidden error', () => {
+          validation.checkErrorForbidden(response);
+        });
+      });
+
+      describe('when updating an unexistant webhook', () => {
+        let response;
+        before(async () => {
+          const res = await server.request()
+            .put(`/${username}/webhooks/doesnotexist`)
+            .set('Authorization', appAccessToken1)
+            .send({
+              state: 'active',
+            });
+          response = res;
+        });
+
+        it('should return a 404 status with an unknown resource error', () => {
+          validation.checkError(response, {
+            status: 404,
+            id: ErrorIds.UnknownResource,
+          });
+        });
 
       });
     });
 
     describe('when using a personal token', () => {
 
+      describe('when providing valid parameters', () => {
+
+        let response;
+        before(async () => {
+          const res = await server.request()
+            .put(`/${username}/webhooks/${webhookId1}`)
+            .set('Authorization', personalAccessToken)
+            .send({
+              state: 'inactive',
+            });
+          response = res;
+        });
+
+        it('should return a status 200 with the updated webhook', () => {
+          validation.check(response, {
+            status: 200,
+            schema: methodsSchema.update.result,
+          });
+        });
+      });
 
     });
 
     describe('when using a shared token', () => {
 
+      describe('when providing valid parameters', () => {
+
+        let response;
+        before(async () => {
+          const res = await server.request()
+            .put(`/${username}/webhooks/${webhookId1}`)
+            .set('Authorization', sharedAccessToken)
+            .send({
+              state: 'inactive',
+            });
+          response = res;
+        });
+
+        it('should return a status 403 with a forbidden error', () => {
+          validation.checkErrorForbidden(response);
+        });
+      });
+
     });
 
-    it('should activate a deactivated hook');
-
-    it('should fail if the webhook does not exist');
-
-    it('should fail if the webhook outside of the token\'s rights');
-
-    it('should fail if maxRetries is too low');
-
-    it('should fail if minIntervalMs is too low');
   });
 
   describe('DELETE /:webhookId', () => {

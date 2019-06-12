@@ -50,11 +50,11 @@ module.exports = function produceAccessesApiMethods(
 
   api.register('webhooks.get',
     commonFns.getParamsValidation(methodsSchema.get.params),
-    validateRetrievalAccess,
+    forbidSharedAccess,
     findAccessibleWebhooks,
   );
 
-  function validateRetrievalAccess(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  function forbidSharedAccess(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     const currentAccess = context.access;
 
     if (currentAccess == null) {
@@ -81,7 +81,7 @@ module.exports = function produceAccessesApiMethods(
 
   api.register('webhooks.getOne',
     commonFns.getParamsValidation(methodsSchema.get.params),
-    validateRetrievalAccess,
+    forbidSharedAccess,
     findWebhook,
   );
 
@@ -167,7 +167,7 @@ module.exports = function produceAccessesApiMethods(
 
   api.register('webhooks.update',
     commonFns.getParamsValidation(methodsSchema.update.params),
-    validateRetrievalAccess,
+    forbidSharedAccess,
     applyPrerequisitesForUpdate,
     updateWebhook);
 
