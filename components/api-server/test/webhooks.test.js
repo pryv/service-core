@@ -2,15 +2,20 @@
 
 const cuid = require('cuid');
 const bluebird = require('bluebird');
+const timestamp = require('unix-timestamp');
 const chai = require('chai');
 const assert = chai.assert;
 
 const helpers = require('./helpers');
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
+const validation = helpers.validation;
+const methodsSchema = require('../src/schema/webhooksMethods');
 
 const { ErrorIds } = require('components/errors/src');
 const storage = require('components/test-helpers').dependencies.storage.user.webhooks;
+
+const { Webhook } = require('components/business/src/webhooks');
 
 describe('webhooks', () => {
 
@@ -19,14 +24,13 @@ describe('webhooks', () => {
     mongoFixtures.clean();
   });
 
-  let username, streamId, personalAccessToken, 
+  let username, personalAccessToken, 
       appAccessToken1, appAccessToken2,
       appAccessId1, appAccessId2,
       sharedAccessToken,
       webhookId1, webhookId2;
   before(() => {
     username = cuid();
-    streamId = cuid();
     personalAccessToken = cuid();
     appAccessToken1 = cuid();
     appAccessToken2 = cuid();
@@ -74,21 +78,20 @@ describe('webhooks', () => {
 
     describe('when using an app token', () => {
       
-      let webhooks, status;
+      let webhooks, response;
       before(async () => {
         const res = await server.request()
           .get(`/${username}/webhooks`)
           .set('Authorization', appAccessToken1);
+        response = res;
         webhooks = res.body.webhooks;
-        status = res.status;
       });
 
-      it('should return a status 200', () => {
-        assert.equal(status, 200);
-      });
-      it('should return a webhooks object which is an array', () => {
-        assert.exists(webhooks);
-        assert.typeOf(webhooks, 'Array');
+      it('should return a status 200 with a webhooks object which is an array', () => {
+        validation.check(response, {
+          schema: methodsSchema.get.result,
+          status: 200,
+        });
       });
       it('should fetch all webhooks reachable by an app token', () => {
         webhooks.forEach(w => {
@@ -130,26 +133,16 @@ describe('webhooks', () => {
 
     describe('when using a shared token', () => {
 
-      let webhooks, error, status;
+      let response;
       before(async () => {
         const res = await server.request()
           .get(`/${username}/webhooks`)
           .set('Authorization', sharedAccessToken);
-        webhooks = res.body.webhooks;
-        error = res.body.error;
-        status = res.status;
+        response = res;
       });
 
-      it('should return a status 403 forbidden', () => {
-        assert.equal(status, 403);
-      });
-      it('should return an error object', () => {
-        assert.notExists(webhooks);
-        assert.exists(error);
-        assert.typeOf(error, 'Object');
-      });
-      it('error should say that it is forbidden to use a shared access', () => {
-        assert.equal(error.id, ErrorIds.Forbidden);
+      it('should return a status 403 with a forbidden error', () => {
+        validation.checkErrorForbidden(response);
       });
     });
     
@@ -191,7 +184,7 @@ describe('webhooks', () => {
         }, appAccessId1);
         user.webhook({
           id: webhookId2,
-        });
+        }, appAccessId2);
       });
     });
 
@@ -203,90 +196,49 @@ describe('webhooks', () => {
 
       describe('when fetching an existing webhook inside its scope', () => {
 
-        let webhook, status;
+        let response;
         before(async () => {
           const res = await server.request()
             .get(`/${username}/webhooks/${webhookId1}`)
             .set('Authorization', appAccessToken1);
-          webhook = res.body.webhook;
-          status = res.status;
+          response = res;
         });
 
-        it('should return a status 200', () => {
-          assert.equal(status, 200);
-        });
-        it('should return a webhook object', () => {
-          assert.exists(webhook);
-          assert.typeOf(webhook, 'Object');
-        });
-        it('should have correct fields', () => {
-          assert.equal(webhook.id, webhookId1);
-          assert.equal(webhook.url, url);
-          assert.equal(webhook.state, 'active');
-          assert.equal(webhook.minIntervalMs, minIntervalMs);
-          assert.equal(webhook.maxRetries, maxRetries);
-          assert.equal(webhook.currentRetries, 0);
-          assert.deepEqual(webhook.runs, []);
-          assert.deepEqual(webhook.lastRun, { status: 0, timestamp: 0});
-          assert.equal(webhook.runCount, 0);
-          assert.equal(webhook.failCount, 0);
-        });
-        it('should not have internal fields', () => {
-          assert.notExists(webhook.timeout);
-          assert.notExists(webhook.user);
-          assert.notExists(webhook.NatsSubscriber);
-          assert.notExists(webhook.messageBuffer);
-          assert.notExists(webhook.storage);
+        it('should return a status 200 with a webhook object', () => {
+          validation.check(response, {
+            schema: methodsSchema.getOne.result,
+            status: 200,
+          });
         });
       });
 
       describe('when fetching an existing webhook outside of its scope', () => {
 
-        let webhook, status, error;
+        let response;
         before(async () => {
           const res = await server.request()
             .get(`/${username}/webhooks/${webhookId2}`)
             .set('Authorization', appAccessToken1);
-          webhook = res.body.webhook;
-          status = res.status;
-          error = res.body.error;
+          response = res;
         });
 
-        it('should return a status 403', () => {
-          assert.equal(status, 403);
-        });
-        it('should return an error object', () => {
-          assert.notExists(webhook);
-          assert.exists(error);
-          assert.typeOf(error, 'Object');
-        });
-        it('error should say that it is forbidden', () => {
-          assert.equal(error.id, ErrorIds.Forbidden);
+        it('should return a status 403 with a forbidden error', () => {
+          validation.checkErrorForbidden(response);
         });
       });
 
       describe('when fetching an unexistant webhook', () => {
 
-        let webhook, status, error;
+        let response;
         before(async () => {
           const res = await server.request()
             .get(`/${username}/webhooks/doesnotexist`)
             .set('Authorization', appAccessToken1);
-          webhook = res.body.webhook;
-          status = res.status;
-          error = res.body.error;
+          response = res;
         });
 
-        it('should return a status 404 not found', () => {
-          assert.equal(status, 404);
-        });
-        it('should return an error object', () => {
-          assert.notExists(webhook);
-          assert.exists(error);
-          assert.typeOf(error, 'Object');
-        });
-        it('error should say that it is an unknown id', () => {
-          assert.equal(error.id, ErrorIds.UnknownResource);
+        it('should return a status 404 with a unknown resource error', () => {
+          validation.checkErrorUnknown(response);
         });
       });
     
@@ -294,48 +246,35 @@ describe('webhooks', () => {
 
     describe('when using a personnal token', () => {
 
-      let webhook, status;
+      let response;
       before(async () => {
         const res = await server.request()
           .get(`/${username}/webhooks/${webhookId2}`)
           .set('Authorization', personalAccessToken);
-        webhook = res.body.webhook;
-        status = res.status;
+        response = res;
       });
 
-      it('should return a status 200', () => {
-        assert.equal(status, 200);
-      });
-      it('should return a webhook object', () => {
-        assert.exists(webhook);
-        assert.typeOf(webhook, 'Object');
+      it('should return a status 200 with a webhook object', () => {
+        validation.check(response, {
+          schema: methodsSchema.getOne.result,
+          status: 200,
+        });
       });
     });
 
     describe('when using a shared token', () => {
 
-      let webhook, status, error;
+      let response;
       before(async () => {
         const res = await server.request()
           .get(`/${username}/webhooks/doesnotmatter`)
           .set('Authorization', sharedAccessToken);
-        webhook = res.body.webhook;
-        status = res.status;
-        error = res.body.error;
+        response = res;
       });
 
-      it('should return a status 403 forbidden', () => {
-        assert.equal(status, 403);
+      it('should return a status 403 with a forbidden error', () => {
+        validation.checkErrorForbidden(response);
       });
-      it('should return an error object', () => {
-        assert.notExists(webhook);
-        assert.exists(error);
-        assert.typeOf(error, 'Object');
-      });
-      it('error should say that it is forbidden to use a shared access', () => {
-        assert.equal(error.id, ErrorIds.Forbidden);
-      });
-
     });
     
   });
@@ -373,46 +312,35 @@ describe('webhooks', () => {
       describe('when using an App Access', () => {
 
         const url = 'https://somecompany.com/notifications';
-        let webhook, status;
+        let webhook, response;
         before(async () => {
           const res = await server.request()
             .post(`/${username}/webhooks`)
             .set('Authorization', appAccessToken1)
             .send({ url: url });
-          webhook = res.body.webhook;
-          status = res.status;
+          response = res;
+          webhook = new Webhook({
+            accessId: appAccessId1,
+            url: url,
+            id: res.body.webhook.id,
+          }).forApi();
         });
 
-        it('should return a status 201', () => {
-          assert.equal(status, 201);
-        });
-        it('should return a webhook field which is an object', () => {
-          assert.exists(webhook);
-          assert.typeOf(webhook, 'Object');
-        });
-        it('should have the correct url', () => {
-          assert.equal(webhook.url, url);
-        });
-        it('should fill its fields with default data', () => {
-          assert.equal(webhook.accessId, appAccessId1);
-          assert.equal(webhook.maxRetries, 5);
-          assert.equal(webhook.minIntervalMs, 5000);
-          assert.equal(webhook.runCount, 0);
-          assert.equal(webhook.failCount, 0);
-          assert.typeOf(webhook.runs, 'Array');
-          assert.equal(webhook.runs.length, 0);
-          assert.equal(webhook.currentRetries, 0);
-          assert.equal(webhook.state, 'active');
-          assert.exists(webhook.created);
-          assert.exists(webhook.createdBy);
-          assert.exists(webhook.modified);
-          assert.exists(webhook.modifiedBy);
+        it('should return a status 201 with the created webhook', () => {
+          validation.check(response, {
+            status: 201,
+            schema: methodsSchema.create.result,
+            data: webhook,
+            sanitizeFn: validation.removeTrackingPropertiesForOne,
+            sanitizeTarget: 'webhook',
+          });
         });
         it('should save it to the storage', async () => {
-          const retrievedWebhook = await bluebird.fromCallback((cb) =>
+          const storedWebhook = await bluebird.fromCallback((cb) =>
             storage.findOne({ id: username}, { accessId: { $eq: appAccessId1 } }, {}, cb)
           );
-          assert.deepEqual(retrievedWebhook, webhook);
+          assert.deepEqual(validation.removeTrackingPropertiesForOne(storedWebhook), 
+            validation.removeTrackingPropertiesForOne(webhook));
         });
       });
 
@@ -557,9 +485,13 @@ describe('webhooks', () => {
 
       describe('when minIntervalMs is smaller that the system minimum', () => {
 
+        it('should return an error');
+
       });
       
       describe('when maxRetries is bigger that the allowed maxmum', () => {
+
+        it('should return an error');
 
       });
 
@@ -618,7 +550,7 @@ describe('webhooks', () => {
 
         describe('when changing a valid parameter', () => {
 
-          let webhook, status;
+          let response, webhook;
           before(async () => {
             const res = await server.request()
               .put(`/${username}/webhooks/${webhookId1}`)
@@ -626,42 +558,62 @@ describe('webhooks', () => {
               .send({
                 state: 'inactive',
               });
-            webhook = res.body.webhook;
-            status = res.status;
+            response = res;
+            webhook = new Webhook({
+              accessId: appAccessId1,
+              url: url,
+              id: webhookId1,
+              minIntervalMs: minIntervalMs,
+              maxRetries: maxRetries,
+              state: 'inactive',
+            }).forApi();
           });
 
-          it('should return a status 200', () => {
-            assert.equal(status, 200);
-          });
-          it('should return a webhook object', () => {
-            assert.exists(webhook);
-            assert.typeOf(webhook, 'Object');
-          });
-          it('should apply the changes to the return webhook', () => {
-            assert.equal(webhook.id, webhookId1);
-            assert.equal(webhook.url, url);
-            assert.equal(webhook.minIntervalMs, minIntervalMs);
-            assert.equal(webhook.maxRetries, maxRetries);
-            assert.equal(webhook.currentRetries, 0);
-            assert.equal(webhook.state, 'inactive');
-            assert.deepEqual(webhook.runs, []);
-            assert.deepEqual(webhook.lastRun, { status: 0, timestamp: 0 });
-            assert.equal(webhook.runCount, 0);
-            assert.equal(webhook.failCount, 0);
+          it('should return a status 200 with the updated webhook', () => {
+            validation.check(response, {
+              status: 200,
+              schema: methodsSchema.update.result,
+              data: webhook,
+              sanitizeFn: validation.removeTrackingPropertiesForOne,
+              sanitizeTarget: 'webhook',
+            });
           });
           it('should apply the changes to the storage', async () => {
-            const retrievedWebhook = await bluebird.fromCallback((cb) =>
+            const storedWebhook = await bluebird.fromCallback((cb) =>
               storage.findOne({ id: username }, { id: { $eq: webhookId1 } }, {}, cb)
             );
-            assert.deepEqual(retrievedWebhook, webhook);
+            assert.deepEqual(validation.removeTrackingPropertiesForOne(storedWebhook),
+              validation.removeTrackingPropertiesForOne(webhook));
           });
         });
 
         describe('when changing a readonly parameter', () => {
 
-          it('should return a 403 status');
+          let webhook, status, error;
+          before(async () => {
+            const res = await server.request()
+              .put(`/${username}/webhooks/${webhookId1}`)
+              .set('Authorization', appAccessToken1)
+              .send({
+                lastRun: {
+                  status: 201,
+                  timestamp: timestamp.now(),
+                }
+              });
+            webhook = res.body.webhook;
+            status = res.status;
+            error = res.body.error;
+          });
 
-          it('should return an error object');
+          it('should return a 403 status', () => {
+            assert.equal(status, 403);
+          });
+
+          it('should return an error object', () => {
+            assert.exists(error);
+            assert.isObject(error);
+            assert.notExists(webhook);
+          });
 
           it('should return an error ');
 

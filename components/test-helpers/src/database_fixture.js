@@ -6,6 +6,7 @@ const lodash = require('lodash');
 const Charlatan = require('charlatan');
 const generateId = require('cuid');
 const debug = require('debug')('databaseFixture');
+const timestamp = require('unix-timestamp');
 
 const storage = require('components/storage');
 
@@ -148,7 +149,13 @@ class FixtureTreeNode {
    */
   attributes(attrs: {}): Attributes {
     return lodash.merge(
-      { id: `c${Charlatan.Number.number(15)}` },
+      { 
+        id: generateId(),
+        created: timestamp.now(),
+        createdBy: this.context.user.id,
+        modified: timestamp.now(),
+        modifiedBy: this.context.user.id,
+      },
       this.fakeAttributes(),
       attrs,
     );
@@ -361,7 +368,6 @@ class FixtureAccess extends FixtureTreeNode implements ChildResource {
     const db = this.db; 
     const user = this.context.user; 
     const attributes = this.attrs; 
-    
     return bluebird.fromCallback((cb) => 
       db.accesses.insertOne(user, attributes, cb)); 
   }

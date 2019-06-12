@@ -15,36 +15,43 @@ module.exports = {
       id: 'webhooks.get',
     }),
     result: object({
-      'webhooks': {
+      webhooks: {
         type: 'array',
         items: webhook(Action.READ)
-      },
+      },}, { required: ['webhooks'] })
+  },
+
+  getOne: {
+    params: object({
+      // in path for HTTP requests
+      id: string(),
     }, {
-        required: ['webhooks']
-      })
+      id: 'webhooks.getOne',
+    }),
+    result: object({
+      webhook: webhook(Action.READ),
+    }, { required: [ 'webhook' ] })
   },
 
   create: {
     params: webhook(Action.CREATE),
     result: object({
-      'webhook': webhook(Action.READ)
-    }, {
-        required: ['webhook']
-      })
+      webhook: webhook(Action.READ)
+    }, { required: ['webhook'] })
   },
 
   update: {
     params: object({
       // in path for HTTP requests
-      'id': string(),
+      id: string(),
       // = body of HTTP requests
-      'update': webhook(Action.UPDATE)
+      update: webhook(Action.UPDATE)
     }, {
         id: 'webhooks.update',
         required: ['id', 'update']
       }),
     result: object({
-      'webhook': webhook(Action.READ)
+      webhook: webhook(Action.READ)
     }, {
         required: ['webhook']
       })
@@ -53,7 +60,7 @@ module.exports = {
   del: {
     params: object({
       // in path for HTTP requests
-      'id': string()
+      id: string(),
     }, {
         id: 'webhooks.delete',
         required: ['id']
