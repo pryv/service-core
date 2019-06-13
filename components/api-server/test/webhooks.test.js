@@ -14,7 +14,6 @@ const methodsSchema = require('../src/schema/webhooksMethods');
 
 const { ErrorIds } = require('components/errors/src');
 const storage = require('components/test-helpers').dependencies.storage.user.webhooks;
-
 const { Webhook } = require('components/business/src/webhooks');
 
 describe('webhooks', () => {
@@ -281,6 +280,8 @@ describe('webhooks', () => {
 
   describe('POST /', () => {
 
+    let usedUrl = 'https://existing.com/notifications';
+
     before(async () => {
       await mongoFixtures.clean();
       username = cuid();
@@ -295,6 +296,7 @@ describe('webhooks', () => {
         user.access({
           type: 'personal', token: personalAccessToken,
         });
+        user.session(personalAccessToken);
         user.access({
           id: appAccessId1,
           type: 'app', token: appAccessToken1,
@@ -302,15 +304,15 @@ describe('webhooks', () => {
         user.access({
           type: 'shared', token: sharedAccessToken,
         });
-
-        user.session(personalAccessToken);
+        user.webhook({
+          url: usedUrl,
+        }, appAccessId1);
       });
     });
 
-    describe('when providing a valid webhook', () => {
-      
-      describe('when using an App Access', () => {
+    describe('when using an App Access', () => {
 
+      describe('when providing a valid webhook', () => {
         const url = 'https://somecompany.com/notifications';
         let webhook, response;
         before(async () => {
@@ -336,15 +338,73 @@ describe('webhooks', () => {
           });
         });
         it('should save it to the storage', async () => {
-          const storedWebhook = await bluebird.fromCallback((cb) =>
-            storage.findOne({ id: username}, { accessId: { $eq: appAccessId1 } }, {}, cb)
+          const storedWebhook = await bluebird.fromCallback(
+            cb => storage.findOne({ id: username }, { id: { $eq: webhook.id } }, {}, cb)
           );
-          assert.deepEqual(validation.removeTrackingPropertiesForOne(storedWebhook), 
+          assert.deepEqual(validation.removeTrackingPropertiesForOne(storedWebhook),
             validation.removeTrackingPropertiesForOne(webhook));
         });
       });
 
-      describe('when using a Shared Access', () => {
+      describe('when providing an existing url', () => {
+
+        let response;
+        before(async () => {
+          const res = await server.request()
+            .post(`/${username}/webhooks`)
+            .set('Authorization', appAccessToken1)
+            .send({ url: usedUrl });
+          response = res;
+        });
+
+        it('should return a status 400 with a collision error error', () => {
+          validation.checkError(response, {
+            status: 400,
+            id: ErrorIds.ItemAlreadyExists
+          });
+        });
+      });
+
+      describe('when providing invalid parameters', () => {
+
+        describe('when url is not a string', () => {
+
+          const url = 123;
+
+          let response;
+          before(async () => {
+            const res = await server.request()
+              .post(`/${username}/webhooks`)
+              .set('Authorization', appAccessToken1)
+              .send({ url: url });
+            response = res;
+          });
+
+          it('should return a status 400 with a invalid parameters error', () => {
+            validation.checkErrorInvalidParams(response);
+          });
+        });
+
+        describe('when minIntervalMs is smaller that the system minimum', () => {
+
+          it('should return an error');
+
+        });
+
+        describe('when maxRetries is bigger that the allowed maxmum', () => {
+
+          it('should return an error');
+
+        });
+
+
+      });
+    });
+
+
+    describe('when using a Shared Access', () => {
+
+      describe('when providing a valid webhook', () => {
         let response;
         before(async () => {
           const res = await server.request()
@@ -357,9 +417,13 @@ describe('webhooks', () => {
         it('should return a status 403 with a forbidden error', () => {
           validation.checkErrorForbidden(response);
         });
-      });
 
-      describe('when using a Personal Access', () => {
+      });
+    });
+
+    describe('when using a Personal Access', () => {     
+
+      describe('when providing a valid webhook', () => {
         let response;
         before(async () => {
           const res = await server.request()
@@ -369,101 +433,13 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('should return a status 403', () => {
+        it('should return a status 403 with a forbidden error', () => {
           validation.checkErrorForbidden(response);
         });
       });
     });
 
-    describe('when providing an existing url', () => {
-
-      const url = 'https://existing.com/notifications';
-      
-      before(() => {
-        mongoFixtures.clean();
-        username = cuid();
-        appAccessId1 = cuid();
-        appAccessToken1 = cuid();
-      });
-
-      before(() => {
-        return mongoFixtures.user(username, {}, async (user) => {
-          user.access({
-            id: appAccessId1,
-            type: 'app', token: appAccessToken1,
-          });
-          user.webhook({ url: url }, appAccessId1);
-        });
-      });
-
-      let response;
-      before(async () => {
-        const res = await server.request()
-          .post(`/${username}/webhooks`)
-          .set('Authorization', appAccessToken1)
-          .send({ url: url });
-        response = res;
-      });
-
-      it('should return a status 400 with a collision error error', () => {
-        validation.checkError(response, {
-          status: 400,
-          id: ErrorIds.ItemAlreadyExists
-        });
-      });
-    });
-
-    describe('when providing invalid parameters', () => {
-
-      describe('when url is not a string', () => {
-
-        const url = 123;
-
-        before(() => {
-          mongoFixtures.clean();
-          username = cuid();
-          appAccessId1 = cuid();
-          appAccessToken1 = cuid();
-        });
-
-        before(() => {
-          return mongoFixtures.user(username, {}, async (user) => {
-            user.access({
-              id: appAccessId1,
-              type: 'app', token: appAccessToken1,
-            });
-            user.webhook({ url: 'someurl' }, appAccessId1);
-          });
-        });
-
-        let response;
-        before(async () => {
-          const res = await server.request()
-            .post(`/${username}/webhooks`)
-            .set('Authorization', appAccessToken1)
-            .send({ url: url });
-          response = res;
-        });
-
-        it('should return a status 400 with a invalid parameters error', () => {
-          validation.checkErrorInvalidParams(response);
-        });
-      });
-
-      describe('when minIntervalMs is smaller that the system minimum', () => {
-
-        it('should return an error');
-
-      });
-      
-      describe('when maxRetries is bigger that the allowed maxmum', () => {
-
-        it('should return an error');
-
-      });
-
-      
-    });
+    
 
   });
 

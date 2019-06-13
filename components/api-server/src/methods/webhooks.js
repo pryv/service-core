@@ -62,7 +62,7 @@ module.exports = function produceAccessesApiMethods(
     }
     if (currentAccess.isShared()) {
       return next(errors.forbidden(
-        'Shared Accesses cannot create Webhooks. Please use an App or Personnal Access'
+        'Shared Accesses cannot manipulate Webhooks. Please use an App or Personnal Access.'
       ));
     }
     next();
@@ -110,29 +110,28 @@ module.exports = function produceAccessesApiMethods(
 
   api.register('webhooks.create',
     commonFns.getParamsValidation(methodsSchema.create.params),
-    applyPrerequisitesForCreation,
+    forbidSharedAccess,
+    forbidPersonalAccess,
     createWebhook,
     loadWebhook,
   );
 
-  function applyPrerequisitesForCreation(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  function forbidPersonalAccess(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     const currentAccess = context.access;
+
+    if (currentAccess == null) {
+      return next(new Error('AF: Access cannot be null at this point.'));
+    }
     if (currentAccess.isPersonal()) {
       return next(errors.forbidden(
-        'Personal Accesses cannot create Webhooks. Please use an App Access'
+        'Personal Accesses cannot create Webhooks. Please use an App Access.'
       ));
     }
-    if (currentAccess.isShared()) {
-      return next(errors.forbidden(
-        'Shared Accesses cannot create Webhooks. Please use an App Access'
-      ));
-    }
-
-    context.initTrackingProperties(params);
-    return next();
+    next();
   }
 
   async function createWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
+    context.initTrackingProperties(params);
 
     const webhook = new Webhook(_.extend({
       user: context.user,
