@@ -9,6 +9,7 @@ const storage = require('components/storage');
 const API = require('./API');
 
 import type { ConfigAccess } from './settings';
+import type { Service } from './methods/service';
 import type { LogFactory } from 'components/utils';
 import type { Logger } from 'components/utils';
 
@@ -78,9 +79,9 @@ class Application {
       authSettings: settings.get('auth').obj(),
       auditSettings: settings.get('audit').obj(),
       eventFilesSettings: settings.get('eventFiles').obj(),
-      eventTypesSettings: settings.get('eventTypes').obj(),
+      eventTypesSettings: settings.get('eventTypes').obj(), // ICI
       httpSettings: settings.get('http').obj(),
-      servicesSettings: settings.get('services').obj(),
+      servicesSettings: settings.get('services').obj(), // ICI
       updatesSettings: settings.get('updates').obj(),
     });
     

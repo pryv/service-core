@@ -33,7 +33,7 @@
   },
   "services": {
     "register": {
-      "url": "https://reg.pryv.io",
+      "url": "https://reg.pryv.io", // ICI
       "key": "OVERRIDE ME"
     },
     "email": {
