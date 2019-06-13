@@ -106,12 +106,20 @@ describe('webhooks', () => {
     
     describe('when using a personal token', () => {
 
-      let webhooks;
+      let webhooks, response;
       before(async () => {
         const res = await server.request()
           .get(`/${username}/webhooks`)
           .set('Authorization', personalAccessToken);
+        response = res;
         webhooks = res.body.webhooks;
+      });
+
+      it('should return a status 200 with a webhooks object which is an array', () => {
+        validation.check(response, {
+          schema: methodsSchema.get.result,
+          status: 200,
+        });
       });
 
       it('should fetch all webhooks for the user', () => {
@@ -552,7 +560,7 @@ describe('webhooks', () => {
             response = res;
           });
 
-          it('should return a 400 status with an invalid parameter error', () => {
+          it('should return a status 400 with an invalid parameter error', () => {
             validation.checkErrorInvalidParams(response);
           });
         });
@@ -572,7 +580,7 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('should return a 403 status with a forbidden error', () => {
+        it('should return a status 403 with a forbidden error', () => {
           validation.checkErrorForbidden(response);
         });
       });
@@ -589,7 +597,7 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('should return a 404 status with an unknown resource error', () => {
+        it('should return a status 404 with an unknown resource error', () => {
           validation.checkError(response, {
             status: 404,
             id: ErrorIds.UnknownResource,
