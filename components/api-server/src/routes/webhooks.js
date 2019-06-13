@@ -36,5 +36,10 @@ module.exports = function (expressApp: express$Application, api: API) {
     const params = _.extend({ id: req.params.id }, req.query);
     api.call('webhooks.delete', req.context, params, methodCallback(res, next, 200));
   });
+
+  expressApp.post(Paths.Webhooks + '/:id/test', function (req: express$Request, res: express$Response, next: express$NextFunction) {
+    const params = _.extend({ id: req.params.id }, req.query);
+    api.call('webhooks.test', req.context, params, methodCallback(res, next, 200));
+  });
 };
 module.exports.injectDependencies = true;

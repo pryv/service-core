@@ -70,4 +70,16 @@ module.exports = {
       additionalProperties: false
     })
   },
+
+  test: {
+    params: object({
+      // in path for HTTP requests
+      id: string(),
+    }, {
+        id: 'webhooks.test',
+      }),
+    result: object({
+      webhook: webhook(Action.READ),
+    }, { required: ['webhook'] })
+  },
 };

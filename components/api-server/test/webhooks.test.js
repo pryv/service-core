@@ -11,6 +11,7 @@ const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 const validation = helpers.validation;
 const methodsSchema = require('../src/schema/webhooksMethods');
+const HttpServer = require('components/business/test/acceptance/webhooks/support/httpServer');
 
 const { ErrorIds } = require('components/errors/src');
 const storage = require('components/test-helpers').dependencies.storage.user.webhooks;
@@ -251,8 +252,7 @@ describe('webhooks', () => {
     
     });
 
-    describe('when using a personnal token', () => {
-
+    describe('when using a personal token', () => {
       let response;
       before(async () => {
         const res = await server.request()
@@ -318,7 +318,7 @@ describe('webhooks', () => {
       });
     });
 
-    describe('when using an App Access', () => {
+    describe('when using an app token', () => {
 
       describe('when providing a valid webhook', () => {
         const url = 'https://somecompany.com/notifications';
@@ -410,7 +410,7 @@ describe('webhooks', () => {
     });
 
 
-    describe('when using a Shared Access', () => {
+    describe('when using a shared token', () => {
 
       describe('when providing a valid webhook', () => {
         let response;
@@ -429,7 +429,7 @@ describe('webhooks', () => {
       });
     });
 
-    describe('when using a Personal Access', () => {     
+    describe('when using a personal token', () => {     
 
       describe('when providing a valid webhook', () => {
         let response;
@@ -598,10 +598,7 @@ describe('webhooks', () => {
         });
 
         it('should return a status 404 with an unknown resource error', () => {
-          validation.checkError(response, {
-            status: 404,
-            id: ErrorIds.UnknownResource,
-          });
+          validation.checkErrorUnknown(response);
         });
 
       });
@@ -745,13 +742,7 @@ describe('webhooks', () => {
         });
 
         it('should return a status 404 with an unknown resource error', () => {
-          validation.checkError(
-            response,
-            {
-              status: 404,
-              id: ErrorIds.UnknownResource,
-            }
-          );
+          validation.checkErrorUnknown(response);
         });
       });
 
@@ -766,13 +757,7 @@ describe('webhooks', () => {
         });
 
         it('should return a status 404 with an unknown resource error', () => {
-          validation.checkError(
-            response,
-            {
-              status: 404,
-              id: ErrorIds.UnknownResource,
-            }
-          );
+          validation.checkErrorUnknown(response);
         });
       });
 
@@ -837,10 +822,169 @@ describe('webhooks', () => {
   });
 
   describe('POST /:webhookId/test', () => {
-    it('should send a POST request to the url of the webhook');
 
-    it('should fail if the webhook does not exist');
+    const port = 5123;
+    const postPath = '/notifications';
 
-    it('should fail if the webhook outside of the token\'s rights');
+    let notificationsServer;
+    before(async () => {
+      notificationsServer = new HttpServer(postPath, 200);
+      await notificationsServer.listen(port);
+    });
+
+    before(() => {
+      personalAccessToken = cuid();
+      appAccessId1 = cuid();
+      appAccessToken1 = cuid();
+      appAccessId2 = cuid();
+      appAccessToken2 = cuid();
+      sharedAccessToken = cuid();
+      webhookId1 = cuid();
+      webhookId2 = cuid();
+    });
+
+    before(() => {
+      return mongoFixtures.user(username, {}, async (user) => {
+        user.access({
+          type: 'personal', token: personalAccessToken,
+        });
+        user.session(personalAccessToken);
+        user.access({
+          id: appAccessId1,
+          type: 'app', token: appAccessToken1,
+        });
+        user.access({
+          id: appAccessId2,
+          type: 'app', token: appAccessToken2,
+        });
+        user.access({
+          type: 'shared', token: sharedAccessToken,
+        });
+        user.webhook({
+          url: 'http://localhost:' + port + postPath,
+          id: webhookId1,
+        }, appAccessId1);
+        user.webhook({
+          id: webhookId2,
+        }, appAccessId2);
+      });
+    });
+
+    after(async () => {
+      await mongoFixtures.clean();
+      await notificationsServer.close();
+    });
+
+    describe('when using an app token', () => {
+
+      describe('when the webhook exists', () => {
+
+        describe('when the URL is valid', () => {
+          
+          let response;
+          before(async () => {
+            const res = await server.request()
+              .post(`/${username}/webhooks/${webhookId1}/test`)
+              .set('Authorization', appAccessToken1);
+            response = res;
+          });
+
+          it('should return a status 200 with a webhook object', () => {
+            validation.check(response, {
+              schema: methodsSchema.test.result,
+              status: 200,
+            });
+          });
+
+          it('should send a POST request to the URL', async () => {
+            /*await new bluebird((resolve, reject) => {
+              notificationsServer.on('received', resolve);
+              notificationsServer.on('close', () => { });
+              notificationsServer.on('error', reject);
+            });*/
+            assert.isTrue(notificationsServer.isMessageReceived());
+          }).timeout(1000);
+        });
+
+        describe('when the URL is invalid', () => {
+          it('not sure if doing');
+        });
+        
+      });
+
+      describe('when the webhook does not exist', () => {
+        let response;
+        before(async () => {
+          const res = await server.request()
+            .post(`/${username}/webhooks/doesnotexist/test`)
+            .set('Authorization', appAccessToken1);
+          response = res;
+        });
+
+        it('should return a status 404 with a unknown resource error', () => {
+          validation.checkErrorUnknown(response);
+        });
+      });
+
+      describe('when the webhook is outside of its scope', () => {
+        let response;
+        before(async () => {
+          const res = await server.request()
+            .post(`/${username}/webhooks/${webhookId2}/test`)
+            .set('Authorization', appAccessToken1);
+          response = res;
+        });
+
+        it('should return a status 403 with a forbidden error', () => {
+          validation.checkErrorForbidden(response);
+        });
+      });
+    });
+
+    describe('when using a personal token', () => {
+
+      describe('when the webhook exists', () => {
+        let response;
+        before(async () => {
+          const res = await server.request()
+            .post(`/${username}/webhooks/${webhookId1}/test`)
+            .set('Authorization', personalAccessToken);
+          response = res;
+        });
+
+        it('should return a status 200 with a webhook object', () => {
+          validation.check(response, {
+            schema: methodsSchema.test.result,
+            status: 200,
+          });
+        });
+
+        it('should send a POST request to the URL', async () => {
+          /*await new bluebird((resolve, reject) => {
+            notificationsServer.on('received', resolve);
+            notificationsServer.on('close', () => { });
+            notificationsServer.on('error', reject);
+          });*/
+          assert.isTrue(notificationsServer.isMessageReceived());
+        }).timeout(1000);
+      });
+    });
+
+    describe('when using a shared token', () => {
+
+      describe('when the webhook exists', () => {
+        let response;
+        before(async () => {
+          const res = await server.request()
+            .get(`/${username}/webhooks/doesnotmatter`)
+            .set('Authorization', sharedAccessToken);
+          response = res;
+        });
+
+        it('should return a status 403 with a forbidden error', () => {
+          validation.checkErrorForbidden(response);
+        });
+      });
+    });
   });
 });

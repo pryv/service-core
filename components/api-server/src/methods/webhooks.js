@@ -230,6 +230,38 @@ module.exports = function produceAccessesApiMethods(
     next();
   }
 
+  // TEST
+
+  api.register('webhooks.test',
+    commonFns.getParamsValidation(methodsSchema.test.params),
+    forbidSharedAccess,
+    testWebhook,
+  );
+
+  async function testWebhook(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    const user = context.user;
+    const currentAccess = context.access;
+    const webhookId = params.id;
+    let webhook;
+    try {
+      webhook = await webhooksRepository.getById(user, webhookId);
+      if (webhook == null) {
+        return next(errors.unknownResource('webhook', params.id));
+      }
+      if (!isWebhookInScope(webhook, currentAccess)) {
+        return next(errors.forbidden());
+      }
+
+      // replies after having made the call, but returns unexpected error if call fails - as if db fetching fails
+      // await webhook.makeCall(['test']);
+      result.webhook = webhook.forApi();
+    } catch (error) {
+      return next(errors.unexpectedError(error));
+    }
+    if (webhook != null) webhook.makeCall(['test']);
+    next();
+  }
+
   /**
    * checks if the webhook is allowed to be handled by the access
    * If Personnal: yes

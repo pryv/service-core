@@ -93,6 +93,9 @@ class Webhook implements MessageSink {
     this.NatsSubscriber = nsub;
   }
 
+  /**
+   * Send message and update the webhook in the storage
+   */
   async deliver(message: string) {
     await this.send(message);
     await makeUpdate([
@@ -103,6 +106,9 @@ class Webhook implements MessageSink {
     ], this);
   }
 
+  /**
+   * Send the message with the throttling and retry mechanics - to use in webhooks service
+   */
   async send(message: string, isRescheduled?: boolean): Promise<void> {
     if (isRescheduled != null && isRescheduled == true) {
       this.timeout = null;
@@ -119,13 +125,7 @@ class Webhook implements MessageSink {
     this.messageBuffer.clear();
     try {
       const messages = sentBuffer;
-      const res = await request.post(this.url)
-        .send({
-          messages: messages,
-          meta: {
-            apiVersion: '1.2.3'
-          }
-        });
+      const res = await this.makeCall(messages);
       status = res.status;
       if (status >= 300) handleError.call(this, res, sentBuffer);
     } catch (e) {
@@ -174,6 +174,20 @@ class Webhook implements MessageSink {
         return false;
       }
     }
+  }
+
+  /**
+   * Only make the HTTP call - used for webhook.test API method
+   */
+  async makeCall(messages: Array<string>): Promise<Http$Response> {
+    const res = await request.post(this.url)
+      .send({
+        messages: messages,
+        meta: {
+          apiVersion: '1.2.3'
+        }
+      });
+    return res;
   }
 
   stop(): void {
