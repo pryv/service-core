@@ -27,7 +27,7 @@ describe('webhooks', () => {
       appAccessToken1, appAccessToken2,
       appAccessId1, appAccessId2,
       sharedAccessToken,
-      webhookId1, webhookId2;
+      webhookId1, webhookId2, webhookId3;
   before(() => {
     username = cuid();
     personalAccessToken = cuid();
@@ -453,6 +453,8 @@ describe('webhooks', () => {
       personalAccessToken = cuid();
       appAccessId1 = cuid();
       appAccessToken1 = cuid();
+      appAccessId2 = cuid();
+      appAccessToken2 = cuid();
       sharedAccessToken = cuid();
       webhookId1 = cuid();
       webhookId2 = cuid();
@@ -463,14 +465,18 @@ describe('webhooks', () => {
         user.access({
           type: 'personal', token: personalAccessToken,
         });
+        user.session(personalAccessToken);
         user.access({
           id: appAccessId1,
           type: 'app', token: appAccessToken1,
         });
         user.access({
+          id: appAccessId2,
+          type: 'app', token: appAccessToken2,
+        });
+        user.access({
           type: 'shared', token: sharedAccessToken,
         });
-        user.session(personalAccessToken);
         user.webhook({
           id: webhookId1,
           url: url,
@@ -479,7 +485,7 @@ describe('webhooks', () => {
         }, appAccessId1);
         user.webhook({
           id: webhookId2,
-        });
+        }, appAccessId2);
       });
     });
 
@@ -643,13 +649,183 @@ describe('webhooks', () => {
   });
 
   describe('DELETE /:webhookId', () => {
-    it('should delete a webhook');
 
-    it('should fail if the webhook does not exist');
+    before(() => {
+      personalAccessToken = cuid();
+      appAccessId1 = cuid();
+      appAccessToken1 = cuid();
+      appAccessId2 = cuid();
+      appAccessToken2 = cuid();
+      sharedAccessToken = cuid();
+      webhookId1 = cuid();
+      webhookId2 = cuid();
+      webhookId3 = cuid();
+    });
 
-    it('should fail if the webhook outside of the token\'s rights');
+    before(() => {
+      return mongoFixtures.user(username, {}, async (user) => {
+        user.access({
+          type: 'personal', token: personalAccessToken,
+        });
+        user.session(personalAccessToken);
+        user.access({
+          id: appAccessId1,
+          type: 'app', token: appAccessToken1,
+        });
+        user.access({
+          id: appAccessId2,
+          type: 'app', token: appAccessToken2,
+        });
+        user.access({
+          type: 'shared', token: sharedAccessToken,
+        });
+        user.webhook({
+          id: webhookId1,
+        }, appAccessId1);
+        user.webhook({
+          id: webhookId2,
+        }, appAccessId2);
+        user.webhook({
+          id: webhookId3,
+        }, appAccessId1);
+      });
+    });
 
-    it('should fail if the webhook is already deleted');
+    after(async () => {
+      await mongoFixtures.clean();
+    });
+
+    describe('when using an app token', () => {
+      describe('when deleting an existing webhook', () => {
+
+        let response, deletion;
+        before(async () => {
+          const res = await server.request()
+            .delete(`/${username}/webhooks/${webhookId1}`)
+            .set('Authorization', appAccessToken1);
+          response = res;
+          deletion = {
+            id: response.body.id,
+            timestamp: response.body.timestamp,
+          };
+        });
+
+        it('should return a status 200 with the webhook deletion', () => {
+          validation.check(response, {
+            status: 200,
+            schema: methodsSchema.del.result,
+            data: deletion,
+          });
+        });
+
+        it('should delete it in the storage', async () => {
+          const deletedWebhook = await bluebird.fromCallback((cb) =>
+            storage.findOne({ id: username }, { id: { $eq: webhookId1 } }, {}, cb)
+          );
+          assert.notExists(deletedWebhook);
+        });
+      });
+
+      describe('when deleting an unexistant webhook', () => {
+
+        let response;
+        before(async () => {
+          const res = await server.request()
+            .delete(`/${username}/webhooks/doesnotexist`)
+            .set('Authorization', appAccessToken1);
+          response = res;
+        });
+
+        it('should return a status 404 with an unknown resource error', () => {
+          validation.checkError(
+            response,
+            {
+              status: 404,
+              id: ErrorIds.UnknownResource,
+            }
+          );
+        });
+      });
+
+      describe('when deleting an already deleted webhook', () => {
+
+        let response;
+        before(async () => {
+          const res = await server.request()
+            .delete(`/${username}/webhooks/${webhookId1}`)
+            .set('Authorization', appAccessToken1);
+          response = res;
+        });
+
+        it('should return a status 404 with an unknown resource error', () => {
+          validation.checkError(
+            response,
+            {
+              status: 404,
+              id: ErrorIds.UnknownResource,
+            }
+          );
+        });
+      });
+
+      describe('when deleting a webhook outside of its scope', () => {
+
+        let response;
+        before(async () => {
+          const res = await server.request()
+            .delete(`/${username}/webhooks/${webhookId2}`)
+            .set('Authorization', appAccessToken1);
+          response = res;
+        });
+
+        it('should return a status 403 with a forbidden error', () => {
+          validation.checkErrorForbidden(response);
+        });
+      });
+    });
+
+    describe('when using a personal token', () => {
+      describe('when deleting an existing webhook', () => {
+
+        let response, deletion;
+        before(async () => {
+          const res = await server.request()
+            .delete(`/${username}/webhooks/${webhookId3}`)
+            .set('Authorization', personalAccessToken);
+          response = res;
+          deletion = {
+            id: response.body.id,
+            timestamp: response.body.timestamp,
+          };
+        });
+
+        it('should return a status 200 with the webhook deletion', () => {
+          validation.check(response, {
+            status: 200,
+            schema: methodsSchema.del.result,
+            data: deletion,
+          });
+        });
+      });
+    });
+
+    describe('when using a shared token', () => {
+      describe('when deleting an existing webhook', () => {
+
+        let response;
+        before(async () => {
+          const res = await server.request()
+            .delete(`/${username}/webhooks/${webhookId2}`)
+            .set('Authorization', sharedAccessToken);
+          response = res;
+        });
+
+        it('should return a status 403 with a forbidden error', () => {
+          validation.checkErrorForbidden(response);
+        });
+
+      });
+    });
   });
 
   describe('POST /:webhookId/test', () => {

@@ -201,6 +201,15 @@ class Webhook implements MessageSink {
     await makeUpdate(fields, this);
   }
 
+  async delete(): Promise<void> {
+    if (this.storage == null) {
+      throw new Error('storage not set for Webhook object.');
+    }
+    await bluebird.fromCallback(
+      (cb) => this.storage.delete(this.user, { id: this.id }, cb)
+    );
+  }
+
   getMessageBuffer(): Array<string> {
     return Array.from(this.messageBuffer);
   }

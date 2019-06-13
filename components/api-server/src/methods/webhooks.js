@@ -1,13 +1,13 @@
 // @flow
 
 const _ = require('lodash');
+const timestamp = require('unix-timestamp');
 
 const APIError = require('components/errors').APIError;
 const errors = require('components/errors').factory;
 const ErrorIds = require('components/errors').ErrorIds;
 
 const commonFns = require('./helpers/commonFunctions');
-const webhookSchema = require('../schema/webhook');
 const methodsSchema = require('../schema/webhooksMethods');
 
 const Webhook = require('components/business').webhooks.Webhook;
@@ -192,6 +192,38 @@ module.exports = function produceAccessesApiMethods(
 
       await webhook.update(update);
       result.webhook = webhook.forApi();
+    } catch (e) {
+      return next(errors.unexpectedError(e));
+    }
+    next();
+  }
+
+  // DELETION
+
+  api.register('webhooks.delete',
+    commonFns.getParamsValidation(methodsSchema.del.params),
+    forbidSharedAccess,
+    deleteAccess);
+
+  async function deleteAccess(context, params, result, next) {
+    const user = context.user;
+    const currentAccess = context.access;
+    const webhookId = params.id;
+
+    try {
+      const webhook = await webhooksRepository.getById(user, webhookId);
+      if (webhook == null) {
+        return next(errors.unknownResource('webhook', params.id));
+      }
+      if (!isWebhookInScope(webhook, currentAccess)) {
+        return next(errors.forbidden());
+      }
+
+      await webhook.delete();
+      result.webhookDeletion = {
+        id: webhook.id,
+        deleted: timestamp.now(),
+      };
     } catch (e) {
       return next(errors.unexpectedError(e));
     }

@@ -52,7 +52,23 @@ Webhooks.prototype.getCollectionInfo = function (user) {
  */
 Webhooks.prototype.delete = function (user, query, callback) {
   const update = {
-    $set: { deleted: new Date() }
+    $set: { deleted: new Date() },
+    $unset: {
+      accessId: 1,
+      url: 1,
+      state: 1,
+      runCount: 1,
+      failCount: 1,
+      lastRun: 1,
+      runs: 1,
+      currentRetries: 1,
+      maxRetries: 1,
+      minIntervalMs: 1,
+      created: 1,
+      createdBy: 1,
+      modified: 1,
+      modifiedBy: 1,
+    },
   };
   this.database.updateMany(this.getCollectionInfo(user),
     this.applyQueryToDB(query), update, callback);
