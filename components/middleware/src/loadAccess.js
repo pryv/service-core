@@ -9,17 +9,20 @@ import type { StorageLayer } from 'components/storage';
 // Also, it adds the corresponding access id as a specific response header.
 // 
 module.exports = function loadAccess(storageLayer: StorageLayer) {
-  return function (
+  return async function (
     req: express$Request, res: express$Response, next: express$NextFunction
   ) {
 
-    const accessLoaded = req.context.retrieveExpandedAccess(storageLayer);
-
-    return bluebird.resolve(accessLoaded).asCallback((err) => {
-      // Add access id header regardless of success or error case
+    try {
+      await req.context.retrieveExpandedAccess(storageLayer);
+      // Add access id header
+      setAccessIdHeader(req, res);
+      next();
+    } catch (err) {
+      // Also set the header in case of error
       setAccessIdHeader(req, res);
       next(err);
-    });
+    }
   };
 };
 
