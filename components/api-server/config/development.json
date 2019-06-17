@@ -7,9 +7,8 @@
       "enabled": false
     },
     "register": {
-      "url": "https://reg.pryv.io",
       "TODO DELETE" : "// ICI",
-      "key": "OVERRIDE ME"
+      "url": "https://reg.pryv.io"
     }
   }, 
   "tcpMessaging": {

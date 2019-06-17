@@ -5,6 +5,7 @@
 const Server = require('../src/server');
 const Application = require('../src/application');
 const Settings = require('../src/settings');
+// const Service = require('../src/service');
 
 // Load settings
 const settings = Settings.load(); 
@@ -15,6 +16,10 @@ const logger = app.logFactory('api-server');
 
 // démarrer Register et apperler /service/infos
 // récupérer les infos et les stocker dans la config de core
+
+//http get services.register.url/service/infos
+//copy config into internal config
+
 
 // This bit is useful to trace down promise rejections that aren't caught. 
 process.on('unhandledRejection', (reason, promise) => {

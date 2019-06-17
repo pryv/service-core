@@ -102,6 +102,7 @@ class Server {
       require('./methods/system'),
       require('./methods/utility'),
       require('./methods/auth'),
+      require('./methods/service'),
     ].forEach(function (moduleDef) {
       dependencies.resolve(moduleDef);
     });
@@ -272,6 +273,7 @@ class Server {
       require('./routes/profile'),
       require('./routes/streams'),
       require('./routes/events'),
+      require('./routes/service'),
     ].forEach(function (moduleDef) {
       dependencies.resolve(moduleDef);
     });

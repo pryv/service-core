@@ -9,7 +9,7 @@ const storage = require('components/storage');
 const API = require('./API');
 
 import type { ConfigAccess } from './settings';
-import type { Service } from './methods/service';
+// import type { Service } from './methods/service';
 import type { LogFactory } from 'components/utils';
 import type { Logger } from 'components/utils';
 

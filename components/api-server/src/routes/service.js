@@ -1,18 +1,11 @@
-var methodCallback = require('./methodCallback'),
-    Paths = require('./Paths'),
-    _ = require('lodash');
-
+const express = require('express');
+const Paths = require('./Paths');
 /**
- * Service info route handling.
- *
- * @param expressApp
- * @param api
+ * Set up events route handling.
  */
-module.exports = function (expressApp, api) {
-
-  expressApp.get(Paths.Service + '/info', function (req, res, next) {
-    var params = _.extend({}, req.query);
-    api.call('service.info', req.context, params, methodCallback(res, next, 200));
+module.exports = function(expressApp, api) {  
+  expressApp.get(Paths.Service + '/infos', function (req, res, next) {
+    api.call('service.infos', req.context, req.query, methodCallback(res, next, 200));
   });
 };
-module.exports.injectDependencies = true;
+//module.exports.injectDependencies = true;

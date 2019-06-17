@@ -2,8 +2,6 @@ module.exports = function (api, logging) {
 
   const logger = logging.getLogger('methods/service');
 
-  // RETRIEVAL
-
   api.register('service.infos',
     getServiceInfo
   );
@@ -28,4 +26,4 @@ module.exports = function (api, logging) {
       serviceInfos[memberName] = value;
   }
 };
-module.exports.injectDependencies = true;
+//module.exports.injectDependencies = true; // confirmer qu'on vire ?
