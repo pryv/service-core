@@ -887,6 +887,11 @@ describe('webhooks', () => {
               .post(`/${username}/webhooks/${webhookId1}/test`)
               .set('Authorization', appAccessToken1);
             response = res;
+            await new bluebird((resolve, reject) => {
+              notificationsServer.on('received', resolve);
+              notificationsServer.on('close', () => { });
+              notificationsServer.on('error', reject);
+            });
           });
 
           it('should return a status 200 with a webhook object', () => {
@@ -897,11 +902,6 @@ describe('webhooks', () => {
           });
 
           it('should send a POST request to the URL', async () => {
-            /*await new bluebird((resolve, reject) => {
-              notificationsServer.on('received', resolve);
-              notificationsServer.on('close', () => { });
-              notificationsServer.on('error', reject);
-            });*/
             assert.isTrue(notificationsServer.isMessageReceived());
           }).timeout(1000);
         });
@@ -950,6 +950,11 @@ describe('webhooks', () => {
             .post(`/${username}/webhooks/${webhookId1}/test`)
             .set('Authorization', personalAccessToken);
           response = res;
+          await new bluebird((resolve, reject) => {
+            notificationsServer.on('received', resolve);
+            notificationsServer.on('close', () => { });
+            notificationsServer.on('error', reject);
+          });
         });
 
         it('should return a status 200 with a webhook object', () => {
@@ -960,11 +965,6 @@ describe('webhooks', () => {
         });
 
         it('should send a POST request to the URL', async () => {
-          /*await new bluebird((resolve, reject) => {
-            notificationsServer.on('received', resolve);
-            notificationsServer.on('close', () => { });
-            notificationsServer.on('error', reject);
-          });*/
           assert.isTrue(notificationsServer.isMessageReceived());
         }).timeout(1000);
       });
