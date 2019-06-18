@@ -1,6 +1,7 @@
 // @flow
 
 const bluebird = require('bluebird');
+const _ = require('lodash');
 
 const NatsSubscriber = require('components/api-server/src/socket-io/nats_subscriber');
 const NATS_CONNECTION_URI: string = require('components/utils').messaging.NATS_CONNECTION_URI;
@@ -41,6 +42,7 @@ class WebhooksService implements MessageSink {
     await this.subscribeToCreateListener();
     await this.loadWebhooks();
     await this.initSubscribers();
+    this.logger.info('started');
   }
 
   async subscribeToDeleteListener(): Promise<void> {
@@ -63,7 +65,18 @@ class WebhooksService implements MessageSink {
   deliver(channel: string, usernameWebhook: UsernameWebhook): void {
     switch(channel) {
       case WEBHOOKS_CREATE_CHANNEL:
-        this.addWebhook(usernameWebhook.username, new Webhook(usernameWebhook.webhook));
+        this.addWebhook(usernameWebhook.username, 
+          new Webhook(_.extend(
+            {}, 
+            usernameWebhook.webhook,
+            { 
+              webhooksStorage: this.storage,
+              user: {
+                username: usernameWebhook.username,
+              }
+            }
+          ))
+        );
         break;
       case WEBHOOKS_DELETE_CHANNEL:
         this.stopWebhook(usernameWebhook.username, usernameWebhook.webhook.id);
@@ -79,23 +92,23 @@ class WebhooksService implements MessageSink {
     }
     userWebhooks.push(webhook);
     await initSubscriberForWebhook(username, webhook);
+    this.logger.info(`Loaded webhook ${webhook.id} for ${username}`);
   }
 
   stopWebhook(username: string, webhookId: string): void {
     let usersWebhooks = this.webhooks.get(username);
-    let webhookToStop;
     usersWebhooks = usersWebhooks.filter(w => {
-        if (w.id === webhookId) {
-          webhookToStop = w;
-        }
-        return w.id !== webhookId;
-      });
+      if (w.id === webhookId) {
+        w.stop();
+      }
+      return w.id !== webhookId;
+    });
     this.webhooks.set(username, usersWebhooks);
-    webhookToStop.stop();
+    this.logger.info(`Stopped webhook ${webhookId} for ${username}`);
   }
 
   stop(): void {
-    console.log('stoppin webhooks');
+    this.logger.info('Stopping webhooks service');
     for (const usernameWebhooks of this.webhooks) {
       usernameWebhooks[1].forEach(w => {
         w.stop();

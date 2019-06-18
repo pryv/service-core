@@ -3,8 +3,6 @@
 // Main application class. Does all the work. 
 
 const assert = require('assert');
-const path = require('path');
-
 const yargs = require('yargs');
 
 const loggingSubsystem = require('components/utils/src/logging');
@@ -48,7 +46,7 @@ class Application {
     const loggerSettings = settings.getLogSettingsObject();
     const logFactory = this.logFactory = loggingSubsystem(loggerSettings).getLogger;
 
-    const logger = this.logger = logFactory('application');
+    const logger = this.logger = logFactory('webhooks');
 
     const consoleLevel = settings.get('logs.console.level').str();
     logger.info(`Console logging is configured at level '${consoleLevel}'`);
@@ -67,7 +65,7 @@ class Application {
   async run() {
     const logger = this.logger;
 
-    logger.info('Webhooks service is mounting services:');
+    logger.info('Webhooks service is mounting services');
     await this.startWebhooksService();
   }
 

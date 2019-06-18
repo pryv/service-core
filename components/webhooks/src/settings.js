@@ -4,7 +4,7 @@
 const fs = require('fs');
 
 const bluebird = require('bluebird');
-const lodash = require('lodash');
+const _ = require('lodash');
 const Hjson = require('hjson');
 const YAML = require('js-yaml');
 
@@ -36,7 +36,7 @@ class Settings implements ConfigAccess {
     this.config = this.defaults();
 
     if (override != null)
-      lodash.merge(this.config, override);
+      _.merge(this.config, override);
   }
   defaults() {
     return {
@@ -44,7 +44,6 @@ class Settings implements ConfigAccess {
         minIntervalMs: 5000,
         maxRetries: 5,
       },
-
       logs: {
         // If you add something here, you might also want to include it into 
         // the #getLogSettingsObject return value below.
@@ -82,28 +81,28 @@ class Settings implements ConfigAccess {
     else
       obj = Hjson.parse(text);
 
-    lodash.merge(this.config, obj);
+    _.merge(this.config, obj);
   }
 
   // Merges settings in `other` with the settings stored here. 
   // 
   merge(other: Object) {
-    lodash.merge(this.config, other);
+    _.merge(this.config, other);
   }
 
   get(key: string): ConfigValue {
     const config = this.config;
 
-    if (!lodash.has(config, key)) return new MissingValue(key);
+    if (!_.has(config, key)) return new MissingValue(key);
 
-    const val = lodash.get(config, key);
+    const val = _.get(config, key);
     return new ExistingValue(key, val);
   }
 
   has(key: string): boolean {
     const config = this.config;
 
-    return lodash.has(config, key);
+    return _.has(config, key);
   }
 
   getWebhooksSettingsObject(): Object {
@@ -198,7 +197,7 @@ class LValue {
     const key = [prefix, this.key].join('.');
     const val = config.get(key);
     const mapper = this.mapper;
-    lodash.set(res, this.key, mapper(val));
+    _.set(res, this.key, mapper(val));
   }
 }
 
