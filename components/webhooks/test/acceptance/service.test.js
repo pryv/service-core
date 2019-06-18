@@ -14,6 +14,7 @@ const { produceMongoConnection, context } = require('components/api-server/test/
 
 const WebhooksApp = require('../../src/application');
 
+const Webhook = require('components/business').webhooks.Webhook;
 const HttpServer = require('components/business/test/acceptance/webhooks/support/httpServer');
 
 describe('webhooks', () => {
@@ -35,21 +36,20 @@ describe('webhooks', () => {
 
   const url = 'http://localhost:' + port + postPath;
 
-  before(() => {
-    return mongoFixtures.user(username, {}, async (user) => {
-      await user.stream({
-        id: streamId,
-      });
-      await user.access({
-        id: appAccessId,
-        type: 'app', token: appAccessToken,
-        permissions: [{
-          streamId: '*',
-          level: 'manage',
-        }]
-      });
-      await user.webhook({ url: url }, appAccessId);
+  before(async () => {
+    const user = await mongoFixtures.user(username, {});
+    await user.stream({
+      id: streamId,
     });
+    await user.access({
+      id: appAccessId,
+      type: 'app', token: appAccessToken,
+      permissions: [{
+        streamId: '*',
+        level: 'manage',
+      }]
+    });
+    await user.webhook({ url: url }, appAccessId);
   });
 
   let apiServer, mongoFixtures, webhooksApp;
@@ -82,7 +82,6 @@ describe('webhooks', () => {
         });
 
         let requestTimestamp;
-
         before(async () => {
           requestTimestamp = timestamp.now();
           await apiServer.request()
@@ -121,10 +120,9 @@ describe('webhooks', () => {
   
   });
 
-  describe('when creating a Webhook through API server', () => {
+  describe('when creating a Webhook through api-server', () => {
 
     const url = 'doesntmatter';
-
     let webhookId;
     before(async () => {
       const res = await apiServer.request()
@@ -147,6 +145,77 @@ describe('webhooks', () => {
       }
       assert.isTrue(isWebhookActive);
     });
+  });
+
+  describe('when there are running webhooks', () => {
+
+     before(() => {
+        username = cuid();
+        appAccessId = cuid();
+        appAccessToken = cuid();
+        webhookId = cuid();
+        streamId = cuid();
+      });
+
+      before(async () => {
+        const user = await mongoFixtures.user(username, {});
+        await user.stream({
+          id: streamId,
+          name: 'doesntmatter'
+        });
+        await user.access({
+          id: appAccessId,
+          type: 'app', token: appAccessToken,
+          permissions: [{
+            streamId: streamId,
+            level: 'manage',
+          }]
+        });
+        await user.webhook({ 
+          url: 'doesntmatter',
+          id: webhookId,
+        }, appAccessId);
+      });
+
+      before(async () => {
+        await webhooksApp.webhooksService.addWebhook(username, new Webhook({
+          id: webhookId,
+        }));
+      });
+
+    describe('when deleting a webhook through API server', () => {
+
+      before(async () => {
+        await apiServer.request()
+          .delete(`/${username}/webhooks/${webhookId}`)
+          .set('Authorization', appAccessToken);
+      });
+
+      it('should deactivate the current running webhook through NATS', async () => {
+        let isWebhookActive = true;
+        while (isWebhookActive) {
+          const webhooks = webhooksApp.webhooksService.webhooks.get(username);
+          isWebhookActive = false;
+          webhooks.forEach( w => {
+            if (w.id === webhookId) {
+              isWebhookActive = true;
+            }
+          });
+          await awaiting.delay(10);
+        }
+        assert.isFalse(isWebhookActive);
+      });
+    });
+
+  });
+
+  describe('when deleting an access through API server', () => {
+
+  });
+
+  describe('when an access expires', () => {
+    
+
   });
 
 });

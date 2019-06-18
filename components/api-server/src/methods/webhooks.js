@@ -170,12 +170,12 @@ module.exports = function produceAccessesApiMethods(
     applyPrerequisitesForUpdate,
     updateWebhook);
 
-  function applyPrerequisitesForUpdate(context, params, result, next) {
+  function applyPrerequisitesForUpdate(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     context.updateTrackingProperties(params.update);
     next();
   }
 
-  async function updateWebhook(context, params, result, next) {
+  async function updateWebhook(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     const user = context.user;
     const currentAccess = context.access;
     const update = params.update;
@@ -203,9 +203,11 @@ module.exports = function produceAccessesApiMethods(
   api.register('webhooks.delete',
     commonFns.getParamsValidation(methodsSchema.del.params),
     forbidSharedAccess,
-    deleteAccess);
+    deleteAccess,
+    turnOffWebhook,
+  );
 
-  async function deleteAccess(context, params, result, next) {
+  async function deleteAccess(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     const user = context.user;
     const currentAccess = context.access;
     const webhookId = params.id;
@@ -229,6 +231,19 @@ module.exports = function produceAccessesApiMethods(
     }
     next();
   }
+
+  async function turnOffWebhook(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    const username = context.user.username;
+    const webhookId = params.id;
+    natsPublisher.deliver(NATS_WEBHOOKS_DELETE_CHANNEL, {
+      username: username,
+      webhook: {
+        id: webhookId,
+      }
+    });
+    return next();
+  }
+
 
   // TEST
 

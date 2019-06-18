@@ -61,13 +61,12 @@ class WebhooksService implements MessageSink {
   }
 
   deliver(channel: string, usernameWebhook: UsernameWebhook): void {
-    //console.log('received notification for', channel, 'with', usernameWebhook);
     switch(channel) {
       case WEBHOOKS_CREATE_CHANNEL:
         this.addWebhook(usernameWebhook.username, new Webhook(usernameWebhook.webhook));
         break;
       case WEBHOOKS_DELETE_CHANNEL:
-
+        this.stopWebhook(usernameWebhook.username, usernameWebhook.webhook.id);
         break;
     }
   }
@@ -80,6 +79,19 @@ class WebhooksService implements MessageSink {
     }
     userWebhooks.push(webhook);
     await initSubscriberForWebhook(username, webhook);
+  }
+
+  stopWebhook(username: string, webhookId: string): void {
+    let usersWebhooks = this.webhooks.get(username);
+    let webhookToStop;
+    usersWebhooks = usersWebhooks.filter(w => {
+        if (w.id === webhookId) {
+          webhookToStop = w;
+        }
+        return w.id !== webhookId;
+      });
+    this.webhooks.set(username, usersWebhooks);
+    webhookToStop.stop();
   }
 
   stop(): void {
@@ -98,7 +110,6 @@ class WebhooksService implements MessageSink {
 }
 
 async function initSubscriberForWebhook(username: string, webhook: Webhook): Promise<void> {
-  console.log('initiating subscriber for', username, '@', webhook.url);
   const natsSubscriber = new NatsSubscriber(NATS_CONNECTION_URI, webhook, 
     function channelForUser(username: string): string {
       return `${username}.wh1`;
