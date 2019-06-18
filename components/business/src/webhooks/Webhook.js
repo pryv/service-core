@@ -96,14 +96,8 @@ class Webhook implements MessageSink {
   /**
    * Send message and update the webhook in the storage
    */
-  async deliver(message: string) {
+  async deliver(username: string, message: string): Promise<void> {
     await this.send(message);
-    await makeUpdate([
-      'runs',
-      'runCount',
-      'failCount',
-      'currentRetries',
-    ], this);
   }
 
   /**
@@ -127,34 +121,49 @@ class Webhook implements MessageSink {
       const messages = sentBuffer;
       const res = await this.makeCall(messages);
       status = res.status;
-      if (status >= 300) handleError.call(this, res, sentBuffer);
     } catch (e) {
-      status = handleError.call(this, e.response, sentBuffer);
+      if (e.response != null) {
+        status = e.response.status;
+      } else {
+        status = 0;
+      }
     }
-    if (status >= 200 && status < 300) {
+    if (hasError(status)) {
+      this.failCount++;
+      this.currentRetries++;
+      sentBuffer.forEach(m => {
+        this.messageBuffer.add(m);
+      });
+    } else {
       this.currentRetries = 0;
     }
-
+    
     this.runCount++;
     this.lastRun = { status: status, timestamp: Date.now() / 1000 };
     this.runs.push(this.lastRun);
 
-    function handleError(response: number, sentBuffer: Array<string>): number {
-      sentBuffer.forEach(m => {
-        this.messageBuffer.add(m);
-      });
-      this.failCount++;
+    await makeUpdate([
+      'lastRun',
+      'runs',
+      'runCount',
+      'failCount',
+      'currentRetries',
+      'state',
+    ], this);
+
+    if (hasError(status)) {
       handleRetry.call(this, message);
-      if (response == null) return 0;
-      return response.status;
+    }
+
+    function hasError(status) {
+      return (status < 200) || (status >= 300);
     }
 
     function handleRetry(message): void {
       if (this.currentRetries > this.maxRetries || this.state === 'inactive') {
         this.state = 'inactive';
         return;
-      }
-      this.currentRetries++;
+      } 
       reschedule.call(this, message);
     }
 
@@ -162,7 +171,11 @@ class Webhook implements MessageSink {
       if (this.timeout != null) return;
       const delay = this.minIntervalMs * (this.currentRetries || 1);
       this.timeout = setTimeout(async () => {
-        await this.send(message, true);
+        return this.send(message, true);
+        //await this.send(message, true);
+        /*process.nextTick((message, bool) => {
+          this.send(message, bool)
+          }, message, true);*/
       }, delay);
     }
 
@@ -284,8 +297,7 @@ async function makeUpdate(fields?: Array<string>, webhook: Webhook): Promise<voi
   } else {
     update = _.pick(webhook.forStorage(), fields);
   }
-
-  const query = {};
+  const query = { id: webhook.id };
   await bluebird.fromCallback(
     (cb) => webhook.storage.updateOne(webhook.user, query, update, cb)
   );
