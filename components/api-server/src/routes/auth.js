@@ -5,6 +5,7 @@ const lodash = require('lodash');
 const express = require('express');
 
 const errors = require('components/errors').factory;
+const middleware = require('components/middleware');
 
 const methodCallback = require('./methodCallback');
 const Paths = require('./Paths');
@@ -13,14 +14,17 @@ declare class RequestWithContext extends express$Request {
   context: any; 
 }
 
-import type { ConfigAccess } from '../settings';
+import type Application from '../application';
 
 /**
  * Auth routes.
  *
  * @param {Object} api The API object for registering methods
  */
-module.exports = function (expressApp: express$Application, api: any, settings: ConfigAccess) {
+module.exports = function (expressApp: express$Application, app: Application) {
+  const settings = app.settings;
+  const api = app.api;
+
   const ms14days: number = 1000 * 60 * 60 * 24 * 14;
   const sessionMaxAge: number = settings.get('auth.sessionMaxAge').num() || ms14days;
   const ssoCookieDomain: string = settings.get('auth.ssoCookieDomain').str() || settings.get('http.ip').str();
@@ -28,6 +32,8 @@ module.exports = function (expressApp: express$Application, api: any, settings: 
   const ssoCookieSecure: boolean = process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'test' ;
   const ssoIsWhoamiActivated: boolean = settings.get('deprecated.auth.ssoIsWhoamiActivated').bool();
   const ssoHttpOnly: boolean = true ;
+
+  const loadAccessMiddleware = middleware.loadAccess(app.storageLayer);
 
   // Returns true if the given `obj` has all of the property values identified
   // by the names contained in `keys`.
@@ -100,10 +106,12 @@ module.exports = function (expressApp: express$Application, api: any, settings: 
       });
 
     });
-    router.post('/logout', function routeLogout(req: RequestWithContext, res, next) {
-      clearSSOCookie(res);
-      api.call('auth.logout', req.context, {}, methodCallback(res, next, 200));
-    });
+    router.post('/logout',
+      loadAccessMiddleware,
+      function routeLogout(req: RequestWithContext, res, next) {
+        clearSSOCookie(res);
+        api.call('auth.logout', req.context, {}, methodCallback(res, next, 200));
+      });
   }
   
   // Create a router that is relative to /:username/auth/
@@ -116,4 +124,3 @@ module.exports = function (expressApp: express$Application, api: any, settings: 
     hasProperties: hasProperties, 
   };
 };
-module.exports.injectDependencies = true;

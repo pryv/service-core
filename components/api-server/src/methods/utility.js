@@ -1,8 +1,10 @@
-var async = require('async'),
-    commonFns = require('./helpers/commonFunctions'),
-    errorHandling = require('components/errors').errorHandling,
-    methodsSchema = require('../schema/generalMethods'),
-    _ = require('lodash');
+// @flow
+
+const commonFns = require('./helpers/commonFunctions');
+const errorHandling = require('components/errors').errorHandling;
+const methodsSchema = require('../schema/generalMethods');
+const _ = require('lodash');
+const bluebird = require('bluebird');
 
 /**
  * Utility API methods implementations.
@@ -14,9 +16,8 @@ module.exports = function (api, logging, storageLayer) {
   var logger = logging.getLogger('methods/batch');
 
   api.register('getAccessInfo',
-      commonFns.loadAccess(storageLayer),
-      commonFns.getParamsValidation(methodsSchema.getAccessInfo.params),
-      getAccessInfo);
+    commonFns.getParamsValidation(methodsSchema.getAccessInfo.params),
+    getAccessInfo);
 
   function getAccessInfo(context, params, result, next) {
     result.type = context.access.type;
@@ -28,33 +29,36 @@ module.exports = function (api, logging, storageLayer) {
   }
 
   api.register('callBatch',
-      commonFns.getParamsValidation(methodsSchema.callBatch.params),
-      callBatch);
+    commonFns.getParamsValidation(methodsSchema.callBatch.params),
+    callBatch);
 
-  function callBatch(context, params, results, next) {
-    results.results = [];
-    async.forEachSeries(params, executeCall, next);
-
-    function executeCall(call, done) {
-      // clone context to avoid potential side FX
-      var freshContext = _.extend(Object.create(Object.getPrototypeOf(context)), context);
-      api.call(call.method, freshContext, call.params, function (err, result) {
-        if (err) {
-          // provide custom request context as we're outside of the usual error handling logic
-          var reqContext = {
-            method: call.method + ' (within batch)',
-            url: 'pryv://' + context.username
-          };
-          errorHandling.logError(err, reqContext, logger);
-          results.results.push({error: errorHandling.getPublicErrorData(err)});
-          done();
-        } else {
-          result.toObject(function (object) {
-            results.results.push(object);
-            done();
-          });
-        }
-      });
+  async function callBatch(context, calls, results, next) {
+    results.results = await bluebird.mapSeries(calls, executeCall);
+    next();
+  
+    async function executeCall(call) {
+      // Clone context to avoid potential side effects
+      const freshContext = _.cloneDeep(context);
+      try {
+        // Reload streams tree since a previous call in this batch
+        // may have created a new stream.
+        await freshContext.retrieveStreams(storageLayer);
+        // Perform API call
+        const result = await bluebird.fromCallback(
+          (cb) => api.call(call.method, freshContext, call.params, cb));
+        
+        return await bluebird.fromCallback(
+          (cb) => result.toObject(cb));
+      } catch(err) {
+        // Batchcalls have specific error handling hence the custom request context
+        const reqContext = {
+          method: call.method + ' (within batch)',
+          url: 'pryv://' + context.username
+        };
+        errorHandling.logError(err, reqContext, logger);
+        
+        return {error: errorHandling.getPublicErrorData(err)};
+      }
     }
   }
 
