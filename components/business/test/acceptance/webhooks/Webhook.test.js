@@ -3,6 +3,7 @@
 const assert = require('chai').assert;
 const timestamp = require('unix-timestamp');
 const bluebird = require('bluebird');
+const awaiting = require('awaiting');
 
 const Webhook = require('../../../src/webhooks/Webhook');
 
@@ -29,57 +30,114 @@ describe('Webhook', () => {
 
     describe('when sending to an existing endpoint', () => {
 
-      before(async () => {
-        notificationsServer = new HttpServer(postPath, 200);
-        await notificationsServer.listen();
-      });
+      describe('when the endpoint answers ASAP', () => {
 
-      after(() => {
-        notificationsServer.close();
-      });
-
-      let webhook, runs, message, requestTimestamp,
-        storedWebhook;
-
-      before(async () => {
-        message = 'hi';
-        webhook = new Webhook({
-          accessId: 'doesntmatter',
-          url: url,
-          webhooksStorage: storage,
-          user: user,
+        before(async () => {
+          notificationsServer = new HttpServer(postPath, 200);
+          await notificationsServer.listen();
         });
-        await webhook.save();
-        requestTimestamp = timestamp.now();
-        await webhook.send(message);
-        runs = webhook.runs;
-        storedWebhook = await bluebird.fromCallback(
-          cb => storage.findOne(user, { id: { $eq: webhook.id } }, {}, cb)
-        );
+
+        after(() => {
+          notificationsServer.close();
+        });
+
+        let webhook, runs, message, requestTimestamp,
+          storedWebhook;
+
+        before(async () => {
+          message = 'hi';
+          webhook = new Webhook({
+            accessId: 'doesntmatter',
+            url: url,
+            webhooksStorage: storage,
+            user: user,
+          });
+          await webhook.save();
+          requestTimestamp = timestamp.now();
+          await webhook.send(message);
+          runs = webhook.runs;
+          storedWebhook = await bluebird.fromCallback(
+            cb => storage.findOne(user, { id: { $eq: webhook.id } }, {}, cb)
+          );
+        });
+
+        it('should send it', () => {
+          assert.equal(notificationsServer.getMessages()[0], message, 'Webhook sent wrong message.');
+        });
+        it('should add a log to runs', () => {
+          assert.equal(runs.length, 1);
+          assert.equal(storedWebhook.runs.length, 1);
+        });
+        it('should add the correct status to the last run', () => {
+          assert.equal(runs[0].status, 200);
+          assert.equal(storedWebhook.runs[0].status, 200);
+        });
+        it('should add the correct timestamp to the last run', () => {
+          assert.approximately(runs[0].timestamp, requestTimestamp, 0.5, 'Timestamp is unsynced.');
+          assert.approximately(storedWebhook.runs[0].timestamp, requestTimestamp, 0.5, 'Timestamp is unsynced.');
+        });
+        it('should increment runCount', () => {
+          assert.equal(webhook.runCount, 1);
+          assert.equal(storedWebhook.runCount, 1);
+        });
+        it('should not increment failCount', () => {
+          assert.equal(webhook.failCount, 0);
+          assert.equal(storedWebhook.failCount, 0);
+        });
       });
 
-      it('should send it', () => {
-        assert.equal(notificationsServer.getMessages()[0], message, 'Webhook sent wrong message.');
-      });
-      it('should add a log to runs', () => {
-        assert.equal(runs.length, 1);
-        assert.equal(storedWebhook.runs.length, 1);
-      });
-      it('should add the correct status to the last run', () => {
-        assert.equal(runs[0].status, 200);
-        assert.equal(storedWebhook.runs[0].status, 200);
-      });
-      it('should add the correct timestamp to the last run', () => {
-        assert.approximately(runs[0].timestamp, requestTimestamp, 0.5, 'Timestamp is unsynced.');
-        assert.approximately(storedWebhook.runs[0].timestamp, requestTimestamp, 0.5, 'Timestamp is unsynced.');
-      });
-      it('should increment runCount', () => {
-        assert.equal(webhook.runCount, 1);
-        assert.equal(storedWebhook.runCount, 1);
-      });
-      it('should not increment failCount', () => {
-        assert.equal(webhook.failCount, 0);
-        assert.equal(storedWebhook.failCount, 0);
+      describe('when the endpoint answers with a long delay', () => {
+
+        postPath = '/delayed';
+        url = makeUrl(postPath);
+        const minIntervalMs = 50;
+        const intraCallsIntervalMs = 100;
+        const delay = 500;
+        const firstMessage = 'hi1';
+        const secondMessage = 'hi2';
+
+        before(async () => {
+          notificationsServer = new HttpServer(postPath, 200);
+          await notificationsServer.listen();
+          notificationsServer.setResponseDelay(delay)
+        });
+
+        after(() => {
+          notificationsServer.close();
+        });
+
+        let webhook, requestTimestamp;
+
+        before(async () => {
+          webhook = new Webhook({
+            accessId: 'doesntmatter',
+            url: url,
+            minIntervalMs: minIntervalMs,
+            webhooksStorage: storage,
+            user: user,
+          });
+          //await webhook.save();
+          const start = timestamp.now();
+          setTimeout(() => {
+            console.log('doing 2 @', timestamp.now() - start);
+            return webhook.send(secondMessage)
+          }, intraCallsIntervalMs);
+          webhook.send(firstMessage);
+          await awaiting.event(notificationsServer, 'received');
+          console.log('received 1 @', timestamp.now() - start);
+          notificationsServer.setResponseDelay(null);
+          await awaiting.event(notificationsServer, 'responding');
+          console.log('received 2 @', timestamp.now() - start);
+          await awaiting.event(notificationsServer, 'responding');
+        });
+
+        it('should send the second message after the first', async () => {
+          const receivedMessages = notificationsServer.getMessages();
+          assert.equal(receivedMessages.length, 2);
+          assert.equal(receivedMessages[0], firstMessage);
+          assert.equal(receivedMessages[1], secondMessage);
+        });
+
       });
 
     });
@@ -283,3 +341,7 @@ describe('Webhook', () => {
     });
   });
 });
+
+function makeUrl(path) {
+  return 'http://localhost:' + PORT + path;
+}

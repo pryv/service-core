@@ -32,16 +32,18 @@ class Webhook implements MessageSink {
   failCount: number;
 
   currentRetries: number;
-  timeout: Timeout;
-
   maxRetries: number;
   minIntervalMs: number;
-  messageBuffer: Set<string>;
 
   created: number;
   createdBy: string;
   modified: number;
   modifiedBy: string;
+
+  messageBuffer: Set<string>;
+  timeout: Timeout;
+  isRescheduled: boolean;
+  isSending: boolean;
 
   user: {};
   storage: ?WebhooksStorage;
@@ -85,8 +87,10 @@ class Webhook implements MessageSink {
     this.user = params.user;
     this.storage = params.webhooksStorage;
     this.NatsSubscriber = null;
-    this.timeout = null;
     this.messageBuffer = params.messageBuffer || new Set();
+    this.timeout = null;
+    this.toReschedule = false;
+    this.isSending = false;
   }
 
   setNatsSubscriber(nsub: NatsSubscriber): void {
@@ -104,22 +108,25 @@ class Webhook implements MessageSink {
    * Send the message with the throttling and retry mechanics - to use in webhooks service
    */
   async send(message: string, isRescheduled?: boolean): Promise<void> {
+    console.log('call to send', message);
     if (isRescheduled != null && isRescheduled == true) {
       this.timeout = null;
     }
-
     this.messageBuffer.add(message);
 
-    if (tooSoon.call(this)) {
-      return reschedule.call(this, message);
-    }
+    if (tooSoon.call(this)) return reschedule.call(this, message);
+    if (this.isSending) return reschedule.call(this, message);
+
+    this.isSending = true;
 
     let status: ?number;
     const sentBuffer: Array<string> = Array.from(this.messageBuffer);
     this.messageBuffer.clear();
     try {
       const messages = sentBuffer;
+      console.log('sendin', messages);
       const res = await this.makeCall(messages);
+      console.log('sent', messages);
       status = res.status;
     } catch (e) {
       if (e.response != null) {
@@ -128,6 +135,8 @@ class Webhook implements MessageSink {
         status = 0;
       }
     }
+    this.isSending = false;
+
     if (hasError(status)) {
       this.failCount++;
       this.currentRetries++;
@@ -137,10 +146,14 @@ class Webhook implements MessageSink {
     } else {
       this.currentRetries = 0;
     }
-    
+
     this.runCount++;
     this.lastRun = { status: status, timestamp: Date.now() / 1000 };
     this.runs.push(this.lastRun);
+
+    if (hasError(status)) {
+      handleRetry.call(this, message);
+    }
 
     await makeUpdate([
       'lastRun',
@@ -150,10 +163,6 @@ class Webhook implements MessageSink {
       'currentRetries',
       'state',
     ], this);
-
-    if (hasError(status)) {
-      handleRetry.call(this, message);
-    }
 
     function hasError(status) {
       return (status < 200) || (status >= 300);
@@ -170,14 +179,26 @@ class Webhook implements MessageSink {
     function reschedule(message: string, ): void {
       if (this.timeout != null) return;
       const delay = this.minIntervalMs * (this.currentRetries || 1);
-      this.timeout = setTimeout(async () => {
-        return this.send(message, true);
-        //await this.send(message, true);
+      console.log('schedulin call', message, 'in', delay)
+      this.timeout = setTimeout(() => {
+          return this.send(message, true);
+        }
+        //await 
         /*process.nextTick((message, bool) => {
           this.send(message, bool)
           }, message, true);*/
-      }, delay);
+      , delay);
     }
+
+    /**
+    setTimeout(this.send.bind(this, message, true), delay);
+     */
+
+     /**
+     setTimeout(() => {
+          return this.send(message, true);
+        }, delay);
+      */
 
     function tooSoon(): boolean {
       const now = timestamp.now();
@@ -281,7 +302,6 @@ class Webhook implements MessageSink {
     ]);
   }
 
-
 }
 module.exports = Webhook;
 
@@ -289,7 +309,6 @@ async function makeUpdate(fields?: Array<string>, webhook: Webhook): Promise<voi
   if (webhook.storage == null) {
     throw new Error('storage not set for Webhook object.');
   }
-
   let update;
 
   if (fields == null) {
