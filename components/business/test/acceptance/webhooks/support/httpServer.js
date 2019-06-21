@@ -11,6 +11,7 @@ class HttpServer extends EventEmitter {
   app: Express$app;
   server: HttpServer;
   messages: Array<string>;
+  metas: Array<string>;
   messageReceived: boolean;
   messageCount: number;
   responseStatus: number;
@@ -21,6 +22,7 @@ class HttpServer extends EventEmitter {
     const app = express();
 
     this.messages = [];
+    this.metas = [];
     this.messageReceived = false;
     this.messageCount = 0;
     this.responseStatus = statusCode || 200;
@@ -31,20 +33,18 @@ class HttpServer extends EventEmitter {
     app.post(path, (req, res) => {
 
       this.emit('received');
-      console.log('received with delay?', that.responseDelay);
       if (that.responseDelay == null) {
         processMessage.call(that, req, res);
       } else {
         setTimeout(() => {
-          console.log('WHY YOU NOT WAIT')
           processMessage.call(that, req, res);
         }, that.responseDelay);
       }
-      
     });
 
     function processMessage(req, res) {
       this.messages = this.messages.concat(req.body.messages);
+      this.metas = this.metas.concat(req.body.meta);
       this.messageReceived = true;
       this.messageCount++;
       this.emit('responding');
@@ -61,6 +61,10 @@ class HttpServer extends EventEmitter {
 
   getMessages() {
     return this.messages;
+  }
+
+  getMetas() {
+    return this.metas;
   }
 
   isMessageReceived() {
@@ -80,7 +84,6 @@ class HttpServer extends EventEmitter {
   }
 
   setResponseDelay(delay) {
-    console.log('delay set', delay)
     this.responseDelay = delay;
   }
 

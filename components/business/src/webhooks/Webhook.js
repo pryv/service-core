@@ -42,12 +42,12 @@ class Webhook implements MessageSink {
 
   messageBuffer: Set<string>;
   timeout: Timeout;
-  isRescheduled: boolean;
   isSending: boolean;
 
   user: {};
   storage: ?WebhooksStorage;
   NatsSubscriber: ?NatsSubscriber;
+  apiVersion: string;
 
   constructor(params: {
     id?: string,
@@ -89,7 +89,6 @@ class Webhook implements MessageSink {
     this.NatsSubscriber = null;
     this.messageBuffer = params.messageBuffer || new Set();
     this.timeout = null;
-    this.toReschedule = false;
     this.isSending = false;
   }
 
@@ -108,15 +107,12 @@ class Webhook implements MessageSink {
    * Send the message with the throttling and retry mechanics - to use in webhooks service
    */
   async send(message: string, isRescheduled?: boolean): Promise<void> {
-    console.log('call to send', message);
     if (isRescheduled != null && isRescheduled == true) {
       this.timeout = null;
     }
     this.messageBuffer.add(message);
 
-    if (tooSoon.call(this)) return reschedule.call(this, message);
-    if (this.isSending) return reschedule.call(this, message);
-
+    if (tooSoon.call(this) || this.isSending) return reschedule.call(this, message);
     this.isSending = true;
 
     let status: ?number;
@@ -124,9 +120,7 @@ class Webhook implements MessageSink {
     this.messageBuffer.clear();
     try {
       const messages = sentBuffer;
-      console.log('sendin', messages);
       const res = await this.makeCall(messages);
-      console.log('sent', messages);
       status = res.status;
     } catch (e) {
       if (e.response != null) {
@@ -151,10 +145,6 @@ class Webhook implements MessageSink {
     this.lastRun = { status: status, timestamp: Date.now() / 1000 };
     this.runs.push(this.lastRun);
 
-    if (hasError(status)) {
-      handleRetry.call(this, message);
-    }
-
     await makeUpdate([
       'lastRun',
       'runs',
@@ -163,6 +153,10 @@ class Webhook implements MessageSink {
       'currentRetries',
       'state',
     ], this);
+
+    if (hasError(status)) {
+      handleRetry.call(this, message);
+    }
 
     function hasError(status) {
       return (status < 200) || (status >= 300);
@@ -179,7 +173,6 @@ class Webhook implements MessageSink {
     function reschedule(message: string, ): void {
       if (this.timeout != null) return;
       const delay = this.minIntervalMs * (this.currentRetries || 1);
-      console.log('schedulin call', message, 'in', delay)
       this.timeout = setTimeout(() => {
           return this.send(message, true);
         }
@@ -218,7 +211,8 @@ class Webhook implements MessageSink {
       .send({
         messages: messages,
         meta: {
-          apiVersion: '1.2.3'
+          apiVersion: this.apiVersion,
+          serverTime: timestamp.now(),
         }
       });
     return res;
@@ -300,6 +294,10 @@ class Webhook implements MessageSink {
       'modified',
       'modifiedBy',
     ]);
+  }
+
+  setApiVersion(version) {
+    this.apiVersion = version;
   }
 
 }

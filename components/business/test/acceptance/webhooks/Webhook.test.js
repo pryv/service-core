@@ -11,6 +11,8 @@ const HttpServer = require('./support/httpServer');
 const PORT = 6123;
 
 const storage = require('components/test-helpers').dependencies.storage.user.webhooks;
+const { ProjectVersion } = require('components/middleware/src/project_version');
+
 
 describe('Webhook', () => {
 
@@ -37,6 +39,12 @@ describe('Webhook', () => {
           await notificationsServer.listen();
         });
 
+        let apiVersion;
+        before(async () => {
+          const pv = new ProjectVersion(); 
+          apiVersion = await pv.version();
+        });
+
         after(() => {
           notificationsServer.close();
         });
@@ -52,6 +60,7 @@ describe('Webhook', () => {
             webhooksStorage: storage,
             user: user,
           });
+          webhook.setApiVersion(apiVersion);
           await webhook.save();
           requestTimestamp = timestamp.now();
           await webhook.send(message);
@@ -83,6 +92,11 @@ describe('Webhook', () => {
         it('should not increment failCount', () => {
           assert.equal(webhook.failCount, 0);
           assert.equal(storedWebhook.failCount, 0);
+        });
+        it('should send the meta', () => {
+          const meta = notificationsServer.getMetas()[0];
+          assert.equal(meta.apiVersion, apiVersion);
+          assert.approximately(meta.serverTime, requestTimestamp, 0.5);
         });
       });
 
@@ -116,18 +130,14 @@ describe('Webhook', () => {
             webhooksStorage: storage,
             user: user,
           });
-          //await webhook.save();
           const start = timestamp.now();
           setTimeout(() => {
-            console.log('doing 2 @', timestamp.now() - start);
             return webhook.send(secondMessage)
           }, intraCallsIntervalMs);
           webhook.send(firstMessage);
           await awaiting.event(notificationsServer, 'received');
-          console.log('received 1 @', timestamp.now() - start);
           notificationsServer.setResponseDelay(null);
           await awaiting.event(notificationsServer, 'responding');
-          console.log('received 2 @', timestamp.now() - start);
           await awaiting.event(notificationsServer, 'responding');
         });
 

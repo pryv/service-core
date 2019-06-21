@@ -16,6 +16,8 @@ import type { Logger } from 'components/utils/src/logging';
 const Webhook = require('components/business/src/webhooks/Webhook');
 const WebhooksRepository = require('components/business/src/webhooks/repository');
 
+const { ProjectVersion } = require('components/middleware/src/project_version');
+
 type UsernameWebhook = {
   username: string,
   webhook: {},
@@ -32,6 +34,8 @@ class WebhooksService implements MessageSink {
   db: StorageLayer;
   logger: Logger;
 
+  apiVersion: string;
+
   constructor(db: StorageLayer, logger: Logger) {
     this.logger = logger;
     this.repository = new WebhooksRepository(db.webhooks, db.users);
@@ -43,6 +47,8 @@ class WebhooksService implements MessageSink {
     await this.loadWebhooks();
     await this.initSubscribers();
     this.logger.info('started');
+    const pv = new ProjectVersion(); 
+    this.apiVersion = await pv.version(); 
   }
 
   async subscribeToDeleteListener(): Promise<void> {
@@ -73,7 +79,7 @@ class WebhooksService implements MessageSink {
               webhooksStorage: this.storage,
               user: {
                 username: usernameWebhook.username,
-              }
+              },
             }
           ))
         );
@@ -129,6 +135,7 @@ async function initSubscriberForWebhook(username: string, webhook: Webhook): Pro
     });
   await natsSubscriber.subscribe(username);
   webhook.setNatsSubscriber(natsSubscriber);
+  webhook.setApiVersion(this.apiVersion);
 }
 
 module.exports = WebhooksService;

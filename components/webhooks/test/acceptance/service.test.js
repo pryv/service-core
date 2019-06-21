@@ -27,6 +27,7 @@ describe('webhooks', () => {
     appAccessId = cuid();
   });
 
+  let mongoFixtures;
   before(() => {
     mongoFixtures = databaseFixture(produceMongoConnection());
   });
@@ -52,7 +53,7 @@ describe('webhooks', () => {
     await user.webhook({ url: url }, appAccessId);
   });
 
-  let apiServer, mongoFixtures, webhooksApp;
+  let apiServer, webhooksApp;
   before(async () => {
     apiServer = await context.spawn();
     webhooksApp = new WebhooksApp();

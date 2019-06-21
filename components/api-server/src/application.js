@@ -135,7 +135,6 @@ class Application {
 
   getWebhooksSettings(): WebhooksSettingsHolder {
     //const settings = this.settings;
-
     return {
       minIntervalMs: 5000,
       maxRetries: 5,
