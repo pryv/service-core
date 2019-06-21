@@ -1,5 +1,9 @@
 ## 1.4
 
+### 1.4.9
+
+- Improve the update account API call, in particular when it applies a change of email address. It now correctly checks if the email address is not already in use before updating the account and throws consistent errors.
+
 ### 1.4.6
 
 - Increase MongoDB driver reconnection window.

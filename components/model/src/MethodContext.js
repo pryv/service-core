@@ -161,9 +161,9 @@ class MethodContext {
       throw errors.invalidAccessToken(
         'Cannot find access from token.', 403);
         
-    this.checkAccessValid(access);
-                
     this.access = access; 
+
+    this.checkAccessValid(this.access);            
   }
   
   // Performs validity checks on the given access. You must call this after

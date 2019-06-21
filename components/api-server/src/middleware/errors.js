@@ -20,6 +20,7 @@ function produceHandleErrorMiddleware(logging: any) {
     }
 
     errorHandling.logError(error, req, logger);
+    
     res
       .status(error.httpStatus || 500)
       .json(
