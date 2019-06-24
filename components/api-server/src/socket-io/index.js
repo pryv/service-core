@@ -71,7 +71,7 @@ function setupSocketIO(
   const webhooksChangeNotifier = new ChangeNotifier(whNatsPublisher);
   webhooksChangeNotifier.listenTo(notifications);
   
-  function authorizeUserMiddleware(
+  async function authorizeUserMiddleware(
     handshake: SocketIO$Handshake, callback: (err: any, res: any) => mixed
   ) {
     const nsName = handshake.query.resource;
@@ -92,17 +92,17 @@ function setupSocketIO(
     // the code in Manager. 
     handshake.methodContext = context;
 
-    // Load user, init the namespace
-    const initDone = context.retrieveUser(storageLayer)
-      // FLOW We should not piggy-back on the method context here.
-      .then(() => {
-        if (context.user == null) throw new Error('AF: context.user != null');
-        manager.ensureInitNamespace(nsName, context.user); 
-        return true; 
-      });
-    
-    // Makes sure that we call back 
-    return bluebird.resolve(initDone).asCallback(callback);
+    try {
+      // Load user, init the namespace
+      await context.retrieveUser(storageLayer);
+      if (context.user == null) throw new Error('AF: context.user != null');
+      manager.ensureInitNamespace(nsName, context.user); 
+      // Load access
+      await context.retrieveExpandedAccess(storageLayer);
+      callback(null, true);
+    } catch (err) {
+      callback(err);
+    }
   }
 }
 module.exports = setupSocketIO; 

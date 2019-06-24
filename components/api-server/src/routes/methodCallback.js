@@ -14,8 +14,6 @@ import type Result from '../Result';
 module.exports = function (res: express$Response, next: express$NextFunction, successCode: number) {
   return function (err: ?Error, result: ?Result) {
 
-    addAccessIdHeader(res);
-
     if (err != null) {
       return next(err);
     }
@@ -26,22 +24,3 @@ module.exports = function (res: express$Response, next: express$NextFunction, su
     result.writeToHttpResponse(res, successCode);
   };
 };
-
-/**
- * Adds the id of the access (if any was used during API call)
- * within the `Pryv-Access-Id` header of the given result.
- * It is extracted from the request context.
- *
- * @param res {express$Response} Current express response. MODIFIED IN PLACE. 
- */
-function addAccessIdHeader (res: express$Response): express$Response {
-  const request = res.req;
-  if (request != null) {
-    const requestCtx = request.context;
-    if (requestCtx != null && requestCtx.access != null) {
-      res.header('Pryv-Access-Id', requestCtx.access.id);
-    }
-  }
-
-  return res;
-}

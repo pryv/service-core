@@ -3,8 +3,10 @@
 const methodCallback = require('./methodCallback');
 const Paths = require('./Paths');
 const _ = require('lodash');
+const middleware = require('components/middleware');
 
 const API = require('../API');
+import type Application from '../application';
 
 /**
  * Webhooks route handling.
@@ -12,7 +14,14 @@ const API = require('../API');
  * @param {App} expressApp
  * @param {Object} api The API object for registering methods
  */
-module.exports = function (expressApp: express$Application, api: API) {
+module.exports = function (expressApp: express$Application, app: Application) {
+  const api: API = app.api;
+
+  const loadAccessMiddleware = middleware.loadAccess(app.storageLayer);
+
+  // Require access for all Webhooks API methods.
+  expressApp.all(Paths.Webhooks + '*', loadAccessMiddleware);
+
 
   expressApp.get(Paths.Webhooks, function (req: express$Request, res: express$Response, next: express$NextFunction) {
     api.call('webhooks.get', req.context, req.query, methodCallback(res, next, 200));
@@ -42,4 +51,3 @@ module.exports = function (expressApp: express$Application, api: API) {
     api.call('webhooks.test', req.context, params, methodCallback(res, next, 200));
   });
 };
-module.exports.injectDependencies = true;

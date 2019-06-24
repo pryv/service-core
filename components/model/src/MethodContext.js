@@ -190,10 +190,10 @@ class MethodContext {
     if (access == null)
       throw errors.invalidAccessToken('Cannot find access matching id.');
       
-    this.checkAccessValid(access);
-
     this.access = access;
     this.accessToken = access.token;
+
+    this.checkAccessValid(access);
     
     return access;
   }

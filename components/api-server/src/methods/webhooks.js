@@ -40,12 +40,6 @@ module.exports = function produceAccessesApiMethods(
   const webhooksRepository = new WebhooksRepository(storageLayer.webhooks);
   const natsPublisher = new NatsPublisher(NATS_CONNECTION_URI);
 
-  // COMMON
-
-  api.register('webhooks.*',
-    commonFns.loadAccess(storageLayer)
-  );
-
   // RETRIEVAL
 
   api.register('webhooks.get',

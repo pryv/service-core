@@ -357,7 +357,7 @@ class Connection {
     const logger = this.logger; 
     
     // Make sure that we have a callback here. 
-    if (callback == null) callback = function(err: any) { }; // eslint-disable-line no-unused-vars
+    if (callback == null) callback = function(err: any, res: any) { }; // eslint-disable-line no-unused-vars
     
     const methodContext = this.methodContext;
 
@@ -375,7 +375,10 @@ class Connection {
       if (result == null) 
         throw new Error('AF: either err or result must be non-null');
       
-      return result.toObject((obj) => callback(null, setCommonMeta(obj)));
+      const obj = await bluebird.fromCallback(
+        (cb) => result.toObject(cb));
+        
+      return callback(null, setCommonMeta(obj));
     }
     catch (err) {
       errorHandling.logError(err, {

@@ -64,6 +64,9 @@ async function start() {
   const initContextMiddleware = middleware.initContext(
     storageLayer,
     customAuthStepExt && customAuthStepExt.fn);
+
+  const loadAccessMiddleware = middleware.loadAccess(
+    storageLayer);
     
   const pv = new ProjectVersion(); 
   const version = await pv.version(); 
@@ -84,6 +87,7 @@ async function start() {
     commonHeadersMiddleware: middleware.commonHeaders(version),
     errorsMiddleware: require('./middleware/errors'),
     initContextMiddleware: initContextMiddleware,
+    loadAccessMiddleware: loadAccessMiddleware,
     requestTraceMiddleware: middleware.requestTrace,
 
     // Express & app

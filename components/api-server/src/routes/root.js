@@ -19,6 +19,7 @@ function root(expressApp: express$Application, app: Application) {
   const customAuthStepFn = settings.getCustomAuthFunction();
   const initContextMiddleware = middleware.initContext(
     app.storageLayer, customAuthStepFn);
+  const loadAccessMiddleware = middleware.loadAccess(app.storageLayer);
 
   // Bootstrap to user's Pryv page (i.e. browser home).
   expressApp.get('/', rootIndex);
@@ -28,18 +29,24 @@ function root(expressApp: express$Application, app: Application) {
   expressApp.all(Paths.UserRoot + '/*', initContextMiddleware);
 
   // Current access information.
-  expressApp.get(Paths.UserRoot + '/access-info', function (req: express$Request, res, next) {
-    // FLOW More request.context...
-    api.call('getAccessInfo', req.context, req.query, 
-      methodCallback(res, next, 200));
-  });
+  expressApp.get(Paths.UserRoot + '/access-info',
+    loadAccessMiddleware,
+    function (req: express$Request, res, next) {
+      // FLOW More request.context...
+      api.call('getAccessInfo', req.context, req.query, 
+        methodCallback(res, next, 200));
+    });
 
   // Batch request of multiple API method calls.
-  expressApp.post(Paths.UserRoot, initContextMiddleware, function (req: express$Request, res, next) {
-    // FLOW More request.context...
-    api.call('callBatch', req.context, req.body, 
-      methodCallback(res, next, 200));
-  });
+  expressApp.post(Paths.UserRoot,
+    initContextMiddleware,
+    loadAccessMiddleware,
+    function (req: express$Request, res, next) {
+      // FLOW More request.context...
+      api.call('callBatch', req.context, req.body, 
+        methodCallback(res, next, 200));
+    }
+  );
 }
 module.exports = root; 
 
