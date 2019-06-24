@@ -15,13 +15,13 @@ import type Application from '../application';
  * @param {Object} api The API object for registering methods
  */
 module.exports = function (expressApp: express$Application, app: Application) {
+
   const api: API = app.api;
 
   const loadAccessMiddleware = middleware.loadAccess(app.storageLayer);
 
   // Require access for all Webhooks API methods.
   expressApp.all(Paths.Webhooks + '*', loadAccessMiddleware);
-
 
   expressApp.get(Paths.Webhooks, function (req: express$Request, res: express$Response, next: express$NextFunction) {
     api.call('webhooks.get', req.context, req.query, methodCallback(res, next, 200));
