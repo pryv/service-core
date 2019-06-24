@@ -24,11 +24,12 @@ function release {
   local local_name="$service_name:$version"
   local remote_name="$host/$service_name:$version"
   
-  if [ -e ../release_build ]; then
-    # Publication to registry:
+  # publish anyways as we want to produce multiple 1.4.10-XXX
+  #if [ -e ../release_build ]; then
+    # Publication to registry: 
     sudo docker tag $local_name $remote_name
     sudo docker push $remote_name
-  fi
+  #fi
 }
 
 # Create a release.tar that contains all the code. 
