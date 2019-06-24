@@ -68,3 +68,10 @@ cp ../release.tar .
 sudo docker build -f Dockerfile -t pryv/cli:$version .
 release "pryv/cli" $version
 popd
+
+echo "---------------------------- building webhooks --------------------------------"
+pushd webhooks
+cp ../release.tar .
+sudo docker build -f Dockerfile -t pryv/webhooks:$version .
+release "pryv/webhooks" $version
+popd
