@@ -11,7 +11,10 @@ header "Install application from release.tar"
 run mkdir -p $target_dir
 run chown app $target_dir
 
-# Unpack the application and run npm install. 
+# This will avoid getting DOSed by unicode.org because of the unicode npm package.
+minimal_apt_get_install unicode-data
+
+# Unpack the application and run yarn install. 
 pushd $target_dir
 run run tar -x --owner app -f \
   /pd_build/release.tar .
@@ -24,7 +27,7 @@ run yarn release > /dev/null
 # Install the config file
 run mkdir -p $conf_dir && \
   run cp /pd_build/config/webhooks.json $conf_dir/webhooks.json
-  
+
 # Create the log
 run mkdir -p $log_dir && \
   run chown -R app:app $log_dir && \

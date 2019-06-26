@@ -1,4 +1,3 @@
 #!/bin/sh
 exec chpst -u app node /app/bin/dist/components/webhooks/bin/server \
-    --config /app/conf/webhooks.json --http-port ${PORT_NUM}
-# ${PORT_NUM} will be replaced by launching script 
+    --config /app/conf/webhooks.json
