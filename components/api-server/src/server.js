@@ -256,27 +256,17 @@ class Server {
   //
   addRoutes(expressApp: express$Application) {
     const application = this.application;
-    const settings = this.settings;
-    const dependencies = application.dependencies;
     
-    dependencies.resolve(require('./routes/system'));
+    require('./routes/system')(expressApp, application);
     require('./routes/root')(expressApp, application);
-    require('./routes/auth')(expressApp, application.api, settings);
-
-    // NOTE We're in the process of getting rid of DI. See above for how these
-    // should look once that is done - we're handing each of these route 
-    // definers a fixed set of dependencies from which they get to choose. 
-    [
-      require('./routes/accesses'),
-      require('./routes/account'),
-      require('./routes/followed-slices'),
-      require('./routes/profile'),
-      require('./routes/streams'),
-      require('./routes/events'),
-      require('./routes/service'),
-    ].forEach(function (moduleDef) {
-      dependencies.resolve(moduleDef);
-    });
+    require('./routes/auth')(expressApp, application);
+    require('./routes/events')(expressApp, application);
+    require('./routes/accesses')(expressApp, application);
+    require('./routes/account')(expressApp, application);
+    require('./routes/followed-slices')(expressApp, application);
+    require('./routes/streams')(expressApp, application);
+    require('./routes/profile')(expressApp, application);
+    require('./routes/service')(expressApp, application);
   }
 
 }

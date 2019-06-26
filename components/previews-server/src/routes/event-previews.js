@@ -21,31 +21,18 @@ const StandardDimensionsLength = StandardDimensions.length;
  *
  * @param expressApp
  * @param initContextMiddleware
+ * @param loadAccessMiddleware
  * @param userEventsStorage
  * @param userEventFilesStorage
  * @param logging
  */
 module.exports = function (
-  expressApp, initContextMiddleware, userEventsStorage,
-  userEventFilesStorage, logging, storageLayer) {
+  expressApp, initContextMiddleware, loadAccessMiddleware, userEventsStorage,
+  userEventFilesStorage, logging) {
 
   // SERVING PREVIEWS
 
-  expressApp.all('/:username/events/*', initContextMiddleware, loadAccess);
-
-  function loadAccess(req, res, next) {
-    return nextify(
-      req.context.retrieveExpandedAccess(storageLayer), 
-      next);
-  }
-  
-  // Resolves promise and calls (express) `next` correctly. 
-  // 
-  function nextify(promise, next) {
-    promise
-      .then(() => next())
-      .catch(err => next(err));
-  }
+  expressApp.all('/:username/events/*', initContextMiddleware, loadAccessMiddleware);
 
   expressApp.get('/:username/events/:id:extension(.jpg|.jpeg|)', function (req, res, next) {
     var event,
@@ -105,11 +92,11 @@ module.exports = function (
           height: req.query.height || req.query.h
         });
         userEventFilesStorage.ensurePreviewPath(req.context.user, req.params.id,
-            Math.max(targetSize.width, targetSize.height), function (err, path) {
-          if (err) { return stepDone(err); }
-          previewPath = path;
-          stepDone();
-        });
+          Math.max(targetSize.width, targetSize.height), function (err, path) {
+            if (err) { return stepDone(err); }
+            previewPath = path;
+            stepDone();
+          });
       },
       function checkCache(stepDone) {
         xattr.get(previewPath, Cache.EventModifiedXattrKey, function (err, cacheModified) {
@@ -250,12 +237,12 @@ module.exports = function (
     callback = (typeof callback === 'function') ? callback : function () {};
 
     var worker = childProcess.fork(__dirname + '/../runCacheCleanup.js',
-        process.argv.slice(2));
+      process.argv.slice(2));
     workerRunning = true;
     worker.on('exit', function (code) {
       workerRunning = false;
       callback(code !== 0 ?
-          new Error('Cache cleanup unexpectedly failed (see logs for details)') : null);
+        new Error('Cache cleanup unexpectedly failed (see logs for details)') : null);
     });
   }
 

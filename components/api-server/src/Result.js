@@ -20,7 +20,7 @@ type APIResult =
   {[string]: Object} |
   {[string]: Array<Object>};
   
-type ToObjectCallback = (resOrError: APIResult) => mixed;
+type ToObjectCallback = (err: ?Error, res: ?APIResult) => mixed;
 
 
 // Result object used to store API call response body while it is processed.
@@ -156,13 +156,13 @@ class Result {
       if (err) {
         return callback(err);
       }
-      callback(resultObj);
+      callback(null, resultObj);
     });
   }
   
   toObjectSingle(callback: ToObjectCallback) {
     delete this._private;
-    callback(this);
+    callback(null, this);
   }
 }
 

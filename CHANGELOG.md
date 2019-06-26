@@ -1,5 +1,9 @@
 ## 1.4
 
+### 1.4.10
+
+- Most API calls now present a 'Pryv-Access-Id' response header that contains the id of the access used for the call. This is the case only when a valid authorization token has been provided during the request (even if the token is expired).
+
 ### 1.4.9
 
 - Improve the update account API call, in particular when it applies a change of email address. It now correctly checks if the email address is not already in use before updating the account and throws consistent errors.

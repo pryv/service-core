@@ -34,7 +34,7 @@ describe('Authentication', function() {
   
   describe('hasProperties', function() {
     // FLOW Mock out the settings object for this unit test
-    const {hasProperties} = authMod(express(), null, settings);
+    const {hasProperties} = authMod(express(), {settings: settings});
     const obj = { a: 1, b: 2 };
     const keys = ['a', 'b'];
     

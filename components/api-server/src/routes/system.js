@@ -1,20 +1,22 @@
-var errors = require('components/errors').factory,
-    Paths = require('./Paths'),
-    methodCallback = require('./methodCallback'),
-    contentType = require('components/middleware').contentType,
-    _ = require('lodash');
+// @flow
 
-/**
- * System (e.g. registration server) calls route handling.
- *
- * @param expressApp
- * @param systemAPI
- * @param authSettings Register authSettings
- * @param logging
- */
-module.exports = function system(expressApp, systemAPI, authSettings, logging) {
+const errors = require('components/errors').factory;
+const Paths = require('./Paths');
+const methodCallback = require('./methodCallback');
+const contentType = require('components/middleware').contentType;
+const _ = require('lodash');
 
-  var logger = logging.getLogger('routes/system');
+import type Application from '../application';
+
+// System (e.g. registration server) calls route handling.
+module.exports = function system(expressApp: express$Application, app: Application) {
+
+  const systemAPI = app.systemAPI;
+  const settings = app.settings;
+  
+  const adminAccessKey = settings.get('auth.adminAccessKey').str();
+
+  const logger = app.logFactory('routes/system');
 
   /**
    * Handle common parameters.
@@ -27,7 +29,7 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
   // DEPRECATED: remove after all reg servers updated
   expressApp.post('/register/create-user', contentType.json, createUser);
 
-  function createUser(req, res, next) {
+  function createUser(req: express$Request, res, next) {
 
     let params = _.extend({}, req.body); 
     systemAPI.call('system.createUser', {}, params, methodCallback(res, next, 201));
@@ -36,15 +38,15 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
   // Specific routes for managing users pool
   expressApp.post(Paths.System + '/pool/create-user', contentType.json, createPoolUser);
 
-  function createPoolUser(req, res, next) {
+  function createPoolUser(req: express$Request, res, next) {
     systemAPI.call('system.createPoolUser', {}, {}, methodCallback(res, next, 201));
   }
 
-  expressApp.get(Paths.System + '/pool/size', function (req, res, next) {
+  expressApp.get(Paths.System + '/pool/size', function (req: express$Request, res, next) {
     systemAPI.call('system.getUsersPoolSize', {}, {}, methodCallback(res, next, 200));
   });
 
-  expressApp.get(Paths.System + '/user-info/:username', function (req, res, next) {
+  expressApp.get(Paths.System + '/user-info/:username', function (req: express$Request, res, next) {
     var params = {
       username: req.params.username
     };
@@ -53,10 +55,10 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
 
   // Checks if `req` contains valid authorization to access the system routes. 
   // 
-  function checkAuth(req, res, next) {
+  function checkAuth(req: express$Request, res, next) {
     var secret = req.headers.authorization;
 
-    if (secret==null || secret !== authSettings.adminAccessKey) {
+    if (secret==null || secret !== adminAccessKey) {
       logger.warn('Unauthorized attempt to access system route', {
         url: req.url,
         ip: req.ip,
@@ -70,5 +72,4 @@ module.exports = function system(expressApp, systemAPI, authSettings, logging) {
     next();
   }
 };
-module.exports.injectDependencies = true;
 

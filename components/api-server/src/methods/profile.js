@@ -10,19 +10,14 @@ var errors = require('components/errors').factory,
  * @param api
  * @param userProfileStorage
  */
-module.exports = function (api, userProfileStorage, storageLayer) {
-
-  // COMMON
-
-  api.register('profile.*',
-      commonFns.loadAccess(storageLayer));
+module.exports = function (api, userProfileStorage) {
 
   // RETRIEVAL / CREATION
 
   api.register('profile.getPublic',
-      setPublicProfile,
-      commonFns.getParamsValidation(methodsSchema.get.params),
-      getProfile);
+    setPublicProfile,
+    commonFns.getParamsValidation(methodsSchema.get.params),
+    getProfile);
 
   function setPublicProfile(context, params, result, next) {
     params.id = 'public';
@@ -30,14 +25,14 @@ module.exports = function (api, userProfileStorage, storageLayer) {
   }
 
   api.register('profile.getApp',
-      setAppProfile,
-      commonFns.getParamsValidation(methodsSchema.get.params),
-      getProfile);
+    setAppProfile,
+    commonFns.getParamsValidation(methodsSchema.get.params),
+    getProfile);
 
   api.register('profile.get',
-      commonFns.requirePersonalAccess,
-      commonFns.getParamsValidation(methodsSchema.get.params),
-      getProfile);
+    commonFns.requirePersonalAccess,
+    commonFns.getParamsValidation(methodsSchema.get.params),
+    getProfile);
 
   function getProfile(context, params, result, next) {
     userProfileStorage.findOne(context.user, {id: params.id}, null, function (err, profileSet) {
@@ -50,14 +45,14 @@ module.exports = function (api, userProfileStorage, storageLayer) {
   // UPDATE
 
   api.register('profile.updateApp',
-      setAppProfile,
-      commonFns.getParamsValidation(methodsSchema.update.params),
-      updateProfile);
+    setAppProfile,
+    commonFns.getParamsValidation(methodsSchema.update.params),
+    updateProfile);
 
   api.register('profile.update',
-      commonFns.requirePersonalAccess,
-      commonFns.getParamsValidation(methodsSchema.update.params),
-      updateProfile);
+    commonFns.requirePersonalAccess,
+    commonFns.getParamsValidation(methodsSchema.update.params),
+    updateProfile);
 
   function updateProfile(context, params, result, next) {
     async.series([
@@ -72,13 +67,13 @@ module.exports = function (api, userProfileStorage, storageLayer) {
         }.bind(this));
       }.bind(this),
       function update(stepDone) {
-	userProfileStorage.updateOne(context.user, {id: params.id}, {data: params.update},
-            function (err, updatedProfile) {
-          if (err) { return stepDone(errors.unexpectedError(err)); }
+        userProfileStorage.updateOne(context.user, {id: params.id}, {data: params.update},
+          function (err, updatedProfile) {
+            if (err) { return stepDone(errors.unexpectedError(err)); }
 
-          result.profile = updatedProfile.data;
-          stepDone();
-        });
+            result.profile = updatedProfile.data;
+            stepDone();
+          });
       }.bind(this)
     ], next);
   }

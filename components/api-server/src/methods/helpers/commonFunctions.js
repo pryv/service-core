@@ -1,15 +1,5 @@
 var errors = require('components/errors').factory,
     validation = require('../../schema/validation');
-    
-const bluebird = require('bluebird');
-
-exports.loadAccess = function(storage) {
-  return function loadAccessMiddleware(context, params, result, next) {
-    const loadedAccess = context.retrieveExpandedAccess(storage);
-
-    return bluebird.resolve(loadedAccess).asCallback(next);
-  };
-};
 
 exports.requirePersonalAccess = function requirePersonalAccess(context, params, result, next) {
   if (! context.access.isPersonal()) {
