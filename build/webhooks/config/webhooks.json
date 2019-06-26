@@ -18,11 +18,7 @@
       "colorize": true
     },
     "file": {
-      "active": true,
-      "level": "error",
-      "path": "/app/log/webhooks.log",
-      "maxFileBytes": 20000000000,
-      "maxNbFiles": 1
+      "active": false
     },
     "airbrake": {
       "active": false,
