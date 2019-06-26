@@ -2,6 +2,7 @@
 
 // Main application class. Does all the work. 
 
+const path = require('path');
 const assert = require('assert');
 const yargs = require('yargs');
 
