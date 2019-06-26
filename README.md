@@ -184,7 +184,7 @@ If you are getting multiple seamingly unrelated errors following a branch switch
 ### Cannot find module components
 
 When running tests in single components:
-- `Error: Cannot find module 'components/...'`: Ensure that symlink `node_modules/components` pointing to `../components` exists
+- `Error: Cannot find module 'components/...'`: Ensure that symlink `node_modules/components` pointing to `../components` exists. (for `dist/`, `yarn release` takes care of it).
 
 ### Unicode
 
