@@ -22,7 +22,6 @@ remove_links() {
 	rm -Rf /etc/service/app
 
 	#When removing link from /etc/service Runit will stop the processes
-	rm -Rf /etc/runit/app
 	rm -f /etc/service/gnats
 }
 
