@@ -12,17 +12,12 @@ create_links() {
 	chmod +x /etc/runit/app/run # make the script executable
 	ln -s /etc/runit/app /etc/service/app #make a link to /etc/service (will be run with runit).
 
-	chmod +x /etc/runit/gnats/run # make the script executable
-	ln -s /etc/runit/gnats /etc/service/gnats #make a link to /etc/service (will be run with runit).
-
 	rm -Rf /etc/service/runit # Remove link to this script in /etc/service so it will be run only once at container startup
 }
 
 remove_links() {
-	rm -Rf /etc/service/app
-
 	#When removing link from /etc/service Runit will stop the processes
-	rm -f /etc/service/gnats
+	rm -Rf /etc/service/app
 }
 
 case "$1" in 
