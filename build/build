@@ -42,7 +42,7 @@ tar cf build/release.tar \
   .
 popd
 
-
+: <<'END'
 echo "---------------------------- building core ------------------------------"
 pushd core
 cp ../release.tar .
@@ -70,7 +70,7 @@ cp ../release.tar .
 sudo docker build -f Dockerfile -t pryv/cli:$version .
 release "pryv/cli" $version
 popd
-
+END
 echo "---------------------------- building webhooks --------------------------------"
 pushd webhooks
 cp ../release.tar .
