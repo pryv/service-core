@@ -8,6 +8,8 @@ const _ = require('lodash');
 const Hjson = require('hjson');
 const YAML = require('js-yaml');
 
+const NATS_CONNECTION_URI: string = require('components/utils').messaging.NATS_CONNECTION_URI;
+
 const { ExistingValue, MissingValue } = require('components/utils/src/config/value');
 
 import type { ConfigValue } from 'components/utils/src/config/value';
@@ -51,7 +53,6 @@ class Settings implements ConfigAccess {
         console: { active: true, level: 'info', colorize: true },
         file: { active: false },
       },
-
       mongodb: {
         host: '127.0.0.1', // production will need to override this.
         port: 27017,
@@ -59,6 +60,9 @@ class Settings implements ConfigAccess {
         authUser: '',
         authPassword: '',
       },
+      nats: {
+        uri: NATS_CONNECTION_URI
+      }
     };
   }
 

@@ -89,7 +89,11 @@ class Application {
     );
 
     // Construct the service
-    const service = new services.WebhooksService(storageLayer, loggerFor('webhooks_service'));
+    const service = new services.WebhooksService({
+      storage: storageLayer, 
+      logger: loggerFor('webhooks_service'),
+      settings: settings,
+    });
     this.webhooksService = service;
 
     // And start it.
