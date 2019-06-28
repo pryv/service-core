@@ -102,7 +102,6 @@ class Server {
       require('./methods/system'),
       require('./methods/utility'),
       require('./methods/auth'),
-      require('./methods/service'),
     ].forEach(function (moduleDef) {
       dependencies.resolve(moduleDef);
     });
@@ -112,6 +111,10 @@ class Server {
       this.notificationBus, 
       application.getUpdatesSettings(), 
       application.storageLayer);
+
+    require('./methods/service')(
+        application.api, l('methods/service'), application.getServiceInfosSettings()
+    );
 
     [
       require('./methods/account'),

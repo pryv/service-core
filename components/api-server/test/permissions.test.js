@@ -1,16 +1,19 @@
 /*global describe, before, beforeEach, after, it */
 
 require('./test-helpers'); 
-var helpers = require('./helpers'),
-    treeUtils = require('components/utils').treeUtils,
-    server = helpers.dependencies.instanceManager,
-    async = require('async'),
-    fs = require('fs'),
-    path = require('path'),
-    validation = helpers.validation,
-    testData = helpers.data,
-    timestamp = require('unix-timestamp'),
-    _ = require('lodash');
+const helpers = require('./helpers');
+const treeUtils = require('components/utils').treeUtils;
+const server = helpers.dependencies.instanceManager;
+const async = require('async');
+const fs = require('fs');
+const path = require('path');
+const validation = helpers.validation;
+const testData = helpers.data;
+const timestamp = require('unix-timestamp');
+const _ = require('lodash');
+const bluebird = require('bluebird');
+const chai = require('chai');
+const assert = chai.assert;
 
 describe('Access permissions', function () {
 
@@ -454,24 +457,19 @@ describe('Access permissions', function () {
         });
       });
 
-      it('[P4OM] must validate the custom function at startup time', function (done) {
-        async.series([
-          function setupCustomAuthStep(stepDone) {
-            var srcPath = path.join(__dirname, 'permissions.fixtures', 'customAuthStepFn.invalid');
-            fs.readFile(srcPath, function (err, data) {
-              fs.writeFile(destPath, data, stepDone);
-            });
-          },
-          server.restart.bind(server)
-        ], function (err) {
-          // basic validation; users are expected to check console output
-          err.message.should.match(/Server failed/);
-          done();
-        });
+      it('[P4OM] must validate the custom function at startup time', async () => {
+        const srcPath = path.join(__dirname, 'permissions.fixtures', 'customAuthStepFn.invalid.js');
+        fs.writeFileSync(destPath, fs.readFileSync(srcPath)); // Copy content of srcPath file to destPath
+        try {
+          await bluebird.fromCallback(cb => {
+            server.restart.call(server, cb);
+          });
+        } catch (error) {
+          assert.isNotNull(error);
+          assert.exists(error.message);
+          assert.match(error.message, /Server failed/);
+        }
       });
-
     });
-
   });
-
 });

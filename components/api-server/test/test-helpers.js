@@ -26,8 +26,8 @@ const NullLogger = require('components/utils/src/logging').NullLogger;
 
 // Produces and returns a connection to MongoDB. 
 // 
-function produceMongoConnection(): Database {
-  const settings = Settings.load();
+async function produceMongoConnection(): Promise<Database> {
+  const settings = await Settings.load();
   const database = new Database(
     settings.get('database').obj(), 
     new NullLogger()); 

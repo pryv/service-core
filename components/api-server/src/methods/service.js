@@ -1,29 +1,25 @@
-module.exports = function (api, logging) {
+// @flow
 
-  const logger = logging.getLogger('methods/service');
+import type { MethodContext } from 'components/model';
+import type API from '../API';
+import type { ApiCallback } from '../API';
+import type Notifications from '../Notifications';
+import type Result from '../Result';
+import type { Logger } from 'components/utils';
+import type { ConfigAccess } from './settings';
+
+module.exports = function (api: API, logger: Logger, settings: ConfigAccess) {
 
   api.register('service.infos',
     getServiceInfo
   );
 
-  function getServiceInfo()
-  {
-    let serviceInfos = {};
+  function getServiceInfo(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    // Deep copy settings directly into result
+    // @Ilia : a better way to do this ?
+    for (const key of Object.keys(settings))
+      result[key] = settings[key];
 
-    setConfig(serviceInfos, 'register', 'http:register:url'); // TODO
-    setConfig(serviceInfos, 'name', 'service:name');
-    setConfig(serviceInfos, 'home', 'http:static:url');
-    setConfig(serviceInfos, 'support', 'service:support');
-    setConfig(serviceInfos, 'terms', 'service:terms');
-    setConfig(serviceInfos, 'event-types', 'eventTypes:sourceURL');
-
-    return serviceInfos;
-  }
-
-  function setConfig(serviceInfos, memberName, configPath) {
-    const value = config.get(configPath); // TODO config !
-    if(value)
-      serviceInfos[memberName] = value;
+    return next();
   }
 };
-//module.exports.injectDependencies = true; // confirmer qu'on vire ?

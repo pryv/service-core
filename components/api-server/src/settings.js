@@ -10,6 +10,9 @@ opaque type ConvictConfig = Object;
 import type { CustomAuthFunction } from 'components/model';
 import type { ConfigValue } from 'components/utils/src/config/value';
 
+const _ = require('lodash');
+const request = require('superagent')
+
 export interface ConfigAccess {
   get(key: string): ConfigValue;
   has(key: string): boolean;
@@ -30,16 +33,16 @@ class Settings implements ConfigAccess {
   // Additionally, you can pass `configLocation` which will override the env
   // and the command line arguments. 
   //
-  static load(configLocation: ?string): Settings {
+  static async load(configLocation: ?string): Promise<Settings> {
     config.printSchemaAndExitIfNeeded();
 
     const ourConfig = config.setup(configLocation);
     
     const settings = new Settings(ourConfig);
-    
+    await settings.loadRegisterInfo();
     settings.maybePrint(); 
-     
-    return settings; 
+    
+    return settings;
   }
 
   constructor(ourConfig: ConvictConfig) {
@@ -114,6 +117,41 @@ class Settings implements ConfigAccess {
   static existingValue(key: string, value: mixed): ConfigValue {
     return new ExistingValue(key, value);
   }
+
+  async loadRegisterInfo() {
+    const regUrlPath = this.get("services.register.url");
+    if(!regUrlPath) {
+      console.warn("You should configure services.register.url");
+      return;
+    }
+    
+    const regUrl = regUrlPath.value + '/service/infos';
+    let res;
+    try {
+      res = await request.get(regUrl);
+    } catch (error) {
+      // console.warn("Unable to reach ", regUrl, error); // TODO laisser le warn ? Autre chose ?
+      return;
+    }
+
+    this.setConvict(this.convict, "serial", res.body.serial, regUrl);
+    this.setConvict(this.convict, "access", res.body.access, regUrl);
+    this.setConvict(this.convict, "api", res.body.api, regUrl);
+    this.setConvict(this.convict, "http.register.url", res.body.register, regUrl);
+    this.setConvict(this.convict, "http.static.url", res.body.home, regUrl);
+    this.setConvict(this.convict, "service.name", res.body.name, regUrl);
+    this.setConvict(this.convict, "service.support", res.body.support, regUrl);
+    this.setConvict(this.convict, "service.terms", res.body.terms, regUrl);
+    this.setConvict(this.convict, "eventTypes.sourceURL", res.body.eventTypes, regUrl);
+  }
+
+  setConvict(convict: any, memberName: string, value: Object, regUrl: string) {
+    // console.log("trying to set", memberName, "with", value);
+    if(!value) {
+      console.warn("Unable to get '" + memberName + "' from " + regUrl + " please check configuration");
+      return;
+    }
+    convict.set(memberName, value);
+  }
 }
 module.exports = Settings;
-

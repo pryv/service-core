@@ -9,7 +9,6 @@ const storage = require('components/storage');
 const API = require('./API');
 
 import type { ConfigAccess } from './settings';
-// import type { Service } from './methods/service';
 import type { LogFactory } from 'components/utils';
 import type { Logger } from 'components/utils';
 
@@ -79,9 +78,9 @@ class Application {
       authSettings: settings.get('auth').obj(),
       auditSettings: settings.get('audit').obj(),
       eventFilesSettings: settings.get('eventFiles').obj(),
-      eventTypesSettings: settings.get('eventTypes').obj(), // ICI
+      eventTypesSettings: settings.get('eventTypes').obj(),
       httpSettings: settings.get('http').obj(),
-      servicesSettings: settings.get('services').obj(), // ICI
+      servicesSettings: settings.get('services').obj(),
       updatesSettings: settings.get('updates').obj(),
     });
     
@@ -131,6 +130,31 @@ class Application {
     return {
       ignoreProtectedFields: settings.get('updates.ignoreProtectedFields').bool(),
     };
+  }
+  
+  getServiceInfosSettings(): Object {
+    const serviceInfosSettings = {};
+
+    this.setConfig(serviceInfosSettings, this.settings, "serial", "serial");
+    this.setConfig(serviceInfosSettings, this.settings, "access", "access");
+    this.setConfig(serviceInfosSettings, this.settings, "api", "api");
+    this.setConfig(serviceInfosSettings, this.settings, "register", "http.register.url");
+    this.setConfig(serviceInfosSettings, this.settings, "name", "service.name");
+    this.setConfig(serviceInfosSettings, this.settings, "home", "http.static.url");
+    this.setConfig(serviceInfosSettings, this.settings, "support", "service.support");
+    this.setConfig(serviceInfosSettings, this.settings, "terms", "service.terms");
+    this.setConfig(serviceInfosSettings, this.settings, "eventTypes", "eventTypes.sourceURL");
+
+    return serviceInfosSettings;
+  }
+
+  setConfig(serviceInfos: Object, settings: Object, memberName: string, configKey: string) {
+    const param = settings.get(configKey);
+    if(!param) {
+      console.warn("Unable to get '" + memberName + "' from Settings, please check configuration");
+      return;
+    }
+    serviceInfos[memberName] = param.value;
   }
   
   // Produces and returns a new logger for a given `topic`.

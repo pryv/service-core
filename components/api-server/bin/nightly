@@ -5,53 +5,59 @@
 const Settings = require('../src/settings');
 const bluebird = require('bluebird');
 const Application = require('../src/application');
+let logger;
 
-// Load settings
-const settings = Settings.load(); 
+(async () => {
+  // Load settings asynchronously because we have to fetch
+  // some value from register via an http-get request.
+  const settings = await Settings.load(); 
 
-// Construct application
-const app = new Application(settings);
-const logger = app.logFactory('nightly-tasks');
+  // Construct application
+  const app = new Application(settings);
+  logger = app.logFactory('nightly-tasks');
 
-// Construct storage size object
-const storage = require('../../storage');
-const storageLayer = app.storageLayer;
-const storageSize = new storage.Size(
-  storageLayer.users,
-  [ storageLayer.accesses,
-    storageLayer.events,
-    storageLayer.followedSlices,
-    storageLayer.streams,
-    storageLayer.profile ],
-  [ storageLayer.eventFiles ]
-);
+  // Construct storage size object
+  const storage = require('../../storage');
+  const storageLayer = app.storageLayer;
+  const storageSize = new storage.Size(
+    storageLayer.users,
+    [ storageLayer.accesses,
+      storageLayer.events,
+      storageLayer.followedSlices,
+      storageLayer.streams,
+      storageLayer.profile ],
+    [ storageLayer.eventFiles ]
+  );
 
-// This bit is useful to trace down promise rejections that aren't caught. 
-process.on('unhandledRejection', (reason, promise) => {
-  logger.warn('Unhandled promise rejection:', promise, 'reason:', reason.stack || reason); 
-});
-process.on('exit', function () {
-  logger.info('Service stopped.');
-});
-process.on('SIGINT', () => {
-  logger.warn('Received SIGINT. Exiting...');
-  process.exit(2);
-});
-
-runNightlyTasks()
-  .then(() => {
-    logger.info('Nightly tasks completed.');
-    process.exit(0);
-  })
-  .catch(e => {
-    logger.error(e);
-    process.exit(1);
+  // This bit is useful to trace down promise rejections that aren't caught. 
+  process.on('unhandledRejection', (reason, promise) => {
+    logger.warn('Unhandled promise rejection:', promise, 'reason:', reason.stack || reason); 
   });
+  process.on('exit', function () {
+    logger.info('Service stopped.');
+  });
+  process.on('SIGINT', () => {
+    logger.warn('Received SIGINT. Exiting...');
+    process.exit(2);
+  });
+
+  runNightlyTasks(storageLayer, storageSize)
+    .then(() => {
+      console.log('ZNightly tasks completed.');
+      logger.info('Nightly tasks completed.');
+      process.exit(0);
+    })
+    .catch(e => {
+      console.log("ZERROR", e);
+      logger.error(e);
+      process.exit(1);
+    });
+})()
 
 /**
  * Standalone script to perform nightly tasks (such as updating storage sizes for all users).
  */
-async function runNightlyTasks() {
+async function runNightlyTasks(storageLayer, storageSize) {
   logger.info('Starting update of storage size');
   
   // Retrieve all existing users

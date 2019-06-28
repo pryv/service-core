@@ -15,21 +15,23 @@ const _ = require('lodash');
 
 const { ErrorIds } = require('components/errors/src');
 const storage = require('components/test-helpers').dependencies.storage.user.accesses;
+let mongoFixtures;
 
 describe('access deletions', () => {
 
-  const mongoFixtures = databaseFixture(produceMongoConnection());
-  after(() => {
-    mongoFixtures.clean();
-  });
-
   let userId, streamId, activeToken, deletedToken, accessToken;
-  before(() => {
+  before(async () => {
+    mongoFixtures = databaseFixture(await produceMongoConnection());
+
     userId = cuid();
     streamId = cuid();
     activeToken = cuid();
     deletedToken = cuid();
     accessToken = cuid();
+  });
+
+  after(() => {
+    mongoFixtures.clean();
   });
 
   describe('when given a few existing accesses', () => {
@@ -204,16 +206,13 @@ describe('access deletions', () => {
 
 describe('access expiry', () => {
   // Uses dynamic fixtures:
-  const mongoFixtures = databaseFixture(produceMongoConnection());
-  after(() => {
-    mongoFixtures.clean(); 
-  });
   
   // Set up a few ids that we'll use for testing. NOTE that these ids will
   // change on every test run.
   let userId, streamId, accessToken, expiredToken, validId;
   let hasExpiryId, hasExpiryToken;
-  before(() => {
+  before(async () => {
+    mongoFixtures = databaseFixture(await produceMongoConnection());
     userId = cuid(); 
     streamId = cuid();
     accessToken = cuid(); 
@@ -221,6 +220,10 @@ describe('access expiry', () => {
     validId = cuid(); 
     hasExpiryId = cuid(); 
     hasExpiryToken = cuid(); 
+  });
+
+  after(() => {
+    mongoFixtures.clean(); 
   });
 
   describe('when given a few existing accesses', () => {
@@ -583,12 +586,6 @@ describe('access expiry', () => {
 });
 
 describe('access client data', () => {
-  // Uses dynamic fixtures:
-  const mongoFixtures = databaseFixture(produceMongoConnection());
-  after(() => {
-    mongoFixtures.clean(); 
-  });
-
   function sampleAccess(name, clientData) {
     return {
       id: cuid(),
@@ -604,7 +601,9 @@ describe('access client data', () => {
   let userId, streamId, accessToken, complexClientData, existingAccess;
   let toBeUpdateAccess1, toBeUpdateAccess2, toBeUpdateAccess3, emptyClientDataAccess;
   let fixtureAccesses;
-  before(() => {
+  before(async () => {
+    mongoFixtures = databaseFixture(await produceMongoConnection());
+
     userId = cuid(); 
     streamId = cuid();
     accessToken = cuid();
@@ -620,6 +619,10 @@ describe('access client data', () => {
     toBeUpdateAccess3 = sampleAccess('Access to be updated 3', complexClientData);
     emptyClientDataAccess = sampleAccess('Access with empty clientData', null);
     fixtureAccesses = [existingAccess, toBeUpdateAccess1, toBeUpdateAccess2, toBeUpdateAccess3, emptyClientDataAccess];
+  });
+
+  after(() => {
+    mongoFixtures.clean(); 
   });
 
   describe('when given a few existing accesses', () => {

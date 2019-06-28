@@ -33,7 +33,6 @@
   },
   "services": {
     "register": {
-      "TODO DELETE" : "// ICI",
       "url": "https://reg.pryv.io"
     },
     "email": {
