@@ -105,7 +105,7 @@ class WebhooksService implements MessageSink {
       this.webhooks.set(username, userWebhooks);
     }
     userWebhooks.push(webhook);
-    await initSubscriberForWebhook(username, webhook);
+    await initSubscriberForWebhook.call(this, username, webhook);
     this.logger.info(`Loaded webhook ${webhook.id} for ${username}`);
   }
 
