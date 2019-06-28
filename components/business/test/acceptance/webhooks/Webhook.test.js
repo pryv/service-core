@@ -345,7 +345,7 @@ describe('Webhook', () => {
     describe('when the webhook becomes inactive', () => {
 
       before(async () => {
-        postPath = '/notifs4';
+        postPath = '/notifs5';
         url = 'http://localhost:' + PORT + postPath;
         notificationsServer = new HttpServer(postPath, 400);
         await notificationsServer.listen();
@@ -385,6 +385,61 @@ describe('Webhook', () => {
         assert.equal(storedWebhook.state, 'inactive');
       });
     });
+
+    describe('when the runs array gets shifted', () => {
+
+      const message = 'hello';
+      const message2 = 'hello';
+
+      before(async () => {
+        postPath = '/notifs4';
+        url = 'http://localhost:' + PORT + postPath;
+        notificationsServer = new HttpServer(postPath, 200);
+        await notificationsServer.listen();
+      });
+
+      after(async () => {
+        webhook.stop();
+        notificationsServer.close();
+      });
+
+      before(async () => {
+        webhook = new Webhook({
+          accessId: 'doesntmatter',
+          url: url,
+          minIntervalMs: 10,
+          webhooksStorage: storage,
+          user: user,
+          runsSize: 3,
+        });
+        await webhook.save();
+      });
+
+      let runs1, runs2, runs3;
+
+      it('should only save 3 items', async () => {
+        await webhook.send(message);
+        await webhook.send(message);
+        await webhook.send(message);
+        runs1 = webhook.runs;
+      });
+      it('should rotate the runs'), async () => {
+        await webhook.send(message);
+        runs2 = webhook.runs;
+        assert.equal(runs1[1], runs2[1]);
+        assert.equal(runs1[2], runs2[2]);
+        assert.notEqual(runs1[0], runs2[0]);
+      }
+      it('should rotate the runs more'), async () => {
+        await webhook.send(message);
+        runs3 = webhook.runs;
+        assert.equal(runs3[0], runs2[0]);
+        assert.notEqual(runs3[1], runs2[1]);
+        assert.notEqual(runs3[1], runs0[1]);
+        assert.notEqual(runs3[2], runs1[2]);
+      }
+
+    })
 
   });
 });

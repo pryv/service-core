@@ -45,6 +45,7 @@ class Settings implements ConfigAccess {
       webhooks: {
         minIntervalMs: 5000,
         maxRetries: 5,
+        runsSize: 20,
       },
       logs: {
         // If you add something here, you might also want to include it into 

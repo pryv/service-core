@@ -131,6 +131,7 @@ module.exports = function produceAccessesApiMethods(
       user: context.user,
       accessId: context.access.id,
       webhooksStorage: storageLayer.webhooks,
+      runsSize: wehbooksSettings.webhooks.runsSize,
     }, params));
 
     try {

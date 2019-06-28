@@ -28,6 +28,7 @@ class Webhook implements MessageSink {
   runs: Array<Run>;
   lastRun: Run;
 
+  runsSize: number;
   runCount: number;
   failCount: number;
 
@@ -90,6 +91,7 @@ class Webhook implements MessageSink {
     this.messageBuffer = params.messageBuffer || new Set();
     this.timeout = null;
     this.isSending = false;
+    this.runsSize = params.runsSize || 50;
   }
 
   setNatsSubscriber(nsub: NatsSubscriber): void {
@@ -146,7 +148,7 @@ class Webhook implements MessageSink {
 
     this.runCount++;
     this.lastRun = { status: status, timestamp: Date.now() / 1000 };
-    this.runs.push(this.lastRun);
+    this.addRun(this.lastRun);
 
     await makeUpdate([
       'lastRun',
@@ -226,6 +228,15 @@ class Webhook implements MessageSink {
     }
     if (this.NatsSubscriber != null) {
       this.NatsSubscriber.close();
+    }
+  }
+
+  addRun(run: Run): void {
+    if (this.runCount > this.runsSize) {
+      const position = this.runCount % this.runsSize;
+      this.runs[position] = run;
+    } else {
+      this.runs.push(run);
     }
   }
 
