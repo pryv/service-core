@@ -137,6 +137,9 @@ class Webhook implements MessageSink {
       sentBuffer.forEach(m => {
         this.messageBuffer.add(m);
       });
+      if (this.currentRetries > this.maxRetries || this.state === 'inactive') {
+        this.state = 'inactive';
+      } 
     } else {
       this.currentRetries = 0;
     }
@@ -163,8 +166,7 @@ class Webhook implements MessageSink {
     }
 
     function handleRetry(message): void {
-      if (this.currentRetries > this.maxRetries || this.state === 'inactive') {
-        this.state = 'inactive';
+      if (this.state == 'inactive') {
         return;
       } 
       reschedule.call(this, message);

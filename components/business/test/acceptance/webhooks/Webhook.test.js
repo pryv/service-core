@@ -259,11 +259,7 @@ describe('Webhook', () => {
         });
         it('should send scheduled messages after an interval', async () => {
           notificationsServer.setResponseStatus(201);
-          await new bluebird((resolve, reject) => {
-            notificationsServer.on('received', resolve);
-            notificationsServer.on('close', () => { });
-            notificationsServer.on('error', reject);
-          });
+          await awaiting.event(notificationsServer, 'received');
           assert.isTrue(notificationsServer.isMessageReceived());
           // firstMessage is received the first time although it returns a 503.
           assert.deepEqual(notificationsServer.getMessages(),
@@ -335,11 +331,7 @@ describe('Webhook', () => {
         assert.exists(webhook.timeout);
       });
       it('should send scheduled messages after an interval', async () => {
-        await new bluebird((resolve, reject) => {
-          notificationsServer.on('received', resolve);
-          notificationsServer.on('close', () => { });
-          notificationsServer.on('error', reject);
-        });
+        await awaiting.event(notificationsServer, 'received');
         assert.isTrue(notificationsServer.isMessageReceived());
         assert.deepEqual(notificationsServer.getMessages(), 
           [firstMessage, firstMessage, secondMessage, thirdMessage]);
@@ -349,6 +341,51 @@ describe('Webhook', () => {
       });
 
     });
+
+    describe('when the webhook becomes inactive', () => {
+
+      before(async () => {
+        postPath = '/notifs4';
+        url = 'http://localhost:' + PORT + postPath;
+        notificationsServer = new HttpServer(postPath, 400);
+        await notificationsServer.listen();
+      });
+
+      after(async () => {
+        webhook.stop();
+        notificationsServer.close();
+      });
+
+      before(async () => {
+        webhook = new Webhook({
+          accessId: 'doesntmatter',
+          url: url,
+          minIntervalMs: 10,
+          webhooksStorage: storage,
+          user: user,
+        });
+        await webhook.save();
+        await webhook.send('hello');
+      });
+
+      it('should run 5 times', async () => {
+        await awaiting.event(notificationsServer, 'received');
+        await awaiting.event(notificationsServer, 'received');
+        await awaiting.event(notificationsServer, 'received');
+        await awaiting.event(notificationsServer, 'received');
+        await awaiting.event(notificationsServer, 'received');
+      });
+      it('should update the state to inactive', () => {
+        assert.equal(webhook.state, 'inactive');
+      });
+      it('should update the stored version', async () => {
+        storedWebhook = await bluebird.fromCallback(
+            cb => storage.findOne(user, { id: { $eq: webhook.id } }, {}, cb)
+        );
+        assert.equal(storedWebhook.state, 'inactive');
+      });
+    });
+
   });
 });
 
