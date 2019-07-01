@@ -384,6 +384,13 @@ describe('Webhook', () => {
         );
         assert.equal(storedWebhook.state, 'inactive');
       });
+      it('should not run anymore', async () => {
+        const msgCount = notificationsServer.getMessageCount();
+        const runCount = webhook.runCount;
+        await webhook.send();
+        assert.equal(notificationsServer.getMessageCount(), msgCount);
+        assert.equal(webhook.runCount, runCount);
+      });
     });
 
     describe('when the runs array gets shifted', () => {

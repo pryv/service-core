@@ -109,6 +109,8 @@ class Webhook implements MessageSink {
    * Send the message with the throttling and retry mechanics - to use in webhooks service
    */
   async send(message: string, isRescheduled?: boolean): Promise<void> {
+    if (this.state == 'inactive') return;
+
     if (isRescheduled != null && isRescheduled == true) {
       this.timeout = null;
     }
