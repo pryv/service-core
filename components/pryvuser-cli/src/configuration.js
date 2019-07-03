@@ -60,8 +60,8 @@ class Configuration {
   coreConfigPath(): string { return this._corePath; }
   hfsConfigPath(): string { return this._hfsPath; }
 
-  registrySettings(): RegistrySettings {
-    const coreConfig = this.coreConfig(); 
+  async registrySettings(): Promise<RegistrySettings> {
+    const coreConfig = await this.coreConfig(); 
 
     return {
       url: coreConfig.get('services.register.url').str(), 
@@ -69,15 +69,15 @@ class Configuration {
     };
   }
 
-  mongoDbSettings(): MongoDbSettings {
-    const coreConfig = this.coreConfig();
+  async mongoDbSettings(): Promise<MongoDbSettings> {
+    const coreConfig = await this.coreConfig();
 
     return {
       host: coreConfig.get('database.host').str(), 
       port: coreConfig.get('database.port').num(),
       dbname: coreConfig.get('database.name').str(),  
 
-      fileStore: this.fileStoreSettings(), 
+      fileStore: await this.fileStoreSettings(), 
     };
   }
 
@@ -90,8 +90,8 @@ class Configuration {
     };
   }
 
-  fileStoreSettings(): FileStoreSettings {
-    const coreConfig = this.coreConfig();
+  async fileStoreSettings(): Promise<FileStoreSettings> {
+    const coreConfig = await this.coreConfig();
 
     return {
       attachmentsPath: coreConfig.get('eventFiles.attachmentsDirPath').str(),
@@ -101,11 +101,11 @@ class Configuration {
 
   /// Loads and memoises core configuration. 
   /// 
-  coreConfig(): CoreSettings {
+  async coreConfig(): CoreSettings {
     const coreConfig = this._coreConfig; 
     if (coreConfig != null) return coreConfig;
 
-    const newConfig = CoreSettings.load(this.coreConfigPath());
+    const newConfig = CoreSettings.load(await this.coreConfigPath());
     this._coreConfig = newConfig;
 
     return newConfig;
