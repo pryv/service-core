@@ -18,11 +18,12 @@ const username = cuid()
 let server;
 let mongoFixtures;
 let infoHttpServer;
+let mockInfos;
 const infoHttpServerPort = 5123;
 describe('Service', () => {
 
   before(async () => {
-    let mockInfos = {
+      mockInfos = {
       serial: '2019062601',
       access: 'https://access.pryv.io/access',
       api: 'https://{username}.pryv.io/',
@@ -51,21 +52,11 @@ describe('Service', () => {
     it('[FR4K] must return all service infos', async () => {
       let path = '/' + username + '/service/infos';
       const res = await server.request().get(path);
-
       validation.check(res, {
         status: 200,
-        schema: methodsSchema.get.result
+        schema: methodsSchema.get.result,
+        body: mockInfos
       });
-
-      assert.isNotEmpty(res.body.serial);
-      assert.isNotEmpty(res.body.access);
-      assert.isNotEmpty(res.body.api);
-      assert.isNotEmpty(res.body.register);
-      assert.isNotEmpty(res.body.name);
-      assert.isNotEmpty(res.body.home);
-      assert.isNotEmpty(res.body.support);
-      assert.isNotEmpty(res.body.terms);
-      assert.isNotEmpty(res.body.eventTypes);
     });
   });
 });
