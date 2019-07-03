@@ -8,6 +8,9 @@ import type Result from '../Result';
 import type { Logger } from 'components/utils';
 import type { ConfigAccess } from './settings';
 
+const Result2 = require('../Result');
+const _ = require('lodash');
+
 module.exports = function (api: API, logger: Logger, settings: ConfigAccess) {
 
   api.register('service.infos',
@@ -15,11 +18,7 @@ module.exports = function (api: API, logger: Logger, settings: ConfigAccess) {
   );
 
   function getServiceInfo(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    // Deep copy settings directly into result
-    // @Ilia : a better way to do this ?
-    for (const key of Object.keys(settings))
-      result[key] = settings[key];
-
+    result = _.merge(result, settings);
     return next();
   }
 };
