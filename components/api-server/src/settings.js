@@ -121,7 +121,7 @@ class Settings implements ConfigAccess {
   async loadRegisterInfo() {
     const regUrlPath = this.get('services.register.url');
     if(!regUrlPath) {
-      console.warn('You should configure services.register.url');
+      console.warn('Parameter "services.register.url" is undefined, set it in the configuration to allow core to provide service infos');
       return;
     }
     
