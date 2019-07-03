@@ -56,6 +56,16 @@ describe('Service', () => {
         status: 200,
         schema: methodsSchema.get.result
       });
+
+      assert.isNotEmpty(res.body.serial);
+      assert.isNotEmpty(res.body.access);
+      assert.isNotEmpty(res.body.api);
+      assert.isNotEmpty(res.body.register);
+      assert.isNotEmpty(res.body.name);
+      assert.isNotEmpty(res.body.home);
+      assert.isNotEmpty(res.body.support);
+      assert.isNotEmpty(res.body.terms);
+      assert.isNotEmpty(res.body.eventTypes);
     });
   });
 });
