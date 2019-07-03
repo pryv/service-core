@@ -15,13 +15,17 @@ const _ = require('lodash');
 
 const { ErrorIds } = require('components/errors/src');
 const storage = require('components/test-helpers').dependencies.storage.user.accesses;
+
 let mongoFixtures;
+(async () => {
+  mongoFixtures = databaseFixture(await produceMongoConnection());
+})();
+
 
 describe('access deletions', () => {
 
   let userId, streamId, activeToken, deletedToken, accessToken;
   before(async () => {
-    mongoFixtures = databaseFixture(await produceMongoConnection());
 
     userId = cuid();
     streamId = cuid();
@@ -212,7 +216,6 @@ describe('access expiry', () => {
   let userId, streamId, accessToken, expiredToken, validId;
   let hasExpiryId, hasExpiryToken;
   before(async () => {
-    mongoFixtures = databaseFixture(await produceMongoConnection());
     userId = cuid(); 
     streamId = cuid();
     accessToken = cuid(); 
@@ -602,8 +605,6 @@ describe('access client data', () => {
   let toBeUpdateAccess1, toBeUpdateAccess2, toBeUpdateAccess3, emptyClientDataAccess;
   let fixtureAccesses;
   before(async () => {
-    mongoFixtures = databaseFixture(await produceMongoConnection());
-
     userId = cuid(); 
     streamId = cuid();
     accessToken = cuid();
