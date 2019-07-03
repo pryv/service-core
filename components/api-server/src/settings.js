@@ -146,9 +146,7 @@ class Settings implements ConfigAccess {
   }
 
   setConvict(convict: any, memberName: string, value: Object, regUrl: string) {
-    // console.log("trying to set", memberName, "with", value);
     if(!value) {
-      console.warn("Unable to get '" + memberName + "' from " + regUrl + " please check configuration");
       return;
     }
     convict.set(memberName, value);
