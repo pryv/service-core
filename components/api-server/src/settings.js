@@ -119,9 +119,9 @@ class Settings implements ConfigAccess {
   }
 
   async loadRegisterInfo() {
-    const regUrlPath = this.get("services.register.url");
+    const regUrlPath = this.get('services.register.url');
     if(!regUrlPath) {
-      console.warn("You should configure services.register.url");
+      console.warn('You should configure services.register.url');
       return;
     }
     
@@ -130,19 +130,19 @@ class Settings implements ConfigAccess {
     try {
       res = await request.get(regUrl);
     } catch (error) {
-      // console.warn("Unable to reach ", regUrl, error); // TODO laisser le warn ? Autre chose ?
+      console.warn('Unable to retrieve service-infos from Register on URL:', regUrl, 'Error:', error);
       return;
     }
 
-    this.setConvict(this.convict, "serial", res.body.serial, regUrl);
-    this.setConvict(this.convict, "access", res.body.access, regUrl);
-    this.setConvict(this.convict, "api", res.body.api, regUrl);
-    this.setConvict(this.convict, "http.register.url", res.body.register, regUrl);
-    this.setConvict(this.convict, "http.static.url", res.body.home, regUrl);
-    this.setConvict(this.convict, "service.name", res.body.name, regUrl);
-    this.setConvict(this.convict, "service.support", res.body.support, regUrl);
-    this.setConvict(this.convict, "service.terms", res.body.terms, regUrl);
-    this.setConvict(this.convict, "eventTypes.sourceURL", res.body.eventTypes, regUrl);
+    this.setConvict(this.convict, 'serial', res.body.serial, regUrl);
+    this.setConvict(this.convict, 'access', res.body.access, regUrl);
+    this.setConvict(this.convict, 'api', res.body.api, regUrl);
+    this.setConvict(this.convict, 'http.register.url', res.body.register, regUrl);
+    this.setConvict(this.convict, 'http.static.url', res.body.home, regUrl);
+    this.setConvict(this.convict, 'service.name', res.body.name, regUrl);
+    this.setConvict(this.convict, 'service.support', res.body.support, regUrl);
+    this.setConvict(this.convict, 'service.terms', res.body.terms, regUrl);
+    this.setConvict(this.convict, 'eventTypes.sourceURL', res.body.eventTypes, regUrl);
   }
 
   setConvict(convict: any, memberName: string, value: Object, regUrl: string) {
