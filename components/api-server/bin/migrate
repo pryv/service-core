@@ -9,7 +9,7 @@ let logger;
 
 (async () => {
   // Load settings asynchronously because we have to fetch
-  // some value from register via an http-get request.
+  // some values from register via an http-get request.
   const settings = await Settings.load(); 
 
   // Construct application

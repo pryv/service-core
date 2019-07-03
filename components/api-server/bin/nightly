@@ -9,7 +9,7 @@ let logger;
 
 (async () => {
   // Load settings asynchronously because we have to fetch
-  // some value from register via an http-get request.
+  // some values from register via an http-get request.
   const settings = await Settings.load(); 
 
   // Construct application
@@ -43,16 +43,14 @@ let logger;
 
   runNightlyTasks(storageLayer, storageSize)
     .then(() => {
-      console.log('ZNightly tasks completed.');
       logger.info('Nightly tasks completed.');
       process.exit(0);
     })
     .catch(e => {
-      console.log("ZERROR", e);
       logger.error(e);
       process.exit(1);
     });
-})()
+})();
 
 /**
  * Standalone script to perform nightly tasks (such as updating storage sizes for all users).

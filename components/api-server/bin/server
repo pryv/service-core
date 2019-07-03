@@ -9,7 +9,7 @@ let logger;
 
 (async () => {
   // Load settings asynchronously because we have to fetch
-  // some value from register via an http-get request.
+  // some values from register via an http-get request.
   const settings = await Settings.load();
 
   // Construct application
@@ -30,8 +30,7 @@ let logger;
 
   // Start the server
   const server = new Server(app); 
-  server.start();
-
+  await server.start();
 })()
 .then(() => logger.info('Startup sequence complete, Server is running.'))
 .catch(e => {
