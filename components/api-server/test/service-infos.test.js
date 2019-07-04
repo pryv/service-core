@@ -12,7 +12,6 @@ const httpServer = require('./support/httpServer');
 
 const chai = require('chai');
 const assert = chai.assert;
-const should = require('should');
 
 const username = cuid()
 let server;
