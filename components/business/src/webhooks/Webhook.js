@@ -123,8 +123,7 @@ class Webhook implements MessageSink {
     const sentBuffer: Array<string> = Array.from(this.messageBuffer);
     this.messageBuffer.clear();
     try {
-      const messages = sentBuffer;
-      const res = await this.makeCall(messages);
+      const res = await this.makeCall(sentBuffer);
       status = res.status;
     } catch (e) {
       if (e.response != null) {
@@ -141,7 +140,7 @@ class Webhook implements MessageSink {
       sentBuffer.forEach(m => {
         this.messageBuffer.add(m);
       });
-      if (this.currentRetries > this.maxRetries || this.state === 'inactive') {
+      if (this.currentRetries > this.maxRetries) {
         this.state = 'inactive';
       } 
     } else {

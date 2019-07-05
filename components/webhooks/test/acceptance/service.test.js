@@ -96,11 +96,7 @@ describe('webhooks', () => {
         });
 
         it('should send API call to the notifications server', async () => {
-          await new bluebird((resolve, reject) => {
-            notificationsServer.on('received', resolve);
-            notificationsServer.on('close', () => { });
-            notificationsServer.on('error', reject);
-          });
+          await awaiting.event(notificationsServer, 'received');
           assert.isTrue(notificationsServer.isMessageReceived());
         });
 

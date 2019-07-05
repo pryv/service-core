@@ -255,7 +255,6 @@ describe('Webhook', () => {
         });
         it('should schedule for a retry', () => {
           assert.exists(webhook.timeout);
-          //webhook.send(secondMessage);
         });
         it('should send scheduled messages after an interval', async () => {
           notificationsServer.setResponseStatus(201);
@@ -322,6 +321,7 @@ describe('Webhook', () => {
         assert.equal(notificationsServer.getMessageCount(), 1, 'server should receive the message once');
         assert.equal(runs.length, 1, 'Webhook should have 1 run');
         assert.equal(storedWebhook.runs.length, 1, 'Webhook should have 1 run');
+        assert.deepEqual(notificationsServer.getMessages(), [firstMessage]);
       });
       it('should accumulate messages', () => {
         assert.deepEqual(webhook.getMessageBuffer(), 
@@ -331,6 +331,7 @@ describe('Webhook', () => {
         assert.exists(webhook.timeout);
       });
       it('should send scheduled messages after an interval', async () => {
+        notificationsServer.resetMessageReceived();
         await awaiting.event(notificationsServer, 'received');
         assert.isTrue(notificationsServer.isMessageReceived());
         assert.deepEqual(notificationsServer.getMessages(), 
