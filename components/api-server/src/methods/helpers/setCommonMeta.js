@@ -3,11 +3,13 @@
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 const { ProjectVersion } = require('components/middleware/src/project_version');
+import type { ConfigAccess } from './settings';
 
 type MetaInfo = {
   meta: {
     apiVersion: string, 
     serverTime: number, 
+    serial: string // TODO string or number ??
   }
 }
 
@@ -18,12 +20,14 @@ type MetaInfo = {
 //  and store it forever. This (init and memoise) is the next best thing. 
 
 // Memoised copy of the current project version. 
-let version: string = 'n/a'; 
+let version: string = 'n/a';
+let serial: string = 'n/a';
 
 // Initialise the project version as soon as we can. 
 const pv = new ProjectVersion(); 
-pv.version().then(
-  v => version = v);
+(async () => {
+  version = await pv.version();
+})();
 
 /**
  * Adds common metadata (API version, server time) in the `meta` field of the given result,
@@ -31,13 +35,22 @@ pv.version().then(
  *
  * @param result {Object} Current result. MODIFIED IN PLACE. 
  */
-module.exports = function <T: Object>(result: T): T & MetaInfo {
+module.exports = function <T: Object>(result: T, settings: ?ConfigAccess): T & MetaInfo {
   if (result.meta == null) {
     result.meta = {};
   }
+
+  if(settings) {
+    try {
+      serial = settings.get('serial').str();
+    }
+    catch(error){}
+  }
+
   _.extend(result.meta, {
     apiVersion: version,
-    serverTime: timestamp.now()
+    serverTime: timestamp.now(),
+    serial: serial
   });
   return result;
 };

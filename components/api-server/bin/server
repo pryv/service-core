@@ -5,12 +5,14 @@
 const Server = require('../src/server');
 const Application = require('../src/application');
 const Settings = require('../src/settings');
+const setCommonMeta = require('../src/methods/helpers/setCommonMeta');
 let logger;
 
 (async () => {
   // Load settings asynchronously because we have to fetch
   // some values from register via an http-get request.
   const settings = await Settings.load();
+  setCommonMeta({}, settings);
 
   // Construct application
   const app = new Application(settings);
