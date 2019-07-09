@@ -1,6 +1,7 @@
 // @flow
 
 const { Extension, ExtensionLoader } = require('components/utils').extension;
+// FLOW __dirname can be undefined when node is run outside of file.
 const config = require(__dirname + '/config');
 
 const { ExistingValue, MissingValue } = require('components/utils/src/config/value');

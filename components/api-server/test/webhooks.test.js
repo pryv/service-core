@@ -15,7 +15,7 @@ const HttpServer = require('components/business/test/acceptance/webhooks/support
 
 const { ErrorIds } = require('components/errors/src');
 const storage = require('components/test-helpers').dependencies.storage.user.webhooks;
-const { Webhook } = require('components/business/src/webhooks');
+const { Webhook } = require('components/business').webhooks;
 
 describe('webhooks', () => {
 
@@ -394,7 +394,7 @@ describe('webhooks', () => {
         });
 
         describe('when minIntervalMs is smaller that the system minimum', () => {
-
+          
           it('should return an error');
 
         });
@@ -560,8 +560,8 @@ describe('webhooks', () => {
             response = res;
           });
 
-          it('should return a status 400 with an invalid parameter error', () => {
-            validation.checkErrorInvalidParams(response);
+          it('should return a status 403 with an invalid parameter error', () => {
+            validation.checkErrorForbidden(response);
           });
         });
 

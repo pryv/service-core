@@ -27,6 +27,7 @@ module.exports = {
       id: string(),
     }, {
       id: 'webhooks.getOne',
+      required: ['id'],
     }),
     result: object({
       webhook: webhook(Action.READ),
@@ -47,14 +48,14 @@ module.exports = {
       // = body of HTTP requests
       update: webhook(Action.UPDATE)
     }, {
-        id: 'webhooks.update',
-        required: ['id', 'update']
-      }),
+      id: 'webhooks.update',
+      required: ['id', 'update']
+    }),
     result: object({
       webhook: webhook(Action.READ)
     }, {
-        required: ['webhook']
-      })
+      required: ['webhook']
+    })
   },
 
   del: {
@@ -77,6 +78,7 @@ module.exports = {
       id: string(),
     }, {
         id: 'webhooks.test',
+        required: ['id'],
       }),
     result: object({
       webhook: webhook(Action.READ),

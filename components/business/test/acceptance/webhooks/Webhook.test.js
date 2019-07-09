@@ -1,9 +1,10 @@
-/*global describe, it, before, afterR*/
+/*global describe, it, before, after*/
 
 const assert = require('chai').assert;
 const timestamp = require('unix-timestamp');
 const bluebird = require('bluebird');
 const awaiting = require('awaiting');
+const _ = require('lodash');
 
 const Webhook = require('../../../src/webhooks/Webhook');
 
@@ -49,8 +50,7 @@ describe('Webhook', () => {
           notificationsServer.close();
         });
 
-        let webhook, runs, message, requestTimestamp,
-          storedWebhook;
+        let webhook, runs, message, requestTimestamp, storedWebhook;
 
         before(async () => {
           message = 'hi';
@@ -113,14 +113,14 @@ describe('Webhook', () => {
         before(async () => {
           notificationsServer = new HttpServer(postPath, 200);
           await notificationsServer.listen();
-          notificationsServer.setResponseDelay(delay)
+          notificationsServer.setResponseDelay(delay);
         });
 
         after(() => {
           notificationsServer.close();
         });
 
-        let webhook, requestTimestamp;
+        let webhook;
 
         before(async () => {
           webhook = new Webhook({
@@ -130,9 +130,8 @@ describe('Webhook', () => {
             webhooksStorage: storage,
             user: user,
           });
-          const start = timestamp.now();
           setTimeout(() => {
-            return webhook.send(secondMessage)
+            return webhook.send(secondMessage);
           }, intraCallsIntervalMs);
           webhook.send(firstMessage);
           await awaiting.event(notificationsServer, 'received');
@@ -154,8 +153,7 @@ describe('Webhook', () => {
 
     describe('when sending to an unexistant endpoint', () => {
 
-      let webhook, runs, requestTimestamp,
-        storedWebhook;
+      let webhook, requestTimestamp, storedWebhook;
 
       before(async () => {
         webhook = new Webhook({
@@ -219,9 +217,8 @@ describe('Webhook', () => {
           notificationsServer.close();
         });
 
-        let webhook, run, requestTimestamp, storedWebhook;
+        let webhook, run, storedRun, requestTimestamp, storedWebhook;
         const firstMessage = 'hello';
-        const secondMessage = 'hello2';
 
         before(async () => {
           webhook = new Webhook({
@@ -313,8 +310,8 @@ describe('Webhook', () => {
         await webhook.send(thirdMessage);
         runs = webhook.runs;
         storedWebhook = await bluebird.fromCallback(
-            cb => storage.findOne(user, { id: { $eq: webhook.id } }, {}, cb)
-          );
+          cb => storage.findOne(user, { id: { $eq: webhook.id } }, {}, cb)
+        );
       });
 
       it('should only send the message once', () => {
@@ -343,8 +340,9 @@ describe('Webhook', () => {
 
     });
 
-    describe('when the webhook becomes inactive', () => {
+    describe('when the webhook becomes inactive after failures', () => {
 
+      let webhook, storedWebhook;
       before(async () => {
         postPath = '/notifs5';
         url = 'http://localhost:' + PORT + postPath;
@@ -381,7 +379,7 @@ describe('Webhook', () => {
       });
       it('should update the stored version', async () => {
         storedWebhook = await bluebird.fromCallback(
-            cb => storage.findOne(user, { id: { $eq: webhook.id } }, {}, cb)
+          cb => storage.findOne(user, { id: { $eq: webhook.id } }, {}, cb)
         );
         assert.equal(storedWebhook.state, 'inactive');
       });
@@ -397,8 +395,7 @@ describe('Webhook', () => {
     describe('when the runs array gets shifted', () => {
 
       const message = 'hello';
-      const message2 = 'hello';
-
+      let webhook;
       before(async () => {
         postPath = '/notifs4';
         url = 'http://localhost:' + PORT + postPath;
@@ -429,25 +426,25 @@ describe('Webhook', () => {
         await webhook.send(message);
         await webhook.send(message);
         await webhook.send(message);
-        runs1 = webhook.runs;
+        runs1 = _.cloneDeep(webhook.runs);
       });
-      it('should rotate the runs'), async () => {
+      it('should rotate the runs', async () => {
         await webhook.send(message);
-        runs2 = webhook.runs;
-        assert.equal(runs1[1], runs2[1]);
-        assert.equal(runs1[2], runs2[2]);
+        runs2 = _.cloneDeep(webhook.runs);
+        assert.deepEqual(runs1[1], runs2[1]);
+        assert.deepEqual(runs1[2], runs2[2]);
         assert.notEqual(runs1[0], runs2[0]);
-      }
-      it('should rotate the runs more'), async () => {
+      });
+      it('should rotate the runs more', async () => {
         await webhook.send(message);
         runs3 = webhook.runs;
-        assert.equal(runs3[0], runs2[0]);
+        assert.deepEqual(runs3[0], runs2[0]);
         assert.notEqual(runs3[1], runs2[1]);
-        assert.notEqual(runs3[1], runs0[1]);
+        assert.notEqual(runs3[1], runs1[1]);
         assert.notEqual(runs3[2], runs1[2]);
-      }
+      });
 
-    })
+    });
 
   });
 });

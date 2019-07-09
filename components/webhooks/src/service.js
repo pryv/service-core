@@ -20,18 +20,17 @@ const { ProjectVersion } = require('components/middleware/src/project_version');
 
 type UsernameWebhook = {
   username: string,
-  webhook: {},
+  webhook: Webhook,
 };
 
 class WebhooksService implements MessageSink {
 
-  natsSubscribers: any;
   createListener: NatsSubscriber;
   deleteListener: NatsSubscriber;
   webhooks: Map<string, Array<Webhook>>;
 
   repository: WebhooksRepository;
-  db: StorageLayer;
+  storage: StorageLayer;
   logger: Logger;
   settings: Settings;
   NATS_CONNECTION_URI: string;
@@ -41,9 +40,10 @@ class WebhooksService implements MessageSink {
   constructor(params: {
     storage: StorageLayer, 
     logger: Logger,
-    settings: settings,
+    settings: Settings,
     }) {
     this.logger = params.logger;
+    this.storage = params.storage.webhooks;
     this.repository = new WebhooksRepository(params.storage.webhooks, params.storage.users);
     this.settings = params.settings;
     this.NATS_CONNECTION_URI = this.settings.get('nats.uri').str();
@@ -57,6 +57,7 @@ class WebhooksService implements MessageSink {
     this.logger.info('started');
     const pv = new ProjectVersion(); 
     this.apiVersion = await pv.version(); 
+    console.log('loadin service with version', this.apiVersion);
   }
 
   async subscribeToDeleteListener(): Promise<void> {
@@ -77,19 +78,19 @@ class WebhooksService implements MessageSink {
   }
 
   deliver(channel: string, usernameWebhook: UsernameWebhook): void {
+    const webhooksStorage = this.storage;
     switch(channel) {
       case WEBHOOKS_CREATE_CHANNEL:
-        this.addWebhook(usernameWebhook.username, 
-          new Webhook(_.extend(
-            {}, 
-            usernameWebhook.webhook,
-            { 
-              webhooksStorage: this.storage,
+        this.addWebhook(
+          usernameWebhook.username,
+          new Webhook(
+            _.extend({}, usernameWebhook.webhook, {
+              webhooksStorage: webhooksStorage,
               user: {
-                username: usernameWebhook.username,
-              },
-            }
-          ))
+                username: usernameWebhook.username
+              }
+            })
+          )
         );
         break;
       case WEBHOOKS_DELETE_CHANNEL:
@@ -110,15 +111,29 @@ class WebhooksService implements MessageSink {
   }
 
   stopWebhook(username: string, webhookId: string): void {
-    let usersWebhooks = this.webhooks.get(username);
-    usersWebhooks = usersWebhooks.filter(w => {
-      if (w.id === webhookId) {
-        w.stop();
-      }
-      return w.id !== webhookId;
-    });
+    const [ usersWebhooks: Array<Webhook>, webhook: Webhook, idx: number ] = this.getWebhook(username, webhookId);
+    if (webhook == null || usersWebhooks == null || idx == null) {
+      this.logger.warn(`Could not retrieve webhook ${webhookId} for ${username} to stop it.`);
+      return;
+    }
+    webhook.stop();
+    usersWebhooks.splice(idx, 1);
     this.webhooks.set(username, usersWebhooks);
     this.logger.info(`Stopped webhook ${webhookId} for ${username}`);
+  }
+
+  getWebhook(username: string, webhookId: string): [ ?Array<Webhook>, ?Webhook, ?number ] {
+    const usersWebhooks: ?Array<Webhook> = this.webhooks.get(username);
+
+    if (usersWebhooks == null) return [ null, null, null ];
+
+    const len = usersWebhooks.length;
+    for(let i=0; i<len; i++) {
+      if (usersWebhooks[i].id === webhookId) {
+        return [ usersWebhooks, usersWebhooks[i], i ];
+      }
+    }
+    return [ null, null, null ];
   }
 
   stop(): void {
@@ -136,14 +151,14 @@ class WebhooksService implements MessageSink {
 
 }
 
-async function initSubscriberForWebhook(username: string, webhook: Webhook): Promise<void> {
+async function initSubscriberForWebhook(username: string, webhook: Webhook, apiVersion: string): Promise<void> {
   const natsSubscriber = new NatsSubscriber(this.NATS_CONNECTION_URI, webhook, 
     function channelForUser(username: string): string {
       return `${username}.wh1`;
     });
   await natsSubscriber.subscribe(username);
   webhook.setNatsSubscriber(natsSubscriber);
-  webhook.setApiVersion(this.apiVersion);
+  webhook.setApiVersion.call(webhook, apiVersion);
 }
 
 module.exports = WebhooksService;

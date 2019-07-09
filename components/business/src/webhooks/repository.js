@@ -42,6 +42,7 @@ class Repository {
       const webhooks = await bluebird.fromCallback(
         (cb) => this.storage.find(user, webhooksQuery, webhooksOptions, cb)
       );
+      // TODO remove log from production
       if (webhooks != null && webhooks.length > 0) {
         console.log('retrieved webhooks for', user);
       }
@@ -74,7 +75,7 @@ class Repository {
     const webhookObjects = [];
     webhooks.forEach((w) => {
       const webhook = initWebhook(user, this.storage, w);
-      webhookObjects.push(webhook.forApi());
+      webhookObjects.push(webhook);
     });
 
     return webhookObjects;
@@ -83,7 +84,7 @@ class Repository {
   /**
    * Returns a webhook for a user, fetched by its id
    */
-  async getById(user: any, webhookId: string): Promise<Webhook> {
+  async getById(user: any, webhookId: string): Promise<?Webhook> {
     const query = {
       id: { $eq: webhookId }
     };

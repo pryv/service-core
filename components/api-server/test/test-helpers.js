@@ -21,6 +21,7 @@ after(async () => {
 });
 
 const { Database } = require('components/storage');
+// FLOW the case when __dirname can be undefined is almost impossible
 const Settings = require(__dirname + '/../src/settings');
 const NullLogger = require('components/utils/src/logging').NullLogger;
 

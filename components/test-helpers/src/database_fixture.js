@@ -10,7 +10,7 @@ const timestamp = require('unix-timestamp');
 
 const storage = require('components/storage');
 
-const Webhook = require('components/business/src/webhooks/Webhook');
+const Webhook = require("components/business").webhooks.Webhook;
 
 class Context {
   databaseConn: storage.Database; 

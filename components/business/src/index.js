@@ -3,7 +3,10 @@
 module.exports = {
   series: require('./series'), 
   types: require('./types'), 
-  webhooks: require('./webhooks'),
+  webhooks: {
+    Webhook: require('./webhooks/Webhook'),
+    Repository: require('./webhooks/repository'),
+  },
 };
 
 import type { Query } from './series/series';

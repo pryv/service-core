@@ -19,7 +19,7 @@ const HttpServer = require('components/business/test/acceptance/webhooks/support
 
 describe('webhooks', () => {
 
-  let username, streamId, appAccessId, appAccessToken;
+  let username, streamId, appAccessId, appAccessToken, webhookId;
   before(() => {
     username = cuid();
     streamId = cuid();
@@ -132,12 +132,13 @@ describe('webhooks', () => {
     });
 
     it('should register a new webhook in the service through NATS', async () => {
+      const webhooksService = webhooksApp.webhooksService;
       let isWebhookActive = false;
       while (! isWebhookActive) {
-        const webhooks = webhooksApp.webhooksService.webhooks.get(username);
-        webhooks.forEach( w => {
-          if (w.id === webhookId) isWebhookActive = true;
-        });
+        const [ , webhook,  ] = webhooksService.getWebhook(username, webhookId);
+        if (webhook != null) {
+          isWebhookActive = true;
+        }
         await awaiting.delay(10);
       }
       assert.isTrue(isWebhookActive);
@@ -147,38 +148,38 @@ describe('webhooks', () => {
   describe('when there are running webhooks', () => {
 
     before(() => {
-        username = cuid();
-        appAccessId = cuid();
-        appAccessToken = cuid();
-        webhookId = cuid();
-        streamId = cuid();
-      });
+      username = cuid();
+      appAccessId = cuid();
+      appAccessToken = cuid();
+      webhookId = cuid();
+      streamId = cuid();
+    });
 
-      before(async () => {
-        const user = await mongoFixtures.user(username, {});
-        await user.stream({
-          id: streamId,
-          name: 'doesntmatter'
-        });
-        await user.access({
-          id: appAccessId,
-          type: 'app', token: appAccessToken,
-          permissions: [{
-            streamId: streamId,
-            level: 'manage',
-          }]
-        });
-        await user.webhook({ 
-          url: 'doesntmatter',
-          id: webhookId,
-        }, appAccessId);
+    before(async () => {
+      const user = await mongoFixtures.user(username, {});
+      await user.stream({
+        id: streamId,
+        name: 'doesntmatter'
       });
+      await user.access({
+        id: appAccessId,
+        type: 'app', token: appAccessToken,
+        permissions: [{
+          streamId: streamId,
+          level: 'manage',
+        }]
+      });
+      await user.webhook({ 
+        url: 'doesntmatter',
+        id: webhookId,
+      }, appAccessId);
+    });
 
-      before(async () => {
-        await webhooksApp.webhooksService.addWebhook(username, new Webhook({
-          id: webhookId,
-        }));
-      });
+    before(async () => {
+      await webhooksApp.webhooksService.addWebhook(username, new Webhook({
+        id: webhookId,
+      }));
+    });
 
     describe('when deleting a webhook through API server', () => {
 

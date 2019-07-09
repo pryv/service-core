@@ -8,16 +8,16 @@ const PORT = 6123;
 
 class HttpServer extends EventEmitter {
 
-  app: Express$app;
-  server: HttpServer;
+  app: express$Application;
+  server: ?HttpServer;
   messages: Array<string>;
   metas: Array<string>;
   messageReceived: boolean;
   messageCount: number;
   responseStatus: number;
-  responseDelay: number;
+  responseDelay: ?number;
 
-  constructor(path, statusCode, responseBody, delay) {
+  constructor(path: string, statusCode: number, responseBody: {}, delay: number) {
     super();
     const app = express();
 
@@ -30,7 +30,7 @@ class HttpServer extends EventEmitter {
 
     const that = this;
     app.use(bodyParser.json());
-    app.post(path, (req, res) => {
+    app.post(path, (req, res: express$Response) => {
 
       this.emit('received');
       if (that.responseDelay == null) {
@@ -55,7 +55,7 @@ class HttpServer extends EventEmitter {
     this.app = app;
   }
 
-  async listen(port) {
+  async listen(port: number) {
     this.server = await this.app.listen(port || PORT);
   }
 
@@ -79,17 +79,20 @@ class HttpServer extends EventEmitter {
     return this.messageCount;
   }
 
-  setResponseStatus(newStatus) {
+  setResponseStatus(newStatus: number) {
     this.responseStatus = newStatus;
   }
 
-  setResponseDelay(delay) {
+  setResponseDelay(delay: number) {
     this.responseDelay = delay;
   }
 
   close() {
     return bluebird.fromCallback(
-      (cb) => { this.server.close(cb); });
+      (cb) => { 
+        if (this.server == null) return cb();
+        this.server.close(cb); 
+      });
   }
 }
 module.exports = HttpServer;

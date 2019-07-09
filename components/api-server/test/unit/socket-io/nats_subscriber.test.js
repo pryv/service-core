@@ -109,7 +109,10 @@ class ArraySink implements MessageSink {
     this.cvNewMessage = new ConditionVariable(); 
   }
   
-  deliver(userName: string, message: string): void {
+  deliver(userName: string, message: string | {}): void {
+    if (typeof message === 'object') {
+      message = JSON.stringify(message);
+    }
     this.msgs.push(message);
     this.cvNewMessage.broadcast(); 
   }

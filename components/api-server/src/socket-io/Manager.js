@@ -154,7 +154,7 @@ class Manager implements MessageSink {
   // 
   // Part of the MessageSink implementation.
   //
-  deliver(userName: string, message: string): void {
+  deliver(userName: string, message: string | {}): void {
     const context = this.getContext(`/${userName}`);
     if (context == null) return; 
     
@@ -162,6 +162,10 @@ class Manager implements MessageSink {
     if (namespace == null) 
       throw new Error('AF: namespace should not be null');
     
+    if (typeof message === 'object') {
+      message = JSON.stringify(message);
+    }
+
     namespace.emit(message);
   }
 }

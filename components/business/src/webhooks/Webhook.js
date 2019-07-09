@@ -10,16 +10,14 @@ const WebhooksStorage = require('components/storage').user.Webhooks;
 const NatsSubscriber = require('components/api-server/src/socket-io/nats_subscriber');
 import type { MessageSink } from 'components/api-server/src/socket-io/message_sink';
 
-
 export type Run = {
   status: number,
-  timestamp: number,
+  timestamp: number
 };
 
 export type WebhookState = 'active' | 'inactive';
 
 class Webhook implements MessageSink {
-
   id: string;
   accessId: string;
   url: string;
@@ -36,16 +34,16 @@ class Webhook implements MessageSink {
   maxRetries: number;
   minIntervalMs: number;
 
-  created: number;
-  createdBy: string;
-  modified: number;
-  modifiedBy: string;
+  created: ?number;
+  createdBy: ?string;
+  modified: ?number;
+  modifiedBy: ?string;
 
   messageBuffer: Set<string>;
-  timeout: Timeout;
+  timeout: ?TimeoutID;
   isSending: boolean;
 
-  user: {};
+  user: ?{};
   storage: ?WebhooksStorage;
   NatsSubscriber: ?NatsSubscriber;
   apiVersion: string;
@@ -57,6 +55,7 @@ class Webhook implements MessageSink {
     runCount?: number,
     failCount?: number,
     runs?: Array<Run>,
+    runsSize?: number,
     lastRun: Run,
     state?: WebhookState,
     currentRetries?: number,
@@ -68,7 +67,7 @@ class Webhook implements MessageSink {
     modifiedBy?: string,
     user?: {},
     webhooksStorage?: WebhooksStorage,
-    messageBuffer?: Set<string>,
+    messageBuffer?: Set<string>
   }) {
     this.id = params.id || cuid();
     this.accessId = params.accessId;
@@ -116,7 +115,8 @@ class Webhook implements MessageSink {
     }
     this.messageBuffer.add(message);
 
-    if (tooSoon.call(this) || this.isSending) return reschedule.call(this, message);
+    if (tooSoon.call(this) || this.isSending)
+      return reschedule.call(this, message);
     this.isSending = true;
 
     let status: ?number;
@@ -142,7 +142,7 @@ class Webhook implements MessageSink {
       });
       if (this.currentRetries > this.maxRetries) {
         this.state = 'inactive';
-      } 
+      }
     } else {
       this.currentRetries = 0;
     }
@@ -151,14 +151,10 @@ class Webhook implements MessageSink {
     this.lastRun = { status: status, timestamp: Date.now() / 1000 };
     this.addRun(this.lastRun);
 
-    await makeUpdate([
-      'lastRun',
-      'runs',
-      'runCount',
-      'failCount',
-      'currentRetries',
-      'state',
-    ], this);
+    await makeUpdate(
+      ['lastRun', 'runs', 'runCount', 'failCount', 'currentRetries', 'state'],
+      this
+    );
 
     if (hasError(status)) {
       handleRetry.call(this, message);
@@ -171,32 +167,20 @@ class Webhook implements MessageSink {
     function handleRetry(message): void {
       if (this.state == 'inactive') {
         return;
-      } 
+      }
       reschedule.call(this, message);
     }
 
-    function reschedule(message: string, ): void {
+    function reschedule(message: string): void {
       if (this.timeout != null) return;
       const delay = this.minIntervalMs * (this.currentRetries || 1);
-      this.timeout = setTimeout(() => {
+      this.timeout = setTimeout(
+        () => {
           return this.send(message, true);
-        }
-        //await 
-        /*process.nextTick((message, bool) => {
-          this.send(message, bool)
-          }, message, true);*/
-      , delay);
+        },
+        delay
+      );
     }
-
-    /**
-    setTimeout(this.send.bind(this, message, true), delay);
-     */
-
-     /**
-     setTimeout(() => {
-          return this.send(message, true);
-        }, delay);
-      */
 
     function tooSoon(): boolean {
       const now = timestamp.now();
@@ -212,14 +196,13 @@ class Webhook implements MessageSink {
    * Only make the HTTP call - used for webhook.test API method
    */
   async makeCall(messages: Array<string>): Promise<Http$Response> {
-    const res = await request.post(this.url)
-      .send({
-        messages: messages,
-        meta: {
-          apiVersion: this.apiVersion,
-          serverTime: timestamp.now(),
-        }
-      });
+    const res = await request.post(this.url).send({
+      messages: messages,
+      meta: {
+        apiVersion: this.apiVersion,
+        serverTime: timestamp.now()
+      }
+    });
     return res;
   }
 
@@ -234,7 +217,7 @@ class Webhook implements MessageSink {
 
   addRun(run: Run): void {
     if (this.runCount > this.runsSize) {
-      const position = this.runCount % this.runsSize;
+      const position = (this.runCount % this.runsSize) - 1;
       this.runs[position] = run;
     } else {
       this.runs.push(run);
@@ -310,7 +293,7 @@ class Webhook implements MessageSink {
     ]);
   }
 
-  setApiVersion(version) {
+  setApiVersion(version: string) {
     this.apiVersion = version;
   }
 

@@ -27,9 +27,9 @@ exports = module.exports = function (action) {
     'currentRetries': number(),
     'maxRetries': number(),
     'minIntervalMs': number(),
-    }, 
-    {
-      additionalProperties: false
+  }, 
+  {
+    additionalProperties: false
   });
   helpers.addTrackingProperties(base);
 
@@ -57,9 +57,7 @@ exports = module.exports = function (action) {
       base.required = ['url'];
       break;
     case Action.UPDATE:
-      base.required = [
-        'state'
-      ];
+      base.alterableProperties = ['state'];
       break;
   }
 
@@ -69,9 +67,11 @@ exports = module.exports = function (action) {
 const run = object({
   status: number(),
   timestamp: number(),
-  },
-  { required: [
+},
+{ 
+  required: [
     'status',
     'timestamp',
-  ]}
+  ]
+}
 );

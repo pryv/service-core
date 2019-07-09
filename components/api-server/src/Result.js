@@ -23,6 +23,11 @@ type APIResult =
   
 type ToObjectCallback = (err: ?Error, res: ?APIResult) => mixed;
 
+type itemDeletion = {
+  id: string,
+  deleted: number,
+};
+
 
 // Result object used to store API call response body while it is processed.
 // In case of events.get call, it stores multiple streams in this.streamsArray.
@@ -55,6 +60,7 @@ class Result {
   webhook: Webhook;
   webhooks: Array<Webhook>;
   
+  webhookDeletion: itemDeletion;
   constructor(params?: ResultOptions) {
     this._private = { 
       init: false, first: true, 

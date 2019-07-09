@@ -14,6 +14,7 @@ function unhandledRejection(reason, promise) {
 
 const { Database } = require('components/storage');
 const storage = require('components/storage');
+// FLOW __dirname can be undefined when node is run outside of file.
 const Settings = require(__dirname + '/../src/settings');
 const NullLogger = require('components/utils/src/logging').NullLogger;
 

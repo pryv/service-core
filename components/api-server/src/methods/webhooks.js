@@ -3,11 +3,10 @@
 const _ = require('lodash');
 const timestamp = require('unix-timestamp');
 
-const APIError = require('components/errors').APIError;
 const errors = require('components/errors').factory;
-const ErrorIds = require('components/errors').ErrorIds;
 
 const commonFns = require('./helpers/commonFunctions');
+const webhookSchema = require('../schema/webhook');
 const methodsSchema = require('../schema/webhooksMethods');
 
 const Webhook = require('components/business').webhooks.Webhook;
@@ -29,6 +28,13 @@ import type Result from '../Result';
 export type WebhooksSettingsHolder = {
   minIntervalMs: number,
   maxRetries: number,
+  runsSize: number,
+}
+
+type Access = {
+  id: string,
+  isApp(): boolean,
+  isPersonal(): boolean,
 }
 
 module.exports = function produceAccessesApiMethods(
@@ -66,11 +72,15 @@ module.exports = function produceAccessesApiMethods(
     const currentAccess = context.access;
     try {
       const webhooks = await webhooksRepository.get(context.user, currentAccess);
-      result.webhooks = webhooks;
+      result.webhooks = webhooks.map(forApi);
     } catch (error) {
       return next(errors.unexpectedError(error));
     }
     next();
+
+    function forApi(w: Webhook): {} {
+      return w.forApi();
+    }
   }
 
   api.register('webhooks.getOne',
@@ -79,7 +89,7 @@ module.exports = function produceAccessesApiMethods(
     findWebhook,
   );
 
-  async function findWebhook(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async function findWebhook(context: MethodContext, params: { id: string }, result: Result, next: ApiCallback) {
     const user = context.user;
     const currentAccess = context.access;
     const webhookId = params.id;
@@ -90,7 +100,7 @@ module.exports = function produceAccessesApiMethods(
         return next(errors.unknownResource('webhook', params.id));
       }
       if (!isWebhookInScope(webhook, currentAccess)) {
-        return next(errors.forbidden());
+        return next(errors.forbidden('The webhook was not created by this app access.'));
       }
 
       result.webhook = webhook.forApi();
@@ -162,15 +172,21 @@ module.exports = function produceAccessesApiMethods(
   api.register('webhooks.update',
     commonFns.getParamsValidation(methodsSchema.update.params),
     forbidSharedAccess,
+    commonFns.catchForbiddenUpdate(webhookSchema('update'), false, logger),
     applyPrerequisitesForUpdate,
     updateWebhook);
 
-  function applyPrerequisitesForUpdate(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  function applyPrerequisitesForUpdate(context: MethodContext, 
+    params: { update: {} }, 
+    result: Result, next: ApiCallback) {
     context.updateTrackingProperties(params.update);
     next();
   }
 
-  async function updateWebhook(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async function updateWebhook(context: MethodContext, 
+    params: { update: {}, id: string }, 
+    result: Result, next: ApiCallback) {
+    
     const user = context.user;
     const currentAccess = context.access;
     const update = params.update;
@@ -182,7 +198,7 @@ module.exports = function produceAccessesApiMethods(
         return next(errors.unknownResource('webhook', params.id));
       }
       if (!isWebhookInScope(webhook, currentAccess)) {
-        return next(errors.forbidden());
+        return next(errors.forbidden('The webhook was not created by this app access.'));
       }
 
       await webhook.update(update);
@@ -202,7 +218,10 @@ module.exports = function produceAccessesApiMethods(
     turnOffWebhook,
   );
 
-  async function deleteAccess(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async function deleteAccess(context: MethodContext, 
+    params: { id: string }, 
+    result: Result, next: ApiCallback) {
+    
     const user = context.user;
     const currentAccess = context.access;
     const webhookId = params.id;
@@ -213,7 +232,7 @@ module.exports = function produceAccessesApiMethods(
         return next(errors.unknownResource('webhook', params.id));
       }
       if (!isWebhookInScope(webhook, currentAccess)) {
-        return next(errors.forbidden());
+        return next(errors.forbidden('The webhook was not created by this app access.'));
       }
 
       await webhook.delete();
@@ -227,7 +246,7 @@ module.exports = function produceAccessesApiMethods(
     next();
   }
 
-  async function turnOffWebhook(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async function turnOffWebhook(context: MethodContext, params: { id: string }, result: Result, next: ApiCallback) {
     const username = context.user.username;
     const webhookId = params.id;
     natsPublisher.deliver(NATS_WEBHOOKS_DELETE_CHANNEL, {
@@ -248,7 +267,7 @@ module.exports = function produceAccessesApiMethods(
     testWebhook,
   );
 
-  async function testWebhook(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async function testWebhook(context: MethodContext, params: { id: string }, result: Result, next: ApiCallback) {
     const user = context.user;
     const currentAccess = context.access;
     const webhookId = params.id;
@@ -259,7 +278,7 @@ module.exports = function produceAccessesApiMethods(
         return next(errors.unknownResource('webhook', params.id));
       }
       if (!isWebhookInScope(webhook, currentAccess)) {
-        return next(errors.forbidden());
+        return next(errors.forbidden('The webhook was not created by this app access.'));
       }
 
       // replies after having made the call, but returns unexpected error if call fails - as if db fetching fails
@@ -277,9 +296,9 @@ module.exports = function produceAccessesApiMethods(
    * If Personnal: yes
    * If App: only if it was used to create the webhook
    */
-  function isWebhookInScope(webhook: {}, access: {}): boolean {
+  function isWebhookInScope(webhook: Webhook, access: Access): boolean {
     if (access.isPersonal()) return true;
-    return access.isApp() && (access.id === webhook.accessId);
+    return access.isApp() && access.id === webhook.accessId;
   }
 
 

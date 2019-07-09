@@ -29,8 +29,7 @@ class Application {
 
     await this.parseCommandLine(process.argv);
 
-    if (overrideSettings != null)
-      this.settings.merge(overrideSettings);
+    if (overrideSettings != null) this.settings.merge(overrideSettings);
 
     this.initLogger();
     this.initTrace();
@@ -45,9 +44,11 @@ class Application {
   initLogger() {
     const settings = this.settings;
     const loggerSettings = settings.getLogSettingsObject();
-    const logFactory = this.logFactory = loggingSubsystem(loggerSettings).getLogger;
+    const logFactory = (this.logFactory = loggingSubsystem(
+      loggerSettings
+    ).getLogger);
 
-    const logger = this.logger = logFactory('webhooks');
+    const logger = (this.logger = logFactory('webhooks'));
 
     const consoleLevel = settings.get('logs.console.level').str();
     logger.info(`Console logging is configured at level '${consoleLevel}'`);
@@ -60,14 +61,14 @@ class Application {
     await cliArgs.parse(argv);
   }
 
-  // Runs the application. This method only ever exits once the service is 
-  // killed. 
-  // 
+  // Runs the application. This method only ever exits once the service is
+  // killed.
+  //
   async run() {
     const logger = this.logger;
 
     logger.info('Webhooks service is mounting services');
-    await this.startWebhooksService();
+    await this.startWebhooksService.call(this);
   }
 
   stop(): void {
@@ -76,28 +77,33 @@ class Application {
 
   // Initializes and starts the webhooks service. The `endpoint`
   // parameter should contain an endpoint the service binds to in the form of
-  // HOST:PORT.  
-  // 
+  // HOST:PORT.
+  //
   async startWebhooksService() {
     const settings = this.settings;
-    const loggerFor = this.logFactory;
 
     // Connect to MongoDB
     const storageLayer = produceStorageLayer(
       settings.getMongodbSettings(),
-      loggerFor('mongodb')
+      this.getLogger('mongodb')
     );
 
     // Construct the service
     const service = new services.WebhooksService({
-      storage: storageLayer, 
-      logger: loggerFor('webhooks_service'),
-      settings: settings,
+      storage: storageLayer,
+      logger: this.getLogger('webhooks_service'),
+      settings: settings
     });
     this.webhooksService = service;
 
     // And start it.
     await service.start();
+  }
+
+  // Produces and returns a new logger for a given `topic`.
+  //
+  getLogger(topic: string): Logger {
+    return this.logFactory(topic);
   }
 }
 module.exports = Application;
