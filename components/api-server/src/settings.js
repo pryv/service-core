@@ -134,22 +134,28 @@ class Settings implements ConfigAccess {
       return;
     }
 
-    this.setConvict(this.convict, 'serial', res.body.serial, regUrl);
-    this.setConvict(this.convict, 'access', res.body.access, regUrl);
-    this.setConvict(this.convict, 'api', res.body.api, regUrl);
-    this.setConvict(this.convict, 'http.register.url', res.body.register, regUrl);
-    this.setConvict(this.convict, 'http.static.url', res.body.home, regUrl);
-    this.setConvict(this.convict, 'service.name', res.body.name, regUrl);
-    this.setConvict(this.convict, 'service.support', res.body.support, regUrl);
-    this.setConvict(this.convict, 'service.terms', res.body.terms, regUrl);
-    this.setConvict(this.convict, 'eventTypes.sourceURL', res.body.eventTypes, regUrl);
+    this.setConvictMember('serial', res.body.serial);
+    this.setConvictMember('access', res.body.access);
+    this.setConvictMember('api', res.body.api);
+    this.setConvictMember('http.register.url', res.body.register);
+    this.setConvictMember('http.static.url', res.body.home);
+    this.setConvictMember('service.name', res.body.name);
+    this.setConvictMember('service.support', res.body.support);
+    this.setConvictMember('service.terms', res.body.terms);
+    this.setConvictMember('eventTypes.sourceURL', res.body.eventTypes);
   }
 
-  setConvict(convict: any, memberName: string, value: Object, regUrl: string) {
+  /**
+   * Add or update a config value if the `value` is not null.
+   *
+   * @param {string} : memberName
+   * @param {Object} : value
+   */
+  setConvictMember(memberName: string, value: Object) {
     if(!value) {
       return;
     }
-    convict.set(memberName, value);
+    this.convict.set(memberName, value);
   }
 }
 module.exports = Settings;
