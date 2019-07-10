@@ -13,7 +13,7 @@ const httpServer = require('./support/httpServer');
 const chai = require('chai');
 const assert = chai.assert;
 
-const username = cuid()
+const username = cuid();
 let server;
 let mongoFixtures;
 let infoHttpServer;
@@ -39,13 +39,13 @@ describe('Service', () => {
     mongoFixtures =  databaseFixture(await produceMongoConnection());
     await mongoFixtures.user(username, {});
     server = await context.spawn();
-  })
+  });
 
   after(async () => {
     await mongoFixtures.clean();
     server.stop();
     infoHttpServer.close();
-  })
+  });
 
   describe('GET /service/infos', () => {
     it('[FR4K] must return all service infos', async () => {

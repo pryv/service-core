@@ -11,7 +11,7 @@ import type { CustomAuthFunction } from 'components/model';
 import type { ConfigValue } from 'components/utils/src/config/value';
 
 const _ = require('lodash');
-const request = require('superagent')
+const request = require('superagent');
 
 export interface ConfigAccess {
   get(key: string): ConfigValue;
