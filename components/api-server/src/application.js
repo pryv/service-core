@@ -5,6 +5,7 @@
 
 const utils = require('components/utils');
 const storage = require('components/storage');
+const Settings = require('./settings');
 
 const API = require('./API');
 
@@ -132,31 +133,10 @@ class Application {
     };
   }
   
-  getServiceInfosSettings(): Object {
-    const serviceInfosSettings = {};
-
-    this.setConfig(serviceInfosSettings, this.settings, "serial", "serial");
-    this.setConfig(serviceInfosSettings, this.settings, "access", "access");
-    this.setConfig(serviceInfosSettings, this.settings, "api", "api");
-    this.setConfig(serviceInfosSettings, this.settings, "register", "http.register.url");
-    this.setConfig(serviceInfosSettings, this.settings, "name", "service.name");
-    this.setConfig(serviceInfosSettings, this.settings, "home", "http.static.url");
-    this.setConfig(serviceInfosSettings, this.settings, "support", "service.support");
-    this.setConfig(serviceInfosSettings, this.settings, "terms", "service.terms");
-    this.setConfig(serviceInfosSettings, this.settings, "eventTypes", "eventTypes.sourceURL");
-
-    return serviceInfosSettings;
+  getServiceInfosSettings(): ConfigAccess {
+    return this.settings;
   }
 
-  setConfig(serviceInfos: Object, settings: Object, memberName: string, configKey: string) {
-    const param = settings.get(configKey);
-    if(!param) {
-      console.warn("Unable to get '" + memberName + "' from Settings, please check configuration");
-      return;
-    }
-    serviceInfos[memberName] = param.value;
-  }
-  
   // Produces and returns a new logger for a given `topic`.
   // 
   getLogger(topic: string): Logger {

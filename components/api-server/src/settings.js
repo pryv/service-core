@@ -26,6 +26,7 @@ export type { ConfigValue };
 class Settings implements ConfigAccess {
   convict: ConvictConfig; 
   customAuthStepFn: ?Extension; 
+  registerLoaded: boolean;
   
   // Loads the settings for production use. This means that we follow the order
   // defined in config.load. 
@@ -47,6 +48,7 @@ class Settings implements ConfigAccess {
 
   constructor(ourConfig: ConvictConfig) {
     this.convict = ourConfig;
+    this.registerLoaded = false;
     this.customAuthStepFn = this.loadCustomExtension(); 
   }
   
@@ -119,6 +121,12 @@ class Settings implements ConfigAccess {
   }
 
   async loadRegisterInfo() {
+    if(this.registerLoaded) {
+      console.debug("register service/infos already loaded");
+      return;
+    }
+    console.debug("load register service/infos");
+
     const regUrlPath = this.get('services.register.url');
     if(!regUrlPath) {
       console.warn('Parameter "services.register.url" is undefined, set it in the configuration to allow core to provide service infos');
@@ -143,6 +151,8 @@ class Settings implements ConfigAccess {
     this.setConvictMember('service.support', res.body.support);
     this.setConvictMember('service.terms', res.body.terms);
     this.setConvictMember('eventTypes.sourceURL', res.body.eventTypes);
+
+    this.registerLoaded = true;
   }
 
   /**
