@@ -9,7 +9,7 @@ type MetaInfo = {
   meta: {
     apiVersion: string, 
     serverTime: number, 
-    serial: string // TODO string or number ??
+    serial: string
   }
 }
 
@@ -33,6 +33,10 @@ const pv = new ProjectVersion();
  * Adds common metadata (API version, server time) in the `meta` field of the given result,
  * initializing `meta` if missing.
  *
+ * Warning : the new `settings` parameter is a slight "hack" (almost like `version`)
+ * to set and cache the serial when core starts.
+ * We REALLY should refactor this method.
+ *
  * @param result {Object} Current result. MODIFIED IN PLACE. 
  */
 module.exports = function <T: Object>(result: T, settings: ?ConfigAccess): T & MetaInfo {
@@ -40,6 +44,7 @@ module.exports = function <T: Object>(result: T, settings: ?ConfigAccess): T & M
     result.meta = {};
   }
 
+  // See warning in the doc above
   if(settings) {
     try {
       serial = settings.get('serial').str();
