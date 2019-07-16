@@ -1,5 +1,8 @@
 // @flow
 
+const request = require('superagent');
+const path = require('path');
+
 const { Extension, ExtensionLoader } = require('components/utils').extension;
 const config = require('./config');
 
@@ -10,13 +13,11 @@ opaque type ConvictConfig = Object;
 import type { CustomAuthFunction } from 'components/model';
 import type { ConfigValue } from 'components/utils/src/config/value';
 
-const _ = require('lodash');
-const request = require('superagent');
-
 export interface ConfigAccess {
   get(key: string): ConfigValue;
   has(key: string): boolean;
   getCustomAuthFunction(): ?CustomAuthFunction;
+  loadRegisterInfo(): Promise<void>;
 }
 
 export type { ConfigValue };
@@ -120,7 +121,7 @@ class Settings implements ConfigAccess {
     return new ExistingValue(key, value);
   }
 
-  async loadRegisterInfo() {
+  async loadRegisterInfo(): Promise<void> {
     if(this.registerLoaded) {
       console.debug("register service/infos already loaded");
       return;
@@ -133,7 +134,7 @@ class Settings implements ConfigAccess {
       return;
     }
     
-    const regUrl = regUrlPath.value + '/service/infos';
+    const regUrl = path.join(regUrlPath.value, '/service/infos');
     let res;
     try {
       res = await request.get(regUrl);

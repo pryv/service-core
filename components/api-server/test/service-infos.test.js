@@ -1,17 +1,13 @@
-/* global describe, before, beforeEach, it */
+/* global describe, before, after, it */
 
 require('./test-helpers');
 const cuid = require('cuid');
-const async = require('async');
 const helpers = require('./helpers');
 const validation = helpers.validation;
 const methodsSchema = require('../src/schema/service-infosMethods');
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 const httpServer = require('./support/httpServer');
-
-const chai = require('chai');
-const assert = chai.assert;
 
 const username = cuid();
 let server;
