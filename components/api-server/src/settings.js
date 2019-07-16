@@ -123,23 +123,23 @@ class Settings implements ConfigAccess {
 
   async loadRegisterInfo(): Promise<void> {
     if(this.registerLoaded) {
-      console.debug("register service/infos already loaded");
+      console.debug("register service/info already loaded");
       return;
     }
-    console.debug("load register service/infos");
+    console.debug("loading register service/info");
 
     const regUrlPath = this.get('services.register.url');
     if(!regUrlPath) {
-      console.warn('Parameter "services.register.url" is undefined, set it in the configuration to allow core to provide service infos');
+      console.warn('Parameter "services.register.url" is undefined, set it in the configuration to allow core to provide service info');
       return;
     }
     
-    const regUrl = path.join(regUrlPath.value, '/service/infos');
+    const regUrl = path.join(regUrlPath.value, '/service/info');
     let res;
     try {
       res = await request.get(regUrl);
     } catch (error) {
-      console.warn('Unable to retrieve service-infos from Register on URL:', regUrl, 'Error:', error);
+      // console.warn('Unable to retrieve service-info from Register on URL:', regUrl, 'Error:', error); // TODO uncomment
       return;
     }
 

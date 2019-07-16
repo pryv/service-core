@@ -11,25 +11,25 @@ const _ = require('lodash');
 
 module.exports = function (api: API, logger: Logger, settings: ConfigAccess) {
 
-  api.register('service.infos',
+  api.register('service.info',
     getServiceInfo
   );
 
   async function getServiceInfo(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     await settings.loadRegisterInfo();
 
-    const serviceInfosSettings = {};
-    setConfig(serviceInfosSettings, settings, 'serial', 'serial');
-    setConfig(serviceInfosSettings, settings, 'access', 'access');
-    setConfig(serviceInfosSettings, settings, 'api', 'api');
-    setConfig(serviceInfosSettings, settings, 'register', 'http.register.url');
-    setConfig(serviceInfosSettings, settings, 'name', 'service.name');
-    setConfig(serviceInfosSettings, settings, 'home', 'http.static.url');
-    setConfig(serviceInfosSettings, settings, 'support', 'service.support');
-    setConfig(serviceInfosSettings, settings, 'terms', 'service.terms');
-    setConfig(serviceInfosSettings, settings, 'eventTypes', 'eventTypes.sourceURL');
+    const serviceInfoSettings = {};
+    setConfig(serviceInfoSettings, settings, 'serial', 'serial');
+    setConfig(serviceInfoSettings, settings, 'access', 'access');
+    setConfig(serviceInfoSettings, settings, 'api', 'api');
+    setConfig(serviceInfoSettings, settings, 'register', 'http.register.url');
+    setConfig(serviceInfoSettings, settings, 'name', 'service.name');
+    setConfig(serviceInfoSettings, settings, 'home', 'http.static.url');
+    setConfig(serviceInfoSettings, settings, 'support', 'service.support');
+    setConfig(serviceInfoSettings, settings, 'terms', 'service.terms');
+    setConfig(serviceInfoSettings, settings, 'eventTypes', 'eventTypes.sourceURL');
 
-    result = _.merge(result, serviceInfosSettings);
+    result = _.merge(result, serviceInfoSettings);
     return next();
   }
 
