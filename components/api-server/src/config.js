@@ -10,7 +10,7 @@ module.exports = config;
 _.merge(config.schema, {
   eventTypes: {
     sourceURL: {
-      format: 'url',
+      format: String,
       default: 'https://pryv.github.io/event-types/flat.json'
     }
   },
@@ -66,7 +66,7 @@ _.merge(config.schema, {
       doc: 'The maximum age (in seconds) of a password reset request.'
     },
     passwordResetPageURL: {
-      format: 'url',
+      format: String,
       // TODO: update when simplified env implemented
       default: 'https://sw.pryv.li/access/reset-password.html'
     }
@@ -74,7 +74,7 @@ _.merge(config.schema, {
   services: {
     register: {
       url: {
-        format: 'url',
+        format: String,
         // TODO: update when simplified env implemented
         default: 'https://reg.pryv.in'
       },
