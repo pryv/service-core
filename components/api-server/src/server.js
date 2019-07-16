@@ -113,7 +113,7 @@ class Server {
       application.storageLayer);
 
     require('./methods/service')(
-        application.api, l('methods/service'), application.getServiceInfosSettings()
+      application.api, l('methods/service'), application.getServiceInfoSettings()
     );
 
     [

@@ -33,13 +33,13 @@ module.exports = function (api: API, logger: Logger, settings: ConfigAccess) {
     return next();
   }
 
-  function setConfig(serviceInfos: Object, settings: ConfigAccess, memberName: string, configKey: string) {
+  function setConfig(serviceInfo: Object, settings: ConfigAccess, memberName: string, configKey: string) {
     const param = settings.get(configKey);
     if(!param) {
       logger.warn('Unable to get \'' + memberName + '\' from Settings, please check configuration');
       return;
     }
-    serviceInfos[memberName] = param.value;
+    serviceInfo[memberName] = param.value;
   }
 
 };

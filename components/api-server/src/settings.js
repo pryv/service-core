@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 // @flow
 
 const request = require('superagent');
@@ -123,10 +124,10 @@ class Settings implements ConfigAccess {
 
   async loadRegisterInfo(): Promise<void> {
     if(this.registerLoaded) {
-      console.debug("register service/info already loaded");
+      console.debug('register service/info already loaded');
       return;
     }
-    console.debug("loading register service/info");
+    console.debug('loading register service/info');
 
     const regUrlPath = this.get('services.register.url');
     if(!regUrlPath) {
@@ -134,12 +135,12 @@ class Settings implements ConfigAccess {
       return;
     }
     
-    const regUrl = path.join(regUrlPath.value, '/service/info');
+    const regUrl = regUrlPath.value + '/service/info';
     let res;
     try {
       res = await request.get(regUrl);
     } catch (error) {
-      // console.warn('Unable to retrieve service-info from Register on URL:', regUrl, 'Error:', error); // TODO uncomment
+      console.warn('Unable to retrieve service-info from Register on URL:', regUrl, 'Error:', error);
       return;
     }
 
@@ -163,6 +164,7 @@ class Settings implements ConfigAccess {
    * @param {Object} : value
    */
   setConvictMember(memberName: string, value: Object) {
+    console.log("setting ", memberName, "with", value);
     if(!value) {
       return;
     }

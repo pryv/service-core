@@ -5,7 +5,6 @@
 
 const utils = require('components/utils');
 const storage = require('components/storage');
-const Settings = require('./settings');
 
 const API = require('./API');
 
@@ -133,7 +132,7 @@ class Application {
     };
   }
   
-  getServiceInfosSettings(): ConfigAccess {
+  getServiceInfoSettings(): ConfigAccess {
     return this.settings;
   }
 

@@ -4,7 +4,7 @@ require('./test-helpers');
 const cuid = require('cuid');
 const helpers = require('./helpers');
 const validation = helpers.validation;
-const methodsSchema = require('../src/schema/service-infosMethods');
+const methodsSchema = require('../src/schema/service-infoMethods');
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 const httpServer = require('./support/httpServer');
@@ -13,12 +13,12 @@ const username = cuid();
 let server;
 let mongoFixtures;
 let infoHttpServer;
-let mockInfos;
+let mockInfo;
 const infoHttpServerPort = 5123;
 describe('Service', () => {
 
   before(async () => {
-      mockInfos = {
+    mockInfo = {
       serial: '2019062601',
       access: 'https://access.pryv.io/access',
       api: 'https://{username}.pryv.io/',
@@ -30,7 +30,7 @@ describe('Service', () => {
       eventTypes: 'https://api.pryv.com/event-types/flat.json'
     };
 
-    infoHttpServer = new httpServer('/service/infos', 200, mockInfos);
+    infoHttpServer = new httpServer('/service/info', 200, mockInfo);
     await infoHttpServer.listen(infoHttpServerPort);
     mongoFixtures =  databaseFixture(await produceMongoConnection());
     await mongoFixtures.user(username, {});
@@ -43,14 +43,14 @@ describe('Service', () => {
     infoHttpServer.close();
   });
 
-  describe('GET /service/infos', () => {
-    it('[FR4K] must return all service infos', async () => {
-      let path = '/' + username + '/service/infos';
+  describe('GET /service/info', () => {
+    it('[FR4K] must return all service info', async () => {
+      let path = '/' + username + '/service/info';
       const res = await server.request().get(path);
       validation.check(res, {
         status: 200,
         schema: methodsSchema.get.result,
-        body: mockInfos
+        body: mockInfo
       });
     });
   });
