@@ -154,22 +154,21 @@ describe('account', function () {
 
   });
 
-  var filesystemBlockSize = 1024;
-  // console.log('initial filesystemBlockSize : '+filesystemBlockSize);
+  let filesystemBlockSize = 1024;
+
   function getFilesystemBlockSize(done) {
-    const testFilePath = "./file_test.txt";
+    const testFilePath = './file_test.txt';
     const testValue = 0;
     fs.writeFile(testFilePath, testValue, (err) => {
       if (err) throw err;
-      // console.log('test file created');
+
       fs.stat(testFilePath, (err, status) => {
         if (err) throw err;
         filesystemBlockSize = status.blksize;
-        // console.log('updated filesystemBlockSize : '+filesystemBlockSize);
 
         fs.unlink(testFilePath, (err) => {
           if (err) throw err;
-          // console.log('test file deleted');
+
           done();
         });
       });
