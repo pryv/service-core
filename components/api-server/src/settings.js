@@ -164,7 +164,6 @@ class Settings implements ConfigAccess {
    * @param {Object} : value
    */
   setConvictMember(memberName: string, value: Object) {
-    console.log("setting ", memberName, "with", value);
     if(!value) {
       return;
     }
