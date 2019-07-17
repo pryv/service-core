@@ -135,7 +135,7 @@ class Settings implements ConfigAccess {
       return;
     }
     
-    const regUrl = url.resolve(regUrlPath.value, '/service/infos');
+    const regUrl = url.resolve(regUrlPath.value, '/service/info');
     let res;
     try {
       res = await request.get(regUrl);
