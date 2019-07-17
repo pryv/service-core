@@ -1,5 +1,8 @@
 ## 1.4
 
+### 1.4.12
+- Add route /service/info who provides a unified way for third party services to access the necessary information related to a Pryv.io platform.
+
 ### 1.4.11
 
 - Fix pryv-cli user-delete so that it works for single-node setups and prevent it to abort if the username is already deleted on register.
