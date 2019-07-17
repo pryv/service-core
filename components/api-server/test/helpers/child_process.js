@@ -29,6 +29,10 @@ class ConfigMask implements ConfigAccess {
     this.mask = mask; 
     this.settings = settings;
   }
+
+  loadRegisterInfo() {
+    return this.settings.loadRegisterInfo();
+  }
   
   get(key: string): ConfigValue {
     // Overlaid?
@@ -79,14 +83,14 @@ class ApplicationLauncher {
     this.app = null; 
   }
   
-  launch(injectSettings: Object) {
+  async launch(injectSettings: Object) {
     debug('launch', injectSettings);
     
     injectSettings.tcpMessaging = {
       enabled: false, 
     };
     
-    const settings = Settings.load(); 
+    const settings = await Settings.load(); 
     const masked = new ConfigMask(injectSettings, settings);
     const app = this.app = new Application(masked);
     

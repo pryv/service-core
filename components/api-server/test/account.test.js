@@ -1,6 +1,7 @@
 /*global describe, before, beforeEach, it */
 
 require('./test-helpers'); 
+const fs = require('fs');
 
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
@@ -153,7 +154,29 @@ describe('account', function () {
 
   });
 
+  let filesystemBlockSize = 1024;
+
+  function getFilesystemBlockSize(done) {
+    const testFilePath = './file_test.txt';
+    const testValue = 0;
+    fs.writeFile(testFilePath, testValue, (err) => {
+      if (err) throw err;
+
+      fs.stat(testFilePath, (err, status) => {
+        if (err) throw err;
+        filesystemBlockSize = status.blksize;
+
+        fs.unlink(testFilePath, (err) => {
+          if (err) throw err;
+
+          done();
+        });
+      });
+    });
+  }
+
   describe('storage space monitoring', function () {
+    before(getFilesystemBlockSize);
 
     // when checking files storage size we allow a small 1k error margin to account for folder sizes
 
@@ -173,7 +196,9 @@ describe('account', function () {
             var expectedAttsSize = _.reduce(testData.events, function (total, evt) {
               return total + getTotalAttachmentsSize(evt);
             }, 0);
-            storageUsed.attachedFiles.should.be.approximately(expectedAttsSize, 1024);
+
+            // On Ubuntu with ext4 FileSystem the size difference is 4k, not 1k. I still dunno why.
+            storageUsed.attachedFiles.should.be.approximately(expectedAttsSize, filesystemBlockSize);
 
             initialStorageUsed = storageUsed;
 
@@ -186,9 +211,8 @@ describe('account', function () {
             should.not.exist(err);
             // hard to know what the exact difference should be, so we just expect it's bigger
             storageUsed.dbDocuments.should.be.above(initialStorageUsed.dbDocuments);
-            // SPURIOUS Comparison sometimes fails by more than 1024.
             storageUsed.attachedFiles.should.be.approximately(initialStorageUsed.attachedFiles +
-                newAtt.size, 1024);
+                newAtt.size, filesystemBlockSize);
             updatedStorageUsed = storageUsed;
             stepDone();
           });
@@ -231,7 +255,7 @@ describe('account', function () {
         
       account.storageUsed.dbDocuments.should.be.above(initialStorageUsed.dbDocuments);
       account.storageUsed.attachedFiles.should.be.approximately(
-        initialStorageUsed.attachedFiles + newAtt.size, 1024);
+        initialStorageUsed.attachedFiles + newAtt.size, filesystemBlockSize);
     });
 
     function addEventWithAttachment(attachment, callback) {
@@ -266,7 +290,7 @@ describe('account', function () {
           storage.findOne({id: user.id}, null, function (err, account) {
             account.storageUsed.dbDocuments.should.eql(initialStorageUsed.dbDocuments);
             account.storageUsed.attachedFiles.should.be.approximately(
-                    initialStorageUsed.attachedFiles + newAtt.size, 1024);
+                    initialStorageUsed.attachedFiles + newAtt.size, filesystemBlockSize);
             stepDone();
           });
         }
@@ -295,7 +319,7 @@ describe('account', function () {
           storage.findOne({id: user.id}, null, function (err, account) {
             account.storageUsed.dbDocuments.should.eql(initialStorageUsed.dbDocuments);
             account.storageUsed.attachedFiles.should.be.approximately(
-                initialStorageUsed.attachedFiles - deletedAtt.size, 1024);
+                initialStorageUsed.attachedFiles - deletedAtt.size, filesystemBlockSize);
             stepDone();
           });
         }
@@ -329,7 +353,7 @@ describe('account', function () {
           storage.findOne({id: user.id}, null, function (err, account) {
             account.storageUsed.dbDocuments.should.eql(initialStorageUsed.dbDocuments);
             account.storageUsed.attachedFiles.should.be.approximately(
-              initialStorageUsed.attachedFiles - getTotalAttachmentsSize(deletedEvt), 1024);
+              initialStorageUsed.attachedFiles - getTotalAttachmentsSize(deletedEvt), filesystemBlockSize);
             stepDone();
           });
         }

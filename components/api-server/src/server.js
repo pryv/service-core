@@ -112,6 +112,10 @@ class Server {
       application.getUpdatesSettings(), 
       application.storageLayer);
 
+    require('./methods/service')(
+      application.api, l('methods/service'), application.getServiceInfoSettings()
+    );
+
     [
       require('./methods/account'),
       require('./methods/followedSlices'),
@@ -265,6 +269,7 @@ class Server {
     require('./routes/followed-slices')(expressApp, application);
     require('./routes/streams')(expressApp, application);
     require('./routes/profile')(expressApp, application);
+    require('./routes/service')(expressApp, application);
   }
 
 }

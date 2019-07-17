@@ -31,13 +31,13 @@ describe('Configuration', () => {
     });
 
     it('[0Y2F] has the right register url and key', async () => {  
-      const reg = config.registrySettings(); 
+      const reg = await config.registrySettings(); 
 
       assert.strictEqual(reg.url, 'https://reg.preview.pryv.tech');
       assert.strictEqual(reg.key, 'OVERRIDE ME');
     });
-    it('[1KYM] has mongodb configured correctly (including defaults)', () => {
-      const mongodb = config.mongoDbSettings(); 
+    it('[1KYM] has mongodb configured correctly (including defaults)', async () => {
+      const mongodb = await config.mongoDbSettings(); 
 
       assert.strictEqual(mongodb.host, 'mongodb');
       assert.strictEqual(mongodb.port, 27017); // from defaults
@@ -48,8 +48,8 @@ describe('Configuration', () => {
       assert.strictEqual(influxdb.host, 'influxdb');
       assert.strictEqual(influxdb.port, 8086);
     });
-    it('[1QDH] has the right file store settings', () => {
-      const fileStore = config.fileStoreSettings(); 
+    it('[1QDH] has the right file store settings', async () => {
+      const fileStore = await config.fileStoreSettings(); 
 
       assert.strictEqual(fileStore.attachmentsPath, '/app/data/attachments'); 
       assert.strictEqual(fileStore.previewsPath, '/app/data/previews'); 

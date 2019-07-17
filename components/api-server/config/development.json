@@ -5,6 +5,9 @@
   "services": {
     "email": {
       "enabled": false
+    },
+    "register": {
+      "url": "https://reg.pryv.io"
     }
   }, 
   "tcpMessaging": {

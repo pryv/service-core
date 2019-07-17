@@ -5,35 +5,39 @@
 const Server = require('../src/server');
 const Application = require('../src/application');
 const Settings = require('../src/settings');
+const setCommonMeta = require('../src/methods/helpers/setCommonMeta');
+let logger;
 
-// Load settings
-const settings = Settings.load(); 
+(async () => {
+  // Load settings asynchronously because we have to fetch
+  // some values from register via an http-get request.
+  const settings = await Settings.load();
+  setCommonMeta({}, settings);
 
-// Construct application
-const app = new Application(settings);
-const logger = app.logFactory('api-server');
+  // Construct application
+  const app = new Application(settings);
+  logger = app.logFactory('api-server');
 
-// This bit is useful to trace down promise rejections that aren't caught. 
-process.on('unhandledRejection', (reason, promise) => {
-  logger.warn('Unhandled promise rejection:', promise, 'reason:', reason.stack || reason); 
-});
-process.on('exit', function () {
-  logger.info('Server stopped.');
-});
-process.on('SIGINT', () => {
-  logger.warn('Received SIGINT. Exiting...');
-  process.exit(2);
-});
+  // This bit is useful to trace down promise rejections that aren't caught. 
+  process.on('unhandledRejection', (reason, promise) => {
+    logger.warn('Unhandled promise rejection:', promise, 'reason:', reason.stack || reason); 
+  });
+  process.on('exit', function () {
+    logger.info('Server stopped.');
+  });
+  process.on('SIGINT', () => {
+    logger.warn('Received SIGINT. Exiting...');
+    process.exit(2);
+  });
 
-// Start the server
-const server = new Server(app); 
-const result = server.start();
-
-// Make sure we catch top-level exceptions.
-result
-  .then(() => logger.info('Startup sequence complete, Server is running.')) 
-  .catch(e => {
-    console.dir(e);
+  // Start the server
+  const server = new Server(app); 
+  await server.start();
+})()
+.then(() => logger.info('Startup sequence complete, Server is running.'))
+.catch(e => {
+  console.dir(e);
+  if(logger)
     logger.error(e);
-    process.exit(1);
-  }); 
+  process.exit(1);
+});

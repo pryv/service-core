@@ -33,8 +33,7 @@
   },
   "services": {
     "register": {
-      "url": "https://reg.pryv.io",
-      "key": "OVERRIDE ME"
+      "url": "https://reg.pryv.io"
     },
     "email": {
       "welcomeTemplate": "welcome-email",

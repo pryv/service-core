@@ -1,4 +1,8 @@
+/* eslint-disable no-console */
 // @flow
+
+const request = require('superagent');
+const url = require('url');
 
 const { Extension, ExtensionLoader } = require('components/utils').extension;
 const config = require('./config');
@@ -14,6 +18,7 @@ export interface ConfigAccess {
   get(key: string): ConfigValue;
   has(key: string): boolean;
   getCustomAuthFunction(): ?CustomAuthFunction;
+  loadRegisterInfo(): Promise<void>;
 }
 
 export type { ConfigValue };
@@ -23,6 +28,7 @@ export type { ConfigValue };
 class Settings implements ConfigAccess {
   convict: ConvictConfig; 
   customAuthStepFn: ?Extension; 
+  registerLoaded: boolean;
   
   // Loads the settings for production use. This means that we follow the order
   // defined in config.load. 
@@ -30,20 +36,21 @@ class Settings implements ConfigAccess {
   // Additionally, you can pass `configLocation` which will override the env
   // and the command line arguments. 
   //
-  static load(configLocation: ?string): Settings {
+  static async load(configLocation: ?string): Promise<Settings> {
     config.printSchemaAndExitIfNeeded();
 
     const ourConfig = config.setup(configLocation);
     
     const settings = new Settings(ourConfig);
-    
+    await settings.loadRegisterInfo();
     settings.maybePrint(); 
-     
-    return settings; 
+    
+    return settings;
   }
 
   constructor(ourConfig: ConvictConfig) {
     this.convict = ourConfig;
+    this.registerLoaded = false;
     this.customAuthStepFn = this.loadCustomExtension(); 
   }
   
@@ -114,6 +121,53 @@ class Settings implements ConfigAccess {
   static existingValue(key: string, value: mixed): ConfigValue {
     return new ExistingValue(key, value);
   }
+
+  async loadRegisterInfo(): Promise<void> {
+    if(this.registerLoaded) {
+      console.debug('register service/info already loaded');
+      return;
+    }
+    console.debug('loading register service/info');
+
+    const regUrlPath = this.get('services.register.url');
+    if(!regUrlPath) {
+      console.warn('Parameter "services.register.url" is undefined, set it in the configuration to allow core to provide service info');
+      return;
+    }
+    
+    const regUrl = url.resolve(regUrlPath.value, '/service/infos');
+    let res;
+    try {
+      res = await request.get(regUrl);
+    } catch (error) {
+      console.warn('Unable to retrieve service-info from Register on URL:', regUrl, 'Error:', error);
+      return;
+    }
+
+    this.setConvictMember('serial', res.body.serial);
+    this.setConvictMember('access', res.body.access);
+    this.setConvictMember('api', res.body.api);
+    this.setConvictMember('http.register.url', res.body.register);
+    this.setConvictMember('http.static.url', res.body.home);
+    this.setConvictMember('service.name', res.body.name);
+    this.setConvictMember('service.support', res.body.support);
+    this.setConvictMember('service.terms', res.body.terms);
+    this.setConvictMember('eventTypes.sourceURL', res.body.eventTypes);
+
+    this.registerLoaded = true;
+  }
+
+  /**
+   * Add or update a config value if the `value` is not null.
+   *
+   * @param {string} : memberName
+   * @param {Object} : value
+   */
+  setConvictMember(memberName: string, value: Object) {
+    if(!value) {
+      return;
+    }
+    this.convict.set(memberName, value);
+  }
 }
 module.exports = Settings;
-

@@ -132,6 +132,10 @@ class Application {
     };
   }
   
+  getServiceInfoSettings(): ConfigAccess {
+    return this.settings;
+  }
+
   // Produces and returns a new logger for a given `topic`.
   // 
   getLogger(topic: string): Logger {

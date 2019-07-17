@@ -8,6 +8,14 @@
       "level": "info",
       "timestamp": false
     }
+  },
+  "services": {
+    "email": {
+      "enabled": false
+    },
+    "register": {
+      "url": "http://localhost:5123"
+    }
   }, 
   "tcpMessaging": {
     "enabled": true
