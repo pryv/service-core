@@ -48,20 +48,6 @@ sudo docker build -f Dockerfile -t pryv/core:$version .
 release "pryv/core" $version
 popd
 
-echo "---------------------------- building preview ---------------------------"
-pushd preview
-cp ../release.tar .
-sudo docker build -f Dockerfile -t pryv/preview:$version .
-release "pryv/preview" $version
-popd
-
-echo "---------------------------- building hfs --------------------------------"
-pushd hfs
-cp ../release.tar .
-sudo docker build -f Dockerfile -t pryv/hfs:$version .
-release "pryv/hfs" $version
-popd
-
 echo "---------------------------- building cli --------------------------------"
 pushd cli
 cp ../release.tar .

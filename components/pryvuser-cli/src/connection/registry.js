@@ -45,30 +45,38 @@ class Registry {
       opts != null && 
       opts.dryRun === true);
 
-    const res = await superagent.delete(url)
-      .query({ dryRun: isDryRun })
-      .query({ onlyReg: true })
-      .set('Authorization', config.key);
+    try {
+      const res = await superagent.delete(url)
+        .query({ dryRun: isDryRun })
+        .query({ onlyReg: true })
+        .set('Authorization', config.key);
 
-    // On success, return null
-    if (res.status != 200) return `Unknown error: status was ${res.status}.`;
-    const body = res.body; 
-    if (body.result != null) {
-      const result = body.result;
-      const shouldDelete = ! isDryRun;
+      const body = res.body; 
+      if (body.result != null) {
+        const result = body.result;
+        const shouldDelete = ! isDryRun;
 
-      if (result.deleted !== shouldDelete) {
-        let expect = `should have deleted '${username}', but did not.`;
-        
-        if (! shouldDelete) 
-          expect = `should not have deleted '${username}', but did so anyway.`;
+        if (result.deleted !== shouldDelete) {
+          let expect = `should have deleted '${username}', but did not.`;
+          
+          if (! shouldDelete) 
+            expect = `should not have deleted '${username}', but did so anyway.`;
 
-        return `Unexpected result; server ${expect}`;
+          return `Unexpected result; server ${expect}`;
+        }
       }
+
+      // Looks like we did succeed.
+      return null;
+    } catch(err) {
+      if (err.message != null && err.message.match(/Not Found/i) != null) {
+        // Consider as a success if the user is Not Found on register,
+        // i.e. it is already deleted.
+        return null;
+      }
+      return `Unknown error: ${err.message}.`;
     }
 
-    // Looks like we did succeed.
-    return null;
   }
 
   async close(): Promise<mixed> {
