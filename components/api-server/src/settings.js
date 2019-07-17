@@ -2,7 +2,7 @@
 // @flow
 
 const request = require('superagent');
-const path = require('path');
+const url = require('url');
 
 const { Extension, ExtensionLoader } = require('components/utils').extension;
 const config = require('./config');
@@ -135,7 +135,7 @@ class Settings implements ConfigAccess {
       return;
     }
     
-    const regUrl = regUrlPath.value + '/service/info';
+    const regUrl = url.resolve(regUrlPath.value, '/service/infos');
     let res;
     try {
       res = await request.get(regUrl);
