@@ -1,5 +1,9 @@
 ## 1.4
 
+### 1.4.11
+
+- Fix pryv-cli user-delete so that it works for single-node setups and prevent it to abort if the username is already deleted on register.
+
 ### 1.4.10
 
 - Most API calls now present a 'Pryv-Access-Id' response header that contains the id of the access used for the call. This is the case only when a valid authorization token has been provided during the request (even if the token is expired).

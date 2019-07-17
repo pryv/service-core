@@ -39,7 +39,7 @@ describe('Connection/Registry', () => {
         assert.isFalse(registryMock.sedsDead, 'Sed should not be dead after preflight');
       });
 
-      it('does not abort if username is not found on register (already deleted).', async () => {
+      it('[WL2U] does not abort if username is not found on register (already deleted).', async () => {
         await registry.preflight('deleted');
       });
     });
@@ -50,7 +50,7 @@ describe('Connection/Registry', () => {
         assert.isTrue(registryMock.sedsDead, "Sed's dead baby, sed's dead.");
       });
 
-      it('does not abort if username is not found on register (already deleted).', async () => {
+      it('[DE8U] does not abort if username is not found on register (already deleted).', async () => {
         await registry.deleteUser('deleted');
       });
 
