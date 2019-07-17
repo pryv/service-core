@@ -38,12 +38,20 @@ describe('Connection/Registry', () => {
 
         assert.isFalse(registryMock.sedsDead, 'Sed should not be dead after preflight');
       });
+
+      it('does not abort if username is not found on register (already deleted).', async () => {
+        await registry.preflight('deleted');
+      });
     });
     describe('#deleteUser(username)', () => {
       it('[BYAZ] deletes the user', async () => {
         await registry.deleteUser('jsmith');
 
         assert.isTrue(registryMock.sedsDead, "Sed's dead baby, sed's dead.");
+      });
+
+      it('does not abort if username is not found on register (already deleted).', async () => {
+        await registry.deleteUser('deleted');
       });
 
       describe('when given the wrong system key', () => {
@@ -81,7 +89,9 @@ class MockRegistry {
 
   async start(host: string, port: number) { 
     const app = express(); 
-    
+    app.delete('/users/deleted', (req: express$Request, res) => {
+      res.status(404).send({id: 'NO_SUCH_USER', message: "No such user ('deleted')"});
+    });
     app.delete('/users/jsmith', (req: express$Request, res) => {
       const dryRun = req.query.dryRun === 'true';
       const secret = req.header('authorization');

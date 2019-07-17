@@ -68,13 +68,14 @@ class Registry {
 
       // Looks like we did succeed.
       return null;
-    } catch(err) {
-      if (err.message != null && err.message.match(/Not Found/i) != null) {
-        // Consider as a success if the user is Not Found on register,
-        // i.e. it is already deleted.
+    } catch (err) {
+      const response = err.response;
+      // Consider as a success if the user is not found on register,
+      // i.e. it is already deleted. 
+      if (response != null && response.body != null && response.body.id === 'NO_SUCH_USER') {
         return null;
       }
-      return `Unknown error: ${err.message}.`;
+      return err.message || 'Unexpected error.';
     }
 
   }
