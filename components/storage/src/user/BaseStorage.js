@@ -267,19 +267,8 @@ BaseStorage.prototype.findOneAndUpdate = function(user, query, updatedData, call
  * @param updatedData
  * @param callback
  */
-BaseStorage.prototype.updateOne = function(user, query, updatedData, callback) {
-  this.database.findOneAndUpdate(
-    this.getCollectionInfo(user),
-    this.applyQueryToDB(query),
-    this.applyUpdateToDB(updatedData),
-    function(err, dbItem) {
-      if (err) {
-        return callback(err);
-      }
-      callback(null, this.applyItemFromDB(dbItem));
-    }.bind(this)
-  );
-};
+BaseStorage.prototype.updateOne = BaseStorage.prototype.findOneAndUpdate;
+
 
 /**
  * Updates the one or multiple document(s) matching the given query.
