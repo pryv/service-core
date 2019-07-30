@@ -101,11 +101,11 @@ class Configuration {
 
   /// Loads and memoises core configuration. 
   /// 
-  async coreConfig(): CoreSettings {
+  async coreConfig(): Promise<CoreSettings> {
     const coreConfig = this._coreConfig; 
     if (coreConfig != null) return coreConfig;
 
-    const newConfig = CoreSettings.load(await this.coreConfigPath());
+    const newConfig = await CoreSettings.load(this.coreConfigPath());
     this._coreConfig = newConfig;
 
     return newConfig;

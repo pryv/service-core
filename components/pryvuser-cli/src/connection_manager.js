@@ -23,7 +23,7 @@ class ConnectionManager {
     if (this.mongoDbConn != null) return this.mongoDbConn;
 
     const config = this.config; 
-    const conn = new MongoDB(config.mongoDbSettings());
+    const conn = new MongoDB(await config.mongoDbSettings());
 
     this.mongoDbConn = conn; 
 
