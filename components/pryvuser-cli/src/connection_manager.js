@@ -45,7 +45,7 @@ class ConnectionManager {
     if (this.registerConn != null) return this.registerConn;
 
     const config = this.config;
-    const conn = new Registry(config.registrySettings());
+    const conn = new Registry(await config.registrySettings());
 
     this.registerConn = conn;
 
@@ -57,7 +57,7 @@ class ConnectionManager {
 
     const config = this.config;
     const mongodb = await this.mongoDbConnection();
-    const conn = new FileStore(config.fileStoreSettings(), mongodb);
+    const conn = new FileStore(await config.fileStoreSettings(), mongodb);
 
     this.fileStore = conn;
 
