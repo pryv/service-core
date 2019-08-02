@@ -192,6 +192,10 @@ module.exports = function produceAccessesApiMethods(
     const update = params.update;
     const webhookId = params.id;
 
+    if (update.state === 'active') {
+      update.currentRetries = 0;
+    }
+
     try {
       const webhook = await webhooksRepository.getById(user, webhookId);
       if (webhook == null) {

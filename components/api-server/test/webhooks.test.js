@@ -490,6 +490,8 @@ describe('webhooks', () => {
           url: url,
           minIntervalMs: minIntervalMs,
           maxRetries: maxRetries,
+          currentRetries: 5,
+          state: 'inactive',
         }, appAccessId1);
         user.webhook({
           id: webhookId2,
@@ -513,7 +515,7 @@ describe('webhooks', () => {
               .put(`/${username}/webhooks/${webhookId1}`)
               .set('Authorization', appAccessToken1)
               .send({
-                state: 'inactive',
+                state: 'active',
               });
             response = res;
             webhook = new Webhook({
@@ -522,7 +524,8 @@ describe('webhooks', () => {
               id: webhookId1,
               minIntervalMs: minIntervalMs,
               maxRetries: maxRetries,
-              state: 'inactive',
+              state: 'active',
+              currentRetries: 0
             }).forApi();
           });
 
