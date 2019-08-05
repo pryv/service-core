@@ -23,6 +23,8 @@ type UsernameWebhook = {
   webhook: Webhook,
 };
 
+const BOOT_MESSAGE = 'boot';
+
 class WebhooksService implements MessageSink {
 
   createListener: NatsSubscriber;
@@ -54,6 +56,7 @@ class WebhooksService implements MessageSink {
     await this.subscribeToCreateListener();
     await this.loadWebhooks();
     await this.initSubscribers();
+    await this.sendBootMessage();
     this.logger.info('started');
     const pv = new ProjectVersion(); 
     this.apiVersion = await pv.version(); 
@@ -68,6 +71,15 @@ class WebhooksService implements MessageSink {
   async subscribeToCreateListener(): Promise<void> {
     this.createListener = new NatsSubscriber(this.NATS_CONNECTION_URI, this);
     await this.createListener.subscribe(WEBHOOKS_CREATE_CHANNEL);
+  }
+
+  async sendBootMessage(): Promise<void> {
+    for (const entry of this.webhooks) {
+      await bluebird.all(entry[1].map(async (webhook) => {
+        console.log('callin boot for', webhook.user, '@', webhook.url);
+        await webhook.send(BOOT_MESSAGE);
+      }));
+    }
   }
 
   async initSubscribers(): Promise<void> {

@@ -2,25 +2,26 @@
 
 const cuid = require('cuid');
 const assert = require('chai').assert;
-const bluebird = require('bluebird');
 const awaiting = require('awaiting');
 const timestamp = require('unix-timestamp');
 
 const { databaseFixture } = require('components/test-helpers');
-const { usersStorage, webhooksStorage } = require('../test-helpers');
+const { webhooksStorage } = require('../test-helpers');
 
 require('components/api-server/test/test-helpers');
 const { produceMongoConnection, context } = require('components/api-server/test/test-helpers');
 
 const WebhooksApp = require('../../src/application');
 
-const Webhook = require('components/business').webhooks.Webhook;
+const { Webhook, Repository } = require('components/business').webhooks;
+
+const repository = new Repository(webhooksStorage);
 const HttpServer = require('components/business/test/acceptance/webhooks/support/httpServer');
 
-describe('webhooks', () => {
+describe('webhooks', function() {
 
   let username, streamId, appAccessId, appAccessToken, webhookId;
-  before(() => {
+  before(function() {
     username = cuid();
     streamId = cuid();
     appAccessToken = cuid();
@@ -28,17 +29,20 @@ describe('webhooks', () => {
   });
 
   let mongoFixtures;
-  before(() => {
+  before(function() {
     mongoFixtures = databaseFixture(produceMongoConnection());
   });
 
   const port = 5123;
+  const port2 = 5124;
   const postPath = '/notifications';
 
   const url = 'http://localhost:' + port + postPath;
+  const url2 = 'http://localhost:' + port2 + postPath;
 
-  before(async () => {
-    const user = await mongoFixtures.user(username, {});
+  let user, webhook, webhook2;
+  before(async function() {
+    user = await mongoFixtures.user(username, {});
     await user.stream({
       id: streamId,
     });
@@ -50,40 +54,74 @@ describe('webhooks', () => {
         level: 'manage',
       }]
     });
-    await user.webhook({ url: url }, appAccessId);
+    webhook = await user.webhook({ url: url }, appAccessId);
+    webhook = webhook.attrs;
+    webhook2 = await user.webhook({ 
+      url: url2,
+      state: 'inactive',
+    }, appAccessId);
+    webhook2 = webhook2.attrs;
   });
 
   let apiServer, webhooksApp;
-  before(async () => {
+  before(async function() {
     apiServer = await context.spawn();
-    webhooksApp = new WebhooksApp();
-    await webhooksApp.setup();
-    await webhooksApp.run();
   });
-  after(async () => {
+  after(async function() {
     await mongoFixtures.clean();
     await apiServer.stop();
     webhooksApp.stop();
   });
 
-  describe('when loading Webhooks on startup', () => {
+  describe('when loading Webhooks on startup', function() {
 
-    describe('when creating an event in a Webhook scope', () => {
+    describe('when booting the webhooks application', function() {
+
+      let notificationsServer, notificationsServer2;
+      before(async function () {
+        notificationsServer = new HttpServer(postPath, 200);
+        notificationsServer.listen(port);
+        notificationsServer2 = new HttpServer(postPath, 200);
+        notificationsServer2.listen(port2);
+      });
+      after(async function () {
+        await notificationsServer.close();
+        await notificationsServer2.close();
+      });
+
+      before(async function() {
+        webhooksApp = new WebhooksApp();
+        await webhooksApp.setup();
+        await webhooksApp.run();
+      });
+
+      it('should send a boot message to all active webhooks', async function() {
+        assert.isAbove(notificationsServer.getMessageCount(), 1);
+        const activeWebhook = await repository.getById(user, webhook.id);
+        assert.equal(activeWebhook.runCount, 1);
+      });
+      it('should send nothing to inactive webhooks', async function () {
+        const inactiveWebhook = await repository.getById(user, webhook2.id);
+        assert.equal(inactiveWebhook.runCount, 0);
+      });
+    });
+
+    describe('when creating an event in a Webhook scope', function() {
       
-      describe('when the notifications server is running', () => {
+      describe('when the notifications server is running', function() {
 
         let notificationsServer;
-        before(async () => {
+        before(async function() {
           notificationsServer = new HttpServer(postPath, 200);
           await notificationsServer.listen(port);
         });
 
-        after(async () => {
+        after(async function() {
           await notificationsServer.close();
         });
 
         let requestTimestamp;
-        before(async () => {
+        before(async function() {
           requestTimestamp = timestamp.now();
           await apiServer.request()
             .post(`/${username}/events`)
@@ -95,19 +133,16 @@ describe('webhooks', () => {
             });
         });
 
-        it('should send API call to the notifications server', async () => {
+        it('should send API call to the notifications server', async function() {
           await awaiting.event(notificationsServer, 'received');
           assert.isTrue(notificationsServer.isMessageReceived());
         });
 
-        it('should update the Webhook\'s data to the storage', async () => {
-          const webhooks = await bluebird.fromCallback((cb) => webhooksStorage.find({ username: username }, {}, {}, cb));
-          assert.exists(webhooks);
-          assert.equal(webhooks.length, 1, 'Incorrect webhooks length');
-          const updatedWebhook = webhooks[0];
-          assert.equal(updatedWebhook.runCount, 1);
+        it('should update the Webhook\'s data to the storage', async function() {
+          const updatedWebhook = await repository.getById(user, webhook.id);
+          assert.equal(updatedWebhook.runCount, 2);
           const runs = updatedWebhook.runs;
-          assert.equal(runs.length, 1);
+          assert.equal(runs.length, 2);
           const run = runs[0];
           assert.equal(run.status, 200);
           assert.approximately(run.timestamp, requestTimestamp, 0.5);
@@ -117,11 +152,11 @@ describe('webhooks', () => {
   
   });
 
-  describe('when creating a Webhook through api-server', () => {
+  describe('when creating a Webhook through api-server', function() {
 
     const url = 'doesntmatter';
     let webhookId;
-    before(async () => {
+    before(async function() {
       const res = await apiServer.request()
         .post(`/${username}/webhooks`)
         .set('Authorization', appAccessToken)
@@ -131,7 +166,7 @@ describe('webhooks', () => {
       webhookId = res.body.webhook.id;
     });
 
-    it('should register a new webhook in the service through NATS', async () => {
+    it('should register a new webhook in the service through NATS', async function() {
       const webhooksService = webhooksApp.webhooksService;
       let isWebhookActive = false;
       while (! isWebhookActive) {
@@ -145,9 +180,9 @@ describe('webhooks', () => {
     });
   });
 
-  describe('when there are running webhooks', () => {
+  describe('when there are running webhooks', function() {
 
-    before(() => {
+    before(function() {
       username = cuid();
       appAccessId = cuid();
       appAccessToken = cuid();
@@ -155,7 +190,7 @@ describe('webhooks', () => {
       streamId = cuid();
     });
 
-    before(async () => {
+    before(async function() {
       const user = await mongoFixtures.user(username, {});
       await user.stream({
         id: streamId,
@@ -175,21 +210,21 @@ describe('webhooks', () => {
       }, appAccessId);
     });
 
-    before(async () => {
+    before(async function() {
       await webhooksApp.webhooksService.addWebhook(username, new Webhook({
         id: webhookId,
       }));
     });
 
-    describe('when deleting a webhook through API server', () => {
+    describe('when deleting a webhook through API server', function() {
 
-      before(async () => {
+      before(async function() {
         await apiServer.request()
           .delete(`/${username}/webhooks/${webhookId}`)
           .set('Authorization', appAccessToken);
       });
 
-      it('should deactivate the current running webhook through NATS', async () => {
+      it('should deactivate the current running webhook through NATS', async function() {
         let isWebhookActive = true;
         while (isWebhookActive) {
           const webhooks = webhooksApp.webhooksService.webhooks.get(username);
@@ -205,13 +240,13 @@ describe('webhooks', () => {
       });
     });
 
-    describe('when deleting an access through API server', () => {
+    describe('when deleting an access through API server', function() {
 
       
 
     });
 
-    describe('when an access expires', () => {
+    describe('when an access expires', function() {
     
 
     });
