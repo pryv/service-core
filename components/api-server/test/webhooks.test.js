@@ -5,6 +5,7 @@ const bluebird = require('bluebird');
 const timestamp = require('unix-timestamp');
 const chai = require('chai');
 const assert = chai.assert;
+const awaiting = require('awaiting');
 
 const helpers = require('./helpers');
 const { databaseFixture } = require('components/test-helpers');
@@ -886,15 +887,9 @@ describe('webhooks', () => {
           
           let response;
           before(async () => {
-            const res = await server.request()
+            response = await server.request()
               .post(`/${username}/webhooks/${webhookId1}/test`)
               .set('Authorization', appAccessToken1);
-            response = res;
-            await new bluebird((resolve, reject) => {
-              notificationsServer.on('received', resolve);
-              notificationsServer.on('close', () => { });
-              notificationsServer.on('error', reject);
-            });
           });
 
           it('should return a status 200 with a webhook object', () => {
@@ -910,7 +905,22 @@ describe('webhooks', () => {
         });
 
         describe('when the URL is invalid', () => {
-          it('not sure if doing');
+
+          let response;
+          before(async () => {
+            notificationsServer.setResponseStatus(404);
+            response = await server
+              .request()
+              .post(`/${username}/webhooks/${webhookId1}/test`)
+              .set('Authorization', appAccessToken1);
+          });
+
+          it('should return a status 400 with an error object', () => {
+            validation.check(response, {
+              status: 400,
+              id: ErrorIds.UnknownReferencedResource,
+            });
+          });
         });
         
       });
@@ -947,17 +957,14 @@ describe('webhooks', () => {
     describe('when using a personal token', () => {
 
       describe('when the webhook exists', () => {
+
         let response;
         before(async () => {
+          notificationsServer.setResponseStatus(200);
           const res = await server.request()
             .post(`/${username}/webhooks/${webhookId1}/test`)
             .set('Authorization', personalAccessToken);
           response = res;
-          await new bluebird((resolve, reject) => {
-            notificationsServer.on('received', resolve);
-            notificationsServer.on('close', () => { });
-            notificationsServer.on('error', reject);
-          });
         });
 
         it('should return a status 200 with a webhook object', () => {

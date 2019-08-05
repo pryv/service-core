@@ -284,14 +284,16 @@ module.exports = function produceAccessesApiMethods(
       if (!isWebhookInScope(webhook, currentAccess)) {
         return next(errors.forbidden('The webhook was not created by this app access.'));
       }
-
-      // replies after having made the call, but returns unexpected error if call fails - as if db fetching fails
-      // await webhook.makeCall(['test']);
-      result.webhook = webhook.forApi();
     } catch (error) {
       return next(errors.unexpectedError(error));
     }
-    if (webhook != null) webhook.makeCall(['test']);
+
+    try {
+      await webhook.makeCall(['test']);
+    } catch (e) {
+      return next(errors.unknownReferencedResource('webhook', 'url', webhook.url, e));
+    }
+    result.webhook = webhook.forApi();
     next();
   }
 
