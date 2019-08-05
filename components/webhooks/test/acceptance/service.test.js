@@ -4,6 +4,7 @@ const cuid = require('cuid');
 const assert = require('chai').assert;
 const awaiting = require('awaiting');
 const timestamp = require('unix-timestamp');
+const _ = require('lodash');
 
 const { databaseFixture } = require('components/test-helpers');
 const { webhooksStorage } = require('../test-helpers');
@@ -20,13 +21,11 @@ const HttpServer = require('components/business/test/acceptance/webhooks/support
 
 describe('webhooks', function() {
 
-  let username, streamId, appAccessId, appAccessToken, webhookId;
-  before(function() {
-    username = cuid();
-    streamId = cuid();
-    appAccessToken = cuid();
-    appAccessId = cuid();
-  });
+  let user, username, 
+      streamId, appAccessId, appAccessToken, 
+      webhook, webhook2, webhookId,
+      url, url2,
+      notificationsServer, notificationsServer2;
 
   let mongoFixtures;
   before(function() {
@@ -36,38 +35,18 @@ describe('webhooks', function() {
   const port = 5123;
   const port2 = 5124;
   const postPath = '/notifications';
+  const mockServerHostname = 'http://localhost:';
 
-  const url = 'http://localhost:' + port + postPath;
-  const url2 = 'http://localhost:' + port2 + postPath;
-
-  let user, webhook, webhook2;
-  before(async function() {
-    user = await mongoFixtures.user(username, {});
-    await user.stream({
-      id: streamId,
-    });
-    await user.access({
-      id: appAccessId,
-      type: 'app', token: appAccessToken,
-      permissions: [{
-        streamId: '*',
-        level: 'manage',
-      }]
-    });
-    webhook = await user.webhook({ url: url }, appAccessId);
-    webhook = webhook.attrs;
-    webhook2 = await user.webhook({ 
-      url: url2,
-      state: 'inactive',
-    }, appAccessId);
-    webhook2 = webhook2.attrs;
+  before(function() {
+    url = mockServerHostname + port + postPath;
+    url2 = mockServerHostname + port2 + postPath;
   });
 
-  let apiServer, webhooksApp;
-  before(async function() {
+  let apiServer, webhooksApp, webhooksService;
+  before(async function () {
     apiServer = await context.spawn();
   });
-  after(async function() {
+  after(async function () {
     await mongoFixtures.clean();
     await apiServer.stop();
     webhooksApp.stop();
@@ -77,7 +56,36 @@ describe('webhooks', function() {
 
     describe('when booting the webhooks application', function() {
 
-      let notificationsServer, notificationsServer2;
+      before(function () {
+        username = cuid();
+        streamId = cuid();
+        appAccessToken = cuid();
+        appAccessId = cuid();
+      });
+
+      before(async function () {
+        user = await mongoFixtures.user(username, {});
+        await user.stream({
+          id: streamId,
+        });
+        await user.access({
+          id: appAccessId,
+          type: 'app', token: appAccessToken,
+          permissions: [{
+            streamId: '*',
+            level: 'manage',
+          }]
+        });
+        webhook = await user.webhook({ url: url }, appAccessId);
+        webhook = webhook.attrs;
+        webhook2 = await user.webhook({
+          url: url2,
+          state: 'inactive',
+        }, appAccessId);
+        webhook2 = webhook2.attrs;
+      });
+
+      
       before(async function () {
         notificationsServer = new HttpServer(postPath, 200);
         notificationsServer.listen(port);
@@ -93,6 +101,7 @@ describe('webhooks', function() {
         webhooksApp = new WebhooksApp();
         await webhooksApp.setup();
         await webhooksApp.run();
+        webhooksService = webhooksApp.webhooksService;
       });
 
       it('should send a boot message to all active webhooks', async function() {
@@ -110,14 +119,39 @@ describe('webhooks', function() {
       
       describe('when the notifications server is running', function() {
 
-        let notificationsServer;
         before(async function() {
           notificationsServer = new HttpServer(postPath, 200);
           await notificationsServer.listen(port);
         });
-
         after(async function() {
           await notificationsServer.close();
+        });
+
+        before(function() {
+          username = cuid();
+          appAccessId = cuid();
+          appAccessToken = cuid();
+          streamId = cuid();
+        });
+
+        before(async function() {
+          user = await mongoFixtures.user(username);
+          await user.access({
+            id: appAccessId,
+            token: appAccessToken,
+            type: 'app',
+            permissions: [{
+              streamId: '*',
+              level: 'manage',
+            }],
+          });
+          await user.stream({ id: streamId });
+          webhook = await user.webhook({
+            accessId: appAccessId,
+            url: url,
+          });
+          webhook = new Webhook(_.merge(webhook.attrs, { webhooksStorage: webhooksStorage, user: user}));
+          await webhooksService.addWebhook(username, webhook);
         });
 
         let requestTimestamp;
@@ -140,9 +174,9 @@ describe('webhooks', function() {
 
         it('should update the Webhook\'s data to the storage', async function() {
           const updatedWebhook = await repository.getById(user, webhook.id);
-          assert.equal(updatedWebhook.runCount, 2);
+          assert.equal(updatedWebhook.runCount, 1, 'wrong runCount');
           const runs = updatedWebhook.runs;
-          assert.equal(runs.length, 2);
+          assert.equal(runs.length, 1, 'wrong amount of runs');
           const run = runs[0];
           assert.equal(run.status, 200);
           assert.approximately(run.timestamp, requestTimestamp, 0.5);
@@ -155,7 +189,6 @@ describe('webhooks', function() {
   describe('when creating a Webhook through api-server', function() {
 
     const url = 'doesntmatter';
-    let webhookId;
     before(async function() {
       const res = await apiServer.request()
         .post(`/${username}/webhooks`)
@@ -167,7 +200,6 @@ describe('webhooks', function() {
     });
 
     it('should register a new webhook in the service through NATS', async function() {
-      const webhooksService = webhooksApp.webhooksService;
       let isWebhookActive = false;
       while (! isWebhookActive) {
         const [ , webhook,  ] = webhooksService.getWebhook(username, webhookId);
