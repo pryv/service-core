@@ -61,6 +61,7 @@ class MongoDB {
       storage.streams,
       storage.followedSlices,
       storage.profile,
+      storage.webhooks,
     ]; 
 
     const drops = dbCollections
