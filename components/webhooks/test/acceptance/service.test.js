@@ -105,7 +105,7 @@ describe('webhooks', function() {
       });
 
       it('should send a boot message to all active webhooks', async function() {
-        assert.isAbove(notificationsServer.getMessageCount(), 1);
+        assert.equal(notificationsServer.getMessageCount(), 1);
         const activeWebhook = await repository.getById(user, webhook.id);
         assert.equal(activeWebhook.runCount, 1);
       });
