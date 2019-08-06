@@ -5,7 +5,6 @@ const bluebird = require('bluebird');
 const timestamp = require('unix-timestamp');
 const chai = require('chai');
 const assert = chai.assert;
-const awaiting = require('awaiting');
 
 const helpers = require('./helpers');
 const { databaseFixture } = require('components/test-helpers');

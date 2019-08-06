@@ -2,16 +2,19 @@
 
 const assert = require('chai').assert;
 const timestamp = require('unix-timestamp');
-const bluebird = require('bluebird');
 const awaiting = require('awaiting');
 const _ = require('lodash');
 
 const Webhook = require('../../../src/webhooks/Webhook');
+const WebhooksRepository = require('../../../src/webhooks/repository');
 
 const HttpServer = require('./support/httpServer');
 const PORT = 6123;
 
+//const whStorage = require('components/test-helpers').dependencies.storage.user.webhooks;
 const storage = require('components/test-helpers').dependencies.storage.user.webhooks;
+const userStorage = require('components/test-helpers').dependencies.storage.users;
+
 const { ProjectVersion } = require('components/middleware/src/project_version');
 
 
@@ -19,6 +22,7 @@ describe('Webhook', () => {
 
   describe('send()', () => {
 
+    let repository = new WebhooksRepository(storage, userStorage);
     let notificationsServer;
     let postPath = '/notifications';
     let url = 'http://localhost:' + PORT + postPath;
@@ -27,8 +31,7 @@ describe('Webhook', () => {
     };
 
     after( async () => {
-      await bluebird.fromCallback(
-        cb => storage.removeAll(user, cb));
+      await repository.deleteForUser(user);
     });
 
     describe('when sending to an existing endpoint', () => {
@@ -57,7 +60,7 @@ describe('Webhook', () => {
           webhook = new Webhook({
             accessId: 'doesntmatter',
             url: url,
-            webhooksStorage: storage,
+            webhooksRepository: repository,
             user: user,
           });
           webhook.setApiVersion(apiVersion);
@@ -65,9 +68,7 @@ describe('Webhook', () => {
           requestTimestamp = timestamp.now();
           await webhook.send(message);
           runs = webhook.runs;
-          storedWebhook = await bluebird.fromCallback(
-            cb => storage.findOne(user, { id: { $eq: webhook.id } }, {}, cb)
-          );
+          storedWebhook = await repository.getById(user, webhook.id);
         });
 
         it('should send it', () => {
@@ -127,7 +128,7 @@ describe('Webhook', () => {
             accessId: 'doesntmatter',
             url: url,
             minIntervalMs: minIntervalMs,
-            webhooksStorage: storage,
+            webhooksRepository: repository,
             user: user,
           });
           setTimeout(() => {
@@ -159,15 +160,13 @@ describe('Webhook', () => {
         webhook = new Webhook({
           accessId: 'doesnmatter',
           url: 'unexistant',
-          webhooksStorage: storage,
+          webhooksRepository: repository,
           user: user,
         });
         await webhook.save();
         requestTimestamp = timestamp.now();
         await webhook.send('doesntmatter');
-        storedWebhook = await bluebird.fromCallback(
-          cb => storage.findOne(user, { id: { $eq: webhook.id } }, {}, cb)
-        );
+        storedWebhook = await repository.getById(user, webhook.id);
       });
 
       after(() => {
@@ -225,16 +224,14 @@ describe('Webhook', () => {
             accessId: 'doesntmatter',
             url: url,
             minIntervalMs: 100,
-            webhooksStorage: storage,
+            webhooksRepository: repository,
             user: user,
           });
           await webhook.save();
           requestTimestamp = timestamp.now();
           await webhook.send(firstMessage);
           run = webhook.runs[0];
-          storedWebhook = await bluebird.fromCallback(
-            cb => storage.findOne(user, { id: { $eq: webhook.id } }, {}, cb)
-          );
+          storedWebhook = await repository.getById(user, webhook.id);
           storedRun = storedWebhook.runs[0];
         });
 
@@ -263,9 +260,7 @@ describe('Webhook', () => {
 
         });
         it('should reset error tracking properties', async () => {
-          storedWebhook = await bluebird.fromCallback(
-            cb => storage.findOne(user, { id: { $eq: webhook.id } }, {}, cb)
-          );
+          storedWebhook = await repository.getById(user, webhook.id);
           assert.notExists(webhook.timeout);
           assert.equal(webhook.currentRetries, 0);
           assert.equal(webhook.messageBuffer.size, 0);
@@ -300,7 +295,7 @@ describe('Webhook', () => {
           accessId: 'doesntmatter',
           url: url,
           minIntervalMs: 100,
-          webhooksStorage: storage,
+          webhooksRepository: repository,
           user: user,
         });
         await webhook.save();
@@ -309,9 +304,7 @@ describe('Webhook', () => {
         await webhook.send(secondMessage);
         await webhook.send(thirdMessage);
         runs = webhook.runs;
-        storedWebhook = await bluebird.fromCallback(
-          cb => storage.findOne(user, { id: { $eq: webhook.id } }, {}, cb)
-        );
+        storedWebhook = await repository.getById(user, webhook.id);
       });
 
       it('should only send the message once', () => {
@@ -360,7 +353,7 @@ describe('Webhook', () => {
           accessId: 'doesntmatter',
           url: url,
           minIntervalMs: 10,
-          webhooksStorage: storage,
+          webhooksRepository: repository,
           user: user,
         });
         await webhook.save();
@@ -378,9 +371,7 @@ describe('Webhook', () => {
         assert.equal(webhook.state, 'inactive');
       });
       it('should update the stored version', async () => {
-        storedWebhook = await bluebird.fromCallback(
-          cb => storage.findOne(user, { id: { $eq: webhook.id } }, {}, cb)
-        );
+        storedWebhook = await repository.getById(user, webhook.id);
         assert.equal(storedWebhook.state, 'inactive');
       });
       it('should not run anymore', async () => {
@@ -413,7 +404,7 @@ describe('Webhook', () => {
           accessId: 'doesntmatter',
           url: url,
           minIntervalMs: 10,
-          webhooksStorage: storage,
+          webhooksRepository: repository,
           user: user,
           runsSize: 3,
         });
@@ -438,7 +429,8 @@ describe('Webhook', () => {
       it('should rotate the runs more', async () => {
         await webhook.send(message);
         runs3 = webhook.runs;
-        assert.deepEqual(runs3[0], runs2[0]);
+        assert.equal(runs3[0].status, runs2[0].status);
+        assert.approximately(runs3[0].timestamp, runs2[0].timestamp, 100);
         assert.notEqual(runs3[1], runs2[1]);
         assert.notEqual(runs3[1], runs1[1]);
         assert.notEqual(runs3[2], runs1[2]);

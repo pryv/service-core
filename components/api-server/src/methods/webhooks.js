@@ -140,7 +140,7 @@ module.exports = function produceAccessesApiMethods(
     const webhook = new Webhook(_.extend({
       user: context.user,
       accessId: context.access.id,
-      webhooksStorage: storageLayer.webhooks,
+      webhooksRepository: webhooksRepository,
       runsSize: wehbooksSettings.runsSize,
     }, params));
 

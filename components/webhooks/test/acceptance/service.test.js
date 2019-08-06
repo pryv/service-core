@@ -150,7 +150,7 @@ describe('webhooks', function() {
             accessId: appAccessId,
             url: url,
           });
-          webhook = new Webhook(_.merge(webhook.attrs, { webhooksStorage: webhooksStorage, user: user}));
+          webhook = new Webhook(_.merge(webhook.attrs, { webhooksRepository: repository, user: user}));
           await webhooksService.addWebhook(username, webhook);
         });
 

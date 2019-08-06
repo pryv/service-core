@@ -32,7 +32,6 @@ class WebhooksService implements MessageSink {
   webhooks: Map<string, Array<Webhook>>;
 
   repository: WebhooksRepository;
-  storage: StorageLayer;
   logger: Logger;
   settings: Settings;
   NATS_CONNECTION_URI: string;
@@ -45,7 +44,6 @@ class WebhooksService implements MessageSink {
     settings: Settings,
     }) {
     this.logger = params.logger;
-    this.storage = params.storage.webhooks;
     this.repository = new WebhooksRepository(params.storage.webhooks, params.storage.users);
     this.settings = params.settings;
     this.NATS_CONNECTION_URI = this.settings.get('nats.uri').str();
@@ -90,14 +88,13 @@ class WebhooksService implements MessageSink {
   }
 
   deliver(channel: string, usernameWebhook: UsernameWebhook): void {
-    const webhooksStorage = this.storage;
     switch(channel) {
       case WEBHOOKS_CREATE_CHANNEL:
         this.addWebhook(
           usernameWebhook.username,
           new Webhook(
             _.extend({}, usernameWebhook.webhook, {
-              webhooksStorage: webhooksStorage,
+              webhooksRepository: this.repository,
               user: {
                 username: usernameWebhook.username
               }

@@ -1,12 +1,10 @@
 // @flow
 
-const bluebird = require('bluebird');
 const request = require('superagent');
 const _ = require('lodash');
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
 
-const WebhooksStorage = require('components/storage').user.Webhooks;
 const NatsSubscriber = require('components/api-server/src/socket-io/nats_subscriber');
 import type { MessageSink } from 'components/api-server/src/socket-io/message_sink';
 
@@ -44,7 +42,7 @@ class Webhook implements MessageSink {
   isSending: boolean;
 
   user: ?{};
-  storage: ?WebhooksStorage;
+  repository: ?WebhooksRepository;
   NatsSubscriber: ?NatsSubscriber;
   apiVersion: string;
 
@@ -66,7 +64,7 @@ class Webhook implements MessageSink {
     modified?: number,
     modifiedBy?: string,
     user?: {},
-    webhooksStorage?: WebhooksStorage,
+    webhooksRepository?: webhooksRepository,
     messageBuffer?: Set<string>
   }) {
     this.id = params.id || cuid();
@@ -85,7 +83,7 @@ class Webhook implements MessageSink {
     this.modified = params.modified;
     this.modifiedBy = params.modifiedBy;
     this.user = params.user;
-    this.storage = params.webhooksStorage;
+    this.repository = params.webhooksRepository;
     this.NatsSubscriber = null;
     this.messageBuffer = params.messageBuffer || new Set();
     this.timeout = null;
@@ -161,7 +159,7 @@ class Webhook implements MessageSink {
     }
 
     function hasError(status) {
-      return (status < 200) || (status >= 300);
+      return status < 200 || status >= 300;
     }
 
     function handleRetry(message): void {
@@ -174,17 +172,14 @@ class Webhook implements MessageSink {
     function reschedule(message: string): void {
       if (this.timeout != null) return;
       const delay = this.minIntervalMs * (this.currentRetries || 1);
-      this.timeout = setTimeout(
-        () => {
-          return this.send(message, true);
-        },
-        delay
-      );
+      this.timeout = setTimeout(() => {
+        return this.send(message, true);
+      }, delay);
     }
 
     function tooSoon(): boolean {
       const now = timestamp.now();
-      if (((now - this.lastRun.timestamp) * 1000) < this.minIntervalMs) {
+      if ((now - this.lastRun.timestamp) * 1000 < this.minIntervalMs) {
         return true;
       } else {
         return false;
@@ -225,13 +220,10 @@ class Webhook implements MessageSink {
   }
 
   async save(): Promise<void> {
-    if (this.storage == null) {
-      throw new Error('storage not set for Webhook object.');
+    if (this.repository == null) {
+      throw new Error('repository not set for Webhook object.');
     }
-
-    await bluebird.fromCallback(
-      (cb) => this.storage.insertOne(this.user, this.forStorage(), cb)
-    );
+    await this.repository.insertOne(this.user, this);
   }
 
   async update(fieldsToUpdate: {}): Promise<void> {
@@ -241,12 +233,10 @@ class Webhook implements MessageSink {
   }
 
   async delete(): Promise<void> {
-    if (this.storage == null) {
-      throw new Error('storage not set for Webhook object.');
+    if (this.repository == null) {
+      throw new Error('repository not set for Webhook object.');
     }
-    await bluebird.fromCallback(
-      (cb) => this.storage.delete(this.user, { id: this.id }, cb)
-    );
+    await this.repository.deleteOne(this.user, this.id);
   }
 
   getMessageBuffer(): Array<string> {
@@ -269,7 +259,7 @@ class Webhook implements MessageSink {
       'created',
       'createdBy',
       'modified',
-      'modifiedBy',
+      'modifiedBy'
     ]);
   }
 
@@ -289,20 +279,19 @@ class Webhook implements MessageSink {
       'created',
       'createdBy',
       'modified',
-      'modifiedBy',
+      'modifiedBy'
     ]);
   }
 
   setApiVersion(version: string) {
     this.apiVersion = version;
   }
-
 }
 module.exports = Webhook;
 
 async function makeUpdate(fields?: Array<string>, webhook: Webhook): Promise<void> {
-  if (webhook.storage == null) {
-    throw new Error('storage not set for Webhook object.');
+  if (webhook.repository == null) {
+    throw new Error('repository not set for Webhook object.');
   }
   let update;
 
@@ -311,8 +300,5 @@ async function makeUpdate(fields?: Array<string>, webhook: Webhook): Promise<voi
   } else {
     update = _.pick(webhook.forStorage(), fields);
   }
-  const query = { id: webhook.id };
-  await bluebird.fromCallback(
-    (cb) => webhook.storage.updateOne(webhook.user, query, update, cb)
-  );
+  await webhook.repository.updateOne(webhook.user, update, webhook.id);
 }

@@ -48,7 +48,7 @@ class Repository {
       }
       const userWebhooks = [];
       webhooks.forEach((w) => {
-        userWebhooks.push(initWebhook(user, this.storage, w));
+        userWebhooks.push(initWebhook(user, this, w));
       });
       allWebhooks.set(user.username, userWebhooks);
     }
@@ -74,7 +74,7 @@ class Repository {
 
     const webhookObjects = [];
     webhooks.forEach((w) => {
-      const webhook = initWebhook(user, this.storage, w);
+      const webhook = initWebhook(user, this, w);
       webhookObjects.push(webhook);
     });
 
@@ -96,15 +96,52 @@ class Repository {
 
     if (webhook == null) return null;
 
-    return initWebhook(user, this.storage, webhook);
+    return initWebhook(user, this, webhook);
+  }
+
+  /**
+   * Inserts a webhook for a user
+   */
+  async insertOne(user: {}, webhook: Webhook): Promise<void> {
+    await bluebird.fromCallback(cb =>
+      this.storage.insertOne(user, webhook.forStorage(), cb)
+    );
+  }
+
+  /**
+   * Updates certain fields of a webhook for a user
+   */
+  async updateOne(user: {}, update: {}, webhookId: string): Promise<void> {
+    const query = { id: webhookId };
+    await bluebird.fromCallback(cb =>
+      this.storage.updateOne(user, query, update, cb)
+    );
+  }
+
+  /**
+   * Deletes a webhook for a user, given the webhook's id
+   */
+  async deleteOne(user: {}, webhookId: string): Promise<void> {
+    await bluebird.fromCallback(cb =>
+      this.storage.delete(user, { id: webhookId }, cb)
+    );
+  }
+
+  /**
+   * Deletes all webhooks for a user.
+   */
+  async deleteForUser(user: {}): Promise<void> {
+    await bluebird.fromCallback(cb =>
+      this.storage.delete(user, {}, cb)
+    );
   }
 
 }
 module.exports = Repository;
 
-function initWebhook(user: {}, storage: WebhooksStorage, webhook: {}): Webhook {
+function initWebhook(user: {}, repository: webhooksRepository, webhook: {}): Webhook {
   return new Webhook(_.merge({
-    webhooksStorage: storage,
+    webhooksRepository: repository,
     user: user,
   }, webhook));
 }
