@@ -74,7 +74,6 @@ class WebhooksService implements MessageSink {
   async sendBootMessage(): Promise<void> {
     for (const entry of this.webhooks) {
       await bluebird.all(entry[1].map(async (webhook) => {
-        console.log('callin boot for', webhook.user, '@', webhook.url);
         await webhook.send(BOOT_MESSAGE);
       }));
     }

@@ -29,22 +29,22 @@ export type WebhooksSettingsHolder = {
   minIntervalMs: number,
   maxRetries: number,
   runsSize: number,
-}
+};
 
 type Access = {
   id: string,
   isApp(): boolean,
   isPersonal(): boolean,
-}
+};
 
-module.exports = function produceAccessesApiMethods(
+module.exports = function produceWebhooksApiMethods(
   api: API,
   logger: Logger,
   wehbooksSettings: WebhooksSettingsHolder,
   storageLayer: StorageLayer) {
 
-  const webhooksRepository = new WebhooksRepository(storageLayer.webhooks);
-  const natsPublisher = new NatsPublisher(NATS_CONNECTION_URI);
+  const webhooksRepository: WebhooksRepository = new WebhooksRepository(storageLayer.webhooks);
+  const natsPublisher: NatsPublisher = new NatsPublisher(NATS_CONNECTION_URI);
 
   // RETRIEVAL
 
@@ -55,7 +55,7 @@ module.exports = function produceAccessesApiMethods(
   );
 
   function forbidSharedAccess(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    const currentAccess = context.access;
+    const currentAccess: Access = context.access;
 
     if (currentAccess == null) {
       return next(new Error('AF: Access cannot be null at this point.'));
@@ -71,15 +71,15 @@ module.exports = function produceAccessesApiMethods(
   async function findAccessibleWebhooks(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     const currentAccess = context.access;
     try {
-      const webhooks = await webhooksRepository.get(context.user, currentAccess);
+      const webhooks: Array<Webhook> = await webhooksRepository.get(context.user, currentAccess);
       result.webhooks = webhooks.map(forApi);
     } catch (error) {
       return next(errors.unexpectedError(error));
     }
     next();
 
-    function forApi(w: Webhook): {} {
-      return w.forApi();
+    function forApi(webhook: Webhook): {} {
+      return webhook.forApi();
     }
   }
 
@@ -90,11 +90,11 @@ module.exports = function produceAccessesApiMethods(
   );
 
   async function findWebhook(context: MethodContext, params: { id: string }, result: Result, next: ApiCallback) {
-    const user = context.user;
-    const currentAccess = context.access;
-    const webhookId = params.id;
+    const user: {} = context.user;
+    const currentAccess: Access = context.access;
+    const webhookId: string = params.id;
     try {
-      const webhook = await webhooksRepository.getById(user, webhookId);
+      const webhook: Webhook = await webhooksRepository.getById(user, webhookId);
 
       if (webhook == null) {
         return next(errors.unknownResource('webhook', params.id));
@@ -121,7 +121,7 @@ module.exports = function produceAccessesApiMethods(
   );
 
   function forbidPersonalAccess(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    const currentAccess = context.access;
+    const currentAccess: Access = context.access;
 
     if (currentAccess == null) {
       return next(new Error('AF: Access cannot be null at this point.'));
@@ -187,17 +187,17 @@ module.exports = function produceAccessesApiMethods(
     params: { update: {}, id: string }, 
     result: Result, next: ApiCallback) {
     
-    const user = context.user;
-    const currentAccess = context.access;
-    const update = params.update;
-    const webhookId = params.id;
+    const user: {} = context.user;
+    const currentAccess: Access = context.access;
+    const update: {} = params.update;
+    const webhookId: string = params.id;
 
     if (update.state === 'active') {
       update.currentRetries = 0;
     }
 
     try {
-      const webhook = await webhooksRepository.getById(user, webhookId);
+      const webhook: Webhook = await webhooksRepository.getById(user, webhookId);
       if (webhook == null) {
         return next(errors.unknownResource('webhook', params.id));
       }
@@ -226,12 +226,12 @@ module.exports = function produceAccessesApiMethods(
     params: { id: string }, 
     result: Result, next: ApiCallback) {
     
-    const user = context.user;
-    const currentAccess = context.access;
-    const webhookId = params.id;
+    const user: {} = context.user;
+    const currentAccess: Access = context.access;
+    const webhookId: string = params.id;
 
     try {
-      const webhook = await webhooksRepository.getById(user, webhookId);
+      const webhook: Webhook = await webhooksRepository.getById(user, webhookId);
       if (webhook == null) {
         return next(errors.unknownResource('webhook', params.id));
       }
@@ -251,8 +251,8 @@ module.exports = function produceAccessesApiMethods(
   }
 
   async function turnOffWebhook(context: MethodContext, params: { id: string }, result: Result, next: ApiCallback) {
-    const username = context.user.username;
-    const webhookId = params.id;
+    const username: string = context.user.username;
+    const webhookId: string = params.id;
     natsPublisher.deliver(NATS_WEBHOOKS_DELETE_CHANNEL, {
       username: username,
       webhook: {
@@ -272,10 +272,10 @@ module.exports = function produceAccessesApiMethods(
   );
 
   async function testWebhook(context: MethodContext, params: { id: string }, result: Result, next: ApiCallback) {
-    const user = context.user;
-    const currentAccess = context.access;
-    const webhookId = params.id;
-    let webhook;
+    const user: {} = context.user;
+    const currentAccess: Access = context.access;
+    const webhookId: string = params.id;
+    let webhook: ?Webhook;
     try {
       webhook = await webhooksRepository.getById(user, webhookId);
       if (webhook == null) {
