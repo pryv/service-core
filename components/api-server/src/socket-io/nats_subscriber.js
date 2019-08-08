@@ -15,6 +15,9 @@ class NatsSubscriber {
   
   // What user we subscribed to - or `null` if no subscription was made yet. 
   subscriptionUser: ?string; 
+
+  // Provides a function to apply to the channel name
+  channelFormat: (string) => string;
   
   // Connects to the NATS server on `natsUri` (in the form of
   // 'nats://nats.io:4222'). Messages that arrive here via subscriptions made 
@@ -25,12 +28,13 @@ class NatsSubscriber {
   //    const subscriber = new NatsSubscriber(natsUrl, sink); 
   //    await subscriber.subscribe('USERNAME')
   // 
-  constructor(natsUri: string, sink: MessageSink) {
+  constructor(natsUri: string, sink: MessageSink, channelFormat?: (string) => string) {
     this.conn = NATS.connect({
       url: natsUri, 
       'preserveBuffers': true,
     });
     this.sink = sink; 
+    this.channelFormat = channelFormat || (a => {return a;});
     
     this.subscriptionUser = null; 
   }
@@ -40,7 +44,7 @@ class NatsSubscriber {
   // 
   async subscribe(username: string): Promise<void> {
     const conn = this.conn; 
-    const channelName = channelForUser(username);
+    const channelName = this.channelFormat(username);
     const subscriptionUser = this.subscriptionUser;
     
     if (subscriptionUser != null) 
@@ -53,10 +57,6 @@ class NatsSubscriber {
     
     // Wait until subscription is done. 
     return subscribed;
-    
-    function channelForUser(username: string): string {
-      return `${username}.sok1`;
-    }
   }
   
   // Closes this NatsSubscriber's connections. This unsubscribes and closes  the
@@ -79,8 +79,6 @@ class NatsSubscriber {
       throw new Error('AF: subscriptionUser may not be null here.');
     
     const msg = decode(buf);
-    if (typeof msg !== 'string') 
-      throw new Error('AF: messages are simple strings in sok1.');
       
     sink.deliver(subscriptionUser, msg);
   }

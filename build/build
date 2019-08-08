@@ -25,7 +25,7 @@ function release {
   local remote_name="$host/$service_name:$version"
   
   if [ -e ../release_build ]; then
-    # Publication to registry:
+    # Publication to registry: 
     sudo docker tag $local_name $remote_name
     sudo docker push $remote_name
   fi
@@ -67,4 +67,11 @@ pushd cli
 cp ../release.tar .
 sudo docker build -f Dockerfile -t pryv/cli:$version .
 release "pryv/cli" $version
+popd
+
+echo "---------------------------- building webhooks --------------------------------"
+pushd webhooks
+cp ../release.tar .
+docker build -f Dockerfile -t pryv/webhooks:$version .
+release "pryv/webhooks" $version
 popd

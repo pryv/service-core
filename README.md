@@ -62,9 +62,10 @@ Then just `yarn install`.
 | Run ALL server processes          | `nf start`                     |
 | Run API server                    | `nf start api`                 |
 | Run API and Preview server        | `nf start api, previews`       |
+| Run Webhooks service              | `nf start webhooks`            |
 | Run Database                      | `nf start database`            |
-| Get a list of available processes | `cat Procfile`                 |
-| Run flow checker                  | `watch -c flow --color=always` |
+| Get a list of available processes | `cat Procfile`                  |
+| Run flow checker                   | `watch -c flow --color=always`  |
 
 **NOTE** that all binaries like `nf` or `flow` must be accessed by prepending `yarn {nf,flow}`, as documented [here](http://strongloop.github.io/node-foreman/).
 
@@ -183,7 +184,7 @@ If you are getting multiple seamingly unrelated errors following a branch switch
 ### Cannot find module components
 
 When running tests in single components:
-- `Error: Cannot find module 'components/...'`: Ensure that symlink `node_modules/components` pointing to `../components` exists
+- `Error: Cannot find module 'components/...'`: Ensure that symlink `node_modules/components` pointing to `../components` exists. (for `dist/`, `yarn release` takes care of it).
 
 ### Unicode
 

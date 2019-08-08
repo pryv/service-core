@@ -31,6 +31,7 @@ const Paths = module.exports = {
   Events: makePath(username, 'events'),
   Profile: makePath(username, 'profile'),
   Service: makePath(username, 'service'),
+  Webhooks: makePath(username, 'webhooks'),
 
   SocketIO: makePath('socket.io'),
   Favicon: makePath('favicon.ico')

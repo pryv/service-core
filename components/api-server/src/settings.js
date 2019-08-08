@@ -5,7 +5,8 @@ const request = require('superagent');
 const url = require('url');
 
 const { Extension, ExtensionLoader } = require('components/utils').extension;
-const config = require('./config');
+// FLOW __dirname can be undefined when node is run outside of file.
+const config = require(__dirname + '/config');
 
 const { ExistingValue, MissingValue } = require('components/utils/src/config/value');
 

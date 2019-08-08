@@ -3,6 +3,7 @@
 const errorHandling = require('components/errors').errorHandling;
 const setCommonMeta = require('../methods/helpers/setCommonMeta');
 const bluebird = require('bluebird');
+const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
 
 const NatsSubscriber = require('./nats_subscriber');
     
@@ -11,9 +12,6 @@ import type { MethodContext } from 'components/model';
 import type API from '../API';
 
 import type { MessageSink } from './message_sink';
-
-// Uri for internal NATS connection.
-const NATS_CONNECTION_URI = 'nats://127.0.0.1:4222';
 
 type SocketIO$SocketId = string; 
 export type SocketIO$Handshake = {
@@ -156,7 +154,7 @@ class Manager implements MessageSink {
   // 
   // Part of the MessageSink implementation.
   //
-  deliver(userName: string, message: string): void {
+  deliver(userName: string, message: string | {}): void {
     const context = this.getContext(`/${userName}`);
     if (context == null) return; 
     
@@ -164,6 +162,10 @@ class Manager implements MessageSink {
     if (namespace == null) 
       throw new Error('AF: namespace should not be null');
     
+    if (typeof message === 'object') {
+      message = JSON.stringify(message);
+    }
+
     namespace.emit(message);
   }
 }
@@ -246,7 +248,11 @@ class NamespaceContext {
 
     const natsSubscriber = new NatsSubscriber(
       NATS_CONNECTION_URI, 
-      sink);
+      sink,
+      (username: string): string => {
+        return `${username}.sok1`;
+      }
+    );
           
     // We'll await this, since the user will want a connection that has
     // notifications turned on immediately. 

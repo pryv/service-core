@@ -6,8 +6,11 @@ const lodash = require('lodash');
 const Charlatan = require('charlatan');
 const generateId = require('cuid');
 const debug = require('debug')('databaseFixture');
+const timestamp = require('unix-timestamp');
 
 const storage = require('components/storage');
+
+const Webhook = require("components/business").webhooks.Webhook;
 
 class Context {
   databaseConn: storage.Database; 
@@ -28,6 +31,7 @@ type DatabaseShortcuts = {
   streams: storage.user.Streams, 
   events: storage.user.Events, 
   accesses: storage.user.Accesses, 
+  webhooks: storage.user.Webhooks,
 }
 class UserContext {
   userName: string; 
@@ -54,6 +58,7 @@ class UserContext {
       streams: new storage.user.Streams(conn),
       events: new storage.user.Events(conn),
       accesses: new storage.user.Accesses(conn),
+      webhooks: new storage.user.Webhooks(conn),
     };
   }
 }
@@ -144,7 +149,13 @@ class FixtureTreeNode {
    */
   attributes(attrs: {}): Attributes {
     return lodash.merge(
-      { id: `c${Charlatan.Number.number(15)}` },
+      { 
+        id: generateId(),
+        created: timestamp.now(),
+        createdBy: this.context.user.id,
+        modified: timestamp.now(),
+        modifiedBy: this.context.user.id,
+      },
       this.fakeAttributes(),
       attrs,
     );
@@ -189,7 +200,9 @@ class Fixture {
   //
   clean(): Promise<mixed> {
     return this.childs.all(
-      (child) => child.remove());
+      (child) => {
+        return child.remove();
+      });
   }
 }
 
@@ -201,20 +214,24 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
       lodash.merge({id: name, username: name}, attrs));
   }
   
-  stream(attrs: {}={}, cb: (FixtureStream) => void) {
+  stream(attrs: {}={}, cb: (FixtureStream) => void): Promise<mixed> {
     const s = new FixtureStream(this.context, attrs);
 
     return this.childs.create(s, cb);
   }
-  access(attrs: {}={}) {
+  access(attrs: {}={}): Promise<mixed> {
     const a = new FixtureAccess(this.context, attrs); 
   
     return this.childs.create(a);
   }
-  session(token?: string) {
+  session(token?: string): Promise<mixed> {
     const s = new FixtureSession(this.context, token); 
     
     return this.childs.create(s);
+  }
+  webhook(attrs: {}={}, accessId: string): Promise<mixed> {
+    const w = new FixtureWebhook(this.context, attrs, accessId);
+    return this.childs.create(w);
   }
   
   /** Removes all resources belonging to the user, then creates them again, 
@@ -236,6 +253,7 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
       db.streams, 
       db.events,
       db.accesses, 
+      db.webhooks,
     ];
         
     // NOTE username in context will be the same as the one stored in
@@ -304,7 +322,7 @@ class FixtureStream extends FixtureTreeNode implements ChildResource {
   fakeAttributes() {
     return {
       id: `c${Charlatan.Number.number(15)}`,
-      name: Charlatan.Internet.domainName(), 
+      name: Charlatan.App.name(), 
       parentId: this.parentId, 
     };
   }
@@ -350,7 +368,6 @@ class FixtureAccess extends FixtureTreeNode implements ChildResource {
     const db = this.db; 
     const user = this.context.user; 
     const attributes = this.attrs; 
-    
     return bluebird.fromCallback((cb) => 
       db.accesses.insertOne(user, attributes, cb)); 
   }
@@ -359,8 +376,31 @@ class FixtureAccess extends FixtureTreeNode implements ChildResource {
     return {
       id: `c${Charlatan.Number.number(15)}`,
       token: Charlatan.Internet.deviceToken(), 
-      name: Charlatan.Commerce.productName(), 
+      name: Charlatan.Internet.userName(),
       type: Charlatan.Helpers.sample(['personal', 'shared']), 
+    };
+  }
+}
+
+class FixtureWebhook extends FixtureTreeNode implements ChildResource {
+  constructor(context: UserContext, attrs: {}, accessId: string) {
+    super(context, R.merge(attrs, {accessId: accessId}));
+  }
+
+  create() {
+    const db = this.db;
+    const user = this.context.user;
+    const attributes = this.attrs;
+    const webhook = new Webhook(attributes).forStorage();
+    return bluebird.fromCallback(
+      (cb) => db.webhooks.insertOne(user, webhook, cb)
+    );
+  }
+
+  fakeAttributes() {
+    return {
+      id: generateId(),
+      url: `https://${Charlatan.Internet.domainName()}/notifications`,
     };
   }
 }
