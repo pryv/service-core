@@ -72,6 +72,6 @@ popd
 echo "---------------------------- building webhooks --------------------------------"
 pushd webhooks
 cp ../release.tar .
-docker build -f Dockerfile -t pryv/webhooks:$version .
+sudo docker build -f Dockerfile -t pryv/webhooks:$version .
 release "pryv/webhooks" $version
 popd
