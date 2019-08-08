@@ -314,6 +314,37 @@ describe('root', function() {
     });
   });
 
+  describe('Accept Basic Auth request', function () {
+    var infoAccess = testData.accesses[1];
+
+    it('[0MI9] must accept https://token@user.domain/ AUTH schema', function (done) {
+      const fullurl = server.url.replace('http://', 'http://' + infoAccess.token + '@');
+      superagent.get(fullurl + '/' + user.username + '/access-info').end(function (err, res) {
+        
+        if (err) {
+          should.not.exists(err.response.error);
+          return done(err);
+        }
+        res.status.should.eql(200);
+        done();
+      });
+    });
+
+    it('[0MI9] must accept https://token:anystring@user.domain/ AUTH schema', function (done) {
+      const fullurl = server.url.replace('http://', 'http://' + infoAccess.token + ':anystring@');
+      superagent.get(fullurl + '/' + user.username + '/access-info').end(function (err, res) {
+
+        if (err) {
+          should.not.exists(err.response.error);
+          return done(err);
+        }
+        res.status.should.eql(200);
+        done();
+      });
+    });
+  
+  });
+
   describe('POST / (i.e. batch call)', function() {
     beforeEach(resetEvents);
 

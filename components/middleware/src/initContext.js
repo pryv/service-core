@@ -37,6 +37,10 @@ module.exports = function initContext(
       let authorizationHeader = req.header('authorization');
 
       if (authorizationHeader != null) {
+        const basic = authorizationHeader.split(' ');
+        if (basic[0].toLowerCase() === 'basic' && basic[1]) {
+          authorizationHeader = new Buffer(basic[1], 'base64').toString('ascii').split(':')[0];
+        }
         if (Array.isArray(authorizationHeader)) return authorizationHeader[0];
         return authorizationHeader;        
       }
