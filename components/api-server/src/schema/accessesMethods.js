@@ -95,7 +95,7 @@ module.exports = {
     }, {
       id: 'accesses.checkApp',
       required: [ 'requestingAppId', 'requestedPermissions' ],
-      additionalProperties: false
+      additionalProperties: false,
     }),
     result: object({
       'matchingAccess': access(Action.READ),

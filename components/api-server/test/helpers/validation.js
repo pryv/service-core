@@ -143,7 +143,7 @@ exports.checkErrorInvalidParams = function (res, done) {
   expect(error.id).to.equal(ErrorIds.InvalidParametersFormat);
   expect(res.body.error.data).to.exist; // expect validation errors
 
-  done();
+  if (done) done();
 };
 
 /**
@@ -155,7 +155,7 @@ exports.checkErrorInvalidAccess = function (res, done) {
   checkJSON(res, schemas.errorResult);
   res.body.error.id.should.eql(ErrorIds.InvalidAccessToken);
 
-  done();
+  if (done) done();
 };
 
 /**
@@ -167,7 +167,7 @@ exports.checkErrorForbidden = function (res, done) {
   checkJSON(res, schemas.errorResult);
   res.body.error.id.should.eql(ErrorIds.Forbidden);
 
-  done();
+  if (done) done();
 };
 
 /**
@@ -179,7 +179,7 @@ exports.checkErrorUnknown = function (res, done) {
   checkJSON(res, schemas.errorResult);
   res.body.error.id.should.eql(ErrorIds.UnknownResource);
 
-  done();
+  if (done) done();
 };
 
 /**
@@ -352,4 +352,24 @@ exports.removeHistory = function (items) {
  */
 exports.removeDeletionsAndHistory = function (items) {
   return items.filter(function (e) { return ! (e.deleted || e.headId); });
+};
+
+/*
+ * Strips off item from tracking properties
+ */
+exports.removeTrackingPropertiesForOne = function (item) {
+  if (item == null) return;
+  delete item.created;
+  delete item.createdBy;
+  delete item.modified;
+  delete item.modifiedBy;
+  return item;
+};
+
+/**
+ * Strips off items from tracking properties
+ */
+exports.removeTrackingProperties = function (items) {
+  items.forEach(exports.removeTrackingPropertiesForOne);
+  return items;
 };

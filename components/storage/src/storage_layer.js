@@ -17,6 +17,7 @@ const Events = require('./user/Events');
 const FollowedSlices = require('./user/FollowedSlices');
 const Profile = require('./user/Profile');
 const Streams = require('./user/Streams');
+const Webhooks = require('./user/Webhooks');
 
 class StorageLayer {
   connection: Database; 
@@ -31,6 +32,7 @@ class StorageLayer {
   followedSlices: FollowedSlices;
   profile: Profile;
   streams: Streams;
+  webhooks: Webhooks;
   
   constructor(
     connection: Database, 
@@ -62,6 +64,7 @@ class StorageLayer {
     this.followedSlices = new FollowedSlices(connection);
     this.profile = new Profile(connection);
     this.streams = new Streams(connection);
+    this.webhooks = new Webhooks(connection);
   }
   
   async waitForConnection() {

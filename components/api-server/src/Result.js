@@ -6,8 +6,9 @@ const DrainStream = require('./methods/streams/DrainStream');
 const ArrayStream = require('./methods/streams/ArrayStream');
 const async = require('async');
 
-
 const Transform = require('stream').Transform;
+
+import type { Webhook } from 'components/business/webhooks';
 
 type ResultOptions = {
   arrayLimit?: number, 
@@ -21,6 +22,11 @@ type APIResult =
   {[string]: Array<Object>};
   
 type ToObjectCallback = (err: ?Error, res: ?APIResult) => mixed;
+
+type itemDeletion = {
+  id: string,
+  deleted: number,
+};
 
 
 // Result object used to store API call response body while it is processed.
@@ -50,7 +56,11 @@ class Result {
   mismatchingAccess: mixed;
   checkedPermissions: mixed;
   error: mixed;
+
+  webhook: Webhook;
+  webhooks: Array<Webhook>;
   
+  webhookDeletion: itemDeletion;
   constructor(params?: ResultOptions) {
     this._private = { 
       init: false, first: true, 

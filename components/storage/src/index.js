@@ -19,6 +19,7 @@ module.exports = {
     FollowedSlices: require('./user/FollowedSlices'),
     Profile: require('./user/Profile'),
     Streams: Stream,
+    Webhooks: require('./user/Webhooks'),
   }, 
   
   StorageLayer: StorageLayer,

@@ -14,6 +14,8 @@ declare class RequestWithContext extends express$Request {
   context: any; 
 }
 
+
+import type { ConfigAccess } from '../settings';
 import type Application from '../application';
 
 /**
@@ -22,7 +24,8 @@ import type Application from '../application';
  * @param {Object} api The API object for registering methods
  */
 module.exports = function (expressApp: express$Application, app: Application) {
-  const settings = app.settings;
+
+  const settings: ConfigAccess = app.settings;
   const api = app.api;
 
   const ms14days: number = 1000 * 60 * 60 * 24 * 14;
@@ -41,7 +44,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
   function hasProperties(obj: mixed, keys: Array<string>): boolean {
     if (obj == null) { return false; }
     if (typeof obj !== 'object') { return false; }
-       
+    
     for (const key of keys) {
       if (! lodash.has(obj, key)) return false; 
     }

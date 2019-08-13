@@ -4,6 +4,7 @@ const bluebird = require('bluebird');
 const socketIO = require('socket.io');
 
 const MethodContext = require('components/model').MethodContext;
+const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
 
 const Manager = require('./Manager');
 const Paths = require('../routes/Paths');
@@ -57,9 +58,18 @@ function setupSocketIO(
   const manager: Manager = new Manager(logger, io, api);
   
   // Setup the chain from notifications -> NATS
-  const natsPublisher = new NatsPublisher('nats://127.0.0.1:4222');
+  const natsPublisher = new NatsPublisher(NATS_CONNECTION_URI, 
+    (userName: string): string => { return `${userName}.sok1`; }
+  );
   const changeNotifier = new ChangeNotifier(natsPublisher);
   changeNotifier.listenTo(notifications);
+
+  // Webhooks nats publisher - could be moved if there is a more convenient place.
+  const whNatsPublisher = new NatsPublisher(NATS_CONNECTION_URI,
+    (userName: string): string => { return `${userName}.wh1`; }
+  );
+  const webhooksChangeNotifier = new ChangeNotifier(whNatsPublisher);
+  webhooksChangeNotifier.listenTo(notifications);
   
   async function authorizeUserMiddleware(
     handshake: SocketIO$Handshake, callback: (err: any, res: any) => mixed

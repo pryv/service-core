@@ -113,7 +113,13 @@ class Server {
       application.storageLayer);
 
     require('./methods/service')(
-      application.api, l('methods/service'), application.getServiceInfoSettings()
+      application.api, l('methods/service'), 
+      application.getServiceInfoSettings());
+
+    require('./methods/webhooks')(
+      application.api, l('methods/webhooks'),
+      application.getWebhooksSettings(),
+      application.storageLayer,
     );
 
     [
@@ -259,17 +265,20 @@ class Server {
   //
   addRoutes(expressApp: express$Application) {
     const application = this.application;
-    
+  
+    // system and root MUST come first
     require('./routes/system')(expressApp, application);
     require('./routes/root')(expressApp, application);
-    require('./routes/auth')(expressApp, application);
-    require('./routes/events')(expressApp, application);
+
     require('./routes/accesses')(expressApp, application);
     require('./routes/account')(expressApp, application);
+    require('./routes/auth')(expressApp, application);
+    require('./routes/events')(expressApp, application);
     require('./routes/followed-slices')(expressApp, application);
-    require('./routes/streams')(expressApp, application);
     require('./routes/profile')(expressApp, application);
     require('./routes/service')(expressApp, application);
+    require('./routes/streams')(expressApp, application);
+    require('./routes/webhooks')(expressApp, application);
   }
 
 }
