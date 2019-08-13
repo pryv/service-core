@@ -330,7 +330,7 @@ describe('root', function() {
       });
     });
 
-    it('[0MI9] must accept https://token:anystring@user.domain/ AUTH schema', function (done) {
+    it('[0MI0] must accept https://token:anystring@user.domain/ AUTH schema', function (done) {
       const fullurl = server.url.replace('http://', 'http://' + infoAccess.token + ':anystring@');
       superagent.get(fullurl + '/' + user.username + '/access-info').end(function (err, res) {
 
