@@ -10,9 +10,11 @@ var treeUtils = require('components/utils').treeUtils,
  */
 var PermissionLevels = {
   'read': 0,
+  'create-only': 1,
   'contribute': 1,
-  'manage': 2
+  'manage': 2,
 };
+
 Object.freeze(PermissionLevels);
 
 /**
@@ -114,6 +116,11 @@ const accessLogic = module.exports = {
 
   canReadStream: function (streamId) {
     var level = this.getStreamPermissionLevel(streamId);
+    return level && isHigherOrEqualLevel(level, 'read') && level != 'create-only' ;
+  },
+
+  canListStream: function (streamId) {
+    var level = this.getStreamPermissionLevel(streamId);
     return level && isHigherOrEqualLevel(level, 'read');
   },
 
@@ -122,23 +129,33 @@ const accessLogic = module.exports = {
     return level && isHigherOrEqualLevel(level, 'contribute');
   },
 
+  canUpdateStream: function (streamId) {
+    var level = this.getStreamPermissionLevel(streamId);
+    if (level === 'create-only') return false;
+    return this.canContributeToStream(streamId);
+  },
+
   canManageStream: function (streamId) {
     var level = this.getStreamPermissionLevel(streamId || undefined);
-    return level && isHigherOrEqualLevel(level, 'manage');
+    return level && isHigherOrEqualLevel(level, 'manage') && level != 'create-only';
   },
 
   canReadAllTags: function () {
-    return this.isPersonal() || !! this.getTagPermissionLevel('*');
+    return this.isPersonal() || !!this.getTagPermissionLevel('*');
   },
 
   canReadTag: function (tag) {
     var level = this.getTagPermissionLevel(tag);
-    return level && isHigherOrEqualLevel(level, 'read');
+    return level && isHigherOrEqualLevel(level, 'read') && level != 'create-only';
   },
 
   canContributeToTag: function (tag) {
     var level = this.getTagPermissionLevel(tag);
     return level && isHigherOrEqualLevel(level, 'contribute');
+  },
+
+  canUpdateTag: function (tag) {
+    return this.canContributeToTag(tag);
   },
 
   canManageTag: function (tag) {
@@ -249,3 +266,4 @@ function isLowerLevel(permissionLevelA, permissionLevelB) {
 function hasPermissions(access) {
   return access.permissions && access.permissions.length > 0;
 }
+

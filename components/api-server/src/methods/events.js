@@ -92,7 +92,12 @@ module.exports = function (
         : nonTrashedStreamIds;
     }
     if (! context.access.canReadAllStreams()) {
-      var accessibleStreamIds = Object.keys(context.access.streamPermissionsMap);
+      var accessibleStreamIds = [];
+      Object.keys(context.access.streamPermissionsMap).map((streamId) => {
+        if (context.access.canReadStream(streamId)) {
+          accessibleStreamIds.push(streamId);
+        }
+      });
       params.streams = params.streams 
         ? _.intersection(params.streams, accessibleStreamIds) 
         : accessibleStreamIds;
@@ -385,7 +390,7 @@ module.exports = function (
         return next(errors.unknownResource('event', params.id));
       }
 
-      if (! context.canContributeToContext(event.streamId, event.tags)) {
+      if (! context.canUpdateContext(event.streamId, event.tags)) {
         return next(errors.forbidden());
       }
 
@@ -877,7 +882,7 @@ module.exports = function (
   api.register('events.delete',
     commonFns.getParamsValidation(methodsSchema.del.params),
     function (context, params, result, next) {
-      checkEventForWriting(context, params.id, function (err, event) {
+      checkEventForDelete(context, params.id, function (err, event) {
         if (err) {
           return next(err);
         }
@@ -970,7 +975,7 @@ module.exports = function (
           deletedAtt;
       async.series([
         function (stepDone) {
-          checkEventForWriting(context, params.id, function (err, event) {
+          checkEventForDelete(context, params.id, function (err, event) {
             if (err) { return stepDone(err); }
 
             updatedEvent = event;
@@ -1026,7 +1031,7 @@ module.exports = function (
       requestedType;
   }
 
-  function checkEventForWriting(context, eventId, callback) {
+  function checkEventForDelete(context, eventId, callback) {
     userEventsStorage.findOne(context.user, {id: eventId}, null, function (err, event) {
       if (err) {
         return callback(errors.unexpectedError(err));
@@ -1036,7 +1041,7 @@ module.exports = function (
           'event', eventId
         ));
       }
-      if (! context.canContributeToContext(event.streamId, event.tags)) {
+      if (! context.canUpdateContext(event.streamId, event.tags)) {
         return callback(errors.forbidden());
       }
 

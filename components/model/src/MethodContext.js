@@ -280,6 +280,16 @@ class MethodContext {
   }
 
   /**
+  * Sugar for the corresponding access method.
+  */
+  canListStream(streamId: string) {
+    const access = this.access;
+    if (access == null)
+      throw new Error('Access needs to be retrieved first.');
+    return access.canListStream(streamId);
+  }
+
+  /**
    * Sugar for the corresponding access method.
    */
   canManageStream(streamId: string) {
@@ -327,6 +337,24 @@ class MethodContext {
     return access.canReadStream(streamId) &&
       (access.canReadAllTags() ||
         _.some(tags || [], access.canReadTag.bind(this.access)));
+  }
+
+  /**
+   * Whether events in the given stream and tags context can be updated/deleted.
+   *
+   * @param streamId
+   * @param tags
+   * @returns {Boolean}
+   */
+  canUpdateContext(streamId: string, tags: ?Array<string>) {
+    const access = this.access;
+    if (access == null)
+      throw new Error('Access needs to be retrieved first.');
+
+
+    return access.canUpdateStream(streamId) ||
+      (access.canUpdateTag('*') ||
+       _.some(tags || [], access.canUpdateTag.bind(this.access)));
   }
 
   /**
