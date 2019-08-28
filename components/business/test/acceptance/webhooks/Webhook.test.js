@@ -53,9 +53,10 @@ describe('Webhook', () => {
           notificationsServer.close();
         });
 
-        let webhook, runs, message, requestTimestamp, storedWebhook;
+        let webhook, runs, message, requestTimestamp, storedWebhook, serial;
 
         before(async () => {
+          serial = '20190820';
           message = 'hi';
           webhook = new Webhook({
             accessId: 'doesntmatter',
@@ -64,6 +65,7 @@ describe('Webhook', () => {
             user: user,
           });
           webhook.setApiVersion(apiVersion);
+          webhook.setSerial(serial);
           await webhook.save();
           requestTimestamp = timestamp.now();
           await webhook.send(message);
@@ -97,6 +99,7 @@ describe('Webhook', () => {
         it('should send the meta', () => {
           const meta = notificationsServer.getMetas()[0];
           assert.equal(meta.apiVersion, apiVersion);
+          assert.equal(meta.serial, serial);
           assert.approximately(meta.serverTime, requestTimestamp, 0.5);
         });
       });

@@ -7,6 +7,7 @@ const timestamp = require('unix-timestamp');
 
 const NatsSubscriber = require('components/api-server/src/socket-io/nats_subscriber');
 import type { MessageSink } from 'components/api-server/src/socket-io/message_sink';
+import type Repository from './repository';
 
 export type Run = {
   status: number,
@@ -14,6 +15,11 @@ export type Run = {
 };
 
 export type WebhookState = 'active' | 'inactive';
+
+export type WebhookUpdate = {
+  state: WebhookState,
+  currentRetries: number,
+};
 
 class Webhook implements MessageSink {
   id: string;
@@ -42,9 +48,10 @@ class Webhook implements MessageSink {
   isSending: boolean;
 
   user: ?{};
-  repository: ?WebhooksRepository;
+  repository: ?Repository;
   NatsSubscriber: ?NatsSubscriber;
   apiVersion: string;
+  serial: string;
 
   constructor(params: {
     id?: string,
@@ -64,7 +71,7 @@ class Webhook implements MessageSink {
     modified?: number,
     modifiedBy?: string,
     user?: {},
-    webhooksRepository?: webhooksRepository,
+    webhooksRepository?: Repository,
     messageBuffer?: Set<string>
   }) {
     this.id = params.id || cuid();
@@ -195,7 +202,8 @@ class Webhook implements MessageSink {
       messages: messages,
       meta: {
         apiVersion: this.apiVersion,
-        serverTime: timestamp.now()
+        serverTime: timestamp.now(),
+        serial: this.serial,
       }
     });
     return res;
@@ -283,8 +291,12 @@ class Webhook implements MessageSink {
     ]);
   }
 
-  setApiVersion(version: string) {
+  setApiVersion(version: string): void {
     this.apiVersion = version;
+  }
+
+  setSerial(serial: string): void {
+    this.serial = serial;
   }
 }
 module.exports = Webhook;
