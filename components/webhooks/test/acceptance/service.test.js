@@ -19,6 +19,8 @@ const { Webhook, Repository } = require('components/business').webhooks;
 const repository = new Repository(webhooksStorage);
 const HttpServer = require('components/business/test/acceptance/webhooks/support/httpServer');
 
+const BOOT_MESSAGE = require('../../src/messages').BOOT_MESSAGE;
+
 describe('webhooks', function() {
 
   let user, username, 
@@ -108,6 +110,8 @@ describe('webhooks', function() {
         assert.equal(notificationsServer.getMessageCount(), 1);
         const activeWebhook = await repository.getById(user, webhook.id);
         assert.equal(activeWebhook.runCount, 1);
+        const messages = notificationsServer.getMessages();
+        assert.equal(messages[0], BOOT_MESSAGE);
       });
       it('should send nothing to inactive webhooks', async function () {
         const inactiveWebhook = await repository.getById(user, webhook2.id);

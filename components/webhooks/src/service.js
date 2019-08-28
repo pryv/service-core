@@ -18,12 +18,12 @@ const WebhooksRepository = require('components/business/src/webhooks/repository'
 
 const { ProjectVersion } = require('components/middleware/src/project_version');
 
+const BOOT_MESSAGE = require('./messages').BOOT_MESSAGE;
+
 type UsernameWebhook = {
   username: string,
   webhook: Webhook,
 };
-
-const BOOT_MESSAGE = 'boot';
 
 class WebhooksService implements MessageSink {
 
