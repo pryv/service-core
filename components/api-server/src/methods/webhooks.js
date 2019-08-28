@@ -25,6 +25,8 @@ import type API from '../API';
 import type { ApiCallback } from '../API';
 import type Result from '../Result';
 
+import type { WebhookUpdate } from 'components/business/src/webhooks/Webhook';
+
 export type WebhooksSettingsHolder = {
   minIntervalMs: number,
   maxRetries: number,
@@ -189,7 +191,7 @@ module.exports = function produceWebhooksApiMethods(
     
     const user: {} = context.user;
     const currentAccess: Access = context.access;
-    const update: {} = params.update;
+    const update: WebhookUpdate = params.update;
     const webhookId: string = params.id;
 
     if (update.state === 'active') {
@@ -272,6 +274,9 @@ module.exports = function produceWebhooksApiMethods(
   );
 
   async function testWebhook(context: MethodContext, params: { id: string }, result: Result, next: ApiCallback) {
+
+    const TEST_MESSAGE: string = 'test';
+
     const user: {} = context.user;
     const currentAccess: Access = context.access;
     const webhookId: string = params.id;
@@ -289,7 +294,7 @@ module.exports = function produceWebhooksApiMethods(
     }
 
     try {
-      await webhook.makeCall(['test']);
+      await webhook.makeCall([TEST_MESSAGE]);
     } catch (e) {
       return next(errors.unknownReferencedResource('webhook', 'url', webhook.url, e));
     }
@@ -306,6 +311,5 @@ module.exports = function produceWebhooksApiMethods(
     if (access.isPersonal()) return true;
     return access.isApp() && access.id === webhook.accessId;
   }
-
-
+  
 };

@@ -7,21 +7,21 @@ const Webhook = require('./Webhook');
 const WebhooksStorage = require('components/storage').StorageLayer.webhooks;
 const UsersStorage = require('components/storage').StorageLayer.users;
 
-/** Repository of all Webhooks in this Pryv instance. 
+/** 
+ * Repository of all Webhooks in this Pryv.io instance. 
  */
 class Repository {
   storage: WebhooksStorage;
   usersStorage: UsersStorage;
 
-  /** Constructs a Webhooks repository based on a Webhooks storage abstraction. 
-   * 
-   * @param webhooksStorage {WebhooksStorage} handle to the storage methods
-   */
   constructor(webhooksStorage: WebhooksStorage, usersStorage: UsersStorage) {
     this.storage = webhooksStorage;
     this.usersStorage = usersStorage;
   }
 
+  /**
+   * Returns all webhooks in a map <username, Arrra<webhooks>>
+   */
   async getAll(): Promise<Map<string, Array<Webhook>>> {
     
     const usersQuery = {};
@@ -139,7 +139,7 @@ class Repository {
 }
 module.exports = Repository;
 
-function initWebhook(user: {}, repository: webhooksRepository, webhook: {}): Webhook {
+function initWebhook(user: {}, repository: Repository, webhook: {}): Webhook {
   return new Webhook(_.merge({
     webhooksRepository: repository,
     user: user,

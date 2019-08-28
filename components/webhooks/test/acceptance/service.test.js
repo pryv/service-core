@@ -271,17 +271,6 @@ describe('webhooks', function() {
         assert.isFalse(isWebhookActive);
       });
     });
-
-    describe('when deleting an access through API server', function() {
-
-      
-
-    });
-
-    describe('when an access expires', function() {
-    
-
-    });
     
   });
 

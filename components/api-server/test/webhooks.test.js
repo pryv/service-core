@@ -396,19 +396,6 @@ describe('webhooks', () => {
           });
         });
 
-        describe('when minIntervalMs is smaller that the system minimum', () => {
-          
-          it('should return an error');
-
-        });
-
-        describe('when maxRetries is bigger that the allowed maxmum', () => {
-
-          it('should return an error');
-
-        });
-
-
       });
     });
 
