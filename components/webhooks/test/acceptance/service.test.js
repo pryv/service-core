@@ -112,6 +112,10 @@ describe('webhooks', function() {
         assert.equal(activeWebhook.runCount, 1);
         const messages = notificationsServer.getMessages();
         assert.equal(messages[0], BOOT_MESSAGE);
+        const metas = notificationsServer.getMetas();
+        assert.equal(metas[0].apiVersion, webhooksService.apiVersion);
+        assert.equal(metas[0].serial, webhooksService.serial);
+        assert.approximately(metas[0].serverTime, Date.now() / 1000, 100);
       });
       it('should send nothing to inactive webhooks', async function () {
         const inactiveWebhook = await repository.getById(user, webhook2.id);

@@ -63,6 +63,11 @@ class Settings implements ConfigAccess {
       },
       nats: {
         uri: NATS_CONNECTION_URI
+      },
+      service: {
+        info: {
+          serial: '20190101',
+        }
       }
     };
   }
