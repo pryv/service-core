@@ -25,22 +25,18 @@ class HttpServer {
 
     app.use(bodyParser.json());
     app.get(path, (req, res: express$Response) => {
-      console.debug('request http local');
       res.status(this.responseStatus).json(responseBody || { ok: '1' });
     });
     this.app = app;
-    console.debug('local http server started');
   }
 
   async listen (port: number) {
     this.server = await this.app.listen(port || PORT);
-    console.debug('local http server listening');
   }
 
   close () {
     return bluebird.fromCallback(() => {
       this.server.close();
-      console.debug('local http server closed');
     });
   }
 }
