@@ -88,7 +88,7 @@ _Prerequisite:_ MongoDB must be running on the default port; you can use `yarn n
 `yarn test` runs tests on each component. See individual components for things like detailed output and other options.
 `yarn test-root` runs root tests combining multiple components (e.g., High-Frequency series).
 
-If you want to run tests for a specific component, you can run them against the transpiled files by going into `dist/${COMPONENT_NAME}` then running `yarn test` there.
+If you want to run tests for a specific component, you can run them against the transpiled files by going into `dist/components/${COMPONENT_NAME}` then running `yarn test` there.
 
 If you want to run tests directly against the source files in `components/`, you will need to start with a command like this: 
 
