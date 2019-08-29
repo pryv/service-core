@@ -63,7 +63,7 @@ class WebhooksService implements MessageSink {
     await this.loadWebhooks();
     this.logger.info('Loaded webhooks for ' + this.webhooks.size + ' user(s).');
 
-    const numWebhooks: number = await this.setStuff.call(this);
+    const numWebhooks: number = await this.setMeta.call(this);
 
     await this.sendBootMessage();
     this.logger.info(BOOT_MESSAGE + ' sent.');
@@ -83,7 +83,7 @@ class WebhooksService implements MessageSink {
     await this.createListener.subscribe(WEBHOOKS_CREATE_CHANNEL);
   }
 
-  setStuff(): number {
+  setMeta(): number {
     let numWebhooks: number = 0;
     for (const entry of this.webhooks) {
       const userWebhooks = entry[1];
@@ -108,8 +108,10 @@ class WebhooksService implements MessageSink {
 
   async initSubscribers(): Promise<void> {
     for(const entry of this.webhooks) {
-      const f = initSubscriberForWebhook.bind(this, entry[0], this.apiVersion, this.serial);
-      await bluebird.all(entry[1].map(f));
+      const username: string = entry[0];
+      const webhooks: Array<Webhook> = entry[1];
+      const f = initSubscriberForWebhook.bind(this, username, this.apiVersion, this.serial);
+      await bluebird.all(webhooks.map(f));
     }
   }
 

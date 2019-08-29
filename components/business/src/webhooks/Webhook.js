@@ -304,7 +304,7 @@ class Webhook implements MessageSink {
     this.serial = serial;
   }
 
-  setLogger(logger: Logger) {
+  setLogger(logger: Logger): void {
     this.logger = logger;
   }
 }
