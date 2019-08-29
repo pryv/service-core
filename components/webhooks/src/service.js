@@ -61,13 +61,15 @@ class WebhooksService implements MessageSink {
     this.logger.info('Listeners for webhooks creation/deletion up.');
 
     await this.loadWebhooks();
-    this.logger.info('Loaded webhooks for ' + this.webhooks.size + ' users.');
+    this.logger.info('Loaded webhooks for ' + this.webhooks.size + ' user(s).');
 
-    const numWebhooks: number = await this.sendBootMessage();
+    const numWebhooks: number = await this.setStuff.call(this);
+
+    await this.sendBootMessage();
     this.logger.info(BOOT_MESSAGE + ' sent.');
 
     await this.initSubscribers();
-    this.logger.info(numWebhooks + ' webhooks listening to changes from core.');
+    this.logger.info(numWebhooks + ' webhook(s) listening to changes from core.');
 
   }
 
@@ -81,15 +83,27 @@ class WebhooksService implements MessageSink {
     await this.createListener.subscribe(WEBHOOKS_CREATE_CHANNEL);
   }
 
-  async sendBootMessage(): Promise<number> {
+  setStuff(): number {
     let numWebhooks: number = 0;
+    for (const entry of this.webhooks) {
+      const userWebhooks = entry[1];
+      userWebhooks.forEach(w => {
+        w.setApiVersion(this.apiVersion);
+        w.setSerial(this.serial);
+        w.setLogger(this.logger);
+        numWebhooks++;
+      });
+    }
+    return numWebhooks;
+  }
+
+  async sendBootMessage(): Promise<void> {
     for (const entry of this.webhooks) {
       await bluebird.all(entry[1].map(async (webhook) => {
         await webhook.send(BOOT_MESSAGE);
-        numWebhooks++;
+        
       }));
     }
-    return numWebhooks;
   }
 
   async initSubscribers(): Promise<void> {
@@ -177,8 +191,6 @@ async function initSubscriberForWebhook(username: string, apiVersion: string, se
     function channelForUser(username: string): string {
       return `${username}.wh1`;
     });
-  webhook.setApiVersion(apiVersion);
-  webhook.setSerial(serial)
   await natsSubscriber.subscribe(username);
   webhook.setNatsSubscriber(natsSubscriber);
 }
