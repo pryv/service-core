@@ -54,13 +54,21 @@ class WebhooksService implements MessageSink {
     this.apiVersion = await pv.version(); 
     this.serial = this.settings.get('service.info.serial').str();
 
+    this.logger.info('Loading service with version ' + this.apiVersion + ' and serial ' + this.serial + '.');
+
     await this.subscribeToDeleteListener();
     await this.subscribeToCreateListener();
+    this.logger.info('Listeners for webhooks creation/deletion up.');
+
     await this.loadWebhooks();
+    this.logger.info('Loaded webhooks for ' + this.webhooks.size + ' users.');
+
+    const numWebhooks: number = await this.sendBootMessage();
+    this.logger.info(BOOT_MESSAGE + ' sent.');
+
     await this.initSubscribers();
-    await this.sendBootMessage();
-    this.logger.info('started');
-    this.logger.info('loadin service with version: ' + this.apiVersion + ' and serial: ' + this.serial);
+    this.logger.info(numWebhooks + ' webhooks listening to changes from core.');
+
   }
 
   async subscribeToDeleteListener(): Promise<void> {
@@ -73,12 +81,15 @@ class WebhooksService implements MessageSink {
     await this.createListener.subscribe(WEBHOOKS_CREATE_CHANNEL);
   }
 
-  async sendBootMessage(): Promise<void> {
+  async sendBootMessage(): Promise<number> {
+    let numWebhooks: number = 0;
     for (const entry of this.webhooks) {
       await bluebird.all(entry[1].map(async (webhook) => {
         await webhook.send(BOOT_MESSAGE);
+        numWebhooks++;
       }));
     }
+    return numWebhooks;
   }
 
   async initSubscribers(): Promise<void> {

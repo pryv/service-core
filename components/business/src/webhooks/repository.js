@@ -42,15 +42,13 @@ class Repository {
       const webhooks = await bluebird.fromCallback(
         (cb) => this.storage.find(user, webhooksQuery, webhooksOptions, cb)
       );
-      // TODO remove log from production
-      if (webhooks != null && webhooks.length > 0) {
-        console.log('retrieved webhooks for', user);
-      }
       const userWebhooks = [];
       webhooks.forEach((w) => {
         userWebhooks.push(initWebhook(user, this, w));
       });
-      allWebhooks.set(user.username, userWebhooks);
+      if (userWebhooks.length > 0) {
+        allWebhooks.set(user.username, userWebhooks);
+      }
     }
   }
 
