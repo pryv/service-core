@@ -162,6 +162,10 @@ It is possible to extend the API and previews servers with your own code, via th
     - `callerId` (string): optional additional id passed after `accessToken` in auth after a separating space (auth format is thus `<access-token>[ <caller-id>]`)
     - `access` (object): the access object (see [API doc](https://api.pryv.com/reference/#access) for structure) 
 
+## Test IDs tagging
+
+To tag test cases with IDs run: `yarn tag-tests`. Please use check in [test-results](https://github.com/pryv/test-results-pryv.io) for possible duplicates.
+
 ## Test Results
 
 Test results are kept in the [test-results-pryv.io](https://github.com/pryv/test-results-pryv.io) repository.

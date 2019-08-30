@@ -15,6 +15,7 @@
     "release": "scripts/prepare_dist && node_modules/.bin/babel ./components --out-dir=dist/components --copy-files",
     "flow-coverage": "node_modules/.bin/flow-coverage-report -i 'components/**/*.js' -t html",
     "init-test-results-repo": "scripts/test-results/init_repo.sh",
+    "tag-tests": "node scripts/test-ids.js",
     "output-test-results": "node scripts/test-results/test-results.js",
     "upload-test-results": "scripts/test-results/upload.sh"
   },
