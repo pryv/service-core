@@ -4,11 +4,12 @@ const path = require('path');
 const componentsPath = path.resolve(__dirname, '../components');
 
 let testsCount = 0;
-let a = 0;
+let taggedTests = 0;
+
 readDir(componentsPath);
 
-console.log('found', testsCount);
-
+console.log('total tests', testsCount);
+console.log('tagged tests', taggedTests);
 
 function readDir(dirName) {
   fs.readdirSync(dirName, { withFileTypes: true }).forEach(function (fileName) {
@@ -36,6 +37,7 @@ function addIdToTests(file) {
         const tagged = sSplice(line, genTag());
         lines[i] = tagged;
         isTagged = true;
+        taggedTests++;
       }
       testsCount++;
     }
@@ -44,7 +46,6 @@ function addIdToTests(file) {
   if (isTagged) {
     const newContent = lines.join('\n');
     fs.writeFileSync(file, newContent);
-    a++;
   }
 }
 
