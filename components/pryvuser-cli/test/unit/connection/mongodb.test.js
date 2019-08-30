@@ -141,7 +141,7 @@ describe('Connection/MongoDB', () => {
         const user = await mongodb.findUser(userId);
         assert.isNull(user);
       });
-      it('deletes his data from MongoDB', async function() {
+      it('[47A6] deletes his data from MongoDB', async function() {
         await assertIsEmpty(eventsStorage, userId);
         await assertIsEmpty(streamsStorage, userId);
         await assertIsEmpty(accessesStorage, userId);
