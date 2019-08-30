@@ -403,8 +403,7 @@ describe('root', function() {
         });
     });
 
-    it(
-      '[TVPI] must execute the method calls containing events.get and ' +
+    it('[TVPI] must execute the method calls containing events.get and ' +
         'return the results',
       function(done) {
         const streamId = 'batch-call-streamId';
