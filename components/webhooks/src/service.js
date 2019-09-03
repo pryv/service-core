@@ -46,13 +46,13 @@ class WebhooksService implements MessageSink {
     this.logger = params.logger;
     this.repository = new WebhooksRepository(params.storage.webhooks, params.storage.users);
     this.settings = params.settings;
-    this.NATS_CONNECTION_URI = this.settings.get('nats.uri').str();
+    this.NATS_CONNECTION_URI = this.settings.get('nats:uri');
   }
 
   async start() {
     const pv = new ProjectVersion();
     this.apiVersion = await pv.version(); 
-    this.serial = this.settings.get('service.info.serial').str();
+    this.serial = this.settings.get('service:info:serial');
 
     this.logger.info('Loading service with version ' + this.apiVersion + ' and serial ' + this.serial + '.');
 

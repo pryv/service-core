@@ -31,14 +31,14 @@ class Application {
   }
   initLogger() {
     const settings = this.settings;
-    const loggerSettings = settings.getLogSettingsObject();
+    const loggerSettings = settings.get('logs');
     const logFactory = (this.logFactory = loggingSubsystem(
       loggerSettings
     ).getLogger);
 
     const logger = (this.logger = logFactory('webhooks'));
 
-    const consoleLevel = settings.get('logs.console.level').str();
+    const consoleLevel = settings.get('logs.console.level');
     logger.info(`Console logging is configured at level '${consoleLevel}'`);
   }
 
@@ -50,7 +50,7 @@ class Application {
 
     // Connect to MongoDB
     const storageLayer = produceStorageLayer(
-      settings.getMongodbSettings(),
+      settings.get('mongodb'),
       this.getLogger('mongodb')
     );
 

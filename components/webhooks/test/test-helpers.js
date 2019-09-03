@@ -23,9 +23,8 @@ const NullLogger = require('components/utils/src/logging').NullLogger;
 function produceMongoConnection(): Database {
   const settings = new Settings();
   const database = new Database(
-    settings.get('mongodb').obj(),
+    settings.get('mongodb'),
     new NullLogger());
-
   return database;
 }
 

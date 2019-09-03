@@ -52,6 +52,7 @@
     "morgan": "^1.8.1",
     "msgpack5": "^3.6.0",
     "multer": "^1.3.0",
+    "nconf": "^0.10.0",
     "node-foreman": "git://github.com/pryv/node-foreman.git#4eb501d443432878491b2d0387ded96e7c4154d0",
     "previews-server": "file:components/previews-server",
     "protobufjs": "^6.8.6",
