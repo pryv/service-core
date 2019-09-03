@@ -225,11 +225,9 @@ class Webhook implements MessageSink {
 
   addRun(run: Run): void {
     if (this.runCount > this.runsSize) {
-      const position = (this.runCount % this.runsSize) - 1;
-      this.runs[position] = run;
-    } else {
-      this.runs.push(run);
-    }
+      this.runs.splice(-1, 1);
+    } 
+    this.runs.unshift(run);
   }
 
   async save(): Promise<void> {

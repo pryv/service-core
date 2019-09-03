@@ -425,18 +425,16 @@ describe('Webhook', () => {
       it('[FYOR] should rotate the runs', async () => {
         await webhook.send(message);
         runs2 = _.cloneDeep(webhook.runs);
-        assert.deepEqual(runs1[1], runs2[1]);
-        assert.deepEqual(runs1[2], runs2[2]);
-        assert.notEqual(runs1[0], runs2[0]);
+        assert.deepEqual(runs2[2], runs1[1]);
+        assert.deepEqual(runs2[1], runs1[0]);
+        assert.deepEqual(runs2[0], webhook.lastRun);
       });
       it('[XDAF] should rotate the runs more', async () => {
         await webhook.send(message);
         runs3 = webhook.runs;
-        assert.equal(runs3[0].status, runs2[0].status);
-        assert.approximately(runs3[0].timestamp, runs2[0].timestamp, 100);
-        assert.notEqual(runs3[1], runs2[1]);
-        assert.notEqual(runs3[1], runs1[1]);
-        assert.notEqual(runs3[2], runs1[2]);
+        assert.deepEqual(runs3[1], runs2[0]);
+        assert.deepEqual(runs3[2], runs2[1]);
+        assert.deepEqual(runs3[0], webhook.lastRun);
       });
 
     });
