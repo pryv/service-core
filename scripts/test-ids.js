@@ -19,10 +19,14 @@ function readDir(dirName) {
       readDir(subPath);
     }
     
-    if (fileName.endsWith('test.js')) {
+    if (isTestFile(fileName)) {
       addIdToTests(subPath);
     }
   });
+}
+
+function isTestFile(filename) {
+  return filename.endsWith('.test.js'); 
 }
 
 function addIdToTests(file) {
