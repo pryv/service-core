@@ -1,5 +1,11 @@
 ## 1.4
 
+### 1.4.16
+
+New feature:
+
+ - Pryv.io API now support the Basic Authentication scheme
+
 ### 1.4.15
 
 - Official release of webhooks
