@@ -317,7 +317,7 @@ describe('root', function() {
   describe('Accept Basic Auth request', function () {
     var infoAccess = testData.accesses[1];
 
-    it('[0MI9] must accept https://token@user.domain/ AUTH schema', function (done) {
+    it('[0MI9] must accept the https://token@user.domain/ AUTH schema', function (done) {
       const fullurl = server.url.replace('http://', 'http://' + infoAccess.token + '@');
       superagent.get(fullurl + '/' + user.username + '/access-info').end(function (err, res) {
         
@@ -330,7 +330,7 @@ describe('root', function() {
       });
     });
 
-    it('[0MI0] must accept https://token:anystring@user.domain/ AUTH schema', function (done) {
+    it('[0MI0] must accept the https://token:anystring@user.domain/ AUTH schema', function (done) {
       const fullurl = server.url.replace('http://', 'http://' + infoAccess.token + ':anystring@');
       superagent.get(fullurl + '/' + user.username + '/access-info').end(function (err, res) {
 
@@ -341,6 +341,40 @@ describe('root', function() {
         res.status.should.eql(200);
         done();
       });
+    });
+
+    it('[3W3Y] must accept the https://token:@user.domain/ AUTH schema', function (done) {
+      const fullurl = server.url.replace('http://', 'http://' + infoAccess.token + ':@');
+      superagent.get(fullurl + '/' + user.username + '/access-info').end(function (err, res) {
+
+        if (err) {
+          should.not.exists(err.response.error);
+          return done(err);
+        }
+        res.status.should.eql(200);        
+        done();
+      });
+    });
+
+    it('[M54U] must return a 401 error when basic auth is missing using https://@user.domain/', function (done) {
+      const fullurl = server.url.replace('http://', 'http://@');
+      superagent.get(fullurl + '/' + user.username + '/access-info').end(function (err, res) {
+
+        should.exist(err);
+        res.status.should.eql(401);
+        done();
+      });
+    });
+
+    it('[TPH4] must return a 403 error when using https://:token@user.domain/', function(done) {
+      const fullurl = server.url.replace('http://', 'http://:' + infoAccess.token + '@');
+      superagent
+        .get(fullurl + '/' + user.username + '/access-info')
+        .end(function(err, res) {
+          should.exist(err);
+          res.status.should.eql(403);
+          done();
+        });
     });
   
   });
