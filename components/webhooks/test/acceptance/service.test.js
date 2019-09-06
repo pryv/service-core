@@ -19,6 +19,8 @@ const { Webhook, Repository } = require('components/business').webhooks;
 const repository = new Repository(webhooksStorage);
 const HttpServer = require('components/business/test/acceptance/webhooks/support/httpServer');
 
+const BOOT_MESSAGE = require('../../src/messages').BOOT_MESSAGE;
+
 describe('webhooks', function() {
 
   let user, username, 
@@ -104,12 +106,18 @@ describe('webhooks', function() {
         webhooksService = webhooksApp.webhooksService;
       });
 
-      it('should send a boot message to all active webhooks', async function() {
+      it('[YD6N] should send a boot message to all active webhooks', async function() {
         assert.equal(notificationsServer.getMessageCount(), 1);
         const activeWebhook = await repository.getById(user, webhook.id);
         assert.equal(activeWebhook.runCount, 1);
+        const messages = notificationsServer.getMessages();
+        assert.equal(messages[0], BOOT_MESSAGE);
+        const metas = notificationsServer.getMetas();
+        assert.equal(metas[0].apiVersion, webhooksService.apiVersion);
+        assert.equal(metas[0].serial, webhooksService.serial);
+        assert.approximately(metas[0].serverTime, Date.now() / 1000, 100);
       });
-      it('should send nothing to inactive webhooks', async function () {
+      it('[UM4T] should send nothing to inactive webhooks', async function () {
         const inactiveWebhook = await repository.getById(user, webhook2.id);
         assert.equal(inactiveWebhook.runCount, 0);
       });
@@ -167,12 +175,12 @@ describe('webhooks', function() {
             });
         });
 
-        it('should send API call to the notifications server', async function() {
+        it('[3TMH] should send API call to the notifications server', async function() {
           await awaiting.event(notificationsServer, 'received');
           assert.isTrue(notificationsServer.isMessageReceived());
         });
 
-        it('should update the Webhook\'s data to the storage', async function() {
+        it('[7N4L] should update the Webhook\'s data to the storage', async function() {
           const updatedWebhook = await repository.getById(user, webhook.id);
           assert.equal(updatedWebhook.runCount, 1, 'wrong runCount');
           const runs = updatedWebhook.runs;
@@ -199,7 +207,7 @@ describe('webhooks', function() {
       webhookId = res.body.webhook.id;
     });
 
-    it('should register a new webhook in the service through NATS', async function() {
+    it('[EXQD] should register a new webhook in the service through NATS', async function() {
       let isWebhookActive = false;
       while (! isWebhookActive) {
         const [ , webhook,  ] = webhooksService.getWebhook(username, webhookId);
@@ -256,7 +264,7 @@ describe('webhooks', function() {
           .set('Authorization', appAccessToken);
       });
 
-      it('should deactivate the current running webhook through NATS', async function() {
+      it('[904D] should deactivate the current running webhook through NATS', async function() {
         let isWebhookActive = true;
         while (isWebhookActive) {
           const webhooks = webhooksApp.webhooksService.webhooks.get(username);
@@ -270,17 +278,6 @@ describe('webhooks', function() {
         }
         assert.isFalse(isWebhookActive);
       });
-    });
-
-    describe('when deleting an access through API server', function() {
-
-      
-
-    });
-
-    describe('when an access expires', function() {
-    
-
     });
     
   });

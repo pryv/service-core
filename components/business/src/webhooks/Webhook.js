@@ -7,6 +7,8 @@ const timestamp = require('unix-timestamp');
 
 const NatsSubscriber = require('components/api-server/src/socket-io/nats_subscriber');
 import type { MessageSink } from 'components/api-server/src/socket-io/message_sink';
+import type Repository from './repository';
+import type { Logger } from 'components/utils/src/logging';
 
 export type Run = {
   status: number,
@@ -14,6 +16,11 @@ export type Run = {
 };
 
 export type WebhookState = 'active' | 'inactive';
+
+export type WebhookUpdate = {
+  state: WebhookState,
+  currentRetries: number,
+};
 
 class Webhook implements MessageSink {
   id: string;
@@ -42,9 +49,13 @@ class Webhook implements MessageSink {
   isSending: boolean;
 
   user: ?{};
-  repository: ?WebhooksRepository;
+  repository: ?Repository;
   NatsSubscriber: ?NatsSubscriber;
+
   apiVersion: string;
+  serial: string;
+
+  logger: Logger;
 
   constructor(params: {
     id?: string,
@@ -64,7 +75,7 @@ class Webhook implements MessageSink {
     modified?: number,
     modifiedBy?: string,
     user?: {},
-    webhooksRepository?: webhooksRepository,
+    webhooksRepository?: Repository,
     messageBuffer?: Set<string>
   }) {
     this.id = params.id || cuid();
@@ -130,6 +141,7 @@ class Webhook implements MessageSink {
         status = 0;
       }
     }
+    log(this, 'Webhook ' + this.id + ' run with status ' + status);
     this.isSending = false;
 
     if (hasError(status)) {
@@ -195,7 +207,8 @@ class Webhook implements MessageSink {
       messages: messages,
       meta: {
         apiVersion: this.apiVersion,
-        serverTime: timestamp.now()
+        serverTime: timestamp.now(),
+        serial: this.serial,
       }
     });
     return res;
@@ -212,11 +225,9 @@ class Webhook implements MessageSink {
 
   addRun(run: Run): void {
     if (this.runCount > this.runsSize) {
-      const position = (this.runCount % this.runsSize) - 1;
-      this.runs[position] = run;
-    } else {
-      this.runs.push(run);
-    }
+      this.runs.splice(-1, 1);
+    } 
+    this.runs.unshift(run);
   }
 
   async save(): Promise<void> {
@@ -283,11 +294,24 @@ class Webhook implements MessageSink {
     ]);
   }
 
-  setApiVersion(version: string) {
+  setApiVersion(version: string): void {
     this.apiVersion = version;
+  }
+
+  setSerial(serial: string): void {
+    this.serial = serial;
+  }
+
+  setLogger(logger: Logger): void {
+    this.logger = logger;
   }
 }
 module.exports = Webhook;
+
+function log(webhook: Webhook, msg: string): void {
+  if (webhook.logger == null) return;
+  webhook.logger.info(msg);
+}
 
 async function makeUpdate(fields?: Array<string>, webhook: Webhook): Promise<void> {
   if (webhook.repository == null) {

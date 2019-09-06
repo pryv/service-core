@@ -129,4 +129,21 @@ _.merge(config.schema, {
       'When false, trying to update protected fields will fail with a forbidden error.'
     }
   },
+  webhooks: {
+    minIntervalMs: {
+      format: Number,
+      default: 5000,
+      doc: 'The minimum interval between successive webhook notifications, in milliseconds.',
+    },
+    maxRetries: {
+      format: Number,
+      default: 5,
+      doc: 'The number of retried webhook notifications before it becomes inactive.',
+    },
+    runsSize: {
+      format: Number,
+      default: 20,
+      doc: 'The size of the runs array.'
+    },
+  },
 });

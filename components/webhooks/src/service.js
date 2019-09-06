@@ -18,12 +18,12 @@ const WebhooksRepository = require('components/business/src/webhooks/repository'
 
 const { ProjectVersion } = require('components/middleware/src/project_version');
 
+const BOOT_MESSAGE = require('./messages').BOOT_MESSAGE;
+
 type UsernameWebhook = {
   username: string,
   webhook: Webhook,
 };
-
-const BOOT_MESSAGE = 'boot';
 
 class WebhooksService implements MessageSink {
 
@@ -46,19 +46,31 @@ class WebhooksService implements MessageSink {
     this.logger = params.logger;
     this.repository = new WebhooksRepository(params.storage.webhooks, params.storage.users);
     this.settings = params.settings;
-    this.NATS_CONNECTION_URI = this.settings.get('nats.uri').str();
+    this.NATS_CONNECTION_URI = this.settings.get('nats:uri');
   }
 
   async start() {
+    const pv = new ProjectVersion();
+    this.apiVersion = await pv.version(); 
+    this.serial = this.settings.get('service:info:serial');
+
+    this.logger.info('Loading service with version ' + this.apiVersion + ' and serial ' + this.serial + '.');
+
     await this.subscribeToDeleteListener();
     await this.subscribeToCreateListener();
+    this.logger.info('Listeners for webhooks creation/deletion up.');
+
     await this.loadWebhooks();
-    await this.initSubscribers();
+    this.logger.info('Loaded webhooks for ' + this.webhooks.size + ' user(s).');
+
+    const numWebhooks: number = await this.setMeta.call(this);
+
     await this.sendBootMessage();
-    this.logger.info('started');
-    const pv = new ProjectVersion(); 
-    this.apiVersion = await pv.version(); 
-    console.log('loadin service with version', this.apiVersion);
+    this.logger.info(BOOT_MESSAGE + ' sent.');
+
+    await this.initSubscribers();
+    this.logger.info(numWebhooks + ' webhook(s) listening to changes from core.');
+
   }
 
   async subscribeToDeleteListener(): Promise<void> {
@@ -71,18 +83,35 @@ class WebhooksService implements MessageSink {
     await this.createListener.subscribe(WEBHOOKS_CREATE_CHANNEL);
   }
 
+  setMeta(): number {
+    let numWebhooks: number = 0;
+    for (const entry of this.webhooks) {
+      const userWebhooks = entry[1];
+      userWebhooks.forEach(w => {
+        w.setApiVersion(this.apiVersion);
+        w.setSerial(this.serial);
+        w.setLogger(this.logger);
+        numWebhooks++;
+      });
+    }
+    return numWebhooks;
+  }
+
   async sendBootMessage(): Promise<void> {
     for (const entry of this.webhooks) {
       await bluebird.all(entry[1].map(async (webhook) => {
         await webhook.send(BOOT_MESSAGE);
+        
       }));
     }
   }
 
   async initSubscribers(): Promise<void> {
     for(const entry of this.webhooks) {
-      const f = initSubscriberForWebhook.bind(this, entry[0]);
-      await bluebird.all(entry[1].map(f));
+      const username: string = entry[0];
+      const webhooks: Array<Webhook> = entry[1];
+      const f = initSubscriberForWebhook.bind(this, username, this.apiVersion, this.serial);
+      await bluebird.all(webhooks.map(f));
     }
   }
 
@@ -114,7 +143,7 @@ class WebhooksService implements MessageSink {
       this.webhooks.set(username, userWebhooks);
     }
     userWebhooks.push(webhook);
-    await initSubscriberForWebhook.call(this, username, webhook);
+    await initSubscriberForWebhook.call(this, username, this.apiVersion, this.serial, webhook);
     this.logger.info(`Loaded webhook ${webhook.id} for ${username}`);
   }
 
@@ -159,14 +188,13 @@ class WebhooksService implements MessageSink {
 
 }
 
-async function initSubscriberForWebhook(username: string, webhook: Webhook, apiVersion: string): Promise<void> {
+async function initSubscriberForWebhook(username: string, apiVersion: string, serial: string, webhook: Webhook): Promise<void> {
   const natsSubscriber = new NatsSubscriber(this.NATS_CONNECTION_URI, webhook, 
     function channelForUser(username: string): string {
       return `${username}.wh1`;
     });
   await natsSubscriber.subscribe(username);
   webhook.setNatsSubscriber(natsSubscriber);
-  webhook.setApiVersion.call(webhook, apiVersion);
 }
 
 module.exports = WebhooksService;

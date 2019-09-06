@@ -134,11 +134,8 @@ class Application {
   }
 
   getWebhooksSettings(): WebhooksSettingsHolder {
-    //const settings = this.settings;
-    return {
-      minIntervalMs: 5000,
-      maxRetries: 5,
-    };
+    const settings = this.settings;
+    return settings.get('webhooks').obj();
   }
   
   getServiceInfoSettings(): ConfigAccess {

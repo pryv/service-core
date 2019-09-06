@@ -26,7 +26,7 @@ var collectionInfo = {
  */
 function PasswordResetRequests(database, options) {
   this.database = database;
-  this.options = _.extend({
+  this.options = _.merge({
     maxAge: 1000 * 60 * 60 // one hour
   }, options);
 }

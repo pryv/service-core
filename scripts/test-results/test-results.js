@@ -5,6 +5,7 @@ const moment = require('moment');
 const mkdirp = require('mkdirp');
 
 const RESULTS_FOLDER = path.join(__dirname, '/../../test_results/service-core/');
+const ROOT_FOLDER = path.join(__dirname, '/../..');
 
 try {
   fs.statSync(RESULTS_FOLDER);
@@ -30,9 +31,6 @@ fs.readdirSync(componentsPath).forEach(function (name) {
   if (!fs.existsSync(path.join(subPath, 'package.json'))) {
     return;
   }
-  
-  // produces stdout output - makes output unparsable as JSON
-  if (name === 'pryvuser-cli' || name === 'storage') return;
 
   // contains no test script which produces error - makes output unparsable as JSON
   if (name === 'test-helpers' || name === 'errors') return;
@@ -43,12 +41,13 @@ fs.readdirSync(componentsPath).forEach(function (name) {
     '--logs:console:active=false',
     '--timeout 10000',
     '--reporter=json',
+    '--exit',
     'test/**/*.test.js'], {
       env: process.env,
       cwd: subPath,
     });
-
-  const componentResults = JSON.parse(res.stdout.toString());
+  const output = removeStdout(res.stdout.toString());
+  const componentResults = JSON.parse(output);
   componentResults.componentName = name;
   test_results.push(componentResults);
 });
@@ -59,6 +58,19 @@ fs.writeFileSync(FULL_OUTPUT_FILENAME, JSON.stringify(test_results, null, 2));
 linkToLatestResult();
 linkToLatestVersion();
 
+function removeStdout(output) {
+  let lines = output.split('\n');
+  const len = lines.length;
+  let start = 0;
+  for (let i=0; i<len; i++) {
+    if (lines[i].startsWith('{')) {
+      start = i;
+      break;
+    }
+  }
+  return lines.slice(start).join('\n');
+}
+
 function pad(str) {
   //                total len           - a space - the name
   const targetLen = process.stdout.columns - 1 - str.length;
@@ -68,7 +80,7 @@ function pad(str) {
 function getReleaseVersion() {
   const res = childProcess.spawnSync('git', ['describe'], {
     env: process.env,
-    cwd: path.join(RESULTS_FOLDER, '/..'),
+    cwd: ROOT_FOLDER,
   });
 
   const gitTagDirty = res.stdout.toString();

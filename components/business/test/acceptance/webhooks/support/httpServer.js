@@ -30,7 +30,7 @@ class HttpServer extends EventEmitter {
 
     const that = this;
     app.use(bodyParser.json());
-    app.post(path, (req, res: express$Response) => {
+    app.post(path, (req: express$Request, res: express$Response) => {
 
       this.emit('received');
       if (that.responseDelay == null) {

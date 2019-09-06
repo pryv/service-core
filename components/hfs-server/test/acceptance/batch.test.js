@@ -186,7 +186,7 @@ describe('Storing BATCH data in a HF series', function() {
       });
     });
     
-    it("[QHM5] should fail without 'Authorization' header", async () => {
+    it('[QHM5] should fail without \'Authorization\' header', async () => {
       const data = {
         'format': 'seriesBatch',
         'data': [

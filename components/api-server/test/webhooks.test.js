@@ -90,18 +90,18 @@ describe('webhooks', () => {
         webhooks = res.body.webhooks;
       });
 
-      it('should return a status 200 with a webhooks object which is an array', () => {
+      it('[R5KD] should return a status 200 with a webhooks object which is an array', () => {
         validation.check(response, {
           schema: methodsSchema.get.result,
           status: 200,
         });
       });
-      it('should fetch all webhooks reachable by an app token', () => {
+      it('[67CX] should fetch all webhooks reachable by an app token', () => {
         webhooks.forEach(w => {
           assert.equal(w.accessId, appAccessId1);
         });
       });
-      it('should not fetch any Webhook outside its scope', () => {
+      it('[WSJG] should not fetch any Webhook outside its scope', () => {
         webhooks.forEach(w => {
           assert.notEqual(w.accessId, appAccessId2);
         });
@@ -119,14 +119,14 @@ describe('webhooks', () => {
         webhooks = res.body.webhooks;
       });
 
-      it('should return a status 200 with a webhooks object which is an array', () => {
+      it('[6MNC] should return a status 200 with a webhooks object which is an array', () => {
         validation.check(response, {
           schema: methodsSchema.get.result,
           status: 200,
         });
       });
 
-      it('should fetch all webhooks for the user', () => {
+      it('[4YFQ] should fetch all webhooks for the user', () => {
         let found1 = false;
         let found2 = false; 
         webhooks.forEach(w => {
@@ -152,7 +152,7 @@ describe('webhooks', () => {
         response = res;
       });
 
-      it('should return a status 403 with a forbidden error', () => {
+      it('[NC0J] should return a status 403 with a forbidden error', () => {
         validation.checkErrorForbidden(response);
       });
     });
@@ -215,7 +215,7 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('should return a status 200 with a webhook object', () => {
+        it('[XMB7] should return a status 200 with a webhook object', () => {
           validation.check(response, {
             schema: methodsSchema.getOne.result,
             status: 200,
@@ -233,7 +233,7 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('should return a status 403 with a forbidden error', () => {
+        it('[BDC2] should return a status 403 with a forbidden error', () => {
           validation.checkErrorForbidden(response);
         });
       });
@@ -248,7 +248,7 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('should return a status 404 with a unknown resource error', () => {
+        it('[O6MM] should return a status 404 with a unknown resource error', () => {
           validation.checkErrorUnknown(response);
         });
       });
@@ -264,7 +264,7 @@ describe('webhooks', () => {
         response = res;
       });
 
-      it('should return a status 200 with a webhook object', () => {
+      it('[D8YQ] should return a status 200 with a webhook object', () => {
         validation.check(response, {
           schema: methodsSchema.getOne.result,
           status: 200,
@@ -282,7 +282,7 @@ describe('webhooks', () => {
         response = res;
       });
 
-      it('should return a status 403 with a forbidden error', () => {
+      it('[604H] should return a status 403 with a forbidden error', () => {
         validation.checkErrorForbidden(response);
       });
     });
@@ -339,7 +339,7 @@ describe('webhooks', () => {
           }).forApi();
         });
 
-        it('should return a status 201 with the created webhook', () => {
+        it('[Z1XD] should return a status 201 with the created webhook', () => {
           validation.check(response, {
             status: 201,
             schema: methodsSchema.create.result,
@@ -348,7 +348,7 @@ describe('webhooks', () => {
             sanitizeTarget: 'webhook',
           });
         });
-        it('should save it to the storage', async () => {
+        it('[XKLU] should save it to the storage', async () => {
           const storedWebhook = await bluebird.fromCallback(
             cb => storage.findOne({ id: username }, { id: { $eq: webhook.id } }, {}, cb)
           );
@@ -368,7 +368,7 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('should return a status 400 with a collision error error', () => {
+        it('[60OQ] should return a status 400 with a collision error error', () => {
           validation.checkError(response, {
             status: 400,
             id: ErrorIds.ItemAlreadyExists
@@ -391,23 +391,10 @@ describe('webhooks', () => {
             response = res;
           });
 
-          it('should return a status 400 with a invalid parameters error', () => {
+          it('[3VIU] should return a status 400 with a invalid parameters error', () => {
             validation.checkErrorInvalidParams(response);
           });
         });
-
-        describe('when minIntervalMs is smaller that the system minimum', () => {
-          
-          it('should return an error');
-
-        });
-
-        describe('when maxRetries is bigger that the allowed maxmum', () => {
-
-          it('should return an error');
-
-        });
-
 
       });
     });
@@ -425,7 +412,7 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('should return a status 403 with a forbidden error', () => {
+        it('[LN79] should return a status 403 with a forbidden error', () => {
           validation.checkErrorForbidden(response);
         });
 
@@ -444,7 +431,7 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('should return a status 403 with a forbidden error', () => {
+        it('[3AZO] should return a status 403 with a forbidden error', () => {
           validation.checkErrorForbidden(response);
         });
       });
@@ -532,7 +519,7 @@ describe('webhooks', () => {
             }).forApi();
           });
 
-          it('should return a status 200 with the updated webhook', () => {
+          it('[C9FU] should return a status 200 with the updated webhook', () => {
             validation.check(response, {
               status: 200,
               schema: methodsSchema.update.result,
@@ -541,7 +528,7 @@ describe('webhooks', () => {
               sanitizeTarget: 'webhook',
             });
           });
-          it('should apply the changes to the storage', async () => {
+          it('[JSOH] should apply the changes to the storage', async () => {
             const storedWebhook = await bluebird.fromCallback((cb) =>
               storage.findOne({ id: username }, { id: { $eq: webhookId1 } }, {}, cb)
             );
@@ -566,7 +553,7 @@ describe('webhooks', () => {
             response = res;
           });
 
-          it('should return a status 403 with an invalid parameter error', () => {
+          it('[PW4I] should return a status 403 with an invalid parameter error', () => {
             validation.checkErrorForbidden(response);
           });
         });
@@ -586,7 +573,7 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('should return a status 403 with a forbidden error', () => {
+        it('[8T2G] should return a status 403 with a forbidden error', () => {
           validation.checkErrorForbidden(response);
         });
       });
@@ -603,7 +590,7 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('should return a status 404 with an unknown resource error', () => {
+        it('[AR5R] should return a status 404 with an unknown resource error', () => {
           validation.checkErrorUnknown(response);
         });
 
@@ -625,7 +612,7 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('should return a status 200 with the updated webhook', () => {
+        it('[LCKN] should return a status 200 with the updated webhook', () => {
           validation.check(response, {
             status: 200,
             schema: methodsSchema.update.result,
@@ -650,7 +637,7 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('should return a status 403 with a forbidden error', () => {
+        it('[TMIZ] should return a status 403 with a forbidden error', () => {
           validation.checkErrorForbidden(response);
         });
       });
@@ -721,7 +708,7 @@ describe('webhooks', () => {
           };
         });
 
-        it('should return a status 200 with the webhook deletion', () => {
+        it('[A0CG] should return a status 200 with the webhook deletion', () => {
           validation.check(response, {
             status: 200,
             schema: methodsSchema.del.result,
@@ -729,7 +716,7 @@ describe('webhooks', () => {
           });
         });
 
-        it('should delete it in the storage', async () => {
+        it('[KA98] should delete it in the storage', async () => {
           const deletedWebhook = await bluebird.fromCallback((cb) =>
             storage.findOne({ id: username }, { id: { $eq: webhookId1 } }, {}, cb)
           );
@@ -747,7 +734,7 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('should return a status 404 with an unknown resource error', () => {
+        it('[ZPRT] should return a status 404 with an unknown resource error', () => {
           validation.checkErrorUnknown(response);
         });
       });
@@ -762,7 +749,7 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('should return a status 404 with an unknown resource error', () => {
+        it('[5UX7] should return a status 404 with an unknown resource error', () => {
           validation.checkErrorUnknown(response);
         });
       });
@@ -777,7 +764,7 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('should return a status 403 with a forbidden error', () => {
+        it('[7O0F] should return a status 403 with a forbidden error', () => {
           validation.checkErrorForbidden(response);
         });
       });
@@ -798,7 +785,7 @@ describe('webhooks', () => {
           };
         });
 
-        it('should return a status 200 with the webhook deletion', () => {
+        it('[P6X4] should return a status 200 with the webhook deletion', () => {
           validation.check(response, {
             status: 200,
             schema: methodsSchema.del.result,
@@ -819,7 +806,7 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('should return a status 403 with a forbidden error', () => {
+        it('[OZZB] should return a status 403 with a forbidden error', () => {
           validation.checkErrorForbidden(response);
         });
 
@@ -894,14 +881,14 @@ describe('webhooks', () => {
               .set('Authorization', appAccessToken1);
           });
 
-          it('should return a status 200 with a webhook object', () => {
+          it('[ZM2B] should return a status 200 with a webhook object', () => {
             validation.check(response, {
               schema: methodsSchema.test.result,
               status: 200,
             });
           });
 
-          it('should send a POST request to the URL', async () => {
+          it('[Q7KL] should send a POST request to the URL', async () => {
             assert.isTrue(notificationsServer.isMessageReceived());
           }).timeout(1000);
         });
@@ -917,7 +904,7 @@ describe('webhooks', () => {
               .set('Authorization', appAccessToken1);
           });
 
-          it('should return a status 400 with an error object', () => {
+          it('[KLRO] should return a status 400 with an error object', () => {
             validation.check(response, {
               status: 400,
               id: ErrorIds.UnknownReferencedResource,
@@ -936,7 +923,7 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('should return a status 404 with a unknown resource error', () => {
+        it('[KXA8] should return a status 404 with a unknown resource error', () => {
           validation.checkErrorUnknown(response);
         });
       });
@@ -950,7 +937,7 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('should return a status 403 with a forbidden error', () => {
+        it('[KZJD] should return a status 403 with a forbidden error', () => {
           validation.checkErrorForbidden(response);
         });
       });
@@ -969,14 +956,14 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('should return a status 200 with a webhook object', () => {
+        it('[HYZZ] should return a status 200 with a webhook object', () => {
           validation.check(response, {
             schema: methodsSchema.test.result,
             status: 200,
           });
         });
 
-        it('should send a POST request to the URL', async () => {
+        it('[SBI7] should send a POST request to the URL', async () => {
           assert.isTrue(notificationsServer.isMessageReceived());
         }).timeout(1000);
       });
@@ -993,7 +980,7 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('should return a status 403 with a forbidden error', () => {
+        it('[J2PL] should return a status 403 with a forbidden error', () => {
           validation.checkErrorForbidden(response);
         });
       });

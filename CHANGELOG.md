@@ -1,6 +1,19 @@
 ## 1.4
 
+### 1.4.15
+
+- Official release of webhooks
+
+### 1.4.14
+
+- Preview release of webhooks
+
+### 1.4.13
+
+- Fix config loading in pryv-cli
+
 ### 1.4.12
+
 - Add route /service/info who provides a unified way for third party services to access the necessary information related to a Pryv.io platform.
 
 ### 1.4.11

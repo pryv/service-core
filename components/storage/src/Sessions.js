@@ -27,7 +27,7 @@ var collectionInfo = {
  */
 function Sessions(database, options) {
   this.database = database;
-  this.options = _.extend({
+  this.options = _.merge({
     maxAge: 1000 * 60 * 60 * 24 * 14 // two weeks
   }, options);
 }
