@@ -384,8 +384,8 @@ class Server {
     return new url.URL(path || '', this.baseUrl).toString();
   }
 
-  request() {
-    return supertest(this.baseUrl);
+  request(newUrl?: string) {
+    return supertest(newUrl || this.baseUrl);
   }
 }
 
