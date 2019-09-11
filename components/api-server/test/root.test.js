@@ -384,7 +384,7 @@ describe('root', function() {
       eventsNotifCount++;
     });*/
 
-    it('must be able to create streams with non-star permissions access', async function() {
+    it('[2IV3] must be able to create streams with non-star permissions access', async function() {
       const midParentId = 'sonofParent';
       const calls = [
         {
