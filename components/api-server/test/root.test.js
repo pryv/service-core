@@ -1,6 +1,6 @@
 'use strict';
 
-/*global describe, before, after, afterEach, it */
+/*global describe, before, after, it */
 
 require('./test-helpers');
 const helpers = require('./helpers');
@@ -13,11 +13,12 @@ const chai = require('chai');
 const assert = chai.assert;
 const cuid = require('cuid');
 const bluebird = require('bluebird');
+const superagent = require('superagent'); // for basic auth
 
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
-describe('rootABC', function() {
+describe('root', function() {
   let user, user2;
 
   let mongoFixtures;
@@ -106,34 +107,6 @@ describe('rootABC', function() {
     user2 = user2.attrs;
   });
 
-  /*
-  before(function(done) {
-    async.series(
-      [
-        testData.resetUsers,
-        testData.resetAccesses,
-        testData.resetStreams,
-        server.ensureStarted.bind(server, helpers.dependencies.settings),
-        function(stepDone) {
-          request = helpers.request(server.url);
-          request.login(user, stepDone);
-        },
-        function(stepDone) {
-          helpers.dependencies.storage.user.accesses.findOne(
-            user,
-            { token: request.token },
-            null,
-            function(err, access) {
-              accessId = access.id;
-              stepDone();
-            }
-          );
-        },
-      ],
-      done
-    );
-  });*/
-
   describe('GET /', function() {
     it('[UA7B] should return basic server meta information as JSON when requested', async function() {
       const res = await server.request()
@@ -163,9 +136,6 @@ describe('rootABC', function() {
       }
     });
   });
-
-  // warning: the following tests assume the server instance is started, which
-  // is done in the previous test above
 
   describe('All requests:', function() {
     it('[TJHO] should return correct common HTTP headers + meta data in response body', async function() {
@@ -350,51 +320,56 @@ describe('rootABC', function() {
 
   
 
-  describe.skip('Accept Basic Auth request', function () {
+  describe('Accept Basic Auth request', function () {
 
-    let urlBackup;
-    before(function() {
-      urlBackup = server.baseUrl;
+    let url;
+    before(function () {
+      url = server.baseUrl;
     });
-    afterEach(function() {
-      server.baseUrl = urlBackup;
-    });
+
+    // I didn't manage to make these tests work with server.request() which returns
+    // an instance of supertest, so I have used superagent instead.
 
     it('[0MI9] must accept the https://token@user.domain/ AUTH schema', async function () {
-      const fullurl = server.baseUrl.replace('http://', 'http://' + sharedAccess.token + '@');
-      console.log('first talkin to', fullurl);
-      const res = await server.request(fullurl)
-        .get('/' + user.username + '/access-info');
+      const fullurl = url.replace('http://', 'http://' + sharedAccess.token + '@');
+      const res = await superagent
+        .get(fullurl + '/' + user.username + '/access-info');
       assert.equal(res.status, 200);
     });
 
     it('[0MI0] must accept the https://token:anystring@user.domain/ AUTH schema', async function () {
-      const fullurl = server.baseUrl.replace('http://', 'http://' + sharedAccess.token + ':anystring@');
-      console.log('then talkin to', fullurl);
-      const res = await server.request(fullurl)
+      const fullurl = url.replace('http://', 'http://' + sharedAccess.token + ':anystring@');
+      const res = await superagent
         .get(fullurl + '/' + user.username + '/access-info');
       assert.equal(res.status, 200);
     });
 
     it('[3W3Y] must accept the https://token:@user.domain/ AUTH schema', async function () {
-      const fullurl = server.baseUrl.replace('http://', 'http://' + sharedAccess.token + ':@');
-      const res = await server.request(fullurl)
+      const fullurl = url.replace('http://', 'http://' + sharedAccess.token + ':@');
+      const res = await superagent
         .get(fullurl + '/' + user.username + '/access-info');
-      res.status.should.eql(200);        
+      assert.equal(res.status, 200);        
     });
 
     it('[M54U] must return a 401 error when basic auth is missing using https://@user.domain/', async function () {
-      const fullurl = server.baseUrl.replace('http://', 'http://@');
-      const res = await server.request(fullurl)
-        .get(fullurl + '/' + user.username + '/access-info');
-      res.status.should.eql(401);
+      const fullurl = url.replace('http://', 'http://@');
+      try {
+        await superagent
+          .get(fullurl + '/' + user.username + '/access-info');
+      } catch (e) {
+        assert.equal(e.response.status, 401);
+      }
+      
     });
 
     it('[TPH4] must return a 403 error when using https://:token@user.domain/', async function() {
-      const fullurl = server.basUrl.replace('http://', 'http://:' + sharedAccess.token + '@');
-      const res = await server.request(fullurl)
-        .get(fullurl + '/' + user.username + '/access-info');
-      res.status.should.eql(403);
+      const fullurl = url.replace('http://', 'http://:' + sharedAccess.token + '@');
+      try {
+        await superagent
+          .get(fullurl + '/' + user.username + '/access-info');
+      } catch (e) {
+        assert.equal(e.response.status, 403);
+      }
     });
   
   });
@@ -410,13 +385,34 @@ describe('rootABC', function() {
     });*/
 
     it('must be able to create streams with non-star permissions access', async function() {
+      const midParentId = 'sonofParent';
       const calls = [
         {
+          method: 'streams.create',
           params: {
-            streamId: 'yolo'
+            parentId: stream.id,
+            id: midParentId,
+            name: 'Son of Parent',
+          }
+        },
+        {
+          method: 'streams.create',
+          params: {
+            parentId: midParentId,
+            id: 'whatever-123',
+            name: 'grand son stream',
           }
         }
       ];
+      const res = await server.request()
+        .post('/' + username) 
+        .set('Authorization', sharedAccessToken)
+        .send(calls);
+      assert.equal(res.status, 200);
+      const results = res.body.results;
+      assert.exists(results);
+      assert.exists(results[0].stream);
+      assert.exists(results[1].stream);
     });
 
     it('[ORT3] must execute the given method calls and return the results', async function() {
