@@ -51,10 +51,13 @@ module.exports = function (api: API, logging: Logger, storageLayer: StorageLayer
     async function executeCall(call: ApiCall) {
       // Clone context to avoid potential side effects
       const freshContext: MethodContext = _.cloneDeep(context);
+      const access = freshContext.access;
       try {
         // Reload streams tree since a previous call in this batch
         // may have created a new stream.
         await freshContext.retrieveStreams(storageLayer);
+        const streams = freshContext.streams;
+        if (!access.isPersonal()) access.loadPermissions(streams);
         // Perform API call
         const result: Result = await bluebird.fromCallback(
           (cb) => api.call(call.method, freshContext, call.params, cb));
