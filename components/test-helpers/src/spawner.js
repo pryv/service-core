@@ -3,7 +3,9 @@
 const url = require('url');
 const child_process = require('child_process');
 const net = require('net');
+const EventEmitter = require('events');
 
+const axon = require('axon');
 const lodash = require('lodash');
 const msgpack = require('msgpack5')();
 const bluebird = require('bluebird');
@@ -22,7 +24,7 @@ const PRESPAWN_LIMIT = 2;
 class SpawnContext {
   childPath: string; 
   
-  basePort: number; 
+  basePort: number; // used for HTTP server and Axon server
   shuttingDown: boolean; 
   
   pool: Array<ProcessProxy>;
@@ -74,6 +76,8 @@ class SpawnContext {
     // Find a port to use
     // TODO Free ports once done.
     const port = await this.allocatePort(); 
+
+    const axonPort = await this.allocatePort();
     
     // Obtain a process proxy
     const process = this.getProcess(); 
@@ -81,8 +85,17 @@ class SpawnContext {
     // Create settings for this new instance.
     const settings = {
       http: {
-        port: port,           // use this port for http/express
+        port: port // use this port for http/express
       },
+      tcpMessaging: {
+        enabled: true,
+        // for spawner, we boot api-servers before their Server holder objects
+        // so the api-server needs to listen on a socket before Server facade
+        // connects to it. It's the inverse for InstanceManager
+        pubConnectInsteadOfBind: false,
+        port: axonPort,
+        host: 'localhost'
+      }
     };
     
     // Specialize the server we've started using the settings above.
@@ -91,17 +104,17 @@ class SpawnContext {
     debug(`spawned a child on port ${port}`);
     
     // Return to our caller - server should be up and answering at this point. 
-    return new Server(port, process);
+    return new Server(port, process, axonPort);
   }
   
   // Returns the next free port to use for testing. 
   //
-  async allocatePort(): Promise<number> {
+  async allocatePort(port?: number): Promise<number> {
     
     // Infinite loop, see below for exits. 
     while (true) { // eslint-disable-line no-constant-condition
       // Simple strategy: Keep increasing port numbers. 
-      const nextPort = this.basePort; 
+      const nextPort = port || this.basePort; 
       this.basePort += 1; 
 
       // Exit 1: If this fires, we might reconsider the simple implementation
@@ -351,15 +364,31 @@ class ProcessProxy {
 
 // Public facade to the servers we spawn. 
 //
-class Server {
+class Server extends EventEmitter {
   port: number;
+  axonPort: number;
   baseUrl: string; 
   process: ProcessProxy;
+  messagingSocket: mixed;
   
-  constructor(port: number, proxy: ProcessProxy) {
+  constructor(port: number, proxy: ProcessProxy, axonPort: number) {
+    super();
     this.port = port; 
+    this.axonPort = axonPort;
     this.baseUrl = `http://localhost:${port}`;
-    this.process = proxy; 
+    this.process = proxy;
+    this.listen();
+  }
+
+  listen(): void {
+    const host = this.host || 'localhost';
+    this.messagingSocket = axon.socket('sub-emitter');
+    const mSocket = this.messagingSocket;
+    mSocket.connect(+this.axonPort, host);
+    
+    mSocket.on('*', function (message, data) {
+      this.emit(message, data);
+    }.bind(this));
   }
   
   // Stops the server as soon as possible. Eventually returns either `true` (for
