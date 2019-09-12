@@ -88,7 +88,6 @@ describe('root', function() {
     await user.session(personalAccessToken);
     user = user.attrs;
 
-
     user2 = await mongoFixtures.user(username2, {
       id: 'u_2',
       password: 't3st-Numb3r',
@@ -113,7 +112,7 @@ describe('root', function() {
         .get('/')
         .set('Accept', 'application/json');
       assert.equal(res.status, 200);
-      assert.isAbove(res.header['content-type'].indexOf('application/json'), -1);
+      assert.include(res.header['content-type'], 'application/json');
       validation.checkMeta(res.body);
     });
 
@@ -122,18 +121,14 @@ describe('root', function() {
         .get('/')
         .set('Accept', 'text/html');
       assert.equal(res.status, 200);
-      assert.isAbove(res.header['content-type'].indexOf('text/html'), -1);
+      assert.include(res.header['content-type'], 'text/html');
       assert.match(res.text, /Pryv API/);
     });
 
     it('[TS3D] should return an error if trying to access an unknown user account', async function() {
-      try {
-        await server.request()
-          .get('/unknown_user/events');
-      } catch (err) {
-        assert.exists(err);
-        assert.equal(err.response.status, 404);
-      }
+      const res = await server.request()
+        .get('/unknown_user/events');
+      assert.equal(res.status, 404); // 404 does not throw
     });
   });
 
@@ -268,9 +263,8 @@ describe('root', function() {
         );
       });
       assert.exists(access.lastUsed); //
-      assert.equal(Math.round(access.lastUsed), 
-        Math.round(expectedTime)
-      );
+      assert.approximately(Math.round(access.lastUsed), 
+        Math.round(expectedTime), 5);
 
       assert.exists(access.calls);
       assert.exists(access.calls[calledMethodKey]);
@@ -356,6 +350,7 @@ describe('root', function() {
       try {
         await superagent
           .get(fullurl + '/' + user.username + '/access-info');
+        assert.fail('this should have thrown');
       } catch (e) {
         assert.equal(e.response.status, 401);
       }
@@ -367,6 +362,7 @@ describe('root', function() {
       try {
         await superagent
           .get(fullurl + '/' + user.username + '/access-info');
+        assert.fail('this should have thrown');
       } catch (e) {
         assert.equal(e.response.status, 403);
       }
@@ -377,13 +373,18 @@ describe('root', function() {
   
   describe('POST / (i.e. batch call)', function() {
 
-    const testType = 'test/test';
-    /*
-    let eventsNotifCount = 0;
-    server.on('events-changed', function() {
-      eventsNotifCount++;
-    });*/
+    let eventsNotifCount;
+    before(function () {
+      eventsNotifCount = 0;
+      
+      server.on('events-changed', function () {
+        eventsNotifCount++;
+      });
+    });
 
+    const testType = 'test/test';
+
+    // fixes #198
     it('[2IV3] must be able to create streams with non-star permissions access', async function() {
       const midParentId = 'sonofParent';
       const calls = [
@@ -483,7 +484,7 @@ describe('root', function() {
       );
       assert.exists(results[2].error);
       assert.equal(results[2].error.id, ErrorIds.UnknownReferencedResource);
-      //eventsNotifCount.should.eql(2, 'events notifications');
+      assert.equal(eventsNotifCount, 2, 'events notifications');
     });
 
     it('[TVPI] must execute the method calls containing events.get and ' +
@@ -548,7 +549,7 @@ describe('root', function() {
 
       const getEventsResult = results[2];
       assert.exists(getEventsResult.events);
-      //assert.exists(getEventsResult.eventDeletions);
+      assert.exists(getEventsResult.eventDeletions);
     }
     );
 
