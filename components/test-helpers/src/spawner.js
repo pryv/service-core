@@ -370,18 +370,20 @@ class Server extends EventEmitter {
   baseUrl: string; 
   process: ProcessProxy;
   messagingSocket: mixed;
+  host: string;
   
   constructor(port: number, proxy: ProcessProxy, axonPort: number) {
     super();
     this.port = port; 
     this.axonPort = axonPort;
-    this.baseUrl = `http://localhost:${port}`;
+    this.host = 'localhost';
+    this.baseUrl = `http://${this.host}:${port}`;
     this.process = proxy;
     this.listen();
   }
 
   listen(): void {
-    const host = this.host || 'localhost';
+    const host = this.host;
     this.messagingSocket = axon.socket('sub-emitter');
     const mSocket = this.messagingSocket;
     mSocket.connect(+this.axonPort, host);
