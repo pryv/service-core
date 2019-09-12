@@ -109,12 +109,12 @@ class SpawnContext {
   
   // Returns the next free port to use for testing. 
   //
-  async allocatePort(port?: number): Promise<number> {
+  async allocatePort(): Promise<number> {
     
     // Infinite loop, see below for exits. 
     while (true) { // eslint-disable-line no-constant-condition
       // Simple strategy: Keep increasing port numbers. 
-      const nextPort = port || this.basePort; 
+      const nextPort = this.basePort; 
       this.basePort += 1; 
 
       // Exit 1: If this fires, we might reconsider the simple implementation
