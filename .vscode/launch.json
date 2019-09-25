@@ -1,0 +1,51 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "TEST service-info",
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "env": {"NODE_ENV":"test"},
+            "args": [
+                "--no-timeouts",
+                // "--timeout 10000",
+                "--colors",
+                "--reporter=dot",
+                "${workspaceFolder}/dist/components/api-server/test/service-info.test.js"
+            ],
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "TEST permission",
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "env": {"NODE_ENV":"test"},
+            "args": [
+                "--no-timeouts",
+                "--colors",
+                "--reporter=dot",
+                "${workspaceFolder}/dist/components/api-server/test/permissions.test.js"
+            ],
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "START api-server",
+            "program": "${workspaceFolder}/dist/components/api-server/bin/server",
+            "env": {"NODE_ENV":"development", "NODE_TLS_REJECT_UNAUTHORIZED":"0"},
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "runtimeArgs": ["--nolazy"],
+            "sourceMapPathOverrides": { "webpack:///*": "${workspaceRoot}/*" }
+        }
+    ]
+}
