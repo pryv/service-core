@@ -22,9 +22,11 @@ describe('Flush', () => {
   const db = produceStorageLayer(connection);
   const logger = new NullLogger(); 
 
-  const now = new Date() / 1e3;
+  const now = 100000;
   const from = now - 10; 
   const to = now - 1;
+
+  const modifiedTime = Date.now() / 1e3 ;
   
   // Construct and clean a database fixture. 
   const pryv = databaseFixture(connection);
@@ -60,7 +62,8 @@ describe('Flush', () => {
             required: ['value'],
             earliest: now - 100, // < `from`
             latest: now + 100, // > `to`
-          }
+          },
+          duration: now + 100,
         });
       });
     });
@@ -85,11 +88,12 @@ describe('Flush', () => {
       const event = await loadEvent(db, userId, eventId);
       
       assert.strictEqual(event.modifiedBy, 'author123');
-      assert.approximately(event.modified, now, 1);
+      assert.approximately(event.modified, modifiedTime, 1);
       
       const content = event.content;
       assert.strictEqual(content.earliest, from); 
       assert.strictEqual(content.latest, to); 
+      assert.strictEqual(event.duration, to); 
     });
   });
   describe('event with existing metadata', () => {
@@ -108,11 +112,11 @@ describe('Flush', () => {
     it('[5QO0] doesn\'t destroy old earliest and latest', async () => {
       await op.run(); 
       const event = await loadEvent(db, userId, eventWithContentId);
-
       // See fixture above
       const content = event.content;
       assert.strictEqual(content.earliest, now - 100); 
       assert.strictEqual(content.latest, now + 100); 
+      assert.strictEqual(event.duration, now + 100); 
     });
     it('[Z70F] leaves base data intact', async () => {
       await op.run(); 
@@ -175,7 +179,7 @@ function makeUpdate(now: number, attrs: UpdateAttrs={}): PendingUpdate {
     eventId: attrs.eventId || 'event', 
     
     author: attrs.author || 'token1', 
-    timestamp: attrs.timestamp || now, 
+    timestamp: attrs.timestamp || Date.now() / 1e3, 
     dataExtent: {
       from: attrs.from || (now - 100), 
       to: attrs.to || now, 

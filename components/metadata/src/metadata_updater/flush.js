@@ -42,7 +42,6 @@ class Flush implements Operation {
     const logger = this.logger; 
     
     logger.debug(`Flushing update to ${request.userId}/${request.eventId}, author ${request.author}`);
-    
     // update.userId contains the user _name_. To be able to update, we must 
     // first load the user and resolve his id. 
     const users = this.users; 
@@ -61,11 +60,13 @@ class Flush implements Operation {
       id: request.eventId,
     };
     const { from, to } = request.dataExtent;
+   
     const updatedData = {
       $min: { 'content.earliest': from }, 
-      $max: { 'content.latest': to },
+      $max: { duration: to, 'content.latest': to },
       modifiedBy: request.author, 
       modified: request.timestamp,
+     
     };
     await bluebird.fromCallback(
       cb => db.events.updateOne(user, query, updatedData, cb));
