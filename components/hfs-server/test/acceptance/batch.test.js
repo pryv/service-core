@@ -94,16 +94,17 @@ describe('Storing BATCH data in a HF series', function() {
             'eventId': eventId,
             'data': {
               'format': 'flatJSON', 
-              'fields': ['timestamp', 'value'], 
+              'fields': ['deltatime', 'value'], 
               'points': [
-                [1519314345, 10.2], 
-                [1519314346, 12.2],
-                [1519314347, 14.2],
+                [0, 10.2], 
+                [1, 12.2],
+                [2, 14.2],
               ]
             }   
           }
         ]
       };
+    
       const response = await storeData(data);
 
       const body = response.body; 
@@ -124,9 +125,9 @@ describe('Storing BATCH data in a HF series', function() {
       assert.strictEqual(result.length, 3);
       
       const expectedValues = [
-        ['2018-02-22T15:45:45.000000000Z', 10.2],
-        ['2018-02-22T15:45:46.000000000Z', 12.2],
-        ['2018-02-22T15:45:47.000000000Z', 14.2],
+        ['1970-01-01T00:00:00.000000000Z', 10.2],
+        ['1970-01-01T00:00:01.000000000Z', 12.2],
+        ['1970-01-01T00:00:02.000000000Z', 14.2],
       ];
       
       for (const row of result) {
@@ -194,11 +195,11 @@ describe('Storing BATCH data in a HF series', function() {
             'eventId': eventId1,
             'data': {
               'format': 'flatJSON', 
-              'fields': ['timestamp', 'value'], 
+              'fields': ['deltatime', 'value'], 
               'points': [
-                [1519314345, 10.2], 
-                [1519314346, 12.2],
-                [1519314347, 14.2],
+                [0, 10.2], 
+                [1, 12.2],
+                [2, 14.2],
               ]
             }   
           }
@@ -233,11 +234,11 @@ describe('Storing BATCH data in a HF series', function() {
               'eventId': eventId1,
               'data': {
                 'format': 'flatJSON', 
-                'fields': ['timestamp', 'value'], 
+                'fields': ['deltatime', 'value'], 
                 'points': [
-                  [1519314345, 10.2], 
-                  [1519314346, 12.2],
-                  [1519314347, 14.2],
+                  [0, 10.2], 
+                  [1, 12.2],
+                  [2, 14.2],
                 ]
               }   
             }
@@ -294,11 +295,11 @@ describe('Storing BATCH data in a HF series', function() {
               'eventId': eventId1,
               'data': {
                 'format': 'flatJSON', 
-                'fields': ['timestamp', 'value'], 
+                'fields': ['deltatime', 'value'], 
                 'points': [
-                  [1519314345, 10.2], 
-                  [1519314346, 12.2],
-                  [1519314347, 14.2],
+                  [0, 10.2], 
+                  [1, 12.2],
+                  [2, 14.2],
                 ]
               }   
             },
@@ -306,11 +307,11 @@ describe('Storing BATCH data in a HF series', function() {
               'eventId': eventId2,
               'data': {
                 'format': 'flatJSON', 
-                'fields': ['timestamp', 'value'], 
+                'fields': ['deltatime', 'value'], 
                 'points': [
-                  [1519314345, 10.2], 
-                  [1519314346, 12.2],
-                  [1519314347, 14.2],
+                  [0, 10.2], 
+                  [1, 12.2],
+                  [2, 14.2],
                 ]
               }   
             }

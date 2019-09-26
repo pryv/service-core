@@ -21,9 +21,9 @@ describe('DataMatrix', function () {
     it('[576J] should accept the happy path', () => {
       good({
         'format': 'flatJSON', 
-        'fields': ['timestamp', 'latitude', 'longitude', 'altitude'], 
+        'fields': ['deltatime', 'latitude', 'longitude', 'altitude'], 
         'points': [
-          [1519314345, 10.2, 11.2, 500]
+          [0, 10.2, 11.2, 500]
         ]
       });
     });
@@ -68,9 +68,9 @@ describe('DataMatrix', function () {
     it('[SBU1] refuses if data cannot be coerced', () => {
       bad({
         format: 'flatJSON', 
-        fields: [ 'timestamp', 'latitude' ], 
+        fields: [ 'deltatime', 'latitude' ], 
         points: [
-          [1519314345, null],
+          [0, null],
         ]
       });
     });
@@ -149,8 +149,8 @@ describe('DataMatrix', function () {
     });
   });
   describe('#minmax()', () => {
-    it('[QGY6] returns the minimum and maximum timestamp used', () => {
-      const headers = ['a', 'b', 'timestamp']; 
+    it('[QGY6] returns the minimum and maximum deltatime used', () => {
+      const headers = ['a', 'b', 'deltatime']; 
       const matrix = new DataMatrix(
         headers,
         [
@@ -163,7 +163,7 @@ describe('DataMatrix', function () {
       assert.strictEqual(to, 6);
     });
     it('[ROK8] throws an error if the matrix is empty', () => {
-      const headers = ['a', 'b', 'timestamp']; 
+      const headers = ['a', 'b', 'deltatime']; 
       const matrix = new DataMatrix(
         headers,
         [ ]
@@ -171,7 +171,7 @@ describe('DataMatrix', function () {
       
       assert.throws( () => matrix.minmax() );
     });
-    it('[79DA] throws an error if the timestamp is missing', () => {
+    it('[79DA] throws an error if the deltatime is missing', () => {
       const headers = ['a', 'b', 'c']; 
       const matrix = new DataMatrix(
         headers,

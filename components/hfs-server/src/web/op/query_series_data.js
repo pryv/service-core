@@ -50,13 +50,13 @@ async function querySeriesData(
 
 function coerceStringParams(params: Object): Query {
   tryCoerceStringValues(params, {
-    fromTime: 'number',
-    toTime: 'number',
+    fromDeltaTime: 'number',
+    toDeltaTime: 'number',
   });
 
   const query = {
-    from: params.fromTime,
-    to: params.toTime,
+    from: params.fromDeltaTime,
+    to: params.toDeltaTime,
   };
 
   return query;

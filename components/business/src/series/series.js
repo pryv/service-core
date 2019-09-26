@@ -46,7 +46,6 @@ class Series {
     const appendOptions = {
       database: this.namespace, 
     };
-    
     const points = []; 
     
     // Transform all data rows into a measurement point. Transform of rows 
@@ -54,15 +53,15 @@ class Series {
     const toMeasurement = (row) => {
       const struct = row.toStruct(); 
 
-      // FLOW This cannot fail, but somehow flow things we access the timestamp. 
-      delete struct.timestamp; 
+      // FLOW This cannot fail, but somehow flow things we access the deltatime. 
+      delete struct.deltatime; 
       
-      const timestamp = row.get('timestamp');
+      const deltatime = row.get('deltatime');
       
       return {
         tags: [], 
         fields: struct, 
-        timestamp: timestamp, 
+        timestamp: deltatime, 
       };
     };
       
@@ -109,10 +108,10 @@ class Series {
     const extractHeaders = (e) => R.map(R.prop(R.__, e), headers);
     const data = R.map(extractHeaders, result); 
     
-    // Replace influx 'time' with 'timestamp'
+    // Replace influx 'time' with 'deltatime'
     const idx = R.findIndex(
       R.equals('time'), headers); 
-    if (idx >= 0) headers[idx] = 'timestamp';
+    if (idx >= 0) headers[idx] = 'deltatime';
     
     for (let row of data) {
       row[idx] = +row[idx] / 1000; // TODO replace

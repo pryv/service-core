@@ -15,8 +15,8 @@ describe('business.series.Repository', function () {
     const namespace = 'pryv-userdb.USER_ID';  // influx database
     const seriesName = 'event.EVENT_ID';      // influx measurement
     const data = new DataMatrix(
-      ['timestamp', 'a', 'b'], 
-      [[1490277022, 1, 2]]
+      ['deltatime', 'a', 'b'], 
+      [[0, 1, 2]]
     ); 
 
     // A test double for the actual connection:

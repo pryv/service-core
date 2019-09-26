@@ -51,13 +51,13 @@ class Row {
     return this.values[idx];
   }
   
-  // Returns this rows timestamp. If the timestamp is not available, a runtime
+  // Returns this rows deltatime. If the deltatime is not available, a runtime
   // error is thrown. 
   // 
-  timestamp(): number {
-    const value = this.get('timestamp');
-    if (typeof value !== 'number') throw new Error('Timestamp must be a number');
-    
+  deltatime(): number {
+    const value = this.get('deltatime');
+    if (typeof value !== 'number') throw new Error('Deltatime must be a number');
+    if (value < 0) throw new Error('Deltatime must be greater than 0');
     return value;
   }
 }
