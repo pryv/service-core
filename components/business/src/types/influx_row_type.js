@@ -5,9 +5,9 @@ const debug = require('debug')('influx_row_type');
 
 import type {EventType, PropertyType, Validator, Content} from './interfaces';
 
-const FIELD_TIMESTAMP = 'deltatime';
+const FIELD_TIMESTAMP = 'deltaTime';
 
-// Represents the type of the deltatime column in influx input data.
+// Represents the type of the deltaTime column in influx input data.
 //
 class InfluxDateType implements PropertyType {
   secondsToNanos(secs: number): number {
@@ -24,7 +24,7 @@ class InfluxDateType implements PropertyType {
       // FALL THROUGH
     }
 
-    throw new Error(`Cannot coerce ${value} into deltatime.`);
+    throw new Error(`Cannot coerce ${value} into deltaTime.`);
   }
 }
 

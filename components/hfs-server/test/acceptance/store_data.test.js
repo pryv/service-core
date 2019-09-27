@@ -100,7 +100,7 @@ describe('Storing data in a HF series', function() {
     }
     
     it('[GZIZ] should store data correctly', async () => {
-      const response = await storeData({deltatime: 1, value: 80.3});
+      const response = await storeData({deltaTime: 1, value: 80.3});
 
       const body = response.body; 
       if (body == null || body.status == null) throw new Error(); 
@@ -207,7 +207,7 @@ describe('Storing data in a HF series', function() {
       function produceData() {
         return {
           format: 'flatJSON', 
-          fields: ['deltatime', 'value'], 
+          fields: ['deltaTime', 'value'], 
           points: [
             [0, 14.1], 
             [1, 14.2], 
@@ -243,7 +243,7 @@ describe('Storing data in a HF series', function() {
                 
               assert.deepEqual(
                 response.fields, 
-                ['deltatime', 'value']); 
+                ['deltaTime', 'value']); 
               
               const pairEqual = ([given, expected]) => 
                 assert.deepEqual(given, expected);
@@ -297,7 +297,7 @@ describe('Storing data in a HF series', function() {
         describe('when request is malformed', function () {
           malformed('format is not flatJSON', {
             format: 'JSON', 
-            fields: ['deltatime', 'value'], 
+            fields: ['deltaTime', 'value'], 
             points: [
               [0, 14.1], 
               [1, 14.2], 
@@ -306,16 +306,16 @@ describe('Storing data in a HF series', function() {
           }, '96HC');
           malformed('matrix is not square - not enough fields', {
             format: 'flatJSON', 
-            fields: ['deltatime', 'value'], 
+            fields: ['deltaTime', 'value'], 
             points: [
               [0, 14.1], 
               [1], 
               [2, 14.3], 
             ]
           }, '38W3');
-          malformed('no negative deltatime', {
+          malformed('no negative deltaTime', {
             format: 'flatJSON',
-            fields: ['deltatime', 'value'],
+            fields: ['deltaTime', 'value'],
             points: [
               [-1, 14.1],
               [1, 14.2],
@@ -324,14 +324,14 @@ describe('Storing data in a HF series', function() {
           }, 'GJL5');
           malformed('value types are not all valid', {
             format: 'flatJSON', 
-            fields: ['deltatime', 'value'], 
+            fields: ['deltaTime', 'value'], 
             points: [
               [0, 14.1], 
               [1, 'foobar'], 
               [2, 14.3], 
             ]
           }, 'GJL4');
-          malformed('missing deltatime column', {
+          malformed('missing deltaTime column', {
             format: 'flatJSON', 
             fields: ['value'], 
             points: [
@@ -342,7 +342,7 @@ describe('Storing data in a HF series', function() {
           }, 'JJRO');
           malformed('missing value column for a simple input', {
             format: 'flatJSON', 
-            fields: ['deltatime'], 
+            fields: ['deltaTime'], 
             points: [
               [0], 
               [1], 
@@ -525,7 +525,7 @@ describe('Storing data in a HF series', function() {
         const now = 6; 
         
         const result = await tryStore({ type: 'series:angular-speed/rad-s' }, 
-          ['deltatime', 'value'],
+          ['deltaTime', 'value'],
           [
             [now-3, 1], 
             [now-2, 2], 
@@ -536,7 +536,7 @@ describe('Storing data in a HF series', function() {
       it('[3WGH] stores data of complex types', async () => {
         const now = 6; 
         const {ok} = await tryStore({ type: 'series:ratio/generic' }, 
-          ['deltatime', 'value', 'relativeTo'],
+          ['deltaTime', 'value', 'relativeTo'],
           [
             [now-3, 1, 2], 
             [now-2, 2, 2], 
@@ -547,7 +547,7 @@ describe('Storing data in a HF series', function() {
       it('[1NDB] doesn\'t accept data in non-series format', async () => {
         const now = 6; 
         const {ok, body} = await tryStore({ type: 'angular-speed/rad-s' }, 
-          ['deltatime', 'value'],
+          ['deltaTime', 'value'],
           [
             [now-3, 1], 
             [now-2, 2], 
@@ -564,7 +564,7 @@ describe('Storing data in a HF series', function() {
         const now = 20; 
         
         const result = await tryStore({ type: 'series:call/telephone'}, 
-          ['deltatime', 'value'], 
+          ['deltaTime', 'value'], 
           [
             [now-10, aLargeString]
           ]);
@@ -579,7 +579,7 @@ describe('Storing data in a HF series', function() {
           idx => [now-100+idx, Math.random() * 1e6]);
         
         const result = await tryStore({ type: 'series:mass/kg'}, 
-          ['deltatime', 'value'], 
+          ['deltaTime', 'value'], 
           aHundredRandomFloats);
         assert.isTrue(result.ok); 
         
@@ -681,7 +681,7 @@ describe('Storing data in a HF series', function() {
       describe('when not all required fields are given', () => {
         let now = 6;
         let args = [
-          ['deltatime', 'value'],
+          ['deltaTime', 'value'],
           [
             [now-3, 1], 
             [now-2, 2], 
@@ -700,11 +700,11 @@ describe('Storing data in a HF series', function() {
           assert.strictEqual(message, '"fields" field must contain valid field names for the series type.');
         });
       });
-      it('[DTZ2] refuses to store when deltatime is present twice (ambiguous!)', async () => {
+      it('[DTZ2] refuses to store when deltaTime is present twice (ambiguous!)', async () => {
         const now =6; 
         assert.isFalse(
           await tryStore(
-            ['deltatime', 'deltatime', 'value', 'relativeTo'],
+            ['deltaTime', 'deltaTime', 'value', 'relativeTo'],
             [
               [now-3, now-6, 1, 1], 
               [now-2, now-5, 2, 2], 
@@ -714,7 +714,7 @@ describe('Storing data in a HF series', function() {
         const now = 6; 
         assert.isFalse(
           await tryStore(
-            ['deltatime', 'value', 'value', 'relativeTo'],
+            ['deltaTime', 'value', 'value', 'relativeTo'],
             [
               [now-3, 3, 1, 1], 
               [now-2, 2, 2, 2], 
@@ -723,7 +723,7 @@ describe('Storing data in a HF series', function() {
       describe("when field names don't match the type", () => {
         const now = 6;
         const args = [
-          ['deltatime', 'value', 'relativeFrom'],
+          ['deltaTime', 'value', 'relativeFrom'],
           [
             [now-3, 3, 1], 
             [now-2, 2, 2], 
@@ -803,7 +803,7 @@ describe('Storing data in a HF series', function() {
         const now = 6; 
         assert.isTrue(
           await tryStore(
-            ['deltatime', 'latitude', 'longitude', 'altitude'],
+            ['deltaTime', 'latitude', 'longitude', 'altitude'],
             [
               [now-3, 1, 2, 3], 
               [now-2, 2, 3, 4], 
@@ -811,7 +811,7 @@ describe('Storing data in a HF series', function() {
 
         assert.isTrue(
           await tryStore(
-            ['deltatime', 'latitude', 'longitude', 'altitude', 'speed'],
+            ['deltaTime', 'latitude', 'longitude', 'altitude', 'speed'],
             [
               [now-3, 1, 2, 3, 160], 
               [now-2, 2, 3, 4, 170], 
@@ -821,7 +821,7 @@ describe('Storing data in a HF series', function() {
         const now = 6; 
         assert.isFalse(
           await tryStore(
-            ['deltatime', 'latitude', 'longitude', 'depth'],
+            ['deltaTime', 'latitude', 'longitude', 'depth'],
             [
               [now-3, 1, 2, 3], 
               [now-2, 2, 3, 4], 

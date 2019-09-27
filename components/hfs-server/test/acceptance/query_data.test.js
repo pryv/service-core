@@ -105,8 +105,8 @@ describe('Querying data from a HF series', function() {
       .get(`/${userId}/events/${eventId}/series`)
       .set('authorization', accessToken)
       .query({
-        fromDeltaTime: 'hi-i-am-not-a-deltatime',
-        toDeltaTime: 'i-am-not-a-deltatime-either'
+        fromDeltaTime: 'hi-i-am-not-a-deltaTime',
+        toDeltaTime: 'i-am-not-a-deltaTime-either'
       })
       .expect(400)
       .then((res) => {

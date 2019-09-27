@@ -25,7 +25,7 @@ describe('Manage InfluxDB data (business.series.*)', function () {
     
     const toNano = (v) => v * 1000 * 1000 * 1000; 
     const data = new DataMatrix(
-      ['deltatime', 'value'], 
+      ['deltaTime', 'value'], 
       [
         [toNano(0), 10], 
         [toNano(1), 20],
@@ -38,7 +38,7 @@ describe('Manage InfluxDB data (business.series.*)', function () {
           .then(() => series.query({from: 0, to: 2}) )
           .then((data) => {
             should(data.length).be.eql(2);
-            should(data.columns).be.eql(['deltatime', 'value']);
+            should(data.columns).be.eql(['deltaTime', 'value']);
             
             should(data.at(0)).be.eql([0, 10]);
             should(data.at(1)).be.eql([1, 20]);

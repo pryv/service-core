@@ -94,7 +94,7 @@ describe('Storing BATCH data in a HF series', function() {
             'eventId': eventId,
             'data': {
               'format': 'flatJSON', 
-              'fields': ['deltatime', 'value'], 
+              'fields': ['deltaTime', 'value'], 
               'points': [
                 [0, 10.2], 
                 [1, 12.2],
@@ -195,7 +195,7 @@ describe('Storing BATCH data in a HF series', function() {
             'eventId': eventId1,
             'data': {
               'format': 'flatJSON', 
-              'fields': ['deltatime', 'value'], 
+              'fields': ['deltaTime', 'value'], 
               'points': [
                 [0, 10.2], 
                 [1, 12.2],
@@ -234,7 +234,7 @@ describe('Storing BATCH data in a HF series', function() {
               'eventId': eventId1,
               'data': {
                 'format': 'flatJSON', 
-                'fields': ['deltatime', 'value'], 
+                'fields': ['deltaTime', 'value'], 
                 'points': [
                   [0, 10.2], 
                   [1, 12.2],
@@ -295,7 +295,7 @@ describe('Storing BATCH data in a HF series', function() {
               'eventId': eventId1,
               'data': {
                 'format': 'flatJSON', 
-                'fields': ['deltatime', 'value'], 
+                'fields': ['deltaTime', 'value'], 
                 'points': [
                   [0, 10.2], 
                   [1, 12.2],
@@ -307,7 +307,7 @@ describe('Storing BATCH data in a HF series', function() {
               'eventId': eventId2,
               'data': {
                 'format': 'flatJSON', 
-                'fields': ['deltatime', 'value'], 
+                'fields': ['deltaTime', 'value'], 
                 'points': [
                   [0, 10.2], 
                   [1, 12.2],

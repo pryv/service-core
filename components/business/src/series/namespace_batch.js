@@ -56,10 +56,10 @@ class NamespaceBatch {
     // Converts a single `Row` of data into an IPoint structure. 
     function toIPoint(eventId: string, row: Row, measurementName: string): IPoint {
       const struct = row.toStruct(); 
-      // FLOW This cannot fail, but somehow flow things we access the deltatime. 
-      delete struct.deltatime; 
+      // FLOW This cannot fail, but somehow flow things we access the deltaTime. 
+      delete struct.deltaTime; 
       
-      const timestamp = row.get('deltatime');
+      const timestamp = row.get('deltaTime');
       
       return {
         tags: [], 

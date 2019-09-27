@@ -53,15 +53,15 @@ class Series {
     const toMeasurement = (row) => {
       const struct = row.toStruct(); 
 
-      // FLOW This cannot fail, but somehow flow things we access the deltatime. 
-      delete struct.deltatime; 
+      // FLOW This cannot fail, but somehow flow things we access the deltaTime. 
+      delete struct.deltaTime; 
       
-      const deltatime = row.get('deltatime');
+      const deltaTime = row.get('deltaTime');
       
       return {
         tags: [], 
         fields: struct, 
-        timestamp: deltatime, 
+        timestamp: deltaTime, 
       };
     };
       
@@ -108,10 +108,10 @@ class Series {
     const extractHeaders = (e) => R.map(R.prop(R.__, e), headers);
     const data = R.map(extractHeaders, result); 
     
-    // Replace influx 'time' with 'deltatime'
+    // Replace influx 'time' with 'deltaTime'
     const idx = R.findIndex(
       R.equals('time'), headers); 
-    if (idx >= 0) headers[idx] = 'deltatime';
+    if (idx >= 0) headers[idx] = 'deltaTime';
     
     for (let row of data) {
       row[idx] = +row[idx] / 1000; // TODO replace

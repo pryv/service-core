@@ -25,7 +25,7 @@ describe('BatchRequest', () => {
             'eventId': 'cjcrx6jy1000w8xpvjv9utxjx',
             'data': {
               'format': 'flatJSON', 
-              'fields': ['deltatime', 'latitude', 'longitude', 'altitude'], 
+              'fields': ['deltaTime', 'latitude', 'longitude', 'altitude'], 
               'points': [
                 [0, 10.2, 11.2, 500], 
                 [1, 10.2, 11.2, 510],
@@ -98,7 +98,7 @@ describe('BatchRequestElement', () => {
         eventId: 'cjcrx6jy1000w8xpvjv9utxjx', 
         data: {
           'format': 'flatJSON', 
-          'fields': ['deltatime', 'latitude', 'longitude', 'altitude'], 
+          'fields': ['deltaTime', 'latitude', 'longitude', 'altitude'], 
           'points': [
             [0, 10.2, 11.2, 500], 
             [1, 10.2, 11.2, 510],

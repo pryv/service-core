@@ -107,7 +107,7 @@ class DataMatrix {
   }
 
   // Returns a tuple of [from, to] for the dataset in this matrix, indicating
-  // the earliest (`from`) and the latest (`to`) deltatime in the data set. 
+  // the earliest (`from`) and the latest (`to`) deltaTime in the data set. 
   // No assumptions are made about the order of the data. If the matrix is 
   // empty, this method throws an error. 
   // 
@@ -115,15 +115,15 @@ class DataMatrix {
     if (this.length <= 0) throw new Error('Precondition error: matrix is empty.');
     
     // assert: length > 0 => at least one row is available
-    const first = this.atRow(0).deltatime(); 
+    const first = this.atRow(0).deltaTime(); 
     
     let [min, max] = [first, first];
     this.eachRow(row => {
       
-      const deltatime = row.deltatime();
+      const deltaTime = row.deltaTime();
                   
-      min = Math.min(min, deltatime);
-      max = Math.max(max, deltatime);
+      min = Math.min(min, deltaTime);
+      max = Math.max(max, deltaTime);
     });
     
     return {

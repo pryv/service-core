@@ -51,11 +51,11 @@ class Row {
     return this.values[idx];
   }
   
-  // Returns this rows deltatime. If the deltatime is not available, a runtime
+  // Returns this rows deltaTime. If the deltaTime is not available, a runtime
   // error is thrown. 
   // 
-  deltatime(): number {
-    const value = this.get('deltatime');
+  deltaTime(): number {
+    const value = this.get('deltaTime');
     if (typeof value !== 'number') throw new Error('Deltatime must be a number');
     if (value < 0) throw new Error('Deltatime must be greater than 0');
     return value;
