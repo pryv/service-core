@@ -52,9 +52,9 @@ class Flush implements Operation {
     // overwrite modified/modifiedBy all the same. 
     // 
     // The alternative would be load/modify/store here. That would be racy too, 
-    // possibly destroying earliest/latest in the process. 
+    // possibly destroying duration in the process. 
     // 
-    // The chosen option at least leaves earliest/latest correct.
+    // The chosen option at least leaves duration correct.
 
     const query = {
       id: request.eventId,
@@ -62,8 +62,8 @@ class Flush implements Operation {
     const { from, to } = request.dataExtent;
    
     const updatedData = {
-      $min: { 'content.earliest': from }, 
-      $max: { duration: to, 'content.latest': to },
+      // $min: { 'content.earliest': from }, -> Removed features
+      $max: { duration: to },
       modifiedBy: request.author, 
       modified: request.timestamp,
      

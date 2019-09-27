@@ -59,9 +59,7 @@ describe('Flush', () => {
           content: {
             elementType: 'mass/kg', 
             fields: ['value'], 
-            required: ['value'],
-            earliest: now - 100, // < `from`
-            latest: now + 100, // > `to`
+            required: ['value']
           },
           duration: now + 100,
         });
@@ -88,11 +86,7 @@ describe('Flush', () => {
       const event = await loadEvent(db, userId, eventId);
       
       assert.strictEqual(event.modifiedBy, 'author123');
-      assert.approximately(event.modified, modifiedTime, 1);
-      
-      const content = event.content;
-      assert.strictEqual(content.earliest, from); 
-      assert.strictEqual(content.latest, to); 
+      assert.approximately(event.modified, modifiedTime, 2);
       assert.strictEqual(event.duration, to); 
     });
   });
@@ -109,13 +103,10 @@ describe('Flush', () => {
       op = new Flush(update, db, logger);
     });
     
-    it('[5QO0] doesn\'t destroy old earliest and latest', async () => {
+    it('[5QO0] doesn\'t modfify duration', async () => {
       await op.run(); 
       const event = await loadEvent(db, userId, eventWithContentId);
       // See fixture above
-      const content = event.content;
-      assert.strictEqual(content.earliest, now - 100); 
-      assert.strictEqual(content.latest, now + 100); 
       assert.strictEqual(event.duration, now + 100); 
     });
     it('[Z70F] leaves base data intact', async () => {
