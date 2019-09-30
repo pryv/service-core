@@ -15,6 +15,14 @@ const clsWrapFactory = require('./tracing/middleware/clsWrap');
 
 const { ProjectVersion } = require('components/middleware/src/project_version');
 
+const NatsSubscriber = require('components/api-server/src/socket-io/nats_subscriber');
+const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
+const NATS_HFS_UPDATE_CACHE = require('components/utils').messaging
+  .NATS_HFS_UPDATE_CACHE;
+const NATS_HFS_UPDATE_API = require('components/utils').messaging
+  .NATS_HFS_UPDATE_API;
+
+
 const controllerFactory = require('./web/controller');
 
 const KEY_IP = 'http.ip';
@@ -22,11 +30,19 @@ const KEY_PORT = 'http.port';
 
 import type {Logger} from 'components/utils/src/logging';
 import type Context from './context';
+import type { MessageSink } from './message_sink';
+
+type UsernameEvent = {
+  username: string,
+  event: {
+    id: string
+  }
+};
 
 /**
  * HTTP server responsible for the REST api that the HFS server exposes. 
  */
-class Server {
+class Server implements MessageSink{
   // Server settings.
   settings: Settings;
   
@@ -46,6 +62,9 @@ class Server {
   // Web request context
   context: Context; 
   
+  natsSubscriber: NatsSubscriber;
+  sink: MessageSink;
+
   constructor(settings: Settings, context: Context) {
     const logSettings = settings.get('logs').obj();
     const logFactory = logging(logSettings);
@@ -61,8 +80,28 @@ class Server {
     this.baseUrl = `http://${ip}:${port}/`;
     
     this.logger.info('constructed.');
+
+    this.subscribeToNotifications();
   }
-  
+
+  deliver(channel: string, usernameEvent: UsernameEvent): void {
+    this.logger.info('we got sumfin on: ' + channel + ', it is: ' + usernameEvent);
+    switch (channel) {
+      case NATS_HFS_UPDATE_CACHE:
+        this.logger.info('we got da goods: ' + usernameEvent);
+        break;
+      default:
+        this.logger.info('whachwegot? ' + usernameEvent);
+        break;
+    }
+  }
+
+  async subscribeToNotifications() {
+    this.logger.info('connecting to ' + NATS_CONNECTION_URI + ' on channel ' + NATS_HFS_UPDATE_CACHE);
+    this.natsSubscriber = new NatsSubscriber(NATS_CONNECTION_URI, this);
+    await this.natsSubscriber.subscribe(NATS_HFS_UPDATE_CACHE);
+  }
+
   /**
    * Starts the HTTP server. 
    * 

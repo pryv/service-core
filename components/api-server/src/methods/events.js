@@ -15,6 +15,11 @@ const assert = require('assert');
     
 const {TypeRepository, isSeriesType} = require('components/business').types;
 
+const NatsPublisher = require('../socket-io/nats_publisher');
+const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
+const NATS_HFS_UPDATE_CACHE = require('components/utils').messaging
+  .NATS_HFS_UPDATE_CACHE;
+
 // Type repository that will contain information about what is allowed/known
 // for events. 
 const typeRepo = new TypeRepository(); 
@@ -28,12 +33,14 @@ module.exports = function (
   authSettings, eventTypesSettings, notifications, logging,
   auditSettings, updatesSettings,
 ) {
-                             
+
   // Update types and log error
   typeRepo.tryUpdate(eventTypesSettings.sourceURL)
     .catch((err) => logging.getLogger('typeRepo').warn(err));
     
   const logger = logging.getLogger('methods/events');
+  const natsPublisher = new NatsPublisher(NATS_CONNECTION_URI);
+  logger.info('on se connecte à ' + NATS_CONNECTION_URI);
 
   // RETRIEVAL
 
@@ -450,6 +457,26 @@ module.exports = function (
 
   function notify(context, params, result, next) {
     notifications.eventsChanged(context.user);
+
+    const updatedEvent = result.event;
+    if (isSeriesEvent(updatedEvent)) {
+      
+      
+      logger.info('on écrit à ' + NATS_HFS_UPDATE_CACHE + ' ce gros paquet: ' + JSON.stringify({
+        username: context.user.username,
+        event: _.pick(updatedEvent, ['id'])
+      }, null, 2));
+
+
+      natsPublisher.deliver(NATS_HFS_UPDATE_CACHE, {
+        username: context.user.username,
+        event: _.pick(updatedEvent, ['id'])
+      });
+    }
+
+    function isSeriesEvent(event) {
+      return event.type.startsWith('series:');
+    }
     next();
   }
 
@@ -501,7 +528,8 @@ module.exports = function (
     const eventType = typeRepo.lookup(type);
     if (eventType.isSeries()) {
       // Series cannot have content on update, not here at least.
-      if (context.content.content != null) {
+      if (params.update.content != null) {
+        logger.info('on a de la merde: ' + JSON.stringify(params.update, null, 2));
         return next(errors.invalidParametersFormat(
           'The event content\'s format is invalid.', 
           'Events of type High-frequency have a read-only content'));
