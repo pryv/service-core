@@ -40,7 +40,6 @@ module.exports = function (
     
   const logger = logging.getLogger('methods/events');
   const natsPublisher = new NatsPublisher(NATS_CONNECTION_URI);
-  logger.info('on se connecte à ' + NATS_CONNECTION_URI);
 
   // RETRIEVAL
 
@@ -460,14 +459,6 @@ module.exports = function (
 
     const updatedEvent = result.event;
     if (isSeriesEvent(updatedEvent)) {
-      
-      
-      logger.info('on écrit à ' + NATS_HFS_UPDATE_CACHE + ' ce gros paquet: ' + JSON.stringify({
-        username: context.user.username,
-        event: _.pick(updatedEvent, ['id'])
-      }, null, 2));
-
-
       natsPublisher.deliver(NATS_HFS_UPDATE_CACHE, {
         username: context.user.username,
         event: _.pick(updatedEvent, ['id'])

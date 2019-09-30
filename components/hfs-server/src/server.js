@@ -19,9 +19,6 @@ const NatsSubscriber = require('components/api-server/src/socket-io/nats_subscri
 const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
 const NATS_HFS_UPDATE_CACHE = require('components/utils').messaging
   .NATS_HFS_UPDATE_CACHE;
-const NATS_HFS_UPDATE_API = require('components/utils').messaging
-  .NATS_HFS_UPDATE_API;
-
 
 const controllerFactory = require('./web/controller');
 
@@ -85,19 +82,17 @@ class Server implements MessageSink{
   }
 
   deliver(channel: string, usernameEvent: UsernameEvent): void {
-    this.logger.info('we got sumfin on: ' + channel + ', it is: ' + usernameEvent);
     switch (channel) {
       case NATS_HFS_UPDATE_CACHE:
-        this.logger.info('we got da goods: ' + usernameEvent);
+        // parse data, update cache
         break;
       default:
-        this.logger.info('whachwegot? ' + usernameEvent);
+        // should not happen
         break;
     }
   }
 
   async subscribeToNotifications() {
-    this.logger.info('connecting to ' + NATS_CONNECTION_URI + ' on channel ' + NATS_HFS_UPDATE_CACHE);
     this.natsSubscriber = new NatsSubscriber(NATS_CONNECTION_URI, this);
     await this.natsSubscriber.subscribe(NATS_HFS_UPDATE_CACHE);
   }
