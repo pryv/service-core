@@ -10,7 +10,6 @@ exports.NATS_WEBHOOKS_CREATE = 'wh.creates';
 exports.NATS_WEBHOOKS_DELETE = 'wh.deletes';
 
 exports.NATS_HFS_UPDATE_CACHE = 'hfs.update-cache';
-exports.NATS_HFS_UPDATE_API = 'hfs.update-api';
 
 /**
  * @param {{host: String, port: Number, pubConnectInsteadOfBind: Boolean}} settings
