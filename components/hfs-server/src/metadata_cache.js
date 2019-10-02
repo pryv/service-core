@@ -68,7 +68,8 @@ class MetadataCache implements MetadataRepository {
     const cache = this.cache; 
     
     const cachedValue = cache.get(key);
-    if (cachedValue !== undefined) {
+    console.log('OOOOOOO remove false');
+    if (false && cachedValue !== undefined) {
       debug(`Using cached credentials for ${userName} / ${eventId}.`);
       return cachedValue;
     }
@@ -123,6 +124,7 @@ class MetadataLoader {
           if (err != null) return returnValueCallback(
             mapErrors(err));
 
+          console.log('FFFFFFFFFFFFF', results);
           const access = methodContext.access;
           const user = methodContext.user;
           const event = R.last(results);
@@ -183,19 +185,18 @@ class SeriesMetadataImpl implements SeriesMetadata {
   
   userName: string; 
   eventId: string; 
-  
-  eventType: string; 
+  eventType: string;
+  time: number; 
   
   constructor(access: AccessModel, user: UserModel, event: EventModel) {
     const streamId = event.streamId; 
-
     this.permissions = {
       write: access.canContributeToStream(streamId),
       read: access.canReadStream(streamId),
     };
     this.userName = user.username; 
     this.eventId = event.id; 
-    
+    this.time = event.time.getTime() / 1000;
     this.eventType = event.type; 
   }
   
@@ -225,6 +226,7 @@ class SeriesMetadataImpl implements SeriesMetadata {
       throw errors.invalidOperation(
         "High Frequency data can only be stored in events whose type starts with 'series:'.");
     
+    type.setSeriesMeta(this);
     return type; 
   }
 }
