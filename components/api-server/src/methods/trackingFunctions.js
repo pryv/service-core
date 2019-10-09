@@ -1,29 +1,42 @@
-var errorHandling = require('components/errors').errorHandling,
-    errors = require('components/errors').factory,
-    string = require('./helpers/string'),
-    timestamp = require('unix-timestamp');
+// @flow
+
+const errorHandling = require('components/errors').errorHandling;
+const errors = require('components/errors').factory;
+const string = require('./helpers/string');
+const timestamp = require('unix-timestamp');
+
+import type API from '../API';
+import type { Logger } from 'components/utils';
+import type { StorageLayer } from 'components/storage';
+import type { MethodContext } from 'components/model';
+import type Result from '../Result';
+import type { ApiCallback } from '../API';
 
 /**
  * Call tracking functions, to be registered after all methods have been registered.
  *
  * @param api
- * @param userAccessesStorage
- * @param logging
+ * @param logger
+ * @param storageLayer
  */
-module.exports = function (api, userAccessesStorage, logging) {
+module.exports = function (
+  api: API,
+  logger: Logger, 
+  storageLayer: StorageLayer
+) {
 
-  var logger = logging.getLogger('methods/trackingFunctions');
+  const userAccessesStorage = storageLayer.accesses;
 
   api.register('*',
-      updateAccessUsageStats);
+    updateAccessUsageStats);
 
-  function updateAccessUsageStats(context, params, result, next) {
+  function updateAccessUsageStats(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     // don't make callers wait on this to get their reply
     next();
 
     // handle own errors not to mess with "concurrent" code (because of next() above)
     try {
-      var access = context.access;
+      const access = context.access;
       if (access) {
         const calledMethodKey = string.toMongoKey(context.calledMethodId);
         const prevCallCount = (access.calls && access.calls[calledMethodKey]) ?
@@ -53,4 +66,3 @@ module.exports = function (api, userAccessesStorage, logging) {
   }
 
 };
-module.exports.injectDependencies = true;

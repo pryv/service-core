@@ -1,7 +1,5 @@
 // @flow
 
-const bluebird = require('bluebird');
-
 import type { StorageLayer } from 'components/storage';
 
 // Returns a middleware function that loads the access into `req.context.access`.

@@ -28,6 +28,16 @@ type itemDeletion = {
   deleted: number,
 };
 
+type PermissionLevel = 'read' | 'contribute' | 'manage';
+
+type Permission = {
+  streamId: string,
+  level: PermissionLevel,
+} | {
+  tag: string,
+  level: PermissionLevel,
+};
+
 
 // Result object used to store API call response body while it is processed.
 // In case of events.get call, it stores multiple streams in this.streamsArray.
@@ -56,6 +66,12 @@ class Result {
   mismatchingAccess: mixed;
   checkedPermissions: mixed;
   error: mixed;
+
+  type: string;
+  name: string;
+  permissions: Array<Permission>
+
+  results: Array<Result>;
 
   webhook: Webhook;
   webhooks: Array<Webhook>;

@@ -1,6 +1,5 @@
 // @flow
 
-const bluebird = require('bluebird');
 const socketIO = require('socket.io');
 
 const MethodContext = require('components/model').MethodContext;
