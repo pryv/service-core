@@ -509,7 +509,7 @@ describe('Storing data in a HF series', function() {
       async function tryStore(attrs: Object, header: Header, data: Rows): Promise<TryOpResult> {
         const userQuery = {id: userId};
         const effectiveAttrs = lodash.merge(
-          { streamId: parentStreamId }, 
+          { streamId: parentStreamId , time: new Date()}, 
           attrs
         );
 

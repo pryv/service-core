@@ -39,11 +39,11 @@ class InfluxDateType implements PropertyType {
 class InfluxRowType implements EventType {
   eventType: EventType; 
   seriesMeta: SeriesMetadata;
-  convertTimeStampToDeltaTime: Boolean;
+  applyDeltaTimeToSerie: Number;
 
   constructor(eventType: EventType) {
     this.eventType = eventType; 
-    this.convertTimeStampToDeltaTime = false;
+    this.applyDeltaTimeToSerie = 0;
   }
 
   setSeriesMeta(seriesMeta: SeriesMetadata) {
@@ -71,7 +71,10 @@ class InfluxRowType implements EventType {
     const timestampColumn = columnNames.indexOf(FIELD_TIMESTAMP);
     if (timestampColumn >= 0) {
       columnNames[timestampColumn] = FIELD_DELTATIME;
-      this.convertTimeStampToDeltaTime = true;
+      if (!this.seriesMeta) {
+        throw new Error('Cannot transform to timestamp without knwowing the seriesMeta time');
+      }
+      this.applyDeltaTimeToSerie = this.seriesMeta.time;
     }
 
     // These names are all allowed once:
@@ -165,7 +168,7 @@ class InfluxRowType implements EventType {
    */
   forField(name: string): PropertyType  {
     if (name === FIELD_DELTATIME) {
-      return new InfluxDateType(this.convertTimeStampToDeltaTime ? this.seriesMeta.time : 0);
+      return new InfluxDateType(this.applyDeltaTimeToSerie);
     } else {
       return this.eventType.forField(name);
     }
