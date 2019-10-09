@@ -690,4 +690,3 @@ module.exports = function produceAccessesApiMethods(
   }
 
 };
-module.exports.injectDependencies = true;

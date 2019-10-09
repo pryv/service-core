@@ -5,11 +5,17 @@ const debug = require('debug')('influx_row_type');
 
 import type {EventType, PropertyType, Validator, Content} from './interfaces';
 
-const FIELD_TIMESTAMP = 'deltaTime';
+const FIELD_DELTATIME = 'deltaTime';
+const FIELD_TIMESTAMP = 'timestamp';
 
 // Represents the type of the deltaTime column in influx input data.
 //
 class InfluxDateType implements PropertyType {
+  deltaTo: number;
+  constructor(eventTime: number) {
+    this.deltaTo = eventTime;
+  }
+
   secondsToNanos(secs: number): number {
     if (secs < 0) throw new Error(`Deltatime must be greater than 0`);
     return secs * 1000 * 1000 * 1000;
@@ -18,9 +24,9 @@ class InfluxDateType implements PropertyType {
   coerce(value: any): any {
     switch (R.type(value)) {
       case 'Number': 
-        return this.secondsToNanos(value); 
+        return this.secondsToNanos(value - this.deltaTo); 
       case 'String':
-        return this.secondsToNanos(parseInt(value)); 
+        return this.secondsToNanos(parseInt(value) - this.deltaTo); 
       // FALL THROUGH
     }
 
@@ -32,25 +38,48 @@ class InfluxDateType implements PropertyType {
 //  
 class InfluxRowType implements EventType {
   eventType: EventType; 
-  
+  seriesMeta: SeriesMetadata;
+  applyDeltaTimeToSerie: Number;
+
   constructor(eventType: EventType) {
     this.eventType = eventType; 
+    this.applyDeltaTimeToSerie = 0;
   }
-  
+
+  setSeriesMeta(seriesMeta: SeriesMetadata) {
+    this.seriesMeta = seriesMeta;
+  }
+
   // Returns the name of the type inside the series. 
   // 
   elementTypeName() {
     return this.eventType.typeName(); 
   }
   
-  /** Returns true if the columns given can be reconciled with this type. 
+  /** 
+   * Returns true if the columns given can be reconciled with this type.
+   * WARNING If 'timestamp' column is found a column name will be renamed to "deltaTime" 
+   * and next coerce will convert timestamps to deltaTime relatively to the 
+   * Event time.
    */
   validateColumns(columnNames: Array<string>): boolean {
     const underlyingType = this.eventType;
     
+    // ** do we need to transformation timestamp into deltatime
+    // ** look for "timestamp" in the columns and rename it to deltatime.. 
+    // ** advertise type to convert future measures and r
+    const timestampColumn = columnNames.indexOf(FIELD_TIMESTAMP);
+    if (timestampColumn >= 0) {
+      columnNames[timestampColumn] = FIELD_DELTATIME;
+      if (!this.seriesMeta) {
+        throw new Error('Cannot transform to timestamp without knwowing the seriesMeta time');
+      }
+      this.applyDeltaTimeToSerie = this.seriesMeta.time;
+    }
+
     // These names are all allowed once:
     const allowedFields = new Set(underlyingType.fields());
-    allowedFields.add(FIELD_TIMESTAMP);
+    allowedFields.add(FIELD_DELTATIME);
     debug('Allowed are ', allowedFields);
     
     // Accumulator for the fields that we've already seen.
@@ -75,7 +104,7 @@ class InfluxRowType implements EventType {
     // Now this looks valid: Only allowed fields and every field just once. 
     // Let's see if we have all required fields: 
     const requiredFields = new Set(underlyingType.requiredFields());
-    requiredFields.add(FIELD_TIMESTAMP);
+    requiredFields.add(FIELD_DELTATIME);
     
     for (const requiredField of requiredFields) {
       if (! seenFields.has(requiredField)) {
@@ -138,10 +167,9 @@ class InfluxRowType implements EventType {
   /** Returns the type of a single cell with column name `name`. 
    */
   forField(name: string): PropertyType  {
-    if (name === FIELD_TIMESTAMP) {
-      return new InfluxDateType();
-    }
-    else {
+    if (name === FIELD_DELTATIME) {
+      return new InfluxDateType(this.applyDeltaTimeToSerie);
+    } else {
       return this.eventType.forField(name);
     }
   }
@@ -156,11 +184,11 @@ class InfluxRowType implements EventType {
   // What fields MUST be present? 
   // 
   requiredFields(): Array<string> {
-    return [FIELD_TIMESTAMP].concat(
+    return [FIELD_DELTATIME].concat(
       this.eventType.requiredFields());
   }
   fields(): Array<string> {
-    return [FIELD_TIMESTAMP].concat(
+    return [FIELD_DELTATIME].concat(
       this.eventType.fields()); 
   }
 

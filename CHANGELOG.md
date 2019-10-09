@@ -1,5 +1,9 @@
 ## 1.4
 
+### 1.4.17
+
+ - Fix bug with batch streams.create calls not working for non-"star" permissions
+
 ### 1.4.16
 
 New feature:

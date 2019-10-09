@@ -126,6 +126,8 @@ class MethodContext {
       // TODO refactor to not use a mixin; If this fails, it'll be hard to debug.
       _.extend(this.access, accessLogic);
       
+      // those 2 last are executed in callbatch for each call.
+
       // Load the streams we can access.
       await this.retrieveStreams(storage);
       
