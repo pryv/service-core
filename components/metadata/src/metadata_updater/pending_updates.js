@@ -37,7 +37,7 @@ class PendingUpdatesMap {
       
       existing.merge(update);
       
-      // Now that we've possibly modified the timestamps on `existing`, let's 
+      // Now that we've possibly modified the deltaTimes on `existing`, let's 
       // rebuild the heap. 
       heap.updateItem(existing);
     }

@@ -146,9 +146,9 @@ describe('business.types.TypeRepository', function () {
     it('[IR3B] should inform about fields correctly', function () {
       const eventType = repository.lookup('series:mass/kg');
 
-      should(eventType.requiredFields()).be.eql(['timestamp', 'value']);
+      should(eventType.requiredFields()).be.eql(['deltaTime', 'value']);
       should(eventType.optionalFields()).be.eql([]);
-      should(eventType.fields()).be.eql(['timestamp', 'value']);
+      should(eventType.fields()).be.eql(['deltaTime', 'value']);
     });
   });
 });

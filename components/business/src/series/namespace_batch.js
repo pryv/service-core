@@ -36,7 +36,7 @@ class NamespaceBatch {
     };
     
     const points: Array<IPoint> = []; 
-    
+
     // Loop through all batch requests and convert each row into an IPoint 
     // structure. 
     for (const element of data.elements()) {
@@ -56,11 +56,10 @@ class NamespaceBatch {
     // Converts a single `Row` of data into an IPoint structure. 
     function toIPoint(eventId: string, row: Row, measurementName: string): IPoint {
       const struct = row.toStruct(); 
+      // FLOW This cannot fail, but somehow flow things we access the deltaTime. 
+      delete struct.deltaTime; 
       
-      // FLOW This cannot fail, but somehow flow things we access the timestamp. 
-      delete struct.timestamp; 
-      
-      const timestamp = row.get('timestamp');
+      const timestamp = row.get('deltaTime');
       
       return {
         tags: [], 
