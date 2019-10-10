@@ -81,13 +81,15 @@ class Server implements MessageSink{
     this.subscribeToNotifications();
   }
 
+
+
   deliver(channel: string, usernameEvent: UsernameEvent): void {
     switch (channel) {
       case NATS_HFS_UPDATE_CACHE:
-        // parse data, update cache
+        console.log('ZZZ', usernameEvent);
         break;
       default:
-        // should not happen
+
         break;
     }
   }

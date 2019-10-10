@@ -68,7 +68,8 @@ class MetadataCache implements MetadataRepository {
     const cache = this.cache; 
     
     const cachedValue = cache.get(key);
-    if (cachedValue !== undefined) {
+    console.log('OOOOOOO remove false');
+    if (false && cachedValue !== undefined) {
       debug(`Using cached credentials for ${userName} / ${eventId}.`);
       return cachedValue;
     }
@@ -122,6 +123,8 @@ class MetadataLoader {
         (err, results) => {
           if (err != null) return returnValueCallback(
             mapErrors(err));
+
+          console.log('FFFFFFFFFFFFF', results);
           const access = methodContext.access;
           const user = methodContext.user;
           const event = R.last(results);
@@ -193,7 +196,7 @@ class SeriesMetadataImpl implements SeriesMetadata {
     };
     this.userName = user.username; 
     this.eventId = event.id; 
-    this.time = event.time.getTime() / 1000;
+    this.time = event.time;
     this.eventType = event.type; 
   }
   

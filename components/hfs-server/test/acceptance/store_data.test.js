@@ -16,6 +16,8 @@ const {
   produceInfluxConnection, produceStorageLayer } = require('./test-helpers');
 const { databaseFixture } = require('components/test-helpers');
 
+const apiServerContext = require('components/api-server/test/test-helpers').context;
+
 const rpc = require('components/tprpc');
 const metadata = require('components/metadata');
 
@@ -154,6 +156,10 @@ describe('Storing data in a HF series', function() {
         '1970-01-01T00:00:01.000000000Z'); 
       assert.strictEqual(row.value, 80.3);
     });
+
+
+
+
     it('[KC15] should return data once stored', async () => {
       // identical with id here, but will be user name in general. 
       const userName = userId; 
@@ -199,6 +205,144 @@ describe('Storing data in a HF series', function() {
           });
       }
     });
+  });
+
+
+  describe('UPDATE and DELETE on handling event affect the serie', function () {
+
+
+    // TODO Worry about deleting data that we stored in earlier tests.
+    let hfServer; 
+    let apiServer;
+    // Spawns a server.
+    before(async () => {
+      debug('spawning');
+      hfServer = await spawnContext.spawn();
+      apiServer = await apiServerContext.spawn();
+    });
+    after(() => {
+      hfServer.stop();
+      apiServer.stop();
+    });
+
+    const pryv = databaseFixture(database);
+    after(function () {
+      pryv.clean();
+    });
+
+    let userId, parentStreamId, accessToken;
+    before(() => {
+      userId = cuid();
+      parentStreamId = cuid();
+      accessToken = cuid();
+
+      
+
+
+      debug('build fixture');
+      return pryv.user(userId, {}, function (user) {
+        user.stream({ id: parentStreamId }, function () { });
+
+        user.access({ token: accessToken, type: 'personal' });
+        user.session(accessToken);
+      });
+    });
+
+    const storageLayer = produceStorageLayer(database);
+
+    // Tries to store `data` in an event with attributes `attrs`. Returns 
+    // true if the whole operation is successful. 
+    // 
+    async function tryStore(attrs: Object, header: Header, data: Rows): Promise<TryOpResult> {
+      const userQuery = { id: userId };
+      const effectiveAttrs = lodash.merge(
+        { streamId: parentStreamId, time: Date.now() / 1000 },
+        attrs
+      );
+
+      const user = await bluebird.fromCallback(
+        cb => storageLayer.users.findOne(userQuery, null, cb));
+
+      assert.isNotNull(user);
+
+      const event = await bluebird.fromCallback(
+        cb => storageLayer.events.insertOne(user, effectiveAttrs, cb));
+
+      const requestData = {
+        format: 'flatJSON',
+        fields: header,
+        points: data,
+      };
+
+      const request = hfServer.request();
+      const response = await request
+        .post(`/${userId}/events/${event.id}/series`)
+        .set('authorization', accessToken)
+        .send(requestData);
+
+      if (response.statusCode != 200) {
+        debug('Failed to store data, debug report:');
+        debug('response.body', response.body);
+      }
+
+      debug('Enter these commands into influx CLI to inspect the data:');
+      debug(`  use "user.${user.id}"`);
+      debug(`  select * from "event.${event.id}"`);
+      debug(`  show field keys from "event.${event.id}"`);
+
+      return {
+        ok: response.statusCode === 200,
+        user: user,
+        event: event,
+        status: response.statusCode,
+        body: response.body,
+      };
+    }
+
+
+    function storeData(eventId, data): any {
+      const request = hfServer.request();
+      const response = request
+        .post(`/${userId}/events/${eventId}/series`)
+        .set('authorization', accessToken)
+        .send(data);
+
+      return response;
+    }
+
+    it('[UPC1] first', async () => {
+      
+      /** 
+      const event = await bluebird.fromCallback(
+        cb => storageLayer.events.insertOne(user,
+          { streamId: streamId, content: 10, type: "series:mass/kg", time: new Date() }, cb)); */
+
+      const now = 6;
+
+      const result = await tryStore({ type: 'series:angular-speed/rad-s' },
+        ['deltaTime', 'value'],
+        [
+          [now - 3, 1],
+          [now - 2, 2],
+          [now - 1, 3]]);
+
+      console.log('AAAA', result);
+      const response = await apiServer.request()
+        .put('/' + result.user.username + '/events/'+ result.event.id )
+        .set('authorization', accessToken)
+        .send({time: Date.now() / 1000});
+      console.log('8888', response.body);
+
+
+      const result2 = await storeData(result.event.id, 
+        ['deltaTime', 'value'],
+        [
+          [now - 3, 1],
+          [now - 2, 2],
+          [now - 1, 3]]);
+      console.dir('8888', result2);
+    });
+
   });
   
   describe('POST /events/EVENT_ID/series', function() {
@@ -509,7 +653,7 @@ describe('Storing data in a HF series', function() {
       async function tryStore(attrs: Object, header: Header, data: Rows): Promise<TryOpResult> {
         const userQuery = {id: userId};
         const effectiveAttrs = lodash.merge(
-          { streamId: parentStreamId , time: new Date()}, 
+          { streamId: parentStreamId , time: Date.now() / 1000}, 
           attrs
         );
 

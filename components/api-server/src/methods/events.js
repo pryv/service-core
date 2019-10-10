@@ -520,7 +520,7 @@ module.exports = function (
     if (eventType.isSeries()) {
       // Series cannot have content on update, not here at least.
       if (params.update.content != null) {
-        logger.info('on a de la merde: ' + JSON.stringify(params.update, null, 2));
+        logger.info('Invalid series params: ' + JSON.stringify(params.update, null, 2));
         return next(errors.invalidParametersFormat(
           'The event content\'s format is invalid.', 
           'Events of type High-frequency have a read-only content'));

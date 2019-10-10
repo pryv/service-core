@@ -21,13 +21,13 @@ function Events(database) {
 
   _.extend(this.converters, {
     itemDefaults: [converters.createIdIfMissing],
-    itemToDB: [endTimeToDB, converters.deletionToDB, converters.stateToDB],
+    itemToDB: [checkTimeIsNumber,endTimeToDB, converters.deletionToDB, converters.stateToDB],
     updateToDB: [
       endTimeUpdate,
       converters.stateUpdate,
       converters.getKeyValueSetUpdateFn('clientData'),
     ],
-    itemFromDB: [clearEndTime, converters.deletionFromDB],
+    itemFromDB: [checkTimeIsNumber, clearEndTime, converters.deletionFromDB],
   });
 
   this.defaultOptions = {
@@ -35,6 +35,14 @@ function Events(database) {
   };
 }
 util.inherits(Events, BaseStorage);
+
+function checkTimeIsNumber(eventData) {
+  if (typeof eventData.time !== 'number') {
+    throw new Error('Invalid time for: ', JSON.stringify(eventData));
+  }
+  return eventData;
+}
+
 
 function endTimeToDB(eventData) {
   if (eventData.hasOwnProperty('duration') && eventData.duration !== 0) {
