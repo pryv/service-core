@@ -60,7 +60,7 @@ describe('Storing data in a HF series', function() {
       pryv.clean(); 
     });
 
-    const nowEvent = new Date();
+    const nowEvent = Date.now() / 1000;
       
     // Set up a few ids that we'll use for testing. NOTE that these ids will
     // change on every test run. 
@@ -110,8 +110,8 @@ describe('Storing data in a HF series', function() {
     it('[ZUBI] should convert timestamp to deltaTime', async () => {
       const storageLayer = produceStorageLayer(database);
 
-      const nowPlus1Sec = new Date(nowEvent.getTime() + 1000);
-      const response = await storeData({ timestamp: nowPlus1Sec / 1000, value: 80.3 });
+      const nowPlus1Sec = nowEvent + 1;
+      const response = await storeData({ timestamp: nowPlus1Sec, value: 80.3 });
 
       // Check if the data is really there
       const userName = userId; // identical with id here, but will be user name in general. 
