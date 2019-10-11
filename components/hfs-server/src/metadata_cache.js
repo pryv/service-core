@@ -193,7 +193,7 @@ class SeriesMetadataImpl implements SeriesMetadata {
     };
     this.userName = user.username; 
     this.eventId = event.id; 
-    this.time = event.time.getTime() / 1000;
+    this.time = event.time;
     this.eventType = event.type; 
   }
   

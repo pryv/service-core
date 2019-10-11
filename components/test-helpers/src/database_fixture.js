@@ -352,7 +352,7 @@ class FixtureEvent extends FixtureTreeNode implements ChildResource {
     // constructor. 
     return {
       id: `c${Charlatan.Number.number(15)}`,
-      time: Charlatan.Date.backward(), 
+      time: Charlatan.Date.backward().getTime() / 1000, 
       duration: 0, 
       type: Charlatan.Helpers.sample(['mass/kg']), 
       tags: [], 
