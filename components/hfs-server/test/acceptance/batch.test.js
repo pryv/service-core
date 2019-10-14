@@ -106,14 +106,6 @@ describe('Storing BATCH data in a HF series', function() {
       };
     
       const response = await storeData(data);
-      
-      const response2 = await server.request()
-        .post(`/${userId}/events/${eventId}/series`)
-        .set('authorization', accessToken)
-        .send(data)
-        .expect(200);
-
-      console.log('UUUUUUUUUU' + response2)
 
       const body = response.body; 
       if (body == null || body.status == null) throw new Error(); 
