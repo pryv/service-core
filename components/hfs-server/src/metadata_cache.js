@@ -11,10 +11,23 @@ const MethodContext = require('components/model').MethodContext;
 const errors = require('components/errors').factory;
 const { InfluxRowType } = require('components/business').types;
 
+const NatsSubscriber = require('components/api-server/src/socket-io/nats_subscriber');
+const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
+const NATS_HFS_UPDATE_CACHE = require('components/utils').messaging
+  .NATS_HFS_UPDATE_CACHE;
+
 import type { LRUCache } from 'lru-cache';
 
 import type { TypeRepository } from 'components/business';
 import type { Logger } from 'components/utils';
+import type { MessageSink } from './message_sink';
+
+type UsernameEvent = {
+  username: string,
+  event: {
+    id: string
+  }
+};
 
 /** A repository for meta data on series. 
  */
@@ -44,16 +57,23 @@ const LRU_CACHE_SIZE = 10000;
 // Credentials will be cached for at most this many ms. 
 const LRU_CACHE_MAX_AGE_MS = 1000*60*5; // 5 mins
 
+
+
 /** Holds metadata related to series for some time so that we don't have to 
  * compile it every time we store data in the server. 
  * 
  * Caches data about a series first by `accessToken`, then by `eventId`. 
  * */
-class MetadataCache implements MetadataRepository {
+class MetadataCache implements MetadataRepository, MessageSink {
   loader: MetadataRepository;
   cache: LRUCache<string, SeriesMetadata>; 
+
+  // nats messaging
+  natsSubscriber: NatsSubscriber;
+  sink: MessageSink;
   
   constructor(metadataLoader: MetadataRepository) {
+
     this.loader = metadataLoader;
     
     const options = {
@@ -61,7 +81,30 @@ class MetadataCache implements MetadataRepository {
       maxAge: LRU_CACHE_MAX_AGE_MS,
     };
     this.cache = LRU(options);
+
+    // nats messages
+    this.subscribeToNotifications();
   }
+
+  // nats messages
+
+  deliver(channel: string, usernameEvent: UsernameEvent): void {
+    switch (channel) {
+      case NATS_HFS_UPDATE_CACHE:
+        console.log('ZZZ', usernameEvent);
+        break;
+      default:
+
+        break;
+    }
+  }
+
+  async subscribeToNotifications() {
+    this.natsSubscriber = new NatsSubscriber(NATS_CONNECTION_URI, this);
+    await this.natsSubscriber.subscribe(NATS_HFS_UPDATE_CACHE);
+  }
+
+  // cache logic
   
   async forSeries(userName: string, eventId: string, accessToken: string): Promise<SeriesMetadata> {
     const key = [userName, eventId, accessToken].join('/'); 
@@ -69,7 +112,7 @@ class MetadataCache implements MetadataRepository {
     
     const cachedValue = cache.get(key);
     console.log('OOOOOOO remove false');
-    if (false && cachedValue !== undefined) {
+    if ( cachedValue !== undefined) {
       debug(`Using cached credentials for ${userName} / ${eventId}.`);
       return cachedValue;
     }
