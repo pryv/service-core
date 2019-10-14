@@ -310,37 +310,54 @@ describe('Storing data in a HF series', function() {
       return response;
     }
 
-    it('[UPC1] first', async () => {
+    it('[UD1C] moving event in time does empty the cache', async () => {
+      // This is visible if after moving the "timestamp" sugar is valid
       
-      /** 
-      const event = await bluebird.fromCallback(
-        cb => storageLayer.events.insertOne(user,
-          { streamId: streamId, content: 10, type: "series:mass/kg", time: new Date() }, cb)); */
-
-      const now = 6;
-
+      // 1 - Create an event with some values
       const result = await tryStore({ type: 'series:angular-speed/rad-s' },
         ['deltaTime', 'value'],
         [
-          [now - 3, 1],
-          [now - 2, 2],
-          [now - 1, 3]]);
+          [1, 1],
+          [2, 2],
+          [3, 3]]);
 
-      console.log('AAAA', result);
+      // move event to tomorrow 
+      const newEventTime = (Date.now() / 1000) + 60 * 60 * 24;
+
       const response = await apiServer.request()
         .put('/' + result.user.username + '/events/'+ result.event.id )
         .set('authorization', accessToken)
-        .send({time: Date.now() / 1000});
-      console.log('8888', response.body);
-
+        .send({ time: newEventTime });
+      
+      // add Data using timestamp sugar
 
       const result2 = await storeData(result.event.id, 
-        ['deltaTime', 'value'],
-        [
-          [now - 3, 1],
-          [now - 2, 2],
-          [now - 1, 3]]);
-      console.dir('8888', result2);
+        {format: 'flatJSON',
+        fields: ['timestamp', 'value'],
+        points: [
+          [newEventTime + 4, 4],
+          [newEventTime + 5, 5],
+          [newEventTime + 6, 6]]});
+      
+      console.log(result2.body);
+      // check Data 
+
+      const request = hfServer.request();
+      return request
+        .get(`/${result.user.username}/events/${result.event.id}/series`)
+        .set('authorization', accessToken)
+        .query({  })
+        // .then((res) => console.log(require('util').inspect(res.body, { depth: null })))
+        .expect(200)
+        .then((res) => {
+          const points = res.body.points || [];
+
+          assert.isNotEmpty(points);
+          console.log('ZZZZ', points);
+          assert.deepEqual(
+            points[5],
+           [ 6, 6]);
+        });
     });
 
   });
