@@ -34,6 +34,11 @@ async function storeSeriesData(ctx: Context,
   trace.start('seriesMeta/load');
   const seriesMeta = await metadata.forSeries(userName, eventId, accessToken);
   trace.finish('seriesMeta/load');
+
+  // Trashed or Deleted: Abort.
+  if (seriesMeta.trashedOrDeleted()) {
+    throw errors.forbidden('Access to trashed or deleted series is forbidden');
+  }
   
   // No access permission: Abort.
   if (!seriesMeta.canWrite()) throw errors.forbidden();

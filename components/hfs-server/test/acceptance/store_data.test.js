@@ -338,10 +338,8 @@ describe('Storing data in a HF series', function() {
           [newEventTime + 4, 4],
           [newEventTime + 5, 5],
           [newEventTime + 6, 6]]});
-      
-      console.log(result2.body);
-      // check Data 
 
+      // check Data 
       const request = hfServer.request();
       return request
         .get(`/${result.user.username}/events/${result.event.id}/series`)
@@ -353,11 +351,50 @@ describe('Storing data in a HF series', function() {
           const points = res.body.points || [];
 
           assert.isNotEmpty(points);
-          console.log('ZZZZ', points);
           assert.deepEqual(
             points[5],
            [ 6, 6]);
         });
+    });
+
+    it('[UD2C] trashed event cannot be updated', async () => {
+      // This is visible if after moving the "timestamp" sugar is valid
+
+      // 1 - Create an event with some values
+      const result = await tryStore({ type: 'series:angular-speed/rad-s' },
+        ['deltaTime', 'value'],
+        [
+          [1, 1],
+          [2, 2],
+          [3, 3]]);
+
+      // move event to tomorrow 
+      const newEventTime = (Date.now() / 1000) + 60 * 60 * 24;
+
+      
+      const response = await apiServer.request()
+        .delete('/' + result.user.username + '/events/' + result.event.id)
+        .set('authorization', accessToken);
+        
+
+      // add Data using timestamp sugar
+
+      const result2 = await storeData(result.event.id,
+        {
+          format: 'flatJSON',
+          fields: ['timestamp', 'value'],
+          points: [
+            [newEventTime + 4, 4],
+            [newEventTime + 5, 5],
+            [newEventTime + 6, 6]]
+        });
+
+      assert.strictEqual(result2.status, 403);
+      const error = result2.body.error;
+      assert.strictEqual(error.id, 'forbidden');
+      assert.strictEqual(error.message, 'Access to trashed or deleted series is forbidden');
+      assert.typeOf(error.message, 'string');
+   
     });
 
   });

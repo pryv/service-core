@@ -49,6 +49,9 @@ export interface SeriesMetadata {
   
   // Return the InfluxDB row type for the given event. 
   produceRowType(repo: TypeRepository): InfluxRowType; 
+
+  // Retur true if item is trashed or deleted
+  trashedOrDeleted(): boolean;
 }
 
 // A single HFS server will keep at maximum this many credentials in cache.
@@ -56,8 +59,6 @@ const LRU_CACHE_SIZE = 10000;
 
 // Credentials will be cached for at most this many ms. 
 const LRU_CACHE_MAX_AGE_MS = 1000*60*5; // 5 mins
-
-
 
 /** Holds metadata related to series for some time so that we don't have to 
  * compile it every time we store data in the server. 
@@ -91,11 +92,22 @@ class MetadataCache implements MetadataRepository, MessageSink {
   deliver(channel: string, usernameEvent: UsernameEvent): void {
     switch (channel) {
       case NATS_HFS_UPDATE_CACHE:
-        console.log('ZZZ', usernameEvent);
+        this.invalidateEvent(usernameEvent);
         break;
       default:
 
         break;
+    }
+  }
+
+  invalidateEvent(usernameEvent: UsernameEvent): void {
+    const cache = this.cache;
+    const eventKey = usernameEvent.username + '/' + usernameEvent.event.id;
+    const cachedTokenListForEvent = cache.get(eventKey);
+    if (cachedTokenListForEvent !== undefined) {
+      cachedTokenListForEvent.map((token) => { 
+        cache.del(eventKey + '/' + token);
+      })
     }
   }
 
@@ -105,19 +117,38 @@ class MetadataCache implements MetadataRepository, MessageSink {
   }
 
   // cache logic
-  
   async forSeries(userName: string, eventId: string, accessToken: string): Promise<SeriesMetadata> {
-    const key = [userName, eventId, accessToken].join('/'); 
     const cache = this.cache; 
     
+    const key = [userName, eventId, accessToken].join('/'); 
+
+    // to make sure we update the tokenList "recently used info" cache we also get eventKey
+    const eventKey = [userName, eventId].join('/');
+    const cachedTokenListForEvent = cache.get(eventKey);
+
+    // also keep a list of used Token to invalidate them
+    const cachedEventListForTokens = cache.get(accessToken);
+    
     const cachedValue = cache.get(key);
-    console.log('OOOOOOO remove false');
     if ( cachedValue !== undefined) {
       debug(`Using cached credentials for ${userName} / ${eventId}.`);
       return cachedValue;
-    }
-      
+    }  
     const newValue = await this.loader.forSeries(userName, eventId, accessToken); 
+    
+    // new event we add it to the list
+    if (cachedTokenListForEvent !== undefined) {
+      cache.set(eventKey, cachedTokenListForEvent.concat(accessToken));
+    } else {
+      cache.set(eventKey, [accessToken]);
+    }
+
+    // new token we add it to the list
+    if (cachedEventListForTokens !== undefined) {
+      cache.set(accessToken, cachedEventListForTokens.concat(key));
+    } else {
+      cache.set(accessToken, [key]);
+    }
     
     cache.set(key, newValue);
     
@@ -167,7 +198,6 @@ class MetadataLoader {
           if (err != null) return returnValueCallback(
             mapErrors(err));
 
-          console.log('FFFFFFFFFFFFF', results);
           const access = methodContext.access;
           const user = methodContext.user;
           const event = R.last(results);
@@ -241,8 +271,15 @@ class SeriesMetadataImpl implements SeriesMetadata {
     this.eventId = event.id; 
     this.time = event.time;
     this.eventType = event.type; 
+    this.trashed = event.trashed;
+    this.deleted = event.deleted;
   }
   
+
+  trashedOrDeleted(): boolean {
+    return this.trashed || this.deleted;
+  }
+
   canWrite(): boolean {
     return this.permissions.write; 
   }

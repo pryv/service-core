@@ -456,12 +456,13 @@ module.exports = function (
 
   function notify(context, params, result, next) {
     notifications.eventsChanged(context.user);
-
+  
     const updatedEvent = result.event;
     if (isSeriesEvent(updatedEvent)) {
       natsPublisher.deliver(NATS_HFS_UPDATE_CACHE, {
         username: context.user.username,
-        event: _.pick(updatedEvent, ['id'])
+        event: _.pick(updatedEvent, ['id']),
+        calledMethodId: context.calledMethodId
       });
     }
 
@@ -910,7 +911,7 @@ module.exports = function (
           deleteWithData(context, params, result, next);
         }
       });
-    });
+    }, notify);
 
   function flagAsTrashed(context, params, result, next) {
     var updatedData = {trashed: true};
@@ -922,7 +923,6 @@ module.exports = function (
 
         result.event = updatedEvent;
         setFileReadToken(context.access, result.event);
-        notifications.eventsChanged(context.user);
         next();
       });
   }
@@ -958,7 +958,6 @@ module.exports = function (
               return stepDone(errors.unexpectedError(err));
             }
             result.eventDeletion = {id: params.id};
-            notifications.eventsChanged(context.user);
             stepDone();
           });
       },
