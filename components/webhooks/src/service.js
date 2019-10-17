@@ -37,6 +37,7 @@ class WebhooksService implements MessageSink {
   NATS_CONNECTION_URI: string;
 
   apiVersion: string;
+  serial: string;
 
   constructor(params: {
     storage: StorageLayer, 

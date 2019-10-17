@@ -6,23 +6,35 @@ const methodsSchema = require('../schema/generalMethods');
 const _ = require('lodash');
 const bluebird = require('bluebird');
 
+import type API from '../API';
+import type { Logger } from 'components/utils';
+import type { StorageLayer } from 'components/storage';
+import type { MethodContext } from 'components/model';
+import type Result from '../Result';
+import type { ApiCallback } from '../API';
+
+type ApiCall = {
+  method: string,
+  params: mixed,
+};
+
 /**
  * Utility API methods implementations.
  *
  * @param api
  */
-module.exports = function (api, logging, storageLayer) {
+module.exports = function (api: API, logging: Logger, storageLayer: StorageLayer) {
 
-  var logger = logging.getLogger('methods/batch');
+  const logger = logging.getLogger('methods/batch');
 
   api.register('getAccessInfo',
     commonFns.getParamsValidation(methodsSchema.getAccessInfo.params),
     getAccessInfo);
 
-  function getAccessInfo(context, params, result, next) {
+  function getAccessInfo(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     result.type = context.access.type;
     result.name = context.access.name;
-    if (context.access.permissions) {
+    if (context.access.permissions != null) {
       result.permissions = context.access.permissions;
     }
     next();
@@ -32,19 +44,22 @@ module.exports = function (api, logging, storageLayer) {
     commonFns.getParamsValidation(methodsSchema.callBatch.params),
     callBatch);
 
-  async function callBatch(context, calls, results, next) {
-    results.results = await bluebird.mapSeries(calls, executeCall);
+  async function callBatch(context: MethodContext, calls: Array<ApiCall>, result: Result, next: ApiCallback) {
+    result.results = await bluebird.mapSeries(calls, executeCall);
     next();
   
-    async function executeCall(call) {
+    async function executeCall(call: ApiCall) {
       // Clone context to avoid potential side effects
-      const freshContext = _.cloneDeep(context);
+      const freshContext: MethodContext = _.cloneDeep(context);
+      const access = freshContext.access;
       try {
         // Reload streams tree since a previous call in this batch
         // may have created a new stream.
         await freshContext.retrieveStreams(storageLayer);
+        const streams = freshContext.streams;
+        if (!access.isPersonal()) access.loadPermissions(streams);
         // Perform API call
-        const result = await bluebird.fromCallback(
+        const result: Result = await bluebird.fromCallback(
           (cb) => api.call(call.method, freshContext, call.params, cb));
         
         return await bluebird.fromCallback(

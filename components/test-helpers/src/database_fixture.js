@@ -7,6 +7,7 @@ const Charlatan = require('charlatan');
 const generateId = require('cuid');
 const debug = require('debug')('databaseFixture');
 const timestamp = require('unix-timestamp');
+const _ = require('lodash');
 
 const storage = require('components/storage');
 
@@ -351,7 +352,7 @@ class FixtureEvent extends FixtureTreeNode implements ChildResource {
     // constructor. 
     return {
       id: `c${Charlatan.Number.number(15)}`,
-      time: Charlatan.Date.backward(), 
+      time: Charlatan.Date.backward().getTime() / 1000, 
       duration: 0, 
       type: Charlatan.Helpers.sample(['mass/kg']), 
       tags: [], 
@@ -367,7 +368,7 @@ class FixtureAccess extends FixtureTreeNode implements ChildResource {
   create() {
     const db = this.db; 
     const user = this.context.user; 
-    const attributes = this.attrs; 
+    const attributes = _.merge(this.fakeAttributes(), this.attrs); 
     return bluebird.fromCallback((cb) => 
       db.accesses.insertOne(user, attributes, cb)); 
   }

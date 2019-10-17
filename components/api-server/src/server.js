@@ -122,13 +122,18 @@ class Server {
       application.storageLayer,
     );
 
+    require('./methods/trackingFunctions')(
+      application.api,
+      l('methods/trackingFunctions'),
+      application.storageLayer,
+    );
+
     [
       require('./methods/account'),
       require('./methods/followedSlices'),
       require('./methods/profile'),
       require('./methods/streams'),
       require('./methods/events'),
-      require('./methods/trackingFunctions'),
     ].forEach(function (moduleDef) {
       dependencies.resolve(moduleDef);
     });
