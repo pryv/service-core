@@ -16,6 +16,8 @@ const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTIO
 const NATS_HFS_UPDATE_CACHE = require('components/utils').messaging
   .NATS_HFS_UPDATE_CACHE;
 
+ 
+
 import type { LRUCache } from 'lru-cache';
 
 import type { TypeRepository } from 'components/business';
@@ -26,7 +28,8 @@ type UsernameEvent = {
   username: string,
   event: {
     id: string
-  }
+  },
+  isDelete: boolean
 };
 
 /** A repository for meta data on series. 
@@ -68,15 +71,17 @@ const LRU_CACHE_MAX_AGE_MS = 1000*60*5; // 5 mins
 class MetadataCache implements MetadataRepository, MessageSink {
   loader: MetadataRepository;
   cache: LRUCache<string, SeriesMetadata>; 
+  series: Repository;
 
   // nats messaging
   natsSubscriber: NatsSubscriber;
   sink: MessageSink;
   
-  constructor(metadataLoader: MetadataRepository) {
+  constructor(series: Repository, metadataLoader: MetadataRepository) {
 
     this.loader = metadataLoader;
-    
+    this.series = series;
+
     const options = {
       max: LRU_CACHE_SIZE,
       maxAge: LRU_CACHE_MAX_AGE_MS,
@@ -93,11 +98,21 @@ class MetadataCache implements MetadataRepository, MessageSink {
     switch (channel) {
       case NATS_HFS_UPDATE_CACHE:
         this.invalidateEvent(usernameEvent);
+        if (usernameEvent.isDelete) {
+          this.dropSeries(usernameEvent);
+        }
         break;
       default:
 
         break;
     }
+  }
+
+  dropSeries(usernameEvent: UsernameEvent): Promise {
+    return this.series.connection.dropMeasurement(
+      'event.' + usernameEvent.event.id,
+      'user.' + usernameEvent.username
+    );
   }
 
   invalidateEvent(usernameEvent: UsernameEvent): void {

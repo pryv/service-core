@@ -46,7 +46,7 @@ class Context {
     this.tracer = tracer;
 
     this.configureTypeRepository(typeRepoUpdateUrl); 
-    this.configureMetadataCache(mongoConn, logFactory('model'));
+    this.configureMetadataCache(this.series, mongoConn, logFactory('model'));
   }
   
   configureTypeRepository(url: string) {
@@ -56,8 +56,8 @@ class Context {
     this.typeRepository = typeRepo;
   }
   
-  configureMetadataCache(mongoConn: Database, logger: Logger) {
-    this.metadata = new MetadataCache(
+  configureMetadataCache(series: Repository, mongoConn: Database, logger: Logger) {
+    this.metadata = new MetadataCache(series: Repository,
       new MetadataLoader(mongoConn, logger));
   }
   

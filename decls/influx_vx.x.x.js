@@ -15,6 +15,7 @@ declare class InfluxDB {
   createDatabase(name: string): Promise<void>; 
   dropDatabase(name: string): Promise<void>;
   writeMeasurement(measurement: string, points: Array<IPoint>, options?: IWriteOptions): Promise<void>;
+  dropMeasurement(measurement: string, dbName: string);
   writePoints(points: Array<IPoint>, options?: IWriteOptions): Promise<void>;
 }
   

@@ -209,7 +209,7 @@ describe('Storing data in a HF series', function() {
 
 
   describe('UPDATE and DELETE on handling event affect the serie', function () {
-
+    this.timeout(5000);
 
     // TODO Worry about deleting data that we stored in earlier tests.
     let hfServer; 
@@ -218,7 +218,9 @@ describe('Storing data in a HF series', function() {
     before(async () => {
       debug('spawning');
       hfServer = await spawnContext.spawn();
+     
       apiServer = await apiServerContext.spawn();
+      
     });
     after(() => {
       hfServer.stop();
@@ -237,7 +239,6 @@ describe('Storing data in a HF series', function() {
       accessToken = cuid();
 
       
-
 
       debug('build fixture');
       return pryv.user(userId, {}, function (user) {
@@ -357,9 +358,9 @@ describe('Storing data in a HF series', function() {
         });
     });
 
-    it('[UD2C] trashed event cannot be updated', async () => {
+    it('[UD2C] trashed event cannot be accessed', async () => {
       // This is visible if after moving the "timestamp" sugar is valid
-
+      
       // 1 - Create an event with some values
       const result = await tryStore({ type: 'series:angular-speed/rad-s' },
         ['deltaTime', 'value'],
@@ -395,6 +396,41 @@ describe('Storing data in a HF series', function() {
       assert.strictEqual(error.message, 'Access to trashed or deleted series is forbidden');
       assert.typeOf(error.message, 'string');
    
+    });
+
+    it('[ZTG6] deleted events deletes series', async () => {
+      // This is visible if after moving the "timestamp" sugar is valid
+
+      // 1 - Create an event with some values
+      const result = await tryStore({ type: 'series:angular-speed/rad-s' },
+        ['deltaTime', 'value'],
+        [
+          [1, 1],
+          [2, 2],
+          [3, 3]]);
+
+    
+      const delete1 = await apiServer.request()
+        .delete('/' + result.user.username + '/events/' + result.event.id)
+        .set('authorization', accessToken);
+      assert.strictEqual(delete1.status, 200);
+
+      const query = `select * from "event.${result.event.id}"`;
+      const opts = {
+        database: `user.${result.user.id}`
+      };
+      const rows = await influx.query(query, opts);
+      assert.strictEqual(rows.length, 3);
+      
+      const delete2 = await apiServer.request()
+        .delete('/' + result.user.username + '/events/' + result.event.id)
+        .set('authorization', accessToken);
+      assert.strictEqual(delete2.status, 200);
+
+      const rows2 = await influx.query(query, opts);
+      assert.strictEqual(rows2.length, 0);
+  
+
     });
 
   });

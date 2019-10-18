@@ -456,13 +456,15 @@ module.exports = function (
 
   function notify(context, params, result, next) {
     notifications.eventsChanged(context.user);
-  
-    const updatedEvent = result.event;
-    if (isSeriesEvent(updatedEvent)) {
+    // in case of delete the context.event exists, while not in case of update
+    if (isSeriesEvent(context.event || result.event)) {
+
+      const isDelete = result.eventDeletion ? true : false;
+      const updatedEventId = isDelete ? _.pick(result.eventDeletion, ['id']) : _.pick(result.event, ['id']);
       natsPublisher.deliver(NATS_HFS_UPDATE_CACHE, {
         username: context.user.username,
-        event: _.pick(updatedEvent, ['id']),
-        calledMethodId: context.calledMethodId
+        event: updatedEventId,
+        isDelete: isDelete
       });
     }
 
@@ -751,7 +753,6 @@ module.exports = function (
         // TODO: remove saved files if any
         return callback(err);
       }
-
       // approximately update account storage size
       context.user.storageUsed.attachedFiles += sizeDelta;
       usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
@@ -964,6 +965,9 @@ module.exports = function (
       userEventFilesStorage.removeAllForEvent.bind(userEventFilesStorage, context.user, params.id),
       function (stepDone) {
         // approximately update account storage size
+        if (! context.user.storageUsed || ! context.user.storageUsed.attachedFiles) {
+          return stepDone();
+        }
         context.user.storageUsed.attachedFiles -= getTotalAttachmentsSize(context.event);
         usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
           stepDone);
