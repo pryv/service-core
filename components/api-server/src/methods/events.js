@@ -456,10 +456,12 @@ module.exports = function (
 
   function notify(context, params, result, next) {
     notifications.eventsChanged(context.user);
-    // in case of delete the context.event exists, while not in case of update
-    if (isSeriesEvent(context.event || result.event)) {
 
+    // notify is called by create, update and delete
+    // depending on the case the event properties will be found in context or event
+    if (isSeriesEvent(context.event || result.event)) {
       const isDelete = result.eventDeletion ? true : false;
+      // if event is a deletion 'id' is given by result.eventDeletion
       const updatedEventId = isDelete ? _.pick(result.eventDeletion, ['id']) : _.pick(result.event, ['id']);
       natsPublisher.deliver(NATS_HFS_UPDATE_CACHE, {
         username: context.user.username,

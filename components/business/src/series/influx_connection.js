@@ -33,6 +33,7 @@ class InfluxConnection {
     options?: IWriteOptions
   ): Promise<void> 
   {
+    this.logger.debug(`Write -> ${name}: ${points.length} points.`);
     return this.conn.writeMeasurement(name, points, options);
   }
 

@@ -218,7 +218,6 @@ describe('Storing data in a HF series', function() {
     before(async () => {
       debug('spawning');
       hfServer = await spawnContext.spawn();
-     
       apiServer = await apiServerContext.spawn();
       
     });
