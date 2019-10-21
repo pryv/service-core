@@ -3,13 +3,29 @@
 // Service that receives notifications from api-server and send them to existing Webhooks.
 
 const Application = require('../src/application');
+const AirbrakeClient = require('airbrake-js');
 
 startup()
   .catch(err => console.error(err)); // eslint-disable-line no-console
 
 async function startup() {
   const app = new Application();
-
   await app.setup();
-  await app.run();
+  
+  // Activate airbrake
+  const airbrakeSettings = app.settings.get('logs:airbrake');
+  const airbrake = airbrakeSettings.active ?
+    new AirbrakeClient({
+      projectId: airbrakeSettings.projectId,
+      projectKey: airbrakeSettings.apiKey,
+    }) : null;
+
+  try {
+    await app.run();
+  } catch (err) {
+    if (airbrake != null) {
+      airbrake.notify(err);
+    }
+    throw err;
+  }
 }

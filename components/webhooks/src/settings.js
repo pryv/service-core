@@ -19,6 +19,11 @@ class Settings {
         prefix: '',
         console: { active: true, level: 'info', colorize: true },
         file: { active: false },
+        airbrake: {
+          active: true,
+          projectId: '247285',
+          apiKey: 'ba44e430f8fdf66e820717660e838874',
+        }
       },
       mongodb: {
         host: '127.0.0.1',

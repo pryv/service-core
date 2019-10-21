@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "airbrake": "^2.1.1",
+    "airbrake-js": "^1.6.8",
     "api-server": "file:components/api-server",
     "async": "^2.5.0",
     "awaiting": "^3.0.0",
@@ -33,6 +34,7 @@
     "convict": "^3.0.0",
     "cookie-parser": "^1.4.3",
     "cron": "^1.2.1",
+    "cross-fetch": "^3.0.4",
     "dependable": "attentif/dependable#0bb5c4a9ef2b32dded1b24d5d3c0ecccfb0bf7fd",
     "errors": "file:components/errors",
     "express": "^4",
