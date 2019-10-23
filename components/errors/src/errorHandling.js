@@ -38,7 +38,7 @@ errorHandling.logError = function (error: Error, req: express$Request | Object, 
     }
 
     if (error.id === ErrorIds.UnexpectedError) {
-      logger.warn(logMsg, metadata);
+      logger.error(logMsg, metadata);
     } else {
       logger.info(logMsg, metadata);
     }
