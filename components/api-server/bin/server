@@ -35,6 +35,7 @@ const AirbrakeClient = require('airbrake-js');
 
   // Catch uncaught Exceptions
   process.on('uncaughtException', async (error) => {
+    if (logger) logger.error(error);
     console.dir(error);
     if (airbrake != null && typeof airbrake.notify === 'function') {
       await airbrake.notify(error);
@@ -56,8 +57,7 @@ const AirbrakeClient = require('airbrake-js');
 })()
   .then(() => logger.info('Startup sequence complete, Server is running.'))
   .catch(e => {
+    if (logger) logger.error(e);
     console.dir(e);
-    if(logger)
-      logger.error(e);
     process.exit(1);
   });
