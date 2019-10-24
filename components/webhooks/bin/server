@@ -12,10 +12,10 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // Catch uncaught Exceptions
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', async (error) => {
   console.dir(error);
   if (airbrake != null && typeof airbrake.notify === 'function') {
-    airbrake.notify(error);
+    await airbrake.notify(error);
   }
   process.exit(1);
 });
