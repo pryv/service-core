@@ -27,7 +27,7 @@
     "airbrake": {
       "active": false,
       "projectId": "",
-      "apiKey": ""
+      "key": ""
     }
   }
 }
