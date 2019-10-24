@@ -22,7 +22,7 @@ class Settings {
         airbrake: {
           active: false,
           projectId: '',
-          apiKey: '',
+          key: '',
         }
       },
       mongodb: {

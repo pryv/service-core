@@ -23,7 +23,7 @@ const AirbrakeClient = require('airbrake-js');
   const airbrakeSettings = app.settings.get('logs.airbrake').obj();
   if (airbrakeSettings.active) {
     airbrake = new AirbrakeClient({
-      projectId: airbrakeSettings.id,
+      projectId: airbrakeSettings.projectId,
       projectKey: airbrakeSettings.key,
     });
   }

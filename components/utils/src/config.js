@@ -167,7 +167,7 @@ config.schema = {
         default: '',
         doc: 'The Airbrake API key'
       },
-      id: {
+      projectId: {
         format: String,
         default: '',
         doc: 'The Airbrake project id'

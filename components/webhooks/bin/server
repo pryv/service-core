@@ -32,7 +32,7 @@ async function startup() {
   if (airbrakeSettings.active) {
     airbrake = new AirbrakeClient({
       projectId: airbrakeSettings.projectId,
-      projectKey: airbrakeSettings.apiKey,
+      projectKey: airbrakeSettings.key,
     });
   }
 
