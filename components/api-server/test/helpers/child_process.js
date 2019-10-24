@@ -86,10 +86,6 @@ class ApplicationLauncher {
   async launch(injectSettings: Object) {
     debug('launch', injectSettings);
     
-    injectSettings.tcpMessaging = {
-      enabled: false, 
-    };
-    
     const settings = await Settings.load(); 
     const masked = new ConfigMask(injectSettings, settings);
     const app = this.app = new Application(masked);

@@ -57,6 +57,8 @@ describe('Storing data in a HF series', function() {
     after(function () {
       pryv.clean(); 
     });
+
+    const nowEvent = Date.now() / 1000;
       
     // Set up a few ids that we'll use for testing. NOTE that these ids will
     // change on every test run. 
@@ -66,13 +68,17 @@ describe('Storing data in a HF series', function() {
       parentStreamId = cuid(); 
       eventId = cuid(); 
       accessToken = cuid(); 
+
+      
       
       debug('build fixture');
       return pryv.user(userId, {}, function (user) {
         user.stream({id: parentStreamId}, function (stream) {
           stream.event({
             id: eventId, 
-            type: 'series:mass/kg'});
+            type: 'series:mass/kg',
+            time: nowEvent
+          });
         });
 
         user.access({token: accessToken, type: 'personal'});
@@ -98,6 +104,31 @@ describe('Storing data in a HF series', function() {
         .send(postData)
         .expect(200);
     }
+
+    it('[ZUBI] should convert timestamp to deltaTime', async () => {
+      const storageLayer = produceStorageLayer(database);
+
+      const nowPlus1Sec = nowEvent + 1;
+      const response = await storeData({ timestamp: nowPlus1Sec, value: 80.3 });
+
+      // Check if the data is really there
+      const userName = userId; // identical with id here, but will be user name in general. 
+      const options = { database: `user.${userName}` };
+      const query = `
+        SELECT * FROM "event.${eventId}"
+      `;
+
+      const result = await influx.query(query, options);
+      const row = result[0];
+      if (row.time == null || row.value == null)
+        throw new Error('Should have time and value.');
+
+      assert.strictEqual(
+        row.time.toNanoISOString(),
+        '1970-01-01T00:00:01.000000000Z');
+      assert.strictEqual(row.value, 80.3);
+      
+    });
     
     it('[GZIZ] should store data correctly', async () => {
       const response = await storeData({deltaTime: 1, value: 80.3});
@@ -478,7 +509,7 @@ describe('Storing data in a HF series', function() {
       async function tryStore(attrs: Object, header: Header, data: Rows): Promise<TryOpResult> {
         const userQuery = {id: userId};
         const effectiveAttrs = lodash.merge(
-          { streamId: parentStreamId }, 
+          { streamId: parentStreamId , time: Date.now() / 1000}, 
           attrs
         );
 
