@@ -20,9 +20,9 @@ class Settings {
         console: { active: true, level: 'info', colorize: true },
         file: { active: false },
         airbrake: {
-          active: true,
-          projectId: '247285',
-          apiKey: 'ba44e430f8fdf66e820717660e838874',
+          active: false,
+          projectId: '',
+          apiKey: '',
         }
       },
       mongodb: {
