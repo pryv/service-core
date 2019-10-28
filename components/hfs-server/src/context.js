@@ -57,8 +57,7 @@ class Context {
   }
   
   configureMetadataCache(series: Repository, mongoConn: Database, logger: Logger) {
-    this.metadata = new MetadataCache(series: Repository,
-      new MetadataLoader(mongoConn, logger));
+    this.metadata = new MetadataCache(series, new MetadataLoader(mongoConn, logger));
   }
   
   // Configures the metadata updater service. 

@@ -22,7 +22,7 @@ class InfluxConnection {
     return this.conn.createDatabase(name);
   }
   
-  dropDatabase(name: string, database: string): Promise<void> {
+  dropDatabase(name: string): Promise<void> {
     this.logger.debug(`Dropping database ${name}.`);
     return this.conn.dropDatabase(name);
   }
@@ -41,7 +41,7 @@ class InfluxConnection {
     name: string,
     dbName: string
   ): Promise<void> {
-    this.logger.debug(`Drop -> measurment: ${name} on dbName ${dbName}`);
+    this.logger.debug(`Drop -> measurement: ${name} on dbName ${dbName}`);
     return this.conn.dropMeasurement(name, dbName);
   }
   

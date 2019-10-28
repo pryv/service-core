@@ -36,7 +36,7 @@ async function storeSeriesData(ctx: Context,
   trace.finish('seriesMeta/load');
 
   // Trashed or Deleted: Abort.
-  if (seriesMeta.trashedOrDeleted()) {
+  if (seriesMeta.isTrashedOrDeleted()) {
     throw errors.forbidden('Access to trashed or deleted series is forbidden');
   }
   

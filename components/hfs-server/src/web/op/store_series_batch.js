@@ -126,7 +126,7 @@ class EventMetaDataCache {
     
     const seriesMeta = await this.getSeriesMeta(eventId);
 
-    if (seriesMeta.trashedOrDeleted()) {
+    if (seriesMeta.isTrashedOrDeleted()) {
       throw errors.forbidden('Access to trashed or deleted series is forbidden');
     }
 

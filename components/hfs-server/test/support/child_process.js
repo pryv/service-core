@@ -34,7 +34,7 @@ class ApplicationLauncher {
     const seriesMeta = {
       canWrite: () => authTokenValid,
       canRead: () => authTokenValid, 
-      trashedOrDeleted: () => false,
+      isTrashedOrDeleted: () => false,
       namespaceAndName: () => ['test', 'foo'],
       produceRowType: () => new InfluxRowType(typeRepo.lookup('mass/kg')),
     };
