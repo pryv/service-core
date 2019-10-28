@@ -55,7 +55,7 @@ async function createContext(
   
   const typeRepoUpdateUrl = settings.get('eventTypes.sourceURL').str();
     
-  const context = new Context(influx, mongo, logFactory, tracer, typeRepoUpdateUrl);
+  const context = new Context(influx, mongo, logFactory, tracer, typeRepoUpdateUrl, settings);
 
   if (settings.has('metadataUpdater.host')) {
     const mdHost = settings.get('metadataUpdater.host').str(); 

@@ -3,6 +3,7 @@
 // Our convict configuration that determines the configuration schema. 
 
 const convict = require('convict');
+const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
 
 function produce() {
   const formats = {
@@ -97,6 +98,11 @@ function produce() {
     eventTypes: {
       sourceURL: {
         format: 'url', default: 'https://pryv.github.io/event-types/flat.json'
+      }
+    },
+    nats: {
+      uri: {
+        format: String, default: NATS_CONNECTION_URI
       }
     },
   });
