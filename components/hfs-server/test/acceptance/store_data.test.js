@@ -10,6 +10,7 @@ const cuid = require('cuid');
 const debug = require('debug')('store_data.test');
 const bluebird = require('bluebird');
 const lodash = require('lodash');
+const awaiting = require('awaiting');
 
 const { 
   spawnContext, produceMongoConnection, 
@@ -397,7 +398,7 @@ describe('Storing data in a HF series', function() {
    
     });
 
-    it('[ZTG6] deleted events deletes series', async () => {
+    it('[ZTG6] deleted events deletes series', async function() {
       // This is visible if after moving the "timestamp" sugar is valid
 
       // 1 - Create an event with some values
@@ -406,7 +407,9 @@ describe('Storing data in a HF series', function() {
         [
           [1, 1],
           [2, 2],
-          [3, 3]]);
+          [3, 3]
+        ]
+      );
 
     
       const delete1 = await apiServer.request()
@@ -425,6 +428,8 @@ describe('Storing data in a HF series', function() {
         .delete('/' + result.user.username + '/events/' + result.event.id)
         .set('authorization', accessToken);
       assert.strictEqual(delete2.status, 200);
+
+      awaiting.delay(100);
 
       const rows2 = await influx.query(query, opts);
       assert.strictEqual(rows2.length, 0);
