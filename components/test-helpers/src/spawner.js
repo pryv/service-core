@@ -18,9 +18,11 @@ const debug = require('debug')('spawner');
 
 const PRESPAWN_LIMIT = 2; 
 
+let basePort = 3001;
+
 // Spawns instances of api-server for tests. Listening port is chosen at random; 
 // settings are either default or what you pass into the #spawn function. 
-// 
+//
 class SpawnContext {
   childPath: string; 
   
@@ -35,9 +37,11 @@ class SpawnContext {
   // components/api-server/test/helpers/child_process for an example of such 
   // a module. 
   // 
+
   constructor(childPath: string = __dirname + '/../../api-server/test/helpers/child_process') {
     this.childPath = childPath;
-    this.basePort = 3001;
+    this.basePort = basePort;
+    basePort += 10;
 
     this.shuttingDown = false; 
     this.pool = []; 

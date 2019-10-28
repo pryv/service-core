@@ -7,7 +7,7 @@
   
   logs: {
     console: {
-      level: info
+      level: debug
     }
   }
 }

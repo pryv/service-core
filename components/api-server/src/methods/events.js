@@ -15,6 +15,13 @@ const assert = require('assert');
     
 const {TypeRepository, isSeriesType} = require('components/business').types;
 
+const NatsPublisher = require('../socket-io/nats_publisher');
+const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
+const NATS_UPDATE_EVENT = require('components/utils').messaging
+  .NATS_UPDATE_EVENT;
+const NATS_DELETE_EVENT = require('components/utils').messaging
+  .NATS_DELETE_EVENT;
+
 // Type repository that will contain information about what is allowed/known
 // for events. 
 const typeRepo = new TypeRepository(); 
@@ -28,12 +35,13 @@ module.exports = function (
   authSettings, eventTypesSettings, notifications, logging,
   auditSettings, updatesSettings,
 ) {
-                             
+
   // Update types and log error
   typeRepo.tryUpdate(eventTypesSettings.sourceURL)
     .catch((err) => logging.getLogger('typeRepo').warn(err));
     
   const logger = logging.getLogger('methods/events');
+  const natsPublisher = new NatsPublisher(NATS_CONNECTION_URI);
 
   // RETRIEVAL
 
@@ -450,6 +458,23 @@ module.exports = function (
 
   function notify(context, params, result, next) {
     notifications.eventsChanged(context.user);
+
+    // notify is called by create, update and delete
+    // depending on the case the event properties will be found in context or event
+    if (isSeriesEvent(context.event || result.event)) {
+      const isDelete = result.eventDeletion ? true : false;
+      // if event is a deletion 'id' is given by result.eventDeletion
+      const updatedEventId = isDelete ? _.pick(result.eventDeletion, ['id']) : _.pick(result.event, ['id']);
+      const subject = isDelete ? NATS_DELETE_EVENT : NATS_UPDATE_EVENT;
+      natsPublisher.deliver(subject, {
+        username: context.user.username,
+        event: updatedEventId,
+      });
+    }
+
+    function isSeriesEvent(event) {
+      return event.type.startsWith('series:');
+    }
     next();
   }
 
@@ -501,7 +526,7 @@ module.exports = function (
     const eventType = typeRepo.lookup(type);
     if (eventType.isSeries()) {
       // Series cannot have content on update, not here at least.
-      if (context.content.content != null) {
+      if (params.update.content != null) {
         return next(errors.invalidParametersFormat(
           'The event content\'s format is invalid.', 
           'Events of type High-frequency have a read-only content'));
@@ -731,7 +756,6 @@ module.exports = function (
         // TODO: remove saved files if any
         return callback(err);
       }
-
       // approximately update account storage size
       context.user.storageUsed.attachedFiles += sizeDelta;
       usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
@@ -891,7 +915,7 @@ module.exports = function (
           deleteWithData(context, params, result, next);
         }
       });
-    });
+    }, notify);
 
   function flagAsTrashed(context, params, result, next) {
     var updatedData = {trashed: true};
@@ -903,7 +927,6 @@ module.exports = function (
 
         result.event = updatedEvent;
         setFileReadToken(context.access, result.event);
-        notifications.eventsChanged(context.user);
         next();
       });
   }
@@ -939,13 +962,15 @@ module.exports = function (
               return stepDone(errors.unexpectedError(err));
             }
             result.eventDeletion = {id: params.id};
-            notifications.eventsChanged(context.user);
             stepDone();
           });
       },
       userEventFilesStorage.removeAllForEvent.bind(userEventFilesStorage, context.user, params.id),
       function (stepDone) {
-        // approximately update account storage size
+        // If needed, approximately update account storage size
+        if (! context.user.storageUsed || ! context.user.storageUsed.attachedFiles) {
+          return stepDone();
+        }
         context.user.storageUsed.attachedFiles -= getTotalAttachmentsSize(context.event);
         usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
           stepDone);
