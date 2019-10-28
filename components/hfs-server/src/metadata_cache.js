@@ -11,6 +11,8 @@ const MethodContext = require('components/model').MethodContext;
 const errors = require('components/errors').factory;
 const { InfluxRowType } = require('components/business').types;
 
+const Settings = require('./Settings');
+
 const NatsSubscriber = require('components/api-server/src/socket-io/nats_subscriber');
 const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
 const NATS_UPDATE_EVENT = require('components/utils').messaging
@@ -79,15 +81,18 @@ class MetadataCache implements MetadataRepository, MessageSink {
   cache: LRUCache<string, mixed>; 
   series: Repository;
 
+  settings: Settings;
+
   // nats messaging
   natsUpdateSubscriber: NatsSubscriber;
   natsDeleteSubscriber: NatsSubscriber;
   sink: MessageSink;
   
-  constructor(series: Repository, metadataLoader: MetadataRepository) {
+  constructor(series: Repository, metadataLoader: MetadataRepository, settings: Settings) {
 
     this.loader = metadataLoader;
     this.series = series;
+    this.settings = settings;
 
     const options = {
       max: LRU_CACHE_SIZE,
@@ -102,7 +107,6 @@ class MetadataCache implements MetadataRepository, MessageSink {
   // nats messages
 
   deliver(channel: string, usernameEvent: UsernameEvent): void {
-    console.log('received', channel)
     switch (channel) {
       case NATS_DELETE_EVENT:
         this.dropSeries(usernameEvent);
@@ -134,8 +138,8 @@ class MetadataCache implements MetadataRepository, MessageSink {
   }
 
   async subscribeToNotifications() {
-    this.natsUpdateSubscriber = new NatsSubscriber(NATS_CONNECTION_URI, this);
-    this.natsDeleteSubscriber = new NatsSubscriber(NATS_CONNECTION_URI, this);
+    this.natsUpdateSubscriber = new NatsSubscriber(this.settings.get('nats.uri').str(), this);
+    this.natsDeleteSubscriber = new NatsSubscriber(this.settings.get('nats.uri').str(), this);
     await this.natsUpdateSubscriber.subscribe(NATS_UPDATE_EVENT);
     await this.natsDeleteSubscriber.subscribe(NATS_DELETE_EVENT);
   }

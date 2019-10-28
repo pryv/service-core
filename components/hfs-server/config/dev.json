@@ -1,11 +1,11 @@
 {
   "trace": {
-    "enable": false,
+    "enable": false
   },
   "logs": {
     "console": {
       "active": true,
-      "level": "warn",
+      "level": "warn"
     }
   },
   "mongodb": {
@@ -14,5 +14,8 @@
   "influxdb": {
     "host": "127.0.0.1", 
     "port": 8086
+  },
+  "nats": {
+    "uri": "nats://127.0.0.1:4222"
   }
 }
