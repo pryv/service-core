@@ -1,5 +1,11 @@
 ## 1.4
 
+### 1.4.20
+
+ - Various fixes for HF series:
+   - Fix validation for events.create and events.update
+   - Add nats:uri to configuration
+
 ### 1.4.19
 
  - Implement delete and update methods for HF series.
