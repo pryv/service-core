@@ -526,13 +526,11 @@ module.exports = function (
     const eventType = typeRepo.lookup(type);
     if (eventType.isSeries()) {
       // Series cannot have content on update, not here at least.
-      if (params.update.content != null) {
-        return next(errors.invalidParametersFormat(
-          'The event content\'s format is invalid.', 
-          'Events of type High-frequency have a read-only content'));
+      if (isCreateSeriesAndHasContent() || isUpdateSeriesAndHasContent()) {
+        return next(errors.invalidParametersFormat('The event content\'s format is invalid.', 'Events of type High-frequency have a read-only content'));
       }
-      
-      return next(); 
+
+      return next();
     }
     
     // assert: `type` is not a series but is known
@@ -553,6 +551,13 @@ module.exports = function (
         (err) => next(errors.invalidParametersFormat(
           'The event content\'s format is invalid.', err))
       );
+
+    function isCreateSeriesAndHasContent() {
+      return params.content != null;
+    }
+    function isUpdateSeriesAndHasContent() {
+      return params.update != null && params.update.content != null;
+    }
   }
 
   function cleanupEventTags(eventData) {      
