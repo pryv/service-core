@@ -1,5 +1,9 @@
 ## 1.4
 
+### 1.4.19
+
+ - Implement delete and update methods for HF series.
+
 ### 1.4.18
 
  - Plug airbrake for webhooks server and improve general error reporting strategy
