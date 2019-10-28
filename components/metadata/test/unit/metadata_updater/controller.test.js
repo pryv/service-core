@@ -47,7 +47,7 @@ describe('Metadata Updater/Controller', () => {
       
         if (callTimestamps.length >= 2) {
           // First call happens immediately. 
-          assert.approximately(now, callTimestamps[0], 15);
+          assert.approximately(now, callTimestamps[0], 50);
 
           // And the second call 10 ms afterwards
           assert.approximately(callTimestamps[0], callTimestamps[1], 15);
