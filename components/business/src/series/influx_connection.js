@@ -36,6 +36,14 @@ class InfluxConnection {
     this.logger.debug(`Write -> ${name}: ${points.length} points.`);
     return this.conn.writeMeasurement(name, points, options);
   }
+
+  dropMeasurement(
+    name: string,
+    dbName: string
+  ): Promise<void> {
+    this.logger.debug(`Drop -> measurement: ${name} on dbName ${dbName}`);
+    return this.conn.dropMeasurement(name, dbName);
+  }
   
   writePoints(points: Array<IPoint>, options?: IWriteOptions): Promise<void> {
     this.logger.debug(`Write -> (multiple): ${points.length} points.`);

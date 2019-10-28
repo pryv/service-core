@@ -1,11 +1,11 @@
 {
   "trace": {
-    "enable": false,
+    "enable": false
   },
   "logs": {
     "console": {
       "active": true,
-      "level": "debug",
+      "level": "debug"
     }
   },
   "mongodb": {
@@ -17,6 +17,6 @@
   }, 
   "metadataUpdater": {
     "host": "127.0.0.1", 
-    "port": 9020,
+    "port": 9020
   }
 }

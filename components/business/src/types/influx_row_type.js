@@ -18,7 +18,7 @@ class InfluxDateType implements PropertyType {
 
   secondsToNanos(secs: number): number {
     if (secs < 0) throw new Error(`Deltatime must be greater than 0`);
-    return secs * 1000 * 1000 * 1000;
+    return Math.trunc(secs * 1000 * 1000 * 1000);
   }
 
   coerce(value: any): any {
@@ -26,7 +26,7 @@ class InfluxDateType implements PropertyType {
       case 'Number': 
         return this.secondsToNanos(value - this.deltaTo); 
       case 'String':
-        return this.secondsToNanos(parseInt(value) - this.deltaTo); 
+        return this.secondsToNanos(parseFloat(value) - this.deltaTo); 
       // FALL THROUGH
     }
 

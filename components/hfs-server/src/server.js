@@ -15,6 +15,7 @@ const clsWrapFactory = require('./tracing/middleware/clsWrap');
 
 const { ProjectVersion } = require('components/middleware/src/project_version');
 
+
 const controllerFactory = require('./web/controller');
 
 const KEY_IP = 'http.ip';
@@ -22,6 +23,7 @@ const KEY_PORT = 'http.port';
 
 import type {Logger} from 'components/utils/src/logging';
 import type Context from './context';
+
 
 /**
  * HTTP server responsible for the REST api that the HFS server exposes. 
@@ -46,6 +48,8 @@ class Server {
   // Web request context
   context: Context; 
   
+  
+
   constructor(settings: Settings, context: Context) {
     const logSettings = settings.get('logs').obj();
     const logFactory = logging(logSettings);
@@ -61,8 +65,13 @@ class Server {
     this.baseUrl = `http://${ip}:${port}/`;
     
     this.logger.info('constructed.');
+
+    
   }
-  
+
+
+
+
   /**
    * Starts the HTTP server. 
    * 

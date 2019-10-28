@@ -10,11 +10,14 @@ const cuid = require('cuid');
 const debug = require('debug')('store_data.test');
 const bluebird = require('bluebird');
 const lodash = require('lodash');
+const awaiting = require('awaiting');
 
 const { 
   spawnContext, produceMongoConnection, 
   produceInfluxConnection, produceStorageLayer } = require('./test-helpers');
 const { databaseFixture } = require('components/test-helpers');
+
+const apiServerContext = require('components/api-server/test/test-helpers').context;
 
 const rpc = require('components/tprpc');
 const metadata = require('components/metadata');
@@ -154,6 +157,10 @@ describe('Storing data in a HF series', function() {
         '1970-01-01T00:00:01.000000000Z'); 
       assert.strictEqual(row.value, 80.3);
     });
+
+
+
+
     it('[KC15] should return data once stored', async () => {
       // identical with id here, but will be user name in general. 
       const userName = userId; 
@@ -199,6 +206,237 @@ describe('Storing data in a HF series', function() {
           });
       }
     });
+  });
+
+
+  describe('UPDATE and DELETE on handling event affect the serie', function () {
+    this.timeout(5000);
+
+    // TODO Worry about deleting data that we stored in earlier tests.
+    let hfServer; 
+    let apiServer;
+    // Spawns a server.
+    before(async () => {
+      debug('spawning');
+      hfServer = await spawnContext.spawn();
+      apiServer = await apiServerContext.spawn();
+      
+    });
+    after(() => {
+      hfServer.stop();
+      apiServer.stop();
+    });
+
+    const pryv = databaseFixture(database);
+    after(function () {
+      pryv.clean();
+    });
+
+    let userId, parentStreamId, accessToken;
+    before(() => {
+      userId = cuid();
+      parentStreamId = cuid();
+      accessToken = cuid();
+
+      
+
+      debug('build fixture');
+      return pryv.user(userId, {}, function (user) {
+        user.stream({ id: parentStreamId }, function () { });
+
+        user.access({ token: accessToken, type: 'personal' });
+        user.session(accessToken);
+      });
+    });
+
+    const storageLayer = produceStorageLayer(database);
+
+    // Tries to store `data` in an event with attributes `attrs`. Returns 
+    // true if the whole operation is successful. 
+    // 
+    async function tryStore(attrs: Object, header: Header, data: Rows): Promise<TryOpResult> {
+      const userQuery = { id: userId };
+      const effectiveAttrs = lodash.merge(
+        { streamId: parentStreamId, time: Date.now() / 1000 },
+        attrs
+      );
+
+      const user = await bluebird.fromCallback(
+        cb => storageLayer.users.findOne(userQuery, null, cb));
+
+      assert.isNotNull(user);
+
+      const event = await bluebird.fromCallback(
+        cb => storageLayer.events.insertOne(user, effectiveAttrs, cb));
+
+      const requestData = {
+        format: 'flatJSON',
+        fields: header,
+        points: data,
+      };
+
+      const request = hfServer.request();
+      const response = await request
+        .post(`/${userId}/events/${event.id}/series`)
+        .set('authorization', accessToken)
+        .send(requestData);
+
+      if (response.statusCode != 200) {
+        debug('Failed to store data, debug report:');
+        debug('response.body', response.body);
+      }
+
+      debug('Enter these commands into influx CLI to inspect the data:');
+      debug(`  use "user.${user.id}"`);
+      debug(`  select * from "event.${event.id}"`);
+      debug(`  show field keys from "event.${event.id}"`);
+
+      return {
+        ok: response.statusCode === 200,
+        user: user,
+        event: event,
+        status: response.statusCode,
+        body: response.body,
+      };
+    }
+
+
+    function storeData(eventId, data): any {
+      const request = hfServer.request();
+      const response = request
+        .post(`/${userId}/events/${eventId}/series`)
+        .set('authorization', accessToken)
+        .send(data);
+
+      return response;
+    }
+
+    it('[UD1C] moving event in time does empty the cache', async () => {
+      // This is visible if after moving the "timestamp" sugar is valid
+      
+      // 1 - Create an event with some values
+      const result = await tryStore({ type: 'series:angular-speed/rad-s' },
+        ['deltaTime', 'value'],
+        [
+          [1, 1],
+          [2, 2],
+          [3, 3]]);
+
+      // move event to tomorrow 
+      const newEventTime = (Date.now() / 1000) + 60 * 60 * 24;
+
+      const response = await apiServer.request()
+        .put('/' + result.user.username + '/events/'+ result.event.id )
+        .set('authorization', accessToken)
+        .send({ time: newEventTime });
+      
+      // add Data using timestamp sugar
+
+      const result2 = await storeData(result.event.id, 
+        {format: 'flatJSON',
+        fields: ['timestamp', 'value'],
+        points: [
+          [newEventTime + 4, 4],
+          [newEventTime + 5, 5],
+          [newEventTime + 6, 6]]});
+
+      // check Data 
+      const request = hfServer.request();
+      return request
+        .get(`/${result.user.username}/events/${result.event.id}/series`)
+        .set('authorization', accessToken)
+        .query({  })
+        // .then((res) => console.log(require('util').inspect(res.body, { depth: null })))
+        .expect(200)
+        .then((res) => {
+          const points = res.body.points || [];
+
+          assert.isNotEmpty(points);
+          assert.deepEqual(
+            points[5],
+           [ 6, 6]);
+        });
+    });
+
+    it('[UD2C] trashed event cannot be accessed', async () => {
+      // This is visible if after moving the "timestamp" sugar is valid
+      
+      // 1 - Create an event with some values
+      const result = await tryStore({ type: 'series:angular-speed/rad-s' },
+        ['deltaTime', 'value'],
+        [
+          [1, 1],
+          [2, 2],
+          [3, 3]]);
+
+      // move event to tomorrow 
+      const newEventTime = (Date.now() / 1000) + 60 * 60 * 24;
+
+      
+      const response = await apiServer.request()
+        .delete('/' + result.user.username + '/events/' + result.event.id)
+        .set('authorization', accessToken);
+        
+
+      // add Data using timestamp sugar
+
+      const result2 = await storeData(result.event.id,
+        {
+          format: 'flatJSON',
+          fields: ['timestamp', 'value'],
+          points: [
+            [newEventTime + 4, 4],
+            [newEventTime + 5, 5],
+            [newEventTime + 6, 6]]
+        });
+
+      assert.strictEqual(result2.status, 403);
+      const error = result2.body.error;
+      assert.strictEqual(error.id, 'forbidden');
+      assert.strictEqual(error.message, 'Access to trashed or deleted series is forbidden');
+      assert.typeOf(error.message, 'string');
+   
+    });
+
+    it('[ZTG6] deleted events deletes series', async function() {
+      // This is visible if after moving the "timestamp" sugar is valid
+
+      // 1 - Create an event with some values
+      const result = await tryStore({ type: 'series:angular-speed/rad-s' },
+        ['deltaTime', 'value'],
+        [
+          [1, 1],
+          [2, 2],
+          [3, 3]
+        ]
+      );
+
+    
+      const delete1 = await apiServer.request()
+        .delete('/' + result.user.username + '/events/' + result.event.id)
+        .set('authorization', accessToken);
+      assert.strictEqual(delete1.status, 200);
+
+      const query = `select * from "event.${result.event.id}"`;
+      const opts = {
+        database: `user.${result.user.id}`
+      };
+      const rows = await influx.query(query, opts);
+      assert.strictEqual(rows.length, 3);
+      
+      const delete2 = await apiServer.request()
+        .delete('/' + result.user.username + '/events/' + result.event.id)
+        .set('authorization', accessToken);
+      assert.strictEqual(delete2.status, 200);
+
+      awaiting.delay(100);
+
+      const rows2 = await influx.query(query, opts);
+      assert.strictEqual(rows2.length, 0);
+  
+
+    });
+
   });
   
   describe('POST /events/EVENT_ID/series', function() {

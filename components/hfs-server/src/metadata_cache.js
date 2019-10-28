@@ -11,10 +11,25 @@ const MethodContext = require('components/model').MethodContext;
 const errors = require('components/errors').factory;
 const { InfluxRowType } = require('components/business').types;
 
+const NatsSubscriber = require('components/api-server/src/socket-io/nats_subscriber');
+const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
+const NATS_UPDATE_EVENT = require('components/utils').messaging
+  .NATS_UPDATE_EVENT;
+const NATS_DELETE_EVENT = require('components/utils').messaging
+  .NATS_DELETE_EVENT;
+
 import type { LRUCache } from 'lru-cache';
 
-import type { TypeRepository } from 'components/business';
+import type { TypeRepository, Repository } from 'components/business';
 import type { Logger } from 'components/utils';
+import type { MessageSink } from './message_sink';
+
+type UsernameEvent = {
+  username: string,
+  event: {
+    id: string
+  },
+};
 
 /** A repository for meta data on series. 
  */
@@ -36,6 +51,9 @@ export interface SeriesMetadata {
   
   // Return the InfluxDB row type for the given event. 
   produceRowType(repo: TypeRepository): InfluxRowType; 
+
+  // Retur true if item is trashed or deleted
+  isTrashedOrDeleted(): boolean;
 }
 
 // A single HFS server will keep at maximum this many credentials in cache.
@@ -49,31 +67,112 @@ const LRU_CACHE_MAX_AGE_MS = 1000*60*5; // 5 mins
  * 
  * Caches data about a series first by `accessToken`, then by `eventId`. 
  * */
-class MetadataCache implements MetadataRepository {
+class MetadataCache implements MetadataRepository, MessageSink {
   loader: MetadataRepository;
-  cache: LRUCache<string, SeriesMetadata>; 
+
+  /**
+   * Stores:
+   *  - username/eventId -> [accessTokens]
+   *  - accessToken -> username/eventID/accessToken
+   *  - username/eventId/accessToken -> SeriesMetadataImpl (metadata_cache.js)
+   */
+  cache: LRUCache<string, mixed>; 
+  series: Repository;
+
+  // nats messaging
+  natsUpdateSubscriber: NatsSubscriber;
+  natsDeleteSubscriber: NatsSubscriber;
+  sink: MessageSink;
   
-  constructor(metadataLoader: MetadataRepository) {
+  constructor(series: Repository, metadataLoader: MetadataRepository) {
+
     this.loader = metadataLoader;
-    
+    this.series = series;
+
     const options = {
       max: LRU_CACHE_SIZE,
       maxAge: LRU_CACHE_MAX_AGE_MS,
     };
     this.cache = LRU(options);
+
+    // nats messages
+    this.subscribeToNotifications();
   }
-  
+
+  // nats messages
+
+  deliver(channel: string, usernameEvent: UsernameEvent): void {
+    console.log('received', channel)
+    switch (channel) {
+      case NATS_DELETE_EVENT:
+        this.dropSeries(usernameEvent);
+      // fall through
+      case NATS_UPDATE_EVENT:
+        this.invalidateEvent(usernameEvent);
+        break;
+      default:
+        break;
+    }
+  }
+
+  dropSeries(usernameEvent: UsernameEvent): Promise {
+    return this.series.connection.dropMeasurement(
+      'event.' + usernameEvent.event.id,
+      'user.' + usernameEvent.username
+    );
+  }
+
+  invalidateEvent(usernameEvent: UsernameEvent): void {
+    const cache = this.cache;
+    const eventKey = usernameEvent.username + '/' + usernameEvent.event.id;
+    const cachedTokenListForEvent: Array<string> = cache.get(eventKey);
+    if (cachedTokenListForEvent != null) { // what does this return
+      cachedTokenListForEvent.map((token) => {
+        cache.del(eventKey + '/' + token);
+      });
+    }
+  }
+
+  async subscribeToNotifications() {
+    this.natsUpdateSubscriber = new NatsSubscriber(NATS_CONNECTION_URI, this);
+    this.natsDeleteSubscriber = new NatsSubscriber(NATS_CONNECTION_URI, this);
+    await this.natsUpdateSubscriber.subscribe(NATS_UPDATE_EVENT);
+    await this.natsDeleteSubscriber.subscribe(NATS_DELETE_EVENT);
+  }
+
+  // cache logic
   async forSeries(userName: string, eventId: string, accessToken: string): Promise<SeriesMetadata> {
-    const key = [userName, eventId, accessToken].join('/'); 
-    const cache = this.cache; 
+    const cache: LRUCache<string, Array<string>> = this.cache; 
+    
+    const key: string = [userName, eventId, accessToken].join('/'); 
+
+    // to make sure we update the tokenList "recently used info" cache we also get eventKey
+    const eventKey: string = [userName, eventId].join('/');
+    const cachedTokenListForEvent: Array<string> = cache.get(eventKey);
+
+    // also keep a list of used Token to invalidate them
+    const cachedEventListForTokens: Array<string> = cache.get(accessToken);
     
     const cachedValue = cache.get(key);
-    if (cachedValue !== undefined) {
+    if ( cachedValue != null) {
       debug(`Using cached credentials for ${userName} / ${eventId}.`);
       return cachedValue;
-    }
-      
+    }  
     const newValue = await this.loader.forSeries(userName, eventId, accessToken); 
+    
+    // new event we add it to the list
+    if (cachedTokenListForEvent != null) {
+      cache.set(eventKey, cachedTokenListForEvent.concat(accessToken));
+    } else {
+      cache.set(eventKey, [accessToken]);
+    }
+
+    // new token we add it to the list
+    if (cachedEventListForTokens != null) {
+      cache.set(accessToken, cachedEventListForTokens.concat(key));
+    } else {
+      cache.set(accessToken, [key]);
+    }
     
     cache.set(key, newValue);
     
@@ -122,6 +221,7 @@ class MetadataLoader {
         (err, results) => {
           if (err != null) return returnValueCallback(
             mapErrors(err));
+
           const access = methodContext.access;
           const user = methodContext.user;
           const event = R.last(results);
@@ -195,8 +295,15 @@ class SeriesMetadataImpl implements SeriesMetadata {
     this.eventId = event.id; 
     this.time = event.time;
     this.eventType = event.type; 
+    this.trashed = event.trashed;
+    this.deleted = event.deleted;
   }
   
+
+  isTrashedOrDeleted(): boolean {
+    return this.trashed || this.deleted;
+  }
+
   canWrite(): boolean {
     return this.permissions.write; 
   }

@@ -23,6 +23,7 @@ describe('business.series.Repository', function () {
     const influxConnection: influx.InfluxDB = {
       createDatabase: () => Promise.resolve(true),
       writeMeasurement: () => Promise.resolve(true), 
+      dropMeasurement: () => Promise.resolve(true)
     };
 
     it('[0UEA] should produce series objects for events', function () {
