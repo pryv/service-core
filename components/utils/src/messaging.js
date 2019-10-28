@@ -9,7 +9,8 @@ exports.NATS_CONNECTION_URI = 'nats://127.0.0.1:4222';
 exports.NATS_WEBHOOKS_CREATE = 'wh.creates';
 exports.NATS_WEBHOOKS_DELETE = 'wh.deletes';
 
-exports.NATS_HFS_UPDATE_CACHE = 'hfs.update-cache';
+exports.NATS_UPDATE_EVENT = 'events.update';
+exports.NATS_DELETE_EVENT = 'events.delete';
 
 /**
  * @param {{host: String, port: Number, pubConnectInsteadOfBind: Boolean}} settings

@@ -17,8 +17,10 @@ const {TypeRepository, isSeriesType} = require('components/business').types;
 
 const NatsPublisher = require('../socket-io/nats_publisher');
 const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
-const NATS_HFS_UPDATE_CACHE = require('components/utils').messaging
-  .NATS_HFS_UPDATE_CACHE;
+const NATS_UPDATE_EVENT = require('components/utils').messaging
+  .NATS_UPDATE_EVENT;
+const NATS_DELETE_EVENT = require('components/utils').messaging
+  .NATS_DELETE_EVENT;
 
 // Type repository that will contain information about what is allowed/known
 // for events. 
@@ -463,10 +465,10 @@ module.exports = function (
       const isDelete = result.eventDeletion ? true : false;
       // if event is a deletion 'id' is given by result.eventDeletion
       const updatedEventId = isDelete ? _.pick(result.eventDeletion, ['id']) : _.pick(result.event, ['id']);
-      natsPublisher.deliver(NATS_HFS_UPDATE_CACHE, {
+      const subject = isDelete ? NATS_DELETE_EVENT : NATS_UPDATE_EVENT;
+      natsPublisher.deliver(subject, {
         username: context.user.username,
         event: updatedEventId,
-        isDelete: isDelete
       });
     }
 
@@ -525,7 +527,6 @@ module.exports = function (
     if (eventType.isSeries()) {
       // Series cannot have content on update, not here at least.
       if (params.update.content != null) {
-        logger.info('Invalid series params: ' + JSON.stringify(params.update, null, 2));
         return next(errors.invalidParametersFormat(
           'The event content\'s format is invalid.', 
           'Events of type High-frequency have a read-only content'));
@@ -966,7 +967,7 @@ module.exports = function (
       },
       userEventFilesStorage.removeAllForEvent.bind(userEventFilesStorage, context.user, params.id),
       function (stepDone) {
-        // approximately update account storage size
+        // If needed, approximately update account storage size
         if (! context.user.storageUsed || ! context.user.storageUsed.attachedFiles) {
           return stepDone();
         }
