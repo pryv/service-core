@@ -37,7 +37,10 @@ async function storeSeriesData(ctx: Context,
 
   // Trashed or Deleted: Abort.
   if (seriesMeta.isTrashedOrDeleted()) {
-    throw errors.forbidden('Access to trashed or deleted series is forbidden');
+    throw errors.invalidOperation(
+      `The referenced event "${eventId}" is trashed.`,
+      {trashedReference: 'eventId'}
+    );
   }
   
   // No access permission: Abort.
