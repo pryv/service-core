@@ -1,5 +1,9 @@
 ## 1.4
 
+### 1.4.21
+
+ - Throw consistent errors for trashed HF events.
+
 ### 1.4.20
 
  - Various fixes for HF series:
