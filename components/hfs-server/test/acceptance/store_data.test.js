@@ -358,7 +358,7 @@ describe('Storing data in a HF series', function() {
         });
     });
 
-    it('[UD2C] trashed event cannot be accessed', async () => {
+    it('[UD2C] trashed event cannot be written to', async () => {
       // This is visible if after moving the "timestamp" sugar is valid
       
       // 1 - Create an event with some values
@@ -390,12 +390,12 @@ describe('Storing data in a HF series', function() {
             [newEventTime + 6, 6]]
         });
 
-      assert.strictEqual(result2.status, 403);
+      assert.strictEqual(result2.status, 400);
       const error = result2.body.error;
-      assert.strictEqual(error.id, 'forbidden');
-      assert.strictEqual(error.message, 'Access to trashed or deleted series is forbidden');
+      assert.strictEqual(error.id, 'invalid-operation');
       assert.typeOf(error.message, 'string');
-   
+      assert.strictEqual(error.message, `The referenced event "${result.event.id}" is trashed.`);
+      assert.deepEqual(error.data, {trashedReference: 'eventId'});
     });
 
     it('[ZTG6] deleted events deletes series', async function() {
