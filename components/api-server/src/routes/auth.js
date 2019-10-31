@@ -3,6 +3,7 @@
 const cookieParser = require('cookie-parser');
 const lodash = require('lodash');
 const express = require('express');
+const speakeasy = require('speakeasy');
 
 const errors = require('components/errors').factory;
 const middleware = require('components/middleware');
@@ -115,6 +116,24 @@ module.exports = function (expressApp: express$Application, app: Application) {
       function routeLogout(req: RequestWithContext, res, next) {
         clearSSOCookie(res);
         api.call('auth.logout', req.context, {}, methodCallback(res, next, 200));
+      });
+
+    router.post('/2fa',
+      loadAccessMiddleware,
+      function setup2fa(req: RequestWithContext, res, next) {
+        const currentAccess = req.context.access;
+            
+        if (currentAccess == null || ! currentAccess.isPersonal()) {
+          return next(errors.forbidden('A personal token is required to setup 2FA.'));
+        }
+
+        const user = req.context.user;
+        const secret = speakeasy.generateSecret();
+
+        app.storageLayer.users.updateOne({id: user.id}, {twofa: secret.base32}, function (err) {
+          if (err != null) return next(err);
+          res.status(302).end(secret.otpauth_url);
+        });
       });
   }
   
