@@ -9,5 +9,6 @@ module.exports = {
   notFound: require('./notFound'),
   override: require('./override'),
   requestTrace: require('./requestTrace'),
-  subdomainToPath: require('./subdomainToPath')
+  subdomainToPath: require('./subdomainToPath'),
+  twoFA: require('./2fa'),
 };

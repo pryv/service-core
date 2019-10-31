@@ -37,6 +37,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
   const ssoHttpOnly: boolean = true ;
 
   const loadAccessMiddleware = middleware.loadAccess(app.storageLayer);
+  const twoFAMiddleware = middleware.twoFA();
 
   // Returns true if the given `obj` has all of the property values identified
   // by the names contained in `keys`.
@@ -87,7 +88,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
         token: ssoCookie.token
       });
     });
-    router.post('/login', function routeLogin(req: RequestWithContext, res, next) {
+    router.post('/login', twoFAMiddleware, function routeLogin(req: RequestWithContext, res, next) {
       if (typeof req.body !== 'object' || req.body == null ||
         ! hasProperties(req.body, ['username', 'password', 'appId'])) {
         return next(errors.invalidOperation('Missing parameters: username, password and appId are required.'));

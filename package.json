@@ -66,6 +66,7 @@
     "shimmer": "^1.2.0",
     "sinon": "^5",
     "slug": "^0.9.1",
+    "speakeasy": "^2.0.0",
     "storage": "file:components/storage",
     "superagent": "^3.8",
     "tchannel": "^3.9.12",
