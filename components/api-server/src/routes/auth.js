@@ -128,7 +128,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
         }
 
         const user = req.context.user;
-        const secret = speakeasy.generateSecret();
+        const secret = speakeasy.generateSecret({issuer: 'Pryv', name: 'Pryv 2FA'});
 
         app.storageLayer.users.updateOne({id: user.id}, {twofa: secret.base32}, function (err) {
           if (err != null) return next(err);
