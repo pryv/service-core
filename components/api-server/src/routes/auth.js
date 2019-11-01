@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 const lodash = require('lodash');
 const express = require('express');
 const speakeasy = require('speakeasy');
+const otplib = require('otplib');
 
 const errors = require('components/errors').factory;
 const middleware = require('components/middleware');
@@ -128,11 +129,15 @@ module.exports = function (expressApp: express$Application, app: Application) {
         }
 
         const user = req.context.user;
-        const secret = speakeasy.generateSecret({issuer: 'Pryv', name: 'Pryv 2FA'});
-
-        app.storageLayer.users.updateOne({id: user.id}, {twofa: secret.base32}, function (err) {
+        //const secret = speakeasy.generateSecret({issuer: 'Pryv', name: 'Pryv 2FA'});
+        const secret = otplib.authenticator.generateSecret();
+        const secretB32 = secret;
+        //const secretB32 = secret.base32;
+        //const url = secret.otpauth_url;
+        const url = otplib.authenticator.keyuri(user.id, 'Pryv', secret);
+        app.storageLayer.users.updateOne({id: user.id}, {twofa: secretB32}, function (err) {
           if (err != null) return next(err);
-          res.status(302).end(secret.otpauth_url);
+          res.status(302).end(url);
         });
       });
   }
