@@ -33,7 +33,7 @@
   },
   "services": {
     "register": {
-      "url": "https://reg.pryv.io"
+      "url": "http://localhost:8080"
     },
     "email": {
       "welcomeTemplate": "welcome-email",

@@ -7,7 +7,7 @@
       "enabled": false
     },
     "register": {
-      "url": "https://reg.pryv.io"
+      "url": "http://localhost:8080"
     }
   }, 
   "tcpMessaging": {
