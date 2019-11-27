@@ -302,6 +302,7 @@ describe('root', function() {
         res,
         {
           status: 200,
+          schema: methodsSchema.getAccessInfo.result, 
           body: sharedAccess,
         }
       );
