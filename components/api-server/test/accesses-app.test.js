@@ -99,6 +99,22 @@ describe('accesses (app)', function () {
       createdBy: 'test',
       modified: timestamp.now(),
       modifiedBy: 'test'
+    },
+    {
+      id: 'shared_B',
+      token: 'shared_B_token',
+      name: 'Shared access B (with permission on unexisting stream)',
+      type: 'shared',
+      permissions: [
+        {
+          streamId: 'idonotexist',
+          level: 'read'
+        }
+      ],
+      created: timestamp.now(),
+      createdBy: 'test',
+      modified: timestamp.now(),
+      modifiedBy: 'test'
     }
   ];
   const user = testData.users[0];

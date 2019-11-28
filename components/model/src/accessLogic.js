@@ -85,7 +85,6 @@ const accessLogic = module.exports = {
       }
 
       var expandedPerm = id === perm.streamId ? perm : _.extend(_.clone(perm), {streamId: id});
-
       this._registerStreamPermission(expandedPerm);
     }.bind(this));
   },
@@ -166,12 +165,12 @@ const accessLogic = module.exports = {
     
     // assert: candidate.isShared()
 
+    candidate.loadPermissions(this._cachedStreams);
+
     if (! hasPermissions(this) || ! hasPermissions(candidate)) {
       // can only manage shared accesses with permissions
       return false;
     }
-
-    candidate.loadPermissions(this._cachedStreams);
 
     // Can candidate access streams that `this` cannot? Does it elevate the 
     // permissions on common streams? If yes, abort. 
@@ -247,5 +246,8 @@ function isLowerLevel(permissionLevelA, permissionLevelB) {
 }
 
 function hasPermissions(access) {
-  return access.permissions && access.permissions.length > 0;
+
+  return access.permissions && access.permissions.length > 0 &&
+    ((access.streamPermissions && access.streamPermissions.length > 0)
+      || (access.tagPermissions && access.tagPermissions.length > 0));
 }
