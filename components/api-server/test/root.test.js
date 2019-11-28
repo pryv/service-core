@@ -82,7 +82,8 @@ describe('root', function() {
       permissions: [{
         streamId: stream.id,
         level: 'manage'
-      }]
+      }],
+      clientData: 'This is a consent'
     });
     sharedAccess = sharedAccess.attrs;
     await user.session(personalAccessToken);
@@ -301,12 +302,8 @@ describe('root', function() {
         res,
         {
           status: 200,
-          schema: methodsSchema.getAccessInfo.result,
-          body: {
-            type: sharedAccess.type,
-            name: sharedAccess.name,
-            permissions: sharedAccess.permissions,
-          },
+          schema: methodsSchema.getAccessInfo.result, 
+          body: sharedAccess,
         }
       );
     });
