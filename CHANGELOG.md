@@ -1,5 +1,10 @@
 ## 1.4
 
+### 1.4.22
+
+ - Enrich access-info call result with more access properties.
+ - Fix: Accesses.get gives inexact result when accesses have permissions on unexisting/deleted streams.
+
 ### 1.4.21
 
  - Throw consistent errors for trashed HF events.
