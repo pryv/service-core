@@ -1,8 +1,11 @@
 ## 1.4
 
-### 1.4.22
+### 1.4.23
 
  - Enrich access-info call result with more access properties.
+
+### 1.4.22
+
  - Fix: Accesses.get gives inexact result when accesses have permissions on unexisting/deleted streams.
 
 ### 1.4.21
