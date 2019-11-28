@@ -32,10 +32,13 @@ module.exports = function (api: API, logging: Logger, storageLayer: StorageLayer
     getAccessInfo);
 
   function getAccessInfo(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    result.type = context.access.type;
-    result.name = context.access.name;
-    if (context.access.permissions != null) {
-      result.permissions = context.access.permissions;
+    const accessInfoProps = ['name', 'type', 'permissions', 'token',
+      'created', 'createdBy', 'modified', 'modifiedBy', 'id',
+      'lastUsed', 'calls' , 'clientData'
+    ];
+    for (const prop of accessInfoProps) {
+      const accessProp = context.access[prop];
+      if (accessProp != null) result[prop] = accessProp;
     }
     next();
   }
