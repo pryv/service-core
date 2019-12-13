@@ -1,99 +1,65 @@
-var async = require('async'),
-    fs = require('fs'),
-    timestamp = require('unix-timestamp'),
-    xattr = require('fs-xattr');
+// @flow
+
+const fs = require('fs');
+const timestamp = require('unix-timestamp');
+const xattr = require('fs-xattr');
+const { resolve } = require('path');
+const { readdir } = require('fs').promises;
+
+type CacheSettings  = {
+  maxAge: number;
+  rootPath: string;
+  logger: Object;
+}
+
+// Basic implementation for file cache cleanup, relying on xattr.
+class Cache {
+  settings: CacheSettings;
+  cleanUpInProgress: boolean;
+
+  static EventModifiedXattrKey = 'user.pryv.eventModified';
+  static LastAccessedXattrKey = 'user.pryv.lastAccessed'
+
+  constructor(settings: CacheSettings) {
+    this.settings = settings;
+    this.cleanUpInProgress = false;
+  }
+
+  // Removes all cached files that haven't been accessed since the given time.
+  async cleanUp () {
+    if (this.cleanUpInProgress) {
+      throw new Error('Clean-up is already in progress.');
+    }
+    this.cleanUpInProgress = true;
+
+    const cutoffTime = timestamp.now() - this.settings.maxAge;
+
+    const files = await getFiles(this.settings.rootPath);
+
+    for (const file of files) {
+      try {
+        const value = await xattr.get(file, Cache.LastAccessedXattrKey);
+
+        if (value != null && +value.toString() < cutoffTime) {
+          fs.unlinkSync(file);
+        }
+      } catch(err) {
+        // log and ignore file
+        this.settings.logger.warn(`Could not process file "${file}": ${err}`);
+      }
+    }
+
+    this.cleanUpInProgress = false;
+  }
+}
+
+async function getFiles(dir) {
+  const dirents = await readdir(dir, { withFileTypes: true });
+  const files = dirents.map((dirent) => {
+    const res = resolve(dir, dirent.name);
+    return dirent.isDirectory() ? getFiles(res) : res;
+  });
+  return Array.prototype.concat(...files);
+}
 
 module.exports = Cache;
-
-/**
- * Basic implementation for file cache cleanup, relying on xattr.
- *
- * @param {Object} settings
- * @constructor
- */
-function Cache(settings) {
-  this.settings = settings;
-  this.cleanUpInProgress = false;
-}
-
-// declare XAttr constants
-
-// must be prefixed with "user." to work on all systems
-Cache.EventModifiedXattrKey = 'user.pryv.eventModified';
-Cache.LastAccessedXattrKey = 'user.pryv.lastAccessed';
-
-/**
- * Removes all cached files that haven't been accessed since the given time.
- *
- * @param {Function} callback
- */
-Cache.prototype.cleanUp = function(callback) {
-  if (this.cleanUpInProgress) {
-    return callback(new Error('Clean-up is already in progress.'));
-  }
-  this.cleanUpInProgress = true;
-
-  var cutoffTime = timestamp.now() - this.settings.maxAge;
-  var processFile = function(path, stepDone) {
-    xattr.get(
-      path,
-      Cache.LastAccessedXattrKey,
-      function(err, value) {
-        if (err) {
-          // log and ignore file
-          this.settings.logger.warn(
-            'Could not read extended attribute on file "' + path + '": ' + err
-          );
-          return stepDone();
-        }
-        value = value.toString();
-        if (!value || +value >= cutoffTime) {
-          return stepDone();
-        }
-        fs.unlink(path, stepDone);
-      }.bind(this)
-    );
-  }.bind(this);
-
-  var done = function(err) {
-    this.cleanUpInProgress = false;
-    callback(err || null);
-  }.bind(this);
-
-  walkDirectory(this.settings.rootPath, function(err, files) {
-    if (err) {
-      return callback(err);
-    }
-    async.forEach(files, processFile, done);
-  });
-};
-
-function walkDirectory(dir, done) {
-  var results = [];
-  fs.readdir(dir, function(err, list) {
-    if (err) {
-      return done(err);
-    }
-
-    var i = 0;
-    (function next() {
-      var file = list[i++];
-      if (!file) {
-        return done(null, results);
-      }
-      file = dir + '/' + file;
-
-      fs.stat(file, function(err, stat) {
-        if (stat && stat.isDirectory()) {
-          walkDirectory(file, function(err, res) {
-            results = results.concat(res);
-            next();
-          });
-        } else {
-          results.push(file);
-          next();
-        }
-      });
-    })();
-  });
-}
