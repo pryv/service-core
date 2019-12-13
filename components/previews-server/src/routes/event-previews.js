@@ -1,16 +1,15 @@
-const async = require('async');
-const Cache = require('../Cache');
+// @flow
+
+const Cache = require('../cache');
 const childProcess = require('child_process');
 const CronJob = require('cron').CronJob;
 const errors = require('components/errors').factory;
-const APIError = require('components/errors').APIError;
 const gm = require('gm');
 const timestamp = require('unix-timestamp');
 const xattr = require('fs-xattr');
 const _ = require('lodash');
-
+const bluebird = require('bluebird');
 // constants
-const PreviewNotSupported = 'preview-not-supported';
 const StandardDimensions = [ 256, 512, 768, 1024 ];
 const SmallestStandardDimension = StandardDimensions[0];
 const BiggestStandardDimension = StandardDimensions[StandardDimensions.length - 1];
@@ -34,114 +33,87 @@ module.exports = function (
 
   expressApp.all('/:username/events/*', initContextMiddleware, loadAccessMiddleware);
 
-  expressApp.get('/:username/events/:id:extension(.jpg|.jpeg|)', function (req, res, next) {
-    var event,
-        attachment,
-        attachmentPath,
-        originalSize,
-        previewPath,
-        targetSize,
-        cached = false;
+  expressApp.get('/:username/events/:id:extension(.jpg|.jpeg|)', async function (req, res, next) {
+    let originalSize, previewPath;
+    let cached = false;
+    const context = req.context;
+    const user = req.context.user;
+    const id = req.params.id;
 
-    async.series([
-      function checkEvent(stepDone) {
-        userEventsStorage.findOne(req.context.user, {id: req.params.id}, null, function (err, evt) {
-          if (err) { return stepDone(err); }
+    try {
+      // Check Event
+      const event = await bluebird.fromCallback((cb) => userEventsStorage.findOne(user, {id: id}, null, cb));
+      if (event == null) { 
+        return next(errors.unknownResource('event', id));
+      }
 
-          event = evt;
-          if (! event) { return stepDone(errors.unknownResource('event', req.params.id)); }
+      if (! context.canReadContext(event.streamId, event.tags)) {
+        return next(errors.forbidden());
+      }
 
-          if (! req.context.canReadContext(event.streamId, event.tags)) {
-            return next(errors.forbidden());
-          }
+      if (! canHavePreview(event)) { 
+        return res.sendStatus(204);
+      }
 
-          if (! canHavePreview(event)) { return stepDone(PreviewNotSupported); }
+      let attachment = getSourceAttachment(event);
+      if (attachment == null) {
+        throw errors.corruptedData('Corrupt event data: expected an attachment.');
+      }
 
-          attachment = getSourceAttachment(event);
-          if (! attachment) {
-            return stepDone(errors.corruptedData('Corrupt event data: expected an attachment.'));
-          }
+      let attachmentPath = userEventFilesStorage.getAttachedFilePath(context.user, id, attachment.id);
 
-          attachmentPath = userEventFilesStorage.getAttachedFilePath(req.context.user,
-            req.params.id, attachment.id);
+      // Get aspect ratio
+      if (attachment.width != null) {
+        originalSize = { width: attachment.width, height: attachment.height };
+      }
 
-          stepDone();
-        });
-      },
-      function getAspectRatio(stepDone) {
-        if (attachment.width) {
-          originalSize = { width: attachment.width, height: attachment.height };
-          return stepDone();
+      try {
+        originalSize = await bluebird.fromCallback((cb) => gm(attachmentPath).size(cb));
+        attachment.width = originalSize.width;
+        attachment.height = originalSize.height;
+      } catch(err) {
+        return next(adjustGMResultError(err));
+      }
+
+      await bluebird.fromCallback((cb) => userEventsStorage.updateOne(
+        req.context.user, {id: req.params.id},{attachments: event.attachments}, cb));
+
+      // Prepare path
+      const targetSize = getPreviewSize(originalSize, {
+        width: req.query.width || req.query.w,
+        height: req.query.height || req.query.h
+      });
+
+      previewPath = await bluebird.fromCallback((cb) => userEventFilesStorage.ensurePreviewPath(
+        req.context.user, req.params.id, Math.max(targetSize.width, targetSize.height), cb));
+
+      try {
+        const cacheModified = await xattr.get(previewPath, Cache.EventModifiedXattrKey);
+        cached = cacheModified.toString() === event.modified.toString();
+      } catch (err) {
+        // assume no cache (don't throw any error)
+      }
+
+      if (! cached) {
+        try {
+          await bluebird.fromCallback((cb) => gm(attachmentPath + '[0]') // to cover animated GIFs
+            .resize(targetSize.width, targetSize.height).noProfile()
+            .interlace('Line') // progressive JPEG
+            .write(previewPath, cb));
+        } catch (err) {
+          return next(adjustGMResultError(err));
         }
 
-        gm(attachmentPath).size(function (err, size) {
-          if (err) {
-            return stepDone(adjustGMResultError(err));
-          }
-          originalSize = size;
-          attachment.width = size.width;
-          attachment.height = size.height;
-          
-          userEventsStorage.updateOne(req.context.user, {id: req.params.id},
-            {attachments: event.attachments}, stepDone);
-        });
-      },
-      function preparePath(stepDone) {
-        targetSize = getPreviewSize(originalSize, {
-          width: req.query.width || req.query.w,
-          height: req.query.height || req.query.h
-        });
-        userEventFilesStorage.ensurePreviewPath(req.context.user, req.params.id,
-          Math.max(targetSize.width, targetSize.height), function (err, path) {
-            if (err) { return stepDone(err); }
-            previewPath = path;
-            stepDone();
-          });
-      },
-      function checkCache(stepDone) {
-        xattr.get(previewPath, Cache.EventModifiedXattrKey, function (err, cacheModified) {
-          if (err) {
-            // assume no cache
-            return stepDone();
-          }
-          cached = cacheModified.toString() === event.modified.toString();
-          stepDone();
-        });
-      },
-      function generatePreview(stepDone) {
-        if (cached) { return stepDone(); }
+        await xattr.set(previewPath, Cache.EventModifiedXattrKey, event.modified.toString());
 
-        gm(attachmentPath + '[0]') // to cover animated GIFs
-          .resize(targetSize.width, targetSize.height).noProfile()
-          .interlace('Line') // progressive JPEG
-          .write(previewPath, function setModifiedTime(err) {
-            if (err) {
-              return stepDone(adjustGMResultError(err));
-            }
-            xattr.set(previewPath, Cache.EventModifiedXattrKey, event.modified.toString(), stepDone);
-          });
-      },
-      function respond(stepDone) {
-        res.sendFile(previewPath, stepDone);
       }
-    ], function handleError(err) {
-      if (err) {
-        switch (err) {
-          case PreviewNotSupported:
-            res.send(204);
-            break;
-          default:
-            if (err instanceof APIError) 
-              return next(err);
-            else 
-              return next(errors.unexpectedError(err));
-        }
-      } else {
-        // update last accessed time (don't check result)
-        xattr.set(previewPath, Cache.LastAccessedXattrKey, timestamp.now().toString(),
-          function () {});
-      }
-    });
+
+      res.sendFile(previewPath);
+      // update last accessed time (don't check result)
+      await xattr.set(previewPath, Cache.LastAccessedXattrKey, timestamp.now().toString());
+    } catch(err) {
+      next(err);
+    }
   });
 
   function canHavePreview(event) {
@@ -203,7 +175,7 @@ module.exports = function (
 
   function cleanUpCache(req, res, next) {
     if (workerRunning) {
-      return res.json({message: 'Clean-up already in progress.'}, 200);
+      return res.status(200).json({message: 'Clean-up already in progress.'});
     }
     logger.info('Start cleaning up previews cache (on request' +
         (req.headers.origin ? ' from ' + req.headers.origin : '') + ', client IP: ' + req.ip +
@@ -212,7 +184,7 @@ module.exports = function (
       if (err) {
         return next(errors.unexpectedError(err));
       }
-      res.json({message: 'Clean-up successful.'}, 200);
+      res.status(200).json({message: 'Clean-up successful.'});
     });
   }
 
