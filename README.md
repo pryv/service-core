@@ -8,7 +8,7 @@ Pryv core server app components, ie. what runs on each server node and handles u
 ## Install
 
 _Prerequisites:_ 
-- Node v8+
+- Node v12+
 - Yarn v1+
 - Mongo DB v3.4+ (needs at least 4GB of free disk space for the initial database)
 - InfluxDB v1.2+
