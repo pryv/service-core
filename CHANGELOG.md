@@ -1,5 +1,9 @@
 ## 1.4
 
+### 1.4.24
+
+ - Update node to 12.13.1.
+
 ### 1.4.23
 
  - Enrich access-info call result with more access properties.
