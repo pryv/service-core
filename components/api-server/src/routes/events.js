@@ -139,7 +139,7 @@ module.exports = function(expressApp: express$Application, app: Application) {
   expressApp.put(Paths.Events + '/:id',
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      api.call('events.update', req.context, { id: req.param('id'), update: req.body }, methodCallback(res, next, 200));
+      api.call('events.update', req.context, { id: req.params.id, update: req.body }, methodCallback(res, next, 200));
     });
 
   events.post('/stop',
