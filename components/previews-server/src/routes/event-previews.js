@@ -1,6 +1,6 @@
 // @flow
 
-const Cache = require('../cache');
+const Cache = require('../cache.js');
 const childProcess = require('child_process');
 const CronJob = require('cron').CronJob;
 const errors = require('components/errors').factory;

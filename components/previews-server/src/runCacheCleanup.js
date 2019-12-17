@@ -3,7 +3,7 @@
  * Expects settings to be passed the same way as for the main server.
  */
 
-const Cache = require('./cache');
+const Cache = require('./cache.js');
 const errorHandling = require('components/errors').errorHandling;
 const utils = require('components/utils');
 const settings = require('./config').load();
