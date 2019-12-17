@@ -1,5 +1,9 @@
 ## 1.4
 
+### 1.4.25
+
+ - Fix preview-server module loading issue.
+
 ### 1.4.24
 
  - Update node to 12.13.1.
