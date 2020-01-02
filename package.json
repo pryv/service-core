@@ -26,7 +26,7 @@
     "async": "^2.5.0",
     "awaiting": "^3.0.0",
     "axon": "2.0.x",
-    "bcrypt": "^1.0.2",
+    "bcrypt": "^3.0.7",
     "bluebird": "^3.5.0",
     "body-parser": "^1.17.1",
     "business": "file:components/business",
@@ -38,6 +38,7 @@
     "dependable": "attentif/dependable#0bb5c4a9ef2b32dded1b24d5d3c0ecccfb0bf7fd",
     "errors": "file:components/errors",
     "express": "^4",
+    "flow-bin": "^0.113.0",
     "foreman": "git://github.com/pryv/node-foreman.git#4eb501d443432878491b2d0387ded96e7c4154d0",
     "heap": "^0.2.6",
     "hfs-server": "file:components/hfs-server",
@@ -71,7 +72,7 @@
     "tchannel": "^3.9.12",
     "test-helpers": "file:components/test-helpers",
     "tprpc": "file:components/tprpc",
-    "unicode": "^0.6.1",
+    "unicode": "^12.1.0",
     "unix-timestamp": "^0.2.0",
     "utils": "file:components/utils",
     "yargs": "^11.0.0"
@@ -94,7 +95,6 @@
     "deep-equal": "latest",
     "eslint": "latest",
     "eslint-plugin-flowtype": "latest",
-    "flow-bin": "^0.71",
     "flow-coverage-report": "^0.3.0",
     "flow-typed": "^2.0.0",
     "inspect": "^0.0.2",
@@ -113,6 +113,7 @@
     "wrench": "latest"
   },
   "engines": {
-    "node": "8.x"
+    "node": "12.x",
+    "yarn": "1.x"
   }
 }
