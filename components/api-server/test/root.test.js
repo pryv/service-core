@@ -549,6 +549,10 @@ describe('root', function() {
       assert.exists(getEventsResult.eventDeletions);
     });
 
+    /*
+     * Fixes : https://github.com/pryv/service-core/issues/221
+     * Don't put null meta in every response.
+     */
     it('[U4RB] should not add a null meta field in the response', async function() {
       const streamId = 'batch-call-streamId-meta';
       const calls = [
