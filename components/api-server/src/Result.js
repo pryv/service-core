@@ -85,8 +85,6 @@ class Result {
       streamsArray: [],  
     };
     
-    this.meta = null;
-    
     if (params && params.arrayLimit != null && params.arrayLimit > 0) {
       this._private.arrayLimit = params.arrayLimit;
     }

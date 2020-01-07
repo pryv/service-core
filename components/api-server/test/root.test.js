@@ -547,9 +547,36 @@ describe('root', function() {
       const getEventsResult = results[2];
       assert.exists(getEventsResult.events);
       assert.exists(getEventsResult.eventDeletions);
-    }
-    );
+    });
 
+    // fixes #222
+    it('[U4RB] should not add a null meta field in the response', async function() {
+      const streamId = 'batch-call-streamId-meta';
+      const calls = [
+        {
+          method: 'streams.create',
+          params: {
+            id: streamId,
+            name: 'i don\'t want meta !',
+          },
+        }
+      ];
+      const res = await server
+        .request()
+        .post('/' + username)
+        .send(calls)
+        .set('authorization', appAccessToken1);
+      validation.check(res, {
+        status: 200,
+        schema: methodsSchema.callBatch.result,
+      });
+
+      validation.checkMeta(res.body);
+      const results = res.body.results;
+      for(let i = 0; i < results.length; i++) {
+        assert.notInclude(Object.keys(results[i]), 'meta');
+      }
+    });
     it('[WGVY] must return an error if the sent data is badly formatted', async function() {
       const calls = [
         {

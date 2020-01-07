@@ -1,5 +1,39 @@
 ## 1.4
 
+### 1.4.25
+
+ - Fix preview-server module loading issue.
+
+### 1.4.24
+
+ - Update node to 12.13.1.
+
+### 1.4.23
+
+ - Enrich access-info call result with more access properties.
+
+### 1.4.22
+
+ - Fix: Accesses.get gives inexact result when accesses have permissions on unexisting/deleted streams.
+
+### 1.4.21
+
+ - Throw consistent errors for trashed HF events.
+
+### 1.4.20
+
+ - Various fixes for HF series:
+   - Fix validation for events.create and events.update
+   - Add nats:uri to configuration
+
+### 1.4.19
+
+ - Implement delete and update methods for HF series.
+
+### 1.4.18
+
+ - Plug airbrake for webhooks server and improve general error reporting strategy
+
 ### 1.4.17
 
  - Fix bug with batch streams.create calls not working for non-"star" permissions
