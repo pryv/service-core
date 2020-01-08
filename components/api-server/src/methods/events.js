@@ -397,6 +397,21 @@ module.exports = function (
         return next(errors.forbidden());
       }
 
+      const updatedEventType = params.update.type;
+      if(updatedEventType != null) {
+        const currentEventType = event.type;
+        const isCurrentEventTypeSeries = isSeriesType(currentEventType);
+        const isUpdatedEventTypeSeries = isSeriesType(updatedEventType);
+        if (! typeRepo.isKnown(updatedEventType) && isUpdatedEventTypeSeries) {
+          return next(errors.invalidEventType(updatedEventType)); // We forbid the 'series' prefix for these free types. 
+        }
+
+        if((isCurrentEventTypeSeries && ! isUpdatedEventTypeSeries) || 
+          (! isCurrentEventTypeSeries && isUpdatedEventTypeSeries)) {
+          return next(errors.invalidOperation('Normal events cannot be updated to HF-events and vice versa.'));
+        }
+      }
+
       context.oldContent = _.cloneDeep(event);
       context.content = _.extend(event, params.update);
 
