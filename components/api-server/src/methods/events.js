@@ -397,21 +397,23 @@ module.exports = function (
         return next(errors.forbidden());
       }
 
-      const currentEventType = event.type;
-      const isCurrentEventTypeSeries = isSeriesType(currentEventType);
-      if (! typeRepo.isKnown(currentEventType) && isCurrentEventTypeSeries) {
-        return next(errors.invalidEventType(currentEventType)); // We forbid the 'series' prefix for these free types. 
-      }
-
+      // Fixes #208
       const updatedEventType = params.update.type;
-      const isUpdatedEventTypeSeries = isSeriesType(updatedEventType);
-      if (! typeRepo.isKnown(updatedEventType) && isUpdatedEventTypeSeries) {
-        return next(errors.invalidEventType(updatedEventType)); // We forbid the 'series' prefix for these free types. 
-      }
+      if(updatedEventType != null) {
+        const currentEventType = event.type;
+        const isCurrentEventTypeSeries = isSeriesType(currentEventType);
 
-      if(isCurrentEventTypeSeries != isUpdatedEventTypeSeries && (isCurrentEventTypeSeries || isUpdatedEventTypeSeries)) {
-        return next(errors.invalidOperation('Normal events can\'t be updated to HF-events and HF-events can\'t be updated to normal event'));
+        const isUpdatedEventTypeSeries = updatedEventType == null ? isCurrentEventTypeSeries : isSeriesType(updatedEventType);
+        if (! typeRepo.isKnown(updatedEventType) && isUpdatedEventTypeSeries) {
+          return next(errors.invalidEventType(updatedEventType)); // We forbid the 'series' prefix for these free types. 
+        }
+
+        if((isCurrentEventTypeSeries && ! isUpdatedEventTypeSeries) || 
+          (! isCurrentEventTypeSeries && isUpdatedEventTypeSeries)) {
+          return next(errors.invalidOperation('Normal events cannot be updated to HF-events and vice versa.'));
+        }
       }
+      // End fixes #208
 
       context.oldContent = _.cloneDeep(event);
       context.content = _.extend(event, params.update);
