@@ -397,7 +397,6 @@ module.exports = function (
         return next(errors.forbidden());
       }
 
-      // Fixes #208
       const updatedEventType = params.update.type;
       if(updatedEventType != null) {
         const currentEventType = event.type;
@@ -413,7 +412,6 @@ module.exports = function (
           return next(errors.invalidOperation('Normal events cannot be updated to HF-events and vice versa.'));
         }
       }
-      // End fixes #208
 
       context.oldContent = _.cloneDeep(event);
       context.content = _.extend(event, params.update);
