@@ -1586,15 +1586,69 @@ describe('events', function () {
             }
           ], done);
         });
-        
+
       function setIgnoreProtectedFieldUpdates(activated, stepDone) {
         let settings = _.cloneDeep(helpers.dependencies.settings);
         settings.updates.ignoreProtectedFields = activated;
         server.ensureStarted.call(server, settings, stepDone);
       }
-        
     });
-    
+
+    it('[Z7R6] must not accept HF/non-HF type changing', function (done) {
+      const streamId = testData.streams[0].id;
+      const normalEvent = {'streamId': streamId, 'type' : 'activity/plain'};
+      const hfEvent = {'streamId': streamId, 'type' : 'series:activity/plain'};
+      let normalEventId;
+      let hfEventId;
+
+      async.series([
+        function createNormalEvent(stepDone) {
+          request.post(basePath).send(normalEvent).end(function (res) {
+            should.exist(res.status);
+            should(res.status).be.eql(201);
+
+            should.exist(res.body.event.id);
+            normalEventId = res.body.event.id;
+
+            stepDone();
+          });
+        },
+        function updateNormalEventToHF(stepDone) {
+          request.put(path(normalEventId)).send(hfEvent).end(function (res) {
+            should.exist(res.status);
+            should(res.status).be.eql(400);
+
+            should.exist(res.body.error.id);
+            should(res.body.error.id).be.eql('invalid-operation');
+
+            stepDone();
+          });
+        },
+        function createHfEvent(stepDone) {
+          request.post(basePath).send(hfEvent).end(function (res) {
+            should.exist(res.status);
+            should(res.status).be.eql(201);
+
+            should.exist(res.body.event.id);
+            hfEventId = res.body.event.id;
+
+            stepDone();
+          });
+        },
+        function updateHfEventToNormal(stepDone) {
+          request.put(path(hfEventId)).send(normalEvent).end(function (res) {
+            should.exist(res.status);
+            should(res.status).be.eql(400);
+
+            should.exist(res.body.error.id);
+            should(res.body.error.id).be.eql('invalid-operation');
+
+            stepDone();
+          });
+        }
+      ], done);
+    });
+        
     it('[CUM3] must reject tags that are too long', function (done) {
       var bigTag = new Array(600).join('a');
       
@@ -1607,7 +1661,6 @@ describe('events', function () {
           }, done);
         });
     });
-
   });
 
   describe('POST /stop', function () {
