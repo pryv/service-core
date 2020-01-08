@@ -401,8 +401,7 @@ module.exports = function (
       if(updatedEventType != null) {
         const currentEventType = event.type;
         const isCurrentEventTypeSeries = isSeriesType(currentEventType);
-
-        const isUpdatedEventTypeSeries = updatedEventType == null ? isCurrentEventTypeSeries : isSeriesType(updatedEventType);
+        const isUpdatedEventTypeSeries = isSeriesType(updatedEventType);
         if (! typeRepo.isKnown(updatedEventType) && isUpdatedEventTypeSeries) {
           return next(errors.invalidEventType(updatedEventType)); // We forbid the 'series' prefix for these free types. 
         }
