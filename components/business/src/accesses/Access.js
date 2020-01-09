@@ -113,6 +113,7 @@ class Access {
     this.streamsTree = await this.streamsRepository.getAll(this.user);
     this.streamsScopeMap.forEach((actions, streamId) => {
       const stream = treeUtils.findById(this.streamsTree, streamId);
+      if (stream == null) return;
       stream.actions = actions;
     });
   }

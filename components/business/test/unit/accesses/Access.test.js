@@ -125,6 +125,43 @@ describe('Access', function() {
         assert.isFalse(access.canReadStream(streamsMap.ab));
       });
     });
+
+    describe('when a deleted stream is readable', function() {
+      before(async () => {
+        const deletedStream = new Stream({
+          id: 'd',
+          name: 'D',
+          streamsRepository: streamsRepository,
+          user: user,
+        });
+        await streamsRepository.insertOne(user, deletedStream);
+        await deletedStream.delete();
+
+        access = new Access({
+          user: user,
+          permissions: [
+            {
+              scope: {
+                streamIds: ['d']
+              },
+              actions: {
+                streams: ['read']
+              }
+            }
+          ],
+          accessesRepository: accessesRepository,
+          streamsRepository: streamsRepository
+        });
+
+        await access.loadPermissions();
+      });
+
+      it('should not be able to read anything', () => {
+        assert.isFalse(access.canReadStream(streamsMap.a));
+        assert.isFalse(access.canReadStream(streamsMap.aa));
+        assert.isFalse(access.canReadStream(streamsMap.ab));
+      });
+    });
   });
 
   describe('canCreateStream()', function() {});
