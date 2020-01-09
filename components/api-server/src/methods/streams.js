@@ -48,9 +48,9 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     userStreamsStorage.find(context.user, {}, null, function (err, streams) {
       if (err) { return next(errors.unexpectedError(err)); }
 
-      if (params.parentId) {
+      if (params.parentId != null) {
         var parent = treeUtils.findById(streams, params.parentId);
-        if (! parent) {
+        if (parent == null) {
           return next(errors.unknownReferencedResource('parent stream',
             'parentId', params.parentId, err));
         }

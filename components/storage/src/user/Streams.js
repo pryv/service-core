@@ -102,7 +102,7 @@ Streams.prototype.insertOne = function (user, stream, callback) {
       }.bind(this));
     }.bind(this),
     function checkParent(stepDone) {
-      if (! stream.parentId) { return stepDone(); }
+      if (stream.parentId == null) { return stepDone(); }
       checkParentExists.call(this, user, stream.parentId, stepDone);
     }.bind(this)
   ], function doInsertOne(err) {
