@@ -24,6 +24,8 @@ type Permission = {
   actions: ActionSet,
 };
 
+type ActionCheck = (ActionSet) => boolean;
+
 /**
  * key: streamId/tag
  * value: its scope action set
@@ -123,7 +125,19 @@ class Access {
   }
 
   canReadStream(stream: Stream): boolean {
-    //console.log('in da can read', this.streamsTree);
+    return this.canDoToStream(stream, hasReadAction);
+  }
+  canCreate(stream: Stream): boolean {
+    return this.canDoToStream(stream, hasCreateAction);
+  }
+  canUpdateStream(stream: Stream): boolean {
+    return this.canDoToStream(stream, hasUpdateAction);
+  }
+  canDeleteStream(stream: Stream): boolean {
+    return this.canDoToStream(stream, hasDeleteAction);
+  }
+
+  canDoToStream(stream: Stream, check: ActionCheck): boolean {
     let targetStream: Stream = treeUtils.findById(this.streamsTree, stream.id);
     let loop = true;
     let hasRead = false;
@@ -132,63 +146,23 @@ class Access {
       switch (actions) {
         case undefined:
           loop = true;
-          targetStream = treeUtils.findById(this.streamsTree, targetStream.parentId);
+          targetStream = treeUtils.findById(
+            this.streamsTree,
+            targetStream.parentId
+          );
           break;
         default:
-          hasRead = hasReadAction(actions.streams);
-          loop = ! hasRead || targetStream.parentId != null;
-          targetStream = treeUtils.findById(this.streamsTree, targetStream.parentId);
+          hasRead = check(actions.streams);
+          loop = !hasRead || targetStream.parentId != null;
+          targetStream = treeUtils.findById(
+            this.streamsTree,
+            targetStream.parentId
+          );
           break;
-
       }
     }
     // TODO handle negative
     return hasRead;
-  }
-
-  canCreateStream(stream: Stream): boolean {
-    let targetStream: Stream = treeUtils.findById(this.streamsTree, stream.id);
-
-    // assert: root streams always have an action set.
-
-    let loop = true;
-    while(loop) {
-      const actions = targetStream.actions;
-      switch(actions) {
-        case undefined:
-          loop = true;
-          targetStream = treeUtils.findById(this.streamsTree, targetStream.parentId);
-          break;
-        default:
-          loop = ! hasReadAction(actions);
-          targetStream = treeUtils.findById(this.streamsTree, targetStream.parentId);
-          break;
-        
-      }
-    }
-    while ((targetStream.actions != null) && !hasCreateAction(targetStream.actions.streams) && targetStream.parentId != null) {
-      targetStream = treeUtils.findById(this.streamsTree, targetStream.parentId);
-    }
-    // TODO handle negative
-    return targetStream != null;
-  }
-
-  canUpdateStream(stream: Stream): boolean {
-    let targetStream: Stream = treeUtils.findById(this.streamsTree, stream.id);
-    while (!hasUpdateAction(targetStream.actions.streams) && targetStream.parentId != null) {
-      targetStream = treeUtils.findById(this.streamsTree, targetStream.parentId);
-    }
-    // TODO handle negative
-    return targetStream != null;
-  }
-
-  canDeleteStream(stream: Stream): boolean {
-    let targetStream: Stream = treeUtils.findById(this.streamsTree, stream.id);
-    while (!hasDeleteAction(targetStream.actions.streams) && targetStream.parentId != null) {
-      targetStream = treeUtils.findById(this.streamsTree, targetStream.parentId);
-    }
-    // TODO handle negative
-    return targetStream != null;
   }
 
   async save(): Promise<void> {
