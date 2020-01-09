@@ -21,8 +21,8 @@ describe('Access', function() {
   let accessesRepository = new AccessesRepository(accessStorage, userStorage);
   let streamsRepository = new StreamsRepository(streamStorage, userStorage);
 
-  let user, streams, access;
-  let streamsMap = {};
+  let user, access;
+  
 
   after(async () => {
     await bluebird.fromCallback(cb => accessStorage.delete(user, {}, cb));
@@ -32,141 +32,149 @@ describe('Access', function() {
     );
   });
 
-  describe('canReadStream()', function() {
-    before(() => {
-      user = new User({
-        username: 'bobbb'
+  describe('streams', function () {
+
+    let streams;
+    let streamsMap = {};
+
+    describe('canReadStream()', function () {
+      before(() => {
+        user = new User({
+          username: 'bobbb'
+        });
+
+        streams = [
+          new Stream({
+            id: 'a',
+            name: 'A'
+          }),
+          new Stream({
+            id: 'aa',
+            name: 'AA',
+            parentId: 'a'
+          }),
+          new Stream({
+            id: 'ab',
+            name: 'AB',
+            parentId: 'a'
+          })
+        ];
+        streams.forEach(s => {
+          streamsMap[s.id] = s;
+        });
       });
 
-      streams = [
-        new Stream({
-          id: 'a',
-          name: 'A'
-        }),
-        new Stream({
-          id: 'aa',
-          name: 'AA',
-          parentId: 'a'
-        }),
-        new Stream({
-          id: 'ab',
-          name: 'AB',
-          parentId: 'a'
-        })
-      ];
-      streams.forEach(s => {
-        streamsMap[s.id] = s;
-      });
-    });
-
-    before(async () => {
-      for (let i = 0; i < streams.length; i++) {
-        await streamsRepository.insertOne(user, streams[i]);
-      }
-    });
-
-    describe('when the root stream is readable', function() {
       before(async () => {
-        access = new Access({
-          user: user,
-          permissions: [
-            {
-              scope: {
-                streamIds: ['a']
-              },
-              actions: {
-                streams: ['read']
-              }
-            }
-          ],
-          accessesRepository: accessesRepository,
-          streamsRepository: streamsRepository
-        });
-        await access.loadPermissions();
+        for (let i = 0; i < streams.length; i++) {
+          await streamsRepository.insertOne(user, streams[i]);
+        }
       });
 
-      it('should be able to read it', () => {
-        assert.isTrue(access.canReadStream(streamsMap.a));
+      describe('when the root stream is readable', function () {
+        before(async () => {
+          access = new Access({
+            user: user,
+            permissions: [
+              {
+                scope: {
+                  streamIds: ['a']
+                },
+                actions: {
+                  streams: ['read']
+                }
+              }
+            ],
+            accessesRepository: accessesRepository,
+            streamsRepository: streamsRepository
+          });
+          await access.loadPermissions();
+        });
+
+        it('should be able to read it', () => {
+          assert.isTrue(access.canReadStream(streamsMap.a));
+        });
+        it('should be able to read its children', () => {
+          assert.isTrue(access.canReadStream(streamsMap.aa));
+          assert.isTrue(access.canReadStream(streamsMap.ab));
+        });
       });
-      it('should be able to read its children', () => {
-        assert.isTrue(access.canReadStream(streamsMap.aa));
-        assert.isTrue(access.canReadStream(streamsMap.ab));
+
+      describe('when a child stream is readable', function () {
+        before(async () => {
+          access = new Access({
+            user: user,
+            permissions: [
+              {
+                scope: {
+                  streamIds: ['aa']
+                },
+                actions: {
+                  streams: ['read']
+                }
+              }
+            ],
+            accessesRepository: accessesRepository,
+            streamsRepository: streamsRepository
+          });
+
+          await access.loadPermissions();
+        });
+
+        it('should be able to read it', () => {
+          assert.isTrue(access.canReadStream(streamsMap.aa));
+        });
+        it('should not be able to read root', () => {
+          assert.isFalse(access.canReadStream(streamsMap.a));
+        });
+        it('should not be able to read its sibling', () => {
+          assert.isFalse(access.canReadStream(streamsMap.ab));
+        });
+      });
+
+      describe('when a deleted stream is readable', function () {
+        before(async () => {
+          const deletedStream = new Stream({
+            id: 'd',
+            name: 'D',
+            streamsRepository: streamsRepository,
+            user: user,
+          });
+          await streamsRepository.insertOne(user, deletedStream);
+          await deletedStream.delete();
+
+          access = new Access({
+            user: user,
+            permissions: [
+              {
+                scope: {
+                  streamIds: ['d']
+                },
+                actions: {
+                  streams: ['read']
+                }
+              }
+            ],
+            accessesRepository: accessesRepository,
+            streamsRepository: streamsRepository
+          });
+
+          await access.loadPermissions();
+        });
+
+        it('should not be able to read anything', () => {
+          assert.isFalse(access.canReadStream(streamsMap.a));
+          assert.isFalse(access.canReadStream(streamsMap.aa));
+          assert.isFalse(access.canReadStream(streamsMap.ab));
+        });
       });
     });
 
-    describe('when a child stream is readable', function() {
-      before(async () => {
-        access = new Access({
-          user: user,
-          permissions: [
-            {
-              scope: {
-                streamIds: ['aa']
-              },
-              actions: {
-                streams: ['read']
-              }
-            }
-          ],
-          accessesRepository: accessesRepository,
-          streamsRepository: streamsRepository
-        });
+    describe('canCreateStream()', function () { });
 
-        await access.loadPermissions();
-      });
+    describe('canUpdateStream()', function () { });
 
-      it('should be able to read it', () => {
-        assert.isTrue(access.canReadStream(streamsMap.aa));
-      });
-      it('should not be able to read root', () => {
-        assert.isFalse(access.canReadStream(streamsMap.a));
-      });
-      it('should not be able to read its sibling', () => {
-        assert.isFalse(access.canReadStream(streamsMap.ab));
-      });
-    });
-
-    describe('when a deleted stream is readable', function() {
-      before(async () => {
-        const deletedStream = new Stream({
-          id: 'd',
-          name: 'D',
-          streamsRepository: streamsRepository,
-          user: user,
-        });
-        await streamsRepository.insertOne(user, deletedStream);
-        await deletedStream.delete();
-
-        access = new Access({
-          user: user,
-          permissions: [
-            {
-              scope: {
-                streamIds: ['d']
-              },
-              actions: {
-                streams: ['read']
-              }
-            }
-          ],
-          accessesRepository: accessesRepository,
-          streamsRepository: streamsRepository
-        });
-
-        await access.loadPermissions();
-      });
-
-      it('should not be able to read anything', () => {
-        assert.isFalse(access.canReadStream(streamsMap.a));
-        assert.isFalse(access.canReadStream(streamsMap.aa));
-        assert.isFalse(access.canReadStream(streamsMap.ab));
-      });
-    });
+    describe('canDeleteStream()', function () { });
   });
 
-  describe('canCreateStream()', function() {});
-
-  describe('canUpdateStream()', function() {});
-
-  describe('canDeleteStream()', function() {});
+  
 });
