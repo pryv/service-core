@@ -11,7 +11,7 @@ import type StreamsRepository from '../streams/Repository';
 
 import type { Logger } from 'components/utils/src/logging';
 
-import type { Stream, Action, ActionsSet } from 'components/business/src/streams';
+import type { Stream, Action, ActionSet } from 'components/business/src/streams';
 import type { User } from 'components/business/src/users';
 
 type Permission = {
@@ -121,7 +121,7 @@ class Access {
   canReadStream(stream: Stream): boolean {
     return this.canDoToStream(stream, hasReadAction);
   }
-  canCreate(stream: Stream): boolean {
+  canCreateStream(stream: Stream): boolean {
     return this.canDoToStream(stream, hasCreateAction);
   }
   canUpdateStream(stream: Stream): boolean {
@@ -160,10 +160,10 @@ class Access {
   }
 
   async save(): Promise<void> {
-    if (this.repository == null) {
+    if (this.accessesRepository == null) {
       throw new Error('repository not set for Access object.');
     }
-    await this.repository.insertOne(this.user, this);
+    await this.accessesRepository.insertOne(this.user, this);
   }
 
   async update(fieldsToUpdate: {}): Promise<void> {
@@ -173,10 +173,10 @@ class Access {
   }
 
   async delete(): Promise<void> {
-    if (this.repository == null) {
+    if (this.accessesRepository == null) {
       throw new Error('repository not set for Access object.');
     }
-    await this.repository.deleteOne(this.user, this.id);
+    await this.accessesRepository.deleteOne(this.user, this.id);
   }
 
   forStorage(): {} {
@@ -225,13 +225,8 @@ class Access {
 }
 module.exports = Access;
 
-function log(access: Access, msg: string): void {
-  if (access.logger == null) return;
-  access.logger.info(msg);
-}
-
 async function makeUpdate(fields?: Array<string>, access: Access): Promise<void> {
-  if (access.repository == null) {
+  if (access.accessesRepository == null) {
     throw new Error('repository not set for Access object.');
   }
   let update;
@@ -241,7 +236,7 @@ async function makeUpdate(fields?: Array<string>, access: Access): Promise<void>
   } else {
     update = _.pick(access.forStorage(), fields);
   }
-  await access.repository.updateOne(access.user, update, access.id);
+  await access.accessesRepository.updateOne(access.user, update, access.id);
 }
 
 function hasReadAction(actions?: Array<Action>) {
