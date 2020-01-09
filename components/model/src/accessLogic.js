@@ -248,6 +248,7 @@ function isLowerLevel(permissionLevelA, permissionLevelB) {
 function hasPermissions(access) {
 
   return access.permissions && access.permissions.length > 0 &&
+  // these checks are added because access.permissions may contain deleted accesses Issue #217
     ((access.streamPermissions && access.streamPermissions.length > 0)
       || (access.tagPermissions && access.tagPermissions.length > 0));
 }

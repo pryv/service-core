@@ -110,16 +110,9 @@ class Access {
 
   async loadPermissions() {
     this.buildPermScopeMaps();
-    console.log('salut', this.user);
     this.streamsTree = await this.streamsRepository.getAll(this.user);
-
-    //console.log('YO', JSON.stringify(this.streamsTree, null, 2));
-    //console.log('YO', this.streamsScopeMap);
-
     this.streamsScopeMap.forEach((actions, streamId) => {
-      console.log('YA', streamId);
       const stream = treeUtils.findById(this.streamsTree, streamId);
-      //console.log('setting for', stream);
       stream.actions = actions;
     });
   }
@@ -153,7 +146,7 @@ class Access {
           break;
         default:
           hasRead = check(actions.streams);
-          loop = !hasRead || targetStream.parentId != null;
+          loop = !hasRead && targetStream.parentId != null;
           targetStream = treeUtils.findById(
             this.streamsTree,
             targetStream.parentId

@@ -128,7 +128,7 @@ class MethodContext {
       
       // those 2 last are executed in callbatch for each call.
 
-      // Load the streams we can access.
+      // Load the user's streams.
       await this.retrieveStreams(storage);
       
       // And finally, load permissions for non-personal accesses.
@@ -337,7 +337,7 @@ class MethodContext {
    * @param streamId
    * @param tags
    * @returns {Boolean}
-   */
+   */ 
   canContributeToContext(streamId: string, tags: ?Array<string>) {
     const access = this.access; 
     if (access == null)
