@@ -467,6 +467,20 @@ describe('events', function () {
       });
     });
 
+    it('[PP6G] must return readToken in attachments', function (done) {
+      var event = testData.events[0];
+
+      request.get(path(event.id) + '/').end(function (res) {
+        res.statusCode.should.eql(200);
+        res.body.event.should.have.property('attachments');
+        res.body.event.attachments.forEach(attachment => {
+          attachment.should.have.property('readToken');          
+        });
+
+        done();
+      });
+    });
+
     it('[NL65] must accept a secure read token in the query string instead of the `"Authorization" header',
         function (done) {
       var event = testData.events[0],
