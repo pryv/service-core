@@ -200,7 +200,8 @@ module.exports = function (
   api.register('events.getOne',
     commonFns.getParamsValidation(methodsSchema.getOne.params),
     findEvent,
-    includeHistoryIfRequested
+    includeHistoryIfRequested,
+    includeDeletionsIfRequested // TODO ilia : should we ?
   );
 
   function findEvent(context, params, result, next) {
@@ -216,6 +217,7 @@ module.exports = function (
       if (! context.canReadContext(event.streamId, event.tags)) {
         return next(errors.forbidden());
       }
+      setFileReadToken(context.access, event);
       result.event = event;
       next();
     });
