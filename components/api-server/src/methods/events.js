@@ -200,8 +200,7 @@ module.exports = function (
   api.register('events.getOne',
     commonFns.getParamsValidation(methodsSchema.getOne.params),
     findEvent,
-    includeHistoryIfRequested,
-    includeDeletionsIfRequested // TODO ilia : should we ?
+    includeHistoryIfRequested
   );
 
   function findEvent(context, params, result, next) {
