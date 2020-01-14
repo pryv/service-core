@@ -150,6 +150,11 @@ class Server {
     app.use(bodyParser.json());
     app.use(middleware.override);
     app.use(middleware.commonHeaders(version));
+
+    const storage = this.context.metadata.loader.storage;
+    
+    const initContextMiddleware = middleware.initContext(storage, null);
+    app.all('/*', initContextMiddleware);
     
     this.defineApplication(app); 
         
