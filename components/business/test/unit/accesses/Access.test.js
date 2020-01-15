@@ -17,6 +17,8 @@ const AccessesRepository = require('components/business/src/accesses')
 const Stream = require('components/business/src/streams').Stream;
 const StreamsRepository = require('components/business/src/streams').Repository;
 
+const Actions = require('components/business/src/streams/types').Actions;
+
 describe('Access', function() {
   let accessesRepository = new AccessesRepository(accessStorage, userStorage);
   let streamsRepository = new StreamsRepository(streamStorage, userStorage);
@@ -57,7 +59,12 @@ describe('Access', function() {
             id: 'ab',
             name: 'AB',
             parentId: 'a'
-          })
+          }),
+          new Stream({
+            id: 'aaa',
+            name: 'AAA',
+            parentId: 'aa',
+          }),
         ];
         streams.forEach(s => {
           streamsMap[s.id] = s;
@@ -80,7 +87,7 @@ describe('Access', function() {
                   streamIds: ['a']
                 },
                 actions: {
-                  streams: ['read']
+                  streams: [Actions.READ]
                 }
               }
             ],
@@ -96,6 +103,7 @@ describe('Access', function() {
         it('should be able to read its children', () => {
           assert.isTrue(access.canReadStream(streamsMap.aa));
           assert.isTrue(access.canReadStream(streamsMap.ab));
+          assert.isTrue(access.canReadStream(streamsMap.aaa));
         });
       });
 
@@ -109,7 +117,7 @@ describe('Access', function() {
                   streamIds: ['aa']
                 },
                 actions: {
-                  streams: ['read']
+                  streams: [Actions.READ]
                 }
               }
             ],
@@ -120,8 +128,9 @@ describe('Access', function() {
           await access.loadPermissions();
         });
 
-        it('should be able to read it', () => {
+        it('should be able to read it and its children', () => {
           assert.isTrue(access.canReadStream(streamsMap.aa));
+          assert.isTrue(access.canReadStream(streamsMap.aaa));
         });
         it('should not be able to read root', () => {
           assert.isFalse(access.canReadStream(streamsMap.a));
@@ -150,7 +159,7 @@ describe('Access', function() {
                   streamIds: ['d']
                 },
                 actions: {
-                  streams: ['read']
+                  streams: [Actions.READ]
                 }
               }
             ],
@@ -165,7 +174,49 @@ describe('Access', function() {
           assert.isFalse(access.canReadStream(streamsMap.a));
           assert.isFalse(access.canReadStream(streamsMap.aa));
           assert.isFalse(access.canReadStream(streamsMap.ab));
+          assert.isFalse(access.canReadStream(streamsMap.aaa));
         });
+      });
+
+      describe('when a child is forbidden', function () {
+        before(async () => {
+          access = new Access({
+            user: user,
+            permissions: [
+              {
+                scope: {
+                  streamIds: ['a']
+                },
+                actions: {
+                  streams: [Actions.READ]
+                }
+              },
+              {
+                scope: {
+                  streamIds: ['aa']
+                },
+                actions: {
+                  streams: [Actions.NONREAD]
+                }
+              }
+            ],
+            accessesRepository: accessesRepository,
+            streamsRepository: streamsRepository
+          });
+
+          await access.loadPermissions();
+        });
+
+        it('should be able to read the root stream and the other child', () => {
+          assert.isTrue(access.canReadStream(streamsMap.a));
+          assert.isTrue(access.canReadStream(streamsMap.ab));
+        });
+
+        it('should not be able to read the forbidden child and its descendents', () => {
+          assert.isFalse(access.canReadStream(streamsMap.aa));
+          assert.isFalse(access.canReadStream(streamsMap.aaa));
+        });
+
       });
     });
 

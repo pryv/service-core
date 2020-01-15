@@ -5,6 +5,7 @@ const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
 
 const treeUtils = require('components/utils/src/treeUtils');
+const Actions = require('components/business/src/streams/types').Actions;
 
 import type AccessesRepository from './repository';
 import type StreamsRepository from '../streams/Repository';
@@ -119,22 +120,23 @@ class Access {
   }
 
   canReadStream(stream: Stream): boolean {
-    return this.canDoToStream(stream, hasReadAction);
+    return this.canDoToStream(stream, hasReadAction, hasNonReadAction);
   }
   canCreateStream(stream: Stream): boolean {
-    return this.canDoToStream(stream, hasCreateAction);
+    return this.canDoToStream(stream, hasCreateAction, hasNonCreateAction);
   }
   canUpdateStream(stream: Stream): boolean {
-    return this.canDoToStream(stream, hasUpdateAction);
+    return this.canDoToStream(stream, hasUpdateAction, hasNonUpdateAction);
   }
   canDeleteStream(stream: Stream): boolean {
-    return this.canDoToStream(stream, hasDeleteAction);
+    return this.canDoToStream(stream, hasDeleteAction, hasNonDeleteAction);
   }
 
-  canDoToStream(stream: Stream, check: ActionCheck): boolean {
+  canDoToStream(stream: Stream, check: ActionCheck, nonCheck: ActionCheck): boolean {
     let targetStream: Stream = treeUtils.findById(this.streamsTree, stream.id);
     let loop = true;
     let hasRead = false;
+    let hasNonRead = false;
     while (loop) {
       const actions = targetStream.actions;
       switch (actions) {
@@ -147,7 +149,8 @@ class Access {
           break;
         default:
           hasRead = check(actions.streams);
-          loop = !hasRead && targetStream.parentId != null;
+          hasNonRead = nonCheck(actions.streams);
+          loop = !hasNonRead && !hasRead && targetStream.parentId != null;
           targetStream = treeUtils.findById(
             this.streamsTree,
             targetStream.parentId
@@ -155,7 +158,6 @@ class Access {
           break;
       }
     }
-    // TODO handle negative
     return hasRead;
   }
 
@@ -240,14 +242,26 @@ async function makeUpdate(fields?: Array<string>, access: Access): Promise<void>
 }
 
 function hasReadAction(actions?: Array<Action>) {
-  return actions != null && actions.indexOf('read') >= 0;
+  return actions != null && actions.indexOf(Actions.READ) >= 0;
+}
+function hasNonReadAction(actions?: Array<Action>) {
+  return actions != null && actions.indexOf(Actions.NONREAD) >= 0;
 }
 function hasCreateAction(actions?: Array<Action>) {
-  return actions != null && actions.indexOf('create') >= 0;
+  return actions != null && actions.indexOf(Actions.CREATE) >= 0;
+}
+function hasNonCreateAction(actions?: Array<Action>) {
+  return actions != null && actions.indexOf(Actions.NONCREATE) >= 0;
 }
 function hasUpdateAction(actions?: Array<Action>) {
-  return actions != null && actions.indexOf('update') >= 0;
+  return actions != null && actions.indexOf(Actions.UPDATE) >= 0;
+}
+function hasNonUpdateAction(actions?: Array<Action>) {
+  return actions != null && actions.indexOf(Actions.NONUPDATE) >= 0;
 }
 function hasDeleteAction(actions?: Array<Action>) {
-  return actions != null && actions.indexOf('delete') >= 0;
+  return actions != null && actions.indexOf(Actions.DELETE) >= 0;
+}
+function hasNonDeleteAction(actions?: Array<Action>) {
+  return actions != null && actions.indexOf(Actions.NONDELETE) >= 0;
 }
