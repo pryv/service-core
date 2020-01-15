@@ -17,6 +17,7 @@ const { ProjectVersion } = require('components/middleware/src/project_version');
 
 
 const controllerFactory = require('./web/controller');
+const getAuth = require('../../middleware/src/getAuth');
 
 const KEY_IP = 'http.ip';
 const KEY_PORT = 'http.port';  
@@ -150,11 +151,7 @@ class Server {
     app.use(bodyParser.json());
     app.use(middleware.override);
     app.use(middleware.commonHeaders(version));
-
-    const storage = this.context.metadata.loader.storage;
-    
-    const initContextMiddleware = middleware.initContext(storage, null);
-    app.all('/*', initContextMiddleware);
+    app.all('/*', getAuth);
     
     this.defineApplication(app); 
         

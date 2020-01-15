@@ -55,6 +55,19 @@ describe('Querying data from a HF series', function() {
     server.stop(); 
   });
 
+  it('[Q1X1] should should accept a query with authentication token header', function () {
+    return server.request()
+      .get(`/${userId}/events/${eventId}/series`)
+      .set('authorization', accessToken)
+      .expect(200);
+  });
+
+  // Fixes #210
+  it('[Q1X2] should should accept a query with authentication token in url parameter', function () {
+    return server.request()
+      .get(`/${userId}/events/${eventId}/series?auth=` + accessToken)
+      .expect(200);
+  });
   it('[I2ZH] should refuse a query for an unknown user', function () {
     return server.request()
       .get('/some-user/events/some-eventId/series')
