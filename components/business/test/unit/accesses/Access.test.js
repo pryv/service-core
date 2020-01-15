@@ -211,12 +211,99 @@ describe('Access', function() {
           assert.isTrue(access.canReadStream(streamsMap.a));
           assert.isTrue(access.canReadStream(streamsMap.ab));
         });
-
         it('should not be able to read the forbidden child and its descendents', () => {
           assert.isFalse(access.canReadStream(streamsMap.aa));
           assert.isFalse(access.canReadStream(streamsMap.aaa));
         });
 
+      });
+
+      describe('when a grandchild is forbidden', function () {
+        before(async () => {
+          access = new Access({
+            user: user,
+            permissions: [
+              {
+                scope: {
+                  streamIds: ['a']
+                },
+                actions: {
+                  streams: [Actions.READ]
+                }
+              },
+              {
+                scope: {
+                  streamIds: ['aaa']
+                },
+                actions: {
+                  streams: [Actions.NONREAD]
+                }
+              }
+            ],
+            accessesRepository: accessesRepository,
+            streamsRepository: streamsRepository
+          });
+
+          await access.loadPermissions();
+        });
+
+        it('should be able to read the root stream and the children', () => {
+          assert.isTrue(access.canReadStream(streamsMap.a));
+          assert.isTrue(access.canReadStream(streamsMap.aa));
+          assert.isTrue(access.canReadStream(streamsMap.ab));
+        });
+        it('should not be able to read the forbidden grandchild', () => {
+          assert.isFalse(access.canReadStream(streamsMap.aaa));
+        });
+      });
+
+      describe('when a parent is forbidden, but its child is allowed', function() {
+        before(async () => {
+          access = new Access({
+            user: user,
+            permissions: [
+              {
+                scope: {
+                  streamIds: ['a']
+                },
+                actions: {
+                  streams: [Actions.READ]
+                }
+              },
+              {
+                scope: {
+                  streamIds: ['aa']
+                },
+                actions: {
+                  streams: [Actions.NONREAD]
+                }
+              },
+              {
+                scope: {
+                  streamIds: ['aaa']
+                },
+                actions: {
+                  streams: [Actions.READ]
+                }
+              }
+            ],
+            accessesRepository: accessesRepository,
+            streamsRepository: streamsRepository
+          });
+
+          await access.loadPermissions();
+        });
+
+        it('should be able to read the root stream and its other child', () => {
+          assert.isTrue(access.canReadStream(streamsMap.a));
+          assert.isTrue(access.canReadStream(streamsMap.ab));
+        });
+        it('should not be able to read the forbidden child', () => {
+          assert.isFalse(access.canReadStream(streamsMap.aa));
+        });
+        it('should be able to read the grandchild', () => {
+          assert.isTrue(access.canReadStream(streamsMap.aaa));
+        });
       });
     });
 
