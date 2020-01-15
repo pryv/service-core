@@ -27,7 +27,5 @@ module.exports = (req: express$Request, res: express$Response, next: express$Nex
   // Set authorization token in the context
   const auth = authHeader || authQuery;
   req.headers[ApiConstants.AUTH_HEADER] = auth; // It's where hfs-server look for authorization token
-  console.log('getAuth - final auth = ', auth);
-  // req.context = Object.assign({}, req.context, {auth: auth});
   next();
 };
