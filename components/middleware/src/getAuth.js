@@ -1,13 +1,12 @@
 // @flow
 
+const ApiConstants = require('components/hfs-server/src/web/api_constants');
+
 // Middleware that verifies the presence of an authorization token
 // 
-const ApiConstants = require('components/hfs-server/src/web/api_constants');
 module.exports = (req: express$Request, res: express$Response, next: express$NextFunction) => {
-  let authHeader = req.headers.authorization; // TODO let authHeader = req.headers[ApiConstants.AUTH_HEADER];
+  let authHeader = req.headers[ApiConstants.AUTH_HEADER];
   const authQuery = req.query.auth;
-  console.log('getAuth - authHeader', authHeader);
-  console.log('getAuth - authQuery', authQuery);
 
   if ((authHeader == null || authHeader === '') && (authQuery == null || authQuery === '')) {
     // return next(new Error('Missing \'Authorization\' header or \'auth\' query parameter.'));
