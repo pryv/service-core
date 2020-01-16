@@ -46,6 +46,22 @@
             "internalConsoleOptions": "neverOpen",
             "runtimeArgs": ["--nolazy"],
             "sourceMapPathOverrides": { "webpack:///*": "${workspaceRoot}/*" }
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "START hfs-server",
+            "program": "${workspaceFolder}/dist/components/hfs-server/bin/server",
+            "env": {"NODE_ENV":"development", "NODE_TLS_REJECT_UNAUTHORIZED":"0"},
+            "args": [
+                "--config",
+                "dist/components/hfs-server/config/local.json"
+            ],
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "runtimeArgs": ["--nolazy"],
+            "sourceMapPathOverrides": { "webpack:///*": "${workspaceRoot}/*" }
         }
     ]
 }
