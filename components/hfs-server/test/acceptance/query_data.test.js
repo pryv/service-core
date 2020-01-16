@@ -8,6 +8,8 @@ const { ErrorIds } = require('components/errors');
 const cuid = require('cuid');
 const chai = require('chai');
 const assert = chai.assert; 
+const URL = require('url');
+const superagent = require('superagent');
 
 const { spawnContext, produceMongoConnection } = 
   require('./test-helpers');
@@ -68,6 +70,14 @@ describe('Querying data from a HF series', function() {
       .get(`/${userId}/events/${eventId}/series?auth=` + accessToken)
       .expect(200);
   });
+  it('[Q1X3] must accept the https://{token}@{domain}/{userId}/events/{eventId}/series AUTH schema', async function () {
+    const url = new URL.URL(server.baseUrl);
+    const basicAuthUrl = url.href.replace(url.hostname, accessToken + '@' + url.hostname);
+    const apiEndPointUrl = URL.resolve(basicAuthUrl, userId + '/events/' + eventId + '/series');
+    const res = await superagent.get(apiEndPointUrl);
+    assert.equal(res.status, 200);
+  });
+
   it('[I2ZH] should refuse a query for an unknown user', function () {
     return server.request()
       .get('/some-user/events/some-eventId/series')
