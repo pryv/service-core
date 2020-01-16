@@ -70,7 +70,7 @@ describe('Querying data from a HF series', function() {
       .get(`/${userId}/events/${eventId}/series?auth=` + accessToken)
       .expect(200);
   });
-  it('[Q1X3] must accept the https://{token}@{domain}/{userId}/events/{eventId}/series AUTH schema', async function () {
+  it('[Q1X3] must accept basic auth schema', async function () {
     const url = new URL.URL(server.baseUrl);
     const basicAuthUrl = url.href.replace(url.hostname, accessToken + '@' + url.hostname);
     const apiEndPointUrl = URL.resolve(basicAuthUrl, userId + '/events/' + eventId + '/series');
