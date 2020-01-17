@@ -65,7 +65,7 @@ describe('Querying data from a HF series', function() {
   });
 
   // Fixes #210
-  it('[Q1X2] should should accept a query with authentication token in url parameter', function () {
+  it('[Q1X2] should accept a query with authentication token in url parameter', function () {
     return server.request()
       .get(`/${userId}/events/${eventId}/series?auth=` + accessToken)
       .expect(200);
@@ -78,6 +78,16 @@ describe('Querying data from a HF series', function() {
     assert.equal(res.status, 200);
   });
 
+  // Fixes #212
+  it('[RAIJ] should return core-metadata in every call', async function () {
+    const res = await server.request()
+      .get(`/${userId}/events/${eventId}/series`)
+      .set('authorization', accessToken);
+
+    chai.expect(res).to.have.property('status').that.eql(200);
+    chai.expect(res.body).to.have.property('meta');
+  });
+  
   it('[I2ZH] should refuse a query for an unknown user', function () {
     return server.request()
       .get('/some-user/events/some-eventId/series')
