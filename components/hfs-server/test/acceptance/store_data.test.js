@@ -429,7 +429,7 @@ describe('Storing data in a HF series', function() {
         .set('authorization', accessToken);
       assert.strictEqual(delete2.status, 200);
 
-      awaiting.delay(100);
+      await awaiting.delay(100);
 
       const rows2 = await influx.query(query, opts);
       assert.strictEqual(rows2.length, 0);
