@@ -1,6 +1,7 @@
 // @flow
 
 const business = require('components/business');
+const setCommonMeta = require('components/api-server/src/methods/helpers/setCommonMeta');
 
 /** Represents a response in series format. 
  * 
@@ -26,11 +27,11 @@ class SeriesResponse {
   /** Serializes this response to JSON. 
    */
   toJSON() {
-    return {
+    return setCommonMeta({
       format: 'flatJSON', 
       fields: this.matrix.columns, 
       points: this.matrix.data, 
-    };
+    });
   }
 }
 

@@ -522,6 +522,14 @@ describe('Storing data in a HF series', function() {
             });
         });
 
+        // Fixes #212
+        it('[TL0D] should return core-metadata in every call', async function() {
+          const data = produceData(); 
+          const res = await storeData(data);
+          chai.expect(res).to.have.property('status').that.eql(200);
+          chai.expect(res.body).to.have.property('meta');
+        });
+        
         it('[RESC] should reject non-JSON bodies', function () { 
           const response = server.request()
             .post(`/USERNAME/events/${EVENT_ID}/series`)
