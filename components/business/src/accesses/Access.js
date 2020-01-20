@@ -126,20 +126,32 @@ class Access {
     return this.readableStreams;
   }
 
+  canReadEvent(stream: Stream): boolean {
+    return this.canDoToResource(stream, 'events', hasReadAction, hasNonReadAction);
+  }
+  canCreateEvent(stream: Stream): boolean {
+    return this.canDoToResource(stream, 'events', hasCreateAction, hasNonCreateAction);
+  }
+  canUpdateEvent(stream: Stream): boolean {
+    return this.canDoToResource(stream, 'events', hasUpdateAction, hasNonUpdateAction);
+  }
+  canDeleteEvent(stream: Stream): boolean {
+    return this.canDoToResource(stream, 'events', hasDeleteAction, hasNonDeleteAction);
+  }
   canReadStream(stream: Stream): boolean {
-    return this.canDoToStream(stream, hasReadAction, hasNonReadAction);
+    return this.canDoToResource(stream, 'streams', hasReadAction, hasNonReadAction);
   }
   canCreateStream(stream: Stream): boolean {
-    return this.canDoToStream(stream, hasCreateAction, hasNonCreateAction);
+    return this.canDoToResource(stream, 'streams', hasCreateAction, hasNonCreateAction);
   }
   canUpdateStream(stream: Stream): boolean {
-    return this.canDoToStream(stream, hasUpdateAction, hasNonUpdateAction);
+    return this.canDoToResource(stream, 'streams', hasUpdateAction, hasNonUpdateAction);
   }
   canDeleteStream(stream: Stream): boolean {
-    return this.canDoToStream(stream, hasDeleteAction, hasNonDeleteAction);
+    return this.canDoToResource(stream, 'streams', hasDeleteAction, hasNonDeleteAction);
   }
 
-  canDoToStream(stream: Stream, check: ActionCheck, nonCheck: ActionCheck): boolean {
+  canDoToResource(stream: Stream, resource: string, check: ActionCheck, nonCheck: ActionCheck): boolean {
     let targetStream: Stream = treeUtils.findById(this.streamsTree, stream.id);
     let loop = true;
     let hasRead = false;
@@ -155,8 +167,8 @@ class Access {
           );
           break;
         default:
-          hasRead = check(actions.streams);
-          hasNonRead = nonCheck(actions.streams);
+          hasRead = check(actions[resource]);
+          hasNonRead = nonCheck(actions[resource]);
           loop = !hasNonRead && !hasRead && targetStream.parentId != null;
           targetStream = treeUtils.findById(
             this.streamsTree,
