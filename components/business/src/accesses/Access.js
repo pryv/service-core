@@ -47,6 +47,8 @@ class Access {
   accessesRepository: ?AccessesRepository;
   streamsRepository: ?StreamsRepository;
 
+  starStreamActions: ActionSet;
+
   streamPermissions: ?Array<{}>;
   tagPermissions: ?Array<{}>;
 
@@ -99,6 +101,15 @@ class Access {
         });
       }
     });
+
+    const starStreamActions: ActionSet = this.streamsScopeMap.get('*');
+    if (starStreamActions != null) {
+      this.starStreamActions = starStreamActions;
+    }
+  }
+
+  hasStarStreamPerm() {
+    return this.starStreamActions != null;
   }
 
   async loadPermissions() {
@@ -113,10 +124,9 @@ class Access {
 
   buildReadableStreams(): void {
     const streamsTree = this.streamsTree;
-    this.readableStreams = treeUtils.filterTree(
-      streamsTree, true,
-      s => { return this.canReadStream(s); }
-    );
+    this.readableStreams = treeUtils.filterTree(streamsTree, true, s => {
+      return this.canReadStream(s);
+    });
   }
 
   getReadableStreams(): Array<Stream> {
@@ -152,6 +162,11 @@ class Access {
   }
 
   canDoToResource(stream: Stream, resource: string, check: ActionCheck, nonCheck: ActionCheck): boolean {
+
+    // case *
+    if (this.hasStarStreamPerm() && check(this.starStreamActions[resource])) return true;
+
+    // normal case
     let targetStream: Stream = treeUtils.findById(this.streamsTree, stream.id);
     let loop = true;
     let hasRead = false;

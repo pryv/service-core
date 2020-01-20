@@ -302,6 +302,34 @@ describe('Access', function() {
           assert.isTrue(access.canReadStream(streamsMap.aaa));
         });
       });
+
+      describe('when all (*) streams are readable', function () {
+        before(async () => {
+          access = new Access({
+            user: user,
+            permissions: [
+              {
+                scope: {
+                  streamIds: ['*'],
+                },
+                actions: {
+                  streams: [Actions.READ]
+                }
+              }
+            ],
+            accessesRepository: accessesRepository,
+            streamsRepository: streamsRepository
+          });
+          await access.loadPermissions();
+        });
+
+        it('should be able to read all streams', () => {
+          assert.isTrue(access.canReadStream(streamsMap.a));
+          assert.isTrue(access.canReadStream(streamsMap.aa));
+          assert.isTrue(access.canReadStream(streamsMap.ab));
+          assert.isTrue(access.canReadStream(streamsMap.aaa));
+        });
+      });
     });
 
     describe('getReadableStreams()', function () {
