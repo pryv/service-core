@@ -158,23 +158,20 @@ class Access {
     let hasNonRead = false;
     while (loop) {
       const actions = targetStream.actions;
-      switch (actions) {
-        case undefined:
-          loop = true;
-          targetStream = treeUtils.findById(
-            this.streamsTree,
-            targetStream.parentId
-          );
-          break;
-        default:
-          hasRead = check(actions[resource]);
-          hasNonRead = nonCheck(actions[resource]);
-          loop = !hasNonRead && !hasRead && targetStream.parentId != null;
-          targetStream = treeUtils.findById(
-            this.streamsTree,
-            targetStream.parentId
-          );
-          break;
+      if (actions == null) {
+        loop = true;
+        targetStream = treeUtils.findById(
+          this.streamsTree,
+          targetStream.parentId
+        );
+      } else {
+        hasRead = check(actions[resource]);
+        hasNonRead = nonCheck(actions[resource]);
+        loop = !hasNonRead && !hasRead && targetStream.parentId != null;
+        targetStream = treeUtils.findById(
+          this.streamsTree,
+          targetStream.parentId
+        );
       }
     }
     return hasRead;
