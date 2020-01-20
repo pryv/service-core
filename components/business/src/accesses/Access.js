@@ -52,6 +52,8 @@ class Access {
 
   streamsTree: Array<Stream>;
 
+  readableStreams: Array<Stream>;
+
   streamsScopeMap: PermScopeMap;
   tagsScopeMap: PermScopeMap;
 
@@ -99,16 +101,6 @@ class Access {
     });
   }
 
-  /**
-   * 1. retrieveStreams for user, applyInheritedProperties
-   * 2. access.loadPermissions(streams);
-   *  0. load sub-tree? probably not needed
-   *  1. put scopes flat
-   *  2. iterate on streams, applying actions on nodes of each stream
-   * 3. build stream perms
-   * 4. build tag perms
-   */
-
   async loadPermissions() {
     this.buildPermScopeMaps();
     this.streamsTree = await this.streamsRepository.getAll(this.user);
@@ -117,6 +109,21 @@ class Access {
       if (stream == null) return;
       stream.actions = actions;
     });
+  }
+
+  buildReadableStreams(): void {
+    const streamsTree = this.streamsTree;
+    this.readableStreams = treeUtils.filterTree(
+      streamsTree, true,
+      s => { return this.canReadStream(s); }
+    );
+  }
+
+  getReadableStreams(): Array<Stream> {
+    if (this.readableStreams == null) {
+      this.buildReadableStreams();
+    }
+    return this.readableStreams;
   }
 
   canReadStream(stream: Stream): boolean {
@@ -159,6 +166,11 @@ class Access {
       }
     }
     return hasRead;
+
+  }
+
+  hasTags(): boolean {
+    return this.tagsScopeMap.size > 0;
   }
 
   async save(): Promise<void> {

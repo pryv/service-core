@@ -10,6 +10,8 @@ const streamStorage = require('components/test-helpers').dependencies.storage
 const userStorage = require('components/test-helpers').dependencies.storage
   .users;
 
+const treeUtils = require('components/utils/src/treeUtils');
+
 const User = require('components/business/src/users').User;
 const Access = require('components/business/src/accesses').Access;
 const AccessesRepository = require('components/business/src/accesses')
@@ -39,6 +41,9 @@ describe('Access', function() {
     let streams;
     let streamsMap = {};
 
+    /**
+     * Other actions are not tested as they are written similarly to read.
+     */
     describe('canReadStream()', function () {
       before(() => {
         user = new User({
@@ -48,23 +53,23 @@ describe('Access', function() {
         streams = [
           new Stream({
             id: 'a',
-            name: 'A'
+            name: 'A',
           }),
           new Stream({
             id: 'aa',
             name: 'AA',
-            parentId: 'a'
+            parentId: 'a',
           }),
           new Stream({
             id: 'ab',
             name: 'AB',
-            parentId: 'a'
+            parentId: 'a',
           }),
           new Stream({
             id: 'aaa',
             name: 'AAA',
             parentId: 'aa',
-          }),
+          })
         ];
         streams.forEach(s => {
           streamsMap[s.id] = s;
@@ -84,7 +89,7 @@ describe('Access', function() {
             permissions: [
               {
                 scope: {
-                  streamIds: ['a']
+                  streamIds: ['a'],
                 },
                 actions: {
                   streams: [Actions.READ]
@@ -264,7 +269,7 @@ describe('Access', function() {
             permissions: [
               {
                 scope: {
-                  streamIds: ['a']
+                  streamIds: ['a', 'aaa']
                 },
                 actions: {
                   streams: [Actions.READ]
@@ -278,14 +283,6 @@ describe('Access', function() {
                   streams: [Actions.NONREAD]
                 }
               },
-              {
-                scope: {
-                  streamIds: ['aaa']
-                },
-                actions: {
-                  streams: [Actions.READ]
-                }
-              }
             ],
             accessesRepository: accessesRepository,
             streamsRepository: streamsRepository
@@ -307,12 +304,85 @@ describe('Access', function() {
       });
     });
 
-    describe('canCreateStream()', function () { });
+    describe('getReadableStreams()', function () {
+      before(() => {
+        user = new User({
+          username: 'bobbb'
+        });
 
-    describe('canUpdateStream()', function () { });
+        streams = [
+          new Stream({
+            id: 'a',
+            name: 'A',
+          }),
+          new Stream({
+            id: 'aa',
+            name: 'AA',
+            parentId: 'a',
+          }),
+          new Stream({
+            id: 'ab',
+            name: 'AB',
+            parentId: 'a',
+          }),
+          new Stream({
+            id: 'aaa',
+            name: 'AAA',
+            parentId: 'aa',
+          })
+        ];
+        streams.forEach(s => {
+          streamsMap[s.id] = s;
+        });
+      });
 
-    describe('canDeleteStream()', function () { });
+      before(async () => {
+        for (let i = 0; i < streams.length; i++) {
+          await streamsRepository.insertOne(user, streams[i]);
+        }
+      });
+
+      before(async () => {
+        access = new Access({
+          user: user,
+          permissions: [
+            {
+              scope: {
+                streamIds: ['ab', 'aaa'],
+              },
+              actions: {
+                streams: [Actions.READ]
+              }
+            }
+          ],
+          accessesRepository: accessesRepository,
+          streamsRepository: streamsRepository
+        });
+        await access.loadPermissions();
+      });
+
+      it('should return the readable streams', () => {
+        const readableStreams = access.getReadableStreams();
+        assert.isArray(readableStreams);
+        let foundAB = false;
+        let foundAAA = false;
+        readableStreams.forEach(s => {
+          if (s.id === 'ab') foundAB = true;
+          if (s.id === 'aaa') foundAAA = true;
+        });
+        assert.isTrue(foundAB);
+        assert.isTrue(foundAAA);
+      });
+
+    });
+
+    
   });
 
+  describe('events', function () {
+
+    
+
+  });
   
 });
