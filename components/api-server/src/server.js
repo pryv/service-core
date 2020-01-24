@@ -13,6 +13,8 @@ const Application = require('./application');
 
 const expressAppInit = require('./expressApp');
 
+const superagent = require('superagent');
+
 import type { Logger } from 'components/utils';
 import type { ConfigAccess } from './settings';
 import type { ExpressAppLifecycle } from './expressApp';
@@ -69,6 +71,8 @@ class Server {
     // Let actual requests pass.
     lifecycle.appStartupComplete(); 
         
+    await this.collectUsageAndSendReport();
+
     logger.info('Server ready.');
     this.notificationBus.serverReady();
   }
@@ -284,6 +288,34 @@ class Server {
     require('./routes/service')(expressApp, application);
     require('./routes/streams')(expressApp, application);
     require('./routes/webhooks')(expressApp, application);
+  }
+
+  async collectUsageAndSendReport() {
+    const opt_out_reporting = 1; // TODO
+    if (opt_out_reporting) { // TODO tester true, false, 1, 0, '', {}, null
+      this.logger.info('PRYV_REPORTING_OFF is set to ' + opt_out_reporting + ', not reporting');
+      return;
+    }
+
+    // Collect usage
+    const payload = {}; // TODO
+
+    const body = {
+      licenseName: 'TODO',
+      role: 'core',
+      hostname: 'TODO',
+      version: 'TODO',
+      payload: payload
+    };
+
+    // Send report
+    const reportingUrl = 'TODO';
+    try {
+      const res = await superagent.post(reportingUrl).send(body);
+      this.logger.info('Report sent to ' + reportingUrl, res.body);
+    } catch(error) {
+      this.logger.error('Unable to send report to ' + reportingUrl, error);
+    }
   }
 
 }
