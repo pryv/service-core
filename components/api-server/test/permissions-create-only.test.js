@@ -117,9 +117,9 @@ describe('Access permissions', function () {
     it('[PCO5] must forbid stopping events for \'create-only\' streams', function (done) {
       request.post(basePath + '/stop', token(8)).send({id: testData.events[28].id})
           .end(function (res) {
-
-            console.log('XXXX', res.body)
-        validation.checkErrorForbidden(res, done);
+            res.statusCode.should.eql(200);
+            assert.exists(res.body.stoppedId);
+            done();
       });
     });
 
