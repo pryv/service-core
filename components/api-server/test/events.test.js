@@ -337,7 +337,7 @@ describe('events', function () {
     });
 
     it('[6H0Z] must return all events (trashed or not) when requested', function (done) {
-      request.get(basePath).query({state: 'all'}).end(function (res) {
+      request.get(basePath).query({state: 'all', limit: 1000}).end(function (res) {
         validation.check(res, {
           status: 200,
           schema: methodsSchema.get.result,

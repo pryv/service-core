@@ -65,13 +65,13 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
       if (! context.access.isPersonal()) {
         streams = treeUtils.filterTree(streams, true /*keep orphans*/, function (stream) {
-          return context.canReadStream(stream.id);
+          return context.canListStream(stream.id);
         });
       }
 
       // hide inaccessible parent ids
       streams.forEach(function (stream) {
-        if (! context.canReadStream(stream.parentId)) {
+        if (! context.canListStream(stream.parentId)) {
           delete stream.parentId;
         }
       });
