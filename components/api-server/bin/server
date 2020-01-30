@@ -8,21 +8,8 @@ const Settings = require('../src/settings');
 const setCommonMeta = require('../src/methods/helpers/setCommonMeta');
 let logger, airbrake;
 const AirbrakeClient = require('airbrake-js');
-const nock = require('nock');
 
 (async () => {
-  // TODO ilia : ailleurs ??
-  if(process.env.SERVICE_REPORTING_NOCK === '1') {
-    console.log('Starting nock service-reporting'); // No logger yet
-    await nock('https://reporting.pryv.com')
-      .post('/reports')
-      .reply(200, (uri, req) => {
-        let report = JSON.parse(req);
-        report.timestamp = '1580388.366';
-        return report;
-      });
-  }
-
   // Load settings asynchronously because we have to fetch
   // some values from register via an http-get request.
   const settings = await Settings.load();

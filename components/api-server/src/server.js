@@ -15,6 +15,7 @@ const expressAppInit = require('./expressApp');
 
 const superagent = require('superagent');
 const child_process = require('child_process');
+const url = require('url');
 
 import type { Logger } from 'components/utils';
 import type { ConfigAccess } from './settings';
@@ -316,9 +317,9 @@ class Server {
 
     // Send report
     // TODO TESTING avec et sans service-reporting qui tourne
-    const reportingUrl = 'reporting.pryv.com';
+    const reportingUrl = 'http://0.0.0.0:4000'; //'reporting.pryv.com';
     try {
-      const res = await superagent.post(reportingUrl).send(body);
+      const res = await superagent.post(url.resolve(reportingUrl, 'reports')).send(body);
       this.logger.info('Report sent to ' + reportingUrl, res.body);
     } catch(error) {
       this.logger.error('Unable to send report to ' + reportingUrl + ' Reason : ' + error.message);

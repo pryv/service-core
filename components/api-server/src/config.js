@@ -128,7 +128,7 @@ _.merge(config.schema, {
       },
       apiVersion: {
         format: String,
-        default: '1.0.26',
+        default: '1.4.26',
         doc: 'Core api-server version'
       },
       templateVersion: {
