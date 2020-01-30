@@ -5,6 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "start": "NODE_ENV=development node bin/server",
+    "startRep": "NODE_ENV=development SERVICE_REPORTING_NOCK=1 node bin/server",
     "test": "yarn run _test --logs:console:active=false",
     "test-detailed": "yarn run _test --reporter=spec",
     "test-debug": "yarn run _test --timeout 3600000 --reporter=spec --debug-brk",

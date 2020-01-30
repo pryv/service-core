@@ -44,6 +44,11 @@
         "welcome": true,
         "resetPassword": true
       }
+    },
+    "reporting": {
+      "licenseName": "OVERRIDE ME",
+      "apiVersion": "1.0.26",
+      "templateVersion": "1.0.0"
     }
   },
   "logs": {

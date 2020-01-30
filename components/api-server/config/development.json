@@ -8,6 +8,11 @@
     },
     "register": {
       "url": "https://reg.pryv.io"
+    },
+    "reporting": {
+      "licenseName": "pryv.io-dev-license",
+      "apiVersion": "1.0.26",
+      "templateVersion": "1.0.0"
     }
   }, 
   "tcpMessaging": {

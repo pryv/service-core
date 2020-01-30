@@ -14,6 +14,7 @@ const Application = require('./application');
 const expressAppInit = require('./expressApp');
 
 const superagent = require('superagent');
+const child_process = require('child_process');
 
 import type { Logger } from 'components/utils';
 import type { ConfigAccess } from './settings';
@@ -71,7 +72,7 @@ class Server {
     // Let actual requests pass.
     lifecycle.appStartupComplete(); 
         
-    await this.collectUsageAndSendReport();
+    this.collectUsageAndSendReport();
 
     logger.info('Server ready.');
     this.notificationBus.serverReady();
@@ -290,35 +291,65 @@ class Server {
     require('./routes/webhooks')(expressApp, application);
   }
 
+
   async collectUsageAndSendReport() {
-    const opt_out_reporting = 1; // TODO
-    if (opt_out_reporting) { // TODO tester true, false, 1, 0, '', {}, null
-      this.logger.info('PRYV_REPORTING_OFF is set to ' + opt_out_reporting + ', not reporting');
+    // Check if the PRYV_REPORTING_OFF environment variable is set to 1.
+    // If it is, don't collect data and don't send report
+    const optOutReporting = process.env.PRYV_REPORTING_OFF;
+    if (optOutReporting === 1) { // TODO TESTING true, false, 1, 0, '', "1", "0", {}, null
+      this.logger.info('PRYV_REPORTING_OFF is set to ' + optOutReporting + ', not reporting');
       return;
     }
 
-    // Collect usage
-    const payload = {}; // TODO
-
+    // Collect data
+    let reportingSettings = this.settings.get('services.reporting').value;
+    const hostname = await this.collectHostname();
+    const clientData = await this.collectClientData();
     const body = {
-      licenseName: 'TODO',
+      licenseName: reportingSettings.licenseName,
       role: 'core',
-      hostname: 'TODO',
-      version: 'TODO',
-      payload: payload
+      hostname: hostname,
+      apiVersion: reportingSettings.apiVersion,
+      templateVersion: reportingSettings.templateVersion,
+      clientData: clientData
     };
 
     // Send report
-    const reportingUrl = 'TODO';
+    // TODO TESTING avec et sans service-reporting qui tourne
+    const reportingUrl = 'reporting.pryv.com';
     try {
       const res = await superagent.post(reportingUrl).send(body);
       this.logger.info('Report sent to ' + reportingUrl, res.body);
     } catch(error) {
-      this.logger.error('Unable to send report to ' + reportingUrl, error);
+      this.logger.error('Unable to send report to ' + reportingUrl + ' Reason : ' + error.message);
     }
+
+    // Send another report in 24 hours
+    const hours = 24;
+    const timeout = hours * 60 * 60 * 1000;
+    this.logger.info('Sending another report in ' + hours + ' hours');
+    setTimeout(() => {
+      this.collectUsageAndSendReport();
+    }, timeout);
+  }
+
+  async collectClientData(): Object {
+    const usersStorage = this.application.storageLayer.users;
+    const POOL_USERNAME_PREFIX = 'pool@';
+    const POOL_REGEX = new RegExp( '^'  + POOL_USERNAME_PREFIX);
+
+    let numUser = await bluebird.fromCallback(cb => { // TODO TESTING 0 ou plusieurs users, ainsi qu'une erreur de DB
+      usersStorage.count({ username: { $regex: POOL_REGEX } }, cb);
+    });
+
+    return {numUser: numUser};
+  }
+
+  async collectHostname(): Object {
+    const hostname = await bluebird.fromCallback(
+      cb => child_process.exec('hostname', cb));
+    return hostname.replace(/\s/g,''); // Remove all white spaces
   }
 
 }
-module.exports = Server; 
-
-
+module.exports = Server;

@@ -119,6 +119,23 @@ _.merge(config.schema, {
         default: 'OVERRIDE ME',
         doc: 'Shared key to authenticate against email service.'
       }
+    },
+    reporting: {
+      licenseName: {
+        format: String,
+        default: 'OVERRIDE ME',
+        doc: 'Pryv licence'
+      },
+      apiVersion: {
+        format: String,
+        default: '1.0.26',
+        doc: 'Core api-server version'
+      },
+      templateVersion: {
+        format: String,
+        default: '1.0.0',
+        doc: 'Version number of Pryv configuration, containing each role version'
+      }
     }
   },
   updates: {
