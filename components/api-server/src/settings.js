@@ -141,7 +141,7 @@ class Settings implements ConfigAccess {
     try {
       res = await request.get(regUrl);
     } catch (error) {
-      console.warn('Unable to retrieve service-info from Register on URL:', regUrl, 'Error:', error);
+      console.warn('Unable to retrieve service-info from Register on URL:', regUrl, 'Error:', error.message);
       return;
     }
 
