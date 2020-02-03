@@ -139,7 +139,8 @@ _.merge(config.schema, {
       optOut: {
         format: Boolean,
         default: false,
-        doc: 'Set to true to disable daily reporting to pryv.com',
+        doc: 'Set to true to disable daily reporting to pryv.com' +
+        'This parameter is meant to be set as an environment variable in the \'run-pryv\' script.',
       },
     }
   },
