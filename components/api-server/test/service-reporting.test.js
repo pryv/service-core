@@ -3,8 +3,7 @@
 require('./test-helpers');
 const httpServer = require('./support/httpServer');
 const awaiting = require('awaiting');
-const chai = require('chai');
-const assert = chai.assert;
+const assert = require('chai').assert;
 
 const { context } = require('./test-helpers');
 let server;
@@ -20,7 +19,7 @@ describe('service-reporting', () => {
     beforeEach(async () => {
       reportMock = {
         licenseName: 'pryv.io-test-license',
-        apiVersion: '1.4.26_D',
+        apiVersion: '1.4.26',
         templateVersion: '1.0.0'
       };
 
@@ -37,7 +36,7 @@ describe('service-reporting', () => {
 
     it('[G1UG] server must start and successfully send a report when service-reporting is listening', async () => {
       await awaiting.event(reportHttpServer, 'report_received');
-      assert.isNotEmpty(server.baseUrl);
+      assert.isNotEmpty(server.baseUrl); // Check the server has booted
     });
   });
 
@@ -45,20 +44,14 @@ describe('service-reporting', () => {
     beforeEach(async () => {
       reportMock = {
         licenseName: 'pryv.io-test-license',
-        apiVersion: '1.4.26_E',
+        apiVersion: '1.4.26',
         templateVersion: '1.0.0'
       };
 
       reportHttpServer = new httpServer('/reports', 200, reportMock);
       await reportHttpServer.listen(reportHttpServerPort);
 
-      const customSettings = {
-        services: {
-          reporting: {
-            optOut: true
-          }
-        }
-      };
+      const customSettings = {services: {reporting: {optOut: true}}};
       server = await context.spawn(customSettings);
     });
 
@@ -79,7 +72,7 @@ describe('service-reporting', () => {
           if (error instanceof Promise.TimeoutError) {
             // Everything is ok, the promise should have timeouted
             // since the report has not been sent.
-            assert.isNotEmpty(server.baseUrl);
+            assert.isNotEmpty(server.baseUrl); // Check the server has booted
           } else {
             assert.fail(error.message);
           }
@@ -97,7 +90,7 @@ describe('service-reporting', () => {
     });
 
     it('[H55A] server must start when service-reporting is not listening', async () => {
-      assert.isNotEmpty(server.baseUrl);
+      assert.isNotEmpty(server.baseUrl); // Check the server has booted
     });
   });
 });
