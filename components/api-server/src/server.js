@@ -329,7 +329,7 @@ class Server {
     // Schedule another report in 24 hours
     const hours = 24;
     const timeout = hours * 60 * 60 * 1000;
-    this.logger.info('Sending another report in ' + hours + ' hours');
+    this.logger.info('Scheduling another report in ' + hours + ' hours');
     setTimeout(() => {
       this.collectUsageAndSendReport();
     }, timeout);
