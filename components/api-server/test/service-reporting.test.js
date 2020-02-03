@@ -52,16 +52,14 @@ describe('service-reporting', () => {
       reportHttpServer = new httpServer('/reports', 200, reportMock);
       await reportHttpServer.listen(reportHttpServerPort);
 
-      // process.env['PRYV_REPORTING_OFF'] = '1';
-      // console.log('setting process.env.PRYV_REPORTING_OFF to ', process.env.PRYV_REPORTING_OFF);
-      const settings = {
+      const customSettings = {
         services: {
           reporting: {
             optOut: true
           }
         }
       };
-      server = await context.spawn(settings);
+      server = await context.spawn(customSettings);
     });
 
     afterEach(async () => {
