@@ -296,8 +296,9 @@ class Server {
   async collectUsageAndSendReport() {
     // Check if the PRYV_REPORTING_OFF environment variable is set to 1.
     // If it is, don't collect data and don't send report
-    const optOutReporting = process.env.PRYV_REPORTING_OFF;
-    if (optOutReporting === 1) { // TODO TESTING true, false, 1, 0, '', "1", "0", {}, null
+
+    const optOutReporting = this.settings.get('services.reporting.optOut').value;
+    if (optOutReporting) {
       this.logger.info('PRYV_REPORTING_OFF is set to ' + optOutReporting + ', not reporting');
       return;
     }
@@ -325,7 +326,7 @@ class Server {
       this.logger.error('Unable to send report to ' + reportingUrl + ' Reason : ' + error.message);
     }
 
-    // Send another report in 24 hours
+    // Schedule another report in 24 hours
     const hours = 24;
     const timeout = hours * 60 * 60 * 1000;
     this.logger.info('Sending another report in ' + hours + ' hours');
@@ -339,7 +340,7 @@ class Server {
     const POOL_USERNAME_PREFIX = 'pool@';
     const POOL_REGEX = new RegExp( '^'  + POOL_USERNAME_PREFIX);
 
-    let numUser = await bluebird.fromCallback(cb => { // TODO TESTING 0 ou plusieurs users, ainsi qu'une erreur de DB
+    let numUser = await bluebird.fromCallback(cb => {
       usersStorage.count({ username: { $regex: POOL_REGEX } }, cb);
     });
 

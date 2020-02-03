@@ -135,7 +135,12 @@ _.merge(config.schema, {
         format: String,
         default: '1.0.0',
         doc: 'Version number of Pryv configuration, containing each role version'
-      }
+      },
+      optOut: {
+        format: Boolean,
+        default: false,
+        doc: 'Set to true to disable daily reporting to pryv.com',
+      },
     }
   },
   updates: {

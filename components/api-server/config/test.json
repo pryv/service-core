@@ -15,6 +15,9 @@
     },
     "register": {
       "url": "http://localhost:5123"
+    },
+    "reporting": {
+      "optOut": false
     }
   }, 
   "tcpMessaging": {

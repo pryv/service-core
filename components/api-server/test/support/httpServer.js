@@ -21,30 +21,20 @@ class HttpServer extends EventEmitter {
   server: HttpServer;
   responseStatus: number;
 
-  constructor (path: string, statusCode: number, responseBody: Object, method: string) {
+  constructor (path: string, statusCode: number, responseBody: Object) {
     super();
-    method = method || 'get';
 
     const app = express();
-
     this.responseStatus = statusCode || 200;
-
     app.use(bodyParser.json());
 
-    switch (method) {
-      case 'post':
-        app.post(path, (req, res: express$Response) => {
-          res.status(this.responseStatus).json(responseBody || { ok: '1' });
-          this.emit('received');
-        });
-        break;
-    
-      default:
-        app.get(path, (req, res: express$Response) => {
-          res.status(this.responseStatus).json(responseBody || { ok: '1' });
-        });
-        break;
-    }
+    app.all(path, (req, res: express$Response) => {
+      res.status(this.responseStatus).json(responseBody || { ok: '1' });
+      if(req.method === 'POST') {
+        this.emit('report_received');
+      }
+    });
+
     this.app = app;
   }
 
