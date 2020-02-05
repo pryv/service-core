@@ -11,7 +11,7 @@ const PORT = 6123;
 
 /*
  * Create a local HTTP server for the purpose of answering
- * query on localhost:PORT/service/info
+ * query on localhost:PORT/service/info or localhost:PORT/reports
  * mocking https://reg.pryv.me/service/info
  *
  * No logger available here. Using console.debug

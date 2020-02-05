@@ -317,8 +317,7 @@ class Server {
     };
 
     // Send report
-    // TODO TESTING avec et sans service-reporting qui tourne
-    const reportingUrl = 'http://0.0.0.0:4000'; //'reporting.pryv.com';
+    const reportingUrl = 'https://reporting.pryv.com';
     try {
       const res = await superagent.post(url.resolve(reportingUrl, 'reports')).send(body);
       this.logger.info('Report sent to ' + reportingUrl, res.body);
