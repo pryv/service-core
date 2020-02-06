@@ -126,11 +126,6 @@ _.merge(config.schema, {
         default: 'OVERRIDE ME',
         doc: 'Pryv licence'
       },
-      apiVersion: {
-        format: String,
-        default: '1.4.26',
-        doc: 'Core api-server version'
-      },
       templateVersion: {
         format: String,
         default: '1.0.0',
