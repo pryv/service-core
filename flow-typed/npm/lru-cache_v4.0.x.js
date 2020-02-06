@@ -1,5 +1,5 @@
-// flow-typed signature: ac5dc0012761b322fb7609d0b5f27e30
-// flow-typed version: da30fe6876/lru-cache_v4.0.x/flow_>=v0.25.0
+// flow-typed signature: aececd077384aa9821b1049a8b64bea7
+// flow-typed version: c6154227d1/lru-cache_v4.0.x/flow_>=v0.104.x
 
 declare module "lru-cache" {
   declare type LRUCache<K, V> = {
@@ -8,8 +8,10 @@ declare module "lru-cache" {
     peek: (key: K) => V,
     del: (key: K) => void,
     reset: () => void,
-    has: (key: K) => boolean
+    has: (key: K) => boolean,
     // TODO add the rest of the things documented at https://www.npmjs.com/package/lru-cache
+    prune: () => void,
+    ...
   };
 
   declare type Options<K, V> = {
@@ -17,7 +19,8 @@ declare module "lru-cache" {
     maxAge?: number,
     length?: (value: V, key: K) => number,
     dispose?: (key: K, value: V) => void,
-    stale?: boolean
+    stale?: boolean,
+    ...
   };
 
   // TODO You can supply just an integer (max size), or even nothing at all.

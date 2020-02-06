@@ -1,5 +1,5 @@
-// flow-typed signature: 96d9e6596558a201899e45822d93e38d
-// flow-typed version: da30fe6876/bcrypt_v1.x.x/flow_>=v0.25.x
+// flow-typed signature: c41ea2d29979cce3a689d6e0f9bccf2f
+// flow-typed version: c6154227d1/bcrypt_v3.x.x/flow_>=v0.104.x
 
 declare module bcrypt {
   declare function genSaltSync(rounds?: number): string;
