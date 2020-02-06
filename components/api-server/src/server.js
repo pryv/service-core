@@ -296,7 +296,6 @@ class Server {
   async collectUsageAndSendReport() {
     // Check if the PRYV_REPORTING_OFF environment variable is set to 1.
     // If it is, don't collect data and don't send report
-
     const optOutReporting = this.settings.get('services.reporting.optOut').value;
     if (optOutReporting) {
       this.logger.info('PRYV_REPORTING_OFF is set to ' + optOutReporting + ', not reporting');
@@ -311,7 +310,6 @@ class Server {
       licenseName: reportingSettings.licenseName,
       role: 'core',
       hostname: hostname,
-      apiVersion: reportingSettings.apiVersion,
       templateVersion: reportingSettings.templateVersion,
       clientData: clientData
     };
