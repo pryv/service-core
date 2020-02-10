@@ -1,3 +1,4 @@
+
 /* global describe, before, beforeEach, afterEach, it */
 
 require('./test-helpers');
@@ -16,11 +17,11 @@ const reportMock = {
   templateVersion: '1.0.0'
 };
 const mock = new Mock('https://reporting.pryv.com', '/reports', 'POST', 200, reportMock, () => {
+  console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>> report_received');
   eventEmitter.emit('report_received');
 });
 
 describe('service-reporting', () => {
-
   describe('POST report on service-reporting (started)', () => {
     beforeEach(async () => {
       server = await context.spawn();
@@ -31,6 +32,7 @@ describe('service-reporting', () => {
     });
 
     it('[G1UG] server must start and successfully send a report when service-reporting is listening', async () => {
+      console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>> awaiting');
       await awaiting.event(eventEmitter, 'report_received');
       assert.isNotEmpty(server.baseUrl); // Check the server has booted
     });

@@ -317,6 +317,7 @@ class Server {
     // Send report
     const reportingUrl = 'https://reporting.pryv.com';
     try {
+      console.log('XXXXXX sending report to ', url.resolve(reportingUrl, 'reports'));
       const res = await superagent.post(url.resolve(reportingUrl, 'reports')).send(body);
       this.logger.info('Report sent to ' + reportingUrl, res.body);
     } catch(error) {
