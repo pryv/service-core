@@ -64,7 +64,7 @@ describe('Access permissions', function () {
       return basePath + '/' + id;
     }
 
-    it('[PCO0] must forbid creating events for \'unreadable\' streams', function (done) {
+    it('[PCO0] must forbid creating events for out of scope streams', function (done) {
       var params = {
         type: 'test/test',
         streamId: testData.streams[0].id
