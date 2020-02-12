@@ -20,6 +20,7 @@ class HttpServer extends EventEmitter {
   app: express$Application;
   server: HttpServer;
   responseStatus: number;
+  lastReport: Object;
 
   constructor (path: string, statusCode: number, responseBody: Object) {
     super();
@@ -31,6 +32,7 @@ class HttpServer extends EventEmitter {
     app.all(path, (req, res: express$Response) => {
       res.status(this.responseStatus).json(responseBody || { ok: '1' });
       if(req.method === 'POST') {
+        this.lastReport = responseBody;
         this.emit('report_received');
       }
     });
@@ -46,6 +48,10 @@ class HttpServer extends EventEmitter {
     return bluebird.fromCallback(() => {
       this.server.close();
     });
+  }
+
+  getLastReport(): Object {
+    return this.lastReport;
   }
 }
 module.exports = HttpServer;

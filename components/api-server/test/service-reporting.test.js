@@ -49,6 +49,9 @@ describe('service-reporting', () => {
     it('[G1UG] server must start and successfully send a report when service-reporting is listening', async () => {
       await awaiting.event(reportHttpServer, 'report_received');
       assert.isNotEmpty(server.baseUrl); // Check the server has booted
+
+      const lastReport = reportHttpServer.getLastReport();
+      assert.equal(lastReport.licenseName, reportMock.licenseName);
     });
   });
 
