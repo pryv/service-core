@@ -8,12 +8,12 @@
     },
     "register": {
       "url": "https://reg.pryv.io"
-    },
-    "reporting": {
-      "licenseName": "pryv.io-dev-license",
-      "templateVersion": "1.0.0"
     }
   }, 
+  "reporting": {
+    "licenseName": "pryv.io-dev-license",
+    "templateVersion": "1.0.0"
+  },
   "tcpMessaging": {
     "enabled": false
   }

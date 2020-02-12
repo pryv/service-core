@@ -44,11 +44,11 @@
         "welcome": true,
         "resetPassword": true
       }
-    },
-    "reporting": {
-      "licenseName": "OVERRIDE ME",
-      "templateVersion": "1.0.0"
     }
+  },
+  "reporting": {
+    "licenseName": "OVERRIDE ME",
+    "templateVersion": "1.0.0"
   },
   "logs": {
     "console": {

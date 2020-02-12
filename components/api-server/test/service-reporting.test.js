@@ -1,56 +1,81 @@
-
-/* global describe, before, beforeEach, afterEach, it */
+/* global describe, beforeEach, afterEach, it */
 
 require('./test-helpers');
+const httpServer = require('./support/httpServer');
 const awaiting = require('awaiting');
 const assert = require('chai').assert;
-const Promise = require('bluebird');
-const { context } = require('./test-helpers');
 
+const { context } = require('./test-helpers');
 let server;
-const Mock = require('./support/Mock');
-const EventEmitter = require('events');
-const eventEmitter = new EventEmitter();
-const reportMock = {
-  licenseName: 'pryv.io-test-license',
-  role: 'core',
-  templateVersion: '1.0.0'
+let reportHttpServer;
+let infoHttpServer;
+let reportMock;
+let serviceInfoMock;
+const infoHttpServerPort = 5123;
+const reportHttpServerPort = 4001;
+const customSettings = {
+  reporting: {
+    url: 'http://127.0.0.1:' + reportHttpServerPort + '/reports',
+    optOut: false
+  }
 };
-const mock = new Mock('https://reporting.pryv.com', '/reports', 'POST', 200, reportMock, () => {
-  console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>> report_received');
-  eventEmitter.emit('report_received');
-});
+
+const Promise = require('bluebird');
 
 describe('service-reporting', () => {
+
   describe('POST report on service-reporting (started)', () => {
     beforeEach(async () => {
-      server = await context.spawn();
+      reportMock = {
+        licenseName: 'pryv.io-test-license',
+        role: 'core',
+        templateVersion: '1.0.0',
+        hostname: 'tests'
+      };
+
+      infoHttpServer = new httpServer('/service/info', 200, serviceInfoMock);
+      reportHttpServer = new httpServer('/reports', 200, reportMock);
+      await infoHttpServer.listen(infoHttpServerPort);
+      await reportHttpServer.listen(reportHttpServerPort);
+
+      server = await context.spawn(customSettings);
     });
 
     afterEach(async () => {
       server.stop();
+      reportHttpServer.close();
     });
 
     it('[G1UG] server must start and successfully send a report when service-reporting is listening', async () => {
-      console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>> awaiting');
-      await awaiting.event(eventEmitter, 'report_received');
+      await awaiting.event(reportHttpServer, 'report_received');
       assert.isNotEmpty(server.baseUrl); // Check the server has booted
     });
   });
 
   describe('POST opt-out and don\'t send report on service-reporting (started)', () => {
     beforeEach(async () => {
-      const customSettings = {services: {reporting: {optOut: true}}};
+      reportMock = {
+        licenseName: 'pryv.io-test-license',
+        role: 'core',
+        templateVersion: '1.0.0',
+        hostname: 'tests'
+      };
+
+      reportHttpServer = new httpServer('/reports', 200, reportMock);
+      await reportHttpServer.listen(reportHttpServerPort);
+
+      customSettings.reporting.optOut = true;
       server = await context.spawn(customSettings);
     });
 
     afterEach(async () => {
       server.stop();
+      reportHttpServer.close();
     });
 
     it('[UR7L] server must start and not send a report when opting-out reporting', async () => {
       await new Promise(async function (resolve) {
-        await awaiting.event(eventEmitter, 'report_received');
+        await awaiting.event(reportHttpServer, 'report_received');
         resolve();
       }).timeout(1000)
         .then(() => {
@@ -69,10 +94,6 @@ describe('service-reporting', () => {
   });
 
   describe('POST report on service-reporting (shut down)', () => {
-    before(async () => {
-      mock.stop();
-    });
-
     beforeEach(async () => {
       server = await context.spawn();
     });

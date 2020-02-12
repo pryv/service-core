@@ -294,16 +294,15 @@ class Server {
 
 
   async collectUsageAndSendReport() {
-    // Check if the PRYV_REPORTING_OFF environment variable is set to 1.
+    // Check if the optOut environment variable is set to 1.
     // If it is, don't collect data and don't send report
-    const optOutReporting = this.settings.get('services.reporting.optOut').value;
-    if (optOutReporting) {
-      this.logger.info('PRYV_REPORTING_OFF is set to ' + optOutReporting + ', not reporting');
+    let reportingSettings = this.settings.get('reporting').value;
+    if (reportingSettings.optOut) {
+      this.logger.info('Reporting opt-out is set to ' + reportingSettings.optOut + ', not reporting');
       return;
     }
 
     // Collect data
-    let reportingSettings = this.settings.get('services.reporting').value;
     const hostname = await this.collectHostname();
     const clientData = await this.collectClientData();
     const body = {
@@ -315,9 +314,8 @@ class Server {
     };
 
     // Send report
-    const reportingUrl = 'https://reporting.pryv.com';
+    const reportingUrl = reportingSettings.url || 'https://reporting.pryv.com';
     try {
-      console.log('XXXXXX sending report to ', url.resolve(reportingUrl, 'reports'));
       const res = await superagent.post(url.resolve(reportingUrl, 'reports')).send(body);
       this.logger.info('Report sent to ' + reportingUrl, res.body);
     } catch(error) {
