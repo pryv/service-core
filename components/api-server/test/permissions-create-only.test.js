@@ -98,6 +98,9 @@ describe('Access permissions', function () {
       });
     });
 
+    it('must see what happens when read in stream and c-o in child');
+    it('must see what happens when contribute in stream and c-o in child');
+
     it('[PCO3] must forbid updating events for \'create-only\' streams', function (done) {
       var params = {
         content: 12
