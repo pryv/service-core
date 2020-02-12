@@ -27,7 +27,7 @@ function Events(database) {
       converters.stateUpdate,
       converters.getKeyValueSetUpdateFn('clientData'),
     ],
-    itemFromDB: [clearEndTime, converters.deletionFromDB],
+    itemFromDB: [clearEndTime, converters.deletionFromDB, addStreamIds],
   });
 
   this.defaultOptions = {
@@ -69,6 +69,15 @@ function clearEndTime(event) {
     return event;
   }
   delete event.endTime;
+  return event;
+}
+
+// #streamIds
+function addStreamIds(event) {
+  if (!event) {
+    return event;
+  }
+  if (event.streamId) event.streamIds = [event.streamId]; // not deleted
   return event;
 }
 
@@ -184,6 +193,7 @@ Events.prototype.minimizeEventsHistory = function(user, headId, callback) {
   var update = {
     $unset: {
       streamId: 1,
+      streamIds: 1,
       time: 1,
       duration: 1,
       endTime: 1,
@@ -220,6 +230,7 @@ Events.prototype.delete = function(user, query, deletionMode, callback) {
     case 'keep-nothing':
       update.$unset = {
         streamId: 1,
+        streamIds: 1,
         time: 1,
         duration: 1,
         endTime: 1,
@@ -239,6 +250,7 @@ Events.prototype.delete = function(user, query, deletionMode, callback) {
     case 'keep-authors':
       update.$unset = {
         streamId: 1,
+        streamIds: 1,
         time: 1,
         duration: 1,
         endTime: 1,

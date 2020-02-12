@@ -17,16 +17,14 @@ const { ErrorIds } = require('components/errors/src');
 const storage = require('components/test-helpers').dependencies.storage.user.accesses;
 
 let mongoFixtures;
-(async () => {
-  mongoFixtures = databaseFixture(await produceMongoConnection());
-})();
+
 
 
 describe('access deletions', () => {
 
   let userId, streamId, activeToken, deletedToken, accessToken;
   before(async () => {
-
+    mongoFixtures = databaseFixture(await produceMongoConnection());
     userId = cuid();
     streamId = cuid();
     activeToken = cuid();

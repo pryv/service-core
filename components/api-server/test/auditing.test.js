@@ -324,6 +324,7 @@ describe('Auditing', function () {
             streamId: singleActivityStream.id,
             tags: ['houba']
           };
+          data.streamIds = [data.streamId];
           var createdId;
 
           async.series([
@@ -364,6 +365,7 @@ describe('Auditing', function () {
             streamId: normalStream.id,
             tags: ['houba']
           };
+          data.streamIds = [data.streamId];
           var createdId;
 
           async.series([
@@ -506,6 +508,7 @@ describe('Auditing', function () {
             streamId: singleActivityStream.id,
             tags: ['houba']
           };
+          data.streamIds = [data.streamId];
           var createdId;
 
           async.series([
@@ -549,6 +552,7 @@ describe('Auditing', function () {
             streamId: normalStream.id,
             tags: ['houba']
           };
+          data.streamIds = [data.streamId]; 
           var createdId;
 
           async.series([

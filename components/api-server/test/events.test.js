@@ -83,6 +83,7 @@ describe('events', function () {
         }
         async.series([
           storage.insertMany.bind(storage, user, additionalEvents),
+          additionalEvents.map(function(event) { event.streamIds = [event.streamId]; return event});
           function getDefault(stepDone) {
             request.get(basePath).end(function (res) {
               var allEvents = additionalEvents
@@ -971,6 +972,7 @@ describe('events', function () {
         streamId: testData.streams[0].id,
         tags: ['houba']
       };
+      data.streamIds = [data.streamId];
       var createdId;
 
       async.series([
@@ -1060,7 +1062,7 @@ describe('events', function () {
         streamId: testData.streams[0].id,
         tags: ['houba']
       };
-
+      data.streamIds = [data.streamId];
       request.post(basePath)
         .field('event', JSON.stringify(data))
         .attach('document', testData.attachments.document.path,

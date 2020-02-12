@@ -84,6 +84,7 @@ module.exports = {
   stop: {
     params: object({
       'streamId': string(),
+      'streamIds': array(string()),
       'type': string(),
       'id': string(),
       'time': number()

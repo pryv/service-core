@@ -1,7 +1,9 @@
 var streams = require('./streams'),
     timestamp = require('unix-timestamp');
 
-module.exports = [
+
+
+const events =  [
   {
     id: getTestEventId(0),
     streamId: streams[0].children[0].id,
@@ -365,7 +367,11 @@ module.exports = [
     modified: 0,
     modifiedBy: 'test'
   }
-];
+].map(function(event) { 
+  if (event.streamId) event.streamIds = [event.streamId]; 
+  return event});
+
+module.exports = events;
 
 /**
  * Creates a cuid-like id (required event id format).

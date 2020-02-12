@@ -24,6 +24,7 @@ exports = module.exports = function (action) {
     'time': number(),
     'duration': number({nullable: true}),
     'streamId': string(),
+    'streamIds': array(string(), { nullable: false }),
     'tags': array(string(), {nullable: true}),
     'type': string({ pattern: '^(series:)?[a-z0-9-]+/[a-z0-9-]+$' }),
     'content': {},
@@ -56,13 +57,13 @@ exports = module.exports = function (action) {
   } else if (action === Action.UPDATE) {
     schema.properties.attachments = { type: 'array' };
     // whitelist for properties that can be updated
-    schema.alterableProperties = ['streamId', 'time', 'duration', 'type',
+    schema.alterableProperties = ['streamId', 'streamIds', 'time', 'duration', 'type',
       'content', 'tags', 'references', 'description', 'clientData', 'trashed'];
   }
 
   switch (action) {
     case Action.READ:
-      schema.required = [ 'id', 'streamId', 'time', 'type',
+      schema.required = ['id', 'streamId', 'streamIds', 'time', 'type',
         'created', 'createdBy', 'modified', 'modifiedBy' ];
       break;
     case Action.CREATE:
