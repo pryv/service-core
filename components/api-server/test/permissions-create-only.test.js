@@ -117,7 +117,7 @@ describe('Access permissions', function () {
     });
 
 
-    it('[PCO5] must forbid stopping events for \'create-only\' streams', function (done) {
+    it('[PCO5] must allow stopping events for \'create-only\' streams', function (done) {
       request.post(basePath + '/stop', token(8)).send({id: testData.events[28].id})
           .end(function (res) {
             res.statusCode.should.eql(200);
