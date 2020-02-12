@@ -1,0 +1,23 @@
+{
+  "auth": {
+    "trustedApps": "pryv-test@http://test.pryv.local, pryv-test-no-cors@*, *@https://*.rec.la*"
+  },
+  "logs": {
+    "console": {
+      "active": false,
+      "level": "info",
+      "timestamp": false
+    }
+  },
+  "services": {
+    "email": {
+      "enabled": false
+    },
+    "register": {
+      "url": "http://localhost:5123"
+    }
+  },
+  "tcpMessaging": {
+    "enabled": true
+  }
+}
