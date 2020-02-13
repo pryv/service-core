@@ -419,6 +419,7 @@ describe('root', function() {
           method: 'events.create',
           params: {
             streamId: streamId2,
+            streamIds: [streamId2],
             time: timestamp.now(),
             type: testType,
             description: 'valid event A',
@@ -428,6 +429,7 @@ describe('root', function() {
           method: 'events.create',
           params: {
             streamId: streamId2,
+            streamIds: [streamId2],
             time: timestamp.now('1h'),
             duration: timestamp.duration('1h'),
             type: testType,
@@ -441,6 +443,7 @@ describe('root', function() {
             time: timestamp.now('2h'),
             type: testType,
             streamId: 'unknown',
+            streamIds: ['unknown'],
             description: 'invalid event C (unknown stream)',
           },
         },
@@ -499,6 +502,7 @@ describe('root', function() {
           method: 'events.create',
           params: {
             streamId: streamId,
+            streamIds: [streamId],
             type: 'note/txt',
             content: 'Hi, i am an event in a batch call',
             time: timestamp.now(),

@@ -21,13 +21,13 @@ function Events(database) {
 
   _.extend(this.converters, {
     itemDefaults: [converters.createIdIfMissing],
-    itemToDB: [endTimeToDB, converters.deletionToDB, converters.stateToDB],
+    itemToDB: [endTimeToDB, converters.deletionToDB, converters.stateToDB, streamIdsToDB],
     updateToDB: [
       endTimeUpdate,
       converters.stateUpdate,
       converters.getKeyValueSetUpdateFn('clientData'),
     ],
-    itemFromDB: [clearEndTime, converters.deletionFromDB, addStreamIds],
+    itemFromDB: [clearEndTime, converters.deletionFromDB, streamIdsFromDB],
   });
 
   this.defaultOptions = {
@@ -72,12 +72,40 @@ function clearEndTime(event) {
   return event;
 }
 
-// #streamIds
-function addStreamIds(event) {
+
+// #streamIds -- Should be removed at the end (Simple intergrity check)
+function streamIdsToDB(event) {
   if (!event) {
     return event;
   }
-  if (event.streamId) event.streamIds = [event.streamId]; // not deleted
+  if (event.streamId && event.streamIds) {
+    if (event.streamIds.length > 1 || event.streamIds[0] !== event.streamId) {
+      console.log("******** ZUT", event);
+      throw new Error("Cannot mix different streamIds and streamId properties");
+    }
+  } 
+  return event;
+}
+
+// #streamIds
+function streamIdsFromDB(event) {
+  if (!event) {
+    return event;
+  }
+  if (event.streamId && event.streamIds) {
+    if (event.streamIds.length > 1 || event.streamIds[0] !== event.streamId) {
+      console.log("******** ZUT", event);
+      throw new Error("Cannot mix different streamIds and streamId properties");
+    }
+  } else {
+    if (!event.streamId && event.streamIds) {
+      event.streamId = event.streamIds[0];
+    }
+    if (!event.streamIds && event.streamId) {
+      event.streamIds = [event.streamId];
+    }
+  }
+  
   return event;
 }
 

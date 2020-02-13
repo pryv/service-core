@@ -280,12 +280,28 @@ module.exports = function (
 
     context.initTrackingProperties(params);
 
+    migrateToStreamids(params);
+
     context.setStream(params.streamId);
     if (! checkStream(context, params.streamId, next)) {
       return;
     }
     context.content = params;
     next();
+  }
+
+  function migrateToStreamids(event) {
+    // convert streamId to streamIds #streamIds
+    if (event.streamId && event.streamIds) {
+      if (event.streamIds.length > 1 || event.streamIds[0] !== event.streamId) {
+        throw new Error("Cannot mix different streamIds and streamId properrties");
+      }
+    } else {
+      if (!event.streamIds) {
+        event.streamIds = [event.streamId];
+      }
+    }
+    //delete event.streamId;
   }
 
   function verifyContext(context, params, result, next) {
@@ -308,6 +324,8 @@ module.exports = function (
       // As long as there is no data, event duration is considered to be 0.
       context.content.duration = 0; 
     }
+
+  
 
     userEventsStorage.insertOne(
       context.user, context.content, function (err, newEvent) {
@@ -381,6 +399,8 @@ module.exports = function (
   function applyPrerequisitesForUpdate(context, params, result, next) {
     
     cleanupEventTags(params.update);
+
+    migrateToStreamids(params);
 
     context.updateTrackingProperties(params.update);
 
