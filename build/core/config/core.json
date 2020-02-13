@@ -46,6 +46,10 @@
       }
     }
   },
+  "reporting": {
+    "licenseName": "OVERRIDE ME",
+    "templateVersion": "1.0.0"
+  },
   "logs": {
     "console": {
       "active": true,
