@@ -1,181 +1,214 @@
-/*global describe, before, beforeEach, after, it */
+/*global describe, it, before, after */
 
-require('./test-helpers'); 
-const helpers = require('./helpers');
-const treeUtils = require('components/utils').treeUtils;
-const server = helpers.dependencies.instanceManager;
-const async = require('async');
-const fs = require('fs');
-const path = require('path');
-const validation = helpers.validation;
-const testData = helpers.data;
-const timestamp = require('unix-timestamp');
-const _ = require('lodash');
-const bluebird = require('bluebird');
+const cuid = require('cuid');
 const chai = require('chai');
 const assert = chai.assert;
 
-describe('Access permissions', function () {
+const { databaseFixture } = require('components/test-helpers');
+const { produceMongoConnection, context } = require('./test-helpers');
 
-  var user = testData.users[0],
-      request = null, // must be set after server instance started
-      filesReadTokenSecret = helpers.dependencies.settings.auth.filesReadTokenSecret;
-
-  function token(testAccessIndex) {
-    return testData.accesses[testAccessIndex].token;
-  }
-
-
-  function getAllStreamIdsByToken(testAccessIndex) {
-    var tokenStreamIds = [];
-    testData.accesses[testAccessIndex].permissions.forEach(function (p) {
-      tokenStreamIds.push(p.streamId);
-    });
-    return treeUtils.expandIds(testData.streams, tokenStreamIds);
-  }
-
-  function getAllTagsByToken(testAccessIndex) {
-    return _.map(testData.accesses[testAccessIndex].permissions, 'tag');
-  }
-
-  before(function (done) {
-    async.series([
-      testData.resetUsers,
-      testData.resetAccesses,
-      server.ensureStarted.bind(server, helpers.dependencies.settings),
-      function (stepDone) { request = helpers.request(server.url); stepDone(); }
-    ], done);
+describe('permissions create-only level', () => {
+  let mongoFixtures;
+  before(async function() {
+    mongoFixtures = databaseFixture(await produceMongoConnection());
+  });
+  after(() => {
+    mongoFixtures.clean();
   });
 
-  describe('Events', function () {
+  let username,
+    streamInId,
+    streamOutId,
+    appAccessId1,
+    appAccessToken1,
+    eventInId,
+    eventOutId;
 
-    before(function (done) {
-      async.series([
-        testData.resetStreams,
-        testData.resetAttachments
-      ], done);
+  before(() => {
+    username = cuid();
+    appAccessToken1 = cuid();
+    appAccessId1 = cuid();
+    streamInId = cuid();
+    streamOutId = cuid();
+    eventInId = cuid();
+    eventOutId = cuid();
+  });
+
+  let server;
+  before(async () => {
+    server = await context.spawn();
+  });
+  after(() => {
+    server.stop();
+  });
+
+  before(() => {
+    return mongoFixtures.user(username, {}, async user => {
+      const streamIn = await user.stream({
+        id: streamInId,
+        name: 'Does not matter',
+        singleActivity: true
+      });
+      const streamOut = await user.stream({
+        id: streamOutId,
+        name: 'Does not matter either'
+      });
+      await user.access({
+        id: appAccessId1,
+        type: 'shared',
+        token: appAccessToken1,
+        permissions: [
+          {
+            streamId: streamInId,
+            level: 'create-only'
+          }
+        ]
+      });
+      await streamIn.event({
+        id: eventInId,
+        duration: null
+      });
+      await streamOut.event({
+        id: eventOutId
+      });
+    });
+  });
+
+  describe('Events', function() {
+    let basePath;
+    before(() => {
+      basePath = `/${username}/events`;
     });
 
-    beforeEach(testData.resetEvents);
-
-    var basePath = '/' + user.username + '/events';
-
     function reqPath(id) {
-      return basePath + '/' + id;
+      return `${basePath}/${id}`;
     }
 
-    it('[PCO0] must forbid creating events for out of scope streams', function (done) {
-      var params = {
+    it('[PCO0X] must forbid creating events for out of scope streams', async function() {
+      const params = {
         type: 'test/test',
-        streamId: testData.streams[0].id
+        streamId: streamOutId
       };
 
-      request.post(basePath, token(8)).send(params).end(function (res) {
-        validation.checkErrorForbidden(res, done);
-      });
+      const res = await server
+        .request()
+        .post(basePath)
+        .set('Authorization', appAccessToken1)
+        .send(params);
+      assert.equal(res.status, 403);
     });
 
-    it('[PCO1] must allow creating events for \'create-only\' streams', function (done) {
-      var params = {
+    it("[PCO1] must allow creating events for 'create-only' streams", async function() {
+      const params = {
         type: 'test/test',
-        streamId: testData.streams[9].id
+        streamId: streamInId
       };
-      request.post(basePath, token(8)).send(params).end(function (res) {
-        res.statusCode.should.eql(201);
-        done();
-      });
+      const res = await server
+        .request()
+        .post(basePath)
+        .set('Authorization', appAccessToken1)
+        .send(params);
+      assert.equal(res.status, 201);
     });
 
-    it('[PCO2] must return an empty list when reading \'create-only\' streams', function (done) {
-      var query = {
-        streams: [testData.streams[9].id]
+    it("[PCO2] must return an empty list when reading 'create-only' streams", async function() {
+      const query = {
+        streams: [streamInId]
       };
 
-      request.get(basePath, token(8)).query(query).end(function (res) {
-        res.statusCode.should.eql(200);
-        res.body.events.should.eql([]);
-        done();
-      });
+      const res = await server
+        .request()
+        .get(basePath)
+        .set('Authorization', appAccessToken1)
+        .query(query);
+      assert.equal(res.status, 200);
+      assert.equal(res.body.events.length, 0);
     });
 
-    it('must see what happens when read in stream and c-o in child');
-    it('must see what happens when contribute in stream and c-o in child');
+    it.skip('must see what happens when read in stream and c-o in child');
+    it.skip('must see what happens when contribute in stream and c-o in child');
 
-    it('[PCO3] must forbid updating events for \'create-only\' streams', function (done) {
-      var params = {
+    it("[PCO3] must forbid updating events for 'create-only' streams", async function() {
+      const params = {
         content: 12
       };
-      request.put(reqPath(testData.events[28].id), token(8)).send(params).end(function (res) {
-        validation.checkErrorForbidden(res, done);
-      });
+      const res = await server
+        .request()
+        .put(reqPath(eventInId))
+        .set('Authorization', appAccessToken1)
+        .send(params);
+      assert.equal(res.status, 403);
     });
 
-    it('[PCO4] must forbid deleting events for \'create-only\' streams', function (done) {
-      request.del(reqPath(testData.events[28].id), token(8)).end(function (res) {
-        validation.checkErrorForbidden(res, done);
-      });
+    it("[PCO4] must forbid deleting events for 'create-only' streams", async function() {
+      const res = await server
+        .request()
+        .del(reqPath(eventInId))
+        .set('Authorization', appAccessToken1);
+      assert.equal(res.status, 403);
     });
 
-
-    it('[PCO5] must allow stopping events for \'create-only\' streams', function (done) {
-      request.post(basePath + '/stop', token(8)).send({id: testData.events[28].id})
-          .end(function (res) {
-            res.statusCode.should.eql(200);
-            assert.exists(res.body.stoppedId);
-            done();
-      });
+    it("[PCO5] must allow stopping events for 'create-only' streams", async function() {
+      const res = await server
+        .request()
+        .post(`${basePath}/stop`)
+        .set('Authorization', appAccessToken1)
+        .send({ id: eventInId });
+      assert.equal(res.status, 200);
+      assert.exists(res.body.stoppedId);
     });
-
   });
 
-  describe('Streams', function () {
-
-    before(testData.resetEvents);
-
-    beforeEach(testData.resetStreams);
-
-    var basePath = '/' + user.username + '/streams';
+  describe('Streams', function() {
+    let basePath;
+    before(() => {
+      basePath = `/${username}/streams`;
+    });
 
     function reqPath(id) {
-      return basePath + '/' + id;
+      return `${basePath}/${id}`;
     }
 
     // note: personal (i.e. full) access is implicitly covered by streams/events tests
 
-    it('[PCO6] `get` must only return streams for which permissions are defined', function (done) {
-      request.get(basePath, token(8)).query({state: 'all'}).end(function (res) {
-        res.body.streams.should.eql([
-          _.omit(testData.streams[9], 'parentId')
-        ]);
-
-        done();
-      });
+    it('[PCO6] `get` must only return streams for which permissions are defined', async function() {
+      const res = await server
+        .request()
+        .get(basePath)
+        .set('Authorization', appAccessToken1)
+        .query({ state: 'all' });
+      const stream = res.body.streams[0];
+      assert.equal(stream.id, streamInId);
     });
 
-    it('[PCO7] must forbid creating child streams in \'create-only\' streams', function (done) {
-      var data = {
+    it("[PCO7] must forbid creating child streams in 'create-only' streams", async function() {
+      const data = {
         name: 'Tai Ji',
-        parentId: testData.streams[9].id
+        parentId: streamInId
       };
-      request.post(basePath, token(8)).send(data).end(function (res) {
-        validation.checkErrorForbidden(res, done);
-      });
+      const res = await server
+        .request()
+        .post(basePath)
+        .set('Authorization', appAccessToken1)
+        .send(data);
+      assert.equal(res.status, 403);
     });
 
-    it('[PCO8] must forbid updating \'create-only\' streams', function (done) {
-      request.put(reqPath(testData.streams[8].id), token(8)).send({name: 'Ba Gua'})
-          .end(function (res) {
-        validation.checkErrorForbidden(res, done);
-      });
+    it("[PCO8] must forbid updating 'create-only' streams", async function() {
+      const res = await server
+        .request()
+        .put(reqPath(streamInId))
+        .set('Authorization', appAccessToken1)
+        .send({ name: 'Ba Gua' });
+      assert.equal(res.status, 403);
     });
 
-    it('[PCO9] must forbid deleting \'create-only\' streams', function (done) {
-      request.del(reqPath(testData.streams[8].id), token(8)).query({mergeEventsWithParent: true})
-          .end(function (res) {
-        validation.checkErrorForbidden(res, done);
-      });
+    it("[PCO9] must forbid deleting 'create-only' streams", async function() {
+      const res = await server
+        .request()
+        .del(reqPath(streamInId))
+        .set('Authorization', appAccessToken1);
+      assert.equal(res.status, 403);
     });
-
   });
-  
 });
