@@ -17,10 +17,15 @@ describe('permissions create-only level', () => {
   });
 
   let username,
+    streamParentId,
     streamInId,
     streamOutId,
     appAccessId1,
     appAccessToken1,
+    appAccessId2,
+    appAccessToken2,
+    appAccessId3,
+    appAccessToken3,
     eventInId,
     eventOutId;
 
@@ -28,6 +33,11 @@ describe('permissions create-only level', () => {
     username = cuid();
     appAccessToken1 = cuid();
     appAccessId1 = cuid();
+    appAccessToken2 = cuid();
+    appAccessId2 = cuid();
+    appAccessToken3 = cuid();
+    appAccessId3 = cuid();
+    streamParentId = cuid();
     streamInId = cuid();
     streamOutId = cuid();
     eventInId = cuid();
@@ -44,7 +54,12 @@ describe('permissions create-only level', () => {
 
   before(() => {
     return mongoFixtures.user(username, {}, async user => {
+      await user.stream({
+        id: streamParentId,
+        name: 'Does not matter at all',
+      });
       const streamIn = await user.stream({
+        parentId: streamParentId,
         id: streamInId,
         name: 'Does not matter',
         singleActivity: true
@@ -55,12 +70,42 @@ describe('permissions create-only level', () => {
       });
       await user.access({
         id: appAccessId1,
-        type: 'shared',
+        type: 'app',
         token: appAccessToken1,
         permissions: [
           {
             streamId: streamInId,
             level: 'create-only'
+          }
+        ]
+      });
+      await user.access({
+        id: appAccessId2,
+        type: 'app',
+        token: appAccessToken2,
+        permissions: [
+          {
+            streamId: streamInId,
+            level: 'create-only'
+          },
+          {
+            streamId: streamParentId,
+            level: 'read'
+          }
+        ]
+      });
+      await user.access({
+        id: appAccessId3,
+        type: 'app',
+        token: appAccessToken3,
+        permissions: [
+          {
+            streamId: streamInId,
+            level: 'create-only'
+          },
+          {
+            streamId: streamParentId,
+            level: 'contribute'
           }
         ]
       });
@@ -83,6 +128,24 @@ describe('permissions create-only level', () => {
     function reqPath(id) {
       return `${basePath}/${id}`;
     }
+
+    it('must see what happens when read in stream and c-o in child', async function() {
+      // 1 fois sur 2 403, l'autre vide
+      const res = await server
+        .request()
+        .get(basePath)
+        .set('Authorization', appAccessToken2);
+      console.log('got', res.body);
+    });
+
+    it('must see what happens when contribute in stream and c-o in child', async function() {
+      // pareil
+      const res = await server
+        .request()
+        .get(basePath)
+        .set('Authorization', appAccessToken3);
+      console.log('got', res.body);
+    });
 
     it('[PCO0X] must forbid creating events for out of scope streams', async function() {
       const params = {
@@ -124,9 +187,6 @@ describe('permissions create-only level', () => {
       assert.equal(res.status, 200);
       assert.equal(res.body.events.length, 0);
     });
-
-    it.skip('must see what happens when read in stream and c-o in child');
-    it.skip('must see what happens when contribute in stream and c-o in child');
 
     it("[PCO3] must forbid updating events for 'create-only' streams", async function() {
       const params = {
