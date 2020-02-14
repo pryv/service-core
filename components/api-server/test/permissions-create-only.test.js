@@ -52,70 +52,70 @@ describe('permissions create-only level', () => {
     server.stop();
   });
 
-  before(() => {
-    return mongoFixtures.user(username, {}, async user => {
-      await user.stream({
-        id: streamParentId,
-        name: 'Does not matter at all',
-      });
-      const streamIn = await user.stream({
-        parentId: streamParentId,
-        id: streamInId,
-        name: 'Does not matter',
-        singleActivity: true
-      });
-      const streamOut = await user.stream({
-        id: streamOutId,
-        name: 'Does not matter either'
-      });
-      await user.access({
-        id: appAccessId1,
-        type: 'app',
-        token: appAccessToken1,
-        permissions: [
-          {
-            streamId: streamInId,
-            level: 'create-only'
-          }
-        ]
-      });
-      await user.access({
-        id: appAccessId2,
-        type: 'app',
-        token: appAccessToken2,
-        permissions: [
-          {
-            streamId: streamInId,
-            level: 'create-only'
-          },
-          {
-            streamId: streamParentId,
-            level: 'read'
-          }
-        ]
-      });
-      await user.access({
-        id: appAccessId3,
-        type: 'app',
-        token: appAccessToken3,
-        permissions: [
-          {
-            streamId: streamInId,
-            level: 'create-only'
-          },
-          {
-            streamId: streamParentId,
-            level: 'contribute'
-          }
-        ]
-      });
-      await streamIn.event({
-        id: eventInId,
-        duration: null
-      });
-      await streamOut.event({
-        id: eventOutId
-      });
+  before(async () => {
+    const user = await mongoFixtures.user(username, {});
+    await user.stream({
+      id: streamParentId,
+      name: 'Does not matter at all'
+    });
+    const streamIn = await user.stream({
+      parentId: streamParentId,
+      id: streamInId,
+      name: 'Does not matter',
+      singleActivity: true
+    });
+    const streamOut = await user.stream({
+      id: streamOutId,
+      name: 'Does not matter either'
+    });
+    await user.access({
+      id: appAccessId1,
+      type: 'app',
+      token: appAccessToken1,
+      permissions: [
+        {
+          streamId: streamInId,
+          level: 'create-only'
+        }
+      ]
+    });
+    await user.access({
+      id: appAccessId2,
+      type: 'app',
+      token: appAccessToken2,
+      permissions: [
+        {
+          streamId: streamInId,
+          level: 'create-only'
+        },
+        {
+          streamId: streamParentId,
+          level: 'read'
+        }
+      ]
+    });
+    console.log('created access 2');
+    await user.access({
+      id: appAccessId3,
+      type: 'app',
+      token: appAccessToken3,
+      permissions: [
+        {
+          streamId: streamInId,
+          level: 'create-only'
+        },
+        {
+          streamId: streamParentId,
+          level: 'contribute'
+        }
+      ]
+    });
+    await streamIn.event({
+      id: eventInId,
+      duration: null
+    });
+    await streamOut.event({
+      id: eventOutId
     });
   });
 
@@ -129,8 +129,7 @@ describe('permissions create-only level', () => {
       return `${basePath}/${id}`;
     }
 
-    it('must see what happens when read in stream and c-o in child', async function() {
-      // 1 fois sur 2 403, l'autre vide
+    it('[GHTHG] must see what happens when read in stream and c-o in child', async function() {
       const res = await server
         .request()
         .get(basePath)
