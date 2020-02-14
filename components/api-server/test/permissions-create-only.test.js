@@ -54,7 +54,7 @@ describe('permissions create-only level', () => {
 
   before(async () => {
     const user = await mongoFixtures.user(username, {});
-    await user.stream({
+    const streamParent = await user.stream({
       id: streamParentId,
       name: 'Does not matter at all'
     });
@@ -110,6 +110,7 @@ describe('permissions create-only level', () => {
         }
       ]
     });
+    await streamParent.event();
     await streamIn.event({
       id: eventInId,
       duration: null
@@ -129,24 +130,29 @@ describe('permissions create-only level', () => {
       return `${basePath}/${id}`;
     }
 
-    it('[GHTHG] must see what happens when read in stream and c-o in child', async function() {
+    it('[GHTHG] should not return events from the create-only stream when we have a read permission on the parent and create-only on the child', async function () {
       const res = await server
         .request()
         .get(basePath)
         .set('Authorization', appAccessToken2);
-      console.log('got', res.body);
+      const events = res.body.events;
+      assert.equal(events.length, 1);
+      const e = events[0];
+      assert.equal(e.streamId, streamParentId);      
     });
 
-    it('must see what happens when contribute in stream and c-o in child', async function() {
-      // pareil
+    it('[PC91] should not return events from the create-only stream when we have a contribute permission on the parent and create-only on the child', async function() {
       const res = await server
         .request()
         .get(basePath)
         .set('Authorization', appAccessToken3);
-      console.log('got', res.body);
+      const events = res.body.events;
+      assert.equal(events.length, 1);
+      const e = events[0];
+      assert.equal(e.streamId, streamParentId);
     });
 
-    it('[PCO0X] must forbid creating events for out of scope streams', async function() {
+    it('[PCO00] should forbid creating events for out of scope streams', async function() {
       const params = {
         type: 'test/test',
         streamId: streamOutId
@@ -160,7 +166,7 @@ describe('permissions create-only level', () => {
       assert.equal(res.status, 403);
     });
 
-    it("[PCO1] must allow creating events for 'create-only' streams", async function() {
+    it("[PCO1] should allow creating events for 'create-only' streams", async function() {
       const params = {
         type: 'test/test',
         streamId: streamInId
@@ -173,7 +179,7 @@ describe('permissions create-only level', () => {
       assert.equal(res.status, 201);
     });
 
-    it("[PCO2] must return an empty list when reading 'create-only' streams", async function() {
+    it("[PCO2] should return an empty list when reading 'create-only' streams", async function() {
       const query = {
         streams: [streamInId]
       };
@@ -187,7 +193,7 @@ describe('permissions create-only level', () => {
       assert.equal(res.body.events.length, 0);
     });
 
-    it("[PCO3] must forbid updating events for 'create-only' streams", async function() {
+    it("[PCO3] should forbid updating events for 'create-only' streams", async function() {
       const params = {
         content: 12
       };
@@ -199,7 +205,7 @@ describe('permissions create-only level', () => {
       assert.equal(res.status, 403);
     });
 
-    it("[PCO4] must forbid deleting events for 'create-only' streams", async function() {
+    it("[PCO4] should forbid deleting events for 'create-only' streams", async function() {
       const res = await server
         .request()
         .del(reqPath(eventInId))
@@ -207,7 +213,7 @@ describe('permissions create-only level', () => {
       assert.equal(res.status, 403);
     });
 
-    it("[PCO5] must allow stopping events for 'create-only' streams", async function() {
+    it("[PCO5] should allow stopping events for 'create-only' streams", async function() {
       const res = await server
         .request()
         .post(`${basePath}/stop`)
@@ -230,7 +236,7 @@ describe('permissions create-only level', () => {
 
     // note: personal (i.e. full) access is implicitly covered by streams/events tests
 
-    it('[PCO6] `get` must only return streams for which permissions are defined', async function() {
+    it('[PCO6] `get` should only return streams for which permissions are defined', async function() {
       const res = await server
         .request()
         .get(basePath)
@@ -240,7 +246,7 @@ describe('permissions create-only level', () => {
       assert.equal(stream.id, streamInId);
     });
 
-    it("[PCO7] must forbid creating child streams in 'create-only' streams", async function() {
+    it("[PCO7] should forbid creating child streams in 'create-only' streams", async function() {
       const data = {
         name: 'Tai Ji',
         parentId: streamInId
@@ -253,7 +259,7 @@ describe('permissions create-only level', () => {
       assert.equal(res.status, 403);
     });
 
-    it("[PCO8] must forbid updating 'create-only' streams", async function() {
+    it("[PCO8] should forbid updating 'create-only' streams", async function() {
       const res = await server
         .request()
         .put(reqPath(streamInId))
@@ -262,7 +268,7 @@ describe('permissions create-only level', () => {
       assert.equal(res.status, 403);
     });
 
-    it("[PCO9] must forbid deleting 'create-only' streams", async function() {
+    it("[PCO9] should forbid deleting 'create-only' streams", async function() {
       const res = await server
         .request()
         .del(reqPath(streamInId))
