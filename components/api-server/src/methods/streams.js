@@ -234,12 +234,13 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     _.defaults(params, { mergeEventsWithParent: null });
 
     // check stream
-    context.stream = treeUtils.findById(context.streams, params.id);
-    if (!context.stream) {
+    let temp = treeUtils.findById(context.streams, params.id);
+    if (temp) context.streamList = [temp];
+    if (!context.streamList) {
       return process.nextTick(next.bind(null,
         errors.unknownResource('stream', params.id)));
     }
-    if (!context.canManageStream(context.stream.id)) {
+    if (!context.canManageStream(context.streamList[0].id)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 
@@ -247,7 +248,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   }
 
   function deleteStream(context, params, result, next) {
-    if (!context.stream.trashed) {
+    if (!context.streamList[0].trashed) {
       // move to trash
       flagAsTrashed(context, params, result, next);
     } else {
@@ -274,13 +275,15 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     let streamAndDescendantIds,
       parentId,
       hasLinkedEvents;
+
+      
     async.series([
       function retrieveStreamIdsToDelete(stepDone) {
+
         userStreamsStorage.find(context.user, {}, null, function (err, streams) {
           if (err) {
             return stepDone(errors.unexpectedError(err));
           }
-
           var streamToDelete = treeUtils.findById(streams, params.id);
           //no need to check existence: done before already
           streamAndDescendantIds = treeUtils.collectPluckFromRootItem(streamToDelete, 'id');

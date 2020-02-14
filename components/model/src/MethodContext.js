@@ -38,7 +38,8 @@ class MethodContext {
   // Custom auth function, if one was configured. 
   customAuthStepFn: ?CustomAuthFunction;
   
-  stream: ?Stream;
+  streamList: ?Array<Stream>;
+  streamIdsNotFoundList: ?Array<string>;
   
   // Memoizes the result of #getSingleActivityExpandedIds.
   singleActivityExpandedIds: ?Array<string>;
@@ -55,6 +56,8 @@ class MethodContext {
     this.access = null;
     this.streams = null;
 
+    this.streamList = null;
+    this.streamIdsNotFoundList = [];
     this.customAuthStepFn = customAuthStepFn;
     
     this.accessToken = null;
@@ -255,17 +258,26 @@ class MethodContext {
 
   // Set this contexts stream by looking in this.streams. DEPRECATED.
   // 
-  setStream(streamId: string) {
-    this.stream = treeUtils.findById(this.streams, streamId);
+  setStreamList(streamIds: array) {
+    if (!streamIds || streamIds.length === 0) return;
+    streamIds.forEach(function (streamId) {
+      let stream = treeUtils.findById(this.streams, streamId);
+      if (stream) {
+        if (!this.streamList) this.streamList = [];
+        this.streamList.push(stream);
+      } else {
+        this.streamIdsNotFoundList.push(streamId);
+      }
+    }.bind(this));
   }
   
   // Returns expanded ids of single-activity streams for the context, based on
-  // this.stream. You will need to call `#setStream` first.
+  // this.streamList. You will need to call `#setStreamList` first.
   // 
   getSingleActivityExpandedIds() {
     if (this.singleActivityExpandedIds == null) {
       this.singleActivityExpandedIds = 
-        produceSingleActivityExpandedIds(this.stream, this.streams);
+        produceSingleActivityExpandedIds(this.streamList, this.streams);
     }
       
     return this.singleActivityExpandedIds;
@@ -379,16 +391,24 @@ class MethodContext {
 }
 module.exports = MethodContext;
 
+
 // Returns expanded ids of single-activity streams for the context, based on
 // stream. 
 // 
-function produceSingleActivityExpandedIds(stream, streams) {
-  if (stream == null)
+function produceSingleActivityExpandedIds(streamList, streams) {
+  if (streamList == null)
     throw new Error('The context\'s `stream` must be set before calling this method.');
   
-  return stream.singleActivityRootId ?
-    treeUtils.expandIds(streams, [stream.singleActivityRootId]) : 
-    [];
+  const result = [];
+  streamList.forEach(function(stream) {
+    const t1 = treeUtils.expandIds(streams, [stream.singleActivityRootId]) ;
+    const temp = stream.singleActivityRootId ? t1 : [];
+    temp.forEach(function(s) {
+      if (! result.includes(s)) result.push(s);
+    });
+
+  });
+  return result;
 }
 
 // Propagates properties that are 'inherited' from a stream parent to all its
@@ -419,3 +439,19 @@ function applyInheritedProperties(streams, properties={}) {
     applyInheritedProperties(stream.children, treeProperties);
   }
 }
+
+Object.defineProperties(MethodContext.prototype, {
+  stream: {
+    get: function () {
+      throw new Error("Deprecated");
+    }
+  },
+  stream: {
+    get: function () {
+      throw new Error("Deprecated");
+    },
+    set: function (value) {
+      throw new Error("Deprecated");
+    }
+  }
+});

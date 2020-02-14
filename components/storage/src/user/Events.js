@@ -118,6 +118,10 @@ var indexes = [
   {
     index: { streamId: 1 },
     options: {},
+  }, 
+  {
+    index: { streamIds: 1 },
+    options: {},
   },
   {
     index: { tags: 1 },

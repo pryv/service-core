@@ -243,6 +243,7 @@ module.exports = function (
   // -------------------------------------------------------------------- CREATE
 
   api.register('events.create',
+    migrationToStreamIdsIN,
     commonFns.getParamsValidation(methodsSchema.create.params),
     applyPrerequisitesForCreation,
     validateEventContentAndCoerce,
@@ -252,6 +253,7 @@ module.exports = function (
     stopPreviousPeriodIfNeeded,
     createEvent,
     createAttachments,
+    migrationToStreamIdsOUT,
     notify);
 
   /**
@@ -263,6 +265,36 @@ module.exports = function (
 
   function setDurationForStart(context, params, result, next) {
     params.duration = null;
+    next();
+  }
+
+
+  function migrationToStreamIdsIN(context, params, result, next) {
+    // convert streamId to streamIds #streamIds
+    if (params.streamId && params.streamIds) {
+      if (params.streamIds.length > 1 || params.streamIds[0] !== params.streamId) {
+        throw new Error("Cannot mix different streamIds and streamId properrties");
+      }
+    } else {
+      if (!params.streamIds) {
+        params.streamIds = [params.streamId];
+      }
+    }
+    //delete params.streamId;
+    next();
+  }
+
+  function migrationToStreamIdsOUT(context, params, result, next) {
+    // convert streamId to streamIds #streamIds
+    if (params.streamId && params.streamIds) {
+      if (params.streamIds.length > 1 || params.streamIds[0] !== params.streamId) {
+        throw new Error("Cannot mix different streamIds and streamId properrties");
+      }
+    } else {
+      if (! params.streamId) {
+        params.streamId = params.streamIds[0];
+      }
+    }
     next();
   }
 
@@ -280,29 +312,17 @@ module.exports = function (
 
     context.initTrackingProperties(params);
 
-    migrateToStreamids(params);
-
-    context.setStream(params.streamId);
-    if (! checkStream(context, params.streamId, next)) {
+    
+  
+    context.setStreamList(params.streamIds);
+    if (! checkStreams(context, next)) {
       return;
     }
     context.content = params;
     next();
   }
 
-  function migrateToStreamids(event) {
-    // convert streamId to streamIds #streamIds
-    if (event.streamId && event.streamIds) {
-      if (event.streamIds.length > 1 || event.streamIds[0] !== event.streamId) {
-        throw new Error("Cannot mix different streamIds and streamId properrties");
-      }
-    } else {
-      if (!event.streamIds) {
-        event.streamIds = [event.streamId];
-      }
-    }
-    //delete event.streamId;
-  }
+  
 
   function verifyContext(context, params, result, next) {
     if (! context.canContributeToContext(context.content.streamId, context.content.tags)) {
@@ -386,6 +406,7 @@ module.exports = function (
   api.register('events.update',
     commonFns.getParamsValidation(methodsSchema.update.params),
     commonFns.catchForbiddenUpdate(eventSchema('update'), updatesSettings.ignoreProtectedFields, logger),
+    migrationToStreamIdsIN,
     applyPrerequisitesForUpdate,
     validateEventContentAndCoerce,
     checkExistingLaterPeriodIfNeeded,
@@ -394,13 +415,12 @@ module.exports = function (
     generateLogIfNeeded,
     updateAttachments,
     updateEvent,
+    migrationToStreamIdsOUT,
     notify);
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
     
     cleanupEventTags(params.update);
-
-    migrateToStreamids(params);
 
     context.updateTrackingProperties(params.update);
 
@@ -420,8 +440,8 @@ module.exports = function (
       context.oldContent = _.cloneDeep(event);
       context.content = _.extend(event, params.update);
 
-      context.setStream(context.content.streamId);
-      if (context.content.streamId && ! checkStream(context, context.content.streamId, next)) {
+      context.setStreamList(context.content.streamIds);
+      if (context.content.streamId && ! checkStreams(context, next)) {
         return;
       }
 
@@ -600,38 +620,56 @@ module.exports = function (
    * `context.setStream` must be called beforehand.
    *
    * @param {Object} context
-   * @param {String} streamId
    * @param {Function} errorCallback Called with the appropriate error if any
    * @return `true` if OK, `false` if an error was found.
    */
-  function checkStream(context, streamId, errorCallback) {
-    if (! context.stream) {
+  function checkStreams(context, errorCallback) {
+
+    if (context.streamIdsNotFoundList.length > 0 ) {
       errorCallback(errors.unknownReferencedResource(
-        'stream', 'streamId', streamId
+        'stream', 'streamId', context.streamIdsNotFoundList
       ));
       return false;
     }
-    if (context.stream.trashed) {
-      errorCallback(errors.invalidOperation(
-        'The referenced stream "' + streamId + '" is trashed.',
-        {trashedReference: 'streamId'}
-      ));
-      return false;
+
+    for (let i = 0; i < context.streamList.length; i++) {
+      if (context.streamList[i].trashed) {
+        errorCallback(errors.invalidOperation(
+          'The referenced stream "' + context.streamList[i].id + '" is trashed.',
+          {trashedReference: 'streamId'}
+        ));
+        return false;
+      }
     }
+
     return true;
+  }
+
+  function isConcernedBySingleActivity(context) {
+    if (! context.streamList) return false;
+    let hasSingleActivityRootId = false;
+    for (let i = 0; i < context.streamList.length; i++) {
+      if (context.streamList[i].singleActivityRootId) {
+        return true;
+      }
+    }
+    return false;
   }
 
   function checkExistingLaterPeriodIfNeeded(context, params, result, next) {
     if (! context.content.hasOwnProperty('time')) {
       return next();
     }
-    if (! context.stream.singleActivityRootId ||
-        ! isPeriod(context.content) ||
-        ! isRunning(context.content)) {
+
+    if (!isPeriod(context.content) ||
+      !isRunning(context.content)) {
       // marks and *finished* periods can be inserted before an existing period
       return process.nextTick(next);
     }
 
+    if (! isConcernedBySingleActivity(context)) {
+      return process.nextTick(next);
+    }
     var query = {
       streamId: {$in: context.getSingleActivityExpandedIds()},
       time: {'$gt': context.content.time},
@@ -669,12 +707,16 @@ module.exports = function (
     if (! context.content.hasOwnProperty('time') && ! context.content.hasOwnProperty('duration')) {
       return next();
     }
-    if (! context.stream.singleActivityRootId ||
-        ! isPeriod(context.content) ||
+    if (! isPeriod(context.content) ||
         isRunning(context.content)) {
       // marks (can be duration of zero) and *running* periods cannot overlap
       return process.nextTick(next);
     }
+
+    if (!isConcernedBySingleActivity(context)) {
+      return process.nextTick(next);
+    }
+    
 
     var endTime = context.content.time + context.content.duration;
     var query = {
@@ -721,7 +763,8 @@ module.exports = function (
   }
 
   function stopPreviousPeriodIfNeeded(context, params, result, next) {
-    if (! context.stream.singleActivityRootId ||
+
+    if (! isConcernedBySingleActivity(context) ||
         ! isPeriod(context.content)) {
       // marks do not affect periods
       return process.nextTick(next);
@@ -749,10 +792,12 @@ module.exports = function (
    * @param {Object} params Must have `singleActivity`, `time` (and optionally `type`)
    */
   function findLastRunning(context, params, callback) {
+    
+    const streamIds = context.streamList.map(function(stream) { return stream.id; });
     var query = {
       streamId: params.singleActivity 
         ? { $in: context.getSingleActivityExpandedIds()} 
-        : context.stream.id,
+        : { $in: streamIds },
       time: {'$lt': params.time},
       duration: {'$type' : 10} // matches when duration exists and is null
     };
@@ -813,7 +858,6 @@ module.exports = function (
     function (context, params, result, next) {
       // default time is now
       _.defaults(params, { time: timestamp.now() });
-
       if (params.id) {
         userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
           if (err) { return next(errors.unexpectedError(err)); }
@@ -830,8 +874,8 @@ module.exports = function (
           applyStop(null, event);
         });
       } else if (params.streamId) {
-        context.setStream(params.streamId);
-        if (! context.stream.singleActivityRootId && ! params.type) {
+        context.setStreamList([params.streamId]);
+        if (! context.streamList[0].singleActivityRootId && ! params.type) {
           return process.nextTick(next.bind(null, 
             errors.invalidParametersFormat(
               'You must specify the event `id` or `type` ' +
@@ -839,9 +883,9 @@ module.exports = function (
             )
           ));
         }
-        if (! checkStream(context, params.streamId, next)) { return; }
+        if (! checkStreams(context, next)) { return; }
         var stopParams = {
-          singleActivity: !! context.stream.singleActivityRootId,
+          singleActivity: !! context.streamList[0].singleActivityRootId,
           time: params.time,
           type: params.type
         };
@@ -856,6 +900,7 @@ module.exports = function (
       }
 
       function applyStop(error, event) {
+        
         if (error) { return next(errors.unexpectedError(error)); }
 
         stopEvent(context, event, params.time, function (err, stoppedId) {

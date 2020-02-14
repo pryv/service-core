@@ -682,12 +682,6 @@ describe('events', function () {
         created;
 
       async.series([
-        function countInitialEvents(stepDone) {
-          storage.countAll(user, function (err, count) {
-            originalCount = count;
-            stepDone();
-          });
-        },
         function addNewEvent(stepDone) {
           request.post(basePath).send(data).end(function (res) {
             validation.check(res, {
@@ -702,11 +696,10 @@ describe('events', function () {
         },
         function verifyEventData(stepDone) {
           storage.find(user, {}, null, function (err, events) {
-            events.length.should.eql(originalCount + 1, 'events');
-
             var expected = _.clone(data);
             expected.id = createdEventId;
             expected.tags = ['patapoumpoum'];
+            expected.streamId = data.streamIds[0];
             expected.created = expected.modified = created;
             expected.createdBy = expected.modifiedBy = access.id;
             var actual = _.find(events, function (event) {
@@ -953,10 +946,11 @@ describe('events', function () {
         streamId: 'unknown-stream-id'
       };
       request.post(basePath).send(data).end(function (res) {
+        console.log(res.text);
         validation.checkError(res, {
           status: 400,
           id: ErrorIds.UnknownReferencedResource,
-          data: {streamId: data.streamId}
+          data: {streamId: [data.streamId]}
         }, done);
       });
     });
@@ -1543,12 +1537,12 @@ describe('events', function () {
     });
 
     it('[01B2] must return an error if the associated stream is unknown', function (done) {
-      request.put(path(testData.events[3].id)).send({streamId: 'unknown-stream-id'})
+      request.put(path(testData.events[3].id)).send({ streamId: 'unknown-stream-id', streamIds: ['unknown-stream-id']})
           .end(function (res) {
         validation.checkError(res, {
           status: 400,
           id: ErrorIds.UnknownReferencedResource,
-          data: {streamId: 'unknown-stream-id'}
+          data: {streamId: ['unknown-stream-id']}
         }, done);
       });
     });
