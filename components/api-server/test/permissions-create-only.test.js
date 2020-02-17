@@ -131,7 +131,7 @@ describe('permissions create-only level', () => {
     }
 
     describe('GET /', function() {
-      it("[PCO2] should return an empty list when reading 'create-only' streams", async function() {
+      it('[PCO2] should return an empty list when reading "create-only" streams', async function() {
         const query = {
           streams: [streamInId]
         };
@@ -145,7 +145,7 @@ describe('permissions create-only level', () => {
         assert.equal(res.body.events.length, 0);
       });
 
-      it('[PC90] should not return events from the create-only stream when we have a read permission on the parent and create-only on the child', async function() {
+      it('[PC90] should return an empty list when reading "create-only" streams that are children of "read" streams', async function() {
         const res = await server
           .request()
           .get(basePath)
@@ -156,7 +156,7 @@ describe('permissions create-only level', () => {
         assert.equal(e.streamId, streamParentId);
       });
 
-      it('[PC91] should not return events from the create-only stream when we have a contribute permission on the parent and create-only on the child', async function() {
+      it('[PC91] should return an empty list when reading "create-only" streams that are children of "contribute" streams', async function() {
         const res = await server
           .request()
           .get(basePath)
@@ -183,7 +183,7 @@ describe('permissions create-only level', () => {
         assert.equal(res.status, 403);
       });
 
-      it("[PCO1] should allow creating events for 'create-only' streams", async function() {
+      it('[PCO1] should allow creating events for "create-only" streams', async function() {
         const params = {
           type: 'test/test',
           streamId: streamInId
@@ -198,7 +198,7 @@ describe('permissions create-only level', () => {
     });
 
     describe('PUT /', function () {
-      it("[PCO3] should forbid updating events for 'create-only' streams", async function () {
+      it('[PCO3] should forbid updating events for "create-only" streams', async function () {
         const params = {
           content: 12
         };
@@ -212,7 +212,7 @@ describe('permissions create-only level', () => {
     });
     
     describe('DELETE /', function () {
-      it("[PCO4] should forbid deleting events for 'create-only' streams", async function () {
+      it('[PCO4] should forbid deleting events for "create-only" streams', async function () {
         const res = await server
           .request()
           .del(reqPath(eventInId))
@@ -222,7 +222,7 @@ describe('permissions create-only level', () => {
     });
 
     describe('POST /stop', function () {
-      it("[PCO5] should allow stopping events for 'create-only' streams", async function () {
+      it('[PCO5] should allow stopping events for "create-only" streams', async function () {
         const res = await server
           .request()
           .post(`${basePath}/stop`)
@@ -246,19 +246,21 @@ describe('permissions create-only level', () => {
     }
 
     describe('GET /', function () {
-      it('[PCO6] `get` should only return streams for which permissions are defined', async function () {
+      it('[PCO6] should only return streams for which permissions are defined', async function () {
         const res = await server
           .request()
           .get(basePath)
           .set('Authorization', appAccessToken1)
           .query({ state: 'all' });
-        const stream = res.body.streams[0];
+        const streams = res.body.streams;
+        assert.equal(streams.length, 1);
+        const stream = streams[0];
         assert.equal(stream.id, streamInId);
       });
     });
 
     describe('POST /', function () {
-      it("[PCO7] should forbid creating child streams in 'create-only' streams", async function () {
+      it('[PCO7] should forbid creating child streams in "create-only" streams', async function () {
         const data = {
           name: 'Tai Ji',
           parentId: streamInId
@@ -273,7 +275,7 @@ describe('permissions create-only level', () => {
     });
 
     describe('PUT /', function () {
-      it("[PCO8] should forbid updating 'create-only' streams", async function () {
+      it('[PCO8] should forbid updating "create-only" streams', async function () {
         const res = await server
           .request()
           .put(reqPath(streamInId))
@@ -284,7 +286,7 @@ describe('permissions create-only level', () => {
     });
 
     describe('DELETE /', function () {
-      it("[PCO9] should forbid deleting 'create-only' streams", async function () {
+      it('[PCO9] should forbid deleting "create-only" streams', async function () {
         const res = await server
           .request()
           .del(reqPath(streamInId))
