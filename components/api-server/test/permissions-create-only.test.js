@@ -128,30 +128,29 @@ describe('permissions create-only level', () => {
       basePath = `/${username}/accesses`;
     });
 
-    it('should allow to create accesses with "create-only" permissions for streams', async function () {
+    it('[PC80] should allow to create accesses with "create-only" permissions for streams', async function () {
       const res = await server.request()
         .post(basePath)
         .set('Authorization', masterAppToken)
         .send({
-          type: 'app',
+          type: 'shared',
           name: 'whatever',
           permissions: [{
-            streamId: 'whatever',
+            streamId: streamInId,
             level: 'create-only',
           }]
         });
       const access = res.body.access;
-      console.log('res.body', JSON.stringify(res.body, null, 2));
       assert.exists(access);
     });
 
-    it('should forbid to create accesses with "create-only" permissions for tags', async function () {
+    it('[PC81] should forbid to create accesses with "create-only" permissions for tags', async function() {
       const res = await server
         .request()
         .post(basePath)
         .set('Authorization', masterAppToken)
         .send({
-          type: 'app',
+          type: 'shared',
           name: 'whatever',
           permissions: [
             {
