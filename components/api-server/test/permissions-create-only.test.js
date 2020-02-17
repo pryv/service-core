@@ -20,23 +20,19 @@ describe('permissions create-only level', () => {
     streamParentId,
     streamInId,
     streamOutId,
-    appAccessId1,
     appAccessToken1,
-    appAccessId2,
     appAccessToken2,
-    appAccessId3,
     appAccessToken3,
+    masterAppToken,
     eventInId,
     eventOutId;
 
   before(() => {
     username = cuid();
     appAccessToken1 = cuid();
-    appAccessId1 = cuid();
     appAccessToken2 = cuid();
-    appAccessId2 = cuid();
     appAccessToken3 = cuid();
-    appAccessId3 = cuid();
+    masterAppToken = cuid();
     streamParentId = cuid();
     streamInId = cuid();
     streamOutId = cuid();
@@ -69,7 +65,6 @@ describe('permissions create-only level', () => {
       name: 'Does not matter either'
     });
     await user.access({
-      id: appAccessId1,
       type: 'app',
       token: appAccessToken1,
       permissions: [
@@ -80,7 +75,6 @@ describe('permissions create-only level', () => {
       ]
     });
     await user.access({
-      id: appAccessId2,
       type: 'app',
       token: appAccessToken2,
       permissions: [
@@ -94,9 +88,7 @@ describe('permissions create-only level', () => {
         }
       ]
     });
-    console.log('created access 2');
     await user.access({
-      id: appAccessId3,
       type: 'app',
       token: appAccessToken3,
       permissions: [
@@ -110,6 +102,16 @@ describe('permissions create-only level', () => {
         }
       ]
     });
+    await user.access({
+      type: 'app',
+      token: masterAppToken,
+      permissions: [
+        {
+          streamId: '*',
+          level: 'manage'
+        },
+      ]
+    });
     await streamParent.event();
     await streamIn.event({
       id: eventInId,
@@ -117,6 +119,51 @@ describe('permissions create-only level', () => {
     });
     await streamOut.event({
       id: eventOutId
+    });
+  });
+
+  describe('Accesses', function () {
+    let basePath;
+    before(() => {
+      basePath = `/${username}/accesses`;
+    });
+
+    it('should allow to create accesses with "create-only" permissions for streams', async function () {
+      const res = await server.request()
+        .post(basePath)
+        .set('Authorization', masterAppToken)
+        .send({
+          type: 'app',
+          name: 'whatever',
+          permissions: [{
+            streamId: 'whatever',
+            level: 'create-only',
+          }]
+        });
+      const access = res.body.access;
+      console.log('res.body', JSON.stringify(res.body, null, 2));
+      assert.exists(access);
+    });
+
+    it('should forbid to create accesses with "create-only" permissions for tags', async function () {
+      const res = await server
+        .request()
+        .post(basePath)
+        .set('Authorization', masterAppToken)
+        .send({
+          type: 'app',
+          name: 'whatever',
+          permissions: [
+            {
+              tag: 'whatever',
+              level: 'create-only'
+            }
+          ]
+        });
+      const error = res.body.error;
+      assert.exists(error);
+      assert.equal(res.status, 403);
+      assert.notExists(res.body.access);
     });
   });
 
@@ -294,6 +341,7 @@ describe('permissions create-only level', () => {
         assert.equal(res.status, 403);
       });
     });
- 
+
   });
+
 });
