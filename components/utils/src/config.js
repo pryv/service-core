@@ -44,7 +44,7 @@ config.schema = {
     licenseName: {
       format: String,
       default: 'OVERRIDE ME',
-      doc: 'Pryv licence'
+      doc: 'Pryv.io licence'
     },
     role: {
       format: String,
@@ -54,17 +54,17 @@ config.schema = {
     templateVersion: {
       format: String,
       default: '1.0.0',
-      doc: 'Version number of Pryv configuration, containing each role version'
+      doc: 'Version number of the Pryv.io configuration, containing each role version'
     },
     hostname: {
       format: String,
       default: 'OVERRIDE ME',
-      doc: 'Name or IP of the machine'
+      doc: 'Hostname of the machine.'
     },
     url : {
       format: String,
       default: 'https://reporting.pryv.com/reports',
-      doc: 'Url to send the report. Should never be overriden except in the test-suite'
+      doc: 'Url to send the report. Should never be overriden except in the test-suite.'
     },
     optOut: {
       format: Boolean,
