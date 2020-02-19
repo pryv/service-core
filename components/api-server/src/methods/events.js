@@ -120,7 +120,7 @@ module.exports = function (
     // build query
     var query = querying.noDeletions(querying.applyState({}, params.state));
     if (params.streams) {
-      query.streamId = {$in: params.streams};
+      query.streamIds = {$in: params.streams};
     }
     if (params.tags && params.tags.length > 0) {
       query.tags = {$in: params.tags};
@@ -212,12 +212,13 @@ module.exports = function (
       if (! event) {
         return next(errors.unknownResource('event', params.id));
       }
-
-      if (! context.canReadContext(event.streamId, event.tags)) {
-        return next(errors.forbidden());
+      for (let i = 0; i < event.streamIds.length; i++) { // ok if at least one
+        if (context.canReadContext(event.streamIds[i], event.tags)) {
+          result.event = event;
+          next();
+        }
       }
-      result.event = event;
-      next();
+      return next(errors.forbidden());
     });
   }
 
@@ -249,7 +250,7 @@ module.exports = function (
     validateEventContentAndCoerce,
     checkExistingLaterPeriodIfNeeded,
     checkOverlappedPeriodsIfNeeded,
-    verifyContext,
+    verifycanContributeToContext,
     stopPreviousPeriodIfNeeded,
     createEvent,
     createAttachments,
@@ -324,9 +325,11 @@ module.exports = function (
 
   
 
-  function verifyContext(context, params, result, next) {
-    if (! context.canContributeToContext(context.content.streamId, context.content.tags)) {
-      return next(errors.forbidden());
+  function verifycanContributeToContext(context, params, result, next) {
+    for (let i = 0; i < context.content.streamIds.length; i++) { // refuse is any context is not accessible
+      if (! context.canContributeToContext(context.content.streamIds[i], context.content.tags)) {
+        return next(errors.forbidden());
+      }
     }
     next();
   }
@@ -433,17 +436,23 @@ module.exports = function (
         return next(errors.unknownResource('event', params.id));
       }
 
-      if (! context.canContributeToContext(event.streamId, event.tags)) {
-        return next(errors.forbidden());
+      // -- here we should check the "changes" on stream #streamIds
+      throw new Error();
+      for (let i = 0; i < event.streamIds.length ; i++) {
+        if (! context.canContributeToContext(event.streamIds[i], event.tags)) {
+          return next(errors.forbidden());
+        }
       }
+
+      //------ I think the following lines are bogus !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       context.oldContent = _.cloneDeep(event);
       context.content = _.extend(event, params.update);
 
-      context.setStreamList(context.content.streamIds);
-      if (context.content.streamId && ! checkStreams(context, next)) {
+      context.setStreamList(context.content.streamIds); 
+      if (context.content.streamIds && ! checkStreams(context, next)) {
         return;
-      }
+      } // Why return with no next!!!
 
       next();
     });
@@ -627,7 +636,7 @@ module.exports = function (
 
     if (context.streamIdsNotFoundList.length > 0 ) {
       errorCallback(errors.unknownReferencedResource(
-        'stream', 'streamId', context.streamIdsNotFoundList
+        'stream', 'streamIds', context.streamIdsNotFoundList
       ));
       return false;
     }
@@ -636,7 +645,7 @@ module.exports = function (
       if (context.streamList[i].trashed) {
         errorCallback(errors.invalidOperation(
           'The referenced stream "' + context.streamList[i].id + '" is trashed.',
-          {trashedReference: 'streamId'}
+          {trashedReference: 'streamIds'}
         ));
         return false;
       }
@@ -671,7 +680,7 @@ module.exports = function (
       return process.nextTick(next);
     }
     var query = {
-      streamId: {$in: context.getSingleActivityExpandedIds()},
+      streamIds: {$in: context.getSingleActivityExpandedIds()},
       time: {'$gt': context.content.time},
       $and: [
         {duration: {'$exists' : true}},
@@ -720,7 +729,7 @@ module.exports = function (
 
     var endTime = context.content.time + context.content.duration;
     var query = {
-      streamId: {$in: context.getSingleActivityExpandedIds()},
+      streamIds: {$in: context.getSingleActivityExpandedIds()},
       $and: [
         {duration: {'$exists' : true}},
         {duration: {$ne: 0}}
@@ -795,7 +804,7 @@ module.exports = function (
     
     const streamIds = context.streamList.map(function(stream) { return stream.id; });
     var query = {
-      streamId: params.singleActivity 
+      streamIds: params.singleActivity 
         ? { $in: context.getSingleActivityExpandedIds()} 
         : { $in: streamIds },
       time: {'$lt': params.time},
@@ -873,7 +882,7 @@ module.exports = function (
           }
           applyStop(null, event);
         });
-      } else if (params.streamId) {
+      } else if (params.streamId) { // legacy streamId paramter DO NOT CONVERT TO streamIds
         context.setStreamList([params.streamId]);
         if (! context.streamList[0].singleActivityRootId && ! params.type) {
           return process.nextTick(next.bind(null, 
@@ -924,8 +933,15 @@ module.exports = function (
    */
   function stopEvent(context, event, stopTime, callback) {
     if (! event) { return process.nextTick(callback); }
-
-    if (! context.canContributeToContext(event.streamId, event.tags)) {
+ 
+    let ok = false; // ok if at least one stream is in contribute
+    for (let i = 0; i < event.streamId.length; i++) {
+      if (context.canContributeToContext(event.streamId[i], event.tags)) {
+        ok = true;
+        break;
+      }
+    }
+    if (! ok) {
       return process.nextTick(callback.bind(null, errors.forbidden()));
     }
 
@@ -1131,8 +1147,10 @@ module.exports = function (
           'event', eventId
         ));
       }
-      if (! context.canContributeToContext(event.streamId, event.tags)) {
-        return callback(errors.forbidden());
+      for (let i = 0; i < event.streamIds.length; i++) {
+        if (! context.canContributeToContext(event.streamIds[i], event.tags)) {
+          return callback(errors.forbidden());
+        }
       }
 
       callback(null, event);

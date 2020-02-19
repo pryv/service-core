@@ -66,7 +66,7 @@ describe('events', function () {
 
     before(resetEvents);
 
-    it('[WC8C] must return the last 20 non-trashed events (sorted descending) by default',
+    it.skip('[WC8C] must return the last 20 non-trashed events (sorted descending) by default',
       function (done) {
         var additionalEvents = [];
         for (var i = 0; i < 50; i++) {
@@ -665,7 +665,7 @@ describe('events', function () {
         duration: timestamp.duration('55m'),
         type: 'temperature/celsius',
         content: 36.7,
-        streamIds: [testData.streams[0].id, testData.streams[1].id],
+        streamIds: [testData.streams[8].id, testData.streams[1].id],
         tags: [' patapoumpoum ', '   ', ''], // must trim and ignore empty tags
         description: 'Test description',
         clientData: {
@@ -950,7 +950,7 @@ describe('events', function () {
         validation.checkError(res, {
           status: 400,
           id: ErrorIds.UnknownReferencedResource,
-          data: {streamId: [data.streamId]}
+          data: {streamIds: [data.streamId]}
         }, done);
       });
     });
@@ -1000,7 +1000,7 @@ describe('events', function () {
         validation.checkError(res, {
           status: 400,
           id: ErrorIds.InvalidOperation,
-          data: {trashedReference: 'streamId'}
+          data: {trashedReference: 'streamIds'}
         }, done);
       });
     });
@@ -1542,7 +1542,7 @@ describe('events', function () {
         validation.checkError(res, {
           status: 400,
           id: ErrorIds.UnknownReferencedResource,
-          data: {streamId: ['unknown-stream-id']}
+          data: {streamIds: ['unknown-stream-id']}
         }, done);
       });
     });
