@@ -13,6 +13,10 @@ const Application = require('./application');
 
 const expressAppInit = require('./expressApp');
 
+const superagent = require('superagent');
+const child_process = require('child_process');
+const url = require('url');
+
 import type { Logger } from 'components/utils';
 import type { ConfigAccess } from './settings';
 import type { ExpressAppLifecycle } from './expressApp';
@@ -69,6 +73,8 @@ class Server {
     // Let actual requests pass.
     lifecycle.appStartupComplete(); 
         
+    this.collectUsageAndSendReport();
+
     logger.info('Server ready.');
     this.notificationBus.serverReady();
   }
@@ -286,7 +292,62 @@ class Server {
     require('./routes/webhooks')(expressApp, application);
   }
 
+
+  async collectUsageAndSendReport() {
+    // Check if the optOut environment variable is set to 1.
+    // If it is, don't collect data and don't send report
+    let reportingSettings = this.settings.get('reporting').value;
+    if (reportingSettings.optOut) {
+      this.logger.info('Reporting opt-out is set to ' + reportingSettings.optOut + ', not reporting');
+      return;
+    }
+
+    // Collect data
+    const hostname = await this.collectHostname();
+    const clientData = await this.collectClientData();
+    const body = {
+      licenseName: reportingSettings.licenseName,
+      role: 'core',
+      hostname: hostname,
+      templateVersion: reportingSettings.templateVersion,
+      clientData: clientData
+    };
+
+    // Send report
+    const reportingUrl = reportingSettings.url || 'https://reporting.pryv.com';
+    try {
+      const res = await superagent.post(url.resolve(reportingUrl, 'reports')).send(body);
+      this.logger.info('Report sent to ' + reportingUrl, res.body);
+    } catch(error) {
+      this.logger.error('Unable to send report to ' + reportingUrl + ' Reason : ' + error.message);
+    }
+
+    // Schedule another report in 24 hours
+    const hours = 24;
+    const timeout = hours * 60 * 60 * 1000;
+    this.logger.info('Scheduling another report in ' + hours + ' hours');
+    setTimeout(() => {
+      this.collectUsageAndSendReport();
+    }, timeout);
+  }
+
+  async collectClientData(): Object {
+    const usersStorage = this.application.storageLayer.users;
+    const POOL_USERNAME_PREFIX = 'pool@';
+    const POOL_REGEX = new RegExp( '^'  + POOL_USERNAME_PREFIX);
+
+    let numUser = await bluebird.fromCallback(cb => {
+      usersStorage.count({ username: { $regex: POOL_REGEX } }, cb);
+    });
+
+    return {numUser: numUser};
+  }
+
+  async collectHostname(): Object {
+    const hostname = await bluebird.fromCallback(
+      cb => child_process.exec('hostname', cb));
+    return hostname.replace(/\s/g,''); // Remove all white spaces
+  }
+
 }
-module.exports = Server; 
-
-
+module.exports = Server;

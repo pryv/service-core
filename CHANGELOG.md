@@ -1,5 +1,13 @@
 ## 1.4
 
+### 1.4.26
+
+ - Fix #186 : Add 'readToken' to events.getOne attachments
+ - Fix #208 : Forbid to convert standard event to HFS (and vice-versa)
+ - Fix #210 : HFS now support basic auth
+ - Fix #212 : Add Meta to HFS response.
+ - Fix #222 : Add Meta to batch response.
+
 ### 1.4.25
 
  - Fix preview-server module loading issue.
