@@ -297,8 +297,8 @@ class Server {
     // Check if the optOut environment variable is set to 1.
     // If it is, don't collect data and don't send report
     let reportingSettings = this.settings.get('reporting').value;
-    if (process.env.PRYV_REPORTING_OFF === 'true' || reportingSettings.optOut) {
-      this.logger.info('Reporting opt-out is set to true, not reporting');
+    if (reportingSettings.optOut) {
+      this.logger.info('Reporting opt-out is set to ' + reportingSettings.optOut + ', not reporting');
       return;
     }
 
