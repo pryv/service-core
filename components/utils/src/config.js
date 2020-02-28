@@ -67,9 +67,10 @@ config.schema = {
       doc: 'Url to send the report. Should never be overriden except in the test-suite'
     },
     optOut: {
-      format: Boolean,
-      default: false,
-      doc: 'Set to true to disable daily reporting to pryv.com' +
+      format: String,
+      default: 'false',
+      env: 'reporting_optOut',
+      doc: 'Set to \'true\' to disable daily reporting to pryv.com' +
       'This parameter is meant to be set as an environment variable in the \'run-pryv\' script.',
     },
   },
