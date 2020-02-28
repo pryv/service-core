@@ -67,7 +67,7 @@ describe('service-reporting', () => {
       reportHttpServer = new httpServer('/reports', 200, reportMock);
       await reportHttpServer.listen(reportHttpServerPort);
 
-      customSettings.reporting.optOut = true;
+      customSettings.reporting.optOut = 'true';
       server = await context.spawn(customSettings);
     });
 
