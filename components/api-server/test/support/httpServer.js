@@ -32,7 +32,7 @@ class HttpServer extends EventEmitter {
     app.all(path, (req, res: express$Response) => {
       res.status(this.responseStatus).json(responseBody || { ok: '1' });
       if(req.method === 'POST') {
-        this.lastReport = responseBody;
+        this.lastReport = req.body;
         this.emit('report_received');
       }
     });
