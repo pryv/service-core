@@ -26,6 +26,8 @@ const customSettings = {
     hostname: hostname(),
   }
 };
+const monitoringUsername = cuid();
+const monitorToken = cuid();
 
 const Promise = require('bluebird');
 
@@ -40,7 +42,10 @@ describe('service-reporting', () => {
   });
 
   before(async () => {
-    await mongoFixtures.user(cuid());
+    const user = await mongoFixtures.user(monitoringUsername);
+    user.access({
+      type: 'app', token: monitorToken,
+    });
     await mongoFixtures.user(cuid());
   });
 
@@ -60,10 +65,9 @@ describe('service-reporting', () => {
       reportHttpServer.close();
     });
 
-    it('[G1UG] server must start and successfully send a report when service-reporting is listening', async () => {
+    it('[G1UG] must start and successfully send a report when service-reporting is listening', async () => {
       await awaiting.event(reportHttpServer, 'report_received');
-      assert.isNotEmpty(server.baseUrl); // Check the server has booted
-
+      await assertServerStarted();
       const lastReport = reportHttpServer.getLastReport();
       const reportingSettings = customSettings.reporting;
       assert.equal(lastReport.licenseName, reportingSettings.licenseName, 'missing or wrong licenseName');
@@ -97,11 +101,11 @@ describe('service-reporting', () => {
         .then(() => {
           throw new Error('Should not have received a report');
         })
-        .catch(error => {
+        .catch(async (error) => {
           if (error instanceof Promise.TimeoutError) {
             // Everything is ok, the promise should have timeouted
             // since the report has not been sent.
-            assert.isNotEmpty(server.baseUrl); // Check the server has booted
+            await assertServerStarted();
           } else {
             assert.fail(error.message);
           }
@@ -119,7 +123,14 @@ describe('service-reporting', () => {
     });
 
     it('[H55A] server must start when service-reporting is not listening', async () => {
-      assert.isNotEmpty(server.baseUrl); // Check the server has booted
+      await assertServerStarted();
     });
   });
 });
+
+async function assertServerStarted() {
+  // throws if the server is off
+  await server.request()
+        .get(`/${monitoringUsername}/events`)
+        .set('Authorizaiton', monitorToken);
+}
