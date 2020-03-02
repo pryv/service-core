@@ -40,6 +40,11 @@ config.schema = {
     default: false,
     doc: 'If `true`, prints the configuration settings actually used to the console at load time'
   },
+  domain: {
+    format: String,
+    default: 'pryv.li',
+    doc: 'The fully qualified domain name associated to the Pryv.io platform',
+  },
   reporting: {
     licenseName: {
       format: String,

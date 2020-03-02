@@ -333,14 +333,10 @@ class Server {
 
   async collectClientData(): Object {
     const usersStorage = this.application.storageLayer.users;
-    const POOL_USERNAME_PREFIX = 'pool@';
-    const POOL_REGEX = new RegExp( '^'  + POOL_USERNAME_PREFIX);
-
-    let numUser = await bluebird.fromCallback(cb => {
-      usersStorage.count({ username: { $regex: POOL_REGEX } }, cb);
+    let numUsers = await bluebird.fromCallback(cb => {
+      usersStorage.count({}, cb);
     });
-
-    return {numUser: numUser};
+    return {numUsers: numUsers};
   }
 
   async collectHostname(): Object {
