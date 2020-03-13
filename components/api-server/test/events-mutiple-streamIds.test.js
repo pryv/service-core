@@ -178,12 +178,25 @@ describe('events muliple streamIds', function () {
     });
 
     it('[POIZ] must not allow mixing  different streamIds and streamId properties', function (done) {
-      
+        var data = { streamId: testData.streams[0].id, type: testType };
+        data.streamIds = [testData.streams[0].id, testData.streams[8].id];
+
+        async.series([
+          function addNew(stepDone) {
+            request.post(basePath).send(data).end(function (res) {
+              validation.checkError(res, {
+                status: 400,
+                id: ErrorIds.InvalidOperation,
+                data: {streamId: data.streamId, streamIds: data.streamIds}
+              }, stepDone);
+            });
+          }
+        ], done);
     });
 
     it('[6ZH8] must not allow running period event if the new event is multiple streams',
       function (done) {
-        var data = { streamId: testData.streams[0].id, type: testType };
+        var data = { type: testType };
 
         data.streamIds = [testData.streams[0].id, testData.streams[8].id];
         async.series([
@@ -193,7 +206,7 @@ describe('events muliple streamIds', function () {
               validation.checkError(res, {
                 status: 400,
                 id: ErrorIds.InvalidOperation,
-                data: { trashedReference: 'streamIds' }
+                data: data
               }, stepDone);
             });
           }
@@ -371,7 +384,7 @@ describe('events muliple streamIds', function () {
 
     var path = basePath + '/stop';
 
-    it.skip('[VE5U] must not allow /stop on multiple multiple streams events ',
+    it('[VE5U] must not allow /stop on multiple multiple streams events ',
       function (done) {
         var stopTime = timestamp.now('-5m'),
           stoppedEvent = testData.events[9],
@@ -380,10 +393,11 @@ describe('events muliple streamIds', function () {
         async.series([
           function stop(stepDone) {
             var data = {
-              streamId: testData.streams[0].id,
+              streamIds: [testData.streams[0].id, testData.streams[8].id],
               time: stopTime
             };
             request.post(path).send(data).end(function (res) {
+              console.log(res);
               validation.checkError(res, {
                 status: 400,
                 id: ErrorIds.InvalidOperation,

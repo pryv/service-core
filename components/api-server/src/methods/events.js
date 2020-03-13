@@ -280,7 +280,8 @@ module.exports = function (
     // convert streamId to streamIds #streamIds
     if (params.streamId && params.streamIds) {
       if (params.streamIds.length > 1 || params.streamIds[0] !== params.streamId) {
-        return next(errors.invalidParametersFormat('Cannot mix different streamIds and streamId properties'));
+        return next(errors.invalidOperation('Cannot mix different streamIds and streamId properties', 
+        {streamId: params.streamId, streamIds: params.streamIds}));
       }
     } else {
       if (!params.streamIds) {
@@ -883,6 +884,7 @@ module.exports = function (
   api.register('events.stop',
     commonFns.getParamsValidation(methodsSchema.stop.params),
     function (context, params, result, next) {
+      console.log('&&&&&&&&&&&&&&');
       // default time is now
       _.defaults(params, { time: timestamp.now() });
       if (params.id) {
@@ -898,7 +900,9 @@ module.exports = function (
               'Event "' + params.id + '" is not a running period event.'
             ));
           }
+          console.log('XXXXX', event.streamIds, event.streamIds.length);
           if (event.streamIds.length > 1) {
+            console.log('YYYYYY', event.streamIds, event.streamIds.length);
             return next(errors.invalidOperation(
               'Cannot stop Event "' + params.id + '" which is in multiple streams.'
             ));
