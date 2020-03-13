@@ -3,7 +3,8 @@ var convict = require('convict'),
     fs = require('fs'),
     path = require('path'),
     toString = require('./toString'),
-    _ = require('lodash');
+    _ = require('lodash'), 
+    ServiceInfo = require('./config/ServiceInfo');
 
 var config = module.exports = {};
 
@@ -306,6 +307,24 @@ config.load = function (configDefault) {
   return settings;
 };
 
+
+async function setupWithServiceInfo(configDefault) {
+  const instance = this.setup(configDefault);
+  const regUrlPath = instance.get('services.register.url');
+  
+  let serviceInfoUrl = instance.get('serviceInfoUrl');
+  if (serviceInfoUrl != null && serviceInfoUrl.startsWith('file://')) {
+    serviceInfoUrl = path.resolve(__dirname, serviceInfoUrl.substring(7));
+    serviceInfoUrl = 'file://' + serviceInfoUrl;
+  }
+
+  serviceInfoUrl = serviceInfoUrl || url.resolve(regUrlPath.value, '/service/info');
+  const serviceInfo = await ServiceInfo.loadFromUrl(serviceInfoUrl);
+  instance.set('service', serviceInfo);
+  return instance;
+}
+config.setupWithServiceInfo = setupWithServiceInfo;
+
 // For internal use only: loads convict instance, then validates and returns it. 
 //
 function setup(configDefault) {
@@ -380,3 +399,4 @@ function getSettingArgName(keyPath) {
 function print(title, data) {
   console.log(title + ':\n' + JSON.stringify(data, null, 2)); // eslint-disable-line no-console
 }
+
