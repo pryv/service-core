@@ -27,7 +27,7 @@ describe('Service', () => {
       "home": "https://sw.pryv.me",
       "support": "https://pryv.com/helpdesk",
       "terms": "https://pryv.com/terms-of-use/",
-      "event-types": "https://api.pryv.com/event-types/flat.json",
+      "eventTypes": "https://api.pryv.com/event-types/flat.json",
       "assets": {
         "definitions": "https://pryv.github.io/assets-pryv.me/index.json"
       }
