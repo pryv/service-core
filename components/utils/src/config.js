@@ -19,12 +19,36 @@ var formats = config.formats = {
  */
 config.schema = {
   service: {
-    'eventTypes': {
-      format: String
+    access: {
+      format: String,
+    },
+    api: {
+      format: String,
+    },
+    serial: {
+      format: String,
     },
     register: {
-      format: String
-    }
+      format: String,
+    },
+    name: {
+      format: String,
+    },
+    home: {
+      format: String,
+    },
+    support: {
+      format: String,
+    },
+    terms: {
+      format: String,
+    },
+    eventTypes: {
+      format: String,
+    },
+    assets: {
+      format: Object,
+    },
   },
   env: {
     format: [ 'production', 'development', 'test' ],
