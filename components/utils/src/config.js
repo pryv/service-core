@@ -18,6 +18,10 @@ var formats = config.formats = {
  * Base settings schema. Extend at will.
  */
 config.schema = {
+  serviceInfoUrl: {
+    format: String,
+    default: 'https://reg.pryv.me/service/info',
+  },
   service: {
     access: {
       format: String,
