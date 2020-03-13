@@ -19,7 +19,7 @@ var formats = config.formats = {
  */
 config.schema = {
   service: {
-    'event-types': {
+    'eventTypes': {
       format: String
     },
     register: {
