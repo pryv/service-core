@@ -18,6 +18,14 @@ var formats = config.formats = {
  * Base settings schema. Extend at will.
  */
 config.schema = {
+  service: {
+    'event-types': {
+      format: String
+    },
+    register: {
+      format: String
+    }
+  },
   env: {
     format: [ 'production', 'development', 'test' ],
     default: 'development',
