@@ -19,15 +19,18 @@ describe('Service', () => {
 
   before(async () => {
     mockInfo = {
-      serial: '2019062601',
-      access: 'https://access.pryv.io/access',
-      api: 'https://{username}.pryv.io/',
-      register: 'https://reg.pryv.io',
-      name: 'Pryv Test',
-      home: 'https://sw.pryv.me',
-      support: 'https://pryv.com/helpdesk',
-      terms: 'https://pryv.com/pryv-lab-terms-of-use/',
-      eventTypes: 'https://api.pryv.com/event-types/flat.json'
+      "access": "https://access.pryv.me/access",
+      "api": "https://{username}.pryv.me/",
+      "serial": "2019061301",
+      "register": "https://reg.pryv.me",
+      "name": "Pryv Lab",
+      "home": "https://sw.pryv.me",
+      "support": "https://pryv.com/helpdesk",
+      "terms": "https://pryv.com/terms-of-use/",
+      "event-types": "https://api.pryv.com/event-types/flat.json",
+      "assets": {
+        "definitions": "https://pryv.github.io/assets-pryv.me/index.json"
+      }
     };
 
     infoHttpServer = new httpServer('/service/info', 200, mockInfo);
@@ -47,6 +50,7 @@ describe('Service', () => {
     it('[FR4K] must return all service info', async () => {
       let path = '/' + username + '/service/info';
       const res = await server.request().get(path);
+      delete res.meta;
       validation.check(res, {
         status: 200,
         schema: methodsSchema.get.result,

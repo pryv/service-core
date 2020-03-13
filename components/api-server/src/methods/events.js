@@ -37,7 +37,7 @@ module.exports = function (
 ) {
 
   // Update types and log error
-  typeRepo.tryUpdate(eventTypesSettings.sourceURL)
+  typeRepo.tryUpdate(eventTypesSettings)
     .catch((err) => logging.getLogger('typeRepo').warn(err));
     
   const logger = logging.getLogger('methods/events');

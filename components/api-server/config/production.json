@@ -15,9 +15,6 @@
     "attachmentsDirPath": "${PRYV_DATADIR}/service-core-files/attachments",
     "previewsDirPath": "${PRYV_DATADIR}/service-core-files/previews"
   },
-  "eventTypes": {
-    "sourceURL": "https://pryv.github.io/event-types/flat.json"
-  },
   "register": {
     "secret": "OVERRIDE ME"
   },

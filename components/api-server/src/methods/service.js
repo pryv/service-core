@@ -10,36 +10,18 @@ import type { ConfigAccess } from '../settings';
 const _ = require('lodash');
 
 module.exports = function (api: API, logger: Logger, settings: ConfigAccess) {
+  this.serviceInfo = null;
 
   api.register('service.info',
     getServiceInfo
   );
 
-  async function getServiceInfo(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    await settings.loadRegisterInfo();
-
-    const serviceInfoSettings = {};
-    setConfig(serviceInfoSettings, settings, 'serial', 'serial');
-    setConfig(serviceInfoSettings, settings, 'access', 'access');
-    setConfig(serviceInfoSettings, settings, 'api', 'api');
-    setConfig(serviceInfoSettings, settings, 'register', 'http.register.url');
-    setConfig(serviceInfoSettings, settings, 'name', 'service.name');
-    setConfig(serviceInfoSettings, settings, 'home', 'http.static.url');
-    setConfig(serviceInfoSettings, settings, 'support', 'service.support');
-    setConfig(serviceInfoSettings, settings, 'terms', 'service.terms');
-    setConfig(serviceInfoSettings, settings, 'eventTypes', 'eventTypes.sourceURL');
-
-    result = _.merge(result, serviceInfoSettings);
+  async function getServiceInfo(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {  
+    if (! this.serviceInfo) {
+      this.serviceInfo = await settings.get('service').value;
+    }   
+    result = _.merge(result, this.serviceInfo);
     return next();
-  }
 
-  function setConfig(serviceInfo: Object, settings: ConfigAccess, memberName: string, configKey: string) {
-    const param = settings.get(configKey);
-    if(!param) {
-      logger.warn('Unable to get \'' + memberName + '\' from Settings, please check configuration');
-      return;
-    }
-    serviceInfo[memberName] = param.value;
   }
-
 };
