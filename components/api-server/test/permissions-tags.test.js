@@ -141,7 +141,7 @@ describe('Access permissions - Tags', function () {
               level: 'manage'
             },
             {
-              streamId: charlatan.Lorem.word(),
+              tag: charlatan.Lorem.word(),
               level: 'manage'
             }
           ]
