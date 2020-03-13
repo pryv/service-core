@@ -79,7 +79,7 @@ class Application {
       authSettings: settings.get('auth').obj(),
       auditSettings: settings.get('audit').obj(),
       eventFilesSettings: settings.get('eventFiles').obj(),
-      eventTypesSettings: settings.get('service.eventTypes').str(),
+      eventTypesUrl: settings.get('service.eventTypes').str(),
       httpSettings: settings.get('http').obj(),
       servicesSettings: settings.get('services').obj(),
       updatesSettings: settings.get('updates').obj(),
