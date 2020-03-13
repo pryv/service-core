@@ -21,7 +21,6 @@ export interface ConfigAccess {
   get(key: string): ConfigValue;
   has(key: string): boolean;
   getCustomAuthFunction(): ?CustomAuthFunction;
-  loadRegisterInfo(): Promise<void>;
 }
 
 export type { ConfigValue };
@@ -157,18 +156,7 @@ class Settings implements ConfigAccess {
       return;
     }
 
-    console.log(res);
-
-    this.setConvictMember('serial', res.serial);
-    this.setConvictMember('access', res.access);
-    this.setConvictMember('api', res.api);
-    this.setConvictMember('http.register.url', res.register);
-    this.setConvictMember('http.static.url', res.home);
-    this.setConvictMember('service.name', res.name);
-    this.setConvictMember('service.support', res.support);
-    this.setConvictMember('service.terms', res.terms);
-    this.setConvictMember('eventTypes.sourceURL', res.eventTypes);
-
+    this.setConvictMember('service', res);
     this.registerLoaded = true;
   }
 

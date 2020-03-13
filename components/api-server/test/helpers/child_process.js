@@ -30,9 +30,6 @@ class ConfigMask implements ConfigAccess {
     this.settings = settings;
   }
 
-  loadRegisterInfo() {
-    return this.settings.loadRegisterInfo();
-  }
   
   get(key: string): ConfigValue {
     // Overlaid?

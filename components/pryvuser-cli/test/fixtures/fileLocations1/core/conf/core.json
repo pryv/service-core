@@ -11,9 +11,6 @@
     "attachmentsDirPath": "/app/data/attachments",
     "previewsDirPath": "/app/data/previews"
   },
-  "eventTypes": {
-    "sourceURL": "https://pryv.github.io/event-types/flat.json"
-  },
   "auth": {
     "adminAccessKey": "OVERRIDE ME",
     "trustedApps": "*@https://*.preview.pryv.tech, *@https://*.pryv.me*, *@http://pryv.github.io, *@https://*.rec.la",

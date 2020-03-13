@@ -21,9 +21,10 @@ exports = module.exports = function (action) {
     'home': string(),
     'support': string(),
     'terms': string(),
-    'eventTypes': string()
+    'event-types': string(),
+    'assets': object({})
   }, {
-    required: ['serial', 'api', 'access', 'register', 'name', 'home', 'support', 'terms', 'eventTypes'],
+    required: ['serial', 'api', 'access', 'register', 'name', 'home', 'support', 'terms', 'event-types'],
     additionalProperties: false
   });
 
