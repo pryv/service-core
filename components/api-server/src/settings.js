@@ -144,33 +144,34 @@ class Settings implements ConfigAccess {
       return;
     }
     const regUrlPath = this.get('services.register.url');
-    let serviceInfoUrl = this.get('serviceInfoUrl').value;
-    if (serviceInfoUrl && serviceInfoUrl.startsWith('file://')) {
+    let serviceInfoUrl = this.get('serviceInfoUrl').str();
+    if (serviceInfoUrl != null && serviceInfoUrl.startsWith('file://')) {
       serviceInfoUrl = path.resolve(__dirname, serviceInfoUrl.substring(7));
       serviceInfoUrl = 'file://' + serviceInfoUrl;
     }
 
     serviceInfoUrl = serviceInfoUrl || url.resolve(regUrlPath.value, '/service/info');
-    console.info('Fetching serviceInfo from: ' + JSON.stringify(serviceInfoUrl));
-    if (!serviceInfoUrl) {
+    console.info('Fetching serviceInfo from: ' + serviceInfoUrl);
+    if (serviceInfoUrl == null) {
       console.error('Parameter "serviceInfoUrl" or "services.register.url" is undefined, set it in the configuration to allow core to provide service info');
-      process.exit(2)
+      process.exit(2);
       return;
     }
-    let res;
+    let serviceInfo;
     try {
       if (serviceInfoUrl.startsWith('file://')) {
-        res = JSON.parse(fs.readFileSync(serviceInfoUrl.substring(7), 'utf8'));
+        serviceInfo = JSON.parse(fs.readFileSync(serviceInfoUrl.substring(7), 'utf8'));
       } else {
-        res = await request.get(serviceInfoUrl).body;
+        const res = await request.get(serviceInfoUrl);
+        serviceInfo = res.body;
       }
     } catch (error) {
       console.error('Failed fetching "serviceInfoUrl" or "services.register.url" ' + serviceInfoUrl + ' with error' + error.message);
-      process.exit(2)
+      process.exit(2);
       return;
     }
 
-    this.setConvictMember('service', res);
+    this.setConvictMember('service', serviceInfo);
     this.registerLoaded = true;
   }
 
