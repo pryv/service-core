@@ -7,6 +7,7 @@ const middleware = require('components/middleware');
 const setCommonMeta = require('../methods/helpers/setCommonMeta');
 const methodCallback = require('./methodCallback');
 const Paths = require('./Paths');
+const getAuth = require('../../../middleware/src/getAuth');
     
 import type Application from '../application';
 
@@ -26,6 +27,7 @@ function root(expressApp: express$Application, app: Application) {
   expressApp.get(Paths.UserRoot + '/', rootIndex);
 
   // Load user for all user API methods.
+  expressApp.all(Paths.UserRoot + '/*', getAuth);
   expressApp.all(Paths.UserRoot + '/*', initContextMiddleware);
 
   // Current access information.

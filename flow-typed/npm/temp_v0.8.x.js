@@ -1,5 +1,5 @@
-// flow-typed signature: 446a675900cd2c7ec951acf8d486a0a8
-// flow-typed version: b45b36945a/temp_v0.8.x/flow_>=v0.58.x
+// flow-typed signature: 1072540f9d953dcbeea12de59bc6c03f
+// flow-typed version: c6154227d1/temp_v0.8.x/flow_>=v0.104.x
 
 // https://github.com/bruce/node-temp
 // https://www.npmjs.com/package/temp
@@ -14,31 +14,47 @@ declare module 'temp' {
 
   declare module.exports: {
     // Settings
-    dir: string;
-    track(value?: boolean): $Exports<'temp'>;
-
+    dir: string,
+    track(value?: boolean): $Exports<'temp'>,
     // Functions
     mkdir(
       affixes?: Affixes,
       callback?: (err: ?ErrnoError, dirPath: string) => mixed,
-    ): void;
-    mkdirSync(affixes?: Affixes): string;
+    ): void,
+    mkdirSync(affixes?: Affixes): string,
     open(
       affixes?: Affixes,
       callback?: (
         err: ?ErrnoError,
-        info: {path: string, fd: ?number},
+        info: {
+          path: string,
+          fd: ?number,
+          ...
+        },
       ) => mixed,
-    ): void;
-    openSync(affixes?: Affixes): {path: string, fd: ?number};
-    path(rawAffixes?: Affixes, defaultPrefix?: string): string;
+    ): void,
+    openSync(affixes?: Affixes): {
+      path: string,
+      fd: ?number,
+      ...
+    },
+    path(rawAffixes?: Affixes, defaultPrefix?: string): string,
     cleanup(
       callback?: (
         err: ?ErrnoError,
-        info: {files: number, dirs?: number},
+        info: {
+          files: number,
+          dirs?: number,
+          ...
+        },
       ) => mixed,
-    ): void;
-    cleanupSync(): {files: number, dirs: number};
-    createWriteStream(affixes?: Affixes): stream$Writable;
+    ): void,
+    cleanupSync(): {
+      files: number,
+      dirs: number,
+      ...
+    },
+    createWriteStream(affixes?: Affixes): stream$Writable,
+    ...
   };
 }

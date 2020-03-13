@@ -9,6 +9,8 @@ const timestamp = require('unix-timestamp');
 const xattr = require('fs-xattr');
 const _ = require('lodash');
 const bluebird = require('bluebird');
+const getAuth = require('../../../middleware/src/getAuth');
+
 // constants
 const StandardDimensions = [ 256, 512, 768, 1024 ];
 const SmallestStandardDimension = StandardDimensions[0];
@@ -30,6 +32,8 @@ module.exports = function (
   userEventFilesStorage, logging) {
 
   // SERVING PREVIEWS
+
+  expressApp.all('/*', getAuth);
 
   expressApp.all('/:username/events/*', initContextMiddleware, loadAccessMiddleware);
 
