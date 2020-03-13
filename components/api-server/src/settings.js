@@ -144,11 +144,10 @@ class Settings implements ConfigAccess {
       process.exit(2)
       return;
     }
-    console.log(__dirname);
     let res;
     try {
       if (serviceInfoUrl.startsWith('file://')) { 
-        res = fs.readFileSync(serviceInfoUrl.substring(7));
+        res = JSON.parse(fs.readFileSync(serviceInfoUrl.substring(7), 'utf8'));
       } else {
         res = await request.get(serviceInfoUrl).body;
       }
@@ -157,6 +156,8 @@ class Settings implements ConfigAccess {
       process.exit(2)
       return;
     }
+
+    console.log(res);
 
     this.setConvictMember('serial', res.serial);
     this.setConvictMember('access', res.access);
