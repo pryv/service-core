@@ -280,7 +280,7 @@ module.exports = function (
     // convert streamId to streamIds #streamIds
     if (params.streamId && params.streamIds) {
       if (params.streamIds.length > 1 || params.streamIds[0] !== params.streamId) {
-        throw new Error("Cannot mix different streamIds and streamId properrties");
+        return next(errors.invalidParametersFormat('Cannot mix different streamIds and streamId properties'));
       }
     } else {
       if (!params.streamIds) {
@@ -295,7 +295,7 @@ module.exports = function (
     // convert streamId to streamIds #streamIds
     if (params.streamId && params.streamIds) {
       if (params.streamIds.length > 1 || params.streamIds[0] !== params.streamId) {
-        throw new Error("Cannot mix different streamIds and streamId properrties");
+        throw new Error("Cannot mix different streamIds and streamId properties");
       }
     } else {
       if (! params.streamId) {
@@ -896,6 +896,11 @@ module.exports = function (
           if (! isRunning(event)) {
             return next(errors.invalidOperation(
               'Event "' + params.id + '" is not a running period event.'
+            ));
+          }
+          if (event.streamIds.length > 1) {
+            return next(errors.invalidOperation(
+              'Cannot stop Event "' + params.id + '" which is in multiple streams.'
             ));
           }
           applyStop(null, event);

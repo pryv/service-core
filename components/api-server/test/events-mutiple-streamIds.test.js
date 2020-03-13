@@ -177,6 +177,9 @@ describe('events muliple streamIds', function () {
       ], done);
     });
 
+    it('[POIZ] must not allow mixing  different streamIds and streamId properties', function (done) {
+      
+    });
 
     it('[6ZH8] must not allow running period event if the new event is multiple streams',
       function (done) {
@@ -186,21 +189,12 @@ describe('events muliple streamIds', function () {
         async.series([
           function addNew(stepDone) {
             request.post(basePath).send(data).end(function (res) {
-              validation.check(res, {
-                status: 201,
-                schema: methodsSchema.create.result
+              console.log(res.body);
+              validation.checkError(res, {
+                status: 400,
+                id: ErrorIds.InvalidOperation,
+                data: { trashedReference: 'streamIds' }
               }, stepDone);
-            });
-          },
-          function verifyData(stepDone) {
-            storage.findAll(user, null, function (err, events) {
-              var expected = testData.events[9];
-              var actual = _.find(events, function (event) {
-                return event.id === expected.id;
-              });
-              actual.should.eql(expected);
-
-              stepDone();
             });
           }
         ], done);
