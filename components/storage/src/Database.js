@@ -56,13 +56,11 @@ class Database {
     this.options = {
       j: true, // Requests acknowledgement that the write operation has been written to the journal.
       w: 1,   // Requests acknowledgement that the write operation has propagated.
-      autoReconnect: true, 
       connectTimeoutMS: s60, 
       socketTimeoutMS: s60,
       useNewUrlParser: true,
       appname: 'pryv.io core',
-      reconnectInterval: s1,
-      reconnectTries: m30,
+      useUnifiedTopology: true,
     };
 
     this.db = null;
