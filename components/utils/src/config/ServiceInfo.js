@@ -10,7 +10,9 @@ class ServiceInfo {
 
   static async loadFromUrl(serviceInfoUrl) {
     if (serviceInfoUrl != null && serviceInfoUrl.startsWith('file://')) {
-      serviceInfoUrl = path.resolve(__dirname, serviceInfoUrl.substring(7));
+      const filePath = serviceInfoUrl.substring(7);
+      const serviceCorePath = path.resolve(__dirname, '../../../../../');
+      serviceInfoUrl = path.resolve(serviceCorePath, filePath);
       serviceInfoUrl = 'file://' + serviceInfoUrl;
     }
 
@@ -30,12 +32,29 @@ class ServiceInfo {
         result = res.body;
       }
     } catch (error) {
+      console.log(__dirname);
       console.error('Failed fetching "serviceInfoUrl" or "services.register.url" ' + serviceInfoUrl + ' with error' + error.message);
       process.exit(2);
       return null;
     }
     serviceInfo = result;
     return serviceInfo;
+  }
+
+  static async addToConvict(convictInstance) {
+    let regUrlPath = null;
+    let serviceInfoUrl = null;
+  
+    try { 
+       convictInstance.get('services.register.url');
+    } catch (e) { }
+    try { 
+     serviceInfoUrl = convictInstance.get('serviceInfoUrl');
+    } catch (e) { }
+    serviceInfoUrl = serviceInfoUrl || url.resolve(regUrlPath.value, '/service/info');
+    const serviceInfo = await ServiceInfo.loadFromUrl(serviceInfoUrl);
+    convictInstance.set('service', serviceInfo);
+    return;
   }
 
   async  get() {

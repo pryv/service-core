@@ -310,17 +310,7 @@ config.load = function (configDefault) {
 
 async function setupWithServiceInfo(configDefault) {
   const instance = this.setup(configDefault);
-  const regUrlPath = instance.get('services.register.url');
-  
-  let serviceInfoUrl = instance.get('serviceInfoUrl');
-  if (serviceInfoUrl != null && serviceInfoUrl.startsWith('file://')) {
-    serviceInfoUrl = path.resolve(__dirname, serviceInfoUrl.substring(7));
-    serviceInfoUrl = 'file://' + serviceInfoUrl;
-  }
-
-  serviceInfoUrl = serviceInfoUrl || url.resolve(regUrlPath.value, '/service/info');
-  const serviceInfo = await ServiceInfo.loadFromUrl(serviceInfoUrl);
-  instance.set('service', serviceInfo);
+  await ServiceInfo.addToConvict(instance);
   return instance;
 }
 config.setupWithServiceInfo = setupWithServiceInfo;

@@ -3,8 +3,9 @@
 const produceConvictInstance = require('./config');
 
 import type { ConfigValue } from 'components/utils/src/config/value';
-const { ExistingValue, MissingValue } = require('components/utils/src/config/value');
 
+const { ExistingValue, MissingValue } = require('components/utils/src/config/value');
+const ServiceInfo = require('components/utils/src/config/ServiceInfo');
 /** 
  * Handles loading and access to project settings. If you're looking for the 
  * configuration schema, please see {produceConfigInstance}. 
@@ -51,9 +52,10 @@ class Settings {
   //  
   // @throws {Error} `.code === ENOENT` if the configuration file doesn't exist. 
   // 
-  loadFromFile(path: string) {
+  async loadFromFile(path: string) {
     const config = this.config; 
     config.loadFile(path);
+    await ServiceInfo.addToConvict(config);
   }
   
   // Merges a javascript configuration object into the settings. 

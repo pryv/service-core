@@ -9,7 +9,7 @@
       "timestamp": false
     }
   },
-  "serviceInfoUrl": "file://../../../../test/service-info.json",
+  "serviceInfoUrl": "file://test/service-info.json",
   "services": {
     "email": {
       "enabled": false
