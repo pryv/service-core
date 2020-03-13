@@ -19,17 +19,17 @@ describe('Service', () => {
 
   before(async () => {
     mockInfo = {
-      "access": "https://access.pryv.me/access",
-      "api": "https://{username}.pryv.me/",
-      "serial": "2019061301",
-      "register": "https://reg.pryv.me",
-      "name": "Pryv Lab",
-      "home": "https://sw.pryv.me",
-      "support": "https://pryv.com/helpdesk",
-      "terms": "https://pryv.com/terms-of-use/",
-      "eventTypes": "https://api.pryv.com/event-types/flat.json",
-      "assets": {
-        "definitions": "https://pryv.github.io/assets-pryv.me/index.json"
+      access: 'https://access.pryv.me/access',
+      api: 'https://{username}.pryv.me/',
+      serial: '2019061301',
+      register: 'https://reg.pryv.me',
+      name: 'Pryv Lab',
+      home: 'https://sw.pryv.me',
+      support: 'https://pryv.com/helpdesk',
+      terms: 'https://pryv.com/terms-of-use/',
+      eventTypes: 'https://api.pryv.com/event-types/flat.json',
+      assets: {
+        definitions: 'https://pryv.github.io/assets-pryv.me/index.json'
       }
     };
 
