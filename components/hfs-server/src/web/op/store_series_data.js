@@ -8,6 +8,8 @@ const business = require('components/business');
 const ApiConstants = require('../api_constants');
 const TracedOperations = require('./traced_operations');
 
+const setCommonMeta = require('components/api-server/src/methods/helpers/setCommonMeta');
+
 import type { TypeRepository } from 'components/business';
 import type Context from '../../context';
 import type {SeriesMetadata} from '../../metadata_cache';
@@ -76,7 +78,7 @@ async function storeSeriesData(ctx: Context,
   
   res
     .status(200)
-    .json({status: 'ok'});
+    .json(setCommonMeta({status: 'ok'}));
 }
 
 type DataMatrix = business.series.DataMatrix;

@@ -180,5 +180,17 @@ module.exports = [
     modified: timestamp.now('-10h'),
     modifiedBy: 'test',
     children: []
+  },
+  // create only permission
+  {
+    id: 's_9',
+    name: 'Root Stream 9 - for create only',
+    parentId: null,
+    singleActivity: true,
+    created: timestamp.now('-10h'),
+    createdBy: 'test',
+    modified: timestamp.now('-10h'),
+    modifiedBy: 'test',
+    children: []
   }
 ];

@@ -100,7 +100,12 @@ module.exports = function (
         : nonTrashedStreamIds;
     }
     if (! context.access.canReadAllStreams()) {
-      var accessibleStreamIds = Object.keys(context.access.streamPermissionsMap);
+      var accessibleStreamIds = [];
+      Object.keys(context.access.streamPermissionsMap).map((streamId) => {
+        if (context.access.canReadStream(streamId)) {
+          accessibleStreamIds.push(streamId);
+        }
+      });
       params.streams = params.streams 
         ? _.intersection(params.streams, accessibleStreamIds) 
         : accessibleStreamIds;
@@ -214,6 +219,7 @@ module.exports = function (
       }
       for (let i = 0; i < event.streamIds.length; i++) { // ok if at least one
         if (context.canReadContext(event.streamIds[i], event.tags)) {
+          setFileReadToken(context.access, event);
           result.event = event;
           next();
         }
@@ -444,7 +450,20 @@ module.exports = function (
         }
       }
 
-      //------ I think the following lines are bogus !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      const updatedEventType = params.update.type;
+      if(updatedEventType != null) {
+        const currentEventType = event.type;
+        const isCurrentEventTypeSeries = isSeriesType(currentEventType);
+        const isUpdatedEventTypeSeries = isSeriesType(updatedEventType);
+        if (! typeRepo.isKnown(updatedEventType) && isUpdatedEventTypeSeries) {
+          return next(errors.invalidEventType(updatedEventType)); // We forbid the 'series' prefix for these free types. 
+        }
+
+        if((isCurrentEventTypeSeries && ! isUpdatedEventTypeSeries) || 
+          (! isCurrentEventTypeSeries && isUpdatedEventTypeSeries)) {
+          return next(errors.invalidOperation('Normal events cannot be updated to HF-events and vice versa.'));
+        }
+      }
 
       context.oldContent = _.cloneDeep(event);
       context.content = _.extend(event, params.update);
@@ -987,7 +1006,7 @@ module.exports = function (
   api.register('events.delete',
     commonFns.getParamsValidation(methodsSchema.del.params),
     function (context, params, result, next) {
-      checkEventForWriting(context, params.id, function (err, event) {
+      checkEventForDelete(context, params.id, function (err, event) {
         if (err) {
           return next(err);
         }
@@ -1081,7 +1100,7 @@ module.exports = function (
           deletedAtt;
       async.series([
         function (stepDone) {
-          checkEventForWriting(context, params.id, function (err, event) {
+          checkEventForDelete(context, params.id, function (err, event) {
             if (err) { return stepDone(err); }
 
             updatedEvent = event;
@@ -1137,7 +1156,7 @@ module.exports = function (
       requestedType;
   }
 
-  function checkEventForWriting(context, eventId, callback) {
+  function checkEventForDelete(context, eventId, callback) {
     userEventsStorage.findOne(context.user, {id: eventId}, null, function (err, event) {
       if (err) {
         return callback(errors.unexpectedError(err));
@@ -1147,6 +1166,7 @@ module.exports = function (
           'event', eventId
         ));
       }
+      
       for (let i = 0; i < event.streamIds.length; i++) {
         if (! context.canContributeToContext(event.streamIds[i], event.tags)) {
           return callback(errors.forbidden());

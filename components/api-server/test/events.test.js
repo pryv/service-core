@@ -339,7 +339,7 @@ describe('events', function () {
     });
 
     it('[6H0Z] must return all events (trashed or not) when requested', function (done) {
-      request.get(basePath).query({state: 'all'}).end(function (res) {
+      request.get(basePath).query({state: 'all', limit: 1000}).end(function (res) {
         validation.check(res, {
           status: 200,
           schema: methodsSchema.get.result,
@@ -464,6 +464,20 @@ describe('events', function () {
 
         res.headers.should.have.property('content-type', attachment.type);
         res.headers.should.have.property('content-length', attachment.size.toString());
+
+        done();
+      });
+    });
+
+    it('[PP6G] must return readToken in attachments', function (done) {
+      var event = testData.events[0];
+
+      request.get(path(event.id) + '/').end(function (res) {
+        res.statusCode.should.eql(200);
+        res.body.event.should.have.property('attachments');
+        res.body.event.attachments.forEach(attachment => {
+          attachment.should.have.property('readToken');          
+        });
 
         done();
       });
@@ -1649,15 +1663,14 @@ describe('events', function () {
             }
           ], done);
         });
-        
+
       function setIgnoreProtectedFieldUpdates(activated, stepDone) {
         let settings = _.cloneDeep(helpers.dependencies.settings);
         settings.updates.ignoreProtectedFields = activated;
         server.ensureStarted.call(server, settings, stepDone);
       }
-        
     });
-    
+
     it('[CUM3] must reject tags that are too long', function (done) {
       var bigTag = new Array(600).join('a');
       
@@ -1670,7 +1683,66 @@ describe('events', function () {
           }, done);
         });
     });
+  });
 
+  // Fixes #208
+  describe('PUT HF/non-HF events', function () {
+    const streamId = testData.streams[0].id;
+    const normalEvent = {'streamId': streamId, 'type' : 'activity/plain'};
+    const hfEvent = {'streamId': streamId, 'type' : 'series:activity/plain'};
+    let normalEventId;
+    let hfEventId;
+
+    before(function(done) {
+      async.parallel([
+        function createNormalEvent(stepDone) {
+          request.post(basePath).send(normalEvent).end(function (res) {
+            should.exist(res.status);
+            should(res.status).be.eql(201);
+
+            should.exist(res.body.event.id);
+            normalEventId = res.body.event.id;
+
+            stepDone();
+          });
+        },
+        function createHfEvent(stepDone) {
+          request.post(basePath).send(hfEvent).end(function (res) {
+            should.exist(res.status);
+            should(res.status).be.eql(201);
+
+            should.exist(res.body.event.id);
+            hfEventId = res.body.event.id;
+
+            stepDone();
+          });
+        }
+      ], done);
+    });
+
+    it('[Z7R1] a normal event should not be updated to an hf-event', function (done) {
+      request.put(path(normalEventId)).send(hfEvent).end(function (res) {
+        should.exist(res.status);
+        should(res.status).be.eql(400);
+
+        should.exist(res.body.error.id);
+        should(res.body.error.id).be.eql('invalid-operation');
+
+        done();
+      });
+    });
+
+    it('[Z7R2] An hf-event should not be updated to a normal event', function (done) {
+      request.put(path(hfEventId)).send(normalEvent).end(function (res) {
+        should.exist(res.status);
+        should(res.status).be.eql(400);
+
+        should.exist(res.body.error.id);
+        should(res.body.error.id).be.eql('invalid-operation');
+
+        done();
+      });
+    });
   });
 
   describe('POST /stop', function () {

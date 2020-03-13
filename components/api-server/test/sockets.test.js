@@ -170,7 +170,8 @@ describe('Socket.IO', function () {
         sortAscending: true,
         state: 'all',
         includeDeletions: true,
-        modifiedSince: -10000
+        modifiedSince: -10000,
+        limit: 1000
       };
       ioCons.con.emit('events.get', params, function (err, result) {
         validation.checkSchema(result, eventsMethodsSchema.get.result);

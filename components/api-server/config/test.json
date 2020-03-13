@@ -9,6 +9,7 @@
       "timestamp": false
     }
   },
+  "serviceInfoUrl": "file://../../../../test/service-info.json",
   "services": {
     "email": {
       "enabled": false
@@ -16,7 +17,7 @@
     "register": {
       "url": "http://localhost:5123"
     }
-  }, 
+  },
   "tcpMessaging": {
     "enabled": true
   }

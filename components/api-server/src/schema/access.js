@@ -107,7 +107,7 @@ exports = module.exports = function (action) {
   return res;
 };
 
-var permissionLevel = exports.permissionLevel = string({enum: ['read', 'contribute', 'manage']});
+var permissionLevel = exports.permissionLevel = string({ enum: ['read', 'contribute', 'manage', 'create-only']});
 
 var permissions = exports.permissions = function (action) {
   var streamPermission = object({

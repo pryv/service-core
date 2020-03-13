@@ -3,6 +3,8 @@
 
 const request = require('superagent');
 const url = require('url');
+const fs = require('fs');
+const path = require('path');
 
 const { Extension, ExtensionLoader } = require('components/utils').extension;
 // FLOW __dirname can be undefined when node is run outside of file.
@@ -128,32 +130,43 @@ class Settings implements ConfigAccess {
       console.debug('register service/info already loaded');
       return;
     }
-    console.debug('loading register service/info');
-
     const regUrlPath = this.get('services.register.url');
-    if(!regUrlPath) {
-      console.warn('Parameter "services.register.url" is undefined, set it in the configuration to allow core to provide service info');
+    let serviceInfoUrl = this.get('serviceInfoUrl').value;
+    if (serviceInfoUrl && serviceInfoUrl.startsWith('file://')) { 
+      serviceInfoUrl = path.resolve(__dirname, serviceInfoUrl.substring(7));
+      serviceInfoUrl = 'file://' + serviceInfoUrl;
+    }
+   
+    serviceInfoUrl = serviceInfoUrl || url.resolve(regUrlPath.value, '/service/info');
+    console.info('Fetching serviceInfo from: ' + JSON.stringify(serviceInfoUrl));
+    if (!serviceInfoUrl) {
+      console.error('Parameter "serviceInfoUrl" or "services.register.url" is undefined, set it in the configuration to allow core to provide service info');
+      process.exit(2)
       return;
     }
-    
-    const regUrl = url.resolve(regUrlPath.value, '/service/info');
+    console.log(__dirname);
     let res;
     try {
-      res = await request.get(regUrl);
+      if (serviceInfoUrl.startsWith('file://')) { 
+        res = fs.readFileSync(serviceInfoUrl.substring(7));
+      } else {
+        res = await request.get(serviceInfoUrl).body;
+      }
     } catch (error) {
-      console.warn('Unable to retrieve service-info from Register on URL:', regUrl, 'Error:', error);
+      console.error('Failed fetching "serviceInfoUrl" or "services.register.url" ' + serviceInfoUrl + ' with error' + error.message);
+      process.exit(2)
       return;
     }
 
-    this.setConvictMember('serial', res.body.serial);
-    this.setConvictMember('access', res.body.access);
-    this.setConvictMember('api', res.body.api);
-    this.setConvictMember('http.register.url', res.body.register);
-    this.setConvictMember('http.static.url', res.body.home);
-    this.setConvictMember('service.name', res.body.name);
-    this.setConvictMember('service.support', res.body.support);
-    this.setConvictMember('service.terms', res.body.terms);
-    this.setConvictMember('eventTypes.sourceURL', res.body.eventTypes);
+    this.setConvictMember('serial', res.serial);
+    this.setConvictMember('access', res.access);
+    this.setConvictMember('api', res.api);
+    this.setConvictMember('http.register.url', res.register);
+    this.setConvictMember('http.static.url', res.home);
+    this.setConvictMember('service.name', res.name);
+    this.setConvictMember('service.support', res.support);
+    this.setConvictMember('service.terms', res.terms);
+    this.setConvictMember('eventTypes.sourceURL', res.eventTypes);
 
     this.registerLoaded = true;
   }

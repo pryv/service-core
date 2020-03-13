@@ -70,7 +70,7 @@ describe('Metadata Cache', function () {
     };
     
     // FLOW stubbing the value of loader here.
-    const cache = new MetadataCache(null,loaderStub);
+    const cache = new MetadataCache(null, loaderStub, settings);
     
     const a = await cache.forSeries('foo', '1234', '5678');
     const b = await cache.forSeries('foo', '1234', '5678');
