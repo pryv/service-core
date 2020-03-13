@@ -16,7 +16,7 @@
     "register": {
       "url": "http://localhost:5123"
     }
-  }, 
+  },
   "tcpMessaging": {
     "enabled": true
   }

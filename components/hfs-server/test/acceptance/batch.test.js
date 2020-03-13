@@ -164,13 +164,34 @@ describe('Storing BATCH data in a HF series', function() {
     //  |- Access(accessToken)
     //  `- Session(accessToken)
     // 
-    let userId, parentStreamId, eventId1, eventId2, accessToken; 
+    let userId, parentStreamId, eventId1, eventId2, accessToken, data1, data2;
     before(() => {
       userId = cuid(); 
       parentStreamId = cuid(); 
       eventId1 = cuid(); 
       eventId2 = cuid(); 
-      accessToken = cuid(); 
+      accessToken = cuid();
+      const points = [
+        [0, 10.2], 
+        [1, 12.2],
+        [2, 14.2],
+      ];
+      data1 = {
+        'eventId': eventId1,
+        'data': {
+          'format': 'flatJSON', 
+          'fields': ['deltaTime', 'value'], 
+          'points': points
+        }   
+      };
+      data2 = {
+        'eventId': eventId2,
+        'data': {
+          'format': 'flatJSON', 
+          'fields': ['deltaTime', 'value'], 
+          'points': points
+        }   
+      };
       
       return pryv.user(userId, {}, function (user) {
         user.stream({id: parentStreamId}, function (stream) {
@@ -187,23 +208,25 @@ describe('Storing BATCH data in a HF series', function() {
       });
     });
     
+    // Fixes #212
+    it('[A3BQ] should return core-metadata in every call', async () => {
+      const data = {
+        'format': 'seriesBatch',
+        'data': [data1]
+      };
+      const res = await server.request()
+        .post(`/${userId}/series/batch`)
+        .set('authorization', accessToken)
+        .send(data);
+
+      chai.expect(res).to.have.property('status').that.eql(200);
+      chai.expect(res.body).to.have.property('meta');
+    });
+
     it('[QHM5] should fail without \'Authorization\' header', async () => {
       const data = {
         'format': 'seriesBatch',
-        'data': [
-          {
-            'eventId': eventId1,
-            'data': {
-              'format': 'flatJSON', 
-              'fields': ['deltaTime', 'value'], 
-              'points': [
-                [0, 10.2], 
-                [1, 12.2],
-                [2, 14.2],
-              ]
-            }   
-          }
-        ]
+        'data': [data1]
       };
 
       const response = await server.request()
@@ -229,20 +252,7 @@ describe('Storing BATCH data in a HF series', function() {
       it('[R57L] fails', async () => {
         const response = await storeData(server.request(), {
           'format': 'seriesBatch',
-          'data': [
-            {
-              'eventId': eventId1,
-              'data': {
-                'format': 'flatJSON', 
-                'fields': ['deltaTime', 'value'], 
-                'points': [
-                  [0, 10.2], 
-                  [1, 12.2],
-                  [2, 14.2],
-                ]
-              }   
-            }
-          ]
+          'data': [data1]
         });
         
         assert.strictEqual(response.statusCode, 403);
@@ -290,32 +300,7 @@ describe('Storing BATCH data in a HF series', function() {
         // the end.
         const data = {
           'format': 'seriesBatch',
-          'data': [
-            {
-              'eventId': eventId1,
-              'data': {
-                'format': 'flatJSON', 
-                'fields': ['deltaTime', 'value'], 
-                'points': [
-                  [0, 10.2], 
-                  [1, 12.2],
-                  [2, 14.2],
-                ]
-              }   
-            },
-            {
-              'eventId': eventId2,
-              'data': {
-                'format': 'flatJSON', 
-                'fields': ['deltaTime', 'value'], 
-                'points': [
-                  [0, 10.2], 
-                  [1, 12.2],
-                  [2, 14.2],
-                ]
-              }   
-            }
-          ]
+          'data': [data1, data2]
         };
         
         let updaterCalled = false; 

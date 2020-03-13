@@ -10,6 +10,7 @@ const lodash = require('lodash');
 const msgpack = require('msgpack5')();
 const bluebird = require('bluebird');
 const supertest = require('supertest');
+const _ = require('lodash');
 
 const { ConditionVariable, Fuse } = require('./condition_variable');
 
@@ -71,7 +72,7 @@ class SpawnContext {
   
   // Spawns a server instance. 
   //
-  async spawn (): Promise<Server> {
+  async spawn (customSettings: Object): Promise<Server> {
     // If by any chance we exhausted our processes really quickly, make 
     // sure to spawn a few now. 
     if (this.pool.length <= 0)
@@ -87,7 +88,8 @@ class SpawnContext {
     const process = this.getProcess(); 
     
     // Create settings for this new instance.
-    const settings = {
+    customSettings = customSettings || {};
+    const settings = _.merge({
       http: {
         port: port // use this port for http/express
       },
@@ -100,7 +102,7 @@ class SpawnContext {
         port: axonPort,
         host: 'localhost'
       }
-    };
+    }, customSettings);
     
     // Specialize the server we've started using the settings above.
     await process.startServer(settings);

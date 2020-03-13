@@ -8,6 +8,8 @@ const { ErrorIds } = require('components/errors');
 const cuid = require('cuid');
 const chai = require('chai');
 const assert = chai.assert; 
+const URL = require('url');
+const superagent = require('superagent');
 
 const { spawnContext, produceMongoConnection } = 
   require('./test-helpers');
@@ -55,6 +57,37 @@ describe('Querying data from a HF series', function() {
     server.stop(); 
   });
 
+  it('[Q1X1] should should accept a query with authentication token header', function () {
+    return server.request()
+      .get(`/${userId}/events/${eventId}/series`)
+      .set('authorization', accessToken)
+      .expect(200);
+  });
+
+  // Fixes #210
+  it('[Q1X2] should accept a query with authentication token in url parameter', function () {
+    return server.request()
+      .get(`/${userId}/events/${eventId}/series?auth=` + accessToken)
+      .expect(200);
+  });
+  it('[Q1X3] must accept basic auth schema', async function () {
+    const url = new URL.URL(server.baseUrl);
+    const basicAuthUrl = url.href.replace(url.hostname, accessToken + '@' + url.hostname);
+    const apiEndPointUrl = URL.resolve(basicAuthUrl, userId + '/events/' + eventId + '/series');
+    const res = await superagent.get(apiEndPointUrl);
+    assert.equal(res.status, 200);
+  });
+
+  // Fixes #212
+  it('[RAIJ] should return core-metadata in every call', async function () {
+    const res = await server.request()
+      .get(`/${userId}/events/${eventId}/series`)
+      .set('authorization', accessToken);
+
+    chai.expect(res).to.have.property('status').that.eql(200);
+    chai.expect(res.body).to.have.property('meta');
+  });
+  
   it('[I2ZH] should refuse a query for an unknown user', function () {
     return server.request()
       .get('/some-user/events/some-eventId/series')

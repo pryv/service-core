@@ -12,6 +12,8 @@ const BatchRequest = business.series.BatchRequest;
 const ApiConstants = require('../api_constants');
 const TracedOperations = require('./traced_operations');
 
+const setCommonMeta = require('components/api-server/src/methods/helpers/setCommonMeta');
+
 import type Context from '../../context';
 import type { InfluxRowType } from 'components/business'; 
 import type { SeriesMetadata } from '../../metadata_cache';
@@ -72,7 +74,7 @@ async function storeSeriesBatch(ctx: Context,
   
   res
     .status(200)
-    .json({status: 'ok'});
+    .json(setCommonMeta({status: 'ok'}));
 }
 
 // Parses the request body and transforms the data contained in it into the 
