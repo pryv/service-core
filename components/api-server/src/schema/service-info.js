@@ -2,15 +2,11 @@
  * JSON Schema specification for events.
  */
 
-const Action = require('./Action');
 const helpers = require('./helpers');
 const object = helpers.object;
 const string = helpers.string;
 
-/**
- * @param {Action} action
- */
-exports = module.exports = function (action) {
+exports = module.exports = function () {
 
   const schema = object({
     'serial': string(),
