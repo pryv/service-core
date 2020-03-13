@@ -53,7 +53,7 @@ async function createContext(
     
   const tracer = produceTracer(settings, logFactory('jaeger'));
   
-  const typeRepoUpdateUrl = settings.get('eventTypes.sourceURL').str();
+  const typeRepoUpdateUrl = settings.get('service.event-types').str();
     
   const context = new Context(influx, mongo, logFactory, tracer, typeRepoUpdateUrl, settings);
 
