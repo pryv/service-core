@@ -1,5 +1,8 @@
 ## 1.4
 
+### 1.4.27
+ - Feature : add reporting to startup
+
 ### 1.4.26
 
  - Fix #186 : Add 'readToken' to events.getOne attachments

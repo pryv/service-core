@@ -1,10 +1,6 @@
 /* eslint-disable no-console */
 // @flow
 
-const request = require('superagent');
-const url = require('url');
-const fs = require('fs');
-const path = require('path');
 
 const { Extension, ExtensionLoader } = require('components/utils').extension;
 // FLOW __dirname can be undefined when node is run outside of file.
@@ -55,9 +51,8 @@ class Settings implements ConfigAccess {
     }
     isLoading = true;
     config.printSchemaAndExitIfNeeded();
-    const ourConfig = config.setup(configLocation);
+    const ourConfig = await config.setupWithServiceInfo(configLocation);
     settingsSingleton = new Settings(ourConfig);
-    await settingsSingleton.loadRegisterInfo();
     settingsSingleton.maybePrint();
     isLoading = false;
     return settingsSingleton;
@@ -136,42 +131,6 @@ class Settings implements ConfigAccess {
   }
   static existingValue(key: string, value: mixed): ConfigValue {
     return new ExistingValue(key, value);
-  }
-
-  async loadRegisterInfo(): Promise<void> {
-    if (this.registerLoaded) {
-      console.debug('register service/info already loaded');
-      return;
-    }
-    const regUrlPath = this.get('services.register.url');
-    let serviceInfoUrl = this.get('serviceInfoUrl').value;
-    if (serviceInfoUrl && serviceInfoUrl.startsWith('file://')) {
-      serviceInfoUrl = path.resolve(__dirname, serviceInfoUrl.substring(7));
-      serviceInfoUrl = 'file://' + serviceInfoUrl;
-    }
-
-    serviceInfoUrl = serviceInfoUrl || url.resolve(regUrlPath.value, '/service/info');
-    console.info('Fetching serviceInfo from: ' + JSON.stringify(serviceInfoUrl));
-    if (!serviceInfoUrl) {
-      console.error('Parameter "serviceInfoUrl" or "services.register.url" is undefined, set it in the configuration to allow core to provide service info');
-      process.exit(2)
-      return;
-    }
-    let res;
-    try {
-      if (serviceInfoUrl.startsWith('file://')) {
-        res = JSON.parse(fs.readFileSync(serviceInfoUrl.substring(7), 'utf8'));
-      } else {
-        res = await request.get(serviceInfoUrl).body;
-      }
-    } catch (error) {
-      console.error('Failed fetching "serviceInfoUrl" or "services.register.url" ' + serviceInfoUrl + ' with error' + error.message);
-      process.exit(2)
-      return;
-    }
-
-    this.setConvictMember('service', res);
-    this.registerLoaded = true;
   }
 
   /**

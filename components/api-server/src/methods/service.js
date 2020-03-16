@@ -18,7 +18,7 @@ module.exports = function (api: API, logger: Logger, settings: ConfigAccess) {
 
   async function getServiceInfo(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {  
     if (! this.serviceInfo) {
-      this.serviceInfo = await settings.get('service').value;
+      this.serviceInfo = await settings.get('service').obj();
     }   
     result = _.merge(result, this.serviceInfo);
     return next();

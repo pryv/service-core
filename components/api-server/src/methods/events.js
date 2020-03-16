@@ -32,12 +32,12 @@ const typeRepo = new TypeRepository();
  */
 module.exports = function (
   api, userEventsStorage, userEventFilesStorage, usersStorage,
-  authSettings, eventTypesSettings, notifications, logging,
+  authSettings, eventTypesUrl, notifications, logging,
   auditSettings, updatesSettings,
 ) {
 
   // Update types and log error
-  typeRepo.tryUpdate(eventTypesSettings)
+  typeRepo.tryUpdate(eventTypesUrl)
     .catch((err) => logging.getLogger('typeRepo').warn(err));
     
   const logger = logging.getLogger('methods/events');

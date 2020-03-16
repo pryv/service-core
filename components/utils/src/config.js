@@ -3,7 +3,8 @@ var convict = require('convict'),
     fs = require('fs'),
     path = require('path'),
     toString = require('./toString'),
-    _ = require('lodash');
+    _ = require('lodash'), 
+    ServiceInfo = require('./config/ServiceInfo');
 
 var config = module.exports = {};
 
@@ -18,13 +19,41 @@ var formats = config.formats = {
  * Base settings schema. Extend at will.
  */
 config.schema = {
+  serviceInfoUrl: {
+    format: String,
+    default: 'https://reg.pryv.me/service/info',
+  },
   service: {
-    'eventTypes': {
-      format: String
+    access: {
+      format: String,
+    },
+    api: {
+      format: String,
+    },
+    serial: {
+      format: String,
     },
     register: {
-      format: String
-    }
+      format: String,
+    },
+    name: {
+      format: String,
+    },
+    home: {
+      format: String,
+    },
+    support: {
+      format: String,
+    },
+    terms: {
+      format: String,
+    },
+    eventTypes: {
+      format: String,
+    },
+    assets: {
+      format: Object,
+    },
   },
   env: {
     format: [ 'production', 'development', 'test' ],
@@ -47,6 +76,11 @@ config.schema = {
     format: Boolean,
     default: false,
     doc: 'If `true`, prints the configuration settings actually used to the console at load time'
+  },
+  domain: {
+    format: String,
+    default: 'pryv.li',
+    doc: 'The fully qualified domain name associated to the Pryv.io platform',
   },
   reporting: {
     licenseName: {
@@ -75,9 +109,10 @@ config.schema = {
       doc: 'Url to send the report. Should never be overriden except in the test-suite.'
     },
     optOut: {
-      format: Boolean,
-      default: false,
-      doc: 'Set to true to disable daily reporting to pryv.com' +
+      format: String,
+      default: 'false',
+      env: 'reporting_optOut',
+      doc: 'Set to \'true\' to disable daily reporting to pryv.com' +
       'This parameter is meant to be set as an environment variable in the \'run-pryv\' script.',
     },
   },
@@ -272,6 +307,14 @@ config.load = function (configDefault) {
   return settings;
 };
 
+
+async function setupWithServiceInfo(configDefault) {
+  const instance = this.setup(configDefault);
+  await ServiceInfo.addToConvict(instance);
+  return instance;
+}
+config.setupWithServiceInfo = setupWithServiceInfo;
+
 // For internal use only: loads convict instance, then validates and returns it. 
 //
 function setup(configDefault) {
@@ -346,3 +389,4 @@ function getSettingArgName(keyPath) {
 function print(title, data) {
   console.log(title + ':\n' + JSON.stringify(data, null, 2)); // eslint-disable-line no-console
 }
+

@@ -81,14 +81,20 @@ class ApplicationLauncher {
   }
   
   async launch(injectSettings: Object) {
-    debug('launch', injectSettings);
+    try {
+      debug('launch', injectSettings);
+      const settings = await Settings.load(); 
     
-    const settings = await Settings.load(); 
-    const masked = new ConfigMask(injectSettings, settings);
-    const app = this.app = new Application(masked);
+      const masked = new ConfigMask(injectSettings, settings);
+      const app = this.app = new Application(masked);
     
-    const server = new Server(app); 
-    return server.start(); 
+      const server = new Server(app); 
+      return server.start(); 
+
+    } catch (e) { // this is necessary for debug process as Error is not forwarded correctly
+      console.error('Error during child_process.launch()', e);
+      throw e; // foward error
+    }
   }
 }
 
