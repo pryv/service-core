@@ -320,22 +320,24 @@ describe('permissions create-only level', () => {
         assert.equal(res.body.events.length, 0);
       });
 
-      it('should return an empty list when fetching "create-only" streams that are children of "read" streams', async function() {
+      it('should return events when fetching "create-only" streams that are children of "read" streams', async function() {
+        // TODO return empty list on v2
         const res = await server
           .request()
           .get(basePath)
           .set('Authorization', coWithReadParentToken);
         const events = res.body.events;
-        assert.equal(events.length, 0);      
+        assert.equal(events.length, 1);      
       });
 
-      it('should return an empty list when fetching "create-only" streams that are children of "contribute" streams', async function() {
+      it('should return events when fetching "create-only" streams that are children of "contribute" streams', async function() {
+        // TODO return empty list on v2
         const res = await server
           .request()
           .get(basePath)
           .set('Authorization', coWithContributeParentToken);
         const events = res.body.events;
-        assert.equal(events.length, 0);
+        assert.equal(events.length, 1);
       });
     });
 
