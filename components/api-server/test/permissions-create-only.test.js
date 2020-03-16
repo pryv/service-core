@@ -268,7 +268,7 @@ describe('permissions create-only level', () => {
         });
       });
 
-      describe('UPDATE /', function() {
+      describe('PUT /', function() {
         it('should forbid updating accesses', async function () {
           const res = await server.request()
             .put(reqPath(readAccessId))
@@ -278,7 +278,8 @@ describe('permissions create-only level', () => {
                 a: 'b',
               },
             });
-          assert.equal(res.status, 403);
+          // 404 instead of 403 for security reason, to not allow to enumerate accesses.
+          assert.equal(res.status, 404);
         });
       });
   
