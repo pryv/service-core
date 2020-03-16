@@ -960,7 +960,7 @@ describe('events', function () {
         streamId: 'unknown-stream-id'
       };
       request.post(basePath).send(data).end(function (res) {
-        console.log(res.text);
+        console.log('TTTTT', res.text);
         validation.checkError(res, {
           status: 400,
           id: ErrorIds.UnknownReferencedResource,

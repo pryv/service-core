@@ -194,46 +194,26 @@ describe('events muliple streamIds', function () {
         ], done);
     });
 
-    it('[6ZH8] must not allow running period event if the new event is multiple streams',
+    it('[5C8K] multiple streams events cannot call "start" (not support on single Activity Streams)',
       function (done) {
-        var data = { type: testType };
-
-        data.streamIds = [testData.streams[0].id, testData.streams[8].id];
-        async.series([
-          function addNew(stepDone) {
-            request.post(basePath).send(data).end(function (res) {
-              console.log(res.body);
-              validation.checkError(res, {
-                status: 400,
-                id: ErrorIds.InvalidOperation,
-                data: data
-              }, stepDone);
-            });
-          }
-        ], done);
-      });
-
-    it('[UL6Y] must not allow stop for event with multiple streamIds', function (done) {
-      var data = {
-        streamId: testData.streams[1].id,
-        duration: timestamp.duration('1h'),
-        type: testType,
-        tags: []
-      };
-      async.series([
-        function addNew(stepDone) {
-          request.post(basePath).send(data).end(function (res) {
-            should.not.exist(res.body.stoppedId);
-            console.log(res.body);
-            validation.checkError(res, {
-              status: 400,
-              id: ErrorIds.InvalidOperation,
-              data: { trashedReference: 'streamIds' }
-            }, stepDone);
+        var data = {
+          // 15 minutes ago to make sure the previous duration is set accordingly
+          time: timestamp.now('-15m'),
+          type: testType,
+          streamIds: [testData.streams[0].id, testData.streams[1].id],
+          tags: ['houba']
+        };
+        var createdId;
+ 
+        request.post(basePath + '/start').send(data).end(function (res) {
+          validation.checkError(res, {
+            status: 400,
+            id: ErrorIds.InvalidOperation
           });
-        }
-      ], done);
+          done();
+        });
     });
+
 
 
     it('[5NEZ] must return an error if one of the associated stream is unknown', function (done) {
@@ -243,7 +223,6 @@ describe('events muliple streamIds', function () {
         streamIds: [testData.streams[0].id, 'unknown-stream-id']
       };
       request.post(basePath).send(data).end(function (res) {
-        console.log(res.text);
         validation.checkError(res, {
           status: 400,
           id: ErrorIds.UnknownReferencedResource,
@@ -266,25 +245,21 @@ describe('events muliple streamIds', function () {
           // 15 minutes ago to make sure the previous duration is set accordingly
           time: timestamp.now('-15m'),
           type: testType,
-          streamIds: [testData.streams[0].id, testData.streams[8].id],
+          streamIds: [testData.streams[0].id, testData.streams[1].id],
           tags: ['houba']
         };
         var createdId;
 
-        async.series([
-          function addNewEvent(stepDone) {
-            request.post(path).send(data).end(function (res) {
-              validation.checkError(res, {
-                status: 400,
-                id: ErrorIds.InvalidOperation,
-                data: 'to be set'
-              }, stepDone);
-            });
-          }
-        ],
-          done
-        );
+        request.post(path).send(data).end(function (res) {
+          validation.checkError(res, {
+            status: 400,
+            id: ErrorIds.InvalidOperation
+          });
+          done();
+        });
       });
+
+
 
   });
 
@@ -311,19 +286,13 @@ describe('events muliple streamIds', function () {
             validation.sanitizeEvent(res.body.event);
 
             var expected = _.clone(original);
+            expected.modifiedBy = 'a_0';
             expected.streamIds = data.streamIds;
             validation.checkObjectEquality(res.body.event, expected);
 
             eventsNotifCount.should.eql(1, 'events notifications');
             stepDone();
           });
-        },
-        function verifyStoredItem(stepDone) {
-          storage.database.findOne(storage.getCollectionInfo(user), { _id: original.id }, {},
-            function (err, dbEvent) {
-              dbEvent.endTime.should.eql(data.time + data.duration);
-              stepDone();
-            });
         }
       ], done);
     });
@@ -397,7 +366,7 @@ describe('events muliple streamIds', function () {
               time: stopTime
             };
             request.post(path).send(data).end(function (res) {
-              console.log(res);
+              console.log('XXXXXX', res);
               validation.checkError(res, {
                 status: 400,
                 id: ErrorIds.InvalidOperation,

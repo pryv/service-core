@@ -286,7 +286,10 @@ module.exports = function (
     } else {
       if (!params.streamIds) {
         params.streamIds = [params.streamId];
-      }
+      } 
+    }
+    if (params.streamIds) {
+      params.streamId = null;
     }
     //delete params.streamId;
     next();
@@ -512,7 +515,14 @@ module.exports = function (
   }
 
   function updateEvent (context, params, result, next) {
+    
+     // in context of migration from streamId => streamIds;
+    if (context.content.streamIds) {
+      context.content.streamId = null
+    }
+
     userEventsStorage.updateOne(context.user, {id: context.content.id}, context.content,
+      
       function (err, updatedEvent) {
         if (err) {
           return next(errors.unexpectedError(err));
@@ -698,6 +708,12 @@ module.exports = function (
     if (! isConcernedBySingleActivity(context)) {
       return process.nextTick(next);
     }
+
+    // forbid multiple stream events in single activity mode
+    if (params.streamIds.length > 1) {
+      return next(errors.invalidOperation('Events with multiple streamIds cannot use the single activity feature'));
+    }
+
     var query = {
       streamIds: {$in: context.getSingleActivityExpandedIds()},
       time: {'$gt': context.content.time},
@@ -743,6 +759,12 @@ module.exports = function (
 
     if (!isConcernedBySingleActivity(context)) {
       return process.nextTick(next);
+    }
+
+
+    // forbid multiple stream events in single activity mode
+    if (params.streamIds.length > 1) {
+      return next(errors.invalidOperation('Events with multiple streamIds cannot use the single activity feature'));
     }
     
 
@@ -796,6 +818,12 @@ module.exports = function (
         ! isPeriod(context.content)) {
       // marks do not affect periods
       return process.nextTick(next);
+    }
+
+
+    // forbid multiple stream events in single activity mode
+    if (params.streamIds.length > 1) {
+      return next(errors.invalidOperation('Events with multiple streamIds cannot use the single activity feature'));
     }
 
     var stopParams = {

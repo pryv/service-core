@@ -253,7 +253,7 @@ function checkObjectEquality(actual, expected) {
   assert.deepEqual(remaining, expectedRemaining);
 }
 
-function checkApproxTimeEquality(actual, expected, epsilon=1) {
+function checkApproxTimeEquality(actual, expected, epsilon=2) {
   const diff = (expected - actual);
   assert.isBelow(Math.abs(diff), epsilon);
 }
