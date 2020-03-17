@@ -4,11 +4,13 @@ const url = require('url');
 const fs = require('fs');
 const path = require('path');
 
-let serviceInfo = null;
+let serviceInfos = {};
 
 class ServiceInfo {
 
   static async loadFromUrl(serviceInfoUrl) {
+    if (serviceInfos[serviceInfoUrl]) return serviceInfos[serviceInfoUrl];
+
     if (serviceInfoUrl != null && serviceInfoUrl.startsWith('file://')) {
       const filePath = serviceInfoUrl.substring(7);
       const serviceCorePath = path.resolve(__dirname, '../../../../../');
@@ -37,8 +39,8 @@ class ServiceInfo {
       process.exit(2);
       return null;
     }
-    serviceInfo = result;
-    return serviceInfo;
+    serviceInfos[serviceInfoUrl] = result;
+    return serviceInfos[serviceInfoUrl];
   }
 
   static async addToConvict(convictInstance) {
