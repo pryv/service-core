@@ -673,60 +673,7 @@ describe('events', function () {
     });
 
 
-    it('[1GR7] must allow event in multiple streams', function (done) {
-      var data = {
-        time: timestamp.fromDate('2012-03-22T10:00'),
-        duration: timestamp.duration('55m'),
-        type: 'temperature/celsius',
-        content: 36.7,
-        streamIds: [testData.streams[8].id, testData.streams[1].id],
-        tags: [' patapoumpoum ', '   ', ''], // must trim and ignore empty tags
-        description: 'Test description',
-        clientData: {
-          testClientDataField: 'testValue'
-        },
-        // check if properly ignored
-        created: timestamp.now('-1h'),
-        createdBy: 'should-be-ignored',
-        modified: timestamp.now('-1h'),
-        modifiedBy: 'should-be-ignored'
-      };
-      var originalCount,
-        createdEventId,
-        created;
-
-      async.series([
-        function addNewEvent(stepDone) {
-          request.post(basePath).send(data).end(function (res) {
-            validation.check(res, {
-              status: 201,
-              schema: methodsSchema.create.result
-            });
-            created = timestamp.now();
-            createdEventId = res.body.event.id;
-            eventsNotifCount.should.eql(1, 'events notifications');
-            stepDone();
-          });
-        },
-        function verifyEventData(stepDone) {
-          storage.find(user, {}, null, function (err, events) {
-            var expected = _.clone(data);
-            expected.id = createdEventId;
-            expected.tags = ['patapoumpoum'];
-            expected.streamId = data.streamIds[0];
-            expected.created = expected.modified = created;
-            expected.createdBy = expected.modifiedBy = access.id;
-            var actual = _.find(events, function (event) {
-              return event.id === createdEventId;
-            });
-            validation.checkStoredItem(actual, 'event');
-            validation.checkObjectEquality(actual, expected);
-
-            stepDone();
-          });
-        }
-      ], done);
-    });
+ 
 
     it('[QSBV] must set the event\'s time to "now" if missing', function (done) {
       var data = {
@@ -960,7 +907,6 @@ describe('events', function () {
         streamId: 'unknown-stream-id'
       };
       request.post(basePath).send(data).end(function (res) {
-        console.log('TTTTT', res.text);
         validation.checkError(res, {
           status: 400,
           id: ErrorIds.UnknownReferencedResource,

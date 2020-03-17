@@ -300,7 +300,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
             { streamId: params.id }));
         }
 
-        userEventsStorage.find(context.user, { streamId: { $in: streamAndDescendantIds } },
+        userEventsStorage.find(context.user, {streamIds: { $in: streamAndDescendantIds }},
           { limit: 1 }, function (err, events) {
             if (err) {
               return stepDone(errors.unexpectedError(err));
@@ -322,7 +322,6 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         if (!hasLinkedEvents) {
           return stepDone();
         }
-
         if (params.mergeEventsWithParent) {
           async.series([
             function generateLogIfNecessary(subStepDone) {
@@ -330,7 +329,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
                 return subStepDone();
               }
               userEventsStorage.findStreamed(context.user,
-                { streamId: { $in: streamAndDescendantIds } }, null,
+                { streamIds: { $in: streamAndDescendantIds }}, null,
                 function (err, eventsStream) {
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));
@@ -360,8 +359,8 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
             },
             function updateStreamIds(subStepDone) {
               userEventsStorage.updateMany(context.user,
-                { streamId: { $in: streamAndDescendantIds }, headId: { $exists: false } },
-                { streamId: parentId }, function (err) {
+                { streamIds: { $in: streamAndDescendantIds }, headId: { $exists: false } },
+                { "streamIds.$": parentId }, function (err) {
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));
                   }
@@ -429,7 +428,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
                 // default: deletionMode='keep-nothing'
 
                 userEventsStorage.findStreamed(context.user,
-                  { streamId: { $in: streamAndDescendantIds } },
+                  { streamIds: { $in: streamAndDescendantIds } },
                   { projection: { id: 1 } },
                   function (err, eventsStream) {
                     if (err) {
@@ -458,7 +457,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
             function deleteEventsWithAttachments(subStepDone) {
 
               userEventsStorage.findStreamed(context.user,
-                { streamId: { $in: streamAndDescendantIds }, attachments: { $exists: true } },
+                { streamIds: { $in: streamAndDescendantIds }, attachments: { $exists: true } },
                 { projection: { id: 1 } }, function (err, eventsStream) {
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));
@@ -487,7 +486,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
             function deleteEvents(subStepDone) {
 
               userEventsStorage.delete(context.user,
-                { streamId: { $in: streamAndDescendantIds }, headId: { $exists: false } },
+                { streamIds: { $in: streamAndDescendantIds }, headId: { $exists: false } },
                 auditSettings.deletionMode, function (err) {
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));
@@ -500,7 +499,6 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         }
       },
       function deleteStreams(stepDone) {
-
         userStreamsStorage.delete(
           context.user,
           { id: { $in: streamAndDescendantIds } },

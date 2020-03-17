@@ -174,7 +174,9 @@ module.exports = function (
           {
             access: context.access,
             filesReadTokenSecret: authSettings.filesReadTokenSecret
-          })));
+          })
+          
+          ));
       next();
     });
   }
@@ -260,7 +262,6 @@ module.exports = function (
     stopPreviousPeriodIfNeeded,
     createEvent,
     createAttachments,
-    migrationToStreamIdsOUT,
     notify);
 
   /**
@@ -288,24 +289,7 @@ module.exports = function (
         params.streamIds = [params.streamId];
       } 
     }
-    if (params.streamIds) {
-      params.streamId = null;
-    }
-    //delete params.streamId;
-    next();
-  }
-
-  function migrationToStreamIdsOUT(context, params, result, next) {
-    // convert streamId to streamIds #streamIds
-    if (params.streamId && params.streamIds) {
-      if (params.streamIds.length > 1 || params.streamIds[0] !== params.streamId) {
-        throw new Error("Cannot mix different streamIds and streamId properties");
-      }
-    } else {
-      if (! params.streamId) {
-        params.streamId = params.streamIds[0];
-      }
-    }
+    delete params.streamId;
     next();
   }
 
@@ -428,7 +412,6 @@ module.exports = function (
     generateLogIfNeeded,
     updateAttachments,
     updateEvent,
-    migrationToStreamIdsOUT,
     notify);
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
@@ -912,7 +895,6 @@ module.exports = function (
   api.register('events.stop',
     commonFns.getParamsValidation(methodsSchema.stop.params),
     function (context, params, result, next) {
-      console.log('&&&&&&&&&&&&&&');
       // default time is now
       _.defaults(params, { time: timestamp.now() });
       if (params.id) {
@@ -928,9 +910,7 @@ module.exports = function (
               'Event "' + params.id + '" is not a running period event.'
             ));
           }
-          console.log('XXXXX', event.streamIds, event.streamIds.length);
           if (event.streamIds.length > 1) {
-            console.log('YYYYYY', event.streamIds, event.streamIds.length);
             return next(errors.invalidOperation(
               'Cannot stop Event "' + params.id + '" which is in multiple streams.'
             ));
@@ -990,7 +970,7 @@ module.exports = function (
     if (! event) { return process.nextTick(callback); }
  
     let ok = false; // ok if at least one stream is in contribute
-    for (let i = 0; i < event.streamId.length; i++) {
+    for (let i = 0; i < event.streamIds.length; i++) {
       if (context.canContributeToContext(event.streamId[i], event.tags)) {
         ok = true;
         break;

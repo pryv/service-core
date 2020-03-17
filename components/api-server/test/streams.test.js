@@ -637,6 +637,7 @@ describe('streams', function () {
   });
 
   describe('DELETE /<id>', function () {
+    this.timeout(5000);
 
     beforeEach(resetData);
 
@@ -764,7 +765,7 @@ describe('streams', function () {
             });
         },
         function verifyLinkedEvents(stepDone) {
-          eventsStorage.find(user, {streamId: parentStream.id}, null, function (err, linkedEvents) {
+          eventsStorage.find(user, {streamIds: parentStream.id}, null, function (err, linkedEvents) {
             _.map(linkedEvents, 'id').should.eql([
               testData.events[4].id,
               testData.events[3].id,
@@ -819,7 +820,6 @@ describe('streams', function () {
 
             deletedEvents.forEach(function (e) {
               const actual = _.find(events, {id: e.id});
-
               assert.approximately(
                 actual.deleted, deletionTime, 2, 
                 'Deletion time must be correct.');
@@ -832,8 +832,8 @@ describe('streams', function () {
             // this several times. 
             assertEventuallyTrue(
               () => ! fs.existsSync(dirPath), 
-              2, // second(s) 
-              'Event directory must be deleted', 
+              5, // second(s) 
+              'Event directory must be deleted' + dirPath, 
               stepDone
             );
           });

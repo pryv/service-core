@@ -76,7 +76,7 @@ describe('events muliple streamIds', function () {
         duration: timestamp.duration('55m'),
         type: 'temperature/celsius',
         content: 36.7,
-        streamIds: [testData.streams[8].id, testData.streams[1].id],
+        streamIds: [testData.streams[7].id, testData.streams[1].id],
         tags: [' patapoumpoum ', '   ', ''], // must trim and ignore empty tags
         description: 'Test description',
         clientData: {

@@ -75,6 +75,7 @@ function clearEndTime(event) {
 
 // #streamIds -- Should be removed at the end (Simple intergrity check)
 function streamIdsToDB(event) {
+  
   if (!event) {
     return event;
   }
@@ -83,7 +84,13 @@ function streamIdsToDB(event) {
       console.log("******** ZUT", event);
       throw new Error("Cannot mix different streamIds and streamId properties");
     }
+    delete event.streamId;
   } 
+  if (event.streamId) {
+    console.warn("Still cleaning some events");
+    event.streamIds = [event.streamId];
+    delete event.streamId;
+  }
   return event;
 }
 
@@ -92,18 +99,12 @@ function streamIdsFromDB(event) {
   if (!event) {
     return event;
   }
-  if (event.streamId && event.streamIds) {
-    if (event.streamIds.length > 1 || event.streamIds[0] !== event.streamId) {
-      console.log("******** ZUT", event);
-      throw new Error("Cannot mix different streamIds and streamId properties");
-    }
-  } else {
-    if (!event.streamId && event.streamIds) {
-      event.streamId = event.streamIds[0];
-    }
-    if (!event.streamIds && event.streamId) {
-      event.streamIds = [event.streamId];
-    }
+  if (event.streamId) {
+    console.log("******** ZUT", event);
+    throw new Error("I should not find anymore event with streamId");
+  }
+  if (event.streamIds && event.streamIds.length > 0 ) {
+    event.streamId = event.streamIds[0];
   }
   
   return event;
@@ -115,10 +116,6 @@ var indexes = [
     index: { time: 1 },
     options: {},
   },
-  {
-    index: { streamId: 1 },
-    options: {},
-  }, 
   {
     index: { streamIds: 1 },
     options: {},
@@ -216,6 +213,11 @@ Events.prototype.findDeletionsStreamed = function(
 
 Events.prototype.countAll = function(user, callback) {
   this.count(user, {}, callback);
+};
+
+Events.prototype.insertOne = function (user, event, callback) {
+  streamIdsFromDB(event);
+  Events.super_.prototype.insertOne.call(this, user, event, callback);
 };
 
 /**

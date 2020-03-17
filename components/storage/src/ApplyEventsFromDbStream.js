@@ -29,11 +29,16 @@ ApplyEventsFromDbStream.prototype._transform = function (event, encoding, callba
     if (event.deleted) {
       event.deleted = timestamp.fromDate(event.deleted);
     } 
-    
-    // #streamIds
-    if (! event.deleted) { 
-      event.streamIds = [event.streamId];
+
+    // migration to #streamIds
+    if (event.streamId) {
+      console.log("******** ZUT 3", event);
+      callback(new Error("I should not find anymore event with streamId"));
     }
+    if (event.streamIds && event.streamIds.length > 0) {
+      event.streamId = event.streamIds[0];
+    }
+    
 
     this.push(event);
     callback();
