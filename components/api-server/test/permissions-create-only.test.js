@@ -341,6 +341,16 @@ describe('permissions create-only level', () => {
       });
     });
 
+    describe('GET /:id', function () {
+      it('should forbid fetching an event when using a "create-only" permission', async function () {
+        const res = await server
+          .request()
+          .get(reqPath(createOnlyEventId))
+          .set('Authorization', createOnlyToken);
+        assert.equal(res.status, 403);
+      });
+    });
+
     describe('POST /', function() {
       it('should forbid creating events for out of scope streams', async function() {
         const params = {
