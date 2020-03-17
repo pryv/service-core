@@ -31,6 +31,7 @@ describe('events muliple streamIds', function () {
     testType = 'test/test',
     // these must be set after server instance started
     request = null,
+    requestA1 = null,
     access = null,
     filesReadTokenSecret = helpers.dependencies.settings.auth.filesReadTokenSecret;
 
@@ -49,6 +50,8 @@ describe('events muliple streamIds', function () {
       testData.resetStreams,
       server.ensureStarted.bind(server, helpers.dependencies.settings),
       function (stepDone) {
+        requestA1 = helpers.request(server.url);
+        requestA1.token = testData.accesses[1].token;
         request = helpers.request(server.url);
         request.login(user, stepDone);
       },
@@ -297,7 +300,7 @@ describe('events muliple streamIds', function () {
       ], done);
     });
 
-    it.skip('[4QZU] must not allow stream addition with not authorized streamId', function (done) {
+    it('[4QZU] must not allow stream addition with not authorized streamId', function (done) {
       var original = testData.events[0],
         time;
       var data = {
@@ -305,30 +308,12 @@ describe('events muliple streamIds', function () {
       };
       async.series([
         function update(stepDone) {
-          request.put(path(original.id)).send(data).end(function (res) {
-            time = timestamp.now();
-            validation.check(res, {
-              status: 200,
-              schema: methodsSchema.update.result
-            });
-
-            validation.checkFilesReadToken(res.body.event, access, filesReadTokenSecret);
-            validation.sanitizeEvent(res.body.event);
-
-            var expected = _.clone(original);
-            expected.streamIds = data.streamIds;
-            validation.checkObjectEquality(res.body.event, expected);
-
-            eventsNotifCount.should.eql(1, 'events notifications');
-            stepDone();
+          requestA1.put(path(original.id)).send(data).end(function (res) {
+            validation.checkError(res, {
+              status: 403,
+              id: ErrorIds.Forbidden
+            }, stepDone);
           });
-        },
-        function verifyStoredItem(stepDone) {
-          storage.database.findOne(storage.getCollectionInfo(user), { _id: original.id }, {},
-            function (err, dbEvent) {
-              dbEvent.endTime.should.eql(data.time + data.duration);
-              stepDone();
-            });
         }
       ], done);
     });
@@ -343,118 +328,6 @@ describe('events muliple streamIds', function () {
           }, done);
         });
     });
-  });
-
-
-
-  describe('POST /stop', function () {
-
-    beforeEach(resetEvents);
-
-    var path = basePath + '/stop';
-
-    it('[VE5U] must not allow /stop on multiple multiple streams events ',
-      function (done) {
-        var stopTime = timestamp.now('-5m'),
-          stoppedEvent = testData.events[9],
-          time;
-
-        async.series([
-          function stop(stepDone) {
-            var data = {
-              streamIds: [testData.streams[0].id, testData.streams[8].id],
-              time: stopTime
-            };
-            request.post(path).send(data).end(function (res) {
-              console.log('XXXXXX', res);
-              validation.checkError(res, {
-                status: 400,
-                id: ErrorIds.InvalidOperation,
-                data: 'to be set'
-              }, stepDone);
-            });
-          }
-        ], done);
-      });
-
-  });
-
-  describe('DELETE /<event id>/<file id>', function () {
-
-    beforeEach(resetEvents);
-
-    it.skip('[RD8Z] must allow deletion of an attachment in an multiple streams event with write access on all streams ', function (done) {
-      // WRITE IT
-      var event = testData.events[0];
-      var fPath = path(event.id) + '/' + event.attachments[0].id;
-      request.del(fPath).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.update.result
-        });
-
-        var updatedEvent = res.body.event;
-        validation.checkFilesReadToken(updatedEvent, access, filesReadTokenSecret);
-        validation.sanitizeEvent(updatedEvent);
-        var expected = _.clone(testData.events[0]);
-        expected.attachments = expected.attachments.slice();
-        // NOTE We cannot be sure that we still are at the exact same second that
-        // we were just now when we did the call. So don't use time here, test
-        // for time delta below. 
-        delete expected.modified;
-        expected.modifiedBy = access.id;
-        expected.attachments.shift();
-        validation.checkObjectEquality(updatedEvent, expected);
-
-        var time = timestamp.now();
-        should(updatedEvent.modified).be.approximately(time, 2);
-
-        var filePath = eventFilesStorage.getAttachedFilePath(user, event.id,
-          event.attachments[0].id);
-        fs.existsSync(filePath).should.eql(false, 'deleted file existence');
-
-        eventsNotifCount.should.eql(1, 'events notifications');
-
-        done();
-      });
-    });
-
-    it.skip('[RD9Z] must allow deletion of an attachment in an multiple streams event with write access on all streams ', function (done) {
-      // WRITE IT
-      var event = testData.events[0];
-      var fPath = path(event.id) + '/' + event.attachments[0].id;
-      request.del(fPath).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.update.result
-        });
-
-        var updatedEvent = res.body.event;
-        validation.checkFilesReadToken(updatedEvent, access, filesReadTokenSecret);
-        validation.sanitizeEvent(updatedEvent);
-        var expected = _.clone(testData.events[0]);
-        expected.attachments = expected.attachments.slice();
-        // NOTE We cannot be sure that we still are at the exact same second that
-        // we were just now when we did the call. So don't use time here, test
-        // for time delta below. 
-        delete expected.modified;
-        expected.modifiedBy = access.id;
-        expected.attachments.shift();
-        validation.checkObjectEquality(updatedEvent, expected);
-
-        var time = timestamp.now();
-        should(updatedEvent.modified).be.approximately(time, 2);
-
-        var filePath = eventFilesStorage.getAttachedFilePath(user, event.id,
-          event.attachments[0].id);
-        fs.existsSync(filePath).should.eql(false, 'deleted file existence');
-
-        eventsNotifCount.should.eql(1, 'events notifications');
-
-        done();
-      });
-    });
-
   });
 
   describe('DELETE /<id>', function () {
