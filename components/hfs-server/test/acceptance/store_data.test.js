@@ -1142,7 +1142,7 @@ describe('Storing data in a HF series', function() {
         event = event.attrs;
       });
 
-      it('should work', async () => {
+      it('[YCGZ] should work', async () => {
         const res = await server
           .request()
           .post(`/${userId}/events/${event.id}/series`)

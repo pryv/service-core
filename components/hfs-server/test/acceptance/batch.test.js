@@ -294,7 +294,7 @@ describe('Storing BATCH data in a HF series', function() {
         event = event.attrs;
       });
 
-      it('should work', async () => {
+      it('[ATAH] should work', async () => {
         const res = await server
           .request()
           .post(`/${userId}/series/batch`)

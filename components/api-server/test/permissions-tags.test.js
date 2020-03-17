@@ -66,7 +66,7 @@ describe('Access permissions - Tags', function () {
       access = access.attrs;
     });
 
-    it('should not be allowed to create tag-only accesses', async function () {
+    it('[QA3G] should not be allowed to create tag-only accesses', async function () {
       const res = await server
         .request()
         .post(basePath)
@@ -85,7 +85,7 @@ describe('Access permissions - Tags', function () {
       assert.equal(res.status, 403);
     });
 
-    it('should not be able to add tags even if a subset of streams are kept (although illogic, keeping this since we drop tags soon)', async function () {
+    it('[HT0Z] should not be able to add tags even if a subset of streams are kept (although illogic, keeping this since we drop tags soon)', async function () {
       const res = await server
         .request()
         .post(basePath)
@@ -127,7 +127,7 @@ describe('Access permissions - Tags', function () {
       access = access.attrs;
     });
 
-    it('should not be able to create accesses with additional tags', async function () {
+    it('[HL9C] should not be able to create accesses with additional tags', async function () {
       const res = await server
         .request()
         .post(basePath)
@@ -149,7 +149,7 @@ describe('Access permissions - Tags', function () {
       assert.equal(res.status, 403);
     });
 
-    it('should not be able to create stream-based accesses', async function () {
+    it('[88S2] should not be able to create stream-based accesses', async function () {
       const res = await server
         .request()
         .post(basePath)
@@ -197,7 +197,7 @@ describe('Access permissions - Tags', function () {
       access = access.attrs;
     });
 
-    it('should not be able to create tag-only accesses', async function () {
+    it('[TTUD] should not be able to create tag-only accesses', async function () {
       const res = await server
         .request()
         .post(basePath)
@@ -219,7 +219,7 @@ describe('Access permissions - Tags', function () {
       assert.equal(res.status, 403);
     });
 
-    it('should not be able to create accesses with a subset of streams and additional tags', async function () {
+    it('[4UZ1] should not be able to create accesses with a subset of streams and additional tags', async function () {
       const res = await server
         .request()
         .post(basePath)
@@ -249,7 +249,7 @@ describe('Access permissions - Tags', function () {
       assert.equal(res.status, 403);
     });
 
-    it('should be able to create an access with a subset of streams and less tags', async function () {
+    it('[E6Y5] should be able to create an access with a subset of streams and less tags', async function () {
       const res = await server
         .request()
         .post(basePath)

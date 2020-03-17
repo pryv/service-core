@@ -170,7 +170,7 @@ describe('Querying data from a HF series', function() {
       });
   });
 
-  it('should refuse a query with a "create-only" token', async function () {
+  it('[XI4M] should refuse a query with a "create-only" token', async function () {
     const res = await server
       .request()
       .get(`/${userId}/events/${eventId}/series`)
