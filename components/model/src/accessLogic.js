@@ -266,9 +266,9 @@ const accessLogic = module.exports = {
    * returns true if this has a stream permission with `create-only` level
    */
   hasCreateOnlyPermission: function () {
-    if (this.streamPermissions.forEach(p => {
-      if (p.level === 'create-only') return true;
-    }));
+    for(permission of this.streamPermissions) {
+      if (permission.level === 'create-only') return true;
+    }
     return false;
   }
 };
