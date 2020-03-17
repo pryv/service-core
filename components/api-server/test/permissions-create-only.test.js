@@ -5,6 +5,8 @@ const chai = require('chai');
 const assert = chai.assert;
 const charlatan = require('charlatan');
 
+const testData = require('./helpers').data;
+
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
@@ -380,6 +382,8 @@ describe('permissions create-only level', () => {
       });
     });
 
+    
+
     describe('PUT /', function () {
       it('should forbid updating events for "create-only" streams', async function () {
         const params = {
@@ -410,6 +414,7 @@ describe('permissions create-only level', () => {
 
     describe('POST /stop', function () {
       it('should allow stopping events for "create-only" streams', async function () {
+        // this should be forbidden, but we keep it as-is since we deprecate events.stop very soon
         const res = await server
           .request()
           .post(`${basePath}/stop`)
@@ -417,6 +422,67 @@ describe('permissions create-only level', () => {
           .send({ id: createOnlyEventId });
         assert.equal(res.status, 200);
         assert.exists(res.body.stoppedId);
+      });
+    });
+
+    describe('attachments', function () {
+
+      let eventId, fileId;
+      before(async function () {
+        const res = await server.request()
+          .post(basePath)
+          .set('Authorization', createOnlyToken)
+          .field('event', JSON.stringify({
+            streamId: createOnlyStreamId,
+            type: 'picture/attached',
+          }))
+          .attach('document', testData.attachments.document.path,
+            testData.attachments.document.filename);
+        assert.equal(res.status, 201);
+        eventId = res.body.event.id;
+        fileId = res.body.event.fileId;
+      });
+      
+      // cleaning up explicitely as we are not using fixtures
+      after(async function () {
+        await server.request()
+          .delete(reqPath(eventId))
+          .set('Authorization', masterToken);
+        await server.request()
+          .delete(reqPath(eventId))
+          .set('Authorization', masterToken);
+      });
+      // not covering addAttachment as it calls events.update
+
+      describe('GET /events/{id}/{fileId}[/{fileName}]', function () {
+        it('should be forbidden', async function () {
+          const res = await server
+            .request()
+            .get(reqPath(eventId) + `/${fileId}`)
+            .set('Authorization', createOnlyToken);
+          assert.equal(res.status, 403);
+        });
+      });
+
+      describe('POST /events/{id}', function () {
+        it('should be forbidden', async function () {
+          const res = await server.request()
+            .post(reqPath(eventId))
+            .set('Authorization', createOnlyToken)
+            .attach('document', testData.attachments.document.path,
+              testData.attachments.document.filename + '-2');
+          assert.equal(res.status, 403);
+        });
+      });
+
+      describe('DELETE /events/{id}/{fileId}', function () {
+        it('should be forbidden', async function () {
+          const res = await server
+            .request()
+            .delete(reqPath(eventId) + `/${fileId}`)
+            .set('Authorization', createOnlyToken);
+          assert.equal(res.status, 403);
+        });
       });
     });
     
