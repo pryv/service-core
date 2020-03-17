@@ -258,6 +258,61 @@ describe('Storing BATCH data in a HF series', function() {
         assert.strictEqual(response.statusCode, 403);
       });
     });
+    describe('when the token has a "create-only" permission', () => {
+      let server;
+      before(async () => {
+        server = await spawnContext.spawn(); 
+      });
+      after(() => {
+        server.stop(); 
+      });
+      
+      const pryv = databaseFixture(database);
+      after(function () {
+        pryv.clean(); 
+      });
+      
+      let userId, streamId, createOnlyToken, event; 
+      before(async () => {
+        userId = cuid(); 
+        streamId = cuid(); 
+        createOnlyToken = cuid(); 
+        
+        const user = await pryv.user(userId, {});
+        user.access({
+          token: createOnlyToken, 
+          type: 'app',
+          permissions: [{
+            streamId: streamId,
+            level: 'create-only'
+          }]
+        });
+        const stream = await user.stream({id: streamId}, function () {});
+        event = await stream.event({
+          type: 'series:mass/kg'
+        });
+        event = event.attrs;
+      });
+
+      it('should work', async () => {
+        const res = await server
+          .request()
+          .post(`/${userId}/series/batch`)
+          .set('authorization', createOnlyToken)
+          .send({
+            format: 'seriesBatch',
+            data: [{
+              eventId: event.id,
+              data: {
+                format: 'flatJSON',
+                fields: ['deltaTime', 'value'],
+                points: [[1,1], [2,2]]
+              }
+            }]
+          });
+        assert.equal(res.status, 200);
+      });
+    });
     describe('when using a metadata updater stub', () => {
       // A stub for the real service. Tests might replace parts of this to do 
       // custom assertions.
