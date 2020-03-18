@@ -451,7 +451,6 @@ describe('Auditing', function () {
         async.series([
           function updateEventOnce(stepDone) {
             request.put(pathToEvent(eventWithNoHistory.id)).send(updateData).end(function (res) {
-              console.log('XXXX', res.body);
               validation.check(res, {
                 status: 200,
                 schema: eventsMethodsSchema.update.result

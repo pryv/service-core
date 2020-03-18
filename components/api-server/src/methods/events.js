@@ -400,6 +400,8 @@ module.exports = function (
 
   // -------------------------------------------------------------------- UPDATE
 
+  
+
   api.register('events.update',
     commonFns.getParamsValidation(methodsSchema.update.params),
     commonFns.catchForbiddenUpdate(eventSchema('update'), updatesSettings.ignoreProtectedFields, logger),
@@ -499,11 +501,6 @@ module.exports = function (
 
   function updateEvent (context, params, result, next) {
     
-     // in context of migration from streamId => streamIds;
-    if (context.content.streamIds) {
-      context.content.streamId = null
-    }
-
     userEventsStorage.updateOne(context.user, {id: context.content.id}, context.content,
       
       function (err, updatedEvent) {

@@ -25,7 +25,7 @@ function Events(database) {
     updateToDB: [
       endTimeUpdate,
       converters.stateUpdate,
-      converters.getKeyValueSetUpdateFn('clientData'),
+      converters.getKeyValueSetUpdateFn('clientData')
     ],
     itemFromDB: [clearEndTime, converters.deletionFromDB, streamIdsFromDB],
   });
@@ -75,7 +75,6 @@ function clearEndTime(event) {
 
 // #streamIds -- Should be removed at the end (Simple intergrity check)
 function streamIdsToDB(event) {
-  
   if (!event) {
     return event;
   }
@@ -216,8 +215,11 @@ Events.prototype.countAll = function(user, callback) {
 };
 
 Events.prototype.insertOne = function (user, event, callback) {
-  streamIdsFromDB(event);
-  Events.super_.prototype.insertOne.call(this, user, event, callback);
+  Events.super_.prototype.insertOne.call(this, user, streamIdsToDB(event), callback);
+};
+
+Events.prototype.updateOne = function (user, query, updatedData, callback) {
+  Events.super_.prototype.updateOne.call(this, user, query, streamIdsToDB(updatedData), callback);
 };
 
 /**
