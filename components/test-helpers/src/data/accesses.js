@@ -153,22 +153,4 @@ module.exports = [
     calls: {},
     deleted: timestamp.now('-3y1d')
   },
-  {
-    id: 'a_8',
-    token: 'a_8_token',
-    name: 'token with create only',
-    type: 'shared',
-    permissions: [
-      {
-        streamId: streams[9].id,
-        level: 'create-only'
-      }
-    ],
-    created: timestamp.now('-4y'),
-    createdBy: 'test',
-    modified: timestamp.now('-4y'),
-    modifiedBy: 'test',
-    lastUsed: timestamp.now('-3y1d'),
-    calls: {}
-  }
 ];
