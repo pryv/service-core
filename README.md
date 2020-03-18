@@ -211,3 +211,14 @@ After running this command, in your shell, log out of your account and log back 
 Run `docker run hello-world` to check if it works.
 
 [reference](https://techoverflow.net/2017/03/01/solving-docker-permission-denied-while-trying-to-connect-to-the-docker-daemon-socket/)
+
+### Influxd "too many open files" error
+
+Delete your local influx DB files and reboot Influx DB: 
+
+```
+rm ~/.influxdb/data/*
+influxd
+```
+
+Or increase the number of authorized files using: `ulimit -n 1024` (or more if needed)

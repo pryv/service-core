@@ -5,6 +5,8 @@ const chai = require('chai');
 const assert = chai.assert;
 const charlatan = require('charlatan');
 
+const testData = require('./helpers').data;
+
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
@@ -158,7 +160,7 @@ describe('permissions create-only level', () => {
               .set('Authorization', createOnlyToken);
             accesses = res.body.accesses;
           });
-          it('should return an empty list', async function () {
+          it('[HOTO] should return an empty list', async function () {
             assert.exists(accesses);
             assert.equal(accesses.length, 0);
           });
@@ -168,7 +170,7 @@ describe('permissions create-only level', () => {
       describe('POST /', function () {
 
         describe('when using an access with a "manage" permission', function () {          
-          it('should forbid to create accesses with "create-only" permissions for tags', async function () {
+          it('[IBXP] should forbid to create accesses with "create-only" permissions for tags', async function () {
             const res = await server
               .request()
               .post(basePath)
@@ -192,7 +194,7 @@ describe('permissions create-only level', () => {
 
         describe('when using an access with a "create-only" permission', function () {
   
-          it('should allow to create an access with a "create-only" permissions', async function () {
+          it('[X4Z1] should allow to create an access with a "create-only" permissions', async function () {
             const res = await server.request()
               .post(basePath)
               .set('Authorization', masterToken)
@@ -208,7 +210,7 @@ describe('permissions create-only level', () => {
             const access = res.body.access;
             assert.exists(access);
           });
-          it('should forbid to create an access with a "read" level permission permission', async function () {
+          it('[FEGI] should forbid to create an access with a "read" level permission permission', async function () {
             const res = await server
               .request()
               .post(basePath)
@@ -227,7 +229,7 @@ describe('permissions create-only level', () => {
             assert.equal(res.status, 403);
             assert.notExists(res.body.access);
           });
-          it('should forbid to create an access with a "contribute" level permission', async function () {
+          it('[SL4P] should forbid to create an access with a "contribute" level permission', async function () {
             const res = await server
               .request()
               .post(basePath)
@@ -246,7 +248,7 @@ describe('permissions create-only level', () => {
             assert.equal(res.status, 403);
             assert.notExists(res.body.access);
           });
-          it('should forbid to create an access with a "manage" level permission', async function () {
+          it('[ZX1M] should forbid to create an access with a "manage" level permission', async function () {
             const res = await server
               .request()
               .post(basePath)
@@ -269,7 +271,7 @@ describe('permissions create-only level', () => {
       });
 
       describe('PUT /', function() {
-        it('should forbid updating accesses', async function () {
+        it('[1WXJ] should forbid updating accesses', async function () {
           const res = await server.request()
             .put(reqPath(readAccessId))
             .set('Authorization', createOnlyToken)
@@ -284,7 +286,7 @@ describe('permissions create-only level', () => {
       });
   
       describe('DELETE /', function () {
-        it('should forbid deleting accesses', async function () {
+        it('[G6IP] should forbid deleting accesses', async function () {
           const res = await server.request()
             .del(reqPath(readAccessId))
             .set('Authorization', createOnlyToken);
@@ -306,7 +308,7 @@ describe('permissions create-only level', () => {
     }
 
     describe('GET /', function() {
-      it('should return an empty list when fetching "create-only" streams', async function() {
+      it('[CKF3] should return an empty list when fetching "create-only" streams', async function() {
         const query = {
           streams: [createOnlyStreamId]
         };
@@ -320,7 +322,7 @@ describe('permissions create-only level', () => {
         assert.equal(res.body.events.length, 0);
       });
 
-      it('should return events when fetching "create-only" streams that are children of "read" streams', async function() {
+      it('[V4KJ] should return events when fetching "create-only" streams that are children of "read" streams', async function() {
         // TODO return empty list on v2
         const res = await server
           .request()
@@ -330,7 +332,7 @@ describe('permissions create-only level', () => {
         assert.equal(events.length, 1);      
       });
 
-      it('should return events when fetching "create-only" streams that are children of "contribute" streams', async function() {
+      it('[SYRW] should return events when fetching "create-only" streams that are children of "contribute" streams', async function() {
         // TODO return empty list on v2
         const res = await server
           .request()
@@ -341,8 +343,18 @@ describe('permissions create-only level', () => {
       });
     });
 
+    describe('GET /:id', function () {
+      it('[N61I] should forbid fetching an event when using a "create-only" permission', async function () {
+        const res = await server
+          .request()
+          .get(reqPath(createOnlyEventId))
+          .set('Authorization', createOnlyToken);
+        assert.equal(res.status, 403);
+      });
+    });
+
     describe('POST /', function() {
-      it('should forbid creating events for out of scope streams', async function() {
+      it('[0G8I] should forbid creating events for out of scope streams', async function() {
         const params = {
           type: 'test/test',
           streamId: streamOutId
@@ -356,7 +368,7 @@ describe('permissions create-only level', () => {
         assert.equal(res.status, 403);
       });
 
-      it('should allow creating events for "create-only" streams', async function() {
+      it('[F406] should allow creating events for "create-only" streams', async function() {
         const params = {
           type: 'test/test',
           streamId: createOnlyStreamId
@@ -370,8 +382,10 @@ describe('permissions create-only level', () => {
       });
     });
 
+    
+
     describe('PUT /', function () {
-      it('should forbid updating events for "create-only" streams', async function () {
+      it('[V0UO] should forbid updating events for "create-only" streams', async function () {
         const params = {
           content: 12
         };
@@ -387,7 +401,7 @@ describe('permissions create-only level', () => {
     });
     
     describe('DELETE /', function () {
-      it('should forbid deleting events for "create-only" streams', async function () {
+      it('[5OUT] should forbid deleting events for "create-only" streams', async function () {
         const res = await server
           .request()
           .del(reqPath(createOnlyEventId))
@@ -399,7 +413,8 @@ describe('permissions create-only level', () => {
     });
 
     describe('POST /stop', function () {
-      it('should allow stopping events for "create-only" streams', async function () {
+      it('[6VJF] should allow stopping events for "create-only" streams', async function () {
+        // this should be forbidden, but we keep it as-is since we deprecate events.stop very soon
         const res = await server
           .request()
           .post(`${basePath}/stop`)
@@ -407,6 +422,67 @@ describe('permissions create-only level', () => {
           .send({ id: createOnlyEventId });
         assert.equal(res.status, 200);
         assert.exists(res.body.stoppedId);
+      });
+    });
+
+    describe('attachments', function () {
+
+      let eventId, fileId;
+      before(async function () {
+        const res = await server.request()
+          .post(basePath)
+          .set('Authorization', createOnlyToken)
+          .field('event', JSON.stringify({
+            streamId: createOnlyStreamId,
+            type: 'picture/attached',
+          }))
+          .attach('document', testData.attachments.document.path,
+            testData.attachments.document.filename);
+        assert.equal(res.status, 201);
+        eventId = res.body.event.id;
+        fileId = res.body.event.fileId;
+      });
+      
+      // cleaning up explicitely as we are not using fixtures
+      after(async function () {
+        await server.request()
+          .delete(reqPath(eventId))
+          .set('Authorization', masterToken);
+        await server.request()
+          .delete(reqPath(eventId))
+          .set('Authorization', masterToken);
+      });
+      // not covering addAttachment as it calls events.update
+
+      describe('GET /events/{id}/{fileId}[/{fileName}]', function () {
+        it('[VTU4] should be forbidden', async function () {
+          const res = await server
+            .request()
+            .get(reqPath(eventId) + `/${fileId}`)
+            .set('Authorization', createOnlyToken);
+          assert.equal(res.status, 403);
+        });
+      });
+
+      describe('POST /events/{id}', function () {
+        it('[8J8O] should be forbidden', async function () {
+          const res = await server.request()
+            .post(reqPath(eventId))
+            .set('Authorization', createOnlyToken)
+            .attach('document', testData.attachments.document.path,
+              testData.attachments.document.filename + '-2');
+          assert.equal(res.status, 403);
+        });
+      });
+
+      describe('DELETE /events/{id}/{fileId}', function () {
+        it('[GY6M] should be forbidden', async function () {
+          const res = await server
+            .request()
+            .delete(reqPath(eventId) + `/${fileId}`)
+            .set('Authorization', createOnlyToken);
+          assert.equal(res.status, 403);
+        });
       });
     });
     
@@ -423,7 +499,7 @@ describe('permissions create-only level', () => {
     }
 
     describe('GET /', function () {
-      it('should only return streams for which permissions are defined', async function () {
+      it('[J12F] should only return streams for which permissions are defined', async function () {
         const res = await server
           .request()
           .get(basePath)
@@ -437,7 +513,7 @@ describe('permissions create-only level', () => {
     });
 
     describe('POST /', function () {
-      it('should forbid creating child streams in "create-only" streams', async function () {
+      it('[TFWF] should forbid creating child streams in "create-only" streams', async function () {
         const data = {
           name: charlatan.Lorem.word(),
           parentId: createOnlyStreamId
@@ -485,7 +561,7 @@ describe('permissions create-only level', () => {
     }
 
     describe('GET /', function () {
-      it('should return an empty list when fetching webhooks', async function () {
+      it('[5FHF] should return an empty list when fetching webhooks', async function () {
         const res = await server
           .request()
           .get(basePath)
@@ -496,7 +572,7 @@ describe('permissions create-only level', () => {
     });
 
     describe('CREATE /', function() {
-      it('should forbid creating webhooks', async function () {
+      it('[3AE9] should forbid creating webhooks', async function () {
         const res = await server
           .request()
           .post(basePath)

@@ -153,7 +153,7 @@ const accessLogic = module.exports = {
 
   canContributeToTag: function (tag) {
     const level = this.getTagPermissionLevel(tag);
-    return level && isHigherOrEqualLevel(level, 'contribute'); // put here or inside method isHigherOrEqualLevel
+    return level && isHigherOrEqualLevel(level, 'contribute');
   },
 
   canUpdateTag: function (tag) {

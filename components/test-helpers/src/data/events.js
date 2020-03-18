@@ -368,25 +368,7 @@ const events =  [
     modifiedBy: 'test'
   },
 
-  // create-only
-  {
-    id: getTestEventId(28),
-    streamId: streams[9].id,
-    time: timestamp.now('-3m'),
-    type: 'mass/kg',
-    content: 72,
-    duration: null,
-    description: 'simple event',
-    created: timestamp.now('-1h'),
-    createdBy: 'test',
-    modified: timestamp.now('-1h'),
-    modifiedBy: 'test'
-  }
-].map(function(event) { 
-  if (event.streamId) event.streamIds = [event.streamId]; 
-  return event});
-
-module.exports = events;
+];
 
 /**
  * Creates a cuid-like id (required event id format).

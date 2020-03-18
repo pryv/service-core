@@ -12,7 +12,8 @@ console.log('total tests', testsCount);
 console.log('tagged tests', taggedTests);
 
 function readDir(dirName) {
-  fs.readdirSync(dirName, { withFileTypes: true }).forEach(function (fileName) {
+  fs.readdirSync(dirName, { withFileTypes: true }).forEach(function (file) {
+    const fileName = file.name;
     const subPath = path.resolve(dirName, fileName);
     const stats = fs.statSync(subPath);
     if (stats.isDirectory()) {

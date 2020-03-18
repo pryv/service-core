@@ -212,7 +212,7 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
   constructor(context: UserContext, name: string, attrs: {}) {
     super(
       context, 
-      lodash.merge({id: name, username: name}, attrs));
+      lodash.merge({id: name, username: name, storageUsed: 0}, attrs));
   }
   
   stream(attrs: {}={}, cb: (FixtureStream) => void): Promise<mixed> {
