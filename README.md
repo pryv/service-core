@@ -214,4 +214,11 @@ Run `docker run hello-world` to check if it works.
 
 ### Influxd "too many open files" error
 
-delete your local influx DB files: `rm ~/.influxdb/data/*`
+Delete your local influx DB files and reboot Influx DB: 
+
+```
+rm ~/.influxdb/data/*
+influxd
+```
+
+Or increase the number of authorized files using: `ulimit -n 1024` (or more if needed)
