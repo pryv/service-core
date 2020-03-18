@@ -85,7 +85,8 @@ describe('Access permissions - Tags', function () {
       assert.equal(res.status, 403);
     });
 
-    it('[HT0Z] should not be able to add tags even if a subset of streams are kept (although illogic, keeping this since we drop tags soon)', async function () {
+    it('[HT0Z] should not be able to add tags even if a subset of streams are kept', async function () {
+      // TODO although illogic, keeping this since we drop tags soon
       const res = await server
         .request()
         .post(basePath)
