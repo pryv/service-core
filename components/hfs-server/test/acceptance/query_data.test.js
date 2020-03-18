@@ -26,25 +26,33 @@ describe('Querying data from a HF series', function() {
 
   // Set up a few ids that we'll use for testing. NOTE that these ids will
   // change on every test run.
-  let userId, streamId, eventId, accessToken; 
+  let userId, streamId, eventId, accessToken, createOnlyToken; 
   before(() => {
     userId = cuid(); 
     streamId = cuid(); 
     eventId = cuid(); 
     accessToken = cuid(); 
+    createOnlyToken = cuid(); 
   });
 
   // Build the fixture
-  before(() => {
-    return pryv.user(userId, {}, function (user) {
-      user.stream({id: streamId}, function (stream) {
-        stream.event({
-          id: eventId,
-          type: 'series:mass/kg'});
-      });
+  before(async () => {
+    const user = await pryv.user(userId, {});
+    const stream = await user.stream({id: streamId});
+    await stream.event({
+      id: eventId,
+      type: 'series:mass/kg'
+    });
 
-      user.access({token: accessToken, type: 'personal'});
-      user.session(accessToken);
+    await user.access({token: accessToken, type: 'personal'});
+    await user.session(accessToken);
+    await user.access({
+      token: createOnlyToken,
+      type: 'app',
+      permissions: [{
+        streamId: streamId,
+        level: 'create-only'
+      }]
     });
   });
   
@@ -160,6 +168,18 @@ describe('Querying data from a HF series', function() {
         const err = res.body.error;
         assert.strictEqual(err.id, ErrorIds.InvalidParametersFormat);
       });
+  });
+
+  it('[XI4M] should refuse a query with a "create-only" token', async function () {
+    const res = await server
+      .request()
+      .get(`/${userId}/events/${eventId}/series`)
+      .set('authorization', createOnlyToken)
+      .query({
+        fromDeltaTime: 0,
+        toDeltaTime: 100,
+      });
+    assert.equal(res.status, 403);
   });
 
 });

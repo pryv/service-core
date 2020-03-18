@@ -364,7 +364,8 @@ module.exports = [
     createdBy: 'test',
     modified: 0,
     modifiedBy: 'test'
-  }
+  },
+
 ];
 
 /**

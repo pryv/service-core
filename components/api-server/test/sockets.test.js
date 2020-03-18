@@ -16,6 +16,8 @@ const io = require('socket.io-client');
 // explicit require to benefit from static functions
 const should = require('should'); 
 const queryString = require('qs');
+const charlatan = require('charlatan');
+const superagent = require('superagent');
 
 const { context } = require('./test-helpers'); 
 const helpers = require('./helpers');
@@ -44,7 +46,6 @@ describe('Socket.IO', function () {
   function connect(namespace, queryParams) {
     const paramsWithNS = _.defaults({resource: namespace}, queryParams || {});
     const url = server.url + namespace + '?' + queryString.stringify(paramsWithNS);
-    
     const conn = io.connect(url, {
       'reconnect': false, 
       'force new connection': true});
@@ -170,7 +171,8 @@ describe('Socket.IO', function () {
         sortAscending: true,
         state: 'all',
         includeDeletions: true,
-        modifiedSince: -10000
+        modifiedSince: -10000,
+        limit: 1000
       };
       ioCons.con.emit('events.get', params, function (err, result) {
         validation.checkSchema(result, eventsMethodsSchema.get.result);
@@ -323,6 +325,58 @@ describe('Socket.IO', function () {
         return bluebird.fromCallback(
           (cb) => conn.emit('streams.create', params, cb));
       }
+    });
+  });
+
+  describe('when using an access with a "create-only" permission', function () {
+
+    it('[K2OO] must refuse a connection', function (done) {
+      let streamId, createOnlyToken;
+      async.series([
+        function (stepDone) {
+          superagent
+            .post(server.url + '/' + user.username + '/streams')
+            .set('Authorization', token)
+            .send({
+              id: charlatan.Lorem.word(),
+              name: charlatan.Lorem.word(),
+            })
+            .end(function (err, res) {
+              streamId = res.body.stream.id;
+              stepDone();
+            });
+        },
+        function (stepDone) {
+          superagent
+            .post(server.url + '/' + user.username + '/accesses')
+            .set('Authorization', token)
+            .send({
+              name: charlatan.Lorem.word(),
+              type: 'app',
+              permissions: [{
+                streamId: streamId,
+                level: 'create-only',
+              }]
+            })
+            .end(function (err, res) {
+              createOnlyToken = res.body.access.token;
+              stepDone();
+            });
+        },
+        function (stepDone) {
+          ioCons.con = connect(namespace, {auth: createOnlyToken});
+      
+          ioCons.con.once('connect', function () {
+            stepDone(new Error('Connecting should have failed'));
+          });
+        
+          ioCons.con.socket.once('error', function (err) {
+            console.log('got err', err);
+            // We expect failure, so we're done here. 
+            stepDone();
+          });
+        }
+      ], done);
     });
   });
   

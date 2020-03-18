@@ -5,6 +5,7 @@ const bluebird = require('bluebird');
 const timestamp = require('unix-timestamp');
 const chai = require('chai');
 const assert = chai.assert;
+const charlatan = require('charlatan');
 
 const helpers = require('./helpers');
 const { databaseFixture } = require('components/test-helpers');
@@ -311,6 +312,7 @@ describe('webhooks', () => {
         user.access({
           id: appAccessId1,
           type: 'app', token: appAccessToken1,
+          permissions: [{streamId: charlatan.Lorem.word(), level: 'read'}],
         });
         user.access({
           type: 'shared', token: sharedAccessToken,

@@ -152,5 +152,5 @@ module.exports = [
     lastUsed: timestamp.now('-3y1d'),
     calls: {},
     deleted: timestamp.now('-3y1d')
-  }
+  },
 ];

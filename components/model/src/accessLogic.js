@@ -10,9 +10,11 @@ var treeUtils = require('components/utils').treeUtils,
  */
 var PermissionLevels = {
   'read': 0,
+  'create-only': 1,
   'contribute': 1,
-  'manage': 2
+  'manage': 2,
 };
+
 Object.freeze(PermissionLevels);
 
 /**
@@ -112,36 +114,57 @@ const accessLogic = module.exports = {
   },
 
   canReadStream: function (streamId) {
-    var level = this.getStreamPermissionLevel(streamId);
+    const level = this.getStreamPermissionLevel(streamId);
+    if (level === 'create-only') return false;
+    return level && isHigherOrEqualLevel(level, 'read');
+  },
+
+  canListStream: function (streamId) {
+    const level = this.getStreamPermissionLevel(streamId);
     return level && isHigherOrEqualLevel(level, 'read');
   },
 
   canContributeToStream: function (streamId) {
-    var level = this.getStreamPermissionLevel(streamId);
+    const level = this.getStreamPermissionLevel(streamId);
     return level && isHigherOrEqualLevel(level, 'contribute');
   },
 
+  canUpdateStream: function (streamId) {
+    const level = this.getStreamPermissionLevel(streamId);
+    if (level === 'create-only') return false;
+    return this.canContributeToStream(streamId);
+  },
+
   canManageStream: function (streamId) {
-    var level = this.getStreamPermissionLevel(streamId || undefined);
-    return level && isHigherOrEqualLevel(level, 'manage');
+    const level = this.getStreamPermissionLevel(streamId || undefined);
+    if (level === 'create-only') return false;
+    return (level != null) && isHigherOrEqualLevel(level, 'manage');
   },
 
   canReadAllTags: function () {
-    return this.isPersonal() || !! this.getTagPermissionLevel('*');
+    return this.isPersonal() || !!this.getTagPermissionLevel('*');
   },
 
   canReadTag: function (tag) {
-    var level = this.getTagPermissionLevel(tag);
+    const level = this.getTagPermissionLevel(tag);
+    if (level === 'create-only') return false;
     return level && isHigherOrEqualLevel(level, 'read');
   },
 
   canContributeToTag: function (tag) {
-    var level = this.getTagPermissionLevel(tag);
+    const level = this.getTagPermissionLevel(tag);
     return level && isHigherOrEqualLevel(level, 'contribute');
   },
 
+  canUpdateTag: function (tag) {
+    const level = this.getTagPermissionLevel(tag);
+    if (level === 'create-only') return false;
+    return this.canContributeToTag(tag);
+  },
+
   canManageTag: function (tag) {
-    var level = this.getTagPermissionLevel(tag);
+    const level = this.getTagPermissionLevel(tag);
+    if (level === 'create-only') return false;
     return level && isHigherOrEqualLevel(level, 'manage');
   },
 
@@ -153,7 +176,7 @@ const accessLogic = module.exports = {
     // The account owner can do everything. 
     if (this.isPersonal()) return true;
     // Shared accesses don't manage anything. 
-    if (this.isShared()) return false; 
+    if (this.isShared()) return false;
     
     // assert: this.isApp()
 
@@ -188,7 +211,10 @@ const accessLogic = module.exports = {
       // The level of `this` must >= the level of candidate streams.
       const myLevel = myStreamPermission.level; 
       const candidateLevel = candidateStreamPermission.level; 
-      if (isLowerLevel(myLevel, candidateLevel)) return false; 
+
+      if (isLowerLevel(myLevel, candidateLevel) || myLevel === 'create-only') {
+        return false; 
+      }
 
       // continue looking for problems...
     }
@@ -234,8 +260,19 @@ const accessLogic = module.exports = {
       var permission = this.tagPermissionsMap[tag] || this.tagPermissionsMap['*'];
       return permission ? permission.level : null;
     }
-  }
+  },
 
+  /**
+   * returns true if this has a stream permission with `create-only` level
+   */
+  hasCreateOnlyPermission: function () {
+    if (this.streamPermissions == null) return false;
+
+    for(permission of this.streamPermissions) {
+      if (permission.level === 'create-only') return true;
+    }
+    return false;
+  }
 };
 
 function isHigherOrEqualLevel(permissionLevelA, permissionLevelB) {
@@ -251,3 +288,4 @@ function hasPermissions(access) {
     ((access.streamPermissions && access.streamPermissions.length > 0)
       || (access.tagPermissions && access.tagPermissions.length > 0));
 }
+

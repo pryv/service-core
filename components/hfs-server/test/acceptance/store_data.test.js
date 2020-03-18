@@ -1105,5 +1105,55 @@ describe('Storing data in a HF series', function() {
               [now-1, 3, 4, 5] ]));
       });
     });
+    describe('using a "create-only" permissions', () => {
+
+      before(async () => {
+        server = await spawnContext.spawn(); 
+      });
+      after(() => {
+        server.stop(); 
+      });
+      
+      const pryv = databaseFixture(database);
+      after(function () {
+        pryv.clean(); 
+      });
+      
+      let userId, streamId, createOnlyToken, event; 
+      before(async () => {
+        userId = cuid(); 
+        streamId = cuid(); 
+        createOnlyToken = cuid(); 
+        
+        debug('build fixture');
+        const user = await pryv.user(userId, {});
+        user.access({
+          token: createOnlyToken, 
+          type: 'app',
+          permissions: [{
+            streamId: streamId,
+            level: 'create-only'
+          }]
+        });
+        const stream = await user.stream({id: streamId}, function () {});
+        event = await stream.event({
+          type: 'series:mass/kg'
+        });
+        event = event.attrs;
+      });
+
+      it('[YCGZ] should work', async () => {
+        const res = await server
+          .request()
+          .post(`/${userId}/events/${event.id}/series`)
+          .set('authorization', createOnlyToken)
+          .send({
+            format: 'flatJSON',
+            fields: ['deltaTime', 'value'],
+            points: [[1,1], [2,2]]
+          });
+        assert.equal(res.status, 200);
+      });
+    });
   }); 
 });
