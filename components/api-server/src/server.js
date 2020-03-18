@@ -297,8 +297,8 @@ class Server {
     // Check if the optOut environment variable is set to 1.
     // If it is, don't collect data and don't send report
     let reportingSettings = this.settings.get('reporting').value;
-    if (reportingSettings.optOut) {
-      this.logger.info('Reporting opt-out is set to ' + reportingSettings.optOut + ', not reporting');
+    if (reportingSettings.optOut === 'true') {
+      this.logger.info('Reporting opt-out is set to true, not reporting');
       return;
     }
 
@@ -333,14 +333,10 @@ class Server {
 
   async collectClientData(): Object {
     const usersStorage = this.application.storageLayer.users;
-    const POOL_USERNAME_PREFIX = 'pool@';
-    const POOL_REGEX = new RegExp( '^'  + POOL_USERNAME_PREFIX);
-
-    let numUser = await bluebird.fromCallback(cb => {
-      usersStorage.count({ username: { $regex: POOL_REGEX } }, cb);
+    let numUsers = await bluebird.fromCallback(cb => {
+      usersStorage.count({}, cb);
     });
-
-    return {numUser: numUser};
+    return {numUsers: numUsers};
   }
 
   async collectHostname(): Object {

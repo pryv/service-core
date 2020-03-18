@@ -4,70 +4,87 @@ require('./test-helpers');
 const httpServer = require('./support/httpServer');
 const awaiting = require('awaiting');
 const assert = require('chai').assert;
+const hostname = require('os').hostname;
+const cuid = require('cuid');
 
-const { context } = require('./test-helpers');
+const { databaseFixture } = require('components/test-helpers');
+const { produceMongoConnection, context } = require('./test-helpers');
+
 let server;
 let reportHttpServer;
 let infoHttpServer;
-let reportMock;
-let serviceInfoMock;
-const infoHttpServerPort = 5123;
-const reportHttpServerPort = 4001;
+const INFO_HTTP_SERVER_PORT = 5123;
+const REPORT_HTTP_SERVER_PORT = 4001;
+const CORE_ROLE = 'core';
 const customSettings = {
+  domain: 'test.pryv.com',
   reporting: {
-    url: 'http://127.0.0.1:' + reportHttpServerPort + '/reports',
-    optOut: false
+    url: 'http://localhost:' + REPORT_HTTP_SERVER_PORT + '/reports',
+    optOut: false,
+    licenseName: 'pryv.io-test-license',
+    templateVersion: '1.0.0',
+    hostname: hostname(),
   }
 };
+const monitoringUsername = cuid();
+const monitorToken = cuid();
 
 const Promise = require('bluebird');
 
 describe('service-reporting', () => {
 
-  describe('POST report on service-reporting (started)', () => {
-    beforeEach(async () => {
-      reportMock = {
-        licenseName: 'pryv.io-test-license',
-        role: 'core',
-        templateVersion: '1.0.0',
-        hostname: 'tests'
-      };
+  let mongoFixtures;
+  before(async function() {
+    mongoFixtures = databaseFixture(await produceMongoConnection());
+  });
+  after(async () => {
+    await mongoFixtures.clean();
+  });
 
-      infoHttpServer = new httpServer('/service/info', 200, serviceInfoMock);
-      reportHttpServer = new httpServer('/reports', 200, reportMock);
-      await infoHttpServer.listen(infoHttpServerPort);
-      await reportHttpServer.listen(reportHttpServerPort);
+  before(async () => {
+    const user = await mongoFixtures.user(monitoringUsername);
+    user.access({
+      type: 'app', token: monitorToken,
+    });
+    await mongoFixtures.user(cuid());
+  });
+
+  describe('POST report on service-reporting (started)', () => {
+    before(async () => {
+
+      infoHttpServer = new httpServer('/service/info', 200);
+      reportHttpServer = new httpServer('/reports', 200);
+      await infoHttpServer.listen(INFO_HTTP_SERVER_PORT);
+      await reportHttpServer.listen(REPORT_HTTP_SERVER_PORT);
 
       server = await context.spawn(customSettings);
     });
 
-    afterEach(async () => {
+    after(async () => {
       server.stop();
       reportHttpServer.close();
     });
 
-    it('[G1UG] server must start and successfully send a report when service-reporting is listening', async () => {
+    it('[G1UG] must start and successfully send a report when service-reporting is listening', async () => {
       await awaiting.event(reportHttpServer, 'report_received');
-      assert.isNotEmpty(server.baseUrl); // Check the server has booted
-
+      await assertServerStarted();
       const lastReport = reportHttpServer.getLastReport();
-      assert.equal(lastReport.licenseName, reportMock.licenseName);
+      const reportingSettings = customSettings.reporting;
+      assert.equal(lastReport.licenseName, reportingSettings.licenseName, 'missing or wrong licenseName');
+      assert.equal(lastReport.role, CORE_ROLE, 'missing or wrong role');
+      assert.equal(lastReport.templateVersion, reportingSettings.templateVersion, 'missing or wrong templatVersion');
+      assert.equal(lastReport.domain, reportingSettings.domain, 'missing or wrong domain');
+      assert.equal(lastReport.hostname, reportingSettings.hostname, 'missing or wrong hostname');
+      assert.isAbove(lastReport.clientData.numUsers, 0, 'missing or wrong numUsers');
     });
   });
 
   describe('POST opt-out and don\'t send report on service-reporting (started)', () => {
     beforeEach(async () => {
-      reportMock = {
-        licenseName: 'pryv.io-test-license',
-        role: 'core',
-        templateVersion: '1.0.0',
-        hostname: 'tests'
-      };
+      reportHttpServer = new httpServer('/reports', 200);
+      await reportHttpServer.listen(REPORT_HTTP_SERVER_PORT);
 
-      reportHttpServer = new httpServer('/reports', 200, reportMock);
-      await reportHttpServer.listen(reportHttpServerPort);
-
-      customSettings.reporting.optOut = true;
+      customSettings.reporting.optOut = 'true';
       server = await context.spawn(customSettings);
     });
 
@@ -84,11 +101,11 @@ describe('service-reporting', () => {
         .then(() => {
           throw new Error('Should not have received a report');
         })
-        .catch(error => {
+        .catch(async (error) => {
           if (error instanceof Promise.TimeoutError) {
             // Everything is ok, the promise should have timeouted
             // since the report has not been sent.
-            assert.isNotEmpty(server.baseUrl); // Check the server has booted
+            await assertServerStarted();
           } else {
             assert.fail(error.message);
           }
@@ -106,7 +123,14 @@ describe('service-reporting', () => {
     });
 
     it('[H55A] server must start when service-reporting is not listening', async () => {
-      assert.isNotEmpty(server.baseUrl); // Check the server has booted
+      await assertServerStarted();
     });
   });
 });
+
+async function assertServerStarted() {
+  // throws if the server is off
+  await server.request()
+        .get(`/${monitoringUsername}/events`)
+        .set('Authorizaiton', monitorToken);
+}
