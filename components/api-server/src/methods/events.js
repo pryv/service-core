@@ -252,8 +252,8 @@ module.exports = function (
   // -------------------------------------------------------------------- CREATE
 
   api.register('events.create',
-    migrationToStreamIdsIN,
     commonFns.getParamsValidation(methodsSchema.create.params),
+    migrationToStreamIdsParams,
     applyPrerequisitesForCreation,
     validateEventContentAndCoerce,
     checkExistingLaterPeriodIfNeeded,
@@ -276,20 +276,29 @@ module.exports = function (
     next();
   }
 
+  function migrationToStreamIdsParams(context, params, result, next) {
+    streamIdsToStreamId(params, next);
+  }
+  function migrationToStreamIdsContext(context, params, result, next) {
+    streamIdsToStreamId(context, next);
+  }
 
-  function migrationToStreamIdsIN(context, params, result, next) {
+  function streamIdsToStreamId(item, next) {
+    if (!item) {
+     return
+    }
     // convert streamId to streamIds #streamIds
-    if (params.streamId && params.streamIds) {
-      if (params.streamIds.length > 1 || params.streamIds[0] !== params.streamId) {
-        return next(errors.invalidOperation('Cannot mix different streamIds and streamId properties', 
-        {streamId: params.streamId, streamIds: params.streamIds}));
+    if (item.streamId && item.streamIds) {
+      if (item.streamIds.length > 1 || item.streamIds[0] !== item.streamId) {
+        return next(errors.invalidOperation('Cannot mix different streamIds and streamId properties',
+          { streamId: item.streamId, streamIds: item.streamIds }));
       }
     } else {
-      if (!params.streamIds) {
-        params.streamIds = [params.streamId];
-      } 
+      if (!item.streamIds && item.streamId) {
+        item.streamIds = [item.streamId];
+      }
     }
-    delete params.streamId;
+    delete item.streamId;
     next();
   }
 
@@ -400,21 +409,40 @@ module.exports = function (
 
   // -------------------------------------------------------------------- UPDATE
 
-  
+  function d(text) {
+    return function (context, params, result, next) {
+      return next();
+      const contentX = {
+        streamIds: context.content ? context.content.streamIds : '',
+        streamId: context.content ? context.content.streamId : ''
+      }
+      console.log('>>>>> ' + text + ' : ', { content: contentX, params: params });
+      next();
+    }
+  }
+
 
   api.register('events.update',
     commonFns.getParamsValidation(methodsSchema.update.params),
     commonFns.catchForbiddenUpdate(eventSchema('update'), updatesSettings.ignoreProtectedFields, logger),
-    migrationToStreamIdsIN,
+    migrationToStreamIdsParams,
+    d('A'),
     applyPrerequisitesForUpdate,
+    d('B'),
+    migrationToStreamIdsContext,
+    d('C'),
     validateEventContentAndCoerce,
     checkExistingLaterPeriodIfNeeded,
     checkOverlappedPeriodsIfNeeded,
     stopPreviousPeriodIfNeeded,
     generateLogIfNeeded,
+    d('F'),
     updateAttachments,
+    d('G'),
     updateEvent,
+    d('H'),
     notify);
+  
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
     
@@ -430,6 +458,9 @@ module.exports = function (
       if (! event) {
         return next(errors.unknownResource('event', params.id));
       }
+
+      // in the context of migration delete streamId that was added by findOne
+      delete event.streamId;
 
       // -- here we should check the "changes" on stream #streamIds
       for (let i = 0; i < event.streamIds.length ; i++) {
@@ -455,7 +486,6 @@ module.exports = function (
 
       context.oldContent = _.cloneDeep(event);
       context.content = _.extend(event, params.update);
-
       context.setStreamList(context.content.streamIds); 
       if (context.content.streamIds && ! checkStreams(context, next)) {
         return;
@@ -500,7 +530,6 @@ module.exports = function (
   }
 
   function updateEvent (context, params, result, next) {
-    
     userEventsStorage.updateOne(context.user, {id: context.content.id}, context.content,
       
       function (err, updatedEvent) {
@@ -690,7 +719,7 @@ module.exports = function (
     }
 
     // forbid multiple stream events in single activity mode
-    if (params.streamIds.length > 1) {
+    if (context.content.streamIds.length > 1) {
       return next(errors.invalidOperation('Events with multiple streamIds cannot use the single activity feature'));
     }
 
@@ -743,7 +772,8 @@ module.exports = function (
 
 
     // forbid multiple stream events in single activity mode
-    if (params.streamIds.length > 1) {
+    
+    if (context.content.streamIds.length > 1) {
       return next(errors.invalidOperation('Events with multiple streamIds cannot use the single activity feature'));
     }
     
@@ -802,7 +832,7 @@ module.exports = function (
 
 
     // forbid multiple stream events in single activity mode
-    if (params.streamIds.length > 1) {
+    if (context.content.streamIds.length > 1) {
       return next(errors.invalidOperation('Events with multiple streamIds cannot use the single activity feature'));
     }
 

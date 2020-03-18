@@ -22,7 +22,7 @@ module.exports = function (context, callback) {
             context.logError(err, 'retrieving Event collection');
             return stepDone(err);
           }
-
+          /** 
           const cursor = source.find({streamId});
           var batch = [];
           while (await cursor.hasNext()) {
@@ -41,7 +41,7 @@ module.exports = function (context, callback) {
             }
           };
           await destination.insertMany(batch);
-       
+          */
 
         });
       }

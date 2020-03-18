@@ -274,7 +274,7 @@ describe('events muliple streamIds', function () {
       var original = testData.events[0],
         time;
       var data = {
-        streamIds: [testData.streams[0].children[0].id, testData.streams[8].id],
+        streamIds: [testData.streams[1].id, testData.streams[7].id],
       };
       async.series([
         function update(stepDone) {
@@ -290,6 +290,8 @@ describe('events muliple streamIds', function () {
 
             var expected = _.clone(original);
             expected.modifiedBy = 'a_0';
+            expected.modified = time ;
+            expected.streamId = data.streamIds[0];
             expected.streamIds = data.streamIds;
             validation.checkObjectEquality(res.body.event, expected);
 

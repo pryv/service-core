@@ -19,7 +19,7 @@ import type { Logger } from 'components/utils';
  * @param {Object} logger The logger object (expected methods: debug, info, warn, error)
  */
 errorHandling.logError = function (error: Error, req: express$Request | Object, logger: Logger) {
-  //console.log(error);
+  // console.log('XXXXXX', error);
   var metadata = {};
   if (req) {
     metadata.context = {
