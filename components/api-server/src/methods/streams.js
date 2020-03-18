@@ -401,7 +401,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
               } else if (auditSettings.deletionMode === 'keep-authors') {
 
                 userEventsStorage.findStreamed(context.user,
-                  { streamId: { $in: streamAndDescendantIds } }, { projection: { id: 1 } },
+                  { streamIds: { $in: streamAndDescendantIds } }, { projection: { id: 1 } },
                   function (err, eventsStream) {
                     if (err) {
                       return subStepDone(errors.unexpectedError(err));
