@@ -368,7 +368,12 @@ const events =  [
     modifiedBy: 'test'
   },
 
-];
+].map(function (event) {
+  if (event.streamId) event.streamIds = [event.streamId];
+  return event
+});
+
+module.exports = events;
 
 /**
  * Creates a cuid-like id (required event id format).
