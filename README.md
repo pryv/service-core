@@ -55,7 +55,8 @@ Then just `yarn install`.
 | Task                              | Command                        |
 | --------------------------------- | ------------------------------ |
 | Setup                             | `yarn install`                 |
-| Create Distribution               | `yarn release`                 |
+| Create Distribution for release  | `yarn release`                 |
+| Create Dev. Distribution (with source Maps) | `yarn build-dev`               |
 | Recompile During Development      | `yarn watch`                   |
 | Run Tests                         | `yarn test`                    |
 | Run Integration Tests             | `yarn test-root`               |
@@ -73,7 +74,7 @@ Then just `yarn install`.
 
 ### Flowtype transpilation
 
-**First execution**: Run at least once `yarn release` before running the servers or tests. The source code needs to be transpiled from Flowtype to pure JS.
+**First execution**: Run at least once `yarn release` or `yarn build-dev ` before running the servers or tests. The source code needs to be transpiled from Flowtype to pure JS.
 
 During development, use `yarn watch` to recompile all files after each saved change. Look out for compilation errors that might prevent the distribution from being updated. 
 
@@ -100,6 +101,17 @@ This is something that should probably be a shell alias in your environment. I u
 
     $ alias pm="../../node_modules/.bin/mocha --compilers js:babel-register test/**/*.test.js"
 
+### Debug in VsCode
+
+Launch `yarn watch`
+
+Open terminal in VsCode (Terminal => New terminal)
+
+`cd dist/component/api-server`
+
+Add your breakpoints 
+
+`yarn test-debug`
 
 ## App Configuration
 

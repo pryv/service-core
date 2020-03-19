@@ -21,6 +21,8 @@ const PRESPAWN_LIMIT = 2;
 
 let basePort = 3001;
 
+let debugPortCount = 1;
+
 // Spawns instances of api-server for tests. Listening port is chosen at random; 
 // settings are either default or what you pass into the #spawn function. 
 //
@@ -61,7 +63,13 @@ class SpawnContext {
     
     while (this.pool.length < PRESPAWN_LIMIT) {
       debug('prespawn process');
-      const childProcess = child_process.fork(childPath);
+      const newArgv = process.execArgv.map((arg) => {
+        if (arg.startsWith('--inspect-brk=')) {
+          return '--inspect-brk=' + (Number(arg.split("=")[1]) + debugPortCount++);
+        }
+        return arg;
+      });
+      const childProcess = child_process.fork(childPath, null, {execArgv: newArgv});
       const proxy = new ProcessProxy(childProcess, this);
 
       debug(`prespawned child pid ${childProcess.pid}`);

@@ -5,6 +5,8 @@ const _ = require('lodash');
 const { ProjectVersion } = require('components/middleware/src/project_version');
 const settings = require('../../settings');
 
+import type { ConfigAccess } from './settings';
+
 type MetaInfo = {
   meta: {
     apiVersion: string, 
@@ -21,8 +23,8 @@ type MetaInfo = {
 
 // Memoised copy of the current project version. 
 let version: string = 'n/a';
-let serial: string = null;
-let config: ConfigAccess = null
+let serial: ?string = null;
+let config: ConfigAccess = null;
 
 // Initialise the project version as soon as we can. 
 const pv = new ProjectVersion(); 
@@ -46,7 +48,7 @@ module.exports = function <T: Object>(result: T): T & MetaInfo {
     result.meta = {};
   }
 
-  if (! serial && config) {
+  if (serial == null && config != null) {
     serial = config.get('service.serial').str();
   }
   
