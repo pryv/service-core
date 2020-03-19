@@ -23,7 +23,7 @@ type MetaInfo = {
 
 // Memoised copy of the current project version. 
 let version: string = 'n/a';
-let serial: string = 'n/a';
+let serial: ?string = null;
 let config: ConfigAccess = null;
 
 // Initialise the project version as soon as we can. 
