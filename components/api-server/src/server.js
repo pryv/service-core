@@ -342,7 +342,6 @@ class Server {
   async collectHostname(): Object {
     const hostname = await bluebird.fromCallback(
       (cb) => {
-        console.log('XXXXX >>>>', process.execArgv);
         child_process.exec('hostname', cb)
       });
     return hostname.replace(/\s/g,''); // Remove all white spaces

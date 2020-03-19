@@ -17,7 +17,7 @@
             "type": "node",
             "request": "launch",
         
-            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "program": "${workspaceFolder}/dist/node_modules/.bin/mocha",
             "env": {
                 "NODE_ENV": "test"
             },
@@ -25,10 +25,10 @@
                 "--no-timeouts",
                 "--colors",
                 "--reporter=dot",
-                "${workspaceFolder}/dist/components/api-server/test/**/*.test.js"
+                "test/**/*.test.js"
             ],
             "cwd": "${workspaceRoot}/dist/components/api-server/",
-           // "preLaunchTask": "release",
+            "preLaunchTask": "build-dev",
             "runtimeExecutable": null,
             "runtimeArgs": [
                 "--nolazy"

@@ -138,7 +138,6 @@ function InstanceManager(settings) {
       // stdio: 'inherit',
       env: process.env
     };
-    console.log('XXXXXX 3', process.execArgv);
     serverProcess = spawn(process.argv[0], args, options);
     var serverExited = false,
         exitCode = null;

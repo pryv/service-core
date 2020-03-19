@@ -211,8 +211,6 @@ module.exports = function (
    */
   function runCacheCleanupWorker(callback) {
     callback = (typeof callback === 'function') ? callback : function () {};
-
-    console.log('NNNNNNN', process.argv.slice(2))
     var worker = childProcess.fork(__dirname + '/../runCacheCleanup.js',
       process.argv.slice(2));
     workerRunning = true;
