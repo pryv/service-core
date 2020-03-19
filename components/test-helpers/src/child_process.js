@@ -49,7 +49,8 @@ class ChildProcess {
     }
     catch (err) {
       debug('handleParentMessage/catch', err.message);
-      this.respondToParent(['err', msgId, cmd, err]);
+      // Using JSON.stringify as message que does nos support Object (just strings)
+      this.respondToParent(['err', msgId, cmd, JSON.stringify({message: err.message, stack: err.stack})]);
     }
       
     debug('handleParentMessage/done', cmd);
