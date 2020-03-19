@@ -24,7 +24,7 @@ const supertest = require('supertest');
 
 require('date-utils');
 
-describe('events muliple streamIds', function () {
+describe('[MXEV] events muliple streamIds', function () {
 
   var user = testData.users[0],
     basePath = '/' + user.username + '/events',
@@ -66,7 +66,7 @@ describe('events muliple streamIds', function () {
   });
 
 
-  describe('POST /', function () {
+  describe('POST event/', function () {
 
     beforeEach(resetEvents);
 
@@ -125,56 +125,22 @@ describe('events muliple streamIds', function () {
       ], done);
     });
 
-    it.skip('[1G19] must not allow event in multiple streams, if one of the stream has not write access', function (done) {
+    it('[1G19] must not allow event in multiple streams, if one of the stream has not write access', function (done) {
       var data = {
         time: timestamp.fromDate('2012-03-22T10:00'),
         duration: timestamp.duration('55m'),
         type: 'temperature/celsius',
         content: 36.7,
-        streamIds: [testData.streams[8].id, testData.streams[1].id],
-        tags: [' patapoumpoum ', '   ', ''], // must trim and ignore empty tags
-        description: 'Test description',
-        clientData: {
-          testClientDataField: 'testValue'
-        },
-        // check if properly ignored
-        created: timestamp.now('-1h'),
-        createdBy: 'should-be-ignored',
-        modified: timestamp.now('-1h'),
-        modifiedBy: 'should-be-ignored'
+        streamIds: [testData.streams[7].id, testData.streams[1].id],
       };
-      var originalCount,
-        createdEventId,
-        created;
 
       async.series([
         function addNewEvent(stepDone) {
-          request.post(basePath).send(data).end(function (res) {
-            validation.check(res, {
-              status: 201,
-              schema: methodsSchema.create.result
-            });
-            created = timestamp.now();
-            createdEventId = res.body.event.id;
-            eventsNotifCount.should.eql(1, 'events notifications');
-            stepDone();
-          });
-        },
-        function verifyEventData(stepDone) {
-          storage.find(user, {}, null, function (err, events) {
-            var expected = _.clone(data);
-            expected.id = createdEventId;
-            expected.tags = ['patapoumpoum'];
-            expected.streamId = data.streamIds[0];
-            expected.created = expected.modified = created;
-            expected.createdBy = expected.modifiedBy = access.id;
-            var actual = _.find(events, function (event) {
-              return event.id === createdEventId;
-            });
-            validation.checkStoredItem(actual, 'event');
-            validation.checkObjectEquality(actual, expected);
-
-            stepDone();
+          requestA1.post(basePath).send(data).end(function (res) {
+            validation.checkError(res, {
+              status: 403,
+              id: ErrorIds.Forbidden
+            }, stepDone);
           });
         }
       ], done);
@@ -182,7 +148,7 @@ describe('events muliple streamIds', function () {
 
     it('[POIZ] must not allow mixing  different streamIds and streamId properties', function (done) {
         var data = { streamId: testData.streams[0].id, type: testType };
-        data.streamIds = [testData.streams[0].id, testData.streams[8].id];
+        data.streamIds = [testData.streams[1].id, testData.streams[7].id];
 
         async.series([
           function addNew(stepDone) {
@@ -236,7 +202,7 @@ describe('events muliple streamIds', function () {
 
   });
 
-  describe('POST /start', function () {
+  describe('POST event/start', function () {
 
     beforeEach(resetEvents);
 
@@ -266,7 +232,7 @@ describe('events muliple streamIds', function () {
 
   });
 
-  describe('PUT /<id>', function () {
+  describe('PUT event/<id>', function () {
 
     beforeEach(resetEvents);
 
@@ -332,52 +298,72 @@ describe('events muliple streamIds', function () {
     });
   });
 
-  describe('DELETE /<id>', function () {
+  describe('DELETE event/<id>', function () {
 
     beforeEach(resetEvents);
 
-    it.skip('[XT5U] must flag the multiple stream event as trashed, when write access on all streams', function (done) {
-      var id = testData.events[0].id,
-        time;
+    it('[XT5U] must flag the multiple stream event as trashed, when write access on all streams', function (done) {
+      var data = {
+        time: timestamp.fromDate('2012-03-22T10:00'),
+        duration: timestamp.duration('55m'),
+        type: 'temperature/celsius',
+        content: 36.7,
+        streamIds: [testData.streams[7].id, testData.streams[1].id],
+      };
 
-      request.del(path(id)).end(function (res) {
-        time = timestamp.now();
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.del.result
-        });
+      let event = null;
+      async.series([
+        function addNewEvent(stepDone) {
+          request.post(basePath).send(data).end(function (res) {
+            should.exist(res.body.event);
+            event = res.body.event;
+            stepDone();
+          });
+        },
+        function delEvent(stepDone) {
+          request.del(path(event.id)).end(function (res) {
+            time = timestamp.now();
+            validation.check(res, {
+              status: 200,
+              schema: methodsSchema.del.result
+            });
 
-        var trashedEvent = res.body.event;
-        trashedEvent.trashed.should.eql(true);
-        trashedEvent.modified.should.be.within(time - 1, time);
-        trashedEvent.modifiedBy.should.eql(access.id);
-        validation.checkFilesReadToken(trashedEvent, access, filesReadTokenSecret);
-
-        eventsNotifCount.should.eql(1, 'events notifications');
-        done();
-      });
+            var trashedEvent = res.body.event;
+            trashedEvent.trashed.should.eql(true);
+            eventsNotifCount.should.eql(2, 'events notifications');
+            stepDone();
+          });
+        }
+      ], done);
     });
 
-    it.skip('[AU5U] must forbid deletion of trashed even, when no write access on all streams', function (done) {
-      var id = testData.events[0].id,
-        time;
+    it('[AU5U] must forbid deletion of trashed even, when no write access on all streams', function (done) {
+      var data = {
+        time: timestamp.fromDate('2012-03-22T10:00'),
+        duration: timestamp.duration('55m'),
+        type: 'temperature/celsius',
+        content: 36.7,
+        streamIds: [testData.streams[7].id, testData.streams[1].id],
+      };
 
-      request.del(path(id)).end(function (res) {
-        time = timestamp.now();
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.del.result
-        });
-
-        var trashedEvent = res.body.event;
-        trashedEvent.trashed.should.eql(true);
-        trashedEvent.modified.should.be.within(time - 1, time);
-        trashedEvent.modifiedBy.should.eql(access.id);
-        validation.checkFilesReadToken(trashedEvent, access, filesReadTokenSecret);
-
-        eventsNotifCount.should.eql(1, 'events notifications');
-        done();
-      });
+      let event = null;
+      async.series([
+        function addNewEvent(stepDone) {
+          request.post(basePath).send(data).end(function (res) {
+            should.exist(res.body.event);
+            event = res.body.event;
+            stepDone();
+          });
+        },
+        function delEvent(stepDone) {
+          requestA1.del(path(event.id)).end(function (res) {
+            validation.checkError(res, {
+              status: 403,
+              id: ErrorIds.Forbidden
+            }, stepDone);
+          });
+        }
+      ], done);
     });
 
   });
