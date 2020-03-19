@@ -22,6 +22,9 @@ config.schema = {
   serviceInfoUrl: {
     format: String,
     default: 'https://reg.pryv.me/service/info',
+    doc: 'Can be either a URL such as https://something or a file path like file://path/to/my/file. ' +
+         'If it is a file, you can provide relative or absolute paths (file:///). Relative paths ' +
+         'will be resolved based on the root repository folder.'
   },
   service: {
     access: {
