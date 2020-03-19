@@ -1,5 +1,8 @@
 ## 1.4
 
+### 1.4.31
+ - Feature: create-only level for permissions
+
 ### 1.4.27
  - Feature : add reporting to startup
 
