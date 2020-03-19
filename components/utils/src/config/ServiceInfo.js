@@ -1,12 +1,16 @@
 
 const request = require('superagent');
 const fs = require('fs');
+const url = require('url');
 const path = require('path');
 
 let serviceInfo = {};
 
 const FILE_PROTOCOL = 'file://';
 const FILE_PROTOCOL_LENGTH = FILE_PROTOCOL.length;
+const SERVICE_INFO_PATH = '/service/info';
+const REGISTER_URL_CONFIG = 'services.register.url';
+const SERVICE_INFO_URL_CONFIG = 'serviceInfoUrl';
 
 class ServiceInfo {
 
@@ -50,7 +54,21 @@ class ServiceInfo {
   }
 
   static async addToConvict(convictInstance) {
-    const serviceInfoUrl = convictInstance.get('serviceInfoUrl');
+    let serviceInfoUrl;
+    try {
+      serviceInfoUrl = convictInstance.get(SERVICE_INFO_URL_CONFIG);
+    } catch (e) {
+      console.info(SERVICE_INFO_URL_CONFIG + ' not provided. Falling back to ' + REGISTER_URL_CONFIG);
+    }
+    if (serviceInfoUrl == null) {
+      try {
+        serviceInfoUrl = url.resolve(convictInstance.get(REGISTER_URL_CONFIG), SERVICE_INFO_PATH);
+      } catch (e) {
+        console.error('Configuration error: ' + REGISTER_URL_CONFIG + 
+        ' not provided. Please provide either ' + REGISTER_URL_CONFIG + 
+        ' or ' + SERVICE_INFO_URL_CONFIG + ' to boot service.');
+      }
+    }
     const serviceInfo = await ServiceInfo.loadFromUrl(serviceInfoUrl);
     convictInstance.set('service', serviceInfo);
     return;
