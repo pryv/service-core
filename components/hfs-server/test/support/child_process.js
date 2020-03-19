@@ -54,8 +54,8 @@ class ApplicationLauncher {
 
   async launch(injectSettings: {}) {
     const settings = new Settings(); 
-    settings.loadFromFile('config/dev.json');
-    settings.loadFromObject(injectSettings);
+    await settings.loadFromFile('config/development.json');
+    await settings.loadFromObject(injectSettings);
     
     debug(settings.get('http.port').num());
     

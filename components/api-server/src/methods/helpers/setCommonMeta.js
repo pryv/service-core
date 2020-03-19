@@ -3,6 +3,8 @@
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 const { ProjectVersion } = require('components/middleware/src/project_version');
+const settings = require('../../settings');
+
 import type { ConfigAccess } from './settings';
 
 type MetaInfo = {
@@ -21,12 +23,14 @@ type MetaInfo = {
 
 // Memoised copy of the current project version. 
 let version: string = 'n/a';
-let serial: string = 'n/a';
+let serial: ?string = null;
+let config: ConfigAccess = null;
 
 // Initialise the project version as soon as we can. 
 const pv = new ProjectVersion(); 
 (async () => {
   version = await pv.version();
+  config = await settings.load();
 })();
 
 /**
@@ -39,19 +43,15 @@ const pv = new ProjectVersion();
  *
  * @param result {Object} Current result. MODIFIED IN PLACE. 
  */
-module.exports = function <T: Object>(result: T, settings: ?ConfigAccess): T & MetaInfo {
+module.exports = function <T: Object>(result: T): T & MetaInfo {
   if (result.meta == null) {
     result.meta = {};
   }
 
-  // See warning in the doc above
-  if(settings) {
-    try {
-      serial = settings.get('serial').str();
-    }
-    catch(error){}
+  if (serial == null && config != null) {
+    serial = config.get('service.serial').str();
   }
-
+  
   _.extend(result.meta, {
     apiVersion: version,
     serverTime: timestamp.now(),

@@ -8,11 +8,9 @@ var config = require('components/utils').config,
 module.exports = config;
 
 _.merge(config.schema, {
-  eventTypes: {
-    sourceURL: {
-      format: String,
-      default: 'https://pryv.github.io/event-types/flat.json'
-    }
+  service: {
+    format: Object,
+    default: {}
   },
   audit: {
     forceKeepHistory: {
@@ -76,7 +74,7 @@ _.merge(config.schema, {
       url: {
         format: String,
         // TODO: update when simplified env implemented
-        default: 'https://reg.pryv.in'
+        default: undefined
       },
       key: {
         format: String,

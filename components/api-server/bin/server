@@ -13,7 +13,7 @@ const AirbrakeClient = require('airbrake-js');
   // Load settings asynchronously because we have to fetch
   // some values from register via an http-get request.
   const settings = await Settings.load();
-  setCommonMeta({}, settings);
+  setCommonMeta({}); // load settings to common meta
 
   // Construct application
   const app = new Application(settings);

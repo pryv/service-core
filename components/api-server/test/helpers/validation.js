@@ -126,6 +126,7 @@ function checkMeta(parentObject) {
 
   assert.match(meta.apiVersion, /^\d+\.\d+\.\d+/);
   assert.match(meta.serverTime, /^\d+\.?\d*$/);
+  expect(meta.serial).to.exist;
 }
 exports.checkMeta = checkMeta;
 

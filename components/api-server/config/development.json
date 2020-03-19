@@ -2,6 +2,7 @@
   "logs": {
     "prefix": "api::"
   }, 
+  "serviceInfoUrl": "file://test/service-info.json",
   "services": {
     "email": {
       "enabled": false

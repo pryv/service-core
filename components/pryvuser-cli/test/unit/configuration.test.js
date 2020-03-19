@@ -24,15 +24,15 @@ describe('Configuration', () => {
     });
   });
 
-  describe('with fileLocations1 fixture config', () => {
+  describe('with fileLocations1 fixture config', function () {
     let config; 
+    this.timeout(5000);
     beforeEach(async () => {
       config = await Configuration.load(fixturePath('fileLocations1'));
     });
 
     it('[0Y2F] has the right register url and key', async () => {  
       const reg = await config.registrySettings(); 
-
       assert.strictEqual(reg.url, 'https://reg.preview.pryv.tech');
       assert.strictEqual(reg.key, 'OVERRIDE ME');
     });

@@ -12,6 +12,10 @@ function produce() {
   };
 
   return convict({
+    serviceInfoUrl: {
+      format: String,
+      default: 'file://test/service-info.json',
+    },
     config: {
       doc: 'Path to the server configuration file.', 
       format: String, 
@@ -95,11 +99,6 @@ function produce() {
         format: 'nat', default: 9000, arg: 'http-port'
       }
     }, 
-    eventTypes: {
-      sourceURL: {
-        format: 'url', default: 'https://pryv.github.io/event-types/flat.json'
-      }
-    },
     nats: {
       uri: {
         format: String, default: NATS_CONNECTION_URI
