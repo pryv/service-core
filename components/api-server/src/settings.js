@@ -21,12 +21,7 @@ export interface ConfigAccess {
 
 export type { ConfigValue };
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 let settingsSingleton = null;
-let isLoading = false;
 
 // Handles loading and access to project settings. 
 //
@@ -45,21 +40,17 @@ class Settings implements ConfigAccess {
   // and the command line arguments. 
   //
   static async load(configLocation: ?string): Promise<Settings> {
-    while (isLoading) { await sleep(50); }
     if (settingsSingleton) {
       return settingsSingleton;
     }
-    isLoading = true;
     config.printSchemaAndExitIfNeeded();
     const ourConfig = await config.setupWithServiceInfo(configLocation);
     settingsSingleton = new Settings(ourConfig);
     settingsSingleton.maybePrint();
-    isLoading = false;
     return settingsSingleton;
   }
 
   constructor(ourConfig: ConvictConfig) {
-    this.isLoading = false;
     this.convict = ourConfig;
     this.registerLoaded = false;
     this.customAuthStepFn = this.loadCustomExtension();
