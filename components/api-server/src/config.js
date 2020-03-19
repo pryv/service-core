@@ -74,7 +74,7 @@ _.merge(config.schema, {
       url: {
         format: String,
         // TODO: update when simplified env implemented
-        default: 'https://reg.pryv.in'
+        default: undefined
       },
       key: {
         format: String,
