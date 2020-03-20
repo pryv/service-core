@@ -66,7 +66,7 @@ describe('events', function () {
 
     before(resetEvents);
 
-    it.skip('[WC8C] must return the last 20 non-trashed events (sorted descending) by default',
+    it('[WC8C] must return the last 20 non-trashed events (sorted descending) by default',
       function (done) {
         var additionalEvents = [];
         for (var i = 0; i < 50; i++) {
@@ -74,7 +74,7 @@ describe('events', function () {
             id: (100 + i).toString(),
             time: timestamp.now('-' + (48 + i) + 'h'),
             type: testType,
-            streamId: testData.streams[i % 2].id,
+            streamIds: [testData.streams[i % 2].id],
             created: timestamp.now('-' + (48 + i) + 'h'),
             createdBy: 'test',
             modified: timestamp.now('-' + (48 + i) + 'h'),
@@ -85,7 +85,7 @@ describe('events', function () {
         async.series([
           storage.insertMany.bind(storage, user, additionalEvents),
           function getDefault(stepDone) {
-            additionalEvents.map(function (event) { event.streamIds = [event.streamId]; return event });
+        
             request.get(basePath).end(function (res) {
               var allEvents = additionalEvents
                 .concat(validation.removeDeletionsAndHistory(testData.events))
@@ -96,6 +96,9 @@ describe('events', function () {
                       _.some(stream.children, containsTrashedEventStream);
                   }
                 });
+
+                // add streamId
+              allEvents.map(function (event) { event.streamId = event.streamIds[0]; return event });
               validation.check(res, {
                 status: 200,
                 schema: methodsSchema.get.result,

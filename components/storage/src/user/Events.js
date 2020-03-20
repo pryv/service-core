@@ -86,7 +86,7 @@ function streamIdsToDB(event) {
     delete event.streamId;
   } 
   if (event.streamId) {
-    console.warn("Still cleaning some events");
+    console.warn("Still cleaning some events IN");
     event.streamIds = [event.streamId];
     delete event.streamId;
   }

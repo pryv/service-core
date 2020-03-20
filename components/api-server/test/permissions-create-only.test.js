@@ -413,15 +413,13 @@ describe('permissions create-only level', () => {
     });
 
     describe('POST /stop', function () {
-      it('[6VJF] should allow stopping events for "create-only" streams', async function () {
-        // this should be forbidden, but we keep it as-is since we deprecate events.stop very soon
-        const res = await server
+      it('[6VJF] should not allow stopping events for "create-only" streams', async function () {
+         const res = await server
           .request()
           .post(`${basePath}/stop`)
           .set('Authorization', createOnlyToken)
           .send({ id: createOnlyEventId });
-        assert.equal(res.status, 200);
-        assert.exists(res.body.stoppedId);
+        assert.equal(res.status, 403);
       });
     });
 
