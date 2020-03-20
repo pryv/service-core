@@ -1,6 +1,7 @@
 const async = require('async');
 const toString = require('components/utils').toString;
-
+const storage = new (require('../user/Events'));
+const addUserIdToIndexIfNeeded = require('../Database').prototype.addUserIdToIndexIfNeeded;
 /**
  * v1.5.0:
  *
@@ -10,56 +11,67 @@ const toString = require('components/utils').toString;
  * db.events.find({ "streamId": { $exists: true, $ne: null } }); 
  */
 module.exports = function (context, callback) {
-  
-  migrateEvents(context, callback);
+  console.log('CRASH');
+  process.exit(0);
 
-  function migrateEvents(context, callback) {
-    context.logInfo('Migrating Events ...');
-    async.series([
-      function _updateEvents(stepDone) {
-        context.database.getCollection({ name: 'Events' }, function (err, eventsCol) {
-          if (err) {
-            context.logError(err, 'retrieving Event collection');
-            return stepDone(err);
-          }
-          /** 
-          const cursor = source.find({streamId});
-          var batch = [];
-          while (await cursor.hasNext()) {
-            let doc = await cursor.next();
-            doc.userId = user._id;
-            if (changeIdTo) {
-              doc[changeIdTo] = doc._id;
-              delete doc._id;
-              //doc._id = user._id + '.' + doc._id;
-            }
-            batch.push(doc);
-            if (batch.length > 10000) {
-              await destination.insertMany(batch);
-              batch = [];
-              console.log('.');
-            }
-          };
-          await destination.insertMany(batch);
-          */
+  let eventCollection = null;
+  const collectionInfo = addUserIdToIndexIfNeeded(storage.getCollectionInfo({ id: 'bob' }));
+  let eventsMigrated = 0;
 
-        });
-      }
-    ], function (err) {
-      if (err) {
-        context.logError(err, 'migrating user');
-        return callback(err);
-      }
-      context.logInfo('Successfully migrated user ' + toString.user(user) + '.');
-      callback();
-    });
-  }
-
-  function ignoreNSError(callback, err) {
-    if (! err || err.message.indexOf('ns not found') !== -1) {
-      return callback();
-    } else {
-      return callback(err);
+  async.series([
+    getCollection, 
+    dropIndex, 
+    createIndex,
+    migrateEvents,
+    function (done) {
+      console.log('V1.4.0 => v1.5.0 Migrated ' + eventsMigrated + ' events.');
+      done();
     }
+  ], callback);
+
+  function getCollection(done) {
+    context.database.getCollection({ name: 'events' }, function (err, collection) {
+      eventCollection = collection;
+      done(err);
+    });
+  };
+
+  function dropIndex(done) {
+    eventCollection.dropIndexes(done);
   }
+
+  function createIndex(done) {
+    async.mapSeries(collectionInfo.indexes, function (item, itemCallback) {
+      eventCollection.createIndex(item.index, item.options, itemCallback);
+    }, done);
+  }
+
+  async function migrateEvents(done) {
+    const cursor = await eventCollection.find({ streamId: { $exists: true, $ne: null } });
+    var requests = [];
+    while (await cursor.hasNext()) {
+      let document = await cursor.next();
+      eventsMigrated++;
+      requests.push({
+        'updateOne': {
+          'filter': { '_id': document._id },
+          'update': {
+            '$set': { 'streamIds': [document.streamId] },
+            '$unset': { 'streamId': ""}
+          }
+        }
+      });
+
+      if (requests.length === 1000) {
+        //Execute per 1000 operations and re-init
+        await eventCollection.bulkWrite(requests);
+        requests = [];
+      }
+    };
+
+    if (requests.length > 0) {
+      await eventCollection.bulkWrite(requests);
+    }
+  };
+
 };

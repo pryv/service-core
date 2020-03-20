@@ -60,11 +60,12 @@ Then just `yarn install`.
 | Recompile During Development      | `yarn watch`                   |
 | Run Tests                         | `yarn test`                    |
 | Run Integration Tests             | `yarn test-root`               |
-| Run ALL server processes          | `nf start`                     |
-| Run API server                    | `nf start api`                 |
-| Run API and Preview server        | `nf start api, previews`       |
-| Run Webhooks service              | `nf start webhooks`            |
-| Run Database                      | `nf start database`            |
+| Run ALL server processes          | `yarn nf start`                |
+| Run API server                    | `yarn nf start api`            |
+| Run API and Preview server        | `yarn nf start api, previews` |
+| Run Webhooks service              | `yarn nf start webhooks`       |
+| Run Database                      | `yarn nf start database`       |
+| DB migration process | `cd dist/component/api-server/ ; ./bin/migrate` |
 | Get a list of available processes | `cat Procfile`                  |
 | Run flow checker                   | `watch -c flow --color=always`  |
 
