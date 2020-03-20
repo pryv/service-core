@@ -88,7 +88,6 @@ module.exports = function (context, callback) {
 
   function migrateUser(user, userDone) {
     context.logInfo('Migrating user ' + toString.user(user) + '...');
-
     async.mapSeries(collectionsInfo, function (collectionInfo, collectionDone) {
       const collectionName = collectionInfo.name;
       const sourceName = user._id + '.' + collectionName;
@@ -96,7 +95,7 @@ module.exports = function (context, callback) {
       if (! collectionList[sourceName]) return collectionDone();
 
       const changeIdTo = collectionInfo.convertIdToItemId;
-
+     
 
       var source = null;
       var destination = null;
@@ -159,6 +158,9 @@ module.exports = function (context, callback) {
           while (await cursor.hasNext()) {
             let doc = await cursor.next();
             doc.userId = user._id;
+            if (collectionName === 'events' && doc.tags) {
+              doc.tags = doc.tags.slice(0, 20); // max 20 tags
+            }
             if (changeIdTo) {
               doc[changeIdTo] = doc._id;
               delete doc._id;
