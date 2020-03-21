@@ -11,8 +11,7 @@ const addUserIdToIndexIfNeeded = require('../Database').prototype.addUserIdToInd
  * db.events.find({ "streamId": { $exists: true, $ne: null } }); 
  */
 module.exports = function (context, callback) {
-  console.log('CRASH');
-  process.exit(0);
+  console.log('V1.4.0 => v1.5.0 Migration started ');
 
   let eventCollection = null;
   const collectionInfo = addUserIdToIndexIfNeeded(storage.getCollectionInfo({ id: 'bob' }));
@@ -20,11 +19,11 @@ module.exports = function (context, callback) {
 
   async.series([
     getCollection, 
-    dropIndex, 
-    createIndex,
     migrateEvents,
+    dropIndex,
+    createIndex,
     function (done) {
-      console.log('V1.4.0 => v1.5.0 Migrated ' + eventsMigrated + ' events.');
+      context.logInfo('V1.4.0 => v1.5.0 Migrated ' + eventsMigrated + ' events.');
       done();
     }
   ], callback);
@@ -32,18 +31,25 @@ module.exports = function (context, callback) {
   function getCollection(done) {
     context.database.getCollection({ name: 'events' }, function (err, collection) {
       eventCollection = collection;
-      done(err);
+      eventCollection.indexes({}, function (err, res) {
+        //console.log(res);
+        done(err);
+      });
+      
     });
   };
 
   function dropIndex(done) {
-    eventCollection.dropIndexes(done);
+    eventCollection.dropIndex('userId_1_streamIds_1', function (err, res) {
+      // ignore error
+      done();
+    });
   }
 
   function createIndex(done) {
-    async.mapSeries(collectionInfo.indexes, function (item, itemCallback) {
-      eventCollection.createIndex(item.index, item.options, itemCallback);
-    }, done);
+
+    context.logInfo('Creating new Index');
+    eventCollection.createIndex({ userId: 1, streamIds: 1 }, {background: true}, done);
   }
 
   async function migrateEvents(done) {
@@ -52,6 +58,7 @@ module.exports = function (context, callback) {
     while (await cursor.hasNext()) {
       let document = await cursor.next();
       eventsMigrated++;
+      context.logInfo('. ' + eventsMigrated + ' events');
       requests.push({
         'updateOne': {
           'filter': { '_id': document._id },
