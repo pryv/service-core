@@ -19,9 +19,9 @@ const initTracer = require('jaeger-client').initTracer;
 
 const { patch } = require('./tracing/mongodb_client');
 
-function createSettings(): Settings {
+async function createSettings(): Promise<Settings> {
   try {
-    return Settings.load(); 
+    return await Settings.load(); 
   } catch(err) {
     if (err.code == 'ENOENT') {
       console.error('Configuration file not found. '     // eslint-disable-line no-console
@@ -113,7 +113,7 @@ class Application {
   server: Server; 
   
   async init(settings?: Settings) {
-    this.settings = settings || createSettings(); 
+    this.settings = settings || await createSettings(); 
     setCommonMeta({}, this.settings); // Initialize ProjectVersion
     this.logFactory = createLogFactory(this.settings);
     
