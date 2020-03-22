@@ -13,9 +13,10 @@
     }
   }, 
   "mongodb": {
-    "host": "localhost",
+    "host": "localhost"
   }, 
   "influxdb": {
-    "host": "localhost",
-  }
+    "host": "localhost"
+  },
+  "serviceInfoUrl": "file://test/service-info.json"
 }
