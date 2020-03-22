@@ -51,19 +51,17 @@ module.exports = function (api: API, logging: Logger, storageLayer: StorageLayer
 
     let needRefeshForNextcall = true;
     let freshContext: MethodContext = null;
-    let access = null;
-    let streams = null;
     
     result.results = await bluebird.mapSeries(calls, executeCall);
     next();
 
 
+    // Reload streams tree since a previous call in this batch
+    // may have modified stream structure.
     async function refreshContext() {
       // Clone context to avoid potential side effects
       freshContext = _.cloneDeep(context);
-      access = freshContext.access;
-      // Reload streams tree since a previous call in this batch
-      // may have created a new stream.
+      const access = freshContext.access;
       await freshContext.retrieveStreams(storageLayer);
       if (! access.isPersonal()) access.loadPermissions(freshContext.streams);
     }
@@ -71,10 +69,10 @@ module.exports = function (api: API, logging: Logger, storageLayer: StorageLayer
     async function executeCall(call: ApiCall) {
       try {
         if (needRefeshForNextcall) {
-          await refreshContext()
+          await refreshContext();
         }
 
-        needRefeshForNextcall = ['streams.create', 'stream.update', 'stream.delete'].includes(call.method);
+        needRefeshForNextcall = ['streams.create', 'streams.update', 'streams.delete'].includes(call.method);
 
         // Perform API call
         const result: Result = await bluebird.fromCallback(
