@@ -9,6 +9,8 @@ const storage = require('components/storage');
 const Context = require('./context');
 const Settings = require('./Settings');
 const Server = require('./server'); 
+
+// Initialize ProjectVersion
 const setCommonMeta = require('components/api-server/src/methods/helpers/setCommonMeta');
 
 import type { LogFactory } from 'components/utils/src/logging';
@@ -114,7 +116,7 @@ class Application {
   
   async init(settings?: Settings) {
     this.settings = settings || await createSettings(); 
-    setCommonMeta({}, this.settings); // Initialize ProjectVersion
+    setCommonMeta({});
     this.logFactory = createLogFactory(this.settings);
     
     this.context = await createContext(this.settings, this.logFactory);
