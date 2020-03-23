@@ -1,6 +1,6 @@
 // @flow
 
-const addCommonMeta = require('./methods/helpers/setCommonMeta');
+const commonMeta = require('./methods/helpers/setCommonMeta');
 const MultiStream = require('multistream');
 const DrainStream = require('./methods/streams/DrainStream');
 const ArrayStream = require('./methods/streams/ArrayStream');
@@ -37,6 +37,11 @@ type Permission = {
   tag: string,
   level: PermissionLevel,
 };
+
+(async () => {
+  await commonMeta.loadSettings();
+})();
+
 
 
 // Result object used to store API call response body while it is processed.
@@ -148,7 +153,7 @@ class Result {
     delete this._private;
     res
       .status(successCode)
-      .json(addCommonMeta(this));
+      .json(commonMeta.setCommonMeta(this));
   }
   
   // Returns the content of the Result object in a JS object.
@@ -211,7 +216,7 @@ class ResultStream extends Transform {
   }
   
   _flush(callback) {
-    const thing = ', "meta": ' + JSON.stringify(addCommonMeta({}).meta);
+    const thing = ', "meta": ' + JSON.stringify(commonMeta.setCommonMeta({}).meta);
     this.push(thing + '}');
 
     callback();

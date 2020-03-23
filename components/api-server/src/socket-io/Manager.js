@@ -1,9 +1,13 @@
 // @flow
 
 const errorHandling = require('components/errors').errorHandling;
-const setCommonMeta = require('../methods/helpers/setCommonMeta');
+const commonMeta = require('../methods/helpers/setCommonMeta');
 const bluebird = require('bluebird');
 const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
+
+(async () => {
+  await commonMeta.loadSettings();
+})();
 
 const NatsSubscriber = require('./nats_subscriber');
     
@@ -382,7 +386,7 @@ class Connection {
       const obj = await bluebird.fromCallback(
         (cb) => result.toObject(cb));
         
-      return callback(null, setCommonMeta(obj));
+      return callback(null, commonMeta.setCommonMeta(obj));
     }
     catch (err) {
       errorHandling.logError(err, {
@@ -391,7 +395,7 @@ class Connection {
         body: params
       }, logger);
       return callback(
-        setCommonMeta({ error: errorHandling.getPublicErrorData(err) }));
+        commonMeta.setCommonMeta({ error: errorHandling.getPublicErrorData(err) }));
     }
     // NOT REACHED
   }

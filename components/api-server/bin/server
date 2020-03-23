@@ -5,7 +5,7 @@
 const Server = require('../src/server');
 const Application = require('../src/application');
 const Settings = require('../src/settings');
-const setCommonMeta = require('../src/methods/helpers/setCommonMeta');
+const loadCommonMeta = require('../src/methods/helpers/setCommonMeta').loadSettings;
 let logger, airbrake;
 const AirbrakeClient = require('airbrake-js');
 
@@ -13,7 +13,8 @@ const AirbrakeClient = require('airbrake-js');
   // Load settings asynchronously because we have to fetch
   // some values from register via an http-get request.
   const settings = await Settings.load();
-  setCommonMeta({}); // load settings to common meta
+  loadCommonMeta({}); // load settings to common meta
+  
 
   // Construct application
   const app = new Application(settings);

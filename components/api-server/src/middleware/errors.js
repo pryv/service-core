@@ -4,7 +4,11 @@ const errors = require('components/errors');
 const errorsFactory = errors.factory;
 const APIError = errors.APIError;
 const errorHandling = errors.errorHandling;
-const setCommonMeta = require('../methods/helpers/setCommonMeta');
+const commonMeta = require('../methods/helpers/setCommonMeta');
+
+(async () => {
+  await commonMeta.loadSettings();
+})();
 
 /** Error route handling.
  */
@@ -24,7 +28,7 @@ function produceHandleErrorMiddleware(logging: any) {
     res
       .status(error.httpStatus || 500)
       .json(
-        setCommonMeta(
+        commonMeta.setCommonMeta(
           {error: errorHandling.getPublicErrorData(error)}));
   };
 }
