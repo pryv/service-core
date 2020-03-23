@@ -578,66 +578,6 @@ describe('root', function() {
       }
     });
 
-    it('[TVPJ] should allow creation of a substream and include it in scope ' +
-      'return the results', async function () {
-        const streamId = 'batch-call-sub-streamId';
-        const calls = [
-          {
-            method: 'streams.create',
-            params: {
-              id: streamId,
-              parentId: stream.id,
-              name: 'batch call root stream',
-            },
-          },
-          {
-            method: 'events.create',
-            params: {
-              streamId: streamId,
-              type: 'note/txt',
-              content: 'Hi, i am an event in a batch call',
-              time: timestamp.now(),
-            },
-          }
-        ];
-        const res = await server
-          .request()
-          .post('/' + username)
-          .send(calls)
-          .set('authorization', sharedAccessToken);
-          
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.callBatch.result,
-        });
-
-        validation.checkMeta(res.body);
-        const results = res.body.results;
-
-        assert.equal(results.length, calls.length, 'method call results');
-        assert.exists(results[0].stream);
-        validation.checkObjectEquality(
-          results[0].stream,
-          _.defaults(
-            {
-              parentId: stream.id,
-            },
-            calls[0].params
-          )
-        );
-        assert.exists(results[1].event);
-        validation.checkObjectEquality(
-          results[1].event,
-          _.defaults(
-            {
-              tags: [],
-              id: results[1].event.id,
-            },
-            calls[1].params
-          )
-        );
-      });
-
     it('[WGVY] must return an error if the sent data is badly formatted', async function() {
       const calls = [
         {
