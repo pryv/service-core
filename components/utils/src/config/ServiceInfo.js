@@ -57,12 +57,17 @@ class ServiceInfo {
     let serviceInfoUrl;
     try {
       serviceInfoUrl = convictInstance.get(SERVICE_INFO_URL_CONFIG);
+      // HACK: in tests, convictInstance is convict(), with bin/server it is hfs/src/config
+      serviceInfoUrl = serviceInfoUrl.value || serviceInfoUrl;
     } catch (e) {
       console.info(SERVICE_INFO_URL_CONFIG + ' not provided. Falling back to ' + REGISTER_URL_CONFIG);
     }
     if (serviceInfoUrl == null) {
       try {
-        serviceInfoUrl = url.resolve(convictInstance.get(REGISTER_URL_CONFIG), SERVICE_INFO_PATH);
+        serviceInfoUrl = convictInstance.get(REGISTER_URL_CONFIG);
+        // HACK: in tests, convictInstance is convict(), with bin/server it is hfs/src/config
+        serviceInfoUrl = serviceInfoUrl.value || serviceInfoUrl;
+        serviceInfoUrl = url.resolve(serviceInfoUrl, SERVICE_INFO_PATH);
       } catch (e) {
         console.error('Configuration error: ' + REGISTER_URL_CONFIG + 
         ' not provided. Please provide either ' + REGISTER_URL_CONFIG + 

@@ -12,7 +12,7 @@ const BatchRequest = business.series.BatchRequest;
 const ApiConstants = require('../api_constants');
 const TracedOperations = require('./traced_operations');
 
-const setCommonMeta = require('components/api-server/src/methods/helpers/setCommonMeta');
+const setCommonMeta = require('components/api-server/src/methods/helpers/setCommonMeta').setCommonMeta;
 
 import type Context from '../../context';
 import type { InfluxRowType } from 'components/business'; 

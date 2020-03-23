@@ -8,9 +8,12 @@ function fixturePath(...args): string {
   return path.join(__dirname, './fixtures', ...args).normalize(); 
 }
   
-const Settings = require('../src/Settings');
-const settings = Settings.loadFromFile(fixturePath('config.json'));
+async function loadSettings() {
+  const Settings = require('../src/Settings');
+  return await Settings.loadFromFile(fixturePath('config.json'));
+}
+
 
 module.exports = {
-  settings: settings, 
+  loadSettings: loadSettings, 
 };

@@ -17,9 +17,13 @@ const testHelpers = require('components/test-helpers');
 const databaseFixture = testHelpers.databaseFixture;
 
 describe('Querying data from a HF series', function() {
-  const database = produceMongoConnection();
-  
-  const pryv = databaseFixture(database);
+
+  let database, pryv;
+  before(async function () {
+    database = await produceMongoConnection();
+    pryv = databaseFixture(database);
+  });
+
   after(function () {
     pryv.clean();
   });

@@ -9,6 +9,8 @@ const storage = require('components/storage');
 const Context = require('./context');
 const Settings = require('./Settings');
 const Server = require('./server'); 
+
+// Initialize ProjectVersion
 const setCommonMeta = require('components/api-server/src/methods/helpers/setCommonMeta');
 
 import type { LogFactory } from 'components/utils/src/logging';
@@ -19,9 +21,9 @@ const initTracer = require('jaeger-client').initTracer;
 
 const { patch } = require('./tracing/mongodb_client');
 
-function createSettings(): Settings {
+async function createSettings(): Promise<Settings> {
   try {
-    return Settings.load(); 
+    return await Settings.load(); 
   } catch(err) {
     if (err.code == 'ENOENT') {
       console.error('Configuration file not found. '     // eslint-disable-line no-console
@@ -113,8 +115,8 @@ class Application {
   server: Server; 
   
   async init(settings?: Settings) {
-    this.settings = settings || createSettings(); 
-    setCommonMeta({}, this.settings); // Initialize ProjectVersion
+    this.settings = settings || await createSettings(); 
+    setCommonMeta.loadSettings(this.settings);
     this.logFactory = createLogFactory(this.settings);
     
     this.context = await createContext(this.settings, this.logFactory);

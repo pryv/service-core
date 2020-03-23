@@ -43,8 +43,13 @@ type ErrorDocument = {
 }
 
 describe('Storing data in a HF series', function() {
-  const database = produceMongoConnection(); 
-  const influx = produceInfluxConnection(); 
+
+  let database, pryv;
+  before(async function () {
+    database = await produceMongoConnection();
+    pryv = databaseFixture(database);
+  });
+  const influx = produceInfluxConnection();
 
   describe('Use Case: Store data in InfluxDB, Verification on either half', function () {
     let server; 
@@ -56,7 +61,6 @@ describe('Storing data in a HF series', function() {
       server.stop(); 
     });
     
-    const pryv = databaseFixture(database);
     after(function () {
       pryv.clean(); 
     });
@@ -227,7 +231,6 @@ describe('Storing data in a HF series', function() {
       apiServer.stop();
     });
 
-    const pryv = databaseFixture(database);
     after(function () {
       pryv.clean();
     });
@@ -249,7 +252,10 @@ describe('Storing data in a HF series', function() {
       });
     });
 
-    const storageLayer = produceStorageLayer(database);
+    let storageLayer;
+    before(function () {
+      storageLayer = produceStorageLayer(database);
+    });
 
     // Tries to store `data` in an event with attributes `attrs`. Returns 
     // true if the whole operation is successful. 
@@ -727,7 +733,6 @@ describe('Storing data in a HF series', function() {
         server.stop(); 
       });
       
-      const pryv = databaseFixture(database);
       after(function () {
         pryv.clean(); 
       });
@@ -747,7 +752,10 @@ describe('Storing data in a HF series', function() {
         });
       });
       
-      const storageLayer = produceStorageLayer(database);
+      let storageLayer;
+      before(function () {
+        storageLayer = produceStorageLayer(database);
+      });
             
       // Tries to store `data` in an event with attributes `attrs`. Returns 
       // true if the whole operation is successful. 
@@ -889,8 +897,6 @@ describe('Storing data in a HF series', function() {
         server.stop(); 
       });
 
-      // Database fixture infrastructure
-      const pryv = databaseFixture(database);
       after(function () {
         pryv.clean(); 
       });
@@ -1030,8 +1036,6 @@ describe('Storing data in a HF series', function() {
         server.stop(); 
       });
 
-      // Database fixture infrastructure
-      const pryv = databaseFixture(database);
       after(function () {
         pryv.clean(); 
       });
@@ -1114,7 +1118,6 @@ describe('Storing data in a HF series', function() {
         server.stop(); 
       });
       
-      const pryv = databaseFixture(database);
       after(function () {
         pryv.clean(); 
       });

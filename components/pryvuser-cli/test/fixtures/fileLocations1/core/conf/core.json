@@ -1,4 +1,5 @@
 {
+  "serviceInfoUrl": "file://test/service-info.json",
   "env": "production",
   "http": {
     "ip": "0.0.0.0",

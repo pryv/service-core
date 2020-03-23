@@ -23,18 +23,19 @@ class Settings {
   /** Constructs and loads settings from the file configured in 'config_file', 
    * which - by default - points to 'hfs-server.json' in the current directory. 
    */
-  static load(): Settings {
+  static async load(): Promise<Settings> {
     const settings = new Settings(); 
     const configFilePath = settings.get('config').str(); 
     
-    settings.loadFromFile(configFilePath);
+    await settings.loadFromFile(configFilePath);
     
     return settings; 
   }
 
   /** Constructs and loads settings from the file indicated in `path`.
+   * uses directly convicts's .file()
    */
-  static loadFromFile(path: string): Settings {
+  static loadFromFile(path: string): Promise<Settings> {
     const settings = new Settings(); 
 
     settings.loadFromFile(path);
@@ -54,7 +55,7 @@ class Settings {
   // 
   async loadFromFile(path: string) {
     const config = this.config; 
-    config.loadFile(path);
+    await config.loadFile(path);
     await ServiceInfo.addToConvict(config);
   }
   

@@ -1,7 +1,7 @@
 // @flow
 
 const business = require('components/business');
-const setCommonMeta = require('components/api-server/src/methods/helpers/setCommonMeta');
+const setCommonMeta = require('components/api-server/src/methods/helpers/setCommonMeta').setCommonMeta;
 
 /** Represents a response in series format. 
  * 

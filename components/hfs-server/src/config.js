@@ -14,7 +14,6 @@ function produce() {
   return convict({
     serviceInfoUrl: {
       format: String,
-      default: 'file://test/service-info.json',
     },
     config: {
       doc: 'Path to the server configuration file.', 

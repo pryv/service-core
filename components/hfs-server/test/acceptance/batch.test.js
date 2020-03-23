@@ -32,7 +32,11 @@ type SeriesBatchEnvelope = {
 };
 
 describe('Storing BATCH data in a HF series', function() {
-  const database = produceMongoConnection(); 
+
+  let database;
+  before(async function () {
+    database = await produceMongoConnection(); 
+  });
   const influx = produceInfluxConnection(); 
 
   describe('Use Case: Store data in InfluxDB, Verification on either half', function () {
@@ -44,7 +48,10 @@ describe('Storing BATCH data in a HF series', function() {
       server.stop(); 
     });
     
-    const pryv = databaseFixture(database);
+    let pryv;
+    before(function () {
+      pryv = databaseFixture(database);
+    });
     after(function () {
       pryv.clean(); 
     });
@@ -150,7 +157,10 @@ describe('Storing BATCH data in a HF series', function() {
       server.stop(); 
     });
     
-    const pryv = databaseFixture(database);
+    let pryv;
+    before(function () {
+      pryv = databaseFixture(database);
+    });
     after(function () {
       pryv.clean(); 
     });
@@ -267,7 +277,10 @@ describe('Storing BATCH data in a HF series', function() {
         server.stop(); 
       });
       
-      const pryv = databaseFixture(database);
+      let pryv;
+      before(function () {
+        pryv = databaseFixture(database);
+      });
       after(function () {
         pryv.clean(); 
       });

@@ -4,12 +4,16 @@ const _ = require('lodash');
 
 const middleware = require('components/middleware');
 
-const setCommonMeta = require('../methods/helpers/setCommonMeta');
+const commonMeta = require('../methods/helpers/setCommonMeta');
 const methodCallback = require('./methodCallback');
 const Paths = require('./Paths');
 const getAuth = require('../../../middleware/src/getAuth');
     
 import type Application from '../application';
+
+(async () => {
+  await commonMeta.loadSettings();
+})();
 
 // Handlers for path roots at various places; handler for batch calls and 
 // access-info. 
@@ -57,7 +61,7 @@ module.exports = root;
 // 
 function rootIndex(req: express$Request, res) {
   const devSiteURL = 'https://api.pryv.com/';
-  const result = setCommonMeta({});
+  const result = commonMeta.setCommonMeta({});
   
   if (req.accepts('application/json')) {
     res.json(_.extend(result, {

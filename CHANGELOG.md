@@ -1,5 +1,11 @@
 ## 1.4
 
+### 1.4.32
+ Refactor: How service-info is used in core
+  - service-info can be loaded from file for dev
+  - eventTypes are loaded from service-info
+  - crash if no service-info 
+
 ### 1.4.31
  - Feature: create-only level for permissions
 

@@ -2,12 +2,12 @@
 
 // Tests that exercise auth checks that have been disabled in other tests. 
 
-/* global describe, it, afterEach, beforeEach */
+/* global describe, it, before, afterEach, beforeEach */
 const should = require('should');
 const chai = require('chai');
 const assert = chai.assert;
 
-const { settings } = require('./test-helpers');
+const { loadSettings } = require('./test-helpers');
 
 const NullLogger = require('components/utils/src/logging').NullLogger;
 const storage = require('components/storage');
@@ -16,9 +16,16 @@ const { databaseFixture } = require('components/test-helpers');
 const { MetadataLoader, MetadataCache } = require('../../src/metadata_cache');
 
 describe('Metadata Loader', function () {
-  const database = new storage.Database(
-    settings.get('mongodb').obj(), 
-    new NullLogger()); 
+
+  let database, settings, pryv;
+  before(async function () {
+    settings = await loadSettings();
+    database = new storage.Database(
+      settings.get('mongodb').obj(), 
+      new NullLogger()); 
+    pryv = databaseFixture(database);
+  });
+  
 
   let loader; 
   beforeEach(() => {
@@ -31,7 +38,6 @@ describe('Metadata Loader', function () {
   const EVENT_ID = 'c1';
   const ACCESS_TOKEN = 'a1';
 
-  const pryv = databaseFixture(database);
   afterEach(function () { pryv.clean(); });
 
   // Build the database fixture
@@ -58,6 +64,11 @@ describe('Metadata Loader', function () {
 });
 
 describe('Metadata Cache', function () {
+
+  let settings;
+  before(async function () {
+    settings = await loadSettings();
+  });
   it('[O8AE] returns loaded metadata for N minutes', async () => {
     let n = 0; 
     const loaderStub = {

@@ -22,8 +22,8 @@ exports.produceInfluxConnection = produceInfluxConnection;
 
 // Produces and returns a connection to MongoDB. 
 // 
-function produceMongoConnection(): storage.Database {
-  const settings = toplevelHelpers.settings;
+async function produceMongoConnection(): storage.Database {
+  const settings = await toplevelHelpers.loadSettings();
   const database = new storage.Database(
     settings.get('mongodb').obj(), 
     new NullLogger()); 
@@ -48,7 +48,7 @@ function produceStorageLayer(connection: storage.Database): storage.StorageLayer
 exports.produceStorageLayer = produceStorageLayer;
 
 // Forward certain things that the top level helper defines, for convenience: 
-exports.settings = toplevelHelpers.settings;
+exports.loadSettings = toplevelHelpers.loadSettings;
 
 // --------------------------------------------------------- prespawning servers
 
