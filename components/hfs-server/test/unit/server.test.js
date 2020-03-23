@@ -6,7 +6,7 @@ const should = require('should');
 const superagent = require('superagent');
 const url = require('url');
 
-const { settings } = require('./test-helpers');
+const { loadSettings } = require('./test-helpers');
 
 const Application = require('../../src/application');
 
@@ -16,7 +16,7 @@ describe('Server', () => {
   let application, server;
   before(async () => {
     application = new Application();
-    await application.init(settings); 
+    await application.init(await loadSettings()); 
     server = application.server; 
   }); 
   
