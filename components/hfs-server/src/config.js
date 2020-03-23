@@ -14,6 +14,7 @@ function produce() {
   return convict({
     serviceInfoUrl: {
       format: String,
+      default: undefined,
     },
     config: {
       doc: 'Path to the server configuration file.', 
