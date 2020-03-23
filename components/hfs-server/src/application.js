@@ -116,7 +116,7 @@ class Application {
   
   async init(settings?: Settings) {
     this.settings = settings || await createSettings(); 
-    setCommonMeta({});
+    setCommonMeta.loadSettings(this.settings);
     this.logFactory = createLogFactory(this.settings);
     
     this.context = await createContext(this.settings, this.logFactory);

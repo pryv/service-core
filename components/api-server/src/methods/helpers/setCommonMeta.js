@@ -3,7 +3,8 @@
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 const { ProjectVersion } = require('components/middleware/src/project_version');
-const settings = require('../../settings');
+// cnan be overriden;
+const apiServerSettings = require('../../settings');
 
 import type { ConfigAccess } from './settings';
 
@@ -30,8 +31,20 @@ let config: ConfigAccess = null;
 const pv = new ProjectVersion(); 
 (async () => {
   version = await pv.version();
-  config = await settings.load();
 })();
+
+
+/**
+ * 
+ * If no parameter is provided, loads the configuration. Otherwise takes the provided loaded settings.
+ */
+module.exports.loadSettings = async function (overrideSettings: ConfigAccess): Promise<void> {
+  if (overrideSettings != null) {
+    config = overrideSettings;
+  } else {
+    config = await apiServerSettings.load();
+  }
+};
 
 /**
  * Adds common metadata (API version, server time) in the `meta` field of the given result,
@@ -43,7 +56,7 @@ const pv = new ProjectVersion();
  *
  * @param result {Object} Current result. MODIFIED IN PLACE. 
  */
-module.exports = function <T: Object>(result: T): T & MetaInfo {
+module.exports.setCommonMeta = function <T: Object>(result: T): T & MetaInfo {
   if (result.meta == null) {
     result.meta = {};
   }

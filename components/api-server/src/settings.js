@@ -50,6 +50,12 @@ class Settings implements ConfigAccess {
     return settingsSingleton;
   }
 
+
+  /**
+   * CONSTRUCTOR
+   * 
+   * @param {*} ourConfig 
+   */
   constructor(ourConfig: ConvictConfig) {
     this.convict = ourConfig;
     this.registerLoaded = false;
