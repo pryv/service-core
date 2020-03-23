@@ -298,6 +298,10 @@ module.exports = function (
         item.streamIds = [item.streamId];
       }
     }
+    // remove double entries from streamIds
+    if (item.streamIds && item.streamIds.length > 1) {
+      item.streamIds = [...new Set(item.streamIds)];
+    }
     delete item.streamId;
     next();
   }

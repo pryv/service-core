@@ -125,6 +125,35 @@ describe('[MXEV] events muliple streamIds', function () {
       ], done);
     });
 
+    it('[1GZ9] must clean double streamIds entries in event in multiple streams', function (done) {
+      var data = {
+        type: 'temperature/celsius',
+        content: 36.7,
+        streamIds: [testData.streams[7].id, testData.streams[7].id, testData.streams[1].id],
+      };
+      var originalCount,
+        createdEventId,
+        created;
+
+      request.post(basePath).send(data).end(function (res) {
+        validation.check(res, {
+          status: 201,
+          schema: methodsSchema.create.result
+        });
+        var expected = _.clone(res.body.event);
+        expected.streamId = data.streamIds[0];
+        expected.streamIds = [testData.streams[7].id, testData.streams[1].id],
+
+        validation.checkObjectEquality(res.body.event, expected);
+        done();
+      });
+    });
+
+
+
+
+
+
     it('[1G19] must not allow event in multiple streams, if one of the stream has not write access', function (done) {
       var data = {
         time: timestamp.fromDate('2012-03-22T10:00'),
@@ -147,20 +176,20 @@ describe('[MXEV] events muliple streamIds', function () {
     });
 
     it('[POIZ] must not allow mixing  different streamIds and streamId properties', function (done) {
-        var data = { streamId: testData.streams[0].id, type: testType };
-        data.streamIds = [testData.streams[1].id, testData.streams[7].id];
+      var data = { streamId: testData.streams[0].id, type: testType };
+      data.streamIds = [testData.streams[1].id, testData.streams[7].id];
 
-        async.series([
-          function addNew(stepDone) {
-            request.post(basePath).send(data).end(function (res) {
-              validation.checkError(res, {
-                status: 400,
-                id: ErrorIds.InvalidOperation,
-                data: {streamId: data.streamId, streamIds: data.streamIds}
-              }, stepDone);
-            });
-          }
-        ], done);
+      async.series([
+        function addNew(stepDone) {
+          request.post(basePath).send(data).end(function (res) {
+            validation.checkError(res, {
+              status: 400,
+              id: ErrorIds.InvalidOperation,
+              data: { streamId: data.streamId, streamIds: data.streamIds }
+            }, stepDone);
+          });
+        }
+      ], done);
     });
 
     it('[5C8K] multiple streams events cannot call "start" (not support on single Activity Streams)',
@@ -173,7 +202,7 @@ describe('[MXEV] events muliple streamIds', function () {
           tags: ['houba']
         };
         var createdId;
- 
+
         request.post(basePath + '/start').send(data).end(function (res) {
           validation.checkError(res, {
             status: 400,
@@ -181,7 +210,7 @@ describe('[MXEV] events muliple streamIds', function () {
           });
           done();
         });
-    });
+      });
 
 
 
@@ -256,7 +285,7 @@ describe('[MXEV] events muliple streamIds', function () {
 
             var expected = _.clone(original);
             expected.modifiedBy = 'a_0';
-            expected.modified = time ;
+            expected.modified = time;
             expected.streamId = data.streamIds[0];
             expected.streamIds = data.streamIds;
             validation.checkObjectEquality(res.body.event, expected);
