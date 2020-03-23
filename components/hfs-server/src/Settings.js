@@ -33,11 +33,12 @@ class Settings {
   }
 
   /** Constructs and loads settings from the file indicated in `path`.
+   * uses directly convicts's .file()
    */
-  static async loadFromFile(path: string): Promise<Settings> {
+  static loadFromFile(path: string): Promise<Settings> {
     const settings = new Settings(); 
 
-    await settings.loadFromFile(path);
+    settings.loadFromFile(path);
     
     return settings; 
   }
