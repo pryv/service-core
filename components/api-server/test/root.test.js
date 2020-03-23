@@ -577,6 +577,7 @@ describe('root', function() {
         assert.notInclude(Object.keys(results[i]), 'meta');
       }
     });
+
     it('[WGVY] must return an error if the sent data is badly formatted', async function() {
       const calls = [
         {
