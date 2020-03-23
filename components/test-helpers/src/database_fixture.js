@@ -220,6 +220,14 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
 
     return this.childs.create(s, cb);
   }
+
+  event(attrs: {}): Promise<FixtureEvent> {
+    debug('event', attrs);
+    const e = new FixtureEvent(this.context, attrs);
+
+    return this.childs.create(e);
+  }
+
   access(attrs: {}={}): Promise<mixed> {
     const a = new FixtureAccess(this.context, attrs); 
   
@@ -330,9 +338,11 @@ class FixtureStream extends FixtureTreeNode implements ChildResource {
 }
 class FixtureEvent extends FixtureTreeNode implements ChildResource {
   constructor(context: UserContext, attrs: {}, streamId: string) {
-    console.log('XX>> ' + streamId);
-    super(context, 
-      R.merge(attrs, {streamIds: [streamId]}));
+    if (streamId) {
+      super(context, R.merge(attrs, {streamIds: [streamId]}));
+    } else { // streamIds is provided by user.event
+      super(context, attrs);
+    }
   }
   
   create() {
