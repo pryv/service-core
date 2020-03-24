@@ -302,9 +302,11 @@ class FixtureStream extends FixtureTreeNode implements ChildResource {
   parentId: ?string; 
   
   constructor(context: UserContext, attrs: {}, parentId: ?string) {
-    super(context, R.merge(attrs, {parentId: parentId}));
-    
-    this.parentId = parentId; 
+    if (parentId) {
+      attrs.parentId = parentId;
+    }
+    super(context, attrs);
+    this.parentId = attrs.parentId; 
   }
   
   stream(attrs: {}={}, cb: (FixtureStream) => void) {

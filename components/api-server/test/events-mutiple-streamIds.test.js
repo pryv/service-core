@@ -76,24 +76,11 @@ describe('[MXEV] events muliple streamIds', function () {
 
       it('[1GR9] must allow event in multiple streams', function (done) {
         var data = {
-          time: timestamp.fromDate('2012-03-22T10:00'),
-          duration: timestamp.duration('55m'),
           type: 'temperature/celsius',
           content: 36.7,
           streamIds: [testData.streams[7].id, testData.streams[1].id],
-          tags: [' patapoumpoum ', '   ', ''], // must trim and ignore empty tags
-          description: 'Test description',
-          clientData: {
-            testClientDataField: 'testValue'
-          },
-          // check if properly ignored
-          created: timestamp.now('-1h'),
-          createdBy: 'should-be-ignored',
-          modified: timestamp.now('-1h'),
-          modifiedBy: 'should-be-ignored'
         };
-        var originalCount,
-          createdEventId,
+        var createdEventId,
           created;
 
         async.series([
@@ -103,9 +90,7 @@ describe('[MXEV] events muliple streamIds', function () {
                 status: 201,
                 schema: methodsSchema.create.result
               });
-              created = timestamp.now();
               createdEventId = res.body.event.id;
-              eventsNotifCount.should.eql(1, 'events notifications');
               stepDone();
             });
           },
@@ -113,13 +98,12 @@ describe('[MXEV] events muliple streamIds', function () {
             storage.find(user, {}, null, function (err, events) {
               var expected = _.clone(data);
               expected.id = createdEventId;
-              expected.tags = ['patapoumpoum'];
-              expected.streamId = data.streamIds[0];
-              expected.created = expected.modified = created;
-              expected.createdBy = expected.modifiedBy = access.id;
               var actual = _.find(events, function (event) {
                 return event.id === createdEventId;
               });
+              expected.tags = actual.tags;
+              expected.time = actual.time;
+              expected.streamId = expected.streamIds[0];
               validation.checkStoredItem(actual, 'event');
               validation.checkObjectEquality(actual, expected);
 
@@ -422,7 +406,7 @@ describe('[MXEV] events muliple streamIds', function () {
       streamBId,
       streamASonId,
       eventId,
-      manageAccesId;
+      manageAccessToken;
 
     beforeEach(async function () {
       username = cuid();
@@ -430,7 +414,7 @@ describe('[MXEV] events muliple streamIds', function () {
       streamBId = cuid();
       streamASonId = cuid();
       eventId = cuid();
-      manageAccesId = cuid();
+      manageAccessToken = cuid();
 
       user = await mongoFixtures.user(username, {});
       await user.stream({
@@ -441,14 +425,16 @@ describe('[MXEV] events muliple streamIds', function () {
         id: streamBId,
         name: 'streamB'
       });
-      await user.stream({
-        parentId: streamASonId,
+      const blip = await user.stream({
+        parentId: streamAId,
         id: streamASonId,
         name: 'stream son of A'
       });
+      console.log(blip.attrs);
+
       await user.access({
         type: 'app',
-        id: manageAccesId,
+        token: manageAccessToken,
         permissions: [
           {
             streamId: '*',
@@ -460,36 +446,41 @@ describe('[MXEV] events muliple streamIds', function () {
         type: 'note/txt',
         content: 'Hello',
         id: eventId,
-        streamIds: [streamBId, streamASonId],
-        level: 'manage'
+        streamIds: [streamBId, streamASonId]
       });
     });
 
 
     it('[S6Z4] Does nothing (yet)', async () => {
-      let basePath = `/${username}/events`;
+      let basePathStream = `/${username}/streams/`;
+      let basePathEvent = `/${username}/events/`;
 
-      const res = await server.request()
-        .get(basePath)
-        .set('Authorization', manageAccesId);
 
-      console.log(res.body);
-      /** 
-      const res = await server.request()
-        .delete(basePath)
-        .set('Authorization', manageAccesId)
-        .send({
-          type: 'shared',
-          name: 'whatever',
-          permissions: [{
-            streamId: createOnlyStreamId,
-            level: 'create-only',
-          }]
-        });
-      assert.equal(res.status, 201);
-      const access = res.body.access;
-      assert.exists(access);
-        **/
+      const resStream = await server.request()
+        .get(basePathStream)
+        .set('Authorization', manageAccessToken);
+
+      console.log(resStream.body);
+
+      const resStreamTrash = await server.request()
+        .delete(basePathStream + streamASonId)
+        .set('Authorization', manageAccessToken)
+        .send({ mergeEventsWithParent: false});
+
+      console.log(resStreamTrash.body);
+
+      const resStreamDelete = await server.request()
+        .delete(basePathStream + streamASonId)
+        .set('Authorization', manageAccessToken)
+        .send({ mergeEventsWithParent: false });
+
+      console.log(resStreamDelete.body);
+
+      const resEvent = await server.request()
+        .get(basePathEvent)
+        .set('Authorization', manageAccessToken);
+
+      console.log([streamBId, streamASonId], resEvent.body.events);
     });
 
   });
