@@ -232,7 +232,6 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
   function applyPrerequisitesForDeletion(context, params, result, next) {
     _.defaults(params, { mergeEventsWithParent: null });
-
     // check stream
     let temp = treeUtils.findById(context.streams, params.id);
     if (temp) context.streamList = [temp];
@@ -243,7 +242,6 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     if (!context.canManageStream(context.streamList[0].id)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
-
     next();
   }
 
@@ -291,8 +289,9 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
           stepDone();
         });
-      },
-      function checkIfLinkedEventsExist(stepDone) {
+      }
+      ,
+      function checkIfSingleStreamLinkedEventsExist(stepDone) {
         if (params.mergeEventsWithParent === true && parentId == null) {
           return stepDone(errors.invalidOperation(
             'Deleting a root stream with mergeEventsWithParent=true is rejected ' +
@@ -317,7 +316,6 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
             stepDone();
           });
       },
-
       function handleLinkedEvents(stepDone) {
         if (!hasLinkedEvents) {
           return stepDone();
@@ -429,19 +427,26 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
                 userEventsStorage.findStreamed(context.user,
                   { streamIds: { $in: streamAndDescendantIds } },
-                  { projection: { id: 1 } },
+                  { projection: { id: 1, streamIds: 1 } },
                   function (err, eventsStream) {
                     if (err) {
                       return subStepDone(errors.unexpectedError(err));
                     }
-
                     eventsStream.on('data', (head) => {
-                      userEventsStorage.removeMany(context.user, { headId: head.id },
-                        function (err) {
-                          if (err) {
-                            return subStepDone(errors.unexpectedError(err));
-                          }
-                        });
+                      // multiple StreamIds &&
+                      // the streams to delete are NOT ALL in the streamAndDescendantIds list
+                      if (head.streamIds.length > 1 && 
+                        ! treeUtils.arrayAIsIncludedInB(head.streamIds, streamAndDescendantIds)) {
+                          // we will remove the streamIds  later on with an update Many
+                      } else { 
+                        // remove the events
+                        userEventsStorage.removeMany(context.user, { headId: head.id },
+                          function (err) {
+                            if (err) {
+                              return subStepDone(errors.unexpectedError(err));
+                            }
+                          });
+                      }
                     });
 
                     eventsStream.on('error', (err) => {
@@ -455,38 +460,71 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
               }
             },
             function deleteEventsWithAttachments(subStepDone) {
-
               userEventsStorage.findStreamed(context.user,
-                { streamIds: { $in: streamAndDescendantIds }, attachments: { $exists: true } },
-                { projection: { id: 1 } }, function (err, eventsStream) {
+                { streamIds: { $in: streamAndDescendantIds }, 
+                attachments: { $exists: true } },
+                { projection: { id: 1, streamIds: 1 } }, function (err, eventsStream) {
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));
                   }
 
                   eventsStream.on('data', (event) => {
-                    userEventFilesStorage.removeAllForEvent(context.user, event.id, function (err) {
-                      if (err) {
-                        // async delete attached files (if any) – don't wait for
-                        // this, just log possible errors
-                        errorHandling.logError(err, null, logger);
-                      }
-                    });
+                    // multiple StreamIds &&
+                    // the streams to delete are NOT ALL in the streamAndDescendantIds list
+                    if (event.streamIds.length > 1 &&
+                      !treeUtils.arrayAIsIncludedInB(head.streamIds, streamAndDescendantIds)) {
+                      // we will remove the streamIds later on 
+                    } else { 
+                        userEventFilesStorage.removeAllForEvent(context.user, event.id, function (err) {
+                          if (err) {
+                            // async delete attached files (if any) – don't wait for
+                            // this, just log possible errors
+                            errorHandling.logError(err, null, logger);
+                          }
+                        });
+                    }
                   });
 
                   eventsStream.on('error', (err) => {
                     subStepDone(errors.unexpectedError(err));
                   });
-
                   eventsStream.on('end', () => {
                     subStepDone();
-                  });
-
-                });
+                  });    
+                }
+              );
+            },
+            function removeStreamdIdsFromAllEvents(subStepDone) {
+              // this will "act" modifiedBy and put all events to be deleted streamLess
+              if (auditSettings.deletionMode === 'keep-everything') {
+                // history is untouched
+                return subStepDone();
+              }
+              userEventsStorage.updateMany(context.user,
+                {}, 
+                { $pull: { streamIds: { $in: streamAndDescendantIds } } },
+                function (err, res) {
+                  if (err) {
+                    return subStepDone(errors.unexpectedError(err));
+                  }
+                  subStepDone();
+                }
+              );
             },
             function deleteEvents(subStepDone) {
-
+              const filter = {};
+              if (auditSettings.deletionMode === 'keep-everything') {
+                filter.streamIds = { $in: streamAndDescendantIds };
+                filter.headId = { $exists: false };
+              } else {
+                // we do a "raw" delete on all streamless events 
+                // we do not want to change the "modifiedBy" and "modifiedDate"
+                // to prevent running condition where another process would 
+                // delete these data and mark the vent modified
+                filter.streamIds = [];
+              }
               userEventsStorage.delete(context.user,
-                { streamIds: { $in: streamAndDescendantIds }, headId: { $exists: false } },
+                filter,
                 auditSettings.deletionMode, function (err) {
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));

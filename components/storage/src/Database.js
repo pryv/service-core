@@ -283,6 +283,7 @@ class Database {
    */
   find(collectionInfo: CollectionInfo, query: {}, options: FindOptions, callback: DatabaseCallback) {
     this.addUserIdIfneed(collectionInfo, query);
+   
     this.getCollectionSafe(collectionInfo, callback, collection => {
       const queryOptions = {
         projection: options.projection,

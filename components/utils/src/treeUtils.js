@@ -196,3 +196,14 @@ exports.expandIds = function (array, ids) {
   });
   return expandedIds;
 };
+
+/**
+ * Returns if an array has all elements conatined in another
+ * used to check if an event with multiple streamIds is
+ * contained in a streamAndDescendantIds lists
+ * @param {Array} a Contains element to check if they exists in b
+ * @param {Array} b list of element that should be included in a
+ */
+exports.arrayAIsIncludedInB = function(a, b) {
+  return a.every(i => b.includes(i));
+}

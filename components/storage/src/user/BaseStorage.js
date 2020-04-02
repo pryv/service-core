@@ -494,10 +494,14 @@ BaseStorage.prototype.applyUpdateToDB = function(updatedData) {
     data.$max = input.$max;
     delete input.$max;
   }
+
+  if (input.$pull != null) {
+    data.$pull = input.$pull;
+    delete input.$pull;
+  }
   
   // Maybe add more of these?
   //    https://docs.mongodb.com/manual/reference/operator/update/
-  
   data.$set = input;
   data.$unset = {};       // code in 'converters.js' depends on this.
   

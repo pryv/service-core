@@ -43,9 +43,6 @@ describe('[MXEV] events muliple streamIds', function () {
       return (base || basePath) + '/' + id;
     }
 
-    // to verify data change notifications
-    var eventsNotifCount;
-    server.on('events-changed', function () { eventsNotifCount++; });
 
     before(function (done) {
       async.series([
@@ -274,7 +271,6 @@ describe('[MXEV] events muliple streamIds', function () {
               expected.streamIds = data.streamIds;
               validation.checkObjectEquality(res.body.event, expected);
 
-              eventsNotifCount.should.eql(1, 'events notifications');
               stepDone();
             });
           }
@@ -343,7 +339,6 @@ describe('[MXEV] events muliple streamIds', function () {
 
               var trashedEvent = res.body.event;
               trashedEvent.trashed.should.eql(true);
-              eventsNotifCount.should.eql(2, 'events notifications');
               stepDone();
             });
           }
@@ -405,16 +400,21 @@ describe('[MXEV] events muliple streamIds', function () {
       streamAId,
       streamBId,
       streamASonId,
-      eventId,
-      manageAccessToken;
+      eventIdBsA,
+      eventIdAsA,
+      manageAccessToken,
+      basePathEvent,
+      basePathStream;
 
     beforeEach(async function () {
       username = cuid();
-      streamAId = cuid();
-      streamBId = cuid();
-      streamASonId = cuid();
-      eventId = cuid();
+      streamAId = 'streamA';
+      streamBId = 'streamB';
+      streamASonId = 'streamASonId';
+      eventIdBsA = cuid();
       manageAccessToken = cuid();
+      basePathStream = `/${username}/streams/`;
+      basePathEvent = `/${username}/events/`;
 
       user = await mongoFixtures.user(username, {});
       await user.stream({
@@ -425,13 +425,11 @@ describe('[MXEV] events muliple streamIds', function () {
         id: streamBId,
         name: 'streamB'
       });
-      const blip = await user.stream({
+      await user.stream({
         parentId: streamAId,
         id: streamASonId,
         name: 'stream son of A'
       });
-      console.log(blip.attrs);
-
       await user.access({
         type: 'app',
         token: manageAccessToken,
@@ -444,43 +442,51 @@ describe('[MXEV] events muliple streamIds', function () {
       });
       await user.event({
         type: 'note/txt',
-        content: 'Hello',
-        id: eventId,
+        time: (Date.now() / 1000) -1,
+        content: 'In B and Son of A',
+        id: eventIdBsA,
         streamIds: [streamBId, streamASonId]
+      });
+      await user.event({
+        type: 'note/txt',
+        time: (Date.now() / 1000),
+        content: 'In A and Son of A',
+        id: eventIdAsA,
+        streamIds: [streamAId, streamASonId]
       });
     });
 
-
-    it('[S6Z4] Does nothing (yet)', async () => {
-      let basePathStream = `/${username}/streams/`;
-      let basePathEvent = `/${username}/events/`;
-
-
-      const resStream = await server.request()
-        .get(basePathStream)
-        .set('Authorization', manageAccessToken);
-
-      console.log(resStream.body);
-
-      const resStreamTrash = await server.request()
-        .delete(basePathStream + streamASonId)
-        .set('Authorization', manageAccessToken)
-        .send({ mergeEventsWithParent: false});
-
-      console.log(resStreamTrash.body);
-
-      const resStreamDelete = await server.request()
-        .delete(basePathStream + streamASonId)
-        .set('Authorization', manageAccessToken)
-        .send({ mergeEventsWithParent: false });
-
-      console.log(resStreamDelete.body);
+    it('[J6H8] Deleting a stream, should not delete multiple streams Event but remove the streamId from list', async () => {
+      for (let i = 0; i < 2; i++) {
+        const resStreamDelete = await server.request()
+          .delete(basePathStream + streamASonId)
+          .query({ mergeEventsWithParent: false })
+          .set('Authorization', manageAccessToken);
+      }
 
       const resEvent = await server.request()
         .get(basePathEvent)
         .set('Authorization', manageAccessToken);
 
-      console.log([streamBId, streamASonId], resEvent.body.events);
+      resEvent.body.events.length.should.eql(2);
+      resEvent.body.events[1].streamIds.should.eql([streamBId]);
+      resEvent.body.events[0].streamIds.should.eql([streamAId]);
+    });
+
+    it('[J6H9] Multiple streams events attached in a parent and child stream, should be deleted if parent stream is deleted', async () => {
+      for (let i = 0; i < 2; i++) {
+        const resStreamDelete = await server.request()
+          .delete(basePathStream + streamAId)
+          .query({ mergeEventsWithParent: false })
+          .set('Authorization', manageAccessToken);
+      }
+
+      const resEvent = await server.request()
+        .get(basePathEvent)
+        .set('Authorization', manageAccessToken);
+
+      resEvent.body.events.length.should.eql(1);
+      resEvent.body.events[0].streamIds.should.eql([streamBId]);
     });
 
   });
