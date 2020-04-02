@@ -411,6 +411,7 @@ describe('[MXEV] events muliple streamIds', function () {
       streamAId = 'streamA';
       streamBId = 'streamB';
       streamASonId = 'streamASonId';
+      eventIdAsA = cuid();
       eventIdBsA = cuid();
       manageAccessToken = cuid();
       basePathStream = `/${username}/streams/`;
@@ -456,7 +457,7 @@ describe('[MXEV] events muliple streamIds', function () {
       });
     });
 
-    it('[J6H8] Deleting a stream, should not delete multiple streams Event but remove the streamId from list', async () => {
+    it('[J6H8] Deleting a stream, should not delete multiple streams Event but remove the streamId from list (mergeWithparent = false)', async () => {
       for (let i = 0; i < 2; i++) {
         const resStreamDelete = await server.request()
           .delete(basePathStream + streamASonId)
@@ -473,7 +474,7 @@ describe('[MXEV] events muliple streamIds', function () {
       resEvent.body.events[0].streamIds.should.eql([streamAId]);
     });
 
-    it('[J6H9] Multiple streams events attached in a parent and child stream, should be deleted if parent stream is deleted', async () => {
+    it('[J6H9] Multiple streams events attached in a parent and child stream, should be deleted if parent stream is deleted (mergeWithparent = false)', async () => {
       for (let i = 0; i < 2; i++) {
         const resStreamDelete = await server.request()
           .delete(basePathStream + streamAId)
@@ -487,6 +488,51 @@ describe('[MXEV] events muliple streamIds', function () {
 
       resEvent.body.events.length.should.eql(1);
       resEvent.body.events[0].streamIds.should.eql([streamBId]);
+    });
+
+    it('[J6H1] Multiple streams events attached should be deleted if all streams they bellong are deleted (mergeWithparent = false)', async () => {
+      for (let i = 0; i < 2; i++) {
+        await server.request()
+          .delete(basePathStream + streamAId)
+          .query({ mergeEventsWithParent: false })
+          .set('Authorization', manageAccessToken);
+        await server.request()
+          .delete(basePathStream + streamBId)
+          .query({ mergeEventsWithParent: false })
+          .set('Authorization', manageAccessToken);
+      }
+
+      const resEvent = await server.request()
+        .get(basePathEvent)
+        .query({ includeDeletions: true, modifiedSince: 0 })
+        .set('Authorization', manageAccessToken);
+
+      resEvent.body.events.length.should.eql(0);
+      resEvent.body.eventDeletions.length.should.eql(2);
+      resEvent.body.eventDeletions.forEach(deletion => {
+        chai.expect([eventIdBsA, eventIdAsA]).to.include(deletion.id);
+      });
+    });
+
+
+    it('[J7H8] Deleting a stream, should not delete multiple streams Events but merge with parent streamId from list (mergeWithparent = true)', async () => {
+      for (let i = 0; i < 2; i++) {
+        const resStreamDelete = await server.request()
+          .delete(basePathStream + streamASonId)
+          .query({ mergeEventsWithParent: true })
+          .set('Authorization', manageAccessToken);
+      }
+
+      const resEvent = await server.request()
+        .get(basePathEvent)
+        .set('Authorization', manageAccessToken);
+
+      resEvent.body.events.length.should.eql(2);
+
+      resEvent.body.events[0].streamIds.should.eql(
+        [streamAId,streamAId]);
+      resEvent.body.events[1].streamIds.should.eql(
+        [streamBId,streamAId]);
     });
 
   });
