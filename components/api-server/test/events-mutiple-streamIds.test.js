@@ -173,28 +173,6 @@ describe('[MXEV] events muliple streamIds', function () {
         ], done);
       });
 
-      it('[5C8K] multiple streams events cannot call "start" (not support on single Activity Streams)',
-        function (done) {
-          var data = {
-            // 15 minutes ago to make sure the previous duration is set accordingly
-            time: timestamp.now('-15m'),
-            type: testType,
-            streamIds: [testData.streams[0].id, testData.streams[1].id],
-            tags: ['houba']
-          };
-          var createdId;
-
-          request.post(basePath + '/start').send(data).end(function (res) {
-            validation.checkError(res, {
-              status: 400,
-              id: ErrorIds.InvalidOperation
-            });
-            done();
-          });
-        });
-
-
-
       it('[5NEZ] must return an error if one of the associated stream is unknown', function (done) {
         var data = {
           time: timestamp.fromDate('2012-03-22T10:00'),
@@ -216,8 +194,6 @@ describe('[MXEV] events muliple streamIds', function () {
 
       beforeEach(resetEvents);
 
-      var path = basePath + '/start';
-
       it('[5C8J] must not allow a running period event with multiple streamIds',
         function (done) {
           var data = {
@@ -229,7 +205,7 @@ describe('[MXEV] events muliple streamIds', function () {
           };
           var createdId;
 
-          request.post(path).send(data).end(function (res) {
+          request.post(basePath + '/start').send(data).end(function (res) {
             validation.checkError(res, {
               status: 400,
               id: ErrorIds.InvalidOperation
@@ -237,8 +213,6 @@ describe('[MXEV] events muliple streamIds', function () {
             done();
           });
         });
-
-
 
     });
 
@@ -345,7 +319,7 @@ describe('[MXEV] events muliple streamIds', function () {
         ], done);
       });
 
-      it('[AU5U] must forbid deletion of trashed even, when no write access on all streams', function (done) {
+      it('[AU5U] must forbid deletion of trashed event, when no write access on all streams', function (done) {
         var data = {
           time: timestamp.fromDate('2012-03-22T10:00'),
           duration: timestamp.duration('55m'),
@@ -490,7 +464,7 @@ describe('[MXEV] events muliple streamIds', function () {
       resEvent.body.events[0].streamIds.should.eql([streamBId]);
     });
 
-    it('[J6H1] Multiple streams events attached should be deleted if all streams they bellong are deleted (mergeWithparent = false)', async () => {
+    it('[J6H1] Multiple streams events attached should be deleted if all streams they belong are deleted (mergeWithparent = false)', async () => {
       for (let i = 0; i < 2; i++) {
         await server.request()
           .delete(basePathStream + streamAId)

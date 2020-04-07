@@ -38,7 +38,9 @@ class MethodContext {
   // Custom auth function, if one was configured. 
   customAuthStepFn: ?CustomAuthFunction;
   
+  // will contain the list of "found" streams 
   streamList: ?Array<Stream>;
+  // during an event.create action for multiple streams event, some streamIds might not exists. They will be listed here
   streamIdsNotFoundList: ?Array<string>;
   
   // Memoizes the result of #getSingleActivityExpandedIds.
@@ -422,7 +424,7 @@ module.exports = MethodContext;
 
 // Returns expanded ids of single-activity streams for the context, based on
 // stream. 
-// 
+// Updated to match multiple streamIds, but actually not supported
 function produceSingleActivityExpandedIds(streamList, streams) {
   if (streamList == null)
     throw new Error('The context\'s `stream` must be set before calling this method.');
