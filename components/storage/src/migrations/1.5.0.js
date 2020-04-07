@@ -40,7 +40,7 @@ module.exports = function (context, callback) {
   };
 
   function dropIndex(done) {
-    eventCollection.dropIndex('userId_1_streamIds_1', function (err, res) {
+    eventCollection.dropIndex('userId_1_streamId_1', function (err, res) {
       // ignore error
       done();
     });

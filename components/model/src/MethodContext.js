@@ -469,19 +469,3 @@ function applyInheritedProperties(streams, properties={}) {
     applyInheritedProperties(stream.children, treeProperties);
   }
 }
-
-Object.defineProperties(MethodContext.prototype, {
-  stream: {
-    get: function () {
-      throw new Error("Deprecated");
-    }
-  },
-  stream: {
-    get: function () {
-      throw new Error("Deprecated");
-    },
-    set: function (value) {
-      throw new Error("Deprecated");
-    }
-  }
-});

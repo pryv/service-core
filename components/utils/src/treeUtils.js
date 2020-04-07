@@ -198,7 +198,7 @@ exports.expandIds = function (array, ids) {
 };
 
 /**
- * Returns if an array has all elements conatined in another
+ * Returns if an array has all elements contained in another
  * used to check if an event with multiple streamIds is
  * contained in a streamAndDescendantIds lists
  * @param {Array} a Contains element to check if they exists in b
