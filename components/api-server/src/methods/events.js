@@ -413,38 +413,20 @@ module.exports = function (
 
   // -------------------------------------------------------------------- UPDATE
 
-  function d(text) {
-    return function (context, params, result, next) {
-      return next();
-      const contentX = {
-        streamIds: context.content ? context.content.streamIds : '',
-        streamId: context.content ? context.content.streamId : ''
-      }
-      console.log('>>>>> ' + text + ' : ', { content: contentX, params: params });
-      next();
-    }
-  }
-
 
   api.register('events.update',
     commonFns.getParamsValidation(methodsSchema.update.params),
     commonFns.catchForbiddenUpdate(eventSchema('update'), updatesSettings.ignoreProtectedFields, logger),
     migrationToStreamIdsParams,
-    d('A'),
     applyPrerequisitesForUpdate,
-    d('B'),
     migrationToStreamIdsContext,
-    d('C'),
     validateEventContentAndCoerce,
     checkExistingLaterPeriodIfNeeded,
     checkOverlappedPeriodsIfNeeded,
     stopPreviousPeriodIfNeeded,
     generateLogIfNeeded,
-    d('F'),
     updateAttachments,
-    d('G'),
     updateEvent,
-    d('H'),
     notify);
   
 
