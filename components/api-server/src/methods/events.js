@@ -277,13 +277,13 @@ module.exports = function (
   }
 
   function migrationToStreamIdsParams(context, params, result, next) {
-    streamIdsToStreamId(params, next);
+    streamIdToStreamIds(params, next);
   }
   function migrationToStreamIdsContext(context, params, result, next) {
-    streamIdsToStreamId(context, next);
+    streamIdToStreamIds(context, next);
   }
 
-  function streamIdsToStreamId(item, next) {
+  function streamIdToStreamIds(item, next) {
     if (!item) {
      return
     }
