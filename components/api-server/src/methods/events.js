@@ -276,14 +276,7 @@ module.exports = function (
     next();
   }
 
-  function migrationToStreamIdsParams(context, params, result, next) {
-    streamIdToStreamIds(params, next);
-  }
-  function migrationToStreamIdsContext(context, params, result, next) {
-    streamIdToStreamIds(context, next);
-  }
-
-  function streamIdToStreamIds(item, next) {
+  function migrationToStreamIdsParams(context, item, result, next) {
     if (!item) {
      return
     }
@@ -419,7 +412,6 @@ module.exports = function (
     commonFns.catchForbiddenUpdate(eventSchema('update'), updatesSettings.ignoreProtectedFields, logger),
     migrationToStreamIdsParams,
     applyPrerequisitesForUpdate,
-    migrationToStreamIdsContext,
     validateEventContentAndCoerce,
     checkExistingLaterPeriodIfNeeded,
     checkOverlappedPeriodsIfNeeded,
