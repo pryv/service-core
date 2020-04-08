@@ -174,9 +174,7 @@ module.exports = function (
           {
             access: context.access,
             filesReadTokenSecret: authSettings.filesReadTokenSecret
-          })
-          
-          ));
+          })));
       next();
     });
   }
@@ -509,7 +507,6 @@ module.exports = function (
 
   function updateEvent (context, params, result, next) {
     userEventsStorage.updateOne(context.user, {id: context.content.id}, context.content,
-      
       function (err, updatedEvent) {
         if (err) {
           return next(errors.unexpectedError(err));
@@ -902,6 +899,7 @@ module.exports = function (
     function (context, params, result, next) {
       // default time is now
       _.defaults(params, { time: timestamp.now() });
+
       if (params.id) {
         userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
           if (err) { return next(errors.unexpectedError(err)); }
@@ -949,7 +947,6 @@ module.exports = function (
       }
 
       function applyStop(error, event) {
-        
         if (error) { return next(errors.unexpectedError(error)); }
 
         stopEvent(context, event, params.time, function (err, stoppedId) {

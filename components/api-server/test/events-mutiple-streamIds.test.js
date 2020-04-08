@@ -385,8 +385,10 @@ describe('[MXEV] events muliple streamIds', function () {
       streamAId = 'streamA';
       streamBId = 'streamB';
       streamASonId = 'streamASonId';
+      streamASonAsonId = 'streamASonAsonId';
       eventIdAsA = cuid();
       eventIdBsA = cuid();
+      eventIdsAssA = cuid();
       manageAccessToken = cuid();
       basePathStream = `/${username}/streams/`;
       basePathEvent = `/${username}/events/`;
@@ -405,6 +407,11 @@ describe('[MXEV] events muliple streamIds', function () {
         id: streamASonId,
         name: 'stream son of A'
       });
+      await user.stream({
+        parentId: streamASonId,
+        id: streamASonAsonId,
+        name: 'stream son of son of A'
+      });
       await user.access({
         type: 'app',
         token: manageAccessToken,
@@ -417,17 +424,24 @@ describe('[MXEV] events muliple streamIds', function () {
       });
       await user.event({
         type: 'note/txt',
-        time: (Date.now() / 1000) -1,
+        time: (Date.now() / 1000) -2,
         content: 'In B and Son of A',
         id: eventIdBsA,
         streamIds: [streamBId, streamASonId]
       });
       await user.event({
         type: 'note/txt',
-        time: (Date.now() / 1000),
+        time: (Date.now() / 1000) -1,
         content: 'In A and Son of A',
         id: eventIdAsA,
         streamIds: [streamAId, streamASonId]
+      });
+      await user.event({
+        type: 'note/txt',
+        time: (Date.now() / 1000),
+        content: 'In Son of A and Son of Son of A',
+        id: eventIdsAssA,
+        streamIds: [streamASonId, streamASonAsonId]
       });
     });
 
@@ -482,9 +496,9 @@ describe('[MXEV] events muliple streamIds', function () {
         .set('Authorization', manageAccessToken);
 
       resEvent.body.events.length.should.eql(0);
-      resEvent.body.eventDeletions.length.should.eql(2);
+      resEvent.body.eventDeletions.length.should.eql(3);
       resEvent.body.eventDeletions.forEach(deletion => {
-        chai.expect([eventIdBsA, eventIdAsA]).to.include(deletion.id);
+        chai.expect([eventIdBsA, eventIdAsA, eventIdsAssA]).to.include(deletion.id);
       });
     });
 
@@ -501,13 +515,18 @@ describe('[MXEV] events muliple streamIds', function () {
         .get(basePathEvent)
         .set('Authorization', manageAccessToken);
 
-      resEvent.body.events.length.should.eql(2);
-
-      resEvent.body.events[0].streamIds.should.eql(
-        [streamAId,streamAId]);
+      resEvent.body.events.length.should.eql(3);
+      
+      resEvent.body.events[2].streamIds.should.eql(
+        [streamBId, streamAId]);
       resEvent.body.events[1].streamIds.should.eql(
-        [streamBId,streamAId]);
+        [streamAId,streamAId]);
+      resEvent.body.events[0].streamIds.should.eql(
+        [streamAId, streamAId]);
     });
+
+
+
 
   });
 

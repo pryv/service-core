@@ -63,7 +63,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         });
       }
 
-      if (!context.access.isPersonal()) {
+      if (! context.access.isPersonal()) {
         streams = treeUtils.filterTree(streams, true /*keep orphans*/, function (stream) {
           return context.canListStream(stream.id);
         });
@@ -71,7 +71,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
       // hide inaccessible parent ids
       streams.forEach(function (stream) {
-        if (!context.canReadStream(stream.parentId)) {
+        if (! context.canListStream(stream.parentId)) {
           delete stream.parentId;
         }
       });
@@ -356,6 +356,13 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
                 });
             },
             function updateStreamIds(subStepDone) {
+              /**
+               * This method will just update the 1st element in array that matches the query
+               * This is not acceptable, when an event is in and stream and one of its descendant 
+               * MongodDB > 3.6 offers  "arrayFilters" which would alow to upadte all with:
+               * https://docs.mongodb.com/manual/reference/operator/update/positional-filtered/
+               * Test J7H8 is covering this case
+               */
               userEventsStorage.updateMany(context.user,
                 { streamIds: { $in: streamAndDescendantIds }, headId: { $exists: false } },
                 { "streamIds.$": parentId }, function (err) {
@@ -363,29 +370,10 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
                     return subStepDone(errors.unexpectedError(err));
                   }
 
-                  //notifications.eventsChanged(context.user);
+                  notifications.eventsChanged(context.user);
                   subStepDone();
                 });
             },
-            function updateStreamIdss(subStepDone) { // #streamIds
-              // --- Warning !!! The previous call to update streamId should be removed. 
-              // ---- This call should be completed by
-              /**
-               * {"userId": "u_0", "streamIds": {$in: ["s1", "s2"]}},
-               *   {"$pull": {"streamIds": {$in: ["s1", "s2"]}}}
-               * To remove eventual duplicates
-               */
-              userEventsStorage.updateMany(context.user,
-                { streamIds: { $in: streamAndDescendantIds }, headId: { $exists: false }},
-                { "streamIds.$": parentId }, function(err) {
-                    if (err) {
-                      return subStepDone(errors.unexpectedError(err));
-                    }
-                    notifications.eventsChanged(context.user);
-                    subStepDone();
-                  });
-            }
-
           ], stepDone);
         } else {
           // case mergeEventsWithParent = false
