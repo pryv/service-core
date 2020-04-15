@@ -356,16 +356,11 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
                 });
             },
             function updateStreamIds(subStepDone) {
-              /**
-               * This method will just update the 1st element in array that matches the query
-               * This is not acceptable, when an event is in and stream and one of its descendant 
-               * MongodDB > 3.6 offers  "arrayFilters" which would alow to upadte all with:
-               * https://docs.mongodb.com/manual/reference/operator/update/positional-filtered/
-               * Test J7H8 is covering this case
-               */
-              userEventsStorage.updateMany(context.user,
+              userEventsStorage.updateWithOptions(context.user,
                 { streamIds: { $in: streamAndDescendantIds }, headId: { $exists: false } },
-                { "streamIds.$": parentId }, function (err) {
+                { "streamIds.$[streamId]": parentId }, 
+                { multi: true, arrayFilters: [{ streamId: { $in: streamAndDescendantIds }}]},
+                function (err) {
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));
                   }

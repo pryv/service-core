@@ -113,7 +113,8 @@ class Database {
       this.logger.debug('Connected');
       this.client = client;
       this.db = client.db(this.databaseName);
-      callback();
+
+      client.db('admin').command({setFeatureCompatibilityVersion: "3.6" }, {}, callback);
     });
   }
 
@@ -463,6 +464,24 @@ class Database {
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateMany(query, update, {w: 1, j:true}, callback);
+    });
+  }
+
+  /**
+   * Applies the given update to the document(s) matching the given query.
+   * Does *not* return the document(s).
+   *
+   * @param {Object} collectionInfo
+   * @param {Object} query
+   * @param {Object} update
+   * @param {Object} options
+   * @param {Function} callback
+   */
+  updateWithOptions(collectionInfo: CollectionInfo, query: Object, update: Object, options: Object, callback: DatabaseCallback) {
+    const opts = Object.assign({ w: 1, j: true }, options); // apply defaults
+    this.addUserIdIfneed(collectionInfo, query);
+    this.getCollectionSafe(collectionInfo, callback, collection => {
+      collection.updateMany(query, update, opts, callback);
     });
   }
 

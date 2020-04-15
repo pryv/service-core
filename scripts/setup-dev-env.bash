@@ -13,10 +13,10 @@ export MONGO_BASE_FOLDER=$DATA_FOLDER
 export MONGO_DATA_FOLDER=$DATA_FOLDER/mongodb-data
 
 if [ `uname` = "Linux" ]; then
-  export MONGO_NAME=mongodb-linux-x86_64-3.4.20
+  export MONGO_NAME=mongodb-linux-x86_64-3.6.17
   export MONGO_DL_BASE_URL=https://fastdl.mongodb.org/linux
 elif [ `uname` = "Darwin" ]; then # OSX
-  export MONGO_NAME=mongodb-osx-x86_64-3.4.4
+  export MONGO_NAME=mongodb-osx-x86_64-3.6.17
   export MONGO_DL_BASE_URL=http://fastdl.mongodb.org/osx
 else
   echo "Installation is meant to be on Linux or OSX"
