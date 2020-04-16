@@ -5,6 +5,7 @@ const assert = require('chai').assert;
 const awaiting = require('awaiting');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
+const bluebird = require('bluebird');
 
 const { databaseFixture } = require('components/test-helpers');
 const { webhooksStorage } = require('../test-helpers');
@@ -27,7 +28,7 @@ describe('webhooks', function() {
       streamId, appAccessId, appAccessToken, 
       webhook, webhook2, webhookId,
       url, url2,
-      notificationsServer, notificationsServer2;
+      notificationsServer;
 
   let mongoFixtures;
   before(async function() {
@@ -46,7 +47,11 @@ describe('webhooks', function() {
 
   let apiServer, webhooksApp, webhooksService;
   before(async function () {
-    apiServer = await context.spawn();
+    apiServer = await context.spawn({
+      webhooks: {
+        minIntervalMs: 10,
+      }
+    });
   });
   after(async function () {
     await mongoFixtures.clean();
@@ -91,12 +96,9 @@ describe('webhooks', function() {
       before(async function () {
         notificationsServer = new HttpServer(postPath, 200);
         notificationsServer.listen(port);
-        notificationsServer2 = new HttpServer(postPath, 200);
-        notificationsServer2.listen(port2);
       });
       after(async function () {
         await notificationsServer.close();
-        await notificationsServer2.close();
       });
 
       before(async function() {
@@ -104,6 +106,9 @@ describe('webhooks', function() {
         await webhooksApp.setup();
         await webhooksApp.run();
         webhooksService = webhooksApp.webhooksService;
+      });
+      after(async function () {
+        webhooksApp.stop();
       });
 
       it('[YD6N] should send a boot message to all active webhooks', async function() {
@@ -194,29 +199,130 @@ describe('webhooks', function() {
   
   });
 
-  describe('when creating a Webhook through api-server', function() {
+  describe('[BBB] when creating a Webhook through api-server', function() {
 
-    const url = 'doesntmatter';
-    before(async function() {
-      const res = await apiServer.request()
-        .post(`/${username}/webhooks`)
-        .set('Authorization', appAccessToken)
-        .send({
-          url: url,
+    describe('when the notifications server is running returning 400', function() {
+
+      before(async function() {
+        webhooksApp = new WebhooksApp();
+        await webhooksApp.setup();
+        await webhooksApp.run();
+        webhooksService = webhooksApp.webhooksService;
+      });
+      after(async function () {
+        webhooksApp.stop();
+      });
+
+      before(async function() {
+        notificationsServer = new HttpServer(postPath, 400);
+        await notificationsServer.listen(port);
+      });
+      after(async function() {
+        await notificationsServer.close();
+      });
+      before(function () {
+        username = cuid();
+        streamId = cuid();
+        appAccessToken = cuid();
+        appAccessId = cuid();
+      });
+
+      before(async function () {
+        user = await mongoFixtures.user(username, {});
+        await user.stream({
+          id: streamId,
         });
-      webhookId = res.body.webhook.id;
-    });
+        await user.access({
+          id: appAccessId,
+          type: 'app', token: appAccessToken,
+          permissions: [{
+            streamId: '*',
+            level: 'manage',
+          }]
+        });
+      });
 
-    it('[EXQD] should register a new webhook in the service through NATS', async function() {
-      let isWebhookActive = false;
-      while (! isWebhookActive) {
-        const [ , webhook,  ] = webhooksService.getWebhook(username, webhookId);
-        if (webhook != null) {
-          isWebhookActive = true;
+      before(async function () {
+        const res = await apiServer.request()
+          .get(`/${username}/webhooks`)
+          .set('Authorization', appAccessToken);
+        const webhooks = res.body.webhooks;
+        const webhooksDeletes = [];
+        webhooks.forEach(w => {
+          webhooksDeletes.push(
+            apiServer.request()
+              .delete(`/${username}/webhooks/${w.id}`)
+              .set('Authorization', appAccessToken)
+          );
+        });
+        await bluebird.all(webhooksDeletes);
+      });
+      before(async function() {
+        const res = await apiServer.request()
+          .post(`/${username}/webhooks`)
+          .set('Authorization', appAccessToken)
+          .send({
+            url: url,
+          });
+        webhookId = res.body.webhook.id;
+      });
+  
+      it('[EXQD] should register a new webhook in the service through NATS', async function() {
+        let isWebhookActive = false;
+        while (! isWebhookActive) {
+          const [ , webhook,  ] = webhooksService.getWebhook(username, webhookId);
+          if (webhook != null) {
+            isWebhookActive = true;
+          }
+          await awaiting.delay(10);
         }
-        await awaiting.delay(10);
-      }
-      assert.isTrue(isWebhookActive);
+        assert.isTrue(isWebhookActive);
+      });
+
+      it('[8Q4E] should deactivate after failures', async function () {
+        let res = await apiServer.request()
+          .post(`/${username}/streams`)
+          .set('Authorization', appAccessToken)
+          .send({
+            id: cuid(),
+            name: cuid(),
+          });
+        await awaiting.event(notificationsServer, 'received');
+        await awaiting.event(notificationsServer, 'received');
+        await awaiting.event(notificationsServer, 'received');
+        await awaiting.event(notificationsServer, 'received');
+        await awaiting.event(notificationsServer, 'received');
+        await awaiting.event(notificationsServer, 'received');
+        /**
+         * The webhook running for this test is activated by other actions and might be run more than 6 times.
+         */
+        await awaiting.delay(200);
+        res = await apiServer.request()
+          .get(`/${username}/webhooks`)
+          .set('Authorization', appAccessToken);
+        let webhook = res.body.webhooks[0];
+        assert.equal(webhook.state, 'inactive');
+      });
+  
+      it('[PY61] should be run again when updating its state', async function () {
+        let res = await apiServer.request()
+          .put(`/${username}/webhooks/${webhookId}`)
+          .set('Authorization', appAccessToken)
+          .send({ state: 'active' });
+        const webhook = res.body.webhook;
+        assert.equal(webhook.state, 'active');
+        res = await apiServer.request()
+          .post(`/${username}/streams`)
+          .set('Authorization', appAccessToken)
+          .send({
+            id: cuid(),
+            name: cuid(),
+          });
+        assert.exists(res.body.stream);
+        await awaiting.event(notificationsServer, 'received');
+        assert.equal(notificationsServer.getMessageCount() > 6, true);
+      });
+
     });
   });
 

@@ -5,6 +5,7 @@ const _ = require('lodash');
 
 const NatsSubscriber = require('components/api-server/src/socket-io/nats_subscriber');
 const WEBHOOKS_CREATE_CHANNEL: string = require('components/utils').messaging.NATS_WEBHOOKS_CREATE;
+const WEBHOOKS_ACTIVATE_CHANNEL: string = require('components/utils').messaging.NATS_WEBHOOKS_ACTIVATE;
 const WEBHOOKS_DELETE_CHANNEL: string = require('components/utils').messaging.NATS_WEBHOOKS_DELETE;
 
 
@@ -59,6 +60,7 @@ class WebhooksService implements MessageSink {
 
     await this.subscribeToDeleteListener();
     await this.subscribeToCreateListener();
+    await this.subscribeToActivateListener();
     this.logger.info('Listeners for webhooks creation/deletion up.');
 
     await this.loadWebhooks();
@@ -82,6 +84,11 @@ class WebhooksService implements MessageSink {
   async subscribeToCreateListener(): Promise<void> {
     this.createListener = new NatsSubscriber(this.NATS_CONNECTION_URI, this);
     await this.createListener.subscribe(WEBHOOKS_CREATE_CHANNEL);
+  }
+
+  async subscribeToActivateListener(): Promise<void> {
+    this.createListener = new NatsSubscriber(this.NATS_CONNECTION_URI, this);
+    await this.createListener.subscribe(WEBHOOKS_ACTIVATE_CHANNEL);
   }
 
   setMeta(): number {
@@ -131,6 +138,12 @@ class WebhooksService implements MessageSink {
           )
         );
         break;
+      case WEBHOOKS_ACTIVATE_CHANNEL:
+        this.activateWebhook(
+          usernameWebhook.username,
+          usernameWebhook.webhook,
+        );
+        break;
       case WEBHOOKS_DELETE_CHANNEL:
         this.stopWebhook(usernameWebhook.username, usernameWebhook.webhook.id);
         break;
@@ -146,6 +159,13 @@ class WebhooksService implements MessageSink {
     userWebhooks.push(webhook);
     await initSubscriberForWebhook.call(this, username, this.apiVersion, this.serial, webhook);
     this.logger.info(`Loaded webhook ${webhook.id} for ${username}`);
+  }
+
+  async activateWebhook(username: string, webhook: Webhook): void {
+    let userWebhooks: Array<Webhook> = this.webhooks.get(username);
+    const stoppedWebhook: Webhook = userWebhooks.filter(w => w.id === webhook.id)[0];
+    stoppedWebhook.state = 'active';
+    this.logger.info(`Reactivated webhook ${stoppedWebhook.id} for ${username}`);
   }
 
   stopWebhook(username: string, webhookId: string): void {

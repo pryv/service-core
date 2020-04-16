@@ -15,6 +15,7 @@ const WebhooksRepository = require('components/business').webhooks.Repository;
 const NatsPublisher = require('../socket-io/nats_publisher');
 const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
 const NATS_WEBHOOKS_CREATE_CHANNEL = require('components/utils').messaging.NATS_WEBHOOKS_CREATE;
+const NATS_WEBHOOKS_ACTIVATE_CHANNEL = require('components/utils').messaging.NATS_WEBHOOKS_ACTIVATE;
 const NATS_WEBHOOKS_DELETE_CHANNEL = require('components/utils').messaging.NATS_WEBHOOKS_DELETE;
 
 import type { StorageLayer } from 'components/storage';
@@ -120,7 +121,7 @@ module.exports = function produceWebhooksApiMethods(
     forbidPersonalAccess,
     forbidCreateOnlyAccess,
     createWebhook,
-    loadWebhook,
+    bootWebhook,
   );
 
   function forbidPersonalAccess(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
@@ -159,6 +160,7 @@ module.exports = function produceWebhooksApiMethods(
       accessId: context.access.id,
       webhooksRepository: webhooksRepository,
       runsSize: wehbooksSettings.runsSize,
+      minIntervalMs: wehbooksSettings.minIntervalMs,
     }, params));
 
     try {
@@ -176,7 +178,7 @@ module.exports = function produceWebhooksApiMethods(
     return next();
   }
 
-  async function loadWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
+  async function bootWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
     natsPublisher.deliver(NATS_WEBHOOKS_CREATE_CHANNEL, _.extend(
       { username: context.user.username }, 
       { webhook: result.webhook })
@@ -191,7 +193,9 @@ module.exports = function produceWebhooksApiMethods(
     forbidSharedAccess,
     commonFns.catchForbiddenUpdate(webhookSchema('update'), false, logger),
     applyPrerequisitesForUpdate,
-    updateWebhook);
+    updateWebhook,
+    reactivateWebhook,
+  );
 
   function applyPrerequisitesForUpdate(context: MethodContext, 
     params: { update: {} }, 
@@ -228,6 +232,14 @@ module.exports = function produceWebhooksApiMethods(
       return next(errors.unexpectedError(e));
     }
     next();
+  }
+
+  async function reactivateWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
+    natsPublisher.deliver(NATS_WEBHOOKS_ACTIVATE_CHANNEL, _.extend(
+      { username: context.user.username }, 
+      { webhook: result.webhook })
+    );
+    return next();
   }
 
   // DELETION
