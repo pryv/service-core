@@ -1,5 +1,8 @@
 ## 1.4
 
+### 1.4.34
+ - Fix webhooks reactivation
+
 ### 1.4.33
  - Optimize batch calls to only reload streams in case of possible change in structure
  - multiple fixes to make 1.4.32 work (config)
