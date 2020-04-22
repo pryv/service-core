@@ -13,6 +13,7 @@ const storage = helpers.dependencies.storage.user.events;
 const testData = helpers.data;
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
+const url = require('url');
 
 
 const cuid = require('cuid');
@@ -395,20 +396,20 @@ describe('[MXEV] events muliple streamIds', function () {
     });
 
     let mongoFixtures;
-    beforeEach(async function () {
+    before(async function () {
       mongoFixtures = databaseFixture(await produceMongoConnection());
-    });
-    afterEach(() => {
-      mongoFixtures.clean();
     });
 
     let user,
       username,
       streamAId,
       streamBId,
+      eventIdA,
       eventIdAB,
-      tokenManageA,
-      tokenManageAB,
+      eventA,
+      eventAB,
+      tokenContributeA,
+      tokenContributeAB,
       manageABAccessToken,
       basePathEvent,
       basePathStream;
@@ -417,9 +418,10 @@ describe('[MXEV] events muliple streamIds', function () {
       username = cuid();
       streamAId = 'streamA';
       streamBId = 'streamB';
+      eventIdA = cuid();
       eventIdAB = cuid();
-      tokenManageA = cuid();
-      tokenManageAB = cuid();
+      tokenContributeA = cuid();
+      tokenContributeAB = cuid();
       basePathEvent = `/${username}/events/`;
 
       user = await mongoFixtures.user(username, {});
@@ -433,48 +435,62 @@ describe('[MXEV] events muliple streamIds', function () {
       });
       await user.access({
         type: 'app',
-        token: tokenManageA,
+        token: tokenContributeA,
         permissions: [
           {
             streamId: 'streamA',
-            level: 'manage'
+            level: 'contribute'
           }
         ]
       });
       await user.access({
         type: 'app',
-        token: tokenManageAB,
+        token: tokenContributeAB,
         permissions: [
           {
             streamId: 'streamA',
-            level: 'manage'
+            level: 'contribute'
           },
           {
             streamId: 'streamB',
-            level: 'manage'
+            level: 'contribute'
           },
         ]
       });
-      await user.event({
+      eventA = await user.event({
         type: 'note/txt',
-        time: (Date.now() / 1000) - 2,
+        content: 'In A',
+        id: eventIdA,
+        streamIds: [streamAId],
+      });
+      eventA = eventA.attrs;
+      eventAB = await user.event({
+        type: 'note/txt',
         content: 'In A and B',
         id: eventIdAB,
         streamIds: [streamAId, streamBId]
       });
+      eventAB = eventAB.attrs;
     });
+    afterEach(() => {
+      mongoFixtures.clean();
+    });
+
+    function eventPath(eventId) {
+      return url.resolve(basePathEvent, eventId);
+    }
 
     describe('GET /events', function () {
 
       it('must return streamIds & streamId containing the first one (if many)', async function () {
         const res = await server.request()
           .get(basePathEvent)
-          .set('Authorization', tokenManageA)
+          .set('Authorization', tokenContributeA)
         const events = res.body.events;
-        assert.equal(events.length, 1);
-        const event = events[0];
-        assert.equal(event.streamId, streamAId);
-        assert.deepEqual(event.streamIds, [streamAId, streamBId]);
+        events.forEach(e => {
+          assert.exists(e.streamId);
+          assert.exists(e.streamIds);
+        });
       });
     });
 
@@ -483,7 +499,7 @@ describe('[MXEV] events muliple streamIds', function () {
       it('must not be able to provide both streamId and streamIds', async function () {
         const res = await server.request()
           .post(basePathEvent)
-          .set('Authorization', tokenManageA)
+          .set('Authorization', tokenContributeA)
           .send({
             streamId: streamAId,
             streamIds: [streamAId, streamBId],
@@ -491,14 +507,14 @@ describe('[MXEV] events muliple streamIds', function () {
             content: 12,
           });
         assert.equal(res.status, 400);
-        // TODO must chceck error message
+        // TODO must check error message
       })
 
       describe('when using "streamId"', async function () {
         it('must return streamIds & streamId', async function () {
           const res = await server.request()
           .post(basePathEvent)
-          .set('Authorization', tokenManageA)
+          .set('Authorization', tokenContributeA)
           .send({
             streamId: streamAId,
             type: 'count/generic',
@@ -515,7 +531,7 @@ describe('[MXEV] events muliple streamIds', function () {
         it('must return streamIds & streamId containing the first one', async function () {
           const res = await server.request()
           .post(basePathEvent)
-          .set('Authorization', tokenManageAB)
+          .set('Authorization', tokenContributeAB)
           .send({
             streamIds: [streamAId, streamBId],
             type: 'count/generic',
@@ -529,13 +545,13 @@ describe('[MXEV] events muliple streamIds', function () {
 
         it('must clean duplicate streamIds', async function () {
           const res = await server.request()
-          .post(basePathEvent)
-          .set('Authorization', tokenManageAB)
-          .send({
-            streamIds: [streamAId, streamBId, streamBId],
-            type: 'count/generic',
-            content: 12,
-          });
+            .post(basePathEvent)
+            .set('Authorization', tokenContributeAB)
+            .send({
+              streamIds: [streamAId, streamBId, streamBId],
+              type: 'count/generic',
+              content: 12,
+            });
           assert.equal(res.status, 201);
           const event = res.body.event;
           assert.deepEqual(event.streamIds, [streamAId, streamBId]);
@@ -544,13 +560,13 @@ describe('[MXEV] events muliple streamIds', function () {
         it('must forbid providing an unknown streamId', async function () {
           const unknownStreamId = 'does-not-exist';
           const res = await server.request()
-          .post(basePathEvent)
-          .set('Authorization', tokenManageA)
-          .send({
-            streamIds: ['does-not-exist'],
-            type: 'count/generic',
-            content: 12,
-          });
+            .post(basePathEvent)
+            .set('Authorization', tokenContributeA)
+            .send({
+              streamIds: [unknownStreamId],
+              type: 'count/generic',
+              content: 12,
+            });
           assert.equal(res.status, 400);
           const err = res.body.error;
           assert.equal(err.id, ErrorIds.UnknownReferencedResource)
@@ -559,39 +575,110 @@ describe('[MXEV] events muliple streamIds', function () {
 
         it('must forbid creating an event in multiple streams, if a contribute permission is missing on at least one stream', async function () {
           const res = await server.request()
-          .post(basePathEvent)
-          .set('Authorization', tokenManageA)
-          .send({
-            streamIds: [streamAId, streamBId],
-            type: 'count/generic',
-            content: 12,
-          });
+            .post(basePathEvent)
+            .set('Authorization', tokenContributeA)
+            .send({
+              streamIds: [streamAId, streamBId],
+              type: 'count/generic',
+              content: 12,
+            });
           assert.equal(res.status, 403);
           const err = res.body.error;
           assert.equal(err.id, ErrorIds.Forbidden);
         });
       });
+    });
 
+    describe('PUT /events', function() { 
       
-
-      it.skip('[U7Z5] An ', async () => {
-        for (let i = 0; i < 2; i++) {
-          const resEventChange = await server.request()
-            .put(basePathEvent + eventIdAB)
-            .query({ mergeEventsWithParent: false })
-            .set('Authorization', manageAccessToken);
-        }
-
-        const resEvent = await server.request()
-          .get(basePathEvent)
-          .set('Authorization', manageAccessToken);
-
-        resEvent.body.events.length.should.eql(2);
-        resEvent.body.events[1].streamIds.should.eql([streamBId]);
-        resEvent.body.events[0].streamIds.should.eql([streamAId]);
+      it('must return streamIds & streamId containing the first one (if many)', async function () {
+        const res = await server.request()
+          .put(eventPath(eventIdA))
+          .set('Authorization', tokenContributeA)
+          .send({
+            content: 'Now I am updated, still in A though.',
+          });
+        assert.equal(res.status, 200);
+        const event = res.body.event;
+        assert.equal(event.streamId, eventA.streamIds[0]);
+        assert.deepEqual(event.streamIds, eventA.streamIds);
       });
 
-  });
+      it('must forbid to provide both streamId and streamIds', async function () {
+        const res = await server.request()
+          .put(eventPath(eventIdA))
+          .set('Authorization', tokenContributeA)
+          .send({
+            streamId: streamBId,
+            streamIds: [streamBId],
+          });
+        assert.equal(res.status, 400);
+        // TODO must check error message
+      });
+
+      it('must forbid providing an unknown streamId', async function () {
+        const unknownStreamId = 'does-not-exist';
+        const res = await server.request()
+          .put(eventPath(eventIdA))
+          .set('Authorization', tokenContributeA)
+          .send({
+            streamIds: [unknownStreamId],
+          });
+        assert.equal(res.status, 400);
+        const err = res.body.error;
+        assert.equal(err.id, ErrorIds.UnknownReferencedResource)
+        assert.deepEqual(err.data, { streamIds: [unknownStreamId] });
+      });
+
+      it('must allow streamId addition, if you have a contribute permission for it', async function () {
+        const res = await server.request()
+          .put(eventPath(eventIdA))
+          .set('Authorization', tokenContributeAB)
+          .send({
+            streamIds: [streamAId, streamBId],
+          });
+        assert.equal(res.status, 200);
+        const event = res.body.event;
+        assert.equal(event.streamId, streamAId);
+        assert.deepEqual(event.streamIds, [streamAId, streamBId]);
+      });
+      
+      it('must forbid streamId addition, if you don\'t have a contribute permission for it', async function () {
+        const res = await server.request()
+          .put(eventPath(eventIdA))
+          .set('Authorization', tokenContributeA)
+          .send({
+            streamIds: [streamAId, streamBId],
+          });
+        assert.equal(res.status, 400);
+        const err = res.body.error;
+      });
+
+      it('must allow streamId deletion, if you have a contribute permission for it', async function () {
+        const res = await server.request()
+          .put(eventPath(eventIdAB))
+          .set('Authorization', tokenContributeAB)
+          .send({
+            streamIds: [streamAId],
+          });
+        assert.equal(res.status, 200);
+        const event = res.body.event;
+        assert.deepEqual(event.streamIds, [streamAId]);
+      });
+      
+      it('must forbid streamId deletion, if you don\'t have contribute permission for it', async function () {
+        const res = await server.request()
+          .put(eventPath(eventIdAB))
+          .set('Authorization', tokenContributeA)
+          .send({
+            streamIds: [streamAId],
+          });
+        assert.equal(res.status, 400);
+        const error = res.body.error;
+      });
+      
+
+    });
 
   });
 
