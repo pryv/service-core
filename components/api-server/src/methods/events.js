@@ -438,12 +438,26 @@ module.exports = function (
       // in the context of migration delete streamId that was added by findOne
       delete event.streamId;
 
-      // -- here we should check the "changes" on stream #streamIds
+
+
+      // check if we can update this event
+      // - OK if an least one stream Match, 
+      // - Prevent removing non authorized streams
+      let canUpdateStreamsCount = 0; 
       for (let i = 0; i < event.streamIds.length ; i++) {
-        if (!context.canUpdateContext(event.streamIds[i], event.tags)) {
-          return next(errors.forbidden());
+        if (context.canUpdateContext(event.streamIds[i], event.tags)) {
+          canUpdateStreamsCount++;
+        } else { // check that unauthorized streams are untouched by adding them back
+          if (params.update.streamIds && !params.update.streamIds.includes(event.streamIds[i])) {
+            params.update.streamIds.push(event.streamIds[i]);
+          }
         }
       }
+      if (canUpdateStreamsCount === 0) { // need at least one stream with update rights
+        return next(errors.forbidden());
+      }
+
+      // -- Change this 
 
       const updatedEventType = params.update.type;
       if(updatedEventType != null) {

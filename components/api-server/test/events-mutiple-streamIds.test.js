@@ -251,6 +251,37 @@ describe('[MXEV] events muliple streamIds', function () {
         ], done);
       });
 
+      it('[4QRZ] must allow event modification if one streams as write access', function (done) {
+        var original = testData.events[0],
+          time;
+        var data = {
+          streamIds: [testData.streams[1].id, testData.streams[7].id],
+        };
+        async.series([
+          function update(stepDone) {
+            request.put(path(original.id)).send(data).end(function (res) {
+              time = timestamp.now();
+              validation.check(res, {
+                status: 200,
+                schema: methodsSchema.update.result
+              });
+
+              validation.checkFilesReadToken(res.body.event, access, filesReadTokenSecret);
+              validation.sanitizeEvent(res.body.event);
+
+              var expected = _.clone(original);
+              expected.modifiedBy = 'a_0';
+              expected.modified = time;
+              expected.streamId = data.streamIds[0];
+              expected.streamIds = data.streamIds;
+              validation.checkObjectEquality(res.body.event, expected);
+
+              stepDone();
+            });
+          }
+        ], done);
+      });
+
       it('[4QZU] must not allow stream addition with not authorized streamId', function (done) {
         var original = testData.events[0],
           time;
@@ -349,6 +380,93 @@ describe('[MXEV] events muliple streamIds', function () {
       });
 
     });
+
+  });
+
+
+  describe('event tests with fixtures', function () { 
+    let server;
+    before(async () => {
+      server = await context.spawn();
+    });
+    after(() => {
+      server.stop();
+    });
+
+    let mongoFixtures;
+    beforeEach(async function () {
+      mongoFixtures = databaseFixture(await produceMongoConnection());
+    });
+    afterEach(() => {
+      mongoFixtures.clean();
+    });
+
+    let user,
+      username,
+      streamAId,
+      streamBId,
+      eventIdAB,
+      manageAAccessToken,
+      basePathEvent,
+      basePathStream;
+
+    beforeEach(async function () {
+      username = cuid();
+      streamAId = 'streamA';
+      streamBId = 'streamB';
+      eventIdAB = cuid();
+      manageAAccessToken = cuid();
+      basePathEvent = `/${username}/events/`;
+
+      user = await mongoFixtures.user(username, {});
+      await user.stream({
+        id: streamAId,
+        name: 'streamA'
+      });
+      await user.stream({
+        id: streamBId,
+        name: 'streamB'
+      });
+      await user.access({
+        type: 'app',
+        token: manageAAccessToken,
+        permissions: [
+          {
+            streamId: 'streamA',
+            name: 'streamA',
+            level: 'manage'
+          }
+        ]
+      });
+      await user.event({
+        type: 'note/txt',
+        time: (Date.now() / 1000) - 2,
+        content: 'In A and B',
+        id: eventIdAB,
+        streamIds: [streamAId, streamBId]
+      });
+    });
+
+    describe('POST /events', function() { 
+
+      it('[U7Z5] An ', async () => {
+        for (let i = 0; i < 2; i++) {
+          const resEventChange = await server.request()
+            .put(basePathEvent + eventIdAB)
+            .query({ mergeEventsWithParent: false })
+            .set('Authorization', manageAccessToken);
+        }
+
+        const resEvent = await server.request()
+          .get(basePathEvent)
+          .set('Authorization', manageAccessToken);
+
+        resEvent.body.events.length.should.eql(2);
+        resEvent.body.events[1].streamIds.should.eql([streamBId]);
+        resEvent.body.events[0].streamIds.should.eql([streamAId]);
+      });
+
+  });
 
   });
 
