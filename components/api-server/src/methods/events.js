@@ -22,6 +22,8 @@ const NATS_UPDATE_EVENT = require('components/utils').messaging
 const NATS_DELETE_EVENT = require('components/utils').messaging
   .NATS_DELETE_EVENT;
 
+const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.'
+
 // Type repository that will contain information about what is allowed/known
 // for events. 
 const typeRepo = new TypeRepository(); 
@@ -281,7 +283,7 @@ module.exports = function (
     // convert streamId to streamIds #streamIds
     if (item.streamId && item.streamIds) {
       if (item.streamIds.length > 1 || item.streamIds[0] !== item.streamId) {
-        return next(errors.invalidOperation('Cannot mix different streamIds and streamId properties',
+        return next(errors.invalidOperation(BOTH_STREAMID_STREAMIDS_ERROR,
           { streamId: item.streamId, streamIds: item.streamIds }));
       }
     } else {
