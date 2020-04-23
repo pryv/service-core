@@ -71,24 +71,6 @@ describe('[MXEV] events muliple streamIds', function () {
 
       beforeEach(resetEvents);
 
-      it('[4QZU] must not allow stream addition with not authorized streamId', function (done) {
-        var original = testData.events[0],
-          time;
-        var data = {
-          streamIds: [testData.streams[0].children[0].id, testData.streams[8].id],
-        };
-        async.series([
-          function update(stepDone) {
-            requestA1.put(path(original.id)).send(data).end(function (res) {
-              validation.checkError(res, {
-                status: 403,
-                id: ErrorIds.Forbidden
-              }, stepDone);
-            });
-          }
-        ], done);
-      });
-
       it('[01BZ] must return an error if the associated stream is unknown', function (done) {
         request.put(path(testData.events[3].id)).send({ streamIds: [testData.streams[8].id, 'unknown-stream-id'] })
           .end(function (res) {
@@ -490,7 +472,7 @@ describe('[MXEV] events muliple streamIds', function () {
           assert.deepEqual(event.streamIds, [streamAId, streamBId]);
         });
         
-        it('must forbid streamId addition, if you don\'t have a contribute permission for it', async function () {
+        it('[4QZU] must forbid streamId addition, if you don\'t have a contribute permission for it', async function () {
           const res = await server.request()
             .put(eventPath(eventIdA))
             .set('Authorization', tokenContributeA)
