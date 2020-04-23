@@ -67,39 +67,6 @@ describe('[MXEV] events muliple streamIds', function () {
       ], done);
     });
 
-
-    describe('POST event/', function () {
-
-      beforeEach(resetEvents);
-
-    });
-
-    describe('POST event/start', function () {
-
-      beforeEach(resetEvents);
-
-      it('[5C8J] must not allow a running period event with multiple streamIds',
-        function (done) {
-          var data = {
-            // 15 minutes ago to make sure the previous duration is set accordingly
-            time: timestamp.now('-15m'),
-            type: testType,
-            streamIds: [testData.streams[0].id, testData.streams[1].id],
-            tags: ['houba']
-          };
-          var createdId;
-
-          request.post(basePath + '/start').send(data).end(function (res) {
-            validation.checkError(res, {
-              status: 400,
-              id: ErrorIds.InvalidOperation
-            });
-            done();
-          });
-        });
-
-    });
-
     describe('PUT event/<id>', function () {
 
       beforeEach(resetEvents);
