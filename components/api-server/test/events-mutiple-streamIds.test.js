@@ -71,37 +71,6 @@ describe('[MXEV] events muliple streamIds', function () {
 
       beforeEach(resetEvents);
 
-      it('[4QRX] must allow stream addition', function (done) {
-        var original = testData.events[0],
-          time;
-        var data = {
-          streamIds: [testData.streams[1].id, testData.streams[7].id],
-        };
-        async.series([
-          function update(stepDone) {
-            request.put(path(original.id)).send(data).end(function (res) {
-              time = timestamp.now();
-              validation.check(res, {
-                status: 200,
-                schema: methodsSchema.update.result
-              });
-
-              validation.checkFilesReadToken(res.body.event, access, filesReadTokenSecret);
-              validation.sanitizeEvent(res.body.event);
-
-              var expected = _.clone(original);
-              expected.modifiedBy = 'a_0';
-              expected.modified = time;
-              expected.streamId = data.streamIds[0];
-              expected.streamIds = data.streamIds;
-              validation.checkObjectEquality(res.body.event, expected);
-
-              stepDone();
-            });
-          }
-        ], done);
-      });
-
       it('[4QRZ] must allow event modification if one streams as write access', function (done) {
         var original = testData.events[0],
           time;
@@ -539,7 +508,7 @@ describe('[MXEV] events muliple streamIds', function () {
           assert.deepEqual(err.data, { streamIds: [unknownStreamId] });
         });
   
-        it('must allow streamId addition, if you have a contribute permission for it', async function () {
+        it('[4QRX] must allow streamId addition, if you have a contribute permission for it', async function () {
           const res = await server.request()
             .put(eventPath(eventIdA))
             .set('Authorization', tokenContributeAB)
