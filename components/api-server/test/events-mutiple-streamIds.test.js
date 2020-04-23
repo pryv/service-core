@@ -26,51 +26,9 @@ const { produceMongoConnection, context } = require('./test-helpers');
 
 require('date-utils');
 
-describe('[MXEV] events muliple streamIds', function () {
+describe('[MXEV] events.streamIds', function () {
 
-
-  describe('events actions', function () {
-
-    var user = testData.users[0],
-      basePath = '/' + user.username + '/events',
-      testType = 'test/test',
-      // these must be set after server instance started
-      request = null,
-      requestA1 = null,
-      access = null,
-      filesReadTokenSecret = helpers.dependencies.settings.auth.filesReadTokenSecret;
-
-    function path(id, base) {
-      return (base || basePath) + '/' + id;
-    }
-
-
-    before(function (done) {
-      async.series([
-        testData.resetUsers,
-        testData.resetAccesses,
-        testData.resetStreams,
-        server.ensureStarted.bind(server, helpers.dependencies.settings),
-        function (stepDone) {
-          requestA1 = helpers.request(server.url);
-          requestA1.token = testData.accesses[1].token;
-          request = helpers.request(server.url);
-          request.login(user, stepDone);
-        },
-        function (stepDone) {
-          helpers.dependencies.storage.user.accesses.findOne(user, { token: request.token },
-            null, function (err, acc) {
-              access = acc;
-              stepDone();
-            });
-        }
-      ], done);
-    });
-
-  });
-
-
-  describe('event tests with fixtures', function () { 
+  describe('events', function () { 
     let server;
     before(async () => {
       server = await context.spawn();
@@ -514,7 +472,7 @@ describe('[MXEV] events muliple streamIds', function () {
 
   });
 
-  describe('streams actions', function () {
+  describe('streams', function () {
     let server;
     before(async () => {
       server = await context.spawn();
