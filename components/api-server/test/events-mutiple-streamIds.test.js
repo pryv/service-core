@@ -408,6 +408,7 @@ describe('[MXEV] events muliple streamIds', function () {
       eventIdAB,
       eventA,
       eventAB,
+      tokenReadA,
       tokenContributeA,
       tokenContributeAB,
       manageABAccessToken,
@@ -420,6 +421,7 @@ describe('[MXEV] events muliple streamIds', function () {
       streamBId = 'streamB';
       eventIdA = cuid();
       eventIdAB = cuid();
+      tokenReadA = cuid();
       tokenContributeA = cuid();
       tokenContributeAB = cuid();
       basePathEvent = `/${username}/events/`;
@@ -432,6 +434,16 @@ describe('[MXEV] events muliple streamIds', function () {
       await user.stream({
         id: streamBId,
         name: 'streamB'
+      });
+      await user.access({
+        type: 'app',
+        token: tokenReadA,
+        permissions: [
+          {
+            streamId: 'streamA',
+            level: 'read'
+          }
+        ]
       });
       await user.access({
         type: 'app',
@@ -492,7 +504,21 @@ describe('[MXEV] events muliple streamIds', function () {
           assert.exists(e.streamIds);
         });
       });
+
+      it('must return only the streamIds you have a read access to', async function () {
+        const res = await server.request()
+          .get(basePathEvent)
+          .set('Authorization', tokenReadA)
+        const events = res.body.events;
+        events.forEach(e => {
+          assert.equal(e.streamId, streamAId);
+          assert.deepEqual(e.streamIds, [streamAId]);
+        });
+      });
+
     });
+
+    
 
     describe('POST /events', function() { 
 
@@ -604,6 +630,29 @@ describe('[MXEV] events muliple streamIds', function () {
         assert.deepEqual(event.streamIds, eventA.streamIds);
       });
 
+      it('must allow modification, if you have a contribute permission on at least 1 streamId', async function () {
+        const res = await server.request()
+          .put(eventPath(eventIdAB))
+          .set('Authorization', tokenContributeA)
+          .send({
+            content: 'Now I am updated, still in AB though.',
+          });
+        assert.equal(res.status, 200);
+      });
+
+      it('must return only the streamIds you have a read access to', async function () {
+        const res = await server.request()
+          .put(eventPath(eventIdAB))
+          .set('Authorization', tokenContributeA)
+          .send({
+            content: 'Now I am updated, still in AB though.',
+          });
+        assert.equal(res.status, 200);
+        const event = res.body.event;
+        assert.equal(event.streamId, streamAId);
+        assert.deepEqual(event.streamIds, [streamAId]);
+      });
+
       it('must forbid to provide both streamId and streamIds', async function () {
         const res = await server.request()
           .put(eventPath(eventIdA))
@@ -616,66 +665,72 @@ describe('[MXEV] events muliple streamIds', function () {
         // TODO must check error message
       });
 
-      it('must forbid providing an unknown streamId', async function () {
-        const unknownStreamId = 'does-not-exist';
-        const res = await server.request()
-          .put(eventPath(eventIdA))
-          .set('Authorization', tokenContributeA)
-          .send({
-            streamIds: [unknownStreamId],
-          });
-        assert.equal(res.status, 400);
-        const err = res.body.error;
-        assert.equal(err.id, ErrorIds.UnknownReferencedResource)
-        assert.deepEqual(err.data, { streamIds: [unknownStreamId] });
-      });
+      describe('when modifying streamIds', function() { 
 
-      it('must allow streamId addition, if you have a contribute permission for it', async function () {
-        const res = await server.request()
-          .put(eventPath(eventIdA))
-          .set('Authorization', tokenContributeAB)
-          .send({
-            streamIds: [streamAId, streamBId],
-          });
-        assert.equal(res.status, 200);
-        const event = res.body.event;
-        assert.equal(event.streamId, streamAId);
-        assert.deepEqual(event.streamIds, [streamAId, streamBId]);
+        it('must forbid providing an unknown streamId', async function () {
+          const unknownStreamId = 'does-not-exist';
+          const res = await server.request()
+            .put(eventPath(eventIdA))
+            .set('Authorization', tokenContributeA)
+            .send({
+              streamIds: [unknownStreamId],
+            });
+          assert.equal(res.status, 400);
+          const err = res.body.error;
+          assert.equal(err.id, ErrorIds.UnknownReferencedResource)
+          assert.deepEqual(err.data, { streamIds: [unknownStreamId] });
+        });
+  
+        it('must allow streamId addition, if you have a contribute permission for it', async function () {
+          const res = await server.request()
+            .put(eventPath(eventIdA))
+            .set('Authorization', tokenContributeAB)
+            .send({
+              streamIds: [streamAId, streamBId],
+            });
+          assert.equal(res.status, 200);
+          const event = res.body.event;
+          assert.equal(event.streamId, streamAId);
+          assert.deepEqual(event.streamIds, [streamAId, streamBId]);
+        });
+        
+        it('must forbid streamId addition, if you don\'t have a contribute permission for it', async function () {
+          const res = await server.request()
+            .put(eventPath(eventIdA))
+            .set('Authorization', tokenContributeA)
+            .send({
+              streamIds: [streamAId, streamBId],
+            });
+          assert.equal(res.status, 400);
+          const err = res.body.error;
+        });
+  
+        it('must allow streamId deletion, if you have a contribute permission for it', async function () {
+          const res = await server.request()
+            .put(eventPath(eventIdAB))
+            .set('Authorization', tokenContributeAB)
+            .send({
+              streamIds: [streamAId],
+            });
+          assert.equal(res.status, 200);
+          const event = res.body.event;
+          assert.deepEqual(event.streamIds, [streamAId]);
+        });
+        
+        it('must forbid streamId deletion, if you don\'t have contribute permission for it', async function () {
+          const res = await server.request()
+            .put(eventPath(eventIdAB))
+            .set('Authorization', tokenContributeA)
+            .send({
+              streamIds: [streamAId],
+            });
+          assert.equal(res.status, 400);
+          const error = res.body.error;
+        });
       });
       
-      it('must forbid streamId addition, if you don\'t have a contribute permission for it', async function () {
-        const res = await server.request()
-          .put(eventPath(eventIdA))
-          .set('Authorization', tokenContributeA)
-          .send({
-            streamIds: [streamAId, streamBId],
-          });
-        assert.equal(res.status, 400);
-        const err = res.body.error;
-      });
 
-      it('must allow streamId deletion, if you have a contribute permission for it', async function () {
-        const res = await server.request()
-          .put(eventPath(eventIdAB))
-          .set('Authorization', tokenContributeAB)
-          .send({
-            streamIds: [streamAId],
-          });
-        assert.equal(res.status, 200);
-        const event = res.body.event;
-        assert.deepEqual(event.streamIds, [streamAId]);
-      });
       
-      it('must forbid streamId deletion, if you don\'t have contribute permission for it', async function () {
-        const res = await server.request()
-          .put(eventPath(eventIdAB))
-          .set('Authorization', tokenContributeA)
-          .send({
-            streamIds: [streamAId],
-          });
-        assert.equal(res.status, 400);
-        const error = res.body.error;
-      });
       
 
     });
