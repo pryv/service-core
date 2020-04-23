@@ -740,7 +740,7 @@ describe('[MXEV] events muliple streamIds', function () {
 
     });
 
-    describe('POST event/start', function () {
+    describe('POST /event/start', function () {
 
       function path(eventId) {
         return url.resolve(basePathEvent, 'start');
@@ -761,7 +761,7 @@ describe('[MXEV] events muliple streamIds', function () {
       
     });
     
-    describe('POST event/stop', function () {
+    describe('POST /event/stop', function () {
 
       function path(eventId) {
         return url.resolve(basePathEvent, 'stop');
