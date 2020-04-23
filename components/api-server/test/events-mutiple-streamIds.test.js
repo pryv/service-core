@@ -71,16 +71,6 @@ describe('[MXEV] events muliple streamIds', function () {
 
       beforeEach(resetEvents);
 
-      it('[01BZ] must return an error if the associated stream is unknown', function (done) {
-        request.put(path(testData.events[3].id)).send({ streamIds: [testData.streams[8].id, 'unknown-stream-id'] })
-          .end(function (res) {
-            validation.checkError(res, {
-              status: 400,
-              id: ErrorIds.UnknownReferencedResource,
-              data: { streamIds: ['unknown-stream-id'] }
-            }, done);
-          });
-      });
     });
 
     describe('DELETE event/<id>', function () {
@@ -445,7 +435,7 @@ describe('[MXEV] events muliple streamIds', function () {
 
       describe('when modifying streamIds', function() { 
 
-        it('must forbid providing an unknown streamId', async function () {
+        it('[01BZ] must forbid providing an unknown streamId', async function () {
           const unknownStreamId = 'does-not-exist';
           const res = await server.request()
             .put(eventPath(eventIdA))
