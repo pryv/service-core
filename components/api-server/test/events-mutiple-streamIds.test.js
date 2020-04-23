@@ -72,46 +72,6 @@ describe('[MXEV] events muliple streamIds', function () {
 
       beforeEach(resetEvents);
 
-      it('[1GR9] must allow event in multiple streams', function (done) {
-        var data = {
-          type: 'temperature/celsius',
-          content: 36.7,
-          streamIds: [testData.streams[7].id, testData.streams[1].id],
-        };
-        var createdEventId,
-          created;
-
-        async.series([
-          function addNewEvent(stepDone) {
-            request.post(basePath).send(data).end(function (res) {
-              validation.check(res, {
-                status: 201,
-                schema: methodsSchema.create.result
-              });
-              createdEventId = res.body.event.id;
-              stepDone();
-            });
-          },
-          function verifyEventData(stepDone) {
-
-            storage.find(user, {}, null, function (err, events) {
-              var expected = _.clone(data);
-              expected.id = createdEventId;
-              var actual = _.find(events, function (event) {
-                return event.id === createdEventId;
-              });
-              expected.tags = actual.tags;
-              expected.time = actual.time;
-              expected.streamId = expected.streamIds[0];
-              validation.checkStoredItem(actual, 'event');
-              validation.checkObjectEquality(actual, expected);
-
-              stepDone();
-            });
-          }
-        ], done);
-      });
-
       it('[1GZ9] must clean double streamIds entries in event in multiple streams', function (done) {
         var data = {
           type: 'temperature/celsius',
@@ -563,7 +523,7 @@ describe('[MXEV] events muliple streamIds', function () {
       });
 
       describe('when using "streamIds"', async function () {
-        it('must return streamIds & streamId containing the first one', async function () {
+        it('[1GR9] must return streamIds & streamId containing the first one', async function () {
           const res = await server.request()
           .post(basePathEvent)
           .set('Authorization', tokenContributeAB)
