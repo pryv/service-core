@@ -72,31 +72,6 @@ describe('[MXEV] events muliple streamIds', function () {
 
       beforeEach(resetEvents);
 
-      it('[1GZ9] must clean double streamIds entries in event in multiple streams', function (done) {
-        var data = {
-          type: 'temperature/celsius',
-          content: 36.7,
-          streamIds: [testData.streams[7].id, testData.streams[7].id, testData.streams[1].id],
-        };
-        var originalCount,
-          createdEventId,
-          created;
-
-        request.post(basePath).send(data).end(function (res) {
-          validation.check(res, {
-            status: 201,
-            schema: methodsSchema.create.result
-          });
-          var expected = _.clone(res.body.event);
-          expected.streamId = data.streamIds[0];
-          expected.streamIds = [testData.streams[7].id, testData.streams[1].id],
-
-            validation.checkObjectEquality(res.body.event, expected);
-          done();
-        });
-      });
-
-
       it('[1G19] must not allow event in multiple streams, if one of the stream has not write access', function (done) {
         var data = {
           time: timestamp.fromDate('2012-03-22T10:00'),
@@ -538,7 +513,7 @@ describe('[MXEV] events muliple streamIds', function () {
         assert.deepEqual(event.streamIds, [streamAId, streamBId]);
         });
 
-        it('must clean duplicate streamIds', async function () {
+        it('[1GZ9] must clean duplicate streamIds', async function () {
           const res = await server.request()
             .post(basePathEvent)
             .set('Authorization', tokenContributeAB)
