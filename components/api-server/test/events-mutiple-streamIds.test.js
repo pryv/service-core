@@ -406,6 +406,7 @@ describe('[MXEV] events muliple streamIds', function () {
       streamBId,
       eventIdA,
       eventIdAB,
+      trashedEventIdAB,
       eventA,
       eventAB,
       tokenReadA,
@@ -421,6 +422,7 @@ describe('[MXEV] events muliple streamIds', function () {
       streamBId = 'streamB';
       eventIdA = cuid();
       eventIdAB = cuid();
+      trashedEventIdAB = cuid();
       tokenReadA = cuid();
       tokenContributeA = cuid();
       tokenContributeAB = cuid();
@@ -483,6 +485,13 @@ describe('[MXEV] events muliple streamIds', function () {
         streamIds: [streamAId, streamBId]
       });
       eventAB = eventAB.attrs;
+      trashedEventAB = await user.event({
+        type: 'note/txt',
+        content: 'In A and B',
+        id: trashedEventIdAB,
+        streamIds: [streamAId, streamBId],
+        trashed: true,
+      });
     });
     afterEach(() => {
       mongoFixtures.clean();
@@ -771,6 +780,52 @@ describe('[MXEV] events muliple streamIds', function () {
         // TODO: assert error id and message
       });
       
+    });
+
+    describe('DELETE /events', function () {
+
+      function eventPath(eventId) {
+        return url.resolve(basePathEvent, eventId);
+      }
+
+      it('must return streamIds & streamId containing the first one (if many)', async function () {
+        const res = await server.request()
+          .delete(eventPath(eventIdAB))
+          .set('Authorization', tokenContributeAB)
+        assert.equal(res.status, 200);
+        const event = res.body.event;
+        assert.equal(event.streamId, streamAId);
+        assert.deepEqual(event.streamIds, [streamAId, streamBId]);
+      });
+
+      it('must return only the streamIds you have a read access to', async function () {
+        const res = await server.request()
+          .delete(eventPath(eventIdAB))
+          .set('Authorization', tokenContributeA)
+        assert.equal(res.status, 200);
+        const event = res.body.event;
+        assert.equal(event.streamId, streamAId);
+        assert.deepEqual(event.streamIds, [streamAId]);
+      });
+
+      it('must allow trashing, if you have a contribute permission on at least 1 streamId', async function () {
+        const res = await server.request()
+          .delete(eventPath(eventIdAB))
+          .set('Authorization', tokenContributeA)
+        assert.equal(res.status, 200);
+        const event = res.body.event;
+        assert.equal(event.trashed, true);
+      });
+
+      it('must allow deletion, if you have a contribute permission on at least 1 streamId', async function () {
+        const res = await server.request()
+          .delete(eventPath(trashedEventIdAB))
+          .set('Authorization', tokenContributeA)
+        assert.equal(res.status, 200);
+        const event = res.body.event;
+        assert.equal(event.trashed, true);
+      });
+
     });
 
   });
