@@ -72,27 +72,6 @@ describe('[MXEV] events muliple streamIds', function () {
 
       beforeEach(resetEvents);
 
-      it('[1G19] must not allow event in multiple streams, if one of the stream has not write access', function (done) {
-        var data = {
-          time: timestamp.fromDate('2012-03-22T10:00'),
-          duration: timestamp.duration('55m'),
-          type: 'temperature/celsius',
-          content: 36.7,
-          streamIds: [testData.streams[7].id, testData.streams[1].id],
-        };
-
-        async.series([
-          function addNewEvent(stepDone) {
-            requestA1.post(basePath).send(data).end(function (res) {
-              validation.checkError(res, {
-                status: 403,
-                id: ErrorIds.Forbidden
-              }, stepDone);
-            });
-          }
-        ], done);
-      });
-
       it('[POIZ] must not allow mixing  different streamIds and streamId properties', function (done) {
         var data = { streamId: testData.streams[0].id, type: testType };
         data.streamIds = [testData.streams[1].id, testData.streams[7].id];
@@ -543,7 +522,7 @@ describe('[MXEV] events muliple streamIds', function () {
           assert.deepEqual(err.data, { streamIds: [unknownStreamId] });
         });
 
-        it('must forbid creating an event in multiple streams, if a contribute permission is missing on at least one stream', async function () {
+        it('[1G19] must forbid creating an event in multiple streams, if a contribute permission is missing on at least one stream', async function () {
           const res = await server.request()
             .post(basePathEvent)
             .set('Authorization', tokenContributeA)
