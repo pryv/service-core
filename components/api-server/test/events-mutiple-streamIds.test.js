@@ -67,12 +67,6 @@ describe('[MXEV] events muliple streamIds', function () {
       ], done);
     });
 
-    describe('PUT event/<id>', function () {
-
-      beforeEach(resetEvents);
-
-    });
-
     describe('DELETE event/<id>', function () {
 
       beforeEach(resetEvents);
