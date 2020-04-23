@@ -728,11 +728,49 @@ describe('[MXEV] events muliple streamIds', function () {
           const error = res.body.error;
         });
       });
-      
 
-      
-      
+    });
 
+    describe('POST event/start', function () {
+
+      function path(eventId) {
+        return url.resolve(basePathEvent, 'start');
+      }
+
+      it('must return a 410 (Gone)', async function () {
+        const res = await server.request()
+          .post(path())
+          .set('Authorization', tokenContributeA)
+          .send({
+            streamIds: [streamAId],
+            type: 'activity/plain'
+          });
+        assert.equal(res.status, 410);
+        const error = res.body.error;
+        // TODO: assert error id and message
+      });
+      
+    });
+    
+    describe('POST event/stop', function () {
+
+      function path(eventId) {
+        return url.resolve(basePathEvent, 'stop');
+      }
+
+      it('must return a 410 (Gone)', async function () {
+        const res = await server.request()
+          .post(path())
+          .set('Authorization', tokenContributeA)
+          .send({
+            streamId: streamAId,
+            type: 'activity/plain',
+          });
+        assert.equal(res.status, 410);
+        const error = res.body.error;
+        // TODO: assert error id and message
+      });
+      
     });
 
   });
