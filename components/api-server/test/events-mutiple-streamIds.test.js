@@ -72,23 +72,6 @@ describe('[MXEV] events muliple streamIds', function () {
 
       beforeEach(resetEvents);
 
-      it('[POIZ] must not allow mixing  different streamIds and streamId properties', function (done) {
-        var data = { streamId: testData.streams[0].id, type: testType };
-        data.streamIds = [testData.streams[1].id, testData.streams[7].id];
-
-        async.series([
-          function addNew(stepDone) {
-            request.post(basePath).send(data).end(function (res) {
-              validation.checkError(res, {
-                status: 400,
-                id: ErrorIds.InvalidOperation,
-                data: { streamId: data.streamId, streamIds: data.streamIds }
-              }, stepDone);
-            });
-          }
-        ], done);
-      });
-
       it('[5NEZ] must return an error if one of the associated stream is unknown', function (done) {
         var data = {
           time: timestamp.fromDate('2012-03-22T10:00'),
