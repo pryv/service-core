@@ -482,11 +482,8 @@ describe('[MXEV] events.streamIds', function () {
     });
 
     let mongoFixtures;
-    beforeEach(async function () {
+    before(async function () {
       mongoFixtures = databaseFixture(await produceMongoConnection());
-    });
-    afterEach(() => {
-      mongoFixtures.clean();
     });
 
     let user,
@@ -563,6 +560,9 @@ describe('[MXEV] events.streamIds', function () {
         id: eventIdsAssA,
         streamIds: [streamASonId, streamASonAsonId]
       });
+    });
+    afterEach(() => {
+      mongoFixtures.clean();
     });
 
     it('[J6H8] Deleting a stream, should not delete multiple streams Event but remove the streamId from list (mergeWithparent = false)', async () => {
