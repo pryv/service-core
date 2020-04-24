@@ -145,7 +145,7 @@ describe('[MXEV] events.streamIds', function () {
 
     describe('GET /events', function () {
 
-      it('must return streamIds & streamId containing the first one (if many)', async function () {
+      it('[WJ0S] must return streamIds & streamId containing the first one (if many)', async function () {
         const res = await server.request()
           .get(basePathEvent)
           .set('Authorization', tokenContributeA)
@@ -156,7 +156,7 @@ describe('[MXEV] events.streamIds', function () {
         });
       });
 
-      it('must return only the streamIds you have a read access to', async function () {
+      it('[WLL9] must return only the streamIds you have a read access to', async function () {
         const res = await server.request()
           .get(basePathEvent)
           .set('Authorization', tokenReadA)
@@ -173,7 +173,7 @@ describe('[MXEV] events.streamIds', function () {
 
     describe('POST /events', function() { 
 
-      it('must not be able to provide both streamId and streamIds', async function () {
+      it('[X4PX] must not be able to provide both streamId and streamIds', async function () {
         const res = await server.request()
           .post(basePathEvent)
           .set('Authorization', tokenContributeA)
@@ -188,7 +188,7 @@ describe('[MXEV] events.streamIds', function () {
       })
 
       describe('when using "streamId"', async function () {
-        it('must return streamIds & streamId', async function () {
+        it('[1YUV] must return streamIds & streamId', async function () {
           const res = await server.request()
           .post(basePathEvent)
           .set('Authorization', tokenContributeA)
@@ -205,7 +205,7 @@ describe('[MXEV] events.streamIds', function () {
       });
 
       describe('when using "streamIds"', async function () {
-        it('[1GR9] must return streamIds & streamId containing the first one', async function () {
+        it('[VXMG] must return streamIds & streamId containing the first one', async function () {
           const res = await server.request()
           .post(basePathEvent)
           .set('Authorization', tokenContributeAB)
@@ -220,7 +220,7 @@ describe('[MXEV] events.streamIds', function () {
         assert.deepEqual(event.streamIds, [streamAId, streamBId]);
         });
 
-        it('[1GZ9] must clean duplicate streamIds', async function () {
+        it('[2QZF] must clean duplicate streamIds', async function () {
           const res = await server.request()
             .post(basePathEvent)
             .set('Authorization', tokenContributeAB)
@@ -234,7 +234,7 @@ describe('[MXEV] events.streamIds', function () {
           assert.deepEqual(event.streamIds, [streamAId, streamBId]);
         });
 
-        it('[5NEZ] must forbid providing an unknown streamId', async function () {
+        it('[NY0E] must forbid providing an unknown streamId', async function () {
           const unknownStreamId = 'does-not-exist';
           const res = await server.request()
             .post(basePathEvent)
@@ -250,7 +250,7 @@ describe('[MXEV] events.streamIds', function () {
           assert.deepEqual(err.data, { streamIds: [unknownStreamId] });
         });
 
-        it('[1G19] must forbid creating an event in multiple streams, if a contribute permission is missing on at least one stream', async function () {
+        it('[6Z2D] must forbid creating an event in multiple streams, if a contribute permission is missing on at least one stream', async function () {
           const res = await server.request()
             .post(basePathEvent)
             .set('Authorization', tokenContributeA)
@@ -268,7 +268,7 @@ describe('[MXEV] events.streamIds', function () {
 
     describe('PUT /events', function() { 
       
-      it('must return streamIds & streamId containing the first one (if many)', async function () {
+      it('[BBBX] must return streamIds & streamId containing the first one (if many)', async function () {
         const res = await server.request()
           .put(eventPath(eventIdA))
           .set('Authorization', tokenContributeA)
@@ -281,7 +281,7 @@ describe('[MXEV] events.streamIds', function () {
         assert.deepEqual(event.streamIds, eventA.streamIds);
       });
 
-      it('[4QRZ] must allow modification, if you have a contribute permission on at least 1 streamId', async function () {
+      it('[42KZ] must allow modification, if you have a contribute permission on at least 1 streamId', async function () {
         const res = await server.request()
           .put(eventPath(eventIdAB))
           .set('Authorization', tokenContributeA)
@@ -291,7 +291,7 @@ describe('[MXEV] events.streamIds', function () {
         assert.equal(res.status, 200);
       });
 
-      it('must return only the streamIds you have a read access to', async function () {
+      it('[2OBZ] must return only the streamIds you have a read access to', async function () {
         const res = await server.request()
           .put(eventPath(eventIdAB))
           .set('Authorization', tokenContributeA)
@@ -304,7 +304,7 @@ describe('[MXEV] events.streamIds', function () {
         assert.deepEqual(event.streamIds, [streamAId]);
       });
 
-      it('must forbid to provide both streamId and streamIds', async function () {
+      it('[Q5P7] must forbid to provide both streamId and streamIds', async function () {
         const res = await server.request()
           .put(eventPath(eventIdA))
           .set('Authorization', tokenContributeA)
@@ -318,7 +318,7 @@ describe('[MXEV] events.streamIds', function () {
 
       describe('when modifying streamIds', function() { 
 
-        it('[01BZ] must forbid providing an unknown streamId', async function () {
+        it('[TQHG] must forbid providing an unknown streamId', async function () {
           const unknownStreamId = 'does-not-exist';
           const res = await server.request()
             .put(eventPath(eventIdA))
@@ -332,7 +332,7 @@ describe('[MXEV] events.streamIds', function () {
           assert.deepEqual(err.data, { streamIds: [unknownStreamId] });
         });
   
-        it('[4QRX] must allow streamId addition, if you have a contribute permission for it', async function () {
+        it('[6Q8B] must allow streamId addition, if you have a contribute permission for it', async function () {
           const res = await server.request()
             .put(eventPath(eventIdA))
             .set('Authorization', tokenContributeAB)
@@ -345,7 +345,7 @@ describe('[MXEV] events.streamIds', function () {
           assert.deepEqual(event.streamIds, [streamAId, streamBId]);
         });
         
-        it('[4QZU] must forbid streamId addition, if you don\'t have a contribute permission for it', async function () {
+        it('[MFF7] must forbid streamId addition, if you don\'t have a contribute permission for it', async function () {
           const res = await server.request()
             .put(eventPath(eventIdA))
             .set('Authorization', tokenContributeA)
@@ -356,7 +356,7 @@ describe('[MXEV] events.streamIds', function () {
           const err = res.body.error;
         });
   
-        it('must allow streamId deletion, if you have a contribute permission for it', async function () {
+        it('[83N6] must allow streamId deletion, if you have a contribute permission for it', async function () {
           const res = await server.request()
             .put(eventPath(eventIdAB))
             .set('Authorization', tokenContributeAB)
@@ -368,7 +368,7 @@ describe('[MXEV] events.streamIds', function () {
           assert.deepEqual(event.streamIds, [streamAId]);
         });
         
-        it('must forbid streamId deletion, if you don\'t have contribute permission for it', async function () {
+        it('[JLS5] must forbid streamId deletion, if you don\'t have contribute permission for it', async function () {
           const res = await server.request()
             .put(eventPath(eventIdAB))
             .set('Authorization', tokenContributeA)
@@ -388,7 +388,7 @@ describe('[MXEV] events.streamIds', function () {
         return url.resolve(basePathEvent, 'start');
       }
 
-      it('must return a 410 (Gone)', async function () {
+      it('[FOM3] must return a 410 (Gone)', async function () {
         const res = await server.request()
           .post(path())
           .set('Authorization', tokenContributeA)
@@ -409,7 +409,7 @@ describe('[MXEV] events.streamIds', function () {
         return url.resolve(basePathEvent, 'stop');
       }
 
-      it('must return a 410 (Gone)', async function () {
+      it('[BR33] must return a 410 (Gone)', async function () {
         const res = await server.request()
           .post(path())
           .set('Authorization', tokenContributeA)
@@ -430,7 +430,7 @@ describe('[MXEV] events.streamIds', function () {
         return url.resolve(basePathEvent, eventId);
       }
 
-      it('must return streamIds & streamId containing the first one (if many)', async function () {
+      it('[BPL0] must return streamIds & streamId containing the first one (if many)', async function () {
         const res = await server.request()
           .delete(eventPath(eventIdAB))
           .set('Authorization', tokenContributeAB)
@@ -440,7 +440,7 @@ describe('[MXEV] events.streamIds', function () {
         assert.deepEqual(event.streamIds, [streamAId, streamBId]);
       });
 
-      it('must return only the streamIds you have a read access to', async function () {
+      it('[SQJQ] must return only the streamIds you have a read access to', async function () {
         const res = await server.request()
           .delete(eventPath(eventIdAB))
           .set('Authorization', tokenContributeA)
@@ -450,7 +450,7 @@ describe('[MXEV] events.streamIds', function () {
         assert.deepEqual(event.streamIds, [streamAId]);
       });
 
-      it('must allow trashing, if you have a contribute permission on at least 1 streamId', async function () {
+      it('[T5ZY] must allow trashing, if you have a contribute permission on at least 1 streamId', async function () {
         const res = await server.request()
           .delete(eventPath(eventIdAB))
           .set('Authorization', tokenContributeA)
@@ -459,7 +459,7 @@ describe('[MXEV] events.streamIds', function () {
         assert.equal(event.trashed, true);
       });
 
-      it('must allow deletion, if you have a contribute permission on at least 1 streamId', async function () {
+      it('[2G32] must allow deletion, if you have a contribute permission on at least 1 streamId', async function () {
         const res = await server.request()
           .delete(eventPath(trashedEventIdAB))
           .set('Authorization', tokenContributeA)
@@ -584,7 +584,7 @@ describe('[MXEV] events.streamIds', function () {
 
     describe('POST /streams', function () {
 
-      it('must forbid setting the "singleActivity" field', async function () {
+      it('[EGW2] must forbid setting the "singleActivity" field', async function () {
         const res = await server.request()
           .post(basePathStream)
           .set('Authorization', manageAccessToken)
@@ -598,7 +598,7 @@ describe('[MXEV] events.streamIds', function () {
 
     describe('PUT /streams', function () {
 
-      it('must forbid setting the "singleActivity" field', async function () {
+      it('[EY79] must forbid setting the "singleActivity" field', async function () {
         const res = await server.request()
           .put(pathStreamId(streamAId))
           .set('Authorization', manageAccessToken)
@@ -615,7 +615,7 @@ describe('[MXEV] events.streamIds', function () {
       
         describe('when mergeEventsWithParent=false', function () {
 
-          it('[J6H8] must not delete events, but remove the deleted streamId from their streamIds', async function () {
+          it('[TWDG] must not delete events, but remove the deleted streamId from their streamIds', async function () {
             for (let i = 0; i < 2; i++) {
               await server.request()
                 .delete(pathStreamId(streamBId))
@@ -637,7 +637,7 @@ describe('[MXEV] events.streamIds', function () {
 
         describe('when mergeEventsWithParent=false', function () {
 
-          it('[J6H9] must delete the events', async function () {
+          it('[6SBU] must delete the events', async function () {
             for (let i = 0; i < 2; i++) {
               await server.request()
                 .delete(pathStreamId(streamAId))
@@ -666,7 +666,7 @@ describe('[MXEV] events.streamIds', function () {
 
         describe('when mergeEventsWithParent=true', function () {
 
-          it('[J7H8] must not delete events, but remove all streamIds and add its parentId', async function () {
+          it('[2FRR] must not delete events, but remove all streamIds and add its parentId', async function () {
             for (let i = 0; i < 2; i++) {
               await server.request()
                 .delete(basePathStream + streamA_AId)
