@@ -536,7 +536,12 @@ module.exports = function (
         if (err) {
           return next(errors.unexpectedError(err));
         }
-
+        
+        // as read is the lowest permission, we don't check the level
+        const accessibleStreams = context.access.streamPermissions.map(p => p.streamId);
+        updatedEvent.streamIds = filterReadableStreamIds(accessibleStreams, updatedEvent.streamIds);
+        // same for streamId if first one is non readable
+        updatedEvent.streamId = updatedEvent.streamIds[0];
         result.event = updatedEvent;
         setFileReadToken(context.access, result.event);
         next();
@@ -1253,6 +1258,10 @@ module.exports = function (
 
   function isRunning(event) {
     return event.duration === null;
+  }
+
+  function filterReadableStreamIds(readableStreamIds, eventStreamIds) {
+    return _.intersection(readableStreamIds, eventStreamIds);
   }
 
 };
