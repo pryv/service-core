@@ -10,7 +10,7 @@ var utils = require('components/utils'),
     treeUtils = utils.treeUtils,
     _ = require('lodash'),
     SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
-    FilterStreamIdsStream = require('./streams/FilterStreamIdsStream');
+    FilterReadableStreamIdsStream = require('./streams/FilterReadableStreamIdsStream');
     
 const assert = require('assert');
     
@@ -179,7 +179,7 @@ module.exports = function (
             filesReadTokenSecret: authSettings.filesReadTokenSecret
           }
         ))
-        .pipe(new FilterStreamIdsStream(
+        .pipe(new FilterReadableStreamIdsStream(
           {
             streams: params.streams,
           }
