@@ -565,6 +565,37 @@ describe('[MXEV] events.streamIds', function () {
       mongoFixtures.clean();
     });
 
+    function pathStreamId(streamId) {
+      return url.resolve(basePathStream, streamId);
+    }
+
+    describe('POST /streams', function () {
+
+      it('must forbid setting the "singleActivity" field', async function () {
+        const res = await server.request()
+          .post(basePathStream)
+          .set('Authorization', manageAccessToken)
+          .send({
+            name: 'something',
+            singleActivity: true,
+          });
+        assert.equal(res.status, 400)
+      });
+    });
+
+    describe('PUT /streams', function () {
+
+      it('must forbid setting the "singleActivity" field', async function () {
+        const res = await server.request()
+          .put(pathStreamId(streamAId))
+          .set('Authorization', manageAccessToken)
+          .send({
+            singleActivity: true,
+          });
+        assert.equal(res.status, 400)
+      });
+    });
+
     it('[J6H8] Deleting a stream, should not delete multiple streams Event but remove the streamId from list (mergeWithparent = false)', async () => {
       for (let i = 0; i < 2; i++) {
         const resStreamDelete = await server.request()
