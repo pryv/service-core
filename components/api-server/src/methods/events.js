@@ -10,6 +10,7 @@ var utils = require('components/utils'),
     treeUtils = utils.treeUtils,
     _ = require('lodash'),
     SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
+    FilterStreamIdsStream = require('./streams/FilterStreamIdsStream');
     
 const assert = require('assert');
     
@@ -176,7 +177,15 @@ module.exports = function (
           {
             access: context.access,
             filesReadTokenSecret: authSettings.filesReadTokenSecret
-          })));
+          }
+        ))
+        .pipe(new FilterStreamIdsStream(
+          {
+            streams: params.streams,
+          }
+        ))
+      );
+      
       next();
     });
   }
