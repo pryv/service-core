@@ -490,22 +490,22 @@ describe('[MXEV] events.streamIds', function () {
       username,
       streamAId,
       streamBId,
-      streamASonId,
-      eventIdBsA,
-      eventIdAsA,
+      streamA_AId,
+      eventIdA_AandB,
+      eventIdAandA_A,
       manageAccessToken,
       basePathEvent,
       basePathStream;
 
     beforeEach(async function () {
       username = cuid();
-      streamAId = 'streamA';
-      streamBId = 'streamB';
-      streamASonId = 'streamASonId';
-      streamASonAsonId = 'streamASonAsonId';
-      eventIdAsA = cuid();
-      eventIdBsA = cuid();
-      eventIdsAssA = cuid();
+      streamAId = 'streamAId';
+      streamBId = 'streamBId';
+      streamA_AId = 'streamA_AId';
+      streamA_A_AId = 'streamA_A_AId';
+      eventIdAandA_A = cuid();
+      eventIdA_AandB = cuid();
+      eventIdA_AandA_A_A = cuid();
       manageAccessToken = cuid();
       basePathStream = `/${username}/streams/`;
       basePathEvent = `/${username}/events/`;
@@ -521,12 +521,12 @@ describe('[MXEV] events.streamIds', function () {
       });
       await user.stream({
         parentId: streamAId,
-        id: streamASonId,
+        id: streamA_AId,
         name: 'stream son of A'
       });
       await user.stream({
-        parentId: streamASonId,
-        id: streamASonAsonId,
+        parentId: streamA_AId,
+        id: streamA_A_AId,
         name: 'stream son of son of A'
       });
       await user.access({
@@ -543,27 +543,36 @@ describe('[MXEV] events.streamIds', function () {
         type: 'note/txt',
         time: (Date.now() / 1000) -2,
         content: 'In B and Son of A',
-        id: eventIdBsA,
-        streamIds: [streamBId, streamASonId]
+        id: eventIdA_AandB,
+        streamIds: [streamBId, streamA_AId]
       });
       await user.event({
         type: 'note/txt',
         time: (Date.now() / 1000) -1,
         content: 'In A and Son of A',
-        id: eventIdAsA,
-        streamIds: [streamAId, streamASonId]
+        id: eventIdAandA_A,
+        streamIds: [streamAId, streamA_AId]
       });
       await user.event({
         type: 'note/txt',
         time: (Date.now() / 1000),
         content: 'In Son of A and Son of Son of A',
-        id: eventIdsAssA,
-        streamIds: [streamASonId, streamASonAsonId]
+        id: eventIdA_AandA_A_A,
+        streamIds: [streamA_AId, streamA_A_AId]
       });
     });
     afterEach(() => {
       mongoFixtures.clean();
     });
+
+    /**
+     * Stream structure
+     A          B
+      \
+       AA
+        \
+         AAA
+     */
 
     function pathStreamId(streamId) {
       return url.resolve(basePathStream, streamId);
