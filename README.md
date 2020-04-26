@@ -114,6 +114,11 @@ Add your breakpoints
 
 `yarn test-debug`
 
+### Debug by hand
+
+- print 500 errors: uncomment line containing `uncomment to log 500 errors on test running using InstanceManager`
+- print logs: uncomment line with `stdio: 'inherit'`
+
 ## App Configuration
 
 Components supporting configuration load their settings from (last takes precedence):
