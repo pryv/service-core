@@ -41,6 +41,7 @@ describe('[MXEV] events.streamIds', function () {
         tokenReadA,
         tokenContributeA,
         tokenContributeA_ReadB,
+        tokenContributeB,
         tokenContributeAB,
         basePathEvent;
 
@@ -54,6 +55,7 @@ describe('[MXEV] events.streamIds', function () {
       tokenReadA = cuid();
       tokenContributeA = cuid();
       tokenContributeA_ReadB = cuid();
+      tokenContributeB = cuid();
       tokenContributeAB = cuid();
       basePathEvent = `/${username}/events/`;
 
@@ -97,6 +99,16 @@ describe('[MXEV] events.streamIds', function () {
           {
             streamId: 'streamB',
             level: 'read'
+          }
+        ]
+      });
+      await user.access({
+        type: 'app',
+        token: tokenContributeB,
+        permissions: [
+          {
+            streamId: 'streamB',
+            level: 'contribute'
           }
         ]
       });
@@ -471,6 +483,15 @@ describe('[MXEV] events.streamIds', function () {
         assert.equal(res.status, 200);
         const deletion = res.body.eventDeletion;
         assert.equal(deletion.id, trashedEventIdAB);
+      });
+
+      it('must forbid trashing, if you don\'t have a contribute permission on at least 1 streamId', async function () {
+        const res = await server.request()
+          .delete(eventPath(eventIdA))
+          .set('Authorization', tokenContributeB);
+        assert.equal(res.status, 403);
+        const error = res.body.error;
+        assert.equal(error.id, ErrorIds.Forbidden);
       });
 
     });
