@@ -994,7 +994,6 @@ describe('events', function () {
         streamId: testData.streams[0].id,
         tags: ['houba']
       };
-      data.streamIds = [data.streamId];
       var createdId;
 
       async.series([
@@ -1084,7 +1083,6 @@ describe('events', function () {
         streamId: testData.streams[0].id,
         tags: ['houba']
       };
-      data.streamIds = [data.streamId];
       request.post(basePath)
         .field('event', JSON.stringify(data))
         .attach('document', testData.attachments.document.path,
@@ -1116,7 +1114,8 @@ describe('events', function () {
                 type: testData.attachments.image.type,
                 size: testData.attachments.image.size
               }
-            ]
+            ],
+            streamIds: [data.streamId],
           }, data);
           validation.checkObjectEquality(createdEvent, expected);
 
@@ -1143,7 +1142,6 @@ describe('events', function () {
           principles: '三頂三圓三虛。。。'
         },
         streamId: testData.streams[0].id,
-        streamIds: [testData.streams[0].id],
         tags: ['bagua']
       };
 
@@ -1168,7 +1166,8 @@ describe('events', function () {
               type: testData.attachments.document.type,
               size: testData.attachments.document.size
             }
-          ]
+          ],
+          streamIds: [data.streamId],
         }, data);
         validation.checkObjectEquality(createdEvent, expected);
 
