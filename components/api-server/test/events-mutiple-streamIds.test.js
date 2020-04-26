@@ -486,7 +486,7 @@ describe('[MXEV] events.streamIds', function () {
         assert.equal(deletion.id, trashedEventIdAB);
       });
 
-      it('must forbid trashing, if you don\'t have a contribute permission on at least 1 streamId', async function () {
+      it('[6W5Y] must forbid trashing, if you don\'t have a contribute permission on at least 1 streamId', async function () {
         const res = await server.request()
           .delete(eventPath(eventIdA))
           .set('Authorization', tokenContributeB);
