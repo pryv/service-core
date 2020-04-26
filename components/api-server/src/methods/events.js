@@ -277,8 +277,11 @@ module.exports = function (
    * Shorthand for `create` with `null` event duration.
    */
   api.register('events.start',
-    setDurationForStart,
-    'events.create');
+    returnGoneError);
+
+  function returnGoneError(context, params, result, next) {
+    return next(errors.goneResource());
+  }
 
   function setDurationForStart(context, params, result, next) {
     params.duration = null;
@@ -977,6 +980,7 @@ module.exports = function (
   }
 
   api.register('events.stop',
+    returnGoneError,
     commonFns.getParamsValidation(methodsSchema.stop.params),
     function (context, params, result, next) {
       // default time is now

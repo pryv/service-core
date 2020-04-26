@@ -212,3 +212,13 @@ factory.unsupportedContentType = function (contentType: string) {
     `If you think we should, please help us and report an issue! (You used ${contentType})`,
     { httpStatus: 415 });
 };
+
+factory.goneResource = function (): APIError {
+  return new APIError(
+    ErrorIds.Gone, 'API method gone, please stop using it.',
+    {
+      httpStatus: 410,
+      dontNotifyAirbrake: true,
+    }
+  );
+};

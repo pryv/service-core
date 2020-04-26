@@ -32,6 +32,10 @@ const ErrorIds = {
    * Used for Batch calls and Socket.IO events.get result storing
    */
   TooManyResults: 'too-many-results',
+  /**
+   * Used for removed API methods
+   */
+  Gone: 'removed-method',
 
   // those last two are not in use yet but already documented (see API reference for details)
 

@@ -403,7 +403,7 @@ describe('[MXEV] events.streamIds', function () {
           });
         assert.equal(res.status, 410);
         const error = res.body.error;
-        // TODO: assert error id and message
+        assert.equal(error.id, ErrorIds.Gone);
       });
       
     });
@@ -424,7 +424,7 @@ describe('[MXEV] events.streamIds', function () {
           });
         assert.equal(res.status, 410);
         const error = res.body.error;
-        // TODO: assert error id and message
+        assert.equal(error.id, ErrorIds.Gone);
       });
       
     });
