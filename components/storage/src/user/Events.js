@@ -79,10 +79,6 @@ function streamIdsToDB(event) {
     return event;
   }
   if (event.streamId && event.streamIds) {
-    if (event.streamIds.length > 1 || event.streamIds[0] !== event.streamId) {
-      console.log("******** ZUT", event);
-      throw new Error("Cannot mix different streamIds and streamId properties");
-    }
     delete event.streamId;
   } 
   if (event.streamId) {
