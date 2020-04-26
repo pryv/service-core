@@ -240,7 +240,6 @@ describe('streams', function () {
         id: 'nullable',
         name: 'New stream with null fields',
         parentId: null,
-        singleActivity: null,
         clientData: null,
         children: null,
         trashed: null
@@ -422,7 +421,6 @@ describe('streams', function () {
         var expected = _.clone(data);
         expected.id = original.id;
         expected.parentId = original.parentId;
-        expected.singleActivity = original.singleActivity;
         expected.modified = time;
         expected.modifiedBy = accessId;
         delete expected.children;
@@ -436,7 +434,6 @@ describe('streams', function () {
     it('[5KNJ] must accept explicit null for optional fields', function (done) {
       const data = {
         parentId: null,
-        singleActivity: null,
         clientData: null,
         trashed: null
       };

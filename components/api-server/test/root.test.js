@@ -498,7 +498,6 @@ describe('root', function() {
         {
           method: 'events.create',
           params: {
-            streamId: streamId,
             streamIds: [streamId],
             type: 'note/txt',
             content: 'Hi, i am an event in a batch call',
@@ -541,7 +540,7 @@ describe('root', function() {
             tags: [],
             id: results[1].event.id,
           },
-          calls[1].params
+          _.extend(calls[1].params, { streamId: calls[1].params.streamIds[0]}),
         )
       );
 
