@@ -1271,11 +1271,14 @@ module.exports = function (
         ));
       }
       
+      let canDeleteEvent = false;
       for (let i = 0; i < event.streamIds.length; i++) {
-        if (! context.canUpdateContext(event.streamIds[i], event.tags)) {
-          return callback(errors.forbidden());
+        if (context.canUpdateContext(event.streamIds[i], event.tags)) {
+          canDeleteEvent = true;
+          continue;
         }
       }
+      if (! canDeleteEvent) return callback(errors.forbidden());
 
       callback(null, event);
     });
