@@ -816,7 +816,7 @@ describe('events', function () {
       });
     });
 
-    it('[H7CN] must not stop the running period event if the new event is a mark event (single activity)',
+    it.skip('[H7CN] must not stop the running period event if the new event is a mark event (single activity)',
         function (done) {
       var data = { streamId: testData.streams[0].id, type: testType };
       async.series([
@@ -918,7 +918,7 @@ describe('events', function () {
       });
     });
 
-    it('[1GGK] must return an error if the event\'s period overlaps existing periods (single activity)',
+    it.skip('[1GGK] must return an error if the event\'s period overlaps existing periods (single activity)',
         function (done) {
       var data = {
         time: timestamp.add(testData.events[1].time, '15m'),
@@ -979,7 +979,7 @@ describe('events', function () {
 
   });
 
-  describe('POST /start', function () {
+  describe.skip('POST /start', function () {
 
     beforeEach(resetEvents);
 
@@ -1437,7 +1437,7 @@ describe('events', function () {
       });
     });
 
-    it('[C9GL] must return the id of the stopped previously running event if any (single activity)',
+    it.skip('[C9GL] must return the id of the stopped previously running event if any (single activity)',
         function (done) {
       request.put(path(testData.events[3].id)).send({time: timestamp.now()})
           .end(function (res) {
@@ -1510,7 +1510,7 @@ describe('events', function () {
       });
     });
 
-    it('[SPN1] must return an error if moving a running period event before another existing ' +
+    it.skip('[SPN1] must return an error if moving a running period event before another existing ' +
         'period event (single activity)', function (done) {
       var data = { time: timestamp.add(testData.events[3].time, '-5m') };
       request.put(path(testData.events[9].id)).send(data).end(function (res) {
@@ -1522,7 +1522,7 @@ describe('events', function () {
       });
     });
 
-    it('[FPEE] must return an error if the event\'s new period overlaps other events\'s (single activity)',
+    it.skip('[FPEE] must return an error if the event\'s new period overlaps other events\'s (single activity)',
         function (done) {
       request.put(path(testData.events[1].id)).send({duration: timestamp.duration('5h')})
           .end(function (res) {
@@ -1694,7 +1694,7 @@ describe('events', function () {
     });
   });
 
-  describe('POST /stop', function () {
+  describe.skip('POST /stop', function () {
 
     beforeEach(resetEvents);
 
