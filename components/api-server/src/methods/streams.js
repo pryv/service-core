@@ -419,7 +419,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
                       // multiple StreamIds &&
                       // the streams to delete are NOT ALL in the streamAndDescendantIds list
                       if (head.streamIds.length > 1 && 
-                        ! treeUtils.arrayAIsIncludedInB(head.streamIds, streamAndDescendantIds)) {
+                        ! arrayAIsIncludedInB(head.streamIds, streamAndDescendantIds)) {
                           // we will remove the streamIds  later on with an update Many
                       } else { 
                         // remove the events
@@ -455,7 +455,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
                     // multiple StreamIds &&
                     // the streams to delete are NOT ALL in the streamAndDescendantIds list
                     if (event.streamIds.length > 1 &&
-                      !treeUtils.arrayAIsIncludedInB(head.streamIds, streamAndDescendantIds)) {
+                      ! arrayAIsIncludedInB(head.streamIds, streamAndDescendantIds)) {
                       // we will remove the streamIds later on 
                     } else { 
                         userEventFilesStorage.removeAllForEvent(context.user, event.id, function (err) {
@@ -537,3 +537,13 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
 };
 module.exports.injectDependencies = true;
+
+/**
+ * Returns if an array has all elements contained in another.
+ * 
+ * @param {Array} a Contains element to check if they exists in b
+ * @param {Array} b
+ */
+function arrayAIsIncludedInB (a, b) {
+  return a.every(i => b.includes(i));
+}
