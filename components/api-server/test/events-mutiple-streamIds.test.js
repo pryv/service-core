@@ -183,7 +183,27 @@ describe('[MXEV] events.streamIds', function () {
 
     });
 
-    
+    describe('GET /events/:id', function () {
+
+      it('[IJQZ] must return streamIds & streamId containing the first one (if many)', async function () {
+        const res = await server.request()
+          .get(eventPath(eventIdAB))
+          .set('Authorization', tokenContributeA_ReadB);
+        const event = res.body.event;
+        assert.equal(event.streamId, streamAId);
+        assert.deepEqual(event.streamIds, [streamAId, streamBId]);
+      });
+
+      it('[1F22] must return only the streamIds you have a read access to', async function () {
+        const res = await server.request()
+          .get(eventPath(eventIdAB))
+          .set('Authorization', tokenReadA);
+        const event = res.body.event;
+        assert.equal(event.streamId, streamAId);
+        assert.deepEqual(event.streamIds, [streamAId]);
+      });
+
+    });
 
     describe('POST /events', function() { 
 

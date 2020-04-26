@@ -238,6 +238,10 @@ module.exports = function (
       }
       if (! canReadEvent) return next(errors.forbidden());
 
+      event.streamIds = filterReadableStreamIds(context, event.streamIds);
+      // same for streamId if first one is non readable
+      event.streamId = event.streamIds[0];
+
       setFileReadToken(context.access, event);
       result.event = event;
       return next();
