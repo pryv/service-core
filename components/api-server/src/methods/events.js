@@ -1136,6 +1136,9 @@ module.exports = function (
 
         result.event = updatedEvent;
         setFileReadToken(context.access, result.event);
+        // as read is the lowest permission, we don't check the level
+        const accessibleStreams = context.access.streamPermissions.map(p => p.streamId);
+        updatedEvent.streamIds = filterReadableStreamIds(accessibleStreams, updatedEvent.streamIds);
         next();
       });
   }
