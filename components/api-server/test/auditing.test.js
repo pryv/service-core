@@ -314,7 +314,7 @@ describe('Auditing', function () {
         ], done);
       });
 
-      it('[TLG6] must not generate history of the running event that was stopped ' +
+      it.skip('[TLG6] must not generate history of the running event that was stopped ' +
         'because of the start call on another event',
         function (done) {
           var data = {
@@ -355,7 +355,7 @@ describe('Auditing', function () {
           ], done);
         });
 
-      it('[DZMK] must not generate history when no event was stopped in the procedure of the start call ' +
+      it.skip('[DZMK] must not generate history when no event was stopped in the procedure of the start call ' +
         'on another event',
         function (done) {
           var data = {
@@ -396,7 +396,7 @@ describe('Auditing', function () {
           ], done);
         });
 
-      it('[MB48] must not generate history when calling stop on a running event', function (done) {
+      it.skip('[MB48] must not generate history when calling stop on a running event', function (done) {
         var data = {
           streamId: normalStream.id,
           id: runningEventOnNormalStream.id,
@@ -498,7 +498,7 @@ describe('Auditing', function () {
         ], done);
       });
 
-      it('[Y4CH] must generate history of the running event that was stopped because of the start call ' +
+      it.skip('[Y4CH] must generate history of the running event that was stopped because of the start call ' +
         'on another event',
         function (done) {
           var data = {
@@ -542,7 +542,7 @@ describe('Auditing', function () {
         });
 
 
-      it('[M90Z] must not generate history when no event was stopped in the procedure of the start call ' +
+      it.skip('[M90Z] must not generate history when no event was stopped in the procedure of the start call ' +
         'on another event',
         function (done) {
           var data = {
@@ -583,7 +583,7 @@ describe('Auditing', function () {
           ], done);
         });
 
-      it('[519W] must generate history when calling stop on a running event', function (done) {
+      it.skip('[519W] must generate history when calling stop on a running event', function (done) {
         var data = {
           streamId: normalStream.id,
           id: runningEventOnNormalStream.id,
