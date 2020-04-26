@@ -469,8 +469,8 @@ describe('[MXEV] events.streamIds', function () {
           .delete(eventPath(trashedEventIdAB))
           .set('Authorization', tokenContributeA);
         assert.equal(res.status, 200);
-        const event = res.body.event;
-        assert.equal(event.trashed, true);
+        const deletion = res.body.eventDeletion;
+        assert.equal(deletion.id, trashedEventIdAB);
       });
 
     });
