@@ -4,6 +4,7 @@ require('./test-helpers');
 
 const ErrorIds = require('components/errors').ErrorIds;
 const url = require('url');
+const _ = require('lodash');
 const cuid = require('cuid');
 const chai = require('chai');
 const assert = chai.assert;
@@ -720,7 +721,8 @@ describe('[MXEV] events.streamIds', function () {
               }
               if (e.id === eventIdA_AandB) {
                 foundA_AandB = true;
-                assert.deepEqual(e.streamIds, [streamBId, streamAId]);
+                assert.isTrue(_.includes(e.streamIds, streamAId));
+                assert.isTrue(_.includes(e.streamIds, streamBId));
               }
             });
             assert.isTrue(foundAandA_A);
