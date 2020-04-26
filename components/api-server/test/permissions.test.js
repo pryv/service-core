@@ -187,14 +187,14 @@ describe('Access permissions', function () {
       });
     });
 
-    it('[RHFS] must forbid stopping events for \'read-only\' streams', function (done) {
+    it.skip('[RHFS] must forbid stopping events for \'read-only\' streams', function (done) {
       request.post(basePath + '/stop', token(2)).send({id: testData.events[9].id})
           .end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
-    it('[3SGZ] must forbid stopping events for \'read-only\' tags', function (done) {
+    it.skip('[3SGZ] must forbid stopping events for \'read-only\' tags', function (done) {
       request.post(basePath + '/stop', token(5)).send({id: testData.events[11].id})
           .end(function (res) {
         validation.checkErrorForbidden(res, done);

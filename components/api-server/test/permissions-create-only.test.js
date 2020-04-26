@@ -413,7 +413,7 @@ describe('permissions create-only level', () => {
     });
 
     describe('POST /stop', function () {
-      it('[6VJF] should not allow stopping events for "create-only" streams', async function () {
+      it.skip('[6VJF] should not allow stopping events for "create-only" streams', async function () {
          const res = await server
           .request()
           .post(`${basePath}/stop`)
