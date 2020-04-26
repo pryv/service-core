@@ -435,7 +435,7 @@ module.exports = function (
       for (let i = 0; i < event.streamIds.length ; i++) {
         if (context.canUpdateContext(event.streamIds[i], event.tags)) {
           canUpdateEvent = true;
-          continue;
+          break;
         }
       }
       if (! canUpdateEvent) return next(errors.forbidden());
@@ -1276,7 +1276,7 @@ module.exports = function (
       for (let i = 0; i < event.streamIds.length; i++) {
         if (context.canUpdateContext(event.streamIds[i], event.tags)) {
           canDeleteEvent = true;
-          continue;
+          break;
         }
       }
       if (! canDeleteEvent) return callback(errors.forbidden());
