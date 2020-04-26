@@ -339,8 +339,6 @@ module.exports = function (
       context.content.duration = 0; 
     }
 
-  
-
     userEventsStorage.insertOne(
       context.user, context.content, function (err, newEvent) {
         if (err != null) {
@@ -397,7 +395,6 @@ module.exports = function (
 
   // -------------------------------------------------------------------- UPDATE
 
-
   api.register('events.update',
     commonFns.getParamsValidation(methodsSchema.update.params),
     commonFns.catchForbiddenUpdate(eventSchema('update'), updatesSettings.ignoreProtectedFields, logger),
@@ -411,7 +408,6 @@ module.exports = function (
     updateAttachments,
     updateEvent,
     notify);
-  
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
 
@@ -433,12 +429,6 @@ module.exports = function (
       // in the context of migration delete streamId that was added by findOne
       delete event.streamId;
 
-      /**
-       * 1. check that have contributeContext on at least 1 existing streamId
-       * 2. check that streams we add have contribute access
-       * 3. check that streams we remove have contribute access
-       */
-
       // 1. check that have contributeContext on at least 1 existing streamId
       let canUpdateEvent = false;
       for (let i = 0; i < event.streamIds.length ; i++) {
@@ -449,7 +439,7 @@ module.exports = function (
       }
       if (! canUpdateEvent) return next(errors.forbidden());
       
-      if (eventUpdate.streamIds != null) {
+      if (hasStreamIdsModification(eventUpdate)) {
 
         // 2. check that streams we add have contribute access
         const streamIdsToAdd = _.difference(eventUpdate.streamIds, event.streamIds);
@@ -459,13 +449,8 @@ module.exports = function (
           }
         }
 
-        // 3. check that streams we remove have contribute access
-        // check that unauthorized streams are untouched by adding them back
-        
-        /**
-         * 1. compute streamIds to remove
-         *  a. event.streamIds - eventUpdate.streamIds + event.hiddenStreams
-         */
+        // 3. check that streams we remove have contribute access        
+        // streamsToRemove = event.streamIds - (eventUpdate.streamIds + event.hiddenStreams)
         for (let i = 0; i < event.streamIds.length ; i++) {
           if (! context.canReadStream(event.streamIds[i])) eventUpdate.streamIds.push(event.streamIds[i]);
         }
@@ -476,11 +461,7 @@ module.exports = function (
             return next(errors.forbidden());
           }
         }
-      } 
-
-      
-
-      // -- Change this 
+      }
 
       const updatedEventType = eventUpdate.type;
       if(updatedEventType != null) {
@@ -500,6 +481,10 @@ module.exports = function (
       context.oldContent = _.cloneDeep(event);
       context.content = _.extend(event, eventUpdate);
       next();
+
+      function hasStreamIdsModification(event) {
+        return event.streamIds != null;
+      }
     });
 
   }
