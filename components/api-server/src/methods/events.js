@@ -9,7 +9,7 @@ var utils = require('components/utils'),
     timestamp = require('unix-timestamp'),
     treeUtils = utils.treeUtils,
     _ = require('lodash'),
-    SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
+    SetFileReadTokenStream = require('./streams/SetFileReadTokenStream'),
     FilterReadableStreamIdsStream = require('./streams/FilterReadableStreamIdsStream');
     
 const assert = require('assert');
@@ -23,7 +23,7 @@ const NATS_UPDATE_EVENT = require('components/utils').messaging
 const NATS_DELETE_EVENT = require('components/utils').messaging
   .NATS_DELETE_EVENT;
 
-const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.'
+const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';
 
 // Type repository that will contain information about what is allowed/known
 // for events. 
@@ -262,7 +262,7 @@ module.exports = function (
 
   api.register('events.create',
     commonFns.getParamsValidation(methodsSchema.create.params),
-    migrationToStreamIdsParams,
+    normalizeStreamIdAndStreamIds,
     applyPrerequisitesForCreation,
     validateEventContentAndCoerce,
     checkExistingLaterPeriodIfNeeded,
@@ -285,57 +285,27 @@ module.exports = function (
     next();
   }
 
-  function migrationToStreamIdsParams(context, item, result, next) {
-    if (!item) {
-     return
-    }
-    // convert streamId to streamIds #streamIds
-    if (item.streamId && item.streamIds) {
-      if (item.streamIds.length > 1 || item.streamIds[0] !== item.streamId) {
-        return next(errors.invalidOperation(BOTH_STREAMID_STREAMIDS_ERROR,
-          { streamId: item.streamId, streamIds: item.streamIds }));
-      }
-    } else {
-      if (!item.streamIds && item.streamId) {
-        item.streamIds = [item.streamId];
-      }
-    }
-    // remove double entries from streamIds
-    if (item.streamIds && item.streamIds.length > 1) {
-      item.streamIds = [...new Set(item.streamIds)];
-    }
-    delete item.streamId;
-    next();
-  }
-
   function applyPrerequisitesForCreation(context, params, result, next) {
+    const event = context.content;
     // default time is now
-    _.defaults(params, { time: timestamp.now() });
-    if (! params.tags) {
-      params.tags = [];
+    _.defaults(event, { time: timestamp.now() });
+    if (! event.tags) {
+      event.tags = [];
     }
     
-    cleanupEventTags(params);
+    cleanupEventTags(event);
     
     context.files = sanitizeRequestFiles(params.files);
     delete params.files;
 
-    context.initTrackingProperties(params);
-
+    context.initTrackingProperties(event);
     
-  
-    context.setStreamList(params.streamIds);
-    if (! checkStreams(context, next)) {
-      return;
-    }
-    context.content = params;
+    context.content = event;
     next();
   }
 
-  
-
   function verifycanContributeToContext(context, params, result, next) {
-    for (let i = 0; i < context.content.streamIds.length; i++) { // refuse is any context is not accessible
+    for (let i = 0; i < context.content.streamIds.length; i++) { // refuse if any context is not accessible
       if (! context.canContributeToContext(context.content.streamIds[i], context.content.tags)) {
         return next(errors.forbidden());
       }
@@ -419,7 +389,7 @@ module.exports = function (
   api.register('events.update',
     commonFns.getParamsValidation(methodsSchema.update.params),
     commonFns.catchForbiddenUpdate(eventSchema('update'), updatesSettings.ignoreProtectedFields, logger),
-    migrationToStreamIdsParams,
+    normalizeStreamIdAndStreamIds,
     applyPrerequisitesForUpdate,
     validateEventContentAndCoerce,
     checkExistingLaterPeriodIfNeeded,
@@ -432,10 +402,12 @@ module.exports = function (
   
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
-    
-    cleanupEventTags(params.update);
 
-    context.updateTrackingProperties(params.update);
+    const eventUpdate = context.content;
+    
+    cleanupEventTags(eventUpdate);
+
+    context.updateTrackingProperties(eventUpdate);
 
     userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
       if (err) {
@@ -459,8 +431,8 @@ module.exports = function (
         if (context.canUpdateContext(event.streamIds[i], event.tags)) {
           canUpdateStreamsCount++;
         } else { // check that unauthorized streams are untouched by adding them back
-          if (params.update.streamIds && !params.update.streamIds.includes(event.streamIds[i])) {
-            params.update.streamIds.push(event.streamIds[i]);
+          if (eventUpdate.streamIds && !eventUpdate.streamIds.includes(event.streamIds[i])) {
+            eventUpdate.streamIds.push(event.streamIds[i]);
           }
         }
       }
@@ -470,7 +442,7 @@ module.exports = function (
 
       // -- Change this 
 
-      const updatedEventType = params.update.type;
+      const updatedEventType = eventUpdate.type;
       if(updatedEventType != null) {
         const currentEventType = event.type;
         const isCurrentEventTypeSeries = isSeriesType(currentEventType);
@@ -486,12 +458,7 @@ module.exports = function (
       }
 
       context.oldContent = _.cloneDeep(event);
-      context.content = _.extend(event, params.update);
-      context.setStreamList(context.content.streamIds); 
-      if (context.content.streamIds && ! checkStreams(context, next)) {
-        return;
-      } // Why return with no next!!!
-
+      context.content = _.extend(event, eventUpdate);
       next();
     });
 
@@ -592,6 +559,38 @@ module.exports = function (
     return result;
   }
 
+  function normalizeStreamIdAndStreamIds(context, params, result, next) {
+    
+    const event = isEventsUpdateMethod() ? params.update : params;
+
+    // forbid providing both streamId and streamIds
+    if (event.streamId != null && event.streamIds != null) {
+      return next(errors.invalidOperation(BOTH_STREAMID_STREAMIDS_ERROR,
+        { streamId: event.streamId, event: params.streamIds }));
+    }
+
+    // convert streamId to streamIds #streamIds
+    if (event.streamId != null) {
+      event.streamIds = [event.streamId];
+    }
+    
+    // remove double entries from streamIds
+    if (event.streamIds != null && event.streamIds.length > 1) {
+      event.streamIds = [...new Set(event.streamIds)];
+    }
+    delete event.streamId;
+    // using context.content now - not params
+    context.content = event;
+
+    // check that streamIds are known
+    context.setStreamList(context.content.streamIds);
+    if (event.streamIds != null && ! checkStreams(context, next)) return;
+    
+    next();
+
+    function isEventsUpdateMethod() { return params.update != null; }
+  }
+
   /**
    * Validates the event's content against its type (if known).
    * Will try casting string content to number if appropriate.
@@ -626,7 +625,7 @@ module.exports = function (
     }
     
     // assert: `type` is not a series but is known
-    
+
     const content = context.content.hasOwnProperty('content') 
       ? context.content.content
       : null;
