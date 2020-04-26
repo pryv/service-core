@@ -418,7 +418,6 @@ describe('root', function() {
         {
           method: 'events.create',
           params: {
-            streamId: streamId2,
             streamIds: [streamId2],
             time: timestamp.now(),
             type: testType,
@@ -428,7 +427,6 @@ describe('root', function() {
         {
           method: 'events.create',
           params: {
-            streamId: streamId2,
             streamIds: [streamId2],
             time: timestamp.now('1h'),
             duration: timestamp.duration('1h'),
@@ -442,7 +440,6 @@ describe('root', function() {
           params: {
             time: timestamp.now('2h'),
             type: testType,
-            streamId: 'unknown',
             streamIds: ['unknown'],
             description: 'invalid event C (unknown stream)',
           },
@@ -468,7 +465,7 @@ describe('root', function() {
             id: results[0].event.id,
             tags: [],
           },
-          calls[0].params
+          _.extend(calls[0].params, { streamId: calls[0].params.streamIds[0]})
         )
       );
 
@@ -479,7 +476,7 @@ describe('root', function() {
           {
             id: results[1].event.id,
           },
-          calls[1].params
+          _.extend(calls[1].params, { streamId: calls[1].params.streamIds[0]})
         )
       );
       assert.exists(results[2].error);

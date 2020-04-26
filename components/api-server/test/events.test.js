@@ -991,7 +991,7 @@ describe('events', function () {
         // 15 minutes ago to make sure the previous duration is set accordingly
         time: timestamp.now('-15m'),
         type: testType,
-        streamId: testData.streams[0].id,
+        streamIds: [testData.streams[0].id],
         tags: ['houba']
       };
       var createdId;
@@ -1080,7 +1080,7 @@ describe('events', function () {
         content: {
           chapterOne: '道 可 道 非 常 道...'
         },
-        streamId: testData.streams[0].id,
+        streamIds: [testData.streams[0].id],
         tags: ['houba']
       };
       request.post(basePath)
@@ -1115,7 +1115,7 @@ describe('events', function () {
                 size: testData.attachments.image.size
               }
             ],
-            streamIds: [data.streamId],
+            streamId: data.streamIds[0],
           }, data);
           validation.checkObjectEquality(createdEvent, expected);
 
@@ -1141,7 +1141,7 @@ describe('events', function () {
         content: {
           principles: '三頂三圓三虛。。。'
         },
-        streamId: testData.streams[0].id,
+        streamIds: [testData.streams[0].id],
         tags: ['bagua']
       };
 
@@ -1167,7 +1167,7 @@ describe('events', function () {
               size: testData.attachments.document.size
             }
           ],
-          streamIds: [data.streamId],
+          streamId: data.streamIds[0],
         }, data);
         validation.checkObjectEquality(createdEvent, expected);
 
@@ -1359,7 +1359,6 @@ describe('events', function () {
         duration: timestamp.add(original.duration, '15m'),
         type: testType,
         content: 'test',
-        streamId: testData.streams[0].children[0].id,
         streamIds: [testData.streams[0].children[0].id],
         tags: [' yippiya ', ' ', ''], // must trim and ignore empty tags
         description: 'New description',
@@ -1385,6 +1384,7 @@ describe('events', function () {
             expected.modified = time;
             expected.modifiedBy = access.id;
             expected.attachments = original.attachments;
+            expected.streamId = data.streamIds[0];
             validation.checkObjectEquality(res.body.event, expected);
 
             eventsNotifCount.should.eql(1, 'events notifications');
@@ -1499,14 +1499,14 @@ describe('events', function () {
     });
 
     it('[01B2] must return an error if the associated stream is unknown', function (done) {
-      request.put(path(testData.events[3].id)).send({ streamId: 'unknown-stream-id', streamIds: ['unknown-stream-id']})
-          .end(function (res) {
-        validation.checkError(res, {
-          status: 400,
-          id: ErrorIds.UnknownReferencedResource,
-          data: {streamIds: ['unknown-stream-id']}
-        }, done);
-      });
+      request.put(path(testData.events[3].id)).send({ streamIds: ['unknown-stream-id']})
+        .end(function (res) {
+          validation.checkError(res, {
+            status: 400,
+            id: ErrorIds.UnknownReferencedResource,
+            data: {streamIds: ['unknown-stream-id']}
+          }, done);
+        });
     });
 
     it.skip('[SPN1] must return an error if moving a running period event before another existing ' +
