@@ -623,7 +623,6 @@ module.exports = function (
    * @param {Function} next
    */
   function validateEventContentAndCoerce(context, params, result, next) {
-
     const type = context.content.type;
         
     // Unknown types can just be created as normal events. 

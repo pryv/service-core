@@ -618,7 +618,7 @@ describe('events', function () {
         duration: timestamp.duration('55m'),
         type: 'temperature/celsius',
         content: 36.7,
-        streamId: testData.streams[0].id,
+        streamIds: [testData.streams[0].id],
         tags: [' patapoumpoum ', '   ', ''], // must trim and ignore empty tags
         description: 'Test description',
         clientData: {
@@ -642,7 +642,7 @@ describe('events', function () {
           });
         },
         function addNewEvent(stepDone) {
-          request.post(basePath).send(data).end(function (res) {            
+          request.post(basePath).send(data).end(function (res) {
             validation.check(res, {
               status: 201,
               schema: methodsSchema.create.result
@@ -658,7 +658,7 @@ describe('events', function () {
             events.length.should.eql(originalCount + 1, 'events');
 
             var expected = _.clone(data);
-            expected.streamIds = [expected.streamId];
+            expected.streamId = expected.streamIds[0];
             expected.id = createdEventId;
             expected.tags = ['patapoumpoum'];
             expected.created = expected.modified = created;
@@ -674,9 +674,6 @@ describe('events', function () {
         }
       ], done);
     });
-
-
- 
 
     it('[QSBV] must set the event\'s time to "now" if missing', function (done) {
       var data = {
