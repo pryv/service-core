@@ -638,32 +638,7 @@ module.exports = function (
    * @param {Function} next
    */
   function validateEventContentAndCoerce(context, params, result, next) {
-    const event = context.content;
 
-    // forbid providing both streamId and streamIds
-    if (event.streamId != null && event.streamIds != null) {
-      return next(errors.invalidOperation(BOTH_STREAMID_STREAMIDS_ERROR,
-        { streamId: event.streamId, event: params.streamIds }));
-    }
-
-    // convert streamId to streamIds #streamIds
-    if (event.streamId != null) {
-      event.streamIds = [event.streamId];
-    }
-
-    // remove double entries from streamIds
-    if (event.streamIds.length > 1) {
-      event.streamIds = [...new Set(event.streamIds)];
-    }
-    delete event.streamId;
-    context.content = event;
-    
-    context.setStreamList(event.streamIds);
-    if (! checkStreams(context, next)) {
-      return;
-    }
-    // assert `streamIds` is set and duplicate-free
-  
     const type = context.content.type;
         
     // Unknown types can just be created as normal events. 
