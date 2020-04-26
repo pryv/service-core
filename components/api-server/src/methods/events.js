@@ -228,14 +228,19 @@ module.exports = function (
       if (! event) {
         return next(errors.unknownResource('event', params.id));
       }
+
+      let canReadEvent = false;
       for (let i = 0; i < event.streamIds.length; i++) { // ok if at least one
         if (context.canReadContext(event.streamIds[i], event.tags)) {
-          setFileReadToken(context.access, event);
-          result.event = event;
-          return next();
+          canReadEvent = true;
+          break;
         }
       }
-      return next(errors.forbidden());
+      if (! canReadEvent) return next(errors.forbidden());
+
+      setFileReadToken(context.access, event);
+      result.event = event;
+      return next();
     });
   }
 
@@ -1136,7 +1141,7 @@ module.exports = function (
         updatedEvent.streamId = updatedEvent.streamIds[0];
         result.event = updatedEvent;
         setFileReadToken(context.access, result.event);
-        
+
         next();
       });
   }
