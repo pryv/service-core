@@ -440,10 +440,7 @@ module.exports = function (
         }
 
         // 3. check that streams we remove have contribute access        
-        // streamsToRemove = event.streamIds - (eventUpdate.streamIds + event.hiddenStreams)
-        for (let i = 0; i < event.streamIds.length ; i++) {
-          if (! context.canReadStream(event.streamIds[i])) eventUpdate.streamIds.push(event.streamIds[i]);
-        }
+        // streamsToRemove = event.streamIds - eventUpdate.streamIds
         const streamIdsToRemove = _.difference(event.streamIds, eventUpdate.streamIds);
 
         for (let i = 0; i < streamIdsToRemove.length ; i++) {
