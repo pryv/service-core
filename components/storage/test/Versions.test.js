@@ -394,6 +394,50 @@ describe('Versions', function () {
 
       done();
     });
+
+    function fixProperties(items, resourceName) {
+
+      items.forEach((item) => {
+        item.id = item._id;
+        delete item._id;
+        delete item.endTime;
+        if (item.deleted != null) item.deleted = new Date(item.deleted) / 1000;
+        if (resourceName == 'accesses') {
+          if (item.deleted === null) {
+            delete item.deleted;
+          }
+        }
+      });
+  
+      if (resourceName == 'streams') {
+        items = buildTree(items);
+      }
+  
+      return items;
+    }
+
+    function compareData(oldData, newData) {
+      oldData.forEach((oldResource) => {
+        let found = false;
+        newData.forEach((resource) => {
+          if (_.isEqual(resource, oldResource)) {
+            found = true;
+          }
+        });
+      });
+    }
+
+    async function getResourcesOld(user, resourceName, callback) {
+      let resourceCol;
+      await database.getCollection({
+        name: user.id + '.' + resourceName
+      }, (err, col) => {
+        if (err) return callback(err);
+        resourceCol = col;
+      });
+      const resources = await resourceCol.find({}).toArray();
+      return callback(null, resources);
+    }
   });
 
   it('[CRPX] must handle data migration from v1.4.0 to 1.5.0', function (done) {
@@ -420,38 +464,6 @@ describe('Versions', function () {
     });
   });
 
-  function fixProperties(items, resourceName) {
-
-    items.forEach((item) => {
-      item.id = item._id;
-      delete item._id;
-      delete item.endTime;
-      if (item.deleted != null) item.deleted = new Date(item.deleted) / 1000;
-      if (resourceName == 'accesses') {
-        if (item.deleted === null) {
-          delete item.deleted;
-        }
-      }
-    });
-
-    if (resourceName == 'streams') {
-      items = buildTree(items);
-    }
-
-    return items;
-  }
-
-  function compareData(oldData, newData) {
-    oldData.forEach((oldResource) => {
-      let found = false;
-      newData.forEach((resource) => {
-        if (_.isEqual(resource, oldResource)) {
-          found = true;
-        }
-      });
-    });
-  }
-
   function compareIndexes(expected, actual) {
     expected.forEach((index) => {
       index.index = _.extend(index.index, { userId: 1 });
@@ -470,19 +482,6 @@ describe('Versions', function () {
       }
     });
   }
-
-  async function getResourcesOld(user, resourceName, callback) {
-    let resourceCol;
-    await database.getCollection({
-      name: user.id + '.' + resourceName
-    }, (err, col) => {
-      if (err) return callback(err);
-      resourceCol = col;
-    });
-    const resources = await resourceCol.find({}).toArray();
-    return callback(null, resources);
-  }
-
 
   function getVersions(/* migration1Id, migration2Id, ... */) {
     const pickArgs = [].slice.call(arguments);
