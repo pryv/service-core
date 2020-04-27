@@ -301,7 +301,7 @@ describe('[MXEV] events.streamIds', function () {
       });
     });
 
-    describe('PUT /events', function() { 
+    describe('PUT /events/:id', function() { 
       
       it('[BBBX] must return streamIds & streamId containing the first one (if many)', async function () {
         const res = await server.request()
@@ -462,7 +462,7 @@ describe('[MXEV] events.streamIds', function () {
       
     });
 
-    describe('DELETE /events', function () {
+    describe('DELETE /events/:id', function () {
 
       function eventPath(eventId) {
         return url.resolve(basePathEvent, eventId);
@@ -644,7 +644,7 @@ describe('[MXEV] events.streamIds', function () {
       });
     });
 
-    describe('PUT /streams', function () {
+    describe('PUT /streams/:id', function () {
 
       it('[EY79] must forbid setting the "singleActivity" field', async function () {
         const res = await server.request()
