@@ -264,28 +264,10 @@ module.exports = function (
     normalizeStreamIdAndStreamIds,
     applyPrerequisitesForCreation,
     validateEventContentAndCoerce,
-    checkExistingLaterPeriodIfNeeded,
-    checkOverlappedPeriodsIfNeeded,
     verifycanContributeToContext,
-    stopPreviousPeriodIfNeeded,
     createEvent,
     createAttachments,
     notify);
-
-  /**
-   * Shorthand for `create` with `null` event duration.
-   */
-  api.register('events.start',
-    returnGoneError);
-
-  function returnGoneError(context, params, result, next) {
-    return next(errors.goneResource());
-  }
-
-  function setDurationForStart(context, params, result, next) {
-    params.duration = null;
-    next();
-  }
 
   function applyPrerequisitesForCreation(context, params, result, next) {
     const event = context.content;
@@ -391,9 +373,6 @@ module.exports = function (
     normalizeStreamIdAndStreamIds,
     applyPrerequisitesForUpdate,
     validateEventContentAndCoerce,
-    checkExistingLaterPeriodIfNeeded,
-    checkOverlappedPeriodsIfNeeded,
-    stopPreviousPeriodIfNeeded,
     generateLogIfNeeded,
     updateAttachments,
     updateEvent,
@@ -702,186 +681,6 @@ module.exports = function (
     return true;
   }
 
-  function isConcernedBySingleActivity(context) {
-    if (! context.streamList) return false;
-    for (let i = 0; i < context.streamList.length; i++) {
-      if (context.streamList[i].singleActivityRootId) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  function checkExistingLaterPeriodIfNeeded(context, params, result, next) {
-    if (! context.content.hasOwnProperty('time')) {
-      return next();
-    }
-
-    if (!isPeriod(context.content) ||
-      !isRunning(context.content)) {
-      // marks and *finished* periods can be inserted before an existing period
-      return process.nextTick(next);
-    }
-
-    if (! isConcernedBySingleActivity(context)) {
-      return process.nextTick(next);
-    }
-
-    // forbid multiple stream events in single activity mode
-    if (context.content.streamIds.length > 1) {
-      return next(errors.invalidOperation('Events with multiple streamIds cannot use the single activity feature'));
-    }
-
-    var query = {
-      streamIds: {$in: context.getSingleActivityExpandedIds()},
-      time: {'$gt': context.content.time},
-      $and: [
-        {duration: {'$exists' : true}},
-        {duration: {$ne: 0}}
-      ]
-    };
-    var options = {
-      projection: {id: 1},
-      sort: {time: 1}
-    };
-    userEventsStorage.findOne(context.user, query, options, function (err, periodEvent) {
-      if (err) { return next(errors.unexpectedError(err)); }
-
-      if (periodEvent) {
-        return next(errors.invalidOperation('At least one period event ("' + periodEvent.id +
-          '") already exists at a later time', {conflictingEventId: periodEvent.id}
-        ));
-      }
-
-      next();
-    });
-  }
-
-  /**
-   * Considers running events to have no duration.
-   *
-   * @param {Object} context
-   * @param {Object} params
-   * @param {Object} result
-   * @param {Function} next
-   */
-  function checkOverlappedPeriodsIfNeeded(context, params, result, next) {
-    if (! context.content.hasOwnProperty('time') && ! context.content.hasOwnProperty('duration')) {
-      return next();
-    }
-    if (! isPeriod(context.content) ||
-        isRunning(context.content)) {
-      // marks (can be duration of zero) and *running* periods cannot overlap
-      return process.nextTick(next);
-    }
-
-    if (!isConcernedBySingleActivity(context)) {
-      return process.nextTick(next);
-    }
-
-
-    // forbid multiple stream events in single activity mode
-    
-    if (context.content.streamIds.length > 1) {
-      return next(errors.invalidOperation('Events with multiple streamIds cannot use the single activity feature'));
-    }
-    
-
-    var endTime = context.content.time + context.content.duration;
-    var query = {
-      streamIds: {$in: context.getSingleActivityExpandedIds()},
-      $and: [
-        {duration: {'$exists' : true}},
-        {duration: {$ne: 0}}
-      ],
-      $or: [
-        // earlier periods
-        {
-          time: {$lt: context.content.time},
-          endTime: { $gt: context.content.time, $lte: timestamp.now() }
-        },
-        // later periods
-        {time: { $gte: context.content.time, $lt: endTime }}
-      ]
-    };
-    var options = {
-      projection: {id: 1},
-      sort: {time: 1}
-    };
-    userEventsStorage.find(context.user, query, options, function (err, periodEvents) {
-      if (err) {
-        return next(errors.unexpectedError(err));
-      }
-
-      if (context.content.id) {
-        // ignore self
-        periodEvents = periodEvents.filter(function (e) {
-          return e.id !== context.content.id;
-        });
-      }
-
-      if (periodEvents.length > 0) {
-        var msg = 'The event\'s period overlaps existing period events.';
-        return next(errors.periodsOverlap(msg,
-          {overlappedIds: periodEvents.map(function (e) { return e.id; })}
-        ));
-      }
-
-      next();
-    });
-  }
-
-  function stopPreviousPeriodIfNeeded(context, params, result, next) {
-
-    if (! isConcernedBySingleActivity(context) ||
-        ! isPeriod(context.content)) {
-      // marks do not affect periods
-      return process.nextTick(next);
-    }
-
-
-    // forbid multiple stream events in single activity mode
-    if (context.content.streamIds.length > 1) {
-      return next(errors.invalidOperation('Events with multiple streamIds cannot use the single activity feature'));
-    }
-
-    var stopParams = {
-      singleActivity: true,
-      time: context.content.time
-    };
-    findLastRunning(context, stopParams, function (err, eventToStop) {
-      if (err) { return next(errors.unexpectedError(err)); }
-      stopEvent(context, eventToStop, context.content.time, function (err, stoppedId) {
-        if (err) { return next(err); }
-
-        if (stoppedId) {
-          result.stoppedId = stoppedId;
-        }
-
-        next();
-      });
-    });
-  }
-
-  /**
-   * @param {Object} params Must have `singleActivity`, `time` (and optionally `type`)
-   */
-  function findLastRunning(context, params, callback) {
-    
-    const streamIds = context.streamList.map(function(stream) { return stream.id; });
-    var query = {
-      streamIds: params.singleActivity 
-        ? { $in: context.getSingleActivityExpandedIds()} 
-        : { $in: streamIds },
-      time: {'$lt': params.time},
-      duration: {'$type' : 10} // matches when duration exists and is null
-    };
-    if (params.type) {
-      query.type = getTypeQueryValue(params.type);
-    }
-    userEventsStorage.findOne(context.user, query, {sort: {time: -1}}, callback);
-  }
-
   /**
    * Saves the uploaded files (if any) as attachments, returning the corresponding attachments info.
    *
@@ -926,132 +725,6 @@ module.exports = function (
           done();
         });
     }
-  }
-
-  api.register('events.stop',
-    returnGoneError,
-    commonFns.getParamsValidation(methodsSchema.stop.params),
-    function (context, params, result, next) {
-      // default time is now
-      _.defaults(params, { time: timestamp.now() });
-
-      if (params.id) {
-        userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
-          if (err) { return next(errors.unexpectedError(err)); }
-          if (! event) {
-            return next(errors.unknownReferencedResource(
-              'event', 'id', params.id
-            ));
-          }
-          if (! isRunning(event)) {
-            return next(errors.invalidOperation(
-              'Event "' + params.id + '" is not a running period event.'
-            ));
-          }
-          if (event.streamIds.length > 1) {
-            return next(errors.invalidOperation(
-              'Cannot stop Event "' + params.id + '" which is in multiple streams.'
-            ));
-          }
-          applyStop(null, event);
-        });
-      } else if (params.streamId) { // legacy streamId paramter DO NOT CONVERT TO streamIds
-        context.setStreamList([params.streamId]);
-        if (! context.streamList[0].singleActivityRootId && ! params.type) {
-          return process.nextTick(next.bind(null, 
-            errors.invalidParametersFormat(
-              'You must specify the event `id` or `type` ' +
-              ' (not a "single activity" stream).'
-            )
-          ));
-        }
-        if (! checkStreams(context, next)) { return; }
-        var stopParams = {
-          singleActivity: !! context.streamList[0].singleActivityRootId,
-          time: params.time,
-          type: params.type
-        };
-        findLastRunning(context, stopParams, applyStop);
-      } else {
-        process.nextTick(next.bind(null,
-          errors.invalidParametersFormat(
-            'You must specify either the "single activity " stream id '+
-            'or the event `id`.'
-          )
-        ));
-      }
-
-      function applyStop(error, event) {
-        if (error) { return next(errors.unexpectedError(error)); }
-
-        stopEvent(context, event, params.time, function (err, stoppedId) {
-          if (err) { return next(err); }
-
-          result.stoppedId = stoppedId;
-          notifications.eventsChanged(context.user);
-          next();
-        });
-      }
-    });
-
-  /**
-   * Enforces permissions (returns an error if forbidden).
-   * Returns null if no running period event was found.
-   *
-   * @param {Object} context
-   * @param {Object} event
-   * @param {Number} stopTime
-   * @param {Function} callback ({APIError} error, {String|null} stoppedId)
-   */
-  function stopEvent(context, event, stopTime, callback) {
-    if (! event) { return process.nextTick(callback); }
- 
-    let ok = false; // ok if at least one stream is in contribute
-    for (let i = 0; i < event.streamIds.length; i++) {
-      if (context.canContributeToContext(event.streamId[i], event.tags)) {
-        ok = true;
-        break;
-      }
-    }
-    if (! ok) {
-      return process.nextTick(callback.bind(null, errors.forbidden()));
-    }
-
-    async.series([
-      function generateLogIfNeeded(stepDone) {
-        if (!auditSettings.forceKeepHistory) {
-          return stepDone();
-        }
-        var oldEvent = _.cloneDeep(event);
-        oldEvent = _.extend(oldEvent, {headId: oldEvent.id});
-        delete oldEvent.id;
-
-        userEventsStorage.insertOne(context.user, oldEvent, function (err) {
-          if (err) {
-            return stepDone(errors.unexpectedError(err));
-          }
-          stepDone();
-        });
-      },
-      function stopEvent(stepDone) {
-        var updatedData = {
-          // always include time: needed by userEventsStorage to update the DB-only "endTime" field
-          time: event.time,
-          duration: stopTime - event.time
-        };
-
-        context.updateTrackingProperties(updatedData);
-
-        userEventsStorage.updateOne(context.user, {id: event.id}, updatedData, function (err) {
-          if (err) {
-            return callback(errors.unexpectedError(err));
-          }
-          stepDone(null, event.id);
-        });
-      }
-    ], function(err, res) {
-      callback(err, res[1]);
-    });
   }
 
   // DELETION
@@ -1258,15 +931,6 @@ module.exports = function (
           access.id, access.token,
           authSettings.filesReadTokenSecret);
     });
-  }
-
-  function isPeriod(event) {
-    return event.hasOwnProperty('duration') &&
-        (event.duration === null || event.duration !== 0);
-  }
-
-  function isRunning(event) {
-    return event.duration === null;
   }
 
 };
