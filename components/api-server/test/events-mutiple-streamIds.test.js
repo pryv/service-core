@@ -170,17 +170,6 @@ describe('[MXEV] events.streamIds', function () {
         });
       });
 
-      it('[WLL9] must return only the streamIds you have a read access to', async function () {
-        const res = await server.request()
-          .get(basePathEvent)
-          .set('Authorization', tokenReadA);
-        const events = res.body.events;
-        events.forEach(e => {
-          assert.equal(e.streamId, streamAId);
-          assert.deepEqual(e.streamIds, [streamAId]);
-        });
-      });
-
     });
 
     describe('GET /events/:id', function () {
@@ -192,15 +181,6 @@ describe('[MXEV] events.streamIds', function () {
         const event = res.body.event;
         assert.equal(event.streamId, streamAId);
         assert.deepEqual(event.streamIds, [streamAId, streamBId]);
-      });
-
-      it('[1F22] must return only the streamIds you have a read access to', async function () {
-        const res = await server.request()
-          .get(eventPath(eventIdAB))
-          .set('Authorization', tokenReadA);
-        const event = res.body.event;
-        assert.equal(event.streamId, streamAId);
-        assert.deepEqual(event.streamIds, [streamAId]);
       });
 
     });
@@ -324,19 +304,6 @@ describe('[MXEV] events.streamIds', function () {
             content: 'Now I am updated, still in AB though.',
           });
         assert.equal(res.status, 200);
-      });
-
-      it('[2OBZ] must return only the streamIds you have a read access to', async function () {
-        const res = await server.request()
-          .put(eventPath(eventIdAB))
-          .set('Authorization', tokenContributeA)
-          .send({
-            content: 'Now I am updated, still in AB though.',
-          });
-        assert.equal(res.status, 200);
-        const event = res.body.event;
-        assert.equal(event.streamId, streamAId);
-        assert.deepEqual(event.streamIds, [streamAId]);
       });
 
       it('[Q5P7] must forbid to provide both streamId and streamIds', async function () {
@@ -476,16 +443,6 @@ describe('[MXEV] events.streamIds', function () {
         const event = res.body.event;
         assert.equal(event.streamId, streamAId);
         assert.deepEqual(event.streamIds, [streamAId, streamBId]);
-      });
-
-      it('[SQJQ] must return only the streamIds you have a read access to', async function () {
-        const res = await server.request()
-          .delete(eventPath(eventIdAB))
-          .set('Authorization', tokenContributeA);
-        assert.equal(res.status, 200);
-        const event = res.body.event;
-        assert.equal(event.streamId, streamAId);
-        assert.deepEqual(event.streamIds, [streamAId]);
       });
 
       it('[T5ZY] must allow trashing, if you have a contribute permission on at least 1 streamId', async function () {

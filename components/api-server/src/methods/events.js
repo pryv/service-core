@@ -9,8 +9,7 @@ var utils = require('components/utils'),
     timestamp = require('unix-timestamp'),
     treeUtils = utils.treeUtils,
     _ = require('lodash'),
-    SetFileReadTokenStream = require('./streams/SetFileReadTokenStream'),
-    FilterReadableStreamIdsStream = require('./streams/FilterReadableStreamIdsStream');
+    SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
     
 const assert = require('assert');
     
@@ -179,11 +178,6 @@ module.exports = function (
             filesReadTokenSecret: authSettings.filesReadTokenSecret
           }
         ))
-        .pipe(new FilterReadableStreamIdsStream(
-          {
-            streams: params.streams,
-          }
-        ))
       );
       
       next();
@@ -237,10 +231,6 @@ module.exports = function (
         }
       }
       if (! canReadEvent) return next(errors.forbidden());
-
-      event.streamIds = filterReadableStreamIds(context, event.streamIds);
-      // same for streamId if first one is non readable
-      event.streamId = event.streamIds[0];
 
       setFileReadToken(context.access, event);
       result.event = event;
@@ -528,9 +518,6 @@ module.exports = function (
         if (err) {
           return next(errors.unexpectedError(err));
         }
-        updatedEvent.streamIds = filterReadableStreamIds(context, updatedEvent.streamIds);
-        // same for streamId if first one is non readable
-        updatedEvent.streamId = updatedEvent.streamIds[0];
         result.event = updatedEvent;
         setFileReadToken(context.access, result.event);
         next();
@@ -1099,9 +1086,6 @@ module.exports = function (
       function (err, updatedEvent) {
         if (err) { return next(errors.unexpectedError(err)); }
 
-        updatedEvent.streamIds = filterReadableStreamIds(context, updatedEvent.streamIds);
-        // same for streamId if first one is non readable
-        updatedEvent.streamId = updatedEvent.streamIds[0];
         result.event = updatedEvent;
         setFileReadToken(context.access, result.event);
 
@@ -1286,14 +1270,6 @@ module.exports = function (
 
   function isRunning(event) {
     return event.duration === null;
-  }
-
-  function filterReadableStreamIds(context, eventStreamIds) {
-    const accessibleStreamIds = [];
-    eventStreamIds.forEach(s => {
-      if (context.canReadStream(s)) accessibleStreamIds.push(s);
-    });
-    return accessibleStreamIds;
   }
 
 };
