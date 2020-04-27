@@ -232,6 +232,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
   function applyPrerequisitesForDeletion(context, params, result, next) {
     _.defaults(params, { mergeEventsWithParent: null });
+
     // check stream
     let temp = treeUtils.findById(context.streams, params.id);
     if (temp) context.streamList = [temp];
@@ -242,6 +243,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     if (!context.canManageStream(context.streamList[0].id)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
+
     next();
   }
 
@@ -273,11 +275,8 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     let streamAndDescendantIds,
       parentId,
       hasLinkedEvents;
-
-      
     async.series([
       function retrieveStreamIdsToDelete(stepDone) {
-
         userStreamsStorage.find(context.user, {}, null, function (err, streams) {
           if (err) {
             return stepDone(errors.unexpectedError(err));
@@ -316,10 +315,12 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
             stepDone();
           });
       },
+
       function handleLinkedEvents(stepDone) {
         if (!hasLinkedEvents) {
           return stepDone();
         }
+
         if (params.mergeEventsWithParent) {
           async.series([
             function generateLogIfNecessary(subStepDone) {
@@ -368,8 +369,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
                   notifications.eventsChanged(context.user);
                   subStepDone();
                 });
-            },
-          ], stepDone);
+            }], stepDone);
         } else {
           // case mergeEventsWithParent = false
 
@@ -471,6 +471,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
                   eventsStream.on('error', (err) => {
                     subStepDone(errors.unexpectedError(err));
                   });
+                  
                   eventsStream.on('end', () => {
                     subStepDone();
                   });    
