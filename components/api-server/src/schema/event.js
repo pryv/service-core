@@ -68,7 +68,7 @@ exports = module.exports = function (action) {
       break;
     case Action.CREATE:
       schema.required = [ 'type' ];
-      schema.anyOf = [{required: ["streamId"]}, {required: ["streamIds"]}];
+      schema.anyOf = [{required: ['streamId']}, {required: ['streamIds']}];
       break;
   }
 
