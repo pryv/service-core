@@ -290,7 +290,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         });
       }
       ,
-      function checkIfSingleStreamLinkedEventsExist(stepDone) {
+      function checkIfSingleStreamLinkedEventsExist(stepDone) { // #endstartstop can be removed? 
         if (params.mergeEventsWithParent === true && parentId == null) {
           return stepDone(errors.invalidOperation(
             'Deleting a root stream with mergeEventsWithParent=true is rejected ' +
@@ -356,20 +356,31 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
                 });
             },
-            function updateStreamIds(subStepDone) {
-              userEventsStorage.updateWithOptions(context.user,
-                { streamIds: { $in: streamAndDescendantIds }, headId: { $exists: false } },
-                { "streamIds.$[streamId]": parentId }, 
-                { multi: true, arrayFilters: [{ streamId: { $in: streamAndDescendantIds }}]},
+            function updateStreamIds(subStepDone) { // merge only the events that are "NOT" in parentId
+              userEventsStorage.updateMany(context.user,
+                { streamIds: { $ne: parentId, $in: streamAndDescendantIds }, headId: { $exists: false } }, // not already containing parentId 
+                { "streamIds.$": parentId }, // set firs elemenz (only first and not multi)
                 function (err) {
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));
                   }
-
                   notifications.eventsChanged(context.user);
                   subStepDone();
                 });
-            }], stepDone);
+            },
+            function removeStreamdIdsFromAllEvents(subStepDone) { // eventually remove tra
+              userEventsStorage.updateMany(context.user,
+                { streamIds: { $in: streamAndDescendantIds }, headId: { $exists: false } },
+                { $pull: { streamIds: { $in: streamAndDescendantIds } } },
+                function (err, res) {
+                  if (err) {
+                    return subStepDone(errors.unexpectedError(err));
+                  }
+                  subStepDone();
+                }
+              );
+            }
+          ], stepDone);
         } else {
           // case mergeEventsWithParent = false
 
