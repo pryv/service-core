@@ -302,10 +302,12 @@ class Server {
       }
     };
 
+    const reportingSettings = this.settings.get('reporting').value;
     const templateVersion = reportingSettings.templateVersion;
-    const licenseName = reportingSettings.licenseName;
+    const licenseName = 'REPLACE'; // reportingSettings.licenseName;
     const role = 'api-server';
-    new Reporting(licenseName, role, templateVersion, collectClientData, this.logger.info);
+    this.logger.info('blup');
+    new Reporting(licenseName, role, templateVersion, collectClientData.bind(this), this.logger.info);
   }
 
   async getUserCount(): Number {

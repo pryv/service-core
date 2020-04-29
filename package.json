@@ -48,6 +48,7 @@
     "js-yaml": "^3.11.0",
     "lodash": "^4.17.4",
     "lru-cache": "^4.1.1",
+    "lib-reporting": "git+ssh://git@github.com/pryv/lib-reporting.git",
     "middleware": "file:components/middleware",
     "mkdirp": "0.5.x",
     "model": "file:components/model",
