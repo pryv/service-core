@@ -304,10 +304,12 @@ class Server {
 
     const reportingSettings = this.settings.get('reporting').value;
     const templateVersion = reportingSettings.templateVersion;
-    const licenseName = 'REPLACE'; // reportingSettings.licenseName;
+    const licenseName = reportingSettings.licenseName;
     const role = 'api-server';
-    this.logger.info('blup');
-    new Reporting(licenseName, role, templateVersion, collectClientData.bind(this), this.logger.info);
+    const mylog = function (str) {
+      this.logger.info(str);
+    }.bind(this);
+    new Reporting(licenseName, role, templateVersion, collectClientData.bind(this), mylog);
   }
 
   async getUserCount(): Number {
