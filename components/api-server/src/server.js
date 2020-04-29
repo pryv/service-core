@@ -298,7 +298,7 @@ class Server {
   async setupReporting() {
     async function collectClientData() {
       return {
-        userCount: this.getUserCount()
+        userCount: await this.getUserCount()
       }
     };
 
