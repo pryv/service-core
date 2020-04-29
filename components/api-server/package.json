@@ -15,6 +15,7 @@
   "dependencies": {
     "airbrake": "^2.1.0",
     "awaiting": "^3.0",
+    "lib-reporting": "git+ssh://git@github.com/pryv/lib-reporting.git",
     "msgpack5": "^3.6",
     "multistream": "^2.1.0",
     "nats": "^0.7",
