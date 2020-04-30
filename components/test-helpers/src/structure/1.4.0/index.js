@@ -6,7 +6,7 @@ module.exports = {
         options: {},
       },
       {
-        index: { streamIds: 1 },
+        index: { streamId: 1 },
         options: {},
       },
       {
