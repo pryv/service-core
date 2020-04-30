@@ -442,7 +442,7 @@ describe('Versions', function () {
 
   it('[CRPX] must handle data migration from v1.4.0 to 1.5.0', function (done) {
     const versions = getVersions('1.5.0');
-    const indexesWithoutUsers = testData.getStructure('1.5.0').indexes;
+    const newIndexes = testData.getStructure('1.5.0').indexes;
   
     const user = { id: 'u_0' };
     const userEventsStorage = storage.user.events;
@@ -459,7 +459,7 @@ describe('Versions', function () {
     
       assert.strictEqual(version._id, '1.5.0');
       assert.isNotNull(version.migrationCompleted);
-      compareIndexes(indexesWithoutUsers.events, eventsIndexes);
+      compareIndexes(newIndexes.events, eventsIndexes);
       done();
     });
   });
