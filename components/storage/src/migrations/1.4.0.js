@@ -159,6 +159,7 @@ module.exports = function (context, callback) {
             let doc = await cursor.next();
             doc.userId = user._id;
             if (collectionName === 'events' && doc.tags) {
+              // this was added to run on an old set of pryv.me data which is not required in production, can be ignored
               doc.tags = doc.tags.slice(0, 20); // max 20 tags
             }
             if (changeIdTo) {
