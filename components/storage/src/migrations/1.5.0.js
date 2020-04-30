@@ -12,11 +12,14 @@ module.exports = function (context, callback) {
   console.log('V1.4.0 => v1.5.0 Migration started ');
 
   let eventCollection;
+  let streamCollection;
   let eventsMigrated = 0;
 
   async.series([
-    getCollection, 
+    getEventsCollection,
+    getStreamsCollection, 
     migrateEvents,
+    migrateStreams,
     dropIndex,
     createIndex,
     function (done) {
@@ -25,10 +28,18 @@ module.exports = function (context, callback) {
     }
   ], callback);
 
-  function getCollection(done) {
+  function getEventsCollection(done) {
     console.log('Fetching events collection');
     context.database.getCollection({ name: 'events' }, function (err, collection) {
       eventCollection = collection;
+      done(err);
+    });
+  }
+
+  function getStreamsCollection(done) {
+    console.log('Fetching events collection');
+    context.database.getCollection({ name: 'streams' }, function (err, collection) {
+      streamCollection = collection;
       done(err);
     });
   }
@@ -74,6 +85,11 @@ module.exports = function (context, callback) {
       await eventCollection.bulkWrite(requests);
       console.log('Migrated ' + eventsMigrated + ' events');
     }
+  }
+
+  async function migrateStreams() {
+    const res = await streamCollection.updateMany({}, { singleActivity: 1 }, { $unset: { singleActivity: '' }});
+    console.log('Migrated', res.modifiedCount, 'streams');
   }
 
 };

@@ -446,22 +446,46 @@ describe('Versions', function () {
   
     const user = { id: 'u_0' };
     const userEventsStorage = storage.user.events;
+    const userStreamsStorage = storage.user.streams;
 
     async.series([
       (cb) => testData.restoreFromDump('1.4.0', mongoFolder, cb),
       (cb) => versions.migrateIfNeeded(cb),
       (cb) => userEventsStorage.listIndexes(user, {}, cb), // (c)
-      (cb) => versions.getCurrent(cb), // (d), see below
+      (cb) => userEventsStorage.findAll(user, {}, cb), // (d), see below
+      (cb) => userStreamsStorage.findAll(user, {}, cb), // (e), see below
+      (cb) => versions.getCurrent(cb), // (f), see below
     ], function (err, res) {
       assert.isNull(err, 'there was an error');
       const eventsIndexes = res[2]; // (c)
-      const version = res[3]; //(d)
+      const events = res[3]; // (d)
+      const streams = res[4]; //(e)
+      const version = res[5]; //(f)
     
-      assert.strictEqual(version._id, '1.5.0');
-      assert.isNotNull(version.migrationCompleted);
+      assert.strictEqual(version._id, '1.5.0', 'version not upgraded');
+      assert.isNotNull(version.migrationCompleted, 'migrationCompleted not set');
       compareIndexes(newIndexes.events, eventsIndexes);
+      // check streamIds
+      checkStreamIdIsNowStreamIds(events);
+      // check that singleActivity streams are gone
+      checkSingleActivityGone(streams);
       done();
     });
+
+    function checkStreamIdIsNowStreamIds(events) {
+      events.forEach(e => {
+        if (e.deleted != null) return; // skip deleted ones
+        //console.log('checkin', e)
+        //assert.notExists(e.streamId, 'streamId should be unset');
+        assert.exists(e.streamIds, 'streamIds array should be set');
+      });
+    }
+
+    function checkSingleActivityGone(streams) {
+      streams.forEach(s => {
+        assert.notExists(s.singleActivity, 'singleActivity in stream should be unset');
+      });
+    }
   });
 
   function compareIndexes(expected, actual) {
