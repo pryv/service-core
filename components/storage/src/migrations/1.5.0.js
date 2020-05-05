@@ -88,7 +88,7 @@ module.exports = function (context, callback) {
   }
 
   async function migrateStreams() {
-    const res = await streamCollection.updateMany({}, { singleActivity: 1 }, { $unset: { singleActivity: '' }});
+    const res = await streamCollection.updateMany({ singleActivity: true }, { $unset: { singleActivity: '' }});
     console.log('Migrated', res.modifiedCount, 'streams');
   }
 
