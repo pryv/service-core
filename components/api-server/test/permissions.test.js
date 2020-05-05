@@ -72,7 +72,7 @@ describe('Access permissions', function () {
       var streamIds = getAllStreamIdsByToken(1);
 
       var events = validation.removeDeletionsAndHistory(testData.events).filter(function (e) {
-        return streamIds.indexOf(e.streamId) >= 0;
+        return streamIds.indexOf(e.streamIds[0]) >= 0;
       }).sort(function (a, b) {
         return b.time - a.time;
       });

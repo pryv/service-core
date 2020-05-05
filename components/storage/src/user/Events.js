@@ -21,7 +21,7 @@ function Events(database) {
 
   _.extend(this.converters, {
     itemDefaults: [converters.createIdIfMissing],
-    itemToDB: [endTimeToDB, converters.deletionToDB, converters.stateToDB, streamIdsToDB],
+    itemToDB: [endTimeToDB, converters.deletionToDB, converters.stateToDB],
     updateToDB: [
       endTimeUpdate,
       converters.stateUpdate,
@@ -72,24 +72,8 @@ function clearEndTime(event) {
   return event;
 }
 
-
-// #streamIds -- Should be removed at the end (Simple intergrity check)
-function streamIdsToDB(event) {
-  if (!event) {
-    return event;
-  }
-  if (event.streamId && event.streamIds) {
-    delete event.streamId;
-  } 
-  if (event.streamId) {
-    console.warn("Still cleaning some events IN");
-    event.streamIds = [event.streamId];
-    delete event.streamId;
-  }
-  return event;
-}
-
-// #streamIds
+// Adds streamId field
+// this should be moved on a business level
 function streamIdsFromDB(event) {
   if (!event) {
     return event;
@@ -210,21 +194,12 @@ Events.prototype.countAll = function(user, callback) {
   this.count(user, {}, callback);
 };
 
-Events.prototype.insertOne = function (user, event, callback) {
-  Events.super_.prototype.insertOne.call(this, user, streamIdsToDB(event), callback);
-};
-
-Events.prototype.updateOne = function (user, query, updatedData, callback) {
-  Events.super_.prototype.updateOne.call(this, user, query, streamIdsToDB(updatedData), callback);
-};
-
 /**
  * Implementation
  */
 Events.prototype.minimizeEventsHistory = function(user, headId, callback) {
   var update = {
     $unset: {
-      streamId: 1,
       streamIds: 1,
       time: 1,
       duration: 1,
@@ -261,7 +236,6 @@ Events.prototype.delete = function(user, query, deletionMode, callback) {
   switch (deletionMode) {
     case 'keep-nothing':
       update.$unset = {
-        streamId: 1,
         streamIds: 1,
         time: 1,
         duration: 1,
@@ -281,7 +255,6 @@ Events.prototype.delete = function(user, query, deletionMode, callback) {
       break;
     case 'keep-authors':
       update.$unset = {
-        streamId: 1,
         streamIds: 1,
         time: 1,
         duration: 1,

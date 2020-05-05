@@ -263,7 +263,7 @@ describe('Storing data in a HF series', function() {
     async function tryStore(attrs: Object, header: Header, data: Rows): Promise<TryOpResult> {
       const userQuery = { id: userId };
       const effectiveAttrs = lodash.merge(
-        { streamId: parentStreamId, time: Date.now() / 1000 },
+        { streamIds: [parentStreamId], time: Date.now() / 1000 },
         attrs
       );
 
@@ -763,7 +763,7 @@ describe('Storing data in a HF series', function() {
       async function tryStore(attrs: Object, header: Header, data: Rows): Promise<TryOpResult> {
         const userQuery = {id: userId};
         const effectiveAttrs = lodash.merge(
-          { streamId: parentStreamId , time: Date.now() / 1000}, 
+          { streamIds: [ parentStreamId ] , time: Date.now() / 1000}, 
           attrs
         );
 

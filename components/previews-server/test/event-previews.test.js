@@ -225,7 +225,7 @@ describe('event previews', function () {
     });
 
     it('[QUM3] must return a proper error if event data is corrupted (no attachment object)', (done) => {
-      const data = { streamId: testData.streams[2].id, type: 'picture/attached' };
+      const data = { streamIds: [ testData.streams[2].id ], type: 'picture/attached' };
       let createdEvent;
       async.series([
         function addCorruptEvent(stepDone) {
