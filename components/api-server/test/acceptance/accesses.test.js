@@ -16,12 +16,12 @@ const _ = require('lodash');
 const { ErrorIds } = require('components/errors/src');
 const storage = require('components/test-helpers').dependencies.storage.user.accesses;
 
-let mongoFixtures;
+
 
 
 
 describe('access deletions', () => {
-
+  let mongoFixtures;
   let userId, streamId, activeToken, deletedToken, accessToken;
   before(async () => {
     mongoFixtures = databaseFixture(await produceMongoConnection());
@@ -208,12 +208,13 @@ describe('access deletions', () => {
 
 describe('access expiry', () => {
   // Uses dynamic fixtures:
-  
+  let mongoFixtures;
   // Set up a few ids that we'll use for testing. NOTE that these ids will
   // change on every test run.
   let userId, streamId, accessToken, expiredToken, validId;
   let hasExpiryId, hasExpiryToken;
   before(async () => {
+    mongoFixtures = databaseFixture(await produceMongoConnection());
     userId = cuid(); 
     streamId = cuid();
     accessToken = cuid(); 
@@ -587,6 +588,7 @@ describe('access expiry', () => {
 });
 
 describe('access client data', () => {
+  let mongoFixtures;
   function sampleAccess(name, clientData) {
     return {
       id: cuid(),
@@ -603,6 +605,7 @@ describe('access client data', () => {
   let toBeUpdateAccess1, toBeUpdateAccess2, toBeUpdateAccess3, emptyClientDataAccess;
   let fixtureAccesses;
   before(async () => {
+    mongoFixtures = databaseFixture(await produceMongoConnection());
     userId = cuid(); 
     streamId = cuid();
     accessToken = cuid();
