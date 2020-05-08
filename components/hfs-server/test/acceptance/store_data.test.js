@@ -69,31 +69,40 @@ describe('Storing data in a HF series', function() {
       
     // Set up a few ids that we'll use for testing. NOTE that these ids will
     // change on every test run. 
-    let userId, parentStreamId, eventId, accessToken; 
-    before(() => {
+    let userId, parentStreamId, secondStreamId, eventId, accessToken, secondStreamToken; 
+    before(async () => {
       userId = cuid(); 
       parentStreamId = cuid(); 
+      secondStreamId = cuid();
       eventId = cuid(); 
       accessToken = cuid(); 
-
-      
+      secondStreamToken = cuid();
       
       debug('build fixture');
-      return pryv.user(userId, {}, function (user) {
-        user.stream({id: parentStreamId}, function (stream) {
-          stream.event({
-            id: eventId, 
-            type: 'series:mass/kg',
-            time: nowEvent
-          });
-        });
-
-        user.access({token: accessToken, type: 'personal'});
-        user.session(accessToken);
+      const user = await pryv.user(userId, {});
+      await user.stream({id: secondStreamId});
+      await user.stream({id: parentStreamId});
+      await user.event({
+        id: eventId, 
+        type: 'series:mass/kg',
+        time: nowEvent,
+        streamIds: [parentStreamId, secondStreamId],
+      });
+      await user.access({token: accessToken, type: 'personal'});
+      await user.session(accessToken);
+      await user.access({ 
+        token: secondStreamToken, 
+        type: 'app',
+        permissions: [
+          {
+            streamId: secondStreamId,
+            level: 'create-only',
+          }
+        ]
       });
     });
     
-    function storeData(data: {}): any {
+    function storeData(data: {}, token: string): any {
       debug('storing some data', data);
       
       // Insert some data into the events series:
@@ -107,7 +116,7 @@ describe('Storing data in a HF series', function() {
       const request = server.request(); 
       return request
         .post(`/${userId}/events/${eventId}/series`)
-        .set('authorization', accessToken)
+        .set('authorization', token)
         .send(postData)
         .expect(200);
     }
@@ -116,7 +125,7 @@ describe('Storing data in a HF series', function() {
       const storageLayer = produceStorageLayer(database);
 
       const nowPlus1Sec = nowEvent + 1;
-      const response = await storeData({ timestamp: nowPlus1Sec, value: 80.3 });
+      const response = await storeData({ timestamp: nowPlus1Sec, value: 80.3 }, accessToken);
 
       // Check if the data is really there
       const userName = userId; // identical with id here, but will be user name in general. 
@@ -138,7 +147,7 @@ describe('Storing data in a HF series', function() {
     });
     
     it('[GZIZ] should store data correctly', async () => {
-      const response = await storeData({deltaTime: 1, value: 80.3});
+      const response = await storeData({deltaTime: 1, value: 80.3}, accessToken);
 
       const body = response.body; 
       if (body == null || body.status == null) throw new Error(); 
@@ -161,9 +170,6 @@ describe('Storing data in a HF series', function() {
         '1970-01-01T00:00:01.000000000Z'); 
       assert.strictEqual(row.value, 80.3);
     });
-
-
-
 
     it('[KC15] should return data once stored', async () => {
       // identical with id here, but will be user name in general. 
@@ -209,6 +215,10 @@ describe('Storing data in a HF series', function() {
               [2, 1234]); 
           });
       }
+    });
+
+    it('[YALY] should accept a request when the authorized permission is on the event\'s 2nd streamId', async () => {
+      await storeData({ deltaTime: 10, value: 54}, secondStreamToken);
     });
   });
 

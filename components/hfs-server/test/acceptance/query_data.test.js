@@ -30,22 +30,26 @@ describe('Querying data from a HF series', function() {
 
   // Set up a few ids that we'll use for testing. NOTE that these ids will
   // change on every test run.
-  let userId, streamId, eventId, accessToken, createOnlyToken; 
+  let userId, streamId, streamId2, eventId, accessToken, createOnlyToken, secondStreamToken; 
   before(() => {
     userId = cuid(); 
-    streamId = cuid(); 
+    streamId = cuid();
+    streamId2 = cuid(); 
     eventId = cuid(); 
     accessToken = cuid(); 
     createOnlyToken = cuid(); 
+    secondStreamToken = cuid();
   });
 
   // Build the fixture
   before(async () => {
     const user = await pryv.user(userId, {});
-    const stream = await user.stream({id: streamId});
-    await stream.event({
+    await user.stream({id: streamId});
+    await user.stream({id: streamId2});
+    await user.event({
       id: eventId,
-      type: 'series:mass/kg'
+      type: 'series:mass/kg',
+      streamIds: [streamId, streamId2]
     });
 
     await user.access({token: accessToken, type: 'personal'});
@@ -56,6 +60,14 @@ describe('Querying data from a HF series', function() {
       permissions: [{
         streamId: streamId,
         level: 'create-only'
+      }]
+    });
+    await user.access({
+      token: secondStreamToken,
+      type: 'app',
+      permissions: [{
+        streamId: streamId2,
+        level: 'read',
       }]
     });
   });
@@ -98,6 +110,14 @@ describe('Querying data from a HF series', function() {
 
     chai.expect(res).to.have.property('status').that.eql(200);
     chai.expect(res.body).to.have.property('meta');
+  });
+
+  it('[XAI2] should accept a query when the authorized permission is on the event\'s 2nd streamId', async function () {
+    const res = await server.request()
+      .get(`/${userId}/events/${eventId}/series`)
+      .set('authorization', secondStreamToken);
+
+    chai.expect(res).to.have.property('status').that.eql(200);
   });
   
   it('[I2ZH] should refuse a query for an unknown user', function () {

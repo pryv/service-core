@@ -263,8 +263,11 @@ type AccessModel = {
 };
 type EventModel = {
   id: string, 
-  streamId: string, 
+  streamIds: string, 
   type: string,
+  time: number,
+  trashed: boolean,
+  deleted: number,
 }; 
 type UserModel = { 
   id: string, 
@@ -288,13 +291,11 @@ class SeriesMetadataImpl implements SeriesMetadata {
   eventId: string; 
   eventType: string;
   time: number; 
+  trashed: boolean;
+  deleted: number;
   
   constructor(access: AccessModel, user: UserModel, event: EventModel) {
-    const streamId = event.streamId; 
-    this.permissions = {
-      write: access.canContributeToStream(streamId),
-      read: access.canReadStream(streamId),
-    };
+    this.permissions = definePermissions(access, event);
     this.userName = user.username; 
     this.eventId = event.id; 
     this.time = event.time;
@@ -302,10 +303,9 @@ class SeriesMetadataImpl implements SeriesMetadata {
     this.trashed = event.trashed;
     this.deleted = event.deleted;
   }
-  
 
   isTrashedOrDeleted(): boolean {
-    return this.trashed || this.deleted;
+    return this.trashed || this.deleted != null;
   }
 
   canWrite(): boolean {
@@ -336,6 +336,24 @@ class SeriesMetadataImpl implements SeriesMetadata {
     
     type.setSeriesMeta(this);
     return type; 
+  }
+}
+
+function definePermissions(access: AccessModel, event: EventModel): {write: boolean, read: boolean} {
+  const streamIds = event.streamIds; 
+  const permissions = {
+    write: false,
+    read: false,
+  };
+  const streamIdsLength = streamIds.length;
+  for(let i=0; i<streamIdsLength && ! readAndWriteTrue(permissions); i++) {
+    if (access.canContributeToStream(streamIds[i])) permissions.write = true;
+    if (access.canReadStream(streamIds[i])) permissions.read = true;
+  }
+  return permissions;
+
+  function readAndWriteTrue(permissions) {
+    return permissions.write === true && permissions.read === true;
   }
 }
 
