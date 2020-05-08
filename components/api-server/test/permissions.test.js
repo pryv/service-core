@@ -139,7 +139,9 @@ describe('Access permissions', function () {
         state: 'all'
       };
       request.get(basePath, token(1)).unset('Authorization').query(query).end(function (res) {
-        res.body.events.should.eql([testData.events[8]]);
+        const expectedEvent = testData.events[8];
+        expectedEvent.streamId = expectedEvent.streamIds[0];
+        res.body.events.should.eql([expectedEvent]);
         done();
       });
     });

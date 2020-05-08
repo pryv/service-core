@@ -233,6 +233,10 @@ module.exports = function (
       if (! canReadEvent) return next(errors.forbidden());
 
       setFileReadToken(context.access, event);
+
+      // To remove when streamId not necessary
+      event.streamId = event.streamIds[0];
+
       result.event = event;
       return next();
     });
@@ -252,6 +256,10 @@ module.exports = function (
         if (err) {
           return next(errors.unexpectedError(err));
         }
+
+        // To remove when streamId not necessary
+        history.forEach(e => e.streamId = e.streamIds[0]);
+        
         result.history = history;
         next();
       });
@@ -321,6 +329,9 @@ module.exports = function (
           // Any other error
           return next(errors.unexpectedError(err));
         }
+
+        // To remove when streamId not necessary
+        newEvent.streamId = newEvent.streamIds[0];
 
         result.event = newEvent;
         next();
@@ -494,6 +505,10 @@ module.exports = function (
         if (err) {
           return next(errors.unexpectedError(err));
         }
+
+        // To remove when streamId not necessary
+        updatedEvent.streamId = updatedEvent.streamIds[0];
+
         result.event = updatedEvent;
         setFileReadToken(context.access, result.event);
         next();
@@ -756,6 +771,9 @@ module.exports = function (
       function (err, updatedEvent) {
         if (err) { return next(errors.unexpectedError(err)); }
 
+        // To remove when streamId not necessary
+        updatedEvent.streamId = updatedEvent.streamIds[0];
+
         result.event = updatedEvent;
         setFileReadToken(context.access, result.event);
 
@@ -850,6 +868,10 @@ module.exports = function (
           userEventsStorage.updateOne(context.user, {id: params.id}, updatedData,
             function (err, updatedEvent) {
               if (err) { return stepDone(err); }
+
+              // To remove when streamId not necessary
+              updatedEvent.streamId = updatedEvent.streamIds[0];
+
               result.event = updatedEvent;
               setFileReadToken(context.access, result.event);
               stepDone();

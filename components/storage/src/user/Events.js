@@ -80,10 +80,11 @@ function streamIdsFromDB(event) {
   }
   if (event.streamId) {
     console.log("******** ZUT 2", event);
-    throw new Error("I should not find anymore event with streamId");
+    throw new Error("I should not find anymore event with streamId: " + event.streamId);
   }
   if (event.streamIds && event.streamIds.length > 0 ) {
-    event.streamId = event.streamIds[0];
+    // HERE
+    //event.streamId = event.streamIds[0];
   }
   
   return event;

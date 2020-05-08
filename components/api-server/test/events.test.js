@@ -666,6 +666,7 @@ describe('events', function () {
             var actual = _.find(events, function (event) {
               return event.id === createdEventId;
             });
+            actual.streamId = actual.streamIds[0]; 
             validation.checkStoredItem(actual, 'event');
             validation.checkObjectEquality(actual, expected);
 
