@@ -33,10 +33,11 @@ ApplyEventsFromDbStream.prototype._transform = function (event, encoding, callba
     // migration to #streamIds
     if (event.streamId) {
       console.log("******** ZUT 3", event);
-      callback(new Error("I should not find anymore event with streamId"));
+      callback(new Error("I should not find anymore event with streamId: " + event.streamId));
     }
     if (event.streamIds && event.streamIds.length > 0) {
-      event.streamId = event.streamIds[0];
+      // HERE
+      //event.streamId = event.streamIds[0];
     }
     
 

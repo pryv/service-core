@@ -72,7 +72,7 @@ describe('Access permissions', function () {
       var streamIds = getAllStreamIdsByToken(1);
 
       var events = validation.removeDeletionsAndHistory(testData.events).filter(function (e) {
-        return streamIds.indexOf(e.streamId) >= 0;
+        return streamIds.indexOf(e.streamIds[0]) >= 0;
       }).sort(function (a, b) {
         return b.time - a.time;
       });
@@ -139,7 +139,9 @@ describe('Access permissions', function () {
         state: 'all'
       };
       request.get(basePath, token(1)).unset('Authorization').query(query).end(function (res) {
-        res.body.events.should.eql([testData.events[8]]);
+        const expectedEvent = testData.events[8];
+        expectedEvent.streamId = expectedEvent.streamIds[0];
+        res.body.events.should.eql([expectedEvent]);
         done();
       });
     });

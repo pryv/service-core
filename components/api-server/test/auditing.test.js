@@ -213,6 +213,7 @@ describe('Auditing', function () {
                     return stepDone(err);
                   }
                   should.exist(event);
+                  delete event.streamId;
                   event.should.eql(_.extend({deleted: event.deleted}, trashedEventWithHistory));
                   stepDone();
                 });
@@ -227,6 +228,7 @@ describe('Auditing', function () {
                   var checked = {first: false, second: false};
                   (events.length).should.eql(2);
                   events.forEach(function (event) {
+                    delete event.streamId;
                     if (event.id === testData.events[20].id) {
                       event.should.eql(testData.events[20]);
                       checked.first = true;
@@ -482,6 +484,7 @@ describe('Auditing', function () {
                 var history = res.body.history;
                 var time = 0;
                 history.forEach(function (previousVersion) {
+                  delete previousVersion.streamId;
                   (previousVersion.headId).should.eql(eventWithNoHistory.id);
                   // check sorted by modified field
                   if (time !== 0) {
@@ -800,6 +803,7 @@ describe('Auditing', function () {
                 return stepDone(err);
               }
               should.exist(event);
+              //delete event.streamId;
               event.should.eql(_.extend({deleted: event.deleted}, eventOnChildStream));
               stepDone();
             });
@@ -813,6 +817,7 @@ describe('Auditing', function () {
               var checked = false;
               (events.length).should.eql(1);
               events.forEach(function (event) {
+                //delete event.streamId;
                 event.headId.should.eql(eventOnChildStream.id);
                 if (event.id === testData.events[26].id) {
                   event.should.eql(testData.events[26]);

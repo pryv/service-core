@@ -305,11 +305,16 @@ exports.checkFilesReadToken = function (eventOrEvents, access, secret) {
  * @param {Object} event
  */
 exports.sanitizeEvent = function (event) {
-  if (! event || ! event.attachments) { return; }
+  if (! event ) { return; }
 
-  event.attachments.forEach(function (att) {
-    delete att.readToken;
-  });
+  delete event.streamId;
+
+  if (event.attachments) {
+    event.attachments.forEach(function (att) {
+      delete att.readToken;
+    });
+  }
+  
   return event;
 };
 

@@ -779,7 +779,10 @@ describe('streams', function () {
 
     it('[KLD8] must delete the linked events when mergeEventsWithParent is false', function (done) {
       const id = testData.streams[0].children[1].id;
-      const deletedEvents = testData.events.filter(function (e) { return e.streamId === id; });
+      const deletedEvents = testData.events.filter(function (e) { 
+        if (e.streamIds == null) return false;
+        return e.streamIds[0] === id; 
+      });
       const deletedEventWithAtt = deletedEvents[0];
       let deletionTime;
       

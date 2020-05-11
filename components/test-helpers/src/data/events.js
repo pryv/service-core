@@ -369,8 +369,11 @@ const events =  [
   },
 
 ].map(function (event) {
-  if (event.streamId) event.streamIds = [event.streamId];
-  return event
+  if (event.streamId) { 
+    event.streamIds = [event.streamId];
+    delete event.streamId;
+  }
+  return event;
 });
 
 module.exports = events;

@@ -92,13 +92,13 @@ describe('events', function () {
                 .filter(function (e) {
                   return !e.trashed && !_.some(testData.streams, containsTrashedEventStream);
                   function containsTrashedEventStream(stream) {
-                    return stream.trashed && stream.id === e.streamId ||
+                    return stream.trashed && stream.id === e.streamIds[0] ||
                       _.some(stream.children, containsTrashedEventStream);
                   }
                 });
 
                 // add streamId
-              allEvents.map(function (event) { event.streamId = event.streamIds[0]; return event });
+              //allEvents.map(function (event) { event.streamId = event.streamIds[0]; return event });
               validation.check(res, {
                 status: 200,
                 schema: methodsSchema.get.result,
@@ -492,7 +492,7 @@ describe('events', function () {
           attIndex = 0;
       async.waterfall([
         function retrieveAttachmentInfo(stepDone) {
-          request.get(basePath).query({sortAscending: true, streams: [event.streamId] }).end(function (res) {
+          request.get(basePath).query({sortAscending: true, streams: event.streamIds[0] }).end(function (res) {
             stepDone(null, res.body.events[0].attachments[attIndex]);
           });
         },
@@ -517,7 +517,7 @@ describe('events', function () {
           attIndex = 1;
       async.waterfall([
         function retrieveAttachmentInfo(stepDone) {
-          request.get(basePath).query({sortAscending: true, streams: [event.streamId]}).end(function (res) {
+          request.get(basePath).query({sortAscending: true, streams: event.streamIds[0]}).end(function (res) {
             stepDone(null, res.body.events[0].attachments[attIndex]);
           });
         },
@@ -544,10 +544,10 @@ describe('events', function () {
         [
           function retrieveAttachmentInfo(stepDone) {
             request
-              .get(`/${user.username}/events`)
+              .get(`/${user.username}/events/${event.id}`)
               .query({ sortAscending: true, streams: [event.streamId] })
               .end(function(res) {
-                stepDone(null, res.body.events[0].attachments[attIndex]);
+                stepDone(null, res.body.event.attachments[attIndex]);
               });
           },
           function retrieveAttachedFile(att, stepDone) {
@@ -666,6 +666,7 @@ describe('events', function () {
             var actual = _.find(events, function (event) {
               return event.id === createdEventId;
             });
+            actual.streamId = actual.streamIds[0]; 
             validation.checkStoredItem(actual, 'event');
             validation.checkObjectEquality(actual, expected);
 
@@ -677,7 +678,7 @@ describe('events', function () {
 
     it('[QSBV] must set the event\'s time to "now" if missing', function (done) {
       var data = {
-        streamId: testData.streams[2].id,
+        streamIds: [testData.streams[2].id],
         type: 'mass/kg',
         content: 10.7
       };
@@ -699,7 +700,7 @@ describe('events', function () {
     it('[6BVW] must accept explicit null for optional fields', function (done) {
       const data = {
         type: 'test/null',
-        streamId: testData.streams[2].id,
+        streamIds: [testData.streams[2].id],
         duration: null,
         content: null,
         description: null,
@@ -726,7 +727,7 @@ describe('events', function () {
     it('[WN86] must return a correct error if an event with the same id already exists', function (done) {
       var data = {
         id: testData.events[0].id,
-        streamId: testData.streams[2].id,
+        streamIds: [testData.streams[2].id],
         type: 'test/test'
       };
       request.post(basePath).send(data).end(function (res) {
@@ -741,7 +742,7 @@ describe('events', function () {
     it('[94PW] must not allow reuse of deleted ids (unlike streams)', function (done) {
       var data = {
         id: testData.events[13].id, // existing deletion
-        streamId: testData.streams[2].id,
+        streamIds: [testData.streams[2].id],
         type: 'test/test'
       };
       request.post(basePath).send(data).end(function (res) {
@@ -756,7 +757,7 @@ describe('events', function () {
     it('[DRFA] must only allow ids that are formatted like cuids', function (done) {
       var data = {
         id: 'man, this is a baaad id',
-        streamId: testData.streams[2].id,
+        streamIds: [testData.streams[2].id],
         type: 'test/test'
       };
       request.post(basePath).send(data).end(function (res) {
@@ -767,7 +768,7 @@ describe('events', function () {
     it('[O7Y2] must reject tags that are too long', function (done) {
       var bigTag = new Array(600).join('a');
       var data = {
-        streamId: testData.streams[2].id,
+        streamIds: [testData.streams[2].id],
         type: 'generic/count',
         content: 1,
         tags: [bigTag]
@@ -815,7 +816,7 @@ describe('events', function () {
 
     it.skip('[H7CN] must not stop the running period event if the new event is a mark event (single activity)',
         function (done) {
-      var data = { streamId: testData.streams[0].id, type: testType };
+      var data = { streamIds: [testData.streams[0].id], type: testType };
       async.series([
         function addNew(stepDone) {
           request.post(basePath).send(data).end(function (res) {
@@ -841,7 +842,7 @@ describe('events', function () {
 
     it('[UL6Y] must not stop the running period event if the stream allows overlapping', function (done) {
       var data = {
-        streamId: testData.streams[1].id,
+        streamIds: [testData.streams[1].id],
         duration: timestamp.duration('1h'),
         type: testType,
         tags: []
@@ -858,6 +859,7 @@ describe('events', function () {
         },
         function verifyData(stepDone) {
           storage.findOne(user, {id: testData.events[11].id}, null, function (err, event) {
+            // HERE
             event.should.eql(testData.events[11]);
             stepDone();
           });
@@ -867,7 +869,7 @@ describe('events', function () {
 
     it('[FZ4T] must validate the event\'s content if its type is known', function (done) {
       var data = {
-        streamId: testData.streams[1].id,
+        streamIds: [testData.streams[1].id],
         type: 'note/webclip',
         content: {
           url: 'bad-url',
@@ -885,7 +887,7 @@ describe('events', function () {
     it('[EL88] must not fail when validating the content if passing a string instead of an object',
         function (done) {
       var data = {
-        streamId: testData.streams[1].id,
+        streamIds: [testData.streams[1].id],
         type: 'note/webclip',
         content: 'This should be an object'
       };
@@ -904,13 +906,13 @@ describe('events', function () {
       var data = {
         time: timestamp.fromDate('2012-03-22T10:00'),
         type: testType,
-        streamId: 'unknown-stream-id'
+        streamIds: ['unknown-stream-id']
       };
       request.post(basePath).send(data).end(function (res) {
         validation.checkError(res, {
           status: 400,
           id: ErrorIds.UnknownReferencedResource,
-          data: {streamIds: [data.streamId]}
+          data: {streamIds: data.streamIds}
         }, done);
       });
     });
@@ -921,7 +923,7 @@ describe('events', function () {
         time: timestamp.add(testData.events[1].time, '15m'),
         duration: timestamp.duration('5h30m'),
         type: testType,
-        streamId: testData.streams[0].id
+        streamIds: [testData.streams[0].id]
       };
       request.post(basePath).send(data).end(function (res) {
         validation.checkError(res, {
@@ -938,7 +940,7 @@ describe('events', function () {
     it('[3S2T] must allow the event\'s period overlapping existing periods when the stream allows it',
         function (done) {
       var data = {
-        streamId: testData.streams[1].id,
+        streamIds: [testData.streams[1].id],
         time: timestamp.add(testData.events[11].time, '-15m'),
         duration: timestamp.duration('5h30m'),
         type: testType
@@ -954,7 +956,7 @@ describe('events', function () {
     it('[Q0L6] must return an error if the assigned stream is trashed', function (done) {
       var data = {
         type: testType,
-        streamId: testData.streams[3].id
+        streamIds: [testData.streams[3].id]
       };
       request.post(basePath).send(data).end(function (res) {
         validation.checkError(res, {
@@ -1037,7 +1039,7 @@ describe('events', function () {
       var data = {
         time: timestamp.now('-1h05m'),
         type: testType,
-        streamId: testData.streams[0].id
+        streamIds: [testData.streams[0].id]
       };
       request.post(path).send(data).end(function (res) {
         validation.checkError(res, {
@@ -1051,7 +1053,7 @@ describe('events', function () {
     it('[7FJZ] must allow starting an event before an existing period when the stream allows overlapping',
         function (done) {
       var data = {
-        streamId: testData.streams[1].id,
+        streamIds: [testData.streams[1].id],
         time: timestamp.add(testData.events[11].time, '-15m'),
         type: testType
       };
@@ -1112,7 +1114,7 @@ describe('events', function () {
                 size: testData.attachments.image.size
               }
             ],
-            streamId: data.streamIds[0],
+            streamIds: data.streamIds,
           }, data);
           validation.checkObjectEquality(createdEvent, expected);
 
@@ -1164,7 +1166,7 @@ describe('events', function () {
               size: testData.attachments.document.size
             }
           ],
-          streamId: data.streamIds[0],
+          streamIds: [data.streamIds[0]],
         }, data);
         validation.checkObjectEquality(createdEvent, expected);
 
@@ -1194,7 +1196,7 @@ describe('events', function () {
     it('[R8ER] must return an error if there is more than one non-file content part', function (done) {
       request.post(basePath)
         .field('event', 
-          JSON.stringify({ streamId: testData.streams[0].id, type: testType }))
+          JSON.stringify({ streamIds: [testData.streams[0].id], type: testType }))
         .field('badPart', 'text')
         .end(function (res) {
           validation.checkError(res, {
@@ -1381,7 +1383,7 @@ describe('events', function () {
             expected.modified = time;
             expected.modifiedBy = access.id;
             expected.attachments = original.attachments;
-            expected.streamId = data.streamIds[0];
+            expected.streamIds = data.streamIds;
             validation.checkObjectEquality(res.body.event, expected);
 
             eventsNotifCount.should.eql(1, 'events notifications');
@@ -1424,6 +1426,7 @@ describe('events', function () {
         var expected = _.clone(original);
         delete expected.modified; 
         expected.modifiedBy = access.id;
+        expected.streamId = expected.streamIds[0];
         _.extend(expected.clientData, data.clientData);
         delete expected.clientData.numberProp;
         validation.checkObjectEquality(res.body.event, expected);
@@ -1633,8 +1636,8 @@ describe('events', function () {
   // Fixes #208
   describe('PUT HF/non-HF events', function () {
     const streamId = testData.streams[0].id;
-    const normalEvent = {'streamId': streamId, 'type' : 'activity/plain'};
-    const hfEvent = {'streamId': streamId, 'type' : 'series:activity/plain'};
+    const normalEvent = {streamIds: [streamId], type : 'activity/plain'};
+    const hfEvent = {streamIds: [streamId], type : 'series:activity/plain'};
     let normalEventId;
     let hfEventId;
 
@@ -1705,7 +1708,7 @@ describe('events', function () {
       async.series([
         function stop(stepDone) {
           var data = {
-            streamId: testData.streams[0].id,
+            streamIds: [testData.streams[0].id],
             time: stopTime
           };
           request.post(path).send(data).end(function (res) {
@@ -1740,7 +1743,7 @@ describe('events', function () {
       async.series([
         function addOtherRunning(stepDone) {
           var data = {
-            streamId: stoppedEvent.streamId,
+            streamIds: [stoppedEvent.streamId],
             type: testType
           };
           request.post(basePath + '/start').send(data)
@@ -1751,7 +1754,7 @@ describe('events', function () {
         },
         function (stepDone) {
           var data = {
-            streamId: stoppedEvent.streamId,
+            streamIds: [stoppedEvent.streamId],
             type: stoppedEvent.type
           };
           request.post(basePath + '/stop').send(data).end(function (res) {
@@ -1780,7 +1783,7 @@ describe('events', function () {
       async.series([
         function addOtherRunning(stepDone) {
           var data = {
-            streamId: testData.streams[1].children[0].id,
+            streamIds: [testData.streams[1].children[0].id],
             type: testType
           };
           request.post(basePath + '/start').send(data)
@@ -1829,7 +1832,7 @@ describe('events', function () {
 
     it('[KN22] must return an error if no event is specified and the stream allows overlapping',
         function (done) {
-      var data = {streamId: testData.streams[1].id};
+      var data = {streamIds: [testData.streams[1].id]};
       request.post(basePath + '/stop').send(data).end(function (res) {
         validation.checkError(res, {
           status: 400,

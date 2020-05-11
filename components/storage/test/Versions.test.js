@@ -475,7 +475,8 @@ describe('Versions', function () {
     function checkStreamIdIsNowStreamIds(events) {
       events.forEach(e => {
         if (e.deleted != null) return; // skip deleted ones
-        //console.log('checkin', e)
+        // TODO: put back when addition of streamId from DB is moved up to business level.
+        //console.log('checkin', e);
         //assert.notExists(e.streamId, 'streamId should be unset');
         assert.exists(e.streamIds, 'streamIds array should be set');
       });
