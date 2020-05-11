@@ -278,86 +278,13 @@ describe('accesses (app)', function () {
 
     beforeEach(resetAccesses);
 
-    it('[ACUA] must modify the access with the sent data', function (done) {
-      const original = additionalTestAccesses[2];
-      const data = {
-        name: 'Updated Shared Access A',
-        permissions: [
-          {
-            streamId: testData.streams[0].children[1].id,
-            level: 'read'
-          }
-        ]
-      };
-      req().put(path(original.id), access.token).send(data).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.update.result
-        });
-
-        const expected: {[key: string]: any} = _.clone(data);
-        expected.modifiedBy = access.id;
-        delete expected.token;
-        delete expected.type;
-        _.defaults(expected, original);
-        delete expected.modified;
-        validation.checkObjectEquality(res.body.access, expected);
-
-        should(accessesNotifCount).be.eql(1, 'accesses notifications');
-        done();
-      });
-    });
-
-    it('[11UZ] must forbid trying to modify a non-shared access', function (done) {
+    it('[11UZ]  must return a 410 (Gone)', function (done) {
       req().put(path(additionalTestAccesses[1].id), access.token)
           .send({name: 'Updated App Access'}).end(function (res) {
-        validation.checkErrorUnknown(res, done);
+            validation.check(res, {status: 410});
+            done();
       });
     });
-
-    it('[3RJC] must forbid trying to modify an access with greater permissions', function (done) {
-      req().put(path(testData.accesses[1].id), access.token)
-          .send({name: 'Updated Shared Access'}).end(function (res) {
-        validation.checkErrorUnknown(res, done);
-      });
-    });
-
-    it('[S7G3] must return a correct error if the access does not exist', function (done) {
-      req().put(path('unknown-id'), access.token).send({name: '?'}).end(function (res) {
-        validation.checkError(res, {
-          status: 404,
-          id: ErrorIds.UnknownResource
-        }, done);
-      });
-    });
-
-    it('[VZBW] must return a correct error if the sent data is badly formatted', function (done) {
-      const data = {
-        permissions: [
-          {
-            streamId: testData.streams[0].id,
-            level: 'bad-level'
-          }
-        ]
-      };
-      req().put(path(additionalTestAccesses[2].id), access.token).send(data)
-      .end(function (res) {
-        validation.checkErrorInvalidParams(res, done);
-      });
-    });
-
-    it('[AZID] must return a correct error if an access with the same name already exists', (done) => {
-      req()
-        .put(path(additionalTestAccesses[2].id), access.token)
-        .send({name: testData.accesses[1].name}).end((res) => {
-          validation.checkError(res, {
-            status: 400,
-            id: ErrorIds.ItemAlreadyExists,
-            data: { type: 'shared', name: testData.accesses[1].name }
-          }, done);
-        });
-    });
-
   });
 
   describe('DELETE /<token>', function () {

@@ -302,11 +302,16 @@ module.exports = function produceAccessesApiMethods(
   // UPDATE
 
   api.register('accesses.update',
+    goneResource,
     commonFns.getParamsValidation(methodsSchema.update.params),
     commonFns.catchForbiddenUpdate(accessSchema('update'), updatesSettings.ignoreProtectedFields, logger),
     applyPrerequisitesForUpdate,
     checkAccessForUpdate,
     updateAccess);
+
+  function goneResource(context, params, result, next) {
+    next(errors.goneResource('accesses.update has bee removed'));
+  }
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
     context.updateTrackingProperties(params.update);

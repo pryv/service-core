@@ -28,6 +28,7 @@ const ErrorIds = {
   UnknownReferencedResource: 'unknown-referenced-resource',
   UnknownResource: 'unknown-resource',
   UnsupportedContentType: 'unsupported-content-type',
+  ResourceGone: 'resource-gone',
   /**
    * Used for Batch calls and Socket.IO events.get result storing
    */
