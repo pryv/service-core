@@ -406,9 +406,6 @@ module.exports = function (
         return next(errors.unknownResource('event', params.id));
       }
 
-      // in the context of migration delete streamId that was added by findOne
-      delete event.streamId;
-
       // 1. check that have contributeContext on at least 1 existing streamId
       let canUpdateEvent = false;
       for (let i = 0; i < event.streamIds.length ; i++) {

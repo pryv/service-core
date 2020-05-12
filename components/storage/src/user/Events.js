@@ -27,7 +27,7 @@ function Events(database) {
       converters.stateUpdate,
       converters.getKeyValueSetUpdateFn('clientData')
     ],
-    itemFromDB: [clearEndTime, converters.deletionFromDB, streamIdsFromDB],
+    itemFromDB: [clearEndTime, converters.deletionFromDB],
   });
 
   this.defaultOptions = {
@@ -69,24 +69,6 @@ function clearEndTime(event) {
     return event;
   }
   delete event.endTime;
-  return event;
-}
-
-// Adds streamId field
-// this should be moved on a business level
-function streamIdsFromDB(event) {
-  if (!event) {
-    return event;
-  }
-  if (event.streamId) {
-    console.log("******** ZUT 2", event);
-    throw new Error("I should not find anymore event with streamId: " + event.streamId);
-  }
-  if (event.streamIds && event.streamIds.length > 0 ) {
-    // HERE
-    //event.streamId = event.streamIds[0];
-  }
-  
   return event;
 }
 

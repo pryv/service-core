@@ -219,8 +219,8 @@ BaseStorage.prototype.insertOne = function(user, item, callback) {
       if (err) {
         return callback(err);
       }
-      callback(null, this.applyItemFromDB(item));
-    }.bind(this)
+      callback(null, item);
+    }
   );
 };
 

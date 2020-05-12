@@ -803,7 +803,6 @@ describe('Auditing', function () {
                 return stepDone(err);
               }
               should.exist(event);
-              //delete event.streamId;
               event.should.eql(_.extend({deleted: event.deleted}, eventOnChildStream));
               stepDone();
             });
@@ -817,7 +816,6 @@ describe('Auditing', function () {
               var checked = false;
               (events.length).should.eql(1);
               events.forEach(function (event) {
-                //delete event.streamId;
                 event.headId.should.eql(eventOnChildStream.id);
                 if (event.id === testData.events[26].id) {
                   event.should.eql(testData.events[26]);
