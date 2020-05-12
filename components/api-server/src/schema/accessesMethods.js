@@ -41,23 +41,6 @@ module.exports = {
     })
   },
 
-  update: {
-    params: object({
-      // in path for HTTP requests
-      'id': string(),
-      // = body of HTTP requests
-      'update': access(Action.UPDATE)
-    }, {
-      id: 'accesses.update',
-      required: [ 'id', 'update' ]
-    }),
-    result: object({
-      'access': access(Action.READ)
-    }, {
-      required: [ 'access' ]
-    })
-  },
-
   del: {
     params: object({
       // in path for HTTP requests

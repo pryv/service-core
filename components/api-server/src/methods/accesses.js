@@ -52,9 +52,6 @@ module.exports = function produceAccessesApiMethods(
 
   // COMMON
 
-  api.register('accesses.*',
-    checkNoSharedAccess);
-
   function checkNoSharedAccess(
     context: MethodContext, params: mixed, result: Result, next: ApiCallback) 
   {
@@ -72,6 +69,7 @@ module.exports = function produceAccessesApiMethods(
   // RETRIEVAL
 
   api.register('accesses.get',
+    checkNoSharedAccess,
     commonFns.getParamsValidation(methodsSchema.get.params),
     findAccessibleAccesses,
     includeDeletionsIfRequested
@@ -141,6 +139,7 @@ module.exports = function produceAccessesApiMethods(
   // CREATION
 
   api.register('accesses.create',
+    checkNoSharedAccess,
     applyDefaultsForCreation,
     commonFns.getParamsValidation(methodsSchema.create.params),
     applyPrerequisitesForCreation,
@@ -303,19 +302,10 @@ module.exports = function produceAccessesApiMethods(
 
   api.register('accesses.update',
     goneResource,
-    commonFns.getParamsValidation(methodsSchema.update.params),
-    commonFns.catchForbiddenUpdate(accessSchema('update'), updatesSettings.ignoreProtectedFields, logger),
-    applyPrerequisitesForUpdate,
-    checkAccessForUpdate,
     updateAccess);
 
   function goneResource(context, params, result, next) {
     next(errors.goneResource('accesses.update has bee removed'));
-  }
-
-  function applyPrerequisitesForUpdate(context, params, result, next) {
-    context.updateTrackingProperties(params.update);
-    next();
   }
 
   function checkAccessForUpdate(context, params, result, next) {
@@ -431,8 +421,8 @@ module.exports = function produceAccessesApiMethods(
 
         if (access == null)
           return next(errors.unknownResource('access', params.id));
-
-        if (! currentAccess.canManageAccess(access)) {
+        
+        if (! currentAccess.canDeleteAccess(access)) {
           return next(
             errors.forbidden(
               'Your access token has insufficient permissions to ' +

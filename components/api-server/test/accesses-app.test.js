@@ -80,9 +80,9 @@ describe('accesses (app)', function () {
         }
       ],
       created: timestamp.now(),
-      createdBy: 'test',
+      createdBy: 'app_A',
       modified: timestamp.now(),
-      modifiedBy: 'test'
+      modifiedBy: 'app_A'
     },
     {
       id: 'root_A',
@@ -326,13 +326,56 @@ describe('accesses (app)', function () {
       );
     });
 
+    it('[ZTSZ] must allow suicide for AppTokens', function (done) {
+      req().del(path(access.id), access.token).end(function (res) {
+        validation.check(res, {
+          status: 200,
+          schema: methodsSchema.del.result,
+          body: { accessDeletion: { id: access.id } }
+        });
+        done();
+      });
+    });
+
+    it('[RT6R] must allow suicide for SharedTokens', function (done) {
+      req().del(path(additionalTestAccesses[2].id), additionalTestAccesses[2].token).end(function (res) {
+        validation.check(res, {
+          status: 200,
+          schema: methodsSchema.del.result,
+          body: { accessDeletion: { id: additionalTestAccesses[2].id } }
+        });
+        done();
+      });
+    });
+
+
+    it('[ZTSX] not must allow deletion of already deleted for AppTokens', function (done) {
+      req().del(path(access.id), access.token).end(function (res) {
+        validation.check(res, {
+          status: 200,
+          schema: methodsSchema.del.result,
+          body: { accessDeletion: { id: access.id } }
+        });
+
+        req().del(path(access.id), access.token).end(function (res2) {
+          validation.check(res2, {
+            status: 403});
+
+          done();
+        });
+
+      });
+    });
+
+    
+
     it('[VGQS] must forbid trying to delete a non-shared access', function (done) {
       req().del(path(additionalTestAccesses[1].id), access.token).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
 
-    it('[ZTSY] must forbid trying to delete an access with greater permissions', function (done) {
+    it('[ZTSY] must forbid trying to delete an access that was not created by itself', function (done) {
       req().del(path(testData.accesses[1].id), access.token).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
