@@ -182,9 +182,9 @@ const accessLogic = module.exports = {
   },
 
   
-  // Whether the current access can see and manage the given access. 
+  // Whether the current access can create the given access. 
   // 
-  canManageAccess: function (access) {
+  canCreateAccess: function (access) {
     //TODO handle tags
     
     // The account owner can do everything. 
