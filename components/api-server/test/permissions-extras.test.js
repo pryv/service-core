@@ -56,9 +56,35 @@ describe('[BLUP] permissions extras', function () {
         permissions: [{
           streamId: '*',
           level: 'contribute'
+        }, {
+          feature: 'selfRevoke',
+          level: 'allowed'
         }]
       });
+      
       assert.equal(res.status, 201);
+      assert.exists(res.body.access);
+      const accessToken = res.body.access.token;
+
+      // --- check that permissions are visible with a .get()
+
+      const res3 = await server.request().get(basePathAccess).set('Authorization', personalToken);
+      assert.equal(res3.status, 200);
+      assert.exists(res3.body.accesses);
+      let found = null;
+      for (let i = 0; i < res3.body.accesses.length && found === null; i++) {
+        if (res3.body.accesses[i].id === res.body.access.id) found = res3.body.accesses[i];
+      }
+      assert.isNotNull(found);
+      assert.exists(found.permissions);
+      let featureFound = false;
+      for (let i = 0; i < found.permissions.length; i++) {
+        if (found.permissions[i].feature === 'selfRevoke') {
+          assert.equal(found.permissions[i].level, 'allowed');
+          featureFound = true;
+        }
+      }
+      assert.isTrue(featureFound);
     });
 
   });
@@ -70,9 +96,9 @@ describe('[BLUP] permissions extras', function () {
     accessKeys;
 
     accessDefs = {};
-    accessDefs.AppCanSelfRevoke = { testCode: 'AHS6' };
+    accessDefs.AppCanSelfRevoke = { testCode: 'AHS6', selfRevoke: true };
     accessDefs.AppCannotSelfRevoke = { testCode: 'H6DU', selfRevoke: false };
-    accessDefs.SharedCanSelfRevoke = { testCode: '3DR7', type: 'shared' };
+    accessDefs.SharedCanSelfRevoke = { testCode: '3DR7', type: 'shared', selfRevoke: true };
     accessDefs.SharedCannotSelfRevoke = { testCode: 'F62D', type: 'shared', selfRevoke: false };
 
     accessKeys = Object.keys(accessDefs);
@@ -94,6 +120,12 @@ describe('[BLUP] permissions extras', function () {
             level: 'contribute'
           }]
         };
+        if (! access.selfRevoke) { 
+          data.permissions.push({
+            feature: 'selfRevoke',
+            level: 'forbidden'
+          });
+        }
         access.id = (await user.access(data)).attrs.id;
       }
     });
@@ -106,9 +138,14 @@ describe('[BLUP] permissions extras', function () {
         const access = accessDefs[accessKeys[i]];
         it('[' + access.testCode + '] self revoke ' + accessKeys[i], async function () {
           const res = await server.request().delete(basePathAccess + access.id).set('Authorization', access.token);
-          assert.equal(res.status, 200);
-          assert.exists(res.body.accessDeletion);
-          assert.equal(res.body.accessDeletion.id, access.id);
+
+          if (access.selfRevoke) {
+            assert.equal(res.status, 200);
+            assert.exists(res.body.accessDeletion);
+            assert.equal(res.body.accessDeletion.id, access.id);
+          } else {
+            assert.equal(res.status, 403);
+          }
         });
       }
     });
