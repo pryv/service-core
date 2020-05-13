@@ -58,7 +58,7 @@ describe('[BLUP] permissions extras', function () {
           level: 'contribute'
         }, {
           feature: 'selfRevoke',
-          level: 'allowed'
+          level: 'forbidden'
         }]
       });
       
@@ -80,7 +80,7 @@ describe('[BLUP] permissions extras', function () {
       let featureFound = false;
       for (let i = 0; i < found.permissions.length; i++) {
         if (found.permissions[i].feature === 'selfRevoke') {
-          assert.equal(found.permissions[i].level, 'allowed');
+          assert.equal(found.permissions[i].level, 'forbidden');
           featureFound = true;
         }
       }
