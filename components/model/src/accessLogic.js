@@ -168,9 +168,23 @@ const accessLogic = module.exports = {
     return level && isHigherOrEqualLevel(level, 'manage');
   },
 
-  // Whether the current access can see and manage the given access. 
+  // Whether the current access delete manage the given access
+  canDeleteAccess: function (access) {
+    // The account owner can do everything. 
+    if (this.isPersonal()) return true;
+    // App and Shared accesses can delete themselves (suicide)
+    if (access.id === this.id) return true;
+    
+    if (this.isShared()) return false;
+
+    // App token can delete the one they created
+    return this.id === access.createdBy;
+  },
+
+  
+  // Whether the current access can create the given access. 
   // 
-  canManageAccess: function (access) {
+  canCreateAccess: function (access) {
     //TODO handle tags
     
     // The account owner can do everything. 

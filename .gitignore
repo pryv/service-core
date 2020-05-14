@@ -22,3 +22,4 @@ build/hfs/release.tar
 build/preview/release.tar
 build/release.tar
 test_results/
+coverage/

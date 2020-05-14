@@ -52,9 +52,6 @@ module.exports = function produceAccessesApiMethods(
 
   // COMMON
 
-  api.register('accesses.*',
-    checkNoSharedAccess);
-
   function checkNoSharedAccess(
     context: MethodContext, params: mixed, result: Result, next: ApiCallback) 
   {
@@ -72,6 +69,7 @@ module.exports = function produceAccessesApiMethods(
   // RETRIEVAL
 
   api.register('accesses.get',
+    checkNoSharedAccess,
     commonFns.getParamsValidation(methodsSchema.get.params),
     findAccessibleAccesses,
     includeDeletionsIfRequested
@@ -86,17 +84,15 @@ module.exports = function produceAccessesApiMethods(
       return next(new Error('AF: Access cannot be null at this point.'));
     
     if (! currentAccess.isPersonal()) {
-      // app -> only shared accesses
-      query.type = 'shared';
+      // app -> only access it created
+      query.createdBy = currentAccess.id;
     }
+
     accessesRepository.find(context.user, query, dbFindOptions, function (err, accesses) {
       if (err != null) return next(errors.unexpectedError(err)); 
       
       // We'll perform a few filter steps on this list, so let's start a chain.
       let chain = _.chain(accesses);
-      
-      // Filter accesses that we cannot manage
-      chain = chain.filter(a => currentAccess.canManageAccess(a));
         
       // Filter expired accesses (maybe)
       chain = maybeFilterExpired(params, chain);
@@ -128,11 +124,16 @@ module.exports = function produceAccessesApiMethods(
     const currentAccess = context.access;
     const accessesRepository = storageLayer.accesses;
 
-    accessesRepository.findDeletions(context.user, { projection: { calls: 0 } },
+    const query = {};
+    if (!currentAccess.isPersonal()) {
+      // app -> only access it created
+      query.createdBy = currentAccess.id;
+    }
+
+    accessesRepository.findDeletions(context.user, query,  { projection: { calls: 0 } },
       function (err, deletions) {
         if (err) { return next(errors.unexpectedError(err)); }
-
-        result.accessDeletions = deletions.filter(a => currentAccess.canManageAccess(a));
+        result.accessDeletions = deletions;
         next();
       });
   }
@@ -141,6 +142,7 @@ module.exports = function produceAccessesApiMethods(
   // CREATION
 
   api.register('accesses.create',
+    checkNoSharedAccess,
     applyDefaultsForCreation,
     commonFns.getParamsValidation(methodsSchema.create.params),
     applyPrerequisitesForCreation,
@@ -164,7 +166,7 @@ module.exports = function produceAccessesApiMethods(
     if (access == null) 
       return next(errors.unexpectedError('AF: Access must not be null here.'));
 
-    if (! access.canManageAccess(params)) {
+    if (! access.canCreateAccess(params)) {
       return next(errors.forbidden(
         'Your access token has insufficient permissions ' +
         'to create this new access.'));
@@ -302,82 +304,18 @@ module.exports = function produceAccessesApiMethods(
   // UPDATE
 
   api.register('accesses.update',
-    commonFns.getParamsValidation(methodsSchema.update.params),
-    commonFns.catchForbiddenUpdate(accessSchema('update'), updatesSettings.ignoreProtectedFields, logger),
-    applyPrerequisitesForUpdate,
-    checkAccessForUpdate,
-    updateAccess);
+    goneResource);
 
-  function applyPrerequisitesForUpdate(context, params, result, next) {
-    context.updateTrackingProperties(params.update);
-    next();
-  }
-
-  function checkAccessForUpdate(context, params, result, next) {
-    const accessesRepository = storageLayer.accesses;
-    const currentAccess = context.access;
-    
-    if (currentAccess == null)
-      return next(new Error('AF: access must not be null'));
-      
-    const update = params.update;
-
-    // Deal with access expiry
-    const expireAfter = update.expireAfter;
-    delete update.expireAfter;
-    
-    if (expireAfter != null) {
-      if (expireAfter >= 0)
-        update.expires = timestamp.now() + expireAfter;
-    }
-    
-    accessesRepository.findOne(context.user, {id: params.id}, dbFindOptions,
-      function (err, access) {
-        if (err) { return next(errors.unexpectedError(err)); }
-
-        if (! access) {
-          return next(errors.unknownResource(
-            'access', params.id
-          ));
-        }
-        
-        // Check that the current access can be managed
-        if(! currentAccess.canManageAccess(access)) {
-          // NOTE If we throw a different error here, an attacker might 
-          //  enumerate accesses that exist. Not being able to manage something
-          //  (in the case of accesses) = not have the right to list. 
-          return next(errors.unknownResource(
-            'access', params.id));
-        }
-          
-        // Check that the updated access can still be managed. In other words,
-        // forbid any attempt to elevate the access permissions beyond
-        // authorized level and context.
-        
-        // Here we foresee what the updated access would look like
-        // in order to check if it is legit
-        const updatedAccess = _.merge({}, access, params.update);
-        if(! currentAccess.canManageAccess(updatedAccess)) {
-          return next(errors.forbidden(
-            'Your access token has insufficient permissions ' +
-            'to perform this update.'
-          ));
-        }
-        
-        // NOTE We store the access loaded here for error reporting later. Don't 
-        //  use this for more than that. 
-        params.resource = access;
-        
-        next();
-      });
+  function goneResource(context, params, result, next) {
+    next(errors.goneResource('accesses.update has bee removed'));
   }
 
   // Updates the access in `params.id` with the attributes in `params.update`.
   // 
-  function updateAccess(context, params, result, next) {
+  function updatePersonalAccess(context, params, result, next) {
     const accessesRepository = storageLayer.accesses;
 
-    accessesRepository.updateOne(context.user, {id: params.id}, params.update,
+    accessesRepository.updateOne(context.user, { id: params.id }, params.update,
       function (err, updatedAccess) {
         if (err != null) {
           // Expecting a duplicate error
@@ -401,7 +339,7 @@ module.exports = function produceAccessesApiMethods(
       });
   }
 
-
+  
   // DELETION
 
   api.register('accesses.delete',
@@ -426,8 +364,8 @@ module.exports = function produceAccessesApiMethods(
 
         if (access == null)
           return next(errors.unknownResource('access', params.id));
-
-        if (! currentAccess.canManageAccess(access)) {
+        
+        if (! currentAccess.canDeleteAccess(access)) {
           return next(
             errors.forbidden(
               'Your access token has insufficient permissions to ' +
