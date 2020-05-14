@@ -70,6 +70,11 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
   function updateOrCreatePersonalAccess(context, params, result, next) {
     context.accessQuery = { name: params.appId, type: 'personal' };
     findAccess(context, (err, access) => {
+      //--------------------------------------------------//
+      //--------------  Was probably not necessary -------//
+      //-------- to discuss in review --------------------//
+      //--------------------------------------------------//
+
       if (err) { return next(errors.unexpectedError(err)); }
       
       var accessData = {token: result.token};
