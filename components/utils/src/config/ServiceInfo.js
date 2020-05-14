@@ -29,8 +29,8 @@ class ServiceInfo {
         // absolute path, do nothing.
       }
     }
-
-    console.info('Fetching serviceInfo from: ' + serviceInfoUrl);
+    if (process.env.NODE_ENV !== 'test')
+      console.info('Fetching serviceInfo from: ' + serviceInfoUrl);
     if (serviceInfoUrl == null) {
       console.error('Parameter "serviceInfoUrl" is undefined, set it in the configuration to allow core to provide service info');
       process.exit(2);

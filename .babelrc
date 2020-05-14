@@ -1,12 +1,15 @@
 {
-  "plugins": ["transform-class-properties"], 
+  "plugins": ["transform-class-properties", "transform-object-rest-spread"],
   "presets": [
     "flow", 
     ["env", { 
       "targets": {
-        "node": "8.11"
+        "node": "12.13"
       }, 
       "modules": false
     }]
+  ],
+  "ignore": [
+   
   ]
 }

@@ -34,6 +34,7 @@ const Paths = module.exports = {
   Webhooks: makePath(username, 'webhooks'),
 
   SocketIO: makePath('socket.io'),
+  SocketIO2: makePath('socket.io2'),
   Favicon: makePath('favicon.ico')
 };
 Object.freeze(Paths);

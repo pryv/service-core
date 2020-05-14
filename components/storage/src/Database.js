@@ -478,7 +478,9 @@ class Database {
    * @param {Function} callback
    */
   updateWithOptions(collectionInfo: CollectionInfo, query: Object, update: Object, options: Object, callback: DatabaseCallback) {
-    const opts = Object.assign({ w: 1, j: true }, options); // apply defaults
+    const opts = lodash.clone(options); // apply defaults
+    opts.w = 1;
+    opts.j = true;
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
       collection.updateMany(query, update, opts, callback);

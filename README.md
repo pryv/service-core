@@ -26,7 +26,7 @@ $ nodenv install 8.8.0
 
 You will need to install 'node-gyp' globally as well: `yarn global add node-gyp`. Your environment needs to support C/C++ compilation. On Linux, this includes `sudo apt-get install build-essentials`, on Mac OS X this is XCode + Command Line Utilities. 
 
-Then just `yarn install`.
+Then just `yarn setup`. **Warning** don't use `yarn install`;
 
 ## Top Level Directories
 

@@ -13,6 +13,7 @@
     "cover:do": "node scripts/components-command ../../node_modules/.bin/nyc --no-clean --temp-dir=../../../.nyc_output yarn run test",
     "cover:report": "node_modules/.bin/nyc report --reporter=html",
     "test": "node scripts/components-command yarn test",
+    "setup": "yarn install --ignore-optionals",
     "jsdoc": "node_modules/.bin/jsdoc -c jsdoc.json",
     "test-root": "node_modules/.bin/mocha --compilers js:babel-register --timeout 10000 --reporter=dot test/**/*.test.js",
     "watch": "node_modules/.bin/babel --watch=./components --out-dir=dist/components --copy-files --source-maps both",
@@ -25,8 +26,7 @@
     "upload-test-results": "scripts/test-results/upload.sh"
   },
   "dependencies": {
-    "airbrake": "^2.1.1",
-    "airbrake-js": "^1.6.8",
+    "@airbrake/node": "^1.1.2",
     "api-server": "file:components/api-server",
     "async": "^2.5.0",
     "awaiting": "^3.0.0",
@@ -87,6 +87,7 @@
     "babel-core": "^6.23.1",
     "babel-eslint": "latest",
     "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-preset-env": "^1.7.0",
     "babel-preset-flow": "^6.23.0",
     "babel-register": "^6.23.0",

@@ -40,7 +40,8 @@ describe('access deletions', () => {
 
     const deletedTimestamp = timestamp.now('-1h');
     
-    before(() => {
+    before(async () => {
+      mongoFixtures = databaseFixture(await produceMongoConnection());
       return mongoFixtures.user(userId, {}, (user) => {
         user.stream({ id: streamId }, () => {});
 
@@ -230,7 +231,8 @@ describe('access expiry', () => {
 
   describe('when given a few existing accesses', () => {
     // Build the fixture
-    before(() => {
+    before(async () => {
+      mongoFixtures = databaseFixture(await produceMongoConnection());
       return mongoFixtures.user(userId, {}, function (user) {
         user.stream({id: streamId}, () => { });
         
@@ -549,7 +551,8 @@ describe('access client data', () => {
   describe('when given a few existing accesses', () => {
 
     // Build the fixture
-    before(() => {
+    before(async () => {
+      mongoFixtures = databaseFixture(await produceMongoConnection());
       return mongoFixtures.user(userId, {}, function (user) {
         user.stream({id: streamId}, () => { });
         user.access({token: accessToken, type: 'personal'});
