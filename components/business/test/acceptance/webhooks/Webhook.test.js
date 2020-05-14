@@ -412,25 +412,30 @@ describe('Webhook', () => {
           runsSize: 3,
         });
         await webhook.save();
-      });
 
-      let runs1, runs2, runs3;
-
-      it('[1MK2] should only save 3 items', async () => {
         await webhook.send(message);
         await webhook.send(message);
         await webhook.send(message);
         runs1 = _.cloneDeep(webhook.runs);
       });
+
+      let runs1, runs2, runs3;
+
+      function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+      }
+
       it('[FYOR] should rotate the runs', async () => {
         await webhook.send(message);
+        await sleep(200);
         runs2 = _.cloneDeep(webhook.runs);
         assert.deepEqual(runs2[2], runs1[1]);
         assert.deepEqual(runs2[1], runs1[0]);
         assert.deepEqual(runs2[0], webhook.lastRun);
-      });
-      it('[XDAF] should rotate the runs more', async () => {
+
+        //should rotate the runs more'
         await webhook.send(message);
+        await sleep(200);
         runs3 = webhook.runs;
         assert.deepEqual(runs3[1], runs2[0]);
         assert.deepEqual(runs3[2], runs2[1]);
