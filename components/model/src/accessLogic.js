@@ -310,7 +310,7 @@ const accessLogic = module.exports = {
    */
   canSelfRevoke: function () {
     if (this.featurePermissionsMap.selfRevoke == null) return true; // default allow
-    return this.featurePermissionsMap.selfRevoke.level !== 'forbidden';
+    return this.featurePermissionsMap.selfRevoke.setting !== 'forbidden';
   },
 };
 

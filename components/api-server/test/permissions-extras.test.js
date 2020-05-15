@@ -58,7 +58,7 @@ describe('[BLUP] permissions extras', function () {
           level: 'contribute'
         }, {
           feature: 'selfRevoke',
-          level: 'forbidden'
+          setting: 'forbidden'
         }]
       });
       
@@ -80,7 +80,7 @@ describe('[BLUP] permissions extras', function () {
       let featureFound = false;
       for (let i = 0; i < found.permissions.length; i++) {
         if (found.permissions[i].feature === 'selfRevoke') {
-          assert.equal(found.permissions[i].level, 'forbidden');
+          assert.equal(found.permissions[i].setting, 'forbidden');
           featureFound = true;
         }
       }
@@ -97,7 +97,7 @@ describe('[BLUP] permissions extras', function () {
           level: 'contribute'
         }, {
           feature: 'selfRevoke',
-          level: 'bob'
+          setting: 'bob'
         }]
       });
       assert.equal(res.status, 400);
@@ -141,7 +141,7 @@ describe('[BLUP] permissions extras', function () {
         if (! access.selfRevoke) { 
           data.permissions.push({
             feature: 'selfRevoke',
-            level: 'forbidden'
+            setting: 'forbidden'
           });
         }
         access.id = (await user.access(data)).attrs.id;
