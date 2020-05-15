@@ -49,7 +49,7 @@ describe('[BLUP] permissions extras', function () {
       mongoFixtures.clean();
     });
 
-    it('[JYL5] can create accesses with features', async () => {
+    it('[JYL5] can create accesses with selfRevoke = forbidden', async () => {
       const res = await server.request().post(basePathAccess).set('Authorization', personalToken).send({
         type: 'app',
         name: 'toto',
@@ -85,6 +85,24 @@ describe('[BLUP] permissions extras', function () {
         }
       }
       assert.isTrue(featureFound);
+    });
+
+
+    it('[JYU5] cannot create accesses with selfRevoke !== forbidden ', async () => {
+      const res = await server.request().post(basePathAccess).set('Authorization', personalToken).send({
+        type: 'app',
+        name: 'toto',
+        permissions: [{
+          streamId: '*',
+          level: 'contribute'
+        }, {
+          feature: 'selfRevoke',
+          level: 'bob'
+        }]
+      });
+      assert.equal(res.status, 400);
+      assert.exists(res.body.error);
+      assert.equal(res.body.error.id, 'invalid-parameters-format');
     });
 
   });
