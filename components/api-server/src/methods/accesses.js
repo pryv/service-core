@@ -307,7 +307,7 @@ module.exports = function produceAccessesApiMethods(
     goneResource);
 
   function goneResource(context, params, result, next) {
-    next(errors.goneResource('accesses.update has bee removed'));
+    next(errors.goneResource('accesses.update has been removed'));
   }
 
   // Updates the access in `params.id` with the attributes in `params.update`.

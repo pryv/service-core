@@ -464,7 +464,7 @@ describe('accesses (personal)', function () {
 
   });
 
-  describe('DELETE /<token>', function () {
+  describe('DELETE /<id>', function () {
   
     beforeEach(resetAccesses);
   

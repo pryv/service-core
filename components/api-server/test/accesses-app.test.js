@@ -287,7 +287,7 @@ describe('accesses (app)', function () {
     });
   });
 
-  describe('DELETE /<token>', function () {
+  describe('DELETE /<id>', function () {
 
     beforeEach(resetAccesses);
 
@@ -326,7 +326,7 @@ describe('accesses (app)', function () {
       );
     });
 
-    it('[ZTSZ] must allow suicide for AppTokens', function (done) {
+    it('[ZTSZ] must allow selfRevoke for AppTokens', function (done) {
       req().del(path(access.id), access.token).end(function (res) {
         validation.check(res, {
           status: 200,
@@ -337,7 +337,7 @@ describe('accesses (app)', function () {
       });
     });
 
-    it('[RT6R] must allow suicide for SharedTokens', function (done) {
+    it('[RT6R] must allow selfRevoke for SharedTokens', function (done) {
       req().del(path(additionalTestAccesses[2].id), additionalTestAccesses[2].token).end(function (res) {
         validation.check(res, {
           status: 200,
@@ -349,7 +349,7 @@ describe('accesses (app)', function () {
     });
 
 
-    it('[ZTSX] not must allow deletion of already deleted for AppTokens', function (done) {
+    it('[ZTSX] forbid deletion of already deleted for AppTokens', function (done) {
       req().del(path(access.id), access.token).end(function (res) {
         validation.check(res, {
           status: 200,
