@@ -8,7 +8,11 @@
     "url": "git://github.com/pryv/service-core.git"
   },
   "scripts": {
-    "test": "node scripts/components-yarn test",
+    "cover": "yarn cover:clean && yarn cover:do && yarn cover:report",
+    "cover:clean": "rm -rf .nyc_output",
+    "cover:do": "node scripts/components-command ../../node_modules/.bin/nyc --no-clean --temp-dir=../../../.nyc_output yarn run test",
+    "cover:report": "node_modules/.bin/nyc report --reporter=html",
+    "test": "node scripts/components-command yarn test",
     "jsdoc": "node_modules/.bin/jsdoc -c jsdoc.json",
     "test-root": "node_modules/.bin/mocha --compilers js:babel-register --timeout 10000 --reporter=dot test/**/*.test.js",
     "watch": "node_modules/.bin/babel --watch=./components --out-dir=dist/components --copy-files --source-maps both",
@@ -105,6 +109,7 @@
     "moment": "^2.24.0",
     "nixt": "^0.5.0",
     "nock": "9.4.0",
+    "nyc": "^15.0.1",
     "parallelshell": "^2.0.0",
     "should": "^11.2.0",
     "socket.io-client": "^0.9",

@@ -31,7 +31,7 @@ fs.readdirSync(componentsPath).forEach(function (name) {
   
   name = pad(name);
   console.log(colors ? name.green : name); // eslint-disable-line 
-  var res = childProcess.spawnSync('yarn', args, {
+  var res = childProcess.spawnSync(args[0], args.slice(1), {
     env: process.env,
     cwd: subPath,
     stdio: 'inherit'

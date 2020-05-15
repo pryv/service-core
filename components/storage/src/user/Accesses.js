@@ -53,10 +53,13 @@ const indexes = [
 
 Accesses.prototype.findDeletions = function (
   user,
+  query,
   options,
   callback
 ) {
-  const query = { deleted: { $type: 'date' } };
+  query = query || {};
+  query.deleted = { $type: 'date' };
+  
   this.database.find(
     this.getCollectionInfo(user),
     query,

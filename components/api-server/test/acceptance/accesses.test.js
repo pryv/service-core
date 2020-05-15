@@ -16,12 +16,12 @@ const _ = require('lodash');
 const { ErrorIds } = require('components/errors/src');
 const storage = require('components/test-helpers').dependencies.storage.user.accesses;
 
-let mongoFixtures;
+
 
 
 
 describe('access deletions', () => {
-
+  let mongoFixtures;
   let userId, streamId, activeToken, deletedToken, accessToken;
   before(async () => {
     mongoFixtures = databaseFixture(await produceMongoConnection());
@@ -198,7 +198,7 @@ describe('access deletions', () => {
       });
 
       it('[OS36] error should say that the deleted field is forbidden upon update', () => {
-        assert.equal(error.id, ErrorIds.InvalidParametersFormat);
+        assert.equal(error.id, ErrorIds.Gone);
       });
 
     });
@@ -208,12 +208,13 @@ describe('access deletions', () => {
 
 describe('access expiry', () => {
   // Uses dynamic fixtures:
-  
+  let mongoFixtures;
   // Set up a few ids that we'll use for testing. NOTE that these ids will
   // change on every test run.
   let userId, streamId, accessToken, expiredToken, validId;
   let hasExpiryId, hasExpiryToken;
   before(async () => {
+    mongoFixtures = databaseFixture(await produceMongoConnection());
     userId = cuid(); 
     streamId = cuid();
     accessToken = cuid(); 
@@ -416,88 +417,7 @@ describe('access expiry', () => {
         });
       });
     });
-    describe('accesses.update', () => {
-      describe('with expireAfter>0', () => {
-        let res, access; 
-        beforeEach(async () => {
-          res = await server.request()
-            .put(`/${userId}/accesses/${validId}`)
-            .set('Authorization', accessToken)
-            .send({ expireAfter: 3700 });
-            
-          access = res.body.access;
-          
-          if (! res.ok && res.body.error) {
-            console.error(res.body.error); // eslint-disable-line no-console
-            // console.dir(res.body.error.data[0].inner);
-          }
-        });
 
-        it('[FMKA] sets the \'expires\' attribute', () => {
-          assert.isTrue(res.ok);
-          assert.isNotNull(access.expires);
-          assert.isAbove(access.expires, timestamp.now('+1h'));
-        });
-      });
-      describe('with expireAfter=0', () => {
-        let res, access; 
-        beforeEach(async () => {
-          res = await server.request()
-            .put(`/${userId}/accesses/${validId}`)
-            .set('Authorization', accessToken)
-            .send({ expireAfter: 0 });
-            
-          access = res.body.access;
-          
-          if (! res.ok && res.body.error) {
-            console.error(res.body.error); // eslint-disable-line no-console
-            // console.dir(res.body.error.data[0].inner);
-          }
-        });
-
-        it('[TKKF] expires the access immediately', () => {
-          assert.isTrue(res.ok);
-          assert.isNotNull(access.expires);
-          assert.isAbove(timestamp.now(), access.expires);
-        });
-      });
-      describe('with expires=null', () => {
-        let res, access; 
-        beforeEach(async () => {
-          res = await server.request()
-            .put(`/${userId}/accesses/${hasExpiryId}`)
-            .set('Authorization', accessToken)
-            .send({ expires: null });
-            
-          access = res.body.access;
-          
-          if (! res.ok && res.body.error) {
-            console.error(res.body.error); // eslint-disable-line no-console
-            // console.dir(res.body.error.data[0].inner);
-          }
-        });
-
-        it('[D80R] removes expiry', () => {
-          assert.isTrue(res.ok);
-          assert.isNull(access.expires);
-        });
-      });
-      
-      describe('when trying to update itself with a longer expiration', () => {
-        let res; 
-        beforeEach(async () => {
-          res = await server.request()
-            .put(`/${userId}/accesses/${hasExpiryId}`)
-            .set('Authorization', hasExpiryToken)
-            .send({ expireAfter: 3700 });
-        });
-        
-        it('[IW8Y] fails', () => {
-          assert.isFalse(res.ok);
-          assert.match(res.body.error.message, /^Unknown access/);
-        });
-      });
-    });
     describe('accesses.checkApp', () => {
       describe('when the matching access is not expired', () => {
         let res; 
@@ -587,6 +507,7 @@ describe('access expiry', () => {
 });
 
 describe('access client data', () => {
+  let mongoFixtures;
   function sampleAccess(name, clientData) {
     return {
       id: cuid(),
@@ -603,6 +524,7 @@ describe('access client data', () => {
   let toBeUpdateAccess1, toBeUpdateAccess2, toBeUpdateAccess3, emptyClientDataAccess;
   let fixtureAccesses;
   before(async () => {
+    mongoFixtures = databaseFixture(await produceMongoConnection());
     userId = cuid(); 
     streamId = cuid();
     accessToken = cuid();
@@ -742,93 +664,6 @@ describe('access client data', () => {
         it('[JYD4] creates an access with complex clientData', () => {
           assert.strictEqual(res.status, 201);
           assert.deepEqual(access.clientData, complexClientData);
-        });
-      });
-    });
-
-    describe('accesses.update', () => {
-
-      function checkResultingAccess (res) {
-        const access = res.body.access;
-        assert.isTrue(res.ok);
-        assert.notExists(res.body.error);
-        assert.exists(access);
-        return access;
-      }
-
-      describe('if existing clientData was not empty', () => {
-        const clientDataUpdate = {
-          aString: null,
-          aNumber: 'it was a number',
-          anArray: ['big', 'array', 'you', 'got'],
-          anObject: {child: 'I feel really empty', leaf: null, newProp: 42},
-          aNewProp: 42
-        };
-
-        let res, access; 
-        before(async () => {
-          res = await server.request()
-            .put(`/${userId}/accesses/${toBeUpdateAccess1.id}`)
-            .set('Authorization', accessToken)
-            .send({ clientData: clientDataUpdate});
-            
-          access = checkResultingAccess(res);
-        });
-
-        it('[IY9L] updates previous clientData with new clientData', () => {
-          assert.exists(access.clientData);
-          assert.deepEqual(access.clientData, clientDataUpdate);
-        });
-      });
-
-      describe('if clientData is not provided', () => {
-        let res, access; 
-        before(async () => {
-          res = await server.request()
-            .put(`/${userId}/accesses/${toBeUpdateAccess2.id}`)
-            .set('Authorization', accessToken)
-            .send({ name: 'Updated access' });
-            
-          access = checkResultingAccess(res);
-        });
-
-        it('[SUT0] keeps existing clientData untouched', () => {
-          assert.exists(access.clientData);
-          assert.deepEqual(access.clientData, toBeUpdateAccess2.clientData);
-        });
-      });
-      
-      describe('if existing clientData was empty', () => {
-
-        let res, access; 
-        before(async () => {
-          res = await server.request()
-            .put(`/${userId}/accesses/${emptyClientDataAccess.id}`)
-            .set('Authorization', accessToken)
-            .send({ clientData: complexClientData});
-            
-          access = checkResultingAccess(res);
-        });
-
-        it('[WC3I] sets clientData to provided clientData', () => {
-          assert.exists(access.clientData);
-          assert.deepEqual(access.clientData, complexClientData);
-        });
-      });
-      
-      describe('if provided clientData is explicitely null', () => {
-        let res, access; 
-        before(async () => {
-          res = await server.request()
-            .put(`/${userId}/accesses/${toBeUpdateAccess3.id}`)
-            .set('Authorization', accessToken)
-            .send({ clientData: null });
-
-          access = checkResultingAccess(res);
-        });
-        
-        it('[2OUY] removes existing clientData', () => {
-          assert.notExists(access.clientData);
         });
       });
     });
