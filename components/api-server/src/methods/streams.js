@@ -493,12 +493,6 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
               );
             },
             function removeStreamdIdsFromAllEvents(subStepDone) {
-              if (auditSettings.deletionMode === 'keep-everything') {
-                // we do not remove streamIds from the head
-                // although this seems like bullshit.
-                // See test D4CY
-                return subStepDone();
-              }
               userEventsStorage.updateMany(context.user,
                 { streamIds: { $in: streamAndDescendantIds }, headId: { $exists: false } },
                 { $pull: { streamIds: { $in: streamAndDescendantIds } } },

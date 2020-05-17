@@ -803,7 +803,10 @@ describe('Auditing', function () {
                 return stepDone(err);
               }
               should.exist(event);
-              event.should.eql(_.extend({deleted: event.deleted}, eventOnChildStream));
+              delete event.streamIds;
+              const eventOnChildStreamWithoutStreamIds = _.cloneDeep(eventOnChildStream);
+              delete eventOnChildStreamWithoutStreamIds.streamIds;
+              event.should.eql(_.extend({deleted: event.deleted}, eventOnChildStreamWithoutStreamIds));
               stepDone();
             });
         },
