@@ -52,15 +52,12 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
     };
     sessionsStorage.getMatching(context.sessionData, function (err, sessionId) {
       if (err) { return next(errors.unexpectedError(err)); }
-
-      console.log('XXXX 1 getMatching:', sessionId);
       if (sessionId) {
         result.token = sessionId;
         next();
       } else {
         sessionsStorage.generate(context.sessionData, function (err, sessionId) {
           if (err) { return next(errors.unexpectedError(err)); }
-          console.log('XXXX 1 generate:', sessionId);
           result.token = sessionId;
           next();
         });
@@ -81,7 +78,6 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
       var accessData = {token: result.token};
       // Access is already existing, updating it
       if (access != null) {
-        console.log('XXXX A found:', accessData.token)
         updatePersonalAccess(accessData, context, next);
       }
       // Access not found, creating it

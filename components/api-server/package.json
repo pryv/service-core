@@ -19,7 +19,8 @@
     "multistream": "^2.1.0",
     "nats": "^0.7",
     "slug": "^0.9.1",
-    "socket.io": "^0.9.19",
+    "socket.io": "^2.3.0",
+    "socketio-wildcard": "^2.0.0",
     "url": "^0.11.0",
     "z-schema": "^4.2.3"
   }
