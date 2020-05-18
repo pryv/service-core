@@ -1,6 +1,14 @@
+## 1.5
+
+### 1.5.2
+
+- Updating access via `accesses.update` has been removed.
+- Capacity for an access to self revoke with `accesses.delete <id>` has been extended to `shared`tokens.
+
 ## 1.4
 
 ### 1.4.34
+
  - Fix webhooks reactivation
 
 ### 1.4.33

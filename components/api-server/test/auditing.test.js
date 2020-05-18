@@ -213,8 +213,9 @@ describe('Auditing', function () {
                     return stepDone(err);
                   }
                   should.exist(event);
-                  delete event.streamId;
-                  event.should.eql(_.extend({deleted: event.deleted}, trashedEventWithHistory));
+                  const expected = _.cloneDeep(trashedEventWithHistory);
+                  delete expected.streamId;
+                  event.should.eql(_.extend({deleted: event.deleted}, expected));
                   stepDone();
                 });
             },
@@ -228,7 +229,6 @@ describe('Auditing', function () {
                   var checked = {first: false, second: false};
                   (events.length).should.eql(2);
                   events.forEach(function (event) {
-                    delete event.streamId;
                     if (event.id === testData.events[20].id) {
                       event.should.eql(testData.events[20]);
                       checked.first = true;
@@ -777,7 +777,7 @@ describe('Auditing', function () {
       ], done);
     });
 
-    it('[D4CY] must not delete the events\' history when their stream is deleted with ' +
+    it('[D4CY] must not delete the events\' history when their stream is deleted with' +
     ' mergeEventsWithParents=false and deletionMode=\'keep-everything\'', function (done) {
       var settings = _.cloneDeep(helpers.dependencies.settings);
       settings.audit = {
@@ -803,7 +803,9 @@ describe('Auditing', function () {
                 return stepDone(err);
               }
               should.exist(event);
-              event.should.eql(_.extend({deleted: event.deleted}, eventOnChildStream));
+              const expected = _.cloneDeep(eventOnChildStream);
+              delete expected.streamId;
+              event.should.eql(_.extend({deleted: event.deleted}, expected));
               stepDone();
             });
         },
