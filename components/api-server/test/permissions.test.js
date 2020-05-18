@@ -139,7 +139,7 @@ describe('Access permissions', function () {
         state: 'all'
       };
       request.get(basePath, token(1)).unset('Authorization').query(query).end(function (res) {
-        const expectedEvent = _.clone(testData.events[8]);
+        const expectedEvent = _.cloneDeep(testData.events[8]);
         expectedEvent.streamId = expectedEvent.streamIds[0];
         res.body.events.should.eql([expectedEvent]);
         done();

@@ -280,7 +280,6 @@ describe('permissions create-only level', () => {
                 a: 'b',
               },
             });
-          // 404 instead of 403 for security reason, to not allow to enumerate accesses.
           assert.equal(res.status, 410);
         });
       });
