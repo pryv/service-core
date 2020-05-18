@@ -59,6 +59,7 @@ Then just `yarn setup`. **Warning** don't use `yarn install`;
 | Create Dev. Distribution (with source Maps) | `yarn build-dev`               |
 | Recompile During Development      | `yarn watch`                   |
 | Run Tests                         | `yarn test`                    |
+| Produce coverage html | `yarn cover` |
 | Run Integration Tests             | `yarn test-root`               |
 | Run ALL server processes          | `yarn nf start`                |
 | Run API server                    | `yarn nf start api`            |
