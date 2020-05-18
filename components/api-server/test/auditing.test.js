@@ -190,7 +190,7 @@ describe('Auditing', function () {
         });
 
       it('[1DBC] must not modify the event\'s history when deleting it with ' +
-        'deletionMode=keep-everything, but empty its streamIds',
+        'deletionMode=keep-everything',
         function (done) {
           var settings = _.cloneDeep(helpers.dependencies.settings);
           settings.audit.deletionMode = 'keep-everything';
@@ -213,11 +213,9 @@ describe('Auditing', function () {
                     return stepDone(err);
                   }
                   should.exist(event);
-                  event.streamIds.should.be.an.Array;
-                  event.streamIds.length.should.eql(0);
-                  const trashedEventWithHistoryWithoutStreamIds = _.cloneDeep(trashedEventWithHistory);
-                  trashedEventWithHistoryWithoutStreamIds.streamIds = [];
-                  event.should.eql(_.extend({deleted: event.deleted}, trashedEventWithHistoryWithoutStreamIds));
+                  const expected = _.cloneDeep(trashedEventWithHistory);
+                  delete expected.streamId;
+                  event.should.eql(_.extend({deleted: event.deleted}, expected));
                   stepDone();
                 });
             },
@@ -780,8 +778,7 @@ describe('Auditing', function () {
     });
 
     it('[D4CY] must not delete the events\' history when their stream is deleted with' +
-    ' mergeEventsWithParents=false and deletionMode=\'keep-everything\', ' +
-    ' but empty its streamIds', function (done) {
+    ' mergeEventsWithParents=false and deletionMode=\'keep-everything\'', function (done) {
       var settings = _.cloneDeep(helpers.dependencies.settings);
       settings.audit = {
         deletionMode: 'keep-everything'
@@ -806,11 +803,9 @@ describe('Auditing', function () {
                 return stepDone(err);
               }
               should.exist(event);
-              event.streamIds.should.be.an.Array;
-              event.streamIds.length.should.eql(0);
-              const eventOnChildStreamWithoutStreamIds = _.cloneDeep(eventOnChildStream);
-              eventOnChildStreamWithoutStreamIds.streamIds = [];
-              event.should.eql(_.extend({deleted: event.deleted}, eventOnChildStreamWithoutStreamIds));
+              const expected = _.cloneDeep(eventOnChildStream);
+              delete expected.streamId;
+              event.should.eql(_.extend({deleted: event.deleted}, expected));
               stepDone();
             });
         },

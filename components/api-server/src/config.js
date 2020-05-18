@@ -25,7 +25,7 @@ _.merge(config.schema, {
       '\'keep-nothing\': Delete history, keep head as itemDeletion as it is now by default.\n' +
       '\'keep-authors\': Keep fields \'headId\', \'id\', \'modified\', \'modifiedBy\'' +
       ' in head and history.\n' +
-      '\'keep-everything\': Add \'deleted\' and remove \'streamIds\' from head item, leave history as is.'
+      '\'keep-everything\': Add \'deleted\' field to head event, leave history as is.'
     }
   },
   auth: {

@@ -253,8 +253,6 @@ Events.prototype.delete = function(user, query, deletionMode, callback) {
         createdBy: 1,
       };
       break;
-    case 'keep-everything':
-      update.$set.streamIds = []; // needed for events.delete, redundant for streams.delete
   }
   this.database.updateMany(
     this.getCollectionInfo(user),

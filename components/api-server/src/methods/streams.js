@@ -493,6 +493,10 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
               );
             },
             function removeStreamdIdsFromAllEvents(subStepDone) {
+              if (auditSettings.deletionMode === 'keep-everything') {
+                // not removing anything
+                return subStepDone();
+              }
               userEventsStorage.updateMany(context.user,
                 { streamIds: { $in: streamAndDescendantIds }, headId: { $exists: false } },
                 { $pull: { streamIds: { $in: streamAndDescendantIds } } },
@@ -506,9 +510,16 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
             },
             function deleteEvents(subStepDone) {
               const filter = {
-                streamIds: [],
                 headId: { $exists: false },
               };
+              if (auditSettings.deletionMode === 'keep-everything') {
+                // they still have all their streamIds
+                filter.streamIds = { $in: streamAndDescendantIds };
+              } else {
+                // their streamIds were removed by removeStreamdIdsFromAllEvents()
+                filter.streamIds = [];
+              }
+              
               // we do a "raw" delete on all streamless events 
               // we do not want to change the "modifiedBy" and "modifiedDate"
               // to prevent running condition where another process would 
