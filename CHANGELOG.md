@@ -1,9 +1,13 @@
 ## 1.5
 
+### 1.5.3
+
+- Deleting an event with `deletionMode=keep-eversthing` now empties its streamIds.
+
 ### 1.5.2
 
 - Updating access via `accesses.update` has been removed.
-- Capacity for an access to self revoke with `accesses.delete <id>` has been extended to `shared`tokens. 
+- Capacity for an access to self revoke with `accesses.delete <id>` has been extended to `shared`tokens.
 
 ## 1.4
 

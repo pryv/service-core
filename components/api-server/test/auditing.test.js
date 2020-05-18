@@ -190,7 +190,7 @@ describe('Auditing', function () {
         });
 
       it('[1DBC] must not modify the event\'s history when deleting it with ' +
-        'deletionMode=keep-everything',
+        'deletionMode=keep-everything, but empty its streamIds',
         function (done) {
           var settings = _.cloneDeep(helpers.dependencies.settings);
           settings.audit.deletionMode = 'keep-everything';
@@ -213,8 +213,11 @@ describe('Auditing', function () {
                     return stepDone(err);
                   }
                   should.exist(event);
-                  delete event.streamId;
-                  event.should.eql(_.extend({deleted: event.deleted}, trashedEventWithHistory));
+                  event.streamIds.should.be.an.Array;
+                  event.streamIds.length.should.eql(0);
+                  const trashedEventWithHistoryWithoutStreamIds = _.cloneDeep(trashedEventWithHistory);
+                  trashedEventWithHistoryWithoutStreamIds.streamIds = [];
+                  event.should.eql(_.extend({deleted: event.deleted}, trashedEventWithHistoryWithoutStreamIds));
                   stepDone();
                 });
             },
@@ -228,7 +231,6 @@ describe('Auditing', function () {
                   var checked = {first: false, second: false};
                   (events.length).should.eql(2);
                   events.forEach(function (event) {
-                    delete event.streamId;
                     if (event.id === testData.events[20].id) {
                       event.should.eql(testData.events[20]);
                       checked.first = true;
@@ -777,8 +779,9 @@ describe('Auditing', function () {
       ], done);
     });
 
-    it('[D4CY] must not delete the events\' history when their stream is deleted with ' +
-    ' mergeEventsWithParents=false and deletionMode=\'keep-everything\'', function (done) {
+    it('[D4CY] must not delete the events\' history when their stream is deleted with' +
+    ' mergeEventsWithParents=false and deletionMode=\'keep-everything\', ' +
+    ' but empty its streamIds', function (done) {
       var settings = _.cloneDeep(helpers.dependencies.settings);
       settings.audit = {
         deletionMode: 'keep-everything'
@@ -803,9 +806,10 @@ describe('Auditing', function () {
                 return stepDone(err);
               }
               should.exist(event);
-              delete event.streamIds;
+              event.streamIds.should.be.an.Array;
+              event.streamIds.length.should.eql(0);
               const eventOnChildStreamWithoutStreamIds = _.cloneDeep(eventOnChildStream);
-              delete eventOnChildStreamWithoutStreamIds.streamIds;
+              eventOnChildStreamWithoutStreamIds.streamIds = [];
               event.should.eql(_.extend({deleted: event.deleted}, eventOnChildStreamWithoutStreamIds));
               stepDone();
             });
