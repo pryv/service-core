@@ -33,7 +33,6 @@ Then just `yarn setup`. **Warning** don't use `yarn install`;
     .
     ├── CHANGELOG.md        Changelog
     ├── Jenkinsfile          Used by Jenkins to identify and run the build
-    ├── Procfile             Used by foreman (`nf`) to identify processes 
     ├── README.md           This README
     ├── build               Contains files needed for Docker release build
     ├── components          Source code for all components 
@@ -60,16 +59,15 @@ Then just `yarn setup`. **Warning** don't use `yarn install`;
 | Recompile During Development      | `yarn watch`                   |
 | Run Tests                         | `yarn test`                    |
 | Run Integration Tests             | `yarn test-root`               |
-| Run ALL server processes          | `yarn nf start`                |
-| Run API server                    | `yarn nf start api`            |
-| Run API and Preview server        | `yarn nf start api, previews` |
-| Run Webhooks service              | `yarn nf start webhooks`       |
-| Run Database                      | `yarn nf start database`       |
+| Run API server                    | `yarn api`                     |
+| Run Preview server                | `yarn previews`                |
+| Run Webhooks service              | `yarn webhooks`                |
+| Run Database                      | `yarn database`                |
 | DB migration process | `cd dist/component/api-server/ ; ./bin/migrate` |
 | Get a list of available processes | `cat Procfile`                  |
 | Run flow checker                   | `watch -c flow --color=always`  |
 
-**NOTE** that all binaries like `nf` or `flow` must be accessed by prepending `yarn {nf,flow}`, as documented [here](http://strongloop.github.io/node-foreman/).
+**NOTE** that all binaries like `flow` must be accessed by prepending `yarn {flow}`.
 
 ## Setup
 
@@ -85,7 +83,7 @@ During development, use `yarn watch` to recompile all files after each saved cha
 
 ## Test Running
 
-_Prerequisite:_ MongoDB must be running on the default port; you can use `yarn nf start database`.
+_Prerequisite:_ MongoDB must be running on the default port; you can use `yarn database`.
 
 `yarn test` runs tests on each component. See individual components for things like detailed output and other options.
 `yarn test-root` runs root tests combining multiple components (e.g., High-Frequency series).

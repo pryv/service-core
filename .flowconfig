@@ -6,7 +6,6 @@ decls/
 [ignore]
 <PROJECT_ROOT>/scripts/.*
 <PROJECT_ROOT>/dist/.*
-<PROJECT_ROOT>/node_modules/nixt/node_modules/changelog/examples/node.json
 <PROJECT_ROOT>/node_modules/nock/node_modules/changelog/examples/node.json
 <PROJECT_ROOT>/components/tprpc/node_modules/config-chain/test/broken.json
 <PROJECT_ROOT>/node_modules/tprpc/node_modules/config-chain/test/broken.json
