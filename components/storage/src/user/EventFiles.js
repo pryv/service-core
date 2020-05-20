@@ -92,7 +92,7 @@ EventFiles.prototype.saveAttachedFile = function (tempPath, user, eventId, fileI
     fileId = this.generateFileId(tempPath);
   }
   var dirPath = this.getAttachmentPath(user.id, eventId);
-  mkdirp(dirPath, function (err) {
+  mkdirp(dirPath).then(function (res, err) {
     if (err) { return callback(err); }
 
     var readStream = fs.createReadStream(tempPath);
@@ -172,7 +172,7 @@ EventFiles.prototype.getAttachmentPath = function (/*userId, eventId, fileId*/) 
  */
 EventFiles.prototype.ensurePreviewPath = function (user, eventId, dimension, callback) {
   var dirPath = path.join(this.settings.previewsDirPath, user.id, eventId);
-  mkdirp(dirPath, function (err) {
+  mkdirp(dirPath).then(function (res, err) {
     if (err) { return callback(err); }
     callback(null, path.join(dirPath, getPreviewFileName(dimension)));
   });
