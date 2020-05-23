@@ -1642,6 +1642,10 @@ describe('events', function () {
     let hfEventId;
 
     before(function(done) {
+      if (!process.env.PRYV_HF) {
+        this.skip();
+        return done();
+      }
       async.parallel([
         function createNormalEvent(stepDone) {
           request.post(basePath).send(normalEvent).end(function (res) {

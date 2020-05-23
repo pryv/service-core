@@ -549,7 +549,8 @@ describe('permissions create-only level', () => {
 
   describe('Webhooks', function () {
     let basePath;
-    before(() => {
+    before(function () {
+      if (!process.env.PRYV_WEBHOOKS) this.skip();
       basePath = `/${username}/webhooks`;
     });
 

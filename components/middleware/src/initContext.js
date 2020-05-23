@@ -2,7 +2,6 @@
 
 const model = require('components/model');
 const MethodContext = model.MethodContext;
-const ApiConstants = require('components/hfs-server/src/web/api_constants');
 
 import type { CustomAuthFunction } from 'components/model';
 import type { StorageLayer } from 'components/storage';
@@ -21,7 +20,7 @@ module.exports = function initContext(
   return function (
     req: express$Request, res: express$Response, next: express$NextFunction
   ) {
-    const authorizationHeader = req.headers[ApiConstants.AUTH_HEADER];
+    const authorizationHeader = req.headers['authorization'];
 
 
     // FLOW We should not do this, but we're doing it.

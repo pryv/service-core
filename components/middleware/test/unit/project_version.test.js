@@ -1,6 +1,8 @@
 // @flow
 
 /* global describe, it, beforeEach, afterEach */
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../../../../../.env') });
 
 const chai = require('chai');
 const assert = chai.assert; 
@@ -9,7 +11,6 @@ const sinon = require('sinon');
 const bluebird = require('bluebird');
 const child_process = require('child_process');
 const fs = require('fs');
-const path = require('path');
 
 const { ProjectVersion } = require('../../src/project_version');
 
@@ -20,6 +21,9 @@ describe('ProjectVersion#version', () => {
   });
   
   describe('when no ".api-version" file is available', () => {
+    before(function () {
+      if (! process.env.PRYV_GITVERSION) this.skip();
+    });
     it('[W2BC] returns a version-string', async () => {
       const version = await pv.version();
       assert.match(version, /^\d+\.\d+\.\d+(-\d+-[0-9a-z]+)?$/);

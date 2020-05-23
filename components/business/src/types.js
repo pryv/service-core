@@ -86,6 +86,7 @@ class TypeRepository {
   // 
   isKnown(name: string): boolean {
     if (isSeriesType(name)) {
+      if (! process.env.PRYV_HF) return false;
       const leafTypeName = name.slice(SERIES_PREFIX.length); 
       return this.isKnown(leafTypeName);
     }
@@ -118,6 +119,8 @@ class TypeRepository {
   // 
   lookup(name: string) {
     if (isSeriesType(name)) {
+      if (! process.env.PRYV_HF) throw new errors.TypeDoesNotExistError(
+        `This instance does not support HF Event types '${name}'.`);
       const leafTypeName = name.slice(SERIES_PREFIX.length); 
       const leafType = this.lookupLeafType(leafTypeName);
       

@@ -122,6 +122,7 @@ class Server {
       application.api, l('methods/service'), 
       application.getServiceInfoSettings());
 
+    if (process.env.PRYV_WEBHOOKS)
     require('./methods/webhooks')(
       application.api, l('methods/webhooks'),
       application.getWebhooksSettings(),
@@ -289,7 +290,8 @@ class Server {
     require('./routes/profile')(expressApp, application);
     require('./routes/service')(expressApp, application);
     require('./routes/streams')(expressApp, application);
-    require('./routes/webhooks')(expressApp, application);
+    if(process.env.PRYV_WEBHOOKS)
+      require('./routes/webhooks')(expressApp, application);
   }
 
 

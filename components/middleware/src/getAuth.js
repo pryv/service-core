@@ -1,11 +1,9 @@
 // @flow
 
-const ApiConstants = require('components/hfs-server/src/web/api_constants');
-
 // Middleware that verifies the presence of an authorization token
 // 
 module.exports = (req: express$Request, res: express$Response, next: express$NextFunction) => {
-  req.headers[ApiConstants.AUTH_HEADER] = getAuth(req);
+  req.headers['authorization'] = getAuth(req);
   next();
 };
 

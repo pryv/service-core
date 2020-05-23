@@ -1,5 +1,5 @@
 // @flow
-
+require('dotenv').config();
 const requestModule = require('./request'); 
 
 exports = module.exports = {
