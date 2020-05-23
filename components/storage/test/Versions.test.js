@@ -18,10 +18,14 @@ const wrench = require('wrench');
 const _ = require('lodash');
 const buildTree = require('components/utils').treeUtils.buildTree;
 
+const path = require('path');
+const basePath = path.resolve(__dirname, '../../../../');
+const mongoFolder = path.resolve(basePath, process.env.PRYV_MONGODB);
+
 describe('Versions', function () {
   this.timeout(20000);
 
-  const mongoFolder = __dirname + '/../../../../../mongo-bin';
+  
 
   // older migration tests are skipped; they're kept for reference (e.g. when
   // writing new tests)

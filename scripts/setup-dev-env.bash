@@ -7,10 +7,15 @@
 SCRIPT_FOLDER=$(cd $(dirname "$0"); pwd)
 cd $SCRIPT_FOLDER/.. # root
 
-export DATA_FOLDER=$SCRIPT_FOLDER/../..
-export LOGS_FOLDER=${DATA_FOLDER}/logs
-export MONGO_BASE_FOLDER=$DATA_FOLDER
-export MONGO_DATA_FOLDER=$DATA_FOLDER/mongodb-data
+. .env # Load env variables
+echo "installing mongo, data, files and logs in ${PRYV_VAR}"
+mkdir -p ${PRYV_VAR}
+mkdir -p ${PRYV_MONGODB}
+mkdir -p ${PRYV_MONGODATA}
+
+export LOGS_FOLDER=${PRYV_LOGS}
+export MONGO_BASE_FOLDER=${PRYV_MONGODB}
+export MONGO_DATA_FOLDER=${PRYV_MONGODATA}
 
 if [ `uname` = "Linux" ]; then
   export MONGO_NAME=mongodb-linux-x86_64-3.6.17
