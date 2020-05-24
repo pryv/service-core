@@ -20,7 +20,7 @@ const Paths = module.exports = {
   System: makePath('system'),
   /* TODO remove: temporarily kept for backwards-compat */
   Register: makePath('register'),
-
+  Reg: makePath('reg'),
   UserRoot: makePath(username),
 
   Accesses: makePath(username, 'accesses'),

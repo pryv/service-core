@@ -67,6 +67,11 @@ class Server {
     this.setupSocketIO(server); 
     await this.startListen(server);
     
+    // For DNS LESS load register
+    if (process.env.PRYV_DNSLESS) {
+      require('../../register')(expressApp, this.application);
+    }
+
     // Finish booting the server, start accepting connections.
     this.addRoutes(expressApp);
     
