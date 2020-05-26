@@ -8,6 +8,11 @@ var config = require('components/utils').config,
 module.exports = config;
 
 _.merge(config.schema, {
+  singleCoreUrl: {
+    format: String,
+    default: null,
+    doc: 'URL indicating the address to reach the server. When the platform operates as a single core, with register as a component. Setting this will deactivate some features and override some parameters.'
+  },
   service: {
     format: Object,
     default: {}

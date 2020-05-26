@@ -4,6 +4,8 @@ const fs = require('fs');
 const url = require('url');
 const path = require('path');
 
+const regPath = require('components/api-server/src/routes/Paths').Reg;
+
 let serviceInfo = {};
 
 const FILE_PROTOCOL = 'file://';
@@ -17,7 +19,6 @@ class ServiceInfo {
   static async loadFromUrl(serviceInfoUrl) {
     if (serviceInfo[serviceInfoUrl]) return serviceInfo[serviceInfoUrl];
 
-    
     if (isFileUrl(serviceInfoUrl)) {
       const filePath = stripFileProtocol(serviceInfoUrl);
       
@@ -54,6 +55,18 @@ class ServiceInfo {
   }
 
   static async addToConvict(convictInstance) {
+    // -- if singleCoreUrl
+    let singleCoreUrl = convictInstance.get('singleCoreUrl');
+    if (singleCoreUrl) { // service is loaded directly from the "service" object and completed programtically
+      // remove trailing slash if not present
+      if (singleCoreUrl.slice(-1) === '/') singleCoreUrl = singleCoreUrl.slice(0, -1);
+      convictInstance.set('service.api', singleCoreUrl + '/{username}');
+      convictInstance.set('service.register', singleCoreUrl + regPath);
+      convictInstance.set('service.access', singleCoreUrl + regPath + '/access');
+      return;
+    }
+
+    // -- from url
     let serviceInfoUrl;
     try {
       serviceInfoUrl = convictInstance.get(SERVICE_INFO_URL_CONFIG);
