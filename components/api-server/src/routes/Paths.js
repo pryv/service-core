@@ -21,6 +21,7 @@ const Paths = module.exports = {
   /* TODO remove: temporarily kept for backwards-compat */
   Register: makePath('register'),
   Reg: makePath('reg'),
+  WWW: makePath('www'),
   UserRoot: makePath(username),
 
   Accesses: makePath(username, 'accesses'),

@@ -70,6 +70,7 @@ class Server {
     // For DNS LESS load register
     if (process.env.PRYV_DNSLESS) {
       require('../../register')(expressApp, this.application);
+      require('../../www')(expressApp, this.application);
     }
 
     // Finish booting the server, start accepting connections.
