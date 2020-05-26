@@ -73,6 +73,7 @@
     "nconf": "^0.10.0",
     "previews-server": "file:components/previews-server",
     "protobufjs": "^6.8.6",
+    "pryv": "^2.0.2",
     "pryvuser-cli": "file:components/pryvuser-cli",
     "qs": "^6.3.0",
     "ramda": "^0.23.0",
