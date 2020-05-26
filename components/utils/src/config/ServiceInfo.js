@@ -60,6 +60,7 @@ class ServiceInfo {
     if (singleCoreUrl) { // service is loaded directly from the "service" object and completed programtically
       // remove trailing slash if not present
       if (singleCoreUrl.slice(-1) === '/') singleCoreUrl = singleCoreUrl.slice(0, -1);
+      convictInstance.set('service.serial', 't' + Math.round(Date.now() / 1000));
       convictInstance.set('service.api', singleCoreUrl + '/{username}');
       convictInstance.set('service.register', singleCoreUrl + regPath);
       convictInstance.set('service.access', singleCoreUrl + regPath + '/access');
