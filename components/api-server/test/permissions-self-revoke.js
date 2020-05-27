@@ -49,7 +49,7 @@ describe('[BLUP] permissions extras', function () {
       mongoFixtures.clean();
     });
 
-    it('[JYL5] can create accesses with selfRevoke = forbidden', async () => {
+    it('[JYL5] Accesses with selfRevoke = forbidden are listed by GET /accesses', async () => {
       const res = await server.request().post(basePathAccess).set('Authorization', personalToken).send({
         type: 'app',
         name: 'toto',

@@ -187,7 +187,7 @@ const accessLogic = module.exports = {
   canDeleteAccess: function (access) {
     // The account owner can do everything. 
     if (this.isPersonal()) return true;
-    // App and Shared accesses can delete themselves (suicide)
+    // App and Shared accesses can delete themselves (selfRevoke)
     if (access.id === this.id) { 
       return this.canSelfRevoke();
     }
