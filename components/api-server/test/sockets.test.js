@@ -330,7 +330,7 @@ describe('Socket.IO', function () {
 
   describe('when using an access with a "create-only" permission', function () {
 
-    it('[K2OO] must refuse a connection', function (done) {
+    it('[K2OO] must accept a connection', function (done) {
       let streamId, createOnlyToken;
       async.series([
         function (stepDone) {
@@ -367,12 +367,12 @@ describe('Socket.IO', function () {
           ioCons.con = connect(namespace, {auth: createOnlyToken});
       
           ioCons.con.once('connect', function () {
-            stepDone(new Error('Connecting should have failed'));
+            stepDone();
           });
         
           ioCons.con.socket.once('error', function (err) {
             // We expect failure, so we're done here. 
-            stepDone();
+            stepDone(new Error('Connecting should have worked'));
           });
         }
       ], done);

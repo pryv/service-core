@@ -577,7 +577,7 @@ describe('permissions create-only level', () => {
           .send({
             url: charlatan.Internet.url(),
           });
-        assert.equal(res.status, 403);
+        assert.equal(res.status, 201);
       });
     });
 

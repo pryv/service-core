@@ -294,18 +294,6 @@ const accessLogic = module.exports = {
   },
 
   /**
-   * returns true if this has a stream permission with `create-only` level
-   */
-  hasCreateOnlyPermission: function () {
-    if (this.streamPermissions == null) return false;
-
-    for(permission of this.streamPermissions) {
-      if (permission.level === 'create-only') return true;
-    }
-    return false;
-  },
-
-  /**
    * return true is does not have "feature selfRevoke" permission with level "forbidden"
    */
   canSelfRevoke: function () {

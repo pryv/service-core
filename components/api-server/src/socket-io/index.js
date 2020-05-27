@@ -99,11 +99,6 @@ function setupSocketIO(
       // Load access
       await context.retrieveExpandedAccess(storageLayer);
 
-      // create-only
-      if (context.access.hasCreateOnlyPermission()) {
-        throw new Error('Socket.io forbidden for "create-only" permissions');
-      }
-
       callback(null, true);
     } catch (err) {
       callback(err);

@@ -119,7 +119,6 @@ module.exports = function produceWebhooksApiMethods(
     commonFns.getParamsValidation(methodsSchema.create.params),
     forbidSharedAccess,
     forbidPersonalAccess,
-    forbidCreateOnlyAccess,
     createWebhook,
     bootWebhook,
   );
@@ -133,20 +132,6 @@ module.exports = function produceWebhooksApiMethods(
     if (currentAccess.isPersonal()) {
       return next(errors.forbidden(
         'Personal Accesses cannot create Webhooks. Please use an App Access.'
-      ));
-    }
-    next();
-  }
-
-  function forbidCreateOnlyAccess(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    const currentAccess: Access = context.access;
-
-    if (currentAccess == null) {
-      return next(new Error('AF: Access cannot be null at this point.'));
-    }
-    if (currentAccess.hasCreateOnlyPermission()) {
-      return next(errors.forbidden(
-        'Accesses containing "create-only" permissions cannot create Webhooks. Please use another App Access.'
       ));
     }
     next();
