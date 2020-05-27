@@ -557,19 +557,9 @@ describe('permissions create-only level', () => {
       return `${basePath}/${id}`;
     }
 
-    describe('GET /', function () {
-      it('[5FHF] should return an empty list when fetching webhooks', async function () {
-        const res = await server
-          .request()
-          .get(basePath)
-          .set('Authorization', createOnlyToken);
-        assert.equal(res.status, 200);
-        assert.equal(res.body.webhooks.length, 0);
-      });
-    });
 
     describe('CREATE /', function() {
-      it('[3AE9] should forbid creating webhooks', async function () {
+      it('[3AE9] should allow creating webhooks', async function () {
         const res = await server
           .request()
           .post(basePath)

@@ -153,8 +153,10 @@ describe('webhooks', () => {
         response = res;
       });
 
-      it('[NC0J] should return a status 403 with a forbidden error', () => {
-        validation.checkErrorForbidden(response);
+      it('[NC0J] should return a status 200 with a forbidden error', () => {
+        validation.check(response, {
+          status: 200,
+        });
       });
     });
     
@@ -271,23 +273,7 @@ describe('webhooks', () => {
           status: 200,
         });
       });
-    });
-
-    describe('when using a shared token', () => {
-
-      let response;
-      before(async () => {
-        const res = await server.request()
-          .get(`/${username}/webhooks/doesnotmatter`)
-          .set('Authorization', sharedAccessToken);
-        response = res;
-      });
-
-      it('[604H] should return a status 403 with a forbidden error', () => {
-        validation.checkErrorForbidden(response);
-      });
-    });
-    
+    });    
   });
 
   describe('POST /', () => {
@@ -414,8 +400,10 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('[LN79] should return a status 403 with a forbidden error', () => {
-          validation.checkErrorForbidden(response);
+        it('[LN79] should return a status 201', () => {
+          validation.check(response, {
+            status: 201,
+          });
         });
 
       });
@@ -968,23 +956,6 @@ describe('webhooks', () => {
         it('[SBI7] should send a POST request to the URL', async () => {
           assert.isTrue(notificationsServer.isMessageReceived());
         }).timeout(1000);
-      });
-    });
-
-    describe('when using a shared token', () => {
-
-      describe('when the webhook exists', () => {
-        let response;
-        before(async () => {
-          const res = await server.request()
-            .get(`/${username}/webhooks/doesnotmatter`)
-            .set('Authorization', sharedAccessToken);
-          response = res;
-        });
-
-        it('[J2PL] should return a status 403 with a forbidden error', () => {
-          validation.checkErrorForbidden(response);
-        });
       });
     });
   });

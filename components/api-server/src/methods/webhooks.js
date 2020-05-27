@@ -53,23 +53,8 @@ module.exports = function produceWebhooksApiMethods(
 
   api.register('webhooks.get',
     commonFns.getParamsValidation(methodsSchema.get.params),
-    forbidSharedAccess,
     findAccessibleWebhooks,
   );
-
-  function forbidSharedAccess(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    const currentAccess: Access = context.access;
-
-    if (currentAccess == null) {
-      return next(new Error('AF: Access cannot be null at this point.'));
-    }
-    if (currentAccess.isShared()) {
-      return next(errors.forbidden(
-        'Shared Accesses cannot manipulate Webhooks. Please use an App or Personnal Access.'
-      ));
-    }
-    next();
-  }
 
   async function findAccessibleWebhooks(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     const currentAccess = context.access;
@@ -88,7 +73,6 @@ module.exports = function produceWebhooksApiMethods(
 
   api.register('webhooks.getOne',
     commonFns.getParamsValidation(methodsSchema.get.params),
-    forbidSharedAccess,
     findWebhook,
   );
 
@@ -117,7 +101,6 @@ module.exports = function produceWebhooksApiMethods(
 
   api.register('webhooks.create',
     commonFns.getParamsValidation(methodsSchema.create.params),
-    forbidSharedAccess,
     forbidPersonalAccess,
     createWebhook,
     bootWebhook,
@@ -175,7 +158,6 @@ module.exports = function produceWebhooksApiMethods(
 
   api.register('webhooks.update',
     commonFns.getParamsValidation(methodsSchema.update.params),
-    forbidSharedAccess,
     commonFns.catchForbiddenUpdate(webhookSchema('update'), false, logger),
     applyPrerequisitesForUpdate,
     updateWebhook,
@@ -231,7 +213,6 @@ module.exports = function produceWebhooksApiMethods(
 
   api.register('webhooks.delete',
     commonFns.getParamsValidation(methodsSchema.del.params),
-    forbidSharedAccess,
     deleteAccess,
     turnOffWebhook,
   );
@@ -281,7 +262,6 @@ module.exports = function produceWebhooksApiMethods(
 
   api.register('webhooks.test',
     commonFns.getParamsValidation(methodsSchema.test.params),
-    forbidSharedAccess,
     testWebhook,
   );
 
