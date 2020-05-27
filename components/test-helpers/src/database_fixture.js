@@ -341,8 +341,10 @@ class FixtureStream extends FixtureTreeNode implements ChildResource {
 class FixtureEvent extends FixtureTreeNode implements ChildResource {
   constructor(context: UserContext, attrs: {}, streamId: string) {
     if (streamId) {
+      // used by stream.event()
       super(context, R.merge(attrs, {streamIds: [streamId]}));
-    } else { // streamIds is provided by user.event
+    } else { 
+      // streamIds must be provided by user.event()
       super(context, attrs);
     }
   }

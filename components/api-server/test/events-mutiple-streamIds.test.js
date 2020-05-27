@@ -14,7 +14,7 @@ const { produceMongoConnection, context } = require('./test-helpers');
 
 require('date-utils');
 
-describe('[MXEV] events.streamIds', function () {
+describe('events.streamIds', function () {
 
   describe('events', function () {
     let server;
