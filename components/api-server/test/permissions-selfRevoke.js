@@ -110,10 +110,10 @@ describe('permissions selfRevoke', function () {
         accessKeys;
 
     const accessDefs = {};
-    accessDefs.AppCanSelfRevoke = { testCode: 'AHS6', selfRevoke: true };
-    accessDefs.AppCannotSelfRevoke = { testCode: 'H6DU', selfRevoke: false };
-    accessDefs.SharedCanSelfRevoke = { testCode: '3DR7', type: 'shared', selfRevoke: true };
-    accessDefs.SharedCannotSelfRevoke = { testCode: 'F62D', type: 'shared', selfRevoke: false };
+    accessDefs['must allow app accesses to self revoke by default'] = { testCode: 'AHS6', selfRevoke: true };
+    accessDefs['must forbid app accesses to self revoke when set'] = { testCode: 'H6DU', selfRevoke: false };
+    accessDefs['must allow shared accesses to self revoke by default'] = { testCode: '3DR7', type: 'shared', selfRevoke: true };
+    accessDefs['must forbid shared accesses to self revoke when set'] = { testCode: 'F62D', type: 'shared', selfRevoke: false };
 
     accessKeys = Object.keys(accessDefs);
 
@@ -149,7 +149,7 @@ describe('permissions selfRevoke', function () {
 
     for (let i = 0; i < accessKeys.length; i++) {
       const access = accessDefs[accessKeys[i]];
-      it('[' + access.testCode + '] self revoke ' + accessKeys[i], async function () {
+      it('[' + access.testCode + '] ' + accessKeys[i], async function () {
         const res = await server.request().delete(basePathAccess + access.id).set('Authorization', access.token);
 
         if (access.selfRevoke) {
