@@ -1,6 +1,16 @@
 ## 1.5
 
-### 1.5.2
+### 1.5.6
+
+- Extend Webhooks manipulation to shared accesses.
+- Extend Socket.io interface to shared accesses.
+- Extend Socket.io interface to accesses containing a `create-only` permission.
+
+### 1.5.5
+
+- Add new access permission class: `{ feature: "selfRevoke", setting: "forbidden"}` which explicitely forbids accesses to self revoke.
+
+### 1.5.4
 
 - Updating access via `accesses.update` has been removed.
 - Capacity for an access to self revoke with `accesses.delete <id>` has been extended to `shared`tokens.

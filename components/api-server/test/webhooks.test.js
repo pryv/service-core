@@ -32,7 +32,8 @@ describe('webhooks', () => {
       appAccessToken1, appAccessToken2,
       appAccessId1, appAccessId2,
       sharedAccessToken,
-      webhookId1, webhookId2, webhookId3;
+      sharedAccessId,
+      webhookId1, webhookId2, webhookId3, webhookId4;
   before(() => {
     username = cuid();
     personalAccessToken = cuid();
@@ -153,11 +154,16 @@ describe('webhooks', () => {
         response = res;
       });
 
-      it('[NC0J] should return a status 403 with a forbidden error', () => {
-        validation.checkErrorForbidden(response);
+      it('[RIZV] should return a status 200 with a webhooks object which is an array', () => {
+        validation.check(response, {
+          schema: methodsSchema.get.result,
+          status: 200,
+        });
       });
     });
-    
+  
+
+
   });
 
   describe('GET /:webhookId', () => {
@@ -171,8 +177,10 @@ describe('webhooks', () => {
       appAccessId1 = cuid();
       appAccessToken1 = cuid();
       sharedAccessToken = cuid();
+      sharedAccessId = cuid();
       webhookId1 = cuid();
       webhookId2 = cuid();
+      webhookId3 = cuid();
     });
 
     before(() => {
@@ -185,6 +193,7 @@ describe('webhooks', () => {
           type: 'app', token: appAccessToken1,
         });
         user.access({
+          id: sharedAccessId,
           type: 'shared', token: sharedAccessToken,
         });
         user.session(personalAccessToken);
@@ -197,6 +206,9 @@ describe('webhooks', () => {
         user.webhook({
           id: webhookId2,
         }, appAccessId2);
+        user.webhook({
+          id: webhookId3,
+        }, sharedAccessId);
       });
     });
 
@@ -271,23 +283,26 @@ describe('webhooks', () => {
           status: 200,
         });
       });
-    });
+    });    
 
     describe('when using a shared token', () => {
 
       let response;
       before(async () => {
         const res = await server.request()
-          .get(`/${username}/webhooks/doesnotmatter`)
+          .get(`/${username}/webhooks/${webhookId3}`)
           .set('Authorization', sharedAccessToken);
         response = res;
       });
 
-      it('[604H] should return a status 403 with a forbidden error', () => {
-        validation.checkErrorForbidden(response);
+      it('[604H] should return a status 200 with a webhook object', () => {
+        validation.check(response, {
+          schema: methodsSchema.getOne.result,
+          status: 200,
+        });
       });
     });
-    
+
   });
 
   describe('POST /', () => {
@@ -300,6 +315,7 @@ describe('webhooks', () => {
       personalAccessToken = cuid();
       appAccessId1 = cuid();
       appAccessToken1 = cuid();
+      sharedAccessId = cuid();
       sharedAccessToken = cuid();
     });
 
@@ -315,6 +331,7 @@ describe('webhooks', () => {
           permissions: [{streamId: charlatan.Lorem.word(), level: 'read'}],
         });
         user.access({
+          id: sharedAccessId,
           type: 'shared', token: sharedAccessToken,
         });
         user.webhook({
@@ -405,17 +422,35 @@ describe('webhooks', () => {
     describe('when using a shared token', () => {
 
       describe('when providing a valid webhook', () => {
-        let response;
+        const url = `https://${charlatan.Internet.domainName()}/something`;
+        let webhook, response;
         before(async () => {
-          const res = await server.request()
+          response = await server.request()
             .post(`/${username}/webhooks`)
             .set('Authorization', sharedAccessToken)
-            .send({ url: 'doesntmatter' });
-          response = res;
+            .send({ url: url });
+          webhook = new Webhook({
+            accessId: sharedAccessId,
+            url: url,
+            id: response.body.webhook.id,
+          }).forApi();
         });
 
-        it('[LN79] should return a status 403 with a forbidden error', () => {
-          validation.checkErrorForbidden(response);
+        it('[YTLW] should return a status 201 with the created webhook', () => {
+          validation.check(response, {
+            status: 201,
+            schema: methodsSchema.create.result,
+            data: webhook,
+            sanitizeFn: validation.removeTrackingPropertiesForOne,
+            sanitizeTarget: 'webhook',
+          });
+        });
+        it('[UC6J] should save it to the storage', async () => {
+          const storedWebhook = await bluebird.fromCallback(
+            cb => storage.findOne({ id: username }, { id: { $eq: webhook.id } }, {}, cb)
+          );
+          assert.deepEqual(validation.removeTrackingPropertiesForOne(storedWebhook),
+            validation.removeTrackingPropertiesForOne(webhook));
         });
 
       });
@@ -455,9 +490,11 @@ describe('webhooks', () => {
       appAccessToken1 = cuid();
       appAccessId2 = cuid();
       appAccessToken2 = cuid();
+      sharedAccessId = cuid();
       sharedAccessToken = cuid();
       webhookId1 = cuid();
       webhookId2 = cuid();
+      webhookId3 = cuid();
     });
 
     before(() => {
@@ -475,6 +512,7 @@ describe('webhooks', () => {
           type: 'app', token: appAccessToken2,
         });
         user.access({
+          id: sharedAccessId,
           type: 'shared', token: sharedAccessToken,
         });
         user.webhook({
@@ -488,6 +526,9 @@ describe('webhooks', () => {
         user.webhook({
           id: webhookId2,
         }, appAccessId2);
+        user.webhook({
+          id: webhookId3,
+        }, sharedAccessId);
       });
     });
 
@@ -631,7 +672,7 @@ describe('webhooks', () => {
         let response;
         before(async () => {
           const res = await server.request()
-            .put(`/${username}/webhooks/${webhookId1}`)
+            .put(`/${username}/webhooks/${webhookId3}`)
             .set('Authorization', sharedAccessToken)
             .send({
               state: 'inactive',
@@ -639,8 +680,11 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('[TMIZ] should return a status 403 with a forbidden error', () => {
-          validation.checkErrorForbidden(response);
+        it('[TMIZ] should return a status 200 with the updated webhook', () => {
+          validation.check(response, {
+            status: 200,
+            schema: methodsSchema.update.result,
+          });
         });
       });
 
@@ -657,9 +701,11 @@ describe('webhooks', () => {
       appAccessId2 = cuid();
       appAccessToken2 = cuid();
       sharedAccessToken = cuid();
+      sharedAccessId = cuid();
       webhookId1 = cuid();
       webhookId2 = cuid();
       webhookId3 = cuid();
+      webhookId4 = cuid();
     });
 
     before(() => {
@@ -677,6 +723,7 @@ describe('webhooks', () => {
           type: 'app', token: appAccessToken2,
         });
         user.access({
+          id: sharedAccessId,
           type: 'shared', token: sharedAccessToken,
         });
         user.webhook({
@@ -688,6 +735,9 @@ describe('webhooks', () => {
         user.webhook({
           id: webhookId3,
         }, appAccessId1);
+        user.webhook({
+          id: webhookId4,
+        }, sharedAccessId);
       });
     });
 
@@ -800,16 +850,24 @@ describe('webhooks', () => {
     describe('when using a shared token', () => {
       describe('when deleting an existing webhook', () => {
 
-        let response;
+        let response, deletion;
         before(async () => {
           const res = await server.request()
-            .delete(`/${username}/webhooks/${webhookId2}`)
+            .delete(`/${username}/webhooks/${webhookId4}`)
             .set('Authorization', sharedAccessToken);
           response = res;
+          deletion = {
+            id: response.body.id,
+            timestamp: response.body.timestamp,
+          };
         });
 
-        it('[OZZB] should return a status 403 with a forbidden error', () => {
-          validation.checkErrorForbidden(response);
+        it('[OZZB] should return a status 200 with the webhook deletion', () => {
+          validation.check(response, {
+            status: 200,
+            schema: methodsSchema.del.result,
+            data: deletion,
+          });
         });
 
       });
@@ -833,9 +891,11 @@ describe('webhooks', () => {
       appAccessToken1 = cuid();
       appAccessId2 = cuid();
       appAccessToken2 = cuid();
+      sharedAccessId = cuid();
       sharedAccessToken = cuid();
       webhookId1 = cuid();
       webhookId2 = cuid();
+      webhookId3 = cuid();
     });
 
     before(() => {
@@ -853,6 +913,7 @@ describe('webhooks', () => {
           type: 'app', token: appAccessToken2,
         });
         user.access({
+          id: sharedAccessId,
           type: 'shared', token: sharedAccessToken,
         });
         user.webhook({
@@ -862,6 +923,10 @@ describe('webhooks', () => {
         user.webhook({
           id: webhookId2,
         }, appAccessId2);
+        user.webhook({
+          url: 'http://localhost:' + port + postPath,
+          id: webhookId3,
+        }, sharedAccessId);
       });
     });
 
@@ -951,6 +1016,7 @@ describe('webhooks', () => {
 
         let response;
         before(async () => {
+          notificationsServer.resetMessageReceived();
           notificationsServer.setResponseStatus(200);
           const res = await server.request()
             .post(`/${username}/webhooks/${webhookId1}/test`)
@@ -976,15 +1042,24 @@ describe('webhooks', () => {
       describe('when the webhook exists', () => {
         let response;
         before(async () => {
+          notificationsServer.resetMessageReceived();
+          notificationsServer.setResponseStatus(200);
           const res = await server.request()
-            .get(`/${username}/webhooks/doesnotmatter`)
+            .post(`/${username}/webhooks/${webhookId3}/test`)
             .set('Authorization', sharedAccessToken);
           response = res;
         });
 
-        it('[J2PL] should return a status 403 with a forbidden error', () => {
-          validation.checkErrorForbidden(response);
+        it('[O8PB] should return a status 200 with a webhook object', () => {
+          validation.check(response, {
+            schema: methodsSchema.test.result,
+            status: 200,
+          });
         });
+
+        it('[C62I] should send a POST request to the URL', async () => {
+          assert.isTrue(notificationsServer.isMessageReceived());
+        }).timeout(1000);
       });
     });
   });
