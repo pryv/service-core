@@ -14,7 +14,7 @@ const { produceMongoConnection, context } = require('./test-helpers');
 
 require('date-utils');
 
-describe('[BLUP] permissions extras', function () {
+describe('permissions self revoke', function () {
   let server;
   before(async () => {
     server = await context.spawn();
