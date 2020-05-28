@@ -21,10 +21,8 @@ const storage = require('components/test-helpers').dependencies.storage.user.acc
 
 
 describe('access deletions', () => {
-  let mongoFixtures;
   let userId, streamId, activeToken, deletedToken, accessToken;
   before(async () => {
-    mongoFixtures = databaseFixture(await produceMongoConnection());
     userId = cuid();
     streamId = cuid();
     activeToken = cuid();
@@ -32,32 +30,31 @@ describe('access deletions', () => {
     accessToken = cuid();
   });
 
-  after(() => {
-    mongoFixtures.clean();
-  });
-
   describe('when given a few existing accesses', () => {
 
     const deletedTimestamp = timestamp.now('-1h');
     
+    let mongoFixtures;
     before(async () => {
       mongoFixtures = databaseFixture(await produceMongoConnection());
-      return mongoFixtures.user(userId, {}, (user) => {
-        user.stream({ id: streamId }, () => {});
+      const user = await mongoFixtures.user(userId);
+      await user.stream({ id: streamId }, () => {});
 
-        user.access({
-          type: 'app', token: activeToken,
-          name: 'active access', permissions: []
-        });
-        user.access({
-          type: 'app', token: deletedToken,
-          name: 'deleted access', permissions: [],
-          deleted: deletedTimestamp
-        });
-
-        user.access({ token: accessToken, type: 'personal' });
-        user.session(accessToken);
+      await user.access({
+        type: 'app', token: activeToken,
+        name: 'active access', permissions: []
       });
+      await user.access({
+        type: 'app', token: deletedToken,
+        name: 'deleted access', permissions: [],
+        deleted: deletedTimestamp
+      });
+
+      await user.access({ token: accessToken, type: 'personal' });
+      await user.session(accessToken);
+    });
+    after(() => {
+      mongoFixtures.clean();
     });
 
     let server;
@@ -215,7 +212,6 @@ describe('access expiry', () => {
   let userId, streamId, accessToken, expiredToken, validId;
   let hasExpiryId, hasExpiryToken;
   before(async () => {
-    mongoFixtures = databaseFixture(await produceMongoConnection());
     userId = cuid(); 
     streamId = cuid();
     accessToken = cuid(); 
@@ -225,50 +221,49 @@ describe('access expiry', () => {
     hasExpiryToken = cuid(); 
   });
 
-  after(() => {
-    mongoFixtures.clean(); 
-  });
-
   describe('when given a few existing accesses', () => {
-    // Build the fixture
+    
+    let mongoFixtures;
     before(async () => {
       mongoFixtures = databaseFixture(await produceMongoConnection());
-      return mongoFixtures.user(userId, {}, function (user) {
-        user.stream({id: streamId}, () => { });
-        
-        // A token that expired one day ago
-        user.access({
-          type: 'app', token: expiredToken, 
-          expires: timestamp.now('-1d'),
-          name: 'expired access',
-          permissions: [], 
-        });
-        
-        // A token that is still valid
-        user.access({
-          id: hasExpiryId, 
-          type: 'app', token: hasExpiryToken, 
-          expires: timestamp.now('1d'),
-          name: 'valid access',
-          permissions: [
-            {
-              'streamId': 'diary',
-              'defaultName': 'Diary',
-              'level': 'read'
-            }
-          ]
-        });
-          
-        // A token that did never expire
-        user.access({
-          id: validId,
-          type: 'app', token: cuid(), 
-          name: 'doesnt expire',
-        });
-
-        user.access({token: accessToken, type: 'personal'});
-        user.session(accessToken);
+      const user = await mongoFixtures.user(userId);
+      await user.stream({id: streamId}, () => { });
+      
+      // A token that expired one day ago
+      await user.access({
+        type: 'app', token: expiredToken, 
+        expires: timestamp.now('-1d'),
+        name: 'expired access',
+        permissions: [], 
       });
+      
+      // A token that is still valid
+      await user.access({
+        id: hasExpiryId, 
+        type: 'app', token: hasExpiryToken, 
+        expires: timestamp.now('1d'),
+        name: 'valid access',
+        permissions: [
+          {
+            'streamId': 'diary',
+            'defaultName': 'Diary',
+            'level': 'read'
+          }
+        ]
+      });
+        
+      // A token that did never expire
+      await user.access({
+        id: validId,
+        type: 'app', token: cuid(), 
+        name: 'doesnt expire',
+      });
+
+      await user.access({token: accessToken, type: 'personal'});
+      await user.session(accessToken);
+    });
+    after(() => {
+      mongoFixtures.clean(); 
     });
 
     let server;
@@ -526,7 +521,6 @@ describe('access client data', () => {
   let toBeUpdateAccess1, toBeUpdateAccess2, toBeUpdateAccess3, emptyClientDataAccess;
   let fixtureAccesses;
   before(async () => {
-    mongoFixtures = databaseFixture(await produceMongoConnection());
     userId = cuid(); 
     streamId = cuid();
     accessToken = cuid();
@@ -544,25 +538,23 @@ describe('access client data', () => {
     fixtureAccesses = [existingAccess, toBeUpdateAccess1, toBeUpdateAccess2, toBeUpdateAccess3, emptyClientDataAccess];
   });
 
-  after(() => {
-    mongoFixtures.clean(); 
-  });
-
   describe('when given a few existing accesses', () => {
 
-    // Build the fixture
+    let mongoFixtures;
     before(async () => {
       mongoFixtures = databaseFixture(await produceMongoConnection());
-      return mongoFixtures.user(userId, {}, function (user) {
-        user.stream({id: streamId}, () => { });
-        user.access({token: accessToken, type: 'personal'});
-        user.access(existingAccess);
-        user.access(toBeUpdateAccess1);
-        user.access(toBeUpdateAccess2);
-        user.access(toBeUpdateAccess3);
-        user.access(emptyClientDataAccess);
-        user.session(accessToken);
-      });
+      const user = await mongoFixtures.user(userId);
+      await user.stream({id: streamId}, () => { });
+      await user.access({token: accessToken, type: 'personal'});
+      await user.access(existingAccess);
+      await user.access(toBeUpdateAccess1);
+      await user.access(toBeUpdateAccess2);
+      await user.access(toBeUpdateAccess3);
+      await user.access(emptyClientDataAccess);
+      await user.session(accessToken);
+    });
+    after(() => {
+      mongoFixtures.clean(); 
     });
 
     let server;
