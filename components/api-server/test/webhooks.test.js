@@ -891,9 +891,11 @@ describe('webhooks', () => {
       appAccessToken1 = cuid();
       appAccessId2 = cuid();
       appAccessToken2 = cuid();
+      sharedAccessId = cuid();
       sharedAccessToken = cuid();
       webhookId1 = cuid();
       webhookId2 = cuid();
+      webhookId3 = cuid();
     });
 
     before(() => {
@@ -911,6 +913,7 @@ describe('webhooks', () => {
           type: 'app', token: appAccessToken2,
         });
         user.access({
+          id: sharedAccessId,
           type: 'shared', token: sharedAccessToken,
         });
         user.webhook({
@@ -920,6 +923,10 @@ describe('webhooks', () => {
         user.webhook({
           id: webhookId2,
         }, appAccessId2);
+        user.webhook({
+          url: 'http://localhost:' + port + postPath,
+          id: webhookId3,
+        }, sharedAccessId);
       });
     });
 
@@ -1009,6 +1016,7 @@ describe('webhooks', () => {
 
         let response;
         before(async () => {
+          notificationsServer.resetMessageReceived();
           notificationsServer.setResponseStatus(200);
           const res = await server.request()
             .post(`/${username}/webhooks/${webhookId1}/test`)
@@ -1031,18 +1039,27 @@ describe('webhooks', () => {
 
     describe('when using a shared token', () => {
 
-      describe('when the webhook does not exists', () => {
+      describe('when the webhook exists', () => {
         let response;
         before(async () => {
+          notificationsServer.resetMessageReceived();
+          notificationsServer.setResponseStatus(200);
           const res = await server.request()
-            .get(`/${username}/webhooks/doesnotmatter`)
+            .post(`/${username}/webhooks/${webhookId3}/test`)
             .set('Authorization', sharedAccessToken);
           response = res;
         });
 
-        it('[J2PL] should return a status 404 with a forbidden error', () => {
-          validation.checkErrorUnknown(response);
+        it('[O8PB] should return a status 200 with a webhook object', () => {
+          validation.check(response, {
+            schema: methodsSchema.test.result,
+            status: 200,
+          });
         });
+
+        it('[C62I] should send a POST request to the URL', async () => {
+          assert.isTrue(notificationsServer.isMessageReceived());
+        }).timeout(1000);
       });
     });
   });
