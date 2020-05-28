@@ -2,8 +2,6 @@
 
 require('./test-helpers');
 
-const ErrorIds = require('components/errors').ErrorIds;
-const url = require('url');
 const _ = require('lodash');
 const cuid = require('cuid');
 const chai = require('chai');
@@ -14,7 +12,7 @@ const { produceMongoConnection, context } = require('./test-helpers');
 
 require('date-utils');
 
-describe('[BLUP] permissions extras', function () {
+describe('permissions selfRevoke', function () {
   let server;
   before(async () => {
     server = await context.spawn();
@@ -28,17 +26,16 @@ describe('[BLUP] permissions extras', function () {
     mongoFixtures = databaseFixture((await produceMongoConnection()));
   });
 
-  describe('features', function ( ) {
+  describe('POST /accesses', function ( ) {
     let username,
-      personalToken,
-      basePathAccess;
+        personalToken,
+        basePathAccess;
     
-
     beforeEach(async function () {
       username = cuid();
       personalToken = cuid();
       basePathAccess = `/${username}/accesses/`;
-      user = await mongoFixtures.user(username, {});
+      const user = await mongoFixtures.user(username, {});
       await user.access({
         type: 'personal',
         token: personalToken});
@@ -49,7 +46,7 @@ describe('[BLUP] permissions extras', function () {
       mongoFixtures.clean();
     });
 
-    it('[JYL5] Accesses with selfRevoke = forbidden are listed by GET /accesses', async () => {
+    it('[JYL5] must list accesses with forbidden selfRevoke by GET /accesses', async () => {
       const res = await server.request().post(basePathAccess).set('Authorization', personalToken).send({
         type: 'app',
         name: 'toto',
@@ -64,15 +61,14 @@ describe('[BLUP] permissions extras', function () {
       
       assert.equal(res.status, 201);
       assert.exists(res.body.access);
-      const accessToken = res.body.access.token;
 
       // --- check that permissions are visible with a .get()
 
       const res3 = await server.request().get(basePathAccess).set('Authorization', personalToken);
       assert.equal(res3.status, 200);
       assert.exists(res3.body.accesses);
-      let found = null;
-      for (let i = 0; i < res3.body.accesses.length && found === null; i++) {
+      let found;
+      for (let i = 0; i < res3.body.accesses.length && found == null; i++) {
         if (res3.body.accesses[i].id === res.body.access.id) found = res3.body.accesses[i];
       }
       assert.isNotNull(found);
@@ -88,7 +84,7 @@ describe('[BLUP] permissions extras', function () {
     });
 
 
-    it('[JYU5] cannot create accesses with selfRevoke !== forbidden ', async () => {
+    it('[JYU5] must forbid creating accesses with selfRevoke different than forbidden ', async () => {
       const res = await server.request().post(basePathAccess).set('Authorization', personalToken).send({
         type: 'app',
         name: 'toto',
@@ -107,25 +103,25 @@ describe('[BLUP] permissions extras', function () {
 
   });
 
-  describe('features selfRevoke', function () {
+  describe('DELETE /accesses', function () {
     let username,
-    accesses,
-    basePathAccess,
-    accessKeys;
+        accesses,
+        basePathAccess,
+        accessKeys;
 
-    accessDefs = {};
-    accessDefs.AppCanSelfRevoke = { testCode: 'AHS6', selfRevoke: true };
-    accessDefs.AppCannotSelfRevoke = { testCode: 'H6DU', selfRevoke: false };
-    accessDefs.SharedCanSelfRevoke = { testCode: '3DR7', type: 'shared', selfRevoke: true };
-    accessDefs.SharedCannotSelfRevoke = { testCode: 'F62D', type: 'shared', selfRevoke: false };
+    const accessDefs = {};
+    accessDefs['must allow app accesses to self revoke by default'] = { testCode: 'AHS6', selfRevoke: true };
+    accessDefs['must forbid app accesses to self revoke when set'] = { testCode: 'H6DU', selfRevoke: false };
+    accessDefs['must allow shared accesses to self revoke by default'] = { testCode: '3DR7', type: 'shared', selfRevoke: true };
+    accessDefs['must forbid shared accesses to self revoke when set'] = { testCode: 'F62D', type: 'shared', selfRevoke: false };
 
     accessKeys = Object.keys(accessDefs);
 
     beforeEach(async function () {
       username = cuid();
       basePathAccess = `/${username}/accesses/`;
-      accesses = Object.assign({}, accessDefs);
-      user = await mongoFixtures.user(username, {});
+      accesses = _.clone(accessDefs);
+      const user = await mongoFixtures.user(username, {});
 
       for (let i = 0; i < accessKeys.length; i++ ) {
         const access = accesses[accessKeys[i]];
@@ -151,21 +147,20 @@ describe('[BLUP] permissions extras', function () {
       mongoFixtures.clean();
     });
 
-    describe('DELETE /accesses', function () {
-      for (let i = 0; i < accessKeys.length; i++) {
-        const access = accessDefs[accessKeys[i]];
-        it('[' + access.testCode + '] self revoke ' + accessKeys[i], async function () {
-          const res = await server.request().delete(basePathAccess + access.id).set('Authorization', access.token);
+    for (let i = 0; i < accessKeys.length; i++) {
+      const access = accessDefs[accessKeys[i]];
+      it('[' + access.testCode + '] ' + accessKeys[i], async function () {
+        const res = await server.request().delete(basePathAccess + access.id).set('Authorization', access.token);
 
-          if (access.selfRevoke) {
-            assert.equal(res.status, 200);
-            assert.exists(res.body.accessDeletion);
-            assert.equal(res.body.accessDeletion.id, access.id);
-          } else {
-            assert.equal(res.status, 403);
-          }
-        });
-      }
-    });
+        if (access.selfRevoke) {
+          assert.equal(res.status, 200);
+          assert.exists(res.body.accessDeletion);
+          assert.equal(res.body.accessDeletion.id, access.id);
+        } else {
+          assert.equal(res.status, 403);
+        }
+      });
+    }
+    
   });
 });
