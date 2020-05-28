@@ -32,6 +32,7 @@ describe('webhooks', () => {
       appAccessToken1, appAccessToken2,
       appAccessId1, appAccessId2,
       sharedAccessToken,
+      sharedAccessId,
       webhookId1, webhookId2, webhookId3;
   before(() => {
     username = cuid();
@@ -153,8 +154,9 @@ describe('webhooks', () => {
         response = res;
       });
 
-      it('[NC0J] should return a status 200 with a forbidden error', () => {
+      it('[RIZV] should return a status 200 with a webhooks object which is an array', () => {
         validation.check(response, {
+          schema: methodsSchema.get.result,
           status: 200,
         });
       });
@@ -286,6 +288,7 @@ describe('webhooks', () => {
       personalAccessToken = cuid();
       appAccessId1 = cuid();
       appAccessToken1 = cuid();
+      sharedAccessId = cuid();
       sharedAccessToken = cuid();
     });
 
@@ -301,6 +304,7 @@ describe('webhooks', () => {
           permissions: [{streamId: charlatan.Lorem.word(), level: 'read'}],
         });
         user.access({
+          id: sharedAccessId,
           type: 'shared', token: sharedAccessToken,
         });
         user.webhook({
@@ -391,19 +395,35 @@ describe('webhooks', () => {
     describe('when using a shared token', () => {
 
       describe('when providing a valid webhook', () => {
-        let response;
+        const url = `https://${charlatan.Internet.domainName()}/something`;
+        let webhook, response;
         before(async () => {
-          const res = await server.request()
+          response = await server.request()
             .post(`/${username}/webhooks`)
             .set('Authorization', sharedAccessToken)
-            .send({ url: 'doesntmatter' });
-          response = res;
+            .send({ url: url });
+          webhook = new Webhook({
+            accessId: sharedAccessId,
+            url: url,
+            id: response.body.webhook.id,
+          }).forApi();
         });
 
-        it('[LN79] should return a status 201', () => {
+        it('[YTLW] should return a status 201 with the created webhook', () => {
           validation.check(response, {
             status: 201,
+            schema: methodsSchema.create.result,
+            data: webhook,
+            sanitizeFn: validation.removeTrackingPropertiesForOne,
+            sanitizeTarget: 'webhook',
           });
+        });
+        it('[UC6J] should save it to the storage', async () => {
+          const storedWebhook = await bluebird.fromCallback(
+            cb => storage.findOne({ id: username }, { id: { $eq: webhook.id } }, {}, cb)
+          );
+          assert.deepEqual(validation.removeTrackingPropertiesForOne(storedWebhook),
+            validation.removeTrackingPropertiesForOne(webhook));
         });
 
       });
