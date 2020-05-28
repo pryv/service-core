@@ -177,7 +177,7 @@ describe('webhooks', () => {
       appAccessId1 = cuid();
       appAccessToken1 = cuid();
       sharedAccessToken = cuid();
-      sharedAccessId1 = cuid();
+      sharedAccessId = cuid();
       webhookId1 = cuid();
       webhookId2 = cuid();
       webhookId3 = cuid();
@@ -193,7 +193,7 @@ describe('webhooks', () => {
           type: 'app', token: appAccessToken1,
         });
         user.access({
-          id: sharedAccessId1,
+          id: sharedAccessId,
           type: 'shared', token: sharedAccessToken,
         });
         user.session(personalAccessToken);
@@ -208,7 +208,7 @@ describe('webhooks', () => {
         }, appAccessId2);
         user.webhook({
           id: webhookId3,
-        }, sharedAccessId1);
+        }, sharedAccessId);
       });
     });
 
@@ -490,7 +490,7 @@ describe('webhooks', () => {
       appAccessToken1 = cuid();
       appAccessId2 = cuid();
       appAccessToken2 = cuid();
-      sharedAccessId1 = cuid();
+      sharedAccessId = cuid();
       sharedAccessToken = cuid();
       webhookId1 = cuid();
       webhookId2 = cuid();
@@ -512,7 +512,7 @@ describe('webhooks', () => {
           type: 'app', token: appAccessToken2,
         });
         user.access({
-          id: sharedAccessId1,
+          id: sharedAccessId,
           type: 'shared', token: sharedAccessToken,
         });
         user.webhook({
@@ -528,7 +528,7 @@ describe('webhooks', () => {
         }, appAccessId2);
         user.webhook({
           id: webhookId3,
-        }, sharedAccessId1);
+        }, sharedAccessId);
       });
     });
 
@@ -700,7 +700,7 @@ describe('webhooks', () => {
       appAccessId2 = cuid();
       appAccessToken2 = cuid();
       sharedAccessToken = cuid();
-      sharedAccessId1 = cuid();
+      sharedAccessId = cuid();
       webhookId1 = cuid();
       webhookId2 = cuid();
       webhookId3 = cuid();
@@ -722,7 +722,7 @@ describe('webhooks', () => {
           type: 'app', token: appAccessToken2,
         });
         user.access({
-          id: sharedAccessId1,
+          id: sharedAccessId,
           type: 'shared', token: sharedAccessToken,
         });
         user.webhook({
@@ -736,7 +736,7 @@ describe('webhooks', () => {
         }, appAccessId1);
         user.webhook({
           id: webhookId4,
-        }, sharedAccessId1);
+        }, sharedAccessId);
       });
     });
 
