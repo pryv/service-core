@@ -49,7 +49,7 @@ describe('permissions self revoke', function () {
       mongoFixtures.clean();
     });
 
-    it('[JYL5] Accesses with selfRevoke = forbidden are listed by GET /accesses', async () => {
+    it('[JYL5] Accesses with forbidden selfRevoke are listed by GET /accesses', async () => {
       const res = await server.request().post(basePathAccess).set('Authorization', personalToken).send({
         type: 'app',
         name: 'toto',
@@ -72,7 +72,7 @@ describe('permissions self revoke', function () {
       assert.equal(res3.status, 200);
       assert.exists(res3.body.accesses);
       let found = null;
-      for (let i = 0; i < res3.body.accesses.length && found === null; i++) {
+      for (let i = 0; i < res3.body.accesses.length && found == null; i++) {
         if (res3.body.accesses[i].id === res.body.access.id) found = res3.body.accesses[i];
       }
       assert.isNotNull(found);
@@ -88,7 +88,7 @@ describe('permissions self revoke', function () {
     });
 
 
-    it('[JYU5] cannot create accesses with selfRevoke !== forbidden ', async () => {
+    it('[JYU5] cannot create accesses with selfRevoke different than forbidden ', async () => {
       const res = await server.request().post(basePathAccess).set('Authorization', personalToken).send({
         type: 'app',
         name: 'toto',
