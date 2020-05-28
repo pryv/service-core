@@ -295,7 +295,7 @@ describe('webhooks', () => {
         response = res;
       });
 
-      it('[604H] should return a status 403 with a forbidden error', () => {
+      it('[604H] should return a status 200 with a webhook object', () => {
         validation.check(response, {
           schema: methodsSchema.getOne.result,
           status: 200,
