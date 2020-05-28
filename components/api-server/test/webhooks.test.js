@@ -159,7 +159,9 @@ describe('webhooks', () => {
         });
       });
     });
-    
+  
+
+
   });
 
   describe('GET /:webhookId', () => {
@@ -173,8 +175,10 @@ describe('webhooks', () => {
       appAccessId1 = cuid();
       appAccessToken1 = cuid();
       sharedAccessToken = cuid();
+      sharedAccessId1 = cuid();
       webhookId1 = cuid();
       webhookId2 = cuid();
+      webhookId3 = cuid();
     });
 
     before(() => {
@@ -187,6 +191,7 @@ describe('webhooks', () => {
           type: 'app', token: appAccessToken1,
         });
         user.access({
+          id: sharedAccessId1,
           type: 'shared', token: sharedAccessToken,
         });
         user.session(personalAccessToken);
@@ -199,6 +204,9 @@ describe('webhooks', () => {
         user.webhook({
           id: webhookId2,
         }, appAccessId2);
+        user.webhook({
+          id: webhookId3,
+        }, sharedAccessId1);
       });
     });
 
@@ -274,6 +282,25 @@ describe('webhooks', () => {
         });
       });
     });    
+
+    describe('when using a shared token', () => {
+
+      let response;
+      before(async () => {
+        const res = await server.request()
+          .get(`/${username}/webhooks/${webhookId3}`)
+          .set('Authorization', sharedAccessToken);
+        response = res;
+      });
+
+      it('[604H] should return a status 403 with a forbidden error', () => {
+        validation.check(response, {
+          schema: methodsSchema.getOne.result,
+          status: 200,
+        });
+      });
+    });
+
   });
 
   describe('POST /', () => {
@@ -956,6 +983,23 @@ describe('webhooks', () => {
         it('[SBI7] should send a POST request to the URL', async () => {
           assert.isTrue(notificationsServer.isMessageReceived());
         }).timeout(1000);
+      });
+    });
+
+    describe('when using a shared token', () => {
+
+      describe('when the webhook does not exists', () => {
+        let response;
+        before(async () => {
+          const res = await server.request()
+            .get(`/${username}/webhooks/doesnotmatter`)
+            .set('Authorization', sharedAccessToken);
+          response = res;
+        });
+
+        it('[J2PL] should return a status 404 with a forbidden error', () => {
+          validation.checkErrorUnknown(response);
+        });
       });
     });
   });

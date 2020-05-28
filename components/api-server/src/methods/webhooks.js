@@ -87,7 +87,7 @@ module.exports = function produceWebhooksApiMethods(
         return next(errors.unknownResource('webhook', params.id));
       }
       if (!isWebhookInScope(webhook, currentAccess)) {
-        return next(errors.forbidden('The webhook was not created by this app access.'));
+        return next(errors.forbidden('The webhook was not created by this access.'));
       }
 
       result.webhook = webhook.forApi();
@@ -301,7 +301,7 @@ module.exports = function produceWebhooksApiMethods(
    */
   function isWebhookInScope(webhook: Webhook, access: Access): boolean {
     if (access.isPersonal()) return true;
-    return access.isApp() && access.id === webhook.accessId;
+    return access.id === webhook.accessId;
   }
   
 };
