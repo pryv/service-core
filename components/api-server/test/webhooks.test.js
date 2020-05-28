@@ -33,7 +33,7 @@ describe('webhooks', () => {
       appAccessId1, appAccessId2,
       sharedAccessToken,
       sharedAccessId,
-      webhookId1, webhookId2, webhookId3;
+      webhookId1, webhookId2, webhookId3, webhookId4;
   before(() => {
     username = cuid();
     personalAccessToken = cuid();
@@ -490,9 +490,11 @@ describe('webhooks', () => {
       appAccessToken1 = cuid();
       appAccessId2 = cuid();
       appAccessToken2 = cuid();
+      sharedAccessId1 = cuid();
       sharedAccessToken = cuid();
       webhookId1 = cuid();
       webhookId2 = cuid();
+      webhookId3 = cuid();
     });
 
     before(() => {
@@ -510,6 +512,7 @@ describe('webhooks', () => {
           type: 'app', token: appAccessToken2,
         });
         user.access({
+          id: sharedAccessId1,
           type: 'shared', token: sharedAccessToken,
         });
         user.webhook({
@@ -523,6 +526,9 @@ describe('webhooks', () => {
         user.webhook({
           id: webhookId2,
         }, appAccessId2);
+        user.webhook({
+          id: webhookId3,
+        }, sharedAccessId1);
       });
     });
 
@@ -666,7 +672,7 @@ describe('webhooks', () => {
         let response;
         before(async () => {
           const res = await server.request()
-            .put(`/${username}/webhooks/${webhookId1}`)
+            .put(`/${username}/webhooks/${webhookId3}`)
             .set('Authorization', sharedAccessToken)
             .send({
               state: 'inactive',
@@ -674,8 +680,10 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('[TMIZ] should return a status 403 with a forbidden error', () => {
-          validation.checkErrorForbidden(response);
+        it('[TMIZ] should be allowed', () => {
+          validation.check(response, {
+            status: 200,
+          });
         });
       });
 
@@ -692,9 +700,11 @@ describe('webhooks', () => {
       appAccessId2 = cuid();
       appAccessToken2 = cuid();
       sharedAccessToken = cuid();
+      sharedAccessId1 = cuid();
       webhookId1 = cuid();
       webhookId2 = cuid();
       webhookId3 = cuid();
+      webhookId4 = cuid();
     });
 
     before(() => {
@@ -712,6 +722,7 @@ describe('webhooks', () => {
           type: 'app', token: appAccessToken2,
         });
         user.access({
+          id: sharedAccessId1,
           type: 'shared', token: sharedAccessToken,
         });
         user.webhook({
@@ -723,6 +734,9 @@ describe('webhooks', () => {
         user.webhook({
           id: webhookId3,
         }, appAccessId1);
+        user.webhook({
+          id: webhookId4,
+        }, sharedAccessId1);
       });
     });
 
@@ -838,13 +852,15 @@ describe('webhooks', () => {
         let response;
         before(async () => {
           const res = await server.request()
-            .delete(`/${username}/webhooks/${webhookId2}`)
+            .delete(`/${username}/webhooks/${webhookId4}`)
             .set('Authorization', sharedAccessToken);
           response = res;
         });
 
-        it('[OZZB] should return a status 403 with a forbidden error', () => {
-          validation.checkErrorForbidden(response);
+        it('[OZZB] should be allowed', () => {
+          validation.check(response, {
+            status: 200
+          });
         });
 
       });
