@@ -371,7 +371,6 @@ describe('Socket.IO', function () {
           });
         
           ioCons.con.socket.once('error', function (err) {
-            // We expect failure, so we're done here. 
             stepDone(new Error('Connecting should have worked'));
           });
         }
