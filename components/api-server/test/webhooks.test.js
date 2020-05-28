@@ -680,9 +680,10 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('[TMIZ] should be allowed', () => {
+        it('[TMIZ] should return a status 200 with the updated webhook', () => {
           validation.check(response, {
             status: 200,
+            schema: methodsSchema.update.result,
           });
         });
       });
@@ -849,17 +850,23 @@ describe('webhooks', () => {
     describe('when using a shared token', () => {
       describe('when deleting an existing webhook', () => {
 
-        let response;
+        let response, deletion;
         before(async () => {
           const res = await server.request()
             .delete(`/${username}/webhooks/${webhookId4}`)
             .set('Authorization', sharedAccessToken);
           response = res;
+          deletion = {
+            id: response.body.id,
+            timestamp: response.body.timestamp,
+          };
         });
 
-        it('[OZZB] should be allowed', () => {
+        it('[OZZB] should return a status 200 with the webhook deletion', () => {
           validation.check(response, {
-            status: 200
+            status: 200,
+            schema: methodsSchema.del.result,
+            data: deletion,
           });
         });
 
