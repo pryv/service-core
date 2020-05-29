@@ -1,5 +1,11 @@
 ## 1.5
 
+### 1.5.7
+
+- Update babel to v7, now compiling into node v12 (instead of v8)
+- Update airbrake version
+- Silence serviceInfo log for tests
+
 ### 1.5.6
 
 - Extend Webhooks manipulation to shared accesses.
