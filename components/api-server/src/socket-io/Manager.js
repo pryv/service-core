@@ -5,10 +5,6 @@ const commonMeta = require('../methods/helpers/setCommonMeta');
 const bluebird = require('bluebird');
 const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
 
-const MethodContext = require('components/model').MethodContext;
-
-import type { StorageLayer } from 'components/storage';
-
 (async () => {
   await commonMeta.loadSettings();
 })();
@@ -16,9 +12,11 @@ import type { StorageLayer } from 'components/storage';
 const NatsSubscriber = require('./nats_subscriber');
     
 import type { Logger } from 'components/utils';
+const MethodContext = require('components/model').MethodContext;
 import type API from '../API';
 
 import type { MessageSink } from './message_sink';
+import type { StorageLayer } from 'components/storage';
 
 type SocketIO$SocketId = string; 
 export type SocketIO$Handshake = {
@@ -50,8 +48,6 @@ type SocketIO$Server = {
   handshaken: {[id: SocketIO$SocketId]: SocketIO$Handshake};
 }; 
 
-type User = { username: string };
-
 // Manages contexts for socket-io. NamespaceContext's are created when the first
 // client connects to a namespace and are then kept forever.  
 // 
@@ -70,6 +66,7 @@ class Manager implements MessageSink {
     this.logger = logger; 
     this.io = io; 
     this.api = api; 
+
     this.contexts = new Map(); 
     this.storageLayer = storageLayer;
     this.customAuthStepFn = customAuthStepFn;
@@ -98,10 +95,6 @@ class Manager implements MessageSink {
     return candidate;
   }
   
-  // Retrieves the namespace context from this.contexts - or calls `missingCb` 
-  // if no such namespace exists yet. The namespace returned from `missingCb` 
-  // is then stored in the contexts map. 
-  // 
   async ensureInitNamespace(namespaceName: string): NamespaceContext {  
     let context = this.contexts.get(namespaceName);
     let username = this.extractUsername(namespaceName);
@@ -159,10 +152,7 @@ class Manager implements MessageSink {
       // Load access
       await context.retrieveExpandedAccess(this.storageLayer);
 
-      // create-only
-      if (context.access.hasCreateOnlyPermission()) {
-        throw new Error('Socket.io forbidden for "create-only" permissions');
-      }
+
       callback(null, true);
     } catch (err) {
       callback(err, false);
@@ -202,7 +192,7 @@ class NamespaceContext {
   natsSubscriber: ?NatsSubscriber; 
   
   constructor(
-    username: User, 
+    username: string, 
     socketServer: SocketIO$Server, socketNs: SocketIO$Namespace, 
     api: API, 
     sink: MessageSink, 
@@ -308,7 +298,7 @@ class NamespaceContext {
     
     if (methodContext == null) {
       logger.warn('AF: onNsConnect received handshake w/o method context.');
-      //return; 
+      return; 
     }
     
     this.addConnection(socket, methodContext);  

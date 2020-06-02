@@ -67,25 +67,21 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
 
   function updateOrCreatePersonalAccess(context, params, result, next) {
     context.accessQuery = { name: params.appId, type: 'personal' };
+    // a
     findAccess(context, (err, access) => {
-      //--------------------------------------------------//
-      //--------------   Is probably not necessary -------//
-      //-------- to discuss in review --------------------//
-      //--------------------------------------------------//
-
       if (err) { return next(errors.unexpectedError(err)); }
-      
       var accessData = {token: result.token};
-      // Access is already existing, updating it
+      // Access is already existing, updating it with new token (as we have updated the sessions with it earlier).
       if (access != null) {
         updatePersonalAccess(accessData, context, next);
       }
       // Access not found, creating it
       else {
+        // b
         createAccess(accessData, context, (err) => {
           if (err != null) {
             // Concurrency issue, the access is already created
-            // by a simultaneous login, retrieving and updating it
+            // by a simultaneous login (happened between a & b), retrieving and updating its modifiedTime, while keeping the same previous token
             if (err.isDuplicate) {
               findAccess(context, (err, access) => {
                 if (err || access == null) { return next(errors.unexpectedError(err)); }

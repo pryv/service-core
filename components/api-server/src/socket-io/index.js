@@ -5,6 +5,8 @@
  */
 
 const socketIO = require('socket.io');
+
+const MethodContext = require('components/model').MethodContext;
 const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
 
 const Manager = require('./Manager');
@@ -13,10 +15,8 @@ const Paths = require('../routes/Paths');
 const ChangeNotifier = require('./change_notifier');
 const NatsPublisher = require('./nats_publisher');
 
-const MethodContext = require('components/model').MethodContext;
-
-import type { StorageLayer } from 'components/storage';
 import type { Logger } from 'components/utils';
+import type { StorageLayer } from 'components/storage';
 import type { CustomAuthFunction } from 'components/model';
 
 import type API from '../API';
@@ -33,8 +33,8 @@ function setupSocketIO(
   const io = socketIO.listen(server, {
     path: Paths.SocketIO
   });
-  //logger: logger,
   io.use(initUsersNameSpaces);
+  
 
   // Manages socket.io connections and delivers method calls to the api. 
   const manager: Manager = new Manager(logger, io, api, storageLayer, customAuthStepFn);

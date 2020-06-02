@@ -326,29 +326,6 @@ describe('accesses (app)', function () {
       );
     });
 
-    it('[ZTSZ] must allow selfRevoke for AppTokens', function (done) {
-      req().del(path(access.id), access.token).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.del.result,
-          body: { accessDeletion: { id: access.id } }
-        });
-        done();
-      });
-    });
-
-    it('[RT6R] must allow selfRevoke for SharedTokens', function (done) {
-      req().del(path(additionalTestAccesses[2].id), additionalTestAccesses[2].token).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.del.result,
-          body: { accessDeletion: { id: additionalTestAccesses[2].id } }
-        });
-        done();
-      });
-    });
-
-
     it('[ZTSX] forbid deletion of already deleted for AppTokens', function (done) {
       req().del(path(access.id), access.token).end(function (res) {
         validation.check(res, {

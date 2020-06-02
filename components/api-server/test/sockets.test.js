@@ -47,7 +47,6 @@ describe('Socket.IO', function () {
     const paramsWithNS = _.defaults({resource: namespace}, queryParams || {});
     const url = server.url + namespace + '?' + queryString.stringify(paramsWithNS);
     const conn = io.connect(url, {forceNew: true});
-      
     cleanupConnections.push(conn);
     
     return conn; 
@@ -328,7 +327,7 @@ describe('Socket.IO', function () {
 
   describe('when using an access with a "create-only" permission', function () {
 
-    it('[K2OO] must refuse a connection', function (done) {
+    it('[K2OO] must allow a connection', function (done) {
       let streamId, createOnlyToken;
       async.series([
         function (stepDone) {
@@ -365,12 +364,11 @@ describe('Socket.IO', function () {
           ioCons.con = connect(namespace, {auth: createOnlyToken});
       
           ioCons.con.once('connect', function () {
-            stepDone(new Error('Connecting should have failed'));
+            stepDone();
           });
         
           ioCons.con.once('error', function (err) {
-            // We expect failure, so we're done here. 
-            stepDone();
+            stepDone(new Error('Connecting should have failed'));
           });
         }
       ], done);

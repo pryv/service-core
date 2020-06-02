@@ -56,8 +56,12 @@ class ServiceInfo {
 
   static async addToConvict(convictInstance) {
     // -- if singleCoreUrl
-    let singleCoreUrl = convictInstance.get('singleCoreUrl');
-    if (singleCoreUrl) { // service is loaded directly from the "service" object and completed programtically
+
+    let singleCoreUrl = null;
+    try { 
+      convictInstance.get('singleCoreUrl');
+    } catch (e) { }
+    if (singleCoreUrl && singleCoreUrl !== '') { // service is loaded directly from the "service" object and completed programtically
       // remove trailing slash if not present
       if (singleCoreUrl.slice(-1) === '/') singleCoreUrl = singleCoreUrl.slice(0, -1);
       convictInstance.set('service.serial', 't' + Math.round(Date.now() / 1000));
