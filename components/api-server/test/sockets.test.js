@@ -46,10 +46,7 @@ describe('Socket.IO', function () {
   function connect(namespace, queryParams) {
     const paramsWithNS = _.defaults({resource: namespace}, queryParams || {});
     const url = server.url + namespace + '?' + queryString.stringify(paramsWithNS);
-    const conn = io.connect(url, {
-      'reconnect': false, 
-      'force new connection': true});
-      
+    const conn = io.connect(url, {forceNew: true});
     cleanupConnections.push(conn);
     
     return conn; 
@@ -158,7 +155,7 @@ describe('Socket.IO', function () {
       done(new Error('Connecting should have failed'));
     });
   
-    ioCons.con.socket.once('error', function () {
+    ioCons.con.once('error', function () {
       // We expect failure, so we're done here. 
       done();
     });
@@ -330,7 +327,7 @@ describe('Socket.IO', function () {
 
   describe('when using an access with a "create-only" permission', function () {
 
-    it('[K2OO] must accept a connection', function (done) {
+    it('[K2OO] must allow a connection', function (done) {
       let streamId, createOnlyToken;
       async.series([
         function (stepDone) {
@@ -370,8 +367,8 @@ describe('Socket.IO', function () {
             stepDone();
           });
         
-          ioCons.con.socket.once('error', function (err) {
-            stepDone(new Error('Connecting should have worked'));
+          ioCons.con.once('error', function (err) {
+            stepDone(new Error('Connecting should have failed'));
           });
         }
       ], done);
@@ -395,7 +392,10 @@ describe('Socket.IO', function () {
         conn.disconnect(); 
       }
     });
-  
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
     // Spawns A and B. 
     beforeEach(async () => {
       // Stop a few servers here; this is just so that we can maybe reclaim 
@@ -405,6 +405,8 @@ describe('Socket.IO', function () {
   
       // Spawn two new servers.
       servers = await bluebird.all( context.spawn_multi(2) );
+      // give a chance to Socket.io to set-up. 
+      await sleep(1000);
     });
   
     it('[JJRA] changes made in A notify clients of B', async () => {
@@ -426,6 +428,11 @@ describe('Socket.IO', function () {
         msgs.push('ec'); 
         eventReceived.broadcast(); 
       }); 
+
+      conn2.on('error', (data) => {
+        throw new Error(data);
+        eventReceived.broadcast();
+      });
   
       await addEvent(conn1);
       if (msgs.length === 0)
@@ -442,12 +449,7 @@ describe('Socket.IO', function () {
       const url = server.url(namespace) + 
         `?${queryString.stringify(params)}`;
   
-      const connectOpts = {
-        'reconnect': false,             // Once connection is interrupted, it stays interrupted.
-        'force new connection': true,   // Connect again, don't reuse old connections.
-      };
-  
-      const conn = io.connect(url, connectOpts);
+      const conn = io.connect(url, { forceNew: true });
   
       // Automatically add all created connections to the cleanup array: 
       connections.push(conn);

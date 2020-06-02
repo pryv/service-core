@@ -9,7 +9,7 @@
     "cover": "../../node_modules/.bin/nyc --reporter=html --report-dir=./coverage yarn run test",
     "test-detailed": "yarn run _test --reporter=spec",
     "test-debug": "yarn run _test --timeout 3600000 --reporter=spec --inspect-brk=40000",
-    "test-profile": "yarn run _test --profile=true --logs:console:active=false && tick-processor > profiling-output.txt && open profiling-output.txt",
+    "test-profile": "yarn run _test --profile=true --logs:console:active=true && tick-processor > profiling-output.txt && open profiling-output.txt",
     "_test": "NODE_ENV=test ../../node_modules/.bin/mocha --timeout 10000 --reporter=dot 'test/**/*.test.js'",
     "update-event-types": "scripts/update-event-types.bash"
   },
@@ -19,7 +19,8 @@
     "multistream": "^2.1.0",
     "nats": "^0.7",
     "slug": "^0.9.1",
-    "socket.io": "^0.9.19",
+    "socket.io": "^2.3.0",
+    "socketio-wildcard": "^2.0.0",
     "url": "^0.11.0",
     "z-schema": "^4.2.3"
   }

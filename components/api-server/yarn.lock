@@ -152,24 +152,6 @@ slug@^0.9.1:
   dependencies:
     unicode ">= 0.3.1"
 
-socket.io-client@0.9.16:
-  version "0.9.16"
-  resolved "https://registry.yarnpkg.com/socket.io-client/-/socket.io-client-0.9.16.tgz#4da7515c5e773041d1b423970415bcc430f35fc6"
-  integrity sha1-TadRXF53MEHRtCOXBBW8xDDzX8Y=
-  dependencies:
-    active-x-obfuscator "0.0.1"
-    uglify-js "1.2.5"
-    ws "0.4.x"
-    xmlhttprequest "1.4.2"
-
-socket.io@^0.9.19:
-  version "0.9.19"
-  resolved "https://registry.yarnpkg.com/socket.io/-/socket.io-0.9.19.tgz#490bb5fd0dc54cf002ee04e67fadfc43b848a38f"
-  integrity sha1-SQu1/Q3FTPAC7gTmf638Q7hIo48=
-  dependencies:
-    base64id "0.1.0"
-    policyfile "0.0.4"
-    socket.io-client "0.9.16"
 
 string_decoder@~1.1.1:
   version "1.1.1"
