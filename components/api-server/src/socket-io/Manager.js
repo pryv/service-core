@@ -76,7 +76,6 @@ class Manager implements MessageSink {
   // 
   looksLikeUsername(candidate: string): boolean {
     const reUsername = /^([a-zA-Z0-9])(([a-zA-Z0-9-]){3,21})[a-zA-Z0-9]$/; 
-
     return reUsername.test(candidate);
   }
 
