@@ -39,7 +39,7 @@ describe('ProjectVersion#version', () => {
       assert.strictEqual(given, expected);
     });
   });
-  describe('when a ".api-version" file exists in the project', () => {
+  describe.skip('when a ".api-version" file exists in the project', () => {
     const versionFilePath = path.join(__dirname, '../../../../../', '.api-version');
 
     beforeEach(() => {

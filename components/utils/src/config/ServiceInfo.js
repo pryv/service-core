@@ -59,7 +59,7 @@ class ServiceInfo {
 
     let singleCoreUrl = null;
     try { 
-      convictInstance.get('singleCoreUrl');
+      singleCoreUrl = convictInstance.get('singleCoreUrl');
     } catch (e) { }
     if (singleCoreUrl && singleCoreUrl !== '') { // service is loaded directly from the "service" object and completed programtically
       // remove trailing slash if not present
