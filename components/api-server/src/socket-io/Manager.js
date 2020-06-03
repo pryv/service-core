@@ -9,7 +9,10 @@ const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTIO
   await commonMeta.loadSettings();
 })();
 
-const NatsSubscriber = require('./nats_subscriber');
+let NatsSubscriber = null
+if (process.env.PRYV_NATS) {
+  NatsSubscriber = require('./nats_subscriber');
+}
     
 import type { Logger } from 'components/utils';
 const MethodContext = require('components/model').MethodContext;
@@ -248,7 +251,7 @@ class NamespaceContext {
   
   async open() {
     // If we've already got an active subscription, leave it be. 
-    if (this.natsSubscriber != null) return; 
+    if (this.natsSubscriber != null || ! process.env.PRYV_NATS) return; 
     this.natsSubscriber = await this.produceNatsSubscriber();
   }
   async produceNatsSubscriber(): Promise<NatsSubscriber> {

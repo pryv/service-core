@@ -15,7 +15,10 @@ const assert = require('assert');
     
 const {TypeRepository, isSeriesType} = require('components/business').types;
 
-const NatsPublisher = require('../socket-io/nats_publisher');
+let NatsPublisher = null;
+if (process.env.PRYV_NATS) {
+  NatsPublisher = require('../socket-io/nats_publisher');
+}
 const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
 const NATS_UPDATE_EVENT = require('components/utils').messaging
   .NATS_UPDATE_EVENT;
@@ -43,7 +46,9 @@ module.exports = function (
     .catch((err) => logging.getLogger('typeRepo').warn(err));
     
   const logger = logging.getLogger('methods/events');
-  const natsPublisher = new NatsPublisher(NATS_CONNECTION_URI);
+  let natsPublisher = null;
+  if (process.env.PRYV_NATS)
+    natsPublisher = new NatsPublisher(NATS_CONNECTION_URI);
 
   // RETRIEVAL
 
@@ -517,7 +522,7 @@ module.exports = function (
 
     // notify is called by create, update and delete
     // depending on the case the event properties will be found in context or event
-    if (isSeriesEvent(context.event || result.event)) {
+    if (isSeriesEvent(context.event || result.event) && process.env.PRYV_HF) {
       const isDelete = result.eventDeletion ? true : false;
       // if event is a deletion 'id' is given by result.eventDeletion
       const updatedEventId = isDelete ? _.pick(result.eventDeletion, ['id']) : _.pick(result.event, ['id']);

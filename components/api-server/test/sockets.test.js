@@ -379,6 +379,10 @@ describe('Socket.IO', function () {
     // Servers A and B, length will be 2
     let servers: Array<Server> = []; 
   
+    before(function () {
+      if (! process.env.PRYV_NATS) this.skip();
+    })
+
     // Client connections that we make. If you add your connection here, it 
     // will get #close()d. 
     let connections;

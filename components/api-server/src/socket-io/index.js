@@ -13,7 +13,10 @@ const Manager = require('./Manager');
 const Paths = require('../routes/Paths');
 
 const ChangeNotifier = require('./change_notifier');
-const NatsPublisher = require('./nats_publisher');
+let NatsPublisher = null;
+if (process.env.PRYV_NATS) {
+   NatsPublisher = require('./nats_publisher');
+}
 
 import type { Logger } from 'components/utils';
 import type { StorageLayer } from 'components/storage';
@@ -40,18 +43,23 @@ function setupSocketIO(
   const manager: Manager = new Manager(logger, io, api, storageLayer, customAuthStepFn);
   
   // Setup the chain from notifications -> NATS
-  const natsPublisher = new NatsPublisher(NATS_CONNECTION_URI, 
-    (userName: string): string => { return `${userName}.sok1`; }
-  );
-  const changeNotifier = new ChangeNotifier(natsPublisher);
-  changeNotifier.listenTo(notifications);
+  if (process.env.PRYV_NATS) {
+    const natsPublisher = new NatsPublisher(NATS_CONNECTION_URI, 
+      (userName: string): string => { return `${userName}.sok1`; }
+    );
+    const changeNotifier = new ChangeNotifier(natsPublisher);
+    changeNotifier.listenTo(notifications);
 
-  // Webhooks nats publisher - could be moved if there is a more convenient place.
-  const whNatsPublisher = new NatsPublisher(NATS_CONNECTION_URI,
-    (userName: string): string => { return `${userName}.wh1`; }
-  );
-  const webhooksChangeNotifier = new ChangeNotifier(whNatsPublisher);
-  webhooksChangeNotifier.listenTo(notifications);
+    // Webhooks nats publisher - could be moved if there is a more convenient place.
+    const whNatsPublisher = new NatsPublisher(NATS_CONNECTION_URI,
+      (userName: string): string => { return `${userName}.wh1`; }
+    );
+    const webhooksChangeNotifier = new ChangeNotifier(whNatsPublisher);
+    webhooksChangeNotifier.listenTo(notifications);
+  } else {
+    const changeNotifier = new ChangeNotifier(manager);
+    changeNotifier.listenTo(notifications);
+  }
   
   async function initUsersNameSpaces(
     socket, callback: (err: any, res: any) => mixed
