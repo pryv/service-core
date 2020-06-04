@@ -109,17 +109,17 @@ _.merge(config.schema, {
       },
       method: {
         format: [ 'mandrill', 'microservice'],
-        default: 'mandrill',
+        default: 'microservice',
         doc: 'Name of the service used to send emails (mandrill or microservice)'
       },
       url: {
         format: String,
-        default: 'https://mandrillapp.local/api/1.0/messages/send-template.json',
+        default: 'http://localhost:9000/sendmail/',
         doc: 'URL of the email delivery service.'
       },
       key: {
         format: String,
-        default: 'OVERRIDE ME',
+        default: 'SHOULD_MATCH_SERVICE_MAIL',
         doc: 'Shared key to authenticate against email service.'
       }
     }
