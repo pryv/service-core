@@ -19,7 +19,7 @@
     "previews": "cd dist/components/previews-server && npm start",
     "metadata": "cd dist/components/metadata && bin/metadata",
     "webhooks": "cd dist/components/webhooks && bin/server #--config build/webhooks/config/webhooks.json",
-    "gnat": "gnatsd",
+    "nats": "gnatsd",
     "influx": "influxd -config /usr/local/etc/influxdb.conf",
     "setup": "yarn install --ignore-optionals",
     "jsdoc": "node_modules/.bin/jsdoc -c jsdoc.json",

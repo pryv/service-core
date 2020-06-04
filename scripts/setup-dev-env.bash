@@ -13,7 +13,7 @@ mkdir -p ${PRYV_VAR}
 mkdir -p ${PRYV_MONGODATA}
 
 ## used in Open Pryv
-SCRIPT_EXTRAS="./scripts/setup-extras.bash"
+SCRIPT_EXTRAS="./scripts/setup-open.bash"
 if [[ -f $SCRIPT_EXTRAS ]]; then
   echo "installing service mail"
   bash $SCRIPT_EXTRAS

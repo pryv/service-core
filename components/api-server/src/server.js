@@ -66,12 +66,6 @@ class Server {
     const server: net$Server = http.createServer(expressApp);
     this.setupSocketIO(server); 
     await this.startListen(server);
-    
-    // For DNS LESS load register
-    if (process.env.PRYV_DNSLESS) {
-      require('../../register')(expressApp, this.application);
-      require('../../www')(expressApp, this.application);
-    }
 
     // Finish booting the server, start accepting connections.
     this.addRoutes(expressApp);
@@ -283,6 +277,12 @@ class Server {
   //
   addRoutes(expressApp: express$Application) {
     const application = this.application;
+
+    // For DNS LESS load register
+    if (process.env.PRYV_DNSLESS) {
+      require('../../register')(expressApp, this.application);
+      require('../../www')(expressApp, this.application);
+    }
   
     // system and root MUST come first
     require('./routes/system')(expressApp, application);
