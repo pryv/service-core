@@ -8,10 +8,10 @@ Pryv core server app components, ie. what runs on each server node and handles u
 ## Install
 
 _Prerequisites:_ 
-- Node v12+
-- Yarn v1+
-- Mongo DB v3.4+ (needs at least 4GB of free disk space for the initial database)
-- InfluxDB v1.2+
+- Node v12
+- Yarn v1
+- Mongo DB v3.6 (needs at least 4GB of free disk space for the initial database)
+- InfluxDB v1.2
 - gnatsd
 
 For node, you may use [nvm](https://github.com/nvm-sh/nvm) or [nodenv](https://github.com/nodenv/nodenv) to manage multiple nodeJS versions.
@@ -19,12 +19,12 @@ For node, you may use [nvm](https://github.com/nvm-sh/nvm) or [nodenv](https://g
 On a mac OS X system, you should be able to install these prerequisites by first installing homebrew and then running these commands: 
 
 ~~~bash
-$ brew install gnatsd mongodb node-build influxdb nodenv/nvm
-# Follow post-install instructions by homebrew, especially for nodenv/nvm. 
+$ brew install gnatsd node-build influxdb nodenv/nvm
+# Follow post-install instructions by homebrew, especially for nodenv/nvm.
 $ nodenv install 8.8.0
 ~~~
 
-You will need to install 'node-gyp' globally as well: `yarn global add node-gyp`. Your environment needs to support C/C++ compilation. On Linux, this includes `sudo apt-get install build-essentials`, on Mac OS X this is XCode + Command Line Utilities. 
+You will need to install 'node-gyp' globally as well: `yarn global add node-gyp`. Your environment needs to support C/C++ compilation. On Linux, this includes `sudo apt-get install build-essentials`, on Mac OS X this is XCode + Command Line Utilities.
 
 Then just `yarn setup`. **Warning** don't use `yarn install`; now using --no opts because they don't compile.
 
@@ -75,9 +75,9 @@ Then just `yarn setup`. **Warning** don't use `yarn install`; now using --no opt
 
 ### Flowtype transpilation
 
-**First execution**: Run at least once `yarn release` or `yarn build-dev ` before running the servers or tests. The source code needs to be transpiled from Flowtype to pure JS.
+**First execution**: Run at least once `yarn release` or `yarn build-dev` before running the servers or tests. The source code needs to be transpiled from Flowtype to pure JS.
 
-During development, use `yarn watch` to recompile all files after each saved change. Look out for compilation errors that might prevent the distribution from being updated. 
+During development, use `yarn watch` to recompile all files after each saved change. Look out for compilation errors that might prevent the distribution from being updated.
 
 ### MongoDB
 
@@ -114,10 +114,10 @@ Add your breakpoints
 
 `yarn test-debug`
 
-### Debug by hand
+### Debug tests by hand
 
-- print 500 errors: uncomment line containing `uncomment to log 500 errors on test running using InstanceManager`
-- print logs: uncomment line with `stdio: 'inherit'`
+- print server 500 errors: uncomment line containing `uncomment to log 500 errors on test running using InstanceManager`
+- print server console.log: uncomment line with `stdio: 'inherit'`
 
 ## App Configuration
 
@@ -192,7 +192,6 @@ Test results are kept in the [test-results-pryv.io](https://github.com/pryv/test
 - Run the test suite, printing the results in `test_results/service-core/${TAG_VERSION}/${TIMESTAMP}-service-core.json` using: `yarn output-test-results`
 - Upload the results: `yarn upload-test-results`
 
-
 ## Troubleshooting
 
 ### Test failures
@@ -210,7 +209,7 @@ When running tests in single components:
 
 ### Unicode
 
-If you're blocking because 'unicode.org' doesn't like you today, here's what you do: 
+If you're blocking because 'unicode.org' doesn't like you today, here's what you do:
 
     $ NODE_UNICODETABLE_UNICODEDATA_TXT=$(pwd)/UnicodeData.txt yarn install
 
@@ -218,7 +217,7 @@ If you're blocking because 'unicode.org' doesn't like you today, here's what you
 
 If you are trying to run `docker SOME_COMMAND` and get the following error:  
 
-```
+```log
 docker: Got permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Post http://%2Fvar%2Frun%2Fdocker.sock/v1.26/containers/create: dial unix /var/run/docker.sock: connect: permission denied.
 See 'docker run --help'.
 ```
@@ -232,7 +231,7 @@ Run `docker run hello-world` to check if it works.
 
 ### Influxd "too many open files" error
 
-Delete your local influx DB files and reboot Influx DB: 
+Delete your local influx DB files and reboot Influx DB:
 
 ```
 rm ~/.influxdb/data/*
