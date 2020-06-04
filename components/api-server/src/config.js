@@ -8,10 +8,26 @@ var config = require('components/utils').config,
 module.exports = config;
 
 _.merge(config.schema, {
-  singleCoreUrl: {
-    format: String,
-    default: '',
-    doc: 'URL indicating the address to reach the server. When the platform operates as a single core, with register as a component. Setting this will deactivate some features and override some parameters.'
+  openSource: {
+    isActive: {
+      format: Boolean,
+      default: false,
+      doc: 'This setting is necessary for the open source version build'
+    }
+  },  
+  dnsLess: {
+    isActive: {
+      format: Boolean,
+      default: false,
+      doc: 'Setting this will deactivate some features and override some parameters.',
+    },
+    publicUrl: {
+      format: String,
+      default: undefined,
+      doc: 'URL used to reach the service from the public internet.\n' +
+      'In development, this can be http://localhost:PORT.\n' + 
+      'In Production, as the service stands behind a NGINX reverse proxy, it should be different.'
+    },
   },
   service: {
     format: Object,
@@ -122,7 +138,8 @@ _.merge(config.schema, {
         default: 'SHOULD_MATCH_SERVICE_MAIL',
         doc: 'Shared key to authenticate against email service.'
       }
-    }
+    },
+
   },
   updates: {
     ignoreProtectedFields: {

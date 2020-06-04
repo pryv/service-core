@@ -5,6 +5,7 @@ const url = require('url');
 const path = require('path');
 
 const regPath = require('components/api-server/src/routes/Paths').Register;
+const wwwPath = require('components/api-server/src/routes/Paths').WWW;
 
 let serviceInfo = {};
 
@@ -13,6 +14,8 @@ const FILE_PROTOCOL_LENGTH = FILE_PROTOCOL.length;
 const SERVICE_INFO_PATH = '/service/info';
 const REGISTER_URL_CONFIG = 'services.register.url';
 const SERVICE_INFO_URL_CONFIG = 'serviceInfoUrl';
+const DNS_LESS_VERSION_CONFIG = 'dnsLess.isActive'; 
+const DNS_LESS_PUBLIC_URL_CONFIG = 'dnsLess.publicUrl';
 
 class ServiceInfo {
 
@@ -55,19 +58,18 @@ class ServiceInfo {
   }
 
   static async addToConvict(convictInstance) {
-    // -- if singleCoreUrl
+    
 
-    let singleCoreUrl = null;
-    try { 
-      singleCoreUrl = convictInstance.get('singleCoreUrl');
-    } catch (e) { }
-    if (singleCoreUrl && singleCoreUrl !== '') { // service is loaded directly from the "service" object and completed programtically
-      // remove trailing slash if not present
-      if (singleCoreUrl.slice(-1) === '/') singleCoreUrl = singleCoreUrl.slice(0, -1);
+    let isDnsLess = convictInstance.get(DNS_LESS_VERSION_CONFIG);
+    if (isDnsLess) {
+      const dnsLessPublicUrl = convictInstance.get(DNS_LESS_PUBLIC_URL_CONFIG);
       convictInstance.set('service.serial', 't' + Math.round(Date.now() / 1000));
-      convictInstance.set('service.api', singleCoreUrl + '/{username}');
-      convictInstance.set('service.register', singleCoreUrl + regPath);
-      convictInstance.set('service.access', singleCoreUrl + regPath + '/access');
+      convictInstance.set('service.api', url.resolve(dnsLessPublicUrl, '/{username}/'));
+      convictInstance.set('service.register', url.resolve(dnsLessPublicUrl, regPath + '/'));
+      convictInstance.set('service.access', url.resolve(dnsLessPublicUrl, regPath, '/access/'));
+      convictInstance.set('service.assets', {
+        definitions: url.resolve(dnsLessPublicUrl, wwwPath, '/assets/index.json'),
+      });
       return;
     }
 
