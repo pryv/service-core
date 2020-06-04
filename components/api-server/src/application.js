@@ -83,6 +83,7 @@ class Application {
       httpSettings: settings.get('http').obj(),
       servicesSettings: settings.get('services').obj(),
       updatesSettings: settings.get('updates').obj(),
+      openSourceSettings: settings.get('openSource').obj(),
     });
     
     // DI on the topic of storage and MongoDB access

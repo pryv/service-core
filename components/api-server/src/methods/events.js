@@ -15,10 +15,7 @@ const assert = require('assert');
     
 const {TypeRepository, isSeriesType} = require('components/business').types;
 
-let NatsPublisher = null;
-if (process.env.PRYV_NATS) {
-  NatsPublisher = require('../socket-io/nats_publisher');
-}
+const NatsPublisher = require('../socket-io/nats_publisher');
 const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
 const NATS_UPDATE_EVENT = require('components/utils').messaging
   .NATS_UPDATE_EVENT;
@@ -38,7 +35,7 @@ const typeRepo = new TypeRepository();
 module.exports = function (
   api, userEventsStorage, userEventFilesStorage, usersStorage,
   authSettings, eventTypesUrl, notifications, logging,
-  auditSettings, updatesSettings,
+  auditSettings, updatesSettings, openSourceSettings,
 ) {
 
   // Update types and log error
@@ -46,9 +43,11 @@ module.exports = function (
     .catch((err) => logging.getLogger('typeRepo').warn(err));
     
   const logger = logging.getLogger('methods/events');
-  let natsPublisher = null;
-  if (process.env.PRYV_NATS)
+  
+  let natsPublisher;
+  if (!openSourceSettings.isActive) {
     natsPublisher = new NatsPublisher(NATS_CONNECTION_URI);
+  }
 
   // RETRIEVAL
 
@@ -315,6 +314,9 @@ module.exports = function (
   {
 
     if (isSeriesType(context.content.type)) {
+      if (openSourceSettings.isActive) {
+        return next(errors.unavailableMethod());
+      }
       try {
         context.content.content = createSeriesEventContent(context);
       }
@@ -522,7 +524,7 @@ module.exports = function (
 
     // notify is called by create, update and delete
     // depending on the case the event properties will be found in context or event
-    if (isSeriesEvent(context.event || result.event) && process.env.PRYV_HF) {
+    if (isSeriesEvent(context.event || result.event) && !openSourceSettings.isActive) {
       const isDelete = result.eventDeletion ? true : false;
       // if event is a deletion 'id' is given by result.eventDeletion
       const updatedEventId = isDelete ? _.pick(result.eventDeletion, ['id']) : _.pick(result.event, ['id']);

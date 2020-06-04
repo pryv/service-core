@@ -36,6 +36,10 @@ const ErrorIds = {
    * Used for removed API methods
    */
   Gone: 'removed-method',
+  /**
+   * Used for open source version
+   */
+  unavailableMethod: 'unavailable-method',
 
   // those last two are not in use yet but already documented (see API reference for details)
 

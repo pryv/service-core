@@ -4,8 +4,11 @@ const cuid = require('cuid');
 const chai = require('chai');
 const assert = chai.assert;
 const charlatan = require('charlatan');
+const _ = require('lodash');
 
-const testData = require('./helpers').data;
+const helpers = require('./helpers');
+const testData = helpers.data;
+const settings = _.cloneDeep(helpers.dependencies.settings);
 
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
@@ -550,7 +553,7 @@ describe('permissions create-only level', () => {
   describe('Webhooks', function () {
     let basePath;
     before(function () {
-      if (!process.env.PRYV_WEBHOOKS) this.skip();
+      if (settings.openSource.isActive) this.skip();
       basePath = `/${username}/webhooks`;
     });
 

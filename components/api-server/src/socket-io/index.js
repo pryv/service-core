@@ -13,10 +13,7 @@ const Manager = require('./Manager');
 const Paths = require('../routes/Paths');
 
 const ChangeNotifier = require('./change_notifier');
-let NatsPublisher = null;
-if (process.env.PRYV_NATS) {
-   NatsPublisher = require('./nats_publisher');
-}
+const NatsPublisher = require('./nats_publisher');
 
 import type { Logger } from 'components/utils';
 import type { StorageLayer } from 'components/storage';
@@ -31,19 +28,19 @@ function setupSocketIO(
   server: net$Server, logger: Logger, 
   notifications: EventEmitter, api: API, 
   storageLayer: StorageLayer, 
-  customAuthStepFn: ?CustomAuthFunction, 
+  customAuthStepFn: ?CustomAuthFunction,
+  isOpenSource: boolean,
 ) {
   const io = socketIO.listen(server, {
     path: Paths.SocketIO
   });
   io.use(initUsersNameSpaces);
-  
 
   // Manages socket.io connections and delivers method calls to the api. 
-  const manager: Manager = new Manager(logger, io, api, storageLayer, customAuthStepFn);
+  const manager: Manager = new Manager(logger, io, api, storageLayer, customAuthStepFn, isOpenSource);
   
   // Setup the chain from notifications -> NATS
-  if (process.env.PRYV_NATS) {
+  if (! isOpenSource) {
     const natsPublisher = new NatsPublisher(NATS_CONNECTION_URI, 
       (userName: string): string => { return `${userName}.sok1`; }
     );

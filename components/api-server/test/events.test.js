@@ -1640,9 +1640,10 @@ describe('events', function () {
     const hfEvent = {streamIds: [streamId], type : 'series:activity/plain'};
     let normalEventId;
     let hfEventId;
+    const isOpenSource = helpers.dependencies.settings.openSource.isActive;
 
     before(function(done) {
-      if (!process.env.PRYV_HF) {
+      if (isOpenSource) {
         this.skip();
         return done();
       }

@@ -12,7 +12,9 @@
   "serviceInfoUrl": "file://test/service-info.json",
   "services": {
     "email": {
-      "enabled": false
+      "enabled": false,
+      "method": "mandrill",
+      "url": "https://mandrillapp.local/api/1.0/messages/send-template.json"
     },
     "register": {
       "url": "http://localhost:5123"

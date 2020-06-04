@@ -30,6 +30,7 @@ import type { ExpressAppLifecycle } from './expressApp';
 class Server {
   application: Application;
   settings: ConfigAccess;
+  isOpenSource: boolean;
   
   logger: Logger; 
   
@@ -42,7 +43,8 @@ class Server {
     this.application = application;
     
     const settings = application.settings; 
-    this.settings = settings; 
+    this.settings = settings;
+    this.isOpenSource = settings.get('openSource.isActive').bool();
 
     this.logger = application.logFactory('api-server');
   }
@@ -122,7 +124,7 @@ class Server {
       application.api, l('methods/service'), 
       application.getServiceInfoSettings());
 
-    if (process.env.PRYV_WEBHOOKS)
+    if (! this.isOpenSource)
     require('./methods/webhooks')(
       application.api, l('methods/webhooks'),
       application.getWebhooksSettings(),
@@ -164,12 +166,14 @@ class Server {
     const storageLayer = application.storageLayer;
     const settings = this.settings; 
     const customAuthStepFn = settings.getCustomAuthFunction();
+    const isOpenSource = this.isOpenSource;
         
     const socketIOsetup = require('./socket-io');
     socketIOsetup(
       server, application.logFactory('socketIO'), 
       notificationBus, api, 
-      storageLayer, customAuthStepFn);
+      storageLayer, customAuthStepFn,
+      isOpenSource);
   }
   
   // Open http port and listen to incoming connections. 
@@ -279,7 +283,7 @@ class Server {
     const application = this.application;
 
     // For DNS LESS load register
-    if (process.env.PRYV_DNSLESS) {
+    if (this.isOpenSource) {
       require('../../register')(expressApp, this.application);
       require('../../www')(expressApp, this.application);
     }
@@ -296,8 +300,7 @@ class Server {
     require('./routes/profile')(expressApp, application);
     require('./routes/service')(expressApp, application);
     require('./routes/streams')(expressApp, application);
-    if(process.env.PRYV_WEBHOOKS)
-      require('./routes/webhooks')(expressApp, application);
+    if(! this.isOpenSource) require('./routes/webhooks')(expressApp, application);
   }
 
 

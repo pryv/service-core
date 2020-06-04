@@ -58,7 +58,6 @@ class ServiceInfo {
   }
 
   static async addToConvict(convictInstance) {
-    
 
     let isDnsLess = convictInstance.get(DNS_LESS_VERSION_CONFIG);
     if (isDnsLess) {

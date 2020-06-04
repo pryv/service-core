@@ -222,3 +222,13 @@ factory.goneResource = function (): APIError {
     }
   );
 };
+
+factory.unavailableMethod = function (message: ?string): APIError {
+  return new APIError(
+    ErrorIds.unavailableMethod, 'API method unavailable in current version. This method is only available in the commercial license.',
+    {
+      httpStatus: 451,
+      dontNotifyAirbrake: true,
+    }
+  );
+};

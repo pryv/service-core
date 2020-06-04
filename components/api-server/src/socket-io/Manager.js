@@ -9,11 +9,8 @@ const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTIO
   await commonMeta.loadSettings();
 })();
 
-let NatsSubscriber = null
-if (process.env.PRYV_NATS) {
-  NatsSubscriber = require('./nats_subscriber');
-}
-    
+let NatsSubscriber = require('./nats_subscriber');
+
 import type { Logger } from 'components/utils';
 const MethodContext = require('components/model').MethodContext;
 import type API from '../API';
@@ -62,9 +59,11 @@ class Manager implements MessageSink {
   api: API; 
   storageLayer: StorageLayer;
   customAuthStepFn: Object;
+  isOpenSource: boolean;
 
   constructor(
-    logger: Logger, io: SocketIO$Server, api: API, storageLayer: StorageLayer, customAuthStepFn
+    logger: Logger, io: SocketIO$Server, api: API, storageLayer: StorageLayer, customAuthStepFn: Object,
+    isOpenSource: boolean,
   ) {
     this.logger = logger; 
     this.io = io; 
@@ -251,7 +250,7 @@ class NamespaceContext {
   
   async open() {
     // If we've already got an active subscription, leave it be. 
-    if (this.natsSubscriber != null || ! process.env.PRYV_NATS) return; 
+    if (this.natsSubscriber != null || this.isOpenSource) return; 
     this.natsSubscriber = await this.produceNatsSubscriber();
   }
   async produceNatsSubscriber(): Promise<NatsSubscriber> {
