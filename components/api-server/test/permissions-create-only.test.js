@@ -572,7 +572,7 @@ describe('permissions create-only level', () => {
       });
     });
 
-    // skipping UPDATE & DELETE as there is no way to create webhooks in the first place.
+    // skipping GET, UPDATE & DELETE as they use the same code check.
 
   });
 
