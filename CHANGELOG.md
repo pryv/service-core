@@ -1,5 +1,9 @@
 ## 1.5
 
+### 1.5.8
+
+Added compatibility for open-source version with DNS-less capabilities
+
 ### 1.5.7
 
 - Update babel to v7, now compiling into node v12 (instead of v8)
