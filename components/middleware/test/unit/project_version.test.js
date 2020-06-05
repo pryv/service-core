@@ -2,7 +2,6 @@
 
 /* global describe, it, beforeEach, afterEach */
 const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../../../../../.env') });
 
 const chai = require('chai');
 const assert = chai.assert; 
