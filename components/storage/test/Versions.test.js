@@ -18,9 +18,7 @@ const wrench = require('wrench');
 const _ = require('lodash');
 const buildTree = require('components/utils').treeUtils.buildTree;
 
-const path = require('path');
-const basePath = path.resolve(__dirname, '../../../../');
-const mongoFolder = path.resolve(basePath, process.env.PRYV_MONGODB);
+const mongoFolder = __dirname + '/../../../../var-pryv/mongodb-bin'
 
 describe('Versions', function () {
   this.timeout(20000);
