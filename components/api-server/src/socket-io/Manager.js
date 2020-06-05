@@ -9,8 +9,6 @@ const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTIO
   await commonMeta.loadSettings();
 })();
 
-let NatsSubscriber = require('./nats_subscriber');
-
 import type { Logger } from 'components/utils';
 const MethodContext = require('components/model').MethodContext;
 import type API from '../API';
@@ -68,7 +66,7 @@ class Manager implements MessageSink {
     this.logger = logger; 
     this.io = io; 
     this.api = api; 
-
+    this.isOpenSource = isOpenSource;
     this.contexts = new Map(); 
     this.storageLayer = storageLayer;
     this.customAuthStepFn = customAuthStepFn;
@@ -112,7 +110,7 @@ class Manager implements MessageSink {
         username,
         this.io, socketNs,
         this.api,
-        sink, this.logger);
+        sink, this.logger, this.isOpenSource);
         
       context.init();
 
@@ -198,7 +196,8 @@ class NamespaceContext {
     socketServer: SocketIO$Server, socketNs: SocketIO$Namespace, 
     api: API, 
     sink: MessageSink, 
-    logger: Logger
+    logger: Logger,
+    isOpenSource: Boolean
   ) {
     this.username = username; 
     this.socketServer = socketServer;
@@ -206,7 +205,7 @@ class NamespaceContext {
     this.api = api; 
     this.sink = sink; 
     this.logger = logger; 
-
+    this.isOpenSource = isOpenSource;
     this.connections = new Map(); 
     this.natsSubscriber = null;
   }
@@ -256,7 +255,7 @@ class NamespaceContext {
   async produceNatsSubscriber(): Promise<NatsSubscriber> {
     const sink: MessageSink = this.sink; 
     const userName = this.username;
-
+    const NatsSubscriber = require('./nats_subscriber');
     const natsSubscriber = new NatsSubscriber(
       NATS_CONNECTION_URI, 
       sink,

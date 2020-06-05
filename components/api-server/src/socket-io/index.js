@@ -13,7 +13,6 @@ const Manager = require('./Manager');
 const Paths = require('../routes/Paths');
 
 const ChangeNotifier = require('./change_notifier');
-const NatsPublisher = require('./nats_publisher');
 
 import type { Logger } from 'components/utils';
 import type { StorageLayer } from 'components/storage';
@@ -41,6 +40,7 @@ function setupSocketIO(
   
   // Setup the chain from notifications -> NATS
   if (! isOpenSource) {
+    const NatsPublisher = require('./nats_publisher');
     const natsPublisher = new NatsPublisher(NATS_CONNECTION_URI, 
       (userName: string): string => { return `${userName}.sok1`; }
     );

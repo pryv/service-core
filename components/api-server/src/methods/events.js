@@ -15,7 +15,7 @@ const assert = require('assert');
     
 const {TypeRepository, isSeriesType} = require('components/business').types;
 
-const NatsPublisher = require('../socket-io/nats_publisher');
+
 const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
 const NATS_UPDATE_EVENT = require('components/utils').messaging
   .NATS_UPDATE_EVENT;
@@ -46,6 +46,7 @@ module.exports = function (
   
   let natsPublisher;
   if (!openSourceSettings.isActive) {
+    const NatsPublisher = require('../socket-io/nats_publisher');
     natsPublisher = new NatsPublisher(NATS_CONNECTION_URI);
   }
 
