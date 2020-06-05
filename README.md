@@ -64,7 +64,6 @@ Then just `yarn setup`. **Warning** don't use `yarn install`; now using --no opt
 | Run Preview server                | `yarn previews`                |
 | Run Webhooks service              | `yarn webhooks`                |
 | Run Database                      | `yarn database`                |
-| Run Service-Mail (Open Pryv only) | `yarn mail`                    |
 | DB migration process | `cd dist/component/api-server/ ; ./bin/migrate` |
 | Get a list of available processes | `cat Procfile`                  |
 | Run flow checker                   | `watch -c flow --color=always`  |
