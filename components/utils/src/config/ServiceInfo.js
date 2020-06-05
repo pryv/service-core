@@ -64,9 +64,9 @@ class ServiceInfo {
       const dnsLessPublicUrl = convictInstance.get(DNS_LESS_PUBLIC_URL_CONFIG);
       if (dnsLessPublicUrl.slice(-1) === '/') dnsLessPublicUrl = dnsLessPublicUrl.slice(0, -1);
       convictInstance.set('service.serial', 't' + Math.round(Date.now() / 1000));
-      convictInstance.set('service.api', dnsLessPublicUrl + '/{username}');
-      convictInstance.set('service.register', dnsLessPublicUrl + regPath);
-      convictInstance.set('service.access', dnsLessPublicUrl + regPath + '/access');
+      convictInstance.set('service.api', dnsLessPublicUrl + '/{username}/');
+      convictInstance.set('service.register', dnsLessPublicUrl + regPath + '/');
+      convictInstance.set('service.access', dnsLessPublicUrl + regPath + '/access/');
       convictInstance.set('service.assets', {
         definitions: dnsLessPublicUrl + wwwPath + '/assets/index.json',
       });
