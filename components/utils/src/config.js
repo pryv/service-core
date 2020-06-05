@@ -23,14 +23,15 @@ config.schema = {
     isActive: {
       format: Boolean,
       default: false,
-      doc: 'This setting is necessary for the open source version build'
+      doc: 'Used when webhooks and HFS are not available to cut off unavailble dependencies that would make the service crash.'
     }
   },  
   dnsLess: {
     isActive: {
       format: Boolean,
       default: false,
-      doc: 'Setting this will deactivate some features and override some parameters.',
+      doc: 'Activates routes /reg and /www. Builds service information on publicUrl.\n' + 
+      'This requires to have built-in register and app-web-auth3.',
     },
     publicUrl: {
       format: String,
