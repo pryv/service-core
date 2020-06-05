@@ -113,7 +113,6 @@ module.exports = function (
     
     // Skip this step if welcome mail is deactivated
     const isMailActivated = emailSettings.enabled;
-    console.log('XXXXX', emailSettings);
     if (isMailActivated === false || 
        (isMailActivated != null && isMailActivated.welcome === false)) {
       return next();
