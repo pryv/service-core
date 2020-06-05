@@ -9,7 +9,7 @@ cd $SCRIPT_FOLDER/.. # root
 
 export DATA_FOLDER=$SCRIPT_FOLDER/../var-pryv
 export LOGS_FOLDER=${DATA_FOLDER}/logs
-export ATTACHMENTS_FOLDER=${DATA_FOLDER}/service-core-files
+export ATTACHMENTS_FOLDER=${DATA_FOLDER}/attachment-files
 
 export MONGO_BASE_FOLDER=$DATA_FOLDER
 
