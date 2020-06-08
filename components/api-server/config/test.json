@@ -22,5 +22,9 @@
   },
   "tcpMessaging": {
     "enabled": true
+  },
+  "reporting": {
+    "licenseName": "pryv.io-test-license",
+    "templateVersion": "1.0.0"
   }
 }

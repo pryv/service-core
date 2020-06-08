@@ -77,7 +77,9 @@ class Server {
     // Let actual requests pass.
     lifecycle.appStartupComplete(); 
     
-    await this.setupReporting();
+    if (! this.isOpenSource) {
+      await this.setupReporting();
+    }
 
     logger.info('Server ready.');
     this.notificationBus.serverReady();
