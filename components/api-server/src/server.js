@@ -31,7 +31,7 @@ class Server {
   application: Application;
   settings: ConfigAccess;
   isOpenSource: boolean;
-  
+  isDNSLess: Boolean;
   logger: Logger; 
   
   // Axon based internal notification and messaging bus. 
@@ -45,7 +45,7 @@ class Server {
     const settings = application.settings; 
     this.settings = settings;
     this.isOpenSource = settings.get('openSource.isActive').bool();
-
+    this.isDNSLess = settings.get('dnsLess.isActive').bool();
     this.logger = application.logFactory('api-server');
   }
     
@@ -56,7 +56,7 @@ class Server {
     
     this.publishExpressMiddleware();
     
-    const [expressApp, lifecycle] = await this.createExpressApp(); 
+    const [expressApp, lifecycle] = await this.createExpressApp(this.isDNSLess); 
 
     // start TCP pub messaging
     await this.setupNotificationBus();
@@ -81,11 +81,11 @@ class Server {
     this.notificationBus.serverReady();
   }
   
-  async createExpressApp(): Promise<[express$Application, ExpressAppLifecycle]> {
+  async createExpressApp(isDNSLess: boolean): Promise<[express$Application, ExpressAppLifecycle]> {
     const app = this.application;
     const dependencies = app.dependencies;
 
-    const {expressApp, lifecycle} = await expressAppInit(dependencies);
+    const {expressApp, lifecycle} = await expressAppInit(dependencies, isDNSLess);
     dependencies.register({expressApp: expressApp});
     
     // Make sure that when we receive requests at this point, they get notified 
