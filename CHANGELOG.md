@@ -1,5 +1,9 @@
 ## 1.5
 
+### 1.5.10
+
+- load reporting lib conditionnally
+
 ### 1.5.9
 
 - use lib-reporting:
