@@ -1,5 +1,12 @@
 ## 1.5
 
+### 1.5.9
+
+- use lib-reporting:
+  - requires reporting:licenseName to boot api-server
+  - not used in open-source mode
+- create user on open-source register now returns pryvApiEndpoint
+
 ### 1.5.8
 
 Added compatibility for open-source version with DNS-less capabilities
