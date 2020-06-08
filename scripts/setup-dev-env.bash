@@ -7,6 +7,18 @@
 SCRIPT_FOLDER=$(cd $(dirname "$0"); pwd)
 cd $SCRIPT_FOLDER/.. # root
 
+
+## used in Open Pryv
+SCRIPT_EXTRAS="./scripts/setup-open.bash"
+if [[ -f $SCRIPT_EXTRAS ]]; then
+  echo "installing service mail"
+  bash $SCRIPT_EXTRAS
+fi
+
+echo ""
+echo "Setup complete!"
+echo ""
+
 export DATA_FOLDER=$SCRIPT_FOLDER/../var-pryv
 export LOGS_FOLDER=${DATA_FOLDER}/logs
 export ATTACHMENTS_FOLDER=${DATA_FOLDER}/attachment-files
@@ -30,14 +42,3 @@ if [[ ${EXIT_CODE} -ne 0 ]]; then
   echo ""
   exit ${EXIT_CODE}
 fi
-
-## used in Open Pryv
-SCRIPT_EXTRAS="./scripts/setup-open.bash"
-if [[ -f $SCRIPT_EXTRAS ]]; then
-  echo "installing service mail"
-  bash $SCRIPT_EXTRAS
-fi
-
-echo ""
-echo "Setup complete!"
-echo ""

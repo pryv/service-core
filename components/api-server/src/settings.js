@@ -8,6 +8,8 @@ const config = require(__dirname + '/config');
 
 const { ExistingValue, MissingValue } = require('components/utils/src/config/value');
 
+const wwwPath = require('./routes/Paths').WWW;
+
 opaque type ConvictConfig = Object;
 
 import type { CustomAuthFunction } from 'components/model';
@@ -46,6 +48,14 @@ class Settings implements ConfigAccess {
     config.printSchemaAndExitIfNeeded();
     const ourConfig = await config.setupWithServiceInfo(configLocation);
     settingsSingleton = new Settings(ourConfig);
+
+    // I was not able to find a better place  -- to be changed 
+    if (ourConfig.get('dnsLess.isActive')) {
+      let publicUrl = ourConfig.get('dnsLess.publicUrl');
+      if (publicUrl.slice(-1) === '/') publicUrl = publicUrl.slice(0, -1);
+      ourConfig.set('auth.passwordResetPageURL', publicUrl + wwwPath + '/access/reset-password.html');
+    }
+
     settingsSingleton.maybePrint();
     return settingsSingleton;
   }

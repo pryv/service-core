@@ -177,7 +177,7 @@ class ExpressAppLifecycle {
 // Creates and returns an express application with a standard set of middleware. 
 // `version` should be the version string you want to show to API clients. 
 // 
-async function expressAppInit(dependencies: any) {
+async function expressAppInit(dependencies: any, isDNSLess: boolean) {
   const pv = new ProjectVersion(); 
   const version = await pv.version(); 
   
@@ -200,7 +200,9 @@ async function expressAppInit(dependencies: any) {
     .filter(e => _.isString(e))
     .filter(e => e.indexOf(Paths.Params.Username) < 0)
     .value(); 
-  app.use(middleware.subdomainToPath(ignorePaths));
+
+  if (! isDNSLess)
+    app.use(middleware.subdomainToPath(ignorePaths));
 
   // Parse JSON bodies: 
   app.use(bodyParser.json({
