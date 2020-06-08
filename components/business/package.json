@@ -9,6 +9,6 @@
     "test": "../../node_modules/.bin/mocha -R dot --exit 'test/**/*.test.js'"
   },
   "dependencies": {
-    "z-schema": "^3.18.2"
+    "z-schema": "^4.2.3"
   }
 }

@@ -5,7 +5,6 @@ module.exports = [
     id: 's_0',
     name: 'Root Stream 0',
     parentId: null,
-    singleActivity: true, // forbid period events overlapping
     created: timestamp.now(),
     createdBy: 'test',
     modified: timestamp.now(),
@@ -174,7 +173,6 @@ module.exports = [
     id: 's_8',
     name: 'Root Stream 8 - for auditing',
     parentId: null,
-    singleActivity: true,
     created: timestamp.now('-10h'),
     createdBy: 'test',
     modified: timestamp.now('-10h'),

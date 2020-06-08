@@ -113,7 +113,8 @@ describe('service-reporting', () => {
     });
   });
 
-  describe('POST report on service-reporting (shut down)', () => {
+  describe('POST report on service-reporting (shut down)', function () {
+    this.timeout(5000);
     beforeEach(async () => {
       server = await context.spawn();
     });

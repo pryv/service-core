@@ -3,7 +3,7 @@
 // Service that receives notifications from api-server and send them to existing Webhooks.
 
 const Application = require('../src/application');
-const AirbrakeClient = require('airbrake-js');
+const { Notifier } = require('@airbrake/node');
 let airbrake;
 
 // Catch uncaught Promise rejections
@@ -30,9 +30,10 @@ async function startup() {
   // Setup Airbrake if enabled
   const airbrakeSettings = app.settings.get('logs:airbrake');
   if (airbrakeSettings.active) {
-    airbrake = new AirbrakeClient({
+    airbrake = new Notifier({
       projectId: airbrakeSettings.projectId,
       projectKey: airbrakeSettings.key,
+      environment: 'production',
     });
   }
 

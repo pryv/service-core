@@ -173,6 +173,7 @@ A successful query will respond with the data selected by the query from the ser
 | 401    | `"missing-header"`            | Access cannot be granted without a valid 'Authorization' header. |
 | 403    | `"invalid-access-token"`      | Access denied; your token has insufficient permissions to access the given series. |
 | 404    | `"unknown-resource"`          | No such series exists.                                       |
+| 410    | `"resource-gone"`             | This ressources has been removed .                             |
 
 **Note 1** Since access permissions associated with a token are cached internally to speed up series access, you might get a `"invalid-access-token"` error even if you just adjusted the permissions on the token. There is a (configurable) delay during which the old access permissions will be retained. 
 

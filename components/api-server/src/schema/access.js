@@ -109,6 +109,8 @@ exports = module.exports = function (action) {
 
 var permissionLevel = exports.permissionLevel = string({ enum: ['read', 'contribute', 'manage', 'create-only']});
 
+var featureSetting = exports.featureSetting = string({ enum: ['forbidden']});
+
 var permissions = exports.permissions = function (action) {
   var streamPermission = object({
     'streamId': {
@@ -135,7 +137,16 @@ var permissions = exports.permissions = function (action) {
     required: [ 'tag', 'level' ]
   });
 
+  var featurePermission = object({
+    'feature': string(),
+    'setting': featureSetting
+  }, {
+    id: 'featurePermission',
+    additionalProperties: false,
+    required: ['feature', 'setting']
+  });
+
   return array({
-    oneOf: [ streamPermission, tagPermission ]
+    oneOf: [streamPermission, tagPermission, featurePermission]
   });
 };

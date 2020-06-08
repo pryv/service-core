@@ -131,9 +131,8 @@ module.exports = function(expressApp: express$Application, app: Application) {
     });
 
   events.post('/start',
-    loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      api.call('events.start', req.context, req.body, methodCallback(res, next, 201));
+      return next(errors.goneResource());
     });
 
   expressApp.put(Paths.Events + '/:id',
@@ -143,9 +142,8 @@ module.exports = function(expressApp: express$Application, app: Application) {
     });
 
   events.post('/stop',
-    loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      api.call('events.stop', req.context, _.extend({}, req.body), methodCallback(res, next, 200));
+      return next(errors.goneResource());
     });
   
   // Update an event

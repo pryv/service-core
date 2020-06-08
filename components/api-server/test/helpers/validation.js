@@ -253,7 +253,7 @@ function checkObjectEquality(actual, expected) {
   assert.deepEqual(remaining, expectedRemaining);
 }
 
-function checkApproxTimeEquality(actual, expected, epsilon=1) {
+function checkApproxTimeEquality(actual, expected, epsilon=2) {
   const diff = (expected - actual);
   assert.isBelow(Math.abs(diff), epsilon);
 }
@@ -305,11 +305,16 @@ exports.checkFilesReadToken = function (eventOrEvents, access, secret) {
  * @param {Object} event
  */
 exports.sanitizeEvent = function (event) {
-  if (! event || ! event.attachments) { return; }
+  if (! event ) { return; }
 
-  event.attachments.forEach(function (att) {
-    delete att.readToken;
-  });
+  delete event.streamId;
+
+  if (event.attachments) {
+    event.attachments.forEach(function (att) {
+      delete att.readToken;
+    });
+  }
+  
   return event;
 };
 

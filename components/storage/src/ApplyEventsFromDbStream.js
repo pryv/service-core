@@ -28,8 +28,8 @@ ApplyEventsFromDbStream.prototype._transform = function (event, encoding, callba
     // from storage/src/converters
     if (event.deleted) {
       event.deleted = timestamp.fromDate(event.deleted);
-    }
-
+    } 
+    
     this.push(event);
     callback();
   } catch(err) {

@@ -8,10 +8,10 @@ Pryv core server app components, ie. what runs on each server node and handles u
 ## Install
 
 _Prerequisites:_ 
-- Node v12+
-- Yarn v1+
-- Mongo DB v3.4+ (needs at least 4GB of free disk space for the initial database)
-- InfluxDB v1.2+
+- Node v12
+- Yarn v1
+- Mongo DB v3.6 (needs at least 4GB of free disk space for the initial database)
+- InfluxDB v1.2
 - gnatsd
 
 For node, you may use [nvm](https://github.com/nvm-sh/nvm) or [nodenv](https://github.com/nodenv/nodenv) to manage multiple nodeJS versions.
@@ -19,21 +19,20 @@ For node, you may use [nvm](https://github.com/nvm-sh/nvm) or [nodenv](https://g
 On a mac OS X system, you should be able to install these prerequisites by first installing homebrew and then running these commands: 
 
 ~~~bash
-$ brew install gnatsd mongodb node-build influxdb nodenv/nvm
-# Follow post-install instructions by homebrew, especially for nodenv/nvm. 
+$ brew install gnatsd node-build influxdb nodenv/nvm
+# Follow post-install instructions by homebrew, especially for nodenv/nvm.
 $ nodenv install 8.8.0
 ~~~
 
-You will need to install 'node-gyp' globally as well: `yarn global add node-gyp`. Your environment needs to support C/C++ compilation. On Linux, this includes `sudo apt-get install build-essentials`, on Mac OS X this is XCode + Command Line Utilities. 
+You will need to install 'node-gyp' globally as well: `yarn global add node-gyp`. Your environment needs to support C/C++ compilation. On Linux, this includes `sudo apt-get install build-essentials`, on Mac OS X this is XCode + Command Line Utilities.
 
-Then just `yarn install`.
+Then just `yarn setup`. **Warning** don't use `yarn install`; now using --no opts because they don't compile.
 
 ## Top Level Directories
 
     .
     ├── CHANGELOG.md        Changelog
     ├── Jenkinsfile          Used by Jenkins to identify and run the build
-    ├── Procfile             Used by foreman (`nf`) to identify processes 
     ├── README.md           This README
     ├── build               Contains files needed for Docker release build
     ├── components          Source code for all components 
@@ -55,27 +54,29 @@ Then just `yarn install`.
 | Task                              | Command                        |
 | --------------------------------- | ------------------------------ |
 | Setup                             | `yarn install`                 |
-| Create Distribution               | `yarn release`                 |
+| Create Distribution for release  | `yarn release`                 |
+| Create Dev. Distribution (with source Maps) | `yarn build-dev`               |
 | Recompile During Development      | `yarn watch`                   |
 | Run Tests                         | `yarn test`                    |
+| Produce coverage html | `yarn cover` |
 | Run Integration Tests             | `yarn test-root`               |
-| Run ALL server processes          | `nf start`                     |
-| Run API server                    | `nf start api`                 |
-| Run API and Preview server        | `nf start api, previews`       |
-| Run Webhooks service              | `nf start webhooks`            |
-| Run Database                      | `nf start database`            |
+| Run API server                    | `yarn api`                     |
+| Run Preview server                | `yarn previews`                |
+| Run Webhooks service              | `yarn webhooks`                |
+| Run Database                      | `yarn database`                |
+| DB migration process | `cd dist/component/api-server/ ; ./bin/migrate` |
 | Get a list of available processes | `cat Procfile`                  |
 | Run flow checker                   | `watch -c flow --color=always`  |
 
-**NOTE** that all binaries like `nf` or `flow` must be accessed by prepending `yarn {nf,flow}`, as documented [here](http://strongloop.github.io/node-foreman/).
+**NOTE** that all binaries like `flow` must be accessed by prepending `yarn {flow}`.
 
 ## Setup
 
 ### Flowtype transpilation
 
-**First execution**: Run at least once `yarn release` before running the servers or tests. The source code needs to be transpiled from Flowtype to pure JS.
+**First execution**: Run at least once `yarn release` or `yarn build-dev` before running the servers or tests. The source code needs to be transpiled from Flowtype to pure JS.
 
-During development, use `yarn watch` to recompile all files after each saved change. Look out for compilation errors that might prevent the distribution from being updated. 
+During development, use `yarn watch` to recompile all files after each saved change. Look out for compilation errors that might prevent the distribution from being updated.
 
 ### MongoDB
 
@@ -83,7 +84,7 @@ During development, use `yarn watch` to recompile all files after each saved cha
 
 ## Test Running
 
-_Prerequisite:_ MongoDB must be running on the default port; you can use `yarn nf start database`.
+_Prerequisite:_ MongoDB must be running on the default port; you can use `yarn database`.
 
 `yarn test` runs tests on each component. See individual components for things like detailed output and other options.
 `yarn test-root` runs root tests combining multiple components (e.g., High-Frequency series).
@@ -100,6 +101,22 @@ This is something that should probably be a shell alias in your environment. I u
 
     $ alias pm="../../node_modules/.bin/mocha --compilers js:babel-register test/**/*.test.js"
 
+### Debug in VsCode
+
+Launch `yarn watch`
+
+Open terminal in VsCode (Terminal => New terminal)
+
+`cd dist/component/api-server`
+
+Add your breakpoints 
+
+`yarn test-debug`
+
+### Debug tests by hand
+
+- print server 500 errors: uncomment line containing `uncomment to log 500 errors on test running using InstanceManager`
+- print server console.log: uncomment line with `stdio: 'inherit'`
 
 ## App Configuration
 
@@ -174,7 +191,6 @@ Test results are kept in the [test-results-pryv.io](https://github.com/pryv/test
 - Run the test suite, printing the results in `test_results/service-core/${TAG_VERSION}/${TIMESTAMP}-service-core.json` using: `yarn output-test-results`
 - Upload the results: `yarn upload-test-results`
 
-
 ## Troubleshooting
 
 ### Test failures
@@ -192,7 +208,7 @@ When running tests in single components:
 
 ### Unicode
 
-If you're blocking because 'unicode.org' doesn't like you today, here's what you do: 
+If you're blocking because 'unicode.org' doesn't like you today, here's what you do:
 
     $ NODE_UNICODETABLE_UNICODEDATA_TXT=$(pwd)/UnicodeData.txt yarn install
 
@@ -200,7 +216,7 @@ If you're blocking because 'unicode.org' doesn't like you today, here's what you
 
 If you are trying to run `docker SOME_COMMAND` and get the following error:  
 
-```
+```log
 docker: Got permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Post http://%2Fvar%2Frun%2Fdocker.sock/v1.26/containers/create: dial unix /var/run/docker.sock: connect: permission denied.
 See 'docker run --help'.
 ```
@@ -214,7 +230,7 @@ Run `docker run hello-world` to check if it works.
 
 ### Influxd "too many open files" error
 
-Delete your local influx DB files and reboot Influx DB: 
+Delete your local influx DB files and reboot Influx DB:
 
 ```
 rm ~/.influxdb/data/*

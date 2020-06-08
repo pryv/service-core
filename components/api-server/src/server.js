@@ -32,6 +32,7 @@ import type { ExpressAppLifecycle } from './expressApp';
 class Server {
   application: Application;
   settings: ConfigAccess;
+  isOpenSource: boolean;
   
   logger: Logger; 
   
@@ -44,7 +45,8 @@ class Server {
     this.application = application;
     
     const settings = application.settings; 
-    this.settings = settings; 
+    this.settings = settings;
+    this.isOpenSource = settings.get('openSource.isActive').bool();
 
     this.logger = application.logFactory('api-server');
   }
@@ -68,7 +70,7 @@ class Server {
     const server: net$Server = http.createServer(expressApp);
     this.setupSocketIO(server); 
     await this.startListen(server);
-    
+
     // Finish booting the server, start accepting connections.
     this.addRoutes(expressApp);
     
@@ -124,6 +126,7 @@ class Server {
       application.api, l('methods/service'), 
       application.getServiceInfoSettings());
 
+    if (! this.isOpenSource)
     require('./methods/webhooks')(
       application.api, l('methods/webhooks'),
       application.getWebhooksSettings(),
@@ -165,12 +168,14 @@ class Server {
     const storageLayer = application.storageLayer;
     const settings = this.settings; 
     const customAuthStepFn = settings.getCustomAuthFunction();
+    const isOpenSource = this.isOpenSource;
         
     const socketIOsetup = require('./socket-io');
     socketIOsetup(
       server, application.logFactory('socketIO'), 
       notificationBus, api, 
-      storageLayer, customAuthStepFn);
+      storageLayer, customAuthStepFn,
+      isOpenSource);
   }
   
   // Open http port and listen to incoming connections. 
@@ -278,6 +283,12 @@ class Server {
   //
   addRoutes(expressApp: express$Application) {
     const application = this.application;
+
+    // For DNS LESS load register
+    if (this.isOpenSource) {
+      require('../../register')(expressApp, this.application);
+      require('../../www')(expressApp, this.application);
+    }
   
     // system and root MUST come first
     require('./routes/system')(expressApp, application);
@@ -291,7 +302,7 @@ class Server {
     require('./routes/profile')(expressApp, application);
     require('./routes/service')(expressApp, application);
     require('./routes/streams')(expressApp, application);
-    require('./routes/webhooks')(expressApp, application);
+    if(! this.isOpenSource) require('./routes/webhooks')(expressApp, application);
   }
 
 
@@ -312,7 +323,7 @@ class Server {
     new Reporting(licenseName, role, templateVersion, collectClientData.bind(this), mylog);
   }
 
-  async getUserCount(): Number {
+  async getUserCount(): Promise<Number> {
     const usersStorage = this.application.storageLayer.users;
     let numUsers = await bluebird.fromCallback(cb => {
       usersStorage.count({}, cb);

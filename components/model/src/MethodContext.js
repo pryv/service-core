@@ -38,10 +38,10 @@ class MethodContext {
   // Custom auth function, if one was configured. 
   customAuthStepFn: ?CustomAuthFunction;
   
-  stream: ?Stream;
-  
-  // Memoizes the result of #getSingleActivityExpandedIds.
-  singleActivityExpandedIds: ?Array<string>;
+  // will contain the list of "found" streams 
+  streamList: ?Array<Stream>;
+  // during an event.create action for multiple streams event, some streamIds might not exists. They will be listed here
+  streamIdsNotFoundList: ?Array<string>;
   
   calledMethodId: ?string;
   
@@ -55,6 +55,8 @@ class MethodContext {
     this.access = null;
     this.streams = null;
 
+    this.streamList = null;
+    this.streamIdsNotFoundList = [];
     this.customAuthStepFn = customAuthStepFn;
     
     this.accessToken = null;
@@ -247,28 +249,22 @@ class MethodContext {
     const user = this.user;
     const streams = await bluebird.fromCallback(
       cb => storage.streams.find(user, {}, null, cb));
-      
-    applyInheritedProperties(streams);
-
     this.streams = streams;
   }
 
   // Set this contexts stream by looking in this.streams. DEPRECATED.
   // 
-  setStream(streamId: string) {
-    this.stream = treeUtils.findById(this.streams, streamId);
-  }
-  
-  // Returns expanded ids of single-activity streams for the context, based on
-  // this.stream. You will need to call `#setStream` first.
-  // 
-  getSingleActivityExpandedIds() {
-    if (this.singleActivityExpandedIds == null) {
-      this.singleActivityExpandedIds = 
-        produceSingleActivityExpandedIds(this.stream, this.streams);
-    }
-      
-    return this.singleActivityExpandedIds;
+  setStreamList(streamIds: array) {
+    if (!streamIds || streamIds.length === 0) return;
+    streamIds.forEach(function (streamId) {
+      let stream = treeUtils.findById(this.streams, streamId);
+      if (stream) {
+        if (!this.streamList) this.streamList = [];
+        this.streamList.push(stream);
+      } else {
+        this.streamIdsNotFoundList.push(streamId);
+      }
+    }.bind(this));
   }
   
   /**
@@ -406,44 +402,3 @@ class MethodContext {
   }
 }
 module.exports = MethodContext;
-
-// Returns expanded ids of single-activity streams for the context, based on
-// stream. 
-// 
-function produceSingleActivityExpandedIds(stream, streams) {
-  if (stream == null)
-    throw new Error('The context\'s `stream` must be set before calling this method.');
-  
-  return stream.singleActivityRootId ?
-    treeUtils.expandIds(streams, [stream.singleActivityRootId]) : 
-    [];
-}
-
-// Propagates properties that are 'inherited' from a stream parent to all its
-// children. 
-// 
-// Currently, only one such property exists, called `singleActivityRootId`. It
-// stores the first 'singleActivity' streams id. 
-// 
-// TODO This is in the wrong place; it should be handled by the code that loads
-//  the streams. Doing it here opens up other code paths that might not have
-//  this attribute. 
-// 
-// This function is recursive; your first call should not set the `properties`
-// attribute. 
-// 
-function applyInheritedProperties(streams, properties={}) {
-  for (const stream of streams) {
-    _.defaults(stream, properties);
-    
-    const treeProperties = _.clone(properties);
-
-    const uptopRootId = treeProperties.singleActivityRootId;
-    if (stream.singleActivity && uptopRootId == null) 
-      treeProperties.singleActivityRootId = stream.id;
-    
-    // apply this trees properties to stream and all its children:
-    _.defaults(stream, treeProperties);
-    applyInheritedProperties(stream.children, treeProperties);
-  }
-}

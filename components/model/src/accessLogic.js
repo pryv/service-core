@@ -53,12 +53,17 @@ const accessLogic = module.exports = {
     this.streamPermissionsMap = {};
     this.tagPermissions = [];
     this.tagPermissionsMap = {};
+    this.featurePermissions = [];
+    this.featurePermissionsMap = {};
+
 
     this.permissions.forEach(function (perm) {
       if (perm.streamId) {
         this._loadStreamPermission(perm);
       } else if (perm.tag) {
         this._loadTagPermission(perm);
+      } else if (perm.feature) {
+        this._loadFeaturePermission(perm);
       }
     }.bind(this));
 
@@ -94,6 +99,16 @@ const accessLogic = module.exports = {
   _registerStreamPermission: function (perm) {
     this.streamPermissions.push(perm);
     this.streamPermissionsMap[perm.streamId] = perm;
+  },
+
+  _loadFeaturePermission: function (perm) {
+    // here we might want to check if permission is higher
+    this._registerFeaturePermission(perm);
+  },
+
+  _registerFeaturePermission: function (perm) {
+    this.featurePermissions.push(perm);
+    this.featurePermissionsMap[perm.feature] = perm;
   },
 
   _loadTagPermission: function (perm) {
@@ -168,9 +183,25 @@ const accessLogic = module.exports = {
     return level && isHigherOrEqualLevel(level, 'manage');
   },
 
-  // Whether the current access can see and manage the given access. 
+  // Whether the current access delete manage the given access
+  canDeleteAccess: function (access) {
+    // The account owner can do everything. 
+    if (this.isPersonal()) return true;
+    // App and Shared accesses can delete themselves (selfRevoke)
+    if (access.id === this.id) { 
+      return this.canSelfRevoke();
+    }
+
+    if (this.isShared()) return false;
+
+    // App token can delete the one they created
+    return this.id === access.createdBy;
+  },
+
+  
+  // Whether the current access can create the given access. 
   // 
-  canManageAccess: function (access) {
+  canCreateAccess: function (access) {
     //TODO handle tags
     
     // The account owner can do everything. 
@@ -263,16 +294,12 @@ const accessLogic = module.exports = {
   },
 
   /**
-   * returns true if this has a stream permission with `create-only` level
+   * return true is does not have "feature selfRevoke" permission with level "forbidden"
    */
-  hasCreateOnlyPermission: function () {
-    if (this.streamPermissions == null) return false;
-
-    for(permission of this.streamPermissions) {
-      if (permission.level === 'create-only') return true;
-    }
-    return false;
-  }
+  canSelfRevoke: function () {
+    if (this.featurePermissionsMap.selfRevoke == null) return true; // default allow
+    return this.featurePermissionsMap.selfRevoke.setting !== 'forbidden';
+  },
 };
 
 function isHigherOrEqualLevel(permissionLevelA, permissionLevelB) {

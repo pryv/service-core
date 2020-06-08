@@ -23,7 +23,6 @@ module.exports = function (action, ignoreChildren, refToStreamSchema) {
       'id': string({minLength: 1}),
       'name': string({minLength: 1}),
       'parentId': string({nullable: true, minLength: 1}),
-      'singleActivity': boolean({nullable: true}),
       'clientData': object({}, {nullable: true}),
       'trashed': boolean({nullable: true}),
       // ignored except on READ, accepted to simplify interaction with client frameworks
@@ -50,7 +49,7 @@ module.exports = function (action, ignoreChildren, refToStreamSchema) {
       break;
     case Action.UPDATE:
       // whitelist for properties that can be updated
-      schema.alterableProperties = ['name', 'parentId', 'singleActivity',
+      schema.alterableProperties = ['name', 'parentId',
         'clientData', 'trashed'];
       break;
   }

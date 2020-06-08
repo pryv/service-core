@@ -19,6 +19,28 @@ var formats = config.formats = {
  * Base settings schema. Extend at will.
  */
 config.schema = {
+  openSource: {
+    isActive: {
+      format: Boolean,
+      default: false,
+      doc: 'Used when webhooks and HFS are not available to cut off unavailble dependencies that would make the service crash.'
+    }
+  },  
+  dnsLess: {
+    isActive: {
+      format: Boolean,
+      default: false,
+      doc: 'Activates routes /reg and /www. Builds service information on publicUrl.\n' + 
+      'This requires to have built-in register and app-web-auth3.',
+    },
+    publicUrl: {
+      format: String,
+      default: undefined,
+      doc: 'URL used to reach the service from the public internet.\n' +
+      'In development, this can be http://localhost:PORT.\n' + 
+      'In Production, as the service stands behind a NGINX reverse proxy, it should be different.'
+    },
+  },
   serviceInfoUrl: {
     format: String,
     default: undefined,

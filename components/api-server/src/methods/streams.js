@@ -1,14 +1,14 @@
 var errors = require('components/errors').factory,
-    async = require('async'),
-    commonFns = require('./helpers/commonFunctions'),
-    errorHandling = require('components/errors').errorHandling,
-    methodsSchema = require('../schema/streamsMethods'),
-    streamSchema = require('../schema/stream'),
-    slugify = require('slug'),
-    string = require('./helpers/string'),
-    utils = require('components/utils'),
-    treeUtils = utils.treeUtils,
-    _ = require('lodash');
+  async = require('async'),
+  commonFns = require('./helpers/commonFunctions'),
+  errorHandling = require('components/errors').errorHandling,
+  methodsSchema = require('../schema/streamsMethods'),
+  streamSchema = require('../schema/stream'),
+  slugify = require('slug'),
+  string = require('./helpers/string'),
+  utils = require('components/utils'),
+  treeUtils = utils.treeUtils,
+  _ = require('lodash');
 
 /**
  * Event streams API methods implementation.
@@ -22,7 +22,7 @@ var errors = require('components/errors').factory,
  * @param auditSettings
  * @param updatesSettings
  */
-module.exports = function (api, userStreamsStorage, userEventsStorage, userEventFilesStorage, 
+module.exports = function (api, userStreamsStorage, userEventsStorage, userEventFilesStorage,
   notifications, logging, auditSettings, updatesSettings) {
 
   const logger = logging.getLogger('methods/streams');
@@ -50,7 +50,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
       if (params.parentId) {
         var parent = treeUtils.findById(streams, params.parentId);
-        if (! parent) {
+        if (!parent) {
           return next(errors.unknownReferencedResource('parent stream',
             'parentId', params.parentId, err));
         }
@@ -59,7 +59,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
       if (params.state !== 'all') { // i.e. === 'default' (return non-trashed items)
         streams = treeUtils.filterTree(streams, false /*no orphans*/, function (item) {
-          return ! item.trashed;
+          return !item.trashed;
         });
       }
 
@@ -106,12 +106,12 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     createStream);
 
   function applyDefaultsForCreation(context, params, result, next) {
-    _.defaults(params, {parentId: null});
+    _.defaults(params, { parentId: null });
     next();
   }
 
   function applyPrerequisitesForCreation(context, params, result, next) {
-    if (! context.canManageStream(params.parentId)) {
+    if (!context.canManageStream(params.parentId)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 
@@ -121,8 +121,8 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     }
 
     if (params.id) {
-      if (string.isReservedId(params.id) || 
-      string.isReservedId(params.id = slugify(params.id))) {
+      if (string.isReservedId(params.id) ||
+        string.isReservedId(params.id = slugify(params.id))) {
         return process.nextTick(next.bind(null, errors.invalidItemId(
           'The specified id "' + params.id + '" is not allowed.')));
       }
@@ -140,11 +140,11 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         if (err.isDuplicate) {
           if (err.isDuplicateIndex('streamId')) {
             return next(errors.itemAlreadyExists(
-              'stream', {id: params.id}, err));
+              'stream', { id: params.id }, err));
           }
           if (err.isDuplicateIndex('name')) {
             return next(errors.itemAlreadyExists(
-              'sibling stream', {name: params.name}, err));
+              'sibling stream', { name: params.name }, err));
           }
         }
         // Unknown parent stream error
@@ -171,22 +171,22 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     applyPrerequisitesForUpdate,
     updateStream);
 
-  function applyPrerequisitesForUpdate(context, params, result, next) {    
+  function applyPrerequisitesForUpdate(context, params, result, next) {
     // check stream
     var stream = treeUtils.findById(context.streams, params.id);
-    if (! stream) {
+    if (!stream) {
       return process.nextTick(next.bind(null,
         errors.unknownResource(
           'stream', params.id
         )
       ));
     }
-    if (! context.canManageStream(stream.id)) {
+    if (!context.canManageStream(stream.id)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 
     // check target parent if needed
-    if (params.update.parentId && ! context.canManageStream(params.update.parentId)) {
+    if (params.update.parentId && !context.canManageStream(params.update.parentId)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 
@@ -196,14 +196,14 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   }
 
   function updateStream(context, params, result, next) {
-    userStreamsStorage.updateOne(context.user, {id: params.id}, params.update,
+    userStreamsStorage.updateOne(context.user, { id: params.id }, params.update,
       function (err, updatedStream) {
         if (err != null) {
           // Duplicate error
           if (err.isDuplicate) {
             if (err.isDuplicateIndex('name')) {
               return next(errors.itemAlreadyExists(
-                'sibling stream', {name: params.update.name}, err
+                'sibling stream', { name: params.update.name }, err
               ));
             }
           }
@@ -227,27 +227,26 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
   api.register('streams.delete',
     commonFns.getParamsValidation(methodsSchema.del.params),
-    applyPrerequisitesForDeletion,
+    verifyStreamExistenceAndPermissions,
     deleteStream);
 
-  function applyPrerequisitesForDeletion(context, params, result, next) {
+  function verifyStreamExistenceAndPermissions(context, params, result, next) {
     _.defaults(params, { mergeEventsWithParent: null });
 
-    // check stream
     context.stream = treeUtils.findById(context.streams, params.id);
-    if (! context.stream) {
+    if (context.stream == null) {
       return process.nextTick(next.bind(null,
         errors.unknownResource('stream', params.id)));
-    }
+      }
     if (! context.canManageStream(context.stream.id)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 
     next();
   }
-  
+
   function deleteStream(context, params, result, next) {
-    if (! context.stream.trashed) {
+    if (context.stream.trashed == null) {
       // move to trash
       flagAsTrashed(context, params, result, next);
     } else {
@@ -257,10 +256,10 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   }
 
   function flagAsTrashed(context, params, result, next) {
-    var updatedData = {trashed: true};
+    var updatedData = { trashed: true };
     context.updateTrackingProperties(updatedData);
 
-    userStreamsStorage.updateOne(context.user, {id: params.id}, updatedData,
+    userStreamsStorage.updateOne(context.user, { id: params.id }, updatedData,
       function (err, updatedStream) {
         if (err) { return next(errors.unexpectedError(err)); }
 
@@ -272,15 +271,15 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
   function deleteWithData(context, params, result, next) {
     let streamAndDescendantIds,
-        parentId,
-        hasLinkedEvents;
+      parentId,
+      hasLinkedEvents;
     async.series([
       function retrieveStreamIdsToDelete(stepDone) {
         userStreamsStorage.find(context.user, {}, null, function (err, streams) {
           if (err) {
             return stepDone(errors.unexpectedError(err));
           }
-
+          // isnt this the same as context.stream
           var streamToDelete = treeUtils.findById(streams, params.id);
           //no need to check existence: done before already
           streamAndDescendantIds = treeUtils.collectPluckFromRootItem(streamToDelete, 'id');
@@ -289,16 +288,16 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
           stepDone();
         });
       },
-      function checkIfLinkedEventsExist(stepDone) {
-        if(params.mergeEventsWithParent === true && parentId == null) {
+      function checkIfRootStreamAndLinkedEventsExist(stepDone) {
+        if (params.mergeEventsWithParent === true && parentId == null) {
           return stepDone(errors.invalidOperation(
             'Deleting a root stream with mergeEventsWithParent=true is rejected ' +
             'since there is no parent stream to merge linked events in.',
-            {streamId: params.id}));
+            { streamId: params.id }));
         }
-        
-        userEventsStorage.find(context.user, {streamId: {$in: streamAndDescendantIds}},
-          {limit: 1}, function (err, events) {
+
+        userEventsStorage.find(context.user, {streamIds: { $in: streamAndDescendantIds }},
+          { limit: 1 }, function (err, events) {
             if (err) {
               return stepDone(errors.unexpectedError(err));
             }
@@ -327,7 +326,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
                 return subStepDone();
               }
               userEventsStorage.findStreamed(context.user,
-                {streamId: {$in: streamAndDescendantIds}}, null,
+                { streamIds: { $in: streamAndDescendantIds }}, null,
                 function (err, eventsStream) {
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));
@@ -335,7 +334,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
                   let eventToVersion;
                   eventsStream.on('data', (event) => {
-                    eventToVersion = _.extend(event, {headId: event.id});
+                    eventToVersion = _.extend(event, { headId: event.id });
                     delete eventToVersion.id;
                     userEventsStorage.insertOne(context.user, eventToVersion,
                       function (err) {
@@ -355,18 +354,31 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
                 });
             },
-            function updateStreamIds(subStepDone) {
+            function addParentStreamIdIfNeeded(subStepDone) {
               userEventsStorage.updateMany(context.user,
-                {streamId: {$in: streamAndDescendantIds}, headId: {$exists: false}},
-                {streamId: parentId}, function (err) {
+                { streamIds: { $ne: parentId, $in: streamAndDescendantIds }, headId: { $exists: false } }, // not already containing parentId 
+                { 'streamIds.$': parentId }, // set first element only (not multi)
+                function (err) {
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));
                   }
-
                   notifications.eventsChanged(context.user);
                   subStepDone();
                 });
-            }], stepDone);
+            },
+            function removeStreamdIds(subStepDone) {
+              userEventsStorage.updateMany(context.user,
+                { streamIds: { $in: streamAndDescendantIds }, headId: { $exists: false } },
+                { $pull: { streamIds: { $in: streamAndDescendantIds } } },
+                function (err) {
+                  if (err) {
+                    return subStepDone(errors.unexpectedError(err));
+                  }
+                  subStepDone();
+                }
+              );
+            }
+          ], stepDone);
         } else {
           // case mergeEventsWithParent = false
 
@@ -379,7 +391,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
               } else if (auditSettings.deletionMode === 'keep-authors') {
 
                 userEventsStorage.findStreamed(context.user,
-                  {streamId: {$in: streamAndDescendantIds}}, {projection: {id: 1}},
+                  { streamIds: { $in: streamAndDescendantIds } }, { projection: { id: 1 } },
                   function (err, eventsStream) {
                     if (err) {
                       return subStepDone(errors.unexpectedError(err));
@@ -406,20 +418,28 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
                 // default: deletionMode='keep-nothing'
 
                 userEventsStorage.findStreamed(context.user,
-                  {streamId: {$in: streamAndDescendantIds}},
-                  {projection: {id: 1}},
+                  { streamIds: { $in: streamAndDescendantIds } },
+                  { projection: { id: 1, streamIds: 1 } },
                   function (err, eventsStream) {
                     if (err) {
                       return subStepDone(errors.unexpectedError(err));
                     }
-
                     eventsStream.on('data', (head) => {
-                      userEventsStorage.removeMany(context.user, {headId: head.id},
-                        function (err) {
-                          if (err) {
-                            return subStepDone(errors.unexpectedError(err));
-                          }
-                        });
+                      // multiple StreamIds &&
+                      // the streams to delete are NOT ALL in the streamAndDescendantIds list
+                      if (head.streamIds.length > 1 && 
+                        ! arrayAIsIncludedInB(head.streamIds, streamAndDescendantIds)) {
+                          // event is still attached to existing streamId(s)
+                          // we will remove the streamIds later on
+                      } else {
+                        // remove the events
+                        userEventsStorage.removeMany(context.user, { headId: head.id },
+                          function (err) {
+                            if (err) {
+                              return subStepDone(errors.unexpectedError(err));
+                            }
+                          });
+                      }
                     });
 
                     eventsStream.on('error', (err) => {
@@ -433,38 +453,79 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
               }
             },
             function deleteEventsWithAttachments(subStepDone) {
-
               userEventsStorage.findStreamed(context.user,
-                {streamId: {$in: streamAndDescendantIds}, attachments: {$exists: true}},
-                {projection: {id: 1}}, function (err, eventsStream) {
+                { 
+                  streamIds: { $in: streamAndDescendantIds }, 
+                  attachments: { $exists: true }
+                },
+                { projection: { id: 1, streamIds: 1 } },
+                function (err, eventsStream) {
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));
                   }
 
                   eventsStream.on('data', (event) => {
-                    userEventFilesStorage.removeAllForEvent(context.user, event.id, function (err) {
-                      if (err) {
-                        // async delete attached files (if any) – don't wait for
-                        // this, just log possible errors
-                        errorHandling.logError(err, null, logger);
-                      }
-                    });
+                    // multiple StreamIds &&
+                    // the streams to delete are NOT ALL in the streamAndDescendantIds list
+                    if (event.streamIds.length > 1 &&
+                      ! arrayAIsIncludedInB(event.streamIds, streamAndDescendantIds)) {
+                      // event is still attached to existing streamId(s)
+                      // we will remove the streamIds later on
+                    } else {
+                      userEventFilesStorage.removeAllForEvent(context.user, event.id, function (err) {
+                        if (err) {
+                          // async delete attached files (if any) – don't wait for
+                          // this, just log possible errors
+                          errorHandling.logError(err, null, logger);
+                        }
+                      });
+                    }
                   });
 
                   eventsStream.on('error', (err) => {
                     subStepDone(errors.unexpectedError(err));
                   });
-
+                  
                   eventsStream.on('end', () => {
                     subStepDone();
-                  });
-
-                });
+                  });    
+                }
+              );
+            },
+            function removeStreamdIdsFromAllEvents(subStepDone) {
+              if (auditSettings.deletionMode === 'keep-everything') {
+                // not removing anything
+                return subStepDone();
+              }
+              userEventsStorage.updateMany(context.user,
+                { streamIds: { $in: streamAndDescendantIds }, headId: { $exists: false } },
+                { $pull: { streamIds: { $in: streamAndDescendantIds } } },
+                function (err) {
+                  if (err) {
+                    return subStepDone(errors.unexpectedError(err));
+                  }
+                  subStepDone();
+                }
+              );
             },
             function deleteEvents(subStepDone) {
-
+              const filter = {
+                headId: { $exists: false },
+              };
+              if (auditSettings.deletionMode === 'keep-everything') {
+                // they still have all their streamIds
+                filter.streamIds = { $in: streamAndDescendantIds };
+              } else {
+                // their streamIds were removed by removeStreamdIdsFromAllEvents()
+                filter.streamIds = [];
+              }
+              
+              // we do a "raw" delete on all streamless events 
+              // we do not want to change the "modifiedBy" and "modifiedDate"
+              // to prevent running condition where another process would 
+              // delete these data and mark the vent modified
               userEventsStorage.delete(context.user,
-                {streamId: {$in: streamAndDescendantIds}, headId: {$exists: false}},
+                filter,
                 auditSettings.deletionMode, function (err) {
                   if (err) {
                     return subStepDone(errors.unexpectedError(err));
@@ -477,15 +538,14 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         }
       },
       function deleteStreams(stepDone) {
-
         userStreamsStorage.delete(
           context.user,
-          {id: {$in: streamAndDescendantIds}},
+          { id: { $in: streamAndDescendantIds } },
           function (err) {
             if (err) {
               return stepDone(errors.unexpectedError(err));
             }
-            result.streamDeletion = {id: params.id};
+            result.streamDeletion = { id: params.id };
             notifications.streamsChanged(context.user);
             stepDone();
           });
@@ -495,3 +555,13 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
 };
 module.exports.injectDependencies = true;
+
+/**
+ * Returns if an array has all elements contained in another.
+ * 
+ * @param {Array} a Contains element to check if they exists in b
+ * @param {Array} b
+ */
+function arrayAIsIncludedInB (a, b) {
+  return a.every(i => b.includes(i));
+}

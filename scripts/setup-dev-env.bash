@@ -7,29 +7,22 @@
 SCRIPT_FOLDER=$(cd $(dirname "$0"); pwd)
 cd $SCRIPT_FOLDER/.. # root
 
-export DATA_FOLDER=$SCRIPT_FOLDER/../..
+export DATA_FOLDER=$SCRIPT_FOLDER/../var-pryv
 export LOGS_FOLDER=${DATA_FOLDER}/logs
-export MONGO_BASE_FOLDER=$DATA_FOLDER
-export MONGO_DATA_FOLDER=$DATA_FOLDER/mongodb-data
+export ATTACHMENTS_FOLDER=${DATA_FOLDER}/attachment-files
 
-if [ `uname` = "Linux" ]; then
-  export MONGO_NAME=mongodb-linux-x86_64-3.4.20
-  export MONGO_DL_BASE_URL=https://fastdl.mongodb.org/linux
-elif [ `uname` = "Darwin" ]; then # OSX
-  export MONGO_NAME=mongodb-osx-x86_64-3.4.4
-  export MONGO_DL_BASE_URL=http://fastdl.mongodb.org/osx
-else
-  echo "Installation is meant to be on Linux or OSX"
-  exit 1
-fi
+export MONGO_BASE_FOLDER=$DATA_FOLDER
+
 
 # file structure
 
+mkdir -p $DATA_FOLDER
 mkdir -p $LOGS_FOLDER
+mkdir -p $ATTACHMENTS_FOLDER
 
 # database
 
-curl -s -L https://pryv.github.io/dev-scripts/setup-mongodb.bash | bash
+. scripts/setup-mongodb.bash
 EXIT_CODE=$?
 if [[ ${EXIT_CODE} -ne 0 ]]; then
   echo ""
@@ -38,6 +31,12 @@ if [[ ${EXIT_CODE} -ne 0 ]]; then
   exit ${EXIT_CODE}
 fi
 
+## used in Open Pryv
+SCRIPT_EXTRAS="./scripts/setup-open.bash"
+if [[ -f $SCRIPT_EXTRAS ]]; then
+  echo "installing service mail"
+  bash $SCRIPT_EXTRAS
+fi
 
 echo ""
 echo "Setup complete!"

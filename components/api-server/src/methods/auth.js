@@ -22,7 +22,7 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
     applyPrerequisitesForLogin,
     checkPassword,
     openSession,
-    updateOrCreateAccess,
+    updateOrCreatePersonalAccess,
     setAdditionalInfo);
 
   function applyPrerequisitesForLogin(context, params, result, next) {
@@ -52,14 +52,12 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
     };
     sessionsStorage.getMatching(context.sessionData, function (err, sessionId) {
       if (err) { return next(errors.unexpectedError(err)); }
-
       if (sessionId) {
         result.token = sessionId;
         next();
       } else {
         sessionsStorage.generate(context.sessionData, function (err, sessionId) {
           if (err) { return next(errors.unexpectedError(err)); }
-
           result.token = sessionId;
           next();
         });
@@ -67,28 +65,29 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
     });
   }
 
-  function updateOrCreateAccess(context, params, result, next) {
+  function updateOrCreatePersonalAccess(context, params, result, next) {
     context.accessQuery = { name: params.appId, type: 'personal' };
+    // a
     findAccess(context, (err, access) => {
       if (err) { return next(errors.unexpectedError(err)); }
-      
       var accessData = {token: result.token};
-      // Access is already existing, updating it
+      // Access is already existing, updating it with new token (as we have updated the sessions with it earlier).
       if (access != null) {
-        updateAccess(accessData, context, next);
+        updatePersonalAccess(accessData, context, next);
       }
       // Access not found, creating it
       else {
+        // b
         createAccess(accessData, context, (err) => {
           if (err != null) {
             // Concurrency issue, the access is already created
-            // by a simultaneous login, retrieving and updating it
+            // by a simultaneous login (happened between a & b), retrieving and updating its modifiedTime, while keeping the same previous token
             if (err.isDuplicate) {
               findAccess(context, (err, access) => {
                 if (err || access == null) { return next(errors.unexpectedError(err)); }
                 result.token = access.token;
                 accessData.token = access.token;
-                updateAccess(accessData, context, next);
+                updatePersonalAccess(accessData, context, next);
               });
             } else {
               // Any other error
@@ -111,7 +110,7 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
       userAccessesStorage.insertOne(context.user, access, callback);
     }
     
-    function updateAccess(access, context, callback) {
+    function updatePersonalAccess(access, context, callback) {
       context.updateTrackingProperties(access, 'system');
       userAccessesStorage.updateOne(context.user, context.accessQuery, access, callback);
     }

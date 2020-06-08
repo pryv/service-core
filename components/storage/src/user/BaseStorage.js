@@ -303,6 +303,31 @@ BaseStorage.prototype.updateMany = function(
   );
 };
 
+/**
+ * Update.
+ *
+ * @param user
+ * @param query
+ * @param updatedData
+ * @param options
+ * @param callback
+ */
+BaseStorage.prototype.updateWithOptions = function (
+  user,
+  query,
+  updatedData,
+  options,
+  callback
+) {
+  this.database.updateWithOptions(
+    this.getCollectionInfo(user),
+    this.applyQueryToDB(query),
+    this.applyUpdateToDB(updatedData),
+    options,
+    callback
+  );
+};
+
 /* jshint -W024, -W098 */
 /**
  * Deletes the document(s), replacing them with a deletion record (i.e. id and deletion date).
@@ -494,10 +519,14 @@ BaseStorage.prototype.applyUpdateToDB = function(updatedData) {
     data.$max = input.$max;
     delete input.$max;
   }
+
+  if (input.$pull != null) {
+    data.$pull = input.$pull;
+    delete input.$pull;
+  }
   
   // Maybe add more of these?
   //    https://docs.mongodb.com/manual/reference/operator/update/
-  
   data.$set = input;
   data.$unset = {};       // code in 'converters.js' depends on this.
   

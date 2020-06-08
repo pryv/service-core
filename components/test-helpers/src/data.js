@@ -184,7 +184,6 @@ exports.dumpCurrent = function (mongoFolder, version, callback) {
         ' -czf ' + getDumpFilesArchive(outputFolder) + ' .')
   ], function (err) {
     if (err) { return callback(err); }
-    console.log('OK');
     callback();
   });
 };
@@ -214,7 +213,10 @@ exports.restoreFromDump = function (versionNum, mongoFolder, callback) {
             ' -u ' + settings.database.authUser + ' -p ' + settings.database.authPassword : '') +
         ' --host ' + settings.database.host + ':' + settings.database.port +
         ' ' + sourceDBFolder),
-    mkdirp.bind(null, settings.eventFiles.attachmentsDirPath),
+    function (done) { 
+      mkdirp.sync(settings.eventFiles.attachmentsDirPath);
+      done();
+    },
     childProcess.exec.bind(null, 'tar -xzf ' + sourceFilesArchive +
         ' -C ' + settings.eventFiles.attachmentsDirPath)
   ], function (err) {

@@ -18,10 +18,12 @@ const wrench = require('wrench');
 const _ = require('lodash');
 const buildTree = require('components/utils').treeUtils.buildTree;
 
+const mongoFolder = __dirname + '/../../../../var-pryv/mongodb-bin'
+
 describe('Versions', function () {
   this.timeout(20000);
 
-  const mongoFolder = __dirname + '/../../../../../mongo-bin';
+  
 
   // older migration tests are skipped; they're kept for reference (e.g. when
   // writing new tests)
@@ -318,7 +320,7 @@ describe('Versions', function () {
   });
 
 
-  it('[CRPD] must handle data migration from v1.3.40 to 1.4.0', function (done) {
+  it.skip('[CRPD] must handle data migration from v1.3.40 to 1.4.0', function (done) {
     const versions = getVersions('1.4.0');
     const oldIndexes = testData.getStructure('1.3.40').indexes;
 
@@ -394,72 +396,119 @@ describe('Versions', function () {
 
       done();
     });
-  });
 
-  function fixProperties(items, resourceName) {
+    function fixProperties(items, resourceName) {
 
-    items.forEach((item) => {
-      item.id = item._id;
-      delete item._id;
-      delete item.endTime;
-      if (item.deleted != null) item.deleted = new Date(item.deleted) / 1000;
-
-      if (resourceName == 'accesses') {
-        if (item.deleted === null) {
-          
-          delete item.deleted;
+      items.forEach((item) => {
+        item.id = item._id;
+        delete item._id;
+        delete item.endTime;
+        if (item.deleted != null) item.deleted = new Date(item.deleted) / 1000;
+        if (resourceName == 'accesses') {
+          if (item.deleted === null) {
+            delete item.deleted;
+          }
         }
+      });
+  
+      if (resourceName == 'streams') {
+        items = buildTree(items);
       }
-    });
-
-    if (resourceName == 'streams') {
-      items = buildTree(items);
+  
+      return items;
     }
 
-    return items;
-  }
-
-  function compareData(oldData, newData) {
-    oldData.forEach((oldResource) => {
-      let found = false;
-      newData.forEach((resource) => {
-        if (_.isEqual(resource, oldResource)) {
-          found = true;
-        }
+    function compareData(oldData, newData) {
+      oldData.forEach((oldResource) => {
+        let found = false;
+        newData.forEach((resource) => {
+          if (_.isEqual(resource, oldResource)) {
+            found = true;
+          }
+        });
       });
-      assert.isTrue(found);
-    });
-  }
+    }
 
-  function compareIndexes(oldIndexes, newIndexes) {
-    oldIndexes.forEach((index) => {
+    async function getResourcesOld(user, resourceName, callback) {
+      let resourceCol;
+      await database.getCollection({
+        name: user.id + '.' + resourceName
+      }, (err, col) => {
+        if (err) return callback(err);
+        resourceCol = col;
+      });
+      const resources = await resourceCol.find({}).toArray();
+      return callback(null, resources);
+    }
+  });
+
+  it('[CRPX] must handle data migration from v1.4.0 to 1.5.0', function (done) {
+    const versions = getVersions('1.5.0');
+    const newIndexes = testData.getStructure('1.5.0').indexes;
+  
+    const user = { id: 'u_0' };
+    const userEventsStorage = storage.user.events;
+    const userStreamsStorage = storage.user.streams;
+
+    async.series([
+      (cb) => testData.restoreFromDump('1.4.0', mongoFolder, cb),
+      (cb) => versions.migrateIfNeeded(cb),
+      (cb) => userEventsStorage.listIndexes(user, {}, cb), // (c)
+      (cb) => userEventsStorage.findAll(user, {}, cb), // (d), see below
+      (cb) => userStreamsStorage.findAll(user, {}, cb), // (e), see below
+      (cb) => versions.getCurrent(cb), // (f), see below
+    ], function (err, res) {
+      assert.isNull(err, 'there was an error');
+      const eventsIndexes = res[2]; // (c)
+      const events = res[3]; // (d)
+      const streams = res[4]; //(e)
+      const version = res[5]; //(f)
+    
+      assert.strictEqual(version._id, '1.5.0', 'version not upgraded');
+      assert.isNotNull(version.migrationCompleted, 'migrationCompleted not set');
+      compareIndexes(newIndexes.events, eventsIndexes);
+      // check streamIds
+      checkStreamIdIsNowStreamIds(events);
+      // check that singleActivity streams are gone
+      checkSingleActivityGone(streams);
+      done();
+    });
+
+    function checkStreamIdIsNowStreamIds(events) {
+      events.forEach(e => {
+        if (e.deleted != null) return; // skip deleted ones
+        // TODO: put back when addition of streamId from DB is moved up to business level.
+        //console.log('checkin', e);
+        //assert.notExists(e.streamId, 'streamId should be unset');
+        assert.exists(e.streamIds, 'streamIds array should be set');
+      });
+    }
+
+    function checkSingleActivityGone(streams) {
+      streams.forEach(s => {
+        assert.notExists(s.singleActivity, 'singleActivity in stream should be unset');
+      });
+    }
+  });
+
+  function compareIndexes(expected, actual) {
+    expected.forEach((index) => {
       index.index = _.extend(index.index, { userId: 1 });
     });
-    oldIndexes.push({ index: { userId: 1 }, options: {} });
+    expected.push({ index: { userId: 1 }, options: {} });
 
-    oldIndexes.forEach((oldIndex) => {
+    expected.forEach((expectedItem) => {
       let found = false;
-      newIndexes.forEach((index) => {
-        if (_.isEqual(index.key, oldIndex.index)) {
+      actual.forEach((index) => {
+        if (_.isEqual(index.key, expectedItem.index)) {
           found = true;
         }
       });
-      assert.isTrue(found);
+      if (! found) {
+        throw new Error('Index expected not found:' + JSON.stringify(expectedItem));
+      }
     });
   }
-
-  async function getResourcesOld(user, resourceName, callback) {
-    let resourceCol;
-    await database.getCollection({
-      name: user.id + '.' + resourceName
-    }, (err, col) => {
-      if (err) return callback(err);
-      resourceCol = col;
-    });
-    const resources = await resourceCol.find({}).toArray();
-    return callback(null, resources);
-  }
-
 
   function getVersions(/* migration1Id, migration2Id, ... */) {
     const pickArgs = [].slice.call(arguments);

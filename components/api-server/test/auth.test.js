@@ -234,19 +234,42 @@ describe('auth', function() {
         });
     });
 
-    it('[6PQR] must support concurrent login request', function(done) {
-      var loginCount = 2;
-      var randomId = 'pryv-test-' + Date.now();
+    // concurrent requests
+    it('[FMJH] must support concurrent login request, saving only the last token that is written in the storage', function(done) {
+      const loginCount = 2;
+      const randomId = 'pryv-test-' + Date.now();
+      const accessStorage = helpers.dependencies.storage.user.accesses;
 
       async.times(
         loginCount,
         function(n, next) {
-          parallelLogin(randomId, function(err) {
-            next(err);
-          });
+          request
+            .post(path(authData.username))
+            .set('Origin', 'https://test.rec.la:1234')
+            .send({
+              username: user.username,
+              password: user.password,
+              appId: randomId,
+            })
+            .end(function(err, res) {
+              if (err) return next(err);
+              should(res.statusCode).be.equal(200);
+              next(null, res.body.token);
+            });
         },
-        function(error) {
-          done(error);
+        function(err, results) {
+          if (err) return done(err);
+          const lastResult = results[1];
+
+          accessStorage.findOne(
+            user,
+            { name: randomId, type: 'personal' },
+            null,
+            (err, access) => {
+              should(access.token).be.equal(lastResult);
+              done();
+            }
+          );
         }
       );
     });
@@ -376,33 +399,6 @@ describe('auth', function() {
         );
       });
     });
-
-    function parallelLogin(appId, callback) {
-      // We want our random appId to be trusted, so using recla as origin
-      request
-        .post(path(authData.username))
-        .set('Origin', 'https://test.rec.la:1234')
-        .send({
-          username: user.username,
-          password: user.password,
-          appId: appId,
-        })
-        .end(function(err, res) {
-          if (err) {
-            return callback(err);
-          }
-          should(res.statusCode).be.equal(200);
-          helpers.dependencies.storage.user.accesses.findOne(
-            user,
-            { name: appId, type: 'personal' },
-            null,
-            (err, access) => {
-              should(access.token).be.equal(res.body.token);
-              callback();
-            }
-          );
-        });
-    }
 
     function checkNoUnwantedCookie(res) {
       if (!res.headers['set-cookie']) {

@@ -4,8 +4,11 @@ const cuid = require('cuid');
 const chai = require('chai');
 const assert = chai.assert;
 const charlatan = require('charlatan');
+const _ = require('lodash');
 
-const testData = require('./helpers').data;
+const helpers = require('./helpers');
+const testData = helpers.data;
+const settings = _.cloneDeep(helpers.dependencies.settings);
 
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
@@ -280,8 +283,7 @@ describe('permissions create-only level', () => {
                 a: 'b',
               },
             });
-          // 404 instead of 403 for security reason, to not allow to enumerate accesses.
-          assert.equal(res.status, 404);
+          assert.equal(res.status, 410);
         });
       });
   
@@ -413,15 +415,13 @@ describe('permissions create-only level', () => {
     });
 
     describe('POST /stop', function () {
-      it('[6VJF] should allow stopping events for "create-only" streams', async function () {
-        // this should be forbidden, but we keep it as-is since we deprecate events.stop very soon
-        const res = await server
+      it.skip('[6VJF] should not allow stopping events for "create-only" streams', async function () {
+         const res = await server
           .request()
           .post(`${basePath}/stop`)
           .set('Authorization', createOnlyToken)
           .send({ id: createOnlyEventId });
-        assert.equal(res.status, 200);
-        assert.exists(res.body.stoppedId);
+        assert.equal(res.status, 403);
       });
     });
 
@@ -552,7 +552,8 @@ describe('permissions create-only level', () => {
 
   describe('Webhooks', function () {
     let basePath;
-    before(() => {
+    before(function () {
+      if (settings.openSource.isActive) this.skip();
       basePath = `/${username}/webhooks`;
     });
 
@@ -560,19 +561,9 @@ describe('permissions create-only level', () => {
       return `${basePath}/${id}`;
     }
 
-    describe('GET /', function () {
-      it('[5FHF] should return an empty list when fetching webhooks', async function () {
-        const res = await server
-          .request()
-          .get(basePath)
-          .set('Authorization', createOnlyToken);
-        assert.equal(res.status, 200);
-        assert.equal(res.body.webhooks.length, 0);
-      });
-    });
 
     describe('CREATE /', function() {
-      it('[3AE9] should forbid creating webhooks', async function () {
+      it('[3AE9] should allow creating webhooks', async function () {
         const res = await server
           .request()
           .post(basePath)
@@ -580,11 +571,11 @@ describe('permissions create-only level', () => {
           .send({
             url: charlatan.Internet.url(),
           });
-        assert.equal(res.status, 403);
+        assert.equal(res.status, 201);
       });
     });
 
-    // skipping UPDATE & DELETE as there is no way to create webhooks in the first place.
+    // skipping GET, UPDATE & DELETE as they use the same code check.
 
   });
 

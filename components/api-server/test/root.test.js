@@ -418,7 +418,7 @@ describe('root', function() {
         {
           method: 'events.create',
           params: {
-            streamId: streamId2,
+            streamIds: [streamId2],
             time: timestamp.now(),
             type: testType,
             description: 'valid event A',
@@ -427,7 +427,7 @@ describe('root', function() {
         {
           method: 'events.create',
           params: {
-            streamId: streamId2,
+            streamIds: [streamId2],
             time: timestamp.now('1h'),
             duration: timestamp.duration('1h'),
             type: testType,
@@ -440,7 +440,7 @@ describe('root', function() {
           params: {
             time: timestamp.now('2h'),
             type: testType,
-            streamId: 'unknown',
+            streamIds: ['unknown'],
             description: 'invalid event C (unknown stream)',
           },
         },
@@ -465,7 +465,7 @@ describe('root', function() {
             id: results[0].event.id,
             tags: [],
           },
-          calls[0].params
+          _.extend(calls[0].params, { streamId: calls[0].params.streamIds[0]})
         )
       );
 
@@ -476,7 +476,7 @@ describe('root', function() {
           {
             id: results[1].event.id,
           },
-          calls[1].params
+          _.extend(calls[1].params, { streamId: calls[1].params.streamIds[0]})
         )
       );
       assert.exists(results[2].error);
@@ -498,7 +498,7 @@ describe('root', function() {
         {
           method: 'events.create',
           params: {
-            streamId: streamId,
+            streamIds: [streamId],
             type: 'note/txt',
             content: 'Hi, i am an event in a batch call',
             time: timestamp.now(),
@@ -540,7 +540,7 @@ describe('root', function() {
             tags: [],
             id: results[1].event.id,
           },
-          calls[1].params
+          _.extend(calls[1].params, { streamId: calls[1].params.streamIds[0]}),
         )
       );
 

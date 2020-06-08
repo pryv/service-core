@@ -7,7 +7,7 @@ const Application = require('../src/application');
 const Settings = require('../src/settings');
 const loadCommonMeta = require('../src/methods/helpers/setCommonMeta').loadSettings;
 let logger, airbrake;
-const AirbrakeClient = require('airbrake-js');
+const { Notifier } = require('@airbrake/node');
 
 (async () => {
   // Load settings asynchronously because we have to fetch
@@ -23,9 +23,10 @@ const AirbrakeClient = require('airbrake-js');
   // Setup Airbrake if enabled
   const airbrakeSettings = app.settings.get('logs.airbrake').obj();
   if (airbrakeSettings.active) {
-    airbrake = new AirbrakeClient({
-      projectId: airbrakeSettings.projectId,
-      projectKey: airbrakeSettings.key,
+   airbrake = new Notifier({
+     projectId: airbrakeSettings.projectId, 
+     projectKey: airbrakeSettings.key,
+    environment: 'production',
     });
   }
 

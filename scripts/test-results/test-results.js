@@ -16,7 +16,7 @@ try {
 
 const VERSION_FOLDER = getReleaseVersion();
 const FULL_VERSION_FOLDER = path.join(RESULTS_FOLDER, VERSION_FOLDER);
-mkdirp(FULL_VERSION_FOLDER);
+mkdirp.sync(FULL_VERSION_FOLDER);
 
 const time = moment().format('YYYYMMDD-hhmmss');
 const OUTPUT_FILENAME =  time + '-service-core.json';

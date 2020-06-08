@@ -1,5 +1,4 @@
 // @flow
-
 const http = require('http');
 
 const dependencies = require('dependable').container({useFnAnnotations: true});

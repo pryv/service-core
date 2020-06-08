@@ -9,13 +9,12 @@ const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTIO
   await commonMeta.loadSettings();
 })();
 
-const NatsSubscriber = require('./nats_subscriber');
-    
 import type { Logger } from 'components/utils';
-import type { MethodContext } from 'components/model';
+const MethodContext = require('components/model').MethodContext;
 import type API from '../API';
 
 import type { MessageSink } from './message_sink';
+import type { StorageLayer } from 'components/storage';
 
 type SocketIO$SocketId = string; 
 export type SocketIO$Handshake = {
@@ -47,8 +46,6 @@ type SocketIO$Server = {
   handshaken: {[id: SocketIO$SocketId]: SocketIO$Handshake};
 }; 
 
-type User = { username: string };
-
 // Manages contexts for socket-io. NamespaceContext's are created when the first
 // client connects to a namespace and are then kept forever.  
 // 
@@ -58,22 +55,27 @@ class Manager implements MessageSink {
   logger: Logger; 
   io: SocketIO$Server; 
   api: API; 
-  
+  storageLayer: StorageLayer;
+  customAuthStepFn: Object;
+  isOpenSource: boolean;
+
   constructor(
-    logger: Logger, io: SocketIO$Server, api: API
+    logger: Logger, io: SocketIO$Server, api: API, storageLayer: StorageLayer, customAuthStepFn: Object,
+    isOpenSource: boolean,
   ) {
     this.logger = logger; 
     this.io = io; 
     this.api = api; 
-
+    this.isOpenSource = isOpenSource;
     this.contexts = new Map(); 
+    this.storageLayer = storageLayer;
+    this.customAuthStepFn = customAuthStepFn;
   }
   
   // Returns true if the `candidate` could be a username on a lexical level. 
   // 
   looksLikeUsername(candidate: string): boolean {
     const reUsername = /^([a-zA-Z0-9])(([a-zA-Z0-9-]){3,21})[a-zA-Z0-9]$/; 
-    
     return reUsername.test(candidate);
   }
 
@@ -93,64 +95,68 @@ class Manager implements MessageSink {
     return candidate;
   }
   
-  // Retrieves the namespace context given a namespace. 
-  // 
-  getContext(namespaceName: string): ?NamespaceContext {
-    const contexts = this.contexts; 
-    
-    return contexts.get(namespaceName);
-  }
-  
-  // Retrieves the namespace context from this.contexts - or calls `missingCb` 
-  // if no such namespace exists yet. The namespace returned from `missingCb` 
-  // is then stored in the contexts map. 
-  // 
-  ensureContext(
-    namespaceName: string, missingCb: () => NamespaceContext
-  ): NamespaceContext {
-    const contexts = this.contexts; 
-    
-    let context = contexts.get(namespaceName);
-    
+  async ensureInitNamespace(namespaceName: string): NamespaceContext {  
+    let context = this.contexts.get(namespaceName);
+    let username = this.extractUsername(namespaceName);
+
     // Value is not missing, return it. 
-    if (context != null) return context; 
-    
-    // assert: context == null
-    // Value is missing, produce it. 
-    context = missingCb();
+    if (typeof context === 'undefined') {
+      const socketNs = this.io.of(namespaceName);
+      socketNs.use(this.authorizeUserMiddleware.bind(this));
 
-    contexts.set(namespaceName, context);
-    return context; 
-  }
-  
-  // Sets up the namespace with the given name and user, if not already present.
-  // 
-  async ensureInitNamespace(namespaceName: string, user: User) {
-    const context = this.ensureContext(namespaceName, 
-      () => this.setupNamespaceContext(namespaceName, user));
-    
-    // On every path, reopen the context resources. 
-    await context.open(); 
-  }
-  
-  // Creates a NamespaceContext and stores it in the contexts map. The context
-  // will not be open yet. 
-  // 
-  setupNamespaceContext(namespaceName: string, user: User): NamespaceContext {
-    const io = this.io; 
-    const logger = this.logger; 
-    const socketNs = io.of(namespaceName);
-    const sink: MessageSink = this; 
-    
-    const ctx = new NamespaceContext(
-      user, 
-      io, socketNs, 
-      this.api, 
-      sink, logger);
-      
-    ctx.init(); 
+      const sink: MessageSink = this;
 
-    return ctx; 
+      context = new NamespaceContext(
+        username,
+        this.io, socketNs,
+        this.api,
+        sink, this.logger, this.isOpenSource);
+        
+      context.init();
+
+      this.contexts.set(namespaceName, context);
+    }  
+    await context.open();
+    return context;
+  }
+
+
+  // authorize middleware for NS
+  async authorizeUserMiddleware(
+    socket, callback: (err: any, res: any) => mixed
+  ) {
+    const handshake = socket.handshake;
+    const nsName = handshake.query.resource;
+    if (nsName == null) return callback("Missing 'resource' parameter.", false);
+
+
+    const userName = this.extractUsername(nsName);
+    if (userName == null) return callback(`Invalid resource "${nsName}".`, false);
+
+    const accessToken = handshake.query.auth;
+    if (accessToken == null)
+      return callback("Missing 'auth' parameter with a valid access token.", false);
+
+    const context = new MethodContext(
+      userName, accessToken,
+      this.customAuthStepFn);
+
+    // HACK Attach our method context to the socket as a means of talking to
+    // the code in Manager. 
+    socket.methodContext = context;
+    try {
+      // Load user, init the namespace
+      await context.retrieveUser(this.storageLayer);
+      if (context.username == null) throw new Error('AF: context.username != null');
+    
+      // Load access
+      await context.retrieveExpandedAccess(this.storageLayer);
+
+
+      callback(null, true);
+    } catch (err) {
+      callback(err, false);
+    }
   }
     
   // Given a `userName` and a `message`, delivers the `message` as a socket.io
@@ -159,7 +165,7 @@ class Manager implements MessageSink {
   // Part of the MessageSink implementation.
   //
   deliver(userName: string, message: string | {}): void {
-    const context = this.getContext(`/${userName}`);
+    const context = this.contexts.get(`/${userName}`);
     if (context == null) return; 
     
     const namespace = context.socketNs;
@@ -175,7 +181,7 @@ class Manager implements MessageSink {
 }
 
 class NamespaceContext {
-  user: User; 
+  username: string; 
   socketServer: SocketIO$Server;
   socketNs: SocketIO$Namespace;
   api: API; 
@@ -186,19 +192,20 @@ class NamespaceContext {
   natsSubscriber: ?NatsSubscriber; 
   
   constructor(
-    user: User, 
+    username: string, 
     socketServer: SocketIO$Server, socketNs: SocketIO$Namespace, 
     api: API, 
     sink: MessageSink, 
-    logger: Logger
+    logger: Logger,
+    isOpenSource: Boolean
   ) {
-    this.user = user; 
+    this.username = username; 
     this.socketServer = socketServer;
     this.socketNs = socketNs; 
     this.api = api; 
     this.sink = sink; 
     this.logger = logger; 
-
+    this.isOpenSource = isOpenSource;
     this.connections = new Map(); 
     this.natsSubscriber = null;
   }
@@ -211,8 +218,7 @@ class NamespaceContext {
     const logger = this.logger; 
     const socketNs = this.socketNs;
     const namespaceName = this.socketNs.name;
-    
-    logger.debug(`Initializing namespace '${namespaceName}'`);
+    socketNs.use(require('socketio-wildcard')());
     socketNs.on('connection', 
       (socket: SocketIO$Socket) => this.onConnect(socket));
   }
@@ -220,10 +226,10 @@ class NamespaceContext {
   // Adds a connection to the namespace. This produces a `Connection` instance 
   // and stores it in (our) namespace. 
   // 
-  addConnection(socket: SocketIO$Socket, methodContext: MethodContext) {    
+  addConnection(socket: SocketIO$Socket, methodContext: MethodContext) {  
     // This will represent state that we keep for every connection. 
     const connection = new Connection(
-      this.logger, socket, this, methodContext, this.api);
+      this.logger, socket, this, socket.methodContext, this.api);
 
     // Permanently store the connection in this namespace.
     this.storeConnection(connection);
@@ -243,13 +249,13 @@ class NamespaceContext {
   
   async open() {
     // If we've already got an active subscription, leave it be. 
-    if (this.natsSubscriber != null) return; 
+    if (this.natsSubscriber != null || this.isOpenSource) return; 
     this.natsSubscriber = await this.produceNatsSubscriber();
   }
   async produceNatsSubscriber(): Promise<NatsSubscriber> {
     const sink: MessageSink = this.sink; 
-    const userName = this.user.username;
-
+    const userName = this.username;
+    const NatsSubscriber = require('./nats_subscriber');
     const natsSubscriber = new NatsSubscriber(
       NATS_CONNECTION_URI, 
       sink,
@@ -284,14 +290,12 @@ class NamespaceContext {
     const logger = this.logger; 
     const io = this.socketServer; 
     
-    const namespaceName = socket.namespace.name;
+    const namespaceName = socket.nsp.name;
     
     logger.info(`New client connected on namespace '${namespaceName}' (context ${this.socketNs.name})`);
-        
-    // Extract the methodContext from the handshake: 
-    const socketHandshake = io.handshaken[socket.id];
-    // FLOW This is attached to the handshake by our authorizeUserMiddleware.
-    const methodContext = socketHandshake.methodContext; 
+    
+    // FLOW This is attached to the socket by our initUsersNameSpaces.
+    const methodContext = socket.methodContext; 
     
     if (methodContext == null) {
       logger.warn('AF: onNsConnect received handshake w/o method context.');
@@ -349,11 +353,7 @@ class Connection {
   }
   
   init() {
-    const socket = this.socket; 
-    
-    // Attach a few handlers to this socket. 
-    socket.on('*', 
-      (callData, callback) => this.onMethodCall(callData, callback));
+    this.socket.on('*', (callData, callback) => this.onMethodCall(callData, callback));
   }
   
   // ------------------------------------------------------------ event handlers
@@ -362,20 +362,29 @@ class Connection {
   // 
   async onMethodCall(callData: SocketIO$CallData, callback: (err: mixed, res: any) => mixed) {
     const api = this.api; 
-    const logger = this.logger; 
+    const logger = this.logger;
     
+    if (! callData || ! callData.data || callData.data.length != 3) {
+      if (callback) { 
+        callback(new Error("invalid data"));
+      }
+      return;
+    }
+    const apiMethod = callData.data[0];
+    const params = callData.data[1];
+    callback = callback || callData.data[2];
+    //if (callback == null) callback = function (err: any, res: any) { }; // eslint-disable-line no-unused-vars
+
     // Make sure that we have a callback here. 
-    if (callback == null) callback = function(err: any, res: any) { }; // eslint-disable-line no-unused-vars
+   
     
     const methodContext = this.methodContext;
 
     // FLOW MethodContext will need to be rewritten as a class...
     const userName = methodContext.username;   
-    const method = callData.name; 
-    const params = callData.args[0];
     
     const answer = bluebird.fromCallback(
-      (cb) => api.call(method, methodContext, params, cb));
+      (cb) => api.call(apiMethod, methodContext, params, cb));
       
     try {
       const result = await answer; 
@@ -391,7 +400,7 @@ class Connection {
     catch (err) {
       errorHandling.logError(err, {
         url: `socketIO/${userName}`,
-        method: method,
+        method: apiMethod,
         body: params
       }, logger);
       return callback(

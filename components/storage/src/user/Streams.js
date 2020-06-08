@@ -150,7 +150,6 @@ Streams.prototype.delete = function (user, query, callback) {
     $unset: {
       name: 1,
       parentId: 1,
-      singleActivity: 1,
       clientData: 1,
       children: 1,
       trashed: 1,

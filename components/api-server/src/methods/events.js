@@ -15,12 +15,14 @@ const assert = require('assert');
     
 const {TypeRepository, isSeriesType} = require('components/business').types;
 
-const NatsPublisher = require('../socket-io/nats_publisher');
+
 const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
 const NATS_UPDATE_EVENT = require('components/utils').messaging
   .NATS_UPDATE_EVENT;
 const NATS_DELETE_EVENT = require('components/utils').messaging
   .NATS_DELETE_EVENT;
+
+const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';
 
 // Type repository that will contain information about what is allowed/known
 // for events. 
@@ -33,7 +35,7 @@ const typeRepo = new TypeRepository();
 module.exports = function (
   api, userEventsStorage, userEventFilesStorage, usersStorage,
   authSettings, eventTypesUrl, notifications, logging,
-  auditSettings, updatesSettings,
+  auditSettings, updatesSettings, openSourceSettings,
 ) {
 
   // Update types and log error
@@ -41,7 +43,12 @@ module.exports = function (
     .catch((err) => logging.getLogger('typeRepo').warn(err));
     
   const logger = logging.getLogger('methods/events');
-  const natsPublisher = new NatsPublisher(NATS_CONNECTION_URI);
+  
+  let natsPublisher;
+  if (!openSourceSettings.isActive) {
+    const NatsPublisher = require('../socket-io/nats_publisher');
+    natsPublisher = new NatsPublisher(NATS_CONNECTION_URI);
+  }
 
   // RETRIEVAL
 
@@ -125,7 +132,7 @@ module.exports = function (
     // build query
     var query = querying.noDeletions(querying.applyState({}, params.state));
     if (params.streams) {
-      query.streamId = {$in: params.streams};
+      query.streamIds = {$in: params.streams};
     }
     if (params.tags && params.tags.length > 0) {
       query.tags = {$in: params.tags};
@@ -174,7 +181,10 @@ module.exports = function (
           {
             access: context.access,
             filesReadTokenSecret: authSettings.filesReadTokenSecret
-          })));
+          }
+        ))
+      );
+      
       next();
     });
   }
@@ -218,12 +228,22 @@ module.exports = function (
         return next(errors.unknownResource('event', params.id));
       }
 
-      if (! context.canReadContext(event.streamId, event.tags)) {
-        return next(errors.forbidden());
+      let canReadEvent = false;
+      for (let i = 0; i < event.streamIds.length; i++) { // ok if at least one
+        if (context.canReadContext(event.streamIds[i], event.tags)) {
+          canReadEvent = true;
+          break;
+        }
       }
+      if (! canReadEvent) return next(errors.forbidden());
+
       setFileReadToken(context.access, event);
+
+      // To remove when streamId not necessary
+      event.streamId = event.streamIds[0];
+
       result.event = event;
-      next();
+      return next();
     });
   }
 
@@ -241,6 +261,10 @@ module.exports = function (
         if (err) {
           return next(errors.unexpectedError(err));
         }
+
+        // To remove when streamId not necessary
+        history.forEach(e => e.streamId = e.streamIds[0]);
+        
         result.history = history;
         next();
       });
@@ -250,53 +274,38 @@ module.exports = function (
 
   api.register('events.create',
     commonFns.getParamsValidation(methodsSchema.create.params),
+    normalizeStreamIdAndStreamIds,
     applyPrerequisitesForCreation,
     validateEventContentAndCoerce,
-    checkExistingLaterPeriodIfNeeded,
-    checkOverlappedPeriodsIfNeeded,
-    verifyContext,
-    stopPreviousPeriodIfNeeded,
+    verifycanContributeToContext,
     createEvent,
     createAttachments,
     notify);
 
-  /**
-   * Shorthand for `create` with `null` event duration.
-   */
-  api.register('events.start',
-    setDurationForStart,
-    'events.create');
-
-  function setDurationForStart(context, params, result, next) {
-    params.duration = null;
-    next();
-  }
-
   function applyPrerequisitesForCreation(context, params, result, next) {
+    const event = context.content;
     // default time is now
-    _.defaults(params, { time: timestamp.now() });
-    if (! params.tags) {
-      params.tags = [];
+    _.defaults(event, { time: timestamp.now() });
+    if (! event.tags) {
+      event.tags = [];
     }
     
-    cleanupEventTags(params);
+    cleanupEventTags(event);
     
     context.files = sanitizeRequestFiles(params.files);
     delete params.files;
 
-    context.initTrackingProperties(params);
-
-    context.setStream(params.streamId);
-    if (! checkStream(context, params.streamId, next)) {
-      return;
-    }
-    context.content = params;
+    context.initTrackingProperties(event);
+    
+    context.content = event;
     next();
   }
 
-  function verifyContext(context, params, result, next) {
-    if (! context.canContributeToContext(context.content.streamId, context.content.tags)) {
-      return next(errors.forbidden());
+  function verifycanContributeToContext(context, params, result, next) {
+    for (let i = 0; i < context.content.streamIds.length; i++) { // refuse if any context is not accessible
+      if (! context.canContributeToContext(context.content.streamIds[i], context.content.tags)) {
+        return next(errors.forbidden());
+      }
     }
     next();
   }
@@ -306,6 +315,9 @@ module.exports = function (
   {
 
     if (isSeriesType(context.content.type)) {
+      if (openSourceSettings.isActive) {
+        return next(errors.unavailableMethod());
+      }
       try {
         context.content.content = createSeriesEventContent(context);
       }
@@ -325,6 +337,9 @@ module.exports = function (
           // Any other error
           return next(errors.unexpectedError(err));
         }
+
+        // To remove when streamId not necessary
+        newEvent.streamId = newEvent.streamIds[0];
 
         result.event = newEvent;
         next();
@@ -374,21 +389,21 @@ module.exports = function (
   api.register('events.update',
     commonFns.getParamsValidation(methodsSchema.update.params),
     commonFns.catchForbiddenUpdate(eventSchema('update'), updatesSettings.ignoreProtectedFields, logger),
+    normalizeStreamIdAndStreamIds,
     applyPrerequisitesForUpdate,
     validateEventContentAndCoerce,
-    checkExistingLaterPeriodIfNeeded,
-    checkOverlappedPeriodsIfNeeded,
-    stopPreviousPeriodIfNeeded,
     generateLogIfNeeded,
     updateAttachments,
     updateEvent,
     notify);
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
-    
-    cleanupEventTags(params.update);
 
-    context.updateTrackingProperties(params.update);
+    const eventUpdate = context.content;
+    
+    cleanupEventTags(eventUpdate);
+
+    context.updateTrackingProperties(eventUpdate);
 
     userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
       if (err) {
@@ -399,11 +414,38 @@ module.exports = function (
         return next(errors.unknownResource('event', params.id));
       }
 
-      if (! context.canUpdateContext(event.streamId, event.tags)) {
-        return next(errors.forbidden());
+      // 1. check that have contributeContext on at least 1 existing streamId
+      let canUpdateEvent = false;
+      for (let i = 0; i < event.streamIds.length ; i++) {
+        if (context.canUpdateContext(event.streamIds[i], event.tags)) {
+          canUpdateEvent = true;
+          break;
+        }
+      }
+      if (! canUpdateEvent) return next(errors.forbidden());
+      
+      if (hasStreamIdsModification(eventUpdate)) {
+
+        // 2. check that streams we add have contribute access
+        const streamIdsToAdd = _.difference(eventUpdate.streamIds, event.streamIds);
+        for (let i=0; i<streamIdsToAdd.length; i++) {
+          if (! context.canUpdateContext(streamIdsToAdd[i], event.tags)) {
+            return next(errors.forbidden());
+          }
+        }
+
+        // 3. check that streams we remove have contribute access        
+        // streamsToRemove = event.streamIds - eventUpdate.streamIds
+        const streamIdsToRemove = _.difference(event.streamIds, eventUpdate.streamIds);
+
+        for (let i = 0; i < streamIdsToRemove.length ; i++) {
+          if (! context.canUpdateContext(streamIdsToRemove[i], event.tags)) {
+            return next(errors.forbidden());
+          }
+        }
       }
 
-      const updatedEventType = params.update.type;
+      const updatedEventType = eventUpdate.type;
       if(updatedEventType != null) {
         const currentEventType = event.type;
         const isCurrentEventTypeSeries = isSeriesType(currentEventType);
@@ -419,14 +461,12 @@ module.exports = function (
       }
 
       context.oldContent = _.cloneDeep(event);
-      context.content = _.extend(event, params.update);
-
-      context.setStream(context.content.streamId);
-      if (context.content.streamId && ! checkStream(context, context.content.streamId, next)) {
-        return;
-      }
-
+      context.content = _.extend(event, eventUpdate);
       next();
+
+      function hasStreamIdsModification(event) {
+        return event.streamIds != null;
+      }
     });
 
   }
@@ -471,6 +511,9 @@ module.exports = function (
           return next(errors.unexpectedError(err));
         }
 
+        // To remove when streamId not necessary
+        updatedEvent.streamId = updatedEvent.streamIds[0];
+
         result.event = updatedEvent;
         setFileReadToken(context.access, result.event);
         next();
@@ -482,7 +525,7 @@ module.exports = function (
 
     // notify is called by create, update and delete
     // depending on the case the event properties will be found in context or event
-    if (isSeriesEvent(context.event || result.event)) {
+    if (isSeriesEvent(context.event || result.event) && !openSourceSettings.isActive) {
       const isDelete = result.eventDeletion ? true : false;
       // if event is a deletion 'id' is given by result.eventDeletion
       const updatedEventId = isDelete ? _.pick(result.eventDeletion, ['id']) : _.pick(result.event, ['id']);
@@ -521,6 +564,38 @@ module.exports = function (
     return result;
   }
 
+  function normalizeStreamIdAndStreamIds(context, params, result, next) {
+    
+    const event = isEventsUpdateMethod() ? params.update : params;
+
+    // forbid providing both streamId and streamIds
+    if (event.streamId != null && event.streamIds != null) {
+      return next(errors.invalidOperation(BOTH_STREAMID_STREAMIDS_ERROR,
+        { streamId: event.streamId, event: params.streamIds }));
+    }
+
+    // convert streamId to streamIds #streamIds
+    if (event.streamId != null) {
+      event.streamIds = [event.streamId];
+    }
+    
+    // remove double entries from streamIds
+    if (event.streamIds != null && event.streamIds.length > 1) {
+      event.streamIds = [...new Set(event.streamIds)];
+    }
+    delete event.streamId;
+    // using context.content now - not params
+    context.content = event;
+
+    // check that streamIds are known
+    context.setStreamList(context.content.streamIds);
+    if (event.streamIds != null && ! checkStreams(context, next)) return;
+    
+    next();
+
+    function isEventsUpdateMethod() { return params.update != null; }
+  }
+
   /**
    * Validates the event's content against its type (if known).
    * Will try casting string content to number if appropriate.
@@ -555,7 +630,7 @@ module.exports = function (
     }
     
     // assert: `type` is not a series but is known
-    
+
     const content = context.content.hasOwnProperty('content') 
       ? context.content.content
       : null;
@@ -601,166 +676,29 @@ module.exports = function (
    * `context.setStream` must be called beforehand.
    *
    * @param {Object} context
-   * @param {String} streamId
    * @param {Function} errorCallback Called with the appropriate error if any
    * @return `true` if OK, `false` if an error was found.
    */
-  function checkStream(context, streamId, errorCallback) {
-    if (! context.stream) {
+  function checkStreams(context, errorCallback) {
+
+    if (context.streamIdsNotFoundList.length > 0 ) {
       errorCallback(errors.unknownReferencedResource(
-        'stream', 'streamId', streamId
+        'stream', 'streamIds', context.streamIdsNotFoundList
       ));
       return false;
     }
-    if (context.stream.trashed) {
-      errorCallback(errors.invalidOperation(
-        'The referenced stream "' + streamId + '" is trashed.',
-        {trashedReference: 'streamId'}
-      ));
-      return false;
+
+    for (let i = 0; i < context.streamList.length; i++) {
+      if (context.streamList[i].trashed) {
+        errorCallback(errors.invalidOperation(
+          'The referenced stream "' + context.streamList[i].id + '" is trashed.',
+          {trashedReference: 'streamIds'}
+        ));
+        return false;
+      }
     }
+
     return true;
-  }
-
-  function checkExistingLaterPeriodIfNeeded(context, params, result, next) {
-    if (! context.content.hasOwnProperty('time')) {
-      return next();
-    }
-    if (! context.stream.singleActivityRootId ||
-        ! isPeriod(context.content) ||
-        ! isRunning(context.content)) {
-      // marks and *finished* periods can be inserted before an existing period
-      return process.nextTick(next);
-    }
-
-    var query = {
-      streamId: {$in: context.getSingleActivityExpandedIds()},
-      time: {'$gt': context.content.time},
-      $and: [
-        {duration: {'$exists' : true}},
-        {duration: {$ne: 0}}
-      ]
-    };
-    var options = {
-      projection: {id: 1},
-      sort: {time: 1}
-    };
-    userEventsStorage.findOne(context.user, query, options, function (err, periodEvent) {
-      if (err) { return next(errors.unexpectedError(err)); }
-
-      if (periodEvent) {
-        return next(errors.invalidOperation('At least one period event ("' + periodEvent.id +
-          '") already exists at a later time', {conflictingEventId: periodEvent.id}
-        ));
-      }
-
-      next();
-    });
-  }
-
-  /**
-   * Considers running events to have no duration.
-   *
-   * @param {Object} context
-   * @param {Object} params
-   * @param {Object} result
-   * @param {Function} next
-   */
-  function checkOverlappedPeriodsIfNeeded(context, params, result, next) {
-    if (! context.content.hasOwnProperty('time') && ! context.content.hasOwnProperty('duration')) {
-      return next();
-    }
-    if (! context.stream.singleActivityRootId ||
-        ! isPeriod(context.content) ||
-        isRunning(context.content)) {
-      // marks (can be duration of zero) and *running* periods cannot overlap
-      return process.nextTick(next);
-    }
-
-    var endTime = context.content.time + context.content.duration;
-    var query = {
-      streamId: {$in: context.getSingleActivityExpandedIds()},
-      $and: [
-        {duration: {'$exists' : true}},
-        {duration: {$ne: 0}}
-      ],
-      $or: [
-        // earlier periods
-        {
-          time: {$lt: context.content.time},
-          endTime: { $gt: context.content.time, $lte: timestamp.now() }
-        },
-        // later periods
-        {time: { $gte: context.content.time, $lt: endTime }}
-      ]
-    };
-    var options = {
-      projection: {id: 1},
-      sort: {time: 1}
-    };
-    userEventsStorage.find(context.user, query, options, function (err, periodEvents) {
-      if (err) {
-        return next(errors.unexpectedError(err));
-      }
-
-      if (context.content.id) {
-        // ignore self
-        periodEvents = periodEvents.filter(function (e) {
-          return e.id !== context.content.id;
-        });
-      }
-
-      if (periodEvents.length > 0) {
-        var msg = 'The event\'s period overlaps existing period events.';
-        return next(errors.periodsOverlap(msg,
-          {overlappedIds: periodEvents.map(function (e) { return e.id; })}
-        ));
-      }
-
-      next();
-    });
-  }
-
-  function stopPreviousPeriodIfNeeded(context, params, result, next) {
-    if (! context.stream.singleActivityRootId ||
-        ! isPeriod(context.content)) {
-      // marks do not affect periods
-      return process.nextTick(next);
-    }
-
-    var stopParams = {
-      singleActivity: true,
-      time: context.content.time
-    };
-    findLastRunning(context, stopParams, function (err, eventToStop) {
-      if (err) { return next(errors.unexpectedError(err)); }
-      stopEvent(context, eventToStop, context.content.time, function (err, stoppedId) {
-        if (err) { return next(err); }
-
-        if (stoppedId) {
-          result.stoppedId = stoppedId;
-        }
-
-        next();
-      });
-    });
-  }
-
-  /**
-   * @param {Object} params Must have `singleActivity`, `time` (and optionally `type`)
-   */
-  function findLastRunning(context, params, callback) {
-    var query = {
-      streamId: params.singleActivity 
-        ? { $in: context.getSingleActivityExpandedIds()} 
-        : context.stream.id,
-      time: {'$lt': params.time},
-      duration: {'$type' : 10} // matches when duration exists and is null
-    };
-    if (params.type) {
-      query.type = getTypeQueryValue(params.type);
-    }
-    userEventsStorage.findOne(context.user, query, {sort: {time: -1}}, callback);
   }
 
   /**
@@ -809,119 +747,6 @@ module.exports = function (
     }
   }
 
-  api.register('events.stop',
-    commonFns.getParamsValidation(methodsSchema.stop.params),
-    function (context, params, result, next) {
-      // default time is now
-      _.defaults(params, { time: timestamp.now() });
-
-      if (params.id) {
-        userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
-          if (err) { return next(errors.unexpectedError(err)); }
-          if (! event) {
-            return next(errors.unknownReferencedResource(
-              'event', 'id', params.id
-            ));
-          }
-          if (! isRunning(event)) {
-            return next(errors.invalidOperation(
-              'Event "' + params.id + '" is not a running period event.'
-            ));
-          }
-          applyStop(null, event);
-        });
-      } else if (params.streamId) {
-        context.setStream(params.streamId);
-        if (! context.stream.singleActivityRootId && ! params.type) {
-          return process.nextTick(next.bind(null, 
-            errors.invalidParametersFormat(
-              'You must specify the event `id` or `type` ' +
-              ' (not a "single activity" stream).'
-            )
-          ));
-        }
-        if (! checkStream(context, params.streamId, next)) { return; }
-        var stopParams = {
-          singleActivity: !! context.stream.singleActivityRootId,
-          time: params.time,
-          type: params.type
-        };
-        findLastRunning(context, stopParams, applyStop);
-      } else {
-        process.nextTick(next.bind(null,
-          errors.invalidParametersFormat(
-            'You must specify either the "single activity " stream id '+
-            'or the event `id`.'
-          )
-        ));
-      }
-
-      function applyStop(error, event) {
-        if (error) { return next(errors.unexpectedError(error)); }
-
-        stopEvent(context, event, params.time, function (err, stoppedId) {
-          if (err) { return next(err); }
-
-          result.stoppedId = stoppedId;
-          notifications.eventsChanged(context.user);
-          next();
-        });
-      }
-    });
-
-  /**
-   * Enforces permissions (returns an error if forbidden).
-   * Returns null if no running period event was found.
-   *
-   * @param {Object} context
-   * @param {Object} event
-   * @param {Number} stopTime
-   * @param {Function} callback ({APIError} error, {String|null} stoppedId)
-   */
-  function stopEvent(context, event, stopTime, callback) {
-    if (! event) { return process.nextTick(callback); }
-
-    if (! context.canContributeToContext(event.streamId, event.tags)) {
-      return process.nextTick(callback.bind(null, errors.forbidden()));
-    }
-
-    async.series([
-      function generateLogIfNeeded(stepDone) {
-        if (!auditSettings.forceKeepHistory) {
-          return stepDone();
-        }
-        var oldEvent = _.cloneDeep(event);
-        oldEvent = _.extend(oldEvent, {headId: oldEvent.id});
-        delete oldEvent.id;
-
-        userEventsStorage.insertOne(context.user, oldEvent, function (err) {
-          if (err) {
-            return stepDone(errors.unexpectedError(err));
-          }
-          stepDone();
-        });
-      },
-      function stopEvent(stepDone) {
-        var updatedData = {
-          // always include time: needed by userEventsStorage to update the DB-only "endTime" field
-          time: event.time,
-          duration: stopTime - event.time
-        };
-
-        context.updateTrackingProperties(updatedData);
-
-        userEventsStorage.updateOne(context.user, {id: event.id}, updatedData, function (err) {
-          if (err) {
-            return callback(errors.unexpectedError(err));
-          }
-          stepDone(null, event.id);
-        });
-      }
-    ], function(err, res) {
-      callback(err, res[1]);
-    });
-  }
-
   // DELETION
 
   api.register('events.delete',
@@ -951,8 +776,12 @@ module.exports = function (
       function (err, updatedEvent) {
         if (err) { return next(errors.unexpectedError(err)); }
 
+        // To remove when streamId not necessary
+        updatedEvent.streamId = updatedEvent.streamIds[0];
+
         result.event = updatedEvent;
         setFileReadToken(context.access, result.event);
+
         next();
       });
   }
@@ -1044,6 +873,10 @@ module.exports = function (
           userEventsStorage.updateOne(context.user, {id: params.id}, updatedData,
             function (err, updatedEvent) {
               if (err) { return stepDone(err); }
+
+              // To remove when streamId not necessary
+              updatedEvent.streamId = updatedEvent.streamIds[0];
+
               result.event = updatedEvent;
               setFileReadToken(context.access, result.event);
               stepDone();
@@ -1087,9 +920,15 @@ module.exports = function (
           'event', eventId
         ));
       }
-      if (! context.canUpdateContext(event.streamId, event.tags)) {
-        return callback(errors.forbidden());
+      
+      let canDeleteEvent = false;
+      for (let i = 0; i < event.streamIds.length; i++) {
+        if (context.canUpdateContext(event.streamIds[i], event.tags)) {
+          canDeleteEvent = true;
+          break;
+        }
       }
+      if (! canDeleteEvent) return callback(errors.forbidden());
 
       callback(null, event);
     });
@@ -1119,15 +958,6 @@ module.exports = function (
           access.id, access.token,
           authSettings.filesReadTokenSecret);
     });
-  }
-
-  function isPeriod(event) {
-    return event.hasOwnProperty('duration') &&
-        (event.duration === null || event.duration !== 0);
-  }
-
-  function isRunning(event) {
-    return event.duration === null;
   }
 
 };

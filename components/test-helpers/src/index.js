@@ -1,5 +1,4 @@
 // @flow
-
 const requestModule = require('./request'); 
 
 exports = module.exports = {

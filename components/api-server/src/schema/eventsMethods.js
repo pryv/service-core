@@ -55,7 +55,6 @@ module.exports = {
     params: event(Action.CREATE),
     result: object({
       'event': event(Action.READ),
-      'stoppedId': string()
     }, {
       required: [ 'event' ],
       additionalProperties: false
@@ -74,27 +73,8 @@ module.exports = {
     }),
     result: object({
       'event': event(Action.READ),
-      'stoppedId': string()
     }, {
       required: [ 'event' ],
-      additionalProperties: false
-    })
-  },
-
-  stop: {
-    params: object({
-      'streamId': string(),
-      'type': string(),
-      'id': string(),
-      'time': number()
-    }, {
-      id: 'events.stop',
-      additionalProperties: false
-    }),
-    result: object({
-      'stoppedId': string({optional:true})
-    }, {
-      required: [ 'stoppedId' ],
       additionalProperties: false
     })
   },

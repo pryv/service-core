@@ -135,6 +135,7 @@ describe('business.types.TypeRepository', function () {
     });
   });
   describe('series types like series:mass/kg', function () {
+
     it('[SQNQ] should be known', function () {
       should(
         repository.isKnown('series:position/wgs84')

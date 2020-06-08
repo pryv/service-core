@@ -240,7 +240,6 @@ describe('streams', function () {
         id: 'nullable',
         name: 'New stream with null fields',
         parentId: null,
-        singleActivity: null,
         clientData: null,
         children: null,
         trashed: null
@@ -422,7 +421,6 @@ describe('streams', function () {
         var expected = _.clone(data);
         expected.id = original.id;
         expected.parentId = original.parentId;
-        expected.singleActivity = original.singleActivity;
         expected.modified = time;
         expected.modifiedBy = accessId;
         delete expected.children;
@@ -436,7 +434,6 @@ describe('streams', function () {
     it('[5KNJ] must accept explicit null for optional fields', function (done) {
       const data = {
         parentId: null,
-        singleActivity: null,
         clientData: null,
         trashed: null
       };
@@ -637,6 +634,7 @@ describe('streams', function () {
   });
 
   describe('DELETE /<id>', function () {
+    this.timeout(5000);
 
     beforeEach(resetData);
 
@@ -764,7 +762,7 @@ describe('streams', function () {
             });
         },
         function verifyLinkedEvents(stepDone) {
-          eventsStorage.find(user, {streamId: parentStream.id}, null, function (err, linkedEvents) {
+          eventsStorage.find(user, {streamIds: parentStream.id}, null, function (err, linkedEvents) {
             _.map(linkedEvents, 'id').should.eql([
               testData.events[4].id,
               testData.events[3].id,
@@ -781,7 +779,10 @@ describe('streams', function () {
 
     it('[KLD8] must delete the linked events when mergeEventsWithParent is false', function (done) {
       const id = testData.streams[0].children[1].id;
-      const deletedEvents = testData.events.filter(function (e) { return e.streamId === id; });
+      const deletedEvents = testData.events.filter(function (e) { 
+        if (e.streamIds == null) return false;
+        return e.streamIds[0] === id; 
+      });
       const deletedEventWithAtt = deletedEvents[0];
       let deletionTime;
       
@@ -819,7 +820,6 @@ describe('streams', function () {
 
             deletedEvents.forEach(function (e) {
               const actual = _.find(events, {id: e.id});
-
               assert.approximately(
                 actual.deleted, deletionTime, 2, 
                 'Deletion time must be correct.');
@@ -832,8 +832,8 @@ describe('streams', function () {
             // this several times. 
             assertEventuallyTrue(
               () => ! fs.existsSync(dirPath), 
-              2, // second(s) 
-              'Event directory must be deleted', 
+              5, // second(s) 
+              'Event directory must be deleted' + dirPath, 
               stepDone
             );
           });

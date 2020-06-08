@@ -25,7 +25,7 @@ function Events(database) {
     updateToDB: [
       endTimeUpdate,
       converters.stateUpdate,
-      converters.getKeyValueSetUpdateFn('clientData'),
+      converters.getKeyValueSetUpdateFn('clientData')
     ],
     itemFromDB: [clearEndTime, converters.deletionFromDB],
   });
@@ -79,7 +79,7 @@ var indexes = [
     options: {},
   },
   {
-    index: { streamId: 1 },
+    index: { streamIds: 1 },
     options: {},
   },
   {
@@ -183,7 +183,7 @@ Events.prototype.countAll = function(user, callback) {
 Events.prototype.minimizeEventsHistory = function(user, headId, callback) {
   var update = {
     $unset: {
-      streamId: 1,
+      streamIds: 1,
       time: 1,
       duration: 1,
       endTime: 1,
@@ -219,7 +219,7 @@ Events.prototype.delete = function(user, query, deletionMode, callback) {
   switch (deletionMode) {
     case 'keep-nothing':
       update.$unset = {
-        streamId: 1,
+        streamIds: 1,
         time: 1,
         duration: 1,
         endTime: 1,
@@ -238,7 +238,7 @@ Events.prototype.delete = function(user, query, deletionMode, callback) {
       break;
     case 'keep-authors':
       update.$unset = {
-        streamId: 1,
+        streamIds: 1,
         time: 1,
         duration: 1,
         endTime: 1,
