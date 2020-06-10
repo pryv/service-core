@@ -1,5 +1,9 @@
 ## 1.5
 
+### 1.5.11
+
+- Declare lib-reporting as git submodule
+
 ### 1.5.10
 
 - load reporting lib conditionnally
