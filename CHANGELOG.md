@@ -1,5 +1,9 @@
 ## 1.5
 
+### 1.5.12
+
+- Revert 1.5.11
+
 ### 1.5.10
 
 - load reporting lib conditionnally
