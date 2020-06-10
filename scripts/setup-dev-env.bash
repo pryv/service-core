@@ -7,13 +7,17 @@
 SCRIPT_FOLDER=$(cd $(dirname "$0"); pwd)
 cd $SCRIPT_FOLDER/.. # root
 
-
 ## used in Open Pryv
 SCRIPT_EXTRAS="./scripts/setup-open.bash"
 if [[ -f $SCRIPT_EXTRAS ]]; then
   echo "installing service mail"
   bash $SCRIPT_EXTRAS
 fi
+
+# fetch private dependencies as submodules
+git submodule init && git submodule update
+# update submodules
+git submodule update --remote
 
 echo ""
 echo "Setup complete!"

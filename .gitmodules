@@ -1,0 +1,3 @@
+[submodule "private-dependencies/lib-reporting"]
+	path = private-dependencies/lib-reporting
+	url = git@github.com:pryv/lib-reporting.git

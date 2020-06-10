@@ -4624,9 +4624,8 @@ levn@^0.4.1:
     prelude-ls "^1.2.1"
     type-check "~0.4.0"
 
-"lib-reporting@git+ssh://git@github.com/pryv/lib-reporting.git":
-  version "1.0.0"
-  resolved "git+ssh://git@github.com/pryv/lib-reporting.git#8dca85d35abd41f06b4d91d7d0b5b8b70712d176"
+"lib-reporting@file:private-dependencies/lib-reporting":
+  version "1.0.1"
   dependencies:
     bluebird "^3.7.2"
     superagent "^5.2.2"
