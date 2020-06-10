@@ -31,9 +31,6 @@ function release {
   fi
 }
 
-# Fetch submodule dependencies (private-dependencies)
-git submodule init && git submodule update
-
 # Create a release.tar that contains all the code. 
 pushd ..
 tar cf build/release.tar \
