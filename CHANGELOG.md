@@ -1,5 +1,9 @@
 ## 1.5
 
+### 1.5.14
+
+- fix airbrake
+
 ### 1.5.10-13
 
 - load reporting lib conditionnally
