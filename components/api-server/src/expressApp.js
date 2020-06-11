@@ -55,6 +55,9 @@ class ExpressAppLifecycle {
   
   // Error handling middleware, injected as dependency. 
   errorHandlingMiddleware: express$Middleware; 
+
+  airbrakeExpress: {};
+  airbrakeNotifier: {}
   
   /** Constructs a life cycle manager for an express app. 
    */
@@ -80,8 +83,9 @@ class ExpressAppLifecycle {
   }
 
   // Inserts airbrake related middleware into the stack. 
-  // 
-  activateAirbrake() {
+  // make sure to call this function before any routes
+  // https://github.com/airbrake/airbrake-js/tree/master/packages/node/examples/express
+  activateAirbrakeMiddleware() {
     const app = this.app; 
     
     /*
@@ -100,14 +104,15 @@ class ExpressAppLifecycle {
     if (settings == null) return; 
 
     const { Notifier } = require('@airbrake/node');
+    const airbrakeExpress = require('@airbrake/node/dist/instrumentation/express');
 
-    const airbrake = new Notifier({
+    const airbrakeNotifier = new Notifier({
       projectId: settings.projectId,
       projectKey: settings.key,
       environment: 'production',
     });
 
-    airbrake.addFilter(function (notice) {
+    airbrakeNotifier.addFilter(function (notice) {
       if (notice.environment['err.dontNotifyAirbrake']) {
         // Ignore errors with this messsage
         return null;
@@ -115,7 +120,18 @@ class ExpressAppLifecycle {
       return notice;
     });
 
-    app.use(airbrake.expressHandler());
+    app.use(airbrakeExpress.makeMiddleware(airbrakeNotifier));
+    this.airbrakeNotifier = airbrakeNotifier;
+    this.airbrakeExpress = airbrakeExpress;
+  }
+  
+  // make sure to call this last
+  activateAirbrakeErrorHandler() {
+    const app = this.app; 
+    
+    const settings = this.getAirbrakeSettings(); 
+    if (settings == null) return; 
+    app.use(this.airbrakeExpress.makeErrorHandler(this.airbrakeNotifier));
   }
 
   getAirbrakeSettings(): ?AirbrakeSettings {
@@ -145,6 +161,7 @@ class ExpressAppLifecycle {
     const app = this.app; 
     
     this.go('startupBegon'); 
+    this.activateAirbrakeMiddleware();
     
     // Insert a middleware that allows us to intercept requests. This will 
     // be disabled as soon as `this.phase` is not 'startupBegon' anymore. 
@@ -167,7 +184,7 @@ class ExpressAppLifecycle {
     const app = this.app; 
 
     app.use(middleware.notFound);
-    this.activateAirbrake();
+    this.activateAirbrakeErrorHandler();
     app.use(this.errorHandlingMiddleware);
   }
 }
