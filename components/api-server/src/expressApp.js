@@ -55,9 +55,6 @@ class ExpressAppLifecycle {
   
   // Error handling middleware, injected as dependency. 
   errorHandlingMiddleware: express$Middleware; 
-
-  airbrakeExpress: {};
-  airbrakeNotifier: {}
   
   /** Constructs a life cycle manager for an express app. 
    */
@@ -82,76 +79,6 @@ class ExpressAppLifecycle {
     this.phase = phase; 
   }
 
-  // Inserts airbrake related middleware into the stack. 
-  // make sure to call this function before any routes
-  // https://github.com/airbrake/airbrake-js/tree/master/packages/node/examples/express
-  activateAirbrakeMiddleware() {
-    const app = this.app; 
-    
-    /*
-      Quick guide on how to test Airbrake notifications (under logs entry):
-      1. Update configuration file with Airbrake information:
-          "airbrake": {
-           "active": true,
-           "key": "get it from pryv.airbrake.io settings",
-           "projectId": "get it from pryv.airbrake.io settings"
-         }
-      2. Throw a fake error in the code (/routes/root.js is easy to trigger):
-          throw new Error('This is a test of Airbrake notifications');
-      3. Trigger the error by running the faulty code (run a local core)
-     */
-    const settings = this.getAirbrakeSettings(); 
-    if (settings == null) return; 
-
-    const { Notifier } = require('@airbrake/node');
-    const airbrakeExpress = require('@airbrake/node/dist/instrumentation/express');
-
-    const airbrakeNotifier = new Notifier({
-      projectId: settings.projectId,
-      projectKey: settings.key,
-      environment: 'production',
-    });
-
-    airbrakeNotifier.addFilter(function (notice) {
-      if (notice.environment['err.dontNotifyAirbrake']) {
-        // Ignore errors with this messsage
-        return null;
-      }
-      return notice;
-    });
-
-    app.use(airbrakeExpress.makeMiddleware(airbrakeNotifier));
-    this.airbrakeNotifier = airbrakeNotifier;
-    this.airbrakeExpress = airbrakeExpress;
-  }
-  
-  // make sure to call this last
-  activateAirbrakeErrorHandler() {
-    const app = this.app; 
-    
-    const settings = this.getAirbrakeSettings(); 
-    if (settings == null) return; 
-    app.use(this.airbrakeExpress.makeErrorHandler(this.airbrakeNotifier));
-  }
-
-  getAirbrakeSettings(): ?AirbrakeSettings {
-    // TODO Directly hand log settings to this class. 
-    const logSettings = config.load().logs;
-    if (logSettings == null) return null; 
-    
-    const airbrakeSettings = logSettings.airbrake;
-    if (airbrakeSettings == null || !airbrakeSettings.active) return null; 
-    
-    const projectId = airbrakeSettings.projectId;
-    const key = airbrakeSettings.key;
-    if (projectId == null || key == null) return null; 
-    
-    return {
-      projectId: projectId, 
-      key: key,
-    };
-  }
-
   // ------------------------------------------------------ state machine events
   
   /** Called before we have a database connection. This prevents errors while
@@ -161,7 +88,6 @@ class ExpressAppLifecycle {
     const app = this.app; 
     
     this.go('startupBegon'); 
-    this.activateAirbrakeMiddleware();
     
     // Insert a middleware that allows us to intercept requests. This will 
     // be disabled as soon as `this.phase` is not 'startupBegon' anymore. 
@@ -184,7 +110,6 @@ class ExpressAppLifecycle {
     const app = this.app; 
 
     app.use(middleware.notFound);
-    this.activateAirbrakeErrorHandler();
     app.use(this.errorHandlingMiddleware);
   }
 }
@@ -197,11 +122,13 @@ class ExpressAppLifecycle {
 async function expressAppInit(dependencies: any, isDNSLess: boolean) {
   const pv = new ProjectVersion(); 
   const version = await pv.version(); 
+
+  dependencies.register('airbrakeNotifier', {airbrakeNotifier: createAirbrakeNotifierIfNeeded()});
   
   const commonHeadersMiddleware = middleware.commonHeaders(version);
   const requestTraceMiddleware = dependencies.resolve(middleware.requestTrace); 
   const errorsMiddleware = dependencies.resolve(errorsMiddlewareMod);
-    
+  
   var app = express();
 
   // register common middleware
@@ -239,6 +166,51 @@ async function expressAppInit(dependencies: any, isDNSLess: boolean) {
   return {
     expressApp: app, 
     lifecycle: lifecycle,
+  };
+}
+
+function createAirbrakeNotifierIfNeeded() {
+  
+  /*
+    Quick guide on how to test Airbrake notifications (under logs entry):
+    1. Update configuration file with Airbrake information:
+        "airbrake": {
+         "active": true,
+         "key": "get it from pryv.airbrake.io settings",
+         "projectId": "get it from pryv.airbrake.io settings"
+       }
+    2. Throw a fake error in the code (/routes/root.js is easy to trigger):
+        throw new Error('This is a test of Airbrake notifications');
+    3. Trigger the error by running the faulty code (run a local core)
+   */
+  const settings = getAirbrakeSettings(); 
+  if (settings == null) return; 
+
+  const { Notifier } = require('@airbrake/node');
+
+  const airbrakeNotifier = new Notifier({
+    projectId: settings.projectId,
+    projectKey: settings.key,
+    environment: 'production',
+  });
+  return airbrakeNotifier
+}
+
+function getAirbrakeSettings(): ?AirbrakeSettings {
+  // TODO Directly hand log settings to this class. 
+  const logSettings = config.load().logs;
+  if (logSettings == null) return null; 
+  
+  const airbrakeSettings = logSettings.airbrake;
+  if (airbrakeSettings == null || !airbrakeSettings.active) return null; 
+  
+  const projectId = airbrakeSettings.projectId;
+  const key = airbrakeSettings.key;
+  if (projectId == null || key == null) return null; 
+  
+  return {
+    projectId: projectId, 
+    key: key,
   };
 }
 
