@@ -44,7 +44,7 @@ describe('Socket.IO', function () {
   // Connects to `namespace` given `queryParams`. Connections are disconnected
   // after each test automatically.
   function connect(namespace, queryParams) {
-    const paramsWithNS = _.defaults({resource: namespace}, queryParams || {});
+    const paramsWithNS = _.defaults( queryParams || {});
     const url = server.url + namespace + '?' + queryString.stringify(paramsWithNS);
     const conn = io.connect(url, {forceNew: true});
     cleanupConnections.push(conn);
@@ -124,6 +124,29 @@ describe('Socket.IO', function () {
     ioCons.con.once('connect_error', function (err) {
       done(err || new Error('Connection failed.')); 
     });
+  });
+  it('[VGKX] must connect with twice user name in the path (DNSLess)', function (done) {
+    var dashUser = testData.users[4],
+      dashRequest = null;
+
+    async.series([
+      function (stepDone) {
+        testData.resetAccesses(stepDone, dashUser, null, true);
+      },
+      function (stepDone) {
+        dashRequest = helpers.request(server.url);
+        dashRequest.login(dashUser, stepDone);
+      },
+      function (stepDone) {
+        ioCons.con = connect('/' + dashUser.username + '/' + dashUser.username, { auth: testData.accesses[2].token });
+
+        ioCons.con.once('error', function (e) {
+          stepDone(e || new Error('Communication failed.'));
+        });
+
+        ioCons.con.once('connect', stepDone);
+      }
+    ], done);
   });
   it('[VGKH] must connect to a user with a dash in the username', function (done) {
     var dashUser = testData.users[4],
