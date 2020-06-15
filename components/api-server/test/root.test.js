@@ -281,6 +281,10 @@ describe('root', function() {
       const exposed = _.find(res.body.accesses, { token: personalAccessToken });
       assert.notExists(exposed.calls);
     });
+
+    it('should return the correct error if we post malformed JSON content', async function () {
+      
+    });
   });
 
   
