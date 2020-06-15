@@ -1,5 +1,9 @@
 ## 1.5
 
+### 1.5.16
+
+- fix socket.io for dns-less
+
 ### 1.5.14-15
 
 - fix airbrake
