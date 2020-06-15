@@ -46,11 +46,11 @@ function setupSocketIO(
   });
   
   // add a middelware for authentication 
+  // add middelware for authentication 
   dynamicNamespace.use(async (socket, next) => {
     try {
       const nsName = socket.nsp.name;
       const query = socket.handshake.query;
-      const headers = socket.handshake.headers;
       const userName = manager.extractUsername(nsName);
       if (userName == null) throw new Error(`Invalid resource "${nsName}".`);
       if (query.auth == null) throw new Error("Missing 'auth' parameter with a valid access token.");

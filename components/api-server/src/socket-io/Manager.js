@@ -79,25 +79,13 @@ class Manager implements MessageSink {
     return reUsername.test(candidate);
   }
 
-  cleanNS(namespace: string): ?string {
-    let cleaned = '' + namespace;
-    // remove eventual trailing "/"
-    if (cleaned.slice(-1) === '/') cleaned = cleaned.slice(0, -1);
-    // get last element of path
-    const s = cleaned.lastIndexOf('/');
-    if (s > 0) {
-      cleaned = cleaned.slice(s);
-    }
-    return cleaned;
-  }
-
   // Extracts the username from the given valid namespace name.
   // Returns null if the given `namespaceName` cannot be parsed as a user name. 
   // 
   //    manager.getUsername('/foobar') // => 'foobar'
   //
   extractUsername(namespaceName: string): ?string {
-    const ns = this.cleanNS(namespaceName);
+    const ns: string = cleanNS(namespaceName);
     if (!ns.startsWith('/')) return null; 
   
     // assert: namespaceName[0] === '/'
@@ -106,6 +94,23 @@ class Manager implements MessageSink {
     if (! this.looksLikeUsername(candidate)) return null; 
     
     return candidate;
+
+      /**
+     * Takes the last field of the NS path
+     * 
+     * @param {*} namespace 
+     */
+    function cleanNS(namespace: string): string {
+      let cleaned = '' + namespace;
+      // remove eventual trailing "/"
+      if (cleaned.slice(-1) === '/') cleaned = cleaned.slice(0, -1);
+      // get last element of path
+      const s = cleaned.lastIndexOf('/');
+      if (s > 0) {
+        cleaned = cleaned.slice(s);
+      }
+      return cleaned;
+    }
   }
   
   async ensureInitNamespace(namespaceName: string): NamespaceContext {  
