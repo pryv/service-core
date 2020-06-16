@@ -5,12 +5,11 @@ import type { StorageLayer } from 'components/storage';
 // Returns a middleware function that loads the access into `req.context.access`.
 // The access is loaded from the token previously extracted by the `initContext` middleware.
 // Also, it adds the corresponding access id as a specific response header.
-// 
+//
 module.exports = function loadAccess(storageLayer: StorageLayer) {
   return async function (
-    req: express$Request, res: express$Response, next: express$NextFunction
+    req: express$Request, res: express$Response, next: express$NextFunction,
   ) {
-
     try {
       await req.context.retrieveExpandedAccess(storageLayer);
       // Add access id header
@@ -32,7 +31,7 @@ module.exports = function loadAccess(storageLayer: StorageLayer) {
  * @param req {express$Request} Current express request.
  * @param res {express$Response} Current express response. MODIFIED IN PLACE.
  */
-function setAccessIdHeader (req: express$Request, res: express$Response): express$Response {
+function setAccessIdHeader(req: express$Request, res: express$Response): express$Response {
   if (req != null) {
     const requestCtx = req.context;
     if (requestCtx != null && requestCtx.access != null) {

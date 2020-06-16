@@ -1,7 +1,7 @@
-var BaseStorage = require('./BaseStorage'),
-    converters = require('./../converters'),
-    util = require('util'),
-    _ = require('lodash');
+const util = require('util');
+const _ = require('lodash');
+const BaseStorage = require('./BaseStorage');
+const converters = require('../converters');
 
 module.exports = Profile;
 /**
@@ -15,11 +15,11 @@ function Profile(database) {
 
   _.extend(this.converters, {
     updateToDB: [converters.getKeyValueSetUpdateFn('data')],
-    convertIdToItemId: 'profileId'
+    convertIdToItemId: 'profileId',
   });
 
   this.defaultOptions = {
-    sort: {}
+    sort: {},
   };
 }
 util.inherits(Profile, BaseStorage);
@@ -27,10 +27,10 @@ util.inherits(Profile, BaseStorage);
 Profile.prototype.getCollectionInfo = function (user) {
   return {
     name: 'profile',
-    indexes: [ {
-      index: {profileId: 1},
-      options: {unique: true}
-    } ],
+    indexes: [{
+      index: { profileId: 1 },
+      options: { unique: true },
+    }],
     useUserId: user.id,
   };
 };

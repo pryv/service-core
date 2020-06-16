@@ -5,8 +5,8 @@ const middleware = require('components/middleware');
 const bodyParser = require('body-parser');
 
 type AppAndEndWare = {
-  expressApp: express$Application, 
-  routesDefined: () => mixed, 
+  expressApp: express$Application,
+  routesDefined: () => mixed,
 }
 
 /**
@@ -15,13 +15,13 @@ type AppAndEndWare = {
 module.exports = function expressApp(
   commonHeadersMiddleware: express$Middleware,
   errorsMiddleware: express$Middleware,
-  requestTraceMiddleware: express$Middleware
+  requestTraceMiddleware: express$Middleware,
 ): AppAndEndWare {
   const app = express();
 
   /** Called once routes are defined on app, allows finalizing middleware stack
    * with things like error handling.
-   **/
+   * */
   function routesDefined() {
     app.use(errorsMiddleware);
   }
@@ -36,7 +36,7 @@ module.exports = function expressApp(
 
   return {
     expressApp: app,
-    routesDefined: routesDefined,
+    routesDefined,
   };
 };
 module.exports.injectDependencies = true;

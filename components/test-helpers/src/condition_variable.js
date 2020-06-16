@@ -4,61 +4,65 @@ const bluebird = require('bluebird');
 
 class Waiter {
   promise: Promise<void>;
-  resolve: () => void; 
-  reject: (err: Error) => void; 
+
+  resolve: () => void;
+
+  reject: (err: Error) => void;
+
   timeout: ?TimeoutID;
-  
-  done: boolean; 
-  
+
+  done: boolean;
+
   constructor(timeout?: number) {
-    this.done = false; 
-    
+    this.done = false;
+
     this.promise = new bluebird((res, rej) => {
-      this.resolve = res; 
+      this.resolve = res;
       this.reject = rej;
-      
+
       if (timeout != null && timeout > 0) {
         this.timeout = setTimeout(() => this.timeoutFired(), timeout);
       }
     });
   }
-  
+
   timeoutFired() {
     this.reject(
-      new Error('timeout'));
+      new Error('timeout'),
+    );
   }
-  
+
   release() {
     if (this.done) throw new Error('AF: waiter is not released');
-    this.done = true; 
-    
-    this.resolve(); 
+    this.done = true;
+
+    this.resolve();
   }
 }
 class ConditionVariable {
   waiters: Array<Waiter>;
-  
+
   constructor() {
-    this.waiters = []; 
+    this.waiters = [];
   }
-  
+
   wait(timeout?: number): Promise<void> {
     const waiter = new Waiter(timeout);
-      
+
     this.waiters.push(waiter);
-    
-    return waiter.promise; 
+
+    return waiter.promise;
   }
-  
+
   broadcast() {
-    const list = this.waiters; 
-    
+    const list = this.waiters;
+
     // release this reference before broadcasting; this avoids somehow
-    // broadcasting twice during the first broadcast. 
-    this.waiters = []; 
-    
+    // broadcasting twice during the first broadcast.
+    this.waiters = [];
+
     for (const waiter of list) {
-      waiter.release(); 
+      waiter.release();
     }
   }
 }
@@ -68,32 +72,32 @@ class ConditionVariable {
 // immediately. Like a combination of a boolean and a ConditionVariable.
 //
 class Fuse {
-  cv: ConditionVariable; 
-  burnt: boolean; 
-  
+  cv: ConditionVariable;
+
+  burnt: boolean;
+
   constructor() {
-    this.burnt = false; 
-    this.cv = new ConditionVariable(); 
+    this.burnt = false;
+    this.cv = new ConditionVariable();
   }
-  
+
   async wait(timeout?: number): Promise<void> {
-    if (this.burnt) return; 
-    
-    await this.cv.wait(timeout); 
-    return;
+    if (this.burnt) return;
+
+    await this.cv.wait(timeout);
   }
-  
+
   burn() {
-    this.burnt = true; 
+    this.burnt = true;
     this.cv.broadcast();
   }
-  
+
   isBurnt(): boolean {
     return this.burnt;
   }
 }
 
 module.exports = {
-  ConditionVariable: ConditionVariable, 
-  Fuse: Fuse,
+  ConditionVariable,
+  Fuse,
 };

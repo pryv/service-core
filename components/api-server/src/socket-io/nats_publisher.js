@@ -1,39 +1,39 @@
 // @flow
 
+import type { MessageSink } from './message_sink';
+
 const NATS = require('nats');
 const { encode } = require('./nats_wire_message');
 
-import type { MessageSink } from './message_sink';
-
 // Receives messages from ChangeNotifier and publishes them to the NATS pub/sub
-// queue. 
+// queue.
 //
 class NatsPublisher implements MessageSink {
   conn: NATS.Client;
 
   // Provides a function to apply to the channel name
   channelFormat: (string) => string;
-  
+
   // Connects to the NATS server on `natsUri` (in the form of
-  // 'nats://nats.io:4222') 
+  // 'nats://nats.io:4222')
   //
   constructor(natsUri: string, channelFormat?: (string) => string) {
     this.conn = NATS.connect({
-      url: natsUri, 
-      'preserveBuffers': true,
+      url: natsUri,
+      preserveBuffers: true,
     });
-    this.channelFormat = channelFormat || (a => {return a;});
+    this.channelFormat = channelFormat || ((a) => a);
   }
 
-  // Delivers a message to the subject 'USERNAME.sok1'. 
+  // Delivers a message to the subject 'USERNAME.sok1'.
   //
   deliver(userName: string, message: string | Object): void {
     const subject = this.channelFormat(userName);
     const wireMsg = this.serialize(message);
-    
+
     this.conn.publish(subject, wireMsg);
   }
-  
+
   serialize(msg: string | Object): Buffer {
     return encode(msg);
   }

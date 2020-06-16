@@ -2,18 +2,18 @@
  * JSON Schema specification of methods data for user information.
  */
 
-var Action = require('./Action'),
-    helpers = require('./helpers'),
-    user = require('./user')(Action.READ);
+const Action = require('./Action');
+const helpers = require('./helpers');
+const user = require('./user')(Action.READ);
 
-var accountDetails = helpers.object({
+const accountDetails = helpers.object({
   username: user.properties.username,
   email: user.properties.email,
   language: user.properties.language,
-  storageUsed: user.properties.storageUsed
+  storageUsed: user.properties.storageUsed,
 }, {
-  required: [ 'username', 'email', 'storageUsed' ],
-  additionalProperties: false
+  required: ['username', 'email', 'storageUsed'],
+  additionalProperties: false,
 });
 
 // TODO: all this will change after user info is moved to profiles (so that users collection only
@@ -23,10 +23,10 @@ module.exports = {
   get: {
     params: helpers.object({}),
     result: helpers.object({
-      account: accountDetails
+      account: accountDetails,
     }, {
-      required: ['account']
-    })
+      required: ['account'],
+    }),
   },
 
   update: {
@@ -34,16 +34,16 @@ module.exports = {
       // = body of HTTP requests
       update: helpers.object({
         email: helpers.email,
-        language: helpers.language
-      }, {additionalProperties: false})
+        language: helpers.language,
+      }, { additionalProperties: false }),
     }, {
-      required: ['update']
+      required: ['update'],
     }),
     result: helpers.object({
-      account: accountDetails
+      account: accountDetails,
     }, {
-      required: ['account']
-    })
+      required: ['account'],
+    }),
   },
 
   changePassword: {
@@ -51,23 +51,23 @@ module.exports = {
       oldPassword: helpers.string(),
       newPassword: helpers.string({
         minLength: 6,
-        maxLength: 100
-      })
+        maxLength: 100,
+      }),
     }, {
-      required: [ 'oldPassword', 'newPassword' ],
-      additionalProperties: false
+      required: ['oldPassword', 'newPassword'],
+      additionalProperties: false,
     }),
-    result: helpers.object({}, {additionalProperties: false})
+    result: helpers.object({}, { additionalProperties: false }),
   },
 
   requestPasswordReset: {
     params: helpers.object({
       appId: helpers.string(),
-      origin: helpers.string()
+      origin: helpers.string(),
     }, {
-      required: ['appId']
+      required: ['appId'],
     }),
-    result: helpers.object({}, {additionalProperties: false})
+    result: helpers.object({}, { additionalProperties: false }),
   },
 
   resetPassword: {
@@ -77,11 +77,11 @@ module.exports = {
       resetToken: helpers.string(),
       newPassword: helpers.string({
         minLength: 6,
-        maxLength: 100
-      })
+        maxLength: 100,
+      }),
     }, {
-      required: [ 'appId', 'resetToken', 'newPassword' ]
+      required: ['appId', 'resetToken', 'newPassword'],
     }),
-    result: helpers.object({}, {additionalProperties: false})
-  }
+    result: helpers.object({}, { additionalProperties: false }),
+  },
 };

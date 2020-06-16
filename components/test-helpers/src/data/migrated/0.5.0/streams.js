@@ -17,7 +17,7 @@ module.exports = [
         modified: 1390319367.968,
         modifiedBy: 'test',
         id: 's_0_0',
-        children: []
+        children: [],
       },
       {
         name: 'Child Stream 0.1',
@@ -27,16 +27,16 @@ module.exports = [
         modified: 1390319367.968,
         modifiedBy: 'test',
         id: 's_0_1',
-        children: []
-      }
-    ]
+        children: [],
+      },
+    ],
   },
   {
     name: 'Root Stream 1',
     parentId: null,
     clientData: {
       stringProp: 'O Brother',
-      numberProp: 1
+      numberProp: 1,
     },
     created: 1390319367.968,
     createdBy: 'test',
@@ -52,9 +52,9 @@ module.exports = [
         modified: 1390319367.968,
         modifiedBy: 'test',
         id: 's_1_0',
-        children: []
-      }
-    ]
+        children: [],
+      },
+    ],
   },
   {
     name: 'Root Stream 2',
@@ -82,9 +82,9 @@ module.exports = [
             modified: 1390319367.968,
             modifiedBy: 'test',
             id: 's_2_0_0',
-            children: []
-          }
-        ]
+            children: [],
+          },
+        ],
       },
 
       {
@@ -104,11 +104,11 @@ module.exports = [
             modified: 1390319367.968,
             modifiedBy: 'test',
             id: 's_2_1_0',
-            children: []
-          }
-        ]
-      }
-    ]
+            children: [],
+          },
+        ],
+      },
+    ],
   },
   {
     name: 'Root Stream 3 (trashed)',
@@ -128,8 +128,8 @@ module.exports = [
         modified: 1390319367.968,
         modifiedBy: 'test',
         id: 's_3_0',
-        children: []
-      }
-    ]
-  }
+        children: [],
+      },
+    ],
+  },
 ];

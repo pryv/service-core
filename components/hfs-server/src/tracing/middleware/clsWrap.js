@@ -1,8 +1,7 @@
-
 // @flow
 
-// Express middleware that makes sure we have a continuation local storage 
-// context for each express request. 
+// Express middleware that makes sure we have a continuation local storage
+// context for each express request.
 
 const cls = require('../cls');
 

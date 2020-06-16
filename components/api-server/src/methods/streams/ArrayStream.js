@@ -1,5 +1,5 @@
-const Transform = require('stream').Transform;
-const inherits = require('util').inherits;
+const { Transform } = require('stream');
+const { inherits } = require('util');
 
 module.exports = ArrayStream;
 
@@ -13,7 +13,7 @@ const SERIALIZATION_STACK_SIZE = 1000;
  * @constructor
  */
 function ArrayStream(arrayName, isFirst) {
-  Transform.call(this, {objectMode: true});
+  Transform.call(this, { objectMode: true });
   this.isStart = true;
   this.prefix = formatPrefix(arrayName, isFirst);
   this.size = SERIALIZATION_STACK_SIZE;
@@ -27,9 +27,9 @@ ArrayStream.prototype._transform = function (item, encoding, callback) {
   if (this.stack.length >= this.size) {
     if (this.isStart) {
       this.isStart = false;
-      this.push((this.prefix + JSON.stringify(this.stack)).slice(0,-1));
+      this.push((this.prefix + JSON.stringify(this.stack)).slice(0, -1));
     } else {
-      this.push(',' + (JSON.stringify(this.stack)).slice(1,-1));
+      this.push(`,${(JSON.stringify(this.stack)).slice(1, -1)}`);
     }
     this.stack = [];
   }
@@ -46,7 +46,6 @@ ArrayStream.prototype._flush = function (callback) {
   callback();
 };
 
-
 /**
  * Formats the prefix in the right way depending on whether it is the first data
  * pushed on the result stream or not.
@@ -55,9 +54,9 @@ ArrayStream.prototype._flush = function (callback) {
  * @param isFirst
  * @returns {string}
  */
-function formatPrefix (prefix, isFirst) {
+function formatPrefix(prefix, isFirst) {
   if (isFirst) {
-    return '"' + prefix + '":';
+    return `"${prefix}":`;
   }
-  return ',"' + prefix + '":';
+  return `,"${prefix}":`;
 }

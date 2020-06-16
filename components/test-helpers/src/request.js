@@ -3,35 +3,35 @@
 const superagent = require('superagent');
 const url = require('url');
 const should = require('should');
-const assert = require('chai').assert;
+const { assert } = require('chai');
 
 /**
  * Helper for HTTP requests (with access token authentication).
  */
 module.exports = request;
-module.exports.unpatched = unpatchedRequest; 
-
+module.exports.unpatched = unpatchedRequest;
 
 // --------------------------------- new usage, unpatched sa with helpers added
 function unpatchedRequest(serverURL: string): UnpatchedRequest {
-  return new UnpatchedRequest(serverURL); 
+  return new UnpatchedRequest(serverURL);
 }
 
 class UnpatchedRequest {
-  serverURL: string; 
-  token: ?string; 
-  
+  serverURL: string;
+
+  token: ?string;
+
   constructor(serverURL: string) {
     this.serverURL = serverURL;
-    this.token = null; 
+    this.token = null;
   }
-  
+
   get(...args) {
     return this.execute('GET', ...args);
   }
-  
+
   execute(method: string, path: string, token?: string) {
-    const authToken = token || this.token; 
+    const authToken = token || this.token;
     const destUrl = url.resolve(this.serverURL, path);
 
     return new superagent.Request(method, destUrl)
@@ -49,12 +49,12 @@ function Request(serverURL) {
   this.token = null;
 }
 
-var methods = ['get', 'post', 'put', 'del', 'options'];
-methods.forEach(function (method) {
+const methods = ['get', 'post', 'put', 'del', 'options'];
+methods.forEach((method) => {
   Request.prototype[method] = function (path: any, token: any) {
     const destUrl = url.resolve(this.serverURL, path);
-    const authToken = token || this.token; 
-    
+    const authToken = token || this.token;
+
     return new IndifferentRequest(method, destUrl, authToken);
   };
 });
@@ -63,16 +63,16 @@ methods.forEach(function (method) {
  * @param {Function} callback (error)
  */
 Request.prototype.login = function (user: any, callback: any) {
-  var targetURL = url.resolve(this.serverURL, user.username + '/auth/login');
-  var authData = {
+  const targetURL = url.resolve(this.serverURL, `${user.username}/auth/login`);
+  const authData = {
     username: user.username,
     password: user.password,
-    appId: 'pryv-test'
+    appId: 'pryv-test',
   };
-  
+
   return superagent.post(targetURL)
     .set('Origin', 'http://test.pryv.local')
-    .send(authData).end(function (err, res) {
+    .send(authData).end((err, res) => {
       assert.isNull(err, 'Request must be a success');
       assert.isDefined(res, 'Request has a result');
       res.statusCode.should.eql(200);
@@ -84,41 +84,39 @@ Request.prototype.login = function (user: any, callback: any) {
       this.token = res.body.token;
 
       callback();
-    }.bind(this));
+    });
 };
 
 /**
  * A superagent request that only ever calls back with a single argument.  The
  * argument will be the response object, regardless of the error status of  the
- * query. 
- * 
+ * query.
+ *
  * NOTE This is not a good idea, but most of our tests assume this behaviour
- *      because things used to be this way. Important right now, deprecated as 
- *      well. 
- */ 
+ *      because things used to be this way. Important right now, deprecated as
+ *      well.
+ */
 class IndifferentRequest extends superagent.Request {
-  
-  /** Construct a request. 
-   * 
+  /** Construct a request.
+   *
    * @see superagent.Request
-   *    
+   *
    * @param  {string} method HTTP Method to use for this request
    * @param  {string|url.Url} url request url
    * @param  {string} token authentication token to use
-   */   
+   */
   constructor(method: string, url: string, token: string) {
-    // NOTE newer superagent versions don't know about delete; Let's pretend 
-    // we do. 
+    // NOTE newer superagent versions don't know about delete; Let's pretend
+    // we do.
     if (method === 'del') method = 'delete';
 
     super(method, url)
       .set('authorization', token);
   }
-  
+
   end(callback: (res: any) => void) {
     super.end((err, res) => {
       callback(res || err);
     });
-  } 
+  }
 }
-

@@ -8,7 +8,8 @@ const { produceMongoConnection, context } = require('../test-helpers');
 
 const lodash = require('lodash');
 const chai = require('chai');
-const assert = chai.assert;
+
+const { assert } = chai;
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
@@ -18,7 +19,8 @@ const { ErrorIds } = require('components/errors/src');
 const storage = require('components/test-helpers').dependencies.storage.user.accesses;
 
 describe('access deletions', () => {
-  let userId, streamId, activeToken, deletedToken, accessToken;
+  let userId; let streamId; let activeToken; let deletedToken; let
+      accessToken;
   before(async () => {
     userId = cuid();
     streamId = cuid();
@@ -28,9 +30,8 @@ describe('access deletions', () => {
   });
 
   describe('when given a few existing accesses', () => {
-
     const deletedTimestamp = timestamp.now('-1h');
-    
+
     let mongoFixtures;
     before(async () => {
       mongoFixtures = databaseFixture(await produceMongoConnection());
@@ -38,13 +39,17 @@ describe('access deletions', () => {
       await user.stream({ id: streamId }, () => {});
 
       await user.access({
-        type: 'app', token: activeToken,
-        name: 'active access', permissions: []
+        type: 'app',
+        token: activeToken,
+        name: 'active access',
+        permissions: [],
       });
       await user.access({
-        type: 'app', token: deletedToken,
-        name: 'deleted access', permissions: [],
-        deleted: deletedTimestamp
+        type: 'app',
+        token: deletedToken,
+        name: 'deleted access',
+        permissions: [],
+        deleted: deletedTimestamp,
       });
 
       await user.access({ token: accessToken, type: 'personal' });
@@ -63,7 +68,8 @@ describe('access deletions', () => {
     });
 
     describe('accesses.get', () => {
-      let res, accesses, deletions;
+      let res; let accesses; let
+          deletions;
 
       before(async () => {
         res = await server.request()
@@ -79,7 +85,7 @@ describe('access deletions', () => {
 
       it('[BQ7M] contains active accesses', () => {
         assert.equal(accesses.length, 2);
-        const activeAccess = accesses.find( a => a.token === activeToken );
+        const activeAccess = accesses.find((a) => a.token === activeToken);
         assert.isNotNull(activeAccess);
       });
 
@@ -95,7 +101,6 @@ describe('access deletions', () => {
     });
 
     describe('accesses.create', () => {
-
       describe('for a valid access', () => {
         let createdAccess;
 
@@ -105,9 +110,9 @@ describe('access deletions', () => {
           permissions: [
             {
               streamId: 'stream',
-              level: 'read'
-            }
-          ]
+              level: 'read',
+            },
+          ],
         };
 
         before(async () => {
@@ -124,14 +129,13 @@ describe('access deletions', () => {
 
         it('[J77Z] should contain the set values, but no "deleted" field in the API response', () => {
           assert.deepEqual(access, _.pick(createdAccess,
-            ['name', 'permissions', 'type']
-          ));
+            ['name', 'permissions', 'type']));
           assert.notExists(createdAccess.deleted);
         });
 
         it('[A4JP] should contain the field "deleted:null" in the database', (done) => {
           storage.findAll({ id: userId }, {}, (err, accesses) => {
-            const deletedAccess = accesses.find(a => a.name === access.name);
+            const deletedAccess = accesses.find((a) => a.name === access.name);
             assert.equal(deletedAccess.deleted, null);
             done();
           });
@@ -139,16 +143,17 @@ describe('access deletions', () => {
       });
 
       describe('for a deleted access', () => {
-        let res, error;
+        let res; let
+            error;
 
         const deletedAccess = {
           name: 'whatever',
           type: 'app',
           permissions: [{
             streamId: 'stream',
-            level: 'read'
+            level: 'read',
           }],
-          deleted: new Date()
+          deleted: new Date(),
         };
 
         before(async () => {
@@ -166,24 +171,23 @@ describe('access deletions', () => {
         it('[7ZPK] error should say that the deleted field is forbidden upon creation', () => {
           assert.equal(error.id, ErrorIds.InvalidParametersFormat);
         });
-
       });
-      
     });
 
     describe('accesses.update', () => {
-      let res, error, activeAccess;
+      let res; let error; let
+          activeAccess;
 
       before(async () => {
         res = await server.request()
           .get(`/${userId}/accesses`)
           .set('Authorization', accessToken);
-        activeAccess = res.body.accesses.find( a => a.token === activeToken );
+        activeAccess = res.body.accesses.find((a) => a.token === activeToken);
         res = await server.request()
           .put(`/${userId}/accesses/${activeAccess.id}`)
           .set('Authorization', accessToken)
           .send({
-            update: { deleted: new Date() }
+            update: { deleted: new Date() },
           });
       });
 
@@ -195,9 +199,7 @@ describe('access deletions', () => {
       it('[OS36] error should say that the deleted field is forbidden upon update', () => {
         assert.equal(error.id, ErrorIds.Gone);
       });
-
     });
-
   });
 });
 
@@ -206,61 +208,65 @@ describe('access expiry', () => {
   let mongoFixtures;
   // Set up a few ids that we'll use for testing. NOTE that these ids will
   // change on every test run.
-  let userId, streamId, accessToken, expiredToken, validId;
-  let hasExpiryId, hasExpiryToken;
+  let userId; let streamId; let accessToken; let expiredToken; let
+      validId;
+  let hasExpiryId; let
+      hasExpiryToken;
   before(async () => {
-    userId = cuid(); 
+    userId = cuid();
     streamId = cuid();
-    accessToken = cuid(); 
-    expiredToken = cuid(); 
-    validId = cuid(); 
-    hasExpiryId = cuid(); 
-    hasExpiryToken = cuid(); 
+    accessToken = cuid();
+    expiredToken = cuid();
+    validId = cuid();
+    hasExpiryId = cuid();
+    hasExpiryToken = cuid();
   });
 
   describe('when given a few existing accesses', () => {
-    
     let mongoFixtures;
     before(async () => {
       mongoFixtures = databaseFixture(await produceMongoConnection());
       const user = await mongoFixtures.user(userId);
-      await user.stream({id: streamId}, () => { });
-      
+      await user.stream({ id: streamId }, () => { });
+
       // A token that expired one day ago
       await user.access({
-        type: 'app', token: expiredToken, 
+        type: 'app',
+        token: expiredToken,
         expires: timestamp.now('-1d'),
         name: 'expired access',
-        permissions: [], 
+        permissions: [],
       });
-      
+
       // A token that is still valid
       await user.access({
-        id: hasExpiryId, 
-        type: 'app', token: hasExpiryToken, 
+        id: hasExpiryId,
+        type: 'app',
+        token: hasExpiryToken,
         expires: timestamp.now('1d'),
         name: 'valid access',
         permissions: [
           {
-            'streamId': 'diary',
-            'defaultName': 'Diary',
-            'level': 'read'
-          }
-        ]
+            streamId: 'diary',
+            defaultName: 'Diary',
+            level: 'read',
+          },
+        ],
       });
-        
+
       // A token that did never expire
       await user.access({
         id: validId,
-        type: 'app', token: cuid(), 
+        type: 'app',
+        token: cuid(),
         name: 'doesnt expire',
       });
 
-      await user.access({token: accessToken, type: 'personal'});
+      await user.access({ token: accessToken, type: 'personal' });
       await user.session(accessToken);
     });
     after(() => {
-      mongoFixtures.clean(); 
+      mongoFixtures.clean();
     });
 
     let server;
@@ -268,21 +274,21 @@ describe('access expiry', () => {
       server = await context.spawn();
     });
     after(() => {
-      server.stop(); 
+      server.stop();
     });
 
-    const isExpired = e => e.expires != null && timestamp.now() > e.expires;
+    const isExpired = (e) => e.expires != null && timestamp.now() > e.expires;
 
     describe('accesses.get', () => {
       describe('vanilla version', () => {
-        let res; 
-        let accesses; 
-        
+        let res;
+        let accesses;
+
         beforeEach(async () => {
           res = await server.request()
             .get(`/${userId}/accesses`)
             .set('Authorization', accessToken);
-            
+
           accesses = res.body.accesses;
         });
 
@@ -290,25 +296,26 @@ describe('access expiry', () => {
           assert.isNotNull(accesses);
         });
         it('[7NPE] contains only active accesses', () => {
-          for (const a of accesses) 
-            assert.isFalse(isExpired(a), 
+          for (const a of accesses) {
+            assert.isFalse(isExpired(a),
               `Access '${a.name}' is expired`);
+          }
         });
       });
 
       describe('when given the includeExpired=true parameter', () => {
-        let res; 
-        let accesses; 
-        
+        let res;
+        let accesses;
+
         beforeEach(async () => {
           res = await server.request()
             .get(`/${userId}/accesses`)
             .set('Authorization', accessToken)
             .query('includeExpired=true');
-            
+
           accesses = res.body.accesses;
         });
-        
+
         it('[PIGE] succeeds', () => {
           assert.isNotNull(accesses);
         });
@@ -330,22 +337,23 @@ describe('access expiry', () => {
             },
           ],
         };
-        
-        let res, access;
+
+        let res; let
+            access;
         beforeEach(async () => {
           res = await server.request()
             .post(`/${userId}/accesses`)
             .set('Authorization', accessToken)
             .send(attrs);
-          
+
           access = res.body.access;
-          
-          if (! res.ok && res.body.error != null) {
-            console.error(res.body.error);  // eslint-disable-line no-console
+
+          if (!res.ok && res.body.error != null) {
+            console.error(res.body.error); // eslint-disable-line no-console
             // console.dir(res.body.error.data[0].inner);
           }
         });
-        
+
         it('[3ONA] creates an access with set expiry timestamp', () => {
           assert.strictEqual(res.status, 201);
           assert.isAbove(access.expires, timestamp.now());
@@ -363,22 +371,23 @@ describe('access expiry', () => {
             },
           ],
         };
-        
-        let res, access;
+
+        let res; let
+            access;
         beforeEach(async () => {
           res = await server.request()
             .post(`/${userId}/accesses`)
             .set('Authorization', accessToken)
             .send(attrs);
-          
+
           access = res.body.access;
-          
-          if (! res.ok && res.body.error != null) {
-            console.error(res.body.error);  // eslint-disable-line no-console
+
+          if (!res.ok && res.body.error != null) {
+            console.error(res.body.error); // eslint-disable-line no-console
             // console.dir(res.body.error.data[0].inner);
           }
         });
-        
+
         it('[8B65] creates an expired access', () => {
           assert.strictEqual(res.status, 201);
           assert.isAbove(timestamp.now(), access.expires);
@@ -396,7 +405,7 @@ describe('access expiry', () => {
             },
           ],
         };
-        
+
         let res;
         beforeEach(async () => {
           res = await server.request()
@@ -404,7 +413,7 @@ describe('access expiry', () => {
             .set('Authorization', accessToken)
             .send(attrs);
         });
-                
+
         it('[JHWH] fails', () => {
           assert.strictEqual(res.status, 400);
           assert.strictEqual(res.body.error.message, 'expireAfter cannot be negative.');
@@ -414,73 +423,72 @@ describe('access expiry', () => {
 
     describe('accesses.checkApp', () => {
       describe('when the matching access is not expired', () => {
-        let res; 
+        let res;
         beforeEach(async () => {
           res = await server.request()
             .post(`/${userId}/accesses/check-app`)
             .set('Authorization', accessToken)
-            .send({ 
-              requestingAppId: 'valid access', 
+            .send({
+              requestingAppId: 'valid access',
               requestedPermissions: [
                 {
-                  'streamId': 'diary',
-                  'defaultName': 'Diary',
-                  'level': 'read'
-                }
-              ] 
+                  streamId: 'diary',
+                  defaultName: 'Diary',
+                  level: 'read',
+                },
+              ],
             });
         });
-        
+
         it('[B66B] returns the matching access', () => {
           assert.isTrue(res.ok);
           assert.strictEqual(res.body.matchingAccess.token, hasExpiryToken);
         });
       });
       describe('when the matching access is expired', () => {
-        let res; 
+        let res;
         beforeEach(async () => {
           res = await server.request()
             .post(`/${userId}/accesses/check-app`)
             .set('Authorization', accessToken)
-            .send({ 
-              requestingAppId: 'expired access', 
-              requestedPermissions: [] 
+            .send({
+              requestingAppId: 'expired access',
+              requestedPermissions: [],
             });
-            
+
           // NOTE It is important that the reason why we have a mismatch here is
-          // that the access is expired, not that we're asking for different 
-          // permissions. 
+          // that the access is expired, not that we're asking for different
+          // permissions.
         });
-        
+
         it('[DLHJ] returns no match', () => {
           assert.isUndefined(res.body.matchingAccess);
-          
+
           const mismatching = res.body.mismatchingAccess;
           assert.strictEqual(mismatching.token, expiredToken);
         });
       });
     });
-    
+
     describe('other API accesses', () => {
-      
       function apiAccess(token) {
         return server.request()
           .get(`/${userId}/events`)
           .set('Authorization', token);
       }
-      
+
       describe('using an expired access', () => {
         let res;
         beforeEach(async () => {
           res = await apiAccess(expiredToken);
         });
-        
+
         it('[AJG5] fails', () => {
           assert.strictEqual(res.status, 403);
         });
         it('[KGT4] returns a proper error message', () => {
-          const error = res.body.error; 
-          
+          const { error } = res.body;
+
           assert.isNotNull(error);
           assert.strictEqual(error.id, 'forbidden');
           assert.strictEqual(error.message, 'Access has expired.');
@@ -491,7 +499,7 @@ describe('access expiry', () => {
         beforeEach(async () => {
           res = await apiAccess(accessToken);
         });
-          
+
         it('[CBRF] succeeds', () => {
           assert.strictEqual(res.status, 200);
         });
@@ -506,26 +514,28 @@ describe('access client data', () => {
     return {
       id: cuid(),
       type: 'app',
-      name: name,
+      name,
       permissions: [],
-      clientData: clientData,
+      clientData,
     };
   }
-  
+
   // Set up a few ids that we'll use for testing. NOTE that these ids will
   // change on every test run.
-  let userId, streamId, accessToken, complexClientData, existingAccess;
-  let toBeUpdateAccess1, toBeUpdateAccess2, toBeUpdateAccess3, emptyClientDataAccess;
+  let userId; let streamId; let accessToken; let complexClientData; let
+      existingAccess;
+  let toBeUpdateAccess1; let toBeUpdateAccess2; let toBeUpdateAccess3; let
+      emptyClientDataAccess;
   let fixtureAccesses;
   before(async () => {
-    userId = cuid(); 
+    userId = cuid();
     streamId = cuid();
     accessToken = cuid();
     complexClientData = {
       aString: 'a random string',
       aNumber: 42,
       anArray: ['what', 'a', 'big', 'array', 'you', 'got'],
-      anObject: {child: 'I feel empty', leaf: 42}
+      anObject: { child: 'I feel empty', leaf: 42 },
     };
     existingAccess = sampleAccess('Access with complex clientData', complexClientData);
     toBeUpdateAccess1 = sampleAccess('Access to be updated 1', complexClientData);
@@ -536,13 +546,12 @@ describe('access client data', () => {
   });
 
   describe('when given a few existing accesses', () => {
-
     let mongoFixtures;
     before(async () => {
       mongoFixtures = databaseFixture(await produceMongoConnection());
       const user = await mongoFixtures.user(userId);
-      await user.stream({id: streamId}, () => { });
-      await user.access({token: accessToken, type: 'personal'});
+      await user.stream({ id: streamId }, () => { });
+      await user.access({ token: accessToken, type: 'personal' });
       await user.access(existingAccess);
       await user.access(toBeUpdateAccess1);
       await user.access(toBeUpdateAccess2);
@@ -551,7 +560,7 @@ describe('access client data', () => {
       await user.session(accessToken);
     });
     after(() => {
-      mongoFixtures.clean(); 
+      mongoFixtures.clean();
     });
 
     let server;
@@ -559,16 +568,17 @@ describe('access client data', () => {
       server = await context.spawn();
     });
     after(() => {
-      server.stop(); 
+      server.stop();
     });
 
     describe('accesses.get', () => {
-      let res, accesses; 
+      let res; let
+          accesses;
       before(async () => {
         res = await server.request()
           .get(`/${userId}/accesses`)
           .set('Authorization', accessToken);
-          
+
         accesses = res.body.accesses;
       });
 
@@ -578,19 +588,16 @@ describe('access client data', () => {
 
       it('[NY85] contains existing accesses with clientData', () => {
         for (const a of accesses) {
-          const fixtureAccess =
-            fixtureAccesses.find(f => {return f.id === a.id;});
-          if (fixtureAccess != null)
-            assert.deepEqual(a.clientData, fixtureAccess.clientData);
+          const fixtureAccess = fixtureAccesses.find((f) => f.id === a.id);
+          if (fixtureAccess != null) assert.deepEqual(a.clientData, fixtureAccess.clientData);
         }
       });
     });
 
     describe('accesses.create', () => {
-
-      function sampleAccess (name, clientData) {
+      function sampleAccess(name, clientData) {
         return {
-          name: name,
+          name,
           type: 'app',
           permissions: [
             {
@@ -598,12 +605,12 @@ describe('access client data', () => {
               level: 'read',
             },
           ],
-          clientData: clientData,
+          clientData,
         };
       }
 
-      function checkResultingAccess (res) {
-        const access = res.body.access;
+      function checkResultingAccess(res) {
+        const { access } = res.body;
         assert.isTrue(res.ok);
         assert.notExists(res.body.error);
         assert.exists(access);
@@ -611,16 +618,17 @@ describe('access client data', () => {
       }
 
       describe('when called with clientData={}', () => {
-        let res, access;
+        let res; let
+            access;
         before(async () => {
           res = await server.request()
             .post(`/${userId}/accesses`)
             .set('Authorization', accessToken)
             .send(sampleAccess('With empty clientData', {}));
-          
+
           access = checkResultingAccess(res);
         });
-        
+
         it('[OMUO] creates an access with empty clientData', () => {
           assert.strictEqual(res.status, 201);
           assert.deepEqual(access.clientData, {});
@@ -635,7 +643,7 @@ describe('access client data', () => {
             .set('Authorization', accessToken)
             .send(sampleAccess('With null clientData', null));
         });
-        
+
         it('[E5C1] throws a schema error', () => {
           assert.isFalse(res.ok);
           assert.exists(res.body.error);
@@ -643,7 +651,8 @@ describe('access client data', () => {
       });
 
       describe('when called with complex clientData', () => {
-        let res, access;
+        let res; let
+            access;
         before(async () => {
           res = await server.request()
             .post(`/${userId}/accesses`)
@@ -652,7 +661,7 @@ describe('access client data', () => {
 
           access = checkResultingAccess(res);
         });
-                
+
         it('[JYD4] creates an access with complex clientData', () => {
           assert.strictEqual(res.status, 201);
           assert.deepEqual(access.clientData, complexClientData);
@@ -661,7 +670,6 @@ describe('access client data', () => {
     });
 
     describe('accesses.checkApp', () => {
-
       async function checkAppRequest(req) {
         const res = await server.request()
           .post(`/${userId}/accesses/check-app`)
@@ -677,21 +685,21 @@ describe('access client data', () => {
       describe('when the provided clientData matches the existing clientData', () => {
         let body;
         before(async () => {
-          body = await checkAppRequest({ 
+          body = await checkAppRequest({
             requestingAppId: existingAccess.name,
             requestedPermissions: existingAccess.permissions,
             clientData: existingAccess.clientData,
           });
         });
-        
+
         it('[U1AM] returns the matching access', () => {
           assert.exists(body.matchingAccess);
           assert.strictEqual(body.matchingAccess.id, existingAccess.id);
         });
       });
-      
+
       describe('when the provided clientData does not match the existing clientData', () => {
-        let body; 
+        let body;
         before(async () => {
           body = await checkAppRequest({
             requestingAppId: existingAccess.name,
@@ -699,7 +707,7 @@ describe('access client data', () => {
             clientData: {},
           });
         });
-        
+
         it('[2EER] returns no match', () => {
           assert.exists(body.mismatchingAccess);
           assert.strictEqual(body.mismatchingAccess.id, existingAccess.id);
@@ -707,14 +715,14 @@ describe('access client data', () => {
       });
 
       describe('when no clientData is provided but existing access has one', () => {
-        let body; 
+        let body;
         before(async () => {
           body = await checkAppRequest({
             requestingAppId: existingAccess.name,
             requestedPermissions: existingAccess.permissions,
           });
         });
-        
+
         it('[DHZQ] returns no match', () => {
           assert.exists(body.mismatchingAccess);
           assert.strictEqual(body.mismatchingAccess.id, existingAccess.id);
@@ -725,28 +733,29 @@ describe('access client data', () => {
 });
 
 describe('access-info', () => {
-  
-  let mongoFixtures, userId,
-      token;
+  let mongoFixtures; let userId;
+  let token;
 
   before(() => {
     token = cuid();
     userId = cuid();
-  })
+  });
 
   before(async () => {
     mongoFixtures = databaseFixture(await produceMongoConnection());
     const user = await mongoFixtures.user(userId);
     await user.access({
-      type: 'app', token: token,
-      name: charlatan.Lorem.word(), permissions: [{
+      type: 'app',
+      token,
+      name: charlatan.Lorem.word(),
+      permissions: [{
         streamId: charlatan.Lorem.word(),
         level: 'read',
       }],
     });
   });
   after(() => {
-    mongoFixtures.clean(); 
+    mongoFixtures.clean();
   });
 
   let server;
@@ -754,7 +763,7 @@ describe('access-info', () => {
     server = await context.spawn();
   });
   after(() => {
-    server.stop(); 
+    server.stop();
   });
 
   function path() {
@@ -765,9 +774,8 @@ describe('access-info', () => {
     const res = await server.request()
       .get(path())
       .set('Authorization', token);
-    const body = res.body;
+    const { body } = res;
     assert.exists(body.username);
     assert.equal(body.username, userId);
   });
-
 });

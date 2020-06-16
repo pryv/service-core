@@ -1,7 +1,7 @@
 // @flow
 
-// Thrown when the request parsing fails. 
-// 
+// Thrown when the request parsing fails.
+//
 class ParseFailure extends Error {
 }
 
@@ -11,8 +11,8 @@ function error(msg: string): Error {
 
 module.exports = {
   // error class
-  ParseFailure, 
-  
+  ParseFailure,
+
   // error factories
-  error
+  error,
 };

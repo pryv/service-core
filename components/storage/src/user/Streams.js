@@ -1,10 +1,10 @@
-var async = require('async'),
-    BaseStorage = require('./BaseStorage'),
-    converters = require('./../converters'),
-    util = require('util'),
-    toString = require('components/utils').toString,
-    treeUtils = require('components/utils').treeUtils,
-    _ = require('lodash');
+const async = require('async');
+const util = require('util');
+const { toString } = require('components/utils');
+const { treeUtils } = require('components/utils');
+const _ = require('lodash');
+const converters = require('../converters');
+const BaseStorage = require('./BaseStorage');
 
 module.exports = Streams;
 
@@ -23,29 +23,29 @@ function Streams(database) {
     ],
     itemToDB: [
       converters.deletionToDB,
-      converters.stateToDB
+      converters.stateToDB,
     ],
     itemsToDB: [
       treeUtils.flattenTree,
-      cleanupDeletions
+      cleanupDeletions,
     ],
     updateToDB: [
       converters.stateUpdate,
-      converters.getKeyValueSetUpdateFn('clientData')
+      converters.getKeyValueSetUpdateFn('clientData'),
     ],
     itemFromDB: [converters.deletionFromDB],
     itemsFromDB: [treeUtils.buildTree],
-    convertIdToItemId: 'streamId'
+    convertIdToItemId: 'streamId',
   });
 
   this.defaultOptions = {
-    sort: {name: 1}
+    sort: { name: 1 },
   };
 }
 util.inherits(Streams, BaseStorage);
 
 function cleanupDeletions(streams) {
-  streams.forEach(function (s) {
+  streams.forEach((s) => {
     if (s.deleted) {
       delete s.parentId;
     }
@@ -53,25 +53,28 @@ function cleanupDeletions(streams) {
   return streams;
 }
 
-var indexes = [
+const indexes = [
   {
-    index: {streamId: 1},
-    options: {unique: true}
+    index: { streamId: 1 },
+    options: { unique: true },
   },
- {
-    index: {name: 1},
-    options: {}
+  {
+    index: { name: 1 },
+    options: {},
   },
   {
     index: { name: 1, parentId: 1 },
-    options: { unique: true, partialFilterExpression: {
-      deleted: { $type: 'null'}
-    } }
+    options: {
+      unique: true,
+      partialFilterExpression: {
+        deleted: { $type: 'null' },
+      },
+    },
   },
   {
-    index: {trashed: 1},
-    options: {}
-  }
+    index: { trashed: 1 },
+    options: {},
+  },
 ];
 
 /**
@@ -80,11 +83,10 @@ var indexes = [
 Streams.prototype.getCollectionInfo = function (user) {
   return {
     name: 'streams',
-    indexes: indexes,
-    useUserId: user.id
+    indexes,
+    useUserId: user.id,
   };
 };
-
 
 Streams.prototype.countAll = function (user, callback) {
   this.count(user, {}, callback);
@@ -93,30 +95,30 @@ Streams.prototype.countAll = function (user, callback) {
 Streams.prototype.insertOne = function (user, stream, callback) {
   async.series([
     function checkDeletionWithSameId(stepDone) {
-      if (! stream.id) { return stepDone(); }
+      if (!stream.id) { return stepDone(); }
 
-      this.findDeletion(user, {id: stream.id}, null, function (err, deletion) {
+      this.findDeletion(user, { id: stream.id }, null, (err, deletion) => {
         if (err) { return stepDone(err); }
-        if (! deletion) { return stepDone(); }
-        this.removeOne(user, {id: stream.id}, stepDone);
-      }.bind(this));
+        if (!deletion) { return stepDone(); }
+        this.removeOne(user, { id: stream.id }, stepDone);
+      });
     }.bind(this),
     function checkParent(stepDone) {
-      if (! stream.parentId) { return stepDone(); }
+      if (!stream.parentId) { return stepDone(); }
       checkParentExists.call(this, user, stream.parentId, stepDone);
-    }.bind(this)
-  ], function doInsertOne(err) {
+    }.bind(this),
+  ], (err) => {
     if (err) { return callback(err); }
     Streams.super_.prototype.insertOne.call(this, user, stream, callback);
-  }.bind(this));
+  });
 };
 
 Streams.prototype.updateOne = function (user, query, updatedData, callback) {
-  var self = this;
-  if (! updatedData.parentId) {
+  const self = this;
+  if (!updatedData.parentId) {
     doUpdate();
   } else {
-    checkParentExists.call(self, user, updatedData.parentId, function (err) {
+    checkParentExists.call(self, user, updatedData.parentId, (err) => {
       if (err) { return callback(err); }
       doUpdate();
     });
@@ -131,10 +133,10 @@ Streams.prototype.updateOne = function (user, query, updatedData, callback) {
  * @this {Streams}
  */
 function checkParentExists(user, parentId, callback) {
-  this.findOne(user, {id: parentId}, null, function (err, parent) {
+  this.findOne(user, { id: parentId }, null, (err, parent) => {
     if (err) { return callback(err); }
-    if (! parent) {
-      return callback(new Error('Unknown parent ' + toString.id(parentId)));
+    if (!parent) {
+      return callback(new Error(`Unknown parent ${toString.id(parentId)}`));
     }
     callback();
   });
@@ -145,8 +147,8 @@ function checkParentExists(user, parentId, callback) {
  * Implementation.
  */
 Streams.prototype.delete = function (user, query, callback) {
-  var update = {
-    $set: {deleted: new Date()},
+  const update = {
+    $set: { deleted: new Date() },
     $unset: {
       name: 1,
       parentId: 1,
@@ -156,10 +158,9 @@ Streams.prototype.delete = function (user, query, callback) {
       created: 1,
       createdBy: 1,
       modified: 1,
-      modifiedBy: 1
-    }
+      modifiedBy: 1,
+    },
   };
   this.database.updateMany(this.getCollectionInfo(user),
     this.applyQueryToDB(query), update, callback);
 };
-

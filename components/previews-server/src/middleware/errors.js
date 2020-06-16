@@ -1,8 +1,8 @@
-const errorHandling = require('components/errors').errorHandling;
-const APIError = require('components/errors').APIError;
+const { errorHandling } = require('components/errors');
+const { APIError } = require('components/errors');
 const errors = require('components/errors').factory;
 
-/*jshint -W098*/
+/* jshint -W098 */
 
 /**
  * Error route handling.
@@ -11,7 +11,7 @@ const errors = require('components/errors').factory;
 module.exports = function (logging) {
   const logger = logging.getLogger('routes');
 
-  /*eslint-disable no-unused-vars*/
+  /* eslint-disable no-unused-vars */
   return function handleError(error, req, res, next) {
     if (!(error instanceof APIError)) {
       error = errors.unexpectedError(error);
@@ -21,7 +21,7 @@ module.exports = function (logging) {
     res
       .status(error.httpStatus || 500)
       .json({
-        error: errorHandling.getPublicErrorData(error)
+        error: errorHandling.getPublicErrorData(error),
       });
   };
 };

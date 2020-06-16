@@ -6,8 +6,9 @@ const async = require('async');
 const childProcess = require('child_process');
 const dependencies = require('./dependencies');
 const mkdirp = require('mkdirp');
-const settings = dependencies.settings;
-const storage = dependencies.storage;
+
+const { settings } = dependencies;
+const { storage } = dependencies;
 const fs = require('fs');
 const path = require('path');
 const rimraf = require('rimraf');
@@ -16,6 +17,7 @@ const _ = require('lodash');
 // users
 
 const users = exports.users = require('./data/users');
+
 const defaultUser = users[0];
 
 exports.resetUsers = function (done) {
@@ -25,7 +27,7 @@ exports.resetUsers = function (done) {
     },
     function (stepDone) {
       storage.users.insertMany(users, stepDone);
-    }
+    },
   ], done);
 };
 
@@ -39,8 +41,8 @@ exports.resetAccesses = function (done, user, personalAccessToken, addToId) {
     accesses[0].token = personalAccessToken;
   }
   if (addToId) {
-    var data = JSON.parse(JSON.stringify(accesses));
-    for (var i=0; i < data.length; i++) {
+    const data = JSON.parse(JSON.stringify(accesses));
+    for (let i = 0; i < data.length; i++) {
       data[i].id += u.id;
     }
     resetData(storage.user.accesses, u, data, done);
@@ -59,8 +61,8 @@ exports.resetProfile = function (done, user) {
 
 // followed slices
 
-const followedSlicesURL = 'http://' + settings.http.ip + ':' + settings.http.port + '/' +
-    users[0].username;
+const followedSlicesURL = `http://${settings.http.ip}:${settings.http.port}/${
+  users[0].username}`;
 const followedSlices = exports.followedSlices = require('./data/followedSlices')(followedSlicesURL);
 
 exports.resetFollowedSlices = function (done, user) {
@@ -83,11 +85,10 @@ exports.resetStreams = function (done, user) {
   resetData(storage.user.streams, user || defaultUser, streams, done);
 };
 
-
 function resetData(storage, user, items, done) {
   async.series([
     storage.removeAll.bind(storage, user),
-    storage.insertMany.bind(storage, user, items)
+    storage.insertMany.bind(storage, user, items),
   ], done);
 }
 
@@ -96,7 +97,7 @@ function resetData(storage, user, items, done) {
 /**
  * Source attachments directory path (!= server storage path)
  */
-const attachmentsDirPath = exports.attachmentsDirPath = __dirname + '/data/attachments/';
+const attachmentsDirPath = exports.attachmentsDirPath = `${__dirname}/data/attachments/`;
 
 const attachments = exports.attachments = {
   animatedGif: getAttachmentInfo('animatedGif', 'animated.gif', 'image/gif'),
@@ -104,24 +105,24 @@ const attachments = exports.attachments = {
   document_modified: getAttachmentInfo('document', 'document.modified.pdf', 'application/pdf'),
   image: getAttachmentInfo('image', 'image (space and special chars).png', 'image/png'),
   imageBigger: getAttachmentInfo('imageBigger', 'image-bigger.jpg', 'image/jpeg'),
-  text: getAttachmentInfo('text', 'text.txt', 'text/plain')
+  text: getAttachmentInfo('text', 'text.txt', 'text/plain'),
 };
 
 function getAttachmentInfo(id, filename, type) {
   const filePath = path.join(attachmentsDirPath, filename);
   const data = fs.readFileSync(filePath);
   return {
-    id: id,
-    filename: filename,
+    id,
+    filename,
     path: filePath,
-    data: data,
+    data,
     size: data.length,
-    type: type
+    type,
   };
 }
 
 exports.resetAttachments = function (done, user) {
-  if (! user) {
+  if (!user) {
     user = defaultUser;
   }
   async.series([
@@ -131,15 +132,15 @@ exports.resetAttachments = function (done, user) {
     copyAttachmentFn(attachments.document, user, events[0].id),
     copyAttachmentFn(attachments.image, user, events[0].id),
     copyAttachmentFn(attachments.imageBigger, user, events[2].id),
-    copyAttachmentFn(attachments.animatedGif, user, events[12].id)
+    copyAttachmentFn(attachments.animatedGif, user, events[12].id),
   ], done);
 };
 
 function copyAttachmentFn(attachmentInfo, user, eventId) {
   return function (callback) {
-    const tmpPath = '/tmp/' + attachmentInfo.filename;
+    const tmpPath = `/tmp/${attachmentInfo.filename}`;
     try {
-      childProcess.execSync('cp "' + attachmentInfo.path + '" "' + tmpPath + '"');
+      childProcess.execSync(`cp "${attachmentInfo.path}" "${tmpPath}"`);
     } catch (e) {
       return callback(e);
     }
@@ -161,7 +162,7 @@ exports.dumpCurrent = function (mongoFolder, version, callback) {
   const mongodump = path.resolve(mongoFolder, 'bin/mongodump');
   const outputFolder = getDumpFolder(version);
 
-  console.log('Dumping current test data to ' + outputFolder);
+  console.log(`Dumping current test data to ${outputFolder}`);
 
   async.series([
     clearAllData,
@@ -174,15 +175,15 @@ exports.dumpCurrent = function (mongoFolder, version, callback) {
     exports.resetEvents,
     exports.resetAttachments,
     rimraf.bind(null, outputFolder),
-    childProcess.exec.bind(null, mongodump +
-        (settings.database.authUser ?
-            ' -u ' + settings.database.authUser + ' -p ' + settings.database.authPassword : '') +
-        ' --host ' + settings.database.host + ':' + settings.database.port +
-        ' --db ' + settings.database.name +
-        ' --out ' + getDumpDBSubfolder(outputFolder)),
-    childProcess.exec.bind(null, 'tar -C ' + settings.eventFiles.attachmentsDirPath +
-        ' -czf ' + getDumpFilesArchive(outputFolder) + ' .')
-  ], function (err) {
+    childProcess.exec.bind(null, `${mongodump
+        + (settings.database.authUser
+          ? ` -u ${settings.database.authUser} -p ${settings.database.authPassword}` : '')
+    } --host ${settings.database.host}:${settings.database.port
+    } --db ${settings.database.name
+    } --out ${getDumpDBSubfolder(outputFolder)}`),
+    childProcess.exec.bind(null, `tar -C ${settings.eventFiles.attachmentsDirPath
+    } -czf ${getDumpFilesArchive(outputFolder)} .`),
+  ], (err) => {
     if (err) { return callback(err); }
     callback();
   });
@@ -200,26 +201,26 @@ exports.restoreFromDump = function (versionNum, mongoFolder, callback) {
   const sourceDBFolder = getDumpDBSubfolder(sourceFolder);
   const sourceFilesArchive = getDumpFilesArchive(sourceFolder);
 
-  console.log('Restoring v' + versionNum + ' data from ' + sourceFolder);
+  console.log(`Restoring v${versionNum} data from ${sourceFolder}`);
 
-  if (! fs.existsSync(sourceDBFolder) || ! fs.existsSync(sourceFilesArchive)) {
-    throw new Error('Missing source dump or part of it at ' + sourceFolder);
+  if (!fs.existsSync(sourceDBFolder) || !fs.existsSync(sourceFilesArchive)) {
+    throw new Error(`Missing source dump or part of it at ${sourceFolder}`);
   }
 
   async.series([
     clearAllData,
-    childProcess.exec.bind(null, mongorestore +
-        (settings.database.authUser ?
-            ' -u ' + settings.database.authUser + ' -p ' + settings.database.authPassword : '') +
-        ' --host ' + settings.database.host + ':' + settings.database.port +
-        ' ' + sourceDBFolder),
-    function (done) { 
+    childProcess.exec.bind(null, `${mongorestore
+        + (settings.database.authUser
+          ? ` -u ${settings.database.authUser} -p ${settings.database.authPassword}` : '')
+    } --host ${settings.database.host}:${settings.database.port
+    } ${sourceDBFolder}`),
+    function (done) {
       mkdirp.sync(settings.eventFiles.attachmentsDirPath);
       done();
     },
-    childProcess.exec.bind(null, 'tar -xzf ' + sourceFilesArchive +
-        ' -C ' + settings.eventFiles.attachmentsDirPath)
-  ], function (err) {
+    childProcess.exec.bind(null, `tar -xzf ${sourceFilesArchive
+    } -C ${settings.eventFiles.attachmentsDirPath}`),
+  ], (err) => {
     if (err) { return callback(err); }
     console.log('OK');
     callback();
@@ -233,13 +234,13 @@ exports.restoreFromDump = function (versionNum, mongoFolder, callback) {
  * @returns {Object} structure
  */
 exports.getStructure = function (version) {
-  return require(path.resolve(__dirname + '/structure/' + version));
+  return require(path.resolve(`${__dirname}/structure/${version}`));
 };
 
 function clearAllData(callback) {
   async.series([
     storage.database.dropDatabase.bind(storage.database),
-    storage.user.eventFiles.removeAll.bind(storage.user.eventFiles)
+    storage.user.eventFiles.removeAll.bind(storage.user.eventFiles),
   ], callback);
 }
 

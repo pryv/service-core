@@ -2,86 +2,87 @@
  * JSON Schema specification of methods data for event streams.
  */
 
-var Action = require('./Action'),
-    stream = require('./stream'),
-    itemDeletion = require('./itemDeletion'),
-    helpers = require('./helpers'),
-    object = helpers.object,
-    array = helpers.array,
-    string = helpers.string,
-    number = helpers.number,
-    boolean = helpers.boolean;
+const Action = require('./Action');
+const stream = require('./stream');
+const itemDeletion = require('./itemDeletion');
+const helpers = require('./helpers');
+
+const { object } = helpers;
+const { array } = helpers;
+const { string } = helpers;
+const { number } = helpers;
+const { boolean } = helpers;
 
 module.exports = {
   get: {
     params: object({
-      'parentId': string(),
-      'state': string({enum: ['default', 'all']}),
-      'includeDeletionsSince': number()
+      parentId: string(),
+      state: string({ enum: ['default', 'all'] }),
+      includeDeletionsSince: number(),
     }),
     result: object({
-      'streams': array({$ref: '#/definitions/stream'}),
-      'eventDeletions': array(itemDeletion)
+      streams: array({ $ref: '#/definitions/stream' }),
+      eventDeletions: array(itemDeletion),
     }, {
       definitions: {
         // TODO: clean this schema $ref thing up
-        'stream': stream(Action.READ, false, '#/definitions/stream')
+        stream: stream(Action.READ, false, '#/definitions/stream'),
       },
-      required: [ 'streams' ]
-    })
+      required: ['streams'],
+    }),
   },
 
   create: {
     params: stream(Action.CREATE),
     result: object({
-      'stream': stream(Action.READ, true)
+      stream: stream(Action.READ, true),
     }, {
-      required: [ 'stream' ],
-      additionalProperties: false
-    })
+      required: ['stream'],
+      additionalProperties: false,
+    }),
   },
 
   update: {
     params: object({
       // in path for HTTP requests
-      'id': string(),
+      id: string(),
       // = body of HTTP requests
-      'update': {$ref: '#/definitions/stream'}
+      update: { $ref: '#/definitions/stream' },
     }, {
       definitions: {
         // TODO: clean this schema $ref thing up
-        'stream': stream(Action.UPDATE, false, '#/definitions/stream')
+        stream: stream(Action.UPDATE, false, '#/definitions/stream'),
       },
-      required: [ 'id', 'update' ]
+      required: ['id', 'update'],
     }),
     result: object({
-      'stream': stream(Action.READ, true)
+      stream: stream(Action.READ, true),
     }, {
-      required: [ 'stream' ],
-      additionalProperties: false
-    })
+      required: ['stream'],
+      additionalProperties: false,
+    }),
   },
 
   del: {
     params: object({
       // in path for HTTP requests
-      'id': string(),
+      id: string(),
       // in query string for HTTP requests
-      'mergeEventsWithParent': boolean()
+      mergeEventsWithParent: boolean(),
     }, {
-      required: [ 'id' ]
+      required: ['id'],
     }),
     result: {
       anyOf: [
-        object({stream: stream(Action.READ, true)}, {
+        object({ stream: stream(Action.READ, true) }, {
           required: ['stream'],
-          additionalProperties: false
+          additionalProperties: false,
         }),
-        object({streamDeletion: itemDeletion}, {
+        object({ streamDeletion: itemDeletion }, {
           required: ['streamDeletion'],
-          additionalProperties: false
-        })
-      ]
-    }
-  }
+          additionalProperties: false,
+        }),
+      ],
+    },
+  },
 };

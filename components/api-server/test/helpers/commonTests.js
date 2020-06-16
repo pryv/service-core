@@ -2,20 +2,20 @@
  * Regroups acceptance tests reused in different places.
  */
 
-var validation = require('./validation'),
-    ErrorIds = require('components/errors').ErrorIds,
-    request = require('superagent'),
-    url = require('url');
+const { ErrorIds } = require('components/errors');
+const request = require('superagent');
+const url = require('url');
+const validation = require('./validation');
 
 /**
  * @param {String} serverURL
  * @param {String} path
  */
 exports.checkAccessTokenAuthentication = function (serverURL, path, done) {
-  request.get(url.resolve(serverURL, path)).end(function (err, res) {
+  request.get(url.resolve(serverURL, path)).end((err, res) => {
     validation.check(res, {
       status: 401,
-      id: ErrorIds.InvalidAccessToken
+      id: ErrorIds.InvalidAccessToken,
     }, done);
   });
 };

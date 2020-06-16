@@ -1,40 +1,42 @@
-'use strict';
-
-/*global describe, before, after, it */
+/* global describe, before, after, it */
 
 require('./test-helpers');
-const helpers = require('./helpers');
-const ErrorIds = require('components/errors').ErrorIds;
-const methodsSchema = require('../src/schema/generalMethods');
-const validation = helpers.validation;
+const { ErrorIds } = require('components/errors');
+
+const { validation } = helpers;
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 const chai = require('chai');
-const assert = chai.assert;
+
+const { assert } = chai;
 const cuid = require('cuid');
 const bluebird = require('bluebird');
 const superagent = require('superagent'); // for basic auth
 
 const { databaseFixture } = require('components/test-helpers');
+const methodsSchema = require('../src/schema/generalMethods');
+const helpers = require('./helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
-describe('root', function() {
-  let user, user2;
+describe('root', () => {
+  let user; let
+      user2;
 
   let mongoFixtures;
-  before(async function () {
+  before(async () => {
     mongoFixtures = databaseFixture(await produceMongoConnection());
   });
   after(() => {
     mongoFixtures.clean();
   });
 
-  let username, personalAccess, personalAccessToken,
-      appAccessToken1, appAccessId1,
-      sharedAccessToken, sharedAccess,
-      stream, streamId, 
-      stream2, streamId2,
-      username2, appAccess2Token;
+  let username; let personalAccess; let personalAccessToken;
+  let appAccessToken1; let appAccessId1;
+  let sharedAccessToken; let sharedAccess;
+  let stream; let streamId;
+  let stream2; let streamId2;
+  let username2; let
+      appAccess2Token;
   before(() => {
     username = cuid();
     personalAccessToken = cuid();
@@ -55,7 +57,7 @@ describe('root', function() {
     server.stop();
   });
 
-  before(async function() {
+  before(async () => {
     user = await mongoFixtures.user(username, {});
     personalAccess = await user.access({
       type: 'personal', token: personalAccessToken,
@@ -69,7 +71,7 @@ describe('root', function() {
     stream2 = stream.attrs;
     await user.access({
       id: appAccessId1,
-      type: 'app', 
+      type: 'app',
       token: appAccessToken1,
       permissions: [{
         streamId: '*',
@@ -81,9 +83,9 @@ describe('root', function() {
       type: 'shared',
       permissions: [{
         streamId: stream.id,
-        level: 'manage'
+        level: 'manage',
       }],
-      clientData: 'This is a consent'
+      clientData: 'This is a consent',
     });
     sharedAccess = sharedAccess.attrs;
     await user.session(personalAccessToken);
@@ -93,7 +95,7 @@ describe('root', function() {
       id: 'u_2',
       password: 't3st-Numb3r',
       email: '00000@test.com',
-      language: 'en'
+      language: 'en',
     });
     await user2.access({
       type: 'app',
@@ -107,8 +109,8 @@ describe('root', function() {
     user2 = user2.attrs;
   });
 
-  describe('GET /', function() {
-    it('[UA7B] should return basic server meta information as JSON when requested', async function() {
+  describe('GET /', () => {
+    it('[UA7B] should return basic server meta information as JSON when requested', async () => {
       const res = await server.request()
         .get('/')
         .set('Accept', 'application/json');
@@ -117,7 +119,7 @@ describe('root', function() {
       validation.checkMeta(res.body);
     });
 
-    it('[TO50] should return basic server meta information as text otherwise', async function() {
+    it('[TO50] should return basic server meta information as text otherwise', async () => {
       const res = await server.request()
         .get('/')
         .set('Accept', 'text/html');
@@ -126,20 +128,20 @@ describe('root', function() {
       assert.match(res.text, /Pryv API/);
     });
 
-    it('[TS3D] should return an error if trying to access an unknown user account', async function() {
+    it('[TS3D] should return an error if trying to access an unknown user account', async () => {
       const res = await server.request()
         .get('/unknown_user/events');
       assert.equal(res.status, 404); // 404 does not throw
     });
   });
 
-  describe('All requests:', function() {
-    it('[TJHO] should return correct common HTTP headers + meta data in response body', async function() {
+  describe('All requests:', () => {
+    it('[TJHO] should return correct common HTTP headers + meta data in response body', async () => {
       const origin = 'https://test.pryv.io';
       const allowMethod = 'GET';
       const allowHeaders = 'Content-Type';
       const res = await server.request()
-        .get('/' + username + '/events')
+        .get(`/${username}/events`)
         .set('Origin', origin)
         .set('Authorization', appAccessToken1)
         .set('Access-Control-Request-Method', allowMethod)
@@ -150,68 +152,68 @@ describe('root', function() {
         { name: 'Access-Control-Allow-Methods', value: allowMethod },
         { name: 'Access-Control-Allow-Headers', value: allowHeaders },
         { name: 'Access-Control-Expose-Headers', value: 'API-Version' },
-        { name: 'Access-Control-Allow-Credentials', value: 'true' }
+        { name: 'Access-Control-Allow-Credentials', value: 'true' },
       ]);
       validation.checkMeta(res.body);
 
       assert.match(
         res.headers['api-version'],
         /^\d+\.\d+\.\d+(-\d+-[0-9a-z]+)?$/,
-        'API-Version looks like 1.2.3-432-fag343da.'
+        'API-Version looks like 1.2.3-432-fag343da.',
       );
       assert.notExists(res.headers['x-powered-by']);
     });
 
-    it('[OQ3G] should return meta data in response body for errors as well', async function() {
+    it('[OQ3G] should return meta data in response body for errors as well', async () => {
       const res = await server.request()
-        .get('/' + username + '/bad-path');
+        .get(`/${username}/bad-path`);
       assert.equal(res.status, 404);
       validation.checkMeta(res.body);
     });
 
-    it("[P06Y] should properly translate the Host header's username (i.e. subdomain)", async function() {
+    it("[P06Y] should properly translate the Host header's username (i.e. subdomain)", async () => {
       const res = await server.request()
         .get('/events')
-        .set('Host', username + '.pryv.local');
+        .set('Host', `${username}.pryv.local`);
       assert.equal(res.status, 200);
     });
 
-    it('[R3H5] should translate the username in subdomain also when it only contains numbers', async function() {
+    it('[R3H5] should translate the username in subdomain also when it only contains numbers', async () => {
       const res = await server.request()
-        .post('/' + username2 + '/auth/login')
+        .post(`/${username2}/auth/login`)
         .send({
           username: username2,
           password: user2.password,
-          appId: 'pryv-test'
+          appId: 'pryv-test',
         })
-        .set('Host', user2.username + '.pryv.local')
+        .set('Host', `${user2.username}.pryv.local`)
         .set('Origin', 'http://test.pryv.local')
         .set('Authorization', appAccess2Token);
       assert.equal(res.status, 200);
     });
 
-    it('[5IQK] should support POSTing "urlencoded" content with _json and _auth fields', async function() {
+    it('[5IQK] should support POSTing "urlencoded" content with _json and _auth fields', async () => {
       const res = await server.request()
-        .post('/' + username + '/streams')
+        .post(`/${username}/streams`)
         .type('form')
         .send({ _auth: appAccessToken1 })
         .send({ _json: JSON.stringify({ name: 'New stream1' }) });
       assert.equal(res.status, 201);
     });
 
-    it('[2YEI] should support POSTing "urlencoded" content with _json, _method (PUT) and _auth fields', async function() {
+    it('[2YEI] should support POSTing "urlencoded" content with _json, _method (PUT) and _auth fields', async () => {
       const res = await server.request()
-        .post('/' + username + '/streams/' + streamId)
+        .post(`/${username}/streams/${streamId}`)
         .type('form')
         .send({ _auth: appAccessToken1 })
         .send({ _method: 'PUT' })
-        .send({ _json: JSON.stringify({ name: 'Abrhackadabra' }) });  
+        .send({ _json: JSON.stringify({ name: 'Abrhackadabra' }) });
       assert.equal(res.status, 200);
     });
 
-    it('[VJTP] should support POSTing "urlencoded" content with _json, _method (DELETE) and _auth fields', async function() {
+    it('[VJTP] should support POSTing "urlencoded" content with _json, _method (DELETE) and _auth fields', async () => {
       const res = await server.request()
-        .post('/' + username + '/streams/' + streamId)
+        .post(`/${username}/streams/${streamId}`)
         .type('form')
         .query({ mergeEventsWithParent: false })
         .send({ _auth: appAccessToken1 })
@@ -219,9 +221,9 @@ describe('root', function() {
       assert.equal(res.status, 200);
     });
 
-    it('[6D5O] should properly handle JSON errors when POSTing "urlencoded" content with _json field', async function() {
+    it('[6D5O] should properly handle JSON errors when POSTing "urlencoded" content with _json field', async () => {
       const res = await server.request()
-        .post('/' + username + '/streams')
+        .post(`/${username}/streams`)
         .type('form')
         .unset('authorization')
         .send({ _auth: appAccessToken1 })
@@ -229,156 +231,145 @@ describe('root', function() {
       assert.equal(res.status, 400);
     });
 
-    it('[J2WP] should update the access\'s "last used" time and *internal* request counters', async function() {
+    it('[J2WP] should update the access\'s "last used" time and *internal* request counters', async () => {
       let expectedTime;
       const calledMethodKey = 'events:get';
       let originalCallCount;
 
       // checkOriginalAccess;
-      let access = await bluebird.fromCallback(cb => {
+      let access = await bluebird.fromCallback((cb) => {
         helpers.dependencies.storage.user.accesses.findOne(
           user,
           { token: personalAccessToken },
           null,
-          cb
+          cb,
         );
       });
-      originalCallCount =
-        access.calls && access.calls[calledMethodKey]
-          ? access.calls[calledMethodKey]
-          : 0;
+      originalCallCount = access.calls && access.calls[calledMethodKey]
+        ? access.calls[calledMethodKey]
+        : 0;
 
       // do request
       let res = await server.request()
-        .get('/' + username + '/events')
+        .get(`/${username}/events`)
         .set('Authorization', personalAccessToken);
       expectedTime = timestamp.now();
 
       // checkUpdatedAccess
-      access = await bluebird.fromCallback(cb => {
+      access = await bluebird.fromCallback((cb) => {
         helpers.dependencies.storage.user.accesses.findOne(
           user,
           { token: personalAccessToken },
           null,
-          cb
+          cb,
         );
       });
       assert.exists(access.lastUsed); //
-      assert.approximately(Math.round(access.lastUsed), 
+      assert.approximately(Math.round(access.lastUsed),
         Math.round(expectedTime), 5);
 
       assert.exists(access.calls);
       assert.exists(access.calls[calledMethodKey]);
       assert.equal(access.calls[calledMethodKey],
         originalCallCount + 1,
-        'number of calls'
-      );
+        'number of calls');
 
       // checkExposedAccess
       res = await server.request()
-        .get('/' + username + '/accesses')
+        .get(`/${username}/accesses`)
         .set('Authorization', personalAccessToken);
       const exposed = _.find(res.body.accesses, { token: personalAccessToken });
       assert.notExists(exposed.calls);
     });
 
-    it('should return the correct error if we post malformed JSON content', async function () {
-      
+    it('should return the correct error if we post malformed JSON content', async () => {
+
     });
   });
 
-  
-  describe('OPTIONS /', function() {
-    it('[PDMA] should return OK', async function() {
+  describe('OPTIONS /', () => {
+    it('[PDMA] should return OK', async () => {
       const res = await server.request()
         .options('/');
       assert.equal(res.status, 200);
     });
   });
 
-  describe('GET /access-info', function() {
-
-    it('[0MI8] must return current access information', async function() {
+  describe('GET /access-info', () => {
+    it('[0MI8] must return current access information', async () => {
       const res = await server.request()
-        .get('/' + username + '/access-info')
+        .get(`/${username}/access-info`)
         .set('Authorization', sharedAccessToken);
       validation.check(
         res,
         {
           status: 200,
-          schema: methodsSchema.getAccessInfo.result, 
+          schema: methodsSchema.getAccessInfo.result,
           body: sharedAccess,
-        }
+        },
       );
     });
   });
 
-  
-
-  describe('Accept Basic Auth request', function () {
-
+  describe('Accept Basic Auth request', () => {
     let url;
-    before(function () {
+    before(() => {
       url = server.baseUrl;
     });
 
     // I didn't manage to make these tests work with server.request() which returns
     // an instance of supertest, so I have used superagent instead.
 
-    it('[0MI9] must accept the https://token@user.domain/ AUTH schema', async function () {
-      const fullurl = url.replace('http://', 'http://' + sharedAccess.token + '@');
+    it('[0MI9] must accept the https://token@user.domain/ AUTH schema', async () => {
+      const fullurl = url.replace('http://', `http://${sharedAccess.token}@`);
       const res = await superagent
-        .get(fullurl + '/' + user.username + '/access-info');
+        .get(`${fullurl}/${user.username}/access-info`);
       assert.equal(res.status, 200);
     });
 
-    it('[0MI0] must accept the https://token:anystring@user.domain/ AUTH schema', async function () {
-      const fullurl = url.replace('http://', 'http://' + sharedAccess.token + ':anystring@');
+    it('[0MI0] must accept the https://token:anystring@user.domain/ AUTH schema', async () => {
+      const fullurl = url.replace('http://', `http://${sharedAccess.token}:anystring@`);
       const res = await superagent
-        .get(fullurl + '/' + user.username + '/access-info');
+        .get(`${fullurl}/${user.username}/access-info`);
       assert.equal(res.status, 200);
     });
 
-    it('[3W3Y] must accept the https://token:@user.domain/ AUTH schema', async function () {
-      const fullurl = url.replace('http://', 'http://' + sharedAccess.token + ':@');
+    it('[3W3Y] must accept the https://token:@user.domain/ AUTH schema', async () => {
+      const fullurl = url.replace('http://', `http://${sharedAccess.token}:@`);
       const res = await superagent
-        .get(fullurl + '/' + user.username + '/access-info');
-      assert.equal(res.status, 200);        
+        .get(`${fullurl}/${user.username}/access-info`);
+      assert.equal(res.status, 200);
     });
 
-    it('[M54U] must return a 401 error when basic auth is missing using https://@user.domain/', async function () {
+    it('[M54U] must return a 401 error when basic auth is missing using https://@user.domain/', async () => {
       const fullurl = url.replace('http://', 'http://@');
       try {
         await superagent
-          .get(fullurl + '/' + user.username + '/access-info');
+          .get(`${fullurl}/${user.username}/access-info`);
         assert.fail('this should have thrown');
       } catch (e) {
         assert.equal(e.response.status, 401);
       }
-      
     });
 
-    it('[TPH4] must return a 403 error when using https://:token@user.domain/', async function() {
-      const fullurl = url.replace('http://', 'http://:' + sharedAccess.token + '@');
+    it('[TPH4] must return a 403 error when using https://:token@user.domain/', async () => {
+      const fullurl = url.replace('http://', `http://:${sharedAccess.token}@`);
       try {
         await superagent
-          .get(fullurl + '/' + user.username + '/access-info');
+          .get(`${fullurl}/${user.username}/access-info`);
         assert.fail('this should have thrown');
       } catch (e) {
         assert.equal(e.response.status, 403);
       }
     });
-  
   });
 
-  
-  describe('POST / (i.e. batch call)', function() {
-
+  describe('POST / (i.e. batch call)', () => {
     let eventsNotifCount;
-    before(function () {
+    before(() => {
       eventsNotifCount = 0;
-      
-      server.on('events-changed', function () {
+
+      server.on('events-changed', () => {
         eventsNotifCount++;
       });
     });
@@ -386,7 +377,7 @@ describe('root', function() {
     const testType = 'test/test';
 
     // fixes #198
-    it('[2IV3] must be able to create streams with non-star permissions access', async function() {
+    it('[2IV3] must be able to create streams with non-star permissions access', async () => {
       const midParentId = 'sonofParent';
       const calls = [
         {
@@ -395,7 +386,7 @@ describe('root', function() {
             parentId: stream.id,
             id: midParentId,
             name: 'Son of Parent',
-          }
+          },
         },
         {
           method: 'streams.create',
@@ -403,21 +394,21 @@ describe('root', function() {
             parentId: midParentId,
             id: 'whatever-123',
             name: 'grand son stream',
-          }
-        }
+          },
+        },
       ];
       const res = await server.request()
-        .post('/' + username) 
+        .post(`/${username}`)
         .set('Authorization', sharedAccessToken)
         .send(calls);
       assert.equal(res.status, 200);
-      const results = res.body.results;
+      const { results } = res.body;
       assert.exists(results);
       assert.exists(results[0].stream);
       assert.exists(results[1].stream);
     });
 
-    it('[ORT3] must execute the given method calls and return the results', async function() {
+    it('[ORT3] must execute the given method calls and return the results', async () => {
       const calls = [
         {
           method: 'events.create',
@@ -451,7 +442,7 @@ describe('root', function() {
       ];
 
       const res = await server.request()
-        .post('/' + username)
+        .post(`/${username}`)
         .set('authorization', appAccessToken1)
         .send(calls);
       validation.check(res, {
@@ -459,7 +450,7 @@ describe('root', function() {
         schema: methodsSchema.callBatch.result,
       });
 
-      const results = res.body.results;
+      const { results } = res.body;
       assert.equal(results.length, calls.length, 'method call results');
       assert.exists(results[0].event);
       validation.checkObjectEquality(
@@ -469,8 +460,8 @@ describe('root', function() {
             id: results[0].event.id,
             tags: [],
           },
-          _.extend(calls[0].params, { streamId: calls[0].params.streamIds[0]})
-        )
+          _.extend(calls[0].params, { streamId: calls[0].params.streamIds[0] }),
+        ),
       );
 
       assert.exists(results[1].event);
@@ -480,16 +471,16 @@ describe('root', function() {
           {
             id: results[1].event.id,
           },
-          _.extend(calls[1].params, { streamId: calls[1].params.streamIds[0]})
-        )
+          _.extend(calls[1].params, { streamId: calls[1].params.streamIds[0] }),
+        ),
       );
       assert.exists(results[2].error);
       assert.equal(results[2].error.id, ErrorIds.UnknownReferencedResource);
       assert.equal(eventsNotifCount, 2, 'events notifications');
     });
 
-    it('[TVPI] must execute the method calls containing events.get and ' +
-        'return the results', async function() {
+    it('[TVPI] must execute the method calls containing events.get and '
+        + 'return the results', async () => {
       const streamId = 'batch-call-streamId';
       const calls = [
         {
@@ -515,7 +506,7 @@ describe('root', function() {
       ];
       const res = await server
         .request()
-        .post('/' + username)
+        .post(`/${username}`)
         .send(calls)
         .set('authorization', appAccessToken1);
       validation.check(res, {
@@ -524,7 +515,7 @@ describe('root', function() {
       });
 
       validation.checkMeta(res.body);
-      const results = res.body.results;
+      const { results } = res.body;
       assert.equal(results.length, calls.length, 'method call results');
       assert.exists(results[0].stream);
       validation.checkObjectEquality(
@@ -533,8 +524,8 @@ describe('root', function() {
           {
             parentId: null,
           },
-          calls[0].params
-        )
+          calls[0].params,
+        ),
       );
       assert.exists(results[1].event);
       validation.checkObjectEquality(
@@ -544,8 +535,8 @@ describe('root', function() {
             tags: [],
             id: results[1].event.id,
           },
-          _.extend(calls[1].params, { streamId: calls[1].params.streamIds[0]}),
-        )
+          _.extend(calls[1].params, { streamId: calls[1].params.streamIds[0] }),
+        ),
       );
 
       const getEventsResult = results[2];
@@ -554,7 +545,7 @@ describe('root', function() {
     });
 
     // fixes #222
-    it('[U4RB] should not add a null meta field in the response', async function() {
+    it('[U4RB] should not add a null meta field in the response', async () => {
       const streamId = 'batch-call-streamId-meta';
       const calls = [
         {
@@ -563,11 +554,11 @@ describe('root', function() {
             id: streamId,
             name: 'i don\'t want meta !',
           },
-        }
+        },
       ];
       const res = await server
         .request()
-        .post('/' + username)
+        .post(`/${username}`)
         .send(calls)
         .set('authorization', appAccessToken1);
       validation.check(res, {
@@ -576,13 +567,13 @@ describe('root', function() {
       });
 
       validation.checkMeta(res.body);
-      const results = res.body.results;
-      for(let i = 0; i < results.length; i++) {
+      const { results } = res.body;
+      for (let i = 0; i < results.length; i++) {
         assert.notInclude(Object.keys(results[i]), 'meta');
       }
     });
 
-    it('[WGVY] must return an error if the sent data is badly formatted', async function() {
+    it('[WGVY] must return an error if the sent data is badly formatted', async () => {
       const calls = [
         {
           method: 'events.create',
@@ -590,7 +581,7 @@ describe('root', function() {
         },
       ];
       const res = await server.request()
-        .post('/' + username)
+        .post(`/${username}`)
         .send(calls)
         .set('authorization', appAccessToken1);
       validation.checkErrorInvalidParams(res);

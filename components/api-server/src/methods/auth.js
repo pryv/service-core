@@ -1,9 +1,10 @@
-var commonFns = require('./helpers/commonFunctions'),
-    utils = require('components/utils'),
-    encryption = utils.encryption,
-    errors = require('components/errors').factory,
-    methodsSchema = require('../schema/authMethods'),
-    _ = require('lodash');
+const commonFns = require('./helpers/commonFunctions');
+const utils = require('components/utils');
+
+const { encryption } = utils;
+const errors = require('components/errors').factory;
+const _ = require('lodash');
+const methodsSchema = require('../schema/authMethods');
 
 /**
  * Auth API methods implementations.
@@ -26,19 +27,19 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
     setAdditionalInfo);
 
   function applyPrerequisitesForLogin(context, params, result, next) {
-    var fixedUsername = params.username.toLowerCase();
+    const fixedUsername = params.username.toLowerCase();
     if (context.user.username !== fixedUsername) {
-      return next(errors.invalidOperation('The username in the path does not match that of ' +
-          'the credentials.'));
+      return next(errors.invalidOperation('The username in the path does not match that of '
+          + 'the credentials.'));
     }
     next();
   }
 
   function checkPassword(context, params, result, next) {
-    encryption.compare(params.password, context.user.passwordHash, function (err, isValid) {
+    encryption.compare(params.password, context.user.passwordHash, (err, isValid) => {
       if (err) { return next(errors.unexpectedError(err)); }
 
-      if (! isValid) {
+      if (!isValid) {
         return next(errors.invalidCredentials());
       }
       next();
@@ -48,15 +49,15 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
   function openSession(context, params, result, next) {
     context.sessionData = {
       username: context.user.username,
-      appId: params.appId
+      appId: params.appId,
     };
-    sessionsStorage.getMatching(context.sessionData, function (err, sessionId) {
+    sessionsStorage.getMatching(context.sessionData, (err, sessionId) => {
       if (err) { return next(errors.unexpectedError(err)); }
       if (sessionId) {
         result.token = sessionId;
         next();
       } else {
-        sessionsStorage.generate(context.sessionData, function (err, sessionId) {
+        sessionsStorage.generate(context.sessionData, (err, sessionId) => {
           if (err) { return next(errors.unexpectedError(err)); }
           result.token = sessionId;
           next();
@@ -70,7 +71,7 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
     // a
     findAccess(context, (err, access) => {
       if (err) { return next(errors.unexpectedError(err)); }
-      var accessData = {token: result.token};
+      const accessData = { token: result.token };
       // Access is already existing, updating it with new token (as we have updated the sessions with it earlier).
       if (access != null) {
         updatePersonalAccess(accessData, context, next);
@@ -99,17 +100,17 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
         });
       }
     });
-    
+
     function findAccess(context, callback) {
       userAccessesStorage.findOne(context.user, context.accessQuery, null, callback);
     }
-    
+
     function createAccess(access, context, callback) {
       _.extend(access, context.accessQuery);
       context.initTrackingProperties(access, 'system');
       userAccessesStorage.insertOne(context.user, access, callback);
     }
-    
+
     function updatePersonalAccess(access, context, callback) {
       context.updateTrackingProperties(access, 'system');
       userAccessesStorage.updateOne(context.user, context.accessQuery, access, callback);
@@ -128,10 +129,9 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
     destroySession);
 
   function destroySession(context, params, result, next) {
-    sessionsStorage.destroy(context.accessToken, function (err) {
+    sessionsStorage.destroy(context.accessToken, (err) => {
       next(err ? errors.unexpectedError(err) : null);
     });
   }
-
 };
 module.exports.injectDependencies = true;

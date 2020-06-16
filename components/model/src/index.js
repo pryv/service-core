@@ -1,9 +1,9 @@
 // @flow
 
+import type { CustomAuthFunction } from './MethodContext';
+
 module.exports = {
   accessLogic: require('./accessLogic'),
-  MethodContext: require('./MethodContext')
+  MethodContext: require('./MethodContext'),
 };
-
-import type { CustomAuthFunction } from './MethodContext';
 export type { CustomAuthFunction };

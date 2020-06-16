@@ -4,17 +4,24 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const EventEmitter = require('events');
 const bluebird = require('bluebird');
+
 const PORT = 6123;
 
 class HttpServer extends EventEmitter {
-
   app: express$Application;
+
   server: ?HttpServer;
+
   messages: Array<string>;
+
   metas: Array<string>;
+
   messageReceived: boolean;
+
   messageCount: number;
+
   responseStatus: number;
+
   responseDelay: ?number;
 
   constructor(path: string, statusCode: number, responseBody: {}, delay: number) {
@@ -31,7 +38,6 @@ class HttpServer extends EventEmitter {
     const that = this;
     app.use(bodyParser.json());
     app.post(path, (req: express$Request, res: express$Response) => {
-
       this.emit('received');
       if (that.responseDelay == null) {
         processMessage.call(that, req, res);
@@ -49,7 +55,7 @@ class HttpServer extends EventEmitter {
       this.messageCount++;
       this.emit('responding');
       res.status(this.responseStatus)
-        .json(responseBody || { ok: '1'});
+        .json(responseBody || { ok: '1' });
     }
 
     this.app = app;
@@ -89,11 +95,11 @@ class HttpServer extends EventEmitter {
 
   close() {
     return bluebird.fromCallback(
-      (cb) => { 
+      (cb) => {
         if (this.server == null) return cb();
-        this.server.close(cb); 
-      });
+        this.server.close(cb);
+      },
+    );
   }
 }
 module.exports = HttpServer;
-

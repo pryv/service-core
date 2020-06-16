@@ -1,10 +1,11 @@
 // @flow
 
-// Tests pertaining to storing data in a hf series. 
+// Tests pertaining to storing data in a hf series.
 
 /* global describe, it */
 const chai = require('chai');
-const assert = chai.assert;
+
+const { assert } = chai;
 
 const DataMatrix = require('../../../src/series/data_matrix');
 const { ParseFailure } = require('../../../src/series/errors');
@@ -13,65 +14,65 @@ const Row = require('../../../src/series/row');
 const { TypeRepository } = require('../../../src/types');
 const InfluxRowType = require('../../../src/types/influx_row_type');
 
-describe('DataMatrix', function () {
+describe('DataMatrix', () => {
   describe('.parse(obj)', () => {
-    const typeRepo = new TypeRepository(); 
+    const typeRepo = new TypeRepository();
     const type: InfluxRowType = (typeRepo.lookup('series:position/wgs84'): any);
-    
+
     it('[576J] should accept the happy path', () => {
       good({
-        'format': 'flatJSON', 
-        'fields': ['deltaTime', 'latitude', 'longitude', 'altitude'], 
-        'points': [
-          [0, 10.2, 11.2, 500]
-        ]
+        format: 'flatJSON',
+        fields: ['deltaTime', 'latitude', 'longitude', 'altitude'],
+        points: [
+          [0, 10.2, 11.2, 500],
+        ],
       });
     });
-    
+
     it('[IQTE] refuses if not an object', () => {
       bad(null);
       bad('a string');
     });
     it('[WQGB] refuses if format is not flatJSON', () => {
       bad({
-        format: 'somethingElse'
+        format: 'somethingElse',
       });
     });
     it('[34RS] refuses if fields are not strings', () => {
       bad({
-        format: 'flatJSON', 
-        fields: null
+        format: 'flatJSON',
+        fields: null,
       });
       bad({
-        format: 'flatJSON', 
-        fields: 42
+        format: 'flatJSON',
+        fields: 42,
       });
       bad({
-        format: 'flatJSON', 
-        fields: [ 13, 14 ]
+        format: 'flatJSON',
+        fields: [13, 14],
       });
     });
     it('[M5BI] refuses if points is not an array', () => {
       bad({
-        format: 'flatJSON', 
-        fields: [ 'ts', 'foo' ], 
-        points: 42
+        format: 'flatJSON',
+        fields: ['ts', 'foo'],
+        points: 42,
       });
     });
     it('[V0SH] refuses if field names are not correct', () => {
       bad({
-        format: 'flatJSON', 
-        fields: [ 'ts', 'foo' ], 
-        points: []
+        format: 'flatJSON',
+        fields: ['ts', 'foo'],
+        points: [],
       });
     });
     it('[SBU1] refuses if data cannot be coerced', () => {
       bad({
-        format: 'flatJSON', 
-        fields: [ 'deltaTime', 'latitude' ], 
+        format: 'flatJSON',
+        fields: ['deltaTime', 'latitude'],
         points: [
           [0, null],
-        ]
+        ],
       });
     });
 
@@ -87,117 +88,116 @@ describe('DataMatrix', function () {
     }
   });
 
-  describe('#eachRow', function () {
-    it('[QUQ3] should iterate over all matrix rows', function () {
-      const headers = ['a', 'b', 'c']; 
+  describe('#eachRow', () => {
+    it('[QUQ3] should iterate over all matrix rows', () => {
+      const headers = ['a', 'b', 'c'];
       const matrix = new DataMatrix(
         headers,
         [
-          [1,2,3], [4,5,6]
-        ]
-      ); 
-      
-      let times = 0; 
+          [1, 2, 3], [4, 5, 6],
+        ],
+      );
+
+      let times = 0;
       matrix.eachRow((row, idx) => {
-        if (idx == 0) assert.deepEqual(row.values, [1,2,3]);
-        if (idx == 1) assert.deepEqual(row.values, [4,5,6]);
+        if (idx == 0) assert.deepEqual(row.values, [1, 2, 3]);
+        if (idx == 1) assert.deepEqual(row.values, [4, 5, 6]);
 
         assert.strictEqual(row.columnNames, headers);
-        
-        times += 1; 
+
+        times += 1;
       });
 
       assert.strictEqual(times, 2);
     });
   });
-  describe('#transform', function () {
-    it('[L03R] should call fn for each cell', function () {
-      const headers = ['a', 'b', 'c']; 
+  describe('#transform', () => {
+    it('[L03R] should call fn for each cell', () => {
+      const headers = ['a', 'b', 'c'];
       const matrix = new DataMatrix(
         headers,
         [
-          [1,2,3], [4,5,6]
-        ]
-      ); 
-      
-      let n = 0; 
+          [1, 2, 3], [4, 5, 6],
+        ],
+      );
+
+      let n = 0;
       matrix.transform((name, value) => {
         assert.strictEqual(name, headers[n % 3]);
-        assert.strictEqual(value, n+1);
-        
-        n += 1; 
+        assert.strictEqual(value, n + 1);
+
+        n += 1;
 
         return value; // satisfy the checker
       });
-      
+
       assert.strictEqual(n, 6);
     });
-    it('[7BRV] should store the return value in the matrix', function () {
-      const headers = ['a', 'b', 'c']; 
+    it('[7BRV] should store the return value in the matrix', () => {
+      const headers = ['a', 'b', 'c'];
       const matrix = new DataMatrix(
         headers,
         [
-          [1,2,3], [4,5,6]
-        ]
-      ); 
+          [1, 2, 3], [4, 5, 6],
+        ],
+      );
 
-      matrix.transform(() => {
-        return 42; // don't ask
-      });
-      
+      matrix.transform(() => 42, // don't ask
+      );
+
       assert.deepEqual(matrix.at(0), [42, 42, 42]);
     });
   });
   describe('#minmax()', () => {
     it('[QGY6] returns the minimum and maximum deltaTime used', () => {
-      const headers = ['a', 'b', 'deltaTime']; 
+      const headers = ['a', 'b', 'deltaTime'];
       const matrix = new DataMatrix(
         headers,
         [
-          [1,2,3], [4,5,6]
-        ]
+          [1, 2, 3], [4, 5, 6],
+        ],
       );
-      
+
       const { from, to } = matrix.minmax();
       assert.strictEqual(from, 3);
       assert.strictEqual(to, 6);
     });
     it('[ROK8] throws an error if the matrix is empty', () => {
-      const headers = ['a', 'b', 'deltaTime']; 
+      const headers = ['a', 'b', 'deltaTime'];
       const matrix = new DataMatrix(
         headers,
-        [ ]
+        [],
       );
-      
-      assert.throws( () => matrix.minmax() );
+
+      assert.throws(() => matrix.minmax());
     });
     it('[79DA] throws an error if the deltaTime is missing', () => {
-      const headers = ['a', 'b', 'c']; 
+      const headers = ['a', 'b', 'c'];
       const matrix = new DataMatrix(
         headers,
         [
-          [1,2,3], [4,5,6]
-        ]
+          [1, 2, 3], [4, 5, 6],
+        ],
       );
-      
+
       assert.throws(
-        () => matrix.minmax()
+        () => matrix.minmax(),
       );
     });
   });
 });
 
-describe('business.series.Row', function () {
-  describe('toStruct', function () {
-    it('[NJ4G] should return a js object for the row', function () {
+describe('business.series.Row', () => {
+  describe('toStruct', () => {
+    it('[NJ4G] should return a js object for the row', () => {
       const row = new Row([1, 2], ['a', 'b']);
-      
+
       const obj = row.toStruct();
-        
-      // FLOW 
+
+      // FLOW
       assert.strictEqual(obj.a, 1);
       // FLOW
-      assert.strictEqual(obj.b, 2); 
+      assert.strictEqual(obj.b, 2);
       assert.strictEqual(Object.keys(obj).length, 2);
     });
   });

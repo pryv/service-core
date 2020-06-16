@@ -1,6 +1,6 @@
-var Readable = require('stream').Readable,
-    inherits = require('util').inherits,
-    R = require('ramda');
+const { Readable } = require('stream');
+const { inherits } = require('util');
+const R = require('ramda');
 
 module.exports = Source;
 
@@ -11,7 +11,7 @@ module.exports = Source;
  * @constructor
  */
 function Source(array) {
-  Readable.call(this, {objectMode: true});
+  Readable.call(this, { objectMode: true });
   this.array = R.clone(array); // shift changes in place
 }
 
@@ -20,9 +20,8 @@ inherits(Source, Readable);
 Source.prototype._read = function () {
   if (!this.array || this.array.length === 0) {
     this.push(null);
-  }
-  else {
-    var reading = this.array.shift();
+  } else {
+    const reading = this.array.shift();
     this.push(reading);
   }
 };

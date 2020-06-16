@@ -1,9 +1,9 @@
-var errors = require('components/errors').factory,
-    commonFns = require('./helpers/commonFunctions'),
-    mailing = require('./helpers/mailing'),
-    encryption = require('components/utils').encryption,
-    methodsSchema = require('../schema/accountMethods'),
-    request = require('superagent');
+const errors = require('components/errors').factory;
+const { encryption } = require('components/utils');
+const request = require('superagent');
+const commonFns = require('./helpers/commonFunctions');
+const mailing = require('./helpers/mailing');
+const methodsSchema = require('../schema/accountMethods');
 
 /**
  * @param api
@@ -15,18 +15,17 @@ var errors = require('components/errors').factory,
  */
 module.exports = function (api, usersStorage, passwordResetRequestsStorage,
   authSettings, servicesSettings, notifications) {
-
-  var registerSettings = servicesSettings.register,
-      emailSettings = servicesSettings.email,
-      requireTrustedAppFn =  commonFns.getTrustedAppCheck(authSettings);
+  const registerSettings = servicesSettings.register;
+  const emailSettings = servicesSettings.email;
+  const requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);
 
   // RETRIEVAL
 
   api.register('account.get',
     commonFns.requirePersonalAccess,
     commonFns.getParamsValidation(methodsSchema.get.params),
-    function (context, params, result, next) {
-      usersStorage.findOne({id: context.user.id}, null, function (err, user) {
+    (context, params, result, next) => {
+      usersStorage.findOne({ id: context.user.id }, null, (err, user) => {
         if (err) { return next(errors.unexpectedError(err)); }
 
         sanitizeAccountDetails(user);
@@ -54,12 +53,13 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
     cleanupResult);
 
   function verifyOldPassword(context, params, result, next) {
-    encryption.compare(params.oldPassword, context.user.passwordHash, function (err, isValid) {
+    encryption.compare(params.oldPassword, context.user.passwordHash, (err, isValid) => {
       if (err) { return next(errors.unexpectedError(err)); }
 
-      if (! isValid) {
+      if (!isValid) {
         return next(errors.invalidOperation(
-          'The given password does not match.'));
+          'The given password does not match.',
+        ));
       }
       next();
     });
@@ -74,11 +74,11 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
     sendPasswordResetMail);
 
   function generatePasswordResetRequest(context, params, result, next) {
-    const username = context.user.username;
+    const { username } = context.user;
     if (username == null) {
       return next(new Error('AF: username is not empty.'));
     }
-    passwordResetRequestsStorage.generate(username, function (err, token) {
+    passwordResetRequestsStorage.generate(username, (err, token) => {
       if (err) { return next(errors.unexpectedError(err)); }
 
       context.resetToken = token;
@@ -89,20 +89,20 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
   function sendPasswordResetMail(context, params, result, next) {
     // Skip this step if reset mail is deactivated
     const isMailActivated = emailSettings.enabled;
-    if (isMailActivated === false ||
-       (isMailActivated != null && isMailActivated.resetPassword === false)) {
+    if (isMailActivated === false
+       || (isMailActivated != null && isMailActivated.resetPassword === false)) {
       return next();
     }
-    
+
     const recipient = {
       email: context.user.email,
       name: context.user.username,
-      type: 'to'
+      type: 'to',
     };
-    
+
     const substitutions = {
       RESET_TOKEN: context.resetToken,
-      RESET_URL: authSettings.passwordResetPageURL
+      RESET_URL: authSettings.passwordResetPageURL,
     };
 
     mailing.sendmail(emailSettings, emailSettings.resetPasswordTemplate,
@@ -120,31 +120,31 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
     cleanupResult);
 
   function checkResetToken(context, params, result, next) {
-    const username = context.user.username;
+    const { username } = context.user;
     if (username == null) {
       return next(new Error('AF: username is not empty.'));
     }
     passwordResetRequestsStorage.get(
       params.resetToken,
       username,
-      function (err, reqData) {
+      (err, reqData) => {
         if (err) { return next(errors.unexpectedError(err)); }
 
-        if (! reqData) {
+        if (!reqData) {
           return next(errors.invalidAccessToken('The reset token is invalid or expired'));
         }
         next();
-      }
+      },
     );
   }
 
   function encryptNewPassword(context, params, result, next) {
-    if (! params.newPassword) { return next(); }
+    if (!params.newPassword) { return next(); }
 
-    encryption.hash(params.newPassword, function (err, hash) {
+    encryption.hash(params.newPassword, (err, hash) => {
       if (err) { return next(errors.unexpectedError(err)); }
 
-      params.update = {passwordHash: hash};
+      params.update = { passwordHash: hash };
       next();
     });
   }
@@ -157,14 +157,13 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
       return next();
     }
     // email was changed, must notify registration server
-    const regChangeEmailURL = registerSettings.url + '/users/' + context.user.username +
-        '/change-email';
+    const regChangeEmailURL = `${registerSettings.url}/users/${context.user.username
+    }/change-email`;
     request.post(regChangeEmailURL)
       .set('Authorization', registerSettings.key)
-      .send({email: newEmail})
-      .end(function (err, res) {
-
-        if (err != null || (res && ! res.ok)) {
+      .send({ email: newEmail })
+      .end((err, res) => {
+        if (err != null || (res && !res.ok)) {
           let errMsg = 'Failed to update email on register. ';
           // for some reason register returns error message within res.body
           if (res != null && res.body != null && res.body.message != null) {
@@ -172,7 +171,7 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
           } else if (err != null && err.message != null) {
             errMsg += err.message;
           }
-          return next(errors.invalidOperation(errMsg, {email: newEmail}, err));
+          return next(errors.invalidOperation(errMsg, { email: newEmail }, err));
         }
 
         next();
@@ -180,7 +179,7 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
   }
 
   function updateAccount(context, params, result, next) {
-    usersStorage.updateOne({id: context.user.id}, params.update, function (err, updatedUser) {
+    usersStorage.updateOne({ id: context.user.id }, params.update, (err, updatedUser) => {
       if (err) { return next(errors.unexpectedError(err)); }
 
       sanitizeAccountDetails(updatedUser);
@@ -198,13 +197,12 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
   function sanitizeAccountDetails(data) {
     delete data.id;
     delete data.passwordHash;
-    if (! data.storageUsed) {
+    if (!data.storageUsed) {
       data.storageUsed = {
         dbDocuments: -1,
-        attachedFiles: -1
+        attachedFiles: -1,
       };
     }
   }
-
 };
 module.exports.injectDependencies = true;

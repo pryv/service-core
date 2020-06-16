@@ -1,7 +1,7 @@
-var async = require('async'),
-  toString = require('components/utils').toString,
-  _ = require('lodash'),
-  isDuplicateError = require('../Database').isDuplicateError;
+const async = require('async');
+const { toString } = require('components/utils');
+const _ = require('lodash');
+const { isDuplicateError } = require('../Database');
 
 /**
  * v0.7.1:
@@ -9,13 +9,13 @@ var async = require('async'),
  * - Fixes streams with parentId='' to parentId=null
  */
 module.exports = function (context, callback) {
-  context.database.getCollection({name: 'users'}, function (err, usersCol) {
+  context.database.getCollection({ name: 'users' }, (err, usersCol) => {
     if (err) { return callback(err); }
 
-    usersCol.find({}).toArray(function (err, users) {
+    usersCol.find({}).toArray((err, users) => {
       if (err) { return callback(err); }
 
-      async.forEachSeries(users, migrateUser, function (err) {
+      async.forEachSeries(users, migrateUser, (err) => {
         if (err) { return callback(err); }
 
         context.logInfo('Data version is now 0.7.1');
@@ -25,24 +25,24 @@ module.exports = function (context, callback) {
   });
 
   function migrateUser(user, callback) {
-    context.logInfo('Migrating user ' + toString.user(user) + '...');
+    context.logInfo(`Migrating user ${toString.user(user)}...`);
     async.series([
       function updateStreamsStructure(stepDone) {
-        context.database.getCollection({name: user._id + '.streams'}, function (err, streamsCol) {
+        context.database.getCollection({ name: `${user._id}.streams` }, (err, streamsCol) => {
           if (err) {
             context.logError(err, 'retrieving streams collection');
             return stepDone(err);
           }
 
-          var streamsCursor = streamsCol.find(),
-            completed = false;
-          async.until(function () { return completed; }, migrateStreams,
+          const streamsCursor = streamsCol.find();
+          let completed = false;
+          async.until(() => completed, migrateStreams,
             context.stepCallbackFn('migrating streams structure', stepDone));
 
           function migrateStreams(streamDone) {
-            streamsCursor.nextObject(function (err, stream) {
+            streamsCursor.nextObject((err, stream) => {
               if (err) { return setImmediate(streamDone.bind(null, err)); }
-              if (! stream) {
+              if (!stream) {
                 completed = true;
                 return setImmediate(streamDone);
               }
@@ -51,32 +51,30 @@ module.exports = function (context, callback) {
                 return setImmediate(streamDone);
               }
 
-              var update = {
+              const update = {
                 $set: {
-                  parentId: null
-                }
+                  parentId: null,
+                },
               };
-              streamsCol.update({_id: stream._id}, update, function (err) {
+              streamsCol.update({ _id: stream._id }, update, (err) => {
                 if (err) {
                   if (isDuplicateError(err)) {
                     return updateConflictingNameRecursively(streamsCol, stream, update, streamDone);
-                  } else {
-                    return streamDone(err);
                   }
+                  return streamDone(err);
                 }
                 streamDone();
               });
-
             });
           }
         });
-      }
-    ], function (err) {
+      },
+    ], (err) => {
       if (err) {
         context.logError(err, 'migrating user');
         return callback(err);
       }
-      context.logInfo('Successfully migrated user ' + toString.user(user) + '.');
+      context.logInfo(`Successfully migrated user ${toString.user(user)}.`);
       callback();
     });
   }
@@ -84,15 +82,14 @@ module.exports = function (context, callback) {
   // Applies predefined update with a "-2" added to the name (recursively)
   // as long as there exist duplicate siblings
   function updateConflictingNameRecursively(streamsCol, stream, update, callback) {
-    stream.name = stream.name + '-2';
-    _.extend(update.$set, {name: stream.name});
-    streamsCol.update({_id: stream._id}, update, function (err) {
+    stream.name += '-2';
+    _.extend(update.$set, { name: stream.name });
+    streamsCol.update({ _id: stream._id }, update, (err) => {
       if (err) {
         if (isDuplicateError(err)) {
           return updateConflictingNameRecursively(streamsCol, stream, update, callback);
-        } else {
-          return callback(err);
         }
+        return callback(err);
       }
       callback();
     });

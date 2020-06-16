@@ -1,39 +1,41 @@
-/*global describe, it, before, after */
+/* global describe, it, before, after */
 
 const cuid = require('cuid');
 const bluebird = require('bluebird');
 const timestamp = require('unix-timestamp');
 const chai = require('chai');
-const assert = chai.assert;
+
+const { assert } = chai;
 const charlatan = require('charlatan');
 
-const helpers = require('./helpers');
 const { databaseFixture } = require('components/test-helpers');
-const { produceMongoConnection, context } = require('./test-helpers');
-const validation = helpers.validation;
-const methodsSchema = require('../src/schema/webhooksMethods');
+
+const { validation } = helpers;
 const HttpServer = require('components/business/test/acceptance/webhooks/support/httpServer');
 
 const { ErrorIds } = require('components/errors/src');
 const storage = require('components/test-helpers').dependencies.storage.user.webhooks;
 const { Webhook } = require('components/business').webhooks;
+const methodsSchema = require('../src/schema/webhooksMethods');
+const { produceMongoConnection, context } = require('./test-helpers');
+const helpers = require('./helpers');
 
 describe('webhooks', () => {
-
   let mongoFixtures;
-  before(async function () {
+  before(async () => {
     mongoFixtures = databaseFixture(await produceMongoConnection());
   });
   after(() => {
     mongoFixtures.clean();
   });
 
-  let username, personalAccessToken, 
-      appAccessToken1, appAccessToken2,
-      appAccessId1, appAccessId2,
-      sharedAccessToken,
-      sharedAccessId,
-      webhookId1, webhookId2, webhookId3, webhookId4;
+  let username; let personalAccessToken;
+  let appAccessToken1; let appAccessToken2;
+  let appAccessId1; let appAccessId2;
+  let sharedAccessToken;
+  let sharedAccessId;
+  let webhookId1; let webhookId2; let webhookId3; let
+      webhookId4;
   before(() => {
     username = cuid();
     personalAccessToken = cuid();
@@ -53,37 +55,36 @@ describe('webhooks', () => {
   });
 
   describe('GET /', () => {
-
-    before(() => {
-      return mongoFixtures.user(username, {}, async (user) => {
-        user.access({
-          type: 'personal', token: personalAccessToken,
-        });
-        user.access({
-          id: appAccessId1,
-          type: 'app', token: appAccessToken1,
-        });
-        user.access({
-          id: appAccessId2,
-          type: 'app', token: appAccessToken2,
-        });
-        user.access({
-          type: 'shared', token: sharedAccessToken, 
-        });
-
-        user.session(personalAccessToken);
-        user.webhook({}, appAccessId1);
-        user.webhook({}, appAccessId2);
+    before(() => mongoFixtures.user(username, {}, async (user) => {
+      user.access({
+        type: 'personal', token: personalAccessToken,
       });
-    });
-    
+      user.access({
+        id: appAccessId1,
+        type: 'app',
+        token: appAccessToken1,
+      });
+      user.access({
+        id: appAccessId2,
+        type: 'app',
+        token: appAccessToken2,
+      });
+      user.access({
+        type: 'shared', token: sharedAccessToken,
+      });
+
+      user.session(personalAccessToken);
+      user.webhook({}, appAccessId1);
+      user.webhook({}, appAccessId2);
+    }));
+
     after(async () => {
       await mongoFixtures.clean();
     });
 
     describe('when using an app token', () => {
-      
-      let webhooks, response;
+      let webhooks; let
+          response;
       before(async () => {
         const res = await server.request()
           .get(`/${username}/webhooks`)
@@ -99,20 +100,20 @@ describe('webhooks', () => {
         });
       });
       it('[67CX] should fetch all webhooks reachable by an app token', () => {
-        webhooks.forEach(w => {
+        webhooks.forEach((w) => {
           assert.equal(w.accessId, appAccessId1);
         });
       });
       it('[WSJG] should not fetch any Webhook outside its scope', () => {
-        webhooks.forEach(w => {
+        webhooks.forEach((w) => {
           assert.notEqual(w.accessId, appAccessId2);
         });
       });
     });
-    
-    describe('when using a personal token', () => {
 
-      let webhooks, response;
+    describe('when using a personal token', () => {
+      let webhooks; let
+          response;
       before(async () => {
         const res = await server.request()
           .get(`/${username}/webhooks`)
@@ -130,14 +131,14 @@ describe('webhooks', () => {
 
       it('[4YFQ] should fetch all webhooks for the user', () => {
         let found1 = false;
-        let found2 = false; 
-        webhooks.forEach(w => {
+        let found2 = false;
+        webhooks.forEach((w) => {
           if (w.accessId === appAccessId1) {
             found1 = true;
-          } 
+          }
           if (w.accessId === appAccessId2) {
             found2 = true;
-          } 
+          }
         });
         assert.isTrue(found1, 'did not find webhook1');
         assert.isTrue(found2, 'did not find webhook2');
@@ -145,7 +146,6 @@ describe('webhooks', () => {
     });
 
     describe('when using a shared token', () => {
-
       let response;
       before(async () => {
         const res = await server.request()
@@ -161,13 +161,9 @@ describe('webhooks', () => {
         });
       });
     });
-  
-
-
   });
 
   describe('GET /:webhookId', () => {
-
     const url = 'yololo';
     const minIntervalMs = 10000;
     const maxRetries = 5;
@@ -183,43 +179,41 @@ describe('webhooks', () => {
       webhookId3 = cuid();
     });
 
-    before(() => {
-      return mongoFixtures.user(username, {}, async (user) => {
-        user.access({
-          type: 'personal', token: personalAccessToken,
-        });
-        user.access({
-          id: appAccessId1,
-          type: 'app', token: appAccessToken1,
-        });
-        user.access({
-          id: sharedAccessId,
-          type: 'shared', token: sharedAccessToken,
-        });
-        user.session(personalAccessToken);
-        user.webhook({
-          id: webhookId1,
-          url: url,
-          minIntervalMs: minIntervalMs,
-          maxRetries: maxRetries,
-        }, appAccessId1);
-        user.webhook({
-          id: webhookId2,
-        }, appAccessId2);
-        user.webhook({
-          id: webhookId3,
-        }, sharedAccessId);
+    before(() => mongoFixtures.user(username, {}, async (user) => {
+      user.access({
+        type: 'personal', token: personalAccessToken,
       });
-    });
+      user.access({
+        id: appAccessId1,
+        type: 'app',
+        token: appAccessToken1,
+      });
+      user.access({
+        id: sharedAccessId,
+        type: 'shared',
+        token: sharedAccessToken,
+      });
+      user.session(personalAccessToken);
+      user.webhook({
+        id: webhookId1,
+        url,
+        minIntervalMs,
+        maxRetries,
+      }, appAccessId1);
+      user.webhook({
+        id: webhookId2,
+      }, appAccessId2);
+      user.webhook({
+        id: webhookId3,
+      }, sharedAccessId);
+    }));
 
     after(async () => {
       await mongoFixtures.clean();
     });
 
     describe('when using an app token', () => {
-
       describe('when fetching an existing webhook inside its scope', () => {
-
         let response;
         before(async () => {
           const res = await server.request()
@@ -237,7 +231,6 @@ describe('webhooks', () => {
       });
 
       describe('when fetching an existing webhook outside of its scope', () => {
-
         let response;
         before(async () => {
           const res = await server.request()
@@ -252,7 +245,6 @@ describe('webhooks', () => {
       });
 
       describe('when fetching an unexistant webhook', () => {
-
         let response;
         before(async () => {
           const res = await server.request()
@@ -265,7 +257,6 @@ describe('webhooks', () => {
           validation.checkErrorUnknown(response);
         });
       });
-    
     });
 
     describe('when using a personal token', () => {
@@ -283,10 +274,9 @@ describe('webhooks', () => {
           status: 200,
         });
       });
-    });    
+    });
 
     describe('when using a shared token', () => {
-
       let response;
       before(async () => {
         const res = await server.request()
@@ -302,12 +292,10 @@ describe('webhooks', () => {
         });
       });
     });
-
   });
 
   describe('POST /', () => {
-
-    let usedUrl = 'https://existing.com/notifications';
+    const usedUrl = 'https://existing.com/notifications';
 
     before(async () => {
       await mongoFixtures.clean();
@@ -319,41 +307,41 @@ describe('webhooks', () => {
       sharedAccessToken = cuid();
     });
 
-    before(() => {
-      return mongoFixtures.user(username, {}, async (user) => {
-        user.access({
-          type: 'personal', token: personalAccessToken,
-        });
-        user.session(personalAccessToken);
-        user.access({
-          id: appAccessId1,
-          type: 'app', token: appAccessToken1,
-          permissions: [{streamId: charlatan.Lorem.word(), level: 'read'}],
-        });
-        user.access({
-          id: sharedAccessId,
-          type: 'shared', token: sharedAccessToken,
-        });
-        user.webhook({
-          url: usedUrl,
-        }, appAccessId1);
+    before(() => mongoFixtures.user(username, {}, async (user) => {
+      user.access({
+        type: 'personal', token: personalAccessToken,
       });
-    });
+      user.session(personalAccessToken);
+      user.access({
+        id: appAccessId1,
+        type: 'app',
+        token: appAccessToken1,
+        permissions: [{ streamId: charlatan.Lorem.word(), level: 'read' }],
+      });
+      user.access({
+        id: sharedAccessId,
+        type: 'shared',
+        token: sharedAccessToken,
+      });
+      user.webhook({
+        url: usedUrl,
+      }, appAccessId1);
+    }));
 
     describe('when using an app token', () => {
-
       describe('when providing a valid webhook', () => {
         const url = 'https://somecompany.com/notifications';
-        let webhook, response;
+        let webhook; let
+            response;
         before(async () => {
           const res = await server.request()
             .post(`/${username}/webhooks`)
             .set('Authorization', appAccessToken1)
-            .send({ url: url });
+            .send({ url });
           response = res;
           webhook = new Webhook({
             accessId: appAccessId1,
-            url: url,
+            url,
             id: res.body.webhook.id,
           }).forApi();
         });
@@ -369,7 +357,7 @@ describe('webhooks', () => {
         });
         it('[XKLU] should save it to the storage', async () => {
           const storedWebhook = await bluebird.fromCallback(
-            cb => storage.findOne({ id: username }, { id: { $eq: webhook.id } }, {}, cb)
+            (cb) => storage.findOne({ id: username }, { id: { $eq: webhook.id } }, {}, cb),
           );
           assert.deepEqual(validation.removeTrackingPropertiesForOne(storedWebhook),
             validation.removeTrackingPropertiesForOne(webhook));
@@ -377,7 +365,6 @@ describe('webhooks', () => {
       });
 
       describe('when providing an existing url', () => {
-
         let response;
         before(async () => {
           const res = await server.request()
@@ -390,15 +377,13 @@ describe('webhooks', () => {
         it('[60OQ] should return a status 400 with a collision error error', () => {
           validation.checkError(response, {
             status: 400,
-            id: ErrorIds.ItemAlreadyExists
+            id: ErrorIds.ItemAlreadyExists,
           });
         });
       });
 
       describe('when providing invalid parameters', () => {
-
         describe('when url is not a string', () => {
-
           const url = 123;
 
           let response;
@@ -406,7 +391,7 @@ describe('webhooks', () => {
             const res = await server.request()
               .post(`/${username}/webhooks`)
               .set('Authorization', appAccessToken1)
-              .send({ url: url });
+              .send({ url });
             response = res;
           });
 
@@ -414,24 +399,22 @@ describe('webhooks', () => {
             validation.checkErrorInvalidParams(response);
           });
         });
-
       });
     });
 
-
     describe('when using a shared token', () => {
-
       describe('when providing a valid webhook', () => {
         const url = `https://${charlatan.Internet.domainName()}/something`;
-        let webhook, response;
+        let webhook; let
+            response;
         before(async () => {
           response = await server.request()
             .post(`/${username}/webhooks`)
             .set('Authorization', sharedAccessToken)
-            .send({ url: url });
+            .send({ url });
           webhook = new Webhook({
             accessId: sharedAccessId,
-            url: url,
+            url,
             id: response.body.webhook.id,
           }).forApi();
         });
@@ -447,17 +430,15 @@ describe('webhooks', () => {
         });
         it('[UC6J] should save it to the storage', async () => {
           const storedWebhook = await bluebird.fromCallback(
-            cb => storage.findOne({ id: username }, { id: { $eq: webhook.id } }, {}, cb)
+            (cb) => storage.findOne({ id: username }, { id: { $eq: webhook.id } }, {}, cb),
           );
           assert.deepEqual(validation.removeTrackingPropertiesForOne(storedWebhook),
             validation.removeTrackingPropertiesForOne(webhook));
         });
-
       });
     });
 
-    describe('when using a personal token', () => {     
-
+    describe('when using a personal token', () => {
       describe('when providing a valid webhook', () => {
         let response;
         before(async () => {
@@ -473,13 +454,9 @@ describe('webhooks', () => {
         });
       });
     });
-
-    
-
   });
 
   describe('PUT /:webhookId', () => {
-
     const url = 'yololo';
     const minIntervalMs = 10000;
     const maxRetries = 5;
@@ -497,52 +474,51 @@ describe('webhooks', () => {
       webhookId3 = cuid();
     });
 
-    before(() => {
-      return mongoFixtures.user(username, {}, async (user) => {
-        user.access({
-          type: 'personal', token: personalAccessToken,
-        });
-        user.session(personalAccessToken);
-        user.access({
-          id: appAccessId1,
-          type: 'app', token: appAccessToken1,
-        });
-        user.access({
-          id: appAccessId2,
-          type: 'app', token: appAccessToken2,
-        });
-        user.access({
-          id: sharedAccessId,
-          type: 'shared', token: sharedAccessToken,
-        });
-        user.webhook({
-          id: webhookId1,
-          url: url,
-          minIntervalMs: minIntervalMs,
-          maxRetries: maxRetries,
-          currentRetries: 5,
-          state: 'inactive',
-        }, appAccessId1);
-        user.webhook({
-          id: webhookId2,
-        }, appAccessId2);
-        user.webhook({
-          id: webhookId3,
-        }, sharedAccessId);
+    before(() => mongoFixtures.user(username, {}, async (user) => {
+      user.access({
+        type: 'personal', token: personalAccessToken,
       });
-    });
+      user.session(personalAccessToken);
+      user.access({
+        id: appAccessId1,
+        type: 'app',
+        token: appAccessToken1,
+      });
+      user.access({
+        id: appAccessId2,
+        type: 'app',
+        token: appAccessToken2,
+      });
+      user.access({
+        id: sharedAccessId,
+        type: 'shared',
+        token: sharedAccessToken,
+      });
+      user.webhook({
+        id: webhookId1,
+        url,
+        minIntervalMs,
+        maxRetries,
+        currentRetries: 5,
+        state: 'inactive',
+      }, appAccessId1);
+      user.webhook({
+        id: webhookId2,
+      }, appAccessId2);
+      user.webhook({
+        id: webhookId3,
+      }, sharedAccessId);
+    }));
 
     after(async () => {
       await mongoFixtures.clean();
     });
 
     describe('when using an app token', () => {
-
       describe('when updating an existing webhook', () => {
-
         describe('when changing a valid parameter', () => {
-
-          let response, webhook;
+          let response; let
+              webhook;
           before(async () => {
             const res = await server.request()
               .put(`/${username}/webhooks/${webhookId1}`)
@@ -553,12 +529,12 @@ describe('webhooks', () => {
             response = res;
             webhook = new Webhook({
               accessId: appAccessId1,
-              url: url,
+              url,
               id: webhookId1,
-              minIntervalMs: minIntervalMs,
-              maxRetries: maxRetries,
+              minIntervalMs,
+              maxRetries,
               state: 'active',
-              currentRetries: 0
+              currentRetries: 0,
             }).forApi();
           });
 
@@ -572,16 +548,13 @@ describe('webhooks', () => {
             });
           });
           it('[JSOH] should apply the changes to the storage', async () => {
-            const storedWebhook = await bluebird.fromCallback((cb) =>
-              storage.findOne({ id: username }, { id: { $eq: webhookId1 } }, {}, cb)
-            );
+            const storedWebhook = await bluebird.fromCallback((cb) => storage.findOne({ id: username }, { id: { $eq: webhookId1 } }, {}, cb));
             assert.deepEqual(validation.removeTrackingPropertiesForOne(storedWebhook),
               validation.removeTrackingPropertiesForOne(webhook));
           });
         });
 
         describe('when changing a readonly parameter', () => {
-
           let response;
           before(async () => {
             const res = await server.request()
@@ -591,7 +564,7 @@ describe('webhooks', () => {
                 lastRun: {
                   status: 201,
                   timestamp: timestamp.now(),
-                }
+                },
               });
             response = res;
           });
@@ -600,11 +573,9 @@ describe('webhooks', () => {
             validation.checkErrorForbidden(response);
           });
         });
-
       });
 
       describe('when updating a webhook outside its scope', () => {
-
         let response;
         before(async () => {
           const res = await server.request()
@@ -636,14 +607,11 @@ describe('webhooks', () => {
         it('[AR5R] should return a status 404 with an unknown resource error', () => {
           validation.checkErrorUnknown(response);
         });
-
       });
     });
 
     describe('when using a personal token', () => {
-
       describe('when providing valid parameters', () => {
-
         let response;
         before(async () => {
           const res = await server.request()
@@ -662,13 +630,10 @@ describe('webhooks', () => {
           });
         });
       });
-
     });
 
     describe('when using a shared token', () => {
-
       describe('when providing valid parameters', () => {
-
         let response;
         before(async () => {
           const res = await server.request()
@@ -687,13 +652,10 @@ describe('webhooks', () => {
           });
         });
       });
-
     });
-
   });
 
   describe('DELETE /:webhookId', () => {
-
     before(() => {
       personalAccessToken = cuid();
       appAccessId1 = cuid();
@@ -708,38 +670,39 @@ describe('webhooks', () => {
       webhookId4 = cuid();
     });
 
-    before(() => {
-      return mongoFixtures.user(username, {}, async (user) => {
-        user.access({
-          type: 'personal', token: personalAccessToken,
-        });
-        user.session(personalAccessToken);
-        user.access({
-          id: appAccessId1,
-          type: 'app', token: appAccessToken1,
-        });
-        user.access({
-          id: appAccessId2,
-          type: 'app', token: appAccessToken2,
-        });
-        user.access({
-          id: sharedAccessId,
-          type: 'shared', token: sharedAccessToken,
-        });
-        user.webhook({
-          id: webhookId1,
-        }, appAccessId1);
-        user.webhook({
-          id: webhookId2,
-        }, appAccessId2);
-        user.webhook({
-          id: webhookId3,
-        }, appAccessId1);
-        user.webhook({
-          id: webhookId4,
-        }, sharedAccessId);
+    before(() => mongoFixtures.user(username, {}, async (user) => {
+      user.access({
+        type: 'personal', token: personalAccessToken,
       });
-    });
+      user.session(personalAccessToken);
+      user.access({
+        id: appAccessId1,
+        type: 'app',
+        token: appAccessToken1,
+      });
+      user.access({
+        id: appAccessId2,
+        type: 'app',
+        token: appAccessToken2,
+      });
+      user.access({
+        id: sharedAccessId,
+        type: 'shared',
+        token: sharedAccessToken,
+      });
+      user.webhook({
+        id: webhookId1,
+      }, appAccessId1);
+      user.webhook({
+        id: webhookId2,
+      }, appAccessId2);
+      user.webhook({
+        id: webhookId3,
+      }, appAccessId1);
+      user.webhook({
+        id: webhookId4,
+      }, sharedAccessId);
+    }));
 
     after(async () => {
       await mongoFixtures.clean();
@@ -747,8 +710,8 @@ describe('webhooks', () => {
 
     describe('when using an app token', () => {
       describe('when deleting an existing webhook', () => {
-
-        let response, deletion;
+        let response; let
+            deletion;
         before(async () => {
           const res = await server.request()
             .delete(`/${username}/webhooks/${webhookId1}`)
@@ -769,15 +732,12 @@ describe('webhooks', () => {
         });
 
         it('[KA98] should delete it in the storage', async () => {
-          const deletedWebhook = await bluebird.fromCallback((cb) =>
-            storage.findOne({ id: username }, { id: { $eq: webhookId1 } }, {}, cb)
-          );
+          const deletedWebhook = await bluebird.fromCallback((cb) => storage.findOne({ id: username }, { id: { $eq: webhookId1 } }, {}, cb));
           assert.notExists(deletedWebhook);
         });
       });
 
       describe('when deleting an unexistant webhook', () => {
-
         let response;
         before(async () => {
           const res = await server.request()
@@ -792,7 +752,6 @@ describe('webhooks', () => {
       });
 
       describe('when deleting an already deleted webhook', () => {
-
         let response;
         before(async () => {
           const res = await server.request()
@@ -807,7 +766,6 @@ describe('webhooks', () => {
       });
 
       describe('when deleting a webhook outside of its scope', () => {
-
         let response;
         before(async () => {
           const res = await server.request()
@@ -824,8 +782,8 @@ describe('webhooks', () => {
 
     describe('when using a personal token', () => {
       describe('when deleting an existing webhook', () => {
-
-        let response, deletion;
+        let response; let
+            deletion;
         before(async () => {
           const res = await server.request()
             .delete(`/${username}/webhooks/${webhookId3}`)
@@ -849,8 +807,8 @@ describe('webhooks', () => {
 
     describe('when using a shared token', () => {
       describe('when deleting an existing webhook', () => {
-
-        let response, deletion;
+        let response; let
+            deletion;
         before(async () => {
           const res = await server.request()
             .delete(`/${username}/webhooks/${webhookId4}`)
@@ -869,13 +827,11 @@ describe('webhooks', () => {
             data: deletion,
           });
         });
-
       });
     });
   });
 
   describe('POST /:webhookId/test', () => {
-
     const port = 5553;
     const postPath = '/notifications';
 
@@ -898,37 +854,38 @@ describe('webhooks', () => {
       webhookId3 = cuid();
     });
 
-    before(() => {
-      return mongoFixtures.user(username, {}, async (user) => {
-        user.access({
-          type: 'personal', token: personalAccessToken,
-        });
-        user.session(personalAccessToken);
-        user.access({
-          id: appAccessId1,
-          type: 'app', token: appAccessToken1,
-        });
-        user.access({
-          id: appAccessId2,
-          type: 'app', token: appAccessToken2,
-        });
-        user.access({
-          id: sharedAccessId,
-          type: 'shared', token: sharedAccessToken,
-        });
-        user.webhook({
-          url: 'http://localhost:' + port + postPath,
-          id: webhookId1,
-        }, appAccessId1);
-        user.webhook({
-          id: webhookId2,
-        }, appAccessId2);
-        user.webhook({
-          url: 'http://localhost:' + port + postPath,
-          id: webhookId3,
-        }, sharedAccessId);
+    before(() => mongoFixtures.user(username, {}, async (user) => {
+      user.access({
+        type: 'personal', token: personalAccessToken,
       });
-    });
+      user.session(personalAccessToken);
+      user.access({
+        id: appAccessId1,
+        type: 'app',
+        token: appAccessToken1,
+      });
+      user.access({
+        id: appAccessId2,
+        type: 'app',
+        token: appAccessToken2,
+      });
+      user.access({
+        id: sharedAccessId,
+        type: 'shared',
+        token: sharedAccessToken,
+      });
+      user.webhook({
+        url: `http://localhost:${port}${postPath}`,
+        id: webhookId1,
+      }, appAccessId1);
+      user.webhook({
+        id: webhookId2,
+      }, appAccessId2);
+      user.webhook({
+        url: `http://localhost:${port}${postPath}`,
+        id: webhookId3,
+      }, sharedAccessId);
+    }));
 
     after(async () => {
       await mongoFixtures.clean();
@@ -936,11 +893,8 @@ describe('webhooks', () => {
     });
 
     describe('when using an app token', () => {
-
       describe('when the webhook exists', () => {
-
         describe('when the URL is valid', () => {
-          
           let response;
           before(async () => {
             response = await server.request()
@@ -961,7 +915,6 @@ describe('webhooks', () => {
         });
 
         describe('when the URL is invalid', () => {
-
           let response;
           before(async () => {
             notificationsServer.setResponseStatus(404);
@@ -978,7 +931,6 @@ describe('webhooks', () => {
             });
           });
         });
-        
       });
 
       describe('when the webhook does not exist', () => {
@@ -1011,9 +963,7 @@ describe('webhooks', () => {
     });
 
     describe('when using a personal token', () => {
-
       describe('when the webhook exists', () => {
-
         let response;
         before(async () => {
           notificationsServer.resetMessageReceived();
@@ -1038,7 +988,6 @@ describe('webhooks', () => {
     });
 
     describe('when using a shared token', () => {
-
       describe('when the webhook exists', () => {
         let response;
         before(async () => {

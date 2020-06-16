@@ -2,14 +2,15 @@
 
 /* global describe, it, beforeEach, afterEach */
 
+import type { FileStoreSettings } from '../../../src/configuration';
+
 const path = require('path');
 const fs = require('fs');
 const tmp = require('tmp');
 const bluebird = require('bluebird');
 const chai = require('chai');
-const assert = chai.assert; 
 
-import type { FileStoreSettings } from '../../../src/configuration'; 
+const { assert } = chai;
 const FileStore = require('../../../src/connection/file_store');
 
 describe('Connection/FileStore', () => {
@@ -23,11 +24,12 @@ describe('Connection/FileStore', () => {
 
   describe('when given a users files', () => {
     // Create two random base paths for testing in
-    let previewsPath, attachmentsPath;
+    let previewsPath; let
+        attachmentsPath;
     beforeEach(() => {
-      const opts = { 
-        template: '/tmp/tmp-XXXXXX', 
-        unsafeCleanup: true 
+      const opts = {
+        template: '/tmp/tmp-XXXXXX',
+        unsafeCleanup: true,
       };
       previewsPath = tmp.dirSync(opts);
       attachmentsPath = tmp.dirSync(opts);
@@ -49,11 +51,10 @@ describe('Connection/FileStore', () => {
       };
     });
 
-    let fileStore; 
+    let fileStore;
     beforeEach(() => {
       fileStore = new FileStore(settings, userLoader);
     });
-
 
     describe('#preflight(username)', () => {
       it('[V2SN] works', async () => {
@@ -62,13 +63,15 @@ describe('Connection/FileStore', () => {
     });
     describe('#deleteUser(username)', () => {
       it('[2BUQ] deletes the user\'s files', async () => {
-        await fileStore.deleteUser('jsmith');        
+        await fileStore.deleteUser('jsmith');
 
-        // jsmith's user.id happens to be 'foobar': 
+        // jsmith's user.id happens to be 'foobar':
         assert.throws(
-          () => fs.statSync(path.join(attachmentsPath.name, 'foobar')) );
+          () => fs.statSync(path.join(attachmentsPath.name, 'foobar')),
+        );
         assert.throws(
-          () => fs.statSync(path.join(previewsPath.name, 'foobar')) );
+          () => fs.statSync(path.join(previewsPath.name, 'foobar')),
+        );
       });
     });
   });

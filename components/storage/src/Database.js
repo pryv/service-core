@@ -1,20 +1,20 @@
 // @flow
 
-const async = require('async');
-const MongoClient = require('mongodb').MongoClient;
-const lodash = require('lodash');
-const bluebird = require('bluebird');
-
 import type { Db as MongoDB, Collection } from 'mongodb';
 
 import type { Logger } from 'components/utils';
 
+const async = require('async');
+const { MongoClient } = require('mongodb');
+const lodash = require('lodash');
+const bluebird = require('bluebird');
+
 type DatabaseOptions = {
   j?: boolean,
-  w?: number, 
+  w?: number,
   autoReconnect?: boolean,
-  connectTimeoutMS?: number, 
-  socketTimeoutMS?: number, 
+  connectTimeoutMS?: number,
+  socketTimeoutMS?: number,
 }
 
 /**
@@ -34,29 +34,32 @@ type DatabaseOptions = {
  */
 class Database {
   connectionString: string;
+
   databaseName: string;
+
   options: DatabaseOptions;
-  
-  db: MongoDB; 
+
+  db: MongoDB;
+
   client: MongoClient;
-  
-  initializedCollections: { [name: string]: boolean }; 
-  
-  logger: Logger; 
-  
+
+  initializedCollections: { [name: string]: boolean };
+
+  logger: Logger;
+
   constructor(settings: Object, logger: Logger) {
     const authPart = getAuthPart(settings);
-     
+
     this.connectionString = `mongodb://${authPart}${settings.host}:${settings.port}/${settings.name}`;
-    this.databaseName = settings.name; 
-        
+    this.databaseName = settings.name;
+
     const m30 = 1800; // seconds in 30min
     const s60 = 60000; // 60 seconds
     const s1 = 1000; // 1 second
     this.options = {
       j: true, // Requests acknowledgement that the write operation has been written to the journal.
-      w: 1,   // Requests acknowledgement that the write operation has propagated.
-      connectTimeoutMS: s60, 
+      w: 1, // Requests acknowledgement that the write operation has propagated.
+      connectTimeoutMS: s60,
       socketTimeoutMS: s60,
       useNewUrlParser: true,
       appname: 'pryv.io core',
@@ -76,9 +79,10 @@ class Database {
   waitForConnection(callback: DatabaseCallback) {
     let connected = false;
     const isConnected = () => connected;
-    
+
     async.doUntil(
-      checkConnection.bind(this), isConnected, callback);
+      checkConnection.bind(this), isConnected, callback,
+    );
 
     /**
      * @this {Database}
@@ -86,7 +90,7 @@ class Database {
     function checkConnection(checkDone: () => mixed) {
       this.ensureConnect((err) => {
         if (err != null) {
-          this.logger.warn('Cannot connect to ' + this.connectionString + ', retrying in a sec');
+          this.logger.warn(`Cannot connect to ${this.connectionString}, retrying in a sec`);
           return setTimeout(checkDone, 1000);
         }
         connected = true;
@@ -103,7 +107,7 @@ class Database {
     if (this.db) {
       return callback();
     }
-    this.logger.debug('Connecting to ' + this.connectionString);
+    this.logger.debug(`Connecting to ${this.connectionString}`);
     MongoClient.connect(this.connectionString, this.options, (err, client) => {
       if (err != null) {
         this.logger.debug(err);
@@ -114,46 +118,46 @@ class Database {
       this.client = client;
       this.db = client.db(this.databaseName);
 
-      client.db('admin').command({setFeatureCompatibilityVersion: "3.6" }, {}, callback);
+      client.db('admin').command({ setFeatureCompatibilityVersion: '3.6' }, {}, callback);
     });
   }
 
-   addUserIdToIndexIfNeeded(collectionInfo) {
+  addUserIdToIndexIfNeeded(collectionInfo) {
     // force all indexes to have userId -- ! Order is important
     if (collectionInfo.useUserId) {
-      const newIndexes = [{index: { userId : 1}, options: {}}];
-      for (var i = 0; i < collectionInfo.indexes.length; i++) {
-        const tempIndex = {userId: 1};
-        for (var property in collectionInfo.indexes[i].index) {
+      const newIndexes = [{ index: { userId: 1 }, options: {} }];
+      for (let i = 0; i < collectionInfo.indexes.length; i++) {
+        const tempIndex = { userId: 1 };
+        for (const property in collectionInfo.indexes[i].index) {
           if (collectionInfo.indexes[i].index.hasOwnProperty(property)) {
             tempIndex[property] = collectionInfo.indexes[i].index[property];
           }
         }
-        newIndexes.push({index: tempIndex, options: collectionInfo.indexes[i].options});
+        newIndexes.push({ index: tempIndex, options: collectionInfo.indexes[i].options });
       }
       collectionInfo.indexes = newIndexes;
     }
     return collectionInfo;
   }
 
-  // Internal function. 
-  // 
+  // Internal function.
+  //
   async getCollection(collectionInfo: CollectionInfo, callback: GetCollectionCallback) {
-    try {    
+    try {
       // Make sure we have a connect
-      await bluebird.fromCallback( 
-        cb => this.ensureConnect(cb) ); 
+      await bluebird.fromCallback(
+        (cb) => this.ensureConnect(cb),
+      );
 
       if (this.collectionConnectionsCache[collectionInfo.name]) {
         return callback(null, this.collectionConnectionsCache[collectionInfo.name]);
       }
-        
+
       // Load the collection
-      const db = this.db; 
+      const { db } = this;
       const collection: Collection = db.collection(collectionInfo.name);
 
       this.addUserIdToIndexIfNeeded(collectionInfo);
-
 
       // Ensure that proper indexing is initialized
       await ensureIndexes.call(this, collection, collectionInfo.indexes);
@@ -161,25 +165,24 @@ class Database {
       this.collectionConnectionsCache[collectionInfo.name] = collection;
       // returning the collection.
       return callback(null, collection);
-    }
-    catch (err) {
+    } catch (err) {
       return callback(err);
     }
-    
-    // Called with `this` set to the Database instance. 
-    // 
+
+    // Called with `this` set to the Database instance.
+    //
     async function ensureIndexes(collection: Collection, indexes) {
-      const initializedCollections = this.initializedCollections; 
-      const collectionName: string = collection.collectionName;
-      
-      if (indexes == null) return; 
-      if (initializedCollections[collectionName]) return; 
-      
+      const { initializedCollections } = this;
+      const { collectionName } = collection;
+
+      if (indexes == null) return;
+      if (initializedCollections[collectionName]) return;
+
       for (const item of indexes) {
         const options = lodash.merge({}, item.options, {
-          background: true
+          background: true,
         });
-        
+
         await collection.createIndex(item.index, options);
       }
 
@@ -188,33 +191,33 @@ class Database {
   }
 
   // Internal function. Does the same job as `getCollection` above, but calls `errCallback`
-  // when error would not be null. Otherwise it calls '`callback`, whose code can 
-  // assume that there has been no error. 
-  // 
-  // This should allow you to turn this bit of code: 
-  // 
+  // when error would not be null. Otherwise it calls '`callback`, whose code can
+  // assume that there has been no error.
+  //
+  // This should allow you to turn this bit of code:
+  //
   //    this.getCollection(collectionInfo, (err, coll) => {
   //      if (err) return callback(err);
   //      ...
   //    }
-  // 
-  // into this: 
-  // 
+  //
+  // into this:
+  //
   //    this.getCollectionSafe(collectionInfo, callback, (collection) => {
   //      ...
   //    }
-  // 
+  //
   async getCollectionSafe(
-    collectionInfo: CollectionInfo, 
-    errCallback: DatabaseCallback, block: UsesCollectionBlock) 
-  {
+    collectionInfo: CollectionInfo,
+    errCallback: DatabaseCallback, block: UsesCollectionBlock,
+  ) {
     return await this.getCollection(collectionInfo, (err, coll) => {
       if (err != null) return errCallback(err);
-      
+
       return block(coll);
     });
   }
-  
+
   /**
    * Counts all documents in the collection.
 
@@ -222,12 +225,11 @@ class Database {
    * @param {Function} callback
    */
   countAll(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
-
     if (collectionInfo.useUserId) {
       return this.count(collectionInfo, {}, callback);
     }
 
-    this.getCollectionSafe(collectionInfo, callback, collection => {
+    this.getCollectionSafe(collectionInfo, callback, (collection) => {
       collection.countDocuments(callback);
     });
   }
@@ -239,11 +241,10 @@ class Database {
    * @param {Object|Array} mixed
    */
   addUserIdIfneed(collectionInfo: CollectionInfo, mixed) {
-
     if (collectionInfo.useUserId) {
       if (mixed.constructor === Array) {
-        const length = mixed.length;
-        for (var i = 0; i < length; i++) {
+        const { length } = mixed;
+        for (let i = 0; i < length; i++) {
           addUserIdProperty(mixed[i]);
         }
       } else {
@@ -254,7 +255,7 @@ class Database {
     function addUserIdProperty(object) {
       object.userId = collectionInfo.useUserId;
     }
-}
+  }
 
   /**
    * Counts documents matching the given query.
@@ -265,7 +266,7 @@ class Database {
    */
   count(collectionInfo: CollectionInfo, query: {}, callback: DatabaseCallback) {
     this.addUserIdIfneed(collectionInfo, query);
-    this.getCollectionSafe(collectionInfo, callback, collection => {
+    this.getCollectionSafe(collectionInfo, callback, (collection) => {
       collection.find(query).count(callback);
     });
   }
@@ -284,22 +285,22 @@ class Database {
    */
   find(collectionInfo: CollectionInfo, query: {}, options: FindOptions, callback: DatabaseCallback) {
     this.addUserIdIfneed(collectionInfo, query);
-   
-    this.getCollectionSafe(collectionInfo, callback, collection => {
+
+    this.getCollectionSafe(collectionInfo, callback, (collection) => {
       const queryOptions = {
         projection: options.projection,
       };
-      var cursor = collection
+      let cursor = collection
         .find(query, queryOptions)
         .sort(options.sort);
-      
+
       if (options.skip != null) {
         cursor = cursor.skip(options.skip);
       }
       if (options.limit != null) {
         cursor = cursor.limit(options.limit);
       }
-      
+
       return cursor.toArray(callback);
     });
   }
@@ -317,19 +318,19 @@ class Database {
    * @param {Function} callback
    */
   findStreamed(
-    collectionInfo: CollectionInfo, 
-    query: mixed, options: FindOptions, 
-    callback: DatabaseCallback) 
-  {
+    collectionInfo: CollectionInfo,
+    query: mixed, options: FindOptions,
+    callback: DatabaseCallback,
+  ) {
     this.addUserIdIfneed(collectionInfo, query);
-    this.getCollectionSafe(collectionInfo, callback, collection => {
+    this.getCollectionSafe(collectionInfo, callback, (collection) => {
       const queryOptions = {
         projection: options.projection,
       };
       let cursor = collection
         .find(query, queryOptions)
         .sort(options.sort);
-        
+
       if (options.skip) {
         cursor = cursor.skip(options.skip);
       }
@@ -350,7 +351,7 @@ class Database {
    */
   findOne(collectionInfo: CollectionInfo, query: Object, options: FindOptions, callback: DatabaseCallback) {
     this.addUserIdIfneed(collectionInfo, query);
-    this.getCollectionSafe(collectionInfo, callback, collection => {
+    this.getCollectionSafe(collectionInfo, callback, (collection) => {
       collection.findOne(query, options || {}, callback);
     });
   }
@@ -369,32 +370,32 @@ class Database {
    * @param {Function} callback
    */
   aggregate(
-    collectionInfo: CollectionInfo, query: Object, 
+    collectionInfo: CollectionInfo, query: Object,
     projectExpression: Object, groupExpression: Object,
-    options: Object, callback: DatabaseCallback) 
-  {
+    options: Object, callback: DatabaseCallback,
+  ) {
     this.addUserIdIfneed(collectionInfo, query);
-    this.getCollectionSafe(collectionInfo, callback, collection => {
-      var aggregationCmds = [];
+    this.getCollectionSafe(collectionInfo, callback, (collection) => {
+      const aggregationCmds = [];
       if (query) {
-        aggregationCmds.push({$match: query});
+        aggregationCmds.push({ $match: query });
       }
       if (projectExpression) {
-        aggregationCmds.push({$project: projectExpression});
+        aggregationCmds.push({ $project: projectExpression });
       }
       if (groupExpression) {
-        aggregationCmds.push({$group: groupExpression});
+        aggregationCmds.push({ $group: groupExpression });
       }
       if (options.sort) {
-        aggregationCmds.push({$sort: options.sort});
+        aggregationCmds.push({ $sort: options.sort });
       }
       if (options.skip) {
-        aggregationCmds.push({$skip: options.skip});
+        aggregationCmds.push({ $skip: options.skip });
       }
       if (options.limit) {
-        aggregationCmds.push({$limit: options.limit});
+        aggregationCmds.push({ $limit: options.limit });
       }
-      collection.aggregate(aggregationCmds, function (err, results) {
+      collection.aggregate(aggregationCmds, (err, results) => {
         if (err) { return callback(err); }
         callback(null, results);
       });
@@ -410,12 +411,12 @@ class Database {
    */
   insertOne(collectionInfo: CollectionInfo, item: Object, callback: DatabaseCallback) {
     this.addUserIdIfneed(collectionInfo, item);
-    this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.insertOne(item, {w: 1, j: true}, (err, res) => {
+    this.getCollectionSafe(collectionInfo, callback, (collection) => {
+      collection.insertOne(item, { w: 1, j: true }, (err, res) => {
         if (err != null) {
           Database.handleDuplicateError(err);
         }
-        callback(err,res);
+        callback(err, res);
       });
     });
   }
@@ -425,8 +426,8 @@ class Database {
    */
   insertMany(collectionInfo: CollectionInfo, items: Array<Object>, callback: DatabaseCallback) {
     this.addUserIdIfneed(collectionInfo, items);
-    this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.insertMany(items, {w: 1, j: true}, callback);
+    this.getCollectionSafe(collectionInfo, callback, (collection) => {
+      collection.insertMany(items, { w: 1, j: true }, callback);
     });
   }
 
@@ -441,12 +442,12 @@ class Database {
    */
   updateOne(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
     this.addUserIdIfneed(collectionInfo, query);
-    this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.updateOne(query, update, {w: 1, j: true}, (err, res) => {
+    this.getCollectionSafe(collectionInfo, callback, (collection) => {
+      collection.updateOne(query, update, { w: 1, j: true }, (err, res) => {
         if (err != null) {
           Database.handleDuplicateError(err);
         }
-        callback(err,res);
+        callback(err, res);
       });
     });
   }
@@ -462,8 +463,8 @@ class Database {
    */
   updateMany(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
     this.addUserIdIfneed(collectionInfo, query);
-    this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.updateMany(query, update, {w: 1, j:true}, callback);
+    this.getCollectionSafe(collectionInfo, callback, (collection) => {
+      collection.updateMany(query, update, { w: 1, j: true }, callback);
     });
   }
 
@@ -482,7 +483,7 @@ class Database {
     opts.w = 1;
     opts.j = true;
     this.addUserIdIfneed(collectionInfo, query);
-    this.getCollectionSafe(collectionInfo, callback, collection => {
+    this.getCollectionSafe(collectionInfo, callback, (collection) => {
       collection.updateMany(query, update, opts, callback);
     });
   }
@@ -498,8 +499,8 @@ class Database {
    */
   findOneAndUpdate(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
     this.addUserIdIfneed(collectionInfo, query);
-    this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.findOneAndUpdate(query, update, {returnOriginal: false}, function (err, r) {
+    this.getCollectionSafe(collectionInfo, callback, (collection) => {
+      collection.findOneAndUpdate(query, update, { returnOriginal: false }, (err, r) => {
         if (err != null) {
           Database.handleDuplicateError(err);
           return callback(err);
@@ -519,8 +520,8 @@ class Database {
    */
   upsertOne(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
     this.addUserIdIfneed(collectionInfo, query);
-    this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.updateOne(query, update, {w: 1, upsert: true, j: true}, callback);
+    this.getCollectionSafe(collectionInfo, callback, (collection) => {
+      collection.updateOne(query, update, { w: 1, upsert: true, j: true }, callback);
     });
   }
 
@@ -533,8 +534,8 @@ class Database {
    */
   deleteOne(collectionInfo: CollectionInfo, query: Object, callback: DatabaseCallback) {
     this.addUserIdIfneed(collectionInfo, query);
-    this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.deleteOne(query, {w: 1, j: true}, callback);
+    this.getCollectionSafe(collectionInfo, callback, (collection) => {
+      collection.deleteOne(query, { w: 1, j: true }, callback);
     });
   }
 
@@ -547,8 +548,8 @@ class Database {
    */
   deleteMany(collectionInfo: CollectionInfo, query: Object, callback: DatabaseCallback) {
     this.addUserIdIfneed(collectionInfo, query);
-    this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.deleteMany(query, {w: 1, j: true}, callback);
+    this.getCollectionSafe(collectionInfo, callback, (collection) => {
+      collection.deleteMany(query, { w: 1, j: true }, callback);
     });
   }
 
@@ -563,8 +564,8 @@ class Database {
     if (collectionInfo.useUserId) {
       return this.countAll(collectionInfo, callback);
     }
-    this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.stats(function (err, stats) {
+    this.getCollectionSafe(collectionInfo, callback, (collection) => {
+      collection.stats((err, stats) => {
         if (err != null) {
           // assume collection doesn't exist
           return callback(null, 0);
@@ -580,11 +581,10 @@ class Database {
   dropCollection(collectionInfo: CollectionInfo, callback: DatabaseCallback) {
     if (collectionInfo.useUserId) {
       return this.deleteMany(collectionInfo, {}, callback);
-    } else {
-      return this.getCollectionSafe(collectionInfo, callback, collection => {
-        collection.drop(callback);
-      });
     }
+    return this.getCollectionSafe(collectionInfo, callback, (collection) => {
+      collection.drop(callback);
+    });
   }
 
   /**
@@ -593,10 +593,10 @@ class Database {
    * @param {Function} callback
    */
   dropDatabase(callback: DatabaseCallback) {
-    this.ensureConnect(function (err) {
+    this.ensureConnect((err) => {
       if (err) { return callback(err); }
       this.db.dropDatabase(callback);
-    }.bind(this));
+    });
   }
 
   /**
@@ -616,7 +616,7 @@ class Database {
 
   static isDuplicateError(err: ?MongoDBError) {
     if (err == null) { return false; }
-    var errorCode = err.code || (err.lastErrorObject ? err.lastErrorObject.code : null);
+    const errorCode = err.code || (err.lastErrorObject ? err.lastErrorObject.code : null);
     return errorCode === 11000 || errorCode === 11001;
   }
 
@@ -636,9 +636,9 @@ class Database {
     };
   }
 
-  /// Closes this database connection. After calling this, all other methods 
-  /// will produce undefined behaviour. 
-  /// 
+  /// Closes this database connection. After calling this, all other methods
+  /// will produce undefined behaviour.
+  ///
   async close() {
     return this.client.close();
   }
@@ -648,61 +648,60 @@ module.exports = Database;
 
 type MongoDBError = {
   errmsg?: string,
-  code?: number, 
+  code?: number,
   lastErrorObject?: MongoDBError,
   isDuplicate?: boolean,
   isDuplicateIndex?: (key: string) => boolean,
 }
 
 type DatabaseCallback = (err?: Error | null, result?: mixed) => mixed;
-type GetCollectionCallback = 
+type GetCollectionCallback =
   (err?: ?Error, collection?: ?Collection) => mixed;
 
+type UsesCollectionBlock = (coll: Collection) => mixed;
 
-type UsesCollectionBlock = (coll: Collection) => mixed; 
-
-// Information about a MongoDB collection. 
+// Information about a MongoDB collection.
 type CollectionInfo = {
-  name: string, 
-  indexes: Array<IndexDefinition>, 
+  name: string,
+  indexes: Array<IndexDefinition>,
 }
 
-// Information about an index we create in a mongodb collection. 
+// Information about an index we create in a mongodb collection.
 export type IndexDefinition = {
-  index: { [field: string]: number }, 
+  index: { [field: string]: number },
   options: IndexOptions,
 }
 type IndexOptions = {
-  unique?: boolean, 
+  unique?: boolean,
 }
 
 type FindOptions = {
   projection: { [key: string]: (0 | 1) },
-  sort: Object, 
-  skip: ?number, 
-  limit: ?number, 
+  sort: Object,
+  skip: ?number,
+  limit: ?number,
 }
-  
+
 function getAuthPart(settings) {
-  const authUser = settings.authUser;
+  const { authUser } = settings;
   let authPart = '';
-  
+
   if (authUser != null && typeof authUser === 'string' && authUser.length > 0) {
     const authPassword = settings.authPassword || '';
-    
+
     // See
     //  https://github.com/mongodb/specifications/blob/master/source/connection-string/connection-string-spec.rst#key-value-pair
-    // 
-    authPart = encodeURIComponent(authUser) + ':' + 
-      encodeURIComponent(authPassword) + '@';
+    //
+    authPart = `${encodeURIComponent(authUser)}:${
+      encodeURIComponent(authPassword)}@`;
   }
-  
+
   return authPart;
 }
 
 function getTotalSizeFromStats(stats) {
   // written according to http://docs.mongodb.org/manual/reference/command/collStats/
-  return stats.count * 16 + // ie. record headers
-      stats.size +
-      stats.totalIndexSize;
+  return stats.count * 16 // ie. record headers
+      + stats.size
+      + stats.totalIndexSize;
 }

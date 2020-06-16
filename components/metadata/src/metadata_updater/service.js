@@ -1,72 +1,75 @@
 // @flow
 
-// Main service class for the Metadata Updater Service. 
+// Main service class for the Metadata Updater Service.
+
+import type { Logger } from 'components/utils/src/logging';
+import type { StorageLayer } from 'components/storage';
+import type {
+  IMetadataUpdaterService, IUpdateRequests, IUpdateResponse,
+  IUpdateId, IPendingUpdate,
+} from './interface';
 
 const rpc = require('components/tprpc');
 
+const NatsPublisher = require('components/api-server/src/socket-io/nats_publisher');
 const definitionFactory = require('./definition');
 const { PendingUpdatesMap, PendingUpdate } = require('./pending_updates');
 const { Controller } = require('./controller');
 const { ErrorLogger } = require('./error_logger');
 
-const NatsPublisher = require('components/api-server/src/socket-io/nats_publisher');
-const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
-
-import type { Logger } from 'components/utils/src/logging';
-import type { IMetadataUpdaterService, IUpdateRequests, IUpdateResponse, 
-  IUpdateId, IPendingUpdate } from './interface';
-  
-import type { StorageLayer } from 'components/storage';
+const { NATS_CONNECTION_URI } = require('components/utils').messaging;
 
 // The metadata updater service receives 'scheduleUpdate' rpc messages on the
 // tchannel/protobuf3 interface (from the network). It then flushes these
-// updates every N ms to MongoDB.   
-// 
+// updates every N ms to MongoDB.
+//
 class Service implements IMetadataUpdaterService {
   db: StorageLayer;
+
   logger: Logger;
-  
+
   // Underlying transport and RPC dispatcher
   server: rpc.Server;
-  
+
   // Where we store incoming work, this is shared between this class and the
   // controller.
-  pending: PendingUpdatesMap; 
-  
-  // Controller for work done in this service. 
+  pending: PendingUpdatesMap;
+
+  // Controller for work done in this service.
   controller: Controller;
 
   // <username, natspublisher>
   socketIoNotifiers: Map<string, NatsPublisher>;
-  
+
   constructor(db: StorageLayer, logger: Logger) {
     this.db = db;
-    this.logger = logger; 
-    
-    this.server = new rpc.Server(); 
+    this.logger = logger;
 
-    this.pending = new PendingUpdatesMap(); 
+    this.server = new rpc.Server();
+
+    this.pending = new PendingUpdatesMap();
     this.controller = new Controller(db, this.pending, logger);
   }
-  
+
   // Starts the service, including all subprocesses.
-  // 
+  //
   async start(endpoint: string) {
-    const logger = this.logger; 
-    const server = this.server; 
-    const controller = this.controller;
-    
+    const { logger } = this;
+    const { server } = this;
+    const { controller } = this;
+
     logger.info(`starting... (@ ${endpoint})`);
-    
+
     const definition = await definitionFactory.produce();
     server.add(
-      definition, 'MetadataUpdaterService', 
-      this.produceServiceImpl());
-        
+      definition, 'MetadataUpdaterService',
+      this.produceServiceImpl(),
+    );
+
     await server.listen(endpoint);
-    
+
     logger.info('started.');
-    
+
     const runEachMs = 500;
     logger.info(`Will flush every ${runEachMs}ms.`);
     controller.runEach(runEachMs);
@@ -78,8 +81,7 @@ class Service implements IMetadataUpdaterService {
       this.socketIoNotifiers = new Map();
     }
     this.socketIoNotifiers.set(username, new NatsPublisher(NATS_CONNECTION_URI,
-      (userName: string): string => { return `${userName}.sok1`; }
-    ));
+      (userName: string): string => `${userName}.sok1`));
   }
 
   // execute this to load send notification to api-server socket.io notifiers
@@ -87,50 +89,51 @@ class Service implements IMetadataUpdaterService {
     const publisher = this.socketIoNotifiers.get(username);
     publisher.deliver(username, message);
   }
-  
+
   produceServiceImpl(): IMetadataUpdaterService {
-    const logger = this.logger; 
+    const { logger } = this;
 
     return ErrorLogger.wrap(
-      (this: IMetadataUpdaterService), 
-      logger);
+      (this: IMetadataUpdaterService),
+      logger,
+    );
   }
-  
+
   // --------------------------------------------------- IMetadataUpdaterService
-  
+
   async scheduleUpdate(req: IUpdateRequests): Promise<IUpdateResponse> {
-    const pending = this.pending; 
-    const logger = this.logger; 
-        
+    const { pending } = this;
+    const { logger } = this;
+
     logger.info(`scheduleUpdate: ${req.entries.length} updates.`);
-    
+
     for (const entry of req.entries) {
       logger.info(`scheduleUpdate/entry: ${entry.userId}.${entry.eventId}: [${entry.dataExtent.from}, ${entry.dataExtent.to}]`);
-      
+
       const now = new Date() / 1e3;
       const update = PendingUpdate.fromUpdateRequest(now, entry);
       pending.merge(update);
-      
     }
-    
+
     return {};
   }
+
   async getPendingUpdate(req: IUpdateId): Promise<IPendingUpdate> {
-    const pending = this.pending; 
-    
+    const { pending } = this;
+
     const update = pending.get(PendingUpdate.key(req));
 
     if (update == null) {
       return {
-        found: false, 
-        deadline: 0, 
+        found: false,
+        deadline: 0,
       };
     }
-    
+
     // assert: update != null
-    
+
     return {
-      found: true, 
+      found: true,
       deadline: update.deadline,
     };
   }

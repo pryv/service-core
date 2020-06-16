@@ -1,8 +1,8 @@
-const BaseStorage = require('./BaseStorage');
-const converters = require('./../converters');
 const generateId = require('cuid');
 const util = require('util');
 const _ = require('lodash');
+const converters = require('../converters');
+const BaseStorage = require('./BaseStorage');
 
 module.exports = Accesses;
 /**
@@ -17,14 +17,14 @@ function Accesses(database) {
   _.extend(this.converters, {
     itemDefaults: [
       converters.createIdIfMissing,
-      createTokenIfMissing
+      createTokenIfMissing,
     ],
     itemToDB: [converters.deletionToDB],
-    itemFromDB: [converters.deletionFromDB]
+    itemFromDB: [converters.deletionFromDB],
   });
 
   this.defaultOptions = {
-    sort: {name: 1}
+    sort: { name: 1 },
   };
 }
 util.inherits(Accesses, BaseStorage);
@@ -36,40 +36,40 @@ function createTokenIfMissing(access) {
 
 const indexes = [
   {
-    index: {token: 1},
-    options: { 
+    index: { token: 1 },
+    options: {
       unique: true,
-      partialFilterExpression: { deleted: { $type: 'null' } }
-    }
+      partialFilterExpression: { deleted: { $type: 'null' } },
+    },
   },
   {
     index: { name: 1, type: 1, deviceName: 1 },
-    options: { 
+    options: {
       unique: true,
-      partialFilterExpression: { deleted: { $type: 'null' } }
-    }
-  }
+      partialFilterExpression: { deleted: { $type: 'null' } },
+    },
+  },
 ];
 
 Accesses.prototype.findDeletions = function (
   user,
   query,
   options,
-  callback
+  callback,
 ) {
   query = query || {};
   query.deleted = { $type: 'date' };
-  
+
   this.database.find(
     this.getCollectionInfo(user),
     query,
     this.applyOptionsToDB(options),
-    function (err, dbItems) {
+    (err, dbItems) => {
       if (err) {
         return callback(err);
       }
       callback(null, this.applyItemsFromDB(dbItems));
-    }.bind(this)
+    },
   );
 };
 
@@ -79,8 +79,8 @@ Accesses.prototype.findDeletions = function (
 Accesses.prototype.getCollectionInfo = function (user) {
   return {
     name: 'accesses',
-    indexes: indexes,
-    useUserId: user.id
+    indexes,
+    useUserId: user.id,
   };
 };
 
@@ -90,7 +90,7 @@ Accesses.prototype.getCollectionInfo = function (user) {
  */
 Accesses.prototype.delete = function (user, query, callback) {
   const update = {
-    $set: {deleted: new Date()}
+    $set: { deleted: new Date() },
   };
   this.database.updateMany(this.getCollectionInfo(user),
     this.applyQueryToDB(query), update, callback);
@@ -107,23 +107,23 @@ Accesses.prototype.generateToken = function () {
 
 /**
  * Override base method to set deleted:null
- * 
- * @param {*} user 
- * @param {*} item 
- * @param {*} callback 
+ *
+ * @param {*} user
+ * @param {*} item
+ * @param {*} callback
  */
 Accesses.prototype.insertOne = function (user, access, callback) {
-  let accessToCreate = _.clone(access);
+  const accessToCreate = _.clone(access);
   if (accessToCreate.deleted === undefined) accessToCreate.deleted = null;
   this.database.insertOne(
     this.getCollectionInfo(user),
     this.applyItemToDB(this.applyItemDefaults(accessToCreate)),
-    function (err) {
+    (err) => {
       if (err) {
         return callback(err);
       }
       callback(null, _.omit(accessToCreate, 'deleted'));
-    }
+    },
   );
 };
 
@@ -132,12 +132,12 @@ Accesses.prototype.insertOne = function (user, access, callback) {
  */
 Accesses.prototype.insertMany = function (user, accesses, callback) {
   const accessesToCreate = accesses.map((a) => {
-    if (a.deleted === undefined) return _.assign({deleted: null}, a);
+    if (a.deleted === undefined) return _.assign({ deleted: null }, a);
     return a;
   });
   this.database.insertMany(
     this.getCollectionInfo(user),
     this.applyItemsToDB(accessesToCreate),
-    callback
+    callback,
   );
 };

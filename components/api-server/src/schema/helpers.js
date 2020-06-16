@@ -2,7 +2,7 @@
  * Helpers for defining schemas.
  */
 
-var _ = require('lodash');
+const _ = require('lodash');
 
 /**
  * Gets the full core type URI for the given type name and action (read, create, etc.)
@@ -11,7 +11,7 @@ var _ = require('lodash');
  * @param {String} action
  */
 exports.getTypeURI = function (name, action) {
-  return 'pryv.core.' + name + (action ? '-' + action : '');
+  return `pryv.core.${name}${action ? `-${action}` : ''}`;
 };
 
 /**
@@ -21,7 +21,7 @@ exports.getTypeURI = function (name, action) {
  * @param {Object} options Extra properties to merge into the returned object definition
  */
 exports.object = function (propertiesDef, options) {
-  return _.extend(getBaseSchema('object', options), {properties: propertiesDef});
+  return _.extend(getBaseSchema('object', options), { properties: propertiesDef });
 };
 
 /**
@@ -31,7 +31,7 @@ exports.object = function (propertiesDef, options) {
  * @param {Object} options Extra properties to merge into the returned array definition
  */
 exports.array = function (itemsDef, options) {
-  return _.extend(getBaseSchema('array', options), {items: itemsDef});
+  return _.extend(getBaseSchema('array', options), { items: itemsDef });
 };
 
 /**
@@ -52,7 +52,7 @@ exports.null = getBaseSchema.bind(null, 'null');
 ///   b) Validating emails is hard _and_ useless:
 ///     https://hackernoon.com/the-100-correct-way-to-validate-email-addresses-7c4818f24643
 ///
-exports.email = getBaseSchema('string', {maxLength: 300});
+exports.email = getBaseSchema('string', { maxLength: 300 });
 
 exports.language = getBaseSchema('string', { maxLength: 5, minLength: 1 });
 
@@ -74,11 +74,11 @@ exports.getBaseSchema = getBaseSchema;
 
 function getBaseSchema(type, options) {
   const result = {
-    type: [type]
+    type: [type],
   };
 
   if (options != null) {
-    if(options.nullable === true) {
+    if (options.nullable === true) {
       result.type.push('null');
     }
     // We omit 'nullable' since we handled this particular option just above
@@ -94,8 +94,8 @@ function getBaseSchema(type, options) {
  * @param {Object} schema
  */
 exports.addTrackingProperties = function (schema) {
-  schema.properties.created = {type: 'number'};
-  schema.properties.createdBy = {type: 'string'};
-  schema.properties.modified = {type: 'number'};
-  schema.properties.modifiedBy = {type: 'string'};
+  schema.properties.created = { type: 'number' };
+  schema.properties.createdBy = { type: 'string' };
+  schema.properties.modified = { type: 'number' };
+  schema.properties.modifiedBy = { type: 'string' };
 };

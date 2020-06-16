@@ -1,13 +1,14 @@
 // @flow
 
 const path = require('path');
+const chai = require('chai');
 const Configuration = require('../../src/configuration');
 
 /* global describe, it, beforeEach */
 
 const { fixturePath } = require('../test-helpers');
-const chai = require('chai');
-const assert = chai.assert;
+
+const { assert } = chai;
 
 describe('Configuration', () => {
   describe('.load(basePath)', () => {
@@ -16,43 +17,43 @@ describe('Configuration', () => {
         const fixture = fixturePath('fileLocations1');
         const config = await Configuration.load(fixture);
 
-        assert.strictEqual(config.coreConfigPath(), 
+        assert.strictEqual(config.coreConfigPath(),
           path.join(fixture, 'core/conf/core.json'));
-        assert.strictEqual(config.hfsConfigPath(), 
+        assert.strictEqual(config.hfsConfigPath(),
           path.join(fixture, 'hfs/conf/hfs.json'));
       });
     });
   });
 
   describe('with fileLocations1 fixture config', function () {
-    let config; 
+    let config;
     this.timeout(5000);
     beforeEach(async () => {
       config = await Configuration.load(fixturePath('fileLocations1'));
     });
 
-    it('[0Y2F] has the right register url and key', async () => {  
-      const reg = await config.registrySettings(); 
+    it('[0Y2F] has the right register url and key', async () => {
+      const reg = await config.registrySettings();
       assert.strictEqual(reg.url, 'https://reg.preview.pryv.tech');
       assert.strictEqual(reg.key, 'OVERRIDE ME');
     });
     it('[1KYM] has mongodb configured correctly (including defaults)', async () => {
-      const mongodb = await config.mongoDbSettings(); 
+      const mongodb = await config.mongoDbSettings();
 
       assert.strictEqual(mongodb.host, 'mongodb');
       assert.strictEqual(mongodb.port, 27017); // from defaults
     });
     it('[T9FK] has the right influxdb settings', async () => {
-      const influxdb = config.influxDbSettings(); 
-       
+      const influxdb = config.influxDbSettings();
+
       assert.strictEqual(influxdb.host, 'influxdb');
       assert.strictEqual(influxdb.port, 8086);
     });
     it('[1QDH] has the right file store settings', async () => {
-      const fileStore = await config.fileStoreSettings(); 
+      const fileStore = await config.fileStoreSettings();
 
-      assert.strictEqual(fileStore.attachmentsPath, '/app/data/attachments'); 
-      assert.strictEqual(fileStore.previewsPath, '/app/data/previews'); 
+      assert.strictEqual(fileStore.attachmentsPath, '/app/data/attachments');
+      assert.strictEqual(fileStore.previewsPath, '/app/data/previews');
     });
   });
 });

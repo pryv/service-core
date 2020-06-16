@@ -13,18 +13,18 @@ const Corpus = {
   VIDEO: 6,
 };
 export interface ISearchRequest {
-  query: string;  // id = 1
-  pageNumber: number;  // id = 2
-  resultPerPage: number;  // id = 3
-  corpus: 0 | 1 | 2 | 3 | 4 | 5 | 6;  // id = 4
+  query: string; // id = 1
+  pageNumber: number; // id = 2
+  resultPerPage: number; // id = 3
+  corpus: 0 | 1 | 2 | 3 | 4 | 5 | 6; // id = 4
 }
 export interface ISearchResponse {
-  results: Array<IResult>;  // id = 1
+  results: Array<IResult>; // id = 1
 }
 export interface IResult {
-  url: string;  // id = 1
-  title: string;  // id = 2
-  snippets: Array<string>;  // id = 3
+  url: string; // id = 1
+  title: string; // id = 2
+  snippets: Array<string>; // id = 3
 }
 export interface ISearchService {
   search(req: ISearchRequest): Promise<ISearchResponse>;

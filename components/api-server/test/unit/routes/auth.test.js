@@ -1,4 +1,3 @@
-'use strict';
 // @flow
 
 // Unit tests for auth.js
@@ -9,8 +8,7 @@ const express = require('express');
 
 const authMod = require('../../../src/routes/auth');
 
-describe('Authentication', function() {
-  
+describe('Authentication', () => {
   const settings = {
     auth: {
       sessionMaxAge: 3600 * 1000,
@@ -19,44 +17,42 @@ describe('Authentication', function() {
       ip: '127.0.0.1',
     },
     deprecated: {
-      auth: {}
+      auth: {},
     },
-    get: () => { 
-      return {
-        str: () => { return ''; },
-        num: () => { return 0; },
-        bool: () => { return false; },
-      };
-    },
-    has: () => { return true; },
+    get: () => ({
+      str: () => '',
+      num: () => 0,
+      bool: () => false,
+    }),
+    has: () => true,
     getCustomAuthFunction: () => { },
   };
-  
-  describe('hasProperties', function() {
+
+  describe('hasProperties', () => {
     // FLOW Mock out the settings object for this unit test
-    const {hasProperties} = authMod(express(), {settings: settings});
+    const { hasProperties } = authMod(express(), { settings });
     const obj = { a: 1, b: 2 };
     const keys = ['a', 'b'];
-    
-    it('[IKAI] returns true if all properties exist', function() {
+
+    it('[IKAI] returns true if all properties exist', () => {
       should(
-        hasProperties(obj, keys)
+        hasProperties(obj, keys),
       ).be.ok();
     });
-    it('[K2PZ] returns false if not all properties exist', function() {
+    it('[K2PZ] returns false if not all properties exist', () => {
       should(
-        hasProperties(obj, ['a', 'c'])
-      ).be.false(); 
+        hasProperties(obj, ['a', 'c']),
+      ).be.false();
     });
-    it('[U2NA] returns false if null is given', function() {
+    it('[U2NA] returns false if null is given', () => {
       should(
-        hasProperties(null, ['a', 'c'])
-      ).be.false(); 
+        hasProperties(null, ['a', 'c']),
+      ).be.false();
     });
-    it('[WJ7J] returns false if a string is given', function() {
+    it('[WJ7J] returns false if a string is given', () => {
       should(
-        hasProperties('a string', ['a', 'c'])
-      ).be.false(); 
+        hasProperties('a string', ['a', 'c']),
+      ).be.false();
     });
   });
 });

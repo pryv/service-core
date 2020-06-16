@@ -6,7 +6,7 @@
 const testData = require('../src/data');
 // don't add additional layer of ".." as this script is meant to be launched with babel-node as per the package.json script
 // it does require the "ln -s ../components components" symlink in the root node_modules/ of the projet
-const mongoFolder = __dirname + '/../../../../../mongo-bin';
+const mongoFolder = `${__dirname}/../../../../../mongo-bin`;
 
 const version = process.argv[2];
 if (version == null) {
@@ -14,10 +14,9 @@ if (version == null) {
   process.exit(1);
 }
 
-testData.dumpCurrent(mongoFolder, version, function (err) {
+testData.dumpCurrent(mongoFolder, version, (err) => {
   if (err) {
     console.error(err);
   }
   process.exit(err ? 1 : 0);
 });
-

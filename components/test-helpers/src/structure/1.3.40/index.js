@@ -31,41 +31,41 @@ module.exports = {
         index: { token: 1 },
         options: {
           unique: true,
-          partialFilterExpression: { deleted: { $type: 'null' } }
-        }
+          partialFilterExpression: { deleted: { $type: 'null' } },
+        },
       },
       {
         index: { name: 1, type: 1, deviceName: 1 },
         options: {
           unique: true,
-          partialFilterExpression: { deleted: { $type: 'null' } }
-        }
-      }
+          partialFilterExpression: { deleted: { $type: 'null' } },
+        },
+      },
     ],
     streams: [
       {
         index: { name: 1 },
-        options: {}
+        options: {},
       },
       {
         index: { name: 1, parentId: 1 },
-        options: { unique: true, sparse: true }
+        options: { unique: true, sparse: true },
       },
       {
         index: { trashed: 1 },
-        options: {}
-      }
+        options: {},
+      },
     ],
     followedSlices: [
       {
         index: { name: 1 },
-        options: { unique: true }
+        options: { unique: true },
       },
       {
         index: { username: 1, accessToken: 1 },
-        options: { unique: true }
-      }
+        options: { unique: true },
+      },
     ],
-    profile: []
-  }
+    profile: [],
+  },
 };

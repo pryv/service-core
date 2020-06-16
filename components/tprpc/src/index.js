@@ -6,9 +6,10 @@ const Definition = require('./definition');
 const { RemoteError } = require('./errors');
 
 module.exports = {
-  Server, Client,
+  Server,
+  Client,
   RemoteError,
-  load: Definition.load, 
+  load: Definition.load,
 };
 
 export type { Definition };

@@ -2,34 +2,29 @@
 
 /* global describe, it, after, before, beforeEach */
 
+import type { MongoDbSettings } from '../../../src/configuration';
+
 const lodash = require('lodash');
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
 const bluebird = require('bluebird');
 
-const { Database,  } = require('components/storage');
-const NullLogger = require('components/utils/src/logging').NullLogger;
+const { Database } = require('components/storage');
+const { NullLogger } = require('components/utils/src/logging');
 const storage = require('components/storage');
-
-
-
-import type { MongoDbSettings } from '../../../src/configuration';
+const chai = require('chai');
+const { databaseFixture } = require('components/test-helpers');
 const MongoDB = require('../../../src/connection/mongodb');
 
-const chai = require('chai');
-const assert = chai.assert;
-
-const { databaseFixture } = require('components/test-helpers');
-
+const { assert } = chai;
 
 describe('Connection/MongoDB', () => {
-
-    const settings: MongoDbSettings = {
+  const settings: MongoDbSettings = {
     host: 'localhost',
     port: 27017,
     dbname: 'pryv-node',
     fileStore: {
-      attachmentsPath: '/tmp/', 
+      attachmentsPath: '/tmp/',
       previewsPath: '/tmp/',
     },
   };
@@ -51,8 +46,7 @@ describe('Connection/MongoDB', () => {
       it('[YU38] throws', async () => {
         try {
           await mongodb.preflight('somerandomstringthatisnotauser');
-        }
-        catch (err) {
+        } catch (err) {
           assert.match(err.message, /No such user/);
 
           return;
@@ -67,15 +61,19 @@ describe('Connection/MongoDB', () => {
     // Uses dynamic fixtures:
     const mongoFixtures = databaseFixture(
       produceMongoConnection(
-        settings));
+        settings,
+      ),
+    );
     after(() => {
       mongoFixtures.clean();
     });
 
     // Set up a few ids that we'll use for testing. NOTE that these ids will
     // change on every test run.
-    let userId, userId2, streamId, accessToken, validId;
-    let hasExpiryId, hasExpiryToken;
+    let userId; let userId2; let streamId; let accessToken; let
+        validId;
+    let hasExpiryId; let
+        hasExpiryToken;
     before(() => {
       userId = cuid();
       userId2 = cuid();
@@ -98,22 +96,24 @@ describe('Connection/MongoDB', () => {
       // A token that is still valid
       await user.access({
         id: hasExpiryId,
-        type: 'app', token: hasExpiryToken,
+        type: 'app',
+        token: hasExpiryToken,
         expires: timestamp.now('1d'),
         name: 'valid access',
         permissions: [
           {
-            'streamId': 'diary',
-            'defaultName': 'Diary',
-            'level': 'read'
-          }
-        ]
+            streamId: 'diary',
+            defaultName: 'Diary',
+            level: 'read',
+          },
+        ],
       });
 
       // A token that did never expire
       let access = await user.access({
         id: validId,
-        type: 'app', token: cuid(),
+        type: 'app',
+        token: cuid(),
         name: 'doesnt expire',
       });
       access = access.attrs;
@@ -124,14 +124,14 @@ describe('Connection/MongoDB', () => {
       });
     });
 
-    let mongodb; 
+    let mongodb;
     beforeEach(() => {
       mongodb = new MongoDB(settings);
     });
 
     describe('#preflight(username)', () => {
       it('[K52O] checks the connection and doesn\'t throw', async () => {
-        await mongodb.preflight(userId); 
+        await mongodb.preflight(userId);
       });
     });
     describe('#deleteUser(username)', () => {
@@ -141,41 +141,36 @@ describe('Connection/MongoDB', () => {
         const user = await mongodb.findUser(userId);
         assert.isNull(user);
       });
-      it('[47A6] deletes his data from MongoDB', async function() {
+      it('[47A6] deletes his data from MongoDB', async () => {
         await assertIsEmpty(eventsStorage, userId);
         await assertIsEmpty(streamsStorage, userId);
         await assertIsEmpty(accessesStorage, userId);
         await assertIsEmpty(webhooksStorage, userId);
         await assertIsEmpty(profileStorage, userId);
         // no fixtures implemented for followed slices
-        //assertIsEmpty(followedSlicesStorage, userId);
+        // assertIsEmpty(followedSlicesStorage, userId);
       });
     });
   });
 
-  // Produces and returns a connection to MongoDB. 
-  // 
+  // Produces and returns a connection to MongoDB.
+  //
   function produceMongoConnection(settings: Object): Database {
     const copy = lodash.cloneDeep(settings);
     copy.name = copy.dbname;
 
     const database = new Database(
       copy,
-      new NullLogger());
+      new NullLogger(),
+    );
 
     return database;
   }
-  
 });
 
 async function assertIsEmpty(storage, userId) {
-  const items = await bluebird.fromCallback(cb =>
-    storage.find({ id: userId }, {}, {}, cb)
-  );
-  items.forEach(i => {
+  const items = await bluebird.fromCallback((cb) => storage.find({ id: userId }, {}, {}, cb));
+  items.forEach((i) => {
     assert.notExists(i);
   });
 }
-
-
-

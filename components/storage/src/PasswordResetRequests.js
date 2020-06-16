@@ -3,18 +3,18 @@
  */
 module.exports = PasswordResetRequests;
 
-var generateId = require('cuid'),
-    _ = require('lodash');
+const generateId = require('cuid');
+const _ = require('lodash');
 
-var collectionInfo = {
+const collectionInfo = {
   name: 'passwordResets',
   indexes: [
     // set TTL index for auto cleanup of expired requests
     {
-      index: {expires: 1},
-      options: {expireAfterSeconds: 0}
-    }
-  ]
+      index: { expires: 1 },
+      options: { expireAfterSeconds: 0 },
+    },
+  ],
 };
 
 /**
@@ -27,7 +27,7 @@ var collectionInfo = {
 function PasswordResetRequests(database, options) {
   this.database = database;
   this.options = _.merge({
-    maxAge: 1000 * 60 * 60 // one hour
+    maxAge: 1000 * 60 * 60, // one hour
   }, options);
 }
 
@@ -41,23 +41,23 @@ function PasswordResetRequests(database, options) {
 PasswordResetRequests.prototype.get = function (id, username, callback) {
   const query = {
     _id: id,
-    username: username,
+    username,
   };
-  this.database.findOne(collectionInfo, query, null, function (err, resetReq) {
+  this.database.findOne(collectionInfo, query, null, (err, resetReq) => {
     if (err) {
       return callback(err);
     }
 
-    if (! resetReq) {
+    if (!resetReq) {
       return callback(null, null);
     }
 
-    if (! resetReq.expires || new Date() < resetReq.expires) {
+    if (!resetReq.expires || new Date() < resetReq.expires) {
       callback(null, resetReq);
     } else {
       this.destroy(id, username, callback);
     }
-  }.bind(this));
+  });
 };
 
 /**
@@ -69,10 +69,10 @@ PasswordResetRequests.prototype.get = function (id, username, callback) {
 PasswordResetRequests.prototype.generate = function (username, callback) {
   const resetReq = {
     _id: generateId(),
-    username: username,
+    username,
     expires: this.getNewExpirationDate(),
   };
-  this.database.insertOne(collectionInfo, resetReq, function (err) {
+  this.database.insertOne(collectionInfo, resetReq, (err) => {
     if (err) { return callback(err); }
     callback(null, resetReq._id);
   });
@@ -88,7 +88,7 @@ PasswordResetRequests.prototype.generate = function (username, callback) {
 PasswordResetRequests.prototype.destroy = function (id, username, callback) {
   const query = {
     _id: id,
-    username: username,
+    username,
   };
   this.database.deleteOne(collectionInfo, query, callback);
 };

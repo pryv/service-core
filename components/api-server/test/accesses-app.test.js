@@ -1,24 +1,25 @@
 // @flow
 
-/*global describe, before, beforeEach, it */
+/* global describe, before, beforeEach, it */
 
-require('./test-helpers'); 
-const helpers = require('./helpers');
-const ErrorIds = require('components/errors').ErrorIds;
+import type Request from './helpers';
+
+require('./test-helpers');
+const { ErrorIds } = require('components/errors');
+
 const server = helpers.dependencies.instanceManager;
 const async = require('async');
-const validation = helpers.validation;
-const methodsSchema = require('../src/schema/accessesMethods');
+
+const { validation } = helpers;
 const storage = helpers.dependencies.storage.user.accesses;
 const testData = helpers.data;
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 const should = require('should');
+const methodsSchema = require('../src/schema/accessesMethods');
+const helpers = require('./helpers');
 
-import type Request from './helpers';
-
-describe('accesses (app)', function () {
-
+describe('accesses (app)', () => {
   const additionalTestAccesses = [
     {
       id: 'app_A',
@@ -28,21 +29,21 @@ describe('accesses (app)', function () {
       permissions: [
         {
           streamId: testData.streams[0].id,
-          level: 'manage'
+          level: 'manage',
         },
         {
           streamId: testData.streams[1].id,
-          level: 'contribute'
+          level: 'contribute',
         },
         {
           tag: 'super',
-          level: 'contribute'
-        }
+          level: 'contribute',
+        },
       ],
       created: timestamp.now(),
       createdBy: 'test',
       modified: timestamp.now(),
-      modifiedBy: 'test'
+      modifiedBy: 'test',
     },
     {
       id: 'app_B',
@@ -52,17 +53,17 @@ describe('accesses (app)', function () {
       permissions: [
         {
           streamId: testData.streams[0].id,
-          level: 'read'
+          level: 'read',
         },
         {
           tag: 'super',
-          level: 'read'
-        }
+          level: 'read',
+        },
       ],
       created: timestamp.now(),
       createdBy: 'test',
       modified: timestamp.now(),
-      modifiedBy: 'test'
+      modifiedBy: 'test',
     },
     {
       id: 'shared_A',
@@ -72,17 +73,17 @@ describe('accesses (app)', function () {
       permissions: [
         {
           streamId: testData.streams[0].children[0].id,
-          level: 'read'
+          level: 'read',
         },
         {
           tag: 'super',
-          level: 'read'
-        }
+          level: 'read',
+        },
       ],
       created: timestamp.now(),
       createdBy: 'app_A',
       modified: timestamp.now(),
-      modifiedBy: 'app_A'
+      modifiedBy: 'app_A',
     },
     {
       id: 'root_A',
@@ -92,13 +93,13 @@ describe('accesses (app)', function () {
       permissions: [
         {
           streamId: '*',
-          level: 'manage'
-        }
+          level: 'manage',
+        },
       ],
       created: timestamp.now(),
       createdBy: 'test',
       modified: timestamp.now(),
-      modifiedBy: 'test'
+      modifiedBy: 'test',
     },
     {
       id: 'shared_B',
@@ -108,89 +109,86 @@ describe('accesses (app)', function () {
       permissions: [
         {
           streamId: 'idonotexist',
-          level: 'read'
-        }
+          level: 'read',
+        },
       ],
       created: timestamp.now(),
       createdBy: 'test',
       modified: timestamp.now(),
-      modifiedBy: 'test'
-    }
+      modifiedBy: 'test',
+    },
   ];
   const user = testData.users[0];
   const access = additionalTestAccesses[0];
-  const basePath = '/' + user.username + '/accesses';
+  const basePath = `/${user.username}/accesses`;
   let request: ?Request = null; // must be set after server instance started
 
   function path(id) {
-    return basePath + '/' + id;
+    return `${basePath}/${id}`;
   }
   function req(): Request {
-    if (request) return request; 
+    if (request) return request;
     throw new Error('request is still not defined.');
   }
-  
+
   // to verify data change notifications
   let accessesNotifCount;
-  server.on('accesses-changed', function () { accessesNotifCount++; });
+  server.on('accesses-changed', () => { accessesNotifCount++; });
 
-  before(function (done) {
+  before((done) => {
     async.series([
       testData.resetUsers,
       testData.resetStreams,
       server.ensureStarted.bind(server, helpers.dependencies.settings),
-      function (stepDone) { request = helpers.request(server.url); stepDone(); }
+      function (stepDone) { request = helpers.request(server.url); stepDone(); },
     ], done);
   });
 
-  describe('GET /', function () {
-
+  describe('GET /', () => {
     before(resetAccesses);
 
     it('[YEHW] must return shared accesses whose permissions are a subset of the current one\'s',
-      function (done) {
-        req().get(basePath, access.token).end(function (res) {
+      (done) => {
+        req().get(basePath, access.token).end((res) => {
           validation.check(res, {
             status: 200,
             schema: methodsSchema.get.result,
-            body: {accesses: [additionalTestAccesses[2]]}
+            body: { accesses: [additionalTestAccesses[2]] },
           }, done);
         });
       });
 
-    it('[GLHP] must be forbidden to requests with a shared access token', function (done) {
+    it('[GLHP] must be forbidden to requests with a shared access token', (done) => {
       const sharedAccess = testData.accesses[1];
-      req().get(basePath, sharedAccess.token).end(function (res) {
+      req().get(basePath, sharedAccess.token).end((res) => {
         validation.checkErrorForbidden(res, done);
       });
     });
-
   });
 
-  describe('POST /', function () {
-
+  describe('POST /', () => {
     beforeEach(resetAccesses);
 
-    it('[QVHS] must create a new shared access with the sent data and return it', function (done) {
-      const  data = {
+    it('[QVHS] must create a new shared access with the sent data and return it', (done) => {
+      const data = {
         name: 'New Access',
         permissions: [
           {
             streamId: testData.streams[0].id,
             level: 'read',
             defaultName: 'Should be ignored',
-            name: 'Should be ignored'
+            name: 'Should be ignored',
           },
           {
             tag: 'super',
-            level: 'read'
-          }
-        ]
+            level: 'read',
+          },
+        ],
       };
-      req().post(basePath, access.token).send(data).end(function (res) {
+      req().post(basePath, access.token).send(data).end((res) => {
         validation.check(res, {
           status: 201,
-          schema: methodsSchema.create.result
+          schema: methodsSchema.create.result,
         });
 
         const expected: {[key: string]: any} = _.cloneDeep(data);
@@ -206,53 +204,53 @@ describe('accesses (app)', function () {
       });
     });
 
-    it('[6GR1] must forbid trying to create a non-shared access', function (done) {
+    it('[6GR1] must forbid trying to create a non-shared access', (done) => {
       const data = {
         name: 'New Access',
         type: 'app',
         permissions: [
           {
             streamId: testData.streams[0].id,
-            level: 'read'
-          }
-        ]
+            level: 'read',
+          },
+        ],
       };
-      req().post(basePath, access.token).send(data).end(function (res) {
+      req().post(basePath, access.token).send(data).end((res) => {
         validation.checkErrorForbidden(res, done);
       });
     });
 
-    it('[A4MC] must forbid trying to create an access with greater permissions', function (done) {
+    it('[A4MC] must forbid trying to create an access with greater permissions', (done) => {
       const data = {
         name: 'New Access',
         permissions: [
           {
             streamId: testData.streams[1].id,
-            level: 'manage'
-          }
-        ]
+            level: 'manage',
+          },
+        ],
       };
-      req().post(basePath, access.token).send(data).end(function (res) {
+      req().post(basePath, access.token).send(data).end((res) => {
         validation.checkErrorForbidden(res, done);
       });
     });
 
-    it('[QN6D] must return a correct error if the sent data is badly formatted', function (done) {
+    it('[QN6D] must return a correct error if the sent data is badly formatted', (done) => {
       const data = {
         name: 'New Access',
         permissions: [
           {
             streamId: testData.streams[0].id,
-            level: 'bad-level'
-          }
-        ]
+            level: 'bad-level',
+          },
+        ],
       };
-      req().post(basePath, access.token).send(data).end(function (res) {
+      req().post(basePath, access.token).send(data).end((res) => {
         validation.checkErrorInvalidParams(res, done);
       });
     });
 
-    it('[4HAE] must allow creation of shared accesses with an access that has superior permission on root stream (*)', function (done) {
+    it('[4HAE] must allow creation of shared accesses with an access that has superior permission on root stream (*)', (done) => {
       const access = additionalTestAccesses[3];
 
       const data = {
@@ -260,121 +258,111 @@ describe('accesses (app)', function () {
         permissions: [
           {
             streamId: testData.streams[0].id,
-            level: 'read'
-          }
-        ]
+            level: 'read',
+          },
+        ],
       };
-      req().post(basePath, access.token).send(data).end(function (res) {
+      req().post(basePath, access.token).send(data).end((res) => {
         should.exist(res.body);
         should.not.exist(res.body.error);
         should(res.statusCode).be.eql(201);
         done();
       });
     });
-
   });
 
-  describe('PUT /<token>', function () {
-
+  describe('PUT /<token>', () => {
     beforeEach(resetAccesses);
 
-    it('[11UZ]  must return a 410 (Gone)', function (done) {
+    it('[11UZ]  must return a 410 (Gone)', (done) => {
       req().put(path(additionalTestAccesses[1].id), access.token)
-          .send({name: 'Updated App Access'}).end(function (res) {
-            validation.check(res, {status: 410});
-            done();
-      });
+        .send({ name: 'Updated App Access' }).end((res) => {
+          validation.check(res, { status: 410 });
+          done();
+        });
     });
   });
 
-  describe('DELETE /<id>', function () {
-
+  describe('DELETE /<id>', () => {
     beforeEach(resetAccesses);
 
-    it('[5BOO] must delete the shared access', function (done) {
+    it('[5BOO] must delete the shared access', (done) => {
       const deletedAccess = additionalTestAccesses[2];
       let deletionTime;
       async.series([
         function deleteAccess(stepDone) {
           deletionTime = timestamp.now();
-          req().del(path(deletedAccess.id), access.token).end(function (res) {
+          req().del(path(deletedAccess.id), access.token).end((res) => {
             validation.check(res, {
               status: 200,
               schema: methodsSchema.del.result,
-              body: {accessDeletion: {id: deletedAccess.id}}
+              body: { accessDeletion: { id: deletedAccess.id } },
             });
             should(accessesNotifCount).be.eql(1, 'accesses notifications');
             stepDone();
           });
         },
         function verifyData(stepDone) {
-          storage.findAll(user, null, function (err, accesses) {
+          storage.findAll(user, null, (err, accesses) => {
             accesses.length.should.eql(testData.accesses.length + additionalTestAccesses.length,
-                                       'accesses');
+              'accesses');
 
             const expected = _.assign({
-              deleted: deletionTime
+              deleted: deletionTime,
             }, deletedAccess);
-            const actual = _.find(accesses, {id: deletedAccess.id});
+            const actual = _.find(accesses, { id: deletedAccess.id });
             validation.checkObjectEquality(actual, expected);
 
             stepDone();
           });
-        }
+        },
       ],
-          done
-      );
+      done);
     });
 
-    it('[ZTSX] forbid deletion of already deleted for AppTokens', function (done) {
-      req().del(path(access.id), access.token).end(function (res) {
+    it('[ZTSX] forbid deletion of already deleted for AppTokens', (done) => {
+      req().del(path(access.id), access.token).end((res) => {
         validation.check(res, {
           status: 200,
           schema: methodsSchema.del.result,
-          body: { accessDeletion: { id: access.id } }
+          body: { accessDeletion: { id: access.id } },
         });
 
-        req().del(path(access.id), access.token).end(function (res2) {
-          validation.check(res2, {
-            status: 403});
+        req().del(path(access.id), access.token).end((res2) => {
+          validation.check(res2, { status: 403 });
 
           done();
         });
-
       });
     });
 
-    
-
-    it('[VGQS] must forbid trying to delete a non-shared access', function (done) {
-      req().del(path(additionalTestAccesses[1].id), access.token).end(function (res) {
+    it('[VGQS] must forbid trying to delete a non-shared access', (done) => {
+      req().del(path(additionalTestAccesses[1].id), access.token).end((res) => {
         validation.checkErrorForbidden(res, done);
       });
     });
 
-    it('[ZTSY] must forbid trying to delete an access that was not created by itself', function (done) {
-      req().del(path(testData.accesses[1].id), access.token).end(function (res) {
+    it('[ZTSY] must forbid trying to delete an access that was not created by itself', (done) => {
+      req().del(path(testData.accesses[1].id), access.token).end((res) => {
         validation.checkErrorForbidden(res, done);
       });
     });
 
-    it('[J32P] must return a correct error if the access does not exist', function (done) {
-      req().del(path('unknown-id'), access.token).end(function (res) {
+    it('[J32P] must return a correct error if the access does not exist', (done) => {
+      req().del(path('unknown-id'), access.token).end((res) => {
         validation.checkError(res, {
           status: 404,
-          id: ErrorIds.UnknownResource
+          id: ErrorIds.UnknownResource,
         }, done);
       });
     });
-
   });
 
   function resetAccesses(done) {
     accessesNotifCount = 0;
     async.series([
       testData.resetAccesses,
-      storage.insertMany.bind(storage, user, additionalTestAccesses)
+      storage.insertMany.bind(storage, user, additionalTestAccesses),
     ], done);
   }
-
 });

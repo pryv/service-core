@@ -1,5 +1,9 @@
 // @flow
 
+import type { Query, Repository } from 'components/business';
+import type { MetadataRepository, SeriesMetadata } from '../../metadata_cache';
+import type Context from '../../context';
+
 const { tryCoerceStringValues } = require('components/api-server').validation;
 
 const lodash = require('lodash');
@@ -11,10 +15,6 @@ const SeriesResponse = require('../SeriesResponse');
 
 const AUTH_HEADER = 'authorization';
 
-import type {Query, Repository} from 'components/business';
-import type {MetadataRepository, SeriesMetadata} from '../../metadata_cache';
-import type Context from '../../context';
-
 /** GET /events/:event_id/series - Query a series for a data subset.
  *
  * @param  {type} ctx:  Context
@@ -25,9 +25,9 @@ import type Context from '../../context';
  */
 async function querySeriesData(
   ctx: Context, req: express$Request,
-  res: express$Response): mixed 
-{
-  const metadata = ctx.metadata;
+  res: express$Response,
+): mixed {
+  const { metadata } = ctx;
   const seriesRepo = ctx.series;
 
   // Extract parameters from request:
@@ -40,11 +40,11 @@ async function querySeriesData(
   if (eventId == null) throw errors.invalidItemId();
 
   const seriesMeta = await verifyAccess(username, eventId, accessToken, metadata);
-  
+
   const query = coerceStringParams(lodash.clone(req.query));
   applyDefaultValues(query);
   validateQuery(query);
-  
+
   await retrievePoints(seriesRepo, res, query, seriesMeta);
 }
 
@@ -63,38 +63,35 @@ function coerceStringParams(params: Object): Query {
 }
 
 function applyDefaultValues(query: Object) {
-  if (query.to == null) query.to = timestamp.now(); 
+  if (query.to == null) query.to = timestamp.now();
 }
 
 function validateQuery(query: Query) {
-  if (query.from != null && isNaN(query.from)) 
-    throw errors.invalidParametersFormat("'from' must contain seconds since epoch.");
+  if (query.from != null && isNaN(query.from)) { throw errors.invalidParametersFormat("'from' must contain seconds since epoch."); }
 
-  if (isNaN(query.to)) 
-    throw errors.invalidParametersFormat("'to' must contain seconds since epoch.");
-    
-  if (query.from != null && query.to != null && query.to < query.from) 
-    throw errors.invalidParametersFormat("'to' must be >= 'from'.");
+  if (isNaN(query.to)) { throw errors.invalidParametersFormat("'to' must contain seconds since epoch."); }
+
+  if (query.from != null && query.to != null && query.to < query.from) { throw errors.invalidParametersFormat("'to' must be >= 'from'."); }
 }
 
 async function verifyAccess(
-  username: string, eventId: string, authToken: string, 
-  metadata: MetadataRepository): Promise<SeriesMetadata>
-{
+  username: string, eventId: string, authToken: string,
+  metadata: MetadataRepository,
+): Promise<SeriesMetadata> {
   const seriesMeta = await metadata.forSeries(username, eventId, authToken);
-  
+
   if (!seriesMeta.canRead()) throw errors.forbidden();
-  
+
   return seriesMeta;
 }
 
 async function retrievePoints(
   seriesRepo: Repository, res: express$Response,
-  query: Query, seriesMeta: SeriesMetadata): Promise<void>
-{
+  query: Query, seriesMeta: SeriesMetadata,
+): Promise<void> {
   const seriesInstance = await seriesRepo.get(...seriesMeta.namespaceAndName());
   const data = await seriesInstance.query(query);
-  
+
   const responseObj = new SeriesResponse(data);
   responseObj.answer(res);
 }

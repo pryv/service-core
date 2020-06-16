@@ -1,32 +1,29 @@
+const utils = require('components/utils');
+const errors = require('components/errors').factory;
+const async = require('async');
+const timestamp = require('unix-timestamp');
 
-var utils = require('components/utils'),
-    errors = require('components/errors').factory,
-    async = require('async'),
-    commonFns = require('./helpers/commonFunctions'),
-    methodsSchema = require('../schema/eventsMethods'),
-    eventSchema = require('../schema/event'),
-    querying = require('./helpers/querying'),
-    timestamp = require('unix-timestamp'),
-    treeUtils = utils.treeUtils,
-    _ = require('lodash'),
-    SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
-    
+const { treeUtils } = utils;
+const _ = require('lodash');
+
 const assert = require('assert');
-    
-const {TypeRepository, isSeriesType} = require('components/business').types;
 
+const { TypeRepository, isSeriesType } = require('components/business').types;
 
-const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
-const NATS_UPDATE_EVENT = require('components/utils').messaging
-  .NATS_UPDATE_EVENT;
-const NATS_DELETE_EVENT = require('components/utils').messaging
-  .NATS_DELETE_EVENT;
+const { NATS_CONNECTION_URI } = require('components/utils').messaging;
+const { NATS_UPDATE_EVENT } = require('components/utils').messaging;
+const { NATS_DELETE_EVENT } = require('components/utils').messaging;
+const SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
+const querying = require('./helpers/querying');
+const eventSchema = require('../schema/event');
+const methodsSchema = require('../schema/eventsMethods');
+const commonFns = require('./helpers/commonFunctions');
 
 const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';
 
 // Type repository that will contain information about what is allowed/known
-// for events. 
-const typeRepo = new TypeRepository(); 
+// for events.
+const typeRepo = new TypeRepository();
 
 /**
  * Events API methods implementations.
@@ -37,13 +34,12 @@ module.exports = function (
   authSettings, eventTypesUrl, notifications, logging,
   auditSettings, updatesSettings, openSourceSettings,
 ) {
-
   // Update types and log error
   typeRepo.tryUpdate(eventTypesUrl)
     .catch((err) => logging.getLogger('typeRepo').warn(err));
-    
+
   const logger = logging.getLogger('methods/events');
-  
+
   let natsPublisher;
   if (!openSourceSettings.isActive) {
     const NatsPublisher = require('../socket-io/nats_publisher');
@@ -70,7 +66,7 @@ module.exports = function (
       limit: null,
       state: 'default',
       modifiedSince: null,
-      includeDeletions: false
+      includeDeletions: false,
     });
     if (params.fromTime == null && params.toTime != null) {
       params.fromTime = timestamp.add(params.toTime, -24 * 60 * 60);
@@ -84,44 +80,47 @@ module.exports = function (
     }
 
     if (params.streams != null) {
-      var expandedStreamIds = treeUtils.expandIds(context.streams, params.streams);
-      var unknownIds = _.difference(params.streams, expandedStreamIds);
+      const expandedStreamIds = treeUtils.expandIds(context.streams, params.streams);
+      const unknownIds = _.difference(params.streams, expandedStreamIds);
 
       if (unknownIds.length > 0) {
         return next(errors.unknownReferencedResource(
-          'stream' + (unknownIds.length > 1 ? 's' : ''),
-          'streams', 
-          unknownIds));
+          `stream${unknownIds.length > 1 ? 's' : ''}`,
+          'streams',
+          unknownIds,
+        ));
       }
 
       params.streams = expandedStreamIds;
     }
     if (params.state === 'default') {
       // exclude events in trashed streams
-      var nonTrashedStreamIds = treeUtils.collectPluck(
+      const nonTrashedStreamIds = treeUtils.collectPluck(
         treeUtils.filterTree(
-          context.streams, false, (s) => { return ! s.trashed; }), 
-        'id');
-      params.streams = params.streams 
-        ? _.intersection(params.streams, nonTrashedStreamIds) 
+          context.streams, false, (s) => !s.trashed,
+        ),
+        'id',
+      );
+      params.streams = params.streams
+        ? _.intersection(params.streams, nonTrashedStreamIds)
         : nonTrashedStreamIds;
     }
-    if (! context.access.canReadAllStreams()) {
-      var accessibleStreamIds = [];
+    if (!context.access.canReadAllStreams()) {
+      const accessibleStreamIds = [];
       Object.keys(context.access.streamPermissionsMap).map((streamId) => {
         if (context.access.canReadStream(streamId)) {
           accessibleStreamIds.push(streamId);
         }
       });
-      params.streams = params.streams 
-        ? _.intersection(params.streams, accessibleStreamIds) 
+      params.streams = params.streams
+        ? _.intersection(params.streams, accessibleStreamIds)
         : accessibleStreamIds;
     }
 
-    if (! context.access.canReadAllTags()) {
-      var accessibleTags = Object.keys(context.access.tagPermissionsMap);
-      params.tags = params.tags 
-        ? _.intersection(params.tags, accessibleTags) 
+    if (!context.access.canReadAllTags()) {
+      const accessibleTags = Object.keys(context.access.tagPermissionsMap);
+      params.tags = params.tags
+        ? _.intersection(params.tags, accessibleTags)
         : accessibleTags;
     }
 
@@ -130,48 +129,48 @@ module.exports = function (
 
   function findAccessibleEvents(context, params, result, next) {
     // build query
-    var query = querying.noDeletions(querying.applyState({}, params.state));
+    const query = querying.noDeletions(querying.applyState({}, params.state));
     if (params.streams) {
-      query.streamIds = {$in: params.streams};
+      query.streamIds = { $in: params.streams };
     }
     if (params.tags && params.tags.length > 0) {
-      query.tags = {$in: params.tags};
+      query.tags = { $in: params.tags };
     }
     if (params.types && params.types.length > 0) {
       // unofficially accept wildcard for sub-type parts
-      var types = params.types.map(getTypeQueryValue);
-      query.type = {$in: types};
+      const types = params.types.map(getTypeQueryValue);
+      query.type = { $in: types };
     }
     if (params.running) {
-      query.duration = {'$type' : 10}; // matches when duration exists and is null
+      query.duration = { $type: 10 }; // matches when duration exists and is null
     }
     if (params.fromTime != null) {
       query.$or = [
         { // Event started before fromTime, but finished inside from->to.
-          time: {$lt: params.fromTime},
-          endTime: {$gte: params.fromTime}
+          time: { $lt: params.fromTime },
+          endTime: { $gte: params.fromTime },
         },
         { // Event has started inside the interval.
-          time: { $gte: params.fromTime, $lte: params.toTime }
+          time: { $gte: params.fromTime, $lte: params.toTime },
         },
       ];
     }
     if (params.toTime != null) {
-      _.defaults(query, {time: {}});
+      _.defaults(query, { time: {} });
       query.time.$lte = params.toTime;
     }
     if (params.modifiedSince != null) {
-      query.modified = {$gt: params.modifiedSince};
+      query.modified = { $gt: params.modifiedSince };
     }
 
-    var options = {
-      projection: params.returnOnlyIds ? {id: 1} : {},
+    const options = {
+      projection: params.returnOnlyIds ? { id: 1 } : {},
       sort: { time: params.sortAscending ? 1 : -1 },
       skip: params.skip,
-      limit: params.limit
+      limit: params.limit,
     };
-        
-    userEventsStorage.findStreamed(context.user, query, options, function (err, eventsStream) {
+
+    userEventsStorage.findStreamed(context.user, query, options, (err, eventsStream) => {
       if (err) {
         return next(errors.unexpectedError(err));
       }
@@ -180,29 +179,27 @@ module.exports = function (
         .pipe(new SetFileReadTokenStream(
           {
             access: context.access,
-            filesReadTokenSecret: authSettings.filesReadTokenSecret
-          }
-        ))
-      );
-      
+            filesReadTokenSecret: authSettings.filesReadTokenSecret,
+          },
+        )));
+
       next();
     });
   }
 
   function includeDeletionsIfRequested(context, params, result, next) {
-
     if (params.modifiedSince == null || !params.includeDeletions) {
       return next();
     }
 
-    var options = {
-      sort: {deleted: params.sortAscending ? 1 : -1},
+    const options = {
+      sort: { deleted: params.sortAscending ? 1 : -1 },
       skip: params.skip,
-      limit: params.limit
+      limit: params.limit,
     };
 
     userEventsStorage.findDeletionsStreamed(context.user, params.modifiedSince, options,
-      function (err, deletionsStream) {
+      (err, deletionsStream) => {
         if (err) {
           return next(errors.unexpectedError(err));
         }
@@ -215,16 +212,15 @@ module.exports = function (
   api.register('events.getOne',
     commonFns.getParamsValidation(methodsSchema.getOne.params),
     findEvent,
-    includeHistoryIfRequested
-  );
+    includeHistoryIfRequested);
 
   function findEvent(context, params, result, next) {
-    userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
+    userEventsStorage.findOne(context.user, { id: params.id }, null, (err, event) => {
       if (err) {
         return next(errors.unexpectedError(err));
       }
 
-      if (! event) {
+      if (!event) {
         return next(errors.unknownResource('event', params.id));
       }
 
@@ -235,7 +231,7 @@ module.exports = function (
           break;
         }
       }
-      if (! canReadEvent) return next(errors.forbidden());
+      if (!canReadEvent) return next(errors.forbidden());
 
       setFileReadToken(context.access, event);
 
@@ -252,19 +248,19 @@ module.exports = function (
       return next();
     }
 
-    var options = {
-      sort: {modified: 1}
+    const options = {
+      sort: { modified: 1 },
     };
 
     userEventsStorage.findHistory(context.user, params.id, options,
-      function (err, history) {
+      (err, history) => {
         if (err) {
           return next(errors.unexpectedError(err));
         }
 
         // To remove when streamId not necessary
-        history.forEach(e => e.streamId = e.streamIds[0]);
-        
+        history.forEach((e) => e.streamId = e.streamIds[0]);
+
         result.history = history;
         next();
       });
@@ -286,24 +282,24 @@ module.exports = function (
     const event = context.content;
     // default time is now
     _.defaults(event, { time: timestamp.now() });
-    if (! event.tags) {
+    if (!event.tags) {
       event.tags = [];
     }
-    
+
     cleanupEventTags(event);
-    
+
     context.files = sanitizeRequestFiles(params.files);
     delete params.files;
 
     context.initTrackingProperties(event);
-    
+
     context.content = event;
     next();
   }
 
   function verifycanContributeToContext(context, params, result, next) {
     for (let i = 0; i < context.content.streamIds.length; i++) { // refuse if any context is not accessible
-      if (! context.canContributeToContext(context.content.streamIds[i], context.content.tags)) {
+      if (!context.canContributeToContext(context.content.streamIds[i], context.content.tags)) {
         return next(errors.forbidden());
       }
     }
@@ -311,28 +307,26 @@ module.exports = function (
   }
 
   function createEvent(
-    context, params, result, next) 
-  {
-
+    context, params, result, next,
+  ) {
     if (isSeriesType(context.content.type)) {
       if (openSourceSettings.isActive) {
         return next(errors.unavailableMethod());
       }
       try {
         context.content.content = createSeriesEventContent(context);
-      }
-      catch (err) { return next(err); }
-        
+      } catch (err) { return next(err); }
+
       // As long as there is no data, event duration is considered to be 0.
-      context.content.duration = 0; 
+      context.content.duration = 0;
     }
 
     userEventsStorage.insertOne(
-      context.user, context.content, function (err, newEvent) {
+      context.user, context.content, (err, newEvent) => {
         if (err != null) {
           // Expecting a duplicate error
           if (err.isDuplicateIndex('id')) {
-            return next(errors.itemAlreadyExists('event', {id: params.id}, err));
+            return next(errors.itemAlreadyExists('event', { id: params.id }, err));
           }
           // Any other error
           return next(errors.unexpectedError(err));
@@ -343,37 +337,39 @@ module.exports = function (
 
         result.event = newEvent;
         next();
-      });
+      },
+    );
   }
 
   /**
-   * Creates the event's body according to its type and context. 
+   * Creates the event's body according to its type and context.
    */
   function createSeriesEventContent(context) {
-    const seriesTypeName = context.content.type; 
-    const eventType = typeRepo.lookup(seriesTypeName); 
-    
-    // assert: Type is a series type, so this should be always true: 
-    assert.ok(eventType.isSeries()); 
+    const seriesTypeName = context.content.type;
+    const eventType = typeRepo.lookup(seriesTypeName);
+
+    // assert: Type is a series type, so this should be always true:
+    assert.ok(eventType.isSeries());
 
     return {
-      elementType: eventType.elementTypeName(), 
-      fields: eventType.fields(), 
+      elementType: eventType.elementTypeName(),
+      fields: eventType.fields(),
       required: eventType.requiredFields(),
     };
   }
 
   function createAttachments(context, params, result, next) {
-    attachFiles(context, {id: result.event.id}, context.files, function (err, attachments) {
+    attachFiles(context, { id: result.event.id }, context.files, (err, attachments) => {
       if (err) {
-        return next(err); }
-      if (! attachments) {
+        return next(err);
+      }
+      if (!attachments) {
         return next();
       }
 
       result.event.attachments = attachments;
-      userEventsStorage.updateOne(context.user, {id: result.event.id}, {attachments: attachments},
-        function (err) {
+      userEventsStorage.updateOne(context.user, { id: result.event.id }, { attachments },
+        (err) => {
           if (err) {
             return next(errors.unexpectedError(err));
           }
@@ -398,64 +394,62 @@ module.exports = function (
     notify);
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
-
     const eventUpdate = context.content;
-    
+
     cleanupEventTags(eventUpdate);
 
     context.updateTrackingProperties(eventUpdate);
 
-    userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
+    userEventsStorage.findOne(context.user, { id: params.id }, null, (err, event) => {
       if (err) {
         return next(errors.unexpectedError(err));
       }
 
-      if (! event) {
+      if (!event) {
         return next(errors.unknownResource('event', params.id));
       }
 
       // 1. check that have contributeContext on at least 1 existing streamId
       let canUpdateEvent = false;
-      for (let i = 0; i < event.streamIds.length ; i++) {
+      for (let i = 0; i < event.streamIds.length; i++) {
         if (context.canUpdateContext(event.streamIds[i], event.tags)) {
           canUpdateEvent = true;
           break;
         }
       }
-      if (! canUpdateEvent) return next(errors.forbidden());
-      
-      if (hasStreamIdsModification(eventUpdate)) {
+      if (!canUpdateEvent) return next(errors.forbidden());
 
+      if (hasStreamIdsModification(eventUpdate)) {
         // 2. check that streams we add have contribute access
         const streamIdsToAdd = _.difference(eventUpdate.streamIds, event.streamIds);
-        for (let i=0; i<streamIdsToAdd.length; i++) {
-          if (! context.canUpdateContext(streamIdsToAdd[i], event.tags)) {
+        for (let i = 0; i < streamIdsToAdd.length; i++) {
+          if (!context.canUpdateContext(streamIdsToAdd[i], event.tags)) {
             return next(errors.forbidden());
           }
         }
 
-        // 3. check that streams we remove have contribute access        
+        // 3. check that streams we remove have contribute access
         // streamsToRemove = event.streamIds - eventUpdate.streamIds
         const streamIdsToRemove = _.difference(event.streamIds, eventUpdate.streamIds);
 
-        for (let i = 0; i < streamIdsToRemove.length ; i++) {
-          if (! context.canUpdateContext(streamIdsToRemove[i], event.tags)) {
+        for (let i = 0; i < streamIdsToRemove.length; i++) {
+          if (!context.canUpdateContext(streamIdsToRemove[i], event.tags)) {
             return next(errors.forbidden());
           }
         }
       }
 
       const updatedEventType = eventUpdate.type;
-      if(updatedEventType != null) {
+      if (updatedEventType != null) {
         const currentEventType = event.type;
         const isCurrentEventTypeSeries = isSeriesType(currentEventType);
         const isUpdatedEventTypeSeries = isSeriesType(updatedEventType);
-        if (! typeRepo.isKnown(updatedEventType) && isUpdatedEventTypeSeries) {
-          return next(errors.invalidEventType(updatedEventType)); // We forbid the 'series' prefix for these free types. 
+        if (!typeRepo.isKnown(updatedEventType) && isUpdatedEventTypeSeries) {
+          return next(errors.invalidEventType(updatedEventType)); // We forbid the 'series' prefix for these free types.
         }
 
-        if((isCurrentEventTypeSeries && ! isUpdatedEventTypeSeries) || 
-          (! isCurrentEventTypeSeries && isUpdatedEventTypeSeries)) {
+        if ((isCurrentEventTypeSeries && !isUpdatedEventTypeSeries)
+          || (!isCurrentEventTypeSeries && isUpdatedEventTypeSeries)) {
           return next(errors.invalidOperation('Normal events cannot be updated to HF-events and vice versa.'));
         }
       }
@@ -468,7 +462,6 @@ module.exports = function (
         return event.streamIds != null;
       }
     });
-
   }
 
   function generateLogIfNeeded(context, params, result, next) {
@@ -476,10 +469,10 @@ module.exports = function (
       return next();
     }
 
-    context.oldContent = _.extend(context.oldContent, {headId: context.content.id});
+    context.oldContent = _.extend(context.oldContent, { headId: context.content.id });
     delete context.oldContent.id;
 
-    userEventsStorage.insertOne(context.user, context.oldContent, function (err) {
+    userEventsStorage.insertOne(context.user, context.oldContent, (err) => {
       if (err) {
         return next(errors.unexpectedError(err));
       }
@@ -489,12 +482,12 @@ module.exports = function (
   }
 
   function updateAttachments(context, params, result, next) {
-    var eventInfo = {
+    const eventInfo = {
       id: context.content.id,
-      attachments: context.content.attachments || []
+      attachments: context.content.attachments || [],
     };
     attachFiles(context, eventInfo, sanitizeRequestFiles(params.files),
-      function (err, attachments) {
+      (err, attachments) => {
         if (err) { return next(err); }
 
         if (attachments) {
@@ -504,9 +497,9 @@ module.exports = function (
       });
   }
 
-  function updateEvent (context, params, result, next) {
-    userEventsStorage.updateOne(context.user, {id: context.content.id}, context.content,
-      function (err, updatedEvent) {
+  function updateEvent(context, params, result, next) {
+    userEventsStorage.updateOne(context.user, { id: context.content.id }, context.content,
+      (err, updatedEvent) => {
         if (err) {
           return next(errors.unexpectedError(err));
         }
@@ -526,7 +519,7 @@ module.exports = function (
     // notify is called by create, update and delete
     // depending on the case the event properties will be found in context or event
     if (isSeriesEvent(context.event || result.event) && !openSourceSettings.isActive) {
-      const isDelete = result.eventDeletion ? true : false;
+      const isDelete = !!result.eventDeletion;
       // if event is a deletion 'id' is given by result.eventDeletion
       const updatedEventId = isDelete ? _.pick(result.eventDeletion, ['id']) : _.pick(result.event, ['id']);
       const subject = isDelete ? NATS_DELETE_EVENT : NATS_UPDATE_EVENT;
@@ -550,13 +543,13 @@ module.exports = function (
    * @returns {Object}
    */
   function sanitizeRequestFiles(files) {
-    if (! files || ! files.file || ! Array.isArray(files.file)) {
+    if (!files || !files.file || !Array.isArray(files.file)) {
       // assume files is an object, nothing to do
       return files;
     }
-    var result = {};
-    files.file.forEach(function (item, i) {
-      if (! item.filename) {
+    const result = {};
+    files.file.forEach((item, i) => {
+      if (!item.filename) {
         item.filename = item.name;
       }
       result[i] = item;
@@ -565,7 +558,6 @@ module.exports = function (
   }
 
   function normalizeStreamIdAndStreamIds(context, params, result, next) {
-    
     const event = isEventsUpdateMethod() ? params.update : params;
 
     // forbid providing both streamId and streamIds
@@ -578,7 +570,7 @@ module.exports = function (
     if (event.streamId != null) {
       event.streamIds = [event.streamId];
     }
-    
+
     // remove double entries from streamIds
     if (event.streamIds != null && event.streamIds.length > 1) {
       event.streamIds = [...new Set(event.streamIds)];
@@ -589,8 +581,8 @@ module.exports = function (
 
     // check that streamIds are known
     context.setStreamList(context.content.streamIds);
-    if (event.streamIds != null && ! checkStreams(context, next)) return;
-    
+    if (event.streamIds != null && !checkStreams(context, next)) return;
+
     next();
 
     function isEventsUpdateMethod() { return params.update != null; }
@@ -606,19 +598,19 @@ module.exports = function (
    * @param {Function} next
    */
   function validateEventContentAndCoerce(context, params, result, next) {
-    const type = context.content.type;
-        
-    // Unknown types can just be created as normal events. 
-    if (! typeRepo.isKnown(type)) {
-      // We forbid the 'series' prefix for these free types. 
+    const { type } = context.content;
+
+    // Unknown types can just be created as normal events.
+    if (!typeRepo.isKnown(type)) {
+      // We forbid the 'series' prefix for these free types.
       if (isSeriesType(type)) return next(errors.invalidEventType(type));
 
-      // No further checks, let the user do what he wants. 
+      // No further checks, let the user do what he wants.
       return next();
     }
-        
+
     // assert: `type` is known
-    
+
     const eventType = typeRepo.lookup(type);
     if (eventType.isSeries()) {
       // Series cannot have content on update, not here at least.
@@ -628,24 +620,25 @@ module.exports = function (
 
       return next();
     }
-    
+
     // assert: `type` is not a series but is known
 
-    const content = context.content.hasOwnProperty('content') 
+    const content = context.content.hasOwnProperty('content')
       ? context.content.content
       : null;
 
     const validator = typeRepo.validator();
     validator.validate(eventType, content)
       .then((newContent) => {
-        // Store the coerced value. 
-        context.content.content = newContent; 
-        
+        // Store the coerced value.
+        context.content.content = newContent;
+
         next();
       })
       .catch(
         (err) => next(errors.invalidParametersFormat(
-          'The event content\'s format is invalid.', err))
+          'The event content\'s format is invalid.', err,
+        )),
       );
 
     function isCreateSeriesAndHasContent() {
@@ -656,19 +649,20 @@ module.exports = function (
     }
   }
 
-  function cleanupEventTags(eventData) {      
-    if (! eventData.tags) return;
+  function cleanupEventTags(eventData) {
+    if (!eventData.tags) return;
 
     const limit = 500;
-    
-    eventData.tags = eventData.tags.map(function (tag) {
-      if(tag.length > limit) {
+
+    eventData.tags = eventData.tags.map((tag) => {
+      if (tag.length > limit) {
         throw errors.invalidParametersFormat(
-          'The event contains a tag that exceeds the size limit of ' +
-           limit + ' characters.', tag);
-      } 
+          `The event contains a tag that exceeds the size limit of ${
+            limit} characters.`, tag,
+        );
+      }
       return tag.trim();
-    }).filter(function (tag) { return tag.length > 0; });
+    }).filter((tag) => tag.length > 0);
   }
 
   /**
@@ -680,10 +674,9 @@ module.exports = function (
    * @return `true` if OK, `false` if an error was found.
    */
   function checkStreams(context, errorCallback) {
-
-    if (context.streamIdsNotFoundList.length > 0 ) {
+    if (context.streamIdsNotFoundList.length > 0) {
       errorCallback(errors.unknownReferencedResource(
-        'stream', 'streamIds', context.streamIdsNotFoundList
+        'stream', 'streamIds', context.streamIdsNotFoundList,
       ));
       return false;
     }
@@ -691,8 +684,8 @@ module.exports = function (
     for (let i = 0; i < context.streamList.length; i++) {
       if (context.streamList[i].trashed) {
         errorCallback(errors.invalidOperation(
-          'The referenced stream "' + context.streamList[i].id + '" is trashed.',
-          {trashedReference: 'streamIds'}
+          `The referenced stream "${context.streamList[i].id}" is trashed.`,
+          { trashedReference: 'streamIds' },
         ));
         return false;
       }
@@ -710,36 +703,36 @@ module.exports = function (
    * @param {Function} callback (error, attachments)
    */
   function attachFiles(context, eventInfo, files, callback) {
-    if (! files) { return process.nextTick(callback); }
+    if (!files) { return process.nextTick(callback); }
 
-    var attachments = eventInfo.attachments ? eventInfo.attachments.slice() : [],
-        sizeDelta = 0;
+    const attachments = eventInfo.attachments ? eventInfo.attachments.slice() : [];
+    let sizeDelta = 0;
 
-    async.forEachSeries(Object.keys(files), saveFile, function (err) {
+    async.forEachSeries(Object.keys(files), saveFile, (err) => {
       if (err) {
         // TODO: remove saved files if any
         return callback(err);
       }
       // approximately update account storage size
       context.user.storageUsed.attachedFiles += sizeDelta;
-      usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
-        function (err) {
+      usersStorage.updateOne({ id: context.user.id }, { storageUsed: context.user.storageUsed },
+        (err) => {
           if (err) { return callback(errors.unexpectedError(err)); }
           callback(null, attachments);
         });
     });
 
     function saveFile(name, done) {
-      var fileInfo = files[name];
-      userEventFilesStorage.saveAttachedFile(fileInfo.path, context.user, eventInfo.id, /*fileId,*/
-        function (err, fileId) {
+      const fileInfo = files[name];
+      userEventFilesStorage.saveAttachedFile(fileInfo.path, context.user, eventInfo.id, /* fileId, */
+        (err, fileId) => {
           if (err) { return done(errors.unexpectedError(err)); }
 
           attachments.push({
             id: fileId,
             fileName: fileInfo.originalname,
             type: fileInfo.mimetype,
-            size: fileInfo.size
+            size: fileInfo.size,
           });
           sizeDelta += fileInfo.size;
           done();
@@ -751,8 +744,8 @@ module.exports = function (
 
   api.register('events.delete',
     commonFns.getParamsValidation(methodsSchema.del.params),
-    function (context, params, result, next) {
-      checkEventForDelete(context, params.id, function (err, event) {
+    (context, params, result, next) => {
+      checkEventForDelete(context, params.id, (err, event) => {
         if (err) {
           return next(err);
         }
@@ -769,11 +762,11 @@ module.exports = function (
     }, notify);
 
   function flagAsTrashed(context, params, result, next) {
-    var updatedData = {trashed: true};
+    const updatedData = { trashed: true };
     context.updateTrackingProperties(updatedData);
 
-    userEventsStorage.updateOne(context.user, {id: params.id}, updatedData,
-      function (err, updatedEvent) {
+    userEventsStorage.updateOne(context.user, { id: params.id }, updatedData,
+      (err, updatedEvent) => {
         if (err) { return next(errors.unexpectedError(err)); }
 
         // To remove when streamId not necessary
@@ -792,7 +785,7 @@ module.exports = function (
         if (auditSettings.deletionMode !== 'keep-nothing') {
           return stepDone();
         }
-        userEventsStorage.removeMany(context.user, {headId: params.id}, function (err) {
+        userEventsStorage.removeMany(context.user, { headId: params.id }, (err) => {
           if (err) {
             return stepDone(errors.unexpectedError(err));
           }
@@ -803,7 +796,7 @@ module.exports = function (
         if (auditSettings.deletionMode !== 'keep-authors') {
           return stepDone();
         }
-        userEventsStorage.minimizeEventsHistory(context.user, params.id, function (err) {
+        userEventsStorage.minimizeEventsHistory(context.user, params.id, (err) => {
           if (err) {
             return stepDone(errors.unexpectedError(err));
           }
@@ -811,46 +804,43 @@ module.exports = function (
         });
       },
       function deleteEvent(stepDone) {
-        userEventsStorage.delete(context.user, {id: params.id}, auditSettings.deletionMode,
-          function (err) {
+        userEventsStorage.delete(context.user, { id: params.id }, auditSettings.deletionMode,
+          (err) => {
             if (err) {
               return stepDone(errors.unexpectedError(err));
             }
-            result.eventDeletion = {id: params.id};
+            result.eventDeletion = { id: params.id };
             stepDone();
           });
       },
       userEventFilesStorage.removeAllForEvent.bind(userEventFilesStorage, context.user, params.id),
       function (stepDone) {
         // If needed, approximately update account storage size
-        if (! context.user.storageUsed || ! context.user.storageUsed.attachedFiles) {
+        if (!context.user.storageUsed || !context.user.storageUsed.attachedFiles) {
           return stepDone();
         }
         context.user.storageUsed.attachedFiles -= getTotalAttachmentsSize(context.event);
-        usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
+        usersStorage.updateOne({ id: context.user.id }, { storageUsed: context.user.storageUsed },
           stepDone);
-
-      }
+      },
     ], next);
   }
 
   function getTotalAttachmentsSize(event) {
-    if (! event.attachments) {
+    if (!event.attachments) {
       return 0;
     }
-    return _.reduce(event.attachments, function (evtTotal, att) {
-      return evtTotal + att.size;
-    }, 0);
+    return _.reduce(event.attachments, (evtTotal, att) => evtTotal + att.size, 0);
   }
 
   api.register('events.deleteAttachment',
     commonFns.getParamsValidation(methodsSchema.deleteAttachment.params),
-    function (context, params, result, next) {
-      var updatedEvent,
-          deletedAtt;
+    (context, params, result, next) => {
+      let updatedEvent;
+      let deletedAtt;
       async.series([
         function (stepDone) {
-          checkEventForDelete(context, params.id, function (err, event) {
+          checkEventForDelete(context, params.id, (err, event) => {
             if (err) { return stepDone(err); }
 
             updatedEvent = event;
@@ -858,20 +848,20 @@ module.exports = function (
           });
         },
         function (stepDone) {
-          var attIndex = getAttachmentIndex(updatedEvent.attachments, params.fileId);
+          const attIndex = getAttachmentIndex(updatedEvent.attachments, params.fileId);
           if (attIndex === -1) {
             return stepDone(errors.unknownResource(
-              'attachment', params.fileId
+              'attachment', params.fileId,
             ));
           }
           deletedAtt = updatedEvent.attachments[attIndex];
           updatedEvent.attachments.splice(attIndex, 1);
 
-          var updatedData = {attachments: updatedEvent.attachments};
+          const updatedData = { attachments: updatedEvent.attachments };
           context.updateTrackingProperties(updatedData);
 
-          userEventsStorage.updateOne(context.user, {id: params.id}, updatedData,
-            function (err, updatedEvent) {
+          userEventsStorage.updateOne(context.user, { id: params.id }, updatedData,
+            (err, updatedEvent) => {
               if (err) { return stepDone(err); }
 
               // To remove when streamId not necessary
@@ -888,13 +878,13 @@ module.exports = function (
         function (stepDone) {
           // approximately update account storage size
           context.user.storageUsed.attachedFiles -= deletedAtt.size;
-          usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
+          usersStorage.updateOne({ id: context.user.id }, { storageUsed: context.user.storageUsed },
             stepDone);
         },
         function (stepDone) {
           notifications.eventsChanged(context.user);
           stepDone();
-        }
+        },
       ], next);
     });
 
@@ -904,23 +894,23 @@ module.exports = function (
    * @param {String} requestedType
    */
   function getTypeQueryValue(requestedType) {
-    var wildcardIndex = requestedType.indexOf('/*');
-    return wildcardIndex > 0 ?
-      new RegExp('^' + requestedType.substr(0, wildcardIndex + 1)) : 
-      requestedType;
+    const wildcardIndex = requestedType.indexOf('/*');
+    return wildcardIndex > 0
+      ? new RegExp(`^${requestedType.substr(0, wildcardIndex + 1)}`)
+      : requestedType;
   }
 
   function checkEventForDelete(context, eventId, callback) {
-    userEventsStorage.findOne(context.user, {id: eventId}, null, function (err, event) {
+    userEventsStorage.findOne(context.user, { id: eventId }, null, (err, event) => {
       if (err) {
         return callback(errors.unexpectedError(err));
       }
-      if (! event) {
+      if (!event) {
         return callback(errors.unknownResource(
-          'event', eventId
+          'event', eventId,
         ));
       }
-      
+
       let canDeleteEvent = false;
       for (let i = 0; i < event.streamIds.length; i++) {
         if (context.canUpdateContext(event.streamIds[i], event.tags)) {
@@ -928,7 +918,7 @@ module.exports = function (
           break;
         }
       }
-      if (! canDeleteEvent) return callback(errors.forbidden());
+      if (!canDeleteEvent) return callback(errors.forbidden());
 
       callback(null, event);
     });
@@ -938,9 +928,7 @@ module.exports = function (
    * Returns the key of the attachment with the given file name.
    */
   function getAttachmentIndex(attachments, fileId) {
-    return _.findIndex(attachments, function (att) {
-      return att.id === fileId;
-    });
+    return _.findIndex(attachments, (att) => att.id === fileId);
   }
 
   /**
@@ -951,14 +939,13 @@ module.exports = function (
    * @param event
    */
   function setFileReadToken(access, event) {
-    if (! event.attachments) { return; }
-    event.attachments.forEach(function (att) {
+    if (!event.attachments) { return; }
+    event.attachments.forEach((att) => {
       att.readToken = utils.encryption
-        .fileReadToken(att.id, 
+        .fileReadToken(att.id,
           access.id, access.token,
           authSettings.filesReadTokenSecret);
     });
   }
-
 };
 module.exports.injectDependencies = true;

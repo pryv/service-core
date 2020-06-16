@@ -12,13 +12,13 @@
 exports.applyState = function (query, state) {
   query = query || {};
   switch (state) {
-  case 'trashed':
-    query.trashed = true;
-    break;
-  case 'all':
-    break;
-  default:
-    query.trashed = null;
+    case 'trashed':
+      query.trashed = true;
+      break;
+    case 'all':
+      break;
+    default:
+      query.trashed = null;
   }
   return query;
 };

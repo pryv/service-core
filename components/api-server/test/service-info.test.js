@@ -3,7 +3,8 @@
 require('./test-helpers');
 const cuid = require('cuid');
 const helpers = require('./helpers');
-const validation = helpers.validation;
+
+const { validation } = helpers;
 const methodsSchema = require('../src/schema/service-infoMethods');
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
@@ -16,7 +17,6 @@ let infoHttpServer;
 let mockInfo;
 const infoHttpServerPort = 5123;
 describe('Service', () => {
-
   before(async () => {
     mockInfo = {
       access: 'https://access.pryv.me/access',
@@ -29,13 +29,13 @@ describe('Service', () => {
       terms: 'https://pryv.com/terms-of-use/',
       eventTypes: 'https://api.pryv.com/event-types/flat.json',
       assets: {
-        definitions: 'https://pryv.github.io/assets-pryv.me/index.json'
-      }
+        definitions: 'https://pryv.github.io/assets-pryv.me/index.json',
+      },
     };
 
     infoHttpServer = new httpServer('/service/info', 200, mockInfo);
     await infoHttpServer.listen(infoHttpServerPort);
-    mongoFixtures =  databaseFixture(await produceMongoConnection());
+    mongoFixtures = databaseFixture(await produceMongoConnection());
     await mongoFixtures.user(username, {});
     server = await context.spawn();
   });
@@ -48,13 +48,13 @@ describe('Service', () => {
 
   describe('GET /service/info', () => {
     it('[FR4K] must return all service info', async () => {
-      let path = '/' + username + '/service/info';
+      const path = `/${username}/service/info`;
       const res = await server.request().get(path);
-      
+
       validation.check(res, {
         status: 200,
         schema: methodsSchema.get.result,
-        body: mockInfo
+        body: mockInfo,
       });
     });
   });

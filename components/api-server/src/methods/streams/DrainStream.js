@@ -1,6 +1,6 @@
-var Writable = require('stream').Writable,
-    inherits = require('util').inherits,
-    errors = require('components/errors').factory;
+const { Writable } = require('stream');
+const { inherits } = require('util');
+const errors = require('components/errors').factory;
 
 module.exports = DrainStream;
 
@@ -37,7 +37,7 @@ function DrainStream(params, callback) {
 
 inherits(DrainStream, Writable);
 
-DrainStream.prototype._write = function(object, enc, next) {
+DrainStream.prototype._write = function (object, enc, next) {
   this.size++;
 
   if (this.size > this.limit) {

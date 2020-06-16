@@ -3,7 +3,7 @@
  * Here 'tree' means a recursive array of objects with a 'children' property.
  */
 
-var _ = require('lodash');
+const _ = require('lodash');
 
 /**
  * Items whose parent id refer to an item absent from the array are filtered out.
@@ -12,28 +12,28 @@ var _ = require('lodash');
  * @param {Boolean} stripParentIds Optional, default: false
  */
 exports.buildTree = function (array, stripParentIds) {
-  if (! _.isArray(array)) {
+  if (!_.isArray(array)) {
     throw new Error('Invalid argument: expected an array');
   }
 
-  var map = {};
-  array.forEach(function (item) {
+  const map = {};
+  array.forEach((item) => {
     verifyFlatItem(item);
 
-    var clone = _.clone(item);
+    const clone = _.clone(item);
     if (item.hasOwnProperty('parentId')) {
       clone.children = [];
     }
     map[item.id] = clone;
   });
 
-  var result = [];
-  array.forEach(function (item) {
-    var clone = map[item.id];
+  const result = [];
+  array.forEach((item) => {
+    const clone = map[item.id];
 
     if (clone.hasOwnProperty('parentId') && clone.parentId) {
       // child
-      if (! map[clone.parentId]) {
+      if (!map[clone.parentId]) {
         // missing parent -> ignore
         return;
       }
@@ -51,24 +51,24 @@ exports.buildTree = function (array, stripParentIds) {
 };
 
 function verifyFlatItem(item) {
-  if (! item.hasOwnProperty('id')) {
+  if (!item.hasOwnProperty('id')) {
     throw new Error('Invalid object structure: expected property "id"');
   }
 }
 
 exports.flattenTree = function (array) {
-  if (! _.isArray(array)) {
+  if (!_.isArray(array)) {
     throw new Error('Invalid argument: expected an array');
   }
 
-  var result = [];
+  const result = [];
   flattenRecursive(array, null, result);
   return result;
 };
 
 function flattenRecursive(originalArray, parentId, resultArray) {
-  originalArray.forEach(function (item) {
-    var clone = _.clone(item);
+  originalArray.forEach((item) => {
+    const clone = _.clone(item);
 
     clone.parentId = parentId;
     resultArray.push(clone);
@@ -79,25 +79,23 @@ function flattenRecursive(originalArray, parentId, resultArray) {
   });
 }
 
-var findById = exports.findById = function (array, id) {
-  return findInTree(array, function (item) {
-    return item.id === id;
-  });
+const findById = exports.findById = function (array, id) {
+  return findInTree(array, (item) => item.id === id);
 };
 
 /**
  * @param {Function} iterator Arguments: ({Object}), return value: {Boolean}
  */
 var findInTree = exports.findInTree = function (array, iterator) {
-  for (var i = 0, n = array.length; i < n; i++) {
-    var item = array[i];
+  for (let i = 0, n = array.length; i < n; i++) {
+    const item = array[i];
     // check if item matches
     if (iterator(item)) {
       return item;
     }
     // if not check its children if any
     if (item.hasOwnProperty('children')) {
-      var childrenFind = findInTree(item.children, iterator);
+      const childrenFind = findInTree(item.children, iterator);
       if (childrenFind) {
         return childrenFind;
       }
@@ -113,12 +111,12 @@ var findInTree = exports.findInTree = function (array, iterator) {
  * @param {Function} iterator Arguments: ({Object}), return value: {Boolean}
  */
 var filterTree = exports.filterTree = function (array, keepOrphans, iterator) {
-  var filteredArray = [];
+  const filteredArray = [];
 
-  for (var i = 0, n = array.length; i < n; i++) {
-    var item = array[i];
+  for (let i = 0, n = array.length; i < n; i++) {
+    const item = array[i];
     if (iterator(item)) {
-      var clone = _.clone(item);
+      const clone = _.clone(item);
       filteredArray.push(clone);
       if (clone.hasOwnProperty('children')) {
         clone.children = filterTree(clone.children, keepOrphans, iterator);
@@ -131,28 +129,28 @@ var filterTree = exports.filterTree = function (array, keepOrphans, iterator) {
   return filteredArray;
 };
 
-var collect = exports.collect = function (array, iterator) {
-  if (! _.isArray(array)) {
+const collect = exports.collect = function (array, iterator) {
+  if (!_.isArray(array)) {
     throw new Error('Invalid argument: expected an array');
   }
 
-  var result = [];
+  const result = [];
   collectRecursive(array, result, iterator);
   return result;
 };
 
-var collectFromRootItem = exports.collectFromRootItem = function (item, iterator) {
+const collectFromRootItem = exports.collectFromRootItem = function (item, iterator) {
   if (_.isArray(item)) {
     throw new Error('Invalid argument: expected a single item');
   }
 
-  var result = [ iterator(item) ];
+  const result = [iterator(item)];
   collectRecursive(item.children, result, iterator);
   return result;
 };
 
 function collectRecursive(originalArray, resultArray, iterator) {
-  originalArray.forEach(function (item) {
+  originalArray.forEach((item) => {
     resultArray.push(iterator(item));
     if (item.hasOwnProperty('children')) {
       collectRecursive(item.children, resultArray, iterator);
@@ -161,15 +159,11 @@ function collectRecursive(originalArray, resultArray, iterator) {
 }
 
 exports.collectPluck = function (array, propertyName) {
-  return collect(array, function (item) {
-    return item[propertyName];
-  });
+  return collect(array, (item) => item[propertyName]);
 };
 
-var collectPluckFromRootItem = exports.collectPluckFromRootItem = function (item, propertyName) {
-  return collectFromRootItem(item, function (item) {
-    return item[propertyName];
-  });
+const collectPluckFromRootItem = exports.collectPluckFromRootItem = function (item, propertyName) {
+  return collectFromRootItem(item, (item) => item[propertyName]);
 };
 
 /**
@@ -179,15 +173,15 @@ var collectPluckFromRootItem = exports.collectPluckFromRootItem = function (item
  * @param {Array} ids
  */
 exports.expandIds = function (array, ids) {
-  var expandedIds = [];
-  ids.forEach(function (id) {
-    var currentExpIds;
+  const expandedIds = [];
+  ids.forEach((id) => {
+    let currentExpIds;
     if (id === null) {
       // just keep it
       currentExpIds = [null];
     } else {
-      var item = findById(array, id);
-      if (! item) {
+      const item = findById(array, id);
+      if (!item) {
         return;
       }
       currentExpIds = collectPluckFromRootItem(item, 'id');

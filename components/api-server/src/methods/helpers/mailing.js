@@ -60,35 +60,33 @@ type Substitutions = {[string]: string};
 */
 exports.sendmail = function (emailSettings: EmailSettings, template: string,
   recipient: Recipient, subs: Substitutions, lang: string, callback: Callback): void {
-    
   const mailingMethod = emailSettings.method;
-  
+
   // Sending via Pryv service-mail
-  
+
   switch (mailingMethod) {
     case 'microservice': {
-      const url = URL.resolve(emailSettings.url, template + '/' + lang);
+      const url = URL.resolve(emailSettings.url, `${template}/${lang}`);
       const data = {
         key: emailSettings.key,
         to: recipient,
-        substitutions: subs
+        substitutions: subs,
       };
-      
+
       _sendmail(url, data, callback);
-      
     } break;
-    
+
     case 'mandrill': {
-      const url = emailSettings.url;
-      
+      const { url } = emailSettings;
+
       const subsArray = [];
       for (const key of Object.keys(subs)) {
         subsArray.push({
           name: key,
-          content: subs[key]
+          content: subs[key],
         });
       }
-      
+
       const data = {
         key: emailSettings.key,
         template_name: template,
@@ -96,14 +94,13 @@ exports.sendmail = function (emailSettings: EmailSettings, template: string,
         message: {
           to: [recipient],
           global_merge_vars: subsArray,
-          tags: [template]
-        }
+          tags: [template],
+        },
       };
-      
+
       _sendmail(url, data, callback);
-      
     } break;
-    
+
     default: {
       callback(errors.unexpectedError('Missing or invalid email method.'));
     }
@@ -113,7 +110,7 @@ exports.sendmail = function (emailSettings: EmailSettings, template: string,
 
 function _sendmail(url: string, data: MandrillData | MicroserviceData, cb: Callback): void {
   request.post(url).send(data).end((err, res) => {
-    if (err!=null || (res!=null && !res.ok)) {
+    if (err != null || (res != null && !res.ok)) {
       return cb(parseError(url, err, res));
     }
     cb(null, res);
@@ -121,13 +118,12 @@ function _sendmail(url: string, data: MandrillData | MicroserviceData, cb: Callb
 }
 
 function parseError(url, err, res) {
-  
   // 1. Mail service failed
-  if (res!=null && res.body!=null && res.body.error!=null) {
+  if (res != null && res.body != null && res.body.error != null) {
     const baseMsg = 'Sending email failed, mail-service answered with the following error:\n';
     return errors.unexpectedError(baseMsg + res.body.error);
   }
-  
+
   // 2. Superagent failed
   const errorMsg = err.message;
   let baseMsg = `Sending email failed while trying to reach mail-service at: ${url}.\n`;
@@ -140,5 +136,4 @@ function parseError(url, err, res) {
     baseMsg += 'Endpoint seems unreachable: ';
   }
   return errors.unexpectedError(baseMsg + errorMsg);
-  
 }

@@ -5,32 +5,31 @@ const ChildProcess = require('components/test-helpers').child_process;
 const Application = require('../../src/application');
 
 class ApplicationLauncher {
-  app: ?Application; 
-  
+  app: ?Application;
+
   constructor() {
-    this.app = null; 
+    this.app = null;
   }
-  
+
   async launch(injectSettings: any) {
-    if (injectSettings.http == null || injectSettings.http.port == null)
-      throw new Error('AF: http.port must be set.');
-      
+    if (injectSettings.http == null || injectSettings.http.port == null) throw new Error('AF: http.port must be set.');
+
     const settingsOverride = {
       metadataUpdater: {
-        host: '127.0.0.1', 
+        host: '127.0.0.1',
         port: injectSettings.http.port,
-      }
+      },
     };
-    
-    const app = new Application(); 
-    
+
+    const app = new Application();
+
     await app.setup(settingsOverride);
-    await app.run(); 
-    
-    this.app = app; 
+    await app.run();
+
+    this.app = app;
   }
 }
 
-const appLauncher = new ApplicationLauncher(); 
+const appLauncher = new ApplicationLauncher();
 const childProcess = new ChildProcess(appLauncher);
 childProcess.run();

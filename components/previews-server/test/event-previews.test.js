@@ -1,8 +1,9 @@
-/*global describe, before, beforeEach, it */
+/* global describe, before, beforeEach, it */
 
 require('./test-helpers');
 
 const helpers = require('./helpers');
+
 const server = helpers.dependencies.instanceManager;
 const async = require('async');
 const errors = require('components/errors');
@@ -11,24 +12,24 @@ const bluebird = require('bluebird');
 const gm = require('gm');
 const rimraf = require('rimraf');
 const { assert } = require('chai');
-const storage = helpers.dependencies.storage;
+
+const { storage } = helpers.dependencies;
 const testData = helpers.data;
 const timestamp = require('unix-timestamp');
 const xattr = require('fs-xattr');
 const superagent = require('superagent');
 
-describe('event previews', function () {
-
+describe('event previews', () => {
   const user = testData.users[0];
-  const token = testData.accesses[2].token;
-  const basePath = '/' + user.username + '/events';
+  const { token } = testData.accesses[2];
+  const basePath = `/${user.username}/events`;
   let request = null;
 
   function path(id) {
-    return basePath + '/' + id;
+    return `${basePath}/${id}`;
   }
 
-  before(function (done) {
+  before((done) => {
     async.series([
       testData.resetUsers,
       testData.resetAccesses,
@@ -38,69 +39,67 @@ describe('event previews', function () {
       function (stepDone) {
         request = helpers.request(server.url);
         stepDone();
-      }
+      },
     ], done);
   });
 
-  describe('GET /<event id>/preview', function () {
-
-    beforeEach(function(done) {
+  describe('GET /<event id>/preview', () => {
+    beforeEach((done) => {
       rimraf(storage.user.eventFiles.settings.previewsDirPath, done);
     });
 
-    it('[NRT9] must return JPEG previews for "picture/attached" events and cache the result', 
-      async function() {
+    it('[NRT9] must return JPEG previews for "picture/attached" events and cache the result',
+      async () => {
         const request = helpers.unpatchedRequest(server.url);
         const event = testData.events[2];
 
         const res = await request.get(path(event.id), token);
-          
+
         await checkSizeFits(res.body, {}, { width: 256, height: 256 });
-        
+
         res.statusCode.should.eql(200);
         res.header['content-type'].should.eql('image/jpeg');
-        
-        const eventFiles = storage.user.eventFiles;
+
+        const { eventFiles } = storage.user;
         const cachedPath = eventFiles.getPreviewFilePath(user, event.id, 256);
-        
+
         const modified = await xattr.get(cachedPath, 'user.pryv.eventModified');
-        
+
         modified.toString().should.eql(event.modified.toString());
       });
 
-    it('[FEWU] must accept ".jpg" extension in the path (backwards-compatibility)', function (done) {
+    it('[FEWU] must accept ".jpg" extension in the path (backwards-compatibility)', (done) => {
       const event = testData.events[2];
       request
-        .get(path(event.id) + '.jpg', token)
-        .end(function (res) {
+        .get(`${path(event.id)}.jpg`, token)
+        .end((res) => {
           res.statusCode.should.eql(200);
           done();
         });
     });
 
-    it('[PBC1] must adjust the desired size to the bigger standard size (if exists)', async function () {
+    it('[PBC1] must adjust the desired size to the bigger standard size (if exists)', async () => {
       const request = helpers.unpatchedRequest(server.url);
       const event = testData.events[2];
 
-      const res = await request.get(path(event.id), token).query({h: 280});
-      
-      await checkSizeFits(res.body, {height: 280}, { width: 512, height: 512 });
-      
+      const res = await request.get(path(event.id), token).query({ h: 280 });
+
+      await checkSizeFits(res.body, { height: 280 }, { width: 512, height: 512 });
+
       res.statusCode.should.eql(200);
       res.header['content-type'].should.eql('image/jpeg');
     });
 
-    it('[415L] must limit the desired size to the biggest standard size if too big', async function () {
+    it('[415L] must limit the desired size to the biggest standard size if too big', async () => {
       const request = helpers.unpatchedRequest(server.url);
       const event = testData.events[2];
 
       // due to the test image's aspect ratio, the height will exceed the biggest dimension (1024)
       const res = await request
         .get(path(event.id), token)
-        .query({width: 280});
-        
-      
-      await checkSizeFits(res.body, {width: 280}, { width: 1024, height: 1024 });
+        .query({ width: 280 });
+
+      await checkSizeFits(res.body, { width: 280 }, { width: 1024, height: 1024 });
 
       res.statusCode.should.eql(200);
       res.header['content-type'].should.eql('image/jpeg');
@@ -114,26 +113,28 @@ describe('event previews', function () {
      */
     async function checkSizeFits(imageBuffer, minTargetSize, maxTargetSize) {
       const size = await bluebird.fromCallback(
-        (cb) => gm(imageBuffer).size({bufferStream: true}, cb));
-              
+        (cb) => gm(imageBuffer).size({ bufferStream: true }, cb),
+      );
+
       assert.isAtLeast(size.width, minTargetSize.width || 0);
       assert.isAtMost(size.width, maxTargetSize.width);
-      
+
       assert.isAtLeast(size.height, minTargetSize.height || 0);
       assert.isAtMost(size.height, maxTargetSize.height);
-      
+
       assert.isTrue(
         size.width === maxTargetSize.width || size.height === maxTargetSize.height,
-        'Either dimension needs to be maxed out.'
+        'Either dimension needs to be maxed out.',
       );
     }
 
-    it('[CWTQ] must serve the cached file if available', function (done) {
+    it('[CWTQ] must serve the cached file if available', (done) => {
       const event = testData.events[2];
-      let cachedPath, cachedStats;
+      let cachedPath; let
+          cachedStats;
       async.series([
         function retrieveInitialPreview(stepDone) {
-          request.get(path(event.id), token).end(function (res) {
+          request.get(path(event.id), token).end((res) => {
             res.statusCode.should.eql(200);
             cachedPath = storage.user.eventFiles.getPreviewFilePath(user, event.id, 256);
             cachedStats = fs.statSync(cachedPath);
@@ -141,28 +142,29 @@ describe('event previews', function () {
           });
         },
         function retrieveAgain(stepDone) {
-          request.get(path(event.id), token).end(function (res) {
+          request.get(path(event.id), token).end((res) => {
             res.statusCode.should.eql(200);
-            
+
             const newStats = fs.statSync(cachedPath);
 
-            // The file should not have been recreated. By comparing ino and 
-            // birthtimeMs, we assume that the file is the same. 
+            // The file should not have been recreated. By comparing ino and
+            // birthtimeMs, we assume that the file is the same.
             assert.strictEqual(newStats.ino, cachedStats.ino);
             assert.strictEqual(newStats.birthtimeMs, cachedStats.birthtimeMs);
-            
+
             stepDone();
           });
-        }
+        },
       ], done);
     });
 
-    it('[2MME] must regenerate the cached file if obsolete', function (done) {
+    it('[2MME] must regenerate the cached file if obsolete', (done) => {
       const event = testData.events[2];
-      let cachedPath, cachedFileModified, updatedEvent;
+      let cachedPath; let cachedFileModified; let
+          updatedEvent;
       async.series([
         async function retrieveInitialPreview() {
-          const res = await bluebird.fromCallback(cb => request.get(path(event.id), token).end((res) => {
+          const res = await bluebird.fromCallback((cb) => request.get(path(event.id), token).end((res) => {
             cb(null, res);
           }));
           res.statusCode.should.eql(200);
@@ -174,15 +176,15 @@ describe('event previews', function () {
           const update = {
             description: 'Updated',
             modified: timestamp.now(),
-            modifiedBy: testData.accesses[2].id
+            modifiedBy: testData.accesses[2].id,
           };
-          storage.user.events.updateOne(user, {id: event.id}, update, function (err, updatedEvt) {
+          storage.user.events.updateOne(user, { id: event.id }, update, (err, updatedEvt) => {
             updatedEvent = updatedEvt;
             stepDone();
           });
         },
         async function retrieveAgain() {
-          const res = await bluebird.fromCallback(cb => request.get(path(event.id), token).end((res) => {
+          const res = await bluebird.fromCallback((cb) => request.get(path(event.id), token).end((res) => {
             cb(null, res);
           }));
           res.statusCode.should.eql(200);
@@ -190,25 +192,25 @@ describe('event previews', function () {
           modified = modified.toString();
           modified.should.not.eql(cachedFileModified);
           modified.should.eql(updatedEvent.modified.toString());
-        }
+        },
       ], done);
     });
 
-    it('[7Y91] must respond with "no content" if the event type is not supported', function (done) {
-      request.get(path(testData.events[1].id), token).end(function (res) {
+    it('[7Y91] must respond with "no content" if the event type is not supported', (done) => {
+      request.get(path(testData.events[1].id), token).end((res) => {
         res.statusCode.should.eql(204);
         done();
       });
     });
 
-    it('[61N8] must return a proper error if the event does not exist', function (done) {
-      request.get(path('unknown-event'), token).end(function (res) {
+    it('[61N8] must return a proper error if the event does not exist', (done) => {
+      request.get(path('unknown-event'), token).end((res) => {
         res.statusCode.should.eql(404);
         done();
       });
     });
 
-    it('[VIJO] must forbid requests missing an access token', function (done) {
+    it('[VIJO] must forbid requests missing an access token', (done) => {
       const url = require('url').resolve(server.url, path(testData.events[2].id));
       superagent.get(url).end((res) => {
         assert.strictEqual(res.status, 401);
@@ -216,44 +218,44 @@ describe('event previews', function () {
       });
     });
 
-    it('[FAK4] must forbid requests with unauthorized accesses', function (done) {
+    it('[FAK4] must forbid requests with unauthorized accesses', (done) => {
       const unauthToken = testData.accesses[3].token;
-      request.get(path(testData.events[2].id), unauthToken).end(function (res) {
+      request.get(path(testData.events[2].id), unauthToken).end((res) => {
         res.statusCode.should.eql(403);
         done();
       });
     });
 
     it('[QUM3] must return a proper error if event data is corrupted (no attachment object)', (done) => {
-      const data = { streamIds: [ testData.streams[2].id ], type: 'picture/attached' };
+      const data = { streamIds: [testData.streams[2].id], type: 'picture/attached' };
       let createdEvent;
       async.series([
         function addCorruptEvent(stepDone) {
-          storage.user.events.insertOne(user, data, function (err, event) {
+          storage.user.events.insertOne(user, data, (err, event) => {
             createdEvent = event;
             stepDone();
           });
         },
         function getPreview(stepDone) {
-          request.get(path(createdEvent.id), token).end(function (res) {
+          request.get(path(createdEvent.id), token).end((res) => {
             res.statusCode.should.eql(422);
             res.body.error.id.should.eql(errors.ErrorIds.CorruptedData);
             stepDone();
           });
-        }
+        },
       ], done);
     });
 
-    it('[DQF6] must return a proper error if event data is corrupted (no attached file)', function (done) {
+    it('[DQF6] must return a proper error if event data is corrupted (no attached file)', (done) => {
       const event = testData.events[2];
       const filePath = storage.user.eventFiles.getAttachedFilePath(user, event.id, event.attachments[0].id);
-      const tempPath = filePath + '_bak';
+      const tempPath = `${filePath}_bak`;
       async.series([
         function removeFile(stepDone) {
           fs.rename(filePath, tempPath, stepDone);
         },
         function getPreview(stepDone) {
-          request.get(path(event.id), token).end(function (res) {
+          request.get(path(event.id), token).end((res) => {
             res.statusCode.should.eql(422);
             res.body.error.id.should.eql(errors.ErrorIds.CorruptedData);
             stepDone();
@@ -261,43 +263,43 @@ describe('event previews', function () {
         },
         function restoreFile(stepDone) {
           fs.rename(tempPath, filePath, stepDone);
-        }
+        },
       ], done);
     });
 
-    it('[GSDF] must work with animated GIFs too', function (done) {
+    it('[GSDF] must work with animated GIFs too', (done) => {
       const event = testData.events[12];
-      request.get(path(event.id), token).end(function (res) {
+      request.get(path(event.id), token).end((res) => {
         res.statusCode.should.eql(200);
         done();
       });
     });
-
   });
 
-  describe('POST /clean-up-cache', function () {
+  describe('POST /clean-up-cache', () => {
+    const basePath = `/${user.username}/clean-up-cache`;
 
-    const basePath = '/' + user.username + '/clean-up-cache';
-
-    it('[FUYE] must clean up cached previews not accessed for one week by default', function (done) {
+    it('[FUYE] must clean up cached previews not accessed for one week by default', (done) => {
       const event = testData.events[2];
-      let aCachedPath, anotherCachedPath;
+      let aCachedPath; let
+          anotherCachedPath;
       async.series([
         async function retrieveAPreview() {
-          const res = await bluebird.fromCallback(cb => request.get(path(event.id), token).end((res) => {
+          const res = await bluebird.fromCallback((cb) => request.get(path(event.id), token).end((res) => {
             cb(null, res);
           }));
           res.statusCode.should.eql(200);
           aCachedPath = storage.user.eventFiles.getPreviewFilePath(user, event.id, 256);
           // add delay as the attribute is written after the response is sent
           setTimeout(
-            async function() {
+            async () => {
               const lastAccessed = await xattr.get(aCachedPath, 'user.pryv.lastAccessed');
               assert.isNotNull(lastAccessed);
-            }, 50);
+            }, 50,
+          );
         },
         async function retrieveAnotherPreview() {
-          const res = await bluebird.fromCallback(cb => request.get(path(event.id), token).query({h: 511}).end((res) => {
+          const res = await bluebird.fromCallback((cb) => request.get(path(event.id), token).query({ h: 511 }).end((res) => {
             cb(null, res);
           }));
           assert.strictEqual(res.statusCode, 200);
@@ -309,21 +311,21 @@ describe('event previews', function () {
           await xattr.set(aCachedPath, 'user.pryv.lastAccessed', twoWeeksAgo.toString());
         },
         async function cleanupCache() {
-          const res = await bluebird.fromCallback(cb => request.post(basePath, token).end((res) => {
+          const res = await bluebird.fromCallback((cb) => request.post(basePath, token).end((res) => {
             cb(null, res);
           }));
           assert.strictEqual(res.statusCode, 200);
           await xattr.get(aCachedPath, 'user.pryv.lastAccessed');
           const lastAccessed = await xattr.get(anotherCachedPath, 'user.pryv.lastAccessed');
           assert.isNotNull(lastAccessed);
-        }
+        },
       ], done);
     });
 
-    it('[G5JR] must ignore files with no readable extended attribute', async function () {
+    it('[G5JR] must ignore files with no readable extended attribute', async () => {
       const event = testData.events[2];
       let cachedPath;
-      const resGet = await bluebird.fromCallback(cb => request.get(path(event.id), token).end((res) => {
+      const resGet = await bluebird.fromCallback((cb) => request.get(path(event.id), token).end((res) => {
         cb(null, res);
       }));
 
@@ -334,7 +336,7 @@ describe('event previews', function () {
       assert.isNotNull(lastAccessed);
       await xattr.remove(cachedPath, 'user.pryv.lastAccessed');
 
-      const resPost = await bluebird.fromCallback(cb => request.post(basePath, token).end((res) => {
+      const resPost = await bluebird.fromCallback((cb) => request.post(basePath, token).end((res) => {
         cb(null, res);
       }));
 
@@ -342,7 +344,5 @@ describe('event previews', function () {
       const stat = fs.statSync(cachedPath);
       assert.isNotNull(stat);
     });
-
   });
-
 });

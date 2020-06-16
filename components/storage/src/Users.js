@@ -1,9 +1,9 @@
-var async = require('async'),
-    BaseStorage = require('./user/BaseStorage'),
-    converters = require('./converters'),
-    encryption = require('components/utils').encryption,
-    util = require('util'),
-    _ = require('lodash');
+const async = require('async');
+const { encryption } = require('components/utils');
+const util = require('util');
+const _ = require('lodash');
+const converters = require('./converters');
+const BaseStorage = require('./user/BaseStorage');
 
 module.exports = Users;
 /**
@@ -16,24 +16,24 @@ function Users(database) {
   Users.super_.call(this, database);
 
   _.extend(this.converters, {
-    itemDefaults: [converters.createIdIfMissing]
+    itemDefaults: [converters.createIdIfMissing],
   });
 
   this.defaultOptions = {
-    sort: {username: 1}
+    sort: { username: 1 },
   };
 }
 util.inherits(Users, BaseStorage);
 
-var indexes = [
+const indexes = [
   {
-    index: {username: 1},
-    options: {unique: true}
+    index: { username: 1 },
+    options: { unique: true },
   },
   {
-    index: {email: 1},
-    options: {unique: true}
-  }
+    index: { email: 1 },
+    options: { unique: true },
+  },
 ];
 
 /**
@@ -42,7 +42,7 @@ var indexes = [
 Users.prototype.getCollectionInfo = function () {
   return {
     name: 'users',
-    indexes: indexes
+    indexes,
   };
 };
 
@@ -71,8 +71,8 @@ Users.prototype.findOne = function (query, options, callback) {
  * Override.
  */
 Users.prototype.findOneAndUpdate = function (query, updatedData, callback) {
-  var self = this;
-  encryptPassword(updatedData, function (err, update) {
+  const self = this;
+  encryptPassword(updatedData, (err, update) => {
     if (err) { return callback(err); }
     Users.super_.prototype.findOneAndUpdate.call(self, null, query, update, callback);
   });
@@ -85,8 +85,8 @@ Users.prototype.findOneAndUpdate = function (query, updatedData, callback) {
  * @param {Function} callback ({Error}, {String})
  */
 Users.prototype.insertOne = function (user, callback) {
-  var self = this;
-  encryptPassword(user, function (err, dbUser) {
+  const self = this;
+  encryptPassword(user, (err, dbUser) => {
     if (err) { return callback(err); }
     Users.super_.prototype.insertOne.call(self, null, dbUser, callback);
   });
@@ -96,8 +96,8 @@ Users.prototype.insertOne = function (user, callback) {
  * Override.
  */
 Users.prototype.updateOne = function (query, updatedData, callback) {
-  var self = this;
-  encryptPassword(updatedData, function (err, update) {
+  const self = this;
+  encryptPassword(updatedData, (err, update) => {
     if (err) { return callback(err); }
     Users.super_.prototype.updateOne.call(self, null, query, update, callback);
   });
@@ -109,14 +109,12 @@ Users.prototype.updateOne = function (query, updatedData, callback) {
  * Each item must have a valid id already.
  */
 Users.prototype.insertMany = function (users, callback) {
-  var self = this;
-  async.map(users, encryptPassword, function (err, dbUsers) {
+  const self = this;
+  async.map(users, encryptPassword, (err, dbUsers) => {
     if (err) { return callback(err); }
     Users.super_.prototype.insertMany.call(self, null, dbUsers, callback);
   });
 };
-
-
 
 /**
  * @param {Function} callback (error, dbUser) `dbUser` is a clone of the original user.
@@ -124,7 +122,7 @@ Users.prototype.insertMany = function (users, callback) {
 function encryptPassword(user, callback) {
   const dbUser = _.clone(user);
   if (dbUser.password != null) {
-    encryption.hash(dbUser.password, function (err, hash) {
+    encryption.hash(dbUser.password, (err, hash) => {
       if (err != null) return callback(err);
 
       dbUser.passwordHash = hash;

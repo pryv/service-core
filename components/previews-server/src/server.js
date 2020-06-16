@@ -1,26 +1,25 @@
 // @flow
+import type { Extension } from 'components/utils';
+
 const http = require('http');
 
-const dependencies = require('dependable').container({useFnAnnotations: true});
+const dependencies = require('dependable').container({ useFnAnnotations: true });
 const middleware = require('components/middleware');
 const storage = require('components/storage');
 const utils = require('components/utils');
 
-const ExtensionLoader = utils.extension.ExtensionLoader;
+const { ExtensionLoader } = utils.extension;
 
 const { ProjectVersion } = require('components/middleware/src/project_version');
 
-import type { Extension } from 'components/utils';
-
 function loadCustomAuthStepFn(customExtensions): ?Extension {
-  const defaultFolder = customExtensions.defaultFolder;
+  const { defaultFolder } = customExtensions;
   const customAuthStepFnPath = customExtensions.customAuthStepFn;
-  
+
   const loader = new ExtensionLoader(defaultFolder);
-  
-  if (customAuthStepFnPath != null && customAuthStepFnPath !== '') 
-    return loader.loadFrom(customAuthStepFnPath);
-    
+
+  if (customAuthStepFnPath != null && customAuthStepFnPath !== '') { return loader.loadFrom(customAuthStepFnPath); }
+
   return loader.load('customAuthStepFn');
 }
 
@@ -31,11 +30,11 @@ async function start() {
    */
 
   // load config settings
-  var config = require('./config');
+  const config = require('./config');
   config.printSchemaAndExitIfNeeded();
-  var settings = config.load();
+  const settings = config.load();
 
-  const customAuthStepExt = loadCustomAuthStepFn(settings.customExtensions); 
+  const customAuthStepExt = loadCustomAuthStepFn(settings.customExtensions);
 
   // register base dependencies
   dependencies.register({
@@ -45,30 +44,34 @@ async function start() {
     logsSettings: settings.logs,
 
     // misc utility
-    logging: utils.logging
+    logging: utils.logging,
   });
 
   const logging = dependencies.get('logging');
   const logger = logging.getLogger('server');
 
   const database = new storage.Database(
-    settings.database, logging.getLogger('database'));
+    settings.database, logging.getLogger('database'),
+  );
 
   const storageLayer = new storage.StorageLayer(
-    database, logger, 
-    settings.eventFiles.attachmentsDirPath, 
+    database, logger,
+    settings.eventFiles.attachmentsDirPath,
     settings.eventFiles.previewsDirPath,
-    10, settings.auth.sessionMaxAge);
+    10, settings.auth.sessionMaxAge,
+  );
 
   const initContextMiddleware = middleware.initContext(
     storageLayer,
-    customAuthStepExt && customAuthStepExt.fn);
+    customAuthStepExt && customAuthStepExt.fn,
+  );
 
   const loadAccessMiddleware = middleware.loadAccess(
-    storageLayer);
-    
-  const pv = new ProjectVersion(); 
-  const version = await pv.version(); 
+    storageLayer,
+  );
+
+  const pv = new ProjectVersion();
+  const version = await pv.version();
 
   dependencies.register({
     // storage
@@ -78,23 +81,24 @@ async function start() {
     userEventFilesStorage: storageLayer.eventFiles,
     userEventsStorage: storageLayer.events,
     userStreamsStorage: storageLayer.streams,
-    
+
     // For the code that hasn't quite migrated away from dependencies yet.
-    storageLayer: storageLayer,
+    storageLayer,
 
     // Express middleware
     commonHeadersMiddleware: middleware.commonHeaders(version),
     errorsMiddleware: require('./middleware/errors'),
-    initContextMiddleware: initContextMiddleware,
-    loadAccessMiddleware: loadAccessMiddleware,
+    initContextMiddleware,
+    loadAccessMiddleware,
     requestTraceMiddleware: middleware.requestTrace,
 
     // Express & app
     express: require('express'),
   });
 
-  const {expressApp, routesDefined} = dependencies.resolve(
-    require('./expressApp'));
+  const { expressApp, routesDefined } = dependencies.resolve(
+    require('./expressApp'),
+  );
   dependencies.register('expressApp', expressApp);
 
   // setup routes
@@ -102,12 +106,12 @@ async function start() {
   [
     require('./routes/index'),
     require('./routes/event-previews'),
-  ].forEach(function (routeDefs) {
+  ].forEach((routeDefs) => {
     dependencies.resolve(routeDefs);
   });
 
-  // Finalize middleware stack: 
-  routesDefined(); 
+  // Finalize middleware stack:
+  routesDefined();
 
   // setup HTTP
 
@@ -116,22 +120,22 @@ async function start() {
 
   // Go
 
-  utils.messaging.openPubSocket(settings.tcpMessaging, function (err, pubSocket) {
+  utils.messaging.openPubSocket(settings.tcpMessaging, (err, pubSocket) => {
     if (err) {
-      logger.error('Error setting up TCP pub socket: ' + err);
+      logger.error(`Error setting up TCP pub socket: ${err}`);
       process.exit(1);
     }
-    logger.info('TCP pub socket ready on ' + settings.tcpMessaging.host + ':' +
-        settings.tcpMessaging.port);
+    logger.info(`TCP pub socket ready on ${settings.tcpMessaging.host}:${
+      settings.tcpMessaging.port}`);
 
-    database.waitForConnection(function () {
+    database.waitForConnection(() => {
       const backlog = 512;
-      server.listen(settings.http.port, settings.http.ip, backlog, function () {
-        var address = server.address();
-        var protocol = server.key ? 'https' : 'http';
-        server.url = protocol + '://' + address.address + ':' + address.port;
-        logger.info('Browser server v' + require('../package.json').version +
-            ' [' + expressApp.settings.env + '] listening on ' + server.url);
+      server.listen(settings.http.port, settings.http.ip, backlog, () => {
+        const address = server.address();
+        const protocol = server.key ? 'https' : 'http';
+        server.url = `${protocol}://${address.address}:${address.port}`;
+        logger.info(`Browser server v${require('../package.json').version
+        } [${expressApp.settings.env}] listening on ${server.url}`);
 
         // all right
 
@@ -141,19 +145,18 @@ async function start() {
     });
   });
 
-  process.on('exit', function () {
+  process.on('exit', () => {
     logger.info('Browser server exiting.');
   });
 }
 
 type ExtendedAttributesServer = net$Server & {
   key?: string,
-  url?: string,   
+  url?: string,
 }
 
 // And now:
 start()
-  .catch(err => {
+  .catch((err) => {
     console.error(err); // eslint-disable-line no-console
   });
-  

@@ -6,10 +6,10 @@
 
 type Callback = (err?: ?Error, value: mixed) => void;
 
-var bcrypt = require('bcrypt'),
-    crypto = require('crypto');
+const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 
-var salt = bcrypt.genSaltSync(process.env.NODE_ENV === 'development' ? 1 : 10);
+const salt = bcrypt.genSaltSync(process.env.NODE_ENV === 'development' ? 1 : 10);
 
 /**
  * @param {String} value The value to be hashed.
@@ -43,12 +43,12 @@ exports.compare = function (value: string, hash: string, callback: Callback) {
  * @param {String} secret
  * @returns {string}
  */
-exports.fileReadToken = function(
-  fileId: string, 
-  accessId: string, accessToken: string, 
-  secret: string) 
-{
-  return accessId + '-' + getFileHMAC(fileId, accessToken, secret);
+exports.fileReadToken = function (
+  fileId: string,
+  accessId: string, accessToken: string,
+  secret: string,
+) {
+  return `${accessId}-${getFileHMAC(fileId, accessToken, secret)}`;
 };
 
 /**
@@ -58,31 +58,31 @@ exports.fileReadToken = function(
  * @returns {Object} Contains `accessId` and `hmac` parts if successful; empty otherwise.
  */
 exports.parseFileReadToken = function (fileReadToken: string) {
-  var sepIndex = fileReadToken.indexOf('-');
+  const sepIndex = fileReadToken.indexOf('-');
   if (sepIndex <= 0) { return {}; }
   return {
     accessId: fileReadToken.substr(0, sepIndex),
-    hmac: fileReadToken.substr(sepIndex + 1)
+    hmac: fileReadToken.substr(sepIndex + 1),
   };
 };
 
 exports.isFileReadTokenHMACValid = function (
-  hmac: string, fileId: string, token: string, 
-  secret: string) 
-{
+  hmac: string, fileId: string, token: string,
+  secret: string,
+) {
   return hmac === getFileHMAC(fileId, token, secret);
 };
 
 function getFileHMAC(fileId, token, secret): string {
-  var hmac = crypto.createHmac('sha1', secret);
+  const hmac = crypto.createHmac('sha1', secret);
   hmac.setEncoding('base64');
-  hmac.write(fileId + '-' + token);
+  hmac.write(`${fileId}-${token}`);
   hmac.end();
-  
+
   const base64HMAC = hmac.read();
   if (base64HMAC == null) throw new Error('AF: HMAC cannot be null');
-  
+
   return base64HMAC
-    .toString()   // function signature says we might have a buffer here.
+    .toString() // function signature says we might have a buffer here.
     .replace(/\//g, '_').replace(/\+/g, '-').replace(/=/g, '');
 }

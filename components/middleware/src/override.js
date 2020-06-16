@@ -1,9 +1,9 @@
 // @flow
 
 const errors = require('components/errors').factory;
-    
-// NOTE Name chosen to be unwieldy, so as not to make this look too good. 
-declare class RequestWithOriginalMethodAndBody extends express$Request { 
+
+// NOTE Name chosen to be unwieldy, so as not to make this look too good.
+declare class RequestWithOriginalMethodAndBody extends express$Request {
   originalMethod: ?string;
   originalBody: any;
 }
@@ -15,16 +15,16 @@ declare class RequestWithOriginalMethodAndBody extends express$Request {
  * after e.g. bodyParser middleware.
  */
 function normalizeRequest(
-  req: RequestWithOriginalMethodAndBody, 
-  res: express$Response, 
-  next: express$NextFunction) 
-{
-  if (! req.is('application/x-www-form-urlencoded')) { return next(); }
-  
-  const body = req.body; 
+  req: RequestWithOriginalMethodAndBody,
+  res: express$Response,
+  next: express$NextFunction,
+) {
+  if (!req.is('application/x-www-form-urlencoded')) { return next(); }
+
+  const { body } = req;
   if (body == null || typeof body !== 'object') return next();
 
-  if (typeof body._method == 'string') {
+  if (typeof body._method === 'string') {
     req.originalMethod = req.originalMethod || req.method;
     req.method = body._method.toUpperCase();
     delete body._method;

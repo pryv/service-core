@@ -1,11 +1,11 @@
-var async = require('async'),
-    axon = require('axon'),
-    deepEqual = require('deep-equal'),
-    EventEmitter = require('events').EventEmitter,
-    fs = require('fs'),
-    spawn = require('child_process').spawn,
-    temp = require('temp'),
-    util = require('util');
+const async = require('async');
+const axon = require('axon');
+const deepEqual = require('deep-equal');
+const { EventEmitter } = require('events');
+const fs = require('fs');
+const { spawn } = require('child_process');
+const temp = require('temp');
+const util = require('util');
 
 module.exports = InstanceManager;
 
@@ -25,28 +25,27 @@ module.exports = InstanceManager;
 function InstanceManager(settings) {
   InstanceManager.super_.call(this);
 
-  var serverSettings = null,
-      tempConfigPath = temp.path({suffix: '.json'}),
-      serverProcess = null,
-      serverReady = false,
-      messagingSocket = axon.socket('sub-emitter'),
-      logger = settings.logging.getLogger('instance-manager');
-
+  let serverSettings = null;
+  const tempConfigPath = temp.path({ suffix: '.json' });
+  let serverProcess = null;
+  let serverReady = false;
+  const messagingSocket = axon.socket('sub-emitter');
+  const logger = settings.logging.getLogger('instance-manager');
 
   // setup TCP messaging subscription
 
-  messagingSocket.bind(+settings.tcpMessaging.port, settings.tcpMessaging.host, function () {
-    logger.debug('TCP sub socket ready on ' + settings.tcpMessaging.host + ':' +
-        settings.tcpMessaging.port);
+  messagingSocket.bind(+settings.tcpMessaging.port, settings.tcpMessaging.host, () => {
+    logger.debug(`TCP sub socket ready on ${settings.tcpMessaging.host}:${
+      settings.tcpMessaging.port}`);
   });
 
-  messagingSocket.on('*', function (message, data) {
+  messagingSocket.on('*', (message, data) => {
     if (message === 'server-ready') {
       serverReady = true;
     }
     // forward messages to our own listeners
     this.emit(message, data);
-  }.bind(this));
+  });
 
   /**
    * Makes sure the instance is started with the given config settings, restarting it if needed;
@@ -94,11 +93,11 @@ function InstanceManager(settings) {
   /**
    * @api private
    */
-  this.setup = function() {
+  this.setup = function () {
     // adjust config settings for test instance
     serverSettings.tcpMessaging.pubConnectInsteadOfBind = true;
 
-    this.url = 'http://' + serverSettings.http.ip + ':' + serverSettings.http.port;
+    this.url = `http://${serverSettings.http.ip}:${serverSettings.http.port}`;
   };
 
   /**
@@ -111,7 +110,7 @@ function InstanceManager(settings) {
 
     // write config to temp path
     fs.writeFileSync(tempConfigPath, JSON.stringify(serverSettings));
-    var args = ['--config=' + tempConfigPath];
+    const args = [`--config=${tempConfigPath}`];
 
     args.unshift(settings.serverFilePath);
 
@@ -133,23 +132,23 @@ function InstanceManager(settings) {
     // start proc
 
     logger.debug('Starting server instance... ');
-    var options = {
+    const options = {
       // Uncomment here if you want to see server output
       // stdio: 'inherit',
-      env: process.env
+      env: process.env,
     };
     serverProcess = spawn(process.argv[0], args, options);
-    var serverExited = false,
-        exitCode = null;
-    serverProcess.on('exit', function (code/*, signal*/) {
-      logger.debug('Server instance exited with code ' + code);
+    let serverExited = false;
+    let exitCode = null;
+    serverProcess.on('exit', (code/* , signal */) => {
+      logger.debug(`Server instance exited with code ${code}`);
       serverExited = true;
       exitCode = code;
     });
 
-    async.until(isReadyOrExited, function (next) { setTimeout(next, 100); }, function () {
+    async.until(isReadyOrExited, (next) => { setTimeout(next, 100); }, () => {
       if (serverExited && exitCode > 0) {
-        return callback(new Error('Server failed (code ' + exitCode + ')'));
+        return callback(new Error(`Server failed (code ${exitCode})`));
       }
       callback();
     });
@@ -167,9 +166,9 @@ function InstanceManager(settings) {
    * @api private
    */
   this.stop = function () {
-    if (! isRunning()) { return; }
+    if (!isRunning()) { return; }
     logger.debug('Killing server instance... ');
-    if (! serverProcess.kill()) {
+    if (!serverProcess.kill()) {
       logger.warn('Failed to kill the server instance (it may have exited already).');
     }
     serverProcess = null;
@@ -177,7 +176,7 @@ function InstanceManager(settings) {
   };
 
   function isRunning() {
-    return !! serverProcess;
+    return !!serverProcess;
   }
 
   process.on('exit', this.stop);

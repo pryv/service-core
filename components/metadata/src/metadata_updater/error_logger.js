@@ -1,77 +1,79 @@
 // @flow
 
-const assert = require('assert');
-
 import type { Logger } from 'components/utils';
+
+const assert = require('assert');
 
 // Provides a static constructor '.wrap' that returns a proxy object wrapping a
 // target. All calls  made to the proxy are forwarded to the target. If the
-// target method throws an exception, it is  logged and rethrown. 
-// 
-// Example: 
-// 
+// target method throws an exception, it is  logged and rethrown.
+//
+// Example:
+//
 //    target.foo = () => console.log('yes');
 //    target.bar = () => throw new Error('bar');
 //    proxy = ErrorLogger.wrap(target);
-// 
+//
 //    proxy.foo();    // calls original foo, writes 'yes' to the console
 //    proxy.bar();    // throws 'bar', logs "Uncaught error 'bar' during call to Object#bar."
-// 
+//
 class ErrorLogger<T: Object> {
-  target: T; 
-  logger: Logger; 
-  
+  target: T;
+
+  logger: Logger;
+
   static wrap(target: T, logger: Logger): T {
     // #get is expected to be invariant, but is covariant (because we're using
     // the 'class' syntax here).
-    // FLOW 
+    // FLOW
     const handler = new ErrorLogger(target, logger);
     const proxy = new Proxy(target, handler);
-    
-    return proxy; 
+
+    return proxy;
   }
-  
+
   constructor(target: T, logger: Logger) {
     this.target = target;
-    this.logger = logger; 
+    this.logger = logger;
   }
-  
+
   get(target: T, propKey: string) {
     assert(target === this.target);
-    
+
     // FLOW Whatever this results in, it will be what we want.
     const origValue = target[propKey];
 
-    // If this is not a function, return it to the caller. 
+    // If this is not a function, return it to the caller.
     if (typeof origValue !== 'function') return origValue;
-    
-    // Otherwise: Wrap the function with our exception handler. 
+
+    // Otherwise: Wrap the function with our exception handler.
     const origMethod = origValue;
-    const wrapper = this; 
+    const wrapper = this;
     return function (...args: Array<mixed>) {
       try {
         const retval = origMethod.apply(this, args);
-        
-        if (retval && retval.catch != null) 
-          // NOTE We return the original retval, not the return value from 
-          // catch here. This means that we fork the promise, returning the 
-          // original promise to the caller (and allow chaining off it) while
-          // still _also_ attaching our handler here. It's not simple. 
-          retval.catch(err => {
+
+        if (retval && retval.catch != null)
+        // NOTE We return the original retval, not the return value from
+        // catch here. This means that we fork the promise, returning the
+        // original promise to the caller (and allow chaining off it) while
+        // still _also_ attaching our handler here. It's not simple.
+        {
+          retval.catch((err) => {
             wrapper.handleException(err, target, propKey);
           });
-        
+        }
+
         return retval;
-      }
-      catch (err) {
+      } catch (err) {
         wrapper.handleException(err, target, propKey);
         throw err;
       }
     };
   }
-  
+
   handleException(err: Error, target: T, propKey: string) {
-    const logger = this.logger; 
+    const { logger } = this;
     logger.error(`Uncaught error: '${err.toString()}' during call to ${target.constructor.name}#${propKey}.`);
   }
 }

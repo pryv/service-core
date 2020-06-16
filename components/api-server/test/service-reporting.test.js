@@ -3,12 +3,11 @@
 require('./test-helpers');
 const httpServer = require('./support/httpServer');
 const awaiting = require('awaiting');
-const assert = require('chai').assert;
-const hostname = require('os').hostname;
+const { assert } = require('chai');
+const { hostname } = require('os');
 const cuid = require('cuid');
 
 const { databaseFixture } = require('components/test-helpers');
-const { produceMongoConnection, context } = require('./test-helpers');
 
 let server;
 let reportHttpServer;
@@ -19,22 +18,22 @@ const CORE_ROLE = 'core';
 const customSettings = {
   domain: 'test.pryv.com',
   reporting: {
-    url: 'http://localhost:' + REPORT_HTTP_SERVER_PORT + '/reports',
+    url: `http://localhost:${REPORT_HTTP_SERVER_PORT}/reports`,
     optOut: false,
     licenseName: 'pryv.io-test-license',
     templateVersion: '1.0.0',
     hostname: hostname(),
-  }
+  },
 };
 const monitoringUsername = cuid();
 const monitorToken = cuid();
 
 const Promise = require('bluebird');
+const { produceMongoConnection, context } = require('./test-helpers');
 
 describe('service-reporting', () => {
-
   let mongoFixtures;
-  before(async function() {
+  before(async () => {
     mongoFixtures = databaseFixture(await produceMongoConnection());
   });
   after(async () => {
@@ -51,7 +50,6 @@ describe('service-reporting', () => {
 
   describe('POST report on service-reporting (started)', () => {
     before(async () => {
-
       infoHttpServer = new httpServer('/service/info', 200);
       reportHttpServer = new httpServer('/reports', 200);
       await infoHttpServer.listen(INFO_HTTP_SERVER_PORT);
@@ -94,10 +92,10 @@ describe('service-reporting', () => {
     });
 
     it('[UR7L] server must start and not send a report when opting-out reporting', async () => {
-      await new Promise(async function (resolve) {
+      await new Promise((async (resolve) => {
         await awaiting.event(reportHttpServer, 'report_received');
         resolve();
-      }).timeout(1000)
+      })).timeout(1000)
         .then(() => {
           throw new Error('Should not have received a report');
         })
@@ -118,7 +116,7 @@ describe('service-reporting', () => {
     beforeEach(async () => {
       server = await context.spawn();
     });
-    
+
     afterEach(async () => {
       server.stop();
     });
@@ -132,6 +130,6 @@ describe('service-reporting', () => {
 async function assertServerStarted() {
   // throws if the server is off
   await server.request()
-        .get(`/${monitoringUsername}/events`)
-        .set('Authorizaiton', monitorToken);
+    .get(`/${monitoringUsername}/events`)
+    .set('Authorizaiton', monitorToken);
 }

@@ -1,10 +1,11 @@
-var async = require('async'),
-    migrations = require('./migrations/index'),
-    MigrationContext = require('./migrations/MigrationContext'),
-    timestamp = require('unix-timestamp');
-var collectionInfo = {
+const async = require('async');
+const timestamp = require('unix-timestamp');
+const migrations = require('./migrations/index');
+const MigrationContext = require('./migrations/MigrationContext');
+
+const collectionInfo = {
   name: 'versions',
-  indexes: []
+  indexes: [],
 };
 
 module.exports = Versions;
@@ -35,27 +36,25 @@ function Versions(database, attachmentsDirPath, logger, migrationsOverride) {
 }
 
 Versions.prototype.getCurrent = function (callback) {
-  this.database.findOne(collectionInfo, {}, {sort: {migrationCompleted: -1}}, function (err, v) {
+  this.database.findOne(collectionInfo, {}, { sort: { migrationCompleted: -1 } }, (err, v) => {
     if (err) { return callback(err); }
     callback(null, v);
   });
 };
 
 Versions.prototype.migrateIfNeeded = function (callback) {
-  this.getCurrent(function (err, v) {
+  this.getCurrent((err, v) => {
     if (err) { return callback(err); }
 
-    var currentVNum = v ? v._id : '0.0.0';
-    var migrationsToRun = Object.keys(this.migrations).filter(function (vNum) {
-      return vNum > currentVNum;
-    }).sort();
+    const currentVNum = v ? v._id : '0.0.0';
+    const migrationsToRun = Object.keys(this.migrations).filter((vNum) => vNum > currentVNum).sort();
     async.forEachSeries(migrationsToRun, migrate.bind(this), callback);
-  }.bind(this));
+  });
 
-  var context = new MigrationContext({
+  const context = new MigrationContext({
     database: this.database,
     attachmentsDirPath: this.attachmentsDirPath,
-    logger: this.logger
+    logger: this.logger,
   });
   /**
    * @this {Versions}
@@ -63,18 +62,18 @@ Versions.prototype.migrateIfNeeded = function (callback) {
   function migrate(vNum, done) {
     async.series([
       function (stepDone) {
-        var update = {
+        const update = {
           $set: {
-            migrationStarted: timestamp.now()
-          }
+            migrationStarted: timestamp.now(),
+          },
         };
-        this.database.upsertOne(collectionInfo, {_id: vNum}, update, stepDone);
+        this.database.upsertOne(collectionInfo, { _id: vNum }, update, stepDone);
       }.bind(this),
       this.migrations[vNum].bind(null, context),
       function (stepDone) {
-        var update = {$set: {migrationCompleted: timestamp.now()}};
-        this.database.updateOne(collectionInfo, {_id: vNum}, update, stepDone);
-      }.bind(this)
+        const update = { $set: { migrationCompleted: timestamp.now() } };
+        this.database.updateOne(collectionInfo, { _id: vNum }, update, stepDone);
+      }.bind(this),
     ], done);
   }
 };

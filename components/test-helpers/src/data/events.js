@@ -1,9 +1,7 @@
-var streams = require('./streams'),
-    timestamp = require('unix-timestamp');
+const timestamp = require('unix-timestamp');
+const streams = require('./streams');
 
-
-
-const events =  [
+const events = [
   {
     id: getTestEventId(0),
     streamId: streams[0].children[0].id,
@@ -17,19 +15,19 @@ const events =  [
         id: 'document',
         fileName: 'document.pdf',
         type: 'application/pdf',
-        size: 6701
+        size: 6701,
       },
       {
         id: 'image',
         fileName: 'image (space and special chars).png',
         type: 'image/png',
-        size: 2765
-      }
+        size: 2765,
+      },
     ],
     created: timestamp.now(),
     createdBy: 'test',
     modified: timestamp.now(),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
   {
     id: getTestEventId(1),
@@ -40,12 +38,12 @@ const events =  [
     tags: [],
     clientData: {
       stringProp: 'O Brother',
-      numberProp: 1
+      numberProp: 1,
     },
     created: timestamp.now('-26h'),
     createdBy: 'test',
     modified: timestamp.now('-26h'),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
   {
     id: getTestEventId(2),
@@ -60,13 +58,13 @@ const events =  [
         id: 'imageBigger',
         fileName: 'image-bigger.jpg',
         type: 'image/jpeg',
-        size: 177476
-      }
+        size: 177476,
+      },
     ],
     created: timestamp.now('-25h'),
     createdBy: 'test',
     modified: timestamp.now('-25h'),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
   {
     id: getTestEventId(3),
@@ -78,7 +76,7 @@ const events =  [
     created: timestamp.now('-22h'),
     createdBy: 'test',
     modified: timestamp.now('-22h'),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
   {
     id: getTestEventId(4),
@@ -91,7 +89,7 @@ const events =  [
     created: timestamp.now('-21h'),
     createdBy: 'test',
     modified: timestamp.now('-21h'),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
   {
     id: getTestEventId(5),
@@ -103,7 +101,7 @@ const events =  [
     created: timestamp.now('-20h29m'),
     createdBy: 'test',
     modified: timestamp.now('-20h29m'),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
   {
     id: getTestEventId(6),
@@ -115,7 +113,7 @@ const events =  [
     created: timestamp.now('-10h'),
     createdBy: 'test',
     modified: timestamp.now('-10h'),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
   {
     id: getTestEventId(7),
@@ -126,7 +124,7 @@ const events =  [
     created: timestamp.now('-9h'),
     createdBy: 'test',
     modified: timestamp.now('-9h'),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
   {
     id: getTestEventId(8),
@@ -139,7 +137,7 @@ const events =  [
     created: timestamp.now('-8h'),
     createdBy: 'test',
     modified: timestamp.now('-8h'),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
   {
     id: getTestEventId(9),
@@ -152,7 +150,7 @@ const events =  [
     created: timestamp.now('-1h'),
     createdBy: 'test',
     modified: timestamp.now('-1h'),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
   {
     id: getTestEventId(10),
@@ -166,7 +164,7 @@ const events =  [
     created: timestamp.now('-15m'),
     createdBy: 'test',
     modified: timestamp.now('-15m'),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
   {
     id: getTestEventId(11),
@@ -179,7 +177,7 @@ const events =  [
     created: timestamp.now('-15m'),
     createdBy: 'test',
     modified: timestamp.now('-15m'),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
   {
     id: getTestEventId(12),
@@ -192,27 +190,27 @@ const events =  [
         id: 'animatedGif',
         fileName: 'animated.gif',
         type: 'image/gif',
-        size: 88134
-      }
+        size: 88134,
+      },
     ],
     created: timestamp.now(),
     createdBy: 'test',
     modified: timestamp.now(),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
 
   // deletions
   {
     id: getTestEventId(13),
-    deleted: timestamp.now('-5m')
+    deleted: timestamp.now('-5m'),
   },
   {
     id: getTestEventId(14),
-    deleted: timestamp.now('-1d')
+    deleted: timestamp.now('-1d'),
   },
   {
     id: getTestEventId(15),
-    deleted: timestamp.now('-2y') // to be cleaned up by Mongo TTL
+    deleted: timestamp.now('-2y'), // to be cleaned up by Mongo TTL
   },
 
   // auditing
@@ -227,7 +225,7 @@ const events =  [
     created: timestamp.now('-9h'),
     createdBy: 'test',
     modified: timestamp.now('-3h'),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
   {
     id: getTestEventId(17),
@@ -241,7 +239,7 @@ const events =  [
     created: timestamp.now('-9h'),
     createdBy: 'test',
     modified: timestamp.now('-9h'),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
   {
     id: getTestEventId(18),
@@ -255,7 +253,7 @@ const events =  [
     created: timestamp.now('-9h'),
     createdBy: 'test',
     modified: timestamp.now('-6h'),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
   {
     id: getTestEventId(19),
@@ -267,7 +265,7 @@ const events =  [
     created: timestamp.now('-2h'),
     createdBy: 'test',
     modified: timestamp.now(),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
   {
     id: getTestEventId(20),
@@ -280,7 +278,7 @@ const events =  [
     created: timestamp.now('-2h'),
     createdBy: 'test',
     modified: timestamp.now('-1h'),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
   {
     id: getTestEventId(21),
@@ -293,7 +291,7 @@ const events =  [
     created: timestamp.now('-2h'),
     createdBy: 'test',
     modified: timestamp.now('-2h'),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
   {
     id: getTestEventId(22),
@@ -304,7 +302,7 @@ const events =  [
     created: timestamp.now('-1h'),
     createdBy: 'test',
     modified: timestamp.now('-1h'),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
   {
     id: getTestEventId(23),
@@ -317,7 +315,7 @@ const events =  [
     created: timestamp.now('-1h'),
     createdBy: 'test',
     modified: timestamp.now('-1h'),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
   {
     id: getTestEventId(24),
@@ -330,7 +328,7 @@ const events =  [
     created: timestamp.now('-1h'),
     createdBy: 'test',
     modified: timestamp.now('-1h'),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
   {
     id: getTestEventId(25),
@@ -341,7 +339,7 @@ const events =  [
     created: timestamp.now('-1h'),
     createdBy: 'test',
     modified: timestamp.now('-30m'),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
   {
     id: getTestEventId(26),
@@ -353,7 +351,7 @@ const events =  [
     created: timestamp.now('-1h'),
     createdBy: 'test',
     modified: timestamp.now('-1h'),
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
   {
     id: getTestEventId(27),
@@ -365,11 +363,11 @@ const events =  [
     created: 0,
     createdBy: 'test',
     modified: 0,
-    modifiedBy: 'test'
+    modifiedBy: 'test',
   },
 
-].map(function (event) {
-  if (event.streamId) { 
+].map((event) => {
+  if (event.streamId) {
     event.streamIds = [event.streamId];
     delete event.streamId;
   }
@@ -383,6 +381,6 @@ module.exports = events;
  * @param n
  */
 function getTestEventId(n) {
-  n = n + '';
-  return 'cthisistesteventno' + (n.length >= 7 ? n : new Array(7 - n.length + 1).join('0') + n);
+  n += '';
+  return `cthisistesteventno${n.length >= 7 ? n : new Array(7 - n.length + 1).join('0') + n}`;
 }

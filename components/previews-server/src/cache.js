@@ -6,7 +6,7 @@ const xattr = require('fs-xattr');
 const { resolve } = require('path');
 const { readdir } = require('fs').promises;
 
-type CacheSettings  = {
+type CacheSettings = {
   maxAge: number;
   rootPath: string;
   logger: Object;
@@ -15,9 +15,11 @@ type CacheSettings  = {
 // Basic implementation for file cache cleanup, relying on xattr.
 class Cache {
   settings: CacheSettings;
+
   cleanUpInProgress: boolean;
 
   static EventModifiedXattrKey = 'user.pryv.eventModified';
+
   static LastAccessedXattrKey = 'user.pryv.lastAccessed'
 
   constructor(settings: CacheSettings) {
@@ -26,7 +28,7 @@ class Cache {
   }
 
   // Removes all cached files that haven't been accessed since the given time.
-  async cleanUp () {
+  async cleanUp() {
     if (this.cleanUpInProgress) {
       throw new Error('Clean-up is already in progress.');
     }
@@ -43,7 +45,7 @@ class Cache {
         if (value != null && +value.toString() < cutoffTime) {
           fs.unlinkSync(file);
         }
-      } catch(err) {
+      } catch (err) {
         // log and ignore file
         this.settings.logger.warn(`Could not process file "${file}": ${err}`);
       }

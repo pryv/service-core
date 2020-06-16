@@ -1,10 +1,10 @@
-var errors = require('components/errors').factory,
-    validation = require('../../schema/validation');
+const errors = require('components/errors').factory;
+const validation = require('../../schema/validation');
 
 exports.requirePersonalAccess = function requirePersonalAccess(context, params, result, next) {
-  if (! context.access.isPersonal()) {
-    return next(errors.forbidden('You cannot access this resource using the given access ' +
-        'token.'));
+  if (!context.access.isPersonal()) {
+    return next(errors.forbidden('You cannot access this resource using the given access '
+        + 'token.'));
   }
   next();
 };
@@ -18,33 +18,33 @@ exports.requirePersonalAccess = function requirePersonalAccess(context, params, 
  * @return {Function}
  */
 exports.getTrustedAppCheck = function getTrustedAppCheck(authSettings) {
-  var trustedApps;
+  let trustedApps;
 
   return function requireTrustedApp(context, params, result, next) {
-    if (! isTrustedApp(params.appId, params.origin)) {
-      return next(errors.invalidCredentials('The app id ("appId") is either missing or ' +
-          'not trusted.'));
+    if (!isTrustedApp(params.appId, params.origin)) {
+      return next(errors.invalidCredentials('The app id ("appId") is either missing or '
+          + 'not trusted.'));
     }
     next();
   };
 
   function isTrustedApp(appId, origin) {
-    if (! trustedApps) {
+    if (!trustedApps) {
       trustedApps = [];
-      authSettings.trustedApps.split(',').forEach(function (pair) {
-        var parts = /^\s*(\S+)\s*@\s*(\S+)\s*$/.exec(pair);
+      authSettings.trustedApps.split(',').forEach((pair) => {
+        const parts = /^\s*(\S+)\s*@\s*(\S+)\s*$/.exec(pair);
         if (parts.length !== 3) { return; }
         trustedApps.push({
           appId: parts[1], // index 0 is the original string
-          originRegExp: getRegExp(parts[2])
+          originRegExp: getRegExp(parts[2]),
         });
       });
     }
 
-    if (! appId) { return false; }
+    if (!appId) { return false; }
 
-    var trustedApp;
-    for (var i = 0, n = trustedApps.length; i < n; i++) {
+    let trustedApp;
+    for (let i = 0, n = trustedApps.length; i < n; i++) {
       trustedApp = trustedApps[i];
       // accept wildcards for app ids (for use in tests/dev/staging only)
       if (trustedApp.appId !== appId && trustedApp.appId !== '*') {
@@ -60,32 +60,31 @@ exports.getTrustedAppCheck = function getTrustedAppCheck(authSettings) {
 
   function getRegExp(origin) {
     // BUG The blacklist approach taken here is probably wrong; we're assuming
-    //  that we can escape all the active parts of a string using a list of 
+    //  that we can escape all the active parts of a string using a list of
     //  special chars; we're almost sure to miss something while doing that. A
-    //  better approach would be to whitelist all characters that are allowed 
-    //  in the input language. 
-    
+    //  better approach would be to whitelist all characters that are allowed
+    //  in the input language.
+
     // first escape the origin string
-    var rxString = origin.replace(/([.*+?^=!:${}()|[\]\/\\])/g, '\\$1');
+    let rxString = origin.replace(/([.*+?^=!:${}()|[\]\/\\])/g, '\\$1');
     // then replace wildcards
     rxString = rxString.replace(/\\\*/g, '\\S*');
-    return new RegExp('^' + rxString + '$');
+    return new RegExp(`^${rxString}$`);
   }
 };
 
-
 /** Produces a middleware function to verify parameters against the schema
  * given in `paramsSchema`.
- *  
+ *
  * @param  {Object} paramsSchema JSON Schema for the parameters
  * @return {void}
- */ 
+ */
 exports.getParamsValidation = function getParamsValidation(paramsSchema) {
   return function validateParams(context, params, result, next) {
-    validation.validate(params, paramsSchema, function (err) {
+    validation.validate(params, paramsSchema, (err) => {
       if (err) {
         return next(errors.invalidParametersFormat(
-          "The parameters' format is invalid.", err
+          "The parameters' format is invalid.", err,
         ));
       }
       next();
@@ -97,11 +96,11 @@ exports.catchForbiddenUpdate = function catchForbiddenUpdate(paramsSchema, ignor
   return function validateParams(context, params, result, next) {
     const allowed = paramsSchema.alterableProperties;
     const forbidden = Object.keys(params.update)
-      .filter(key => !allowed.includes(key));
-    if(forbidden.length > 0) {
-      const errorMsg = 'Forbidden update was attempted on the following protected field(s): [' + forbidden + '].';
+      .filter((key) => !allowed.includes(key));
+    if (forbidden.length > 0) {
+      const errorMsg = `Forbidden update was attempted on the following protected field(s): [${forbidden}].`;
       // Strict mode: throw a forbidden error
-      if(!ignoreProtectedFieldUpdates) {
+      if (!ignoreProtectedFieldUpdates) {
         return next(errors.forbidden(errorMsg));
       }
       // Non-strict mode:
@@ -110,8 +109,8 @@ exports.catchForbiddenUpdate = function catchForbiddenUpdate(paramsSchema, ignor
         delete params.update[key];
       });
       // Log a warning
-      logger.warn(errorMsg + '\n' +
-        'Server has "ignoreProtectedFieldUpdates" turned on: Fields are not updated, but no error is thrown.');
+      logger.warn(`${errorMsg}\n`
+        + 'Server has "ignoreProtectedFieldUpdates" turned on: Fields are not updated, but no error is thrown.');
     }
     next();
   };

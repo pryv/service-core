@@ -1,4 +1,3 @@
-'use strict';
 // @flow
 
 const should = require('should');
@@ -6,8 +5,8 @@ const should = require('should');
 /* global describe, it */
 const { loadSettings } = require('./test-helpers');
 
-describe('Settings', function() {
-  it('[KEEZ] should have been loaded for test execution', async function() {
+describe('Settings', () => {
+  it('[KEEZ] should have been loaded for test execution', async () => {
     should.exist(await loadSettings());
   });
 });

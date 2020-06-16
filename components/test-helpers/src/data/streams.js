@@ -1,4 +1,4 @@
-var timestamp = require('unix-timestamp');
+const timestamp = require('unix-timestamp');
 
 module.exports = [
   {
@@ -18,7 +18,7 @@ module.exports = [
         createdBy: 'test',
         modified: timestamp.now(),
         modifiedBy: 'test',
-        children: []
+        children: [],
       },
       {
         id: 's_0_1',
@@ -28,9 +28,9 @@ module.exports = [
         createdBy: 'test',
         modified: timestamp.now(),
         modifiedBy: 'test',
-        children: []
-      }
-    ]
+        children: [],
+      },
+    ],
   },
   {
     id: 's_1',
@@ -38,7 +38,7 @@ module.exports = [
     parentId: null,
     clientData: {
       stringProp: 'O Brother',
-      numberProp: 1
+      numberProp: 1,
     },
     created: timestamp.now(),
     createdBy: 'test',
@@ -53,9 +53,9 @@ module.exports = [
         createdBy: 'test',
         modified: timestamp.now(),
         modifiedBy: 'test',
-        children: []
-      }
-    ]
+        children: [],
+      },
+    ],
   },
   {
     id: 's_2',
@@ -84,9 +84,9 @@ module.exports = [
             createdBy: 'test',
             modified: timestamp.now(),
             modifiedBy: 'test',
-            children: []
-          }
-        ]
+            children: [],
+          },
+        ],
       },
       {
         id: 's_2_1',
@@ -105,11 +105,11 @@ module.exports = [
             createdBy: 'test',
             modified: timestamp.now(),
             modifiedBy: 'test',
-            children: []
-          }
-        ]
-      }
-    ]
+            children: [],
+          },
+        ],
+      },
+    ],
   },
   {
     id: 's_3',
@@ -129,22 +129,22 @@ module.exports = [
         createdBy: 'test',
         modified: timestamp.now(),
         modifiedBy: 'test',
-        children: []
-      }
-    ]
+        children: [],
+      },
+    ],
   },
   // deletions
   {
     id: 's_4',
-    deleted: timestamp.now('-5m')
+    deleted: timestamp.now('-5m'),
   },
   {
     id: 's_5',
-    deleted: timestamp.now('-1d')
+    deleted: timestamp.now('-1d'),
   },
   {
     id: 's_6',
-    deleted: timestamp.now('-2y') // to be cleaned up by Mongo TTL
+    deleted: timestamp.now('-2y'), // to be cleaned up by Mongo TTL
   },
   // auditing
   {
@@ -165,9 +165,9 @@ module.exports = [
         createdBy: 'test',
         modified: timestamp.now(),
         modifiedBy: 'test',
-        children: []
-      }
-    ]
+        children: [],
+      },
+    ],
   },
   {
     id: 's_8',
@@ -177,6 +177,6 @@ module.exports = [
     createdBy: 'test',
     modified: timestamp.now('-10h'),
     modifiedBy: 'test',
-    children: []
+    children: [],
   },
 ];

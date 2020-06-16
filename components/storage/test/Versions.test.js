@@ -2,37 +2,37 @@
  * Tests data migration between versions.
  */
 
-/*global describe, it */
+/* global describe, it */
 
 const helpers = require('components/test-helpers');
-const storage = helpers.dependencies.storage;
-const converters = require('../src/converters');
-const database = storage.database;
+
+const { storage } = helpers.dependencies;
+const { database } = storage;
 const async = require('async');
-const migrations = require('../src/migrations');
 const should = require('should');
-const assert = require('chai').assert;
+const { assert } = require('chai');
+
 const testData = helpers.data;
-const Versions = require('../src/Versions');
 const wrench = require('wrench');
 const _ = require('lodash');
-const buildTree = require('components/utils').treeUtils.buildTree;
+const { buildTree } = require('components/utils').treeUtils;
+const Versions = require('../src/Versions');
+const migrations = require('../src/migrations');
+const converters = require('../src/converters');
 
-const mongoFolder = __dirname + '/../../../../var-pryv/mongodb-bin'
+const mongoFolder = `${__dirname}/../../../../var-pryv/mongodb-bin`;
 
 describe('Versions', function () {
   this.timeout(20000);
 
-  
-
   // older migration tests are skipped; they're kept for reference (e.g. when
   // writing new tests)
 
-  it.skip('must handle data migration from v0.2.0 to v0.3.0 (skipped, obsolete)', function (done) {
-    var versions = getVersions('0.2.0', '0.3.0'),
-        user = {id: 'u_0'};
+  it.skip('must handle data migration from v0.2.0 to v0.3.0 (skipped, obsolete)', (done) => {
+    const versions = getVersions('0.2.0', '0.3.0');
+    const user = { id: 'u_0' };
 
-    var extraEvent = {
+    const extraEvent = {
       id: 'extra',
       channelId: 'c_3',
       folderId: null,
@@ -40,24 +40,24 @@ describe('Versions', function () {
       type: { class: 'temperature', format: 'c' },
       value: 37.2,
       tags: [],
-      modified: 1374036000
+      modified: 1374036000,
     };
-    var extraEventMigrated = {
+    const extraEventMigrated = {
       id: 'extra',
       streamId: 'c_3',
       time: 1374036000,
       type: 'temperature/c',
       content: 37.2,
       tags: [],
-      modified: 1374036000
+      modified: 1374036000,
     };
 
-    var expected = {
+    const expected = {
       accesses: require('../../test-helpers/src/data/migrated/0.3.0/accesses').slice(),
       events: require('../../test-helpers/src/data/migrated/0.3.0/events')
         .concat(extraEventMigrated),
       streams: require('../../test-helpers/src/data/migrated/0.3.0/streams').slice(),
-      attachments: require('../../test-helpers/src/data/migrated/0.3.0/attachments').slice()
+      attachments: require('../../test-helpers/src/data/migrated/0.3.0/attachments').slice(),
     };
 
     async.series({
@@ -67,24 +67,23 @@ describe('Versions', function () {
       migrate: versions.migrateIfNeeded.bind(versions),
       // use raw database to avoid new indexes being applied on old data structure
       accesses: storage.database.find.bind(storage.database,
-        { name: user.id + '.accesses', indexes: [] }, {}, { sort: {name: 1} }),
+        { name: `${user.id}.accesses`, indexes: [] }, {}, { sort: { name: 1 } }),
       streams: storage.user.streams.findAll.bind(storage.user.streams, user, {}),
       events: storage.user.events.findAll.bind(storage.user.events, user, {}),
-      version: versions.getCurrent.bind(versions)
-    }, function (err, results) {
+      version: versions.getCurrent.bind(versions),
+    }, (err, results) => {
       should.not.exist(err);
 
       results.accesses.forEach(converters.getRenamePropertyFn('_id', 'token').bind(null, null));
-      expected.accesses.sort(function (a, b) { return a.name.localeCompare(b.name); });
+      expected.accesses.sort((a, b) => a.name.localeCompare(b.name));
       results.accesses.should.eql(expected.accesses);
 
-      expected.streams.sort(function (a, b) { return a.name.localeCompare(b.name); });
+      expected.streams.sort((a, b) => a.name.localeCompare(b.name));
       results.streams.should.eql(expected.streams);
 
-      expected.events.sort(function (a, b) {
+      expected.events.sort((a, b) =>
         // HACK: empirically determined: sort by id if equal time
-        return (b.time - a.time) || b.id.localeCompare(a.id);
-      });
+        (b.time - a.time) || b.id.localeCompare(a.id));
       results.events.should.eql(expected.events);
 
       // check event files
@@ -98,23 +97,23 @@ describe('Versions', function () {
     });
   });
 
-  it.skip('must handle data migration from v0.3.0 to v0.4.0 (skipped, obsolete)', function (done) {
-    var versions = getVersions('0.4.0'),
-        user = {id: 'u_0'};
+  it.skip('must handle data migration from v0.3.0 to v0.4.0 (skipped, obsolete)', (done) => {
+    const versions = getVersions('0.4.0');
+    const user = { id: 'u_0' };
 
-    var expected = {
-      accesses: require('../../test-helpers/src/data/migrated/0.4.0/accesses').slice()
+    const expected = {
+      accesses: require('../../test-helpers/src/data/migrated/0.4.0/accesses').slice(),
     };
 
     async.series({
       restore: testData.restoreFromDump.bind(null, '0.3.0', mongoFolder),
       migrate: versions.migrateIfNeeded.bind(versions),
       accesses: storage.user.accesses.findAll.bind(storage.user.accesses, user, {}),
-      version: versions.getCurrent.bind(versions)
-    }, function (err, results) {
+      version: versions.getCurrent.bind(versions),
+    }, (err, results) => {
       should.not.exist(err);
 
-      expected.accesses.sort(function (a, b) { return a.name.localeCompare(b.name); });
+      expected.accesses.sort((a, b) => a.name.localeCompare(b.name));
       results.accesses.should.eql(expected.accesses);
 
       results.version._id.should.eql('0.4.0');
@@ -124,12 +123,12 @@ describe('Versions', function () {
     });
   });
 
-  it.skip('must handle data migration from v0.4.0 to v0.5.0 (skipped, obsolete)', function (done) {
-    var versions = getVersions('0.5.0'),
-        user = {id: 'u_0'};
+  it.skip('must handle data migration from v0.4.0 to v0.5.0 (skipped, obsolete)', (done) => {
+    const versions = getVersions('0.5.0');
+    const user = { id: 'u_0' };
 
-    var expected = {
-      events: require('../../test-helpers/src/data/migrated/0.5.0/events').slice()
+    const expected = {
+      events: require('../../test-helpers/src/data/migrated/0.5.0/events').slice(),
     };
 
     async.series({
@@ -138,14 +137,13 @@ describe('Versions', function () {
       events: storage.user.events.findAll.bind(storage.user.events, user, {}),
       followedSlices: storage.user.followedSlices.findAll.bind(storage.user.followedSlices, user,
         {}),
-      version: versions.getCurrent.bind(versions)
-    }, function (err, results) {
+      version: versions.getCurrent.bind(versions),
+    }, (err, results) => {
       should.not.exist(err);
 
-      expected.events.sort(function (a, b) {
+      expected.events.sort((a, b) =>
         // HACK: empirically determined: sort by id if equal time
-        return (b.time - a.time) || b.id.localeCompare(a.id);
-      });
+        (b.time - a.time) || b.id.localeCompare(a.id));
       results.events.should.eql(expected.events);
 
       results.followedSlices.length.should.be.above(0);
@@ -157,17 +155,17 @@ describe('Versions', function () {
     });
   });
 
-  it.skip('must handle data migration from v0.5.0 to v0.7.0', function (done) {
-    var versions = getVersions('0.7.0'),
-        userId = 'u_0',
-        usersStorage = helpers.dependencies.storage.users;
+  it.skip('must handle data migration from v0.5.0 to v0.7.0', (done) => {
+    const versions = getVersions('0.7.0');
+    const userId = 'u_0';
+    const usersStorage = helpers.dependencies.storage.users;
 
     async.series({
       // don't restore, just use the current state (i.e. v0.5.0)
-      removeIrrelevantUsers: usersStorage.remove.bind(usersStorage, {id: {$ne: userId}}),
+      removeIrrelevantUsers: usersStorage.remove.bind(usersStorage, { id: { $ne: userId } }),
       migrate: versions.migrateIfNeeded.bind(versions),
-      version: versions.getCurrent.bind(versions)
-    }, function (err, results) {
+      version: versions.getCurrent.bind(versions),
+    }, (err, results) => {
       should.not.exist(err);
 
       // actual migration is implicitly tested via pryvuser tests,
@@ -180,20 +178,20 @@ describe('Versions', function () {
     });
   });
 
-  it.skip('must handle data migration from v0.7.0 to v0.7.1', function (done) {
-    var versions = getVersions('0.7.1'),
-        user = {id: 'ciya1zox20000ebotsvzyl8cx'};
+  it.skip('must handle data migration from v0.7.0 to v0.7.1', (done) => {
+    const versions = getVersions('0.7.1');
+    const user = { id: 'ciya1zox20000ebotsvzyl8cx' };
 
     async.series({
       restore: testData.restoreFromDump.bind(null, '0.7.0', mongoFolder),
       migrate: versions.migrateIfNeeded.bind(versions),
       streams: storage.user.streams.findAll.bind(storage.user.streams, user, {}),
-      version: versions.getCurrent.bind(versions)
-    }, function (err, results) {
+      version: versions.getCurrent.bind(versions),
+    }, (err, results) => {
       should.not.exist(err);
 
-      results.streams.forEach(function (stream) {
-        if (stream.parentId !== null && ! stream.deleted) {
+      results.streams.forEach((stream) => {
+        if (stream.parentId !== null && !stream.deleted) {
           stream.parentId.should.not.eql('');
         }
       });
@@ -202,14 +200,13 @@ describe('Versions', function () {
       should.exist(results.version.migrationCompleted);
       done();
     });
-
   });
 
-  it.skip('must handle data migration from v0.7.1 to 1.2.0', function (done) {
+  it.skip('must handle data migration from v0.7.1 to 1.2.0', (done) => {
     const versions = getVersions('1.2.0');
-    const user = {id: 'u_0'};
+    const user = { id: 'u_0' };
 
-    const indexes = testData.getStructure('0.7.1').indexes;
+    const { indexes } = testData.getStructure('0.7.1');
 
     async.series({
       restore: testData.restoreFromDump.bind(null, '0.7.1', mongoFolder),
@@ -220,40 +217,39 @@ describe('Versions', function () {
       events: storage.user.events.listIndexes.bind(storage.user.events, user, {}),
       streams: storage.user.streams.listIndexes.bind(storage.user.streams, user, {}),
       accesses: storage.user.accesses.listIndexes.bind(storage.user.accesses, user, {}),
-      version: versions.getCurrent.bind(versions)
-    }, function (err, results) {
+      version: versions.getCurrent.bind(versions),
+    }, (err, results) => {
       should.not.exist(err);
-      should.equal(_.findIndex(results.events, (o) => {return o.key.deleted === 1;}), -1);
-      should.equal(_.findIndex(results.streams, (o) => {return o.key.deleted === 1;}), -1);
-      should.equal(_.findIndex(results.accesses, (o) => {return o.key.deleted === 1;}), -1);
+      should.equal(_.findIndex(results.events, (o) => o.key.deleted === 1), -1);
+      should.equal(_.findIndex(results.streams, (o) => o.key.deleted === 1), -1);
+      should.equal(_.findIndex(results.accesses, (o) => o.key.deleted === 1), -1);
       results.version._id.should.eql('1.2.0');
       should.exist(results.version.migrationCompleted);
       done();
     });
   });
 
-  it.skip('must handle data migration from v1.2.0 to v1.2.5', function (done) {
+  it.skip('must handle data migration from v1.2.0 to v1.2.5', (done) => {
     const versions = getVersions('1.2.5');
-    const indexes = testData.getStructure('1.2.4').indexes;
+    const { indexes } = testData.getStructure('1.2.4');
 
-    const user = {id: 'u_0'};
-    const userEvents = storage.user.events; 
+    const user = { id: 'u_0' };
+    const userEvents = storage.user.events;
 
     async.series([
-      (cb) => testData.restoreFromDump('1.2.4', mongoFolder, cb), 
+      (cb) => testData.restoreFromDump('1.2.4', mongoFolder, cb),
       (cb) => applyPreviousIndexes('events', indexes.events, cb),
       (cb) => versions.migrateIfNeeded(cb),
       (cb) => userEvents.listIndexes(user, {}, cb), // (a), see below
       (cb) => versions.getCurrent(cb), // (b), see below
-    ], function (err, res) {
+    ], (err, res) => {
       assert.isNull(err, 'there was an error');
-      
+
       const events = res[3]; // (a)
       const version = res[4]; // (b)
 
-      const eventEndTimeIndex = 
-        _.findIndex(events, (o) => o.key.endTime === 1);
-      
+      const eventEndTimeIndex = _.findIndex(events, (o) => o.key.endTime === 1);
+
       assert.isAtLeast(eventEndTimeIndex, 0);
       assert.strictEqual(version._id, '1.2.5');
       assert.isNotNull(version.migrationCompleted);
@@ -262,45 +258,41 @@ describe('Versions', function () {
     });
   });
 
-  it.skip('must handle data migration from v1.3.37 to 1.3.40', function (done) {
+  it.skip('must handle data migration from v1.3.37 to 1.3.40', (done) => {
     const versions = getVersions('1.3.40');
-    const indexes = testData.getStructure('1.3.37').indexes;
+    const { indexes } = testData.getStructure('1.3.37');
 
-    const user = {id: 'u_0'};
-    const userAccesses = storage.user.accesses; 
+    const user = { id: 'u_0' };
+    const userAccesses = storage.user.accesses;
 
     async.series([
-      (cb) => testData.restoreFromDump('1.3.37', mongoFolder, cb), 
+      (cb) => testData.restoreFromDump('1.3.37', mongoFolder, cb),
       (cb) => applyPreviousIndexes('accesses', indexes.accesses, cb),
       (cb) => versions.migrateIfNeeded(cb),
       (cb) => userAccesses.listIndexes(user, {}, cb), // (a), see below
       (cb) => versions.getCurrent(cb), // (b), see below
       (cb) => userAccesses.findAll(user, {}, cb), // (c), see below
-    ], function (err, res) {
+    ], (err, res) => {
       assert.isNull(err, 'there was an error');
-      
+
       const accessIndexes = res[3]; // (a)
       const version = res[4]; // (b)
       const accesses = res[5]; // (c)
 
-      const tokenIndex = 
-        _.findIndex(accessIndexes, (o) => o.key.token === 1);
-      const otherIndex =
-        _.findIndex(accessIndexes, (o) => {
-          return o.key.name === 1 &&
-          o.key.type === 1 &&
-          o.key.deviceName === 1
-      });
+      const tokenIndex = _.findIndex(accessIndexes, (o) => o.key.token === 1);
+      const otherIndex = _.findIndex(accessIndexes, (o) => o.key.name === 1
+          && o.key.type === 1
+          && o.key.deviceName === 1);
 
       assert.isAtLeast(tokenIndex, 0, 'token index not found');
       assert.isAtLeast(otherIndex, 0, 'other index not found');
 
       const tokenPartialFilter = accessIndexes[tokenIndex].partialFilterExpression;
       const otherPartialFilter = accessIndexes[otherIndex].partialFilterExpression;
-      
+
       assert.isNotNull(tokenPartialFilter.deleted);
       assert.isNotNull(otherPartialFilter.deleted);
-    
+
       assert.strictEqual(version._id, '1.3.40');
       assert.isNotNull(version.migrationCompleted);
 
@@ -308,10 +300,10 @@ describe('Versions', function () {
         if (a.deleted === undefined) throw new Error('all access.deleted fields should either be set to a date or be null');
 
         if (a.deleted !== null) {
-          if (a['_token'] != null) throw new Error('all deleted accesses should have "token" parameter and not "_token"');
-          if (a['_type'] != null) throw new Error('all deleted accesses should have "type" parameter and not "_type"');
-          if (a['_name'] != null) throw new Error('all deleted accesses should have "name" parameter and not "_name"');
-          if (a['_deviceName'] != null) throw new Error('all deleted accesses should have "deviceName" parameter and not "_deviceName"');
+          if (a._token != null) throw new Error('all deleted accesses should have "token" parameter and not "_token"');
+          if (a._type != null) throw new Error('all deleted accesses should have "type" parameter and not "_type"');
+          if (a._name != null) throw new Error('all deleted accesses should have "name" parameter and not "_name"');
+          if (a._deviceName != null) throw new Error('all deleted accesses should have "deviceName" parameter and not "_deviceName"');
         }
       });
 
@@ -319,8 +311,7 @@ describe('Versions', function () {
     });
   });
 
-
-  it.skip('[CRPD] must handle data migration from v1.3.40 to 1.4.0', function (done) {
+  it.skip('[CRPD] must handle data migration from v1.3.40 to 1.4.0', (done) => {
     const versions = getVersions('1.4.0');
     const oldIndexes = testData.getStructure('1.3.40').indexes;
 
@@ -355,7 +346,7 @@ describe('Versions', function () {
       (cb) => userFollowedSlices.findAll(user, {}, cb), // (o), see below
 
       (cb) => versions.getCurrent(cb), // (p), see below
-    ], function (err, res) {
+    ], (err, res) => {
       assert.isNull(err, 'there was an error');
 
       const oldEvents = fixProperties(res[1]); // (a)
@@ -377,14 +368,13 @@ describe('Versions', function () {
       const followedSlices = res[16]; // (o)
 
       const version = res[17]; // (p)
-      
 
       compareIndexes(oldIndexes.events, eventsIndexes);
       compareIndexes(oldIndexes.streams, streamsIndexes);
       compareIndexes(oldIndexes.accesses, accessesIndexes);
       compareIndexes(oldIndexes.profile, profileIndexes);
       compareIndexes(oldIndexes.followedSlices, followedSlicesIndexes);
-      
+
       compareData(oldEvents, events);
       compareData(oldStreams, streams);
       compareData(oldAccesses, accesses);
@@ -398,7 +388,6 @@ describe('Versions', function () {
     });
 
     function fixProperties(items, resourceName) {
-
       items.forEach((item) => {
         item.id = item._id;
         delete item._id;
@@ -410,11 +399,11 @@ describe('Versions', function () {
           }
         }
       });
-  
+
       if (resourceName == 'streams') {
         items = buildTree(items);
       }
-  
+
       return items;
     }
 
@@ -432,7 +421,7 @@ describe('Versions', function () {
     async function getResourcesOld(user, resourceName, callback) {
       let resourceCol;
       await database.getCollection({
-        name: user.id + '.' + resourceName
+        name: `${user.id}.${resourceName}`,
       }, (err, col) => {
         if (err) return callback(err);
         resourceCol = col;
@@ -442,10 +431,10 @@ describe('Versions', function () {
     }
   });
 
-  it('[CRPX] must handle data migration from v1.4.0 to 1.5.0', function (done) {
+  it('[CRPX] must handle data migration from v1.4.0 to 1.5.0', (done) => {
     const versions = getVersions('1.5.0');
     const newIndexes = testData.getStructure('1.5.0').indexes;
-  
+
     const user = { id: 'u_0' };
     const userEventsStorage = storage.user.events;
     const userStreamsStorage = storage.user.streams;
@@ -457,13 +446,13 @@ describe('Versions', function () {
       (cb) => userEventsStorage.findAll(user, {}, cb), // (d), see below
       (cb) => userStreamsStorage.findAll(user, {}, cb), // (e), see below
       (cb) => versions.getCurrent(cb), // (f), see below
-    ], function (err, res) {
+    ], (err, res) => {
       assert.isNull(err, 'there was an error');
       const eventsIndexes = res[2]; // (c)
       const events = res[3]; // (d)
-      const streams = res[4]; //(e)
-      const version = res[5]; //(f)
-    
+      const streams = res[4]; // (e)
+      const version = res[5]; // (f)
+
       assert.strictEqual(version._id, '1.5.0', 'version not upgraded');
       assert.isNotNull(version.migrationCompleted, 'migrationCompleted not set');
       compareIndexes(newIndexes.events, eventsIndexes);
@@ -475,17 +464,17 @@ describe('Versions', function () {
     });
 
     function checkStreamIdIsNowStreamIds(events) {
-      events.forEach(e => {
+      events.forEach((e) => {
         if (e.deleted != null) return; // skip deleted ones
         // TODO: put back when addition of streamId from DB is moved up to business level.
-        //console.log('checkin', e);
-        //assert.notExists(e.streamId, 'streamId should be unset');
+        // console.log('checkin', e);
+        // assert.notExists(e.streamId, 'streamId should be unset');
         assert.exists(e.streamIds, 'streamIds array should be set');
       });
     }
 
     function checkSingleActivityGone(streams) {
-      streams.forEach(s => {
+      streams.forEach((s) => {
         assert.notExists(s.singleActivity, 'singleActivity in stream should be unset');
       });
     }
@@ -504,8 +493,8 @@ describe('Versions', function () {
           found = true;
         }
       });
-      if (! found) {
-        throw new Error('Index expected not found:' + JSON.stringify(expectedItem));
+      if (!found) {
+        throw new Error(`Index expected not found:${JSON.stringify(expectedItem)}`);
       }
     });
   }
@@ -515,22 +504,21 @@ describe('Versions', function () {
     pickArgs.unshift(migrations);
     const pickedMigrations = _.pick.apply(_, pickArgs);
     return new Versions(database,
-        helpers.dependencies.settings.eventFiles.attachmentsDirPath,
-        helpers.dependencies.logging.getLogger('versions'),
-        pickedMigrations);
+      helpers.dependencies.settings.eventFiles.attachmentsDirPath,
+      helpers.dependencies.logging.getLogger('versions'),
+      pickedMigrations);
   }
 
   function applyPreviousIndexes(collectionName, indexes, callback) {
-    async.forEachSeries(indexes, ensureIndex, function (err) {
+    async.forEachSeries(indexes, ensureIndex, (err) => {
       if (err) { return callback(err); }
       database.initializedCollections[collectionName] = true;
       callback();
-    }.bind(this));
+    });
 
     function ensureIndex(item, itemCallback) {
       database.db.collection(collectionName)
         .createIndex(item.index, item.options, itemCallback);
     }
   }
-
 });

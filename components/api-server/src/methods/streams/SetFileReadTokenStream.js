@@ -1,6 +1,6 @@
-var Transform = require('stream').Transform,
-    inherits = require('util').inherits,
-    utils = require('components/utils');
+const { Transform } = require('stream');
+const { inherits } = require('util');
+const utils = require('components/utils');
 
 module.exports = SetFileReadTokenStream;
 
@@ -14,7 +14,7 @@ module.exports = SetFileReadTokenStream;
  * @constructor
  */
 function SetFileReadTokenStream(params) {
-  Transform.call(this, {objectMode: true});
+  Transform.call(this, { objectMode: true });
 
   this.access = params.access;
   this.filesReadTokenSecret = params.filesReadTokenSecret;
@@ -23,21 +23,20 @@ function SetFileReadTokenStream(params) {
 inherits(SetFileReadTokenStream, Transform);
 
 SetFileReadTokenStream.prototype._transform = function (event, encoding, callback) {
-
   // To remove when streamId not necessary
   event.streamId = event.streamIds[0];
 
-  if (! event.attachments) {
+  if (!event.attachments) {
     this.push(event);
   } else {
-    event.attachments.forEach(function (att) {
+    event.attachments.forEach((att) => {
       att.readToken = utils.encryption
         .fileReadToken(
           att.id, this.access.id, this.access.token,
-          this.filesReadTokenSecret);
-    }.bind(this));
+          this.filesReadTokenSecret,
+        );
+    });
     this.push(event);
   }
   callback();
 };
-

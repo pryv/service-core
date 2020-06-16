@@ -3,7 +3,8 @@
 /* global describe, it, beforeEach, afterEach */
 
 const chai = require('chai');
-const assert = chai.assert;
+
+const { assert } = chai;
 
 const Database = require('../../src/Database');
 
@@ -28,17 +29,16 @@ describe('Database', () => {
   });
 
   describe('Mongo duplicate errors', () => {
-
     const collectionInfo = {
       name: 'duplicateTest',
       indexes: [{
-        index: {name: 1, username: 1},
-        options: {unique: true}
-      }]
+        index: { name: 1, username: 1 },
+        options: { unique: true },
+      }],
     };
-        
+
     beforeEach((done) => {
-      database.insertOne(collectionInfo, {name: 'toto', username: 'mrtoto', age: 17}, (err) => {
+      database.insertOne(collectionInfo, { name: 'toto', username: 'mrtoto', age: 17 }, (err) => {
         done(err);
       });
     });
@@ -50,7 +50,7 @@ describe('Database', () => {
     });
 
     it('[9UBA] must detect mongo duplicate errors with isDuplicateError', (done) => {
-      database.insertOne(collectionInfo, {name: 'toto', username: 'mrtoto', age: 22}, (err) => {
+      database.insertOne(collectionInfo, { name: 'toto', username: 'mrtoto', age: 22 }, (err) => {
         assert.isNotNull(err);
         assert.isTrue(Database.isDuplicateError(err));
         done();
@@ -58,14 +58,14 @@ describe('Database', () => {
     });
 
     it('[W1FO] must augment mongo duplicate errors with duplicate check utilities', (done) => {
-      database.insertOne(collectionInfo, {name: 'toto', username: 'mrtoto', age: 22}, (err) => {
+      database.insertOne(collectionInfo, { name: 'toto', username: 'mrtoto', age: 22 }, (err) => {
         assert.isNotNull(err);
         // FLOW: we ensure that err contains the isDuplicate boolean with assert
-        const isDuplicate = err.isDuplicate;
+        const { isDuplicate } = err;
         assert.isBoolean(isDuplicate);
         assert.isTrue(isDuplicate);
         // FLOW: we ensure that err contains the isDuplicateIndex function with assert
-        const isDuplicateIndex = err.isDuplicateIndex;
+        const { isDuplicateIndex } = err;
         assert.isFunction(isDuplicateIndex);
         assert.isTrue(isDuplicateIndex('name'));
         assert.isTrue(isDuplicateIndex('username'));
@@ -78,7 +78,7 @@ describe('Database', () => {
     // which may break our regular expression matchings, cf. GH issue #163.
     it('[D0EN] must fail if mongo duplicate error message changed', (done) => {
       const duplicateMsg = `E11000 duplicate key error collection: ${connectionSettings.name}.${collectionInfo.name} index: name_1_username_1 dup key:`;
-      database.insertOne(collectionInfo, {name: 'toto', username: 'mrtoto', age: 22}, (err) => {
+      database.insertOne(collectionInfo, { name: 'toto', username: 'mrtoto', age: 22 }, (err) => {
         // FLOW: we ensure that err contains the string errmsg with assert
         const errMsg = err.errmsg;
         assert.isString(errMsg);

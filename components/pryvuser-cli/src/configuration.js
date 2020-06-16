@@ -9,17 +9,16 @@ export interface ConfigurationLoader {
   load: (basePath: string) => Promise<Configuration>,
 }
 
-/// Loads and manages configuration files from all components that we access 
-/// from the command line. Typical usage would look like this: 
-/// 
+/// Loads and manages configuration files from all components that we access
+/// from the command line. Typical usage would look like this:
+///
 ///   const config = Configuration.load(basePath);
-///   config.getMongoDBConnSettings(); 
-/// 
+///   config.getMongoDBConnSettings();
+///
 class Configuration {
-
-  /// Loads the configuration by looking for various files below `basePath`. 
-  /// Implements the `ConfigurationLoader` interface. 
-  /// 
+  /// Loads the configuration by looking for various files below `basePath`.
+  /// Implements the `ConfigurationLoader` interface.
+  ///
   static async load(basePath: string): Promise<Configuration> {
     const hfsConfigPath = tryFind('hfs', basePath, [
       'hfs/conf/hfs.json',
@@ -28,16 +27,15 @@ class Configuration {
     const coreConfigPath = tryFind('core', basePath, [
       'core/conf/core.json',
     ]);
-    
 
-    return new Configuration(coreConfigPath, hfsConfigPath); 
+    return new Configuration(coreConfigPath, hfsConfigPath);
 
     // -- Helpers: -------------------------------------------------------------
 
     function tryFind(topic: string, base: string, candidates: Array<string>): string {
       for (const candidate of candidates) {
         const full = path.join(base, candidate);
-                
+
         const stat = fs.statSync(full);
 
         if (stat.isFile()) return full;
@@ -48,8 +46,11 @@ class Configuration {
   }
 
   _corePath: string;
+
   _hfsPath: string;
-  _coreConfig: ?CoreSettings; 
+
+  _coreConfig: ?CoreSettings;
+
   _hfsConfig: ?HfsSettings;
 
   constructor(corePath: string, hfsPath: string) {
@@ -58,14 +59,15 @@ class Configuration {
   }
 
   coreConfigPath(): string { return this._corePath; }
+
   hfsConfigPath(): string { return this._hfsPath; }
 
   async registrySettings(): Promise<RegistrySettings> {
-    const coreConfig = await this.coreConfig(); 
+    const coreConfig = await this.coreConfig();
 
     return {
-      url: coreConfig.get('services.register.url').str(), 
-      key: coreConfig.get('services.register.key').str(), 
+      url: coreConfig.get('services.register.url').str(),
+      key: coreConfig.get('services.register.key').str(),
     };
   }
 
@@ -73,20 +75,20 @@ class Configuration {
     const coreConfig = await this.coreConfig();
 
     return {
-      host: coreConfig.get('database.host').str(), 
+      host: coreConfig.get('database.host').str(),
       port: coreConfig.get('database.port').num(),
-      dbname: coreConfig.get('database.name').str(),  
+      dbname: coreConfig.get('database.name').str(),
 
-      fileStore: await this.fileStoreSettings(), 
+      fileStore: await this.fileStoreSettings(),
     };
   }
 
   influxDbSettings(): InfluxDbSettings {
-    const hfsConfig = this.hfsConfig(); 
+    const hfsConfig = this.hfsConfig();
 
     return {
-      host: hfsConfig.get('influxdb.host').str(), 
-      port: hfsConfig.get('influxdb.port').num(), 
+      host: hfsConfig.get('influxdb.host').str(),
+      port: hfsConfig.get('influxdb.port').num(),
     };
   }
 
@@ -99,10 +101,10 @@ class Configuration {
     };
   }
 
-  /// Loads and memoises core configuration. 
-  /// 
+  /// Loads and memoises core configuration.
+  ///
   async coreConfig(): Promise<CoreSettings> {
-    const coreConfig = this._coreConfig; 
+    const coreConfig = this._coreConfig;
     if (coreConfig != null) return coreConfig;
 
     const newConfig = await CoreSettings.load(this.coreConfigPath());
@@ -114,34 +116,34 @@ class Configuration {
   hfsConfig(): HfsSettings {
     if (this._hfsConfig != null) return this._hfsConfig;
 
-    const config = HfsSettings.loadFromFile(this.hfsConfigPath()); 
-    this._hfsConfig = config; 
+    const config = HfsSettings.loadFromFile(this.hfsConfigPath());
+    this._hfsConfig = config;
 
-    return config; 
+    return config;
   }
 }
 
 export type RegistrySettings = {
-  url: string, 
-  key: string, 
+  url: string,
+  key: string,
 };
 
 export type MongoDbSettings = {
-  host: string, 
-  port: number, 
-  dbname: string, 
+  host: string,
+  port: number,
+  dbname: string,
 
   fileStore: FileStoreSettings,
 };
 
 export type InfluxDbSettings = {
-  host: string, 
-  port: number, 
+  host: string,
+  port: number,
 };
 
 export type FileStoreSettings = {
-  attachmentsPath: string, 
-  previewsPath: string, 
+  attachmentsPath: string,
+  previewsPath: string,
 }
 
 module.exports = Configuration;

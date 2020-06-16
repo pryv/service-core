@@ -1,9 +1,9 @@
-var BaseStorage = require('./BaseStorage'),
-    converters = require('./../converters'),
-    timestamp = require('unix-timestamp'),
-    util = require('util'),
-    _ = require('lodash'),
-    ApplyEventsFromDbStream = require('./../ApplyEventsFromDbStream');
+const timestamp = require('unix-timestamp');
+const util = require('util');
+const _ = require('lodash');
+const converters = require('../converters');
+const BaseStorage = require('./BaseStorage');
+const ApplyEventsFromDbStream = require('../ApplyEventsFromDbStream');
 
 module.exports = Events;
 /**
@@ -25,7 +25,7 @@ function Events(database) {
     updateToDB: [
       endTimeUpdate,
       converters.stateUpdate,
-      converters.getKeyValueSetUpdateFn('clientData')
+      converters.getKeyValueSetUpdateFn('clientData'),
     ],
     itemFromDB: [clearEndTime, converters.deletionFromDB],
   });
@@ -58,10 +58,9 @@ function getEndTime(time, duration) {
   if (duration === null) {
     // running period event; HACK: end time = event time + 1000 years
     return timestamp.add(time, 24 * 365 * 1000);
-  } else {
-    // finished period event
-    return time + duration;
   }
+  // finished period event
+  return time + duration;
 }
 
 function clearEndTime(event) {
@@ -73,7 +72,7 @@ function clearEndTime(event) {
 }
 
 // TODO: review indexes against 1) real usage and 2) how Mongo actually uses them
-var indexes = [
+const indexes = [
   {
     index: { time: 1 },
     options: {},
@@ -104,18 +103,18 @@ var indexes = [
 /**
  * Implementation.
  */
-Events.prototype.getCollectionInfo = function(user) {
+Events.prototype.getCollectionInfo = function (user) {
   return {
     name: 'events',
-    indexes: indexes,
-    useUserId: user.id
+    indexes,
+    useUserId: user.id,
   };
 };
 
 /**
  * Implementation
  */
-Events.prototype.findStreamed = function(user, query, options, callback) {
+Events.prototype.findStreamed = function (user, query, options, callback) {
   query.deleted = null;
   // Ignore history of events for normal find.
   query.headId = null;
@@ -124,64 +123,64 @@ Events.prototype.findStreamed = function(user, query, options, callback) {
     this.getCollectionInfo(user),
     this.applyQueryToDB(query),
     this.applyOptionsToDB(options),
-    function(err, dbStreamedItems) {
+    (err, dbStreamedItems) => {
       if (err) {
         return callback(err);
       }
       callback(null, dbStreamedItems.pipe(new ApplyEventsFromDbStream()));
-    }.bind(this)
+    },
   );
 };
 
 /**
  * Implementation
  */
-Events.prototype.findHistory = function(user, headId, options, callback) {
+Events.prototype.findHistory = function (user, headId, options, callback) {
   this.database.find(
     this.getCollectionInfo(user),
-    this.applyQueryToDB({ headId: headId }),
+    this.applyQueryToDB({ headId }),
     this.applyOptionsToDB(options),
-    function(err, dbItems) {
+    (err, dbItems) => {
       if (err) {
         return callback(err);
       }
       callback(null, this.applyItemsFromDB(dbItems));
-    }.bind(this)
+    },
   );
 };
 
 /**
  * Implementation
  */
-Events.prototype.findDeletionsStreamed = function(
+Events.prototype.findDeletionsStreamed = function (
   user,
   deletedSince,
   options,
-  callback
+  callback,
 ) {
-  var query = { deleted: { $gt: timestamp.toDate(deletedSince) } };
+  const query = { deleted: { $gt: timestamp.toDate(deletedSince) } };
   this.database.findStreamed(
     this.getCollectionInfo(user),
     query,
     this.applyOptionsToDB(options),
-    function(err, dbStreamedItems) {
+    (err, dbStreamedItems) => {
       if (err) {
         return callback(err);
       }
       callback(null, dbStreamedItems.pipe(new ApplyEventsFromDbStream()));
-    }.bind(this)
+    },
   );
 };
 
-Events.prototype.countAll = function(user, callback) {
+Events.prototype.countAll = function (user, callback) {
   this.count(user, {}, callback);
 };
 
 /**
  * Implementation
  */
-Events.prototype.minimizeEventsHistory = function(user, headId, callback) {
-  var update = {
+Events.prototype.minimizeEventsHistory = function (user, headId, callback) {
+  const update = {
     $unset: {
       streamIds: 1,
       time: 1,
@@ -200,9 +199,9 @@ Events.prototype.minimizeEventsHistory = function(user, headId, callback) {
   };
   this.database.updateMany(
     this.getCollectionInfo(user),
-    this.applyQueryToDB({ headId: headId }),
+    this.applyQueryToDB({ headId }),
     update,
-    callback
+    callback,
   );
 };
 
@@ -210,9 +209,9 @@ Events.prototype.minimizeEventsHistory = function(user, headId, callback) {
 /**
  * Implementation.
  */
-Events.prototype.delete = function(user, query, deletionMode, callback) {
+Events.prototype.delete = function (user, query, deletionMode, callback) {
   // default
-  var update = {
+  const update = {
     $set: { deleted: new Date() },
   };
 
@@ -258,6 +257,6 @@ Events.prototype.delete = function(user, query, deletionMode, callback) {
     this.getCollectionInfo(user),
     this.applyQueryToDB(query),
     update,
-    callback
+    callback,
   );
 };

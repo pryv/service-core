@@ -1,43 +1,38 @@
-/*global describe, it, before, after*/
+/* global describe, it, before, after */
 
-const assert = require('chai').assert;
+const { assert } = require('chai');
 const timestamp = require('unix-timestamp');
 const awaiting = require('awaiting');
 const _ = require('lodash');
 
+const { ProjectVersion } = require('components/middleware/src/project_version');
+const userStorage = require('components/test-helpers').dependencies.storage.users;
+const storage = require('components/test-helpers').dependencies.storage.user.webhooks;
 const Webhook = require('../../../src/webhooks/Webhook');
 const WebhooksRepository = require('../../../src/webhooks/repository');
 
 const HttpServer = require('./support/httpServer');
+
 const PORT = 6123;
 
-//const whStorage = require('components/test-helpers').dependencies.storage.user.webhooks;
-const storage = require('components/test-helpers').dependencies.storage.user.webhooks;
-const userStorage = require('components/test-helpers').dependencies.storage.users;
-
-const { ProjectVersion } = require('components/middleware/src/project_version');
-
+// const whStorage = require('components/test-helpers').dependencies.storage.user.webhooks;
 
 describe('Webhook', () => {
-
   describe('send()', () => {
-
-    let repository = new WebhooksRepository(storage, userStorage);
+    const repository = new WebhooksRepository(storage, userStorage);
     let notificationsServer;
     let postPath = '/notifications';
-    let url = 'http://localhost:' + PORT + postPath;
+    let url = `http://localhost:${PORT}${postPath}`;
     const user = {
       username: 'doesnotmatter',
     };
 
-    after( async () => {
+    after(async () => {
       await repository.deleteForUser(user);
     });
 
     describe('when sending to an existing endpoint', () => {
-
       describe('when the endpoint answers ASAP', () => {
-
         before(async () => {
           notificationsServer = new HttpServer(postPath, 200);
           await notificationsServer.listen();
@@ -45,7 +40,7 @@ describe('Webhook', () => {
 
         let apiVersion;
         before(async () => {
-          const pv = new ProjectVersion(); 
+          const pv = new ProjectVersion();
           apiVersion = await pv.version();
         });
 
@@ -53,16 +48,17 @@ describe('Webhook', () => {
           notificationsServer.close();
         });
 
-        let webhook, runs, message, requestTimestamp, storedWebhook, serial;
+        let webhook; let runs; let message; let requestTimestamp; let storedWebhook; let
+            serial;
 
         before(async () => {
           serial = '20190820';
           message = 'hi';
           webhook = new Webhook({
             accessId: 'doesntmatter',
-            url: url,
+            url,
             webhooksRepository: repository,
-            user: user,
+            user,
           });
           webhook.setApiVersion(apiVersion);
           webhook.setSerial(serial);
@@ -105,7 +101,6 @@ describe('Webhook', () => {
       });
 
       describe('when the endpoint answers with a long delay', () => {
-
         postPath = '/delayed';
         url = makeUrl(postPath);
         const minIntervalMs = 50;
@@ -129,14 +124,12 @@ describe('Webhook', () => {
         before(async () => {
           webhook = new Webhook({
             accessId: 'doesntmatter',
-            url: url,
-            minIntervalMs: minIntervalMs,
+            url,
+            minIntervalMs,
             webhooksRepository: repository,
-            user: user,
+            user,
           });
-          setTimeout(() => {
-            return webhook.send(secondMessage);
-          }, intraCallsIntervalMs);
+          setTimeout(() => webhook.send(secondMessage), intraCallsIntervalMs);
           webhook.send(firstMessage);
           await awaiting.event(notificationsServer, 'received');
           notificationsServer.setResponseDelay(null);
@@ -150,21 +143,19 @@ describe('Webhook', () => {
           assert.equal(receivedMessages[0], firstMessage);
           assert.equal(receivedMessages[1], secondMessage);
         });
-
       });
-
     });
 
     describe('when sending to an unexistant endpoint', () => {
-
-      let webhook, requestTimestamp, storedWebhook;
+      let webhook; let requestTimestamp; let
+          storedWebhook;
 
       before(async () => {
         webhook = new Webhook({
           accessId: 'doesnmatter',
           url: 'unexistant',
           webhooksRepository: repository,
-          user: user,
+          user,
         });
         await webhook.save();
         requestTimestamp = timestamp.now();
@@ -200,16 +191,13 @@ describe('Webhook', () => {
         assert.equal(webhook.currentRetries, 1, 'in memory currentRetries should be 1');
         assert.equal(storedWebhook.currentRetries, 1, 'stored currentRetries should be 1');
       });
-
     });
 
     describe('when scheduling for a retry', () => {
-
       describe('when the notifications service is down', async () => {
-
         before(async () => {
           postPath = '/notifs2222';
-          url = 'http://localhost:' + PORT + postPath;
+          url = `http://localhost:${PORT}${postPath}`;
           notificationsServer = new HttpServer(postPath, 503);
           await notificationsServer.listen();
         });
@@ -219,16 +207,17 @@ describe('Webhook', () => {
           notificationsServer.close();
         });
 
-        let webhook, run, storedRun, requestTimestamp, storedWebhook;
+        let webhook; let run; let storedRun; let requestTimestamp; let
+            storedWebhook;
         const firstMessage = 'hello';
 
         before(async () => {
           webhook = new Webhook({
             accessId: 'doesntmatter',
-            url: url,
+            url,
             minIntervalMs: 100,
             webhooksRepository: repository,
-            user: user,
+            user,
           });
           await webhook.save();
           requestTimestamp = timestamp.now();
@@ -260,7 +249,6 @@ describe('Webhook', () => {
           // firstMessage is received the first time although it returns a 503.
           assert.deepEqual(notificationsServer.getMessages(),
             [firstMessage, firstMessage]);
-
         });
         it('[1VIT] should reset error tracking properties', async () => {
           storedWebhook = await repository.getById(user, webhook.id);
@@ -269,15 +257,13 @@ describe('Webhook', () => {
           assert.equal(webhook.messageBuffer.size, 0);
           assert.equal(storedWebhook.currentRetries, 0, 'stored currentRetries should be 0');
         });
-        
       });
     });
 
     describe('when throttling frequent calls', () => {
-      
       before(async () => {
         postPath = '/notifs3';
-        url = 'http://localhost:' + PORT + postPath;
+        url = `http://localhost:${PORT}${postPath}`;
         notificationsServer = new HttpServer(postPath, 200);
         await notificationsServer.listen();
       });
@@ -287,8 +273,9 @@ describe('Webhook', () => {
         notificationsServer.close();
       });
 
-      let webhook, runs, storedWebhook;
-        
+      let webhook; let runs; let
+          storedWebhook;
+
       const firstMessage = 'hello';
       const secondMessage = 'hello2';
       const thirdMessage = 'hello3';
@@ -296,10 +283,10 @@ describe('Webhook', () => {
       before(async () => {
         webhook = new Webhook({
           accessId: 'doesntmatter',
-          url: url,
+          url,
           minIntervalMs: 100,
           webhooksRepository: repository,
-          user: user,
+          user,
         });
         await webhook.save();
         await webhook.send(firstMessage);
@@ -317,7 +304,7 @@ describe('Webhook', () => {
         assert.deepEqual(notificationsServer.getMessages(), [firstMessage]);
       });
       it('[WPMH] should accumulate messages', () => {
-        assert.deepEqual(webhook.getMessageBuffer(), 
+        assert.deepEqual(webhook.getMessageBuffer(),
           [firstMessage, secondMessage, thirdMessage]);
       });
       it('[YLWK] should schedule for a retry after minInterval', () => {
@@ -327,21 +314,20 @@ describe('Webhook', () => {
         notificationsServer.resetMessageReceived();
         await awaiting.event(notificationsServer, 'received');
         assert.isTrue(notificationsServer.isMessageReceived());
-        assert.deepEqual(notificationsServer.getMessages(), 
+        assert.deepEqual(notificationsServer.getMessages(),
           [firstMessage, firstMessage, secondMessage, thirdMessage]);
       });
       it('[86OP] should remove the timeout afterwards', () => {
         assert.notExists(webhook.timeout);
       });
-
     });
 
     describe('when the webhook becomes inactive after failures', () => {
-
-      let webhook, storedWebhook;
+      let webhook; let
+          storedWebhook;
       before(async () => {
         postPath = '/notifs5';
-        url = 'http://localhost:' + PORT + postPath;
+        url = `http://localhost:${PORT}${postPath}`;
         notificationsServer = new HttpServer(postPath, 400);
         await notificationsServer.listen();
       });
@@ -354,10 +340,10 @@ describe('Webhook', () => {
       before(async () => {
         webhook = new Webhook({
           accessId: 'doesntmatter',
-          url: url,
+          url,
           minIntervalMs: 10,
           webhooksRepository: repository,
-          user: user,
+          user,
         });
         await webhook.save();
         await webhook.send('hello');
@@ -379,7 +365,7 @@ describe('Webhook', () => {
       });
       it('[ODNM] should not run anymore', async () => {
         const msgCount = notificationsServer.getMessageCount();
-        const runCount = webhook.runCount;
+        const { runCount } = webhook;
         await webhook.send();
         assert.equal(notificationsServer.getMessageCount(), msgCount);
         assert.equal(webhook.runCount, runCount);
@@ -387,12 +373,11 @@ describe('Webhook', () => {
     });
 
     describe('when the runs array gets shifted', () => {
-
       const message = 'hello';
       let webhook;
       before(async () => {
         postPath = '/notifs4';
-        url = 'http://localhost:' + PORT + postPath;
+        url = `http://localhost:${PORT}${postPath}`;
         notificationsServer = new HttpServer(postPath, 200);
         await notificationsServer.listen();
       });
@@ -405,10 +390,10 @@ describe('Webhook', () => {
       before(async () => {
         webhook = new Webhook({
           accessId: 'doesntmatter',
-          url: url,
+          url,
           minIntervalMs: 10,
           webhooksRepository: repository,
-          user: user,
+          user,
           runsSize: 3,
         });
         await webhook.save();
@@ -419,10 +404,11 @@ describe('Webhook', () => {
         runs1 = _.cloneDeep(webhook.runs);
       });
 
-      let runs1, runs2, runs3;
+      let runs1; let runs2; let
+          runs3;
 
       function sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
+        return new Promise((resolve) => setTimeout(resolve, ms));
       }
 
       it('[FYOR] should rotate the runs', async () => {
@@ -433,7 +419,7 @@ describe('Webhook', () => {
         assert.deepEqual(runs2[1], runs1[0]);
         assert.deepEqual(runs2[0], webhook.lastRun);
 
-        //should rotate the runs more'
+        // should rotate the runs more'
         await webhook.send(message);
         await sleep(200);
         runs3 = webhook.runs;
@@ -441,12 +427,10 @@ describe('Webhook', () => {
         assert.deepEqual(runs3[2], runs2[1]);
         assert.deepEqual(runs3[0], webhook.lastRun);
       });
-
     });
-
   });
 });
 
 function makeUrl(path) {
-  return 'http://localhost:' + PORT + path;
+  return `http://localhost:${PORT}${path}`;
 }

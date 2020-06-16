@@ -1,32 +1,30 @@
 // @flow
 
+import type { StorageLayer } from 'components/storage';
+import type { Logger } from 'components/utils';
+import type { MethodContext } from 'components/model';
+
+import type { WebhookUpdate } from 'components/business/src/webhooks/Webhook';
+import type API, { ApiCallback } from '../API';
+
+import type Result from '../Result';
+
 const _ = require('lodash');
 const timestamp = require('unix-timestamp');
 
 const errors = require('components/errors').factory;
 
-const commonFns = require('./helpers/commonFunctions');
-const webhookSchema = require('../schema/webhook');
-const methodsSchema = require('../schema/webhooksMethods');
-
-const Webhook = require('components/business').webhooks.Webhook;
+const { Webhook } = require('components/business').webhooks;
 const WebhooksRepository = require('components/business').webhooks.Repository;
 
 const NatsPublisher = require('../socket-io/nats_publisher');
-const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
+const { NATS_CONNECTION_URI } = require('components/utils').messaging;
 const NATS_WEBHOOKS_CREATE_CHANNEL = require('components/utils').messaging.NATS_WEBHOOKS_CREATE;
 const NATS_WEBHOOKS_ACTIVATE_CHANNEL = require('components/utils').messaging.NATS_WEBHOOKS_ACTIVATE;
 const NATS_WEBHOOKS_DELETE_CHANNEL = require('components/utils').messaging.NATS_WEBHOOKS_DELETE;
-
-import type { StorageLayer } from 'components/storage';
-import type { Logger } from 'components/utils';
-import type { MethodContext } from 'components/model';
-
-import type API from '../API';
-import type { ApiCallback } from '../API';
-import type Result from '../Result';
-
-import type { WebhookUpdate } from 'components/business/src/webhooks/Webhook';
+const methodsSchema = require('../schema/webhooksMethods');
+const webhookSchema = require('../schema/webhook');
+const commonFns = require('./helpers/commonFunctions');
 
 export type WebhooksSettingsHolder = {
   minIntervalMs: number,
@@ -44,8 +42,8 @@ module.exports = function produceWebhooksApiMethods(
   api: API,
   logger: Logger,
   wehbooksSettings: WebhooksSettingsHolder,
-  storageLayer: StorageLayer) {
-
+  storageLayer: StorageLayer,
+) {
   const webhooksRepository: WebhooksRepository = new WebhooksRepository(storageLayer.webhooks);
   const natsPublisher: NatsPublisher = new NatsPublisher(NATS_CONNECTION_URI);
 
@@ -53,8 +51,7 @@ module.exports = function produceWebhooksApiMethods(
 
   api.register('webhooks.get',
     commonFns.getParamsValidation(methodsSchema.get.params),
-    findAccessibleWebhooks,
-  );
+    findAccessibleWebhooks);
 
   async function findAccessibleWebhooks(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     const currentAccess = context.access;
@@ -73,11 +70,10 @@ module.exports = function produceWebhooksApiMethods(
 
   api.register('webhooks.getOne',
     commonFns.getParamsValidation(methodsSchema.get.params),
-    findWebhook,
-  );
+    findWebhook);
 
   async function findWebhook(context: MethodContext, params: { id: string }, result: Result, next: ApiCallback) {
-    const user: {} = context.user;
+    const { user } = context;
     const currentAccess: Access = context.access;
     const webhookId: string = params.id;
     try {
@@ -103,8 +99,7 @@ module.exports = function produceWebhooksApiMethods(
     commonFns.getParamsValidation(methodsSchema.create.params),
     forbidPersonalAccess,
     createWebhook,
-    bootWebhook,
-  );
+    bootWebhook);
 
   function forbidPersonalAccess(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     const currentAccess: Access = context.access;
@@ -114,7 +109,7 @@ module.exports = function produceWebhooksApiMethods(
     }
     if (currentAccess.isPersonal()) {
       return next(errors.forbidden(
-        'Personal Accesses cannot create Webhooks. Please use an App Access.'
+        'Personal Accesses cannot create Webhooks. Please use an App Access.',
       ));
     }
     next();
@@ -126,7 +121,7 @@ module.exports = function produceWebhooksApiMethods(
     const webhook = new Webhook(_.extend({
       user: context.user,
       accessId: context.access.id,
-      webhooksRepository: webhooksRepository,
+      webhooksRepository,
       runsSize: wehbooksSettings.runsSize,
       minIntervalMs: wehbooksSettings.minIntervalMs,
     }, params));
@@ -148,9 +143,9 @@ module.exports = function produceWebhooksApiMethods(
 
   async function bootWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
     natsPublisher.deliver(NATS_WEBHOOKS_CREATE_CHANNEL, _.extend(
-      { username: context.user.username }, 
-      { webhook: result.webhook })
-    );
+      { username: context.user.username },
+      { webhook: result.webhook },
+    ));
     return next();
   }
 
@@ -161,23 +156,21 @@ module.exports = function produceWebhooksApiMethods(
     commonFns.catchForbiddenUpdate(webhookSchema('update'), false, logger),
     applyPrerequisitesForUpdate,
     updateWebhook,
-    reactivateWebhook,
-  );
+    reactivateWebhook);
 
-  function applyPrerequisitesForUpdate(context: MethodContext, 
-    params: { update: {} }, 
+  function applyPrerequisitesForUpdate(context: MethodContext,
+    params: { update: {} },
     result: Result, next: ApiCallback) {
     context.updateTrackingProperties(params.update);
     next();
   }
 
-  async function updateWebhook(context: MethodContext, 
-    params: { update: {}, id: string }, 
+  async function updateWebhook(context: MethodContext,
+    params: { update: {}, id: string },
     result: Result, next: ApiCallback) {
-    
-    const user: {} = context.user;
+    const { user } = context;
     const currentAccess: Access = context.access;
-    const update: WebhookUpdate = params.update;
+    const { update } = params;
     const webhookId: string = params.id;
 
     if (update.state === 'active') {
@@ -203,9 +196,9 @@ module.exports = function produceWebhooksApiMethods(
 
   async function reactivateWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
     natsPublisher.deliver(NATS_WEBHOOKS_ACTIVATE_CHANNEL, _.extend(
-      { username: context.user.username }, 
-      { webhook: result.webhook })
-    );
+      { username: context.user.username },
+      { webhook: result.webhook },
+    ));
     return next();
   }
 
@@ -214,14 +207,12 @@ module.exports = function produceWebhooksApiMethods(
   api.register('webhooks.delete',
     commonFns.getParamsValidation(methodsSchema.del.params),
     deleteAccess,
-    turnOffWebhook,
-  );
+    turnOffWebhook);
 
-  async function deleteAccess(context: MethodContext, 
-    params: { id: string }, 
+  async function deleteAccess(context: MethodContext,
+    params: { id: string },
     result: Result, next: ApiCallback) {
-    
-    const user: {} = context.user;
+    const { user } = context;
     const currentAccess: Access = context.access;
     const webhookId: string = params.id;
 
@@ -246,30 +237,27 @@ module.exports = function produceWebhooksApiMethods(
   }
 
   async function turnOffWebhook(context: MethodContext, params: { id: string }, result: Result, next: ApiCallback) {
-    const username: string = context.user.username;
+    const { username } = context.user;
     const webhookId: string = params.id;
     natsPublisher.deliver(NATS_WEBHOOKS_DELETE_CHANNEL, {
-      username: username,
+      username,
       webhook: {
         id: webhookId,
-      }
+      },
     });
     return next();
   }
-
 
   // TEST
 
   api.register('webhooks.test',
     commonFns.getParamsValidation(methodsSchema.test.params),
-    testWebhook,
-  );
+    testWebhook);
 
   async function testWebhook(context: MethodContext, params: { id: string }, result: Result, next: ApiCallback) {
-
     const TEST_MESSAGE: string = 'test';
 
-    const user: {} = context.user;
+    const { user } = context;
     const currentAccess: Access = context.access;
     const webhookId: string = params.id;
     let webhook: ?Webhook;
@@ -303,5 +291,4 @@ module.exports = function produceWebhooksApiMethods(
     if (access.isPersonal()) return true;
     return access.id === webhook.accessId;
   }
-  
 };

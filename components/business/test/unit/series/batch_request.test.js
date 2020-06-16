@@ -1,10 +1,10 @@
-
 // @flow
 
 /* global describe, it */
 
 const chai = require('chai');
-const assert = chai.assert;
+
+const { assert } = chai;
 
 const { BatchRequest, BatchRequestElement, ParseFailure } = require('../../../src/series/batch_request');
 
@@ -13,45 +13,45 @@ const InfluxRowType = require('../../../src/types/influx_row_type');
 
 describe('BatchRequest', () => {
   describe('.parse', () => {
-    const typeRepo = new TypeRepository(); 
+    const typeRepo = new TypeRepository();
     const type: InfluxRowType = (typeRepo.lookup('series:position/wgs84'): any);
     const resolver = () => Promise.resolve(type);
 
     it('[QJ6L] should parse the happy case', async () => {
       const happy = {
-        format: 'seriesBatch', 
+        format: 'seriesBatch',
         data: [
           {
-            'eventId': 'cjcrx6jy1000w8xpvjv9utxjx',
-            'data': {
-              'format': 'flatJSON', 
-              'fields': ['deltaTime', 'latitude', 'longitude', 'altitude'], 
-              'points': [
-                [0, 10.2, 11.2, 500], 
+            eventId: 'cjcrx6jy1000w8xpvjv9utxjx',
+            data: {
+              format: 'flatJSON',
+              fields: ['deltaTime', 'latitude', 'longitude', 'altitude'],
+              points: [
+                [0, 10.2, 11.2, 500],
                 [1, 10.2, 11.2, 510],
                 [2, 10.2, 11.2, 520],
-              ] // points
-            } // flatJSON 
-          } // event
-        ] // seriesBatch
+              ], // points
+            }, // flatJSON
+          }, // event
+        ], // seriesBatch
       };
-      
+
       const request = await BatchRequest.parse(happy, resolver);
       assert.strictEqual(request.length(), 1);
-      
+
       const element = request.list[0];
       assert.strictEqual(element.eventId, 'cjcrx6jy1000w8xpvjv9utxjx');
     });
     it('[VV2O] accepts an empty batch', async () => {
       await good({
-        format: 'seriesBatch', 
-        data: [], 
+        format: 'seriesBatch',
+        data: [],
       });
     });
-  
+
     it('[0NWO] throws if format is missing or wrong', async () => {
       const errorMessage = 'Envelope "format" must be "seriesBatch"';
-      await bad({format: 'something else'}, errorMessage);
+      await bad({ format: 'something else' }, errorMessage);
       await bad({}, errorMessage);
     });
     it('[881Y] throws if another type is passed in', async () => {
@@ -63,11 +63,11 @@ describe('BatchRequest', () => {
     it('[2PZ0] throws if envelope doesn\'t have a data attribute', async () => {
       const errorMessage = 'Envelope must have a data list, containing individual batch elements';
       await bad({
-        format: 'seriesBatch', 
+        format: 'seriesBatch',
         foo: 'bar',
       }, errorMessage);
     });
-    
+
     async function bad(obj: mixed, errorMessage: string) {
       try {
         await BatchRequest.parse(obj, resolver);
@@ -89,30 +89,30 @@ describe('BatchRequest', () => {
 
 describe('BatchRequestElement', () => {
   describe('.parse(obj)', () => {
-    const typeRepo = new TypeRepository(); 
+    const typeRepo = new TypeRepository();
     const type: InfluxRowType = (typeRepo.lookup('series:position/wgs84'): any);
     const resolver = () => Promise.resolve(type);
-    
+
     it('[AGQK] should parse a good looking object', async () => {
       await good({
-        eventId: 'cjcrx6jy1000w8xpvjv9utxjx', 
+        eventId: 'cjcrx6jy1000w8xpvjv9utxjx',
         data: {
-          'format': 'flatJSON', 
-          'fields': ['deltaTime', 'latitude', 'longitude', 'altitude'], 
-          'points': [
-            [0, 10.2, 11.2, 500], 
+          format: 'flatJSON',
+          fields: ['deltaTime', 'latitude', 'longitude', 'altitude'],
+          points: [
+            [0, 10.2, 11.2, 500],
             [1, 10.2, 11.2, 510],
             [2, 10.2, 11.2, 520],
-          ]
-        }
+          ],
+        },
       });
     });
-    
+
     it('[LWME] fails if input is not an Object', async () => {
       const errorMessage = 'Batch element must be an object with properties.';
       await bad(null, errorMessage);
       await bad('string', errorMessage);
-    }); 
+    });
     it('[BU7Q] fails if eventId is missing or the wrong type', async () => {
       const errorMessage = 'Batch element must contain an eventId of the series event.';
       await bad({ foo: 'bar' }, errorMessage);

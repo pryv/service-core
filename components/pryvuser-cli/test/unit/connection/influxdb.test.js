@@ -2,29 +2,29 @@
 
 /* global describe, it, beforeEach */
 
-const Influx = require('influx');
-
 import type { InfluxDbSettings } from '../../../src/configuration';
+
+const Influx = require('influx');
+const chai = require('chai');
 const InfluxDB = require('../../../src/connection/influxdb');
 
-const chai = require('chai');
-const assert = chai.assert; 
+const { assert } = chai;
 
 describe('Connection/InfluxDB', () => {
   describe('when given a username that has a few high frequency series', () => {
     const settings: InfluxDbSettings = {
-      host: 'localhost', 
+      host: 'localhost',
       port: 8086,
     };
 
-    let influxdb; 
+    let influxdb;
     beforeEach(() => {
       influxdb = new InfluxDB(settings);
     });
 
     const DATABASE_NAME = 'user.jsmith';
 
-    // Creates a few measurements inside a database called 'user.jsmith'. 
+    // Creates a few measurements inside a database called 'user.jsmith'.
     beforeEach(async () => {
       const conn = new Influx.InfluxDB(settings);
       const opts = { database: DATABASE_NAME };
@@ -34,7 +34,7 @@ describe('Connection/InfluxDB', () => {
         {
           measurement: 'response_times',
           fields: { duration: 10 },
-        }
+        },
       ], opts);
     });
 
@@ -45,13 +45,13 @@ describe('Connection/InfluxDB', () => {
       const measurements = await conn.getMeasurements(DATABASE_NAME);
       assert.isAbove(measurements.length, 0);
 
-      // Make sure the database exists: If we try to write, a missing db will 
-      // provoke an error. 
+      // Make sure the database exists: If we try to write, a missing db will
+      // provoke an error.
       await conn.writePoints([
         {
           measurement: 'response_times',
           fields: { duration: 10 },
-        }
+        },
       ], opts);
     });
     describe('#preflight', () => {
@@ -68,5 +68,5 @@ describe('Connection/InfluxDB', () => {
         assert.strictEqual(measurements.length, 0);
       });
     });
-  });  
+  });
 });

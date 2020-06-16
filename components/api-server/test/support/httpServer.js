@@ -18,11 +18,14 @@ const PORT = 6123;
  */
 class HttpServer extends EventEmitter {
   app: express$Application;
+
   server: HttpServer;
+
   responseStatus: number;
+
   lastReport: Object;
 
-  constructor (path: string, statusCode: number, responseBody: Object) {
+  constructor(path: string, statusCode: number, responseBody: Object) {
     super();
 
     const app = express();
@@ -31,7 +34,7 @@ class HttpServer extends EventEmitter {
 
     app.all(path, (req, res: express$Response) => {
       res.status(this.responseStatus).json(responseBody || { ok: '1' });
-      if(req.method === 'POST') {
+      if (req.method === 'POST') {
         this.lastReport = req.body;
         this.emit('report_received');
       }
@@ -40,11 +43,11 @@ class HttpServer extends EventEmitter {
     this.app = app;
   }
 
-  async listen (port: number) {
+  async listen(port: number) {
     this.server = await this.app.listen(port || PORT);
   }
 
-  close () {
+  close() {
     return bluebird.fromCallback(() => {
       this.server.close();
     });

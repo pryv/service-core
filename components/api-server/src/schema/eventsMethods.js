@@ -1,4 +1,3 @@
-'use strict';
 // @flow
 
 /**
@@ -9,106 +8,107 @@ const Action = require('./Action');
 const event = require('./event');
 const itemDeletion = require('./itemDeletion');
 const helpers = require('./helpers');
-const object = helpers.object;
-const array = helpers.array;
-const string = helpers.string;
-const number = helpers.number;
-const boolean = helpers.boolean;
+
+const { object } = helpers;
+const { array } = helpers;
+const { string } = helpers;
+const { number } = helpers;
+const { boolean } = helpers;
 
 module.exports = {
   get: {
     params: object({
-      'streams': array(string()),
-      'tags': array(string()),
-      'types': array(string()),
-      'fromTime': number(),
-      'toTime': number(),
-      'sortAscending': boolean(),
-      'skip': number(),
-      'limit': number(),
-      'state': string({ enum: ['default', 'trashed', 'all']}),
-      'modifiedSince': number(),
-      'includeDeletions': boolean()
+      streams: array(string()),
+      tags: array(string()),
+      types: array(string()),
+      fromTime: number(),
+      toTime: number(),
+      sortAscending: boolean(),
+      skip: number(),
+      limit: number(),
+      state: string({ enum: ['default', 'trashed', 'all'] }),
+      modifiedSince: number(),
+      includeDeletions: boolean(),
     }, { id: 'events.get' }),
     result: object({
-      'events': array(event(Action.READ)),
-      'eventDeletions': array(itemDeletion)
+      events: array(event(Action.READ)),
+      eventDeletions: array(itemDeletion),
     }, {
-      required: [ 'events' ]
-    })
+      required: ['events'],
+    }),
   },
 
   getOne: {
     params: object({
-      'id': string(),
-      'includeHistory': boolean()
-    }, {id: 'events.getOne'}),
+      id: string(),
+      includeHistory: boolean(),
+    }, { id: 'events.getOne' }),
     result: object({
-      'event': event(Action.READ),
-      'history': array(event(Action.READ))
+      event: event(Action.READ),
+      history: array(event(Action.READ)),
     }, {
-      required: [ 'event' ]
-    })
+      required: ['event'],
+    }),
   },
 
   create: {
     params: event(Action.CREATE),
     result: object({
-      'event': event(Action.READ),
+      event: event(Action.READ),
     }, {
-      required: [ 'event' ],
-      additionalProperties: false
-    })
+      required: ['event'],
+      additionalProperties: false,
+    }),
   },
 
   update: {
     params: object({
       // in path for HTTP requests
-      'id': string(),
+      id: string(),
       // = body of HTTP requests
-      'update': event(Action.UPDATE)
+      update: event(Action.UPDATE),
     }, {
       id: 'events.update',
-      required: [ 'id', 'update' ]
+      required: ['id', 'update'],
     }),
     result: object({
-      'event': event(Action.READ),
+      event: event(Action.READ),
     }, {
-      required: [ 'event' ],
-      additionalProperties: false
-    })
+      required: ['event'],
+      additionalProperties: false,
+    }),
   },
 
   del: {
     params: object({
       // in path for HTTP requests
-      'id': string()
+      id: string(),
     }, {
       id: 'events.delete',
-      required: [ 'id' ]
+      required: ['id'],
     }),
     result: {
       anyOf: [
-        object({event: event(Action.READ)}, {
+        object({ event: event(Action.READ) }, {
           required: ['event'],
-          additionalProperties: false
+          additionalProperties: false,
         }),
-        object({eventDeletion: itemDeletion}, {
+        object({ eventDeletion: itemDeletion }, {
           required: ['eventDeletion'],
-          additionalProperties: false
-        })
-      ]
-    }
+          additionalProperties: false,
+        }),
+      ],
+    },
   },
 
   deleteAttachment: {
     params: object({
       // in path for HTTP requests
-      'id': string(),
+      id: string(),
       // in path for HTTP requests
-      'fileId': string()
+      fileId: string(),
     }, {
-      required: [ 'id', 'fileId' ]
-    })
-  }
+      required: ['id', 'fileId'],
+    }),
+  },
 };

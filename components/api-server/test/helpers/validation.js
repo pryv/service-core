@@ -2,10 +2,11 @@
  * Helper stuff for validating objects against schemas.
  */
 
-const ErrorIds = require('components/errors').ErrorIds;
+const { ErrorIds } = require('components/errors');
 const Action = require('../../src/schema/Action');
-const encryption = require('components/utils').encryption;
+const { encryption } = require('components/utils');
 const Validator = require('z-schema');
+
 const validator = new Validator();
 const { assert, expect } = require('chai');
 const util = require('util');
@@ -14,7 +15,7 @@ const _ = require('lodash');
 /**
  * Expose common JSON schemas.
  */
-var schemas = exports.schemas = {
+const schemas = exports.schemas = {
   access: require('../../src/schema/access'),
   event: require('../../src/schema/event'),
   followedSlice: require('../../src/schema/followedSlice'),
@@ -24,11 +25,11 @@ var schemas = exports.schemas = {
     type: 'object',
     additionalProperties: false,
     properties: {
-      'error': require('../../src/schema/methodError'),
-      'meta': {type: 'object'}
+      error: require('../../src/schema/methodError'),
+      meta: { type: 'object' },
     },
-    required: [ 'error', 'meta' ]
-  }
+    required: ['error', 'meta'],
+  },
 };
 
 /**
@@ -47,7 +48,7 @@ exports.check = function (response, expected, done) {
   response.statusCode.should.eql(expected.status);
 
   // ignore common metadata
-  var meta = response.body.meta;
+  const { meta } = response.body;
   delete response.body.meta;
 
   if (expected.schema) {
@@ -80,19 +81,19 @@ exports.check = function (response, expected, done) {
 exports.checkError = function (response, expected, done) {
   response.statusCode.should.eql(expected.status);
   checkJSON(response, schemas.errorResult);
-  
-  const error = response.body.error;
+
+  const { error } = response.body;
   assert.equal(error.id, expected.id);
 
   if (expected.data != null) {
     assert.deepEqual(error.data, expected.data);
   }
-  
+
   if (done) done();
 };
 
 function checkJSON(response, schema) {
-  /*jshint -W030 */
+  /* jshint -W030 */
   response.should.be.json;
   checkSchema(response.body, schema);
 }
@@ -105,7 +106,7 @@ function checkJSON(response, schema) {
  */
 function checkSchema(data, schema) {
   validator.validate(data, schema).should.equal(true,
-    util.inspect(validator.getLastErrors(), {depth: 5}));
+    util.inspect(validator.getLastErrors(), { depth: 5 }));
 }
 exports.checkSchema = checkSchema;
 
@@ -121,8 +122,8 @@ exports.checkStoredItem = function (item, schemaName) {
 
 function checkMeta(parentObject) {
   expect(parentObject.meta).to.exist;
-  
-  const meta = parentObject.meta;
+
+  const { meta } = parentObject;
 
   assert.match(meta.apiVersion, /^\d+\.\d+\.\d+/);
   assert.match(meta.serverTime, /^\d+\.?\d*$/);
@@ -137,9 +138,9 @@ exports.checkErrorInvalidParams = function (res, done) {
   expect(res.statusCode).to.equal(400);
 
   checkJSON(res, schemas.errorResult);
-  const body = res.body; 
-  const error = body.error; 
-  
+  const { body } = res;
+  const { error } = body;
+
   expect(error).to.exist;
   expect(error.id).to.equal(ErrorIds.InvalidParametersFormat);
   expect(res.body.error.data).to.exist; // expect validation errors
@@ -193,14 +194,14 @@ exports.checkErrorUnknown = function (res, done) {
  */
 exports.checkObjectEquality = checkObjectEquality;
 function checkObjectEquality(actual, expected) {
-  var verifiedProps = [];
+  const verifiedProps = [];
 
   if (expected.created) {
     checkApproxTimeEquality(actual.created, expected.created);
   }
   verifiedProps.push('created');
 
-  if (! expected.createdBy) {
+  if (!expected.createdBy) {
     verifiedProps.push('createdBy');
   }
 
@@ -214,35 +215,33 @@ function checkObjectEquality(actual, expected) {
   }
   verifiedProps.push('deleted');
 
-  if (! expected.modifiedBy) {
+  if (!expected.modifiedBy) {
     verifiedProps.push('modifiedBy');
   }
 
   if (expected.children != null) {
     expect(actual.children).to.exist;
     assert.strictEqual(actual.children.length, expected.children.length);
-    
-    for (var i = 0, n = expected.children.length; i < n; i++) {
+
+    for (let i = 0, n = expected.children.length; i < n; i++) {
       checkObjectEquality(actual.children[i], expected.children[i]);
     }
   }
   verifiedProps.push('children');
 
-
   if (expected.attachments != null) {
     expect(actual.attachments).to.exist;
 
-    assert.strictEqual(actual.attachments.length, expected.attachments.length, 
+    assert.strictEqual(actual.attachments.length, expected.attachments.length,
       `Must have ${expected.attachments.length} attachments.`);
-    
-    const expectMap = new Map(); 
-    for (let ex of expected.attachments)
-      expectMap.set(ex.id, ex);
-    
-    for (let act of actual.attachments) {
+
+    const expectMap = new Map();
+    for (const ex of expected.attachments) expectMap.set(ex.id, ex);
+
+    for (const act of actual.attachments) {
       const ex = expectMap.get(act.id);
       assert.isNotNull(ex);
-      
+
       checkObjectEquality(act, ex);
     }
   }
@@ -253,7 +252,7 @@ function checkObjectEquality(actual, expected) {
   assert.deepEqual(remaining, expectedRemaining);
 }
 
-function checkApproxTimeEquality(actual, expected, epsilon=2) {
+function checkApproxTimeEquality(actual, expected, epsilon = 2) {
   const diff = (expected - actual);
   assert.isBelow(Math.abs(diff), epsilon);
 }
@@ -263,8 +262,8 @@ function checkApproxTimeEquality(actual, expected, epsilon=2) {
  * @param {Array} expectedHeaders Each item must have name and value properties.
  */
 exports.checkHeaders = function (response, expectedHeaders) {
-  expectedHeaders.forEach(function (expected) {
-    var value = response.headers[expected.name.toLowerCase()];
+  expectedHeaders.forEach((expected) => {
+    const value = response.headers[expected.name.toLowerCase()];
     expect(value).to.exist;
     if (expected.value) {
       value.should.eql(expected.value);
@@ -290,9 +289,9 @@ exports.checkFilesReadToken = function (eventOrEvents, access, secret) {
   }
 
   function checkEvent(evt) {
-    if (! evt.attachments) { return; }
+    if (!evt.attachments) { return; }
 
-    evt.attachments.forEach(function (att) {
+    evt.attachments.forEach((att) => {
       att.readToken.should.eql(encryption.fileReadToken(att.id, access.id, access.token, secret));
     });
   }
@@ -305,16 +304,16 @@ exports.checkFilesReadToken = function (eventOrEvents, access, secret) {
  * @param {Object} event
  */
 exports.sanitizeEvent = function (event) {
-  if (! event ) { return; }
+  if (!event) { return; }
 
   delete event.streamId;
 
   if (event.attachments) {
-    event.attachments.forEach(function (att) {
+    event.attachments.forEach((att) => {
       delete att.readToken;
     });
   }
-  
+
   return event;
 };
 
@@ -324,7 +323,7 @@ exports.sanitizeEvent = function (event) {
  * @param {Array} events
  */
 exports.sanitizeEvents = function (events) {
-  if (! events) { return; }
+  if (!events) { return; }
 
   events.forEach(exports.sanitizeEvent);
   return events;
@@ -337,7 +336,7 @@ exports.sanitizeEvents = function (events) {
  * @returns {Array}
  */
 exports.removeDeletions = function (items) {
-  return items.filter(function (e) { return ! e.deleted; });
+  return items.filter((e) => !e.deleted);
 };
 
 /**
@@ -347,7 +346,7 @@ exports.removeDeletions = function (items) {
  * @returns {Array}
  */
 exports.removeHistory = function (items) {
-  return items.filter(function (e) { return ! e.headId; });
+  return items.filter((e) => !e.headId);
 };
 
 /**
@@ -357,7 +356,7 @@ exports.removeHistory = function (items) {
  * @returns {Array}
  */
 exports.removeDeletionsAndHistory = function (items) {
-  return items.filter(function (e) { return ! (e.deleted || e.headId); });
+  return items.filter((e) => !(e.deleted || e.headId));
 };
 
 /*

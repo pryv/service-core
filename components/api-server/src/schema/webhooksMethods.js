@@ -6,8 +6,9 @@ const Action = require('./Action');
 const webhook = require('./webhook');
 const helpers = require('./helpers');
 const itemDeletion = require('./itemDeletion');
-const object = helpers.object;
-const string = helpers.string;
+
+const { object } = helpers;
+const { string } = helpers;
 
 module.exports = {
   get: {
@@ -17,8 +18,9 @@ module.exports = {
     result: object({
       webhooks: {
         type: 'array',
-        items: webhook(Action.READ)
-      },}, { required: ['webhooks'] })
+        items: webhook(Action.READ),
+      },
+    }, { required: ['webhooks'] }),
   },
 
   getOne: {
@@ -31,14 +33,14 @@ module.exports = {
     }),
     result: object({
       webhook: webhook(Action.READ),
-    }, { required: [ 'webhook' ] })
+    }, { required: ['webhook'] }),
   },
 
   create: {
     params: webhook(Action.CREATE),
     result: object({
-      webhook: webhook(Action.READ)
-    }, { required: ['webhook'] })
+      webhook: webhook(Action.READ),
+    }, { required: ['webhook'] }),
   },
 
   update: {
@@ -46,16 +48,16 @@ module.exports = {
       // in path for HTTP requests
       id: string(),
       // = body of HTTP requests
-      update: webhook(Action.UPDATE)
+      update: webhook(Action.UPDATE),
     }, {
       id: 'webhooks.update',
-      required: ['id', 'update']
+      required: ['id', 'update'],
     }),
     result: object({
-      webhook: webhook(Action.READ)
+      webhook: webhook(Action.READ),
     }, {
-      required: ['webhook']
-    })
+      required: ['webhook'],
+    }),
   },
 
   del: {
@@ -63,13 +65,13 @@ module.exports = {
       // in path for HTTP requests
       id: string(),
     }, {
-        id: 'webhooks.delete',
-        required: ['id']
-      }),
+      id: 'webhooks.delete',
+      required: ['id'],
+    }),
     result: object({ webhookDeletion: itemDeletion }, {
       required: ['webhookDeletion'],
-      additionalProperties: false
-    })
+      additionalProperties: false,
+    }),
   },
 
   test: {
@@ -77,11 +79,11 @@ module.exports = {
       // in path for HTTP requests
       id: string(),
     }, {
-        id: 'webhooks.test',
-        required: ['id'],
-      }),
+      id: 'webhooks.test',
+      required: ['id'],
+    }),
     result: object({
       webhook: webhook(Action.READ),
-    }, { required: ['webhook'] })
+    }, { required: ['webhook'] }),
   },
 };

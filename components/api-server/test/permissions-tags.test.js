@@ -1,17 +1,17 @@
-/*global describe, it, before, after */
+/* global describe, it, before, after */
 
 const cuid = require('cuid');
 const chai = require('chai');
-const assert = chai.assert;
+
+const { assert } = chai;
 const charlatan = require('charlatan');
 
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
-describe('Access permissions - Tags', function () {
-
+describe('Access permissions - Tags', () => {
   let mongoFixtures;
-  before(async function() {
+  before(async () => {
     mongoFixtures = databaseFixture(await produceMongoConnection());
   });
   after(() => {
@@ -26,11 +26,11 @@ describe('Access permissions - Tags', function () {
     server.stop();
   });
 
-  let user,
-      username,
-      streamParentId,
-      streamChildId,
-      basePath;
+  let user;
+  let username;
+  let streamParentId;
+  let streamChildId;
+  let basePath;
 
   before(async () => {
     username = cuid();
@@ -39,7 +39,7 @@ describe('Access permissions - Tags', function () {
     user = await mongoFixtures.user(username, {});
     await user.stream({
       id: streamParentId,
-      name: 'Does not matter at all'
+      name: 'Does not matter at all',
     });
     await user.stream({
       parentId: streamParentId,
@@ -49,8 +49,7 @@ describe('Access permissions - Tags', function () {
     basePath = `/${username}/accesses`;
   });
 
-  describe('stream-only', function () {
-
+  describe('stream-only', () => {
     let access;
     before(async () => {
       access = await user.access({
@@ -59,14 +58,14 @@ describe('Access permissions - Tags', function () {
           {
             streamId: streamParentId,
             level: 'manage',
-          }
+          },
         ],
         token: cuid(),
       });
       access = access.attrs;
     });
 
-    it('[QA3G] should not be allowed to create tag-only accesses', async function () {
+    it('[QA3G] should not be allowed to create tag-only accesses', async () => {
       const res = await server
         .request()
         .post(basePath)
@@ -77,15 +76,15 @@ describe('Access permissions - Tags', function () {
           permissions: [
             {
               tag: charlatan.Lorem.word(),
-              level: 'manage'
-            }
-          ]
-        
+              level: 'manage',
+            },
+          ],
+
         });
       assert.equal(res.status, 403);
     });
 
-    it('[HT0Z] should not be able to add tags even if a subset of streams are kept', async function () {
+    it('[HT0Z] should not be able to add tags even if a subset of streams are kept', async () => {
       // TODO although illogic, keeping this since we drop tags soon
       const res = await server
         .request()
@@ -97,22 +96,19 @@ describe('Access permissions - Tags', function () {
           permissions: [
             {
               tag: charlatan.Lorem.word(),
-              level: 'manage'
+              level: 'manage',
             },
             {
               streamId: streamParentId,
-              level: 'manage'
-            }
-          ]
+              level: 'manage',
+            },
+          ],
         });
       assert.equal(res.status, 403);
     });
-
-    
   });
 
-  describe('tag-only', function () {
-
+  describe('tag-only', () => {
     let access;
     before(async () => {
       access = await user.access({
@@ -121,14 +117,14 @@ describe('Access permissions - Tags', function () {
           {
             tag: charlatan.Lorem.word(),
             level: 'manage',
-          }
+          },
         ],
         token: cuid(),
       });
       access = access.attrs;
     });
 
-    it('[HL9C] should not be able to create accesses with additional tags', async function () {
+    it('[HL9C] should not be able to create accesses with additional tags', async () => {
       const res = await server
         .request()
         .post(basePath)
@@ -139,18 +135,18 @@ describe('Access permissions - Tags', function () {
           permissions: [
             {
               tag: access.permissions[0].tag,
-              level: 'manage'
+              level: 'manage',
             },
             {
               tag: charlatan.Lorem.word(),
-              level: 'manage'
-            }
-          ]
+              level: 'manage',
+            },
+          ],
         });
       assert.equal(res.status, 403);
     });
 
-    it('[88S2] should not be able to create stream-based accesses', async function () {
+    it('[88S2] should not be able to create stream-based accesses', async () => {
       const res = await server
         .request()
         .post(basePath)
@@ -161,20 +157,19 @@ describe('Access permissions - Tags', function () {
           permissions: [
             {
               tag: access.permissions[0].tag,
-              level: 'manage'
+              level: 'manage',
             },
             {
               streamId: streamParentId,
-              level: 'manage'
-            }
-          ]
+              level: 'manage',
+            },
+          ],
         });
       assert.equal(res.status, 403);
     });
   });
 
-  describe('mixed', function () {
-
+  describe('mixed', () => {
     let access;
     before(async () => {
       access = await user.access({
@@ -191,36 +186,14 @@ describe('Access permissions - Tags', function () {
           {
             streamId: streamParentId,
             level: 'manage',
-          }
+          },
         ],
         token: cuid(),
       });
       access = access.attrs;
     });
 
-    it('[TTUD] should not be able to create tag-only accesses', async function () {
-      const res = await server
-        .request()
-        .post(basePath)
-        .set('Authorization', access.token)
-        .send({
-          type: 'shared',
-          name: charlatan.Lorem.word(),
-          permissions: [
-            {
-              tag: access.permissions[0].tag,
-              level: 'manage'
-            },
-            {
-              tag: access.permissions[1].tag,
-              level: 'manage'
-            }
-          ]
-        });
-      assert.equal(res.status, 403);
-    });
-
-    it('[4UZ1] should not be able to create accesses with a subset of streams and additional tags', async function () {
+    it('[TTUD] should not be able to create tag-only accesses', async () => {
       const res = await server
         .request()
         .post(basePath)
@@ -235,7 +208,29 @@ describe('Access permissions - Tags', function () {
             },
             {
               tag: access.permissions[1].tag,
-              level: 'manage'
+              level: 'manage',
+            },
+          ],
+        });
+      assert.equal(res.status, 403);
+    });
+
+    it('[4UZ1] should not be able to create accesses with a subset of streams and additional tags', async () => {
+      const res = await server
+        .request()
+        .post(basePath)
+        .set('Authorization', access.token)
+        .send({
+          type: 'shared',
+          name: charlatan.Lorem.word(),
+          permissions: [
+            {
+              tag: access.permissions[0].tag,
+              level: 'manage',
+            },
+            {
+              tag: access.permissions[1].tag,
+              level: 'manage',
             },
             {
               streamId: streamParentId,
@@ -243,14 +238,14 @@ describe('Access permissions - Tags', function () {
             },
             {
               tag: charlatan.Lorem.word(),
-              level: 'manage'
+              level: 'manage',
             },
-          ]
+          ],
         });
       assert.equal(res.status, 403);
     });
 
-    it('[E6Y5] should be able to create an access with a subset of streams and less tags', async function () {
+    it('[E6Y5] should be able to create an access with a subset of streams and less tags', async () => {
       const res = await server
         .request()
         .post(basePath)
@@ -266,8 +261,8 @@ describe('Access permissions - Tags', function () {
             {
               streamId: streamParentId,
               level: 'manage',
-            }
-          ]
+            },
+          ],
         });
       assert.equal(res.status, 201);
     });

@@ -1,7 +1,7 @@
-var BaseStorage = require('./BaseStorage'),
-    converters = require('./../converters'),
-    util = require('util'),
-    _ = require('lodash');
+const util = require('util');
+const _ = require('lodash');
+const BaseStorage = require('./BaseStorage');
+const converters = require('../converters');
 
 module.exports = FollowedSlices;
 /**
@@ -18,20 +18,20 @@ function FollowedSlices(database) {
   });
 
   this.defaultOptions = {
-    sort: {name: 1}
+    sort: { name: 1 },
   };
 }
 util.inherits(FollowedSlices, BaseStorage);
 
-var indexes = [
+const indexes = [
   {
-    index: {name: 1},
-    options: {unique: true}
+    index: { name: 1 },
+    options: { unique: true },
   },
   {
     index: { username: 1, accessToken: 1 },
-    options: {unique: true}
-  }
+    options: { unique: true },
+  },
 ];
 
 /**
@@ -40,7 +40,7 @@ var indexes = [
 FollowedSlices.prototype.getCollectionInfo = function (user) {
   return {
     name: 'followedSlices',
-    indexes: indexes,
-    useUserId: user.id
+    indexes,
+    useUserId: user.id,
   };
 };

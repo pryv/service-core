@@ -1,4 +1,4 @@
-var streams = require('./streams.js');
+const streams = require('./streams.js');
 
 module.exports = [
   // events for the main test stream (no overlap)
@@ -14,15 +14,15 @@ module.exports = [
       document: {
         fileName: 'document.pdf',
         type: 'application/pdf',
-        size: 6701
+        size: 6701,
       },
       image: {
         fileName: 'image.png',
         type: 'image/png',
-        size: 2765
-      }
+        size: 2765,
+      },
     },
-    modified: 1374114671.898
+    modified: 1374114671.898,
   },
   {
     id: 'c_0_e_1',
@@ -33,9 +33,9 @@ module.exports = [
     tags: [],
     clientData: {
       stringProp: 'O Brother',
-      numberProp: 1
+      numberProp: 1,
     },
-    modified: 1374021071.898
+    modified: 1374021071.898,
   },
   {
     id: 'c_0_e_2',
@@ -48,10 +48,10 @@ module.exports = [
       imageBigger: {
         fileName: 'image-bigger.jpg',
         type: 'image/jpeg',
-        size: 177476
-      }
+        size: 177476,
+      },
     },
-    modified: 1374024671.898
+    modified: 1374024671.898,
   },
   {
     id: 'c_0_e_3',
@@ -60,7 +60,7 @@ module.exports = [
     type: 'activity/pryv',
     duration: 5460,
     tags: ['super', 'cali'],
-    modified: 1374035471.898
+    modified: 1374035471.898,
   },
   {
     id: 'c_0_e_4',
@@ -69,7 +69,7 @@ module.exports = [
     type: 'activity/pryv',
     tags: [],
     description: 'Mark for specific folder',
-    modified: 1374039071.898
+    modified: 1374039071.898,
   },
   {
     id: 'c_0_e_5',
@@ -78,7 +78,7 @@ module.exports = [
     duration: 3600,
     type: 'activity/pryv',
     tags: [],
-    modified: 1374040931.898
+    modified: 1374040931.898,
   },
   {
     id: 'c_0_e_6',
@@ -87,7 +87,7 @@ module.exports = [
     duration: 7200,
     type: 'activity/pryv',
     tags: [],
-    modified: 1374078671.898
+    modified: 1374078671.898,
   },
   {
     id: 'c_0_e_7',
@@ -95,7 +95,7 @@ module.exports = [
     time: 1374082271.898,
     type: 'activity/pryv',
     tags: [],
-    modified: 1374082271.898
+    modified: 1374082271.898,
   },
   {
     id: 'c_0_e_8',
@@ -104,7 +104,7 @@ module.exports = [
     duration: 3600,
     type: 'activity/pryv',
     tags: [],
-    modified: 1374085871.898
+    modified: 1374085871.898,
   },
   {
     id: 'c_0_e_9',
@@ -114,7 +114,7 @@ module.exports = [
     type: 'activity/pryv',
     tags: [],
     description: 'One hour ago',
-    modified: 1374111071.898
+    modified: 1374111071.898,
   },
   {
     id: 'c_0_e_10',
@@ -124,7 +124,7 @@ module.exports = [
     tags: [],
     description: 'Deleted event',
     trashed: true,
-    modified: 1374113771.898
+    modified: 1374113771.898,
   },
   // also have events for each of the other root test streams
   {
@@ -134,7 +134,7 @@ module.exports = [
     duration: 7140,
     type: 'test/test',
     tags: [],
-    modified: 1374021071.898
+    modified: 1374021071.898,
   },
   {
     id: 'c_1_e_12',
@@ -144,7 +144,7 @@ module.exports = [
     type: 'activity/pryv',
     tags: [],
     description: 'One hour ago',
-    modified: 1374111071.898
+    modified: 1374111071.898,
   },
   {
     id: 'c_2_e_13',
@@ -153,7 +153,7 @@ module.exports = [
     type: 'test/test',
     tags: [],
     description: 'Mark for no particular folder',
-    modified: 1374024671.898
+    modified: 1374024671.898,
   },
   {
     id: 'c_3_e_14',
@@ -162,6 +162,6 @@ module.exports = [
     type: 'test/test',
     duration: 5460,
     tags: [],
-    modified: 1374035471.898
-  }
+    modified: 1374035471.898,
+  },
 ];

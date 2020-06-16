@@ -2,10 +2,10 @@
 
 /* global describe, it, before, after */
 
+const chai = require('chai');
 const { context } = require('../test-helpers');
 
-const chai = require('chai');
-const assert = chai.assert;
+const { assert } = chai;
 const helpers = require('../helpers');
 
 const storage = require('components/test-helpers').dependencies.storage.users;
@@ -17,16 +17,15 @@ describe('users pool', () => {
     server = await context.spawn();
   });
   after(() => {
-    server.stop(); 
+    server.stop();
   });
-
 
   describe('create pool user', () => {
     let res;
     let poolUser;
-    
+
     before(async () => {
-      res = await createPoolUser(); 
+      res = await createPoolUser();
       poolUser = res.body;
     });
 
@@ -43,7 +42,7 @@ describe('users pool', () => {
       assert.isNotNull(poolUser.id);
     });
     it('[JKN6] created a user in the database', () => {
-      storage.findOne({ username: { $regex: new RegExp('^' + 'pool@') }}, null, (err, user) => {
+      storage.findOne({ username: { $regex: new RegExp('^' + 'pool@') } }, null, (err, user) => {
         assert.isNull(err);
         assert.isNotNull(user);
       });
@@ -61,7 +60,6 @@ describe('users pool', () => {
     let poolSize;
 
     describe('when empty', () => {
-
       before(async () => {
         res = await server.request()
           .get('/system/pool/size')
@@ -72,7 +70,7 @@ describe('users pool', () => {
       it('[DHID] must succeed', () => {
         assert.isTrue(res.ok);
       });
-      
+
       it('[LH6N] must return 0', () => {
         assert.exists(poolSize);
         assert.equal(poolSize, 0);
@@ -80,7 +78,6 @@ describe('users pool', () => {
     });
 
     describe('when adding pool users', () => {
-
       before(async () => {
         await createPoolUser();
         await createPoolUser();
@@ -106,9 +103,7 @@ describe('users pool', () => {
         assert.exists(poolSize, 'there is not pool size');
         assert.isTrue(poolSize === 3, 'the poolSize number is not as expected');
       });
-
     });
-    
   });
 
   function createPoolUser() {

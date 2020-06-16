@@ -1,19 +1,18 @@
 /* eslint-disable no-console */
 // @flow
 
+import type { CustomAuthFunction } from 'components/model';
+import type { ConfigValue } from 'components/utils/src/config/value';
 
 const { Extension, ExtensionLoader } = require('components/utils').extension;
 // FLOW __dirname can be undefined when node is run outside of file.
-const config = require(__dirname + '/config');
+const config = require(`${__dirname}/config`);
 
 const { ExistingValue, MissingValue } = require('components/utils/src/config/value');
 
 const wwwPath = require('./routes/Paths').WWW;
 
 opaque type ConvictConfig = Object;
-
-import type { CustomAuthFunction } from 'components/model';
-import type { ConfigValue } from 'components/utils/src/config/value';
 
 export interface ConfigAccess {
   get(key: string): ConfigValue;
@@ -25,21 +24,22 @@ export type { ConfigValue };
 
 let settingsSingleton = null;
 
-// Handles loading and access to project settings. 
+// Handles loading and access to project settings.
 //
 class Settings implements ConfigAccess {
   convict: ConvictConfig;
+
   customAuthStepFn: ?Extension;
+
   registerLoaded: boolean;
+
   isLoading: Boolean;
 
-
-
   // Loads the settings for production use. This means that we follow the order
-  // defined in config.load. 
-  // 
+  // defined in config.load.
+  //
   // Additionally, you can pass `configLocation` which will override the env
-  // and the command line arguments. 
+  // and the command line arguments.
   //
   static async load(configLocation: ?string): Promise<Settings> {
     if (settingsSingleton) {
@@ -49,22 +49,21 @@ class Settings implements ConfigAccess {
     const ourConfig = await config.setupWithServiceInfo(configLocation);
     settingsSingleton = new Settings(ourConfig);
 
-    // I was not able to find a better place  -- to be changed 
+    // I was not able to find a better place  -- to be changed
     if (ourConfig.get('dnsLess.isActive')) {
       let publicUrl = ourConfig.get('dnsLess.publicUrl');
       if (publicUrl.slice(-1) === '/') publicUrl = publicUrl.slice(0, -1);
-      ourConfig.set('auth.passwordResetPageURL', publicUrl + wwwPath + '/access/reset-password.html');
+      ourConfig.set('auth.passwordResetPageURL', `${publicUrl + wwwPath}/access/reset-password.html`);
     }
 
     settingsSingleton.maybePrint();
     return settingsSingleton;
   }
 
-
   /**
    * CONSTRUCTOR
-   * 
-   * @param {*} ourConfig 
+   *
+   * @param {*} ourConfig
    */
   constructor(ourConfig: ConvictConfig) {
     this.convict = ourConfig;
@@ -79,6 +78,7 @@ class Settings implements ConfigAccess {
       console.info('Configuration settings loaded', this.convict.get()); // eslint-disable-line no-console
     }
   }
+
   loadCustomExtension(): ?Extension {
     const defaultFolder = this.get('customExtensions.defaultFolder').str();
     const name = 'customAuthStepFn';
@@ -86,47 +86,45 @@ class Settings implements ConfigAccess {
 
     const loader = new ExtensionLoader(defaultFolder);
 
-    if (!customAuthStepFnPath.blank())
-      return loader.loadFrom(customAuthStepFnPath.str());
+    if (!customAuthStepFnPath.blank()) return loader.loadFrom(customAuthStepFnPath.str());
 
-    // assert: no path was configured in configuration file, try loading from 
+    // assert: no path was configured in configuration file, try loading from
     // default location:
     return loader.load(name);
   }
 
-  /** Returns the value for the configuration key `key`.  
-   * 
-   * Example: 
-   * 
+  /** Returns the value for the configuration key `key`.
+   *
+   * Example:
+   *
    *    settings.get('logs.console.active') //=> true
    *
-   * @return {ExistingValue} Returns the configuration value that corresponds to 
-   *    `key` given. 
-   * @throws {Error} If the key you're trying to access doesn't exist in the 
-   *    configuration. This is a hard error, since we have a schema that the 
-   *    configuration file corresponds to. 
-   * 
+   * @return {ExistingValue} Returns the configuration value that corresponds to
+   *    `key` given.
+   * @throws {Error} If the key you're trying to access doesn't exist in the
+   *    configuration. This is a hard error, since we have a schema that the
+   *    configuration file corresponds to.
+   *
    */
   get(key: string): ConfigValue {
     const configuration = this.convict;
 
-    if (!configuration.has(key))
-      return Settings.missingValue(key);
+    if (!configuration.has(key)) return Settings.missingValue(key);
 
     // assert: `config` contains a value for `key`
     const value = configuration.get(key);
     return Settings.existingValue(key, value);
   }
 
-  // Returns true if the given key exists in the configuration, false otherwise. 
-  // 
+  // Returns true if the given key exists in the configuration, false otherwise.
+  //
   has(key: string): boolean {
     return this.convict.has(key) && this.convict.get(key) != null;
   }
 
   // Returns the custom auth function if one was configured. Otherwise returns
-  // null. 
-  // 
+  // null.
+  //
   getCustomAuthFunction(): ?CustomAuthFunction {
     if (this.customAuthStepFn == null) return null;
 
@@ -136,6 +134,7 @@ class Settings implements ConfigAccess {
   static missingValue(key: string): ConfigValue {
     return new MissingValue(key);
   }
+
   static existingValue(key: string, value: mixed): ConfigValue {
     return new ExistingValue(key, value);
   }

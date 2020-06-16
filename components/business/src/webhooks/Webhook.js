@@ -1,14 +1,15 @@
 // @flow
 
+import type { MessageSink } from 'components/api-server/src/socket-io/message_sink';
+import type { Logger } from 'components/utils/src/logging';
+import type Repository from './repository';
+
 const request = require('superagent');
 const _ = require('lodash');
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
 
 const NatsSubscriber = require('components/api-server/src/socket-io/nats_subscriber');
-import type { MessageSink } from 'components/api-server/src/socket-io/message_sink';
-import type Repository from './repository';
-import type { Logger } from 'components/utils/src/logging';
 
 export type Run = {
   status: number,
@@ -24,35 +25,51 @@ export type WebhookUpdate = {
 
 class Webhook implements MessageSink {
   id: string;
+
   accessId: string;
+
   url: string;
+
   state: WebhookState;
 
   runs: Array<Run>;
+
   lastRun: Run;
 
   runsSize: number;
+
   runCount: number;
+
   failCount: number;
 
   currentRetries: number;
+
   maxRetries: number;
+
   minIntervalMs: number;
 
   created: ?number;
+
   createdBy: ?string;
+
   modified: ?number;
+
   modifiedBy: ?string;
 
   messageBuffer: Set<string>;
+
   timeout: ?TimeoutID;
+
   isSending: boolean;
 
   user: ?{};
+
   repository: ?Repository;
+
   NatsSubscriber: ?NatsSubscriber;
 
   apiVersion: string;
+
   serial: string;
 
   logger: Logger;
@@ -124,8 +141,7 @@ class Webhook implements MessageSink {
     }
     this.messageBuffer.add(message);
 
-    if (tooSoon.call(this) || this.isSending)
-      return reschedule.call(this, message);
+    if (tooSoon.call(this) || this.isSending) return reschedule.call(this, message);
     this.isSending = true;
 
     let status: ?number;
@@ -141,13 +157,13 @@ class Webhook implements MessageSink {
         status = 0;
       }
     }
-    log(this, 'Webhook ' + this.id + ' run with status ' + status);
+    log(this, `Webhook ${this.id} run with status ${status}`);
     this.isSending = false;
 
     if (hasError(status)) {
       this.failCount++;
       this.currentRetries++;
-      sentBuffer.forEach(m => {
+      sentBuffer.forEach((m) => {
         this.messageBuffer.add(m);
       });
       if (this.currentRetries > this.maxRetries) {
@@ -158,12 +174,12 @@ class Webhook implements MessageSink {
     }
 
     this.runCount++;
-    this.lastRun = { status: status, timestamp: Date.now() / 1000 };
+    this.lastRun = { status, timestamp: Date.now() / 1000 };
     this.addRun(this.lastRun);
 
     await makeUpdate(
       ['lastRun', 'runs', 'runCount', 'failCount', 'currentRetries', 'state'],
-      this
+      this,
     );
 
     if (hasError(status)) {
@@ -184,18 +200,15 @@ class Webhook implements MessageSink {
     function reschedule(message: string): void {
       if (this.timeout != null) return;
       const delay = this.minIntervalMs * (this.currentRetries || 1);
-      this.timeout = setTimeout(() => {
-        return this.send(message, true);
-      }, delay);
+      this.timeout = setTimeout(() => this.send(message, true), delay);
     }
 
     function tooSoon(): boolean {
       const now = timestamp.now();
       if ((now - this.lastRun.timestamp) * 1000 < this.minIntervalMs) {
         return true;
-      } else {
-        return false;
       }
+      return false;
     }
   }
 
@@ -204,12 +217,12 @@ class Webhook implements MessageSink {
    */
   async makeCall(messages: Array<string>): Promise<Http$Response> {
     const res = await request.post(this.url).send({
-      messages: messages,
+      messages,
       meta: {
         apiVersion: this.apiVersion,
         serverTime: timestamp.now(),
         serial: this.serial,
-      }
+      },
     });
     return res;
   }
@@ -226,7 +239,7 @@ class Webhook implements MessageSink {
   addRun(run: Run): void {
     if (this.runCount > this.runsSize) {
       this.runs.splice(-1, 1);
-    } 
+    }
     this.runs.unshift(run);
   }
 
@@ -270,7 +283,7 @@ class Webhook implements MessageSink {
       'created',
       'createdBy',
       'modified',
-      'modifiedBy'
+      'modifiedBy',
     ]);
   }
 
@@ -290,7 +303,7 @@ class Webhook implements MessageSink {
       'created',
       'createdBy',
       'modified',
-      'modifiedBy'
+      'modifiedBy',
     ]);
   }
 

@@ -4,36 +4,37 @@
 
 const Action = require('./Action');
 const helpers = require('./helpers');
-const object = helpers.object;
-const array = helpers.array;
-const string = helpers.string;
-const number = helpers.number;
-const boolean = helpers.boolean;
+
+const { object } = helpers;
+const { array } = helpers;
+const { string } = helpers;
+const { number } = helpers;
+const { boolean } = helpers;
 
 /**
  * @param {Action} action
  */
 exports = module.exports = function (action) {
   // read items === stored items
-  if (action === Action.STORE){
+  if (action === Action.STORE) {
     action = Action.READ;
   }
 
   const schema = object({
-    'id': string(),
-    'time': number(),
-    'duration': number({nullable: true}),
-    'streamId': string(),
-    'streamIds': array(string(), { nullable: false }),
-    'tags': array(string(), {nullable: true}),
-    'type': string({ pattern: '^(series:)?[a-z0-9-]+/[a-z0-9-]+$' }),
-    'content': {},
-    'description': string({nullable: true}),
-    'clientData': object({}, {nullable: true}),
-    'trashed': boolean({nullable: true})
+    id: string(),
+    time: number(),
+    duration: number({ nullable: true }),
+    streamId: string(),
+    streamIds: array(string(), { nullable: false }),
+    tags: array(string(), { nullable: true }),
+    type: string({ pattern: '^(series:)?[a-z0-9-]+/[a-z0-9-]+$' }),
+    content: {},
+    description: string({ nullable: true }),
+    clientData: object({}, { nullable: true }),
+    trashed: boolean({ nullable: true }),
   }, {
     id: helpers.getTypeURI('event', action),
-    additionalProperties: false
+    additionalProperties: false,
   });
 
   helpers.addTrackingProperties(schema, action);
@@ -48,7 +49,7 @@ exports = module.exports = function (action) {
     schema.properties.id.pattern = '^c[a-z0-9-]{24}$';
     // only allow "files" (raw file data) on create; no further checks as it's
     // created internally
-    schema.properties.files = array(object({})); 
+    schema.properties.files = array(object({}));
   }
 
   // forbid attachments except on read and update (ignored for the latter)
@@ -64,11 +65,11 @@ exports = module.exports = function (action) {
   switch (action) {
     case Action.READ:
       schema.required = ['id', 'streamId', 'streamIds', 'time', 'type',
-        'created', 'createdBy', 'modified', 'modifiedBy' ];
+        'created', 'createdBy', 'modified', 'modifiedBy'];
       break;
     case Action.CREATE:
-      schema.required = [ 'type' ];
-      schema.anyOf = [{required: ['streamId']}, {required: ['streamIds']}];
+      schema.required = ['type'];
+      schema.anyOf = [{ required: ['streamId'] }, { required: ['streamIds'] }];
       break;
   }
 
@@ -80,8 +81,8 @@ exports.attachments = array(object({
   fileName: string(),
   type: string(),
   size: number(),
-  readToken: string()
+  readToken: string(),
 }, {
-  required: [ 'id', 'fileName', 'type', 'size', 'readToken' ],
-  additionalProperties: false
+  required: ['id', 'fileName', 'type', 'size', 'readToken'],
+  additionalProperties: false,
 }));

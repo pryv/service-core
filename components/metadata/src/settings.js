@@ -1,5 +1,6 @@
-
 // @flow
+
+import type { ConfigValue } from 'components/utils/src/config/value';
 
 const fs = require('fs');
 
@@ -10,8 +11,6 @@ const YAML = require('js-yaml');
 
 const { ExistingValue, MissingValue } = require('components/utils/src/config/value');
 
-import type { ConfigValue } from 'components/utils/src/config/value';
-
 export interface ConfigAccess {
   has(key: string): boolean;
   get(key: string): ConfigValue;
@@ -19,107 +18,104 @@ export interface ConfigAccess {
 
 // -----------------------------------------------------------------------------
 
-// Settings of an application. 
-// 
+// Settings of an application.
+//
 // Example:
-//    
+//
 //    const val = settings.get('foo.bar.baz') // => ConfigValue
 //    val.str()     // casts value to a string (or errors out).
-// 
+//
 class Settings implements ConfigAccess {
-  config: Object; 
-  
-  // Constructs a settings object. If `override` is not null, it is merged 
-  // on top of the defaults that are in place. 
-  // 
+  config: Object;
+
+  // Constructs a settings object. If `override` is not null, it is merged
+  // on top of the defaults that are in place.
+  //
   constructor(override: ?Object) {
     this.config = this.defaults();
-    
-    if (override != null) 
-      lodash.merge(this.config, override);
+
+    if (override != null) { lodash.merge(this.config, override); }
   }
+
   defaults() {
     return {
       logs: {
-        // If you add something here, you might also want to include it into 
+        // If you add something here, you might also want to include it into
         // the #getLogSettingsObject return value below.
         prefix: '',
-        console: { active: true, level: 'warn', colorize: true }, 
+        console: { active: true, level: 'warn', colorize: true },
         file: { active: false },
-      }, 
-      
+      },
+
       mongodb: {
         host: '127.0.0.1', // production will need to override this.
         port: 27017,
         name: 'pryv-node',
-        authUser: '', 
+        authUser: '',
         authPassword: '',
-      }
+      },
     };
   }
-  
-  // Loads settings from the file `path` and merges them with the settings in 
-  // the current instance. 
-  // 
-  // This uses HJSON under the covers, but will also load from YAML files. 
-  //  
+
+  // Loads settings from the file `path` and merges them with the settings in
+  // the current instance.
+  //
+  // This uses HJSON under the covers, but will also load from YAML files.
+  //
   //    -> https://www.npmjs.com/package/hjson
   //    -> https://www.npmjs.com/package/js-yaml
-  // 
+  //
   async loadFromFile(path: string) {
     const readFile = bluebird.promisify(fs.readFile);
     const text = await readFile(path, { encoding: 'utf8' });
 
     let obj;
 
-    if (path.endsWith('.yaml')) 
-      obj = YAML.safeLoad(text);
-    else 
-      obj = Hjson.parse(text);
-    
+    if (path.endsWith('.yaml')) { obj = YAML.safeLoad(text); } else { obj = Hjson.parse(text); }
+
     lodash.merge(this.config, obj);
   }
-  
-  // Merges settings in `other` with the settings stored here. 
-  // 
+
+  // Merges settings in `other` with the settings stored here.
+  //
   merge(other: Object) {
     lodash.merge(this.config, other);
   }
-  
+
   get(key: string): ConfigValue {
-    const config = this.config;
-    
-    if (! lodash.has(config, key)) return new MissingValue(key);
+    const { config } = this;
+
+    if (!lodash.has(config, key)) return new MissingValue(key);
 
     const val = lodash.get(config, key);
     return new ExistingValue(key, val);
   }
-  
+
   has(key: string): boolean {
-    const config = this.config;
+    const { config } = this;
 
     return lodash.has(config, key);
   }
-  
-  // Compatibility layer to be able to produce the object that the logging 
-  // subsystem expects. 
-  // 
+
+  // Compatibility layer to be able to produce the object that the logging
+  // subsystem expects.
+  //
   getLogSettingsObject(): Object {
     return l_map('logs', [
       l_str('prefix'),
-      l_bool('console.active'), 
-      l_str('console.level'), 
-      l_bool('console.colorize'), 
-      l_bool('file.active')
+      l_bool('console.active'),
+      l_str('console.level'),
+      l_bool('console.colorize'),
+      l_bool('file.active'),
     ]).apply(this);
   }
-  
+
   // Compatibility layer for setting up mongodb connections.
-  // 
+  //
   getMongodbSettings(): Object {
     return l_map('mongodb', [
-      l_str('host'), 
-      l_num('port'), 
+      l_str('host'),
+      l_num('port'),
       l_str('name'),
       l_str('authUser'),
       l_str('authPassword'),
@@ -129,66 +125,67 @@ class Settings implements ConfigAccess {
 
 // -----------------------------------------------------------------------------
 
-// The following code implements a small system to be able to map current 
-// config syntax (full path access) to old object-style access still used by 
-// some of the code. 
+// The following code implements a small system to be able to map current
+// config syntax (full path access) to old object-style access still used by
+// some of the code.
 
-type LValueMapper = (ConfigValue) => any; 
+type LValueMapper = (ConfigValue) => any;
 
 function l_map(name: string, map: Array<LValue>): LMap {
-  return new LMap(name, map); 
+  return new LMap(name, map);
 }
 function l_bool(key: string) {
-  return new LValue(key, cv => cv.bool());
+  return new LValue(key, (cv) => cv.bool());
 }
 function l_str(key: string) {
-  return new LValue(key, cv => cv.str());
+  return new LValue(key, (cv) => cv.str());
 }
 function l_num(key: string) {
-  return new LValue(key, cv => cv.num());
+  return new LValue(key, (cv) => cv.num());
 }
 
 class LMap {
-  name: string; 
+  name: string;
+
   map: Array<LValue>;
-  
+
   constructor(name: string, map: Array<LValue>) {
-    this.name = name; 
-    this.map = map; 
+    this.name = name;
+    this.map = map;
   }
-  
+
   apply(config: ConfigAccess) {
-    const res = {}; 
-    
+    const res = {};
+
     for (const entry of this.map) {
       entry.update(res, this.name, config);
     }
-    
-    return res; 
+
+    return res;
   }
 }
 
 class LValue {
   key: string;
+
   mapper: LValueMapper;
-  
+
   constructor(key: string, mapper: LValueMapper) {
     this.key = key;
-    this.mapper = mapper; 
+    this.mapper = mapper;
   }
-  
+
   // Updates the object given with a value at path `this.key` and with a value
   // that is produced by `this.mapper`. The `prefix` string is prepended to the
   // key and acts as a scope. Finally, `config` is the place where the values
-  // come from. 
-  // 
+  // come from.
+  //
   update(res: Object, prefix: string, config: ConfigAccess) {
     const key = [prefix, this.key].join('.');
     const val = config.get(key);
-    const mapper = this.mapper;
+    const { mapper } = this;
     lodash.set(res, this.key, mapper(val));
   }
 }
 
 module.exports = Settings;
-

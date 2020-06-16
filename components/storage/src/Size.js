@@ -1,4 +1,4 @@
-var async = require('async');
+const async = require('async');
 
 module.exports = Size;
 
@@ -26,26 +26,26 @@ function Size(usersStorage, dbDocumentsItems, attachedFilesItems) {
 Size.prototype.computeForUser = function (user, callback) {
   async.series({
     dbDocuments: computeCategory.bind(this, this.dbDocumentsItems),
-    attachedFiles: computeCategory.bind(this, this.attachedFilesItems)
-  }, function (err, storageUsed) {
+    attachedFiles: computeCategory.bind(this, this.attachedFilesItems),
+  }, (err, storageUsed) => {
     if (err) { return callback(err); }
-    this.usersStorage.updateOne({id: user.id}, {storageUsed: storageUsed}, function (err) {
+    this.usersStorage.updateOne({ id: user.id }, { storageUsed }, (err) => {
       if (err) { return callback(err); }
       callback(null, storageUsed);
     });
-  }.bind(this));
+  });
 
   function computeCategory(storageItems, callback) {
-    var total = 0;
-    async.each(storageItems, function (storage, itemDone) {
+    let total = 0;
+    async.each(storageItems, (storage, itemDone) => {
       if (typeof storage.getTotalSize !== 'function') { return; }
 
-      storage.getTotalSize(user, function (err, size) {
+      storage.getTotalSize(user, (err, size) => {
         if (err) { return itemDone(err); }
         total += size;
         itemDone();
       });
-    }.bind(this), function (err) {
+    }, (err) => {
       callback(err, total);
     });
   }

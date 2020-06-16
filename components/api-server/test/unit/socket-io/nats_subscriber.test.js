@@ -1,10 +1,13 @@
 // @flow
 
+import type { MessageSink } from '../../../src/socket-io/message_sink';
+
 require('../test-helper');
-const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
+const { NATS_CONNECTION_URI } = require('components/utils').messaging;
 
 const chai = require('chai');
-const assert = chai.assert;
+
+const { assert } = chai;
 
 const NATS = require('nats');
 
@@ -15,82 +18,78 @@ const { ConditionVariable } = require('components/test-helpers').syncPrimitives;
 const NatsSubscriber = require('../../../src/socket-io/nats_subscriber');
 const { encode } = require('../../../src/socket-io/nats_wire_message');
 
-import type { MessageSink } from '../../../src/socket-io/message_sink';
-
 describe('NatsSubscriber', () => {
   it('[DMMP] should construct', () => {
-    // For this to work, you must run the 'gnatsd' service on localhost. 
-    new NatsSubscriber(NATS_CONNECTION_URI, new ArraySink(), 
-      (username) => { return `${username}.sok1`; }
-    );
+    // For this to work, you must run the 'gnatsd' service on localhost.
+    new NatsSubscriber(NATS_CONNECTION_URI, new ArraySink(),
+      (username) => `${username}.sok1`);
   });
-  
+
   async function subscriber(username: string, sink: MessageSink): Promise<NatsSubscriber> {
     const sub = new NatsSubscriber(NATS_CONNECTION_URI, sink,
-      (username) => { return `${username}.sok1`; }
-    );
-    
+      (username) => `${username}.sok1`);
+
     await sub.subscribe(username);
-    
-    return sub; 
+
+    return sub;
   }
-  
+
   describe('when subscribed to "foobar"', () => {
     let natsSubscriber: NatsSubscriber;
     let arySink: ArraySink;
-    
+
     let rawClient;
-    
+
     // Connects NatsSubscriber to user 'foobar'
     beforeEach(async () => {
-      arySink = new ArraySink(); 
+      arySink = new ArraySink();
       natsSubscriber = await subscriber('foobar', arySink);
     });
     // Connects rawClient to NATS
     beforeEach(() => {
       rawClient = NATS.connect({
-        url: NATS_CONNECTION_URI, 
-        'preserveBuffers': true 
+        url: NATS_CONNECTION_URI,
+        preserveBuffers: true,
       });
     });
-    
+
     afterEach(() => {
       rawClient.close();
     });
-    
+
     describe('subscribe("USERNAME")', () => {
       it('[4MAI] accepts messages from USERNAME.sok1 and dispatches them to sinks', async () => {
         rawClient.publish('foobar.sok1', encode('onTestMessage'));
-        
+
         await arySink.notEmpty();
-        
+
         assert.deepEqual(arySink.msgs, ['onTestMessage']);
       });
       it('[47BP] ignores messages from other users', async () => {
         rawClient.publish('barbaz.sok1', encode('onTestMessage1'));
         rawClient.publish('foobar.sok1', encode('onTestMessage2'));
-        
+
         await arySink.notEmpty();
 
         // We've received the second message and not the first. Apart from waiting
         // a long time for the first _not_ to arrive, this is the best assertion we
-        // will get. 
+        // will get.
         assert.deepEqual(arySink.msgs, ['onTestMessage2']);
       });
     });
     describe('unsubscribe()', () => {
       it('[L49E] should unsubscribe from NATS', async () => {
         rawClient.publish('foobar.sok1', encode('onTestMessage1'));
-        
+
         await arySink.notEmpty();
-        
-        await natsSubscriber.close(); 
-        
+
+        await natsSubscriber.close();
+
         rawClient.publish('foobar.sok1', encode('onTestMessage2'));
 
         // We've received the second message and not the first. Apart from waiting
         // a long time for the first _not_ to arrive, this is the best assertion we
-        // will get. 
+        // will get.
         assert.deepEqual(arySink.msgs, ['onTestMessage1']);
       });
     });
@@ -98,32 +97,32 @@ describe('NatsSubscriber', () => {
 });
 
 class ArraySink implements MessageSink {
-  // Messages that were delivered to this sink. 
-  msgs: Array<string>; 
-  
+  // Messages that were delivered to this sink.
+  msgs: Array<string>;
+
   // Broadcasted to when a new message arrives.
   cvNewMessage: ConditionVariable;
-  
+
   constructor() {
-    this.msgs = []; 
-    this.cvNewMessage = new ConditionVariable(); 
+    this.msgs = [];
+    this.cvNewMessage = new ConditionVariable();
   }
-  
+
   deliver(userName: string, message: string | {}): void {
     if (typeof message === 'object') {
       message = JSON.stringify(message);
     }
     this.msgs.push(message);
-    this.cvNewMessage.broadcast(); 
+    this.cvNewMessage.broadcast();
   }
-  
+
   async notEmpty() {
-    const msgs = this.msgs; 
-    const cvNewMessage = this.cvNewMessage;
-    const timeoutMs = 1000; 
-    
-    if (msgs.length>0) return; 
-    
+    const { msgs } = this;
+    const { cvNewMessage } = this;
+    const timeoutMs = 1000;
+
+    if (msgs.length > 0) return;
+
     await cvNewMessage.wait(timeoutMs);
   }
 }

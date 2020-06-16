@@ -1,5 +1,7 @@
 // @flow
 
+import type { MetadataRepository } from '../../src/metadata_cache';
+
 const debug = require('debug')('child_process');
 const bluebird = require('bluebird');
 
@@ -8,73 +10,72 @@ const Settings = require('../../src/Settings');
 const { InfluxRowType, TypeRepository } = require('components/business').types;
 const ChildProcess = require('components/test-helpers').child_process;
 
-import type {MetadataRepository} from '../../src/metadata_cache';
-
-const typeRepo = new TypeRepository(); 
+const typeRepo = new TypeRepository();
 
 class ApplicationLauncher {
-  app: ?Application; 
-  
+  app: ?Application;
+
   constructor() {
-    this.app = null; 
+    this.app = null;
   }
-  
+
   // Gets called by the test process to mock out authentication and allow everyone
-  // access. 
-  // 
+  // access.
+  //
   mockAuthentication(allowAll: boolean) {
-    const app = this.app; 
+    const { app } = this;
     if (app == null) throw new Error('AF: app should not be null anymore');
-    
-    const context = app.context; 
-    
+
+    const { context } = app;
+
     context.metadata = this.produceMetadataLoader(allowAll);
   }
-  produceMetadataLoader(authTokenValid=true): MetadataRepository {
+
+  produceMetadataLoader(authTokenValid = true): MetadataRepository {
     const seriesMeta = {
       canWrite: () => authTokenValid,
-      canRead: () => authTokenValid, 
+      canRead: () => authTokenValid,
       isTrashedOrDeleted: () => false,
       namespaceAndName: () => ['test', 'foo'],
       produceRowType: () => new InfluxRowType(typeRepo.lookup('mass/kg')),
     };
     return {
-      forSeries: function forSeries() { return bluebird.resolve(seriesMeta); }
+      forSeries: function forSeries() { return bluebird.resolve(seriesMeta); },
     };
   }
 
   // Tells the server to use the metadata updater service located at `endpoint`
   async useMetadataUpdater(endpoint) {
-    const app = this.app; 
+    const { app } = this;
     if (app == null) throw new Error('AF: app should not be null anymore');
-    
-    const context = app.context; 
+
+    const { context } = app;
     await context.configureMetadataUpdater(endpoint);
   }
 
   async launch(injectSettings: {}) {
-    const settings = new Settings(); 
+    const settings = new Settings();
     await settings.loadFromFile('config/development.json');
     await settings.loadFromObject(injectSettings);
-    
+
     debug(settings.get('http.port').num());
-    
+
     const app = this.app = new Application();
-    
+
     await app.init(settings);
-    await app.start(); 
+    await app.start();
   }
 }
 
-const appLauncher = new ApplicationLauncher(); 
+const appLauncher = new ApplicationLauncher();
 const childProcess = new ChildProcess(appLauncher);
 childProcess.run();
 
 process.on('SIGTERM', () => {
   // Delay actual exit for half a second, allowing our tracing code to submit
-  // all traces to jaeger. 
+  // all traces to jaeger.
   setTimeout(
-    () => process.exit(0), 
-    100
+    () => process.exit(0),
+    100,
   );
 });

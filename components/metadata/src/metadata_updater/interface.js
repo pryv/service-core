@@ -4,28 +4,28 @@
 // PLEASE DONT EDIT MANUALLY
 
 export interface IUpdateRequests {
-  entries: Array<IUpdateRequest>;  // id = 1
+  entries: Array<IUpdateRequest>; // id = 1
 }
 export interface IUpdateRequest {
-  userId: string;  // id = 1
-  eventId: string;  // id = 2
-  author: string;  // id = 3
-  timestamp: number;  // id = 4
-  dataExtent: ITimeRange;  // id = 5
+  userId: string; // id = 1
+  eventId: string; // id = 2
+  author: string; // id = 3
+  timestamp: number; // id = 4
+  dataExtent: ITimeRange; // id = 5
 }
 export interface ITimeRange {
-  from: number;  // id = 1
-  to: number;  // id = 2
+  from: number; // id = 1
+  to: number; // id = 2
 }
 export interface IUpdateResponse {
 }
 export interface IUpdateId {
-  userId: string;  // id = 1
-  eventId: string;  // id = 2
+  userId: string; // id = 1
+  eventId: string; // id = 2
 }
 export interface IPendingUpdate {
-  found: boolean;  // id = 1
-  deadline: number;  // id = 2
+  found: boolean; // id = 1
+  deadline: number; // id = 2
 }
 export interface IMetadataUpdaterService {
   scheduleUpdate(req: IUpdateRequests): Promise<IUpdateResponse>;

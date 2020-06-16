@@ -1,9 +1,9 @@
-var async = require('async'),
-    exec = require('child_process').exec,
-    fs = require('fs'),
-    path = require('path'),
-    toString = require('components/utils').toString,
-    _ = require('lodash');
+const async = require('async');
+const { exec } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const { toString } = require('components/utils');
+const _ = require('lodash');
 
 /**
  * v0.3.0:
@@ -18,13 +18,13 @@ var async = require('async'),
  * - Error handling and logging is minimal
  */
 module.exports = function (context, callback) {
-  context.database.getCollection({name: 'users'}, function (err, usersCol) {
+  context.database.getCollection({ name: 'users' }, (err, usersCol) => {
     if (err) { return callback(err); }
 
-    usersCol.find({}).toArray(function (err, users) {
+    usersCol.find({}).toArray((err, users) => {
       if (err) { return callback(err); }
 
-      async.forEachSeries(users, migrateUser, function (err) {
+      async.forEachSeries(users, migrateUser, (err) => {
         if (err) { return callback(err); }
 
         context.logInfo('Data version is now 0.3.0');
@@ -34,32 +34,32 @@ module.exports = function (context, callback) {
   });
 
   function migrateUser(user, callback) {
-    context.logInfo('Migrating user ' + toString.user(user.username) + '...');
-    var collectionNames,
-        migratedChannels,
-        channelsCol,
-        streamsCol;
+    context.logInfo(`Migrating user ${toString.user(user.username)}...`);
+    let collectionNames;
+    let migratedChannels;
+    let channelsCol;
+    let streamsCol;
     async.series([
       function retrieveCollectionNames(stepDone) {
-        context.database.db.collectionNames({namesOnly: true}, function (err, names) {
+        context.database.db.collectionNames({ namesOnly: true }, (err, names) => {
           if (err) {
             context.logError(err, 'retrieving collection names');
             return stepDone(err);
           }
 
-          names = names.map(function (name) { return name.substr(name.indexOf('.') + 1); });
+          names = names.map((name) => name.substr(name.indexOf('.') + 1));
           collectionNames = _.object(names, names);
           stepDone();
         });
       },
       function retrieveChannels(stepDone) {
-        var colName = user._id + '.channels';
-        if (! collectionNames[colName]) {
+        const colName = `${user._id}.channels`;
+        if (!collectionNames[colName]) {
           context.logInfo('Skipping channels migration (cannot find collection)');
           return stepDone();
         }
 
-        context.database.getCollection({name: colName}, function (err, cCol) {
+        context.database.getCollection({ name: colName }, (err, cCol) => {
           if (err) {
             context.logError(err, 'retrieving channels collection');
             return stepDone(err);
@@ -67,14 +67,14 @@ module.exports = function (context, callback) {
 
           channelsCol = cCol;
 
-          channelsCol.find({}).toArray(function (err, channels) {
+          channelsCol.find({}).toArray((err, channels) => {
             if (err) {
               context.logError(err, 'retrieving channels');
               return stepDone(err);
             }
 
             // change to stream structure
-            channels.forEach(function (item) {
+            channels.forEach((item) => {
               item.parentId = null;
               if (item.enforceNoEventsOverlap) {
                 item.singleActivity = true;
@@ -88,72 +88,72 @@ module.exports = function (context, callback) {
         });
       },
       function renameFoldersCollection(stepDone) {
-        var colName = user._id + '.folders';
-        if (! collectionNames[colName]) {
+        const colName = `${user._id}.folders`;
+        if (!collectionNames[colName]) {
           context.logInfo('Skipping folders collection rename (cannot find collection)');
           return stepDone();
         }
 
-        context.database.getCollection({name: colName}, function (err, foldersCol) {
+        context.database.getCollection({ name: colName }, (err, foldersCol) => {
           if (err) {
             context.logError(err, 'retrieving folders collection');
             return stepDone(err);
           }
 
-          foldersCol.rename(user._id + '.streams',
-              context.stepCallbackFn('renaming folders collection', stepDone));
+          foldersCol.rename(`${user._id}.streams`,
+            context.stepCallbackFn('renaming folders collection', stepDone));
         });
       },
       function migrateStreamsStructure(stepDone) {
-        context.database.getCollection({name: user._id + '.streams'}, function (err, sCol) {
+        context.database.getCollection({ name: `${user._id}.streams` }, (err, sCol) => {
           if (err) {
             context.logError(err, 'retrieving streams collection');
             return stepDone(err);
           }
           streamsCol = sCol;
 
-          var streamsCursor = streamsCol.find(),
-              completed = false;
-          async.until(function () { return completed; }, migrateStream,
-              context.stepCallbackFn('migrating streams structure', stepDone));
+          const streamsCursor = streamsCol.find();
+          let completed = false;
+          async.until(() => completed, migrateStream,
+            context.stepCallbackFn('migrating streams structure', stepDone));
 
           function migrateStream(eventDone) {
-            streamsCursor.nextObject(function (err, stream) {
+            streamsCursor.nextObject((err, stream) => {
               if (err) { return eventDone(err); }
-              if (! stream) {
+              if (!stream) {
                 completed = true;
                 return eventDone();
               }
 
-              var update = {
+              const update = {
                 $set: {
-                  parentId: stream.parentId ? stream.parentId : stream.channelId
+                  parentId: stream.parentId ? stream.parentId : stream.channelId,
                 },
-                $unset: { channelId: 1, hidden: 1 }
+                $unset: { channelId: 1, hidden: 1 },
               };
-	      streamsCol.updateOne({_id: stream._id}, update, eventDone);
+	      streamsCol.updateOne({ _id: stream._id }, update, eventDone);
             });
           }
         });
       },
       function insertMigratedChannelsAsRootStreams(stepDone) {
-        if (! migratedChannels) { return stepDone(); } // skip
+        if (!migratedChannels) { return stepDone(); } // skip
         streamsCol.insert(migratedChannels,
-            context.stepCallbackFn('inserting migrated channels', stepDone));
+          context.stepCallbackFn('inserting migrated channels', stepDone));
       },
       function dropChannelsCollection(stepDone) {
-        if (! channelsCol) { return stepDone(); } // skip
+        if (!channelsCol) { return stepDone(); } // skip
         channelsCol.drop(context.stepCallbackFn('dropping channels collection', stepDone));
       },
 
       function migrateAccessesStructure(stepDone) {
-        context.database.getCollection({name: user._id + '.accesses'}, function (err, accCol) {
+        context.database.getCollection({ name: `${user._id}.accesses` }, (err, accCol) => {
           if (err) {
             context.logError(err, 'retrieving accesses collection');
             return stepDone(err);
           }
 
-          accCol.find({}).toArray(function (err, accesses) {
+          accCol.find({}).toArray((err, accesses) => {
             if (err) {
               context.logError(err, 'retrieving accesses');
               return stepDone(err);
@@ -165,20 +165,20 @@ module.exports = function (context, callback) {
             }
 
             // update structure
-            accesses.forEach(function (access) {
-              if (access.type === 'personal' || ! access.permissions) { return; }
+            accesses.forEach((access) => {
+              if (access.type === 'personal' || !access.permissions) { return; }
 
-              var newPermissions = [];
+              const newPermissions = [];
 
-              access.permissions.forEach(function (perm) {
-                if (! perm.folderPermissions || perm.folderPermissions.length === 0) {
+              access.permissions.forEach((perm) => {
+                if (!perm.folderPermissions || perm.folderPermissions.length === 0) {
                   delete perm.folderPermissions;
                   perm.streamId = perm.channelId;
                   delete perm.channelId;
 
                   newPermissions.push(perm);
                 } else {
-                  perm.folderPermissions.forEach(function (folderPerm) {
+                  perm.folderPermissions.forEach((folderPerm) => {
                     folderPerm.streamId = folderPerm.folderId || perm.channelId;
                     delete folderPerm.folderId;
 
@@ -192,75 +192,75 @@ module.exports = function (context, callback) {
 
             async.series([
               accCol.remove.bind(accCol, {}),
-              accCol.insert.bind(accCol, accesses)
+              accCol.insert.bind(accCol, accesses),
             ], context.stepCallbackFn('migrating accesses structure', stepDone));
           });
         });
       },
 
       function migrateEventsStructure(stepDone) {
-        context.database.getCollection({name: user._id + '.events'}, function (err, eventsCol) {
+        context.database.getCollection({ name: `${user._id}.events` }, (err, eventsCol) => {
           if (err) {
             context.logError(err, 'retrieving events collection');
             return stepDone(err);
           }
 
-          var eventsCursor = eventsCol.find(),
-              completed = false;
-          async.until(function () { return completed; }, migrateEvent,
-              context.stepCallbackFn('migrating events structure', stepDone));
+          const eventsCursor = eventsCol.find();
+          let completed = false;
+          async.until(() => completed, migrateEvent,
+            context.stepCallbackFn('migrating events structure', stepDone));
 
           function migrateEvent(eventDone) {
-            eventsCursor.nextObject(function (err, event) {
+            eventsCursor.nextObject((err, event) => {
               if (err) { return eventDone(err); }
-              if (! event) {
+              if (!event) {
                 completed = true;
                 return eventDone();
               }
 
-              var update = {
+              const update = {
                 $set: {
                   streamId: event.folderId ? event.folderId : event.channelId,
-                  type: event.type.class + '/' + event.type.format
+                  type: `${event.type.class}/${event.type.format}`,
                 },
-                $unset: {channelId: 1, folderId: 1},
-                $rename: {value: 'content'}
+                $unset: { channelId: 1, folderId: 1 },
+                $rename: { value: 'content' },
               };
-	      eventsCol.updateOne({_id: event._id}, update, eventDone);
+	      eventsCol.updateOne({ _id: event._id }, update, eventDone);
             });
           }
         });
       },
 
       function migrateEventAttachmentsStructure(stepDone) {
-        var userDir = path.resolve(context.attachmentsDirPath, user._id);
-        if (! fs.existsSync(userDir)) {
+        const userDir = path.resolve(context.attachmentsDirPath, user._id);
+        if (!fs.existsSync(userDir)) {
           context.logInfo('Skipping event attachments migration (no attachments)');
           return stepDone();
-        }
+        }
 
-        var channelDirs = fs.readdirSync(userDir);
+        const channelDirs = fs.readdirSync(userDir);
         async.forEachSeries(channelDirs, moveEventDirs,
-            context.stepCallbackFn('migrating event attachments structure', stepDone));
+          context.stepCallbackFn('migrating event attachments structure', stepDone));
 
         function moveEventDirs(channelDir, channelCallback) {
           // filter out files (shouldn't happen except in tests)
-          if (! fs.statSync(path.resolve(userDir, channelDir)).isDirectory()) {
+          if (!fs.statSync(path.resolve(userDir, channelDir)).isDirectory()) {
             return channelCallback(null);
           }
-          exec('mv ' + path.resolve(userDir, channelDir, '*') + ' ' + path.resolve(userDir, '.'),
-              function (err) {
-            if (err) { return channelCallback(err); }
-            fs.rmdir(path.resolve(userDir, channelDir), channelCallback);
-          });
+          exec(`mv ${path.resolve(userDir, channelDir, '*')} ${path.resolve(userDir, '.')}`,
+            (err) => {
+              if (err) { return channelCallback(err); }
+              fs.rmdir(path.resolve(userDir, channelDir), channelCallback);
+            });
         }
-      }
-    ], function (err) {
+      },
+    ], (err) => {
       if (err) {
         context.logError(err, 'migrating user');
         return callback(err);
       }
-      context.logInfo('Successfully migrated user ' + toString.user(user) + '.');
+      context.logInfo(`Successfully migrated user ${toString.user(user)}.`);
       callback();
     });
   }

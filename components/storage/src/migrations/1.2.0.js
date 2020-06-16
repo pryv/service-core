@@ -1,5 +1,5 @@
-var async = require('async'),
-  toString = require('components/utils').toString;
+const async = require('async');
+const { toString } = require('components/utils');
 
 /**
  * v1.2.0:
@@ -9,13 +9,13 @@ var async = require('async'),
  *   after a defined expiration duration
  */
 module.exports = function (context, callback) {
-  context.database.getCollection({name: 'users'}, function (err, usersCol) {
+  context.database.getCollection({ name: 'users' }, (err, usersCol) => {
     if (err) { return callback(err); }
 
-    usersCol.find({}).toArray(function (err, users) {
+    usersCol.find({}).toArray((err, users) => {
       if (err) { return callback(err); }
 
-      async.forEachSeries(users, migrateUser, function (err) {
+      async.forEachSeries(users, migrateUser, (err) => {
         if (err) { return callback(err); }
 
         context.logInfo('Data version is now 1.2.0');
@@ -27,20 +27,20 @@ module.exports = function (context, callback) {
   const DELETED_INDEX_NAME = 'deleted_1';
 
   function migrateUser(user, callback) {
-    context.logInfo('Migrating user ' + toString.user(user) + '...');
+    context.logInfo(`Migrating user ${toString.user(user)}...`);
     async.series([
-      function removeIndexFromEvents (stepDone) {
-        context.database.getCollection({name: user._id + '.events'}, function (err, eventsCol) {
+      function removeIndexFromEvents(stepDone) {
+        context.database.getCollection({ name: `${user._id}.events` }, (err, eventsCol) => {
           if (err) {
             context.logError(err, 'retrieving events');
             return stepDone(err);
           }
           eventsCol.dropIndex(DELETED_INDEX_NAME, ignoreNSError.bind(null,
             context.stepCallbackFn('removing deleted index on events collection', stepDone)));
-          });
+        });
       },
-      function removeIndexFromStreams (stepDone) {
-        context.database.getCollection({name: user._id + '.streams'}, function (err, streamsCol) {
+      function removeIndexFromStreams(stepDone) {
+        context.database.getCollection({ name: `${user._id}.streams` }, (err, streamsCol) => {
           if (err) {
             context.logError(err, 'retrieving streams');
             return stepDone(err);
@@ -49,8 +49,8 @@ module.exports = function (context, callback) {
             context.stepCallbackFn('removing deleted index on streams collection', stepDone)));
         });
       },
-      function removeIndexFromAccesses (stepDone) {
-        context.database.getCollection({name: user._id + '.accesses'}, function (err, accessesCol) {
+      function removeIndexFromAccesses(stepDone) {
+        context.database.getCollection({ name: `${user._id}.accesses` }, (err, accessesCol) => {
           if (err) {
             context.logError(err, 'retrieving accesses');
             return stepDone(err);
@@ -58,22 +58,21 @@ module.exports = function (context, callback) {
           accessesCol.dropIndex(DELETED_INDEX_NAME, ignoreNSError.bind(null,
             context.stepCallbackFn('removing deleted index on accesses collection', stepDone)));
         });
-      }
-    ], function (err) {
+      },
+    ], (err) => {
       if (err) {
         context.logError(err, 'migrating user');
         return callback(err);
       }
-      context.logInfo('Successfully migrated user ' + toString.user(user) + '.');
+      context.logInfo(`Successfully migrated user ${toString.user(user)}.`);
       callback();
     });
   }
 
   function ignoreNSError(callback, err) {
-    if (! err || err.message.indexOf('ns not found') !== -1) {
+    if (!err || err.message.indexOf('ns not found') !== -1) {
       return callback();
-    } else {
-      return callback(err);
     }
+    return callback(err);
   }
 };

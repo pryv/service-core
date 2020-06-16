@@ -1,9 +1,9 @@
 // @flow
 
 // Middleware that verifies the presence of an authorization token
-// 
+//
 module.exports = (req: express$Request, res: express$Response, next: express$NextFunction) => {
-  req.headers['authorization'] = getAuth(req);
+  req.headers.authorization = getAuth(req);
   next();
 };
 
@@ -16,13 +16,13 @@ function getAuth(req): ?string {
       authorizationHeader = Buffer.from(basic[1], 'base64').toString('ascii').split(':')[0];
     }
     if (Array.isArray(authorizationHeader)) return authorizationHeader[0];
-    return authorizationHeader;        
+    return authorizationHeader;
   }
 
-  // assert: no authorization in header, let's check query: 
-  const authFromQuery = req.query.auth; 
+  // assert: no authorization in header, let's check query:
+  const authFromQuery = req.query.auth;
 
-  if (authFromQuery == null) return null; 
+  if (authFromQuery == null) return null;
   if (Array.isArray(authFromQuery)) return authFromQuery[0];
   return authFromQuery;
 }

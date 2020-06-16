@@ -9,5 +9,5 @@ function decode(wireMsg: Buffer | string): string {
   return msgpack.decode(wireMsg);
 }
 
-exports.encode = encode; 
-exports.decode = decode; 
+exports.encode = encode;
+exports.decode = decode;

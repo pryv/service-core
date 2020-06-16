@@ -1,5 +1,5 @@
 const async = require('async');
-const toString = require('components/utils').toString;
+const { toString } = require('components/utils');
 
 /**
  * v1.3.40:
@@ -10,13 +10,13 @@ const toString = require('components/utils').toString;
  *    to their previous names without the "_" prefix.
  */
 module.exports = function (context, callback) {
-  context.database.getCollection({name: 'users'}, function (err, usersCol) {
+  context.database.getCollection({ name: 'users' }, (err, usersCol) => {
     if (err) { return callback(err); }
 
-    usersCol.find({}).toArray(function (err, users) {
+    usersCol.find({}).toArray((err, users) => {
       if (err) { return callback(err); }
 
-      async.forEachSeries(users, migrateUser, function (err) {
+      async.forEachSeries(users, migrateUser, (err) => {
         if (err) { return callback(err); }
 
         context.logInfo('Data version is now 1.3.40');
@@ -26,10 +26,10 @@ module.exports = function (context, callback) {
   });
 
   function migrateUser(user, callback) {
-    context.logInfo('Migrating user ' + toString.user(user) + '...');
+    context.logInfo(`Migrating user ${toString.user(user)}...`);
     async.series([
       function _updateAccessesStructure(stepDone) {
-        context.database.getCollection({ name: user._id + '.accesses' }, function (err, accessesCol) {
+        context.database.getCollection({ name: `${user._id}.accesses` }, (err, accessesCol) => {
           if (err) {
             context.logError(err, 'retrieving accesses collection');
             return stepDone(err);
@@ -40,7 +40,7 @@ module.exports = function (context, callback) {
         });
       },
       function _updateAccessData(stepDone) {
-        context.database.getCollection({ name: user._id + '.accesses' }, function (err, accessesCol) {
+        context.database.getCollection({ name: `${user._id}.accesses` }, (err, accessesCol) => {
           if (err) {
             context.logError(err, 'retrieving accesses collection');
             return stepDone(err);
@@ -48,11 +48,11 @@ module.exports = function (context, callback) {
 
           const accessesCursor = accessesCol.find();
           let completed = false;
-          async.until(function () { return completed; }, migrateAccesss,
+          async.until(() => completed, migrateAccesss,
             context.stepCallbackFn('migrating accesss structure', stepDone));
 
           function migrateAccesss(accessDone) {
-            accessesCursor.next(function (err, access) {
+            accessesCursor.next((err, access) => {
               if (err) { return setImmediate(accessDone.bind(null, err)); }
               if (access == null) {
                 completed = true;
@@ -60,25 +60,25 @@ module.exports = function (context, callback) {
               }
 
               let update;
-              
+
               if (access.deleted === undefined) {
                 update = {
                   $set: {
-                    deleted: null
-                  }
+                    deleted: null,
+                  },
                 };
               } else {
                 update = {
                   $rename: {
-                    '_token': 'token',
-                    '_type': 'type',
-                    '_name': 'name',
-                    '_deviceName': 'deviceName',
-                  }
+                    _token: 'token',
+                    _type: 'type',
+                    _name: 'name',
+                    _deviceName: 'deviceName',
+                  },
                 };
               }
 
-              accessesCol.updateOne({ _id: access._id }, update, function (err) {
+              accessesCol.updateOne({ _id: access._id }, update, (err) => {
                 if (err) {
                   return accessDone(err);
                 }
@@ -87,22 +87,21 @@ module.exports = function (context, callback) {
             });
           }
         });
-      }
-    ], function (err) {
+      },
+    ], (err) => {
       if (err) {
         context.logError(err, 'migrating user');
         return callback(err);
       }
-      context.logInfo('Successfully migrated user ' + toString.user(user) + '.');
+      context.logInfo(`Successfully migrated user ${toString.user(user)}.`);
       callback();
     });
   }
 
   function ignoreNSError(callback, err) {
-    if (! err || err.message.indexOf('ns not found') !== -1) {
+    if (!err || err.message.indexOf('ns not found') !== -1) {
       return callback();
-    } else {
-      return callback(err);
     }
+    return callback(err);
   }
 };

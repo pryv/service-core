@@ -1,5 +1,11 @@
 // @flow
 
+import type { LRUCache } from 'lru-cache';
+
+import type { TypeRepository, Repository } from 'components/business';
+import type { Logger } from 'components/utils';
+import type { MessageSink } from './message_sink';
+
 const async = require('async');
 const R = require('ramda');
 const bluebird = require('bluebird');
@@ -7,24 +13,16 @@ const LRU = require('lru-cache');
 const debug = require('debug')('metadata_cache');
 
 const storage = require('components/storage');
-const MethodContext = require('components/model').MethodContext;
+const { MethodContext } = require('components/model');
 const errors = require('components/errors').factory;
 const { InfluxRowType } = require('components/business').types;
 
 const Settings = require('./Settings');
 
 const NatsSubscriber = require('components/api-server/src/socket-io/nats_subscriber');
-const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
-const NATS_UPDATE_EVENT = require('components/utils').messaging
-  .NATS_UPDATE_EVENT;
-const NATS_DELETE_EVENT = require('components/utils').messaging
-  .NATS_DELETE_EVENT;
-
-import type { LRUCache } from 'lru-cache';
-
-import type { TypeRepository, Repository } from 'components/business';
-import type { Logger } from 'components/utils';
-import type { MessageSink } from './message_sink';
+const { NATS_CONNECTION_URI } = require('components/utils').messaging;
+const { NATS_UPDATE_EVENT } = require('components/utils').messaging;
+const { NATS_DELETE_EVENT } = require('components/utils').messaging;
 
 type UsernameEvent = {
   username: string,
@@ -33,26 +31,26 @@ type UsernameEvent = {
   },
 };
 
-/** A repository for meta data on series. 
+/** A repository for meta data on series.
  */
 export interface MetadataRepository {
   forSeries(userName: string, eventId: string, accessToken: string): Promise<SeriesMetadata>;
 }
 
-/** Meta data on series. 
+/** Meta data on series.
  */
 export interface SeriesMetadata {
   // Returns true if write access to the series is allowed.
   canWrite(): boolean;
-  
-  // Returns true if read access to the series is allowed. 
+
+  // Returns true if read access to the series is allowed.
   canRead(): boolean;
-  
-  // Returns a namespace/database name and a series name for use with InfluxDB. 
+
+  // Returns a namespace/database name and a series name for use with InfluxDB.
   namespaceAndName(): [string, string];
-  
-  // Return the InfluxDB row type for the given event. 
-  produceRowType(repo: TypeRepository): InfluxRowType; 
+
+  // Return the InfluxDB row type for the given event.
+  produceRowType(repo: TypeRepository): InfluxRowType;
 
   // Retur true if item is trashed or deleted
   isTrashedOrDeleted(): boolean;
@@ -61,13 +59,13 @@ export interface SeriesMetadata {
 // A single HFS server will keep at maximum this many credentials in cache.
 const LRU_CACHE_SIZE = 10000;
 
-// Credentials will be cached for at most this many ms. 
-const LRU_CACHE_MAX_AGE_MS = 1000*60*5; // 5 mins
+// Credentials will be cached for at most this many ms.
+const LRU_CACHE_MAX_AGE_MS = 1000 * 60 * 5; // 5 mins
 
-/** Holds metadata related to series for some time so that we don't have to 
- * compile it every time we store data in the server. 
- * 
- * Caches data about a series first by `accessToken`, then by `eventId`. 
+/** Holds metadata related to series for some time so that we don't have to
+ * compile it every time we store data in the server.
+ *
+ * Caches data about a series first by `accessToken`, then by `eventId`.
  * */
 class MetadataCache implements MetadataRepository, MessageSink {
   loader: MetadataRepository;
@@ -78,18 +76,20 @@ class MetadataCache implements MetadataRepository, MessageSink {
    *  - accessToken -> username/eventID/accessToken
    *  - username/eventId/accessToken -> SeriesMetadataImpl (metadata_cache.js)
    */
-  cache: LRUCache<string, mixed>; 
+  cache: LRUCache<string, mixed>;
+
   series: Repository;
 
   settings: Settings;
 
   // nats messaging
   natsUpdateSubscriber: NatsSubscriber;
-  natsDeleteSubscriber: NatsSubscriber;
-  sink: MessageSink;
-  
-  constructor(series: Repository, metadataLoader: MetadataRepository, settings: Settings) {
 
+  natsDeleteSubscriber: NatsSubscriber;
+
+  sink: MessageSink;
+
+  constructor(series: Repository, metadataLoader: MetadataRepository, settings: Settings) {
     this.loader = metadataLoader;
     this.series = series;
     this.settings = settings;
@@ -121,18 +121,18 @@ class MetadataCache implements MetadataRepository, MessageSink {
 
   dropSeries(usernameEvent: UsernameEvent): Promise {
     return this.series.connection.dropMeasurement(
-      'event.' + usernameEvent.event.id,
-      'user.' + usernameEvent.username
+      `event.${usernameEvent.event.id}`,
+      `user.${usernameEvent.username}`,
     );
   }
 
   invalidateEvent(usernameEvent: UsernameEvent): void {
-    const cache = this.cache;
-    const eventKey = usernameEvent.username + '/' + usernameEvent.event.id;
+    const { cache } = this;
+    const eventKey = `${usernameEvent.username}/${usernameEvent.event.id}`;
     const cachedTokenListForEvent: Array<string> = cache.get(eventKey);
     if (cachedTokenListForEvent != null) { // what does this return
       cachedTokenListForEvent.map((token) => {
-        cache.del(eventKey + '/' + token);
+        cache.del(`${eventKey}/${token}`);
       });
     }
   }
@@ -146,9 +146,9 @@ class MetadataCache implements MetadataRepository, MessageSink {
 
   // cache logic
   async forSeries(userName: string, eventId: string, accessToken: string): Promise<SeriesMetadata> {
-    const cache: LRUCache<string, Array<string>> = this.cache; 
-    
-    const key: string = [userName, eventId, accessToken].join('/'); 
+    const { cache } = this;
+
+    const key: string = [userName, eventId, accessToken].join('/');
 
     // to make sure we update the tokenList "recently used info" cache we also get eventKey
     const eventKey: string = [userName, eventId].join('/');
@@ -156,14 +156,14 @@ class MetadataCache implements MetadataRepository, MessageSink {
 
     // also keep a list of used Token to invalidate them
     const cachedEventListForTokens: Array<string> = cache.get(accessToken);
-    
+
     const cachedValue = cache.get(key);
-    if ( cachedValue != null) {
+    if (cachedValue != null) {
       debug(`Using cached credentials for ${userName} / ${eventId}.`);
       return cachedValue;
-    }  
-    const newValue = await this.loader.forSeries(userName, eventId, accessToken); 
-    
+    }
+    const newValue = await this.loader.forSeries(userName, eventId, accessToken);
+
     // new event we add it to the list
     if (cachedTokenListForEvent != null) {
       cache.set(eventKey, cachedTokenListForEvent.concat(accessToken));
@@ -177,80 +177,84 @@ class MetadataCache implements MetadataRepository, MessageSink {
     } else {
       cache.set(accessToken, [key]);
     }
-    
+
     cache.set(key, newValue);
-    
+
     return newValue;
   }
 }
 
-/** Loads metadata related to a series from the main database. 
+/** Loads metadata related to a series from the main database.
  */
 class MetadataLoader {
-  databaseConn: storage.Database; 
+  databaseConn: storage.Database;
+
   storage: storage.StorageLayer;
-  
+
   constructor(databaseConn: storage.Database, logger: Logger) {
-    this.databaseConn = databaseConn; 
-    // NOTE We pass bogus values to the last few arguments of StorageLayer - 
-    // we're not using anything but the 'events' collection. Anyhow - these 
-    // should be abstracted away from the storage. Also - this is currently  
-    // a prototype, so we are allowed to do this. 
+    this.databaseConn = databaseConn;
+    // NOTE We pass bogus values to the last few arguments of StorageLayer -
+    // we're not using anything but the 'events' collection. Anyhow - these
+    // should be abstracted away from the storage. Also - this is currently
+    // a prototype, so we are allowed to do this.
     const sessionMaxAge = 3600 * 1000;
     this.storage = new storage.StorageLayer(
-      databaseConn, logger, 
-      'attachmentsDirPath', 'previewsDirPath', 10, sessionMaxAge);
+      databaseConn, logger,
+      'attachmentsDirPath', 'previewsDirPath', 10, sessionMaxAge,
+    );
   }
-  
+
   forSeries(userName: string, eventId: string, accessToken: string): Promise<SeriesMetadata> {
-    const storage = this.storage; 
-    
+    const { storage } = this;
+
     // Retrieve Access (including accessLogic)
     const customAuthStep = null;
     const methodContext = new MethodContext(userName, accessToken, customAuthStep);
-    
+
     return bluebird.fromCallback((returnValueCallback) => {
       async.series(
         [
           (next) => toCallback(methodContext.retrieveUser(storage), next),
-          (next) => toCallback(methodContext.retrieveExpandedAccess(storage), next), 
+          (next) => toCallback(methodContext.retrieveExpandedAccess(storage), next),
           function loadEvent(done) { // result is used in success handler!
-            const user = methodContext.user; 
-            const query = {id: eventId};
-            const findOpts = null; 
+            const { user } = methodContext;
+            const query = { id: eventId };
+            const findOpts = null;
 
             storage.events.findOne(user, query, findOpts, done);
           },
-        ], 
+        ],
         (err, results) => {
-          if (err != null) return returnValueCallback(
-            mapErrors(err));
+          if (err != null) {
+            return returnValueCallback(
+              mapErrors(err),
+            );
+          }
 
-          const access = methodContext.access;
-          const user = methodContext.user;
+          const { access } = methodContext;
+          const { user } = methodContext;
           const event = R.last(results);
 
           // Because we called retrieveExpandedAccess above.
           if (access == null) throw new Error('AF: access != null');
           // Because we called retrieveUser above.
           if (user == null) throw new Error('AF: user != null');
-          
+
           if (event === null) return returnValueCallback(errors.unknownResource('event', eventId));
 
           returnValueCallback(null,
             new SeriesMetadataImpl(access, user, event));
-        }
+        },
       );
     });
-    
+
     function mapErrors(err: mixed): Error {
-      if (! (err instanceof Error)) 
-        return new Error(err);
-      
+      if (!(err instanceof Error)) { return new Error(err); }
+
       // else
-      return err; 
+      return err;
     }
-    
+
     function toCallback(promise, next) {
       return bluebird.resolve(promise).asCallback(next);
     }
@@ -258,48 +262,52 @@ class MetadataLoader {
 }
 
 type AccessModel = {
-  canContributeToStream(streamId: string): boolean; 
-  canReadStream(streamId: string): boolean; 
+  canContributeToStream(streamId: string): boolean;
+  canReadStream(streamId: string): boolean;
 };
 type EventModel = {
-  id: string, 
-  streamIds: string, 
+  id: string,
+  streamIds: string,
   type: string,
   time: number,
   trashed: boolean,
   deleted: number,
-}; 
-type UserModel = { 
-  id: string, 
-  username: string, 
+};
+type UserModel = {
+  id: string,
+  username: string,
 };
 
-
-/** Metadata on a series, obtained from querying the main database. 
+/** Metadata on a series, obtained from querying the main database.
  *
  * NOTE Instances of this class get stored in RAM for some time. This is the
- *  reason why we don't store everything about the event and the user here, 
- *  only things that we subsequently need for our operations. 
+ *  reason why we don't store everything about the event and the user here,
+ *  only things that we subsequently need for our operations.
  */
 class SeriesMetadataImpl implements SeriesMetadata {
   permissions: {
-    write: boolean, 
-    read: boolean, 
+    write: boolean,
+    read: boolean,
   }
-  
-  userName: string; 
-  eventId: string; 
+
+  userName: string;
+
+  eventId: string;
+
   eventType: string;
-  time: number; 
+
+  time: number;
+
   trashed: boolean;
+
   deleted: number;
-  
+
   constructor(access: AccessModel, user: UserModel, event: EventModel) {
     this.permissions = definePermissions(access, event);
-    this.userName = user.username; 
-    this.eventId = event.id; 
+    this.userName = user.username;
+    this.eventId = event.id;
     this.time = event.time;
-    this.eventType = event.type; 
+    this.eventType = event.type;
     this.trashed = event.trashed;
     this.deleted = event.deleted;
   }
@@ -309,44 +317,47 @@ class SeriesMetadataImpl implements SeriesMetadata {
   }
 
   canWrite(): boolean {
-    return this.permissions.write; 
+    return this.permissions.write;
   }
+
   canRead(): boolean {
     return this.permissions.read;
   }
-  
+
   namespaceAndName(): [string, string] {
     return [
-      `user.${this.userName}`, 
+      `user.${this.userName}`,
       `event.${this.eventId}`,
     ];
   }
 
-  // Return the InfluxDB row type for the given event. 
+  // Return the InfluxDB row type for the given event.
   produceRowType(repo: TypeRepository): InfluxRowType {
     const type = repo.lookup(this.eventType);
-    
+
     // NOTE The instanceof check here serves to make flow-type happy about the
     //  value we'll return from this function. If duck-typing via 'isSeries' is
     //  ever needed, you'll need to find a different way of providing the same
     //  static guarantee (think interfaces...).
-    if (! type.isSeries() || !(type instanceof InfluxRowType))
+    if (!type.isSeries() || !(type instanceof InfluxRowType)) {
       throw errors.invalidOperation(
-        "High Frequency data can only be stored in events whose type starts with 'series:'.");
-    
+        "High Frequency data can only be stored in events whose type starts with 'series:'.",
+      );
+    }
+
     type.setSeriesMeta(this);
-    return type; 
+    return type;
   }
 }
 
 function definePermissions(access: AccessModel, event: EventModel): {write: boolean, read: boolean} {
-  const streamIds = event.streamIds; 
+  const { streamIds } = event;
   const permissions = {
     write: false,
     read: false,
   };
   const streamIdsLength = streamIds.length;
-  for(let i=0; i<streamIdsLength && ! readAndWriteTrue(permissions); i++) {
+  for (let i = 0; i < streamIdsLength && !readAndWriteTrue(permissions); i++) {
     if (access.canContributeToStream(streamIds[i])) permissions.write = true;
     if (access.canReadStream(streamIds[i])) permissions.read = true;
   }
@@ -358,6 +369,6 @@ function definePermissions(access: AccessModel, event: EventModel): {write: bool
 }
 
 module.exports = {
-  MetadataLoader: MetadataLoader, 
-  MetadataCache: MetadataCache,
+  MetadataLoader,
+  MetadataCache,
 };

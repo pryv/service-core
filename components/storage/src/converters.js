@@ -2,8 +2,8 @@
  * Common converter helper functions for storage modules.
  */
 
-var generateId = require('cuid'),
-    timestamp = require('unix-timestamp');
+const generateId = require('cuid');
+const timestamp = require('unix-timestamp');
 
 exports.createIdIfMissing = function (item) {
   item.id = item.id || generateId();
@@ -12,7 +12,7 @@ exports.createIdIfMissing = function (item) {
 
 exports.getRenamePropertyFn = function (oldName, newName) {
   return function (item) {
-    if (! item || ! item.hasOwnProperty(oldName)) {
+    if (!item || !item.hasOwnProperty(oldName)) {
       return item;
     }
 
@@ -37,7 +37,7 @@ exports.stateToDB = function (item) {
 };
 
 exports.stateUpdate = function (update) {
-  if (update.$set.hasOwnProperty('trashed') && ! update.$set.trashed) {
+  if (update.$set.hasOwnProperty('trashed') && !update.$set.trashed) {
     update.$unset.trashed = 1;
     delete update.$set.trashed;
   }
@@ -47,13 +47,13 @@ exports.stateUpdate = function (update) {
 exports.getKeyValueSetUpdateFn = function (propertyName) {
   propertyName = propertyName || 'clientData';
   return function (update) {
-    var keyValueSet = update.$set[propertyName];
+    const keyValueSet = update.$set[propertyName];
     if (keyValueSet) {
-      Object.keys(keyValueSet).forEach(function (key) {
+      Object.keys(keyValueSet).forEach((key) => {
         if (keyValueSet[key] !== null) {
-          update.$set[propertyName + '.' + key] = keyValueSet[key];
+          update.$set[`${propertyName}.${key}`] = keyValueSet[key];
         } else {
-          update.$unset[propertyName + '.' + key] = 1;
+          update.$unset[`${propertyName}.${key}`] = 1;
         }
       });
       delete update.$set[propertyName];
@@ -61,7 +61,6 @@ exports.getKeyValueSetUpdateFn = function (propertyName) {
     return update;
   };
 };
-
 
 exports.deletionToDB = function (item) {
   if (item.deleted != null) {
@@ -84,5 +83,3 @@ exports.deletionFromDB = function (dbItem) {
   }
   return dbItem;
 };
-
-

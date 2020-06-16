@@ -1,6 +1,8 @@
 // @flow
 
-// Main application class. Does all the work. 
+// Main application class. Does all the work.
+
+import type { Logger, LogFactory } from 'components/utils/src/logging';
 
 const assert = require('assert');
 const path = require('path');
@@ -12,85 +14,87 @@ const storage = require('components/storage');
 
 const Settings = require('./settings');
 
-import type { Logger, LogFactory } from 'components/utils/src/logging';
-
 const services = {
   MetadataUpdater: require('./metadata_updater/service'),
 };
 
 class Application {
   logFactory: LogFactory;
-  logger: Logger; 
+
+  logger: Logger;
+
   settings: Settings;
-  
+
   metadataUpdaterService: ?services.MetadataUpdater;
-  
+
   async setup(overrideSettings: ?Object) {
-    this.initSettings(); 
+    this.initSettings();
 
     await this.parseCommandLine(process.argv);
 
-    if (overrideSettings != null) 
-      this.settings.merge(overrideSettings);
+    if (overrideSettings != null) { this.settings.merge(overrideSettings); }
 
-    this.initLogger(); 
-    this.initTrace(); 
-    
+    this.initLogger();
+    this.initTrace();
+
     assert(this.logger != null);
     assert(this.settings != null);
   }
-    
+
   initSettings() {
-    this.settings = new Settings(); 
+    this.settings = new Settings();
   }
+
   initLogger() {
-    const settings = this.settings;
+    const { settings } = this;
     const loggerSettings = settings.getLogSettingsObject();
     const logFactory = this.logFactory = loggingSubsystem(loggerSettings).getLogger;
-    
+
     const logger = this.logger = logFactory('application');
-    
+
     const consoleLevel = settings.get('logs.console.level').str();
     logger.info(`Console logging is configured at level '${consoleLevel}'`);
   }
+
   initTrace() {
     // TODO
   }
+
   async parseCommandLine(argv: Array<string>) {
-    const cliArgs = new CLIArgs(this.settings); 
+    const cliArgs = new CLIArgs(this.settings);
     await cliArgs.parse(argv);
   }
-  
-  // Runs the application. This method only ever exits once the service is 
-  // killed. 
-  // 
-  async run() {    
-    const logger = this.logger; 
-        
+
+  // Runs the application. This method only ever exits once the service is
+  // killed.
+  //
+  async run() {
+    const { logger } = this;
+
     logger.info('Metadata service is mounting services:');
-    await this.startMetadataUpdater(); 
+    await this.startMetadataUpdater();
   }
-  
+
   // Initializes and starts the metadata updater service. The `endpoint`
   // parameter should contain an endpoint the service binds to in the form of
-  // HOST:PORT.  
-  // 
+  // HOST:PORT.
+  //
   async startMetadataUpdater() {
-    const settings = this.settings;
+    const { settings } = this;
     const loggerFor = this.logFactory;
 
     // Connect to MongoDB
     const storageLayer = produceStorageLayer(
       settings.getMongodbSettings(),
-      loggerFor('mongodb')
+      loggerFor('mongodb'),
     );
-    
+
     // Construct the service
-    const service = new services.MetadataUpdater(storageLayer, loggerFor('metadata_updater')); 
-    this.metadataUpdaterService = service; 
-    
-    const host = settings.get('metadataUpdater.host').str(); 
-    const port = settings.get('metadataUpdater.port').num(); 
+    const service = new services.MetadataUpdater(storageLayer, loggerFor('metadata_updater'));
+    this.metadataUpdaterService = service;
+
+    const host = settings.get('metadataUpdater.host').str();
+    const port = settings.get('metadataUpdater.port').num();
     const endpoint = `${host}:${port}`;
 
     // And start it.
@@ -99,40 +103,39 @@ class Application {
 }
 module.exports = Application;
 
-// Handles command line argument parsing and help output. 
-// 
+// Handles command line argument parsing and help output.
+//
 class CLIArgs {
   settings: Settings;
-  
+
   constructor(settings: Settings) {
     this.settings = settings;
   }
-  
-  // Parses the configuration on the command line (arguments) and executes 
+
+  // Parses the configuration on the command line (arguments) and executes
   // actions against the `settings`.
-  // 
+  //
   async parse(argv: Array<string>) {
     const cli = yargs
       .option('c', {
-        alias: 'config', 
-        type: 'string', 
-        describe: 'reads configuration file at PATH'
+        alias: 'config',
+        type: 'string',
+        describe: 'reads configuration file at PATH',
       })
       .usage('$0 [args] \n\n  starts a metadata service')
-      .help();      
-    
+      .help();
+
     const out = cli.parse(argv);
-    
-    if (out.config != null) 
-      await this.parseConfigFile(out.config);
+
+    if (out.config != null) { await this.parseConfigFile(out.config); }
   }
-  
+
   async parseConfigFile(input: string) {
-    const settings = this.settings; 
-    
+    const { settings } = this;
+
     const configPath = path.resolve(input);
     await settings.loadFromFile(configPath);
-    
+
     // NOTE Done after the fact, because maybe 'info' is only visible after
     // configuration.
     console.info(`Using configuration file at: ${configPath}`); // eslint-disable-line no-console
@@ -141,23 +144,25 @@ class CLIArgs {
 
 function produceStorageLayer(settings, logger) {
   logger.info(`Connecting to MongoDB (@ ${settings.host}:${settings.port}/${settings.name}) (${settings.authUser})`);
-  
+
   const mongoConn = new storage.Database(
-    settings, logger);
-    
-  // BUG These must be read from the configuration, probably. If we don't have 
+    settings, logger,
+  );
+
+  // BUG These must be read from the configuration, probably. If we don't have
   // these values, we cannot instanciate StorageLayer, even though none of these
   // is used here. So bad. To be changed.
-  // 
-  const passwordResetRequestMaxAge = 60*1000;
-  const sessionMaxAge = 60*1000;
-      
+  //
+  const passwordResetRequestMaxAge = 60 * 1000;
+  const sessionMaxAge = 60 * 1000;
+
   const storageLayer = new storage.StorageLayer(
-    mongoConn, 
-    logger, 
-    'attachmentsDirPath', 'previewsDirPath', 
+    mongoConn,
+    logger,
+    'attachmentsDirPath', 'previewsDirPath',
     passwordResetRequestMaxAge,
-    sessionMaxAge);
-    
+    sessionMaxAge,
+  );
+
   return storageLayer;
 }

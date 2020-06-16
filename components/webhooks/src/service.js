@@ -1,5 +1,9 @@
 // @flow
 
+import type { MessageSink } from 'components/api-server/src/socket-io/message_sink';
+import type { StorageLayer } from 'components/storage';
+import type { Logger } from 'components/utils/src/logging';
+
 const bluebird = require('bluebird');
 const _ = require('lodash');
 
@@ -7,19 +11,14 @@ const NatsSubscriber = require('components/api-server/src/socket-io/nats_subscri
 const WEBHOOKS_CREATE_CHANNEL: string = require('components/utils').messaging.NATS_WEBHOOKS_CREATE;
 const WEBHOOKS_ACTIVATE_CHANNEL: string = require('components/utils').messaging.NATS_WEBHOOKS_ACTIVATE;
 const WEBHOOKS_DELETE_CHANNEL: string = require('components/utils').messaging.NATS_WEBHOOKS_DELETE;
-
-
-import type { MessageSink } from 'components/api-server/src/socket-io/message_sink';
-import type { StorageLayer } from 'components/storage';
-import type { Logger } from 'components/utils/src/logging';
-const Settings = require('./settings');
-
 const Webhook = require('components/business/src/webhooks/Webhook');
+
 const WebhooksRepository = require('components/business/src/webhooks/repository');
 
 const { ProjectVersion } = require('components/middleware/src/project_version');
+const Settings = require('./settings');
 
-const BOOT_MESSAGE = require('./messages').BOOT_MESSAGE;
+const { BOOT_MESSAGE } = require('./messages');
 
 type UsernameWebhook = {
   username: string,
@@ -27,21 +26,26 @@ type UsernameWebhook = {
 };
 
 class WebhooksService implements MessageSink {
-
   createListener: NatsSubscriber;
+
   deleteListener: NatsSubscriber;
+
   webhooks: Map<string, Array<Webhook>>;
 
   repository: WebhooksRepository;
+
   logger: Logger;
+
   settings: Settings;
+
   NATS_CONNECTION_URI: string;
 
   apiVersion: string;
+
   serial: string;
 
   constructor(params: {
-    storage: StorageLayer, 
+    storage: StorageLayer,
     logger: Logger,
     settings: Settings,
     }) {
@@ -53,10 +57,10 @@ class WebhooksService implements MessageSink {
 
   async start() {
     const pv = new ProjectVersion();
-    this.apiVersion = await pv.version(); 
+    this.apiVersion = await pv.version();
     this.serial = this.settings.get('service:info:serial');
 
-    this.logger.info('Loading service with version ' + this.apiVersion + ' and serial ' + this.serial + '.');
+    this.logger.info(`Loading service with version ${this.apiVersion} and serial ${this.serial}.`);
 
     await this.subscribeToDeleteListener();
     await this.subscribeToCreateListener();
@@ -64,16 +68,15 @@ class WebhooksService implements MessageSink {
     this.logger.info('Listeners for webhooks creation/deletion up.');
 
     await this.loadWebhooks();
-    this.logger.info('Loaded webhooks for ' + this.webhooks.size + ' user(s).');
+    this.logger.info(`Loaded webhooks for ${this.webhooks.size} user(s).`);
 
     const numWebhooks: number = await this.setMeta.call(this);
 
     await this.sendBootMessage();
-    this.logger.info(BOOT_MESSAGE + ' sent.');
+    this.logger.info(`${BOOT_MESSAGE} sent.`);
 
     await this.initSubscribers();
-    this.logger.info(numWebhooks + ' webhook(s) listening to changes from core.');
-
+    this.logger.info(`${numWebhooks} webhook(s) listening to changes from core.`);
   }
 
   async subscribeToDeleteListener(): Promise<void> {
@@ -95,7 +98,7 @@ class WebhooksService implements MessageSink {
     let numWebhooks: number = 0;
     for (const entry of this.webhooks) {
       const userWebhooks = entry[1];
-      userWebhooks.forEach(w => {
+      userWebhooks.forEach((w) => {
         w.setApiVersion(this.apiVersion);
         w.setSerial(this.serial);
         w.setLogger(this.logger);
@@ -109,13 +112,12 @@ class WebhooksService implements MessageSink {
     for (const entry of this.webhooks) {
       await bluebird.all(entry[1].map(async (webhook) => {
         await webhook.send(BOOT_MESSAGE);
-        
       }));
     }
   }
 
   async initSubscribers(): Promise<void> {
-    for(const entry of this.webhooks) {
+    for (const entry of this.webhooks) {
       const username: string = entry[0];
       const webhooks: Array<Webhook> = entry[1];
       const f = initSubscriberForWebhook.bind(this, username, this.apiVersion, this.serial);
@@ -124,7 +126,7 @@ class WebhooksService implements MessageSink {
   }
 
   deliver(channel: string, usernameWebhook: UsernameWebhook): void {
-    switch(channel) {
+    switch (channel) {
       case WEBHOOKS_CREATE_CHANNEL:
         this.addWebhook(
           usernameWebhook.username,
@@ -132,10 +134,10 @@ class WebhooksService implements MessageSink {
             _.extend({}, usernameWebhook.webhook, {
               webhooksRepository: this.repository,
               user: {
-                username: usernameWebhook.username
-              }
-            })
-          )
+                username: usernameWebhook.username,
+              },
+            }),
+          ),
         );
         break;
       case WEBHOOKS_ACTIVATE_CHANNEL:
@@ -162,14 +164,14 @@ class WebhooksService implements MessageSink {
   }
 
   async activateWebhook(username: string, webhook: Webhook): void {
-    let userWebhooks: Array<Webhook> = this.webhooks.get(username);
-    const stoppedWebhook: Webhook = userWebhooks.filter(w => w.id === webhook.id)[0];
+    const userWebhooks: Array<Webhook> = this.webhooks.get(username);
+    const stoppedWebhook: Webhook = userWebhooks.filter((w) => w.id === webhook.id)[0];
     stoppedWebhook.state = 'active';
     this.logger.info(`Reactivated webhook ${stoppedWebhook.id} for ${username}`);
   }
 
   stopWebhook(username: string, webhookId: string): void {
-    const [ usersWebhooks: Array<Webhook>, webhook: Webhook, idx: number ] = this.getWebhook(username, webhookId);
+    const [usersWebhooks: Array<Webhook>, webhook: Webhook, idx: number] = this.getWebhook(username, webhookId);
     if (webhook == null || usersWebhooks == null || idx == null) {
       this.logger.warn(`Could not retrieve webhook ${webhookId} for ${username} to stop it.`);
       return;
@@ -183,21 +185,21 @@ class WebhooksService implements MessageSink {
   getWebhook(username: string, webhookId: string): [ ?Array<Webhook>, ?Webhook, ?number ] {
     const usersWebhooks: ?Array<Webhook> = this.webhooks.get(username);
 
-    if (usersWebhooks == null) return [ null, null, null ];
+    if (usersWebhooks == null) return [null, null, null];
 
     const len = usersWebhooks.length;
-    for(let i=0; i<len; i++) {
+    for (let i = 0; i < len; i++) {
       if (usersWebhooks[i].id === webhookId) {
-        return [ usersWebhooks, usersWebhooks[i], i ];
+        return [usersWebhooks, usersWebhooks[i], i];
       }
     }
-    return [ null, null, null ];
+    return [null, null, null];
   }
 
   stop(): void {
     this.logger.info('Stopping webhooks service');
     for (const usernameWebhooks of this.webhooks) {
-      usernameWebhooks[1].forEach(w => {
+      usernameWebhooks[1].forEach((w) => {
         w.stop();
       });
     }
@@ -206,14 +208,11 @@ class WebhooksService implements MessageSink {
   async loadWebhooks(): Promise<void> {
     this.webhooks = await this.repository.getAll();
   }
-
 }
 
 async function initSubscriberForWebhook(username: string, apiVersion: string, serial: string, webhook: Webhook): Promise<void> {
-  const natsSubscriber = new NatsSubscriber(this.NATS_CONNECTION_URI, webhook, 
-    function channelForUser(username: string): string {
-      return `${username}.wh1`;
-    });
+  const natsSubscriber = new NatsSubscriber(this.NATS_CONNECTION_URI, webhook,
+    ((username: string): string => `${username}.wh1`));
   await natsSubscriber.subscribe(username);
   webhook.setNatsSubscriber(natsSubscriber);
 }

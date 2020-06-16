@@ -1,7 +1,7 @@
-const BaseStorage = require('./BaseStorage');
-const converters = require('./../converters');
 const util = require('util');
 const _ = require('lodash');
+const BaseStorage = require('./BaseStorage');
+const converters = require('../converters');
 
 module.exports = Webhooks;
 /**
@@ -18,7 +18,7 @@ function Webhooks(database) {
       converters.createIdIfMissing,
     ],
     itemToDB: [converters.deletionToDB],
-    itemFromDB: [converters.deletionFromDB]
+    itemFromDB: [converters.deletionFromDB],
   });
 
   this.defaultOptions = {
@@ -31,9 +31,9 @@ const indexes = [
     index: { accessId: 1, url: 1 },
     options: {
       unique: true,
-      partialFilterExpression: { deleted: { $type: 'null' } }
-    }
-  }
+      partialFilterExpression: { deleted: { $type: 'null' } },
+    },
+  },
 ];
 
 /**
@@ -42,8 +42,8 @@ const indexes = [
 Webhooks.prototype.getCollectionInfo = function (user) {
   return {
     name: 'webhooks',
-    indexes: indexes,
-    useUserId: user.id
+    indexes,
+    useUserId: user.id,
   };
 };
 
@@ -76,23 +76,23 @@ Webhooks.prototype.delete = function (user, query, callback) {
 
 /**
  * Override base method to set deleted:null
- * 
- * @param {*} user 
- * @param {*} item 
- * @param {*} callback 
+ *
+ * @param {*} user
+ * @param {*} item
+ * @param {*} callback
  */
 Webhooks.prototype.insertOne = function (user, webhook, callback) {
-  let webhookToCreate = _.clone(webhook);
+  const webhookToCreate = _.clone(webhook);
   if (webhookToCreate.deleted === undefined) webhookToCreate.deleted = null;
   this.database.insertOne(
     this.getCollectionInfo(user),
     this.applyItemToDB(this.applyItemDefaults(webhookToCreate)),
-    function (err) {
+    (err) => {
       if (err) {
         return callback(err);
       }
       callback(null, _.omit(webhookToCreate, 'deleted'));
-    }
+    },
   );
 };
 
@@ -107,6 +107,6 @@ Webhooks.prototype.insertMany = function (user, webhooks, callback) {
   this.database.insertMany(
     this.getCollectionInfo(user),
     this.applyItemsToDB(webhooksToCreate),
-    callback
+    callback,
   );
 };

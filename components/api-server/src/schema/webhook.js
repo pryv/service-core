@@ -4,10 +4,11 @@
 
 const Action = require('./Action');
 const helpers = require('./helpers');
-const object = helpers.object;
-const string = helpers.string;
-const number = helpers.number;
-const array = helpers.array;
+
+const { object } = helpers;
+const { string } = helpers;
+const { number } = helpers;
+const { array } = helpers;
 
 /**
  * @param {Action} action
@@ -16,20 +17,20 @@ exports = module.exports = function (action) {
   if (action === Action.STORE) { action = Action.READ; } // read items === stored items
 
   const base = object({
-    'id': string(),
-    'accessId': string(),
-    'url': string(),
-    'state': string(),
-    'runCount': number(),
-    'failCount': number(),
-    'lastRun': run,
-    'runs': array(run),
-    'currentRetries': number(),
-    'maxRetries': number(),
-    'minIntervalMs': number(),
-  }, 
+    id: string(),
+    accessId: string(),
+    url: string(),
+    state: string(),
+    runCount: number(),
+    failCount: number(),
+    lastRun: run,
+    runs: array(run),
+    currentRetries: number(),
+    maxRetries: number(),
+    minIntervalMs: number(),
+  },
   {
-    additionalProperties: false
+    additionalProperties: false,
   });
   helpers.addTrackingProperties(base);
 
@@ -68,10 +69,9 @@ const run = object({
   status: number(),
   timestamp: number(),
 },
-{ 
+{
   required: [
     'status',
     'timestamp',
-  ]
-}
-);
+  ],
+});

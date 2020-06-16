@@ -2,7 +2,7 @@
  * Helper for opening inter-process TCP messaging sockets.
  */
 
-var axon = require('axon');
+const axon = require('axon');
 
 exports.NATS_CONNECTION_URI = 'nats://127.0.0.1:4222';
 
@@ -18,7 +18,7 @@ exports.NATS_DELETE_EVENT = 'events.delete';
  * @param {Function({Error}, {Object})} callback Called passing the `EventEmitter` for TCP messages
  */
 exports.openPubSocket = function (settings, callback) {
-  var socket = axon.socket('pub-emitter');
+  const socket = axon.socket('pub-emitter');
   if (settings.pubConnectInsteadOfBind) {
     socket.connect(+settings.port, settings.host, onSocketOpened);
   } else {

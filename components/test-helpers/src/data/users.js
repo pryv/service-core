@@ -8,22 +8,22 @@ module.exports = [
     storageUsed: {
       // values are incorrect but that doesn't matter for tests
       dbDocuments: 0,
-      attachedFiles: 275076
-    }
+      attachedFiles: 275076,
+    },
   },
   {
     id: 'u_1',
     username: 'userone',
     password: 't3st-0n3',
     email: 'one@test.com',
-    language: 'fr'
+    language: 'fr',
   },
   {
     id: 'u_2',
     username: '00000',
     password: 't3st-Numb3r',
     email: '00000@test.com',
-    language: 'en'
+    language: 'en',
   },
   // auditing
   {
@@ -31,7 +31,7 @@ module.exports = [
     username: 'auditorUser',
     password: 't3st-tHr3e',
     email: 'auditor@test.com',
-    language: 'en'
+    language: 'en',
   },
   // websockets dash user
   {
@@ -39,6 +39,6 @@ module.exports = [
     username: 'user-four',
     password: 't3st-f0uR',
     email: 'user-three@test.com',
-    language: 'en'
-  }
+    language: 'en',
+  },
 ];

@@ -1,59 +1,63 @@
 // @flow
 
-/*global describe, before, beforeEach, after, it */
+/* global describe, before, beforeEach, after, it */
 
 require('./test-helpers');
 const helpers = require('./helpers');
+
 const server = helpers.dependencies.instanceManager;
 const async = require('async');
-const validation = helpers.validation;
-const ErrorIds = require('components/errors').ErrorIds;
+
+const { validation } = helpers;
+const { ErrorIds } = require('components/errors');
 const should = require('should');
 const chai = require('chai');
-const assert = chai.assert;
+
+const { assert } = chai;
 const request = require('superagent');
+
 const testData = helpers.data;
 const url = require('url');
 const _ = require('lodash');
 const fs = require('fs');
 const os = require('os');
 
-describe('auth', function() {
+describe('auth', function () {
   this.timeout(5000);
   function basePath(username) {
-    return url.resolve(server.url, username + '/auth');
+    return url.resolve(server.url, `${username}/auth`);
   }
 
-  before(function(done) {
+  before((done) => {
     async.series(
       [
         server.ensureStarted.bind(server, helpers.dependencies.settings),
         testData.resetUsers,
       ],
-      done
+      done,
     );
   });
 
-  after(function(done) {
+  after((done) => {
     helpers.dependencies.storage.sessions.clearAll(done);
   });
 
-  var user = testData.users[0],
-      trustedOrigin = 'http://test.pryv.local';
-  var authData = {
+  const user = testData.users[0];
+  const trustedOrigin = 'http://test.pryv.local';
+  const authData = {
     username: user.username,
     password: user.password,
     appId: 'pryv-test',
   };
 
-  describe('/login', function() {
+  describe('/login', () => {
     function path(username) {
-      return basePath(username) + '/login';
+      return `${basePath(username)}/login`;
     }
 
     before(testData.resetAccesses);
 
-    it('[2CV5] must authenticate the given credentials, open a session and return the access token', function(done) {
+    it('[2CV5] must authenticate the given credentials, open a session and return the access token', (done) => {
       async.series(
         [
           function login(stepDone) {
@@ -61,7 +65,7 @@ describe('auth', function() {
               .post(path(authData.username))
               .set('Origin', trustedOrigin)
               .send(authData)
-              .end(function(err, res) {
+              .end((err, res) => {
                 assert.strictEqual(res.statusCode, 200);
 
                 should.exist(res.body.token);
@@ -78,19 +82,19 @@ describe('auth', function() {
               user,
               { name: authData.appId },
               null,
-              function(err, access) {
+              (err, access) => {
                 access.modifiedBy.should.eql('system');
                 stepDone();
-              }
+              },
             );
           },
         ],
-        done
+        done,
       );
     });
 
-    it('[5UMP] must reuse the current session if already open', function(done) {
-      var originalToken;
+    it('[5UMP] must reuse the current session if already open', (done) => {
+      let originalToken;
       async.series(
         [
           function login(stepDone) {
@@ -98,7 +102,7 @@ describe('auth', function() {
               .post(path(authData.username))
               .set('Origin', trustedOrigin)
               .send(authData)
-              .end(function(err, res) {
+              .end((err, res) => {
                 assert.strictEqual(res.statusCode, 200);
                 originalToken = res.body.token;
                 stepDone();
@@ -109,91 +113,91 @@ describe('auth', function() {
               .post(path(authData.username))
               .set('Origin', trustedOrigin)
               .send(authData)
-              .end(function(err, res) {
+              .end((err, res) => {
                 assert.strictEqual(res.statusCode, 200);
                 assert.strictEqual(res.body.token, originalToken);
                 stepDone();
               });
           },
         ],
-        done
+        done,
       );
     });
 
-    it('[509A] must accept "wildcarded" app ids and origins', function(done) {
+    it('[509A] must accept "wildcarded" app ids and origins', (done) => {
       request
         .post(path(authData.username))
         .set('Origin', 'https://test.rec.la:1234')
         .send(authData)
-        .end(function(err, res) {
+        .end((err, res) => {
           assert.strictEqual(res.statusCode, 200);
 
           done();
         });
     });
 
-    it('[ADL4] must accept "no origin" (i.e. not a CORS request) if authorized', function(done) {
-      var authDataNoCORS = _.defaults({ appId: 'pryv-test-no-cors' }, authData);
+    it('[ADL4] must accept "no origin" (i.e. not a CORS request) if authorized', (done) => {
+      const authDataNoCORS = _.defaults({ appId: 'pryv-test-no-cors' }, authData);
       request
         .post(path(authDataNoCORS.username))
         .send(authDataNoCORS)
-        .end(function(err, res) {
+        .end((err, res) => {
           assert.strictEqual(res.statusCode, 200);
 
           done();
         });
     });
 
-    it('[A7JL] must also accept "referer" in place of "origin" (e.g. some browsers do not provide "origin")', function(done) {
+    it('[A7JL] must also accept "referer" in place of "origin" (e.g. some browsers do not provide "origin")', (done) => {
       request
         .post(path(authData.username))
         .set('Referer', trustedOrigin)
         .send(authData)
-        .end(function(err, res) {
+        .end((err, res) => {
           assert.strictEqual(res.statusCode, 200);
 
           done();
         });
     });
 
-    it('[IKNM] must also accept "referer" in place of "origin" (e.g. some browsers do not provide "origin")', function(done) {
+    it('[IKNM] must also accept "referer" in place of "origin" (e.g. some browsers do not provide "origin")', (done) => {
       request
         .post(path(authData.username))
         .set('Referer', trustedOrigin)
         .send(authData)
-        .end(function(err, res) {
+        .end((err, res) => {
           res.statusCode.should.eql(200);
           done();
         });
     });
 
-    it('[1TI6] must not be case-sensitive for the username', function(done) {
+    it('[1TI6] must not be case-sensitive for the username', (done) => {
       request
         .post(path(authData.username))
         .set('Origin', trustedOrigin)
         .send(
-          _.defaults({ username: authData.username.toUpperCase() }, authData)
+          _.defaults({ username: authData.username.toUpperCase() }, authData),
         )
-        .end(function(err, res) {
+        .end((err, res) => {
           assert.strictEqual(res.statusCode, 200);
 
           done();
         });
     });
 
-    it('[L7JQ] must return a correct error when the local credentials are missing or invalid', function(done) {
-      var data = _.defaults(
+    it('[L7JQ] must return a correct error when the local credentials are missing or invalid', (done) => {
+      const data = _.defaults(
         {
           username: authData.username,
           password: 'bad-password',
         },
-        authData
+        authData,
       );
       request
         .post(path(data.username))
         .set('Origin', trustedOrigin)
         .send(data)
-        .end(function(err, res) {
+        .end((err, res) => {
           validation.checkError(res, {
             status: 401,
             id: ErrorIds.InvalidCredentials,
@@ -203,13 +207,13 @@ describe('auth', function() {
         });
     });
 
-    it('[4AQR] must return a correct error if the app id is missing or untrusted', function(done) {
-      var data = _.defaults({ appId: 'untrusted-app-id' }, authData);
+    it('[4AQR] must return a correct error if the app id is missing or untrusted', (done) => {
+      const data = _.defaults({ appId: 'untrusted-app-id' }, authData);
       request
         .post(path(data.username))
         .set('Origin', trustedOrigin)
         .send(data)
-        .end(function(err, res) {
+        .end((err, res) => {
           validation.checkError(res, {
             status: 401,
             id: ErrorIds.InvalidCredentials,
@@ -219,12 +223,12 @@ describe('auth', function() {
         });
     });
 
-    it('[NDB0] must return a correct error if the origin is missing or does not match the app id', function(done) {
+    it('[NDB0] must return a correct error if the origin is missing or does not match the app id', (done) => {
       request
         .post(path(authData.username))
         .set('Origin', 'http://mismatching.origin')
         .send(authData)
-        .end(function(err, res) {
+        .end((err, res) => {
           validation.checkError(res, {
             status: 401,
             id: ErrorIds.InvalidCredentials,
@@ -235,14 +239,14 @@ describe('auth', function() {
     });
 
     // concurrent requests
-    it('[FMJH] must support concurrent login request, saving only the last token that is written in the storage', function(done) {
+    it('[FMJH] must support concurrent login request, saving only the last token that is written in the storage', (done) => {
       const loginCount = 2;
-      const randomId = 'pryv-test-' + Date.now();
+      const randomId = `pryv-test-${Date.now()}`;
       const accessStorage = helpers.dependencies.storage.user.accesses;
 
       async.times(
         loginCount,
-        function(n, next) {
+        (n, next) => {
           request
             .post(path(authData.username))
             .set('Origin', 'https://test.rec.la:1234')
@@ -251,13 +255,13 @@ describe('auth', function() {
               password: user.password,
               appId: randomId,
             })
-            .end(function(err, res) {
+            .end((err, res) => {
               if (err) return next(err);
               should(res.statusCode).be.equal(200);
               next(null, res.body.token);
             });
         },
-        function(err, results) {
+        (err, results) => {
           if (err) return done(err);
           const lastResult = results[1];
 
@@ -268,19 +272,19 @@ describe('auth', function() {
             (err, access) => {
               should(access.token).be.equal(lastResult);
               done();
-            }
+            },
           );
-        }
+        },
       );
     });
 
     // cf. GH issue #57
-    it('[9WHP] must not leak _private object from Result', function(done) {
+    it('[9WHP] must not leak _private object from Result', (done) => {
       request
         .post(path(authData.username))
         .set('Origin', trustedOrigin)
         .send(authData)
-        .end(function(err, res) {
+        .end((err, res) => {
           assert.strictEqual(res.statusCode, 200);
 
           should.exist(res.body.token);
@@ -295,20 +299,20 @@ describe('auth', function() {
     });
 
     // cf. GH issue #3
-    describe('when we log into a temporary log file', function() {
+    describe('when we log into a temporary log file', () => {
       let logFilePath = '';
 
-      beforeEach(function(done) {
+      beforeEach((done) => {
         async.series(
           [ensureLogFileIsEmpty, generateLogFile, instanciateServerWithLogs],
-          done
+          done,
         );
       });
 
       function ensureLogFileIsEmpty(stepDone) {
         if (logFilePath.length <= 0) return stepDone();
         const truncateTo = 0; // default
-        fs.truncate(logFilePath, truncateTo, function(err) {
+        fs.truncate(logFilePath, truncateTo, (err) => {
           if (err && err.code === 'ENOENT') {
             return stepDone();
           } // ignore error if file doesn't exist
@@ -317,12 +321,12 @@ describe('auth', function() {
       }
 
       function generateLogFile(stepDone) {
-        logFilePath = os.tmpdir() + '/password-logs.log';
+        logFilePath = `${os.tmpdir()}/password-logs.log`;
         stepDone();
       }
 
       function instanciateServerWithLogs(stepDone) {
-        let settings = _.cloneDeep(helpers.dependencies.settings);
+        const settings = _.cloneDeep(helpers.dependencies.settings);
         settings.logs = {
           file: {
             active: true,
@@ -338,8 +342,8 @@ describe('auth', function() {
 
       after(server.ensureStarted.bind(server, helpers.dependencies.settings));
 
-      it('[C03J] must replace the password in the logs by (hidden) when an error occurs', function(done) {
-        let wrongPasswordData = _.cloneDeep(authData);
+      it('[C03J] must replace the password in the logs by (hidden) when an error occurs', (done) => {
+        const wrongPasswordData = _.cloneDeep(authData);
         wrongPasswordData.password = 'wrongPassword';
 
         async.series(
@@ -349,13 +353,13 @@ describe('auth', function() {
                 .post(path(authData.username))
                 .set('Origin', trustedOrigin)
                 .send(wrongPasswordData)
-                .end(function(err, res) {
+                .end((err, res) => {
                   assert.strictEqual(res.statusCode, 401);
                   stepDone();
                 });
             },
             function verifyHiddenPasswordInLogs(stepDone) {
-              fs.readFile(logFilePath, 'utf8', function(err, data) {
+              fs.readFile(logFilePath, 'utf8', (err, data) => {
                 if (err) {
                   return stepDone(err);
                 }
@@ -365,12 +369,12 @@ describe('auth', function() {
               });
             },
           ],
-          done
+          done,
         );
       });
 
-      it('[G0YT] must not mention the password in the logs when none is provided', function(done) {
-        let wrongPasswordData = _.cloneDeep(authData);
+      it('[G0YT] must not mention the password in the logs when none is provided', (done) => {
+        const wrongPasswordData = _.cloneDeep(authData);
         delete wrongPasswordData.password;
 
         async.series(
@@ -380,13 +384,13 @@ describe('auth', function() {
                 .post(path(authData.username))
                 .set('Origin', trustedOrigin)
                 .send(wrongPasswordData)
-                .end(function(err, res) {
+                .end((err, res) => {
                   assert.strictEqual(res.statusCode, 400);
                   stepDone();
                 });
             },
             function verifyNoPasswordFieldInLogs(stepDone) {
-              fs.readFile(logFilePath, 'utf8', function(err, data) {
+              fs.readFile(logFilePath, 'utf8', (err, data) => {
                 if (err) {
                   return stepDone(err);
                 }
@@ -395,7 +399,7 @@ describe('auth', function() {
               });
             },
           ],
-          done
+          done,
         );
       });
     });
@@ -406,92 +410,90 @@ describe('auth', function() {
       }
 
       res.headers['set-cookie']
-        .filter(function(cookieString) {
-          return cookieString.indexOf('sso=') !== 0; // we only want the SSO cookie
-        })
+        .filter((cookieString) => cookieString.indexOf('sso=') !== 0, // we only want the SSO cookie
+        )
         .should.eql([]);
     }
   });
 
-  describe('/logout', function() {
+  describe('/logout', () => {
     function path(username) {
-      return basePath(username) + '/logout';
+      return `${basePath(username)}/logout`;
     }
 
-    it('[6W5M] must terminate the access session and fail to logout a second time (session already expired)', function(done) {
+    it('[6W5M] must terminate the access session and fail to logout a second time (session already expired)', (done) => {
       let token;
       async.series(
         [
-          function(stepDone) {
+          function (stepDone) {
             request
-              .post(basePath(user.username) + '/login')
+              .post(`${basePath(user.username)}/login`)
               .set('Origin', trustedOrigin)
               .send(authData)
-              .end(function(err, res) {
+              .end((err, res) => {
                 token = res.body.token;
-                if (typeof token !== 'string')
-                  return stepDone(new Error('AF: not a string'));
+                if (typeof token !== 'string') return stepDone(new Error('AF: not a string'));
 
                 stepDone();
               });
           },
-          function(stepDone) {
+          function (stepDone) {
             request
               .post(path(user.username))
               .send({})
               .set('authorization', token)
-              .end(function(err, res) {
+              .end((err, res) => {
                 assert.strictEqual(res.statusCode, 200);
 
                 stepDone();
               });
           },
-          function(stepDone) {
+          function (stepDone) {
             // Session was already closed
             // Trying to logout a second time should fail
             request
               .post(path(user.username))
               .send({})
               .set('authorization', token)
-              .end(function(err, res) {
+              .end((err, res) => {
                 validation.checkError(
                   res,
                   {
                     status: 403,
                     id: ErrorIds.InvalidAccessToken,
                   },
-                  stepDone
+                  stepDone,
                 );
               });
           },
         ],
-        done
+        done,
       );
     });
 
-    it('[E2MD] (or any request) must alternatively accept the access token in the query string', function(done) {
-      var testRequest = helpers.request(server.url);
+    it('[E2MD] (or any request) must alternatively accept the access token in the query string', (done) => {
+      const testRequest = helpers.request(server.url);
       async.series(
         [
           testRequest.login.bind(testRequest, user),
-          function(stepDone) {
+          function (stepDone) {
             request
               .post(path(user.username))
               .query({ auth: testRequest.token })
               .send({})
-              .end(function(err, res) {
+              .end((err, res) => {
                 assert.strictEqual(res.statusCode, 200);
 
                 stepDone();
               });
           },
         ],
-        done
+        done,
       );
     });
   });
 
-  describe('SSO support', function() {
+  describe('SSO support', () => {
     // WARNING: exceptionally, tests in here are interdependent and their sequence matters
 
     const cookie = require('cookie');
@@ -500,65 +502,64 @@ describe('auth', function() {
     let cookieOptions;
     const persistentReq2 = request.agent();
 
-    before(function (done) {
+    before((done) => {
       persistentReq2
-        .post(basePath(authData.username) + '/login')
+        .post(`${basePath(authData.username)}/login`)
         .set('Origin', trustedOrigin)
         .send(authData)
-        .end(function () {
+        .end(() => {
           done();
         });
     });
 
-    it('[TIDW] GET /who-am-i must return a 404 as it has been deprecated', function (done) {
-      persistentReq2.get(basePath(authData.username) + '/who-am-i')
-        .end(function (err, res) {
+    it('[TIDW] GET /who-am-i must return a 404 as it has been deprecated', (done) => {
+      persistentReq2.get(`${basePath(authData.username)}/who-am-i`)
+        .end((err, res) => {
           assert.strictEqual(res.statusCode, 404);
           done();
         });
     });
 
-    describe('when deprecated.auth.ssoIsWhoamiActivated is set', function() {
-
-      before(function (done) {
+    describe('when deprecated.auth.ssoIsWhoamiActivated is set', () => {
+      before((done) => {
         const settings = _.cloneDeep(helpers.dependencies.settings);
         settings.deprecated.auth.ssoIsWhoamiActivated = true;
         server.ensureStarted(settings, done);
       });
 
-      after(function (done) {
+      after((done) => {
         server.ensureStarted(helpers.dependencies.settings, done);
       });
 
-      it('[6KLF] must set the SSO cookie on /login with the access token', function (done) {
+      it('[6KLF] must set the SSO cookie on /login with the access token', (done) => {
         persistentReq
-          .post(basePath(authData.username) + '/login')
+          .post(`${basePath(authData.username)}/login`)
           .set('Origin', trustedOrigin)
           .send(authData)
-          .end(function (err, res) {
+          .end((err, res) => {
             assert.strictEqual(res.statusCode, 200);
 
-            var setCookie = res.headers['set-cookie'];
+            const setCookie = res.headers['set-cookie'];
             should.exist(setCookie);
             setCookie.length.should.eql(1);
             // cookie properties
-            var cookieProps = setCookie[0].split('; ');
+            const cookieProps = setCookie[0].split('; ');
             cookieProps.should.containEql('HttpOnly');
-            /** test removed as long as superagent complies to not sending back "Unsecure" cookies **/
+            /** test removed as long as superagent complies to not sending back "Unsecure" cookies * */
             // cookieProps.should.containEql('Secure');
 
             // sso properties
-            var parsed = cookie.parse(setCookie[0]);
+            const parsed = cookie.parse(setCookie[0]);
             assert.property(parsed, 'sso');
-            var jsonMatch = /\{.+\}/.exec(parsed.sso);
+            const jsonMatch = /\{.+\}/.exec(parsed.sso);
             should.exist(jsonMatch);
 
-            const token = res.body.token;
+            const { token } = res.body;
             if (typeof token !== 'string') throw new Error('AF: not a string');
 
             ssoInfo = {
               username: authData.username,
-              token: token,
+              token,
             };
             JSON.parse(jsonMatch).should.eql(ssoInfo);
             cookieOptions = {
@@ -570,33 +571,33 @@ describe('auth', function() {
           });
       });
 
-      it('[QT6T] must answer /who-am-i with username and session details if session open', function (done) {
+      it('[QT6T] must answer /who-am-i with username and session details if session open', (done) => {
         persistentReq
-          .get(basePath(authData.username) + '/who-am-i')
-          .end(function (err, res) {
+          .get(`${basePath(authData.username)}/who-am-i`)
+          .end((err, res) => {
             validation.check(
               res,
               {
                 status: 200,
                 body: ssoInfo,
               },
-              done
+              done,
             );
           });
       });
 
-      it('[UNPB] must clear the SSO cookie on /logout', function (done) {
+      it('[UNPB] must clear the SSO cookie on /logout', (done) => {
         persistentReq
-          .post(basePath(authData.username) + '/logout')
+          .post(`${basePath(authData.username)}/logout`)
           .send({})
           .set('authorization', ssoInfo.token)
-          .end(function (err, res) {
+          .end((err, res) => {
             assert.strictEqual(res.statusCode, 200);
 
-            var setCookie = res.headers['set-cookie'];
+            const setCookie = res.headers['set-cookie'];
             should.exist(setCookie);
             setCookie.length.should.eql(1);
-            var parsed = cookie.parse(setCookie[0]);
+            const parsed = cookie.parse(setCookie[0]);
             assert.propertyVal(parsed, 'sso', '');
             assert.property(parsed, 'Expires');
             assert.strictEqual(parsed.Domain, cookieOptions.Domain);
@@ -605,10 +606,10 @@ describe('auth', function() {
           });
       });
 
-      it('[5G0E] must respond /who-am-i with an "unauthorized" error if no cookie is sent', function (done) {
+      it('[5G0E] must respond /who-am-i with an "unauthorized" error if no cookie is sent', (done) => {
         persistentReq
-          .get(basePath(authData.username) + '/who-am-i')
-          .end(function (err, res) {
+          .get(`${basePath(authData.username)}/who-am-i`)
+          .end((err, res) => {
             assert.strictEqual(res.statusCode, 401);
             should.not.exist(res.body.username);
             should.not.exist(res.body.token);
@@ -616,6 +617,5 @@ describe('auth', function() {
           });
       });
     });
-    
   });
 });

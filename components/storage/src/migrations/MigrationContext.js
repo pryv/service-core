@@ -27,5 +27,5 @@ MigrationContext.prototype.logInfo = function (message) {
 };
 
 MigrationContext.prototype.logError = function (err, stepDescription) {
-  this.logger.error('Error ' + stepDescription + ': ' + err.stack);
+  this.logger.error(`Error ${stepDescription}: ${err.stack}`);
 };

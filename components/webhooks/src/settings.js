@@ -1,7 +1,7 @@
 // @flow
 const nconf = require('nconf');
 
-const NATS_CONNECTION_URI: string = require('components/utils').messaging.NATS_CONNECTION_URI;
+const { NATS_CONNECTION_URI } = require('components/utils').messaging;
 
 class Settings {
   config: Object;
@@ -23,7 +23,7 @@ class Settings {
           active: false,
           projectId: '',
           key: '',
-        }
+        },
       },
       mongodb: {
         host: '127.0.0.1',
@@ -33,13 +33,13 @@ class Settings {
         authPassword: '',
       },
       nats: {
-        uri: NATS_CONNECTION_URI
+        uri: NATS_CONNECTION_URI,
       },
       service: {
         info: {
           serial: '20190101',
-        }
-      }
+        },
+      },
     });
   }
 
@@ -48,4 +48,3 @@ class Settings {
   }
 }
 module.exports = Settings;
-

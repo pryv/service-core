@@ -1,10 +1,10 @@
-var async = require('async'),
-    generateId = require('cuid'),
-    fs = require('fs'),
-    mkdirp = require('mkdirp'),
-    path = require('path'),
-    rimraf = require('rimraf'),
-    toString = require('components/utils').toString;
+const async = require('async');
+const generateId = require('cuid');
+const fs = require('fs');
+const mkdirp = require('mkdirp');
+const path = require('path');
+const rimraf = require('rimraf');
+const { toString } = require('components/utils');
 
 module.exports = EventFiles;
 /**
@@ -13,7 +13,7 @@ module.exports = EventFiles;
  */
 function EventFiles(settings, logger) {
   this.settings = settings;
-  this.logger = logger; 
+  this.logger = logger;
 }
 
 /**
@@ -23,14 +23,14 @@ function EventFiles(settings, logger) {
  * @param {Function} callback
  */
 EventFiles.prototype.getTotalSize = function (user, callback) {
-  var userPath = this.getAttachmentPath(user.id);
-  fs.exists(userPath, function (exists) {
-    if (! exists) {
-      this.logger.debug('No attachments dir for user ' + toString.user(user));
+  const userPath = this.getAttachmentPath(user.id);
+  fs.exists(userPath, (exists) => {
+    if (!exists) {
+      this.logger.debug(`No attachments dir for user ${toString.user(user)}`);
       return callback(null, 0);
     }
     getSizeRecursive.call(this, userPath, callback);
-  }.bind(this));
+  });
 };
 
 /**
@@ -39,33 +39,33 @@ EventFiles.prototype.getTotalSize = function (user, callback) {
  * @this {EventFiles}
  */
 function getSizeRecursive(filePath, callback) {
-  fs.lstat(filePath, function (err, stats) {
+  fs.lstat(filePath, (err, stats) => {
     if (err) {
-      this.logger.error('Data corrupted; expected ' + toString.path(filePath) + ' to exist');
+      this.logger.error(`Data corrupted; expected ${toString.path(filePath)} to exist`);
       return callback(null, 0);
     }
 
-    var total = stats.size;
+    let total = stats.size;
 
     if (stats.isDirectory()) {
-      fs.readdir(filePath, function (err, fileNames) {
+      fs.readdir(filePath, (err, fileNames) => {
         if (err) { return callback(err); }
 
         async.forEach(fileNames, function (fileName, fileDone) {
-          getSizeRecursive.call(this, path.join(filePath, fileName), function (err, fileSize) {
-            if (! err) {
+          getSizeRecursive.call(this, path.join(filePath, fileName), (err, fileSize) => {
+            if (!err) {
               total += fileSize;
             }
             fileDone(err);
           });
-        }, function (err) {
+        }, (err) => {
           callback(err, total);
         });
-      }.bind(this));
+      });
     } else {
       callback(null, total);
     }
-  }.bind(this));
+  });
 }
 
 /**
@@ -76,7 +76,7 @@ function getSizeRecursive(filePath, callback) {
  */
 EventFiles.prototype.generateFileId = function (filePath) {
   filePath;
-  
+
   // for now we just generate a random id (in the future we could do a SHA digest)
   return generateId();
 };
@@ -86,22 +86,22 @@ EventFiles.prototype.generateFileId = function (filePath) {
  *                 from that path)
  */
 EventFiles.prototype.saveAttachedFile = function (tempPath, user, eventId, fileId, callback) {
-  if (typeof(fileId) === 'function') {
+  if (typeof (fileId) === 'function') {
     // no fileId provided
     callback = fileId;
     fileId = this.generateFileId(tempPath);
   }
-  var dirPath = this.getAttachmentPath(user.id, eventId);
-  mkdirp(dirPath).then(function (res, err) {
+  const dirPath = this.getAttachmentPath(user.id, eventId);
+  mkdirp(dirPath).then((res, err) => {
     if (err) { return callback(err); }
 
-    var readStream = fs.createReadStream(tempPath);
-    var writeStream = fs.createWriteStream(path.join(dirPath, fileId));
+    const readStream = fs.createReadStream(tempPath);
+    const writeStream = fs.createWriteStream(path.join(dirPath, fileId));
 
     readStream.on('error', callback);
     writeStream.on('error', callback);
-    writeStream.on('close', function () {
-      fs.unlink(tempPath, function (err) {
+    writeStream.on('close', () => {
+      fs.unlink(tempPath, (err) => {
         if (err) { return callback(err); }
         callback(null, fileId);
       });
@@ -112,19 +112,19 @@ EventFiles.prototype.saveAttachedFile = function (tempPath, user, eventId, fileI
 };
 
 EventFiles.prototype.removeAttachedFile = function (user, eventId, fileId, callback) {
-  var filePath = this.getAttachmentPath(user.id, eventId, fileId);
-  fs.unlink(filePath, function (err) {
+  const filePath = this.getAttachmentPath(user.id, eventId, fileId);
+  fs.unlink(filePath, (err) => {
     if (err) { return callback(err); }
     this.cleanupStructure(path.dirname(filePath), callback);
-  }.bind(this));
+  });
 };
 
 EventFiles.prototype.removeAllForEvent = function (user, eventId, callback) {
-  var dirPath = this.getAttachmentPath(user.id, eventId);
-  rimraf(dirPath, function (err) {
+  const dirPath = this.getAttachmentPath(user.id, eventId);
+  rimraf(dirPath, (err) => {
     if (err) { return callback(err); }
     this.cleanupStructure(path.dirname(dirPath), callback);
-  }.bind(this));
+  });
 };
 
 EventFiles.prototype.removeAllForUser = function (user, callback) {
@@ -146,8 +146,8 @@ EventFiles.prototype.removeAll = function (callback) {
  * @param {String} fileId Optional
  * @returns {String}
  */
-EventFiles.prototype.getAttachedFilePath = function (user /*, eventId, fileId*/) {
-  var args = [].slice.call(arguments);
+EventFiles.prototype.getAttachedFilePath = function (user /* , eventId, fileId */) {
+  const args = [].slice.call(arguments);
   args[0] = user.id;
   return this.getAttachmentPath.apply(this, args);
 };
@@ -155,8 +155,8 @@ EventFiles.prototype.getAttachedFilePath = function (user /*, eventId, fileId*/)
 /**
  * @private
  */
-EventFiles.prototype.getAttachmentPath = function (/*userId, eventId, fileId*/) {
-  var args = [].slice.call(arguments);
+EventFiles.prototype.getAttachmentPath = function (/* userId, eventId, fileId */) {
+  const args = [].slice.call(arguments);
   args.unshift(this.settings.attachmentsDirPath);
   return path.join.apply(null, args);
 };
@@ -171,8 +171,8 @@ EventFiles.prototype.getAttachmentPath = function (/*userId, eventId, fileId*/) 
  * @param {Function} callback (error, previewPath)
  */
 EventFiles.prototype.ensurePreviewPath = function (user, eventId, dimension, callback) {
-  var dirPath = path.join(this.settings.previewsDirPath, user.id, eventId);
-  mkdirp(dirPath).then(function (res, err) {
+  const dirPath = path.join(this.settings.previewsDirPath, user.id, eventId);
+  mkdirp(dirPath).then((res, err) => {
     if (err) { return callback(err); }
     callback(null, path.join(dirPath, getPreviewFileName(dimension)));
   });
@@ -189,7 +189,7 @@ EventFiles.prototype.getPreviewFilePath = function (user, eventId, dimension) {
 };
 
 function getPreviewFileName(dimension) {
-  return dimension + '.jpg';
+  return `${dimension}.jpg`;
 }
 
 /**
@@ -203,11 +203,11 @@ EventFiles.prototype.cleanupStructure = function cleanupStructure(dirPath, callb
     return callback();
   }
 
-  fs.rmdir(dirPath, function (err) {
+  fs.rmdir(dirPath, (err) => {
     if (err) {
       // assume the dir is not empty
       return callback();
     }
     cleanupStructure.call(this, path.dirname(dirPath), callback);
-  }.bind(this));
+  });
 };

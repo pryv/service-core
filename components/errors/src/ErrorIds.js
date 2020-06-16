@@ -44,7 +44,7 @@ const ErrorIds = {
   // those last two are not in use yet but already documented (see API reference for details)
 
   UserAccountRelocated: 'user-account-relocated',
-  UserInterventionRequired: 'user-intervention-required'
+  UserInterventionRequired: 'user-intervention-required',
 };
 Object.freeze(ErrorIds);
 

@@ -1,5 +1,7 @@
 // @flow
 
+import type { IndexDefinition } from './Database';
+
 const Access = require('./user/Accesses');
 const User = require('./Users');
 const Stream = require('./user/Streams');
@@ -20,13 +22,10 @@ module.exports = {
     Profile: require('./user/Profile'),
     Streams: Stream,
     Webhooks: require('./user/Webhooks'),
-  }, 
-  
-  StorageLayer: StorageLayer,
-};
+  },
 
-import type { IndexDefinition } from './Database';
+  StorageLayer,
+};
 export type { IndexDefinition };
 
-export type {  
-  Access, User, Stream };
+export type { Access, User, Stream };

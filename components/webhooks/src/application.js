@@ -1,11 +1,12 @@
 // @flow
 
+import type { Logger, LogFactory } from 'components/utils/src/logging';
+
 const assert = require('assert');
 
 const loggingSubsystem = require('components/utils/src/logging');
 const storage = require('components/storage');
 const Settings = require('./settings');
-import type { Logger, LogFactory } from 'components/utils/src/logging';
 
 const services = {
   WebhooksService: require('components/webhooks/src/service'),
@@ -13,7 +14,9 @@ const services = {
 
 class Application {
   logFactory: LogFactory;
+
   logger: Logger;
+
   settings: Settings;
 
   webhooksService: services.WebhooksService;
@@ -29,11 +32,12 @@ class Application {
   initSettings() {
     this.settings = new Settings();
   }
+
   initLogger() {
-    const settings = this.settings;
+    const { settings } = this;
     const loggerSettings = settings.get('logs');
     const logFactory = (this.logFactory = loggingSubsystem(
-      loggerSettings
+      loggerSettings,
     ).getLogger);
 
     const logger = (this.logger = logFactory('webhooks'));
@@ -43,22 +47,22 @@ class Application {
   }
 
   async run() {
-    const logger = this.logger;
+    const { logger } = this;
 
     logger.info('Webhooks service is mounting services');
-    const settings = this.settings;
+    const { settings } = this;
 
     // Connect to MongoDB
     const storageLayer = produceStorageLayer(
       settings.get('mongodb'),
-      this.getLogger('mongodb')
+      this.getLogger('mongodb'),
     );
 
     // Construct the service
     const service = new services.WebhooksService({
       storage: storageLayer,
       logger: this.getLogger('webhooks_service'),
-      settings: settings
+      settings,
     });
     this.webhooksService = service;
 
@@ -82,7 +86,8 @@ function produceStorageLayer(settings, logger) {
   logger.info(`Connecting to MongoDB (@ ${settings.host}:${settings.port}/${settings.name}) (${settings.authUser})`);
 
   const mongoConn = new storage.Database(
-    settings, logger);
+    settings, logger,
+  );
 
   const storageLayer = new storage.StorageLayer(
     mongoConn,

@@ -1,4 +1,5 @@
-var accesses = require('./accesses');
+const accesses = require('./accesses');
+
 module.exports = [
   {
     id: 'public',
@@ -7,8 +8,8 @@ module.exports = [
       keyTwo: 2,
       keyThree: true,
       keyFour: [1, 2, 3, 4],
-      keyFive: { giveMe: 5 }
-    }
+      keyFive: { giveMe: 5 },
+    },
   },
   {
     id: 'private',
@@ -17,8 +18,8 @@ module.exports = [
       keyTwo: 2,
       keyThree: true,
       keyFour: [1, 2, 3, 4],
-      keyFive: { giveMe: 5 }
-    }
+      keyFive: { giveMe: 5 },
+    },
   },
   {
     id: accesses[4].name, // app profile
@@ -27,7 +28,7 @@ module.exports = [
       keyTwo: 2,
       keyThree: true,
       keyFour: [1, 2, 3, 4],
-      keyFive: { giveMe: 5 }
-    }
-  }
+      keyFive: { giveMe: 5 },
+    },
+  },
 ];

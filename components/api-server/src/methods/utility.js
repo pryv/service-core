@@ -1,17 +1,16 @@
 // @flow
 
-const commonFns = require('./helpers/commonFunctions');
-const errorHandling = require('components/errors').errorHandling;
-const methodsSchema = require('../schema/generalMethods');
-const _ = require('lodash');
-const bluebird = require('bluebird');
-
-import type API from '../API';
 import type { Logger } from 'components/utils';
 import type { StorageLayer } from 'components/storage';
 import type { MethodContext } from 'components/model';
+import type API, { ApiCallback } from '../API';
 import type Result from '../Result';
-import type { ApiCallback } from '../API';
+
+const { errorHandling } = require('components/errors');
+const _ = require('lodash');
+const bluebird = require('bluebird');
+const methodsSchema = require('../schema/generalMethods');
+const commonFns = require('./helpers/commonFunctions');
 
 type ApiCall = {
   method: string,
@@ -24,7 +23,6 @@ type ApiCall = {
  * @param api
  */
 module.exports = function (api: API, logging: Logger, storageLayer: StorageLayer) {
-
   const logger = logging.getLogger('methods/batch');
 
   api.register('getAccessInfo',
@@ -34,10 +32,10 @@ module.exports = function (api: API, logging: Logger, storageLayer: StorageLayer
   function getAccessInfo(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     const accessInfoProps = ['id', 'token', 'type', 'name', 'deviceName', 'permissions',
       'lastUsed', 'expires', 'deleted', 'clientData',
-      'created', 'createdBy', 'modified', 'modifiedBy', 'calls'
+      'created', 'createdBy', 'modified', 'modifiedBy', 'calls',
     ];
     const userProps = ['username'];
-    
+
     for (const prop of accessInfoProps) {
       const accessProp = context.access[prop];
       if (accessProp != null) result[prop] = accessProp;
@@ -47,7 +45,7 @@ module.exports = function (api: API, logging: Logger, storageLayer: StorageLayer
       const userProp = context.user[prop];
       if (userProp != null) result[prop] = userProp;
     }
-  
+
     next();
   }
 
@@ -56,22 +54,20 @@ module.exports = function (api: API, logging: Logger, storageLayer: StorageLayer
     callBatch);
 
   async function callBatch(context: MethodContext, calls: Array<ApiCall>, result: Result, next: ApiCallback) {
-
     let needRefeshForNextcall = true;
     let freshContext: MethodContext = null;
-    
+
     result.results = await bluebird.mapSeries(calls, executeCall);
     next();
-
 
     // Reload streams tree since a previous call in this batch
     // may have modified stream structure.
     async function refreshContext() {
       // Clone context to avoid potential side effects
       freshContext = _.cloneDeep(context);
-      const access = freshContext.access;
+      const { access } = freshContext;
       await freshContext.retrieveStreams(storageLayer);
-      if (! access.isPersonal()) access.loadPermissions(freshContext.streams);
+      if (!access.isPersonal()) access.loadPermissions(freshContext.streams);
     }
 
     async function executeCall(call: ApiCall) {
@@ -84,22 +80,23 @@ module.exports = function (api: API, logging: Logger, storageLayer: StorageLayer
 
         // Perform API call
         const result: Result = await bluebird.fromCallback(
-          (cb) => api.call(call.method, freshContext, call.params, cb));
-        
+          (cb) => api.call(call.method, freshContext, call.params, cb),
+        );
+
         return await bluebird.fromCallback(
-          (cb) => result.toObject(cb));
-      } catch(err) {
+          (cb) => result.toObject(cb),
+        );
+      } catch (err) {
         // Batchcalls have specific error handling hence the custom request context
         const reqContext = {
-          method: call.method + ' (within batch)',
-          url: 'pryv://' + context.username
+          method: `${call.method} (within batch)`,
+          url: `pryv://${context.username}`,
         };
         errorHandling.logError(err, reqContext, logger);
-        
-        return {error: errorHandling.getPublicErrorData(err)};
+
+        return { error: errorHandling.getPublicErrorData(err) };
       }
     }
   }
-
 };
 module.exports.injectDependencies = true;

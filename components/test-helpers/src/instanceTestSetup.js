@@ -30,30 +30,29 @@ exports.clear = function (settings: any) {
  * @throws Any error encountered deserializing or calling the setup function
  */
 exports.execute = function (testSetup: string, messagingSocket: any) {
-  var obj = parse(testSetup);
-  
+  const obj = parse(testSetup);
+
   if (obj.context != null) {
     // inject TCP messaging socket to allow passing data back to test process
     obj.context.messagingSocket = messagingSocket;
   }
-  
+
   obj.execute();
 };
 
 function stringify(obj) {
-  return JSON.stringify(obj, function (key, value) {
-    // stringify functions with their source, converting CRLF. 
-    // 
+  return JSON.stringify(obj, (key, value) =>
+    // stringify functions with their source, converting CRLF.
+    //
     // NOTE If you strip CRLF here, any comment in the serialized function will
-    // comment out the rest of the line. 
-    // 
-    return (typeof value === 'function') ? value.toString().replace(/\r?\n|\n/g, '\n') : value;
-  });
+    // comment out the rest of the line.
+    //
+    ((typeof value === 'function') ? value.toString().replace(/\r?\n|\n/g, '\n') : value));
 }
 
 function parse(str) {
-  return JSON.parse(str, function (key, value) {
+  return JSON.parse(str, (key, value) => {
     if (typeof value !== 'string') { return value; }
-    return (value.substring(0, 8) === 'function') ? eval('(' + value + ')') : value;
+    return (value.substring(0, 8) === 'function') ? eval(`(${value})`) : value;
   });
 }

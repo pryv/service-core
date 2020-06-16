@@ -1,5 +1,5 @@
-const streams = require('./streams');
 const timestamp = require('unix-timestamp');
+const streams = require('./streams');
 
 module.exports = [
   {
@@ -12,7 +12,7 @@ module.exports = [
     modified: timestamp.now(),
     modifiedBy: 'test',
     lastUsed: 0,
-    calls: {}
+    calls: {},
   },
   {
     id: 'a_1',
@@ -22,23 +22,23 @@ module.exports = [
     permissions: [
       {
         streamId: streams[0].id,
-        level: 'read'
+        level: 'read',
       },
       {
         streamId: streams[1].id,
-        level: 'contribute'
+        level: 'contribute',
       },
       {
         streamId: streams[2].children[0].id,
-        level: 'manage'
-      }
+        level: 'manage',
+      },
     ],
     created: timestamp.now(),
     createdBy: 'test',
     modified: timestamp.now(),
     modifiedBy: 'test',
     lastUsed: 0,
-    calls: {}
+    calls: {},
   },
   {
     id: 'a_2',
@@ -48,15 +48,15 @@ module.exports = [
     permissions: [
       {
         streamId: '*',
-        level: 'read'
-      }
+        level: 'read',
+      },
     ],
     created: timestamp.now(),
     createdBy: 'test',
     modified: timestamp.now(),
     modifiedBy: 'test',
     lastUsed: 0,
-    calls: {}
+    calls: {},
   },
   {
     id: 'a_3',
@@ -69,7 +69,7 @@ module.exports = [
     modified: timestamp.now(),
     modifiedBy: 'test',
     lastUsed: 0,
-    calls: {}
+    calls: {},
   },
   {
     id: 'a_4',
@@ -80,15 +80,15 @@ module.exports = [
     permissions: [
       {
         streamId: streams[0].id,
-        level: 'contribute'
-      }
+        level: 'contribute',
+      },
     ],
     created: timestamp.now(),
     createdBy: 'test',
     modified: timestamp.now(),
     modifiedBy: 'test',
     lastUsed: 0,
-    calls: {}
+    calls: {},
   },
   {
     id: 'a_5',
@@ -98,19 +98,19 @@ module.exports = [
     permissions: [
       {
         tag: 'super',
-        level: 'contribute'
+        level: 'contribute',
       },
       {
         tag: 'fragilistic',
-        level: 'read'
-      }
+        level: 'read',
+      },
     ],
     created: timestamp.now(),
     createdBy: 'test',
     modified: timestamp.now(),
     modifiedBy: 'test',
     lastUsed: 0,
-    calls: {}
+    calls: {},
   },
   {
     id: 'a_6',
@@ -120,19 +120,19 @@ module.exports = [
     permissions: [
       {
         streamId: streams[0].id,
-        level: 'contribute'
+        level: 'contribute',
       },
       {
         tag: 'fragilistic',
-        level: 'read'
-      }
+        level: 'read',
+      },
     ],
     created: timestamp.now(),
     createdBy: 'test',
     modified: timestamp.now(),
     modifiedBy: 'test',
     lastUsed: 0,
-    calls: {}
+    calls: {},
   },
   {
     id: 'a_7',
@@ -142,8 +142,8 @@ module.exports = [
     permissions: [
       {
         streamId: streams[0].id,
-        level: 'read'
-      }
+        level: 'read',
+      },
     ],
     created: timestamp.now('-4y'),
     createdBy: 'test',
@@ -151,6 +151,6 @@ module.exports = [
     modifiedBy: 'test',
     lastUsed: timestamp.now('-3y1d'),
     calls: {},
-    deleted: timestamp.now('-3y1d')
+    deleted: timestamp.now('-3y1d'),
   },
 ];

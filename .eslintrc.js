@@ -9,7 +9,8 @@ module.exports = {
     },
     "extends": [
         "eslint:recommended",
-        "plugin:flowtype/recommended"
+        "plugin:flowtype/recommended",
+        "airbnb-base"
     ],
     "parserOptions": {
         "sourceType": "module"

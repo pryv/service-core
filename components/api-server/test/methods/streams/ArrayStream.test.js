@@ -1,64 +1,57 @@
-/*global describe, it*/
-'use strict';
+/* global describe, it */
 
-const ArrayStream = require('../../../src/methods/streams/ArrayStream');
-const Writable = require('stream').Writable;
-const inherits = require('util').inherits;
+const { Writable } = require('stream');
+const { inherits } = require('util');
 const should = require('should');
+const ArrayStream = require('../../../src/methods/streams/ArrayStream');
 const Source = require('../../helpers').SourceStream;
 
-describe('ArrayStream', function () {
-  
+describe('ArrayStream', () => {
   const arraySize = new ArrayStream('getSize', true).size;
-  
-  describe('testing around the array size limit', function () {
 
+  describe('testing around the array size limit', () => {
     const testIDs = ['U21Z', 'MKNL', 'MUPF', 'CM4Q', 'F8S9', '6T4V', 'QBOS', 'BY67', 'JNVS', 'N9HG'];
 
     for (let i = -3; i <= 3; i++) {
       const sign = i < 0 ? '' : '+';
-      it('[' + testIDs[i+3] + '] must return a valid array when receiving limit' + sign + i +' items',
-        function (done) {
-          const n = arraySize+i;
+      it(`[${testIDs[i + 3]}] must return a valid array when receiving limit${sign}${i} items`,
+        (done) => {
+          const n = arraySize + i;
           n.should.be.above(0);
           pipeAndCheck(n, true, null, done);
-        }
-      );
+        });
     }
   });
-  
-  describe('testing with small number of items', function () {
 
+  describe('testing with small number of items', () => {
     const testIDs = ['69F6', 'BJRT', 'YJI0', 'EKQQ', '5SUK', 'FPL8', 'ZMO9', 'WFSL', '1YQS', '25IQ'];
 
     for (let i = 0; i <= 3; i++) {
-      it('[' + testIDs[i] + '] must return a valid array when receiving ' + i + ' item(s)',
-        function (done) {
+      it(`[${testIDs[i]}] must return a valid array when receiving ${i} item(s)`,
+        (done) => {
           pipeAndCheck(i, true, null, done);
-        }
-      );
+        });
     }
   });
 
   it('[TWNI] must return an array preceded by a comma when called with parameter isFirst=false',
-    function (done) {
+    (done) => {
       const n = 10;
 
       pipeAndCheck(n, false, (res) => {
         res.charAt(0).should.eql(',');
-        return '{' + res.slice(1) + '}';
+        return `{${res.slice(1)}}`;
       }, done);
-    }
-  );
-    
+    });
+
   function pipeAndCheck(itemNumber, isFirst, resultMapping, done) {
     const name = 'name';
-    
-    let items = [];
+
+    const items = [];
     for (let i = 0; i < itemNumber; i++) {
       items.push({
         a: 'a',
-        n: i
+        n: i,
       });
     }
 
@@ -67,7 +60,7 @@ describe('ArrayStream', function () {
       .pipe(new DestinationStream(isFirst, (err, res) => {
         should.not.exist(err);
         should.exist(res);
-        if(typeof(resultMapping) == 'function') {
+        if (typeof (resultMapping) === 'function') {
           res = resultMapping(res);
         }
         res = JSON.parse(res);
@@ -77,7 +70,6 @@ describe('ArrayStream', function () {
       }));
   }
 });
-
 
 /**
  * Writable stream that concatenates the strings it receives in a buffer.
@@ -98,7 +90,7 @@ function DestinationStream(asObject, callback) {
   if (callback) {
     this.on('finish', function () {
       if (this.asObject) {
-        callback(null, '{' + this.result + '}');
+        callback(null, `{${this.result}}`);
       } else {
         callback(null, this.result);
       }

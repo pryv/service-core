@@ -5,26 +5,26 @@
  * TODO: make that a separate lib to use on client side too
  */
 
-var toString = module.exports = {};
+const toString = module.exports = {};
 
 toString.id = function (id: string) {
-  return '"' + id + '"';
+  return `"${id}"`;
 };
 
 toString.path = function (path: string) {
-  return '"' + path + '"';
+  return `"${path}"`;
 };
 
 toString.property = function (propertyKey: string) {
-  return '`' + propertyKey + '`';
+  return `\`${propertyKey}\``;
 };
 
 type User = {
-  username: string, 
+  username: string,
   id?: string,
-  _id?: string, 
-}; 
+  _id?: string,
+};
 
 toString.user = function (user: User) {
-  return '"' + user.username + '" (' + (user.id || user._id || 'n/a') + ')';
+  return `"${user.username}" (${user.id || user._id || 'n/a'})`;
 };

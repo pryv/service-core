@@ -7,15 +7,14 @@
 const path = require('path');
 
 const Params = {
-  Username: 'username'
+  Username: 'username',
 };
 Object.freeze(Params);
-
 
 const username = param(Params.Username);
 const Paths = module.exports = {
   // expose params for URL parsing
-  Params: Params,
+  Params,
 
   System: makePath('system'),
   Register: makePath('reg'),
@@ -34,7 +33,7 @@ const Paths = module.exports = {
 
   SocketIO: makePath('socket.io'),
   SocketIO2: makePath('socket.io2'),
-  Favicon: makePath('favicon.ico')
+  Favicon: makePath('favicon.ico'),
 };
 Object.freeze(Paths);
 
@@ -45,5 +44,5 @@ function makePath(...a: Array<string>): string {
 }
 
 function param(name) {
-  return ':' + name;
+  return `:${name}`;
 }
