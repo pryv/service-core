@@ -43,9 +43,10 @@ module.exports = function (api: API, logging: Logger, storageLayer: StorageLayer
       if (accessProp != null) result[prop] = accessProp;
     }
 
+    result.user = {};
     for (const prop of userProps) {
       const userProp = context.user[prop];
-      if (userProp != null) result[prop] = userProp;
+      if (userProp != null) result.user[prop] = userProp;
     }
   
     next();

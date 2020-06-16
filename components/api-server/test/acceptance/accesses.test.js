@@ -766,8 +766,9 @@ describe('access-info', () => {
       .get(path())
       .set('Authorization', token);
     const body = res.body;
-    assert.exists(body.username);
-    assert.equal(body.username, userId);
+    assert.exists(body.user);
+    assert.exists(body.user.username)
+    assert.equal(body.user.username, userId);
   });
 
 });
