@@ -12,13 +12,10 @@ const assert = chai.assert;
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
+const charlatan = require('charlatan');
 
 const { ErrorIds } = require('components/errors/src');
 const storage = require('components/test-helpers').dependencies.storage.user.accesses;
-
-
-
-
 
 describe('access deletions', () => {
   let userId, streamId, activeToken, deletedToken, accessToken;
@@ -725,4 +722,52 @@ describe('access client data', () => {
       });
     });
   });
+});
+
+describe('access-info', () => {
+  
+  let mongoFixtures, userId,
+      token;
+
+  before(() => {
+    token = cuid();
+    userId = cuid();
+  })
+
+  before(async () => {
+    mongoFixtures = databaseFixture(await produceMongoConnection());
+    const user = await mongoFixtures.user(userId);
+    await user.access({
+      type: 'app', token: token,
+      name: charlatan.Lorem.word(), permissions: [{
+        streamId: charlatan.Lorem.word(),
+        level: 'read',
+      }],
+    });
+  });
+  after(() => {
+    mongoFixtures.clean(); 
+  });
+
+  let server;
+  before(async () => {
+    server = await context.spawn();
+  });
+  after(() => {
+    server.stop(); 
+  });
+
+  function path() {
+    return `/${userId}/access-info`;
+  }
+
+  it('[PH0K] should return the username', async () => {
+    const res = await server.request()
+      .get(path())
+      .set('Authorization', token);
+    const body = res.body;
+    assert.exists(body.username);
+    assert.equal(body.username, userId);
+  });
+
 });
