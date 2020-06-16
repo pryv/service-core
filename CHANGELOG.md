@@ -1,6 +1,10 @@
 ## 1.5
 
-### 1.5.16
+### 1.5.8
+
+- add username to access-info
+
+### 1.5.16-17
 
 - fix socket.io for dns-less
 
