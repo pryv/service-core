@@ -25,7 +25,8 @@
 
 ### 1.5.8
 
-Added compatibility for open-source version with DNS-less capabilities
+- Added compatibility for open-source version with DNS-less capabilities
+- upgrade socket.io from v0.9 to v2
 
 ### 1.5.7
 
