@@ -307,7 +307,11 @@ describe('root', function() {
         {
           status: 200,
           schema: methodsSchema.getAccessInfo.result, 
-          body: sharedAccess,
+          body: _.merge(
+            sharedAccess, 
+            { user: {
+              username: username
+            }}),
         }
       );
     });
