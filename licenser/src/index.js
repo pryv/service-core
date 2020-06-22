@@ -15,14 +15,6 @@ const fileSpecs = {
       endBlock: '\n */\n'
     }
   ],
-  'README.md': [
-    {
-      action: 'addTrailer',
-      startBlock: '# License',
-      lineBlock: '',
-      endBlock: '' // (go up to the end of the file)
-    }
-  ],
   'package.json': [
     {
       action: 'json',

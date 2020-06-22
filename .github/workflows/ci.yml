@@ -30,11 +30,10 @@ jobs:
     - name: Login to github
       uses: webfactory/ssh-agent@v0.3.0
       with:
-          ssh-private-key: ${{ secrets.SSH_PRYV_PRIVATE_KEY }}
+        ssh-private-key: ${{ secrets.SSH_PRYV_PRIVATE_KEY }}
 
     - name: Install gnatsd, mongodb, influxdb
-      run: |
-         sh build/build-dev
+      run: sh build/build-dev
          
     - name: yarn setup
       run: yarn setup
