@@ -1,8 +1,10 @@
 {
   "name": "metadata",
   "version": "1.0.0",
+  "homepage": "http://pryv.com",
+  "license": "MIT",
+  "author": "Pryv S.A. <support@pryv.com> (http://pryv.com)",
   "main": "src/index.js",
-  "license": "MIT", 
   "scripts": {
     "test": "../../node_modules/.bin/mocha -R dot 'test/**/*.test.js'"
   }

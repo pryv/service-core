@@ -57,3 +57,8 @@ Note that acceptance tests covering the API methods use the HTTP API (that was i
 #### Run specific test(s)
 
 You can pass options to mocha using `--` in the following way `yarn run test -- --grep="Socket"`
+
+# License
+Copyright (C) 2020 Pryv S.A. https://pryv.com - All Rights Reserved
+Unauthorized copying of this file, via any medium is strictly prohibited
+Proprietary and confidential

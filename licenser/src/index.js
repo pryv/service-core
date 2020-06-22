@@ -27,14 +27,10 @@ const fileSpecs = {
     {
       action: 'json',
       force: {
-        author: "Pryv S.A. <support@pryv.com> (http://pryv.com)",
-        license: "BSD-3-Clause",
-        private: false,
+        author: "Pryv S.A. <support@pryv.com> (http://pryv.com)"
       },
       defaults: {
-        homepage: "http://pryv.com",
-        description: "This package is part of Open Pryv.io",
-        version: version
+        homepage: "http://pryv.com"
       },
       sortPackage: true
     },

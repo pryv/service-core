@@ -62,3 +62,8 @@ describing the issue to support@pryv.com.
 ## COPYRIGHT
 
 Copyright 2013-2018, Pryv SA. All rights reserved. 
+
+# License
+Copyright (C) 2020 Pryv S.A. https://pryv.com - All Rights Reserved
+Unauthorized copying of this file, via any medium is strictly prohibited
+Proprietary and confidential
