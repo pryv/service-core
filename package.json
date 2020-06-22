@@ -31,7 +31,8 @@
     "tag-tests": "node scripts/test-ids.js",
     "output-test-results": "node scripts/test-results/test-results.js",
     "upload-test-results": "scripts/test-results/upload.sh",
-    "release": "scripts/prepare_dist && node_modules/.bin/babel ./components --verbose --out-dir=dist/components --copy-files"
+    "release": "scripts/prepare_dist && node_modules/.bin/babel ./components --verbose --out-dir=dist/components --copy-files",
+    "license": "cd licenser ; yarn install; yarn apply"
   },
   "dependencies": {
     "@airbrake/node": "^1.1.2",
@@ -131,5 +132,9 @@
   "engines": {
     "node": "12.x",
     "yarn": "1.x"
-  }
+  },
+  "pre-commit": [
+    "license"
+  ],
+  "license": "UNLICENSED"
 }
