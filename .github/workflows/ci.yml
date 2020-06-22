@@ -28,6 +28,9 @@ jobs:
     - name: Install gnatsd, mongodb, influxdb
       run: |
          sh build/build-dev
+         
+    - name: yarn release
+      run: yarn release
       
     - name: yarn test
       run: |

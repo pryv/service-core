@@ -24,7 +24,8 @@ sh ./scripts/setup-influx.sh
 # Start Influx db and verify the status
 #service influxdb start
 #service influxdb status
-sudo influxdb &
+#sudo influxdb &
+sudo service influxdb start
 
 # Start mongodb
 yarn database

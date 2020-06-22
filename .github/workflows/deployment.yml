@@ -16,8 +16,10 @@ jobs:
     steps:
     - name: Download master branch
       uses: actions/checkout@v2
+        
+    - uses: fusion-engineering/setup-git-credentials@v2
       with:
-        token: ${{ secrets.NPM_AUTH_TOKEN }}
+        credentials: https://${{ secrets.GIT_PRYV_USERNAME }}:${{ secrets.GIT_PRYV_TOKEN }}@github.com/
         
     - name: Setup Node.js with version ${{ matrix.node-version }}
       uses: actions/setup-node@v1
