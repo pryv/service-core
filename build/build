@@ -27,7 +27,7 @@ function release {
   if [ -e ../release_build ]; then
     # Publication to registry: 
     sudo docker tag $local_name $remote_name
-    sudo docker push $remote_name
+    #sudo docker push $remote_name
   fi
 }
 

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# This file installs all dependencies needed to run core for tests
+
+# Install gnatsd - the duplicate of ./core/gnatsd.sh file that consist docker 
+# run commands
+sh ../scripts/setup-gnatsd.sh
+
+# Install mongodb
+bash ../scripts/setup-dev-env.bash
+
+# Install influxdb
+sh ../scripts/setup-influx.sh
+
+==========================================
+# If the scrip is run several times, this could fail because of occupied ports
+# but in the isolated environment like docker it is ok, but for local machine 
+# installation could cause confusion
+
+# Go to the parrent directory
+cd ..
+
+# Start gnatsd (the same as `yarn nats`, just in the background)
+gnatsd &
+
+# Start mongodb
+yarn database
+
+# Start Influx db and verify the status
+service influxdb start
+service influxdb status

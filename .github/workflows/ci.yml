@@ -1,0 +1,36 @@
+name: Pryv-core-server CI
+
+on: 
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - feature/workflow-pipeline
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [12.13]
+
+    steps:
+    - name: Download master branch
+      uses: actions/checkout@v2
+    
+    - name: Setup Node.js with version ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+        
+    - name: Install gnatsd, mongodb, influxdb
+      run: |
+         cd build
+         sh build-dev
+      
+    - name: yarn test
+      run: |
+        ls
+        yarn test

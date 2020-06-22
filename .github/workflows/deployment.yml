@@ -1,0 +1,35 @@
+name: Pryv-core-server deployment workflow
+
+on: 
+  push:
+    branches:
+      - feature/workflow-pipeline
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [12.13]
+
+    steps:
+    - name: Download master branch
+      uses: actions/checkout@v2
+    
+    - name: Setup Node.js with version ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+      
+    - name: Login to the docker containers registry
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ secrets.REGISTRY_PRYV_SERVER }}
+        username: ${{ secrets.REGISTRY_PRYV_USERNAME }}
+        password: ${{ secrets.REGISTRY_PRYV_PASSWORD }}
+
+    - name: Build and deploy
+      run: |
+        cd build 
+        ./build

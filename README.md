@@ -79,7 +79,7 @@ Then just `yarn setup`. **Warning** don't use `yarn install`; now using --no opt
 During development, use `yarn watch` to recompile all files after each saved change. Look out for compilation errors that might prevent the distribution from being updated.
 
 ### MongoDB
-
+ 
 `./scripts/setup-dev-env.bash` installs MongoDB in the parent folder and runs `yarn install`.
 
 ## Test Running

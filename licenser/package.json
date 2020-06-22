@@ -1,0 +1,20 @@
+{
+  "name": "app-node-licenser",
+  "version": "1.0.0",
+  "description": "Add licenses information to files, file-Headers and package.json ",
+  "main": "src/index.js",
+  "scripts": {
+    "apply": "node src/index.js"
+  },
+  "keywords": [
+    "LICENSE",
+    "headers"
+  ],
+  "author": "Pryv S.A.",
+  "license": "BSD-3-Clause",
+  "dependencies": {
+    "lodash": "^4.17.15",
+    "prepend-file": "^1.3.1",
+    "sort-package-json": "^1.44.0"
+  }
+}
