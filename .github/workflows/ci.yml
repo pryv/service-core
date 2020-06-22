@@ -27,8 +27,7 @@ jobs:
         
     - name: Install gnatsd, mongodb, influxdb
       run: |
-         cd build
-         sh build-dev
+         sh build/build-dev
       
     - name: yarn test
       run: |

@@ -3,13 +3,13 @@
 
 # Install gnatsd - the duplicate of ./core/gnatsd.sh file that consist docker 
 # run commands
-sh ../scripts/setup-gnatsd.sh
+sh ./scripts/setup-gnatsd.sh
 
 # Install mongodb
-bash ../scripts/setup-dev-env.bash
+bash ./scripts/setup-dev-env.bash
 
 # Install influxdb
-sh ../scripts/setup-influx.sh
+sh ./scripts/setup-influx.sh
 
 #======================================================================
 # If the scrip is run several times, this could fail because of occupied ports
@@ -17,14 +17,13 @@ sh ../scripts/setup-influx.sh
 # installation could cause confusion
 
 # Go to the parrent directory
-cd ..
 
 # Start gnatsd (the same as `yarn nats`, just in the background)
-./gnatsd &
-
-# Start mongodb
-yarn database
+./gnatsd/gnatsd-v1.0.4-linux-amd64/gnatsd &
 
 # Start Influx db and verify the status
 service influxdb start
 service influxdb status
+
+# Start mongodb
+yarn database
