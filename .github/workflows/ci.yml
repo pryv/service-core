@@ -24,6 +24,8 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
+        always-auth: true
+        registry-url: https://npm.pkg.github.com
         
     - name: Install gnatsd, mongodb, influxdb
       run: |
@@ -31,10 +33,14 @@ jobs:
          
     - name: yarn setup
       run: yarn setup
+      env: 
+        NODE_AUTH_TOKEN: ${{ secrets.GIT_PRYV_TOKEN }}
       
     - name: yarn release
       run: yarn release
-      
+      env: 
+        NODE_AUTH_TOKEN: ${{ secrets.GIT_PRYV_TOKEN }}
+        
     - name: yarn test
       run: |
         ls
