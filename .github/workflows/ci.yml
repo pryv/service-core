@@ -29,6 +29,9 @@ jobs:
       run: |
          sh build/build-dev
          
+    - name: yarn setup
+      run: yarn setup
+      
     - name: yarn release
       run: yarn release
       
