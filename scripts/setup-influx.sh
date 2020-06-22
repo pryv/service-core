@@ -14,6 +14,7 @@
 
 
 wget -qO- https://repos.influxdata.com/influxdb.key | sudo apt-key add -
+chmod +x ./etc/lsb-release
 sudo ./etc/lsb-release
 #echo "deb https://repos.influxdata.com/${DISTRIB_ID,,} ${DISTRIB_CODENAME} stable" | sudo tee /etc/apt/sources.list.d/influxdb.list
 echo "deb https://repos.influxdata.com/ubuntu bionic stable" | tee /etc/apt/sources.list.d/influxdb.list
