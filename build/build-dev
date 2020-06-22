@@ -20,7 +20,7 @@ sh ../scripts/setup-influx.sh
 cd ..
 
 # Start gnatsd (the same as `yarn nats`, just in the background)
-gnatsd &
+./gnatsd &
 
 # Start mongodb
 yarn database
