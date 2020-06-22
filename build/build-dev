@@ -9,7 +9,7 @@ sh ./scripts/setup-gnatsd.sh
 bash ./scripts/setup-dev-env.bash
 
 # Install influxdb
-sh ./scripts/setup-influx.sh
+#sh ./scripts/setup-influx.sh
 
 #======================================================================
 # If the scrip is run several times, this could fail because of occupied ports

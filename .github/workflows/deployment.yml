@@ -49,3 +49,5 @@ jobs:
       run: |
         cd build 
         ./build
+      env: 
+        NODE_AUTH_TOKEN: ${{ secrets.GIT_PRYV_TOKEN }}

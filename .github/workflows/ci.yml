@@ -30,20 +30,23 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.SSH_PRYV_PRIVATE_KEY }}
 
+    - name: Install influxdb
+      run: |     
+        wget -qO- https://repos.influxdata.com/influxdb.key | sudo apt-key add -
+        #echo "deb https://repos.influxdata.com/${DISTRIB_ID,,} ${DISTRIB_CODENAME} stable" | sudo tee /etc/apt/sources.list.d/influxdb.list
+        echo "deb https://repos.influxdata.com/ubuntu bionic stable" | tee /etc/apt/sources.list.d/influxdb.list
+        sudo apt update && sudo apt install influxdb
+
     - name: Install gnatsd, mongodb, influxdb
       run: sh build/build-dev
          
     - name: yarn setup
-      run: yarn install
+      run: yarn setup
       env: 
         NODE_AUTH_TOKEN: ${{ secrets.GIT_PRYV_TOKEN }}
       
     - name: yarn release
       run: yarn release
-      env: 
-        NODE_AUTH_TOKEN: ${{ secrets.GIT_PRYV_TOKEN }}
         
     - name: yarn test
-      run: |
-        ls
-        yarn test
+      run: yarn test
