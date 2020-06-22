@@ -22,8 +22,9 @@ sh ./scripts/setup-influx.sh
 ./gnatsd/gnatsd-v1.0.4-linux-amd64/gnatsd &
 
 # Start Influx db and verify the status
-service influxdb start
-service influxdb status
+#service influxdb start
+#service influxdb status
+sudo influxdb &
 
 # Start mongodb
 yarn database

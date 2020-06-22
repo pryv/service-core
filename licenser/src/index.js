@@ -50,10 +50,9 @@ async function start() {
   await loadAction(require('./actions/addSibling'));
   await loadAction(require('./actions/addTrailer'));
   checkInit();
-  // WHen building docker it is needed to add license directly to the build
-  await loop('../lib');
-  // Add to the sour e code directly
-  await loop('../source');
+
+  // Add licenses to the source code js files
+  await loop('../components');
 }
 
 

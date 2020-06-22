@@ -16,7 +16,9 @@ jobs:
     steps:
     - name: Download master branch
       uses: actions/checkout@v2
-    
+      with:
+        token: ${{ secrets.NPM_AUTH_TOKEN }}
+        
     - name: Setup Node.js with version ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
