@@ -21,6 +21,11 @@ jobs:
       with:
         credentials: https://${{ secrets.GIT_PRYV_USERNAME }}:${{ secrets.GIT_PRYV_TOKEN }}@github.com/
         
+    - name: Login to github
+      uses: webfactory/ssh-agent@v0.3.0
+      with:
+          ssh-private-key: ${{ secrets.SSH_PRYV_PRIVATE_KEY }}
+          
     - name: Setup Node.js with version ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
