@@ -31,28 +31,22 @@ function release {
   fi
 }
 
-
 echo "---------------------------- building core ------------------------------"
-docker build --build-arg SSH_PRIVATE_KEY="$(cat ~/.ssh/id_rsa_github)" --build-arg SSH_PUBLIC_KEY="$(cat ~/.ssh/id_rsa_github.pub)" \
-    -f build/core/Dockerfile.intermediate -t pryv/core:$version .
+docker build --build-arg WITHOUT_YARN_INSTALL=true -f build/core/Dockerfile -t pryv/core:$version .
 release "pryv/core" $version
 
 echo "---------------------------- building preview ---------------------------"
-docker build --build-arg SSH_PRIVATE_KEY="$(cat ~/.ssh/id_rsa_github)" --build-arg SSH_PUBLIC_KEY="$(cat ~/.ssh/id_rsa_github.pub)" \
-    -f build/preview/Dockerfile.intermediate -t pryv/preview:$version .
+docker build --build-arg WITHOUT_YARN_INSTALL=true -f build/preview/Dockerfile -t pryv/preview:$version .
 release "pryv/preview" $version
 
 echo "---------------------------- building hfs --------------------------------"
-docker build --build-arg SSH_PRIVATE_KEY="$(cat ~/.ssh/id_rsa_github)" --build-arg SSH_PUBLIC_KEY="$(cat ~/.ssh/id_rsa_github.pub)" \
-    -f build/hfs/Dockerfile.intermediate -t pryv/hfs:$version .
+docker build --build-arg WITHOUT_YARN_INSTALL=true -f build/hfs/Dockerfile -t pryv/hfs:$version .
 release "pryv/hfs" $version
 
 echo "---------------------------- building cli --------------------------------"
-docker build --build-arg SSH_PRIVATE_KEY="$(cat ~/.ssh/id_rsa_github)" --build-arg SSH_PUBLIC_KEY="$(cat ~/.ssh/id_rsa_github.pub)" 
-    -f build/cli/Dockerfile.intermediate -t pryv/cli:$version .
+docker build --build-arg WITHOUT_YARN_INSTALL=true -f build/cli/Dockerfile -t pryv/cli:$version .
 release "pryv/cli" $version
 
 echo "---------------------------- building webhooks --------------------------------"
-docker build --build-arg SSH_PRIVATE_KEY="$(cat ~/.ssh/id_rsa_github)" --build-arg SSH_PUBLIC_KEY="$(cat ~/.ssh/id_rsa_github.pub)" \
-    -f build/webhooks/Dockerfile.intermediate -t pryv/webhooks:$version .
+docker build -f build/webhooks/Dockerfile -t pryv/webhooks:$version .
 release "pryv/webhooks" $version

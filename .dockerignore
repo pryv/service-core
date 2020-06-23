@@ -1,5 +1,4 @@
 .git
-node_modules
 */node_modules
 build2/build-dev
 build2/build

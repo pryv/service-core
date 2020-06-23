@@ -48,4 +48,5 @@ jobs:
     - name: Build and deploy
       run: |
         ls ~/.ssh
-        ./build/build
+        yarn install
+        ./build/build_workflow
