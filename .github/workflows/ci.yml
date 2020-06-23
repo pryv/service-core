@@ -1,4 +1,4 @@
-name: Pryv-core-server CI
+name: Pryv service-core CI
 
 on: 
   pull_request:

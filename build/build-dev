@@ -12,11 +12,9 @@ bash ./scripts/setup-dev-env.bash
 sh ./scripts/setup-influx.sh
 
 #======================================================================
-# If the scrip is run several times, this could fail because of occupied ports
+# If the script is run several times, this could fail because of occupied ports
 # but in the isolated environment like docker it is ok, but for local machine 
 # installation could cause confusion
-
-# Go to the parrent directory
 
 # Start gnatsd (the same as `yarn nats`, just in the background)
 ./gnatsd/gnatsd-v1.0.4-linux-amd64/gnatsd &
