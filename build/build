@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# This file builds all images when packages are installed in the docker image
+# (ssh keys has to be given as build arguments). For image build when packages 
+# are installed before the build of the docker, please use build/build_workflow.sh script
 
 set -e
 

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-
+# This file builds all images when packages are installed before the build 
+# (no auth is needed inside the docker image itself). Fo authentication inside
+# the docker, please use build/build.sh script
 set -e
 
 # Builds 'service-core' docker image with the version given below. 
@@ -32,19 +34,19 @@ function release {
 }
 
 echo "---------------------------- building core ------------------------------"
-docker build --build-arg WITHOUT_YARN_INSTALL=true -f build/core/Dockerfile -t pryv/core:$version .
+docker build -f build/core/Dockerfile -t pryv/core:$version .
 release "pryv/core" $version
 
 echo "---------------------------- building preview ---------------------------"
-docker build --build-arg WITHOUT_YARN_INSTALL=true -f build/preview/Dockerfile -t pryv/preview:$version .
+docker build -f build/preview/Dockerfile -t pryv/preview:$version .
 release "pryv/preview" $version
 
 echo "---------------------------- building hfs --------------------------------"
-docker build --build-arg WITHOUT_YARN_INSTALL=true -f build/hfs/Dockerfile -t pryv/hfs:$version .
+docker build -f build/hfs/Dockerfile -t pryv/hfs:$version .
 release "pryv/hfs" $version
 
 echo "---------------------------- building cli --------------------------------"
-docker build --build-arg WITHOUT_YARN_INSTALL=true -f build/cli/Dockerfile -t pryv/cli:$version .
+docker build -f build/cli/Dockerfile -t pryv/cli:$version .
 release "pryv/cli" $version
 
 echo "---------------------------- building webhooks --------------------------------"

@@ -2,6 +2,10 @@ name: Pryv-core-server deployment workflow
 
 on: 
   push:
+    push:
+      tags:
+        - '*'
+    # this is used only for testing the pipeline
     branches:
       - feature/workflow-pipeline
 jobs:

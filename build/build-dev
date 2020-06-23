@@ -9,7 +9,7 @@ sh ./scripts/setup-gnatsd.sh
 bash ./scripts/setup-dev-env.bash
 
 # Install influxdb
-#sh ./scripts/setup-influx.sh
+sh ./scripts/setup-influx.sh
 
 #======================================================================
 # If the scrip is run several times, this could fail because of occupied ports
@@ -22,9 +22,6 @@ bash ./scripts/setup-dev-env.bash
 ./gnatsd/gnatsd-v1.0.4-linux-amd64/gnatsd &
 
 # Start Influx db and verify the status
-#service influxdb start
-#service influxdb status
-#sudo influxdb &
 sudo service influxdb start
 
 # Start mongodb

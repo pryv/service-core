@@ -6,7 +6,10 @@ on:
       - master
   push:
     branches:
+      - master
+      # this is used only for testing the pipeline  
       - feature/workflow-pipeline
+     
 jobs:
   build:
 
@@ -24,26 +27,21 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-        
+    
+    # there is one private package (lib-release) used as npm package, so we need 
+    # to authenticate
     - name: Login to github
       uses: webfactory/ssh-agent@v0.3.0
       with:
         ssh-private-key: ${{ secrets.SSH_PRYV_PRIVATE_KEY }}
-
-    - name: Install influxdb
-      run: |     
-        wget -qO- https://repos.influxdata.com/influxdb.key | sudo apt-key add -
-        #echo "deb https://repos.influxdata.com/${DISTRIB_ID,,} ${DISTRIB_CODENAME} stable" | sudo tee /etc/apt/sources.list.d/influxdb.list
-        sudo echo "deb https://repos.influxdata.com/ubuntu bionic stable" | sudo tee /etc/apt/sources.list.d/influxdb.list
-        sudo apt update && sudo apt install influxdb
 
     - name: Install gnatsd, mongodb, influxdb
       run: sh build/build-dev
          
     - name: yarn setup
       run: yarn setup
-      env: 
-        NODE_AUTH_TOKEN: ${{ secrets.GIT_PRYV_TOKEN }}
+      #env: 
+      #  NODE_AUTH_TOKEN: ${{ secrets.GIT_PRYV_TOKEN }}
       
     - name: yarn release
       run: yarn release

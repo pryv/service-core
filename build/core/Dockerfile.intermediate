@@ -5,7 +5,6 @@ COPY . /app/bin
 
 ARG SSH_PRIVATE_KEY
 ARG SSH_PUBLIC_KEY
-ARG WITHOUT_YARN_INSTALL
 
 WORKDIR /app/bin
 
@@ -18,8 +17,8 @@ RUN chmod 600 /root/.ssh/id_rsa
 RUN touch /root/.ssh/known_hosts
 RUN ssh-keyscan github.com >> /root/.ssh/known_hosts
 
-#Install the packages and create node_modules folder
-RUN if [ "x$WITHOUT_YARN_INSTALL" = "x" ] ; then yarn install ; else echo Skipping yarn install ; fi
+#Install the packages 
+yarn install
 
 # main image for the tagging
 FROM pryv/base:1.3.40
