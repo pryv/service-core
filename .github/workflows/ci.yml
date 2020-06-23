@@ -7,8 +7,6 @@ on:
   push:
     branches:
       - master
-      # this is used only for testing the pipeline  
-      - feature/workflow-pipeline
      
 jobs:
   build:
