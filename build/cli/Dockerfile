@@ -4,7 +4,7 @@ MAINTAINER "Tech@Pryv" <tech@pryv.com>
 COPY . /app/bin
 
 # Move building scripts to pd_build (.sh files expect it to be there)
-RUN mv /app/bin/build/core/ /pd_build/
+RUN mv /app/bin/build/cli/ /pd_build/
 
 WORKDIR /app/bin
 
