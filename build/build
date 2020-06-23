@@ -5,7 +5,7 @@ set -e
 # Builds 'service-core' docker image with the version given below. 
 
 # Determine the build_tag and whether we need to release.
-scripts/build_name
+build/scripts/build_name
 
 version=$(cat build_tag)
 if [ -e release_build ]; then
@@ -26,52 +26,28 @@ function release {
   
   if [ -e ../release_build ]; then
     # Publication to registry: 
-    sudo docker tag $local_name $remote_name
+    docker tag $local_name $remote_name
     #sudo docker push $remote_name
   fi
 }
 
-# Create a release.tar that contains all the code. 
-pushd ..
-tar cf build/release.tar \
-  --exclude .git \
-  --exclude node_modules \
-  --exclude */node_modules \
-  --exclude build \
-  .
-popd
 
 echo "---------------------------- building core ------------------------------"
-pushd core
-cp ../release.tar .
-sudo docker build -f Dockerfile -t pryv/core:$version .
+docker build --build-arg SSH_PRIVATE_KEY="$(cat ~/.ssh/id_rsa_github)" --build-arg SSH_PUBLIC_KEY="$(cat ~/.ssh/id_rsa_github.pub)" -f build/core/Dockerfile -t pryv/core:$version .
 release "pryv/core" $version
-popd
 
 echo "---------------------------- building preview ---------------------------"
-pushd preview
-cp ../release.tar .
-sudo docker build -f Dockerfile -t pryv/preview:$version .
+docker build --build-arg SSH_PRIVATE_KEY="$(cat ~/.ssh/id_rsa_github)" --build-arg SSH_PUBLIC_KEY="$(cat ~/.ssh/id_rsa_github.pub)" -f build/preview/Dockerfile -t pryv/preview:$version .
 release "pryv/preview" $version
-popd
 
 echo "---------------------------- building hfs --------------------------------"
-pushd hfs
-cp ../release.tar .
-sudo docker build -f Dockerfile -t pryv/hfs:$version .
+docker build --build-arg SSH_PRIVATE_KEY="$(cat ~/.ssh/id_rsa_github)" --build-arg SSH_PUBLIC_KEY="$(cat ~/.ssh/id_rsa_github.pub)" -f build/hfs/Dockerfile -t pryv/hfs:$version .
 release "pryv/hfs" $version
-popd
 
 echo "---------------------------- building cli --------------------------------"
-pushd cli
-cp ../release.tar .
-sudo docker build -f Dockerfile -t pryv/cli:$version .
+docker build --build-arg SSH_PRIVATE_KEY="$(cat ~/.ssh/id_rsa_github)" --build-arg SSH_PUBLIC_KEY="$(cat ~/.ssh/id_rsa_github.pub)" -f build/cli/Dockerfile -t pryv/cli:$version .
 release "pryv/cli" $version
-popd
 
 echo "---------------------------- building webhooks --------------------------------"
-pushd webhooks
-cp ../release.tar .
-sudo docker build -f Dockerfile -t pryv/webhooks:$version .
+docker build --build-arg SSH_PRIVATE_KEY="$(cat ~/.ssh/id_rsa_github)" --build-arg SSH_PUBLIC_KEY="$(cat ~/.ssh/id_rsa_github.pub)" -f build/webhooks/Dockerfile -t pryv/webhooks:$version .
 release "pryv/webhooks" $version
-popd

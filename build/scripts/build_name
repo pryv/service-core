@@ -27,7 +27,7 @@ def shell(cmd):
   return subprocess.check_output(cmd, shell=True).rstrip()
 
 # '1.1.3-4-g2c1a80f'
-git_describe = shell('git describe --tags --always')
+git_describe = "6.6.6"#shell('git describe --tags --always')
 
 # 'master', 'HEAD', ...
 git_branch = shell('git rev-parse --abbrev-ref HEAD')
