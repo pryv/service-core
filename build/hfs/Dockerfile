@@ -3,6 +3,9 @@ MAINTAINER "Tech@Pryv" <tech@pryv.com>
 
 COPY . /app/bin
 
+# delete installed node modules because they are removed from .dockerignore
+RUN rm -rf /app/bin/node_modules
+
 # Move building scripts to pd_build (.sh files expect it to be there)
 RUN mv /app/bin/build/hfs/ /pd_build/
 

@@ -3,6 +3,9 @@ MAINTAINER "Tech@Pryv" <tech@pryv.com>
 
 COPY . /app/bin
 
+# delete installed node modules because they are removed from .dockerignore
+RUN rm -rf /app/bin/node_modules
+
 ARG SSH_PRIVATE_KEY
 ARG SSH_PUBLIC_KEY
 
