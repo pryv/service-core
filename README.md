@@ -13,6 +13,7 @@ _Prerequisites:_
 - Mongo DB v3.6 (needs at least 4GB of free disk space for the initial database)
 - InfluxDB v1.2
 - gnatsd
+- graphicsmagick - for image events preview
 
 For node, you may use [nvm](https://github.com/nvm-sh/nvm) or [nodenv](https://github.com/nodenv/nodenv) to manage multiple nodeJS versions.
 
@@ -22,6 +23,7 @@ On a mac OS X system, you should be able to install these prerequisites by first
 $ brew install gnatsd node-build influxdb nodenv/nvm
 # Follow post-install instructions by homebrew, especially for nodenv/nvm.
 $ nodenv install 8.8.0
+$ install graphicsmagick
 ~~~
 
 You will need to install 'node-gyp' globally as well: `yarn global add node-gyp`. Your environment needs to support C/C++ compilation. On Linux, this includes `sudo apt-get install build-essentials`, on Mac OS X this is XCode + Command Line Utilities.
