@@ -56,7 +56,7 @@ describe('Metadata Updater/Controller', () => {
         }
       });
       
-      controller.runEach(10);
+      controller.runEach(20);
     });
   });
   describe('#flushOp(update)', () => {
