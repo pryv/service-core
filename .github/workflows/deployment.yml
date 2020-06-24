@@ -23,7 +23,7 @@ jobs:
       with:
           ssh-private-key: ${{ secrets.SSH_PRYV_PRIVATE_KEY }}
           
-    - name: Setup Node.js with version ${{ matrix.node-version }}
+    - name: Install Node.js with version ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
