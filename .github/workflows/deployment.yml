@@ -48,7 +48,7 @@ jobs:
       run: sh build/build-dev
          
     - name: Unicode npm package blacklist ips that request download too many times so it is installed before yarn install
-      run: minimal_apt_get_install unicode-data
+      run: sudo apt-get install unicode-data
       
     - name: yarn setup
       run: yarn setup
