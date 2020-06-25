@@ -3,7 +3,7 @@ MAINTAINER "Tech@Pryv" <tech@pryv.com>
 
 COPY . /app/bin
 
-# Move building scripts to pd_build (.sh files expect it to be there)
+# Move building scripts to pd_build (cli files expect building related scripts to be there)
 RUN mv /app/bin/build/cli/ /pd_build/
 
 WORKDIR /app/bin

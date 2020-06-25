@@ -21,16 +21,16 @@ RUN touch /root/.ssh/known_hosts
 RUN ssh-keyscan github.com >> /root/.ssh/known_hosts
 
 #Install the packages 
-RUN yarn install
-
+RUN yarn setup
+# *********** Below is the image that will be deployed =======================
 # main image for the tagging
 FROM pryv/base:1.3.40
 MAINTAINER "Tech@Pryv" <tech@pryv.com>
 
-# Copy installed packages to the new images
+# *********** Copy installed packages to the new images
 COPY --from=intermediate /app/bin /app/bin
 
-# Move building scripts to pd_build (.sh files expect it to be there)
+# Move building scripts to pd_build (cli files expect building related scripts to be there)
 RUN mv /app/bin/build/core/ /pd_build/
 
 WORKDIR /app/bin

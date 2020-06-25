@@ -6,7 +6,7 @@ COPY . /app/bin
 # delete installed node modules because they are removed from .dockerignore
 RUN rm -rf /app/bin/node_modules
 
-# Move building scripts to pd_build (.sh files expect it to be there)
+# Move building scripts to pd_build (cli files expect building related scripts to be there)
 RUN mv /app/bin/build/hfs/ /pd_build/
 
 WORKDIR /app/bin

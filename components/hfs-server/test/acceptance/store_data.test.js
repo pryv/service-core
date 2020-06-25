@@ -358,8 +358,8 @@ describe('Storing data in a HF series', function() {
         .send({ time: newEventTime });
 
       // There is the need to syncronize separate services, otherwise the new 
-      // reference time is taken from the cache instead of mongodb
-      await awaiting.delay(2)
+      // reference time is taken from the cache instead of mongodb (cache is not invalidated on time)
+      await awaiting.delay(10)
       // add Data using timestamp sugar
       const result2 = await storeData(result.event.id, 
         {format: 'flatJSON',

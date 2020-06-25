@@ -8,7 +8,8 @@ set -e
 # Builds 'service-core' docker image with the version given below. 
 
 # Determine the build_tag and whether we need to release.
-build/scripts/build_name
+SCRIPT_FOLDER=$(cd $(dirname "$0"); pwd)
+$SCRIPT_FOLDER/scripts/build_name
 
 version=$(cat build_tag)
 if [ -e release_build ]; then
@@ -30,7 +31,7 @@ function release {
   if [ -e ../release_build ]; then
     # Publication to registry: 
     docker tag $local_name $remote_name
-    #sudo docker push $remote_name
+    #docker push $remote_name
   fi
 }
 
