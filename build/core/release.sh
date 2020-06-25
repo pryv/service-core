@@ -11,9 +11,6 @@ header "Install application from release.tar"
 
 run chown app $target_dir
 
-# This will avoid getting DOSed by unicode.org because of the unicode npm package.
-minimal_apt_get_install unicode-data
-
 # Perform a release build of the source code. (-> lib)
 run yarn release > /dev/null
 

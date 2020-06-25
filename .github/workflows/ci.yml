@@ -43,5 +43,4 @@ jobs:
       run: yarn release
         
     - name: yarn test
-      run: echo "Pretending that I run tests" 
-      #yarn test
+      run: yarn test
