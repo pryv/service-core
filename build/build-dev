@@ -12,7 +12,7 @@ bash ./scripts/setup-dev-env.bash
 sh ./scripts/setup-influx.sh
 
 # Install graphicsmagick for preview functionality
-apt-get install graphicsmagick
+sudo apt-get install graphicsmagick
 
 #======================================================================
 # If the script is run several times, this could fail because of occupied ports
