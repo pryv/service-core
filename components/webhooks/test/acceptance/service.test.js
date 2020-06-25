@@ -307,6 +307,7 @@ describe('webhooks', function() {
           .get(`/${username}/webhooks`)
           .set('Authorization', appAccessToken);
         let webhook = res.body.webhooks[0];
+        await awaiting.delay(100);
         assert.equal(webhook.state, 'inactive');
       });
   

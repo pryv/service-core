@@ -8,7 +8,7 @@
     "pryvioctl": "./bin/cli"
   },
   "scripts": {
-    "test": "../../node_modules/.bin/mocha -R dot 'test/**/*.test.js'"
+    "test": "../../node_modules/.bin/mocha -R dot --timeout 8000 'test/**/*.test.js'"
   },
   "dependencies": {
     "chalk": "^2.4.1",

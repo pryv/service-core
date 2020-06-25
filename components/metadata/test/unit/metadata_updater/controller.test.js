@@ -54,7 +54,7 @@ describe('Metadata Updater/Controller', () => {
         if (callTimestamps.length >= 2) {
           // First call happens immediately. 
           assert.approximately(now, callTimestamps[0], 50);
-
+          console.log( 'Debugging delta for 9TJ0', callTimestamps[1] - callTimestamps[0]);
           // And the second call 10 ms afterwards
           assert.approximately(callTimestamps[0], callTimestamps[1], 15);
           
@@ -62,7 +62,7 @@ describe('Metadata Updater/Controller', () => {
         }
       });
       
-      controller.runEach(30);
+      controller.runEach(20);
     });
   });
   describe('#flushOp(update)', () => {
