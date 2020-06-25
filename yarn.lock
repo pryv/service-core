@@ -4624,7 +4624,7 @@ levn@^0.4.1:
     prelude-ls "^1.2.1"
     type-check "~0.4.0"
 
-"lib-reporting@git+ssh://git@github.com/pryv/lib-reporting#e633c19a26551c01b63093fbfb2cb9b8d2b71d94":
+"lib-reporting@git+ssh://git@github.com/pryv/lib-reporting":
   version "1.0.1"
   resolved "git+ssh://git@github.com/pryv/lib-reporting#e633c19a26551c01b63093fbfb2cb9b8d2b71d94"
   dependencies:
