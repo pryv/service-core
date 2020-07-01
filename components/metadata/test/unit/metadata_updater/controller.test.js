@@ -56,13 +56,13 @@ describe('Metadata Updater/Controller', () => {
           assert.approximately(now, callTimestamps[0], 50);
           
           // And the second call 10 ms afterwards
-          assert.approximately(callTimestamps[0], callTimestamps[1], 40);
+          assert.approximately(callTimestamps[0], callTimestamps[1], 20);
           
           done(); 
         }
       });
       
-      controller.runEach(20);
+      controller.runEach(10);
     });
   });
   describe('#flushOp(update)', () => {
