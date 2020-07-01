@@ -1,16 +1,14 @@
-FROM pryv/base:1.3.40
-MAINTAINER "Tech@Pryv" <tech@pryv.com>
+FROM pryv/intermediate-preview:latest
 
-COPY . /app/bin
+# install graphicsmagick that is specific for preview image
+RUN apt-get update && apt-get install -y graphicsmagick
 
-# Move building scripts to pd_build (cli files expect building related scripts to be there)
-RUN mv /app/bin/build/preview/ /pd_build/
+# ============================================ Only for preview
+# Have CRON run in this container ?????? TODO cia ne rm o kaip tik runinti turetu
+#?????RUN rm -r /etc/service/cron
+# ============================================
 
-WORKDIR /app/bin
-RUN /pd_build/install.sh
-
-# Ports:
-#   9000        previews api
-#
-EXPOSE 9000
-
+# Clean up after ourselves.
+RUN apt-get remove -y autoconf automake 
+RUN apt-get autoremove && apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* & rm -rf /app/bin/build

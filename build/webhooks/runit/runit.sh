@@ -6,9 +6,7 @@ export NODE_ENV=production
 export NODE_PATH=/app/bin/dist/
 
 create_links() {
-
 	remove_links # Remove all existing service, if any
-
 	chmod +x /etc/runit/app/run # make the script executable
 	ln -s /etc/runit/app /etc/service/app #make a link to /etc/service (will be run with runit).
 

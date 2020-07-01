@@ -1,0 +1,46 @@
+FROM pryv/base:1.3.40
+MAINTAINER "Tech@Pryv" <tech@pryv.com>
+
+# Set main paths that will be reused in this docker file
+ARG TARGET_DIR="/app/bin"
+ARG CONF_DIR="/app/conf"
+ARG LOG_DIR="/app/log"
+ARG DATA_DIR="/app/data"
+
+# pass building name as an argument (like core,previews or other)
+ARG BUILDING_NAME 
+ENV BUILDING_NAME=$BUILDING_NAME
+
+# copy all code to the target dir exept files mentioned in .dockerignore
+COPY . $TARGET_DIR
+WORKDIR $TARGET_DIR
+
+# Perform a release build of the source code. (-> lib)
+RUN yarn release > /dev/null
+
+# Copy config file
+RUN mkdir -p $CONF_DIR && \
+	cp $TARGET_DIR/build/$BUILDING_NAME/config/$BUILDING_NAME.json $CONF_DIR/$BUILDING_NAME.json
+
+# Create the logs directory and related files
+RUN mkdir -p $LOG_DIR && \
+    touch $LOG_DIR/$BUILDING_NAME.log && chown -R app:app $LOG_DIR
+
+# ============================ start runit ================================
+# Install the script that runs the api service
+RUN mkdir /etc/runit/ && mkdir /etc/service/runit/
+RUN cp -r $TARGET_DIR/build/$BUILDING_NAME/runit/* /etc/runit/
+RUN mv /etc/runit/runit.sh /etc/init.d/
+
+# make a link to /etc/service (will be run with runit).
+RUN ln -s /etc/init.d/runit.sh /etc/service/runit/run 
+# ============================ end runit ================================
+
+# Remove cron and sshd entirely, unless we use them
+RUN rm -r /etc/service/cron
+RUN rm -r /etc/service/sshd && rm /etc/my_init.d/00_regen_ssh_host_keys.sh
+
+# Ports:
+#   9000        core api
+#
+EXPOSE 9000

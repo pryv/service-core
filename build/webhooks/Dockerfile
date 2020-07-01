@@ -1,12 +1,6 @@
-FROM pryv/base:1.3.40
-MAINTAINER "Tech@Pryv" <tech@pryv.com>
+FROM pryv/intermediate-webhooks:latest
 
-COPY . /app/bin
-
-# Move building scripts to pd_build (cli files expect building related scripts to be there)
-RUN mv /app/bin/build/webhooks/ /pd_build/
-
-WORKDIR /app/bin
-RUN /pd_build/install.sh
-
-
+# Only clean up after ourselves.
+RUN apt-get remove -y autoconf automake 
+RUN apt-get autoremove && apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* & rm -rf /app/bin/build

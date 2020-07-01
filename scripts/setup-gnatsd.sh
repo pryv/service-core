@@ -10,7 +10,7 @@ BASENAME="gnatsd-$VERSION-linux-amd64"
 FILENAME="$BASENAME.zip"
 SOURCE_URL="https://github.com/nats-io/gnatsd/releases/download/$VERSION/$FILENAME"
 
-apt-get install -y unzip
+apt-get update && apt-get install -y unzip
 
 mkdir -p ./gnatsd && \
 	  cd ./gnatsd/ && 

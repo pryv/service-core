@@ -1,19 +1,9 @@
-FROM pryv/base:1.3.40
-MAINTAINER "Tech@Pryv" <tech@pryv.com>
+FROM pryv/intermediate-hfs:latest
 
-COPY . /app/bin
+# Copy config files to config dir
+RUN cp /app/bin/build/hfs/config/metadata.hjson /app/conf/
 
-# delete installed node modules because they are removed from .dockerignore
-RUN rm -rf /app/bin/node_modules
-
-# Move building scripts to pd_build (cli files expect building related scripts to be there)
-RUN mv /app/bin/build/hfs/ /pd_build/
-
-WORKDIR /app/bin
-RUN /pd_build/install.sh
-
-# Ports:
-#   9000        hfs api
-#
-EXPOSE 9000
-
+# Clean up after ourselves.
+RUN apt-get remove -y autoconf automake 
+RUN apt-get autoremove && apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* & rm -rf /app/bin/build
