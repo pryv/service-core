@@ -359,7 +359,7 @@ describe('Storing data in a HF series', function() {
 
       // There is the need to syncronize separate services, otherwise the new 
       // reference time is taken from the cache instead of mongodb (cache is not invalidated on time)
-      await awaiting.delay(10)
+      await awaiting.delay(5)
       // add Data using timestamp sugar
       const result2 = await storeData(result.event.id, 
         {format: 'flatJSON',
@@ -404,9 +404,10 @@ describe('Storing data in a HF series', function() {
         .delete('/' + result.user.username + '/events/' + result.event.id)
         .set('authorization', accessToken);
         
-
+      // wait a moment before checking if event was deleted correctly
+      await awaiting.delay(5);
+      
       // add Data using timestamp sugar
-
       const result2 = await storeData(result.event.id,
         {
           format: 'flatJSON',
@@ -416,7 +417,6 @@ describe('Storing data in a HF series', function() {
             [newEventTime + 5, 5],
             [newEventTime + 6, 6]]
         });
-
       assert.strictEqual(result2.status, 400);
       const error = result2.body.error;
       assert.strictEqual(error.id, 'invalid-operation');

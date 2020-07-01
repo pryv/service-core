@@ -56,7 +56,7 @@ describe('Metadata Updater/Controller', () => {
           assert.approximately(now, callTimestamps[0], 50);
           console.log( 'Debugging delta for 9TJ0', callTimestamps[1] - callTimestamps[0]);
           // And the second call 10 ms afterwards
-          assert.approximately(callTimestamps[0], callTimestamps[1], 15);
+          assert.approximately(callTimestamps[0], callTimestamps[1], 40);
           
           done(); 
         }
