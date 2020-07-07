@@ -1,6 +1,6 @@
 #!/bin/bash
 # Install gnatsd on linux machine
-# This file is the duplicate of ./core/gnatsd.sh file that consist docker 
+# This file is the duplicate of ./core/gnatsd.sh file that consists of docker
 # run commands to install gnatsd
 
 # check if gnatsd is already installed and if no install it

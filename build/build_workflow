@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # This file builds all images when packages are installed before the build 
-# (no auth is needed inside the docker image itself). Fo authentication inside
-# the docker, please use build/build.sh script
+# (no auth is needed inside the docker image itself)
 set -e
 
 # Builds 'service-core' docker image with the version given below. 
@@ -21,17 +20,17 @@ cp ./build_tag ../.api-version
 
 host='pryvsa-docker-release.bintray.io'
 
-# core hfs webhooks preview
+# Builds core hfs webhooks preview images
 for service in core hfs webhooks preview
 do
     echo "---------------------------- building $service --------------------------------"
-    docker build --build-arg BUILDING_NAME=$service  -f $SCRIPT_FOLDER/Dockerfile.intermediate -t pryv/intermediate-$service:latest .
+    docker build --build-arg COMPONENT_NAME=$service  -f $SCRIPT_FOLDER/Dockerfile.intermediate -t pryv/intermediate-$service:latest .
     echo $host/pryv/$service:$version
     docker build -f $SCRIPT_FOLDER/$service/Dockerfile -t $host/pryv/$service:$version .
-#    docker push $host/pryv/$service:$version
+    docker push $host/pryv/$service:$version
 done
 
 echo "---------------------------- building cli --------------------------------"
-#docker build -f $SCRIPT_FOLDER/cli/Dockerfile -t $host/pryv/cli:$version .
-#docker push $host/pryv/cli:$version
+docker build -f $SCRIPT_FOLDER/cli/Dockerfile -t $host/pryv/cli:$version .
+docker push $host/pryv/cli:$version
 

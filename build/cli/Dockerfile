@@ -10,10 +10,6 @@ RUN chown app /app/bin
 # Perform a release build of the source code. (-> dist)
 RUN yarn release > /dev/null
 
-# Remove cron and sshd entirely, unless we use them
-RUN rm -r /etc/service/cron
-RUN rm -r /etc/service/sshd && rm /etc/my_init.d/00_regen_ssh_host_keys.sh
-
 # Clean up after ourselves.
 RUN apt-get remove -y autoconf automake 
 RUN apt-get autoremove && apt-get clean && \

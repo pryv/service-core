@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # This file installs all dependencies needed to run core for tests
 
-# Install gnatsd - the duplicate of ./core/gnatsd.sh file that consist docker 
+# Install gnatsd - the duplicate of ./core/gnatsd.sh file that consists of docker
 # run commands
 sh ./scripts/setup-gnatsd.sh
 
