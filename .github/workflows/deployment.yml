@@ -2,9 +2,8 @@ name: Pryv-core-server deployment workflow
 
 on: 
   push:
-    push:
-      tags:
-        - '*'
+    tags:
+      - '*'
 jobs:
   build:
 
