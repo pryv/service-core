@@ -15,6 +15,7 @@
     "test": "node scripts/components-command yarn test",
     "database": "scripts/start-database.sh",
     "api": "cd dist/components/api-server && bin/server --config config/development.json",
+    "local": "cd dist/components/api-server && nodemon bin/server --config config/development.json",
     "previews": "cd dist/components/previews-server && npm start",
     "metadata": "cd dist/components/metadata && bin/metadata",
     "webhooks": "cd dist/components/webhooks && bin/server #--config build/webhooks/config/webhooks.json",
@@ -30,7 +31,8 @@
     "tag-tests": "node scripts/test-ids.js",
     "output-test-results": "node scripts/test-results/test-results.js",
     "upload-test-results": "scripts/test-results/upload.sh",
-    "release": "scripts/prepare_dist && node_modules/.bin/babel ./components --verbose --out-dir=dist/components --copy-files"
+    "release": "scripts/prepare_dist && node_modules/.bin/babel ./components --verbose --out-dir=dist/components --copy-files",
+    "license": "cd licenser ; yarn install; yarn apply"
   },
   "dependencies": {
     "@airbrake/node": "^1.1.2",
@@ -59,7 +61,7 @@
     "js-yaml": "^3.11.0",
     "lodash": "^4.17.4",
     "lru-cache": "^4.1.1",
-    "lib-reporting": "pryv/lib-reporting#e633c19a26551c01b63093fbfb2cb9b8d2b71d94",
+    "lib-reporting": "git+ssh://git@github.com/pryv/lib-reporting",
     "middleware": "file:components/middleware",
     "mkdirp": "1.0.4",
     "model": "file:components/model",
@@ -119,6 +121,7 @@
     "nock": "9.4.0",
     "nyc": "^15.0.1",
     "parallelshell": "^2.0.0",
+    "pre-commit": "^1.2.2",
     "should": "^11.2.0",
     "socket.io-client": "^2.3.0",
     "supertest": "^3.0.0",
@@ -129,5 +132,9 @@
   "engines": {
     "node": "12.x",
     "yarn": "1.x"
-  }
+  },
+  "pre-commit": [
+    "license"
+  ],
+  "license": "UNLICENSED"
 }

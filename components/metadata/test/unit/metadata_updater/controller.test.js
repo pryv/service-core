@@ -1,3 +1,9 @@
+/**
+ * @license
+ * Copyright (C) 2020 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ */
 // @flow
 
 // Tests the Metadata Updater Controller. 
@@ -48,9 +54,9 @@ describe('Metadata Updater/Controller', () => {
         if (callTimestamps.length >= 2) {
           // First call happens immediately. 
           assert.approximately(now, callTimestamps[0], 50);
-
+          
           // And the second call 10 ms afterwards
-          assert.approximately(callTimestamps[0], callTimestamps[1], 15);
+          assert.approximately(callTimestamps[0], callTimestamps[1], 20);
           
           done(); 
         }

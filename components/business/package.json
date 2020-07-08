@@ -2,9 +2,10 @@
   "name": "business",
   "version": "1.0.0",
   "description": "Business method layer",
-  "main": "src/index.js",
-  "author": "Pryv",
+  "homepage": "http://pryv.com",
   "license": "All rights reserved / Proprietary",
+  "author": "Pryv S.A. <support@pryv.com> (http://pryv.com)",
+  "main": "src/index.js",
   "scripts": {
     "test": "../../node_modules/.bin/mocha -R dot --exit 'test/**/*.test.js'"
   },

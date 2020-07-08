@@ -2,5 +2,7 @@
   "name": "errors",
   "version": "1.2.18",
   "private": true,
+  "homepage": "http://pryv.com",
+  "author": "Pryv S.A. <support@pryv.com> (http://pryv.com)",
   "main": "./src/index.js"
 }

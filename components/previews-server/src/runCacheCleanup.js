@@ -1,4 +1,10 @@
 /**
+ * @license
+ * Copyright (C) 2020 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ */
+/**
  * Standalone script to perform cache cleanup.
  * Expects settings to be passed the same way as for the main server.
  */

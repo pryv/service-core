@@ -2,15 +2,17 @@
   "name": "pryvuser-cli",
   "version": "0.2.0",
   "private": true,
+  "homepage": "http://pryv.com",
+  "author": "Pryv S.A. <support@pryv.com> (http://pryv.com)",
   "bin": {
     "pryvioctl": "./bin/cli"
   },
   "scripts": {
-    "test": "../../node_modules/.bin/mocha -R dot 'test/**/*.test.js'"
+    "test": "../../node_modules/.bin/mocha -R dot --timeout 8000 'test/**/*.test.js'"
   },
   "dependencies": {
-    "commander": "^2.19", 
     "chalk": "^2.4.1",
+    "commander": "^2.19",
     "inquirer": "^6.2.0"
   }
 }

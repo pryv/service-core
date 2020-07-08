@@ -1,3 +1,9 @@
+/**
+ * @license
+ * Copyright (C) 2020 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ */
 // @flow
 
 const express = require('express');
@@ -316,12 +322,14 @@ class Server {
 
     const reportingSettings = this.settings.get('reporting').value;
     const templateVersion = reportingSettings.templateVersion;
+    const reportingUrl = reportingSettings?.url;
+    const optOut = reportingSettings?.optOut;
     const licenseName = reportingSettings.licenseName;
     const role = 'api-server';
     const mylog = function (str) {
       this.logger.info(str);
     }.bind(this);
-    new Reporting(licenseName, role, templateVersion, collectClientData.bind(this), mylog);
+    new Reporting(licenseName, role, templateVersion, collectClientData.bind(this), mylog, reportingUrl, optOut);
   }
 
   async getUserCount(): Promise<Number> {

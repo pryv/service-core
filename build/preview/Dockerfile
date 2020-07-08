@@ -1,11 +1,9 @@
-FROM pryv/base:1.3.40
-MAINTAINER "Tech@Pryv" <tech@pryv.com>
+FROM pryv/intermediate-preview:latest
 
-ADD . /pd_build
-RUN /pd_build/install.sh
+# install graphicsmagick that is specific for preview image
+RUN apt-get update && apt-get install -y graphicsmagick
 
-# Ports:
-#   9000        previews api
-#
-EXPOSE 9000
-
+# Clean up after ourselves.
+RUN apt-get remove -y autoconf automake 
+RUN apt-get autoremove && apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* & rm -rf /app/bin/build

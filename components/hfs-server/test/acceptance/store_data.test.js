@@ -1,3 +1,9 @@
+/**
+ * @license
+ * Copyright (C) 2020 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ */
 // @flow
 
 // Tests pertaining to storing data in a hf series. 
@@ -350,9 +356,11 @@ describe('Storing data in a HF series', function() {
         .put('/' + result.user.username + '/events/'+ result.event.id )
         .set('authorization', accessToken)
         .send({ time: newEventTime });
-      
-      // add Data using timestamp sugar
 
+      // There is the need to syncronize separate services, otherwise the new 
+      // reference time is taken from the cache instead of mongodb (cache is not invalidated on time)
+      await awaiting.delay(5)
+      // add Data using timestamp sugar
       const result2 = await storeData(result.event.id, 
         {format: 'flatJSON',
         fields: ['timestamp', 'value'],
@@ -360,7 +368,6 @@ describe('Storing data in a HF series', function() {
           [newEventTime + 4, 4],
           [newEventTime + 5, 5],
           [newEventTime + 6, 6]]});
-
       // check Data 
       const request = hfServer.request();
       return request
@@ -371,7 +378,6 @@ describe('Storing data in a HF series', function() {
         .expect(200)
         .then((res) => {
           const points = res.body.points || [];
-
           assert.isNotEmpty(points);
           assert.deepEqual(
             points[5],
@@ -398,9 +404,10 @@ describe('Storing data in a HF series', function() {
         .delete('/' + result.user.username + '/events/' + result.event.id)
         .set('authorization', accessToken);
         
-
+      // wait a moment before checking if event was deleted correctly
+      await awaiting.delay(5);
+      
       // add Data using timestamp sugar
-
       const result2 = await storeData(result.event.id,
         {
           format: 'flatJSON',
@@ -410,7 +417,6 @@ describe('Storing data in a HF series', function() {
             [newEventTime + 5, 5],
             [newEventTime + 6, 6]]
         });
-
       assert.strictEqual(result2.status, 400);
       const error = result2.body.error;
       assert.strictEqual(error.id, 'invalid-operation');
@@ -942,7 +948,7 @@ describe('Storing data in a HF series', function() {
       // 
       async function tryStore(header: Header, data: Rows): Promise<boolean> {
         const response = await storeOp(header, data);
-                    
+        
         return response.statusCode === 200;
       }
       // Attempts a store operation and expects to fail. Returns details on
@@ -1097,6 +1103,7 @@ describe('Storing data in a HF series', function() {
 
       it('[UDHO] allows storing any number of optional fields, on each request', async () => {
         const now = 6; 
+        
         assert.isTrue(
           await tryStore(
             ['deltaTime', 'latitude', 'longitude', 'altitude'],

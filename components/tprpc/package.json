@@ -1,17 +1,19 @@
 {
   "name": "tprpc",
   "version": "1.0.0",
-  "description": "RPC via TChannel and protobuf3.",
-  "main": "src/index.js",
-  "license": "MIT",
   "private": true,
+  "description": "RPC via TChannel and protobuf3.",
+  "homepage": "http://pryv.com",
+  "license": "MIT",
+  "author": "Pryv S.A. <support@pryv.com> (http://pryv.com)",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "../../node_modules/.bin/mocha -R dot 'test/**/*.test.js'"
+  },
   "dependencies": {
     "protobufjs": "^6.8.6"
   },
   "devDependencies": {
     "flowgen": "^1.2.1"
-  }, 
-  "scripts": {
-    "test": "../../node_modules/.bin/mocha -R dot 'test/**/*.test.js'"
   }
 }

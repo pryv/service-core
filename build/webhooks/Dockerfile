@@ -1,7 +1,6 @@
-FROM pryv/base:1.3.40
-MAINTAINER "Tech@Pryv" <tech@pryv.com>
+FROM pryv/intermediate-webhooks:latest
 
-ADD . /pd_build
-RUN /pd_build/install.sh
-
-
+# Only clean up after ourselves.
+RUN apt-get remove -y autoconf automake 
+RUN apt-get autoremove && apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* & rm -rf /app/bin/build
