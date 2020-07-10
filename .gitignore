@@ -27,3 +27,6 @@ var-pryv
 
 # netbeans IDE
 nbproject/
+
+# scripts install gnatsd/ in the root directory
+gnatsd/

@@ -14,10 +14,12 @@ _Prerequisites:_
 - InfluxDB v1.2
 - gnatsd
 - graphicsmagick - for image events preview
+- make
 
 For node, you may use [nvm](https://github.com/nvm-sh/nvm) or [nodenv](https://github.com/nodenv/nodenv) to manage multiple nodeJS versions.
 
-On a mac OS X system, you should be able to install these prerequisites by first installing homebrew and then running these commands: 
+###### On a mac OS X system
+You should be able to install these prerequisites by first installing homebrew and then running these commands: 
 
 ~~~bash
 $ brew install gnatsd node-build influxdb nodenv/nvm
@@ -27,6 +29,31 @@ $ install graphicsmagick
 ~~~
 
 You will need to install 'node-gyp' globally as well: `yarn global add node-gyp`. Your environment needs to support C/C++ compilation. On Linux, this includes `sudo apt-get install build-essentials`, on Mac OS X this is XCode + Command Line Utilities.
+
+###### On Ubuntu 18.04: 
+```
+sudo apt-get install build-essential influxdb graphicsmagick
+
+# Install gnatsd
+./scripts/setup-gnatsd.sh
+
+# Start gnatsd in the background
+gnatsd/gnatsd-v1.0.4-linux-amd64/gnatsd &
+
+# Start Influxdb 
+sudo service influxd start
+(you can check the status with sudo service influxd status)
+
+# Installs MongoDB in the parent folder and run yarn install
+./scripts/setup-dev-env.bash
+
+# Start Mongodb in the background
+yarn database
+
+# For local development (Optional)
+npm install -g nodemon
+
+```
 
 Then just `yarn setup`. **Warning** don't use `yarn install`; now using --no opts because they don't compile.
 

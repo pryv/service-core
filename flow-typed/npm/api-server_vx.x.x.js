@@ -150,7 +150,7 @@ declare module 'api-server/src/routes/account' {
   declare module.exports: any;
 }
 
-declare module 'api-server/src/routes/auth' {
+declare module 'api-server/src/routes/auth/login' {
   declare module.exports: any;
 }
 
@@ -346,7 +346,7 @@ declare module 'api-server/test/auditing.test' {
   declare module.exports: any;
 }
 
-declare module 'api-server/test/auth.test' {
+declare module 'api-server/test/login.test' {
   declare module.exports: any;
 }
 
@@ -466,7 +466,7 @@ declare module 'api-server/test/unit/notifications.test' {
   declare module.exports: any;
 }
 
-declare module 'api-server/test/unit/routes/auth.test' {
+declare module 'api-server/test/unit/routes/login.test' {
   declare module.exports: any;
 }
 
@@ -590,8 +590,8 @@ declare module 'api-server/src/routes/accesses.js' {
 declare module 'api-server/src/routes/account.js' {
   declare module.exports: $Exports<'api-server/src/routes/account'>;
 }
-declare module 'api-server/src/routes/auth.js' {
-  declare module.exports: $Exports<'api-server/src/routes/auth'>;
+declare module 'api-server/src/routes/auth/login.js' {
+  declare module.exports: $Exports<'api-server/src/routes/auth/login'>;
 }
 declare module 'api-server/src/routes/events.js' {
   declare module.exports: $Exports<'api-server/src/routes/events'>;
@@ -740,8 +740,8 @@ declare module 'api-server/test/account.test.js' {
 declare module 'api-server/test/auditing.test.js' {
   declare module.exports: $Exports<'api-server/test/auditing.test'>;
 }
-declare module 'api-server/test/auth.test.js' {
-  declare module.exports: $Exports<'api-server/test/auth.test'>;
+declare module 'api-server/test/login.test.js' {
+  declare module.exports: $Exports<'api-server/test/login.test'>;
 }
 declare module 'api-server/test/events.test.js' {
   declare module.exports: $Exports<'api-server/test/events.test'>;
@@ -833,8 +833,8 @@ declare module 'api-server/test/unit/middleware/uploads.test.js' {
 declare module 'api-server/test/unit/notifications.test.js' {
   declare module.exports: $Exports<'api-server/test/unit/notifications.test'>;
 }
-declare module 'api-server/test/unit/routes/auth.test.js' {
-  declare module.exports: $Exports<'api-server/test/unit/routes/auth.test'>;
+declare module 'api-server/test/unit/routes/login.test.js' {
+  declare module.exports: $Exports<'api-server/test/unit/routes/login.test'>;
 }
 declare module 'api-server/test/unit/schema/validation.test.js' {
   declare module.exports: $Exports<'api-server/test/unit/schema/validation.test'>;

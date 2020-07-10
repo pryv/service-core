@@ -291,6 +291,7 @@ class Server {
     const application = this.application;
 
     // For DNS LESS load register
+    
     if (this.isOpenSource) {
       require('../../register')(expressApp, this.application);
       require('../../www')(expressApp, this.application);
@@ -302,7 +303,7 @@ class Server {
 
     require('./routes/accesses')(expressApp, application);
     require('./routes/account')(expressApp, application);
-    require('./routes/auth')(expressApp, application);
+    require('./routes/auth/login')(expressApp, application);
     require('./routes/events')(expressApp, application);
     require('./routes/followed-slices')(expressApp, application);
     require('./routes/profile')(expressApp, application);
