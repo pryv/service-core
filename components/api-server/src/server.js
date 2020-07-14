@@ -145,12 +145,13 @@ class Server {
       application.api, l('methods/service'), 
       application.getServiceInfoSettings());
 
-    if (! this.isOpenSource)
-    require('./methods/webhooks')(
-      application.api, l('methods/webhooks'),
-      application.getWebhooksSettings(),
-      application.storageLayer,
-    );
+    if (! this.isOpenSource) {
+      require('./methods/webhooks')(
+        application.api, l('methods/webhooks'),
+        application.getWebhooksSettings(),
+        application.storageLayer,
+      );
+    }
 
     require('./methods/trackingFunctions')(
       application.api,
@@ -330,8 +331,8 @@ class Server {
     async function collectClientData() {
       return {
         userCount: await this.getUserCount()
-      }
-    };
+      };
+    }
 
     const reportingSettings = this.settings.get('reporting').value;
     const templateVersion = reportingSettings.templateVersion;
