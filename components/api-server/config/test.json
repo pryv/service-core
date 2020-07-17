@@ -1,4 +1,7 @@
 {
+  "server": {
+    "hostname": "test.DOMAIN"
+  },
   "auth": {
     "trustedApps": "pryv-test@http://test.pryv.local, pryv-test-no-cors@*, *@https://*.rec.la*"
   },
@@ -17,7 +20,8 @@
       "url": "https://mandrillapp.local/api/1.0/messages/send-template.json"
     },
     "register": {
-      "url": "http://localhost:5123"
+      "url": "http://localhost:5123",
+      "key": "test-system-key"
     }
   },
   "tcpMessaging": {

@@ -4,6 +4,8 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+const APIError = require('components/errors/src/APIError');
+
 var errors = require('components/errors').factory,
     validation = require('../../schema/validation');
 
@@ -25,7 +27,6 @@ exports.requirePersonalAccess = function requirePersonalAccess(context, params, 
  */
 exports.getTrustedAppCheck = function getTrustedAppCheck(authSettings) {
   var trustedApps;
-
   return function requireTrustedApp(context, params, result, next) {
     if (! isTrustedApp(params.appId, params.origin)) {
       return next(errors.invalidCredentials('The app id ("appId") is either missing or ' +
@@ -90,8 +91,9 @@ exports.getParamsValidation = function getParamsValidation(paramsSchema) {
   return function validateParams(context, params, result, next) {
     validation.validate(params, paramsSchema, function (err) {
       if (err) {
+        const errorsList = err.map(error => _addCustomMessage(error, paramsSchema));
         return next(errors.invalidParametersFormat(
-          "The parameters' format is invalid.", err
+          "The parameters' format is invalid.", errorsList
         ));
       }
       next();
@@ -99,9 +101,68 @@ exports.getParamsValidation = function getParamsValidation(paramsSchema) {
   };
 };
 
+/**
+ * Replaces z-schema message and code with a custom message given in the schema
+ * !!! Important - it also removes error params and schemaId and
+ * adds "param" that is equal to failing param id
+ * 
+ * @param object error 
+ * @param object schema 
+ */
+function _addCustomMessage(error, schema){
+  const pathElements = error.path.split("/");
+  const paramId = pathElements[pathElements.length -1];//substr(2);
+
+  // if there are cunstom messages set, replace default z-schema message
+  if(schema?.messages && paramId in schema.messages){
+    // if there is a message, set it
+    if(schema.messages[paramId][error.code]?.message){
+      error.message = schema.messages[paramId][error.code].message;
+    }
+    // if there is a custom error code, set it
+    if(schema.messages[paramId][error.code]?.code){
+      error.code = schema.messages[paramId][error.code].code;
+    }
+
+    // delete missleading error parameters
+    if ('params' in error){
+      delete error.params;
+    }
+
+    // delete schemaId
+    if ('schemaId' in error){
+      delete error.schemaId;
+    }
+
+    // make frontenders happier and instead of having 'path' with
+    // modified param name, pass not modified param too
+    error.param = paramId;
+  }
+  // if there are no custom messages, just return default z-schema message
+  return error;  
+}
+
+/**
+ * Convert list of API errors to invalidParametersFormat error format
+ * 
+ * @param array errors 
+ */
+exports.apiErrorToValidationErrorsList = (errorsList: Array<Array<APIError>>) => {
+  const errList = errorsList.map(err => {
+    return {
+      'code': err.id,
+      'message': err.message,
+      'param': err.data.param,
+      'path': '#/' + err.data.param,
+    }
+  });
+  return errors.invalidParametersFormat("The parameters' format is invalid.", errList);
+}
+
 exports.catchForbiddenUpdate = function catchForbiddenUpdate(paramsSchema, ignoreProtectedFieldUpdates, logger) {
   return function validateParams(context, params, result, next) {
     const allowed = paramsSchema.alterableProperties;
+
     const forbidden = Object.keys(params.update)
       .filter(key => !allowed.includes(key));
     if(forbidden.length > 0) {

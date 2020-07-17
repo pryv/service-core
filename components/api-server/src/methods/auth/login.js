@@ -4,11 +4,11 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var commonFns = require('./helpers/commonFunctions'),
+var commonFns = require('components/api-server/src/methods/helpers/commonFunctions'),
     utils = require('components/utils'),
     encryption = utils.encryption,
     errors = require('components/errors').factory,
-    methodsSchema = require('../schema/authMethods'),
+    methodsSchema = require('components/api-server/src/schema/authMethods'), 
     _ = require('lodash');
 
 /**

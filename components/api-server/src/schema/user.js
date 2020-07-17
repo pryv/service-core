@@ -20,7 +20,7 @@ module.exports = function (action) {
     type: 'object',
     additionalProperties: false,
     properties: {
-      'username': helpers.string({pattern: '^[a-z0-9][a-z0-9\\-]{3,21}[a-z0-9]$'}),
+      'username': helpers.username,
       'email': helpers.email,
       'language': helpers.language,
       storageUsed: helpers.object({

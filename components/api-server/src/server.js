@@ -58,6 +58,7 @@ class Server {
   // Start the server. 
   //
   async start() {
+    
     const logger = this.logger;
     
     this.publishExpressMiddleware();
@@ -117,7 +118,8 @@ class Server {
     [
       require('./methods/system'),
       require('./methods/utility'),
-      require('./methods/auth'),
+      require('./methods/auth/login'),
+      require('./methods/auth/register'),
     ].forEach(function (moduleDef) {
       dependencies.resolve(moduleDef);
     });
@@ -229,6 +231,7 @@ class Server {
     if (process.env.NODE_ENV === 'test' && instanceTestSetup.exists()) {
       try {
         const axonSocket = this.notificationBus.axonSocket;
+        
         require('components/test-helpers')
           .instanceTestSetup.execute(instanceTestSetup.str(), axonSocket);
       } catch (err) {
@@ -284,23 +287,25 @@ class Server {
       notifications: bus,
     });
   }
-  
+
   // Installs actual routes in express and prints 'Server ready'.
   //
   addRoutes(expressApp: express$Application) {
     const application = this.application;
 
     // For DNS LESS load register
-    
     if (this.isOpenSource) {
-      require('../../register')(expressApp, this.application);
+      // TODO ieva what to do with register for dnsless
+      //require('../../register')(expressApp, this.application);
       require('../../www')(expressApp, this.application);
     }
-  
+
+    require('./routes/auth/register')(expressApp, application);
+
     // system and root MUST come first
     require('./routes/system')(expressApp, application);
     require('./routes/root')(expressApp, application);
-
+    
     require('./routes/accesses')(expressApp, application);
     require('./routes/account')(expressApp, application);
     require('./routes/auth/login')(expressApp, application);
@@ -309,6 +314,7 @@ class Server {
     require('./routes/profile')(expressApp, application);
     require('./routes/service')(expressApp, application);
     require('./routes/streams')(expressApp, application);
+
     if(! this.isOpenSource) require('./routes/webhooks')(expressApp, application);
   }
 

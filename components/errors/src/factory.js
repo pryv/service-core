@@ -8,6 +8,7 @@
 
 const APIError = require('./APIError');
 const ErrorIds = require('./ErrorIds');
+const ErrorMessages = require('./ErrorMessages');
 const _ = require('lodash');
 
 import type { APIErrorOptions } from './APIError';
@@ -237,4 +238,53 @@ factory.unavailableMethod = function (message: ?string): APIError {
       dontNotifyAirbrake: true,
     }
   );
+};
+
+/**
+ * TODO IEVA - is this the best place for the custom messages
+ * Check in service-register if username is reserved
+ * The name is used in the service-core and service-register
+ **/
+factory.ReservedUsername = (): APIError => {
+  const opts: APIErrorOptions = {
+    httpStatus: 400,
+    data: {param: 'username'},
+  };
+  return new APIError(ErrorIds.ReservedUsername, ErrorMessages[ErrorIds.ReservedUsername], opts);
+};
+
+/**
+ * Check in service-register if username is used
+ * The name is used in the service-core and service-register
+ **/
+factory.ExistingUsername = (): APIError => {
+  const opts: APIErrorOptions = {
+    httpStatus: 400,
+    data: {param: 'username'},
+  };
+  return new APIError(ErrorIds.ExistingUsername, ErrorMessages[ErrorIds.ExistingUsername], opts);
+};
+
+/**
+ * Check in service-register if email is used
+ * The name is used in the service-core and service-register
+ **/
+factory.ExistingEmail = (): APIError => {
+  const opts: APIErrorOptions = {
+    httpStatus: 400,
+    data: {param: 'email'},
+  };
+  return new APIError(ErrorIds.ExistingEmail,  ErrorMessages[ErrorIds.ExistingEmail], opts);
+};
+
+/**
+ * Check in service-register if email is used
+ * The name is used in the service-core and service-register
+ **/
+factory.InvalidInvitationToken = (): APIError => {
+  const opts: APIErrorOptions = {
+    httpStatus: 400,
+    data: {param: 'invitationToken'},
+  };
+  return new APIError(ErrorIds.ExistingEmail,  ErrorMessages[ErrorIds.InvalidInvitationToken], opts);
 };

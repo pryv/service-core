@@ -90,6 +90,7 @@ class Application {
       servicesSettings: settings.get('services').obj(),
       updatesSettings: settings.get('updates').obj(),
       openSourceSettings: settings.get('openSource').obj(),
+      serverSettings: settings.get('server').obj(),
     });
     
     // DI on the topic of storage and MongoDB access

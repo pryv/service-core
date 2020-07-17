@@ -50,7 +50,7 @@ declare module 'api-server/src/methods/account' {
   declare module.exports: any;
 }
 
-declare module 'api-server/src/methods/auth' {
+declare module 'api-server/src/methods/auth/login' {
   declare module.exports: any;
 }
 
@@ -151,6 +151,10 @@ declare module 'api-server/src/routes/account' {
 }
 
 declare module 'api-server/src/routes/auth/login' {
+  declare module.exports: any;
+}
+
+declare module 'api-server/src/routes/auth/register' {
   declare module.exports: any;
 }
 
@@ -515,8 +519,11 @@ declare module 'api-server/src/methods/accesses.js' {
 declare module 'api-server/src/methods/account.js' {
   declare module.exports: $Exports<'api-server/src/methods/account'>;
 }
-declare module 'api-server/src/methods/auth.js' {
-  declare module.exports: $Exports<'api-server/src/methods/auth'>;
+declare module 'api-server/src/methods/auth/login.js' {
+  declare module.exports: $Exports<'api-server/src/methods/auth/login'>;
+}
+declare module 'api-server/src/methods/auth/register.js' {
+  declare module.exports: $Exports<'api-server/src/methods/auth/register'>;
 }
 declare module 'api-server/src/methods/events.js' {
   declare module.exports: $Exports<'api-server/src/methods/events'>;
@@ -592,6 +599,9 @@ declare module 'api-server/src/routes/account.js' {
 }
 declare module 'api-server/src/routes/auth/login.js' {
   declare module.exports: $Exports<'api-server/src/routes/auth/login'>;
+}
+declare module 'api-server/src/routes/auth/register.js' {
+  declare module.exports: $Exports<'api-server/src/routes/auth/register'>;
 }
 declare module 'api-server/src/routes/events.js' {
   declare module.exports: $Exports<'api-server/src/routes/events'>;
