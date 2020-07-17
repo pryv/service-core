@@ -12,6 +12,7 @@ const { databaseFixture } = require('components/test-helpers');
 
 const { produceMongoConnection, context } = require('../test-helpers');
 
+const bluebird = require('bluebird');
 const lodash = require('lodash');
 const chai = require('chai');
 const assert = chai.assert;
@@ -205,6 +206,76 @@ describe('access deletions', () => {
     });
 
   });
+});
+
+describe('XXXXX Delete access', () => {
+
+  let username, streamId, token, access, sharedAccess;
+  before(() => {
+    username = cuid();
+    streamId = charlatan.Lorem.word();
+    token = cuid();
+  });
+
+  let mongoFixtures;
+  before(async () => {
+    mongoFixtures = databaseFixture(await produceMongoConnection());
+    const user = await mongoFixtures.user(username);
+    await user.stream({ id: streamId }, () => {});
+
+    access = await user.access({
+      type: 'app',// token: token,
+      name: charlatan.Lorem.word(), permissions: [{
+        streamId: streamId,
+        level: "read",
+      }]
+    });
+    access = access.attrs;
+    sharedAccess = await user.access({
+      type: 'shared', 
+      name: charlatan.Lorem.word(), permissions: [{
+        streamId: streamId,
+        level: "read",
+      }],
+      createdBy: access.id,
+    });
+    sharedAccess = sharedAccess.attrs;    
+  });
+  after(() => {
+    mongoFixtures.clean();
+  });
+
+  let server;
+  before(async () => {
+    server = await context.spawn();
+  });
+  after(() => {
+    server.stop();
+  });
+
+  describe('when deleting an app access that created shared accesses', () => {
+    let res;
+    before(async () => {
+      res = await server.request()
+        .del(`/${username}/accesses/${access.id}`)
+        .set('Authorization', access.token)
+    });
+
+    it('should return XX', () => {
+      // as usual, or also return the deleted shared accesses?
+    });
+    it('should delete the accesses it created', async () => {
+      await bluebird.fromCallback(callback => {
+        storage.findAll({ id: username }, {}, (err, accesses) => {
+          console.log('on a', accesses);
+          const notDeletedAccess = accesses.find(a => a.id === sharedAccess.id);
+          assert.notExists(notDeletedAccess);
+          callback();
+        });
+      })
+    });
+  });
+
 });
 
 describe('access expiry', () => {
