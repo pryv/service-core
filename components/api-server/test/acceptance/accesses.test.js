@@ -208,13 +208,12 @@ describe('access deletions', () => {
   });
 });
 
-describe('XXXXX Delete access', () => {
+describe('Delete app access', () => {
 
-  let username, streamId, token, access, sharedAccess;
+  let username, streamId, access, sharedAccess;
   before(() => {
     username = cuid();
     streamId = charlatan.Lorem.word();
-    token = cuid();
   });
 
   let mongoFixtures;
@@ -224,7 +223,7 @@ describe('XXXXX Delete access', () => {
     await user.stream({ id: streamId }, () => {});
 
     access = await user.access({
-      type: 'app',// token: token,
+      type: 'app',
       name: charlatan.Lorem.word(), permissions: [{
         streamId: streamId,
         level: "read",
@@ -262,6 +261,7 @@ describe('XXXXX Delete access', () => {
     });
 
     it('should return XX', () => {
+      console.log('got res', res.body)
       // as usual, or also return the deleted shared accesses?
     });
     it('should delete the accesses it created', async () => {
@@ -269,7 +269,7 @@ describe('XXXXX Delete access', () => {
         storage.findAll({ id: username }, {}, (err, accesses) => {
           console.log('on a', accesses);
           const notDeletedAccess = accesses.find(a => a.id === sharedAccess.id);
-          assert.notExists(notDeletedAccess);
+          assert.exists(notDeletedAccess.deleted);
           callback();
         });
       })

@@ -351,7 +351,8 @@ module.exports = function produceAccessesApiMethods(
   api.register('accesses.delete',
     commonFns.getParamsValidation(methodsSchema.del.params),
     checkAccessForDeletion,
-    deleteAccess);
+    deleteAccess,
+    deleteSharedAccesses);
 
   function checkAccessForDeletion(context, params, result, next) {
     const accessesRepository = storageLayer.accesses;
@@ -392,6 +393,16 @@ module.exports = function produceAccessesApiMethods(
       if (err) { return next(errors.unexpectedError(err)); }
 
       result.accessDeletion = {id: params.id};
+      next();
+    });
+  }
+
+  function deleteSharedAccesses(context, params, result, next) {
+    const accessesRepository = storageLayer.accesses;
+
+    accessesRepository.delete(context.user, { createdBy: params.id}, function (err) {
+      if (err) { return next(errors.unexpectedError(err)); }
+
       notifications.accessesChanged(context.username);
       next();
     });
