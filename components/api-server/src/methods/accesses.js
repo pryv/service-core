@@ -351,8 +351,9 @@ module.exports = function produceAccessesApiMethods(
   api.register('accesses.delete',
     commonFns.getParamsValidation(methodsSchema.del.params),
     checkAccessForDeletion,
-    deleteAccess,
-    deleteSharedAccesses);
+    findAccessibleAccesses,
+    renameSharedAccesses,
+    deleteAccesses);
 
   function checkAccessForDeletion(context, params, result, next) {
     const accessesRepository = storageLayer.accesses;
@@ -386,28 +387,27 @@ module.exports = function produceAccessesApiMethods(
     );
   }
 
-  function deleteAccess(context, params, result, next) {
-    const accessesRepository = storageLayer.accesses;
-
-    accessesRepository.delete(context.user, {id: params.id}, function (err) {
-      if (err) { return next(errors.unexpectedError(err)); }
-
-      result.accessDeletion = {id: params.id};
-      next();
+  function renameSharedAccesses(context, params, result, next) {
+    result.sharedDeletions = result.accesses;
+    delete result.accesses;
+    result.sharedDeletions = result.sharedDeletions.map(a => {
+      return { id: a.id }
     });
+    next();
   }
 
-  function deleteSharedAccesses(context, params, result, next) {
+  function deleteAccesses(context, params, result, next) {
     const accessesRepository = storageLayer.accesses;
 
-    accessesRepository.delete(context.user, { createdBy: params.id}, function (err) {
-      if (err) { return next(errors.unexpectedError(err)); }
+    accessesRepository.delete(context.user, 
+      { $or: [ {id: params.id}, {createdBy: params.id} ] }, 
+      function (err) {
+        if (err) { return next(errors.unexpectedError(err)); }
 
-      notifications.accessesChanged(context.username);
-      next();
+        result.accessDeletion = {id: params.id};
+        next();
     });
   }
-
 
   // OTHER METHODS
 

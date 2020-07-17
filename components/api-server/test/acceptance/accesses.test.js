@@ -210,7 +210,7 @@ describe('access deletions', () => {
 
 describe('Delete app access', () => {
 
-  let username, streamId, access, sharedAccess;
+  let username, streamId, access, sharedAccess1, sharedAccess2, sharedAccess3;
   before(() => {
     username = cuid();
     streamId = charlatan.Lorem.word();
@@ -224,21 +224,39 @@ describe('Delete app access', () => {
 
     access = await user.access({
       type: 'app',
-      name: charlatan.Lorem.word(), permissions: [{
+      name: charlatan.Lorem.word() + 0, permissions: [{
         streamId: streamId,
         level: "read",
       }]
     });
     access = access.attrs;
-    sharedAccess = await user.access({
+    sharedAccess1 = await user.access({
       type: 'shared', 
-      name: charlatan.Lorem.word(), permissions: [{
+      name: charlatan.Lorem.word() + 1, permissions: [{
         streamId: streamId,
         level: "read",
       }],
       createdBy: access.id,
     });
-    sharedAccess = sharedAccess.attrs;    
+    sharedAccess1 = sharedAccess1.attrs;   
+    sharedAccess2 = await user.access({
+      type: 'shared', 
+      name: charlatan.Lorem.word() + 2, permissions: [{
+        streamId: streamId,
+        level: "read",
+      }],
+      createdBy: access.id,
+    });
+    sharedAccess2 = sharedAccess2.attrs;    
+    // some unrelated access that shouldn't be changed
+    sharedAccess3 = await user.access({
+      type: 'shared', 
+      name: charlatan.Lorem.word() + 3, permissions: [{
+        streamId: streamId,
+        level: "read",
+      }],
+    });
+    sharedAccess3 = sharedAccess3.attrs;
   });
   after(() => {
     mongoFixtures.clean();
@@ -260,19 +278,34 @@ describe('Delete app access', () => {
         .set('Authorization', access.token)
     });
 
-    it('should return XX', () => {
-      console.log('got res', res.body)
-      // as usual, or also return the deleted shared accesses?
+    it('should return the accessDeletion and sharedDeletions', () => {
+      const accessDeletion = res.body.accessDeletion;
+      const sharedDeletions = res.body.sharedDeletions;
+      assert.exists(accessDeletion);
+      assert.exists(sharedDeletions);
+      assert.equal(accessDeletion.id, access.id);
+      let found1 = false;
+      let found2 = false;
+      assert.equal(sharedDeletions.length, 2);
+      sharedDeletions.forEach(a => {
+        if (a.id === sharedAccess1.id) found1 = true;
+        if (a.id === sharedAccess2.id) found2 = true;
+      });
+      assert.isTrue(found1);
+      assert.isTrue(found2);
     });
     it('should delete the accesses it created', async () => {
       await bluebird.fromCallback(callback => {
         storage.findAll({ id: username }, {}, (err, accesses) => {
-          console.log('on a', accesses);
-          const notDeletedAccess = accesses.find(a => a.id === sharedAccess.id);
-          assert.exists(notDeletedAccess.deleted);
+          const deletedAccess1 = accesses.find(a => a.id === sharedAccess1.id);
+          const deletedAccess2 = accesses.find(a => a.id === sharedAccess2.id);
+          const notDeletedAccess3 = accesses.find(a => a.id === sharedAccess3.id);
+          assert.exists(deletedAccess1.deleted);
+          assert.exists(deletedAccess2.deleted);
+          assert.notExists(notDeletedAccess3.deleted);
           callback();
         });
-      })
+      });
     });
   });
 

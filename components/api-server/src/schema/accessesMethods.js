@@ -55,7 +55,13 @@ module.exports = {
       id: 'accesses.delete',
       required: [ 'id' ]
     }),
-    result: object({accessDeletion: itemDeletion}, {
+    result: object({
+      accessDeletion: itemDeletion,
+      sharedDeletions: {
+        type: 'array',
+        items: itemDeletion,
+      }
+    }, {
       required: ['accessDeletion'],
       additionalProperties: false
     })
