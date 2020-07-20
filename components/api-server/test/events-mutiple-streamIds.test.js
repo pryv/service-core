@@ -523,51 +523,48 @@ describe('events.streamIds', function () {
         return `/${userId}/${resource}`;
       }
     
-      describe('XXXX', () => {
-    
-        beforeEach(async () => {
-          const res = await server.request()
-            .post(path('events'))
-            .set('Authorization', token)
-            .field('event', JSON.stringify({
-              streamId: streamId,
-              type: 'picture/attached'
-            }))
-            .attach('file', fixturePath('somefile'));
-          event = res.body.event;
-          const res2 = await server.request()
-            .get(path(`events/${event.id}`))
-            .set('Authorization', sharedAccess.token)
-          event = res2.body.event;
-          sharedReadToken = event.attachments[0].readToken;
-        });
-    
-        it('should retrieve the attachment with the app token', async () => {
-          const res = await server.request()
-            .get(path(`events/${event.id}/${event.attachments[0].id}`))
-            .set('Authorization', token);
-          const status = res.status;
-          assert.equal(status, 200);
-          const retrievedAttachment = res.body;
-          assert.exists(retrievedAttachment);
-        });
-        it('should retrieve the attachment with the shared access token', async () => {
-          const res = await server.request()
-            .get(path(`events/${event.id}/${event.attachments[0].id}`))
-            .set('Authorization', sharedAccess.token);
-          const status = res.status;
-          assert.equal(status, 200);
-          const retrievedAttachment = res.body;
-          assert.exists(retrievedAttachment);
-        });
-        it('should retrieve the attachment with the shared access readToken', async () => {
-          const res = await server.request()
-            .get(path(`events/${event.id}/${event.attachments[0].id}?readToken=${sharedReadToken}`))
-          const status = res.status;
-          assert.equal(status, 200);
-          const retrievedAttachment = res.body;
-          assert.exists(retrievedAttachment);
-        });
+      beforeEach(async () => {
+        const res = await server.request()
+          .post(path('events'))
+          .set('Authorization', token)
+          .field('event', JSON.stringify({
+            streamId: streamId,
+            type: 'picture/attached'
+          }))
+          .attach('file', fixturePath('somefile'));
+        event = res.body.event;
+        const res2 = await server.request()
+          .get(path(`events/${event.id}`))
+          .set('Authorization', sharedAccess.token)
+        event = res2.body.event;
+        sharedReadToken = event.attachments[0].readToken;
+      });
+  
+      it('should retrieve the attachment with the app token', async () => {
+        const res = await server.request()
+          .get(path(`events/${event.id}/${event.attachments[0].id}`))
+          .set('Authorization', token);
+        const status = res.status;
+        assert.equal(status, 200);
+        const retrievedAttachment = res.body;
+        assert.exists(retrievedAttachment);
+      });
+      it('should retrieve the attachment with the shared access token', async () => {
+        const res = await server.request()
+          .get(path(`events/${event.id}/${event.attachments[0].id}`))
+          .set('Authorization', sharedAccess.token);
+        const status = res.status;
+        assert.equal(status, 200);
+        const retrievedAttachment = res.body;
+        assert.exists(retrievedAttachment);
+      });
+      it('should retrieve the attachment with the shared access readToken', async () => {
+        const res = await server.request()
+          .get(path(`events/${event.id}/${event.attachments[0].id}?readToken=${sharedReadToken}`))
+        const status = res.status;
+        assert.equal(status, 200);
+        const retrievedAttachment = res.body;
+        assert.exists(retrievedAttachment);
       });
     });
 
