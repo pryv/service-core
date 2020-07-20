@@ -278,16 +278,16 @@ describe('Delete app access', () => {
         .set('Authorization', access.token)
     });
 
-    it('should return the accessDeletion and sharedDeletions', () => {
+    it('should return the accessDeletion and relatedDeletions', () => {
       const accessDeletion = res.body.accessDeletion;
-      const sharedDeletions = res.body.sharedDeletions;
+      const relatedDeletions = res.body.relatedDeletions;
       assert.exists(accessDeletion);
-      assert.exists(sharedDeletions);
+      assert.exists(relatedDeletions);
       assert.equal(accessDeletion.id, access.id);
       let found1 = false;
       let found2 = false;
-      assert.equal(sharedDeletions.length, 2);
-      sharedDeletions.forEach(a => {
+      assert.equal(relatedDeletions.length, 2);
+      relatedDeletions.forEach(a => {
         if (a.id === sharedAccess1.id) found1 = true;
         if (a.id === sharedAccess2.id) found2 = true;
       });

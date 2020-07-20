@@ -73,7 +73,7 @@ class Result {
   access: mixed;
   accessDeletion: mixed;
   accessDeletions: mixed;
-  sharedDeletions: ?Array<any>;
+  relatedDeletions: ?Array<any>;
   matchingAccess: mixed;
   mismatchingAccess: mixed;
   checkedPermissions: mixed;

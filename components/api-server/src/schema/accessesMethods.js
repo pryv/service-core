@@ -57,7 +57,7 @@ module.exports = {
     }),
     result: object({
       accessDeletion: itemDeletion,
-      sharedDeletions: {
+      relatedDeletions: {
         type: 'array',
         items: itemDeletion,
       }

@@ -387,10 +387,11 @@ module.exports = function produceAccessesApiMethods(
     );
   }
 
+
   function renameSharedAccesses(context, params, result, next) {
-    result.sharedDeletions = result.accesses;
+    result.relatedDeletions = result.accesses;
     delete result.accesses;
-    result.sharedDeletions = result.sharedDeletions.map(a => {
+    result.relatedDeletions = result.relatedDeletions.map(a => {
       return { id: a.id }
     });
     next();
