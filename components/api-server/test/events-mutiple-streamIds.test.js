@@ -14,6 +14,8 @@ const _ = require('lodash');
 const cuid = require('cuid');
 const chai = require('chai');
 const assert = chai.assert;
+const charlatan = require('charlatan');
+const {fixturePath, fixtureFile} = require('./unit/test-helper');
 
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
@@ -155,8 +157,8 @@ describe('events.streamIds', function () {
         trashed: true,
       });
     });
-    afterEach(() => {
-      mongoFixtures.clean();
+    afterEach(async () => {
+      await mongoFixtures.clean();
     });
 
     function eventPath(eventId) {
@@ -478,6 +480,95 @@ describe('events.streamIds', function () {
         assert.equal(error.id, ErrorIds.Forbidden);
       });
 
+    });
+
+    describe('GET /events/:id/:fileId', () => {
+      let userId,
+          token, sharedAccess, streamId,
+          event, sharedReadToken;
+    
+      before(() => {
+        token = cuid();
+        userId = cuid();
+        streamId = cuid();
+      })
+    
+      beforeEach(async () => {
+        const user = await mongoFixtures.user(userId);
+        await user.stream({
+          id: streamId,
+          name: streamId.toUpperCase(),
+        });
+        await user.access({
+          type: 'app', 
+          token: token,
+          name: charlatan.Lorem.word(), 
+          permissions: [{
+            streamId: streamId,
+            level: 'manage',
+          }],
+        });
+        sharedAccess = await user.access({
+          type: 'shared',
+          name: charlatan.Lorem.word(), 
+          permissions: [{
+            streamId: streamId,
+            level: 'read',
+          }],
+        });
+        sharedAccess = sharedAccess.attrs;
+      });
+    
+      function path(resource) {
+        return `/${userId}/${resource}`;
+      }
+    
+      describe('XXXX', () => {
+    
+        beforeEach(async () => {
+          const res = await server.request()
+            .post(path('events'))
+            .set('Authorization', token)
+            .field('event', JSON.stringify({
+              streamId: streamId,
+              type: 'picture/attached'
+            }))
+            .attach('file', fixturePath('somefile'));
+          event = res.body.event;
+          const res2 = await server.request()
+            .get(path(`events/${event.id}`))
+            .set('Authorization', sharedAccess.token)
+          event = res2.body.event;
+          sharedReadToken = event.attachments[0].readToken;
+        });
+    
+        it('should retrieve the attachment with the app token', async () => {
+          const res = await server.request()
+            .get(path(`events/${event.id}/${event.attachments[0].id}`))
+            .set('Authorization', token);
+          const status = res.status;
+          assert.equal(status, 200);
+          const retrievedAttachment = res.body;
+          assert.exists(retrievedAttachment);
+        });
+        it('should retrieve the attachment with the shared access token', async () => {
+          const res = await server.request()
+            .get(path(`events/${event.id}/${event.attachments[0].id}`))
+            .set('Authorization', sharedAccess.token);
+          const status = res.status;
+          assert.equal(status, 200);
+          const retrievedAttachment = res.body;
+          assert.exists(retrievedAttachment);
+        });
+        it('should retrieve the attachment with the shared access readToken', async () => {
+          const res = await server.request()
+            .get(path(`events/${event.id}/${event.attachments[0].id}?readToken=${sharedReadToken}`))
+          const status = res.status;
+          assert.equal(status, 200);
+          const retrievedAttachment = res.body;
+          assert.exists(retrievedAttachment);
+        });
+      });
     });
 
   });
