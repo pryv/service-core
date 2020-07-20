@@ -387,8 +387,10 @@ module.exports = function produceAccessesApiMethods(
     );
   }
 
-
-  function renameSharedAccesses(context, params, result, next) {
+  /**
+   * Renames result.accesses to result.relatedDeletions and plucks them from all properties except id.
+   */
+  function renameToRelatedAccesses(context, params, result, next) {
     result.relatedDeletions = result.accesses;
     delete result.accesses;
     result.relatedDeletions = result.relatedDeletions.map(a => {
