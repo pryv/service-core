@@ -55,7 +55,7 @@ const ErrorIds = {
   /**
    * Invitation token validation in the service-register
    */
-  InvalidInvitationToken: 'invitationtoken-invalid', // TODO IEVA - looks very different from the core error codes - this and the messages below
+  InvalidInvitationToken: 'invitationtoken-invalid',
   /**
    * Username reservation validation in the service-register
    */

@@ -678,7 +678,6 @@ describe('User Registration related functionalities', () => {
       //   username: 'abcd-ef', status: 200, desc: '- authorized ',
       //   JSchema: schemas.checkUID
       // };
-      //TODO IEVA - what is authorized?
       const username = 'abcd-ef';
       helpers.instanceTestSetup.set(settings, {
         context: {

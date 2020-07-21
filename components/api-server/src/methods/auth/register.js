@@ -34,7 +34,6 @@ module.exports = function (api, usersStorage, logging, storageLayer, servicesSet
   api.register('auth.register',
     // data validation methods
     commonFns.getParamsValidation(methodsSchema.register.params),
-    // TODO IEVA? commonFns.getTrustedAppCheck(authSettings),
 
     setDefaultInvitationTokenValue,
     validateUserInServiceRegister,

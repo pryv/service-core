@@ -19,13 +19,8 @@ module.exports = function (expressApp: express$Application, app: Application) {
 
   // const settings: ConfigAccess = app.settings;
   const api: API = app.api;
-
-  // TODO IEVA - how I should deal with missing context (logging errors)
-  const context = {
-    'username': '',
-    'access': '',
-  };
-
+  const context = {};
+ 
   // POST /user: create a new user
   expressApp.post('/user', function (req: express$Request, res: express$Response, next: express$NextFunction) {
     api.call('auth.register', context, req.body, methodCallback(res, next, 201));
