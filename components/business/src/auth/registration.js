@@ -21,22 +21,6 @@ type Callback = GenericCallback<mixed>;
 import type { MethodContext } from 'components/model';
 import type { ApiCallback } from 'components/api-server/src/API';
 
-export type UserInformation = {
-  id?: string,
-
-  username: string,
-  email: string,
-  language: string,
-
-  password: string,
-  passwordHash: string,
-
-  invitationToken: string,
-  registeredTimestamp?: number,
-
-  server?: string,
-}
-
 /**
  * Create (register) a new user
  * 
