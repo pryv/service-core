@@ -56,6 +56,7 @@ class User {
         "referer": (context.user.referer) ? context.user.referer: null,
         "id": context.user.id,
         "appId": context.user.appId,
+        "language": context.user.language,
         "host": {"name": context.hostname}
       };
       const response = await serviceRegisterConn.createUser(user);
@@ -96,7 +97,6 @@ class User {
             // First create a temp user
             const tempUser = _.clone(userInfo);
             tempUser.username = context.TEMP_USERNAME_PREFIX + cuid();
-
             context.usersStorage.insertOne(tempUser, (err, newUser) => {
               if (err != null) return callback(err);
               // Convert temp to final user

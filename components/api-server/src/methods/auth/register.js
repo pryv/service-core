@@ -35,7 +35,7 @@ module.exports = function (api, usersStorage, logging, storageLayer, servicesSet
     // data validation methods
     commonFns.getParamsValidation(methodsSchema.register.params),
 
-    setDefaultInvitationTokenValue,
+    setDefaultValues,
     validateUserInServiceRegister,
 
     // user registration methods
@@ -55,9 +55,12 @@ module.exports = function (api, usersStorage, logging, storageLayer, servicesSet
    * @param {*} result 
    * @param {*} next 
    */
-  async function setDefaultInvitationTokenValue(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async function setDefaultValues(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     if (!params.invitationtoken) {
       params.invitationtoken = 'no-token';
+    }
+    if (!params.languageCode) {
+      params.languageCode = 'en';
     }
     next();
   }
@@ -84,10 +87,15 @@ module.exports = function (api, usersStorage, logging, storageLayer, servicesSet
         context.skip = true;
         
         //append context with the same values that would be saved by createUser function
-        context.user = {};
-        context.user.username = existingUser.username;
-        context.user.email = existingUser.email;
-        context.user.invitationtoken = existingUser.invitationtoken;
+        context.user = {
+          username: existingUser.username,
+          email: existingUser.email,
+          invitationtoken: existingUser.invitationtoken,
+          language: existingUser.language,
+          referer: existingUser.referer,
+          appId: existingUser.appId,
+          id: existingUser.id
+        };
 
         // set result as current username
         result.username = existingUser.username;
@@ -134,7 +142,11 @@ module.exports = function (api, usersStorage, logging, storageLayer, servicesSet
   async function prepareUserDataForSaving(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     params.username = params.username.toLowerCase();
     params.email = params.email.toLowerCase();
-
+    
+    // change parameter name
+    params.language = params.languageCode;
+    delete params.languageCode;
+    
     // Construct the request for core, including the password. 
     params.passwordHash = await encryption.hash(params.password);
     context.usersStorage = usersStorage;
