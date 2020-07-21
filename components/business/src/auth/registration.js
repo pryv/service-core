@@ -53,6 +53,9 @@ class User {
         "username": context.user.username,
         "email": context.user.email,
         "invitationtoken": context.user.invitationtoken,
+        "referer": (context.user.referer) ? context.user.referer: null,
+        "id": context.user.id,
+        "appId": context.user.appId,
         "host": {"name": context.hostname}
       };
       const response = await serviceRegisterConn.createUser(user);
