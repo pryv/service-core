@@ -241,7 +241,6 @@ factory.unavailableMethod = function (message: ?string): APIError {
 };
 
 /**
- * TODO IEVA - is this the best place for the custom messages
  * Check in service-register if username is reserved
  * The name is used in the service-core and service-register
  **/
@@ -286,5 +285,19 @@ factory.InvalidInvitationToken = (): APIError => {
     httpStatus: 400,
     data: {param: 'invitationToken'},
   };
-  return new APIError(ErrorIds.ExistingEmail,  ErrorMessages[ErrorIds.InvalidInvitationToken], opts);
+  return new APIError(ErrorIds.InvalidInvitationToken,  ErrorMessages[ErrorIds.InvalidInvitationToken], opts);
 };
+
+/**
+ * Check in service-register if key (for example: email, username)
+ * is already reserved for registration (avoiding double click in the 
+ * frontend during the registration)
+ **/
+factory.DuplicatedUserRegistration = (): APIError => {
+  return new APIError(
+    ErrorIds.DuplicatedUserRegistration, ErrorMessages[ErrorIds.DuplicatedUserRegistration],
+    {
+      httpStatus: 400,
+      dontNotifyAirbrake: true,
+    }
+  );};

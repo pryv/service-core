@@ -52,24 +52,24 @@ const ErrorIds = {
   UserAccountRelocated: 'user-account-relocated',
   UserInterventionRequired: 'user-intervention-required',
 
-  // TODO IEVA - is this the best place for custom errors Ids?
   /**
    * Invitation token validation in the service-register
    */
-  InvalidInvitationToken: 'invitationtoken-invalid', // TODO IEVA - looks very different from the core error codes
+  InvalidInvitationToken: 'invitationtoken-invalid', // TODO IEVA - looks very different from the core error codes - this and the messages below
   /**
    * Username reservation validation in the service-register
    */
-  ReservedUsername: 'username-reserved', // TODO IEVA - looks very different from the core error codes
-  ExistingUsername: 'username-exists', // TODO IEVA - looks very different from the core error codes
-  ExistingEmail: 'email-exists', // TODO IEVA - looks very different from the core error codes
-  InvalidUsername: 'username-invalid', // TODO IEVA - looks very different from the core error codes
-  UsernameRequired: 'username-required', // TODO IEVA - looks very different from the core error codes
-  InvalidEmail: 'email-invalid', // TODO IEVA - looks very different from the core error codes
-  InvalidLanguage: 'language-invalid', // TODO IEVA - looks very different from the core error codes
-  InvalidAppId: 'appid-invalid', // TODO IEVA - looks very different from the core error codes
+  ReservedUsername: 'username-reserved',
+  ExistingUsername: 'username-exists',
+  ExistingEmail: 'email-exists',
+  InvalidUsername: 'username-invalid',
+  UsernameRequired: 'username-required',
+  InvalidEmail: 'email-invalid',
+  InvalidLanguage: 'language-invalid',
+  InvalidAppId: 'appid-invalid',
   InvalidPassword: 'password-invalid',
   Invalidreferer: 'referer-invalid',
+  DuplicatedUserRegistration: 'duplicated-user-registration',
 };
 Object.freeze(ErrorIds);
 

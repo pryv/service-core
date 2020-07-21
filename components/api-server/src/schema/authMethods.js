@@ -51,6 +51,7 @@ module.exports = {
       }),
       'invitationtoken': string(),
       // TODO referer tests
+      // TODO is it good that it does not fail?
       'referer': helpers.string({
         minLength: 1,
         maxLength: 99,
@@ -70,6 +71,10 @@ module.exports = {
           },
           'INVALID_TYPE': {
             'message': ErrorMessages[ErrorIds.InvalidAppId],
+            'code': ErrorIds.InvalidAppId
+          },
+          'OBJECT_MISSING_REQUIRED_PROPERTY': {
+            'message': ErrorMessages[ErrorIds.MissingRequiredField] + ': appId',
             'code': ErrorIds.InvalidAppId
           }
         },

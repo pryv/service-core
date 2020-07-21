@@ -13,7 +13,6 @@ const helpers = require('../helpers');
 const server = helpers.dependencies.instanceManager;
 const validation = helpers.validation;
 const authSchema = require('components/api-server/src/schema/authMethods');
-//onst storage = helpers.dependencies.storage.users;
 
 const _ = require('lodash');
 const bluebird = require('bluebird');
@@ -33,7 +32,7 @@ function defaults() {
   };
 }
 
-describe('User Registration', () => {
+describe('User Registration related functionalities', () => {
   let request = null;
   var basePath = '/user';
   const settings = _.cloneDeep(helpers.dependencies.settings);
@@ -48,10 +47,10 @@ describe('User Registration', () => {
       execute: function () {
         const scope = require('nock')(this.context.url);
         scope.post('/users/validate').reply(200, { errors: [] });
+        scope.post('/users/reservations').reply(200, { success: true });
         scope.post('/users').reply(200, { 
           username: 'anyusername',
           server: this.context.defaultServerName
-         // TODO IEVA -should I add apiEndpoint apiEndpoint: 'def',
        });
       }
     });
@@ -73,7 +72,6 @@ describe('User Registration', () => {
   });
 
   describe('POST /user (create user)', function () {
-
     // fixes missing appId PR#104
     it('user creation should store all provided fields', async () => {
       // setup registration server mock
@@ -89,22 +87,6 @@ describe('User Registration', () => {
           server: defaultServerName,
         }
       });
-      //    TODO IEVA - this could only be done in service-register
-      //   const resAdmin = await server.request()
-      //   // TODO check with register server
-      //   .get('/admin/users' + '?auth=' + authAdminKey)
-      //   .send(_.extend({}, defaults(), userData));
-      //   resAdmin.body.users.forEach(function (user) {
-      //     if (user.username === userData.username) {
-      //       delete userData.hosting;
-      //       delete userData.password;
-      //       user.invitationtoken = user.invitationToken;
-      //       Object.keys(userData).forEach(function (prop) {
-      //         assert.deepEqual(userData[prop], user[prop]);
-      //       });
-      //     }
-      //   });
-      // });
     });
 
     it('Too short app id', async () => {
@@ -244,7 +226,6 @@ describe('User Registration', () => {
         data: [
           {
             code: ErrorIds.ReservedUsername,
-            // TODO IEVA- left the same error message as for the reserved username
             message: ErrorMessages[ErrorIds.ReservedUsername],
             param: 'username',
             path: '#/username'
@@ -344,33 +325,40 @@ describe('User Registration', () => {
       });
     });
 
-    //     it('existing username in service-core', async () => {
-    //       const userData1 = _.extend({}, defaults(), { username: 'wactiv' });
-    //       const userData2 = _.extend({}, defaults(), { username: 'wactiv' });
+    it('existing username in service-core but not in service-register', async () => {
+      // pretend saving user only in service-core
+      const userData = defaults();
 
-    //       await (new Promise(server.ensureStarted.bind(server, settings)));
-    //       const res1 = await bluebird.fromCallback(cb =>
-    //         request.post(basePath).send(userData1).end((res) => {
-    //           cb(null, res);
-    //         }));
-    //       const res = await bluebird.fromCallback(cb =>
-    //         request.post(basePath).send(userData2).end((res) => {
-    //           cb(null, res);
-    //         }));
+      // allow all requests to service-register twice
+      helpers.instanceTestSetup.set(settings, {
+        context: {
+          url: settings.services.register.url,
+          defaultServerName: defaultServerName
+        },
+        execute: function () {
+          const scope = require('nock')(this.context.url);
+          scope.post('/users/validate').times(2).reply(200, { errors: [] });
+          scope.post('/users/reservations').times(2).reply(200, { success: true });
+          scope.post('/users').times(2).reply(200, { 
+            username: 'anyusername',
+            server: this.context.defaultServerName
+         });
+        }
+      });
+      await (new Promise(server.ensureStarted.bind(server, settings)));
+      await registrationRequest(userData);
 
-    //       validation.checkError(res, {
-    //         status: 400,
-    //         id: ErrorIds.InvalidParametersFormat,
-    //         data: [
-    //           {
-    //             code: 'EXISTING_USER_NAME',
-    //             message: 'Existing user',
-    //             param: 'username',
-    //             path: '#/username'
-    //           }
-    //         ]
-    //       });
-    //     });
+     const res = await registrationRequest(userData);
+
+      validation.check(res, {
+        status: 201,
+        schema: authSchema.register.result,
+        body: {
+          username: userData.username,
+          server: defaultServerName,
+        }
+      });
+    });
 
     it('existing email in service register', async () => {
 
@@ -744,9 +732,6 @@ describe('User Registration', () => {
     });
   });
 
-  //TODO IEVA - test this manualy    it('always available', username: 'recla', status: 200, desc: 'always available ',
-  //('reserved for pryv',username: 'pryvtoto', status: 200, desc: 'reserved for pryv',
-
   it('reserved dns', async () => {
     // var test = {
     //   username: 'access', status: 200, desc: 'reserved dns',
@@ -761,7 +746,6 @@ describe('User Registration', () => {
       },
       execute: function () {
         require('nock')(this.context.url)
-          //TODO IEVA is this the right test?
           .get(`/${this.context.username}/check_username`).reply(200, { reserved: false, reason: 'RESERVED_USER_NAME' });
       }
     });

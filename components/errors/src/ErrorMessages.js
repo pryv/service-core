@@ -21,7 +21,6 @@ const ErrorMessages = {
    */
   [ErrorIds.ReservedUsername]: 'Reserved user starting by pryv',
   [ErrorIds.ExistingUsername]: 'Existing user',
-  // TODO IEVA improve error messages
   [ErrorIds.InvalidUsername]: 'Invalid username. Username should have from 5 to 23 characters and contain letters or numbers or dashes',
   [ErrorIds.ExistingEmail]: 'Existing e-mail',
   [ErrorIds.UsernameRequired]: 'Username is required',
@@ -29,6 +28,8 @@ const ErrorMessages = {
   [ErrorIds.InvalidLanguage]: 'Invalid language',
   [ErrorIds.InvalidAppId]: 'Invalid app Id',
   [ErrorIds.Invalidreferer]: 'Invalid referer',
+  [ErrorIds.DuplicatedUserRegistration]: 'Duplicated user registration. User already started registration process in another server.',
+  [ErrorIds.MissingRequiredField]: 'Missing required field',
 };
 Object.freeze(ErrorMessages);
 

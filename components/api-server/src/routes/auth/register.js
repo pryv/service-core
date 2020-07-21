@@ -20,7 +20,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
   // const settings: ConfigAccess = app.settings;
   const api: API = app.api;
 
-  // TODO IEVA - how I should deal with missing context?
+  // TODO IEVA - how I should deal with missing context (logging errors)
   const context = {
     'username': '',
     'access': '',
@@ -38,9 +38,8 @@ module.exports = function (expressApp: express$Application, app: Application) {
     // return text response
     api.call('auth.usernameCheck', context, req.body, function (err, result) {
       res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-      if (err) return res.status(200).end(String(true));
-      let response = _.defaults(result.reserved, true);
-      //TODO IEVA - does making the end here is a good solution
+      if (err) return res.status(200).end(String(false));
+      let response = _.defaults(!result.reserved, false);
       res.status(200).end(String(response));
     });
   });

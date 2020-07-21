@@ -6,8 +6,7 @@
  */
 const errors = require('components/errors').factory;
 const commonFns = require('./helpers/commonFunctions');
-const mailing = require('./helpers/mailing');
-const errorHandling = require('components/errors').errorHandling;
+const Register = require('components/business/src/auth/registration');
 const methodsSchema = require('../schema/systemMethods');
 const string = require('./helpers/string');
 const _ = require('lodash');
@@ -24,65 +23,43 @@ const cuid = require('cuid');
  * @param storageLayer
  */
 module.exports = function (
-  systemAPI, usersStorage, userAccessesStorage, servicesSettings, api, logging, storageLayer
+  systemAPI, usersStorage, userAccessesStorage, servicesSettings, api, logging, storageLayer, serverSettings
 ) {
 
-  var logger = logging.getLogger('methods/system');
   const POOL_USERNAME_PREFIX = 'pool@';
   const TEMP_USERNAME_PREFIX = 'temp@';
   const POOL_REGEX = new RegExp( '^'  + POOL_USERNAME_PREFIX);
-
+  const RegistrationService = new Register();
   // ---------------------------------------------------------------- createUser
   systemAPI.register('system.createUser',
     commonFns.getParamsValidation(methodsSchema.createUser.params),
-    applyDefaultsForCreation,
-    createUser,
-    sendWelcomeMail);
-
-  function applyDefaultsForCreation(context, params, result, next) {
-    params.storageUsed = {
-      dbDocuments: 0,
-      attachedFiles: 0
-    };
-    next();
-  }
-
-  function createUser(context, params, result, next) {
-    if (params.username === 'recla') {
-      result.id = 'dummy-test-user';
-      context.user = _.defaults({id: result.id}, params);
-      next();
-    } else {
-      // Consume a pool user if available or use default creation
-      createUserOrConsumePool(params, (err, user) => {
-        if (err != null) return next(handleCreationErrors(err, params));
-        result.id = user.id;
-        context.user = user;
-        next();
-      });
-    }
-  }
-
-  function createUserOrConsumePool(userInfo, callback) {
-    // Try to consume a user from pool
-    usersStorage.findOneAndUpdate({username: {$regex : POOL_REGEX}}, userInfo,
-      (err, updatedUser) => {
-        // Fallback to default user creation in case of error or empty pool
-        if (err != null || updatedUser == null) {
-          // First create a temp user
-          const tempUser = _.clone(userInfo);
-          tempUser.username = TEMP_USERNAME_PREFIX + cuid();
-          usersStorage.insertOne(tempUser, (err, newUser) => {
-            if (err != null) return callback(err);
-            // Convert temp to final user
-            return initUser(newUser, userInfo.username, callback);
-          });
-        }
-        else {        
-          return callback(null, updatedUser);
-        }
-      }
+    prepareUserDataForSaving,
+    RegistrationService.applyDefaultsForCreation,
+    RegistrationService.createUser,
+    RegistrationService.sendWelcomeMail
     );
+
+  /**
+   * 
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  async function prepareUserDataForSaving(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    // Construct the request for core, including the password. 
+    context.usersStorage = usersStorage;
+    context.storageLayer = storageLayer;
+    context.servicesSettings = servicesSettings;
+    context.hostname = serverSettings.hostname;
+    context.logger = logging.getLogger('methods/system');
+    context.POOL_USERNAME_PREFIX = POOL_USERNAME_PREFIX;
+    context.TEMP_USERNAME_PREFIX = TEMP_USERNAME_PREFIX;
+    context.POOL_REGEX = POOL_REGEX;
+
+    // this is used to differentiate the result (for the system call id is needed)
+    context.systemCall = true;
+    next();
   }
 
   function initUser(tempUser, username, callback) {
@@ -114,41 +91,9 @@ module.exports = function (
     return errors.unexpectedError(err, 'Unexpected error while saving user.');
   }
 
-  function sendWelcomeMail(context, params, result, next) {
-    const emailSettings = servicesSettings.email;
-    
-    // Skip this step if welcome mail is deactivated
-    const isMailActivated = emailSettings.enabled;
-    if (isMailActivated === false || 
-       (isMailActivated != null && isMailActivated.welcome === false)) {
-      return next();
-    }
-    
-    const recipient = {
-      email: context.user.email,
-      name: context.user.username,
-      type: 'to'
-    };
-    
-    const substitutions = {
-      USERNAME: context.user.username,
-      EMAIL: context.user.email
-    };
-    
-    mailing.sendmail(emailSettings, emailSettings.welcomeTemplate, recipient, 
-      substitutions, context.user.language, (err) => {
-        // Don't fail creation process itself (mail isn't critical), just log error
-        if (err) {
-          errorHandling.logError(err, null, logger);
-        }
-        
-        next();
-      });
-  }
-
   // ------------------------------------------------------------ createPoolUser
   systemAPI.register('system.createPoolUser',
-    applyDefaultsForCreation,
+    RegistrationService.applyDefaultsForCreation,
     createPoolUser);
   
   function createPoolUser(context, params, result, next) {

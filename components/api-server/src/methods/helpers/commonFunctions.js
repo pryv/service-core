@@ -111,7 +111,12 @@ exports.getParamsValidation = function getParamsValidation(paramsSchema) {
  */
 function _addCustomMessage(error, schema){
   const pathElements = error.path.split("/");
-  const paramId = pathElements[pathElements.length -1];//substr(2);
+  let paramId = pathElements[pathElements.length -1];
+
+  // when field is pissing paramId will be empty
+  if(paramId === '' && error.params.length >= 1){
+    paramId = error.params[0]
+  }
 
   // if there are cunstom messages set, replace default z-schema message
   if(schema?.messages && paramId in schema.messages){

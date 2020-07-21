@@ -15,7 +15,8 @@
       "enabled": false
     },
     "register": {
-      "url": "https://reg.pryv.io"
+      "url": "http://127.0.0.1:8080",
+      "key": "test-system-key"
     }
   }, 
   "reporting": {

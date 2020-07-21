@@ -63,21 +63,19 @@ class User {
    */
   async createUserInServiceRegister(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
-      const serviceRegisterConn = new ServiceRegister(context.servicesSettings.register);
+      const serviceRegisterConn = new ServiceRegister(context.servicesSettings.register, context.logger);
       // check email in service-register
       const user = {
         "username": context.user.username,
         "email": context.user.email,
         "invitationtoken": context.user.invitationtoken,
-        // TODO IEVA - hostname should be here somehow
         "host": {"name": context.hostname}
       };
       const response = await serviceRegisterConn.createUser(user);
 
+      // take only server name
       if (response.username) {
         result.server = response.server;
-        // TODO - do I need api endpoint?
-        result.apiEndpoint = response.apiEndpoint;
         return next();
       }
       
@@ -86,7 +84,6 @@ class User {
     }
     next();
   }
-  
 
   /**
    * Save user to the database
@@ -96,7 +93,7 @@ class User {
    * @param {*} next 
    */
   createUser(context: MethodContext, params: mixed, result, next: ApiCallback) {
-
+    if(context.skip === true){ return next() };
     /**
      * 
      * @param {*} userInfo 
@@ -158,6 +155,11 @@ class User {
 
       createUserOrConsumePool(params, (err, user) => {
         if (err != null) return next(User.handleCreationErrors(err, params));
+
+        if(context.systemCall === true){
+          result.id = user.id;
+        }
+
         result.username = user.username;
         context.user = user;
         next();
@@ -184,6 +186,7 @@ class User {
     // Any other error
     return errors.unexpectedError(err, 'Unexpected error while saving user.');
   }
+
 
   /**
    * 
@@ -217,7 +220,7 @@ class User {
       substitutions, context.user.language, (err) => {
         // Don't fail creation process itself (mail isn't critical), just log error
         if (err) {
-          errorHandling.logError(err, null, logger);
+          errorHandling.logError(err, null, context.logger);
         }
 
         next();

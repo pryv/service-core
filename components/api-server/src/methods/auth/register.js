@@ -28,7 +28,7 @@ import type { ApiCallback } from '../API';
  */
 module.exports = function (api, usersStorage, logging, storageLayer, servicesSettings, serverSettings) {
   // REGISTER
-  const serviceRegisterConn = new ServiceRegister(servicesSettings.register);
+  const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
   const RegistrationService = new Register();
 
   api.register('auth.register',
@@ -41,6 +41,8 @@ module.exports = function (api, usersStorage, logging, storageLayer, servicesSet
 
     // user registration methods
     prepareUserDataForSaving,
+    validateThatUserDoesNotExistInLocalDb,
+    reserveUserInServiceRegister,
     RegistrationService.applyDefaultsForCreation,
     RegistrationService.createUser,
     RegistrationService.createUserInServiceRegister,
@@ -62,61 +64,34 @@ module.exports = function (api, usersStorage, logging, storageLayer, servicesSet
   }
 
   /**
-   * Check in service-register if uid already exists
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
-   */
-  async function doesUidAlreadyExist(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    try {
-      // check email in service-register
-      const exists: Boolean = await serviceRegisterConn.uidExist(params.username);
-      if (exists) {
-        context.errors.push(errors.ExistingUsername());
-        // do not continue to search in core database
-        return next();
-      }
-      // check username in service-core
-      // TODO IEVA - with streams this should be replaced so that it is not counting but searching for existance
-      const usernameExists = await bluebird.fromCallback(
-        (cb) => usersStorage.count({ username: params.username }, cb)
-      );
-      // username was already used
-      if (usernameExists >= 1) {
-        context.errors.push(errors.ExistingUsername());
-      }
-    } catch (error) {
-      return next(errors.unexpectedError(error));
-    }
-    next();
-  }
-
-  /**
    * Check in service-register if email already exists
    * @param {*} context 
    * @param {*} params 
    * @param {*} result 
    * @param {*} next 
    */
-  async function doesEmailAlreadyExist(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async function validateThatUserDoesNotExistInLocalDb(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
-      // check email in service-register
-      const exists: Boolean = await serviceRegisterConn.emailExists(params.email);
-      if (exists) {
-        context.errors.push(errors.ExistingEmail());
-        // do not continue to search in core database
-        return next();
-      }
-
       // check email in service-core
-      // TODO IEVA - with streams this should be replaced so that it is not counting but searching for existance
-      const emailExists = await bluebird.fromCallback(
-        (cb) => usersStorage.count({ email: params.email }, cb)
+      const existingUser = await bluebird.fromCallback(
+        (cb) => usersStorage.findOne({ $or: [ {email: params.email}, {username: params.username} ] }, null, cb)
       );
-      // email was already used
-      if (emailExists >= 1) {
-        context.errors.push(errors.ExistingEmail());
+
+      // if email was already saved, it means that there were an error 
+      // saving in service register (above there is a check that email does not exist in
+      // service register)
+      if (existingUser?.username) {
+        // skip all steps exept registrattion in service-register and welcome email
+        context.skip = true;
+        
+        //append context with the same values that would be saved by createUser function
+        context.user = {};
+        context.user.username = existingUser.username;
+        context.user.email = existingUser.email;
+        context.user.invitationtoken = existingUser.invitationtoken;
+
+        // set result as current username
+        result.username = existingUser.username;
       }
     } catch (error) {
       return next(errors.unexpectedError(error));
@@ -174,6 +149,28 @@ module.exports = function (api, usersStorage, logging, storageLayer, servicesSet
     next();
   }
 
+
+  /**
+   * 
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  async function reserveUserInServiceRegister(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    if(context.skip === true){ return next()};
+    try {
+      const canRegister: Boolean = await serviceRegisterConn.reserveUser(params.username, context.hostname);
+
+      if (canRegister === false) {
+        return next(errors.DuplicatedUserRegistration());
+      }
+    } catch (error) {
+      return next(errors.unexpectedError(error));
+    }
+    next();
+  }
+  
   // Username check
   api.register('auth.usernameCheck',
     commonFns.getParamsValidation(methodsSchema.usernameCheck.params),
@@ -191,20 +188,16 @@ module.exports = function (api, usersStorage, logging, storageLayer, servicesSet
     result.reserved = false;
     try {
       const response = await serviceRegisterConn.checkUsername(params.username);
-      result = response;
+
+      if(response?.reserved){
+        result.reserved = response.reserved;
+      }
+      if(response?.reason){
+        result.reason = response.reason;
+      }
     } catch (error) {
       return next(errors.unexpectedError(error));
     }
-    // TODO IEVA - additional parameters now appear
-    /*
-    "meta": {
-        "apiVersion": "1.2.3",
-        "serverTime": 1594915058.634,
-        "serial": "2019061301"
-    },
-    */
-
-    result.reserved = false;
     next();
   }
 

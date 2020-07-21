@@ -295,7 +295,7 @@ class Server {
 
     // For DNS LESS load register
     if (this.isOpenSource) {
-      // TODO ieva what to do with register for dnsless
+      // TODO ieva fix open pryv
       //require('../../register')(expressApp, this.application);
       require('../../www')(expressApp, this.application);
     }
