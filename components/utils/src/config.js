@@ -47,6 +47,13 @@ config.schema = {
       'In Production, as the service stands behind a NGINX reverse proxy, it should be different.'
     },
   },
+  server: {
+    hostname: {
+      format: String,
+      default: "",
+      doc: 'The name of the core that will be used to send the name to the service-register during the registration.',
+    }
+  },
   serviceInfoUrl: {
     format: String,
     default: undefined,

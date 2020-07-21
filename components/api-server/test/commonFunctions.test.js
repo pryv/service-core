@@ -9,6 +9,7 @@
 const commonFns = require('../src/methods/helpers/commonFunctions');
 const errors = require('components/errors').factory;
 const ErrorIds = require('components/errors').ErrorIds;
+const ErrorMessages = require('components/errors/src/ErrorMessages');
 const chai = require('chai');
 const assert = chai.assert;
 
@@ -27,14 +28,14 @@ describe('methods/helpers/commonFunctions.js', function () {
       assert.equal(formedErrors.dontNotifyAirbrake, true);
       assert.deepEqual(formedErrors.data, [
         {
-          code: 'RESERVED_USER_NAME',
-          message: 'Reserved user starting by pryv',
+          code: ErrorIds.ReservedUsername,
+          message: ErrorMessages[ErrorIds.ReservedUsername],
           param: 'username',
           path: '#/username'
         },
         {
-          code: 'EXISTING_USER_NAME',
-          message: 'Existing user',
+          code: ErrorIds.ExistingUsername,
+          message: ErrorMessages[ErrorIds.ExistingUsername],
           param: 'username',
           path: '#/username'
         }

@@ -158,9 +158,9 @@ class User {
 
         if(context.systemCall === true){
           result.id = user.id;
+        }else{
+          result.username = user.username;
         }
-
-        result.username = user.username;
         context.user = user;
         next();
       });
