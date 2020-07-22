@@ -444,6 +444,34 @@ describe('User Registration related functionalities', () => {
       });
 
     });
+
+    it('Fail to register when reservation is not successful', async () => {
+      const userData = _.extend({}, defaults());
+      helpers.instanceTestSetup.set(settings, {
+        context: {
+          url: settings.services.register.url
+        },
+        execute: function () {
+          const scope = require('nock')(this.context.url);
+          scope.post('/users/validate').reply(200, { errors: [] });
+          scope.post('/users/reservations').reply(400, { success: false });
+        }
+      });
+
+      await (new Promise(server.ensureStarted.bind(server, settings)));
+      const res = await registrationRequest(userData);
+
+      validation.checkError(res, {
+        status: 400,
+        id: ErrorIds.InvalidParametersFormat,
+        data: [{
+          code: ErrorIds.DuplicatedUserRegistration,
+          message: ErrorMessages[ErrorIds.DuplicatedUserRegistration],
+          path: '#/username',
+          param: 'username'
+        }]
+      });
+    });
   });
 
 

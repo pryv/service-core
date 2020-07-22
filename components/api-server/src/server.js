@@ -133,6 +133,7 @@ class Server {
       require('./methods/utility'),
       require('./methods/auth/login'),
       require('./methods/auth/register'),
+      require('./methods/auth/register-singlenode'),
     ].forEach(function (moduleDef) {
       dependencies.resolve(moduleDef);
     });
@@ -309,8 +310,6 @@ class Server {
 
     // For DNS LESS load register
     if (this.isOpenSource) {
-      // TODO ieva fix open pryv
-      require('../../register')(expressApp, this.application);
       require('../../www')(expressApp, this.application);
     }
 

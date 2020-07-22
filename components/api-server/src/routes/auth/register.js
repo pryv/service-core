@@ -9,6 +9,7 @@
 const methodCallback = require('../methodCallback');
 const API = require('../../API');
 import type Application from '../../application';
+const errors = require('components/errors').factory;
 const _ = require('lodash');
 
 /**
@@ -19,34 +20,47 @@ module.exports = function (expressApp: express$Application, app: Application) {
 
   // const settings: ConfigAccess = app.settings;
   const api: API = app.api;
+  const openSource = app.settings.get('openSource').obj().isActive;
   const context = {};
  
   // POST /user: create a new user
   expressApp.post('/user', function (req: express$Request, res: express$Response, next: express$NextFunction) {
-    api.call('auth.register', context, req.body, methodCallback(res, next, 201));
+   if (openSource) {
+      api.call('auth.register.singlenode', context, req.body, methodCallback(res, next, 201));
+    }else{
+      api.call('auth.register', context, req.body, methodCallback(res, next, 201));
+    }
   });
 
   /**
    * POST /username/check: check the existence/validity of a given username
    */
   expressApp.post('/username/check', (req: express$Request, res, next) => {
-    // return text response
-    api.call('auth.usernameCheck', context, req.body, function (err, result) {
-      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-      if (err) return res.status(200).end(String(false));
-      let response = _.defaults(!result.reserved, false);
-      res.status(200).end(String(response));
-    });
+    if (openSource) {
+      return next(errors.NonValidForOpenSource());
+    }else{
+      // return text response
+      api.call('auth.usernameCheck', context, req.body, function (err, result) {
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        if (err) return res.status(200).end(String(false));
+        let response = _.defaults(!result.reserved, false);
+        res.status(200).end(String(response));
+      });
+    }
   });
 
   /**
    * GET /:username/check_username: check the existence/validity of a given username
    */
   expressApp.get('/:username/check_username', (req: express$Request, res, next) => {
-    var params = {
-      username: req.params.username
-    };
-    api.call('auth.usernameCheck', context, params, methodCallback(res, next, 200));
+    if (openSource) {
+      return next(errors.NonValidForOpenSource());
+    }else{
+      var params = {
+        username: req.params.username
+      };
+      api.call('auth.usernameCheck', context, params, methodCallback(res, next, 200));
+    }
   });
 
 };

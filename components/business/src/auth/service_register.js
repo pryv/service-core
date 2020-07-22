@@ -97,6 +97,10 @@ class ServiceRegister {
       }
       return false;
     } catch (err) {
+      if(err.status == 400 && err.response.body.success === false){
+        return false;
+      }
+      // do not log validation errors
       this.logger.error(err);
       throw new Error(err.message || 'Unexpected error.');
     }

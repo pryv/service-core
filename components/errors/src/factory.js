@@ -298,6 +298,17 @@ factory.DuplicatedUserRegistration = (): APIError => {
     ErrorIds.DuplicatedUserRegistration, ErrorMessages[ErrorIds.DuplicatedUserRegistration],
     {
       httpStatus: 400,
+      data: {param: 'username'},
       dontNotifyAirbrake: true,
     }
-  );};
+  )};
+
+factory.NonValidForOpenSource = (): APIError => {
+  return new APIError(
+    ErrorIds.NonValidForOpenSource, ErrorMessages[ErrorIds.NonValidForOpenSource],
+    {
+      httpStatus: 404,
+      dontNotifyAirbrake: true,
+    }
+  )};
+  

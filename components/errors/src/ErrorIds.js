@@ -70,6 +70,11 @@ const ErrorIds = {
   InvalidPassword: 'password-invalid',
   Invalidreferer: 'referer-invalid',
   DuplicatedUserRegistration: 'duplicated-user-registration',
+
+  /**
+   * Throw this error for methods that are valid only for pryv.io
+   */
+  NonValidForOpenSource: 'not-valid-for-open-pryv'
 };
 Object.freeze(ErrorIds);
 

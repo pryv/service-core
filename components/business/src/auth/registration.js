@@ -12,12 +12,13 @@
 const _ = require('lodash');
 const async = require('async');
 const cuid = require('cuid');
+const bluebird = require('bluebird');
 const errors = require('components/errors').factory;
+const commonFns = require('components/api-server/src/methods/helpers/commonFunctions');
 const mailing = require('components/api-server/src/methods/helpers/mailing');
 const ServiceRegister = require('./service_register');
+const encryption = require('components/utils').encryption;
 
-type GenericCallback<T> = (err?: ?Error, res: ?T) => mixed;
-type Callback = GenericCallback<mixed>;
 import type { MethodContext } from 'components/model';
 import type { ApiCallback } from 'components/api-server/src/API';
 
@@ -47,7 +48,11 @@ class User {
    */
   async createUserInServiceRegister(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
-      const serviceRegisterConn = new ServiceRegister(context.servicesSettings.register, context.logger);
+      // if the call comes from system user creation, add service register connection
+      if(!context.serviceRegisterConn){
+        context.serviceRegisterConn = new ServiceRegister(context.servicesSettings.register, context.logger);
+      }
+      
       // check email in service-register
       const user = {
         "username": context.user.username,
@@ -59,7 +64,7 @@ class User {
         "language": context.user.language,
         "host": {"name": context.hostname}
       };
-      const response = await serviceRegisterConn.createUser(user);
+      const response = await context.serviceRegisterConn.createUser(user);
 
       // take only server name
       if (response.username) {
@@ -212,6 +217,135 @@ class User {
 
         next();
       });
+  }
+
+  /**
+   * Check in service-register if invitation token is valid
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  async setDefaultValues(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    if (!params.invitationtoken) {
+      params.invitationtoken = 'no-token';
+    }
+    if (!params.languageCode) {
+      params.languageCode = 'en';
+    }
+    next();
+  }
+
+  /**
+   * Check in service-register if email already exists
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  async validateThatUserDoesNotExistInLocalDb(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    try {
+      // check email in service-core
+      const existingUser = await bluebird.fromCallback(
+        (cb) => context.usersStorage.findOne({ $or: [ {email: params.email}, {username: params.username} ] }, null, cb)
+      );
+
+      // if email was already saved, it means that there were an error 
+      // saving in service register (above there is a check that email does not exist in
+      // service register)
+      if (existingUser?.username) {
+        // skip all steps exept registrattion in service-register and welcome email
+        context.skip = true;
+        
+        //append context with the same values that would be saved by createUser function
+        context.user = {
+          username: existingUser.username,
+          email: existingUser.email,
+          invitationtoken: existingUser.invitationtoken,
+          language: existingUser.language,
+          referer: existingUser.referer,
+          appId: existingUser.appId,
+          id: existingUser.id
+        };
+
+        // set result as current username
+        result.username = existingUser.username;
+      }
+    } catch (error) {
+      return next(errors.unexpectedError(error));
+    }
+    next();
+  }
+
+  /**
+   * 
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  async validateUserInServiceRegister(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    try {
+      const response = await context.serviceRegisterConn.validateUser(params.email, params.username, params.invitationtoken);
+
+      if (response?.errors && response.errors.length > 0) {
+        // 1. convert list of error ids to the list of api errors
+        const listApiErrors = response.errors.map(err => {
+          return errors[err]();
+        });
+
+        // 2. convert api errors to validation errors
+        return next(commonFns.apiErrorToValidationErrorsList(listApiErrors));
+      }
+    } catch (error) {
+      return next(errors.unexpectedError(error));
+    }
+    next();
+  }
+
+  /**
+   * 
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  async prepareUserDataForSaving(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    params.username = params.username.toLowerCase();
+    params.email = params.email.toLowerCase();
+    
+    // change parameter name
+    params.language = params.languageCode;
+    delete params.languageCode;
+    
+    // Construct the request for core, including the password. 
+    params.passwordHash = await encryption.hash(params.password);
+    context.POOL_USERNAME_PREFIX = 'pool@';
+    context.TEMP_USERNAME_PREFIX = 'temp@';
+    context.POOL_REGEX = new RegExp('^' + context.POOL_USERNAME_PREFIX);
+    next();
+  }
+
+
+  /**
+   * 
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  async reserveUserInServiceRegister(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    if(context.skip === true){ return next()};
+    try {
+      const canRegister: Boolean = await context.serviceRegisterConn.reserveUser(params.username, context.hostname);
+
+      if (canRegister == false) {
+        return next(commonFns.apiErrorToValidationErrorsList([errors.DuplicatedUserRegistration()]));
+      }
+    } catch (error) {
+      return next(errors.unexpectedError(error));
+    }
+    next();
   }
 }
 module.exports = User;
