@@ -47,7 +47,7 @@ describe('User Registration related functionalities', () => {
       execute: function () {
         const scope = require('nock')(this.context.url);
         scope.post('/users/validate').reply(200, { errors: [] });
-        scope.post('/users/reservations').reply(200, { success: true });
+        scope.post('/users/reservations').reply(200, { reservation: true });
         scope.post('/users').reply(200, { 
           username: 'anyusername',
           server: this.context.defaultServerName
@@ -338,7 +338,7 @@ describe('User Registration related functionalities', () => {
         execute: function () {
           const scope = require('nock')(this.context.url);
           scope.post('/users/validate').times(2).reply(200, { errors: [] });
-          scope.post('/users/reservations').times(2).reply(200, { success: true });
+          scope.post('/users/reservations').times(2).reply(200, { reservation: true });
           scope.post('/users').times(2).reply(200, { 
             username: 'anyusername',
             server: this.context.defaultServerName
@@ -454,7 +454,7 @@ describe('User Registration related functionalities', () => {
         execute: function () {
           const scope = require('nock')(this.context.url);
           scope.post('/users/validate').reply(200, { errors: [] });
-          scope.post('/users/reservations').reply(400, { success: false });
+          scope.post('/users/reservations').reply(400, { reservation: false });
         }
       });
 

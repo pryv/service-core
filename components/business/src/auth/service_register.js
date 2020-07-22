@@ -92,12 +92,12 @@ class ServiceRegister {
                                   .set('Authorization', this.config.key);
 
       const response = res.body;
-      if (response.success === true) {
+      if (response.reservation === true) {
         return true;
       }
       return false;
     } catch (err) {
-      if(err.status == 400 && err.response.body.success === false){
+      if(err.status == 400 && err.response.body.reservation === false){
         return false;
       }
       // do not log validation errors
