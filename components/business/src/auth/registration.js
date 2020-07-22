@@ -14,6 +14,7 @@ const async = require('async');
 const cuid = require('cuid');
 const bluebird = require('bluebird');
 const errors = require('components/errors').factory;
+const errorHandling = require('components/errors').errorHandling;
 const commonFns = require('components/api-server/src/methods/helpers/commonFunctions');
 const mailing = require('components/api-server/src/methods/helpers/mailing');
 const ServiceRegister = require('./service_register');
