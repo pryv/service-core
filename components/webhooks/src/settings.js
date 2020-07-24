@@ -15,7 +15,7 @@ class Settings {
   constructor() {
     this.config = nconf;
     const config = nconf;
-    config.env().argv();
+    config.argv().env();
 
     const configFile = config.get('config') || 'dev-config.json';
     config.file({ file: configFile });

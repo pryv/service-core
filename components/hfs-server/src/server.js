@@ -134,14 +134,14 @@ class Server {
    * 
    * @return express application.
    */
-  async setupExpress(): Promise<express$Application> {
+  setupExpress(): Promise<express$Application> {
     const logger = this.logger;
     const settings = this.settings;
     const logSettings = settings.get('logs').obj();
     const traceEnabled = settings.get('trace.enable').bool(); 
     
     const pv = new ProjectVersion(); 
-    const version = await pv.version(); 
+    const version = pv.version(); 
         
     var app = express(); 
     

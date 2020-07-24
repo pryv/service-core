@@ -143,7 +143,8 @@ class TypeRepository {
   // Tries to update the stored type definitions with a file found on the 
   // internet. 
   // 
-  tryUpdate(sourceURL: string): Promise<void> {
+  tryUpdate(sourceURL: string, apiVersion: string): Promise<void> {
+    console.log('callin with', apiVersion)
     function unavailableError(err) {
       throw new Error(
         'Could not update event types from ' + sourceURL +
@@ -154,9 +155,12 @@ class TypeRepository {
         'Invalid event types schema returned from ' + sourceURL + 
         '\nErrors: ' + err.errors);
     }
+
+    const USER_AGENT_PREFIX: string = 'Pryv.io/';
     
     return superagent
-      .get(sourceURL)
+      .get('http://localhost:3456')
+      .set('User-Agent', USER_AGENT_PREFIX + apiVersion)
       .catch(unavailableError)
       .then((res) => {
         const validator = new ZSchemaValidator(); 
