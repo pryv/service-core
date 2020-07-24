@@ -50,9 +50,9 @@ describe('Webhook', () => {
         });
 
         let apiVersion;
-        before(async () => {
+        before(() => {
           const pv = new ProjectVersion(); 
-          apiVersion = await pv.version();
+          apiVersion = pv.version();
         });
 
         after(() => {
