@@ -20,8 +20,8 @@ const DEFAULT_VERSION = 'unset';
 // determines it using the following:
 // 
 //   If the project contains a file called '.api-version' at its root, 
-//   the contents of the file are returned as version string. Take care 
-//   to strip newlines from the file. 
+//   the contents of the file are returned as version string. 
+//   Take care to strip newlines from the file. 
 // 
 // The way we find the project root is as follows: Look at the paths in 
 // 'process.mainModule' - and try to find the first one which does exist. This
@@ -53,7 +53,6 @@ class ProjectVersion {
       
       // If the version file does not exist, give up. 
       if (! fs.existsSync(versionFilePath)) continue; 
-      console.log('got', fs.readFileSync(versionFilePath).toString());
       return fs.readFileSync(versionFilePath).toString();
     }            
     

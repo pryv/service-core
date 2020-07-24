@@ -143,7 +143,6 @@ class TypeRepository {
   // internet. 
   // 
   tryUpdate(sourceURL: string, apiVersion: string): Promise<void> {
-    console.log('callin with', apiVersion)
     function unavailableError(err) {
       throw new Error(
         'Could not update event types from ' + sourceURL +
