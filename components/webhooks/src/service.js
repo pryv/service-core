@@ -189,10 +189,13 @@ class WebhooksService implements MessageSink {
   getWebhook(username: string, webhookId: string): [ ?Array<Webhook>, ?Webhook, ?number ] {
     const usersWebhooks: ?Array<Webhook> = this.webhooks.get(username);
 
-        if (usersWebhooks == null) return [ null, null, null ];
+    if (usersWebhooks == null) {
+      return [ null, null, null ];
+    }
 
-        const len = usersWebhooks.length;
-    for(let i=0; i<len; {
+    const len = usersWebhooks.length;
+    
+    for(let i=0; i<len; i++) {
       if (usersWebhooks[i].id === webhookId) {
         return [ usersWebhooks, usersWebhooks[i], i ];
       }
@@ -201,16 +204,16 @@ class WebhooksService implements MessageSink {
   }
 
   stop(): void {
-            this.logger.info('Stopping webhooks service');
+    this.logger.info('Stopping webhooks service');
     for (const usernameWebhooks of this.webhooks) {
-            usernameWebhooks[1].forEach(w => {
-              w.stop();
-            });
+      usernameWebhooks[1].forEach(w => {
+        w.stop();
+      });
     }
   }
 
   async loadWebhooks(): Promise<void> {
-            this.webhooks = await this.repository.getAll();
+    this.webhooks = await this.repository.getAll();
   }
 
 }
