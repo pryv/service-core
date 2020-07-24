@@ -7,7 +7,7 @@
 // @flow
 const http = require('http');
 
-const dependencies = require('dependable').container({useFnAnnotations: true});
+const dependencies = require('dependable').container({ useFnAnnotations: true });
 const middleware = require('components/middleware');
 const storage = require('components/storage');
 const utils = require('components/utils');
@@ -21,12 +21,12 @@ import type { Extension } from 'components/utils';
 function loadCustomAuthStepFn(customExtensions): ?Extension {
   const defaultFolder = customExtensions.defaultFolder;
   const customAuthStepFnPath = customExtensions.customAuthStepFn;
-  
+
   const loader = new ExtensionLoader(defaultFolder);
-  
-  if (customAuthStepFnPath != null && customAuthStepFnPath !== '') 
+
+  if (customAuthStepFnPath != null && customAuthStepFnPath !== '')
     return loader.loadFrom(customAuthStepFnPath);
-    
+
   return loader.load('customAuthStepFn');
 }
 
@@ -41,7 +41,7 @@ async function start() {
   config.printSchemaAndExitIfNeeded();
   var settings = config.load();
 
-  const customAuthStepExt = loadCustomAuthStepFn(settings.customExtensions); 
+  const customAuthStepExt = loadCustomAuthStepFn(settings.customExtensions);
 
   // register base dependencies
   dependencies.register({
@@ -61,8 +61,8 @@ async function start() {
     settings.database, logging.getLogger('database'));
 
   const storageLayer = new storage.StorageLayer(
-    database, logger, 
-    settings.eventFiles.attachmentsDirPath, 
+    database, logger,
+    settings.eventFiles.attachmentsDirPath,
     settings.eventFiles.previewsDirPath,
     10, settings.auth.sessionMaxAge);
 
@@ -72,9 +72,9 @@ async function start() {
 
   const loadAccessMiddleware = middleware.loadAccess(
     storageLayer);
-    
-  const pv = new ProjectVersion(); 
-  const version = await pv.version(); 
+
+  const pv = new ProjectVersion();
+  const version = pv.version();
 
   dependencies.register({
     // storage
@@ -84,7 +84,7 @@ async function start() {
     userEventFilesStorage: storageLayer.eventFiles,
     userEventsStorage: storageLayer.events,
     userStreamsStorage: storageLayer.streams,
-    
+
     // For the code that hasn't quite migrated away from dependencies yet.
     storageLayer: storageLayer,
 
@@ -99,7 +99,7 @@ async function start() {
     express: require('express'),
   });
 
-  const {expressApp, routesDefined} = dependencies.resolve(
+  const { expressApp, routesDefined } = dependencies.resolve(
     require('./expressApp'));
   dependencies.register('expressApp', expressApp);
 
@@ -113,7 +113,7 @@ async function start() {
   });
 
   // Finalize middleware stack: 
-  routesDefined(); 
+  routesDefined();
 
   // setup HTTP
 
@@ -128,7 +128,7 @@ async function start() {
       process.exit(1);
     }
     logger.info('TCP pub socket ready on ' + settings.tcpMessaging.host + ':' +
-        settings.tcpMessaging.port);
+      settings.tcpMessaging.port);
 
     database.waitForConnection(function () {
       const backlog = 512;
@@ -137,7 +137,7 @@ async function start() {
         var protocol = server.key ? 'https' : 'http';
         server.url = protocol + '://' + address.address + ':' + address.port;
         logger.info('Browser server v' + require('../package.json').version +
-            ' [' + expressApp.settings.env + '] listening on ' + server.url);
+          ' [' + expressApp.settings.env + '] listening on ' + server.url);
 
         // all right
 
@@ -154,7 +154,7 @@ async function start() {
 
 type ExtendedAttributesServer = net$Server & {
   key?: string,
-  url?: string,   
+  url?: string,
 }
 
 // And now:
@@ -162,4 +162,4 @@ start()
   .catch(err => {
     console.error(err); // eslint-disable-line no-console
   });
-  
+
