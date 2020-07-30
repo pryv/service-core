@@ -54,12 +54,6 @@ describe('users pool', () => {
         assert.isNotNull(user);
       });
     });
-    it('[YB72] created the related collections', () => {
-
-    });
-    it('[WBCJ] created the related indexes', () => {
-
-    });
   });
 
   describe('get pool size', () => {

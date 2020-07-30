@@ -286,7 +286,7 @@ describe('Delete app access', () => {
     server.stop();
   });
 
-  describe('XXXXX when deleting an app access that created shared accesses', () => {
+  describe('when deleting an app access that created shared accesses', () => {
     let res;
     before(async () => {
       res = await server.request()
