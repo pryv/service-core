@@ -351,8 +351,7 @@ module.exports = function produceAccessesApiMethods(
   api.register('accesses.delete',
     commonFns.getParamsValidation(methodsSchema.del.params),
     checkAccessForDeletion,
-    findAccessibleAccesses,
-    renameSharedAccesses,
+    findRelatedAccesses,
     deleteAccesses);
 
   function checkAccessForDeletion(context, params, result, next) {
@@ -382,32 +381,49 @@ module.exports = function produceAccessesApiMethods(
           );
         }
 
+        // used in next function
+        params.accessToDelete = access;
+
         next();
       }
     );
   }
 
-  /**
-   * Renames result.accesses to result.relatedDeletions and plucks them from all properties except id.
-   */
-  function renameToRelatedAccesses(context, params, result, next) {
-    result.relatedDeletions = result.accesses;
-    delete result.accesses;
-    result.relatedDeletions = result.relatedDeletions.map(a => {
-      return { id: a.id }
+  function findRelatedAccesses(context, params, result, next) {
+    const accessToDelete = params.accessToDelete;
+    const accessesRepository = storageLayer.accesses;
+    
+    // deleting a personal access does not delete the accesses it created.
+    if (! accessToDelete.type === 'personal') {
+      return next();
+    }
+
+    accessesRepository.find(context.user, { createdBy: params.id}, dbFindOptions, function (err, accesses) {
+      if (err != null) return next(errors.unexpectedError(err)); 
+      
+      if (accesses.length === 0) return next();
+
+      accesses = accesses.filter(a => a.id !== params.id);
+      accesses = accesses.filter(a => ! isAccessExpired(a));
+      accesses = accesses.map(a => {
+        return { id: a.id }
+      });
+      result.relatedDeletions = accesses;
+
+      next();
     });
-    next();
   }
 
   function deleteAccesses(context, params, result, next) {
     const accessesRepository = storageLayer.accesses;
-
-    accessesRepository.delete(context.user, 
-      { $or: [ {id: params.id}, {createdBy: params.id} ] }, 
+    accessesRepository.delete(context.user,
+      { 
+        $or: [ { id: params.id } , { createdBy: params.id } ],
+      }, 
       function (err) {
         if (err) { return next(errors.unexpectedError(err)); }
-
         result.accessDeletion = {id: params.id};
+        notifications.accessesChanged(context.username);
         next();
     });
   }

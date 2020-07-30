@@ -337,7 +337,12 @@ describe('accesses (app)', function () {
         validation.check(res, {
           status: 200,
           schema: methodsSchema.del.result,
-          body: { accessDeletion: { id: access.id } }
+          body: { 
+            accessDeletion: { id: access.id },
+            relatedDeletions: [{
+              id: additionalTestAccesses[2].id
+            }] 
+          }
         });
 
         req().del(path(access.id), access.token).end(function (res2) {
