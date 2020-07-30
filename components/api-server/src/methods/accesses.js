@@ -10,6 +10,7 @@ const async = require('async');
 const slugify = require('slug');
 const _ = require('lodash');
 const timestamp = require('unix-timestamp');
+const bluebird = require('bluebird');
 
 const APIError = require('components/errors').APIError;
 const errors = require('components/errors').factory;
@@ -354,42 +355,44 @@ module.exports = function produceAccessesApiMethods(
     findRelatedAccesses,
     deleteAccesses);
 
-  function checkAccessForDeletion(context, params, result, next) {
+  async function checkAccessForDeletion(context, params, result, next) {
     const accessesRepository = storageLayer.accesses;
     const currentAccess = context.access;
     
     if (currentAccess == null)
       return next(new Error('AF: currentAccess cannot be null.'));
 
-    accessesRepository.findOne(
-      context.user,
-      { id: params.id },
-      dbFindOptions,
-      function(err, access) {
-        if (err != null) 
-          return next(errors.unexpectedError(err));
+    let access;
+    try {
+      access = await bluebird.fromCallback(cb => {
+        accessesRepository.findOne(
+          context.user,
+          { id: params.id },
+          dbFindOptions,
+          cb);
+      });
+    } catch (err) {
+      return next(errors.unexpectedError(err));
+    }
 
-        if (access == null)
-          return next(errors.unknownResource('access', params.id));
-        
-        if (! currentAccess.canDeleteAccess(access)) {
-          return next(
-            errors.forbidden(
-              'Your access token has insufficient permissions to ' +
-              'delete this access.'
-            )
-          );
-        }
-
-        // used in next function
-        params.accessToDelete = access;
-
-        next();
+    if (access == null)
+      return next(errors.unknownResource('access', params.id));
+          
+      if (! currentAccess.canDeleteAccess(access)) {
+        return next(
+          errors.forbidden(
+            'Your access token has insufficient permissions to ' +
+            'delete this access.'
+          )
+        );
       }
-    );
+  
+      // used in next function
+      params.accessToDelete = access;
+      next();
   }
 
-  function findRelatedAccesses(context, params, result, next) {
+  async function findRelatedAccesses(context, params, result, next) {
     const accessToDelete = params.accessToDelete;
     const accessesRepository = storageLayer.accesses;
     
@@ -398,34 +401,41 @@ module.exports = function produceAccessesApiMethods(
       return next();
     }
 
-    accessesRepository.find(context.user, { createdBy: params.id}, dbFindOptions, function (err, accesses) {
-      if (err != null) return next(errors.unexpectedError(err)); 
-      
-      if (accesses.length === 0) return next();
-
-      accesses = accesses.filter(a => a.id !== params.id);
-      accesses = accesses.filter(a => ! isAccessExpired(a));
-      accesses = accesses.map(a => {
-        return { id: a.id }
+    let accesses;
+    try {
+      accesses = await bluebird.fromCallback(cb => {
+        accessesRepository.find(context.user, { createdBy: params.id}, dbFindOptions, cb);
       });
-      result.relatedDeletions = accesses;
+    } catch (err) {
+      return next(errors.unexpectedError(err)); 
+    }
+    if (accesses.length === 0) return next();
 
-      next();
+    accesses = accesses.filter(a => a.id !== params.id);
+    accesses = accesses.filter(a => ! isAccessExpired(a));
+    accesses = accesses.map(a => {
+      return { id: a.id }
     });
+    result.relatedDeletions = accesses;
+
+    next();
   }
 
-  function deleteAccesses(context, params, result, next) {
+  async function deleteAccesses(context, params, result, next) {
     const accessesRepository = storageLayer.accesses;
-    accessesRepository.delete(context.user,
-      { 
-        $or: [ { id: params.id } , { createdBy: params.id } ],
-      }, 
-      function (err) {
-        if (err) { return next(errors.unexpectedError(err)); }
-        result.accessDeletion = {id: params.id};
-        notifications.accessesChanged(context.username);
-        next();
-    });
+
+    try {
+      await bluebird.fromCallback(cb => {
+        accessesRepository.delete(context.user,
+          { $or: [ { id: params.id } , { createdBy: params.id } ]},
+          cb);
+      });
+    } catch (err) {
+      return next(errors.unexpectedError(err));
+    }
+    result.accessDeletion = {id: params.id};
+    notifications.accessesChanged(context.username);
+    next();
   }
 
   // OTHER METHODS
