@@ -16,7 +16,7 @@ yarn-error.log
 /out
 .nyc_output/
 dist
-build/build_tag
+build_tag
 build/core/release.tar
 build/hfs/release.tar
 build/preview/release.tar
