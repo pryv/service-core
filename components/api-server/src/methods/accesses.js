@@ -424,10 +424,12 @@ module.exports = function produceAccessesApiMethods(
   async function deleteAccesses(context, params, result, next) {
     const accessesRepository = storageLayer.accesses;
 
+    const idsToDelete: Array<{id: string}> = result.relatedDeletions.concat([{id: params.id}]);
+
     try {
       await bluebird.fromCallback(cb => {
         accessesRepository.delete(context.user,
-          { $or: [ { id: params.id } , { createdBy: params.id } ]},
+          { $or: idsToDelete },
           cb);
       });
     } catch (err) {
