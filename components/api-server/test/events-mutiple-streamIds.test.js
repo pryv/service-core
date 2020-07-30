@@ -14,6 +14,8 @@ const _ = require('lodash');
 const cuid = require('cuid');
 const chai = require('chai');
 const assert = chai.assert;
+const charlatan = require('charlatan');
+const {fixturePath, fixtureFile} = require('./unit/test-helper');
 
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
@@ -155,8 +157,8 @@ describe('events.streamIds', function () {
         trashed: true,
       });
     });
-    afterEach(() => {
-      mongoFixtures.clean();
+    afterEach(async () => {
+      await mongoFixtures.clean();
     });
 
     function eventPath(eventId) {
@@ -478,6 +480,103 @@ describe('events.streamIds', function () {
         assert.equal(error.id, ErrorIds.Forbidden);
       });
 
+    });
+
+    describe('GET /events/:id/:fileId', () => {
+      
+      let userId, streamId, event,
+          appToken, appReadToken, 
+          sharedToken, sharedReadToken;
+    
+      beforeEach(() => {
+        userId = cuid();
+        streamId = cuid();
+        appToken = cuid();
+        sharedToken = cuid();
+      });
+    
+      beforeEach(async () => {
+        const user = await mongoFixtures.user(userId);
+        await user.stream({
+          id: streamId,
+          name: streamId.toUpperCase(),
+        });
+        await user.access({
+          type: 'app', 
+          token: appToken,
+          name: charlatan.Lorem.word(), 
+          permissions: [{
+            streamId: streamId,
+            level: 'manage',
+          }],
+        });
+        await user.access({
+          type: 'shared',
+          token: sharedToken,
+          name: charlatan.Lorem.word(), 
+          permissions: [{
+            streamId: streamId,
+            level: 'read',
+          }],
+        });
+      });
+    
+      beforeEach(async () => {
+        const res = await server.request()
+          .post(path('events'))
+          .set('Authorization', appToken)
+          .field('event', JSON.stringify({
+            streamId: streamId,
+            type: 'picture/attached'
+          }))
+          .attach('file', fixturePath('somefile'));
+        event = res.body.event;
+        appReadToken = event.attachments[0].readToken;
+        const res2 = await server.request()
+          .get(path(`events/${event.id}`))
+          .set('Authorization', sharedToken)
+        event = res2.body.event;
+        sharedReadToken = event.attachments[0].readToken;
+      });
+
+      function path(resource) {
+        return `/${userId}/${resource}`;
+      }
+  
+      it('should retrieve the attachment with the app token', async () => {
+        const res = await server.request()
+          .get(path(`events/${event.id}/${event.attachments[0].id}`))
+          .set('Authorization', appToken);
+        const status = res.status;
+        assert.equal(status, 200);
+        const retrievedAttachment = res.body;
+        assert.exists(retrievedAttachment);
+      });
+      it('should retrieve the attachment with the shared access readToken', async () => {
+        const res = await server.request()
+          .get(path(`events/${event.id}/${event.attachments[0].id}?readToken=${appReadToken}`))
+        const status = res.status;
+        assert.equal(status, 200);
+        const retrievedAttachment = res.body;
+        assert.exists(retrievedAttachment);
+      });
+      it('should retrieve the attachment with the shared access token', async () => {
+        const res = await server.request()
+          .get(path(`events/${event.id}/${event.attachments[0].id}`))
+          .set('Authorization', sharedToken);
+        const status = res.status;
+        assert.equal(status, 200);
+        const retrievedAttachment = res.body;
+        assert.exists(retrievedAttachment);
+      });
+      it('should retrieve the attachment with the shared access readToken', async () => {
+        const res = await server.request()
+          .get(path(`events/${event.id}/${event.attachments[0].id}?readToken=${sharedReadToken}`))
+        const status = res.status;
+        assert.equal(status, 200);
+        const retrievedAttachment = res.body;
+        assert.exists(retrievedAttachment);
+      });
     });
 
   });
