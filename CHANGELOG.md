@@ -1,5 +1,21 @@
 ## 1.5
 
+### 1.5.22
+
+- fix deleting app access deletes shared accesses it created
+
+### 1.5.21
+
+- make event types call with header 'User-Agent: Pryv.io/{API version}
+
+### 1.5.20
+
+- fix missing API version
+
+### 1.5.19
+
+- fix readTokens for shared accesses
+
 ### 1.5.18
 
 - add username to access-info
