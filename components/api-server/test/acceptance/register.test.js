@@ -7,7 +7,11 @@
 // @flow
 
 //const { databaseFixture } = require('components/test-helpers');
+
 require('../test-helpers');
+const { databaseFixture } = require('components/test-helpers');
+const { produceMongoConnection, context } = require('../test-helpers');
+
 const charlatan = require('charlatan');
 const helpers = require('../helpers');
 const server = helpers.dependencies.instanceManager;
@@ -19,6 +23,7 @@ const bluebird = require('bluebird');
 const ErrorIds = require('components/errors/src/ErrorIds');
 const ErrorMessages = require('components/errors/src/ErrorMessages');
 
+//TODO IEVA
 function randomuser() { return 'testpfx' + Math.floor(Math.random() * (100000)); }
 
 function defaults() {
@@ -32,7 +37,8 @@ function defaults() {
   };
 }
 
-describe('User Registration related functionalities', () => {
+
+describe('User Registration related functionalities', async () => {
   let request = null;
   var basePath = '/user';
   const settings = _.cloneDeep(helpers.dependencies.settings);
@@ -47,7 +53,6 @@ describe('User Registration related functionalities', () => {
       execute: function () {
         const scope = require('nock')(this.context.url);
         scope.post('/users/validate').reply(200, { errors: [] });
-        scope.post('/users/reservations').reply(200, { reservation: true });
         scope.post('/users').reply(200, { 
           username: 'anyusername',
           server: this.context.defaultServerName
@@ -67,8 +72,6 @@ describe('User Registration related functionalities', () => {
   beforeEach(async () => {
     await (new Promise(server.ensureStarted.bind(server, helpers.dependencies.settings)));
     request = helpers.request(server.url);
-    await helpers.dependencies.storage.users.removeAll();
-    //testData.resetUsers;
   });
 
   describe('POST /user (create user)', function () {
@@ -338,7 +341,6 @@ describe('User Registration related functionalities', () => {
         execute: function () {
           const scope = require('nock')(this.context.url);
           scope.post('/users/validate').times(2).reply(200, { errors: [] });
-          scope.post('/users/reservations').times(2).reply(200, { reservation: true });
           scope.post('/users').times(2).reply(200, { 
             username: 'anyusername',
             server: this.context.defaultServerName
@@ -453,8 +455,9 @@ describe('User Registration related functionalities', () => {
         },
         execute: function () {
           const scope = require('nock')(this.context.url);
-          scope.post('/users/validate').reply(200, { errors: [] });
-          scope.post('/users/reservations').reply(400, { reservation: false });
+          scope.post('/users/validate').reply(400, {
+            "success": false, "errors": ["DuplicatedUserRegistration"]
+          });
         }
       });
 
@@ -473,8 +476,6 @@ describe('User Registration related functionalities', () => {
       });
     });
   });
-
-
 
   describe('Undefined invitationTokens', async () => {
 

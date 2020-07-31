@@ -82,9 +82,15 @@ class MongoDB {
     await Promise.all(drops);
 
     // Drop the user itself.
-    const query = { username: username };
+    const query = {
+      $and: [
+        { streamIds: { $in: ["username"] } },
+        { content: { $eq: username } }
+      ] };
+    //TODO IEVA update
+    console.log(query,'queryyyyyyyyyyy');
     await bluebird.fromCallback(
-      cb => storage.users.remove(query, cb));
+      cb => storage.user.events.remove(query, cb));
     await bluebird.fromCallback(
       cb => storage.sessions.remove( 
         { data: query }, cb));
@@ -92,11 +98,11 @@ class MongoDB {
 
   findUser(username: string): Promise<?UserAttributes> {
     const storage = this.storageLayer;
-    const query = { username: username };
+    const query = { content: username };
     const options = {};
-
+//TODO IEVA
     return bluebird.fromCallback(
-      cb => storage.users.findOne(query, options, cb)); 
+      cb => storage.events.findOne(query, options, cb)); 
   }
 
   close(): Promise<void> {

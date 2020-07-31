@@ -7,14 +7,16 @@
 // @flow
 
 /* global describe, it, before, after */
+const { databaseFixture } = require('components/test-helpers');
+const { produceMongoConnection, context } = require('../test-helpers');
 
-const { context } = require('../test-helpers');
-
+const bluebird = require('bluebird');
 const chai = require('chai');
 const assert = chai.assert;
 const helpers = require('../helpers');
 
-const storage = require('components/test-helpers').dependencies.storage.users;
+const storage = require('components/test-helpers').dependencies.storage.user.events;
+const database = require('components/test-helpers').dependencies.storage.database;
 
 describe('users pool', () => {
   const adminKey = helpers.dependencies.settings.auth.adminAccessKey;
@@ -30,14 +32,16 @@ describe('users pool', () => {
   describe('create pool user', () => {
     let res;
     let poolUser;
-    
+    let mongoFixtures;
     before(async () => {
+      mongoFixtures = databaseFixture(await produceMongoConnection());
+
       res = await createPoolUser(); 
       poolUser = res.body;
     });
 
-    after((done) => {
-      storage.removeAll(done);
+    after(async () => {
+      await mongoFixtures.context.cleanEverything();
     });
 
     it('[80HI] succeeds', () => {
@@ -48,12 +52,25 @@ describe('users pool', () => {
     it('[Y95U] contains a generated pool user id', () => {
       assert.isNotNull(poolUser.id);
     });
-    it('[JKN6] created a user in the database', () => {
-      storage.findOne({ username: { $regex: new RegExp('^' + 'pool@') }}, null, (err, user) => {
-        assert.isNull(err);
+    it('[JKN6] created a user in the database', async () => {
+      try {
+        const user = await bluebird.fromCallback(cb =>
+          database.findOne(
+            storage.getCollectionInfo({ }),
+            storage.applyQueryToDB({
+              $and: [
+                { streamIds: { $in: ["username"] } },
+                { content: { $regex: new RegExp('^' + 'pool@') } }
+              ]
+            }),
+            null, cb));
+
         assert.isNotNull(user);
-      });
+      } catch (err) {
+        assert.isTrue(false);
+      }
     });
+    
     it('[YB72] created the related collections', () => {
 
     });
@@ -88,6 +105,7 @@ describe('users pool', () => {
     describe('when adding pool users', () => {
 
       before(async () => {
+        mongoFixtures = databaseFixture(await produceMongoConnection());
         await createPoolUser();
         await createPoolUser();
         await createPoolUser();
@@ -99,8 +117,8 @@ describe('users pool', () => {
         poolSize = res.body.size;
       });
 
-      after((done) => {
-        storage.removeAll(done);
+      after(async () => {
+        await mongoFixtures.context.cleanEverything();
       });
 
       it('[CTP7] succeeds', () => {

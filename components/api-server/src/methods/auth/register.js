@@ -9,7 +9,7 @@ const commonFns = require('./../helpers/commonFunctions');
 const errors = require('components/errors').factory;
 const methodsSchema = require('components/api-server/src/schema/authMethods');
 const ServiceRegister = require('components/business/src/auth/service_register');
-const Register = require('components/business/src/auth/registration');
+const Registration = require('components/business/src/auth/registration');
 
 import type { MethodContext } from 'components/model';
 import type Result from '../Result';
@@ -23,25 +23,21 @@ import type { ApiCallback } from '../API';
  * @param sessionsStorage
  * @param authSettings
  */
-module.exports = function (api, usersStorage, logging, storageLayer, servicesSettings, serverSettings) {
+module.exports = function (api, logging, storageLayer, servicesSettings, serverSettings) {
   // REGISTER
-  const RegistrationService = new Register();
+  const registration = new Registration(logging, storageLayer, servicesSettings, serverSettings);
 
   api.register('auth.register',
     // data validation methods
-    commonFns.getParamsValidation(methodsSchema.register.params),  
-    setContext,
-    RegistrationService.setDefaultValues,
-    RegistrationService.validateUserInServiceRegister,
+    commonFns.getParamsValidation(methodsSchema.register.params),     
+    registration.validateUserInServiceRegister,
 
     // user registration methods
-    RegistrationService.prepareUserDataForSaving,
-    RegistrationService.validateThatUserDoesNotExistInLocalDb,
-    RegistrationService.reserveUserInServiceRegister,
-    RegistrationService.applyDefaultsForCreation,
-    RegistrationService.createUser,
-    RegistrationService.createUserInServiceRegister,
-    RegistrationService.sendWelcomeMail
+    registration.prepareUserDataForSaving,
+    registration.validateThatUserDoesNotExistInLocalDb,
+    registration.createUser,
+    registration.createUserInServiceRegister,
+    registration.sendWelcomeMail
   );
   
   // Username check
@@ -50,15 +46,6 @@ module.exports = function (api, usersStorage, logging, storageLayer, servicesSet
     checkUsername
   );
 
-  async function setContext(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    context.serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
-    context.usersStorage = usersStorage;
-    context.storageLayer = storageLayer;
-    context.servicesSettings = servicesSettings;
-    context.hostname = serverSettings.hostname;
-    context.logger = logging.getLogger('methods/system');
-    next();
-  }
   /**
    * Check in service-register if user id is reserved
    * @param {*} context 

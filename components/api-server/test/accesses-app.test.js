@@ -124,6 +124,7 @@ describe('accesses (app)', function () {
     }
   ];
   const user = testData.users[0];
+
   const access = additionalTestAccesses[0];
   const basePath = '/' + user.username + '/accesses';
   let request: ?Request = null; // must be set after server instance started

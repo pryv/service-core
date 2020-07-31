@@ -14,8 +14,8 @@ const chai = require('chai');
 const assert = chai.assert;
 
 describe('methods/helpers/commonFunctions.js', function () {
-  describe('apiErrorToValidationErrorsList', function () {
-    it('Correctly form validation errors', () => {
+  describe('apiErrorToValidationErrorsList()', function () {
+    it('Should correctly form validation errors', () => {
       let errorsList = [];
       errorsList.push(errors.ReservedUsername());
       errorsList.push(errors.ExistingUsername());

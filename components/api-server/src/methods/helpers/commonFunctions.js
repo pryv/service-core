@@ -106,6 +106,38 @@ exports.getParamsValidation = function getParamsValidation(paramsSchema) {
  * !!! Important - it also removes error params and schemaId and
  * adds "param" that is equal to failing param id
  * 
+ * Before this function validation errors could look like this:
+ * "error": {
+        "id": "invalid-parameters-format",
+        "message": "The parameters' format is invalid.",
+        "data": [
+            {
+                "code": "PATTERN",
+                "params": [
+                    "^[a-z0-9][a-z0-9\\-]{3,21}[a-z0-9]$",
+                    "ga"
+                ],
+                "message": "String does not match pattern ^[a-z0-9][a-z0-9\\-]{3,21}[a-z0-9]$: ga",
+                "path": "#/username"
+            }
+        ]
+    },
+    
+    And if custom error messages are provided, it could be changed to something like this:
+ * 
+ * "error": {
+        "id": "invalid-parameters-format",
+        "message": "The parameters' format is invalid.",
+        "data": [
+            {
+                "code": "username-invalid",
+                "message": "Username should have from 5 to 23 characters and contain letters or numbers or dashes",
+                "path": "#/username",
+                "param": "username"
+            }
+        ]
+    },
+ * 
  * @param object error 
  * @param object schema 
  */
@@ -119,7 +151,7 @@ function _addCustomMessage(error, schema){
   }
 
   // if there are cunstom messages set, replace default z-schema message
-  if(schema?.messages && paramId in schema.messages){
+  if(schema?.messages && schema.messages[paramId]){
     // if there is a message, set it
     if(schema.messages[paramId][error.code]?.message){
       error.message = schema.messages[paramId][error.code].message;

@@ -50,8 +50,6 @@ module.exports = {
         maxLength: 99,
       }),
       'invitationtoken': string(),
-      // TODO referer tests
-      // TODO is it good that it does not fail?
       'referer': helpers.string({
         minLength: 1,
         maxLength: 99,

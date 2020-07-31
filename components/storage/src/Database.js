@@ -149,7 +149,6 @@ class Database {
       // Make sure we have a connect
       await bluebird.fromCallback( 
         cb => this.ensureConnect(cb) ); 
-
       if (this.collectionConnectionsCache[collectionInfo.name]) {
         return callback(null, this.collectionConnectionsCache[collectionInfo.name]);
       }
@@ -290,7 +289,6 @@ class Database {
    */
   find(collectionInfo: CollectionInfo, query: {}, options: FindOptions, callback: DatabaseCallback) {
     this.addUserIdIfneed(collectionInfo, query);
-   
     this.getCollectionSafe(collectionInfo, callback, collection => {
       const queryOptions = {
         projection: options.projection,

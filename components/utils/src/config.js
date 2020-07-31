@@ -50,7 +50,7 @@ config.schema = {
   server: {
     hostname: {
       format: String,
-      default: "",
+      default: '',
       doc: 'The name of the core that will be used to send the name to the service-register during the registration.',
     }
   },

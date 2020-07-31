@@ -5,11 +5,14 @@
  * Proprietary and confidential
  */
 var BaseStorage = require('./BaseStorage'),
-    converters = require('./../converters'),
-    timestamp = require('unix-timestamp'),
-    util = require('util'),
-    _ = require('lodash'),
-    ApplyEventsFromDbStream = require('./../ApplyEventsFromDbStream');
+  converters = require('./../converters'),
+  timestamp = require('unix-timestamp'),
+  util = require('util'),
+  _ = require('lodash'),
+  bluebird = require('bluebird'),
+  ApplyEventsFromDbStream = require('./../ApplyEventsFromDbStream'),
+  UserInfoSerializer = require('components/business/src/user/user_info_serializer'),
+  encryption = require('components/utils').encryption;
 
 module.exports = Events;
 /**
@@ -22,7 +25,7 @@ module.exports = Events;
  * @param {Database} database
  * @constructor
  */
-function Events(database) {
+function Events (database) {
   Events.super_.call(this, database);
 
   _.extend(this.converters, {
@@ -42,14 +45,14 @@ function Events(database) {
 }
 util.inherits(Events, BaseStorage);
 
-function endTimeToDB(eventData) {
+function endTimeToDB (eventData) {
   if (eventData.hasOwnProperty('duration') && eventData.duration !== 0) {
     eventData.endTime = getEndTime(eventData.time, eventData.duration);
   }
   return eventData;
 }
 
-function endTimeUpdate(update) {
+function endTimeUpdate (update) {
   if (update.$set.hasOwnProperty('duration')) {
     if (update.$set.duration === 0) {
       update.$unset.endTime = 1;
@@ -60,7 +63,7 @@ function endTimeUpdate(update) {
   return update;
 }
 
-function getEndTime(time, duration) {
+function getEndTime (time, duration) {
   if (duration === null) {
     // running period event; HACK: end time = event time + 1000 years
     return timestamp.add(time, 24 * 365 * 1000);
@@ -70,7 +73,7 @@ function getEndTime(time, duration) {
   }
 }
 
-function clearEndTime(event) {
+function clearEndTime (event) {
   if (!event) {
     return event;
   }
@@ -110,7 +113,7 @@ var indexes = [
 /**
  * Implementation.
  */
-Events.prototype.getCollectionInfo = function(user) {
+Events.prototype.getCollectionInfo = function (user) {
   return {
     name: 'events',
     indexes: indexes,
@@ -121,7 +124,7 @@ Events.prototype.getCollectionInfo = function(user) {
 /**
  * Implementation
  */
-Events.prototype.findStreamed = function(user, query, options, callback) {
+Events.prototype.findStreamed = function (user, query, options, callback) {
   query.deleted = null;
   // Ignore history of events for normal find.
   query.headId = null;
@@ -130,7 +133,7 @@ Events.prototype.findStreamed = function(user, query, options, callback) {
     this.getCollectionInfo(user),
     this.applyQueryToDB(query),
     this.applyOptionsToDB(options),
-    function(err, dbStreamedItems) {
+    function (err, dbStreamedItems) {
       if (err) {
         return callback(err);
       }
@@ -142,12 +145,12 @@ Events.prototype.findStreamed = function(user, query, options, callback) {
 /**
  * Implementation
  */
-Events.prototype.findHistory = function(user, headId, options, callback) {
+Events.prototype.findHistory = function (user, headId, options, callback) {
   this.database.find(
     this.getCollectionInfo(user),
     this.applyQueryToDB({ headId: headId }),
     this.applyOptionsToDB(options),
-    function(err, dbItems) {
+    function (err, dbItems) {
       if (err) {
         return callback(err);
       }
@@ -159,7 +162,7 @@ Events.prototype.findHistory = function(user, headId, options, callback) {
 /**
  * Implementation
  */
-Events.prototype.findDeletionsStreamed = function(
+Events.prototype.findDeletionsStreamed = function (
   user,
   deletedSince,
   options,
@@ -170,7 +173,7 @@ Events.prototype.findDeletionsStreamed = function(
     this.getCollectionInfo(user),
     query,
     this.applyOptionsToDB(options),
-    function(err, dbStreamedItems) {
+    function (err, dbStreamedItems) {
       if (err) {
         return callback(err);
       }
@@ -179,14 +182,14 @@ Events.prototype.findDeletionsStreamed = function(
   );
 };
 
-Events.prototype.countAll = function(user, callback) {
+Events.prototype.countAll = function (user, callback) {
   this.count(user, {}, callback);
 };
 
 /**
  * Implementation
  */
-Events.prototype.minimizeEventsHistory = function(user, headId, callback) {
+Events.prototype.minimizeEventsHistory = function (user, headId, callback) {
   var update = {
     $unset: {
       streamIds: 1,
@@ -216,7 +219,7 @@ Events.prototype.minimizeEventsHistory = function(user, headId, callback) {
 /**
  * Implementation.
  */
-Events.prototype.delete = function(user, query, deletionMode, callback) {
+Events.prototype.delete = function (user, query, deletionMode, callback) {
   // default
   var update = {
     $set: { deleted: new Date() },
@@ -266,4 +269,154 @@ Events.prototype.delete = function(user, query, deletionMode, callback) {
     update,
     callback
   );
+};
+/**
+ * Form user information retrieved from the events
+ */
+Events.prototype.getUserInfo = async function ({ user, getAll }) {
+
+  // get user details
+  try {
+    let userInfoSerializer = await UserInfoSerializer.build();
+    // get streams ids from the config that should be retrieved
+    let userProfileStreamsIds = userInfoSerializer.getProfileStreamIds(getAll);
+
+    // form the query
+    let query = { "streamIds": { '$in': Object.keys(userProfileStreamsIds) } };
+
+    const dbItems = await bluebird.fromCallback(cb => this.database.find(
+      this.getCollectionInfo(user),
+      this.applyQueryToDB(query),
+      this.applyOptionsToDB({}),
+      cb));
+    const userProfileEvents = this.applyItemsFromDB(dbItems);
+
+    // convert events to the account info structure
+    return userInfoSerializer.serializeEventsToAccountInfo(userProfileEvents);
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Get user id from username
+ */
+Events.prototype.getUserIdByUsername = async function (username): integer {
+  // get user id 
+  try {
+    // TODO IEVA validate for deleted users
+    const collectionInfo = this.getCollectionInfo({});
+    const userIdEvent = await bluebird.fromCallback(cb =>
+      this.database.findOne(
+        { name: collectionInfo.name},
+        this.applyQueryToDB({
+          $and: [
+            { "streamIds": { '$in': ['username'] } },
+            { "content": { $eq: username } }]
+        }),
+        null, cb));
+
+    if (userIdEvent && userIdEvent.userId) {
+      return userIdEvent.userId;
+    } else {
+      return 0;
+    }
+
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+/**
+ * Get user id from username
+ * @param user - object that will be returned as a created user
+ * @param userParams - parameters to be saved
+ */
+Events.prototype.createUser = async function (user, userParams) {
+
+  // get user id 
+  try {
+    let userInfoSerializer = await UserInfoSerializer.build();
+    // get streams ids from the config that should be retrieved
+    let userProfileStreamsIds = userInfoSerializer.getProfileStreamIds(true);
+    // get collection info without userId
+    const collectionInfo = this.getCollectionInfo({id: 0});
+
+    // change password into hash
+    if (userParams.password && !userParams.passwordHash) {
+      userParams.passwordHash = await bluebird.fromCallback((cb) => encryption.hash(userParams.password, cb));
+    }
+    delete userParams.password;
+   
+
+    //TODO IEVA -does this way of saving the event is ok, because it does not add createdAtt and etc
+    // first save and update username evant to retrieve the id
+    const username = await bluebird.fromCallback((cb) => this.database.insertOne(
+      { name: collectionInfo.name },
+      {
+        streamIds: ["username", "indexed"],
+        type: "string",
+        content: userParams.username
+      }, cb));
+    if (!userParams.id){
+      user.id = String(username.insertedId);
+    } else {
+      // test are passing user.id so have added this hack
+      // TODO IEVA rethink what could go wrong
+      user.id = userParams.id;
+      user.username = userParams.username;
+    }
+
+    // write userId for the username
+    await bluebird.fromCallback((cb) => this.database.updateOne(
+      { name: collectionInfo.name },
+      { _id: username.insertedId },
+      { $set: { userId: user.id } }, cb));
+
+    // delete username so it won't be saved the second time
+    delete userProfileStreamsIds['username'];
+
+    // form tasks to create the registration events
+    const registrationEvents = Object.keys(userProfileStreamsIds).map(streamId => {
+      if (userParams[streamId] || typeof userProfileStreamsIds[streamId].default !== "undefined") {
+        let parameter = userProfileStreamsIds[streamId].default;
+
+        // set default value if undefined
+        if (typeof userParams[streamId] !== "undefined") {
+          parameter = userParams[streamId];
+        }
+
+        // set for the result
+        user[streamId] = parameter;
+
+        // find stream ids
+        let streamIds = [streamId];
+        if (userProfileStreamsIds[streamId].isIndexed === true) {
+          streamIds.push("indexed");
+        }
+
+        // find type for the event
+        let eventType = "string";
+        if (userProfileStreamsIds[streamId].type) {
+          eventType = userProfileStreamsIds[streamId].type;
+        }
+
+        return bluebird.fromCallback((cb) => this.database.insertOne(
+          this.getCollectionInfo(user),
+          {
+            streamIds: streamIds,
+            type: eventType,
+            content: parameter
+          }, cb));
+      }
+    });
+   
+    // execute tasks to update events
+    await Promise.all(registrationEvents);
+   
+    return user;
+  } catch (error) {
+    throw error;
+  }
 };

@@ -20,12 +20,12 @@ module.exports = function (expressApp: express$Application, app: Application) {
 
   // const settings: ConfigAccess = app.settings;
   const api: API = app.api;
-  const openSource = app.settings.get('openSource').obj().isActive;
+  const isOpenSource = app.settings.get('openSource').obj().isActive;
   const context = {};
  
   // POST /user: create a new user
   expressApp.post('/user', function (req: express$Request, res: express$Response, next: express$NextFunction) {
-   if (openSource) {
+   if (isOpenSource) {
       api.call('auth.register.singlenode', context, req.body, methodCallback(res, next, 201));
     }else{
       api.call('auth.register', context, req.body, methodCallback(res, next, 201));
@@ -36,7 +36,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
    * POST /username/check: check the existence/validity of a given username
    */
   expressApp.post('/username/check', (req: express$Request, res, next) => {
-    if (openSource) {
+    if (isOpenSource) {
       return next(errors.NonValidForOpenSource());
     }else{
       // return text response
@@ -53,7 +53,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
    * GET /:username/check_username: check the existence/validity of a given username
    */
   expressApp.get('/:username/check_username', (req: express$Request, res, next) => {
-    if (openSource) {
+    if (isOpenSource) {
       return next(errors.NonValidForOpenSource());
     }else{
       var params = {

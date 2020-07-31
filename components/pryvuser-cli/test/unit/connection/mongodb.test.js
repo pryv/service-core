@@ -33,7 +33,7 @@ describe('Connection/MongoDB', () => {
     const settings: MongoDbSettings = {
     host: 'localhost',
     port: 27017,
-    dbname: 'pryv-node',
+    dbname: 'pryv-node-test',
     fileStore: {
       attachmentsPath: '/tmp/', 
       previewsPath: '/tmp/',

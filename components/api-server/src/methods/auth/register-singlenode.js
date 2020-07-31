@@ -9,7 +9,7 @@ const bluebird = require('bluebird');
 const commonFns = require('./../helpers/commonFunctions');
 const errors = require('components/errors').factory;
 const methodsSchema = require('components/api-server/src/schema/authMethods');
-const Register = require('components/business/src/auth/registration');
+const Registration = require('components/business/src/auth/registration');
 
 import type { MethodContext } from 'components/model';
 import type Result from '../Result';
@@ -23,31 +23,29 @@ import type { ApiCallback } from '../API';
  * @param sessionsStorage
  * @param authSettings
  */
-module.exports = function (api, usersStorage, logging, storageLayer, servicesSettings, serverSettings) {
+module.exports = function (api, logging, storageLayer, servicesSettings, serverSettings) {
   // REGISTER
-  const RegistrationService = new Register();
+  const registration = new Registration(logging, storageLayer, servicesSettings, serverSettings);
 
   api.register('auth.register.singlenode',
     // data validation methods
     commonFns.getParamsValidation(methodsSchema.register.params),
 
     // set logger, database connection
-    setContext,
     validateUser,
-    RegistrationService.setDefaultValues,
 
     // user registration methods
-    RegistrationService.prepareUserDataForSaving,
-    RegistrationService.applyDefaultsForCreation,
-    RegistrationService.createUser,
-    RegistrationService.sendWelcomeMail
+    registration.prepareUserDataForSaving,
+    registration.createUser,
+    registration.sendWelcomeMail
   );
 
   async function validateUser(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
       // check email in service-core
+      // TODO IEVA - rethink if there are scenarious when this query is not enough
       const existingUser = await bluebird.fromCallback(
-        (cb) => context.usersStorage.findOne({ $or: [ {email: params.email}, {username: params.username} ] }, null, cb)
+        (cb) => storageLayer.events.findOne({}, { $and: [{ streamsIds: { $in: ['username', 'email'] } }, { $or: [{ content: params.email }, { content: params.username }] }]}, null, cb)
       );
       
       let listApiErrors = [];
@@ -68,22 +66,5 @@ module.exports = function (api, usersStorage, logging, storageLayer, servicesSet
     }
     next();
   }
-
-  /**
-   * Set the dependencies needed for the registration
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
-   */
-  async function setContext(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    context.usersStorage = usersStorage;
-    context.storageLayer = storageLayer;
-    context.servicesSettings = servicesSettings;
-    context.hostname = serverSettings.hostname;
-    context.logger = logging.getLogger('methods/system');
-    next();
-  }
-
 };
 module.exports.injectDependencies = true;

@@ -57,7 +57,7 @@ class Settings implements ConfigAccess {
       mongodb: {
         host: '127.0.0.1', // production will need to override this.
         port: 27017,
-        name: 'pryv-node',
+        name: 'pryv-node-test',
         authUser: '', 
         authPassword: '',
       }

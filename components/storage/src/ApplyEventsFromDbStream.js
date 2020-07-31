@@ -19,6 +19,7 @@ function ApplyEventsFromDbStream() {
 }
 
 ApplyEventsFromDbStream.prototype._transform = function (event, encoding, callback) {
+
   try {
     event = this.trans(event);
     // from storage/src/user/Events.js
@@ -26,6 +27,7 @@ ApplyEventsFromDbStream.prototype._transform = function (event, encoding, callba
 
     // SingleCollectionsMode - start
     delete event.userId;
+    
     if (event.deleted == null) {
       delete event.deleted;
     }

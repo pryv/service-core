@@ -353,12 +353,17 @@ class Server {
   }
 
   async getUserCount(): Promise<Number> {
-    const usersStorage = this.application.storageLayer.users;
-    let numUsers = await bluebird.fromCallback(cb => {
-      usersStorage.count({}, cb);
-    });
+    const eventsStorage = this.application.storageLayer.events;
+    let numUsers;
+    try{
+      numUsers = await bluebird.fromCallback(cb => {
+        eventsStorage.count({}, {streamIds: {$in: ["username"]}}, cb);
+      });
+    } catch(error){
+      this.logger.error(error);
+      throw error;
+    }
     return numUsers;
   }
-
 }
 module.exports = Server;

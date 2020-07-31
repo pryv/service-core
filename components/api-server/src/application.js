@@ -100,7 +100,7 @@ class Application {
       versionsStorage: sl.versions,
       passwordResetRequestsStorage: sl.passwordResetRequests,
       sessionsStorage: sl.sessions,
-      usersStorage: sl.users,
+     //TODO IEVA usersStorage: sl.users,
       userAccessesStorage: sl.accesses,
       userEventFilesStorage: sl.eventFiles,
       userEventsStorage: sl.events,

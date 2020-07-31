@@ -200,7 +200,7 @@ function produceMongoConnection(): storage.Database {
   const settings = {
     host: '127.0.0.1', 
     port: 27017,
-    name: 'pryv-node',
+    name: 'pryv-node-test',
   };
   const database = new storage.Database(
     settings, 

@@ -96,6 +96,7 @@ Users.prototype.insertOne = function (user, callback) {
     if (err) { return callback(err); }
     Users.super_.prototype.insertOne.call(self, null, dbUser, callback);
   });
+
 };
 
 /**
@@ -172,3 +173,4 @@ Users.prototype.find = function (query, options, callback) {
 Users.prototype.removeAll = function (callback) {
   Users.super_.prototype.removeAll.call(this, null, callback);
 };
+

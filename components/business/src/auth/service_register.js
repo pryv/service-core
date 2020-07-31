@@ -24,16 +24,24 @@ class ServiceRegister {
     return new urllib.URL(path, this.config.url);
   }
 
-  async validateUser(email: String, username: String, invitationtoken: String): Promise<void> {
+  async validateUser (
+    email: String,
+    username: String,
+    invitationtoken: String,
+    registrationIndexedValues: String,
+    core: String,
+  ): Promise<void> {
     const url = this._formUrl('/users/validate');
     // log fact about the event
     this.logger.info(url);
     try {
       const res = await superagent.post(url)
                                   .send({ 
-                                    'email': email,
-                                    'username': username,
-                                    'invitationtoken': invitationtoken,
+                                    email: email,
+                                    username: username,
+                                    invitationtoken: invitationtoken,
+                                    registrationIndexedValues: registrationIndexedValues,
+                                    core: core
                                  })
                                   .set('Authorization', this.config.key);                           
       return res.body;
@@ -73,34 +81,6 @@ class ServiceRegister {
                          
       return res.body;
     } catch (err) {
-      this.logger.error(err);
-      throw new Error(err.message || 'Unexpected error.');
-    }
-  }
-
-  async reserveUser(key: string, core: string): Promise<void> {
-    const url = this._formUrl(`/users/reservations`);
-    // log fact about the event
-    this.logger.info(url);
-
-    try {
-      const res = await superagent.post(url)
-                                  .send({
-                                    "key": key,
-                                    "core": core
-                                  })
-                                  .set('Authorization', this.config.key);
-
-      const response = res.body;
-      if (response.reservation === true) {
-        return true;
-      }
-      return false;
-    } catch (err) {
-      if(err.status == 400 && err.response.body.reservation === false){
-        return false;
-      }
-      // do not log validation errors
       this.logger.error(err);
       throw new Error(err.message || 'Unexpected error.');
     }

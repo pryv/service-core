@@ -11,7 +11,7 @@ const _ = require('lodash');
 
 const Webhook = require('./Webhook');
 const WebhooksStorage = require('components/storage').StorageLayer.webhooks;
-const UsersStorage = require('components/storage').StorageLayer.users;
+// TODO IEVA const UsersStorage = require('components/storage').StorageLayer.users;
 
 /** 
  * Repository of all Webhooks in this Pryv.io instance. 
@@ -29,12 +29,23 @@ class Repository {
    * Returns all webhooks in a map <username, Arrra<webhooks>>
    */
   async getAll(): Promise<Map<string, Array<Webhook>>> {
-    
-    const usersQuery = {};
-    const usersOptions = { projection: { username: 1 } };
-    const users = await bluebird.fromCallback(
-      (cb) => this.usersStorage.find(usersQuery, usersOptions, cb)
-    );
+    //TODO IEVA validate
+    // const usersQuery = {};
+    // const usersOptions = { projection: { username: 1 } };
+
+    // const users = await bluebird.fromCallback(
+    //   (cb) => this.usersStorageeee.find(usersQuery, usersOptions, cb)
+    // );
+    let users;
+    try {
+      users = await bluebird.fromCallback(cb => {
+        eventsStorage.count({}, { streamIds: { $in: ["username"] } }, cb);
+      });
+    } catch (error) {
+      //TODO IEVA logging
+      this.logger.error(error);
+      throw error;
+    }
 
     const allWebhooks = new Map();
     

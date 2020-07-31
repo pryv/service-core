@@ -29,6 +29,18 @@ class Context {
   forUser(user: string) {
     return new UserContext(this, user);
   }
+
+  cleanEverything (): Promise<mixed> {
+    const documentNames = ['events', 'accesses', 'sessions', 'streams', 'followedSlices', 'webhooks', 'versions']
+    //TODO IEVA
+    console.log(this.databaseConn, 'this.databaseConssssssssssn');
+
+    const documents = documentNames.map(documentName => {
+      return bluebird.fromCallback(cb => this.databaseConn.deleteMany(
+        { name: documentName }, {}, cb));
+    });
+    return Promise.all(documents);
+  }
 }
 
 type DatabaseShortcuts = {
@@ -215,7 +227,7 @@ class Fixture {
 
 class FixtureUser extends FixtureTreeNode implements ChildResource {  
   /** Internal constructor for a user fixture. */
-  constructor(context: UserContext, name: string, attrs: {}) {
+  constructor (context: UserContext, name: string, attrs: {}) {
     super(
       context, 
       lodash.merge({id: name, username: name, storageUsed: 0}, attrs));
@@ -254,10 +266,8 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
    */
   create(): Promise<mixed> {
     const db = this.db; 
-    const attributes = this.attrs; 
-    
-    return bluebird.fromCallback((cb) => 
-      db.users.insertOne(attributes, cb)); 
+    const attributes = this.attrs;
+    return db.events.createUser({}, attributes); 
   }
   
   remove(): Promise<mixed> {
@@ -363,7 +373,7 @@ class FixtureEvent extends FixtureTreeNode implements ChildResource {
     const db = this.db; 
     const user = this.context.user; 
     const attributes = this.attrs; 
-    
+
     return bluebird.fromCallback((cb) => 
       db.events.insertOne(user, attributes, cb)); 
   }
@@ -509,7 +519,9 @@ class Sessions {
       cb);
   }
   
-  removeForUser(userName: string, cb: () => void) {
+  removeForUser (userName: string, cb: () => void) {
+    // TODO IEVA
+    console.log(this.databaseConn, 'this.databaseConn', this.collectionInfo,'this.collectionInfo');
     this.databaseConn.deleteMany(
       this.collectionInfo, 
       {'data.username': userName}, 
@@ -519,7 +531,7 @@ class Sessions {
 
 function databaseFixture(database: storage.Database) {
   const context = new Context(database);
-  
+
   return new Fixture(context);
 }
 

@@ -7,7 +7,7 @@
 /**
  * Regroups shared test data and related  helper functions.
  */
-
+const bluebird = require('bluebird');
 const async = require('async');
 const childProcess = require('child_process');
 const dependencies = require('./dependencies');
@@ -20,19 +20,22 @@ const rimraf = require('rimraf');
 const _ = require('lodash');
 
 // users
-
+// TODO IEVA update data/users with events structure users
 const users = exports.users = require('./data/users');
 const defaultUser = users[0];
 
-exports.resetUsers = function (done) {
-  async.series([
-    function (stepDone) {
-      storage.users.removeAll(stepDone);
-    },
-    function (stepDone) {
-      storage.users.insertMany(users, stepDone);
-    }
-  ], done);
+exports.resetUsers = async () => {
+  // TODO IEVA
+  console.log(storage.user.events.database.deleteMany,'storage.user.events.database.deleteMany');
+  bluebird.fromCallback(cb => storage.user.events.database.deleteMany(
+    { name: 'events' }, {}, cb));
+
+  let i;
+  let isss;
+  for (i = 0; i < users.length; i++){
+    isss = await storage.user.events.createUser({}, users[i]);
+    console.log(isss, 'issssssssssssssss');
+  }
 };
 
 // accesses
@@ -78,9 +81,11 @@ exports.resetFollowedSlices = function (done, user) {
 const events = exports.events = require('./data/events');
 
 exports.resetEvents = function (done, user) {
-  resetData(storage.user.events, user || defaultUser, events, done);
+  deleteData(storage.user.events, user || defaultUser, events, done);
 };
-
+exports.seedEvents = function (done, user) {
+  seedData(storage.user.events, user || defaultUser, events, done);
+};
 // streams
 
 const streams = exports.streams = require('./data/streams');
@@ -89,8 +94,31 @@ exports.resetStreams = function (done, user) {
   resetData(storage.user.streams, user || defaultUser, streams, done);
 };
 
-
-function resetData(storage, user, items, done) {
+/**
+ * resetData first deletion action
+ * @param {*} storage 
+ * @param {*} user 
+ * @param {*} items 
+ * @param {*} done 
+ */
+function deleteData (storage, user, items, done) {
+  async.series([
+    storage.removeAll.bind(storage, user)
+  ], done);
+}
+/**
+ * resetData second seeding action
+ * @param {*} storage
+ * @param {*} user
+ * @param {*} items
+ * @param {*} done
+ */
+function seedData (storage, user, items, done) {
+  async.series([
+    storage.insertMany.bind(storage, user, items)
+  ], done);
+}
+function resetData (storage, user, items, done) {
   async.series([
     storage.removeAll.bind(storage, user),
     storage.insertMany.bind(storage, user, items)
@@ -132,6 +160,7 @@ exports.resetAttachments = function (done, user) {
   }
   async.series([
     function (stepDone) {
+      console.log('resetAttachments');//TODO IEVA
       storage.user.eventFiles.removeAllForUser(user, stepDone);
     },
     copyAttachmentFn(attachments.document, user, events[0].id),
@@ -242,7 +271,8 @@ exports.getStructure = function (version) {
   return require(path.resolve(__dirname + '/structure/' + version));
 };
 
-function clearAllData(callback) {
+function clearAllData (callback) {
+  console.log('clearAllData');//TODO IEVA
   async.series([
     storage.database.dropDatabase.bind(storage.database),
     storage.user.eventFiles.removeAll.bind(storage.user.eventFiles)

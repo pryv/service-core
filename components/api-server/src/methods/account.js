@@ -9,8 +9,8 @@ var errors = require('components/errors').factory,
     mailing = require('./helpers/mailing'),
     encryption = require('components/utils').encryption,
     methodsSchema = require('../schema/accountMethods'),
-    request = require('superagent');
-
+    request = require('superagent'),
+    bluebird = require('bluebird');
 /**
  * @param api
  * @param usersStorage
@@ -19,26 +19,29 @@ var errors = require('components/errors').factory,
  * @param servicesSettings Must contain `email` and `register`
  * @param notifications
  */
-module.exports = function (api, usersStorage, passwordResetRequestsStorage,
+module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
   authSettings, servicesSettings, notifications) {
 
   var registerSettings = servicesSettings.register,
-      emailSettings = servicesSettings.email,
-      requireTrustedAppFn =  commonFns.getTrustedAppCheck(authSettings);
+    emailSettings = servicesSettings.email,
+    requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);
 
   // RETRIEVAL
 
   api.register('account.get',
     commonFns.requirePersonalAccess,
     commonFns.getParamsValidation(methodsSchema.get.params),
-    function (context, params, result, next) {
-      usersStorage.findOne({id: context.user.id}, null, function (err, user) {
-        if (err) { return next(errors.unexpectedError(err)); }
+    async function (context, params, result, next) {
+      try {
+        result.account = await userEventsStorage.getUserInfo({
+          user: { id: context.user.id },
+          getAll: false
+        });
 
-        sanitizeAccountDetails(user);
-        result.account = user;
         next();
-      });
+      } catch (err) {
+        return next(errors.unexpectedError(err));
+      }
     });
 
   // UPDATE
@@ -56,11 +59,11 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
     commonFns.getParamsValidation(methodsSchema.changePassword.params),
     verifyOldPassword,
     encryptNewPassword,
-    updateAccount,
-    cleanupResult);
+    updateAccount);
 
   function verifyOldPassword(context, params, result, next) {
     encryption.compare(params.oldPassword, context.user.passwordHash, function (err, isValid) {
+      delete context.user.passwordHash;
       if (err) { return next(errors.unexpectedError(err)); }
 
       if (! isValid) {
@@ -99,13 +102,13 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
        (isMailActivated != null && isMailActivated.resetPassword === false)) {
       return next();
     }
-    
+
     const recipient = {
       email: context.user.email,
       name: context.user.username,
       type: 'to'
     };
-    
+
     const substitutions = {
       RESET_TOKEN: context.resetToken,
       RESET_URL: authSettings.passwordResetPageURL
@@ -122,8 +125,7 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
     requireTrustedAppFn,
     checkResetToken,
     encryptNewPassword,
-    updateAccount,
-    cleanupResult);
+    updateAccount);
 
   function checkResetToken(context, params, result, next) {
     const username = context.user.username;
@@ -150,7 +152,7 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
     encryption.hash(params.newPassword, function (err, hash) {
       if (err) { return next(errors.unexpectedError(err)); }
 
-      params.update = {passwordHash: hash};
+      params.update = { passwordHash: hash };
       next();
     });
   }
@@ -167,7 +169,7 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
         '/change-email';
     request.post(regChangeEmailURL)
       .set('Authorization', registerSettings.key)
-      .send({email: newEmail})
+      .send({ email: newEmail })
       .end(function (err, res) {
 
         if (err != null || (res && ! res.ok)) {
@@ -178,33 +180,44 @@ module.exports = function (api, usersStorage, passwordResetRequestsStorage,
           } else if (err != null && err.message != null) {
             errMsg += err.message;
           }
-          return next(errors.invalidOperation(errMsg, {email: newEmail}, err));
+          return next(errors.invalidOperation(errMsg, { email: newEmail }, err));
         }
 
         next();
       });
   }
 
-  function updateAccount(context, params, result, next) {
-    usersStorage.updateOne({id: context.user.id}, params.update, function (err, updatedUser) {
-      if (err) { return next(errors.unexpectedError(err)); }
+  async function updateAccount(context, params, result, next) {
+    try {
+      // form tasks to update the events
+      const updateActions = Object.keys(params.update).map(paramKey => {
+        return bluebird.fromCallback(cb => userEventsStorage.updateOne(
+          { id: context.user.id },
+          { streamIds: { $in: [paramKey] } },
+          { content: params.update[paramKey] }, cb));
+      });
+       
+      // execute tasks to update events
+      await Promise.all(updateActions);
 
-      sanitizeAccountDetails(updatedUser);
-      result.account = updatedUser;
+      // retrieve and form user info
+      result.account = await userEventsStorage.getUserInfo({
+        user: { id: context.user.id },
+        getAll: false
+      });
+
       notifications.accountChanged(context.user);
       next();
-    });
-  }
-
-  function cleanupResult(context, params, result, next) {
-    delete result.account;
-    next();
+    } catch (err) {
+      return next(errors.unexpectedError(err));
+    }
   }
 
   function sanitizeAccountDetails(data) {
     delete data.id;
     delete data.passwordHash;
     if (! data.storageUsed) {
+      // TODO IEVA - why not 0 ?  and remove function after find out this
       data.storageUsed = {
         dbDocuments: -1,
         attachedFiles: -1

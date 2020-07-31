@@ -11,9 +11,6 @@ Node.js / Express server to manage user activity and user administration request
 node src/server [options]
 ```
 
-See [the root README](https://github.com/pryv/service-core/blob/master/README.md#about-configuration) to learn about configuration options.
-
-
 ### API
 
 See the [Pryv API reference documentation](https://pryv.github.io/reference/).

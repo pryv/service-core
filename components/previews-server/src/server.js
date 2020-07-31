@@ -79,7 +79,6 @@ async function start() {
   dependencies.register({
     // storage
     sessionsStorage: storageLayer.sessions,
-    usersStorage: storageLayer.users,
     userAccessesStorage: storageLayer.accesses,
     userEventFilesStorage: storageLayer.eventFiles,
     userEventsStorage: storageLayer.events,

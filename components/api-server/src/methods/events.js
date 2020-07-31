@@ -8,6 +8,7 @@
 var utils = require('components/utils'),
     errors = require('components/errors').factory,
     async = require('async'),
+    bluebird = require('bluebird'),
     commonFns = require('./helpers/commonFunctions'),
     methodsSchema = require('../schema/eventsMethods'),
     eventSchema = require('../schema/event'),
@@ -39,7 +40,7 @@ const typeRepo = new TypeRepository();
  * @param auditSettings
  */
 module.exports = function (
-  api, userEventsStorage, userEventFilesStorage, usersStorage,
+  api, userEventsStorage, userEventFilesStorage,
   authSettings, eventTypesUrl, notifications, logging,
   auditSettings, updatesSettings, openSourceSettings,
 ) {
@@ -137,6 +138,7 @@ module.exports = function (
   function findAccessibleEvents(context, params, result, next) {
     // build query
     var query = querying.noDeletions(querying.applyState({}, params.state));
+    
     if (params.streams) {
       query.streamIds = {$in: params.streams};
     }
@@ -176,7 +178,7 @@ module.exports = function (
       skip: params.skip,
       limit: params.limit
     };
-        
+
     userEventsStorage.findStreamed(context.user, query, options, function (err, eventsStream) {
       if (err) {
         return next(errors.unexpectedError(err));
@@ -369,16 +371,16 @@ module.exports = function (
     };
   }
 
-  function createAttachments(context, params, result, next) {
-    attachFiles(context, {id: result.event.id}, context.files, function (err, attachments) {
-      if (err) {
-        return next(err); }
-      if (! attachments) {
+  async function createAttachments (context, params, result, next) {
+    try {
+      const attachments = await attachFiles(context, { id: result.event.id }, context.files);
+
+      if (!attachments) {
         return next();
       }
 
       result.event.attachments = attachments;
-      userEventsStorage.updateOne(context.user, {id: result.event.id}, {attachments: attachments},
+      userEventsStorage.updateOne(context.user, { id: result.event.id }, { attachments: attachments },
         function (err) {
           if (err) {
             return next(errors.unexpectedError(err));
@@ -387,7 +389,9 @@ module.exports = function (
           setFileReadToken(context.access, result.event);
           next();
         });
-    });
+    } catch (err) {
+      next(err);
+    }
   }
 
   // -------------------------------------------------------------------- UPDATE
@@ -713,43 +717,37 @@ module.exports = function (
    * @param {Object} context
    * @param {Object} eventInfo Expected properties: id, attachments
    * @param files Express-style uploaded files object (as in req.files)
-   * @param {Function} callback (error, attachments)
    */
-  function attachFiles(context, eventInfo, files, callback) {
-    if (! files) { return process.nextTick(callback); }
+  async function attachFiles (context, eventInfo, files) {
+    // TODO IEVA ? process.nextTick(callback)
+    if (!files) { return process.nextTick(callback); }
 
     var attachments = eventInfo.attachments ? eventInfo.attachments.slice() : [],
-        sizeDelta = 0;
+      sizeDelta = 0;
 
-    async.forEachSeries(Object.keys(files), saveFile, function (err) {
-      if (err) {
-        // TODO: remove saved files if any
-        return callback(err);
+    // TODO IEVA validate and handle errors
+    try {
+      let i;
+      let fileInfo;
+      const filesKeys = Object.keys(files);
+      for (i = 0; i < filesKeys.length; i++) {
+        //saveFile
+        fileInfo = files[filesKeys[i]];
+        const fileId = await bluebird.fromCallback(cb =>
+          userEventFilesStorage.saveAttachedFile(fileInfo.path, context.user, eventInfo.id, cb));
+
+        attachments.push({
+          id: fileId,
+          fileName: fileInfo.originalname,
+          type: fileInfo.mimetype,
+          size: fileInfo.size
+        });
+        sizeDelta += fileInfo.size;
+        await updateUserStorageUsed({ attachedFiles: sizeDelta }, context.user.id);
       }
-      // approximately update account storage size
-      context.user.storageUsed.attachedFiles += sizeDelta;
-      usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
-        function (err) {
-          if (err) { return callback(errors.unexpectedError(err)); }
-          callback(null, attachments);
-        });
-    });
-
-    function saveFile(name, done) {
-      var fileInfo = files[name];
-      userEventFilesStorage.saveAttachedFile(fileInfo.path, context.user, eventInfo.id, /*fileId,*/
-        function (err, fileId) {
-          if (err) { return done(errors.unexpectedError(err)); }
-
-          attachments.push({
-            id: fileId,
-            fileName: fileInfo.originalname,
-            type: fileInfo.mimetype,
-            size: fileInfo.size
-          });
-          sizeDelta += fileInfo.size;
-          done();
-        });
+      return attachments;
+    } catch (err) {
+      throw err;
     }
   }
 
@@ -778,7 +776,8 @@ module.exports = function (
     var updatedData = {trashed: true};
     context.updateTrackingProperties(updatedData);
 
-    userEventsStorage.updateOne(context.user, {id: params.id}, updatedData,
+    //TODO IEVA - update was done using params.id and not context.user
+    userEventsStorage.updateOne(context.user, {streamIds: {$in: ["dbDocs"]}}, updatedData,
       function (err, updatedEvent) {
         if (err) { return next(errors.unexpectedError(err)); }
 
@@ -827,17 +826,35 @@ module.exports = function (
           });
       },
       userEventFilesStorage.removeAllForEvent.bind(userEventFilesStorage, context.user, params.id),
-      function (stepDone) {
+      async function (stepDone) {
         // If needed, approximately update account storage size
         if (! context.user.storageUsed || ! context.user.storageUsed.attachedFiles) {
           return stepDone();
         }
         context.user.storageUsed.attachedFiles -= getTotalAttachmentsSize(context.event);
-        usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
-          stepDone);
-
+        // TODO IEVA test
+        await updateUserStorageUsed(context.user.storageUsed, context.user.id);
+        stepDone();
       }
     ], next);
+  }
+
+  /**
+   * Update user's storage used parameter after events with type file changes
+   * @param {*} userStorageUsed 
+   */
+  async function updateUserStorageUsed (userStorageUsed, userId) {
+    const updateActions = ['dbDocs', 'attachedFiles'].map(paramKey => {
+      if (userStorageUsed[paramKey]){
+        return bluebird.fromCallback(cb => userEventsStorage.updateOne(
+          { id: userId },
+          { streamIds: { $in: [paramKey] } },
+          { content: userStorageUsed[paramKey] }, cb));
+      }
+    });
+
+    // execute tasks to update events
+    await Promise.all(updateActions);
   }
 
   function getTotalAttachmentsSize(event) {
@@ -891,11 +908,11 @@ module.exports = function (
         function (stepDone) {
           userEventFilesStorage.removeAttachedFile(context.user, params.id, params.fileId, stepDone);
         },
-        function (stepDone) {
+        async function () {
           // approximately update account storage size
           context.user.storageUsed.attachedFiles -= deletedAtt.size;
-          usersStorage.updateOne({id: context.user.id}, {storageUsed: context.user.storageUsed},
-            stepDone);
+          // TODO IEVA validate
+          await updateUserStorageUsed(context.user.storageUsed, context.user.id);
         },
         function (stepDone) {
           notifications.eventsChanged(context.user);

@@ -89,5 +89,6 @@ Versions.prototype.migrateIfNeeded = function (callback) {
  * For tests only.
  */
 Versions.prototype.removeAll = function (callback) {
+  console.log('removeAll');//TODO IEVA
   this.database.deleteMany(collectionInfo, {}, callback);
 };

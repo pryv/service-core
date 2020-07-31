@@ -24,7 +24,7 @@ const R = require('ramda');
 
 describe('accesses (personal)', function () {
 
-  const user = testData.users[0];
+  const user = Object.assign({}, testData.users[0]);
   const basePath = '/' + user.username + '/accesses';
   
   let sessionAccessId = null;

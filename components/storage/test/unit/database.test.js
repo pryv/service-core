@@ -17,7 +17,7 @@ describe('Database', () => {
   const connectionSettings = {
     host: 'localhost',
     port: 27017,
-    name: 'pryv-node',
+    name: 'pryv-node-test',
   };
 
   let database;

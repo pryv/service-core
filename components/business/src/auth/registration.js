@@ -18,26 +18,42 @@ const errorHandling = require('components/errors').errorHandling;
 const commonFns = require('components/api-server/src/methods/helpers/commonFunctions');
 const mailing = require('components/api-server/src/methods/helpers/mailing');
 const ServiceRegister = require('./service_register');
-const encryption = require('components/utils').encryption;
 
 import type { MethodContext } from 'components/model';
 import type { ApiCallback } from 'components/api-server/src/API';
 
 /**
  * Create (register) a new user
- * 
- * @param host the hosting for this user
- * @param user the user data, a json object containing: username, password hash, language and email
- * @param callback function(error,result), result being a json object containing new user data
  */
-class User {
+class Registration {
+  logger;
+  storageLayer; // used for initUser
+  servicesSettings; // settigns to get the email to send user welcome email
+  serviceRegisterConn; // service-register connection
+  hostname; // hostname that will be saved in service-register as a 'core' where user is registered
 
-  applyDefaultsForCreation(context: MethodContext, params: mixed, result, next: ApiCallback) {
-    params.storageUsed = {
-      dbDocuments: 0,
-      attachedFiles: 0
-    };
-    next();
+  constructor (logging, storageLayer, servicesSettings, serverSettings) { 
+
+    this.logger = logging.getLogger('methods/system');
+    this.storageLayer = storageLayer;
+    this.servicesSettings = servicesSettings;
+
+    this.serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
+    this.hostname = serverSettings.hostname;
+    
+    // bind this object to the functions that need it
+    this.createUser = this.createUser.bind(this);
+    this.createUserInServiceRegister = this.createUserInServiceRegister.bind(this);
+    this.sendWelcomeMail = this.sendWelcomeMail.bind(this);
+    this.validateThatUserDoesNotExistInLocalDb = this.validateThatUserDoesNotExistInLocalDb.bind(this);
+    this.validateUserInServiceRegister = this.validateUserInServiceRegister.bind(this);
+    this.initUser = this.initUser.bind(this);
+    this.createPoolUser = this.createPoolUser.bind(this);
+
+    this.POOL_USERNAME_PREFIX = 'pool@';
+    this.TEMP_USERNAME_PREFIX = 'temp@';
+    // TODO IEVA - is it needed
+    this.POOL_REGEX = new RegExp('^' + this.POOL_USERNAME_PREFIX);
   }
 
   /**
@@ -47,32 +63,16 @@ class User {
    * @param {*} result 
    * @param {*} next 
    */
-  async createUserInServiceRegister(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async createUserInServiceRegister (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
-      // if the call comes from system user creation, add service register connection
-      if(!context.serviceRegisterConn){
-        context.serviceRegisterConn = new ServiceRegister(context.servicesSettings.register, context.logger);
-      }
-      
-      // check email in service-register
-      const user = {
-        "username": context.user.username,
-        "email": context.user.email,
-        "invitationtoken": context.user.invitationtoken,
-        "referer": (context.user.referer) ? context.user.referer: null,
-        "id": context.user.id,
-        "appId": context.user.appId,
-        "language": context.user.language,
-        "host": {"name": context.hostname}
-      };
-      const response = await context.serviceRegisterConn.createUser(user);
+      const response = await this.serviceRegisterConn.createUser(context.user, params);
 
       // take only server name
-      if (response.username) {
+      if (response.server) {
         result.server = response.server;
         return next();
       }
-      
+
     } catch (error) {
       return next(errors.unexpectedError(error));
     }
@@ -86,78 +86,100 @@ class User {
    * @param {*} result 
    * @param {*} next 
    */
-  createUser(context: MethodContext, params: mixed, result, next: ApiCallback) {
-    if(context.skip === true){ return next() };
-    /**
-     * 
-     * @param {*} userInfo 
-     * @param {*} callback 
-     */
-    function createUserOrConsumePool(userInfo, callback) {
-      // Try to consume a user from pool
-      context.usersStorage.findOneAndUpdate({ username: { $regex: context.POOL_REGEX } }, userInfo,
-        (err, updatedUser) => {
-          // Fallback to default user creation in case of error or empty pool
-          if (err != null || updatedUser == null) {
+  async createUser (context: MethodContext, params: mixed, result, next: ApiCallback) {
+    if (context.skip === true) { return next() };
 
-            // First create a temp user
-            const tempUser = _.clone(userInfo);
-            tempUser.username = context.TEMP_USERNAME_PREFIX + cuid();
-            context.usersStorage.insertOne(tempUser, (err, newUser) => {
-              if (err != null) return callback(err);
-              // Convert temp to final user
-              return initUser(newUser, userInfo.username, callback, context.storageLayer);
-            });
-          }
-          else {
-            return callback(null, updatedUser);
-          }
-        }
-      );
-    }
-
-    /**
-     * 
-     * @param {*} tempUser 
-     * @param {*} username 
-     * @param {*} callback 
-     */
-    function initUser(tempUser, username, callback, storageLayer) {
-      const repositories = [storageLayer.accesses, storageLayer.events,
-      storageLayer.followedSlices, storageLayer.profile, storageLayer.streams];
-      // Init user's repositories (create collections and indexes)
-      async.eachSeries(repositories, (repository, stepDone) => {
-        repository.initCollection(tempUser, stepDone);
-      }, (err) => {
-        if (err != null) return callback(err);
-        // Rename temp username
-        context.usersStorage.updateOne({ username: tempUser.username }, { username: username },
-          (err, finalUser) => {
-            if (err != null) return callback(err);
-            return callback(null, finalUser);
-          });
-      });
-    }
-
+    // if it is testing user, skip registration process
     if (params.username === 'recla') {
       result.id = 'dummy-test-user';
       context.user = _.defaults({ id: result.id }, params);
-      next();
-    } else {
-      // Consume a pool user if available or use default creation
-
-      createUserOrConsumePool(params, (err, user) => {
-        if (err != null) return next(User.handleCreationErrors(err, params));
-
-        if(context.systemCall === true){
-          result.id = user.id;
-        }else{
-          result.username = user.username;
-        }
-        context.user = user;
-        next();
-      });
+      return next();
     }
+
+    try {
+      // Consume a pool user if available or use default creation
+      // const user = await Registration.createUserOrConsumePool(params, context, params);
+      /* TODO IEVA - do not understand what this part does here
+       console.log(context.POOL_REGEX, params, 'searching for the user with this regex');
+       const updatedUser = await bluebird.fromCallback(
+         (cb) => context.usersStorage.findOneAndUpdate({ username: { $regex: context.POOL_REGEX } }, params, cb));      
+       if (updatedUser === null) {
+         throw Error("Bad, really bad");//TODO IEVA
+       }*/
+      context.user = {
+        username: params.username
+      }
+      context.user = await this.storageLayer.events.createUser(context.user, params);
+      context.user.host = { name: this.hostname };
+
+      // form the result for system call or full registration call
+      if (context.systemCall === true) {
+        result.id = context.user.id;
+      } else {
+        result.username = context.user.username;
+      }
+
+      next();
+    } catch (err) {
+      console.log(err, 'errsrrrrrrrrrrrrrrrr');
+      // const tempUser = _.clone(userInfo);
+      // tempUser.username = context.TEMP_USERNAME_PREFIX + cuid();
+      return next(this.handleCreationErrors(err, params));
+    }
+  }
+
+
+  createPoolUser (context, params, result, next) {
+    const uniqueId = cuid();
+    params.username = this.POOL_USERNAME_PREFIX + uniqueId;
+    params.passwordHash = 'changeMe';
+    params.language = 'en';
+    params.email = this.POOL_USERNAME_PREFIX + uniqueId + '@email';
+    next();
+
+    /*
+    usersStorage.insertOne(poolUser, (err, tempUser) => {
+      if (err != null) return next(this.handleCreationErrors(err, params));
+
+      return this.initUser(tempUser, username, (err, finalUser) => {
+        if (err != null) return next(this.handleCreationErrors(err, params));
+        result.id = finalUser.id;
+        context.user = finalUser;
+        return next();
+      });
+    });*/
+  }
+
+  /**
+   * 
+   * @param {*} tempUser 
+   * @param {*} username 
+   * @param {*} callback 
+   */
+  async initUser (tempUser, username, callback) {
+    const repositories = [
+      this.storageLayer.accesses,
+      this.storageLayer.events,
+      this.storageLayer.followedSlices,
+      this.storageLayer.profile,
+      this.storageLayer.streams];
+    // Init user's repositories (create collections and indexes)
+    async.eachSeries(repositories, (repository, stepDone) => {
+      repository.initCollection(tempUser, stepDone);
+    }, async (err) => {
+      if (err != null) return callback(err);
+      // Rename temp username
+      try {
+        //TODO IEVA - validate
+        const finalUser = await bluebird.fromCallback(
+          (cb) => this.storageLayer.events.updateOne({},
+            { $and: [{ streamIds: { $in: ['username'] } }, { content: { $eq: tempUser.username } }] },
+            { content: username }, cb));
+        return callback(null, finalUser);
+      } catch (e) {
+        return callback(e);
+      }
+    });
   }
 
   /**
@@ -166,14 +188,16 @@ class User {
    * @param {*} err 
    * @param {*} params 
    */
-  static handleCreationErrors(err, params) {
+  // TODO IEVA static
+  handleCreationErrors (err, params) {
+    console.log(err,'err');
     // Duplicate errors
     // I check for these errors in the validation so they are only used for 
     // deprecated systems.createUser path
-    if (err.isDuplicateIndex('email')) {
+    if (typeof err.isDuplicateIndex === 'function' && err.isDuplicateIndex('email')) {
       return errors.itemAlreadyExists('user', { email: params.email }, err);
     }
-    if (err.isDuplicateIndex('username')) {
+    if (typeof err.isDuplicateIndex === 'function' && err.isDuplicateIndex('username')) {
       return errors.itemAlreadyExists('user', { username: params.username }, err);
     }
     // Any other error
@@ -188,8 +212,8 @@ class User {
    * @param {*} result 
    * @param {*} next 
    */
-  sendWelcomeMail(context: MethodContext, params: mixed, result, next: ApiCallback) {
-    const emailSettings = context.servicesSettings.email;
+  sendWelcomeMail (context: MethodContext, params: mixed, result, next: ApiCallback) {
+    const emailSettings = this.servicesSettings.email;
 
     // Skip this step if welcome mail is deactivated
     const isMailActivated = emailSettings.enabled;
@@ -213,28 +237,11 @@ class User {
       substitutions, context.user.language, (err) => {
         // Don't fail creation process itself (mail isn't critical), just log error
         if (err) {
-          errorHandling.logError(err, null, context.logger);
+          errorHandling.logError(err, null, this.logger);
         }
 
         next();
       });
-  }
-
-  /**
-   * Check in service-register if invitation token is valid
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
-   */
-  async setDefaultValues(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    if (!params.invitationtoken) {
-      params.invitationtoken = 'no-token';
-    }
-    if (!params.languageCode) {
-      params.languageCode = 'en';
-    }
-    next();
   }
 
   /**
@@ -244,33 +251,34 @@ class User {
    * @param {*} result 
    * @param {*} next 
    */
-  async validateThatUserDoesNotExistInLocalDb(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async validateThatUserDoesNotExistInLocalDb (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
       // check email in service-core
       const existingUser = await bluebird.fromCallback(
-        (cb) => context.usersStorage.findOne({ $or: [ {email: params.email}, {username: params.username} ] }, null, cb)
+        (cb) => this.storageLayer.events.findOne({},
+          { $and: [{ streamsIds: { $in: ['username', 'email'] } }, { $or: [{ content: params.email }, { content: params.username }] }] },
+          null, cb)
       );
 
       // if email was already saved, it means that there were an error 
       // saving in service register (above there is a check that email does not exist in
       // service register)
-      if (existingUser?.username) {
+      if (existingUser?.content) { // TODO IEVA is this check ok
+
         // skip all steps exept registrattion in service-register and welcome email
         context.skip = true;
-        
+
         //append context with the same values that would be saved by createUser function
-        context.user = {
-          username: existingUser.username,
-          email: existingUser.email,
-          invitationtoken: existingUser.invitationtoken,
-          language: existingUser.language,
-          referer: existingUser.referer,
-          appId: existingUser.appId,
-          id: existingUser.id
-        };
+        // TODO IEVA maybe worth it doing more dynamically
+        context.user = await storageLayer.events.getUserInfo({
+          user: { id: context.user.id },
+          getAll: true
+        });
+
 
         // set result as current username
         result.username = existingUser.username;
+        this.logger.error(`User with id ${existingUser.id} tried to register and application is skipping the user creation on service-core db`);
       }
     } catch (error) {
       return next(errors.unexpectedError(error));
@@ -285,9 +293,11 @@ class User {
    * @param {*} result 
    * @param {*} next 
    */
-  async validateUserInServiceRegister(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async validateUserInServiceRegister (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
-      const response = await context.serviceRegisterConn.validateUser(params.email, params.username, params.invitationtoken);
+      //TODO IEVA reservationKey should be joined indexed fields
+      let reservationKey = params.username + params.email;
+      const response = await this.serviceRegisterConn.validateUser(params.email, params.username, params.invitationtoken, reservationKey, this.hostname);
 
       if (response?.errors && response.errors.length > 0) {
         // 1. convert list of error ids to the list of api errors
@@ -311,42 +321,16 @@ class User {
    * @param {*} result 
    * @param {*} next 
    */
-  async prepareUserDataForSaving(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  async prepareUserDataForSaving (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     params.username = params.username.toLowerCase();
     params.email = params.email.toLowerCase();
-    
+
     // change parameter name
     params.language = params.languageCode;
     delete params.languageCode;
-    
-    // Construct the request for core, including the password. 
-    params.passwordHash = await encryption.hash(params.password);
-    context.POOL_USERNAME_PREFIX = 'pool@';
-    context.TEMP_USERNAME_PREFIX = 'temp@';
-    context.POOL_REGEX = new RegExp('^' + context.POOL_USERNAME_PREFIX);
+
     next();
   }
+};
 
-
-  /**
-   * 
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
-   */
-  async reserveUserInServiceRegister(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    if(context.skip === true){ return next()};
-    try {
-      const canRegister: Boolean = await context.serviceRegisterConn.reserveUser(params.username, context.hostname);
-
-      if (canRegister == false) {
-        return next(commonFns.apiErrorToValidationErrorsList([errors.DuplicatedUserRegistration()]));
-      }
-    } catch (error) {
-      return next(errors.unexpectedError(error));
-    }
-    next();
-  }
-}
-module.exports = User;
+module.exports = Registration;

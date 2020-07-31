@@ -21,7 +21,7 @@ const ErrorMessages = {
    */
   [ErrorIds.ReservedUsername]: 'Reserved user starting by pryv',
   [ErrorIds.ExistingUsername]: 'Existing user',
-  [ErrorIds.InvalidUsername]: 'Invalid username. Username should have from 5 to 23 characters and contain letters or numbers or dashes',
+  [ErrorIds.InvalidUsername]: 'Username should have from 5 to 23 characters and contain letters or numbers or dashes',
   [ErrorIds.ExistingEmail]: 'Existing e-mail',
   [ErrorIds.UsernameRequired]: 'Username is required',
   [ErrorIds.InvalidEmail]: 'Invalid email',
@@ -30,7 +30,7 @@ const ErrorMessages = {
   [ErrorIds.Invalidreferer]: 'Invalid referer',
   [ErrorIds.DuplicatedUserRegistration]: 'Duplicated user registration. User already started registration process in another server.',
   [ErrorIds.MissingRequiredField]: 'Missing required field',
-  [ErrorIds.NonValidForOpenSource]: 'Not valid method for open pryv'
+  [ErrorIds.NonValidForOpenSource]: 'Not valid method for open pryv',
 };
 Object.freeze(ErrorMessages);
 

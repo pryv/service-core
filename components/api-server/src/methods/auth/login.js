@@ -40,8 +40,10 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
     next();
   }
 
-  function checkPassword(context, params, result, next) {
+  function checkPassword (context, params, result, next) {
     encryption.compare(params.password, context.user.passwordHash, function (err, isValid) {
+      delete params.password;
+      delete context.user.passwordHash;
       if (err) { return next(errors.unexpectedError(err)); }
 
       if (! isValid) {
