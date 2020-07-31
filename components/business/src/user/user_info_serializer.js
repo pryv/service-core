@@ -1,3 +1,9 @@
+/**
+ * @license
+ * Copyright (C) 2020 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ */
 const Settings = require('components/api-server/src/settings');
 
 /**
@@ -109,9 +115,28 @@ class UserInfoSerializer {
    * Get the names of all streams that belongs to the system->profile stream
    * @param {*} events 
    */
-  getProfileStreamIds(returnAll) {
+  getProfileStreamIds (returnAll: Boolean) {
     let streamsNames = {};
     return UserInfoSerializer.getStreamsNames(this.systemStreamsSettings.profile, streamsNames, returnAll);
+  }
+
+  /**
+   * Get virtual streams list
+   * @param {*} events 
+   */
+  getVirtualStreamsList (returnAll: Boolean) {
+    let streamsNames = {};
+    const streamsName = UserInfoSerializer.getStreamsNames(this.systemStreamsSettings.profile, streamsNames, returnAll);
+    const streams = Object.keys(streamsName).map(streamName => {
+      return {
+        name: streamName,
+        id: streamName,
+        parentId: 'profile',
+        children: []
+      }
+    })
+
+    return streams;
   }
 }
 module.exports = UserInfoSerializer;

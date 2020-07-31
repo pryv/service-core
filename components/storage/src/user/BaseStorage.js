@@ -364,7 +364,6 @@ BaseStorage.prototype.removeOne = function(user, query, callback) {
 };
 
 BaseStorage.prototype.removeMany = function (user, query, callback) {
-  console.log('BaseStorage.prototype.removeMany');//TODO IEVA
   this.database.deleteMany(
     this.getCollectionInfo(user),
     this.applyQueryToDB(query),

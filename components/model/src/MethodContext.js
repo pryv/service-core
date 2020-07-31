@@ -9,14 +9,13 @@
 const bluebird = require('bluebird');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
-//TODO IEVA
-SetFileReadTokenStream = require('components/api-server/src/methods/streams/SetFileReadTokenStream');
 import type { Access, User, Stream } from 'components/storage';
 
 const accessLogic = require('./accessLogic');
 const APIError = require('components/errors').APIError;
 const errors = require('components/errors').factory;
 const treeUtils = require('components/utils').treeUtils;
+const UserInfoSerializer = require('components/business/src/user/user_info_serializer');
 
 import type { StorageLayer } from 'components/storage';
 
@@ -137,7 +136,7 @@ class MethodContext {
   // This function throws/rejects for various reasons; but it will always throw
   // a subclass of APIError.
   // 
-  async retrieveExpandedAccess(storage: StorageLayer) {
+  async retrieveExpandedAccess (storage: StorageLayer) {
     try {
       if (this.access == null)
         await this.retrieveAccess(storage);
@@ -278,7 +277,13 @@ class MethodContext {
     const user = this.user;
     const streams = await bluebird.fromCallback(
       cb => storage.streams.find(user, {}, null, cb));
-    this.streams = streams;
+
+    // TODO IEVA - maybe here I should mix virtual streams
+    let userInfoSerializer = await UserInfoSerializer.build();
+    // get streams ids from the config that should be retrieved
+    const userProfileStreams = userInfoSerializer.getVirtualStreamsList(false);
+
+    this.streams = _.merge(streams, userProfileStreams);
   }
 
   // Set this contexts stream by looking in this.streams. DEPRECATED.
