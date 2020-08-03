@@ -248,7 +248,7 @@ class Webhook implements MessageSink {
     _.merge(this, fieldsToUpdate);
     await makeUpdate(fields, this);
   }
-
+  
   async delete(): Promise<void> {
     if (this.repository == null) {
       throw new Error('repository not set for Webhook object.');

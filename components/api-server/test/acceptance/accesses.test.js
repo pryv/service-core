@@ -12,6 +12,7 @@ const { databaseFixture } = require('components/test-helpers');
 
 const { produceMongoConnection, context } = require('../test-helpers');
 
+const bluebird = require('bluebird');
 const lodash = require('lodash');
 const chai = require('chai');
 const assert = chai.assert;
@@ -206,6 +207,132 @@ describe('access deletions', () => {
     });
 
   });
+});
+
+describe('Delete app access', () => {
+
+  let username, streamId, access, 
+      sharedAccess1, sharedAccess2, sharedAccess3,
+      expiredSharedAccess;
+  before(() => {
+    username = cuid();
+    streamId = charlatan.Lorem.word();
+  });
+
+  let mongoFixtures;
+  before(async () => {
+    mongoFixtures = databaseFixture(await produceMongoConnection());
+    const user = await mongoFixtures.user(username);
+    await user.stream({ id: streamId }, () => {});
+
+    access = await user.access({
+      type: 'app',
+      name: charlatan.Lorem.word() + 0,
+      permissions: [{
+        streamId: streamId,
+        level: "read",
+      }]
+    });
+    access = access.attrs;
+    sharedAccess1 = await user.access({
+      type: 'shared', 
+      name: charlatan.Lorem.word() + 1,
+      permissions: [{
+        streamId: streamId,
+        level: "read",
+      }],
+      createdBy: access.id,
+    });
+    sharedAccess1 = sharedAccess1.attrs;   
+    sharedAccess2 = await user.access({
+      type: 'shared', 
+      name: charlatan.Lorem.word() + 2,
+      permissions: [{
+        streamId: streamId,
+        level: "read",
+      }],
+      createdBy: access.id,
+    });
+    sharedAccess2 = sharedAccess2.attrs;    
+    // some unrelated access that shouldn't be changed
+    sharedAccess3 = await user.access({
+      type: 'shared', 
+      name: charlatan.Lorem.word() + 3,
+      permissions: [{
+        streamId: streamId,
+        level: "read",
+      }],
+    });
+    sharedAccess3 = sharedAccess3.attrs;
+    expiredSharedAccess = await user.access({
+      type: 'shared',
+      expires: timestamp.now('-1d'),
+      name: charlatan.Lorem.word() + 4,
+      permissions: [{
+        streamId: streamId,
+        level: "read",
+      }],
+    });
+    expiredSharedAccess = expiredSharedAccess.attrs;
+  });
+  after(() => {
+    mongoFixtures.clean();
+  });
+
+  let server;
+  before(async () => {
+    server = await context.spawn();
+  });
+  after(() => {
+    server.stop();
+  });
+
+  describe('when deleting an app access that created shared accesses', () => {
+    let res;
+    before(async () => {
+      res = await server.request()
+        .del(`/${username}/accesses/${access.id}`)
+        .set('Authorization', access.token)
+    });
+
+    it('[WE2O] should return the accessDeletion and relatedDeletions', () => {
+      const accessDeletion = res.body.accessDeletion;
+      const relatedDeletions = res.body.relatedDeletions;
+      assert.exists(accessDeletion);
+      assert.exists(relatedDeletions);
+      assert.equal(accessDeletion.id, access.id);
+      let found1 = false;
+      let found2 = false;
+      let found3 = false;
+      assert.equal(relatedDeletions.length, 2);
+      relatedDeletions.forEach(a => {
+        if (a.id === sharedAccess1.id) found1 = true;
+        if (a.id === sharedAccess2.id) found2 = true;
+        if (a.id === expiredSharedAccess.id) found3 = true;
+      });
+      assert.isTrue(found1);
+      assert.isTrue(found2);
+      assert.isFalse(found3);
+    });
+    it('[IVWP] should delete it and the accesses it created, not touching the expired ones', async () => {
+      await bluebird.fromCallback(callback => {
+        storage.findAll({ id: username }, {}, (err, accesses) => {
+          const deletedAccess = accesses.find(a => a.id === access.id);
+          const deletedShared1 = accesses.find(a => a.id === sharedAccess1.id);
+          const deletedShared2 = accesses.find(a => a.id === sharedAccess2.id);
+          const notDeletedAccess3 = accesses.find(a => a.id === sharedAccess3.id);
+          const notDeletedAccess4 = accesses.find(a => a.id === expiredSharedAccess.id);
+          assert.exists(deletedAccess.deleted);
+          assert.exists(deletedShared1.deleted);
+          assert.exists(deletedShared2.deleted);
+          assert.notExists(notDeletedAccess3.deleted);
+          assert.notExists(notDeletedAccess4.deleted);
+          callback();
+        });
+      });
+    });
+  });
+
 });
 
 describe('access expiry', () => {

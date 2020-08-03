@@ -20,7 +20,9 @@ var utils = require('components/utils'),
     UserInfoSerializer = require('components/business/src/user/user_info_serializer');
 
 const assert = require('assert');
-    
+
+const { ProjectVersion } = require('components/middleware/src/project_version');
+
 const {TypeRepository, isSeriesType} = require('components/business').types;
 
 
@@ -46,8 +48,13 @@ module.exports = function (
   auditSettings, updatesSettings, openSourceSettings,
 ) {
 
+  
+  // Initialise the project version as soon as we can. 
+  const pv = new ProjectVersion();
+  let version = pv.version();
+  
   // Update types and log error
-  typeRepo.tryUpdate(eventTypesUrl)
+  typeRepo.tryUpdate(eventTypesUrl, version)
     .catch((err) => logging.getLogger('typeRepo').warn(err));
     
   const logger = logging.getLogger('methods/events');
