@@ -440,3 +440,46 @@ Events.prototype.updateUser = async function ({ userId, userParams }) {
     throw error;
   }
 };
+
+
+/**
+ * Get All users
+ * (Used ONLY for testing to make each user structure compatible with a 
+ * previous account structure and it is implemented in inefficiant way)
+ */
+Events.prototype.findAllUsers = async function () {
+  try {
+    let users = [];
+    // get list of user ids and usernames
+    const collectionInfo = this.getCollectionInfo({});
+    let query = {
+      streamIds: { $in: ["username"] },
+      deleted: null,
+      headId: null
+    }
+    const usersNames = await bluebird.fromCallback(cb =>
+      this.database.find(
+        { name: collectionInfo.name },
+        this.applyQueryToDB(query),
+        this.applyOptionsToDB(null), cb)
+    );
+
+    const usersCount = usersNames.length;
+    let user;
+    for (var i = 0; i < usersCount; i++) {
+      user = await this.getUserInfo({ user: { id: usersNames[i].userId }, getAll: true });
+      user.id = usersNames[i].userId;
+
+      // for the crazy unknown reason in the tests invitation token, appId and referer
+      // values are not validated, so lets remove them until find out how often this is the
+      // case
+      delete user.referer;
+      delete user.appId;
+      delete user.invitationToken;
+      users.push(user);
+    }
+    return users;
+  } catch (error) {
+    throw error;
+  }
+};

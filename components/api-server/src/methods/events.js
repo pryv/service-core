@@ -161,7 +161,7 @@ module.exports = function (
     // get streams ids from the config that should be retrieved
 
     let whatCoreStreamsToRetrieve = UserInfoSerializer.getReadableCoreStreams();
-    console.log(shouldAllowReadable,'shouldAllowReadable');
+
     if (shouldAllowReadable) {
       whatCoreStreamsToRetrieve = UserInfoSerializer.getOnlyWritableCoreStreams();
     }
@@ -199,9 +199,9 @@ module.exports = function (
 
     if (params.streams) {
       query.streamIds = {$in: params.streams};
-    } console.log(query, 'query', params.streams);
+    }
     query = await removeProfileStreamsFromQuery(query, true);
-    console.log(context.streams, 'context.streams', query,'query');
+
     if (params.tags && params.tags.length > 0) {
       query.tags = {$in: params.tags};
     }

@@ -16,6 +16,7 @@ const timestamp = require('unix-timestamp');
 const url = require('url');
 const _ = require('lodash');
 const assert = require('chai').assert; 
+const bluebird = require('bluebird');
 
 const helpers = require('./helpers');
 const ErrorIds = require('components/errors').ErrorIds;
@@ -23,7 +24,7 @@ const server = helpers.dependencies.instanceManager;
 const methodsSchema = require('../src/schema/systemMethods');
 const validation = helpers.validation;
 const encryption = require('components/utils').encryption;
-const storage = helpers.dependencies.storage.users;
+const storage = helpers.dependencies.storage.user.events;
 const testData = helpers.data;
 
 const os = require('os');
@@ -70,7 +71,7 @@ describe('system (ex-register)', function () {
     };
 
     describe('when email sending really works', function() {
-      it('[FUTR] must create a new user with the sent data, sending a welcome email', function (done) {
+      it('[FUTR] must create a new user with the sent data, sending a welcome email', async function () {
         let settings = _.cloneDeep(helpers.dependencies.settings);
         settings.services.email.enabled = true;
 
@@ -97,43 +98,33 @@ describe('system (ex-register)', function () {
         server.once('mail-sent1', function () {
           mailSent = true;
         });
+        await (new Promise(server.ensureStarted.bind(server, settings)));
 
-        async.series([
-          server.ensureStarted.bind(server, settings),
-          function countInitialUsers(stepDone) {
-            storage.countAll(function (err, count) {
-              originalCount = count;
-              stepDone();
-            });
-          },
-          function registerNewUser(stepDone) {
-            post(newUserData, function (err, res) {
-              validation.check(res, {
-                status: 201,
-                schema: methodsSchema.createUser.result
-              });
-              createdUserId = res.body.id;
-              mailSent.should.eql(true);
-              stepDone();
-            });
-          },
-          function getUpdatedUsers(stepDone) {
-            storage.findAll(null, function (err, users) {
-              users.length.should.eql(originalCount + 1, 'users');
+        const originalUsers = await storage.findAllUsers();
+        originalCount = originalUsers.length;
 
-              var expected = _.cloneDeep(newUserData);
-              expected.id = createdUserId;
-              expected.storageUsed = { dbDocuments: 0, attachedFiles: 0 };
-              var actual = _.find(users, function (user) {
-                return user.id === createdUserId;
-              });
-              validation.checkStoredItem(actual, 'user');
-              actual.should.eql(expected);
+        // create user
+        const res = await bluebird.fromCallback(cb => post(newUserData, cb));
 
-              stepDone();
-            });
-          }
-        ], done);
+        validation.check(res, {
+          status: 201,
+          schema: methodsSchema.createUser.result
+        });
+        createdUserId = res.body.id;
+        mailSent.should.eql(true);
+
+        // getUpdatedUsers
+        const users = await storage.findAllUsers();
+        users.length.should.eql(originalCount + 1, 'users');
+
+        var expected = _.cloneDeep(newUserData);
+        expected.id = createdUserId;
+        expected.storageUsed = { dbDocuments: 0, attachedFiles: 0 };
+        var actual = _.find(users, function (user) {
+          return user.id === createdUserId;
+        });
+        validation.checkStoredItem(actual, 'user');
+        actual.should.eql(expected);
       });
     });
     
@@ -186,7 +177,7 @@ describe('system (ex-register)', function () {
       before(server.ensureStarted.bind(server, helpers.dependencies.settings));
     
       it('[9K71] must run the process but not save anything for test username "recla"', 
-        function (done) {
+        async function () {
           var originalCount,
               createdUserId,
               settings = _.cloneDeep(helpers.dependencies.settings);
@@ -202,39 +193,31 @@ describe('system (ex-register)', function () {
                 .reply(200);
             }
           });
-    
-          async.series([
-            server.ensureStarted.bind(server, settings),
-            function countInitialUsers(stepDone) {
-              storage.countAll(function (err, count) {
-                originalCount = count;
-                stepDone();
-              });
-            },
-            function registerNewUser(stepDone) {
-              var data = {
-                username: 'recla',
-                passwordHash: encryption.hashSync('youpi'),
-                email: 'recla@rec.la',
-                language: 'fr'
-              };
-              post(data, function (err, res) {
-                validation.check(res, {
-                  status: 201,
-                  schema: methodsSchema.createUser.result
-                });
-                createdUserId = res.body.id;
-                stepDone();
-              });
-            },
-            function getUpdatedUsers(stepDone) {
-              storage.findAll(null, function (err, users) {
-                users.length.should.eql(originalCount, 'users');
-                should.not.exist(_.find(users, {id: createdUserId}));
-                stepDone();
-              });
-            }
-          ], done);
+
+          await (new Promise(server.ensureStarted.bind(server, settings)));
+
+          originalUsers = await storage.findAllUsers();
+          originalCount = originalUsers.length;
+
+          // create user
+          var data = {
+            username: 'recla',
+            passwordHash: encryption.hashSync('youpi'),
+            email: 'recla@rec.la',
+            language: 'fr'
+          };
+          const res = await bluebird.fromCallback(cb => post(data, cb));
+
+          validation.check(res, {
+            status: 201,
+            schema: methodsSchema.createUser.result
+          });
+          createdUserId = res.body.id;
+
+          // getUpdatedUsers
+          const users = await storage.findAllUsers();
+          users.length.should.eql(originalCount, 'users');
+          should.not.exist(_.find(users, { id: createdUserId }));
         });
     
       it('[ZG1L] must support the old "/register" path for backwards-compatibility', function (done) {
@@ -267,20 +250,23 @@ describe('system (ex-register)', function () {
       });
     
       it('[RD10] must return a correct 400 error if a user with the same user name already exists',
-        function (done) {
+        async function () {
           var data = {
             username: testData.users[0].username,
             passwordHash: '$-1s-b4d-f0r-U',
             email: 'roudoudou@choupinou.ch',
             language: 'fr'
           };
-          post(data, function (err, res) {
-            validation.checkError(res, {
+          try{
+            const res = await bluebird.fromCallback(cb => post(data, cb));
+            false.should.be.equal(true);
+          } catch(err){
+            validation.checkError(err.response, {
               status: 400,
               id: ErrorIds.ItemAlreadyExists,
               data: {username: data.username}
-            }, done);
-          });
+            });
+          }
         });
       it('[NPJE] must return a correct 400 error if a user with the same email address already exists', function (done) {
         const data = {

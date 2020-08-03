@@ -120,6 +120,7 @@ class Registration {
       }
       next();
     } catch (err) {
+      console.log(err,'err');
      // TODO IEVA
       // const tempUser = _.clone(userInfo);
       // tempUser.username = context.TEMP_USERNAME_PREFIX + cuid();
@@ -188,7 +189,6 @@ class Registration {
    */
   // TODO IEVA static
   handleCreationErrors (err, params) {
-    console.log(err,'err');
     // Duplicate errors
     // I check for these errors in the validation so they are only used for 
     // deprecated systems.createUser path
@@ -254,7 +254,10 @@ class Registration {
       // check email in service-core
       const existingUser = await bluebird.fromCallback(
         (cb) => this.storageLayer.events.findOne({},
-          { $and: [{ streamsIds: { $in: ['username', 'email'] } }, { $or: [{ content: params.email }, { content: params.username }] }] },
+          {
+            $or: [{ $and: [{ streamIds: 'username' }, { content: params.username }] },
+            { $and: [{ streamIds: 'email' }, { content: params.email }] }]
+          },
           null, cb)
       );
 
@@ -323,7 +326,9 @@ class Registration {
     params.email = params.email.toLowerCase();
 
     // change parameter name
-    params.language = params.languageCode;
+    if (params.languageCode){
+      params.language = params.languageCode;
+    }
     delete params.languageCode;
 
     next();

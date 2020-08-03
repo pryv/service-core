@@ -33,9 +33,46 @@ module.exports = function (
   systemAPI.register('system.createUser',
     commonFns.getParamsValidation(methodsSchema.createUser.params),
     registration.prepareUserDataForSaving,
+    validateUserExistanceInTheDatabase,
     registration.createUser,
     registration.sendWelcomeMail
     );
+
+  /**
+ * Check in service-register if email already exists
+ * @param {*} context 
+ * @param {*} params 
+ * @param {*} result 
+ * @param {*} next 
+ */
+  async function validateUserExistanceInTheDatabase(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    try {
+      // check email in service-core
+      const existingUser = await bluebird.fromCallback(
+        (cb) => storageLayer.events.findOne({},
+          {
+            $or: [{ $and: [{ streamIds: 'username' }, { content: params.username }] },
+            { $and: [{ streamIds: 'email' }, { content: params.email }] }]
+          },
+          null, cb)
+      );
+
+      // if email was already saved, throw an error
+      if (existingUser?.streamIds) {
+        if (existingUser.streamIds.includes('username')) {
+          return next(errors.itemAlreadyExists('user', { username: params.username }));
+        }
+        if (existingUser.streamIds.includes('email')) {
+          return next(errors.itemAlreadyExists('user', { email: params.email }));
+        }
+        // Any other error
+        return next(errors.unexpectedError('Unexpected error while saving user.'));
+      }
+    } catch (error) {
+      return next(errors.unexpectedError(error, 'Unexpected error while saving user.'));
+    }
+    next();
+  }
 
   // ------------------------------------------------------------ createPoolUser
   systemAPI.register('system.createPoolUser',

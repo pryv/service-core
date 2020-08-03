@@ -45,7 +45,7 @@ module.exports = function (api, logging, storageLayer, servicesSettings, serverS
       // check email in service-core
       // TODO IEVA - rethink if there are scenarious when this query is not enough
       const existingUser = await bluebird.fromCallback(
-        (cb) => storageLayer.events.findOne({}, { $and: [{ streamsIds: { $in: ['username', 'email'] } }, { $or: [{ content: params.email }, { content: params.username }] }]}, null, cb)
+        (cb) => storageLayer.events.findOne({}, { $and: [{ streamIds: { $in: ['username', 'email'] } }, { $or: [{ content: params.email }, { content: params.username }] }]}, null, cb)
       );
       
       let listApiErrors = [];
