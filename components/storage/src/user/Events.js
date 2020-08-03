@@ -437,7 +437,6 @@ Events.prototype.updateUser = async function ({ userId, userParams }) {
     });
     return true;//TODO IEVA??
   } catch (error) {
-    console.log(error,'error');
     throw error;
   }
 };

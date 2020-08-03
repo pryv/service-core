@@ -100,7 +100,6 @@ class Registration {
       // Consume a pool user if available or use default creation
       // const user = await Registration.createUserOrConsumePool(params, context, params);
       /* TODO IEVA - do not understand what this part does here
-       console.log(context.POOL_REGEX, params, 'searching for the user with this regex');
        const updatedUser = await bluebird.fromCallback(
          (cb) => context.usersStorage.findOneAndUpdate({ username: { $regex: context.POOL_REGEX } }, params, cb));      
        if (updatedUser === null) {
@@ -114,21 +113,19 @@ class Registration {
       context.user.host = { name: this.hostname };
 
       // form the result for system call or full registration call
-      if (context.systemCall === true) {
+      if (context.calledMethodId === 'system.createUser') {
         result.id = context.user.id;
       } else {
         result.username = context.user.username;
       }
-
       next();
     } catch (err) {
-      console.log(err, 'errsrrrrrrrrrrrrrrrr');
+     // TODO IEVA
       // const tempUser = _.clone(userInfo);
       // tempUser.username = context.TEMP_USERNAME_PREFIX + cuid();
       return next(this.handleCreationErrors(err, params));
     }
   }
-
 
   createPoolUser (context, params, result, next) {
     const uniqueId = cuid();
@@ -275,7 +272,6 @@ class Registration {
           user: { id: context.user.id },
           getAll: true
         });
-
 
         // set result as current username
         result.username = existingUser.username;

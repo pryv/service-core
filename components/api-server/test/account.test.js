@@ -202,7 +202,6 @@ describe('account', function () {
         function computeInitial(stepDone) {
           storageSize.computeForUser(user, function (err, storageUsed) {
             should.not.exist(err);
-            console.log(storageUsed,' dbDocuments shoul be 0');
             storageUsed.dbDocuments.should.be.above(0);
 
             var expectedAttsSize = _.reduce(testData.events, function (total, evt) {

@@ -33,8 +33,6 @@ class Context {
   cleanEverything (): Promise<mixed> {
     const documentNames = ['events', 'accesses', 'sessions', 'streams', 'followedSlices', 'webhooks', 'versions']
     //TODO IEVA
-    console.log(this.databaseConn, 'this.databaseConssssssssssn');
-
     const documents = documentNames.map(documentName => {
       return bluebird.fromCallback(cb => this.databaseConn.deleteMany(
         { name: documentName }, {}, cb));
@@ -521,7 +519,6 @@ class Sessions {
   
   removeForUser (userName: string, cb: () => void) {
     // TODO IEVA
-    console.log(this.databaseConn, 'this.databaseConn', this.collectionInfo,'this.collectionInfo');
     this.databaseConn.deleteMany(
       this.collectionInfo, 
       {'data.username': userName}, 

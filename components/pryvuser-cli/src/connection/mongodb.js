@@ -88,7 +88,6 @@ class MongoDB {
         { content: { $eq: username } }
       ] };
     //TODO IEVA update
-    console.log(query,'queryyyyyyyyyyy');
     await bluebird.fromCallback(
       cb => storage.user.events.remove(query, cb));
     await bluebird.fromCallback(

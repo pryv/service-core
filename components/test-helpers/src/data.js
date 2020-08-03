@@ -146,7 +146,7 @@ exports.resetAttachments = function (done, user) {
   }
   async.series([
     function (stepDone) {
-      console.log('resetAttachments');//TODO IEVA
+      //TODO IEVA
       storage.user.eventFiles.removeAllForUser(user, stepDone);
     },
     copyAttachmentFn(attachments.document, user, events[0].id),
