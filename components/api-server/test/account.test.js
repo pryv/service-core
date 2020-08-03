@@ -22,10 +22,11 @@ const storageSize = helpers.dependencies.storage.size;
 const testData = helpers.data;
 const _ = require('lodash');
 const bluebird = require('bluebird');
+const { resolveCname } = require('dns');
 
 describe('account', function () {
   const user = Object.assign({}, testData.users[0]);
-  // user = testData.users[0],
+
    var   basePath = '/' + user.username + '/account',
       request = null; // must be set after server instance started
 
@@ -35,10 +36,9 @@ describe('account', function () {
 
   before(function (done) {
     async.series([
-      testData.resetEvents,
       testData.resetUsers,
-      testData.seedEvents,
       testData.resetAccesses,
+      testData.resetEvents,
       testData.resetProfile,
       testData.resetFollowedSlices,
       
@@ -51,7 +51,7 @@ describe('account', function () {
       }
     ], done);
   });
-
+/*
   describe('GET /', function () {
 
     beforeEach(async () => { await resetUsers() });
@@ -79,7 +79,7 @@ describe('account', function () {
     });
 
   });
-
+*/
   describe('PUT /', function () {
 
     beforeEach(async () => { await resetUsers() });
@@ -115,7 +115,6 @@ describe('account', function () {
         async.series([
           server.ensureStarted.bind(server, settings),
           function update (stepDone) {
-            console.log(updatedData,'updatedData');
             request.put(basePath).send(updatedData).end(function (res) {
               //jshint -W030
               regServerCalled.should.be.ok;
@@ -124,6 +123,7 @@ describe('account', function () {
               delete expected.id;
               delete expected.password;
               delete expected.storageUsed;
+
               validation.check(res, {
                 status: 200,
                 schema: methodsSchema.update.result,
@@ -135,15 +135,15 @@ describe('account', function () {
               stepDone();
             });
           },
-          async function verifyData (stepDone) {
+          async function verifyData () {
             try {
               const updatedUser = await storage.getUserInfo({
                 user: { id: user.id },
                 getAll: true
               });
               validation.checkStoredItem(updatedUser, 'user');
-              stepDone();
             } catch (err) {
+              console.log(err,'err');
               false.should.be.true();
             }
           }
@@ -229,27 +229,18 @@ describe('account', function () {
             stepDone();
           });
         },
-        async function verifyAccount (stepDone) {
-          console.log(storage, 'storageeeeeeeeeeee', user.id);
+        async function verifyAccount () {
           try {
             const account = await storage.getUserInfo({
               user: { id: user.id },
-              getAll: true
-            }); console.log(account, 'accounttttttttttttttttttttttt', user.id);
+              getAll: false
+            });
+
             account.storageUsed.should.eql(updatedStorageUsed);
-            stepDone();
           } catch (err) {
-            stepDone();
+            console.log(err,'err');
             false.should.be.true();
           }
-          stepDone();
-          /*
-          console.log(storage,'storageeeeeeeeeee');
-          storage.findOne({ id: user.id }, null, function (err, account) {
-            console.log(account, 'account');
-            account.storageUsed.should.eql(updatedStorageUsed);
-            stepDone();
-          });*/
         }
       ], done);
     });
@@ -287,12 +278,10 @@ describe('account', function () {
     });
 
     function addEventWithAttachment (attachment, callback) {
-      console.log(testData.streams[0].id, 'testData.streams[0].id', '/' + user.username + '/events');
       request.post('/' + user.username + '/events')
         .field('event', JSON.stringify({ type: 'test/i', streamId: testData.streams[0].id }))
         .attach('image', attachment.path, attachment.filename)
         .end(function (res) {
-          console.log(res,'ressss');
           validation.check(res, {status: 201});
           callback();
         });
@@ -302,11 +291,9 @@ describe('account', function () {
       var initialStorageUsed,
           newAtt = testData.attachments.image;
       async.series([
-        function checkInitial(stepDone) {
-          storage.findOne({id: user.id}, null, function (err, account) {
-            initialStorageUsed = account.storageUsed;
-            stepDone();
-          });
+        async function checkInitial () {
+          const account = await storage.getUserInfo({ user: { id: user.id }, getAll: false });
+          initialStorageUsed = account.storageUsed;
         },
         function addAttachment(stepDone) {
           request.post('/' + user.username + '/events/' + testData.events[0].id)
@@ -316,13 +303,12 @@ describe('account', function () {
                 stepDone();
               });
         },
-        function checkUpdated(stepDone) {
-          storage.findOne({id: user.id}, null, function (err, account) {
-            account.storageUsed.dbDocuments.should.eql(initialStorageUsed.dbDocuments);
-            account.storageUsed.attachedFiles.should.be.approximately(
-                    initialStorageUsed.attachedFiles + newAtt.size, filesystemBlockSize);
-            stepDone();
-          });
+        async function checkUpdated () {
+          const account = await storage.getUserInfo({ user: { id: user.id }, getAll: false });
+          initialStorageUsed = account.storageUsed;
+          account.storageUsed.dbDocuments.should.eql(initialStorageUsed.dbDocuments);
+          account.storageUsed.attachedFiles.should.be.approximately(
+                  initialStorageUsed.attachedFiles + newAtt.size, filesystemBlockSize);
         }
       ], done);
     });
@@ -331,11 +317,9 @@ describe('account', function () {
       var initialStorageUsed,
           deletedAtt = testData.events[0].attachments[0];
       async.series([
-        function checkInitial(stepDone) {
-          storage.findOne({id: user.id}, null, function (err, account) {
-            initialStorageUsed = account.storageUsed;
-            stepDone();
-          });
+        async function checkInitial() {
+          const account = await storage.getUserInfo({ user: { id: user.id }, getAll: false });
+          initialStorageUsed = account.storageUsed;
         },
         function deleteAttachment(stepDone) {
           var urlPath = '/' + user.username + '/events/' + testData.events[0].id + '/' +
@@ -345,13 +329,12 @@ describe('account', function () {
             stepDone();
           });
         },
-        function checkUpdated(stepDone) {
-          storage.findOne({id: user.id}, null, function (err, account) {
-            account.storageUsed.dbDocuments.should.eql(initialStorageUsed.dbDocuments);
-            account.storageUsed.attachedFiles.should.be.approximately(
-                initialStorageUsed.attachedFiles - deletedAtt.size, filesystemBlockSize);
-            stepDone();
-          });
+        async function checkUpdated () {
+          const account = await storage.getUserInfo({ user: { id: user.id }, getAll: false });
+          initialStorageUsed = account.storageUsed;
+          account.storageUsed.dbDocuments.should.eql(initialStorageUsed.dbDocuments);
+          account.storageUsed.attachedFiles.should.be.approximately(
+              initialStorageUsed.attachedFiles - deletedAtt.size, filesystemBlockSize);
         }
       ], done);
     });
@@ -361,11 +344,9 @@ describe('account', function () {
           deletedEvt = testData.events[2],
           deletedEvtPath = '/' + user.username + '/events/' + deletedEvt.id;
       async.series([
-        function checkInitial(stepDone) {
-          storage.findOne({id: user.id}, null, function (err, account) {
-            initialStorageUsed = account.storageUsed;
-            stepDone();
-          });
+        async function checkInitial () {
+          const account = await storage.getUserInfo({ user: { id: user.id }, getAll: false });
+          initialStorageUsed = account.storageUsed;
         },
         function trashEvent(stepDone) {
           request.del(deletedEvtPath).end(function (res) {
@@ -379,13 +360,12 @@ describe('account', function () {
             stepDone();
           });
         },
-        function checkUpdated(stepDone) {
-          storage.findOne({id: user.id}, null, function (err, account) {
-            account.storageUsed.dbDocuments.should.eql(initialStorageUsed.dbDocuments);
-            account.storageUsed.attachedFiles.should.be.approximately(
-              initialStorageUsed.attachedFiles - getTotalAttachmentsSize(deletedEvt), filesystemBlockSize);
-            stepDone();
-          });
+        async function checkUpdated () {
+          const account = await storage.getUserInfo({ user: { id: user.id }, getAll: false });
+          initialStorageUsed = account.storageUsed;
+          account.storageUsed.dbDocuments.should.eql(initialStorageUsed.dbDocuments);
+          account.storageUsed.attachedFiles.should.be.approximately(
+            initialStorageUsed.attachedFiles - getTotalAttachmentsSize(deletedEvt), filesystemBlockSize);
         }
       ], done);
     });
@@ -414,7 +394,7 @@ describe('account', function () {
       };
       async.series([
         function changePassword(stepDone) {
-          request.post(path).send(data).end(function (res) {
+          request.post(path).send(data).end(function (res) { 
             validation.check(res, {
               status: 200,
               schema: methodsSchema.changePassword.result
@@ -423,12 +403,12 @@ describe('account', function () {
             stepDone();
           });
         },
-        function verifyNewPassword(stepDone) {
+        function verifyNewPassword (stepDone) {
           request.login(_.defaults({password: data.newPassword}, user), stepDone);
         }
       ], done);
     });
-
+/*
     it('[STWH] must return an error if the given old password does not match', function (done) {
       var data = {
         oldPassword: 'bad-password',
@@ -681,9 +661,9 @@ describe('account', function () {
         validation.checkErrorInvalidParams(res, done);
       });
     });
-
-  });
 */
+  });
+
   async function resetUsers() {
     accountNotifCount = 0;
     //TODO IEVA

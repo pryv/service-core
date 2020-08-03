@@ -124,7 +124,7 @@ class UserRepository {
     
     const query = { username: name };
     const options = {};
-    
+    // TODO IEVA
     const user = await bluebird.fromCallback(
       cb => db.users.findOne(query, options, cb));
       

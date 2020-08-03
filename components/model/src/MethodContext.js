@@ -93,7 +93,7 @@ class MethodContext {
   // 
   async retrieveUser(storage: StorageLayer) {
 
-    //TODO IEVA
+    //TODO IEVA - join id and info requests
     try {
       this.user = {};
       // get userId by his username
@@ -101,25 +101,10 @@ class MethodContext {
 
       if (!userId)
         throw errors.unknownResource('user', this.username);
+      // get user details
+
       this.user = await storage.events.getUserInfo({ user: {id: userId}, getAll: false});
       this.user.id = userId;
-      console.log(this.user, 'this.usereeeee');
-      /*
-      this.user = { 
-        id: userId,
-        username: this.username,
-       };*/
-// TODO IEVA - why I need this part everywhere?
-      // get user details
-      const userPass = await bluebird.fromCallback(cb =>
-        storage.events.findOne({ userId: this.user.id }, { "streamIds": { '$in': ['passwordHash'] }} , null, cb));
-
-      // TODO IEVA should I throw a different error
-      if (userPass == null)
-        throw errors.unknownResource('user', this.username);
-
-      this.user.passwordHash = userPass.content;
-
     } catch (err) {
       throw errors.unknownResource('user', this.username);
     }
@@ -281,9 +266,9 @@ class MethodContext {
     // TODO IEVA - maybe here I should mix virtual streams
     let userInfoSerializer = await UserInfoSerializer.build();
     // get streams ids from the config that should be retrieved
-    const userProfileStreams = userInfoSerializer.getVirtualStreamsList(false);
+    const userCoreStreams = [];//TODO IEVA userInfoSerializer.getVirtualStreamsList(false);
 
-    this.streams = _.merge(streams, userProfileStreams);
+    this.streams = _.merge(streams, userCoreStreams);
   }
 
   // Set this contexts stream by looking in this.streams. DEPRECATED.

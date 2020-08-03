@@ -18,12 +18,11 @@ var helpers = require('./helpers'),
 
 describe('profile (personal)', function () {
 
-  var user = testData.users[0],
+  var user = Object.assign({}, testData.users[0]),
       basePath = '/' + user.username + '/profile',
       request = null; // must be set after server instance started
   var publicProfile = testData.profile[0],
       privateProfile = testData.profile[1];
-
 
   before(function (done) {
     async.series([
@@ -69,7 +68,6 @@ describe('profile (personal)', function () {
         validation.checkErrorForbidden(res, done);
       });
     });
-
   });
 
   describe('PUT', function () {
@@ -124,5 +122,4 @@ describe('profile (personal)', function () {
     });
 
   });
-
 });

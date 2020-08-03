@@ -6,6 +6,9 @@
  */
 const Settings = require('components/api-server/src/settings');
 
+const readable = 'readable-core-streams',
+  allCoreStreams = 'all-core-streams',
+  onlyWritableCoreStreams = 'only-writable-core-streams';
 /**
  * Class that converts system->profile events to the
  * Account information that matches the previous 
@@ -19,6 +22,18 @@ class UserInfoSerializer {
       throw new Error('UserInfoSerializer cannot be called directly');
     }
     this.systemStreamsSettings = systemStreamsSettings;
+  }
+
+  static getReadableCoreStreams () {
+    return readable;
+  }
+
+  static getAllCoreStreams () {
+    return allCoreStreams;
+  }
+
+  static getOnlyWritableCoreStreams () {
+    return onlyWritableCoreStreams;
   }
 
   // set asyncronously system streams settings information
@@ -51,9 +66,9 @@ class UserInfoSerializer {
       }
 
       // if the stream value is equal to false, it should be not visible
-      if (stream[streamName].isShown === false){
+   /*TODO IEVA   if (stream[streamName].isShown === false){
         continue;
-      }
+      }*/
 
       // get value for the stream element
       let i;
@@ -87,10 +102,11 @@ class UserInfoSerializer {
    * Iterate throught the tree and add keys to the flat list streamsNames
    * @param {*} streams - tree structure object
    * @param array streamsNames - flat list of keys
-   * @param boolean returnAll - if true - all keys will be returned no matter 
+   * @param enum string whatToReturn - enum values should be retrieved with 
+   *  getReadableCoreStreams(), getAllCoreStreams (), getOnlyWritableCoreStreams;
    * if they are equal to false or true
    */
-  static getStreamsNames (streams, streamsNames, returnAll: Boolean) {
+  static getStreamsNames (streams, streamsNames, whatToReturn) {
     let i;
     let stream;
     const streamsKeys = Object.keys(streams);
@@ -98,13 +114,25 @@ class UserInfoSerializer {
       stream = streams[streamsKeys[i]];
       // if stream has children recursivelly call the same function
       if (typeof stream.isShown === "undefined") {
-        streamsNames = UserInfoSerializer.getStreamsNames(stream, streamsNames, returnAll);
+        streamsNames = UserInfoSerializer.getStreamsNames(stream, streamsNames, whatToReturn);
         continue;
       }
 
-      // if the stream value is equal to false, it should be not visible (except when returnAll is true)
-      if (!returnAll && stream.isShown === false) {
-        continue;
+      // if the stream value is equal to false, it should be not visible 
+      // (except when all core streams should be returned)
+      switch (whatToReturn) {
+        case UserInfoSerializer.getReadableCoreStreams():
+          if (stream.isShown === false) {
+            continue;
+          }
+          break;
+        case UserInfoSerializer.getAllCoreStreams():
+          break;
+        default:
+          if (stream.isShown === true) {
+            continue;
+          }
+          break;
       }
       streamsNames[streamsKeys[i]] = stream;
     }
@@ -115,18 +143,19 @@ class UserInfoSerializer {
    * Get the names of all streams that belongs to the system->profile stream
    * @param {*} events 
    */
-  getProfileStreamIds (returnAll: Boolean) {
+  getCoreStreams (whatToReturn) {
     let streamsNames = {};
-    return UserInfoSerializer.getStreamsNames(this.systemStreamsSettings.profile, streamsNames, returnAll);
+    return UserInfoSerializer.getStreamsNames(this.systemStreamsSettings.profile, streamsNames, whatToReturn);
   }
 
   /**
    * Get virtual streams list
    * @param {*} events 
+   * TODO IEVA - perhaps delete
    */
-  getVirtualStreamsList (returnAll: Boolean) {
+  getVirtualStreamsList (whatToReturn) {
     let streamsNames = {};
-    const streamsName = UserInfoSerializer.getStreamsNames(this.systemStreamsSettings.profile, streamsNames, returnAll);
+    const streamsName = UserInfoSerializer.getStreamsNames(this.systemStreamsSettings.profile, streamsNames, whatToReturn);
     const streams = Object.keys(streamsName).map(streamName => {
       return {
         name: streamName,

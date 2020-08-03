@@ -44,7 +44,7 @@ describe('auth', function() {
     helpers.dependencies.storage.sessions.clearAll(done);
   });
 
-  var user = testData.users[0],
+  var user = Object.assign({}, testData.users[0]),
       trustedOrigin = 'http://test.pryv.local';
   var authData = {
     username: user.username,

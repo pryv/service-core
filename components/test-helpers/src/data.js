@@ -26,15 +26,12 @@ const defaultUser = users[0];
 
 exports.resetUsers = async () => {
   // TODO IEVA
-  console.log(storage.user.events.database.deleteMany,'storage.user.events.database.deleteMany');
   bluebird.fromCallback(cb => storage.user.events.database.deleteMany(
     { name: 'events' }, {}, cb));
 
   let i;
-  let isss;
   for (i = 0; i < users.length; i++){
-    isss = await storage.user.events.createUser({}, users[i]);
-    console.log(isss, 'issssssssssssssss');
+    await storage.user.events.createUser(users[i]);
   }
 };
 
@@ -81,11 +78,24 @@ exports.resetFollowedSlices = function (done, user) {
 const events = exports.events = require('./data/events');
 
 exports.resetEvents = function (done, user) {
-  deleteData(storage.user.events, user || defaultUser, events, done);
+  // deleteData(storage.user.events, user || defaultUser, events, done);
+  user = user || defaultUser;
+  //TODO IEVA - make stremIds dynamic
+  async.series([
+    storage.user.events.removeMany.bind(storage.user.events, 
+      user,
+      {
+        streamIds: {
+          $nin: [
+            'username', 'passwordHash', 'email', 'attachedFiles', 'dbDocs', 'language']
+        }
+      }
+    ),
+    storage.user.events.insertMany.bind(storage.user.events, user, events)
+  ], done);
+  
 };
-exports.seedEvents = function (done, user) {
-  seedData(storage.user.events, user || defaultUser, events, done);
-};
+
 // streams
 
 const streams = exports.streams = require('./data/streams');
@@ -94,30 +104,6 @@ exports.resetStreams = function (done, user) {
   resetData(storage.user.streams, user || defaultUser, streams, done);
 };
 
-/**
- * resetData first deletion action
- * @param {*} storage 
- * @param {*} user 
- * @param {*} items 
- * @param {*} done 
- */
-function deleteData (storage, user, items, done) {
-  async.series([
-    storage.removeAll.bind(storage, user)
-  ], done);
-}
-/**
- * resetData second seeding action
- * @param {*} storage
- * @param {*} user
- * @param {*} items
- * @param {*} done
- */
-function seedData (storage, user, items, done) {
-  async.series([
-    storage.insertMany.bind(storage, user, items)
-  ], done);
-}
 function resetData (storage, user, items, done) {
   async.series([
     storage.removeAll.bind(storage, user),

@@ -366,6 +366,10 @@ exports.removeDeletionsAndHistory = function (items) {
   return items.filter(function (e) { return ! (e.deleted || e.headId); });
 };
 
+exports.removeCoreStreamsEvents = function (items) {
+  return items.filter(function (e) { return !(e.streamIds.some(streamId => ['username', 'email', 'language', 'attachedFiles', 'dbDocs', 'passwordHash'].indexOf(streamId) >= 0)); });
+};
+
 /*
  * Strips off item from tracking properties
  */

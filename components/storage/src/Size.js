@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 var async = require('async');
-
+const bluebird = require('bluebird');
 module.exports = Size;
 
 /**
@@ -33,15 +33,15 @@ Size.prototype.computeForUser = function (user, callback) {
   async.series({
     dbDocuments: computeCategory.bind(this, this.dbDocumentsItems),
     attachedFiles: computeCategory.bind(this, this.attachedFilesItems)
-  }, function (err, storageUsed) {
+  }, async function (err, storageUsed) {
       // update logic TODO IEVA
-    if (err) { return callback(err); }
-      this.userEventsStorage.updateOne(
-        { id: user.id },
-        { storageUsed: storageUsed }, function (err) {
-      if (err) { return callback(err); }
-      callback(null, storageUsed);
-    });
+      if (err) { return callback(err); }     
+      try{
+        await this.userEventsStorage.updateUser({ userId: user.id, userParams: storageUsed });
+        callback(null, storageUsed);
+      } catch (err) {
+        callback(err);
+      }
   }.bind(this));
 
   function computeCategory(storageItems, callback) {

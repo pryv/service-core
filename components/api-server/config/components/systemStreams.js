@@ -69,12 +69,12 @@ let config =
 }
    
 if (process.env.additionalProfileFields) {
-  const jsonAdditionalProfileFIelds = JSON.parse(process.env.additionalProfileFields);
-  if (jsonAdditionalProfileFIelds) {
-    const keys = Object.keys(jsonAdditionalProfileFIelds);
+  const jsoncustomAccountFields = JSON.parse(process.env.additionalProfileFields);
+  if (jsoncustomAccountFields) {
+    const keys = Object.keys(jsoncustomAccountFields);
     let i;
     for (i = 0; i < keys; i++){
-      config.systemStreams.profile[keys] = jsonAdditionalProfileFIelds[keys];
+      config.systemStreams.profile[keys] = jsoncustomAccountFields[keys];
       // if some properties are not set, set them by default
       //TODO IEVA
     }

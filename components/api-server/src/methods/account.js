@@ -61,9 +61,14 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     encryptNewPassword,
     updateAccount);
 
-  function verifyOldPassword(context, params, result, next) {
-    encryption.compare(params.oldPassword, context.user.passwordHash, function (err, isValid) {
-      delete context.user.passwordHash;
+  async function verifyOldPassword (context, params, result, next) {
+    const userPass = await bluebird.fromCallback(cb =>
+      userEventsStorage.findOne({ userId: context.user.id }, { "streamIds": { '$in': ['passwordHash'] } }, null, cb));
+
+    if (userPass == null)
+      throw errors.unknownResource('user', context.user.username);
+    
+    encryption.compare(params.oldPassword, userPass.content, function (err, isValid) {
       if (err) { return next(errors.unexpectedError(err)); }
 
       if (! isValid) {
@@ -190,21 +195,22 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
   async function updateAccount(context, params, result, next) {
     try {
       // form tasks to update the events
-      const updateActions = Object.keys(params.update).map(paramKey => {
+      const fieldsToUpdate = Object.keys(params.update);
+      Object.keys(params.update).map(paramKey => {
         return bluebird.fromCallback(cb => userEventsStorage.updateOne(
           { id: context.user.id },
           { streamIds: { $in: [paramKey] } },
           { content: params.update[paramKey] }, cb));
       });
-       
-      // execute tasks to update events
-      await Promise.all(updateActions);
 
       // retrieve and form user info
-      result.account = await userEventsStorage.getUserInfo({
-        user: { id: context.user.id },
-        getAll: false
-      });
+    /* TODO IEVA  is this exception is really necessary ?*/
+      if (!fieldsToUpdate.includes('passwordHash')){
+        result.account = await userEventsStorage.getUserInfo({
+          user: { id: context.user.id },
+          getAll: false
+        });
+      }
 
       notifications.accountChanged(context.user);
       next();
@@ -212,18 +218,5 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
       return next(errors.unexpectedError(err));
     }
   }
-
-  function sanitizeAccountDetails(data) {
-    delete data.id;
-    delete data.passwordHash;
-    if (! data.storageUsed) {
-      // TODO IEVA - why not 0 ?  and remove function after find out this
-      data.storageUsed = {
-        dbDocuments: -1,
-        attachedFiles: -1
-      };
-    }
-  }
-
 };
 module.exports.injectDependencies = true;

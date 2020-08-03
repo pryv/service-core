@@ -82,7 +82,7 @@ module.exports = function (
       context.user = await storageLayer.events.getUserInfo({
         user: { id: userId },
         getAll: false
-      }); console.log(context.user,'context.userrrrrrrrrrrrrrrrrrrrrr');
+      });
       context.user.id = userId;
 
       if (!context.user) {

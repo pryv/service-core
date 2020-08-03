@@ -6,6 +6,7 @@
  */
 var commonFns = require('components/api-server/src/methods/helpers/commonFunctions'),
     utils = require('components/utils'),
+    bluebird = require('bluebird'),
     encryption = utils.encryption,
     errors = require('components/errors').factory,
     methodsSchema = require('components/api-server/src/schema/authMethods'), 
@@ -19,7 +20,7 @@ var commonFns = require('components/api-server/src/methods/helpers/commonFunctio
  * @param sessionsStorage
  * @param authSettings
  */
-module.exports = function (api, userAccessesStorage, sessionsStorage, authSettings) {
+module.exports = function (api, userAccessesStorage, sessionsStorage, userEventsStorage, authSettings) {
   // LOGIN
 
   api.register('auth.login',
@@ -40,10 +41,16 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, authSettin
     next();
   }
 
-  function checkPassword (context, params, result, next) {
-    encryption.compare(params.password, context.user.passwordHash, function (err, isValid) {
+  async function checkPassword (context, params, result, next) {
+    const userPass = await bluebird.fromCallback(cb =>
+      userEventsStorage.findOne({ userId: context.user.id }, { "streamIds": { '$in': ['passwordHash'] } }, null, cb));
+
+    // TODO IEVA should I throw a different error
+    if (userPass == null)
+      throw errors.unknownResource('user', context.user.username);
+    
+    encryption.compare(params.password, userPass.content, function (err, isValid) {
       delete params.password;
-      delete context.user.passwordHash;
       if (err) { return next(errors.unexpectedError(err)); }
 
       if (! isValid) {

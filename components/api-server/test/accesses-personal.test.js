@@ -54,7 +54,7 @@ describe('accesses (personal)', function () {
       },
       function (stepDone) {
         if (request == null) { stepDone('request is null'); }
-        storage.findOne(user, {token: request && request.token}, null, function (err, access) {
+        storage.findOne(user, { token: request && request.token }, null, function (err, access) {
           sessionAccessId = access.id;
           stepDone();
         });
@@ -198,7 +198,7 @@ describe('accesses (personal)', function () {
         };
 
         async.series([
-          function addNew(stepDone) {
+          function addNew (stepDone) {
             req().post(basePath).send(data).end(function (res) {
               validation.check(res, {
                 status: 201,
@@ -223,7 +223,7 @@ describe('accesses (personal)', function () {
               stepDone();
             });
           },
-          function verifyNewStream(stepDone) {
+          function verifyNewStream (stepDone) {
             var query = {id: data.permissions[1].streamId};
             streamsStorage.findOne(user, query, null, function (err, stream) {
               should.not.exist(err);

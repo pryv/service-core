@@ -18,7 +18,7 @@ var accountDetails = helpers.object({
   language: user.properties.language,
   storageUsed: user.properties.storageUsed
 }, {
-  required: [ 'username', 'email', 'storageUsed' ],
+  required: ['username', 'email', 'storageUsed', 'language'],
   additionalProperties: false
 });
 

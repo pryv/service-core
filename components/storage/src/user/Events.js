@@ -279,11 +279,13 @@ Events.prototype.getUserInfo = async function ({ user, getAll }) {
   try {
     let userInfoSerializer = await UserInfoSerializer.build();
     // get streams ids from the config that should be retrieved
-    let userProfileStreamsIds = userInfoSerializer.getProfileStreamIds(getAll);
-
+    const whatStreamsToRetrieve = getAll ? UserInfoSerializer.getAllCoreStreams() : UserInfoSerializer.getReadableCoreStreams();
+    let userProfileStreamsIds = userInfoSerializer.getCoreStreams(whatStreamsToRetrieve);
+    //console.log(whatStreamsToRetrieve, 'whatStreamsToRetrieve', userProfileStreamsIds,'userProfileStreamsIds');
     // form the query
     let query = { "streamIds": { '$in': Object.keys(userProfileStreamsIds) } };
 
+    // IEVA TODO TO prototype?
     const dbItems = await bluebird.fromCallback(cb => this.database.find(
       this.getCollectionInfo(user),
       this.applyQueryToDB(query),
@@ -327,21 +329,17 @@ Events.prototype.getUserIdByUsername = async function (username): integer {
   }
 };
 
-
 /**
- * Get user id from username
- * @param user - object that will be returned as a created user
+ * Create user
  * @param userParams - parameters to be saved
+ * @return object with created user information in flat format
  */
-Events.prototype.createUser = async function (user, userParams) {
-
-  // get user id 
+Events.prototype.createUser = async function (userParams) {
+  let user = {};
   try {
     let userInfoSerializer = await UserInfoSerializer.build();
     // get streams ids from the config that should be retrieved
-    let userProfileStreamsIds = userInfoSerializer.getProfileStreamIds(true);
-    // get collection info without userId
-    const collectionInfo = this.getCollectionInfo({id: 0});
+    let userProfileStreamsIds = userInfoSerializer.getCoreStreams(UserInfoSerializer.getAllCoreStreams());
 
     // change password into hash
     if (userParams.password && !userParams.passwordHash) {
@@ -349,36 +347,29 @@ Events.prototype.createUser = async function (user, userParams) {
     }
     delete userParams.password;
    
+    // create userId so that userId could be passed
+    userParams = converters.createIdIfMissing(userParams);
+    // form username event - it is separate because we set the _id 
+    let updateObject = {
+      streamIds: ["username", "indexed"],
+      type: "string",
+      content: userParams.username,
+      id: userParams.id,
+      created: timestamp.now(),
+      modified: timestamp.now()
+    };
+    user.id = updateObject.id;
 
-    //TODO IEVA -does this way of saving the event is ok, because it does not add createdAtt and etc
-    // first save and update username evant to retrieve the id
-    const username = await bluebird.fromCallback((cb) => this.database.insertOne(
-      { name: collectionInfo.name },
-      {
-        streamIds: ["username", "indexed"],
-        type: "string",
-        content: userParams.username
-      }, cb));
-    if (!userParams.id){
-      user.id = String(username.insertedId);
-    } else {
-      // test are passing user.id so have added this hack
-      // TODO IEVA rethink what could go wrong
-      user.id = userParams.id;
-      user.username = userParams.username;
-    }
-
-    // write userId for the username
-    await bluebird.fromCallback((cb) => this.database.updateOne(
-      { name: collectionInfo.name },
-      { _id: username.insertedId },
-      { $set: { userId: user.id } }, cb));
-
+    // insert username event
+    const username = await bluebird.fromCallback((cb) =>
+      Events.super_.prototype.insertOne.call(this, user, updateObject, cb));
+    user.username = username.content;
+    
     // delete username so it won't be saved the second time
     delete userProfileStreamsIds['username'];
 
-    // form tasks to create the registration events
-    const registrationEvents = Object.keys(userProfileStreamsIds).map(streamId => {
+    // create all user account events
+    Object.keys(userProfileStreamsIds).map(streamId => {
       if (userParams[streamId] || typeof userProfileStreamsIds[streamId].default !== "undefined") {
         let parameter = userProfileStreamsIds[streamId].default;
 
@@ -387,36 +378,66 @@ Events.prototype.createUser = async function (user, userParams) {
           parameter = userParams[streamId];
         }
 
-        // set for the result
+        // set parameter name and value for the result
         user[streamId] = parameter;
 
-        // find stream ids
+        // get additional stream ids from the config
         let streamIds = [streamId];
         if (userProfileStreamsIds[streamId].isIndexed === true) {
           streamIds.push("indexed");
         }
 
-        // find type for the event
+        // get type for the event from the config
         let eventType = "string";
         if (userProfileStreamsIds[streamId].type) {
           eventType = userProfileStreamsIds[streamId].type;
         }
-
-        return bluebird.fromCallback((cb) => this.database.insertOne(
-          this.getCollectionInfo(user),
-          {
+        // create the event
+        return bluebird.fromCallback((cb) =>
+            Events.super_.prototype.insertOne.call(this, user, {
             streamIds: streamIds,
             type: eventType,
-            content: parameter
-          }, cb));
+            content: parameter,
+            created: timestamp.now(),
+            modified: timestamp.now()
+        }, cb));
       }
     });
    
-    // execute tasks to update events
-    await Promise.all(registrationEvents);
-   
     return user;
   } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Update user
+ * @param {*} userParams
+ */
+Events.prototype.updateUser = async function ({ userId, userParams }) {
+  try {
+    let userInfoSerializer = await UserInfoSerializer.build();
+    // get streams ids from the config that should be retrieved
+    let userProfileStreamsIds = userInfoSerializer.getCoreStreams(UserInfoSerializer.getAllCoreStreams());
+
+    // change password into hash if it exists
+    if (userParams.password && !userParams.passwordHash) {
+      userParams.passwordHash = await bluebird.fromCallback((cb) => encryption.hash(userParams.password, cb));
+    }
+    delete userParams.password;
+
+    // update all core streams and do not allow additional properties
+    Object.keys(userProfileStreamsIds).map(streamId => {
+      if (userParams[streamId]) {
+        return bluebird.fromCallback(cb => Events.super_.prototype.updateOne.call(this, 
+          { id: userId },
+          { streamIds: { $in: [streamId] } },
+          { content: userParams[streamId] }, cb));
+      }
+    });
+    return true;//TODO IEVA??
+  } catch (error) {
+    console.log(error,'error');
     throw error;
   }
 };

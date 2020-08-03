@@ -267,7 +267,7 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
   create(): Promise<mixed> {
     const db = this.db; 
     const attributes = this.attrs;
-    return db.events.createUser({}, attributes); 
+    return db.events.createUser(attributes); 
   }
   
   remove(): Promise<mixed> {

@@ -18,7 +18,7 @@ var helpers = require('./helpers'),
 
 describe('profile (app)', function () {
 
-  var user = testData.users[0],
+  var user = Object.assign({}, testData.users[0]),
       basePath = '/' + user.username + '/profile',
       request = null, // must be set after server instance started
       appAccess = testData.accesses[4],

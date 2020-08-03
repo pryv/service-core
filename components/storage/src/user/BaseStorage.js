@@ -217,7 +217,8 @@ BaseStorage.prototype.aggregate = function(
   );
 };
 
-BaseStorage.prototype.insertOne = function(user, item, callback) {
+BaseStorage.prototype.insertOne = function (user, item, callback) {
+  console.log('user: ', user, 'item: ', item);
   this.database.insertOne(
     this.getCollectionInfo(user),
     this.applyItemToDB(this.applyItemDefaults(item)),
@@ -273,7 +274,7 @@ BaseStorage.prototype.findOneAndUpdate = function(user, query, updatedData, call
  * @param updatedData
  * @param callback
  */
-BaseStorage.prototype.updateOne = function(user, query, updatedData, callback) {
+BaseStorage.prototype.updateOne = function (user, query, updatedData, callback) {
   this.database.findOneAndUpdate(
     this.getCollectionInfo(user),
     this.applyQueryToDB(query),

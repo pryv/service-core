@@ -25,7 +25,7 @@ const superagent = require('superagent');
 
 describe('event previews', function () {
 
-  const user = testData.users[0];
+  var user = Object.assign({}, testData.users[0]);
   const token = testData.accesses[2].token;
   const basePath = '/' + user.username + '/events';
   let request = null;

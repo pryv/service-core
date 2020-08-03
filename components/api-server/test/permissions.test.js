@@ -23,7 +23,7 @@ const assert = chai.assert;
 
 describe('Access permissions', function () {
 
-  var user = testData.users[0],
+  var user = Object.assign({}, testData.users[0]),
       request = null, // must be set after server instance started
       filesReadTokenSecret = helpers.dependencies.settings.auth.filesReadTokenSecret;
 
@@ -96,11 +96,13 @@ describe('Access permissions', function () {
         var params = {
           limit: 100, // i.e. all
           state: 'all'
-        };
+        }; 
         request.get(basePath, token(2)).query(params).end(function (res) {
           validation.checkFilesReadToken(res.body.events, testData.accesses[2],
             filesReadTokenSecret);
           validation.sanitizeEvents(res.body.events);
+          // TODO IEVA - test core events pressance in the separate test
+          res.body.events = validation.removeCoreStreamsEvents(res.body.events);
           res.body.events.should.eql(validation.removeDeletionsAndHistory(testData.events).sort(
             function (a, b) {
               return b.time - a.time;
@@ -245,7 +247,6 @@ describe('Access permissions', function () {
         done();
       });
     });
-
   });
 
   describe('Streams', function () {

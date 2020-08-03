@@ -21,7 +21,7 @@ require('date-utils');
 
 describe('Auditing', function () {
 
-  var user = testData.users[0],
+  var user = Object.assign({}, testData.users[0]),
       request = null;
 
   function pathToEvent(eventId) {
@@ -298,7 +298,7 @@ describe('Auditing', function () {
           content: 'updated content'
         };
         async.series([
-          function updateEvent(stepDone) {
+          function updateEvent (stepDone) {
             request.put(pathToEvent(eventWithNoHistory.id)).send(updateData).end(function (res) {
               validation.check(res, {
                 status: 200,

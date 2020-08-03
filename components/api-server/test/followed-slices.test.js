@@ -20,7 +20,7 @@ var helpers = require('./helpers'),
 
 describe('followed slices', function () {
 
-  var user = testData.users[0],
+  var user = Object.assign({}, testData.users[0]),
       basePath = '/' + user.username + '/followed-slices',
       request = null; // must be set after server instance started
 

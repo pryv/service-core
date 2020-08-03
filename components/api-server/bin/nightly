@@ -20,7 +20,7 @@ let logger;
   const storage = require('../../storage');
   const storageLayer = app.storageLayer;
   const storageSize = new storage.Size(
-    storageLayer.users,
+    storageLayer.events,
     [ storageLayer.accesses,
       storageLayer.events,
       storageLayer.followedSlices,
@@ -57,10 +57,10 @@ let logger;
  */
 async function runNightlyTasks(storageLayer, storageSize) {
   logger.info('Starting update of storage size');
-  
+  //TODO IEVA
   // Retrieve all existing users
   const users = await bluebird.fromCallback(
-    (cb) => storageLayer.users.find(
+    (cb) => storageLayer.events.find(
       {$nor: [{username: /^pool@.*/}, {username: /^temp@.*/}]}, null, cb));
 
   // Compute storage size used by each user

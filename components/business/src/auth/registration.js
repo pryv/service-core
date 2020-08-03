@@ -109,7 +109,8 @@ class Registration {
       context.user = {
         username: params.username
       }
-      context.user = await this.storageLayer.events.createUser(context.user, params);
+      const user = await this.storageLayer.events.createUser(params);
+      context.user = { ...context.user, ...user}
       context.user.host = { name: this.hostname };
 
       // form the result for system call or full registration call

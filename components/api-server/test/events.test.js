@@ -32,7 +32,7 @@ require('date-utils');
 
 describe('events', function () {
 
-  var user = testData.users[0],
+  var user = Object.assign({}, testData.users[0]),
       basePath = '/' + user.username + '/events',
       testType = 'test/test',
       // these must be set after server instance started

@@ -16,8 +16,9 @@ var utils = require('components/utils'),
     timestamp = require('unix-timestamp'),
     treeUtils = utils.treeUtils,
     _ = require('lodash'),
-    SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
-    
+    SetFileReadTokenStream = require('./streams/SetFileReadTokenStream'),
+    UserInfoSerializer = require('components/business/src/user/user_info_serializer');
+
 const assert = require('assert');
     
 const {TypeRepository, isSeriesType} = require('components/business').types;
@@ -65,7 +66,7 @@ module.exports = function (
     findAccessibleEvents,
     includeDeletionsIfRequested);
 
-  function applyDefaultsForRetrieval(context, params, result, next) {
+  async function applyDefaultsForRetrieval(context, params, result, next) {
     _.defaults(params, {
       streams: null,
       tags: null,
@@ -88,6 +89,13 @@ module.exports = function (
     if (params.fromTime == null && params.toTime == null && params.limit == null) {
       // limit to 20 items by default
       params.limit = 20;
+    }
+
+    // append core streams to streams list here (only available for retrieval)
+    let userInfoSerializer = await UserInfoSerializer.build();
+    const userCoreStreamsIds = userInfoSerializer.getCoreStreams(UserInfoSerializer.getReadableCoreStreams());
+    for (const key of Object.keys(userCoreStreamsIds)) {
+      context.streams.push({ id: key, children: []});
     }
 
     if (params.streams != null) {
@@ -115,6 +123,7 @@ module.exports = function (
     }
     if (! context.access.canReadAllStreams()) {
       var accessibleStreamIds = [];
+
       Object.keys(context.access.streamPermissionsMap).map((streamId) => {
         if (context.access.canReadStream(streamId)) {
           accessibleStreamIds.push(streamId);
@@ -131,17 +140,61 @@ module.exports = function (
         ? _.intersection(params.tags, accessibleTags) 
         : accessibleTags;
     }
-
     next();
   }
 
-  function findAccessibleEvents(context, params, result, next) {
+  /**
+   * Remove events that belongs to the core streams and should not be displayed
+   * @param mongo query object query 
+   * @param Boolean shouldRemoveReadable - if true, will add 
+   * all core streams to "$nin" in the query
+   */
+  async function removeProfileStreamsFromQuery (query, shouldAllowReadable: Boolean) {
+    let userInfoSerializerObj = await UserInfoSerializer.build();
+    // get streams ids from the config that should be retrieved
+
+    let whatCoreStreamsToRetrieve = UserInfoSerializer.getReadableCoreStreams();
+    console.log(shouldAllowReadable,'shouldAllowReadable');
+    if (shouldAllowReadable) {
+      whatCoreStreamsToRetrieve = UserInfoSerializer.getOnlyWritableCoreStreams();
+    }
+    const userCoreStreams = Object.keys(userInfoSerializerObj.getCoreStreams(whatCoreStreamsToRetrieve));
+    query.streamIds = { ...query.streamIds, ...{ $nin: userCoreStreams } };
+
+    return query;
+  }
+
+  /**
+   * Check if event belongs to the core stream and if yes, trigger the error
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  async function catchForbiddenCoreStreamsUpdate (context, params, result, next) {
+    return next(); // TODO IEVA
+    let userInfoSerializerObj = await UserInfoSerializer.build();
+    // get streams ids from the config that should be retrieved
+
+    let whatCoreStreamsToRetrieve = UserInfoSerializer.getReadableCoreStreams();
+    if (shouldAllowReadable) {
+      whatCoreStreamsToRetrieve = UserInfoSerializer.getOnlyWritableCoreStreams();
+    }
+    const userCoreStreams = Object.keys(userInfoSerializerObj.getCoreStreams(whatCoreStreamsToRetrieve));
+    query.streamIds = { ...query.streamIds, ...{ $nin: userCoreStreams } };
+
+    return query;
+  }
+
+  async function findAccessibleEvents(context, params, result, next) {
     // build query
     var query = querying.noDeletions(querying.applyState({}, params.state));
-    
+
     if (params.streams) {
       query.streamIds = {$in: params.streams};
-    }
+    } console.log(query, 'query', params.streams);
+    query = await removeProfileStreamsFromQuery(query, true);
+    console.log(context.streams, 'context.streams', query,'query');
     if (params.tags && params.tags.length > 0) {
       query.tags = {$in: params.tags};
     }
@@ -309,7 +362,7 @@ module.exports = function (
     next();
   }
 
-  function verifycanContributeToContext(context, params, result, next) {
+  function verifycanContributeToContext (context, params, result, next) {
     for (let i = 0; i < context.content.streamIds.length; i++) { // refuse if any context is not accessible
       if (! context.canContributeToContext(context.content.streamIds[i], context.content.tags)) {
         return next(errors.forbidden());
@@ -399,6 +452,7 @@ module.exports = function (
   api.register('events.update',
     commonFns.getParamsValidation(methodsSchema.update.params),
     commonFns.catchForbiddenUpdate(eventSchema('update'), updatesSettings.ignoreProtectedFields, logger),
+    catchForbiddenCoreStreamsUpdate,
     normalizeStreamIdAndStreamIds,
     applyPrerequisitesForUpdate,
     validateEventContentAndCoerce,
@@ -498,20 +552,20 @@ module.exports = function (
     });
   }
 
-  function updateAttachments(context, params, result, next) {
+  async function updateAttachments(context, params, result, next) {
     var eventInfo = {
       id: context.content.id,
       attachments: context.content.attachments || []
     };
-    attachFiles(context, eventInfo, sanitizeRequestFiles(params.files),
-      function (err, attachments) {
-        if (err) { return next(err); }
-
-        if (attachments) {
-          context.content.attachments = attachments;
-        }
-        next();
-      });
+    try{
+      const attachments = await attachFiles(context, eventInfo, sanitizeRequestFiles(params.files));
+      if (attachments) {
+        context.content.attachments = attachments;
+      }
+      return next();
+    } catch (err) {
+      return next(err);
+    }
   }
 
   function updateEvent (context, params, result, next) {
@@ -690,14 +744,13 @@ module.exports = function (
    * @return `true` if OK, `false` if an error was found.
    */
   function checkStreams(context, errorCallback) {
-
     if (context.streamIdsNotFoundList.length > 0 ) {
       errorCallback(errors.unknownReferencedResource(
         'stream', 'streamIds', context.streamIdsNotFoundList
       ));
       return false;
     }
-
+    
     for (let i = 0; i < context.streamList.length; i++) {
       if (context.streamList[i].trashed) {
         errorCallback(errors.invalidOperation(
@@ -720,7 +773,8 @@ module.exports = function (
    */
   async function attachFiles (context, eventInfo, files) {
     // TODO IEVA ? process.nextTick(callback)
-    if (!files) { return process.nextTick(callback); }
+    //if (!files) { return process.nextTick(callback); }
+    if (!files) { return; }
 
     var attachments = eventInfo.attachments ? eventInfo.attachments.slice() : [],
       sizeDelta = 0;
@@ -742,8 +796,9 @@ module.exports = function (
           type: fileInfo.mimetype,
           size: fileInfo.size
         });
-        sizeDelta += fileInfo.size;
-        await updateUserStorageUsed({ attachedFiles: sizeDelta }, context.user.id);
+        // approximately update account storage size
+        context.user.storageUsed.attachedFiles += fileInfo.size;
+        await userEventsStorage.updateUser({ userId: context.user.id, userParams: { attachedFiles: context.user.storageUsed.attachedFiles } });
       }
       return attachments;
     } catch (err) {
@@ -826,35 +881,16 @@ module.exports = function (
           });
       },
       userEventFilesStorage.removeAllForEvent.bind(userEventFilesStorage, context.user, params.id),
-      async function (stepDone) {
+      async function () {
         // If needed, approximately update account storage size
         if (! context.user.storageUsed || ! context.user.storageUsed.attachedFiles) {
-          return stepDone();
+          return;
         }
         context.user.storageUsed.attachedFiles -= getTotalAttachmentsSize(context.event);
         // TODO IEVA test
-        await updateUserStorageUsed(context.user.storageUsed, context.user.id);
-        stepDone();
+        await userEventsStorage.updateUser({ userId: context.user.id, userParams: context.user.storageUsed });
       }
     ], next);
-  }
-
-  /**
-   * Update user's storage used parameter after events with type file changes
-   * @param {*} userStorageUsed 
-   */
-  async function updateUserStorageUsed (userStorageUsed, userId) {
-    const updateActions = ['dbDocs', 'attachedFiles'].map(paramKey => {
-      if (userStorageUsed[paramKey]){
-        return bluebird.fromCallback(cb => userEventsStorage.updateOne(
-          { id: userId },
-          { streamIds: { $in: [paramKey] } },
-          { content: userStorageUsed[paramKey] }, cb));
-      }
-    });
-
-    // execute tasks to update events
-    await Promise.all(updateActions);
   }
 
   function getTotalAttachmentsSize(event) {
@@ -912,7 +948,7 @@ module.exports = function (
           // approximately update account storage size
           context.user.storageUsed.attachedFiles -= deletedAtt.size;
           // TODO IEVA validate
-          await updateUserStorageUsed(context.user.storageUsed, context.user.id);
+          await userEventsStorage.updateUser({ userId: context.user.id, userParams: context.user.storageUsed });
         },
         function (stepDone) {
           notifications.eventsChanged(context.user);
@@ -933,8 +969,10 @@ module.exports = function (
       requestedType;
   }
 
-  function checkEventForDelete(context, eventId, callback) {
-    userEventsStorage.findOne(context.user, {id: eventId}, null, function (err, event) {
+  async function checkEventForDelete (context, eventId, callback) {
+    let query = await removeProfileStreamsFromQuery({ id: eventId }, false);
+
+    userEventsStorage.findOne(context.user, query, null, function (err, event) {
       if (err) {
         return callback(errors.unexpectedError(err));
       }

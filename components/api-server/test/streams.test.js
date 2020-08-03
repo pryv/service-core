@@ -29,7 +29,7 @@ const assert = chai.assert;
 
 describe('streams', function () {
 
-  var user = testData.users[0],
+  var user = Object.assign({}, testData.users[0]),
       initialRootStreamId = testData.streams[0].id,
       basePath = '/' + user.username + '/streams',
       // these must be set after server instance started

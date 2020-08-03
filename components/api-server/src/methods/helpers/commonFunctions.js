@@ -197,7 +197,7 @@ exports.apiErrorToValidationErrorsList = (errorsList: Array<Array<APIError>>) =>
 }
 
 exports.catchForbiddenUpdate = function catchForbiddenUpdate(paramsSchema, ignoreProtectedFieldUpdates, logger) {
-  return function validateParams(context, params, result, next) {
+  return function validateParams (context, params, result, next) {
     const allowed = paramsSchema.alterableProperties;
 
     const forbidden = Object.keys(params.update)

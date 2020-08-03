@@ -18,10 +18,10 @@ describe('High-Frequency', function () {
   before(function (done) {
     async.series([
       testData.resetUsers,
+      testData.resetEvents,
       testData.resetAccesses,
       testData.resetProfile,
       testData.resetFollowedSlices,
-      testData.resetEvents,
       testData.resetStreams,
       testData.resetAttachments,
       server.ensureStarted.bind(server, helpers.dependencies.settings),

@@ -123,7 +123,7 @@ describe('accesses (app)', function () {
       modifiedBy: 'test'
     }
   ];
-  const user = testData.users[0];
+  var user = Object.assign({}, testData.users[0]);
 
   const access = additionalTestAccesses[0];
   const basePath = '/' + user.username + '/accesses';
