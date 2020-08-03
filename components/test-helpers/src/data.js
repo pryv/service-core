@@ -26,7 +26,7 @@ const defaultUser = users[0];
 
 exports.resetUsers = async () => {
   // TODO IEVA
-  bluebird.fromCallback(cb => storage.user.events.database.deleteMany(
+  await bluebird.fromCallback(cb => storage.user.events.database.deleteMany(
     { name: 'events' }, {}, cb));
 
   let i;
