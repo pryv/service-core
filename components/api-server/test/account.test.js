@@ -31,7 +31,7 @@ describe('account', function () {
   let request = null; // must be set after server instance started
 
   // to verify data change notifications
-  let accountNotifCount;
+  var accountNotifCount;
   server.on('account-changed', function () { accountNotifCount++; });
 
   before(function (done) {
@@ -348,7 +348,7 @@ describe('account', function () {
         newPassword: 'Dr0ws$4p'
       };
       async.series([
-        function changePassword(stepDone) {
+        function changePassword (stepDone) {
           request.post(path).send(data).end(function (res) { 
             validation.check(res, {
               status: 200,
@@ -622,7 +622,7 @@ describe('account', function () {
   async function resetUsers() {
     accountNotifCount = 0;
     //TODO IEVA
-  //  await testData.resetUsers();
+    //await testData.resetUsers();
   }
 
   function cleanUpDetails(accountDetails) {

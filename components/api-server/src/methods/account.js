@@ -62,13 +62,12 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     updateAccount);
 
   async function verifyOldPassword (context, params, result, next) {
-    const userPass = await bluebird.fromCallback(cb =>
-      userEventsStorage.findOne({ userId: context.user.id }, { "streamIds": { '$in': ['passwordHash'] } }, null, cb));
+    const userPass = await userEventsStorage.getUserPasswordHash(context.user.id);
 
     if (userPass == null)
       throw errors.unknownResource('user', context.user.username);
-    
-    encryption.compare(params.oldPassword, userPass.content, function (err, isValid) {
+
+    encryption.compare(params.oldPassword, userPass, function (err, isValid) {
       if (err) { return next(errors.unexpectedError(err)); }
 
       if (! isValid) {

@@ -494,3 +494,20 @@ Events.prototype.findAllUsers = async function () {
     throw error;
   }
 };
+
+/**
+ * Get user password hash
+ */
+Events.prototype.getUserPasswordHash = async function (userId) {
+  let userPass;
+  userPass = await bluebird.fromCallback(cb =>
+  this.database.findOne(
+    this.getCollectionInfo({ id: userId }),
+    this.applyQueryToDB({
+      $and: [
+        { streamIds: 'passwordHash' }
+      ]
+    }),
+    this.applyOptionsToDB(null), cb));
+  return (userPass?.content) ? userPass.content : null;
+};

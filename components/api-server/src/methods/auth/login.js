@@ -42,20 +42,13 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
   }
 
   async function checkPassword (context, params, result, next) {
-    const userPass = await bluebird.fromCallback(cb =>
-      userEventsStorage.findOne({ userId: context.user.id },
-        {
-          $and: [
-            { streamIds: 'passwordHash' },
-            { userId: context.user.id }
-          ]
-        }, null, cb));
+    const userPass = await userEventsStorage.getUserPasswordHash(context.user.id);
 
     // TODO IEVA should I throw a different error
     if (userPass == null)
       throw errors.unknownResource('user', context.user.username);
     
-    encryption.compare(params.password, userPass.content, function (err, isValid) {
+    encryption.compare(params.password, userPass, function (err, isValid) {
       delete params.password;
       if (err) { return next(errors.unexpectedError(err)); }
 
