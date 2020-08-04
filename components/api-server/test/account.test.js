@@ -287,30 +287,24 @@ describe('account', function () {
       ], done);
     });
 
-    it('[93AP] must be approximately updated (diff) when deleting an attached file', function (done) {
-      var initialStorageUsed,
-          deletedAtt = testData.events[0].attachments[0];
-      async.series([
-        async function checkInitial() {
-          const account = await storage.getUserInfo({ user: { id: user.id }, getAll: false });
-          initialStorageUsed = account.storageUsed;
-        },
-        function deleteAttachment(stepDone) {
-          var urlPath = '/' + user.username + '/events/' + testData.events[0].id + '/' +
-              deletedAtt.id;
-          request.del(urlPath).end(function (res) {
-            validation.check(res, {status: 200});
-            stepDone();
-          });
-        },
-        async function checkUpdated () {
-          const account = await storage.getUserInfo({ user: { id: user.id }, getAll: false });
-          initialStorageUsed = account.storageUsed;
-          account.storageUsed.dbDocuments.should.eql(initialStorageUsed.dbDocuments);
-          account.storageUsed.attachedFiles.should.be.approximately(
-              initialStorageUsed.attachedFiles - deletedAtt.size, filesystemBlockSize);
-        }
-      ], done);
+    it('[93AP] must be approximately updated (diff) when deleting an attached file', async function () {
+      const deletedAtt = testData.events[0].attachments[0];
+      const initialStorageUsed = await storageSize.computeForUser(user);
+
+      const path = '/' + user.username + '/events/' + testData.events[0].id + '/' +
+        deletedAtt.id;
+      try { 
+        const res = await request.del(path);
+      } catch (e) {
+        // not an error, but the callback returns the response in 1st position
+        // either we do the request with superagent, or we update request()
+      }
+      
+      const updatedStoragedUsed = await storageSize.computeForUser(user);
+      assert.equal(updatedStoragedUsed.dbDocuments, initialStorageUsed.dbDocuments);
+      assert.approximately(updatedStoragedUsed.attachedFiles, 
+        initialStorageUsed.attachedFiles - deletedAtt.size,
+        filesystemBlockSize);
     });
 
     it('[5WO0] must be approximately updated (diff) when deleting an event', function (done) {
