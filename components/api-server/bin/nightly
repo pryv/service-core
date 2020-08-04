@@ -60,7 +60,7 @@ async function runNightlyTasks(storageLayer, storageSize) {
   //TODO IEVA
   // Retrieve all existing users
   const users = await bluebird.fromCallback(
-    (cb) => storageLayer.events.find(
+    (cb) => storageLayer.users.find(
       {$nor: [{username: /^pool@.*/}, {username: /^temp@.*/}]}, null, cb));
 
   // Compute storage size used by each user
