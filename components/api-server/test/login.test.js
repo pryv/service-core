@@ -45,7 +45,8 @@ describe('auth', function() {
   });
 
   var user = Object.assign({}, testData.users[0]),
-      trustedOrigin = 'http://test.pryv.local';
+    trustedOrigin = 'http://test.pryv.local';
+
   var authData = {
     username: user.username,
     password: user.password,
@@ -477,6 +478,7 @@ describe('auth', function() {
 
     it('[E2MD] (or any request) must alternatively accept the access token in the query string', function(done) {
       var testRequest = helpers.request(server.url);
+
       async.series(
         [
           testRequest.login.bind(testRequest, user),
