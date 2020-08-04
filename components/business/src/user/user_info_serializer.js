@@ -122,7 +122,7 @@ function formEventsTree(stream, events, user){
     for (i = 0; i < events.length; i++) {
       if (events[i].streamIds.includes(streamName)) {
         // allow to display variable with different name 
-        // currently setting is adapted only on dbDocs case and do not
+        // currently setting is adapted only on dbDocuments case and do not
         // handle edge cases
         if (stream[streamName].displayName) {
           user[stream[streamName].displayName] = events[i].content;
