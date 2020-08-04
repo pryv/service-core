@@ -43,7 +43,13 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
 
   async function checkPassword (context, params, result, next) {
     const userPass = await bluebird.fromCallback(cb =>
-      userEventsStorage.findOne({ userId: context.user.id }, { "streamIds": { '$in': ['passwordHash'] } }, null, cb));
+      userEventsStorage.findOne({ userId: context.user.id },
+        {
+          $and: [
+            { streamIds: 'passwordHash' },
+            { userId: context.user.id }
+          ]
+        }, null, cb));
 
     // TODO IEVA should I throw a different error
     if (userPass == null)

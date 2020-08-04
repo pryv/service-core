@@ -39,7 +39,7 @@ class Repository {
     let users;
     try {
       users = await bluebird.fromCallback(cb => {
-        eventsStorage.count({}, { streamIds: { $in: ["username"] } }, cb);
+        eventsStorage.count({}, { streamIds: 'username' }, cb);
       });
     } catch (error) {
       //TODO IEVA logging

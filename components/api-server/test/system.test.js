@@ -105,7 +105,6 @@ describe('system (ex-register)', function () {
 
         // create user
         const res = await bluebird.fromCallback(cb => post(newUserData, cb));
-
         validation.check(res, {
           status: 201,
           schema: methodsSchema.createUser.result
@@ -160,8 +159,9 @@ describe('system (ex-register)', function () {
 
       async.series([
         server.ensureStarted.bind(server, settings),
-        function registerNewUser(stepDone) {
-          post(newUserData, function (err, res) {
+        function registerNewUser (stepDone) {
+          let newUserDataExpected = Object.assign({}, newUserData);
+          post(newUserDataExpected, function (err, res) {
             validation.check(res, {
               status: 201,
               schema: methodsSchema.createUser.result
@@ -221,9 +221,10 @@ describe('system (ex-register)', function () {
         });
     
       it('[ZG1L] must support the old "/register" path for backwards-compatibility', function (done) {
+        let newUserDataExpected = Object.assign({}, newUserData);
         request.post(url.resolve(server.url, '/register/create-user'))
           .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
-          .send(newUserData)
+          .send(newUserDataExpected)
           .end(function (err, res) {
             validation.check(res, {
               status: 201
@@ -238,13 +239,15 @@ describe('system (ex-register)', function () {
       });
 
       it('[ABI5] must return a correct 400 error if the language property is above 5 characters', function (done) {
-        post(_.assignIn(newUserData, { language: 'abcdef' }), function (err, res) {
+        let newUserDataExpected = Object.assign({}, newUserData);
+        post(_.assignIn(newUserDataExpected, { language: 'abcdef' }), function (err, res) {
           validation.checkErrorInvalidParams(res, done);
         });
       });
 
       it('[OVI4] must return a correct 400 error if the language property is the empty string', function (done) {
-        post(_.assignIn(newUserData, { language: '' }), function (err, res) {
+        let newUserDataExpected = Object.assign({}, newUserData);
+        post(_.assignIn(newUserDataExpected, { language: '' }), function (err, res) {
           validation.checkErrorInvalidParams(res, done);
         });
       });
@@ -285,9 +288,10 @@ describe('system (ex-register)', function () {
       });
     
       it('[Y5JB] must return a correct 404 error when authentication is invalid', function (done) {
+        let newUserDataExpected = Object.assign({}, newUserData);
         request
           .post(path())
-          .set('authorization', 'bad-key').send(newUserData)
+          .set('authorization', 'bad-key').send(newUserDataExpected)
           .end(function (err, res) {
             validation.checkError(res, {
               status: 404,
@@ -354,9 +358,10 @@ describe('system (ex-register)', function () {
     
       // cf. GH issue #64
       it('[Y69B] must replace the passwordHash in the logs by (hidden) when the authentication is invalid', function (done) {
+        let newUserDataExpected = Object.assign({}, newUserData);
         async.series([
           function failCreateUser(stepDone) {
-            request.post(path()).set('authorization', 'bad-key').send(newUserData)
+            request.post(path()).set('authorization', 'bad-key').send(newUserDataExpected)
               .end(function (err, res) {
                 validation.checkError(res, {
                   status: 404,
@@ -370,9 +375,10 @@ describe('system (ex-register)', function () {
     
       // cf. GH issue #64 too
       it('[MEJ9] must replace the passwordHash in the logs by (hidden) when the payload is invalid (here parameters)', function (done) {
+        let newUserDataExpected = Object.assign({}, newUserData);
         async.series([
           function failCreateUser(stepDone) {
-            post(_.extend({invalidParam: 'yolo'}, newUserData), function (err, res) {
+            post(_.extend({ invalidParam: 'yolo' }, newUserDataExpected), function (err, res) {
               validation.checkError(res, {
                 status: 400,
                 id: ErrorIds.InvalidParametersFormat
@@ -384,9 +390,10 @@ describe('system (ex-register)', function () {
       });
     
       it('[CO6H] must not mention the passwordHash in the logs when none is provided', function (done) {
+        let newUserDataExpected = Object.assign({}, newUserData);
         async.series([
           function failCreateUser(stepDone) {
-            let dataWithNoPasswordHash = _.cloneDeep(newUserData);
+            let dataWithNoPasswordHash = _.cloneDeep(newUserDataExpected);
             delete dataWithNoPasswordHash.passwordHash;
     
             post(dataWithNoPasswordHash, function (err, res) {
@@ -400,12 +407,13 @@ describe('system (ex-register)', function () {
         ], done);
       });
     
-      function verifyHiddenPasswordHashInLogs(callback) {
+      function verifyHiddenPasswordHashInLogs (callback) {
+        let newUserDataExpected = Object.assign({}, newUserData);
         fs.readFile(logFilePath, 'utf8', function (err, data) {
           if (err) {
             return callback(err);
           }
-          should(data.indexOf(newUserData.passwordHash)).be.equal(-1);
+          should(data.indexOf(newUserDataExpected.passwordHash)).be.equal(-1);
           if (/passwordHash/.test(data))
             should(data.indexOf('passwordHash=(hidden)')).be.aboveOrEqual(0);
           callback();

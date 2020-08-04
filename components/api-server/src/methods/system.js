@@ -90,7 +90,7 @@ module.exports = function (
       const numUsers = await bluebird.fromCallback(cb => 
         storageLayer.events.count({}, {
           $and: [
-            { streamIds: { $in: ["username"] } },
+            { streamIds: 'username' },
             { content: { $regex: POOL_REGEX } }
           ]
         }, cb));

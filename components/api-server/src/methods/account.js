@@ -199,7 +199,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
       Object.keys(params.update).map(paramKey => {
         return bluebird.fromCallback(cb => userEventsStorage.updateOne(
           { id: context.user.id },
-          { streamIds: { $in: [paramKey] } },
+          { streamIds: paramKey },
           { content: params.update[paramKey] }, cb));
       });
 

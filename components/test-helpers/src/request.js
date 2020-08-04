@@ -81,8 +81,8 @@ Request.prototype.login = function (user: any, callback: any) {
     .send(authData).end(function (err, res) {
       // TODO IEVA
       if (err) {
-       // console.log(authData, 'authData', user, 'user');
-        //console.log(err.response.error, 'err Request.prototype.login', authData);
+        console.log(authData, 'authData', user, 'user');
+        console.log(err.response.error, 'err Request.prototype.login', authData);
       }
       assert.isNull(err, 'Request must be a success');
       assert.isDefined(res, 'Request has a result');

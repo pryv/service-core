@@ -172,7 +172,7 @@ class Registration {
         //TODO IEVA - validate
         const finalUser = await bluebird.fromCallback(
           (cb) => this.storageLayer.events.updateOne({},
-            { $and: [{ streamIds: { $in: ['username'] } }, { content: { $eq: tempUser.username } }] },
+            { $and: [{ streamIds: 'username' }, { content: { $eq: tempUser.username } }] },
             { content: username }, cb));
         return callback(null, finalUser);
       } catch (e) {
@@ -271,13 +271,13 @@ class Registration {
 
         //append context with the same values that would be saved by createUser function
         // TODO IEVA maybe worth it doing more dynamically
-        context.user = await storageLayer.events.getUserInfo({
+        context.user = await this.storageLayer.events.getUserInfo({
           user: { id: context.user.id },
           getAll: true
         });
 
         // set result as current username
-        result.username = existingUser.username;
+        result.username = context.user.username;
         this.logger.error(`User with id ${existingUser.id} tried to register and application is skipping the user creation on service-core db`);
       }
     } catch (error) {

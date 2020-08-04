@@ -328,7 +328,7 @@ describe('User Registration related functionalities', async () => {
       });
     });
 
-    it('existing username in service-core but not in service-register', async () => {
+    it('[EUIS] existing username in service-core but not in service-register', async () => {
       // pretend saving user only in service-core
       const userData = defaults();
 
@@ -351,7 +351,6 @@ describe('User Registration related functionalities', async () => {
       await registrationRequest(userData);
 
      const res = await registrationRequest(userData);
-
       validation.check(res, {
         status: 201,
         schema: authSchema.register.result,

@@ -352,11 +352,14 @@ Events.prototype.createUser = async function (userParams) {
     // form username event - it is separate because we set the _id 
     let updateObject = {
       streamIds: ["username", "indexed"],
-      type: "string",
+      type: 'string' + '/pryv',// TODO IEVA - define or take specific type
       content: userParams.username,
       id: userParams.id,
       created: timestamp.now(),
-      modified: timestamp.now()
+      modified: timestamp.now(),
+      createdBy: '',
+      modifiedBy: '',
+      time: timestamp.now()
     };
     user.id = updateObject.id;
 
@@ -369,7 +372,7 @@ Events.prototype.createUser = async function (userParams) {
     delete userProfileStreamsIds['username'];
 
     // create all user account events
-    Object.keys(userProfileStreamsIds).map(streamId => {
+    const eventsCretionActions = Object.keys(userProfileStreamsIds).map(streamId => {
       if (userParams[streamId] || typeof userProfileStreamsIds[streamId].default !== "undefined") {
         let parameter = userProfileStreamsIds[streamId].default;
 
@@ -388,22 +391,25 @@ Events.prototype.createUser = async function (userParams) {
         }
 
         // get type for the event from the config
-        let eventType = "string";
+        let eventType = 'string/pryv';//TODO IEVA- define or take specific type
         if (userProfileStreamsIds[streamId].type) {
-          eventType = userProfileStreamsIds[streamId].type;
+          eventType = userProfileStreamsIds[streamId].type + '/pryv';// TODO IEVA - define or take specific type
         }
         // create the event
         return bluebird.fromCallback((cb) =>
             Events.super_.prototype.insertOne.call(this, user, {
-            streamIds: streamIds,
-            type: eventType,
-            content: parameter,
-            created: timestamp.now(),
-            modified: timestamp.now()
+              streamIds: streamIds,
+              type: eventType,
+              content: parameter,
+              created: timestamp.now(),
+              modified: timestamp.now(),
+              time: timestamp.now(),
+              createdBy: '',
+              modifiedBy: ''
         }, cb));
       }
     });
-   
+    await Promise.all(eventsCretionActions);
     return user;
   } catch (error) {
     throw error;

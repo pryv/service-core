@@ -357,7 +357,7 @@ class Server {
     let numUsers;
     try{
       numUsers = await bluebird.fromCallback(cb => {
-        eventsStorage.count({}, {streamIds: {$in: ["username"]}}, cb);
+        eventsStorage.count({}, {streamIds: 'username' }, cb);
       });
     } catch(error){
       this.logger.error(error);
