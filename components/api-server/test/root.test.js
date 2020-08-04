@@ -30,6 +30,7 @@ describe('root', function() {
   let mongoFixtures;
   before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
+    mongoFixtures.context.cleanEverything();
   });
   after(() => {
     mongoFixtures.clean();
@@ -61,7 +62,8 @@ describe('root', function() {
     server.stop();
   });
 
-  before(async function() {
+  before(async function () {
+    // delete all database before start 
     user = await mongoFixtures.user(username, {});
     personalAccess = await user.access({
       type: 'personal', token: personalAccessToken,
@@ -110,6 +112,7 @@ describe('root', function() {
         level: 'read',
       }],
     });
+
     user2 = user2.attrs;
   });
 
@@ -193,6 +196,7 @@ describe('root', function() {
         .set('Host', user2.username + '.pryv.local')
         .set('Origin', 'http://test.pryv.local')
         .set('Authorization', appAccess2Token);
+
       assert.equal(res.status, 200);
     });
 

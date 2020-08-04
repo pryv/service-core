@@ -18,6 +18,7 @@ const _ = require('lodash');
 const storage = require('components/storage');
 
 const Webhook = require("components/business").webhooks.Webhook;
+const UserInfoSerializer = require('components/business/src/user/user_info_serializer');
 
 class Context {
   databaseConn: storage.Database; 
@@ -201,13 +202,13 @@ class Fixture {
   // the user is really created. 
   // 
   user(name: string, attrs: {}={}, cb?: (FixtureUser) => mixed): Promise<FixtureUser> {
-    return bluebird.try(() => { 
+    return bluebird.try(async () => { 
       const u = new FixtureUser(
         this.context.forUser(name), 
         name, attrs);
         
-      return u.remove()
-        .then(() => this.childs.create(u, cb));
+       await u.remove()
+      return await this.childs.create(u);
     });
   }
   
@@ -262,13 +263,14 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
   /** Removes all resources belonging to the user, then creates them again, 
    * according to the spec stored here. 
    */
-  create(): Promise<mixed> {
+  async create(): Promise<mixed> {
     const db = this.db; 
     const attributes = this.attrs;
-    return db.events.createUser(attributes); 
+    await db.events.createUser(attributes); 
+    return this.attrs;
   }
   
-  remove(): Promise<mixed> {
+  async remove(): Promise<mixed> {
     const db = this.db; 
     const user = null; // NOTE not needed for access to users collection.
     const username = this.context.userName; 
@@ -281,9 +283,18 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
         
     // NOTE username in context will be the same as the one stored in
     // this.attrs.
-    const removeUser = bluebird.fromCallback((cb) => 
-      db.users.removeOne(user, {username: username}, cb));
-      
+    //const removeUser = bluebird.fromCallback((cb) => 
+    //  db.users.removeOne(user, {username: username}, cb));
+    let userInfoSerializer = await UserInfoSerializer.build();
+    // get streams ids from the config that should be deleted
+    const coreStreams = userInfoSerializer.getAllCoreStreams();
+    const removeUser = bluebird.fromCallback((cb) => {
+      db.events.removeMany(this.context.user, {
+        $and:[
+          { streamIds: { $in: Object.keys(coreStreams) } }]
+      }, cb)
+    });
+    
     const removeSessions = bluebird.fromCallback((cb) => 
       db.sessions.removeForUser(username, cb));
 
@@ -508,7 +519,6 @@ class Sessions {
   insertOne(user: {id: string}, attributes: Attributes, cb: () => void) {
     const id = attributes.id; 
     delete attributes.id; 
-    
     attributes['_id'] = id; 
     
     this.databaseConn.insertOne(

@@ -370,8 +370,8 @@ exports.removeDeletionsAndHistory = function (items) {
 exports.removeCoreStreamsEvents = async function (items) {
   let userInfoSerializer = await UserInfoSerializer.build();
   // get streams ids from the config that should be retrieved
-  const expectedCoreEvents = userInfoSerializer.getAllCoreStreams();
-  return items.filter(function (e) { return !(e.streamIds.some(streamId => Object.keys(expectedCoreEvents).indexOf(streamId) >= 0)); });
+  const expectedCoreStreams = userInfoSerializer.getAllCoreStreams();
+  return items.filter(function (e) { return !(e.streamIds.some(streamId => Object.keys(expectedCoreStreams).indexOf(streamId) >= 0)); });
 };
 
 exports.separateCoreStreamsAndOtherEvents = function (items) {
@@ -412,11 +412,11 @@ exports.validateCoreEvents = async function (actualCoreEvents) {
   // get all values from the settings that should be displayed for the user
   let userInfoSerializer = await UserInfoSerializer.build();
   // get streams ids from the config that should be retrieved
-  const expectedCoreEvents = userInfoSerializer.getReadableCoreStreams();
+  const expectedCoreStreams = userInfoSerializer.getReadableCoreStreams();
 
   // iterate through expected core events and check that they exists in actual
   // core events
-  const expectedSreamIds = Object.keys(expectedCoreEvents);
+  const expectedSreamIds = Object.keys(expectedCoreStreams);
   for (n in expectedSreamIds) {
     let foundEvent = false;
     let i;
@@ -424,11 +424,11 @@ exports.validateCoreEvents = async function (actualCoreEvents) {
       if (actualCoreEvents[i].streamIds.includes(expectedSreamIds[n])) {
         foundEvent = true;
         // validate that event is indexed if needed
-        if (expectedCoreEvents[expectedSreamIds[n]].isIndexed === true) {
+        if (expectedCoreStreams[expectedSreamIds[n]].isIndexed === true) {
           actualCoreEvents[i].streamIds.includes('indexed').should.eql(true);
         }
         // validate type
-        actualCoreEvents[i].type.should.eql(expectedCoreEvents[expectedSreamIds[n]].type);
+        actualCoreEvents[i].type.should.eql(expectedCoreStreams[expectedSreamIds[n]].type);
         break;
       }
     }

@@ -338,7 +338,8 @@ Events.prototype.getUserIdByUsername = async function (username): integer {
  * @param userParams - parameters to be saved
  * @return object with created user information in flat format
  */
-Events.prototype.createUser = async function (userParams) {
+Events.prototype.createUser = async function (params) {
+  let userParams = Object.assign({}, params);
   let user = {};
   try {
     let userInfoSerializer = await UserInfoSerializer.build();
