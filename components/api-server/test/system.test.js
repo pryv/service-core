@@ -436,7 +436,7 @@ describe('system (ex-register)', function () {
 
   describe('GET /user-info/{username}', function () {
 
-    var user = Object.assign({}, testData.users[0]);
+    let user = Object.assign({}, testData.users[0]);
     function path(username) {
       return basePath() + '/user-info/' + username;
     }

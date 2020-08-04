@@ -51,7 +51,7 @@ describe('account', function () {
       }
     ], done);
   });
-/*
+
   describe('GET /', function () {
 
     beforeEach(async () => { await resetUsers() });
@@ -79,7 +79,7 @@ describe('account', function () {
     });
 
   });
-*/
+
   describe('PUT /', function () {
 
     beforeEach(async () => { await resetUsers() });
@@ -363,7 +363,7 @@ describe('account', function () {
         }
       ], done);
     });
-/*
+
     it('[STWH] must return an error if the given old password does not match', function (done) {
       var data = {
         oldPassword: 'bad-password',
@@ -390,7 +390,7 @@ describe('account', function () {
     });
 
   });
-/*
+
   describe('/request-password-reset and /reset-password', function () {
 
     beforeEach(async () => { await resetUsers });
@@ -523,8 +523,8 @@ describe('account', function () {
             });
         },
       ], callback);
-    }*/
-/*
+    }
+
     it('[3P2N] must not be possible to use a reset token to illegally change password of another user', function (done) {
       let resetToken = null;
       const newPassword = 'hackingYourPassword';
@@ -616,7 +616,7 @@ describe('account', function () {
         validation.checkErrorInvalidParams(res, done);
       });
     });
-*/
+
   });
 
   async function resetUsers() {

@@ -72,7 +72,7 @@ describe('events', function () {
   describe('GET /', function () {
 
     before(resetEvents);
-/*
+
     it('[WC8C] must return the last 20 non-trashed events (sorted descending) by default',
       function (done) {
         var additionalEvents = [];
@@ -88,13 +88,15 @@ describe('events', function () {
             modifiedBy: 'test'
           });
         }
-
+        let response;
+        let allEvents;
+        let coreStreamsEvents;
         async.series([
           storage.insertMany.bind(storage, user, additionalEvents),
           function getDefault (stepDone) {
-        
             request.get(basePath).end(function (res) {
-              var allEvents = additionalEvents
+              response = res;
+              allEvents = additionalEvents
                 .concat(validation.removeDeletionsAndHistory(testData.events))
                 .filter(function (e) {
                   return !e.trashed && !_.some(testData.streams, containsTrashedEventStream);
@@ -103,17 +105,27 @@ describe('events', function () {
                       _.some(stream.children, containsTrashedEventStream);
                   }
                 });
-
-              // add streamId
-              //allEvents.map(function (event) { event.streamId = event.streamIds[0]; return event });
-              validation.check(res, {
-                status: 200,
-                schema: methodsSchema.get.result,
-                sanitizeFn: validation.sanitizeEvents,
-                sanitizeTarget: 'events',
-                body: { events: _.take(_.sortBy(allEvents, 'time').reverse(), 20) }
-              }, stepDone);
+              stepDone();
             });
+          },
+          async () => {
+            try {
+              // lets separate core events from all other events and validate them separatelly
+              const separatedEvents = await validation.separateCoreStreamsAndOtherEvents(response.body.events);
+              response.body.events = separatedEvents.events;
+              coreStreamsEvents = separatedEvents.coreStreamsEvents;
+            } catch (error) {
+              throw error;
+            }
+          },
+          function checkResponse (stepDone) {
+            validation.check(response, {
+              status: 200,
+              schema: methodsSchema.get.result,
+              sanitizeFn: validation.sanitizeEvents,
+              sanitizeTarget: 'events',
+              body: { events: _.take(_.sortBy(allEvents, 'time').reverse(), 20 - coreStreamsEvents.length) }
+            }, stepDone);
           },
           testData.resetEvents
         ], done);
@@ -349,17 +361,27 @@ describe('events', function () {
     });
 
     it('[6H0Z] must return all events (trashed or not) when requested', function (done) {
-      request.get(basePath).query({ state: 'all', limit: 1000 }).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.get.result,
-          sanitizeFn: validation.sanitizeEvents,
-          sanitizeTarget: 'events',
-          body: {
-            events: _.sortBy(validation.removeDeletionsAndHistory(testData.events), 'time')
-              .reverse()
-          }
-        }, done);
+      request.get(basePath).query({ state: 'all', limit: 1000 }).end(async function (res) {
+        try{
+          // lets separate core events from all other events and validate them separatelly
+          const separatedEvents = await validation.separateCoreStreamsAndOtherEvents(res.body.events);
+          res.body.events = separatedEvents.events;
+          const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
+          await validation.validateCoreEvents(actualCoreStreamsEvents);
+
+          validation.check(res, {
+            status: 200,
+            schema: methodsSchema.get.result,
+            sanitizeFn: validation.sanitizeEvents,
+            sanitizeTarget: 'events',
+            body: {
+              events: _.sortBy(validation.removeDeletionsAndHistory(testData.events), 'time')
+                .reverse()
+            }
+          }, done);
+        } catch (error) {
+          throw error;
+        }
       });
     });
 
@@ -374,19 +396,29 @@ describe('events', function () {
       events = events.sort(function (a, b) {
         return (b.time - a.time);
       });
-      request.get(basePath).query(params).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.get.result,
-          sanitizeFn: validation.sanitizeEvents,
-          sanitizeTarget: 'events',
-          body: {
-            events: events
-          }
-        }, done);
+      request.get(basePath).query(params).end(async function (res) {
+        try{
+          // lets separate core events from all other events and validate them separatelly
+          const separatedEvents = await validation.separateCoreStreamsAndOtherEvents(res.body.events);
+          res.body.events = separatedEvents.events;
+          const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
+          await validation.validateCoreEvents(actualCoreStreamsEvents);
+
+          validation.check(res, {
+            status: 200,
+            schema: methodsSchema.get.result,
+            sanitizeFn: validation.sanitizeEvents,
+            sanitizeTarget: 'events',
+            body: {
+              events: events
+            }
+          }, done);
+        } catch (error) {
+          throw error;
+        }
       });
     });
-*/
+
     it('[B766] must include event deletions (since that time) when requested', function (done) {
       var params = {
         state: 'all',
@@ -404,11 +436,11 @@ describe('events', function () {
       });
 
       request.get(basePath).query(params).end(async function (res) {
-        // lets separate core events from all other events and validate them separatelly
-        const separatedEvents = validation.separateCoreStreamsAndOtherEvents(res.body.events);
-        res.body.events = separatedEvents.events;
-        const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
         try{
+          // lets separate core events from all other events and validate them separatelly
+          const separatedEvents = await validation.separateCoreStreamsAndOtherEvents(res.body.events);
+          res.body.events = separatedEvents.events;
+          const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
           await validation.validateCoreEvents(actualCoreStreamsEvents);
           
           await bluebird.fromCallback(
@@ -1977,23 +2009,27 @@ describe('events', function () {
           },
           function verifyEventData(stepDone) {
             storage.findAll(user, null, async function (err, events) {
-              const separatedEvents = await validation.separateCoreStreamsAndOtherEvents(events);
-              events = separatedEvents.events;
-              const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
-              await validation.validateCoreEvents(actualCoreStreamsEvents);
+              try{
+                const separatedEvents = await validation.separateCoreStreamsAndOtherEvents(events);
+                events = separatedEvents.events;
+                const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
+                await validation.validateCoreEvents(actualCoreStreamsEvents);
 
-              events.length.should.eql(testData.events.length, 'events');
+                events.length.should.eql(testData.events.length, 'events');
 
-              var deletion = _.find(events, function (event) {
-                return event.id === id;
-              });
-              should.exist(deletion);
-              validation.checkObjectEquality(deletion, { id: id, deleted: deletionTime });
+                var deletion = _.find(events, function (event) {
+                  return event.id === id;
+                });
+                should.exist(deletion);
+                validation.checkObjectEquality(deletion, { id: id, deleted: deletionTime });
 
-              var dirPath = eventFilesStorage.getAttachedFilePath(user, id);
-              fs.existsSync(dirPath).should.eql(false, 'deleted event directory existence');
+                var dirPath = eventFilesStorage.getAttachedFilePath(user, id);
+                fs.existsSync(dirPath).should.eql(false, 'deleted event directory existence');
 
-              stepDone();
+                stepDone();
+              } catch (error) {
+                throw error;
+              }
             });
           }
         ],

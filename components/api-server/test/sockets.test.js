@@ -38,7 +38,7 @@ const { ConditionVariable } = require('components/test-helpers').syncPrimitives;
 
 describe('Socket.IO', function () {
 
-  var user = Object.assign({}, testData.users[0]);
+  let user = Object.assign({}, testData.users[0]);
   const namespace = '/' + user.username;
 
   const otherUser = testData.users[1];
