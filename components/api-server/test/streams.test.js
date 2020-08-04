@@ -821,8 +821,16 @@ describe('streams', function () {
             });
         },
         function verifyLinkedEvents(stepDone) {
-          eventsStorage.findAll(user, null, function (err, events) {
+          eventsStorage.findAll(user, null, async function (err, events) {
+
+            // lets separate core events from all other events and validate them separatelly
+            const separatedEvents = validation.separateCoreStreamsAndOtherEvents(events);
+            events = separatedEvents.events;
             events.length.should.eql(testData.events.length, 'events');
+
+            // validate core streams events
+            const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
+            await validation.validateCoreEvents(actualCoreStreamsEvents);
 
             deletedEvents.forEach(function (e) {
               const actual = _.find(events, {id: e.id});

@@ -100,7 +100,7 @@ module.exports = function (
 
     // append core streams to streams list here (only available for retrieval)
     let userInfoSerializer = await UserInfoSerializer.build();
-    const userCoreStreamsIds = userInfoSerializer.getCoreStreams(UserInfoSerializer.getReadableCoreStreams());
+    const userCoreStreamsIds = userInfoSerializer.getReadableCoreStreams();
     for (const key of Object.keys(userCoreStreamsIds)) {
       context.streams.push({ id: key, children: []});
     }
@@ -160,12 +160,13 @@ module.exports = function (
     let userInfoSerializerObj = await UserInfoSerializer.build();
     // get streams ids from the config that should be retrieved
 
-    let whatCoreStreamsToRetrieve = UserInfoSerializer.getReadableCoreStreams();
-
+    let userCoreStreams;
     if (shouldAllowReadable) {
-      whatCoreStreamsToRetrieve = UserInfoSerializer.getOnlyWritableCoreStreams();
+      userCoreStreams = Object.keys(userInfoSerializerObj.getOnlyWritableCoreStreams());
+    } else {
+      userCoreStreams = Object.keys(userInfoSerializerObj.getReadableCoreStreams());
     }
-    const userCoreStreams = Object.keys(userInfoSerializerObj.getCoreStreams(whatCoreStreamsToRetrieve));
+    
     query.streamIds = { ...query.streamIds, ...{ $nin: userCoreStreams } };
 
     return query;
@@ -180,17 +181,7 @@ module.exports = function (
    */
   async function catchForbiddenCoreStreamsUpdate (context, params, result, next) {
     return next(); // TODO IEVA
-    let userInfoSerializerObj = await UserInfoSerializer.build();
-    // get streams ids from the config that should be retrieved
 
-    let whatCoreStreamsToRetrieve = UserInfoSerializer.getReadableCoreStreams();
-    if (shouldAllowReadable) {
-      whatCoreStreamsToRetrieve = UserInfoSerializer.getOnlyWritableCoreStreams();
-    }
-    const userCoreStreams = Object.keys(userInfoSerializerObj.getCoreStreams(whatCoreStreamsToRetrieve));
-    query.streamIds = { ...query.streamIds, ...{ $nin: userCoreStreams } };
-
-    return query;
   }
 
   async function findAccessibleEvents(context, params, result, next) {
@@ -839,7 +830,7 @@ module.exports = function (
     context.updateTrackingProperties(updatedData);
 
     //TODO IEVA - update was done using params.id and not context.user
-    userEventsStorage.updateOne(context.user, {streamIds: {$in: ["dbDocs"]}}, updatedData,
+    userEventsStorage.updateOne(context.user, { id: params.id }, updatedData,
       function (err, updatedEvent) {
         if (err) { return next(errors.unexpectedError(err)); }
 

@@ -15,6 +15,10 @@ const cuid = require('cuid');
 const chai = require('chai');
 const assert = chai.assert;
 const charlatan = require('charlatan');
+
+const helpers = require('./helpers');
+const validation = helpers.validation;
+
 const {fixturePath, fixtureFile} = require('./unit/test-helper');
 
 const { databaseFixture } = require('components/test-helpers');
@@ -786,8 +790,15 @@ describe('events.streamIds', function () {
             const res = await server.request()
               .get(basePathEvent)
               .set('Authorization', manageAccessToken);
-            const events = res.body.events;
+            
+            // lets separate core events from all other events and validate them separatelly
+            const separatedEvents = validation.separateCoreStreamsAndOtherEvents(res.body.events);
+            const events = separatedEvents.events;
             assert.equal(events.length, 3);
+
+            // validate core streams events
+            const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
+            await validation.validateCoreEvents(actualCoreStreamsEvents);
             
             let foundAandA_A = false;
             let foundA_AandA_A_A = false;

@@ -279,8 +279,12 @@ Events.prototype.getUserInfo = async function ({ user, getAll }) {
   try {
     let userInfoSerializer = await UserInfoSerializer.build();
     // get streams ids from the config that should be retrieved
-    const whatStreamsToRetrieve = getAll ? UserInfoSerializer.getAllCoreStreams() : UserInfoSerializer.getReadableCoreStreams();
-    let userProfileStreamsIds = userInfoSerializer.getCoreStreams(whatStreamsToRetrieve);
+    let userProfileStreamsIds;
+    if (getAll){
+      userProfileStreamsIds = userInfoSerializer.getAllCoreStreams();
+    } else {
+      userProfileStreamsIds = userInfoSerializer.getReadableCoreStreams();
+    }
     //console.log(whatStreamsToRetrieve, 'whatStreamsToRetrieve', userProfileStreamsIds,'userProfileStreamsIds');
     // form the query
     let query = { "streamIds": { '$in': Object.keys(userProfileStreamsIds) } };
@@ -339,7 +343,7 @@ Events.prototype.createUser = async function (userParams) {
   try {
     let userInfoSerializer = await UserInfoSerializer.build();
     // get streams ids from the config that should be retrieved
-    let userProfileStreamsIds = userInfoSerializer.getCoreStreams(UserInfoSerializer.getAllCoreStreams());
+    let userProfileStreamsIds = userInfoSerializer.getAllCoreStreams();
 
     // change password into hash
     if (userParams.password && !userParams.passwordHash) {
@@ -424,7 +428,7 @@ Events.prototype.updateUser = async function ({ userId, userParams }) {
   try {
     let userInfoSerializer = await UserInfoSerializer.build();
     // get streams ids from the config that should be retrieved
-    let userProfileStreamsIds = userInfoSerializer.getCoreStreams(UserInfoSerializer.getAllCoreStreams());
+    let userProfileStreamsIds = userInfoSerializer.getAllCoreStreams();
 
     // change password into hash if it exists
     if (userParams.password && !userParams.passwordHash) {

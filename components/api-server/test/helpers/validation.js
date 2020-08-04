@@ -370,7 +370,7 @@ exports.removeDeletionsAndHistory = function (items) {
 exports.removeCoreStreamsEvents = async function (items) {
   let userInfoSerializer = await UserInfoSerializer.build();
   // get streams ids from the config that should be retrieved
-  const expectedCoreEvents = userInfoSerializer.getCoreStreams(UserInfoSerializer.getAllCoreStreams());
+  const expectedCoreEvents = userInfoSerializer.getAllCoreStreams();
   return items.filter(function (e) { return !(e.streamIds.some(streamId => Object.keys(expectedCoreEvents).indexOf(streamId) >= 0)); });
 };
 
@@ -412,7 +412,7 @@ exports.validateCoreEvents = async function (actualCoreEvents) {
   // get all values from the settings that should be displayed for the user
   let userInfoSerializer = await UserInfoSerializer.build();
   // get streams ids from the config that should be retrieved
-  const expectedCoreEvents = userInfoSerializer.getCoreStreams(UserInfoSerializer.getReadableCoreStreams());
+  const expectedCoreEvents = userInfoSerializer.getReadableCoreStreams();
 
   // iterate through expected core events and check that they exists in actual
   // core events
