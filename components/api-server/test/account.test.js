@@ -8,7 +8,7 @@
 
 require('./test-helpers'); 
 const fs = require('fs');
-
+const assert = require('chai').assert;
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
 const async = require('async');
@@ -27,11 +27,11 @@ const { resolveCname } = require('dns');
 describe('account', function () {
   const user = Object.assign({}, testData.users[0]);
 
-   var   basePath = '/' + user.username + '/account',
-      request = null; // must be set after server instance started
+  let basePath = '/' + user.username + '/account';
+  let request = null; // must be set after server instance started
 
   // to verify data change notifications
-  var accountNotifCount;
+  let accountNotifCount;
   server.on('account-changed', function () { accountNotifCount++; });
 
   before(function (done) {
@@ -194,54 +194,34 @@ describe('account', function () {
 
     // tests the computation of user storage size which is used from different API methods
     // (so we're not directly testing an API method here)
-    it('[NFJQ] must properly compute used storage size for a given user when called', function (done) {
-      var initialStorageUsed,
-          updatedStorageUsed,
-          newAtt = testData.attachments.image;
-      async.series([
-        function computeInitial(stepDone) {
-          storageSize.computeForUser(user, function (err, storageUsed) {
-            should.not.exist(err);
-            storageUsed.dbDocuments.should.be.above(0);
+    it('[NFJQ] must properly compute used storage size for a given user when called', async () => {
+      let newAtt = testData.attachments.image;
 
-            var expectedAttsSize = _.reduce(testData.events, function (total, evt) {
-              return total + getTotalAttachmentsSize(evt);
-            }, 0);
+      let storageUsed = await storageSize.computeForUser(user);
+      assert.isAbove(storageUsed.dbDocuments, 0);
 
-            // On Ubuntu with ext4 FileSystem the size difference is 4k, not 1k. I still dunno why.
-            storageUsed.attachedFiles.should.be.approximately(expectedAttsSize, filesystemBlockSize);
+      const expectedAttsSize = _.reduce(testData.events, function (total, evt) {
+        return total + getTotalAttachmentsSize(evt);
+      }, 0);
+      
+      // On Ubuntu with ext4 FileSystem the size difference is 4k, not 1k. I still dunno why.
+      assert.approximately(storageUsed.attachedFiles, expectedAttsSize, filesystemBlockSize);
+      const initialStorageUsed = storageUsed;
 
-            initialStorageUsed = storageUsed;
-
-            stepDone();
-          });
-        },
-        addEventWithAttachment.bind(null, newAtt),
-        function computeUpdated(stepDone) {
-          storageSize.computeForUser(user, function (err, storageUsed) {
-            should.not.exist(err);
-            // hard to know what the exact difference should be, so we just expect it's bigger
-            storageUsed.dbDocuments.should.be.above(initialStorageUsed.dbDocuments);
-            storageUsed.attachedFiles.should.be.approximately(initialStorageUsed.attachedFiles +
-                newAtt.size, filesystemBlockSize);
-            updatedStorageUsed = storageUsed;
-            stepDone();
-          });
-        },
-        async function verifyAccount () {
-          try {
-            const account = await storage.getUserInfo({
-              user: { id: user.id },
-              getAll: false
-            });
-
-            account.storageUsed.should.eql(updatedStorageUsed);
-          } catch (err) {
-            console.log(err,'err');
-            false.should.be.true();
-          }
-        }
-      ], done);
+      await bluebird.fromCallback(cb => addEventWithAttachment(newAtt, cb));
+      storageUsed = await storageSize.computeForUser(user);
+      
+      // hard to know what the exact difference should be, so we just expect it's bigger
+      assert.isAbove(storageUsed.dbDocuments, initialStorageUsed.dbDocuments);
+      assert.approximately(storageUsed.attachedFiles, initialStorageUsed.attachedFiles +
+        newAtt.size, filesystemBlockSize);
+      const updatedStorageUsed = storageUsed;
+      
+      const account = await storage.getUserInfo({
+        user: { id: user.id },
+        getAll: false
+      });
+      assert.deepEqual(account.storageUsed, updatedStorageUsed);
     });
 
     // test nightly job script

@@ -376,10 +376,10 @@ exports.removeCoreStreamsEvents = async function (items) {
 
 exports.separateCoreStreamsAndOtherEvents = function (items) {
   const normalEvents = items.filter(function (e) {
-    return (!e.streamIds) || !(e.streamIds.some(streamId => ['username', 'email', 'language', 'attachedFiles', 'dbDocs', 'passwordHash'].indexOf(streamId) >= 0));
+    return (!e.streamIds) || !(e.streamIds.some(streamId => ['username', 'email', 'language', 'attachedFiles', 'dbDocuments', 'passwordHash'].indexOf(streamId) >= 0));
   });
   const coreStreamsEvents = items.filter(function (e) {
-    return (e.streamIds) && (e.streamIds.some(streamId => ['username', 'email', 'language', 'attachedFiles', 'dbDocs', 'passwordHash'].indexOf(streamId) >= 0));
+    return (e.streamIds) && (e.streamIds.some(streamId => ['username', 'email', 'language', 'attachedFiles', 'dbDocuments', 'passwordHash'].indexOf(streamId) >= 0));
   });
   return { events: normalEvents, coreStreamsEvents: coreStreamsEvents }
 }

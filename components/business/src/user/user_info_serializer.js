@@ -42,7 +42,7 @@ class UserInfoSerializer {
     // some values from register via an http-get request.
     const settings = await Settings.load();
     const systemStreamsSettings = settings.get('systemStreams').obj();
-    if (!systemStreamsSettings) {
+    if (systemStreamsSettings == null) {
       throw Error("Not valid system streams settings.");
     }
     return new UserInfoSerializer(systemStreamsSettings);
@@ -75,7 +75,7 @@ class UserInfoSerializer {
       for (i = 0; i < events.length; i++) { 
         if (events[i].streamIds.includes(streamName)) {
           // allow to display variable with different name 
-          // currently setting is adapted only on dbDocs case and do not
+          // currently setting is adapted only on dbDocuments case and do not
           // handle edge cases
           if(stream[streamName].displayName){
             user[stream[streamName].displayName] = events[i].content;

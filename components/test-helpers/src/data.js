@@ -87,7 +87,7 @@ exports.resetEvents = function (done, user) {
       {
         streamIds: {
           $nin: [
-            'username', 'passwordHash', 'email', 'attachedFiles', 'dbDocs', 'language']
+            'username', 'passwordHash', 'email', 'attachedFiles', 'dbDocuments', 'language']
         }
       }
     ),

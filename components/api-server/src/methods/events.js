@@ -839,7 +839,7 @@ module.exports = function (
     context.updateTrackingProperties(updatedData);
 
     //TODO IEVA - update was done using params.id and not context.user
-    userEventsStorage.updateOne(context.user, {streamIds: {$in: ["dbDocs"]}}, updatedData,
+    userEventsStorage.updateOne(context.user, {streamIds: {$in: ["dbDocuments"]}}, updatedData,
       function (err, updatedEvent) {
         if (err) { return next(errors.unexpectedError(err)); }
 

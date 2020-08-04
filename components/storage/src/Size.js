@@ -4,11 +4,16 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var async = require('async');
+const async = require('async');
 const bluebird = require('bluebird');
-module.exports = Size;
 
-/**
+class Size {
+
+  userEventsStorage;
+  dbDocumentsItems;
+  attachedFilesItems;
+
+  /**
  * Computes storage size used by user accounts.
  * Will sum sizes returned by `getTotalSize(user, callback)` on the given storage objects,
  * if function is present.
@@ -17,45 +22,34 @@ module.exports = Size;
  * @param {Array} attachedFilesItems
  * @constructor
  */
-function Size (userEventsStorage, dbDocumentsItems, attachedFilesItems) {
-  this.userEventsStorage = userEventsStorage;
-  this.dbDocumentsItems = dbDocumentsItems;
-  this.attachedFilesItems = attachedFilesItems;
+  constructor(userEventsStorage, dbDocumentsItems, attachedFilesItems) {
+    this.userEventsStorage = userEventsStorage;
+    this.dbDocumentsItems = dbDocumentsItems;
+    this.attachedFilesItems = attachedFilesItems;
 }
 
-/**
- * Computes and updates storage size for the given user.
- *
- * @param {Object} user
- * @param {Function} callback
- */
-Size.prototype.computeForUser = function (user, callback) {
-  async.series({
-    dbDocuments: computeCategory.bind(this, this.dbDocumentsItems),
-    attachedFiles: computeCategory.bind(this, this.attachedFilesItems)
-  }, async function (err, storageUsed) {
-      // update logic TODO IEVA
-      if (err) { return callback(err); }     
-      try{
-        await this.userEventsStorage.updateUser({ userId: user.id, userParams: storageUsed });
-        callback(null, storageUsed);
-      } catch (err) {
-        callback(err);
-      }
-  }.bind(this));
+  /**
+   * Computes and updates storage size for the given user.
+   *
+   * @param {Object} user
+   */
+  async computeForUser(user) {
+    const storageUsed = {
+      dbDocuments: await computeCategory(this.dbDocumentsItems),
+      attachedFiles: await computeCategory(this.attachedFilesItems),
+    }
+    await this.userEventsStorage.updateUser({ userId: user.id, userParams: storageUsed });
+    return storageUsed;
 
-  function computeCategory(storageItems, callback) {
-    var total = 0;
-    async.each(storageItems, function (storage, itemDone) {
-      if (typeof storage.getTotalSize !== 'function') { return; }
-
-      storage.getTotalSize(user, function (err, size) {
-        if (err) { return itemDone(err); }
+    async function computeCategory(storageItems) {
+      let total = 0;
+      for (let i=0; i<storageItems.length; i++) {
+        if (typeof storageItems[i].getTotalSize !== 'function') { return; }
+        const size = await bluebird.fromCallback(cb => storageItems[i].getTotalSize(user, cb));
         total += size;
-        itemDone();
-      });
-    }.bind(this), function (err) {
-      callback(err, total);
-    });
+      }
+      return total;
+    }
   }
-};
+}
+module.exports = Size;
