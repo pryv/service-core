@@ -50,7 +50,7 @@ let config =
         default: null
       },
       storageUsed: {
-        dbDocs: {
+        dbDocuments: {
           isIndexed: true,
           isShown: true,
           type: "integer/pryv",

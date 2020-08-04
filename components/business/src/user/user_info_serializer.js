@@ -30,12 +30,12 @@ class UserInfoSerializer {
     // some values from register via an http-get request.
     const settings = await Settings.load();
     const systemStreamsSettings = settings.get('systemStreams').obj();
-    if (!systemStreamsSettings) {
+    if (systemStreamsSettings == null) {
       throw Error("Not valid system streams settings.");
     }
     return new UserInfoSerializer(systemStreamsSettings);
   }
-
+  
   /**
    * Convert system->profile events to the account object
    * @param {*} events 
