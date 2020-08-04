@@ -264,7 +264,8 @@ describe('followed slices', function () {
 
   function resetFollowedSlices(done) {
     followedSlicesNotifCount = 0;
-    testData.resetFollowedSlices(done, testData.users[0]);
+    let user = Object.assign({}, testData.users[0]);
+    testData.resetFollowedSlices(done, user);
   }
 
 });

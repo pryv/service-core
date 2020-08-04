@@ -404,7 +404,6 @@ describe('events', function () {
       });
 
       request.get(basePath).query(params).end(async function (res) {
-       // console.log(res.body.events, 'res boooody ', events);
         // lets separate core events from all other events and validate them separatelly
         const separatedEvents = validation.separateCoreStreamsAndOtherEvents(res.body.events);
         res.body.events = separatedEvents.events;

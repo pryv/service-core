@@ -31,7 +31,8 @@ exports.resetUsers = async () => {
 
   let i;
   for (i = 0; i < users.length; i++){
-    await storage.user.events.createUser(users[i]);
+    const user = Object.assign({}, users[i]);
+    await storage.user.events.createUser(user);
   }
 };
 

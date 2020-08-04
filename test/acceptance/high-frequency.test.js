@@ -11,7 +11,7 @@ const helpers = require(__dirname + '/../../dist/components/api-server/test/help
 
 describe('High-Frequency', function () {
 
-  let user = testData.users[0],
+  let user = Object.assign({}, testData.users[0]),
       eventsPath = '/' + user.username + '/events',
       request = null; // must be set after server started
 
