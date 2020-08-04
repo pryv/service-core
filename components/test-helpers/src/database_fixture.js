@@ -202,13 +202,14 @@ class Fixture {
   // the user is really created. 
   // 
   user(name: string, attrs: {}={}, cb?: (FixtureUser) => mixed): Promise<FixtureUser> {
-    return bluebird.try(async () => { 
+    
+    return bluebird.try(() => {
       const u = new FixtureUser(
-        this.context.forUser(name), 
+        this.context.forUser(name),
         name, attrs);
-        
-       await u.remove()
-      return await this.childs.create(u);
+
+      return u.remove()
+        .then(() => this.childs.create(u, cb));
     });
   }
   
@@ -263,13 +264,17 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
   /** Removes all resources belonging to the user, then creates them again, 
    * according to the spec stored here. 
    */
-  async create(): Promise<mixed> {
-    const db = this.db; 
+  create (): Promise<mixed> {
+    return this.createUser();
+  }
+
+  async createUser (): Object<mixed> {
+    const db = this.db;
     const attributes = this.attrs;
-    await db.events.createUser(attributes); 
+    await db.events.createUser(attributes);
     return this.attrs;
   }
-  
+
   async remove(): Promise<mixed> {
     const db = this.db; 
     const user = null; // NOTE not needed for access to users collection.

@@ -289,7 +289,7 @@ Events.prototype.getUserInfo = async function ({ user, getAll }) {
     // form the query
     let query = { "streamIds": { '$in': Object.keys(userProfileStreamsIds) } };
 
-    // IEVA TODO TO prototype?
+    //  TODO IEVA to prototype?
     const dbItems = await bluebird.fromCallback(cb => this.database.find(
       this.getCollectionInfo(user),
       this.applyQueryToDB(query),

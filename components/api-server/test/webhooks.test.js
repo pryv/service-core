@@ -61,7 +61,7 @@ describe('webhooks', () => {
   describe('GET /', () => {
 
     before(() => {
-      return mongoFixtures.user(username, {}, async (user) => {
+      return mongoFixtures.user(username, {}, (user) => {
         user.access({
           type: 'personal', token: personalAccessToken,
         });

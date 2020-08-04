@@ -11,18 +11,18 @@ const _ = require('lodash');
 
 const Webhook = require('./Webhook');
 const WebhooksStorage = require('components/storage').StorageLayer.webhooks;
-// TODO IEVA const UsersStorage = require('components/storage').StorageLayer.users;
+const UserEventsStorage = require('components/storage').StorageLayer.events;
 
 /** 
  * Repository of all Webhooks in this Pryv.io instance. 
  */
 class Repository {
   storage: WebhooksStorage;
-  usersStorage: UsersStorage;
+  userEventsStorage: UserEventsStorage;
 
-  constructor(webhooksStorage: WebhooksStorage, usersStorage: UsersStorage) {
+  constructor (webhooksStorage: WebhooksStorage, userEventsStorage: UserEventsStorage) {
     this.storage = webhooksStorage;
-    this.usersStorage = usersStorage;
+    this.userEventsStorage = userEventsStorage;
   }
 
   /**
@@ -39,7 +39,7 @@ class Repository {
     let users;
     try {
       users = await bluebird.fromCallback(cb => {
-        eventsStorage.count({}, { streamIds: 'username' }, cb);
+        this.userEventsStorage.count({}, { streamIds: 'username' }, cb);
       });
     } catch (error) {
       //TODO IEVA logging
