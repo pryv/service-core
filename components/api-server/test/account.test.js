@@ -294,7 +294,7 @@ describe('account', function () {
       const path = '/' + user.username + '/events/' + testData.events[0].id + '/' +
         deletedAtt.id;
       try { 
-        const res = await request.del(path);
+        await request.del(path);
       } catch (e) {
         // not an error, but the callback returns the response in 1st position
         // either we do the request with superagent, or we update request()
@@ -307,35 +307,22 @@ describe('account', function () {
         filesystemBlockSize);
     });
 
-    it('[5WO0] must be approximately updated (diff) when deleting an event', function (done) {
-      var initialStorageUsed,
-          deletedEvt = testData.events[2],
-          deletedEvtPath = '/' + user.username + '/events/' + deletedEvt.id;
-      async.series([
-        async function checkInitial () {
-          const account = await storage.getUserInfo({ user: { id: user.id }, getAll: false });
-          initialStorageUsed = account.storageUsed;
-        },
-        function trashEvent(stepDone) {
-          request.del(deletedEvtPath).end(function (res) {
-            validation.check(res, {status: 200});
-            stepDone();
-          });
-        },
-        function deleteEvent(stepDone) {
-          request.del(deletedEvtPath).end(function (res) {
-            validation.check(res, {status: 200});
-            stepDone();
-          });
-        },
-        async function checkUpdated () {
-          const account = await storage.getUserInfo({ user: { id: user.id }, getAll: false });
-          initialStorageUsed = account.storageUsed;
-          account.storageUsed.dbDocuments.should.eql(initialStorageUsed.dbDocuments);
-          account.storageUsed.attachedFiles.should.be.approximately(
-            initialStorageUsed.attachedFiles - getTotalAttachmentsSize(deletedEvt), filesystemBlockSize);
-        }
-      ], done);
+    it('[5WO0] must be approximately updated (diff) when deleting an event', async function () {
+      const deletedEvt = testData.events[2];
+      const deletedEvtPath = '/' + user.username + '/events/' + deletedEvt.id;
+      const initialStorageUsed = await storageSize.computeForUser(user);
+      try { 
+        await request.del(deletedEvtPath)
+      } catch (e) {}
+      try { 
+        await request.del(deletedEvtPath)
+      } catch (e) {}
+        
+      const updatedStoragedUsed = await storageSize.computeForUser(user);
+      assert.equal(updatedStoragedUsed.dbDocuments, initialStorageUsed.dbDocuments);
+      assert.approximately(updatedStoragedUsed.attachedFiles, 
+        initialStorageUsed.attachedFiles - getTotalAttachmentsSize(deletedEvt),
+        filesystemBlockSize);
     });
 
     function getTotalAttachmentsSize(event) {
