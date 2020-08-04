@@ -226,7 +226,6 @@ describe('account', function () {
 
     // test nightly job script
     it('[Y445] must properly compute storage size for all users in nightly script', async function () {
-      let initialStorageUsed;
       const newAtt = testData.attachments.image;
       const execSync = require('child_process').execSync;
 
@@ -234,10 +233,7 @@ describe('account', function () {
       execSync('node ./bin/nightly');
       
       // Verify initial storage usage
-      const accounts = await bluebird.fromCallback(
-        (cb) => storage.findAll(null, cb));
-        
-      initialStorageUsed = _.find(accounts, {id: user.id}).storageUsed;
+      const initialStorageUsed = await storageSize.computeForUser(user);
       initialStorageUsed.attachedFiles.should.be.above(0);
       
       // Add an attachment
@@ -248,11 +244,10 @@ describe('account', function () {
       execSync('node ./bin/nightly');
       
       // Verify updated storage usage
-      const account = await bluebird.fromCallback(
-        (cb) => storage.findOne({id: user.id}, null, cb));
+      const updatedStorageUsed = await storageSize.computeForUser(user);
         
-      account.storageUsed.dbDocuments.should.be.above(initialStorageUsed.dbDocuments);
-      account.storageUsed.attachedFiles.should.be.approximately(
+      updatedStorageUsed.dbDocuments.should.be.above(initialStorageUsed.dbDocuments);
+      updatedStorageUsed.attachedFiles.should.be.approximately(
         initialStorageUsed.attachedFiles + newAtt.size, filesystemBlockSize);
     });
 
