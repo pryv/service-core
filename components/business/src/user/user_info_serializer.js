@@ -53,7 +53,7 @@ class UserInfoSerializer {
  * @param {*} events - flat list of the events
  * @param {*} user - object that will be returned after it is updated
  */
-  static formEventsTree(stream, events, user){
+  static _formEventsTree(stream, events, user){
     let streamIndex;
     const streamsNames = Object.keys(stream);
     for (streamIndex = 0; streamIndex < streamsNames.length; streamIndex++) {
@@ -62,7 +62,7 @@ class UserInfoSerializer {
       // if stream has children recursivelly call the same function
       if(typeof stream[streamName].isShown === "undefined"){
         user[streamName] = {};
-        user[streamName] = UserInfoSerializer.formEventsTree(stream[streamName], events, user[streamName])
+        user[streamName] = UserInfoSerializer._formEventsTree(stream[streamName], events, user[streamName])
       }
 
       // if the stream value is equal to false, it should be not visible
@@ -95,7 +95,7 @@ class UserInfoSerializer {
    */
   serializeEventsToAccountInfo(events){
     let user = {};
-    return UserInfoSerializer.formEventsTree(this.systemStreamsSettings.profile, events, user);
+    return UserInfoSerializer._formEventsTree(this.systemStreamsSettings.profile, events, user);
   }
 
   /**
@@ -106,7 +106,7 @@ class UserInfoSerializer {
    *  getReadableCoreStreams(), getAllCoreStreams (), getOnlyWritableCoreStreams;
    * if they are equal to false or true
    */
-  static getStreamsNames (streams, streamsNames, whatToReturn) {
+  static _getStreamsNames (streams, streamsNames, whatToReturn) {
     let i;
     let stream;
     const streamsKeys = Object.keys(streams);
@@ -114,7 +114,7 @@ class UserInfoSerializer {
       stream = streams[streamsKeys[i]];
       // if stream has children recursivelly call the same function
       if (typeof stream.isShown === "undefined") {
-        streamsNames = UserInfoSerializer.getStreamsNames(stream, streamsNames, whatToReturn);
+        streamsNames = UserInfoSerializer._getStreamsNames(stream, streamsNames, whatToReturn);
         continue;
       }
 
@@ -141,11 +141,12 @@ class UserInfoSerializer {
 
   /**
    * Get the names of all streams that belongs to the system->profile stream
-   * @param {*} events 
+   * @param {*} whatToReturn - enum value for 
+   * getReadableCoreStreams(), getAllCoreStreams(), getOnlyWritableCoreStreams()
    */
   getCoreStreams (whatToReturn) {
     let streamsNames = {};
-    return UserInfoSerializer.getStreamsNames(this.systemStreamsSettings.profile, streamsNames, whatToReturn);
+    return UserInfoSerializer._getStreamsNames(this.systemStreamsSettings.profile, streamsNames, whatToReturn);
   }
 
   /**
@@ -155,7 +156,7 @@ class UserInfoSerializer {
    */
   getVirtualStreamsList (whatToReturn) {
     let streamsNames = {};
-    const streamsName = UserInfoSerializer.getStreamsNames(this.systemStreamsSettings.profile, streamsNames, whatToReturn);
+    const streamsName = UserInfoSerializer._getStreamsNames(this.systemStreamsSettings.profile, streamsNames, whatToReturn);
     const streams = Object.keys(streamsName).map(streamName => {
       return {
         name: streamName,

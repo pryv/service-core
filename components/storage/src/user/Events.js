@@ -351,8 +351,8 @@ Events.prototype.createUser = async function (userParams) {
     userParams = converters.createIdIfMissing(userParams);
     // form username event - it is separate because we set the _id 
     let updateObject = {
-      streamIds: ["username", "indexed"],
-      type: 'string' + '/pryv',// TODO IEVA - define or take specific type
+      streamIds: ['username', 'indexed'],
+      type: userProfileStreamsIds['username'].type,
       content: userParams.username,
       id: userParams.id,
       created: timestamp.now(),
@@ -391,9 +391,9 @@ Events.prototype.createUser = async function (userParams) {
         }
 
         // get type for the event from the config
-        let eventType = 'string/pryv';//TODO IEVA- define or take specific type
+        let eventType = 'string';
         if (userProfileStreamsIds[streamId].type) {
-          eventType = userProfileStreamsIds[streamId].type + '/pryv';// TODO IEVA - define or take specific type
+          eventType = userProfileStreamsIds[streamId].type;
         }
         // create the event
         return bluebird.fromCallback((cb) =>

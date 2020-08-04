@@ -13,24 +13,24 @@ let config =
       username: {
         isIndexed: true,
         isShown: true,
-        type: "string",
+        type: "string/pryv",
         sendToRegister: ""
       },
       email: {
         "isIndexed": true,
         "isShown": true,
-        "type": "string"
+        "type": "string/pryv"
       },
       language: {
         isIndexed: true,
         isShown: true,
-        type: "string",
+        type: "string/pryv",
         default: "en"
       },
       appId: {
         isIndexed: true,
         isShown: false,
-        type: "string"
+        type: "string/pryv"
       },
       invitationToken: {
         isIndexed: true,
@@ -41,26 +41,26 @@ let config =
       passwordHash: {
         isIndexed: false,
         isShown: false,
-        type: "string"
+        type: "string/pryv"
       },
       referer: {
         isIndexed: true,
         isShown: false,
-        type: "string",
+        type: "string/pryv",
         default: null
       },
       storageUsed: {
         dbDocs: {
           isIndexed: true,
           isShown: true,
-          type: "integer",
+          type: "integer/pryv",
           default: 0,
           displayName: 'dbDocuments'
         },
         attachedFiles: {
           isIndexed: true,
           isShown: true,
-          type: "integer",
+          type: "integer/pryv",
           default: 0
         }
       }

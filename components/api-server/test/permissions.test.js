@@ -97,12 +97,12 @@ describe('Access permissions', function () {
           limit: 100, // i.e. all
           state: 'all'
         }; 
-        request.get(basePath, token(2)).query(params).end(function (res) {
+        request.get(basePath, token(2)).query(params).end(async function (res) {
           validation.checkFilesReadToken(res.body.events, testData.accesses[2],
             filesReadTokenSecret);
           validation.sanitizeEvents(res.body.events);
           // TODO IEVA - test core events pressance in the separate test
-          res.body.events = validation.removeCoreStreamsEvents(res.body.events);
+          res.body.events = await validation.removeCoreStreamsEvents(res.body.events);
           res.body.events.should.eql(validation.removeDeletionsAndHistory(testData.events).sort(
             function (a, b) {
               return b.time - a.time;

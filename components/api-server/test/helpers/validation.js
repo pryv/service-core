@@ -16,6 +16,7 @@ const validator = new Validator();
 const { assert, expect } = require('chai');
 const util = require('util');
 const _ = require('lodash');
+const UserInfoSerializer = require('components/business/src/user/user_info_serializer');
 
 /**
  * Expose common JSON schemas.
@@ -366,10 +367,22 @@ exports.removeDeletionsAndHistory = function (items) {
   return items.filter(function (e) { return ! (e.deleted || e.headId); });
 };
 
-exports.removeCoreStreamsEvents = function (items) {
-  return items.filter(function (e) { return !(e.streamIds.some(streamId => ['username', 'email', 'language', 'attachedFiles', 'dbDocs', 'passwordHash'].indexOf(streamId) >= 0)); });
+exports.removeCoreStreamsEvents = async function (items) {
+  let userInfoSerializer = await UserInfoSerializer.build();
+  // get streams ids from the config that should be retrieved
+  const expectedCoreEvents = userInfoSerializer.getCoreStreams(UserInfoSerializer.getAllCoreStreams());
+  return items.filter(function (e) { return !(e.streamIds.some(streamId => Object.keys(expectedCoreEvents).indexOf(streamId) >= 0)); });
 };
 
+exports.separateCoreStreamsAndOtherEvents = function (items) {
+  const normalEvents = items.filter(function (e) {
+    return (!e.streamIds) || !(e.streamIds.some(streamId => ['username', 'email', 'language', 'attachedFiles', 'dbDocs', 'passwordHash'].indexOf(streamId) >= 0));
+  });
+  const coreStreamsEvents = items.filter(function (e) {
+    return (e.streamIds) && (e.streamIds.some(streamId => ['username', 'email', 'language', 'attachedFiles', 'dbDocs', 'passwordHash'].indexOf(streamId) >= 0));
+  });
+  return { events: normalEvents, coreStreamsEvents: coreStreamsEvents }
+}
 /*
  * Strips off item from tracking properties
  */
@@ -389,3 +402,37 @@ exports.removeTrackingProperties = function (items) {
   items.forEach(exports.removeTrackingPropertiesForOne);
   return items;
 };
+
+/**
+ * Validate that core events consist of values matching the configuration
+ * and has properties that are usual for the events
+ * 
+ */
+exports.validateCoreEvents = async function (actualCoreEvents) {
+  // get all values from the settings that should be displayed for the user
+  let userInfoSerializer = await UserInfoSerializer.build();
+  // get streams ids from the config that should be retrieved
+  const expectedCoreEvents = userInfoSerializer.getCoreStreams(UserInfoSerializer.getReadableCoreStreams());
+
+  // iterate through expected core events and check that they exists in actual
+  // core events
+  const expectedSreamIds = Object.keys(expectedCoreEvents);
+  for (n in expectedSreamIds) {
+    let foundEvent = false;
+    let i;
+    for (i in actualCoreEvents) {
+      if (actualCoreEvents[i].streamIds.includes(expectedSreamIds[n])) {
+        foundEvent = true;
+        // validate that event is indexed if needed
+        if (expectedCoreEvents[expectedSreamIds[n]].isIndexed === true) {
+          actualCoreEvents[i].streamIds.includes('indexed').should.eql(true);
+        }
+        // validate type
+        actualCoreEvents[i].type.should.eql(expectedCoreEvents[expectedSreamIds[n]].type);
+        break;
+      }
+    }
+    foundEvent.should.eql(true);
+  }
+  return;
+}

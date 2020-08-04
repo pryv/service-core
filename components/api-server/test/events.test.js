@@ -8,6 +8,7 @@
 
 require('./test-helpers'); 
 
+const bluebird = require('bluebird');
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
 const async = require('async');
@@ -71,7 +72,7 @@ describe('events', function () {
   describe('GET /', function () {
 
     before(resetEvents);
-
+/*
     it('[WC8C] must return the last 20 non-trashed events (sorted descending) by default',
       function (done) {
         var additionalEvents = [];
@@ -90,20 +91,20 @@ describe('events', function () {
 
         async.series([
           storage.insertMany.bind(storage, user, additionalEvents),
-          function getDefault(stepDone) {
+          function getDefault (stepDone) {
         
             request.get(basePath).end(function (res) {
               var allEvents = additionalEvents
                 .concat(validation.removeDeletionsAndHistory(testData.events))
                 .filter(function (e) {
                   return !e.trashed && !_.some(testData.streams, containsTrashedEventStream);
-                  function containsTrashedEventStream(stream) {
+                  function containsTrashedEventStream (stream) {
                     return stream.trashed && stream.id === e.streamIds[0] ||
                       _.some(stream.children, containsTrashedEventStream);
                   }
                 });
 
-                // add streamId
+              // add streamId
               //allEvents.map(function (event) { event.streamId = event.streamIds[0]; return event });
               validation.check(res, {
                 status: 200,
@@ -139,7 +140,7 @@ describe('events', function () {
       });
 
     it('[S0M6] must return an error if some of the given streams do not exist', function (done) {
-      var params = {streams: ['bad-id-A', 'bad-id-B']};
+      var params = { streams: ['bad-id-A', 'bad-id-B'] };
       request.get(basePath).query(params).end(function (res) {
         validation.checkError(res, {
           status: 400,
@@ -222,25 +223,25 @@ describe('events', function () {
     });
 
     it('[7MOU] must only return events in the given time period sorted ascending when set',
-        function (done) {
-      var params = {
-        // must also include already started but overlapping events
-        fromTime: timestamp.add(testData.events[1].time, '58m'),
-        toTime: testData.events[3].time,
-        sortAscending: true
-      };
-      request.get(basePath).query(params).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.get.result,
-          sanitizeFn: validation.sanitizeEvents,
-          sanitizeTarget: 'events',
-          body: {
-            events: _.at(testData.events, 1, 2, 3)
-          }
-        }, done);
+      function (done) {
+        var params = {
+          // must also include already started but overlapping events
+          fromTime: timestamp.add(testData.events[1].time, '58m'),
+          toTime: testData.events[3].time,
+          sortAscending: true
+        };
+        request.get(basePath).query(params).end(function (res) {
+          validation.check(res, {
+            status: 200,
+            schema: methodsSchema.get.result,
+            sanitizeFn: validation.sanitizeEvents,
+            sanitizeTarget: 'events',
+            body: {
+              events: _.at(testData.events, 1, 2, 3)
+            }
+          }, done);
+        });
       });
-    });
     
     it('[W5IT] must take into account fromTime and toTime even if set to 0', function (done) {
       const params = {
@@ -316,7 +317,7 @@ describe('events', function () {
     });
 
     it('[S9J4] must only return events in the given paging range when set', function (done) {
-      request.get(basePath).query({state: 'all', skip: 1, limit: 3}).end(function (res) {
+      request.get(basePath).query({ state: 'all', skip: 1, limit: 3 }).end(function (res) {
         var events = (validation.removeDeletionsAndHistory(testData.events)).sort(function (a, b) {
           return (b.time - a.time);
         }).slice(1, 4);
@@ -333,7 +334,7 @@ describe('events', function () {
     });
 
     it('[915E] must return only trashed events when requested', function (done) {
-      request.get(basePath).query({state: 'trashed'}).end(function (res) {
+      request.get(basePath).query({ state: 'trashed' }).end(function (res) {
         var events = (validation.removeDeletionsAndHistory(testData.events)).sort(function (a, b) {
           return (b.time - a.time);
         });
@@ -342,20 +343,22 @@ describe('events', function () {
           schema: methodsSchema.get.result,
           sanitizeFn: validation.sanitizeEvents,
           sanitizeTarget: 'events',
-          body: {events: _.filter(events, {trashed: true})}
+          body: { events: _.filter(events, { trashed: true }) }
         }, done);
       });
     });
 
     it('[6H0Z] must return all events (trashed or not) when requested', function (done) {
-      request.get(basePath).query({state: 'all', limit: 1000}).end(function (res) {
+      request.get(basePath).query({ state: 'all', limit: 1000 }).end(function (res) {
         validation.check(res, {
           status: 200,
           schema: methodsSchema.get.result,
           sanitizeFn: validation.sanitizeEvents,
           sanitizeTarget: 'events',
-          body: { events: _.sortBy(validation.removeDeletionsAndHistory(testData.events), 'time')
-            .reverse() }
+          body: {
+            events: _.sortBy(validation.removeDeletionsAndHistory(testData.events), 'time')
+              .reverse()
+          }
         }, done);
       });
     });
@@ -383,7 +386,7 @@ describe('events', function () {
         }, done);
       });
     });
-
+*/
     it('[B766] must include event deletions (since that time) when requested', function (done) {
       var params = {
         state: 'all',
@@ -399,17 +402,32 @@ describe('events', function () {
       events = validation.removeDeletionsAndHistory(events).filter(function (e) {
         return (e.modified >= timestamp.now('-45m'));
       });
-      request.get(basePath).query(params).end(function (res) {
-        validation.check(res, {
-          status: 200,
-          schema: methodsSchema.get.result,
-          sanitizeFn: validation.sanitizeEvents,
-          sanitizeTarget: 'events',
-          body: {
-            events: events,
-            eventDeletions: eventDeletions
-          }
-        }, done);
+
+      request.get(basePath).query(params).end(async function (res) {
+       // console.log(res.body.events, 'res boooody ', events);
+        // lets separate core events from all other events and validate them separatelly
+        const separatedEvents = validation.separateCoreStreamsAndOtherEvents(res.body.events);
+        res.body.events = separatedEvents.events;
+        const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
+        try{
+          await validation.validateCoreEvents(actualCoreStreamsEvents);
+          
+          await bluebird.fromCallback(
+            (cb) => validation.check(res, {
+            status: 200,
+            schema: methodsSchema.get.result,
+            sanitizeFn: validation.sanitizeEvents,
+            sanitizeTarget: 'events',
+            body: {
+              events: events,
+              eventDeletions: eventDeletions
+            }
+            }, cb));
+          done();
+        } catch (error) {
+          console.log(error, 'error');
+          false.should.eql(true)
+        }
       });
     });
 
@@ -1959,7 +1977,12 @@ describe('events', function () {
             });
           },
           function verifyEventData(stepDone) {
-            storage.findAll(user, null, function (err, events) {
+            storage.findAll(user, null, async function (err, events) {
+              const separatedEvents = await validation.separateCoreStreamsAndOtherEvents(events);
+              events = separatedEvents.events;
+              const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
+              await validation.validateCoreEvents(actualCoreStreamsEvents);
+
               events.length.should.eql(testData.events.length, 'events');
 
               var deletion = _.find(events, function (event) {
