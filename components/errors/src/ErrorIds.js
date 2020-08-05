@@ -74,7 +74,11 @@ const ErrorIds = {
   /**
    * Throw this error for methods that are valid only for pryv.io
    */
-  NonValidForOpenSource: 'not-valid-for-open-pryv'
+  NonValidForOpenSource: 'not-valid-for-open-pryv',
+  /**
+   * Denied event modification perhaps of belonging to the core streams
+   */
+  DeniedEventModification: 'denied-event-modification',
 };
 Object.freeze(ErrorIds);
 

@@ -262,17 +262,15 @@ class MethodContext {
     const user = this.user;
     const streams = await bluebird.fromCallback(
       cb => storage.streams.find(user, {}, null, cb));
-
     // TODO IEVA - maybe here I should mix virtual streams
     let userInfoSerializer = await UserInfoSerializer.build();
     // get streams ids from the config that should be retrieved
-    const userCoreStreams = [];//TODO IEVA userInfoSerializer.getVirtualStreamsList(false);
+    const userCoreStreams = userInfoSerializer.getVirtualStreamsList();
 
-    this.streams = _.merge(streams, userCoreStreams);
+    this.streams = streams.concat(userCoreStreams);
   }
 
   // Set this contexts stream by looking in this.streams. DEPRECATED.
-  // 
   setStreamList(streamIds: array) {
     if (!streamIds || streamIds.length === 0) return;
     streamIds.forEach(function (streamId) {

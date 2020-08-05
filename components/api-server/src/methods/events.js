@@ -22,6 +22,7 @@ var utils = require('components/utils'),
 const assert = require('assert');
 
 const { ProjectVersion } = require('components/middleware/src/project_version');
+const { allowedNodeEnvironmentFlags } = require('process');
 
 const {TypeRepository, isSeriesType} = require('components/business').types;
 
@@ -98,13 +99,6 @@ module.exports = function (
       params.limit = 20;
     }
 
-    // append core streams to streams list here (only available for retrieval)
-    let userInfoSerializer = await UserInfoSerializer.build();
-    const userCoreStreamsIds = userInfoSerializer.getReadableCoreStreams();
-    for (const key of Object.keys(userCoreStreamsIds)) {
-      context.streams.push({ id: key, children: []});
-    }
-
     if (params.streams != null) {
       var expandedStreamIds = treeUtils.expandIds(context.streams, params.streams);
       var unknownIds = _.difference(params.streams, expandedStreamIds);
@@ -170,18 +164,6 @@ module.exports = function (
     query.streamIds = { ...query.streamIds, ...{ $nin: userCoreStreams } };
 
     return query;
-  }
-
-  /**
-   * Check if event belongs to the core stream and if yes, trigger the error
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
-   */
-  async function catchForbiddenCoreStreamsUpdate (context, params, result, next) {
-    return next(); // TODO IEVA
-
   }
 
   async function findAccessibleEvents(context, params, result, next) {
@@ -450,7 +432,6 @@ module.exports = function (
   api.register('events.update',
     commonFns.getParamsValidation(methodsSchema.update.params),
     commonFns.catchForbiddenUpdate(eventSchema('update'), updatesSettings.ignoreProtectedFields, logger),
-    catchForbiddenCoreStreamsUpdate,
     normalizeStreamIdAndStreamIds,
     applyPrerequisitesForUpdate,
     validateEventContentAndCoerce,
@@ -566,11 +547,26 @@ module.exports = function (
     }
   }
 
-  function updateEvent (context, params, result, next) {
-    userEventsStorage.updateOne(context.user, {id: context.content.id}, context.content,
+  async function updateEvent (context, params, result, next) {
+    const userCoreStreams = (await UserInfoSerializer.build()).getAllCoreStreams();
+
+    // exclude core streams from the query
+    let query = {
+      $and: [
+        { _id: context.content.id },
+        { streamIds: { $nin: Object.keys(userCoreStreams) } }
+    ]};
+
+    userEventsStorage.updateOne(context.user, query, context.content,
       function (err, updatedEvent) {
         if (err) {
           return next(errors.unexpectedError(err));
+        }
+
+        // if update was not done and no errors were catched
+        //, perhaps user is trying to edit core streams
+        if (!updatedEvent) {
+          return next(errors.DeniedEventModification());
         }
 
         // To remove when streamId not necessary
@@ -825,14 +821,27 @@ module.exports = function (
       });
     }, notify);
 
-  function flagAsTrashed(context, params, result, next) {
+  async function flagAsTrashed(context, params, result, next) {
     var updatedData = {trashed: true};
     context.updateTrackingProperties(updatedData);
 
-    //TODO IEVA - update was done using params.id and not context.user
-    userEventsStorage.updateOne(context.user, { id: params.id }, updatedData,
+    const userCoreStreams = (await UserInfoSerializer.build()).getAllCoreStreams();
+    // exclude core streams from the query
+    let query = {
+      $and: [
+        { _id: params.id },
+        { streamIds: { $nin: Object.keys(userCoreStreams) } }
+      ]
+    };
+    userEventsStorage.updateOne(context.user, query, updatedData,
       function (err, updatedEvent) {
         if (err) { return next(errors.unexpectedError(err)); }
+
+        // if update was not done and no errors were catched
+        //, perhaps user is trying to edit core streams
+        if (!updatedEvent) {
+          return next(errors.DeniedEventModification());
+        }
 
         // To remove when streamId not necessary
         updatedEvent.streamId = updatedEvent.streamIds[0];
@@ -902,57 +911,60 @@ module.exports = function (
 
   api.register('events.deleteAttachment',
     commonFns.getParamsValidation(methodsSchema.deleteAttachment.params),
-    function (context, params, result, next) {
+    async function (context, params, result, next) {
       var updatedEvent,
-          deletedAtt;
-      async.series([
-        function (stepDone) {
-          checkEventForDelete(context, params.id, function (err, event) {
-            if (err) { return stepDone(err); }
-
-            updatedEvent = event;
-            stepDone();
-          });
-        },
-        function (stepDone) {
-          var attIndex = getAttachmentIndex(updatedEvent.attachments, params.fileId);
-          if (attIndex === -1) {
-            return stepDone(errors.unknownResource(
-              'attachment', params.fileId
-            ));
-          }
-          deletedAtt = updatedEvent.attachments[attIndex];
-          updatedEvent.attachments.splice(attIndex, 1);
-
-          var updatedData = {attachments: updatedEvent.attachments};
-          context.updateTrackingProperties(updatedData);
-
-          userEventsStorage.updateOne(context.user, {id: params.id}, updatedData,
-            function (err, updatedEvent) {
-              if (err) { return stepDone(err); }
-
-              // To remove when streamId not necessary
-              updatedEvent.streamId = updatedEvent.streamIds[0];
-
-              result.event = updatedEvent;
-              setFileReadToken(context.access, result.event);
-              stepDone();
-            });
-        },
-        function (stepDone) {
-          userEventFilesStorage.removeAttachedFile(context.user, params.id, params.fileId, stepDone);
-        },
-        async function () {
-          // approximately update account storage size
-          context.user.storageUsed.attachedFiles -= deletedAtt.size;
-          // TODO IEVA validate
-          await userEventsStorage.updateUser({ userId: context.user.id, userParams: context.user.storageUsed });
-        },
-        function (stepDone) {
-          notifications.eventsChanged(context.user);
-          stepDone();
+        deletedAtt;
+      
+      try {
+        updatedEvent = await bluebird.fromCallback(cb =>
+          checkEventForDelete(context, params.id, cb));
+        var attIndex = getAttachmentIndex(updatedEvent.attachments, params.fileId);
+        if (attIndex === -1) {
+          return next(errors.unknownResource(
+            'attachment', params.fileId
+          ));
         }
-      ], next);
+        deletedAtt = updatedEvent.attachments[attIndex];
+        updatedEvent.attachments.splice(attIndex, 1);
+
+        var updatedData = { attachments: updatedEvent.attachments };
+        context.updateTrackingProperties(updatedData);
+
+        // exclude core streams from the query
+        const  userCoreStreams = (await UserInfoSerializer.build()).getAllCoreStreams();
+        let query = {
+          $and: [
+            { _id: params.id },
+            { streamIds: { $nin: Object.keys(userCoreStreams) } }
+          ]
+        };
+
+        let alreadyUpdatedEvent = await bluebird.fromCallback(cb =>
+          userEventsStorage.updateOne(context.user, query, updatedData, cb));
+
+        // if update was not done and no errors were catched
+        //, perhaps user is trying to edit core streams
+        if (!alreadyUpdatedEvent) {
+          return next(errors.DeniedEventModification());
+        }
+
+        // To remove when streamId not necessary
+        alreadyUpdatedEvent.streamId = alreadyUpdatedEvent.streamIds[0];
+
+        result.event = alreadyUpdatedEvent;
+        setFileReadToken(context.access, result.event);
+
+        await bluebird.fromCallback(cb => userEventFilesStorage.removeAttachedFile(context.user, params.id, params.fileId, cb));
+
+        // approximately update account storage size
+        context.user.storageUsed.attachedFiles -= deletedAtt.size;
+        // TODO IEVA validate
+        await userEventsStorage.updateUser({ userId: context.user.id, userParams: context.user.storageUsed });
+        notifications.eventsChanged(context.user);
+        next();
+      } catch (err) {
+        next(err);
+      }
     });
 
   /**

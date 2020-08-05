@@ -311,4 +311,16 @@ factory.NonValidForOpenSource = (): APIError => {
       dontNotifyAirbrake: true,
     }
   )};
-  
+/**
+ * Denied event modification perhaps of belonging to the core streams
+ */
+factory.DeniedEventModification = (): APIError => {
+  return new APIError(
+    ErrorIds.DeniedEventModification, ErrorMessages[ErrorIds.DeniedEventModification],
+    {
+      httpStatus: 400,
+    //  data: { param: 'username' },
+      dontNotifyAirbrake: false,
+    }
+  )
+};

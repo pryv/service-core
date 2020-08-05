@@ -78,9 +78,9 @@ class UserInfoSerializer {
    * @param {*} events 
    * TODO IEVA - perhaps delete
    */
-  getVirtualStreamsList (whatToReturn) {
+  getVirtualStreamsList () {
     let streamsNames = {};
-    const streamsName = getStreamsNames(this.systemStreamsSettings.profile, streamsNames, whatToReturn);
+    const streamsName = getStreamsNames(this.systemStreamsSettings.profile, streamsNames, readable);
     const streams = Object.keys(streamsName).map(streamName => {
       return {
         name: streamName,
