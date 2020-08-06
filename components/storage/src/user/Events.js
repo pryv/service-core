@@ -25,7 +25,8 @@ module.exports = Events;
  * @param {Database} database
  * @constructor
  */
-function Events (database) {
+function Events (database, systemStreamsSettings) {
+  this.systemStreamsSettings = systemStreamsSettings;
   Events.super_.call(this, database);
 
   _.extend(this.converters, {
@@ -81,43 +82,71 @@ function clearEndTime (event) {
   return event;
 }
 
-// TODO: review indexes against 1) real usage and 2) how Mongo actually uses them
-var indexes = [
-  {
-    index: { time: 1 },
-    options: {},
-  },
-  {
-    index: { streamIds: 1 },
-    options: {},
-  },
-  {
-    index: { tags: 1 },
-    options: {},
-  },
-  // no index by content until we have more actual usage feedback
-  {
-    index: { trashed: 1 },
-    options: {},
-  },
-  {
-    index: { modified: 1 },
-    options: {},
-  },
-  {
-    index: { endTime: 1 },
-    options: { partialFilterExpression: { endTime: { $exists: true } } },
-  },
-];
+function getDbIndexes (systemStreamsSettings) {
+  // TODO: review indexes against 1) real usage and 2) how Mongo actually uses them
+  let indexes = [
+    {
+      index: { time: 1 },
+      options: {},
+    },
+    {
+      index: { streamIds: 1 },
+      options: {},
+    },
+    {
+      index: { tags: 1 },
+      options: {},
+    },
+    // no index by content until we have more actual usage feedback
+    {
+      index: { trashed: 1 },
+      options: {},
+    },
+    {
+      index: { modified: 1 },
+      options: {},
+    },
+    {
+      index: { endTime: 1 },
+      options: { partialFilterExpression: { endTime: { $exists: true } } },
+    }
+  ];
 
+  // for each event group that has to be unique add a rule
+  if (Events.systemStreamsSettings) {
+    Object.keys(systemStreamsSettings).forEach(streamId => {
+      if (systemStreamsSettings[streamId].isIndexed == true) {
+        indexes.push({
+          index: { [streamId + '__unique']: 1 },
+          options: {
+            unique: true,
+            partialFilterExpression: {
+              [streamId + '__unique']: { $exists: true },
+              streamIds: 'indexed'
+            }
+          }
+        });
+      }
+    });
+    console.log(indexes, 'indexes');
+  }
+  return indexes;
+}
 /**
  * Implementation.
  */
 Events.prototype.getCollectionInfo = function (user) {
   return {
     name: 'events',
-    indexes: indexes,
+    indexes: getDbIndexes(this.systemStreamsSettings),
     useUserId: user.id
+  };
+};
+
+Events.prototype.getCollectionInfoWithoutUserId = function () {
+  return {
+    name: 'events',
+    indexes: getDbIndexes(this.systemStreamsSettings)
   };
 };
 
@@ -280,12 +309,11 @@ Events.prototype.getUserInfo = async function ({ user, getAll }) {
     let userInfoSerializer = await UserInfoSerializer.build();
     // get streams ids from the config that should be retrieved
     let userProfileStreamsIds;
-    if (getAll){
+    if (getAll) {
       userProfileStreamsIds = userInfoSerializer.getAllCoreStreams();
     } else {
       userProfileStreamsIds = userInfoSerializer.getReadableCoreStreams();
     }
-    //console.log(whatStreamsToRetrieve, 'whatStreamsToRetrieve', userProfileStreamsIds,'userProfileStreamsIds');
     // form the query
     let query = { "streamIds": { '$in': Object.keys(userProfileStreamsIds) } };
 
@@ -296,7 +324,6 @@ Events.prototype.getUserInfo = async function ({ user, getAll }) {
       this.applyOptionsToDB({}),
       cb));
     const userProfileEvents = this.applyItemsFromDB(dbItems);
-
     // convert events to the account info structure
     return userInfoSerializer.serializeEventsToAccountInfo(userProfileEvents);
   } catch (error) {
@@ -311,10 +338,9 @@ Events.prototype.getUserIdByUsername = async function (username): integer {
   // get user id 
   try {
     // TODO IEVA validate for deleted users
-    const collectionInfo = this.getCollectionInfo({});
     const userIdEvent = await bluebird.fromCallback(cb =>
       this.database.findOne(
-        { name: collectionInfo.name},
+        this.getCollectionInfoWithoutUserId(),
         this.applyQueryToDB({
           $and: [
             { "streamIds": { '$in': ['username'] } },
@@ -340,25 +366,26 @@ Events.prototype.getUserIdByUsername = async function (username): integer {
  */
 Events.prototype.createUser = async function (params) {
   let userParams = Object.assign({}, params);
-  let user = {};
+  let user = {}; console.log('Create user', params);
   try {
     let userInfoSerializer = await UserInfoSerializer.build();
     // get streams ids from the config that should be retrieved
     let userProfileStreamsIds = userInfoSerializer.getAllCoreStreams();
-
-    // change password into hash
+    
+    // change password into hash (also allow for tests to pass passwordHash directly)
     if (userParams.password && !userParams.passwordHash) {
       userParams.passwordHash = await bluebird.fromCallback((cb) => encryption.hash(userParams.password, cb));
     }
     delete userParams.password;
-   
+
     // create userId so that userId could be passed
     userParams = converters.createIdIfMissing(userParams);
     // form username event - it is separate because we set the _id 
     let updateObject = {
       streamIds: ['username', 'indexed'],
-      type: userProfileStreamsIds['username'].type,
+      type: userProfileStreamsIds.username.type,
       content: userParams.username,
+      username__unique: userParams.username, // repeated field for uniqness
       id: userParams.id,
       created: timestamp.now(),
       modified: timestamp.now(),
@@ -372,7 +399,7 @@ Events.prototype.createUser = async function (params) {
     const username = await bluebird.fromCallback((cb) =>
       Events.super_.prototype.insertOne.call(this, user, updateObject, cb));
     user.username = username.content;
-    
+
     // delete username so it won't be saved the second time
     delete userProfileStreamsIds['username'];
 
@@ -389,29 +416,33 @@ Events.prototype.createUser = async function (params) {
         // set parameter name and value for the result
         user[streamId] = parameter;
 
-        // get additional stream ids from the config
-        let streamIds = [streamId];
-        if (userProfileStreamsIds[streamId].isIndexed === true) {
-          streamIds.push("indexed");
-        }
-
         // get type for the event from the config
         let eventType = 'string';
         if (userProfileStreamsIds[streamId].type) {
           eventType = userProfileStreamsIds[streamId].type;
         }
+
         // create the event
+        let creationObject = {
+          type: eventType,
+          content: parameter,
+          created: timestamp.now(),
+          modified: timestamp.now(),
+          time: timestamp.now(),
+          createdBy: '',
+          modifiedBy: ''
+        }
+
+        // get additional stream ids from the config
+        let streamIds = [streamId];
+        if (userProfileStreamsIds[streamId].isIndexed === true) {
+          streamIds.push("indexed");
+          creationObject[streamId + '__unique'] = parameter; // repeated field for uniqness
+        }
+        creationObject.streamIds = streamIds;
+
         return bluebird.fromCallback((cb) =>
-            Events.super_.prototype.insertOne.call(this, user, {
-              streamIds: streamIds,
-              type: eventType,
-              content: parameter,
-              created: timestamp.now(),
-              modified: timestamp.now(),
-              time: timestamp.now(),
-              createdBy: '',
-              modifiedBy: ''
-        }, cb));
+          Events.super_.prototype.insertOne.call(this, user, creationObject, cb));
       }
     });
     await Promise.all(eventsCretionActions);
@@ -440,7 +471,7 @@ Events.prototype.updateUser = async function ({ userId, userParams }) {
     // update all core streams and do not allow additional properties
     Object.keys(userProfileStreamsIds).map(streamId => {
       if (userParams[streamId]) {
-        return bluebird.fromCallback(cb => Events.super_.prototype.updateOne.call(this, 
+        return bluebird.fromCallback(cb => Events.super_.prototype.updateOne.call(this,
           { id: userId },
           { streamIds: { $in: [streamId] } },
           { content: userParams[streamId] }, cb));
@@ -462,15 +493,14 @@ Events.prototype.findAllUsers = async function () {
   try {
     let users = [];
     // get list of user ids and usernames
-    const collectionInfo = this.getCollectionInfo({});
     let query = {
-      streamIds: { $in: ["username"] },
+      streamIds: { $in: ['username'] },
       deleted: null,
       headId: null
     }
     const usersNames = await bluebird.fromCallback(cb =>
       this.database.find(
-        { name: collectionInfo.name },
+        this.getCollectionInfoWithoutUserId(),
         this.applyQueryToDB(query),
         this.applyOptionsToDB(null), cb)
     );
@@ -501,13 +531,13 @@ Events.prototype.findAllUsers = async function () {
 Events.prototype.getUserPasswordHash = async function (userId) {
   let userPass;
   userPass = await bluebird.fromCallback(cb =>
-  this.database.findOne(
-    this.getCollectionInfo({ id: userId }),
-    this.applyQueryToDB({
-      $and: [
-        { streamIds: 'passwordHash' }
-      ]
-    }),
-    this.applyOptionsToDB(null), cb));
+    this.database.findOne(
+      this.getCollectionInfo({ id: userId }),
+      this.applyQueryToDB({
+        $and: [
+          { streamIds: 'passwordHash' }
+        ]
+      }),
+      this.applyOptionsToDB(null), cb));
   return (userPass?.content) ? userPass.content : null;
 };

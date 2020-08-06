@@ -90,7 +90,8 @@ class Application {
       servicesSettings: settings.get('services').obj(),
       updatesSettings: settings.get('updates').obj(),
       openSourceSettings: settings.get('openSource').obj(),
-      serverSettings: settings.get('server').obj()
+      serverSettings: settings.get('server').obj(),
+      systemStreamsSettings: settings.get('systemStreams').obj(),
     });
     
     // DI on the topic of storage and MongoDB access
@@ -100,7 +101,6 @@ class Application {
       versionsStorage: sl.versions,
       passwordResetRequestsStorage: sl.passwordResetRequests,
       sessionsStorage: sl.sessions,
-     //TODO IEVA usersStorage: sl.users,
       userAccessesStorage: sl.accesses,
       userEventFilesStorage: sl.eventFiles,
       userEventsStorage: sl.events,
@@ -128,6 +128,7 @@ class Application {
       settings.get('eventFiles.previewsDirPath').str(), 
       settings.get('auth.passwordResetRequestMaxAge').num(), 
       settings.get('auth.sessionMaxAge').num(), 
+      settings.get('systemStreams.profile').obj(), 
     );
   }
   

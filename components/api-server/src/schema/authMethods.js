@@ -26,7 +26,7 @@ module.exports = {
       additionalProperties: false
     }),
     result: object({
-      'token': string()
+      token: string()
     }, {
       required: ['token'],
       additionalProperties: false
@@ -39,101 +39,112 @@ module.exports = {
 
   register: {
     params: object({
-      'username': helpers.username,
-      'password': helpers.string({
+      username: helpers.username,
+      password: helpers.string({
         minLength: 6,
         maxLength: 100
       }),
-      'email': helpers.email,
-      'appId': helpers.string({
+      email: helpers.email,
+      appId: helpers.string({
         minLength: 6,
         maxLength: 99,
       }),
-      'invitationtoken': string(),
-      'referer': helpers.string({
+      invitationtoken: string(),
+      referer: helpers.string({
         minLength: 1,
         maxLength: 99,
       }),
-      'languageCode': helpers.language,
+      languageCode: helpers.language,
     }, {
-      required: ['appId', 'username', 'email', 'password'],
+      required: ['password'],
       messages: {
-        'appId': {
-          'MIN_LENGTH': {
-            'message': ErrorMessages[ErrorIds.InvalidAppId],
-            'code': ErrorIds.InvalidAppId
+        appId: {
+          MIN_LENGTH: {
+            message: ErrorMessages[ErrorIds.InvalidAppId],
+            code: ErrorIds.InvalidAppId
           },
-          'MAX_LENGTH': {
-            'message': ErrorMessages[ErrorIds.InvalidAppId],
-            'code': ErrorIds.InvalidAppId
+          MAX_LENGTH: {
+            message: ErrorMessages[ErrorIds.InvalidAppId],
+            code: ErrorIds.InvalidAppId
           },
-          'INVALID_TYPE': {
-            'message': ErrorMessages[ErrorIds.InvalidAppId],
-            'code': ErrorIds.InvalidAppId
+          INVALID_TYPE: {
+            message: ErrorMessages[ErrorIds.InvalidAppId],
+            code: ErrorIds.InvalidAppId
           },
-          'OBJECT_MISSING_REQUIRED_PROPERTY': {
-            'message': ErrorMessages[ErrorIds.MissingRequiredField] + ': appId',
-            'code': ErrorIds.InvalidAppId
+          OBJECT_MISSING_REQUIRED_PROPERTY: {
+            message: ErrorMessages[ErrorIds.MissingRequiredField] + ': appId',
+            code: ErrorIds.InvalidAppId
           }
         },
-        'username': {
-          'PATTERN': {
-            'message': ErrorMessages[ErrorIds.InvalidUsername],
-            'code': ErrorIds.InvalidUsername
-          }
-        },
-        'password': {
-          'MIN_LENGTH': {
-            'message': ErrorMessages[ErrorIds.InvalidPassword],
-            'code': ErrorIds.InvalidPassword
+        username: {
+          PATTERN: {
+            message: ErrorMessages[ErrorIds.InvalidUsername],
+            code: ErrorIds.InvalidUsername
           },
-          'MAX_LENGTH': {
-            'message': ErrorMessages[ErrorIds.InvalidPassword],
-            'code': ErrorIds.InvalidPassword
+          OBJECT_MISSING_REQUIRED_PROPERTY: {
+            message: ErrorMessages[ErrorIds.UsernameRequired],
+            code: ErrorIds.UsernameRequired
+          }
+        },
+        password: {
+          MIN_LENGTH: {
+            message: ErrorMessages[ErrorIds.InvalidPassword],
+            code: ErrorIds.InvalidPassword
           },
-          'INVALID_TYPE': {
-            'message': ErrorMessages[ErrorIds.InvalidPassword],
-            'code': ErrorIds.InvalidPassword
-          }
-        },
-        'email': {
-          'INVALID_TYPE': {
-            'message': ErrorMessages[ErrorIds.InvalidEmail],
-            'code': ErrorIds.InvalidEmail
-          }
-        },
-        'invitationtoken': {
-          'INVALID_TYPE': {
-            'message': ErrorMessages[ErrorIds.InvalidInvitationToken],
-            'code': ErrorIds.InvalidInvitationToken
-          }
-        },
-        'referer': {
-          'MIN_LENGTH': {
-            'message': ErrorMessages[ErrorIds.Invalidreferer],
-            'code': ErrorIds.Invalidreferer
+          MAX_LENGTH: {
+            message: ErrorMessages[ErrorIds.InvalidPassword],
+            code: ErrorIds.InvalidPassword
           },
-          'MAX_LENGTH': {
-            'message': ErrorMessages[ErrorIds.Invalidreferer],
-            'code': ErrorIds.Invalidreferer
+          INVALID_TYPE: {
+            message: ErrorMessages[ErrorIds.InvalidPassword],
+            code: ErrorIds.InvalidPassword
           },
-          'INVALID_TYPE': {
-            'message': ErrorMessages[ErrorIds.Invalidreferer],
-            'code': ErrorIds.Invalidreferer
+          OBJECT_MISSING_REQUIRED_PROPERTY: {
+            message: ErrorMessages[ErrorIds.PasswordRequired],
+            code: ErrorIds.PasswordRequired
           }
         },
-        'languageCode': {
-          'MAX_LENGTH': {
-            'message': ErrorMessages[ErrorIds.InvalidLanguage],
-            'code': ErrorIds.InvalidLanguage
+        email: {
+          INVALID_TYPE: {
+            message: ErrorMessages[ErrorIds.InvalidEmail],
+            code: ErrorIds.InvalidEmail
+          },
+          OBJECT_MISSING_REQUIRED_PROPERTY: {
+            message: ErrorMessages[ErrorIds.EmailRequired],
+            code: ErrorIds.EmailRequired
+          }
+        },
+        invitationtoken: {
+          INVALID_TYPE: {
+            message: ErrorMessages[ErrorIds.InvalidInvitationToken],
+            code: ErrorIds.InvalidInvitationToken
+        },
+        referer: {
+          MIN_LENGTH: {
+            message: ErrorMessages[ErrorIds.Invalidreferer],
+            code: ErrorIds.Invalidreferer
+          },
+          MAX_LENGTH: {
+            message: ErrorMessages[ErrorIds.Invalidreferer],
+            code: ErrorIds.Invalidreferer
+          },
+          INVALID_TYPE: {
+            message: ErrorMessages[ErrorIds.Invalidreferer],
+            code: ErrorIds.Invalidreferer
+          }
+        },
+        languageCode: {
+          MAX_LENGTH: {
+            message: ErrorMessages[ErrorIds.InvalidLanguage],
+            code: ErrorIds.InvalidLanguage
           }
         }
       },
       additionalProperties: true
     }),
     result: object({
-      'username': string(),
-      'server': string()
+      username: string(),
+      server: string()
     }, {
       required: ['username'],
       additionalProperties: true
@@ -142,18 +153,18 @@ module.exports = {
 
   usernameCheck: {
     params: object({
-      'username': helpers.username,
+      username: helpers.username,
     }, {
       required: ['username'],
       messages: {
-        'username': {
-          'PATTERN': {
-            'message': ErrorMessages[ErrorIds.InvalidUsername],
-            'code': ErrorIds.InvalidUsername
+        username: {
+          PATTERN: {
+            message: ErrorMessages[ErrorIds.InvalidUsername],
+            code: ErrorIds.InvalidUsername
           },
-          'OBJECT_MISSING_REQUIRED_PROPERTY': {
-            'message': ErrorMessages[ErrorIds.UsernameRequired],
-            'code': ErrorIds.UsernameRequired
+          OBJECT_MISSING_REQUIRED_PROPERTY: {
+            message: ErrorMessages[ErrorIds.UsernameRequired],
+            code: ErrorIds.UsernameRequired
           }
         }
       },

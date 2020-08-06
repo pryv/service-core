@@ -87,8 +87,8 @@ exports.getTrustedAppCheck = function getTrustedAppCheck(authSettings) {
  * @param  {Object} paramsSchema JSON Schema for the parameters
  * @return {void}
  */ 
-exports.getParamsValidation = function getParamsValidation(paramsSchema) {
-  return function validateParams(context, params, result, next) {
+exports.getParamsValidation = function getParamsValidation (paramsSchema) {
+  return function validateParams (context, params, result, next) {
     validation.validate(params, paramsSchema, function (err) {
       if (err) {
         const errorsList = err.map(error => _addCustomMessage(error, paramsSchema));

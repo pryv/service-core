@@ -79,6 +79,8 @@ const ErrorIds = {
    * Denied event modification perhaps of belonging to the core streams
    */
   DeniedEventModification: 'denied-event-modification',
+  EmailRequired: 'email-required',
+  PasswordRequired: 'password-required',
 };
 Object.freeze(ErrorIds);
 

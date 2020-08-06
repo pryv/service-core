@@ -18,6 +18,8 @@ const errorHandling = require('components/errors').errorHandling;
 const commonFns = require('components/api-server/src/methods/helpers/commonFunctions');
 const mailing = require('components/api-server/src/methods/helpers/mailing');
 const ServiceRegister = require('./service_register');
+const methodsSchema = require('components/api-server/src/schema/authMethods');
+var string = require('components/api-server/src/schema/helpers').string;
 
 import type { MethodContext } from 'components/model';
 import type { ApiCallback } from 'components/api-server/src/API';
@@ -31,8 +33,9 @@ class Registration {
   servicesSettings; // settigns to get the email to send user welcome email
   serviceRegisterConn; // service-register connection
   hostname; // hostname that will be saved in service-register as a 'core' where user is registered
+  systemStreamsSettings;
 
-  constructor (logging, storageLayer, servicesSettings, serverSettings) { 
+  constructor (logging, storageLayer, servicesSettings, serverSettings, systemStreamsSettings) { 
 
     this.logger = logging.getLogger('methods/system');
     this.storageLayer = storageLayer;
@@ -40,6 +43,7 @@ class Registration {
 
     this.serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
     this.hostname = serverSettings.hostname;
+    this.systemStreamsSettings = systemStreamsSettings.profile;
     
     // bind this object to the functions that need it
     this.createUser = this.createUser.bind(this);
@@ -49,6 +53,7 @@ class Registration {
     this.validateUserInServiceRegister = this.validateUserInServiceRegister.bind(this);
     this.initUser = this.initUser.bind(this);
     this.createPoolUser = this.createPoolUser.bind(this);
+    this.loadCustomValidationSettings = this.loadCustomValidationSettings.bind(this);
 
     this.POOL_USERNAME_PREFIX = 'pool@';
     this.TEMP_USERNAME_PREFIX = 'temp@';
@@ -315,7 +320,8 @@ class Registration {
   }
 
   /**
-   * 
+   * Do minimal manipulation with data like username convertion to lowercase
+   * TODO IEVA -email to lowercase - why?
    * @param {*} context 
    * @param {*} params 
    * @param {*} result 
@@ -332,6 +338,41 @@ class Registration {
     delete params.languageCode;
 
     next();
+  }
+
+  /**
+   * Append validation settings to validation schema and save new object to the context
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  loadCustomValidationSettings (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    let validationSchema = Object.assign({}, methodsSchema.register.params);
+   
+    // iterate core stream settings and APPEND validation with relevant properties
+    // etc additional required fields or regex validation
+    for (const [field, value] of Object.entries(this.systemStreamsSettings)) {
+      console.log(`${field}: ${value}`, value.isRequiredInValidation);
+      // if field is set as required - add required validation
+      if (value.isRequiredInValidation && value.isRequiredInValidation == true && !methodsSchema.register.params.required.includes(field)) {
+        validationSchema.required.push(field)
+        //TODO IEVA - the error message of required property by z-schema is still a hell
+      }
+
+      // if field has type valiadtion - add regex type rule
+      // etc : '^(series:)?[a-z0-9-]+/[a-z0-9-]+$'
+      if (value.regexValidation && !methodsSchema.register.params.properties.hasOwnProperty(field)) {
+        validationSchema.properties[field] = string({ pattern: value.regexValidation });
+        
+        // if there is an error message and code specified, set those too
+        if (value.regexError && !methodsSchema.register.params.messages.hasOwnProperty(field)) {
+          validationSchema.messages[field] = { 'PATTERN': value.regexError };
+        }
+      }
+    }
+
+    commonFns.getParamsValidation(validationSchema)(context, params, result, next);
   }
 };
 

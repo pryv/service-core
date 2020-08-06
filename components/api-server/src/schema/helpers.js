@@ -79,6 +79,7 @@ exports.boolean = getBaseSchema.bind(null, 'boolean');
 /**
  * Global username rule
  */
+//TODO IEVA - perhaps allow capital letters?
 exports.username = getBaseSchema('string', {pattern:  '^[a-z0-9][a-z0-9\\-]{3,21}[a-z0-9]$'});
 
 exports.getBaseSchema = getBaseSchema;

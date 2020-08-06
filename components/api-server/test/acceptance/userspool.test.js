@@ -56,7 +56,7 @@ describe('users pool', () => {
       try {
         const user = await bluebird.fromCallback(cb =>
           database.findOne(
-            storage.getCollectionInfo({ }),
+            storage.getCollectionInfoWithoutUserId(),
             storage.applyQueryToDB({
               $and: [
                 { streamIds: { $in: ["username"] } },

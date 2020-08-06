@@ -23,9 +23,9 @@ import type { ApiCallback } from '../API';
  * @param sessionsStorage
  * @param authSettings
  */
-module.exports = function (api, logging, storageLayer, servicesSettings, serverSettings) {
+module.exports = function (api, logging, storageLayer, servicesSettings, serverSettings, systemStreamsSettings) {
   // REGISTER
-  const registration = new Registration(logging, storageLayer, servicesSettings, serverSettings);
+  const registration = new Registration(logging, storageLayer, servicesSettings, serverSettings, systemStreamsSettings);
 
   api.register('auth.register.singlenode',
     // data validation methods

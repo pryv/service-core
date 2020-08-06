@@ -33,6 +33,8 @@ const ErrorMessages = {
   [ErrorIds.NonValidForOpenSource]: 'Not valid method for open pryv',
   // TODO IEVA - wording
   [ErrorIds.DeniedEventModification]: 'Event modification was not done, perhaps you are trying to edit a core stream event like user data.',
+  [ErrorIds.EmailRequired]: 'Email is required',
+  [ErrorIds.PasswordRequired]: 'Password is required',
 };
 Object.freeze(ErrorMessages);
 

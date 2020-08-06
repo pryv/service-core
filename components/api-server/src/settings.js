@@ -69,13 +69,12 @@ class Settings implements ConfigAccess {
       ourConfig.set('auth.passwordResetPageURL', publicUrl + wwwPath + '/access/reset-password.html');
     }
 
-    // TODO IEVA - validate the logic with Ilia
-    const additionalComponentsConfigs = ["systemStreams"];
+    const additionalComponentsConfigs = ['systemStreams'];
     let i;
     let configName;
     for (i = 0; i < additionalComponentsConfigs.length; i++){
       configName = additionalComponentsConfigs[i];
-      ourConfig.set(additionalComponentsConfigs[i], require("components/api-server/config/components/" + configName)[configName])
+      ourConfig.set(additionalComponentsConfigs[i], require('components/api-server/config/components/' + configName))
     }
 
     settingsSingleton.maybePrint();
