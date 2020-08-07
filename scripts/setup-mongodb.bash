@@ -4,7 +4,7 @@
 # Meant to be run from dev env setup scripts.
 
 if [ `uname` = "Linux" ]; then
-  export MONGO_NAME=mongodb-linux-x86_64-3.6.17
+  export MONGO_NAME=mongodb-linux-x86_64-ubuntu1804-v4.2-latest
   export MONGO_DL_BASE_URL=https://fastdl.mongodb.org/linux
 elif [ `uname` = "Darwin" ]; then # OSX
   export MONGO_NAME=mongodb-osx-ssl-x86_64-3.6.17

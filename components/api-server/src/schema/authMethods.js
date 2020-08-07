@@ -140,7 +140,8 @@ module.exports = {
           }
         }
       },
-      additionalProperties: true
+        additionalProperties: true
+      }
     }),
     result: object({
       username: string(),

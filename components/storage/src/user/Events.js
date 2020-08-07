@@ -113,7 +113,7 @@ function getDbIndexes (systemStreamsSettings) {
   ];
 
   // for each event group that has to be unique add a rule
-  if (Events.systemStreamsSettings) {
+  if (systemStreamsSettings) {
     Object.keys(systemStreamsSettings).forEach(streamId => {
       if (systemStreamsSettings[streamId].isIndexed == true) {
         indexes.push({
@@ -128,7 +128,7 @@ function getDbIndexes (systemStreamsSettings) {
         });
       }
     });
-    console.log(indexes, 'indexes');
+   // console.log(indexes, 'indexes');
   }
   return indexes;
 }
