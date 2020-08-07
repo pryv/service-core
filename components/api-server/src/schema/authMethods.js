@@ -118,6 +118,7 @@ module.exports = {
           INVALID_TYPE: {
             message: ErrorMessages[ErrorIds.InvalidInvitationToken],
             code: ErrorIds.InvalidInvitationToken
+          }
         },
         referer: {
           MIN_LENGTH: {
@@ -138,9 +139,8 @@ module.exports = {
             message: ErrorMessages[ErrorIds.InvalidLanguage],
             code: ErrorIds.InvalidLanguage
           }
-        }
       },
-        additionalProperties: true
+      additionalProperties: true
       }
     }),
     result: object({

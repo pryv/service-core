@@ -27,6 +27,16 @@ module.exports = Events;
  */
 function Events (database, systemStreamsSettings) {
   this.systemStreamsSettings = systemStreamsSettings;
+  // TODO IEVA - added temporarily until we do not load the settings in the tests 
+  // in the new way
+  /*
+  if (!this.systemStreamsSettings) {
+    this.systemStreamsSettings = {
+      username: { isUnique: true },
+      email: { isUnique: true },
+    };
+  }
+*/
   Events.super_.call(this, database);
 
   _.extend(this.converters, {
@@ -115,20 +125,19 @@ function getDbIndexes (systemStreamsSettings) {
   // for each event group that has to be unique add a rule
   if (systemStreamsSettings) {
     Object.keys(systemStreamsSettings).forEach(streamId => {
-      if (systemStreamsSettings[streamId].isIndexed == true) {
+      if (systemStreamsSettings[streamId].isUnique === true) {
         indexes.push({
           index: { [streamId + '__unique']: 1 },
           options: {
             unique: true,
             partialFilterExpression: {
               [streamId + '__unique']: { $exists: true },
-              streamIds: 'indexed'
+              streamIds: 'unique'
             }
           }
         });
       }
     });
-   // console.log(indexes, 'indexes');
   }
   return indexes;
 }
@@ -360,18 +369,49 @@ Events.prototype.getUserIdByUsername = async function (username): integer {
 };
 
 /**
+ * Override base method to set deleted:null
+ * 
+ * @param {*} user 
+ * @param {*} item 
+ * @param {*} callback 
+ */
+Events.prototype.insertOne = function (user, item, callback, options) {
+  this.database.insertOne(
+    this.getCollectionInfo(user),
+    this.applyItemToDB(this.applyItemDefaults(item)),
+    function (err) {
+      if (err) {
+        return callback(err);
+      }
+      callback(null, item);
+    },
+    options
+  );
+};
+  
+/**
  * Create user
  * @param userParams - parameters to be saved
  * @return object with created user information in flat format
  */
 Events.prototype.createUser = async function (params) {
   let userParams = Object.assign({}, params);
-  let user = {}; console.log('Create user', params);
+  let user = {}; //console.log('Create user', params);
+
+  // Start a transaction session
+  const session = await this.database.startSession();
+
+  const transactionOptions = {
+    readPreference: 'primary',
+    readConcern: { level: 'local' },
+    writeConcern: { w: 'majority' }
+  };
+
   try {
     let userInfoSerializer = await UserInfoSerializer.build();
     // get streams ids from the config that should be retrieved
     let userProfileStreamsIds = userInfoSerializer.getAllCoreStreams();
-    
+
     // change password into hash (also allow for tests to pass passwordHash directly)
     if (userParams.password && !userParams.passwordHash) {
       userParams.passwordHash = await bluebird.fromCallback((cb) => encryption.hash(userParams.password, cb));
@@ -382,7 +422,7 @@ Events.prototype.createUser = async function (params) {
     userParams = converters.createIdIfMissing(userParams);
     // form username event - it is separate because we set the _id 
     let updateObject = {
-      streamIds: ['username', 'indexed'],
+      streamIds: ['username', 'unique'],
       type: userProfileStreamsIds.username.type,
       content: userParams.username,
       username__unique: userParams.username, // repeated field for uniqness
@@ -394,10 +434,10 @@ Events.prototype.createUser = async function (params) {
       time: timestamp.now()
     };
     user.id = updateObject.id;
-
-    // insert username event
-    const username = await bluebird.fromCallback((cb) =>
-      Events.super_.prototype.insertOne.call(this, user, updateObject, cb));
+    const transactionResults = await session.withTransaction(async () => {
+      // insert username event
+      const username = await bluebird.fromCallback((cb) =>
+        this.insertOne(user, updateObject, cb, {session}));
     user.username = username.content;
 
     // delete username so it won't be saved the second time
@@ -429,26 +469,30 @@ Events.prototype.createUser = async function (params) {
           created: timestamp.now(),
           modified: timestamp.now(),
           time: timestamp.now(),
-          createdBy: '',
-          modifiedBy: ''
+          createdBy: user.id,
+          modifiedBy: user.id
         }
 
         // get additional stream ids from the config
         let streamIds = [streamId];
-        if (userProfileStreamsIds[streamId].isIndexed === true) {
-          streamIds.push("indexed");
+        if (userProfileStreamsIds[streamId].isUnique === true) {
+          streamIds.push("unique");
           creationObject[streamId + '__unique'] = parameter; // repeated field for uniqness
         }
         creationObject.streamIds = streamIds;
 
         return bluebird.fromCallback((cb) =>
-          Events.super_.prototype.insertOne.call(this, user, creationObject, cb));
+          this.insertOne(user, creationObject, cb, { session }));
       }
     });
     await Promise.all(eventsCretionActions);
+      }, transactionOptions);
+    //  console.log(transactionResults, 'transactionResults');
     return user;
   } catch (error) {
     throw error;
+  } finally {
+     await session.endSession();
   }
 };
 

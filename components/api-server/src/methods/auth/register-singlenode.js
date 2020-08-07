@@ -30,16 +30,13 @@ module.exports = function (api, logging, storageLayer, servicesSettings, serverS
   api.register('auth.register.singlenode',
     // data validation methods
     commonFns.getParamsValidation(methodsSchema.register.params),
-
-    // set logger, database connection
-    validateUser,
-
+    // validateUser,
     // user registration methods
     registration.prepareUserDataForSaving,
     registration.createUser,
     registration.sendWelcomeMail
   );
-
+/* TODO IEVA - remove
   async function validateUser(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
       // check email in service-core
@@ -65,6 +62,6 @@ module.exports = function (api, logging, storageLayer, servicesSettings, serverS
       return next(errors.unexpectedError(error));
     }
     next();
-  }
+  }*/
 };
 module.exports.injectDependencies = true;

@@ -197,14 +197,19 @@ class Registration {
     // Duplicate errors
     // I check for these errors in the validation so they are only used for 
     // deprecated systems.createUser path
+    let listApiErrors = [];
     if (typeof err.isDuplicateIndex === 'function' && err.isDuplicateIndex('email')) {
-      return errors.itemAlreadyExists('user', { email: params.email }, err);
+      listApiErrors.push(errors.ExistingEmail());
     }
     if (typeof err.isDuplicateIndex === 'function' && err.isDuplicateIndex('username')) {
-      return errors.itemAlreadyExists('user', { username: params.username }, err);
+      listApiErrors.push(errors.ExistingUsername());
+    }
+    // TODO IEVA - error for the other keys
+    if (listApiErrors.length > 0) {
+      return commonFns.apiErrorToValidationErrorsList(listApiErrors);
     }
     // Any other error
-    return errors.unexpectedError(err, 'Unexpected error while saving user.');
+    return errors.unexpectedError(err, 'Unexpected error while saving user.'); 
   }
 
 

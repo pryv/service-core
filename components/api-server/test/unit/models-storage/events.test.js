@@ -93,7 +93,6 @@ describe('Events storage', () => {
         console.log('Test failed because error was not thrown');
         assert.isTrue(false);
       } catch (err) {
-        console.log(err,'err');
         assert.isNotNull(err);
         // FLOW: we ensure that err contains the isDuplicate boolean with assert
         const isDuplicate = err.isDuplicate;
@@ -102,10 +101,10 @@ describe('Events storage', () => {
         // FLOW: we ensure that err contains the isDuplicateIndex function with assert
         const isDuplicateIndex = err.isDuplicateIndex;
         assert.isFunction(isDuplicateIndex);
-        assert.isTrue(isDuplicateIndex('content'));
+        assert.isTrue(isDuplicateIndex('email__unique'));
       }
     });
-
+/*
     it('[79CF] must throw a duplicate error when custom user field from the settings is not unique', async () => {
       try {
         await eventsStorage.createUser({
@@ -125,6 +124,6 @@ describe('Events storage', () => {
         assert.isFunction(isDuplicateIndex);
         assert.isTrue(isDuplicateIndex('content'));
       }
-    });
+    });*/
   });
 });
