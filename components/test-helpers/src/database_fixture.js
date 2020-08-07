@@ -32,13 +32,11 @@ class Context {
   }
 
   cleanEverything (): Promise<mixed> {
-    const documentNames = ['events', 'accesses', 'sessions', 'streams', 'followedSlices', 'webhooks', 'versions']
-    //TODO IEVA
-    const documents = documentNames.map(documentName => {
-      return bluebird.fromCallback(cb => this.databaseConn.deleteMany(
-        { name: documentName }, {}, cb));
+    const collectionNames = ['events', 'accesses', 'sessions', 'streams', 'followedSlices', 'webhooks', 'versions']
+    const collections = collectionNames.map(collectionName => {
+      return bluebird.fromCallback(cb => this.databaseConn.deleteMany({ name: collectionName }, {}, cb))
     });
-    return Promise.all(documents);
+    return Promise.all(collections);
   }
 }
 
@@ -74,6 +72,7 @@ class UserContext {
       sessions: new Sessions(conn),
       
       streams: new storage.user.Streams(conn),
+      // TODO IEVA - add here systemStreamsSettings
       events: new storage.user.Events(conn),
       accesses: new storage.user.Accesses(conn),
       webhooks: new storage.user.Webhooks(conn),

@@ -10,6 +10,7 @@ const _ = require('lodash');
 
 const defaultValuesForFields = {
   isIndexed: false,
+  isUnique: false,
   isShown: false,
   type: 'string/pryv',
   shouldSendToRegister: false,
@@ -22,12 +23,14 @@ config.overrides({
     profile: {
       username: _.extend({}, defaultValuesForFields, {
         isIndexed: true,
+        isUnique: true,
         isShown: true,
         shouldSendToRegister: true,
         isRequiredInValidation: true
       }),
       email: _.extend({}, defaultValuesForFields, {
         isIndexed: true,
+        isUnique: true,
         isShown: true,
         shouldSendToRegister: true,
         isRequiredInValidation: true

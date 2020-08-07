@@ -67,7 +67,7 @@ describe('Events storage', () => {
         });
 
         const allUsers = await eventsStorage.findAllUsers();
-        console.log('Test failed because error was not thrown', allUsers,'allUsers');
+        //console.log('Test failed because error was not thrown', allUsers, 'allUsers', username,'username');
         assert.isTrue(false);
       } catch (err) {
         console.log(err,'err');
@@ -79,7 +79,8 @@ describe('Events storage', () => {
         // FLOW: we ensure that err contains the isDuplicateIndex function with assert
         const isDuplicateIndex = err.isDuplicateIndex;
         assert.isFunction(isDuplicateIndex);
-        assert.isTrue(isDuplicateIndex('content'));
+        console.log(isDuplicateIndex,'isDuplicateIndex');
+        assert.isTrue(isDuplicateIndex('username__unique'));
       }
     });
 
