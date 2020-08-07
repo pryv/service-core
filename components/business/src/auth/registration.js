@@ -20,6 +20,7 @@ const mailing = require('components/api-server/src/methods/helpers/mailing');
 const ServiceRegister = require('./service_register');
 const methodsSchema = require('components/api-server/src/schema/authMethods');
 var string = require('components/api-server/src/schema/helpers').string;
+const UserInfoSerializer = require('components/business/src/user/user_info_serializer');
 
 import type { MethodContext } from 'components/model';
 import type { ApiCallback } from 'components/api-server/src/API';
@@ -70,7 +71,21 @@ class Registration {
    */
   async createUserInServiceRegister (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
-      const response = await this.serviceRegisterConn.createUser(context.user, params);
+      let userInfoSerializer = await UserInfoSerializer.build();
+      // get streams ids from the config that should be retrieved
+      const userStreamsIds = userInfoSerializer.getIndexedCoreStreams();
+
+      // form data that should be sent to service-register
+      // some default values and indexed/uinique fields of the system
+      let saveToServiceRegister = {
+        id: context.user.id,
+        host: context.user.host
+      };
+      Object.keys(userStreamsIds).forEach(streamId => {
+        saveToServiceRegister[streamId] = context.user[streamId];
+      });
+      console.log(saveToServiceRegister,'saveToServiceRegister');
+      const response = await this.serviceRegisterConn.createUser(saveToServiceRegister, params);
 
       // take only server name
       if (response.server) {
@@ -188,7 +203,6 @@ class Registration {
 
   /**
    * Form errors for api response
-   * Note - if we remove system user, this could deprecate
    * @param {*} err 
    * @param {*} params 
    */

@@ -8,7 +8,8 @@ const Settings = require('components/api-server/src/settings');
 
 const readable = 'readable-core-streams',
   allCoreStreams = 'all-core-streams',
-  onlyWritableCoreStreams = 'only-writable-core-streams';
+  onlyWritableCoreStreams = 'only-writable-core-streams',
+  indexedStreams = 'indexed-core-streams';
 /**
  * Class that converts system->profile events to the
  * Account information that matches the previous 
@@ -73,6 +74,14 @@ class UserInfoSerializer {
     return getStreamsNames(this.systemStreamsSettings.profile, streamsNames, allCoreStreams);
   }
 
+/**
+ * Get streamIds of fields that should be indexed
+ */
+  getIndexedCoreStreams () {
+    let streamsNames = {};
+    return getStreamsNames(this.systemStreamsSettings.profile, streamsNames, indexedStreams);
+  }
+  
   /**
    * Get virtual streams list
    * @param {*} events 
@@ -166,6 +175,11 @@ function getStreamsNames(streams, streamsNames, whatToReturn) {
         }
         break;
       case allCoreStreams:
+        break;
+      case indexedStreams:
+        if (stream.isIndexed === false) {
+          continue;
+        }
         break;
       default:
         if (stream.isShown === true) {
