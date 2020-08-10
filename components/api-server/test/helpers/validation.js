@@ -424,7 +424,7 @@ exports.validateCoreEvents = async function (actualCoreEvents) {
       if (actualCoreEvents[i].streamIds.includes(expectedSreamIds[n])) {
         foundEvent = true;
         // validate that event is indexed if needed
-        if (expectedCoreStreams[expectedSreamIds[n]].isIndexed === true) {
+        if (expectedCoreStreams[expectedSreamIds[n]].isUnique === true) {
           actualCoreEvents[i].streamIds.includes('indexed').should.eql(true);
         }
         // validate type

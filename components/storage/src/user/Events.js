@@ -115,7 +115,7 @@ function getDbIndexes (systemStreamsSettings) {
   // for each event group that has to be unique add a rule
   if (systemStreamsSettings) {
     Object.keys(systemStreamsSettings).forEach(streamId => {
-      if (systemStreamsSettings[streamId].isIndexed == true) {
+      if (systemStreamsSettings[streamId].isUnique == true) {
         indexes.push({
           index: { [streamId + '__unique']: 1 },
           options: {
@@ -385,7 +385,7 @@ Events.prototype.createUser = async function (params) {
       streamIds: ['username', 'indexed'],
       type: userProfileStreamsIds.username.type,
       content: userParams.username,
-      username__unique: userParams.username, // repeated field for uniqness
+      username__unique: userParams.username, // repeated field for uniqueness
       id: userParams.id,
       created: timestamp.now(),
       modified: timestamp.now(),
@@ -404,12 +404,12 @@ Events.prototype.createUser = async function (params) {
     delete userProfileStreamsIds['username'];
 
     // create all user account events
-    const eventsCretionActions = Object.keys(userProfileStreamsIds).map(streamId => {
-      if (userParams[streamId] || typeof userProfileStreamsIds[streamId].default !== "undefined") {
+    const eventsCreationActions = Object.keys(userProfileStreamsIds).map(streamId => {
+      if (userParams[streamId] || typeof userProfileStreamsIds[streamId].default !== 'undefined') {
         let parameter = userProfileStreamsIds[streamId].default;
 
         // set default value if undefined
-        if (typeof userParams[streamId] !== "undefined") {
+        if (typeof userParams[streamId] !== 'undefined') {
           parameter = userParams[streamId];
         }
 
@@ -435,8 +435,8 @@ Events.prototype.createUser = async function (params) {
 
         // get additional stream ids from the config
         let streamIds = [streamId];
-        if (userProfileStreamsIds[streamId].isIndexed === true) {
-          streamIds.push("indexed");
+        if (userProfileStreamsIds[streamId].isUnique === true) {
+          streamIds.push('indexed');
           creationObject[streamId + '__unique'] = parameter; // repeated field for uniqness
         }
         creationObject.streamIds = streamIds;
