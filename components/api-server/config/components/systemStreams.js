@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 'use strict'
-let config = require('components/api-server/config/nconf');
+const config = require('components/api-server/config/nconf');
 const _ = require('lodash');
 
 const defaultValuesForFields = {
@@ -19,47 +19,66 @@ const defaultValuesForFields = {
 // default core streams that sould be not changed 
 config.overrides({
   systemStreams: {
-    profile: {
+    account: {
       username: _.extend({}, defaultValuesForFields, {
         isIndexed: true,
         isUnique: true,
         isShown: true,
+        type: 'identifier/string',
+        name: 'Username',
         isRequiredInValidation: true
       }),
       email: _.extend({}, defaultValuesForFields, {
         isIndexed: true,
         isUnique: true,
         isShown: true,
+        type: 'email/string',
+        name: 'Email',
         isRequiredInValidation: true
       }),
       language: _.extend({}, defaultValuesForFields, {
         isIndexed: true,
         isShown: true,
-        default: 'en'
+        default: 'en',
+        type: 'language/iso-639-1',
+        name: 'Language',
       }),
       appId: _.extend({}, defaultValuesForFields, {
         isIndexed: true,
         isRequiredInValidation: true,
         isIndexed: true,
+        type: 'identifier/string',
+        name: 'appId',
       }),
       invitationToken: _.extend({}, defaultValuesForFields, {
         isIndexed: true,
-        default: 'no-token'
+        default: 'no-token',
+        type: 'token/string',
+        name: 'Invitation Token',
       }),
-      passwordHash: defaultValuesForFields,
+      passwordHash: _.extend({}, defaultValuesForFields, {
+        type: 'password-hash/string',
+        name: 'Password Hash',
+      }),
       referer: _.extend({}, defaultValuesForFields, {
         isIndexed: true,
-        default: null
+        default: null,
+        type: 'identifier/string',
+        name: 'Referer',
       }),
       storageUsed: {
         dbDocuments: _.extend({}, defaultValuesForFields, {
           isShown: true,
           default: 0,
-          displayName: 'dbDocuments'
+          displayName: 'dbDocuments',
+          type: 'data-quantity/b',
+          name: 'Storage used',
         }),
         attachedFiles: _.extend({}, defaultValuesForFields, {
           isShown: true,
-          default: 0
+          default: 0,
+          type: 'data-quantity/b',
+          name: 'Attached files',
         })
       }
     }

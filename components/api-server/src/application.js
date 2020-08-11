@@ -128,7 +128,7 @@ class Application {
       settings.get('eventFiles.previewsDirPath').str(), 
       settings.get('auth.passwordResetRequestMaxAge').num(), 
       settings.get('auth.sessionMaxAge').num(), 
-      settings.get('systemStreams.profile').obj(), 
+      settings.get('systemStreams.account').obj(), 
     );
   }
   

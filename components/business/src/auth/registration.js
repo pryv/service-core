@@ -44,7 +44,7 @@ class Registration {
 
     this.serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
     this.hostname = serverSettings.hostname;
-    this.systemStreamsSettings = systemStreamsSettings.profile;
+    this.systemStreamsSettings = systemStreamsSettings.account;
     
     // bind this object to the functions that need it
     this.createUser = this.createUser.bind(this);
@@ -84,7 +84,7 @@ class Registration {
       Object.keys(userStreamsIds).forEach(streamId => {
         saveToServiceRegister[streamId] = context.user[streamId];
       });
-      console.log(saveToServiceRegister,'saveToServiceRegister');
+
       const response = await this.serviceRegisterConn.createUser(saveToServiceRegister, params);
 
       // take only server name

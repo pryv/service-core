@@ -425,7 +425,7 @@ Events.prototype.createUser = async function (params) {
       streamIds: ['username', 'unique'],
       type: userProfileStreamsIds.username.type,
       content: userParams.username,
-      username__unique: userParams.username, // repeated field for uniqness
+      username__unique: userParams.username, // repeated field for uniqueness
       id: userParams.id,
       created: timestamp.now(),
       modified: timestamp.now(),
@@ -438,61 +438,57 @@ Events.prototype.createUser = async function (params) {
       // insert username event
       const username = await bluebird.fromCallback((cb) =>
         this.insertOne(user, updateObject, cb, {session}));
-    user.username = username.content;
+      user.username = username.content;
 
-    // delete username so it won't be saved the second time
-    delete userProfileStreamsIds['username'];
+      // delete username so it won't be saved the second time
+      delete userProfileStreamsIds['username'];
 
-    // create all user account events
-    const eventsCretionActions = Object.keys(userProfileStreamsIds).map(streamId => {
-      if (userParams[streamId] || typeof userProfileStreamsIds[streamId].default !== "undefined") {
-        let parameter = userProfileStreamsIds[streamId].default;
+      // create all user account events
+      const eventsCreationActions = Object.keys(userProfileStreamsIds).map(streamId => {
+        if (userParams[streamId] || typeof userProfileStreamsIds[streamId].default !== 'undefined') {
+          let parameter = userProfileStreamsIds[streamId].default;
 
-        // set default value if undefined
-        if (typeof userParams[streamId] !== "undefined") {
-          parameter = userParams[streamId];
+          // set default value if undefined
+          if (typeof userParams[streamId] !== 'undefined') {
+            parameter = userParams[streamId];
+          }
+
+          // set parameter name and value for the result
+          user[streamId] = parameter;
+
+          // get type for the event from the config
+          let eventType = 'string';
+          if (userProfileStreamsIds[streamId].type) {
+            eventType = userProfileStreamsIds[streamId].type;
+          }
+
+          // create the event
+          let creationObject = {
+            type: eventType,
+            content: parameter,
+            created: timestamp.now(),
+            modified: timestamp.now(),
+            time: timestamp.now(),
+            createdBy: user.id,
+            modifiedBy: user.id
+          }
+
+          // get additional stream ids from the config
+          let streamIds = [streamId];
+          if (userProfileStreamsIds[streamId].isUnique === true) {
+            streamIds.push("unique");
+            creationObject[streamId + '__unique'] = parameter; // repeated field for uniqness
+          }
+          creationObject.streamIds = streamIds;
+          return bluebird.fromCallback((cb) =>
+            this.insertOne(user, creationObject, cb, { session }));
         }
-
-        // set parameter name and value for the result
-        user[streamId] = parameter;
-
-        // get type for the event from the config
-        let eventType = 'string';
-        if (userProfileStreamsIds[streamId].type) {
-          eventType = userProfileStreamsIds[streamId].type;
-        }
-
-        // create the event
-        let creationObject = {
-          type: eventType,
-          content: parameter,
-          created: timestamp.now(),
-          modified: timestamp.now(),
-          time: timestamp.now(),
-          createdBy: user.id,
-          modifiedBy: user.id
-        }
-
-        // get additional stream ids from the config
-        let streamIds = [streamId];
-        if (userProfileStreamsIds[streamId].isUnique === true) {
-          streamIds.push("unique");
-          creationObject[streamId + '__unique'] = parameter; // repeated field for uniqness
-        }
-        creationObject.streamIds = streamIds;
-
-        return bluebird.fromCallback((cb) =>
-          this.insertOne(user, creationObject, cb, { session }));
-      }
-    });
-    await Promise.all(eventsCretionActions);
-      }, transactionOptions);
-    //  console.log(transactionResults, 'transactionResults');
+      });
+      await Promise.all(eventsCreationActions);
+    }, transactionOptions);
     return user;
   } catch (error) {
     throw error;
-  } finally {
-     await session.endSession();
   }
 };
 
