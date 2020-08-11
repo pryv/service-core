@@ -42,7 +42,7 @@ class UserInfoSerializer {
    */
   serializeEventsToAccountInfo(events){
     let user = {};
-    return formEventsTree(this.systemStreamsSettings.profile, events, user);
+    return formEventsTree(this.systemStreamsSettings.account, events, user);
   }
 
   /**
@@ -51,7 +51,7 @@ class UserInfoSerializer {
    */
   getReadableCoreStreams () {
     let streamsNames = {};
-    return getStreamsNames(this.systemStreamsSettings.profile, streamsNames, readable);
+    return getStreamsNames(this.systemStreamsSettings.account, streamsNames, readable);
   }
 
   /**
@@ -60,7 +60,7 @@ class UserInfoSerializer {
    */
   getOnlyWritableCoreStreams () {
     let streamsNames = {};
-    return getStreamsNames(this.systemStreamsSettings.profile, streamsNames, onlyWritableCoreStreams);
+    return getStreamsNames(this.systemStreamsSettings.account, streamsNames, onlyWritableCoreStreams);
   }
 
   /**
@@ -70,7 +70,7 @@ class UserInfoSerializer {
    */
   getAllCoreStreams () {
     let streamsNames = {};
-    return getStreamsNames(this.systemStreamsSettings.profile, streamsNames, allCoreStreams);
+    return getStreamsNames(this.systemStreamsSettings.account, streamsNames, allCoreStreams);
   }
 
   /**
@@ -80,7 +80,7 @@ class UserInfoSerializer {
    */
   getVirtualStreamsList () {
     let streamsNames = {};
-    const streamsName = getStreamsNames(this.systemStreamsSettings.profile, streamsNames, readable);
+    const streamsName = getStreamsNames(this.systemStreamsSettings.account, streamsNames, readable);
     const streams = Object.keys(streamsName).map(streamName => {
       return {
         name: streamName,
