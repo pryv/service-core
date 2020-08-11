@@ -311,7 +311,7 @@ class Registration {
   }
 
   /**
-   * 
+   * Validation and reservation in service-register
    * @param {*} context 
    * @param {*} params 
    * @param {*} result 
@@ -320,7 +320,17 @@ class Registration {
   async validateUserInServiceRegister (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
       //TODO IEVA reservationKey should be joined indexed fields
-      let reservationKey = params.username + params.email;
+      let reservationKey = '';//params.username + params.email;
+      for (const [field, value] of Object.entries(this.systemStreamsSettings)) {
+        // if field is set as required - add required validation
+        if (value.isUnique && value.isUnique === true) {
+          reservationKey += field + '_';
+        }
+      }
+      // remove last '_'
+      reservationKey = reservationKey.substring(0, reservationKey.length - 1);
+
+      // do the validation and reservation in service-register
       const response = await this.serviceRegisterConn.validateUser(params.email, params.username, params.invitationtoken, reservationKey, this.hostname);
 
       if (response?.errors && response.errors.length > 0) {
@@ -372,7 +382,6 @@ class Registration {
     // iterate core stream settings and APPEND validation with relevant properties
     // etc additional required fields or regex validation
     for (const [field, value] of Object.entries(this.systemStreamsSettings)) {
-      console.log(`${field}: ${value}`, value.isRequiredInValidation);
       // if field is set as required - add required validation
       if (value.isRequiredInValidation && value.isRequiredInValidation == true && !methodsSchema.register.params.required.includes(field)) {
         validationSchema.required.push(field)
