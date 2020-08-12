@@ -262,7 +262,7 @@ describe('User Registration related functionalities', async () => {
       });
     });
 
-    it('invalid language', async () => {
+    it('[F3D8] invalid language', async () => {
 
       // var test = {
       //   data: { languageCode: 'abcdef' },

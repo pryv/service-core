@@ -283,6 +283,15 @@ module.exports = function (
       // To remove when streamId not necessary
       event.streamId = event.streamIds[0];
 
+      // remove event values used for enforcing uniqness in database level
+      // (the fields are formed "streamId + __unique")
+      event = Object.keys(event)
+        .filter(key => ! /__unique/.test(key))
+        .reduce((obj, key) => {
+          obj[key] = event[key];
+          return obj;
+        }, {});
+      
       result.event = event;
       return next();
     });

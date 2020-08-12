@@ -140,10 +140,6 @@ module.exports = async function (context, callback) {
       }
       creationObject.streamIds = streamIds;
 
-      return bluebird.fromCallback((cb) =>
-        Events.super_.prototype.insertOne.call(this, user, creationObject, cb));
-      }
-
       function isPropertyUnique(streamId) { return streamData.isUnique === true; }
     });
     await Promise.all(eventsCretionActions);

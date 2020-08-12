@@ -412,10 +412,18 @@ class Database {
    * @param {Object} item
    * @param {Function} callback
    */
-  insertOne(collectionInfo: CollectionInfo, item: Object, callback: DatabaseCallback) {
+  insertOne (collectionInfo: CollectionInfo, item: Object, callback: DatabaseCallback, options: Object) {
+    // default value for options 
+    const defaultOptions = { w: 1, j: true };
+    if (typeof options !== 'object') {
+      options = defaultOptions;
+    } else {
+      options = { ...options, ...defaultOptions };
+    }
+
     this.addUserIdIfneed(collectionInfo, item);
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.insertOne(item, {w: 1, j: true}, (err, res) => {
+      collection.insertOne(item, options, (err, res) => {
         if (err != null) {
           Database.handleDuplicateError(err);
         }
@@ -645,6 +653,15 @@ class Database {
   /// 
   async close() {
     return this.client.close();
+  }
+
+  async startSession () {
+    
+    // Make sure we have a connect
+    await bluebird.fromCallback(
+      cb => this.ensureConnect(cb)); 
+    const session = this.client.startSession();
+    return session;
   }
 }
 

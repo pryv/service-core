@@ -8,9 +8,10 @@ const Settings = require('components/api-server/src/settings');
 
 const readable = 'readable-core-streams',
   allCoreStreams = 'all-core-streams',
-  onlyWritableCoreStreams = 'only-writable-core-streams';
+  onlyWritableCoreStreams = 'only-writable-core-streams',
+  indexedStreams = 'indexed-core-streams';
 /**
- * Class that converts system->profile events to the
+ * Class that converts system->account events to the
  * Account information that matches the previous 
  * structure of the account info
  */
@@ -37,7 +38,7 @@ class UserInfoSerializer {
   }
   
   /**
-   * Convert system->profile events to the account object
+   * Convert system->account events to the account object
    * @param {*} events 
    */
   serializeEventsToAccountInfo(events){
@@ -46,7 +47,7 @@ class UserInfoSerializer {
   }
 
   /**
-   * Get the names of all readable streams that belongs to the system->profile stream
+   * Get the names of all readable streams that belongs to the system->account stream
    * and could be returned to the user
    */
   getReadableCoreStreams () {
@@ -55,7 +56,7 @@ class UserInfoSerializer {
   }
 
   /**
-   * Get the names of the streams that belongs to the system->profile stream
+   * Get the names of the streams that belongs to the system->account stream
    * but is not readable for the user (only writable) 
    */
   getOnlyWritableCoreStreams () {
@@ -64,7 +65,7 @@ class UserInfoSerializer {
   }
 
   /**
-   * Get the names of all streams that belongs to the system->profile stream
+   * Get the names of all streams that belongs to the system->account stream
    * should be used only for internal usage because contains fields that 
    * should not be returned to the user
    */
@@ -73,6 +74,14 @@ class UserInfoSerializer {
     return getStreamsNames(this.systemStreamsSettings.account, streamsNames, allCoreStreams);
   }
 
+/**
+ * Get streamIds of fields that should be indexed
+ */
+  getIndexedCoreStreams () {
+    let streamsNames = {};
+    return getStreamsNames(this.systemStreamsSettings.account, streamsNames, indexedStreams);
+  }
+  
   /**
    * Get virtual streams list
    * @param {*} events 
@@ -85,7 +94,7 @@ class UserInfoSerializer {
       return {
         name: streamName,
         id: streamName,
-        parentId: 'profile',
+        parentId: 'account',
         children: []
       }
     })
@@ -166,6 +175,11 @@ function getStreamsNames(streams, streamsNames, whatToReturn) {
         }
         break;
       case allCoreStreams:
+        break;
+      case indexedStreams:
+        if (stream.isIndexed === false) {
+          continue;
+        }
         break;
       default:
         if (stream.isShown === true) {

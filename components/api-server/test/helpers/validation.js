@@ -406,7 +406,6 @@ exports.removeTrackingProperties = function (items) {
 /**
  * Validate that core events consist of values matching the configuration
  * and has properties that are usual for the events
- * 
  */
 exports.validateCoreEvents = async function (actualCoreEvents) {
   // get all values from the settings that should be displayed for the user
@@ -425,7 +424,7 @@ exports.validateCoreEvents = async function (actualCoreEvents) {
         foundEvent = true;
         // validate that event is indexed if needed
         if (expectedCoreStreams[expectedSreamIds[n]].isUnique === true) {
-          actualCoreEvents[i].streamIds.includes('indexed').should.eql(true);
+          actualCoreEvents[i].streamIds.includes('unique').should.eql(true);
         }
         // validate type
         actualCoreEvents[i].type.should.eql(expectedCoreStreams[expectedSreamIds[n]].type);

@@ -9,10 +9,11 @@ const config = require('components/api-server/config/nconf');
 const _ = require('lodash');
 
 const defaultValuesForFields = {
-  isUnique: false,
-  isShown: false,
-  isSentToRegister: false,
-  isRequiredInValidation: false
+  isIndexed: false, // if true will be sent to service-register to be able to query across the platform
+  isUnique: false,// if true will be sent to service-register and enforced uniqness on mongodb
+  isShown: false, // if true, will be shown for the users
+  type: 'string/pryv', // event type
+  isRequiredInValidation: false // if true, the field will be required in the validation
 }
 
 // default core streams that sould be not changed 
@@ -20,22 +21,25 @@ config.overrides({
   systemStreams: {
     account: {
       username: _.extend({}, defaultValuesForFields, {
+        isIndexed: true,
         isUnique: true,
         isShown: true,
         isSentToRegister: true,
-        isRequiredInValidation: true,
         type: 'identifier/string',
         name: 'Username',
+        isRequiredInValidation: true
       }),
       email: _.extend({}, defaultValuesForFields, {
+        isIndexed: true,
         isUnique: true,
         isShown: true,
         isSentToRegister: true,
-        isRequiredInValidation: true,
         type: 'email/string',
         name: 'Email',
+        isRequiredInValidation: true
       }),
       language: _.extend({}, defaultValuesForFields, {
+        isIndexed: true,
         isShown: true,
         isSentToRegister: true,
         default: 'en',
@@ -43,11 +47,14 @@ config.overrides({
         name: 'Language',
       }),
       appId: _.extend({}, defaultValuesForFields, {
+        isIndexed: true,
         isRequiredInValidation: true,
+        isIndexed: true,
         type: 'identifier/string',
         name: 'appId',
       }),
       invitationToken: _.extend({}, defaultValuesForFields, {
+        isIndexed: true,
         default: 'no-token',
         type: 'token/string',
         name: 'Invitation Token',
@@ -57,6 +64,7 @@ config.overrides({
         name: 'Password Hash',
       }),
       referer: _.extend({}, defaultValuesForFields, {
+        isIndexed: true,
         default: null,
         type: 'identifier/string',
         name: 'Referer',
