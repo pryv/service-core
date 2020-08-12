@@ -35,6 +35,7 @@ const ErrorMessages = {
   [ErrorIds.DeniedEventModification]: 'Event modification was not done, perhaps you are trying to edit a core stream event like user data.',
   [ErrorIds.EmailRequired]: 'Email is required',
   [ErrorIds.PasswordRequired]: 'Password is required',
+  [ErrorIds.InvalidPassword]: 'Password should have from 5 to 23 characters',
 };
 Object.freeze(ErrorMessages);
 

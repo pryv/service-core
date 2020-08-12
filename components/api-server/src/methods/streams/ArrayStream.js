@@ -30,12 +30,13 @@ inherits(ArrayStream, Transform);
 
 ArrayStream.prototype._transform = function (item, encoding, callback) {
   // remove event values used for enforcing uniqness in database level
-  item = Object.keys(item)
+  // (the fields are formed "streamId + __unique")
+  /* TODO IEVA item = Object.keys(item)
     .filter(key => ! /__unique/.test(key))
     .reduce((obj, key) => {
       obj[key] = item[key];
       return obj;
-    }, {});
+    }, {});*/
 
   this.stack.push(item);
 

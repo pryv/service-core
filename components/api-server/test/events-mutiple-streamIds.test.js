@@ -790,12 +790,12 @@ describe('events.streamIds', function () {
             const res = await server.request()
               .get(basePathEvent)
               .set('Authorization', manageAccessToken);
-            
+
             // lets separate core events from all other events and validate them separatelly
             const separatedEvents = validation.separateCoreStreamsAndOtherEvents(res.body.events);
             const events = separatedEvents.events;
             assert.equal(events.length, 3);
-
+            
             // validate core streams events
             const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
             await validation.validateCoreEvents(actualCoreStreamsEvents);

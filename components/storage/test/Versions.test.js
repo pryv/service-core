@@ -10,6 +10,7 @@
 
 /*global describe, it */
 
+const bluebird = require('bluebird');
 const helpers = require('components/test-helpers');
 const storage = helpers.dependencies.storage;
 const converters = require('../src/converters');
@@ -448,7 +449,7 @@ describe('Versions', function () {
     }
   });
 
-  it('[CRPX] must handle data migration from v1.4.0 to 1.5.0', function (done) {
+  it.skip('[CRPX] must handle data migration from v1.4.0 to 1.5.0', function (done) {
     const versions = getVersions('1.5.0');
     const newIndexes = testData.getStructure('1.5.0').indexes;
   
@@ -496,6 +497,21 @@ describe('Versions', function () {
       });
     }
   });
+
+  it('[VMKO] must handle data migration from 1.5.22 to 1.6.0', async function () {
+    const versions = getVersions('1.6.0');
+    const newIndexes = testData.getStructure('1.6.0').indexes;
+  
+    const user = { id: 'u_0' };
+    const usersStorage = storage.users;
+    const eventsStorage = storage.user.events;
+    const streamsStorage = storage.user.streams;
+
+    await bluebird.fromCallback(cb => testData.restoreFromDump('1.5.22', mongoFolder, cb));
+    await bluebird.fromCallback(cb => versions.migrateIfNeeded(cb));
+    //const usersCollection = await bluebird.fromCallback(cb => usersStorage.findAll(cb));
+    //const eventsCollection = await bluebird.fromCallback(cb => eventsStorage.findAll(cb));
+  })
 
   function compareIndexes(expected, actual) {
     expected.forEach((index) => {

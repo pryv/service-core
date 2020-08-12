@@ -20,6 +20,7 @@ const mailing = require('components/api-server/src/methods/helpers/mailing');
 const ServiceRegister = require('./service_register');
 const methodsSchema = require('components/api-server/src/schema/authMethods');
 var string = require('components/api-server/src/schema/helpers').string;
+const UserInfoSerializer = require('components/business/src/user/user_info_serializer');
 
 import type { MethodContext } from 'components/model';
 import type { ApiCallback } from 'components/api-server/src/API';
@@ -43,7 +44,7 @@ class Registration {
 
     this.serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
     this.hostname = serverSettings.hostname;
-    this.systemStreamsSettings = systemStreamsSettings.profile;
+    this.systemStreamsSettings = systemStreamsSettings.account;
     
     // bind this object to the functions that need it
     this.createUser = this.createUser.bind(this);
@@ -70,7 +71,21 @@ class Registration {
    */
   async createUserInServiceRegister (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
-      const response = await this.serviceRegisterConn.createUser(context.user, params);
+      let userInfoSerializer = await UserInfoSerializer.build();
+      // get streams ids from the config that should be retrieved
+      const userStreamsIds = userInfoSerializer.getIndexedCoreStreams();
+
+      // form data that should be sent to service-register
+      // some default values and indexed/uinique fields of the system
+      let saveToServiceRegister = {
+        id: context.user.id,
+        host: context.user.host
+      };
+      Object.keys(userStreamsIds).forEach(streamId => {
+        saveToServiceRegister[streamId] = context.user[streamId];
+      });
+
+      const response = await this.serviceRegisterConn.createUser(saveToServiceRegister, params);
 
       // take only server name
       if (response.server) {
@@ -188,7 +203,6 @@ class Registration {
 
   /**
    * Form errors for api response
-   * Note - if we remove system user, this could deprecate
    * @param {*} err 
    * @param {*} params 
    */
@@ -197,14 +211,19 @@ class Registration {
     // Duplicate errors
     // I check for these errors in the validation so they are only used for 
     // deprecated systems.createUser path
+    let listApiErrors = [];
     if (typeof err.isDuplicateIndex === 'function' && err.isDuplicateIndex('email')) {
-      return errors.itemAlreadyExists('user', { email: params.email }, err);
+      listApiErrors.push(errors.ExistingEmail());
     }
     if (typeof err.isDuplicateIndex === 'function' && err.isDuplicateIndex('username')) {
-      return errors.itemAlreadyExists('user', { username: params.username }, err);
+      listApiErrors.push(errors.ExistingUsername());
+    }
+    // TODO IEVA - error for the other keys
+    if (listApiErrors.length > 0) {
+      return commonFns.apiErrorToValidationErrorsList(listApiErrors);
     }
     // Any other error
-    return errors.unexpectedError(err, 'Unexpected error while saving user.');
+    return errors.unexpectedError(err, 'Unexpected error while saving user.'); 
   }
 
 
