@@ -18,7 +18,7 @@ describe('methods/helpers/commonFunctions.js', function () {
     it('Should correctly form validation errors', () => {
       let errorsList = [];
       errorsList.push(errors.ReservedUsername());
-      errorsList.push(errors.ExistingUsername());
+      errorsList.push(errors.existingField('username'));
       const formedErrors = commonFns.apiErrorToValidationErrorsList(errorsList);
 
       assert.equal(formedErrors.id, ErrorIds.InvalidParametersFormat);
@@ -34,8 +34,8 @@ describe('methods/helpers/commonFunctions.js', function () {
           path: '#/username'
         },
         {
-          code: ErrorIds.ExistingUsername,
-          message: ErrorMessages[ErrorIds.ExistingUsername],
+          code: ErrorIds.Existing_username,
+          message: ErrorMessages[ErrorIds.Existing_username],
           param: 'username',
           path: '#/username'
         }

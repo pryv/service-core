@@ -46,7 +46,7 @@ const typeRepo = new TypeRepository();
 module.exports = function (
   api, userEventsStorage, userEventFilesStorage,
   authSettings, eventTypesUrl, notifications, logging,
-  auditSettings, updatesSettings, openSourceSettings,
+  auditSettings, updatesSettings, openSourceSettings, servicesSettings
 ) {
 
   
@@ -557,36 +557,46 @@ module.exports = function (
   }
 
   async function updateEvent (context, params, result, next) {
-    const userCoreStreams = (await UserInfoSerializer.build()).getAllCoreStreams();
+    const userCoreStreamsIds = (await UserInfoSerializer.build()).getCoreStreamsIdsForbiddenForEditing();
 
     // exclude core streams from the query
     let query = {
       $and: [
         { _id: context.content.id },
-        { streamIds: { $nin: Object.keys(userCoreStreams) } }
+        { streamIds: { $nin: userCoreStreamsIds } }
     ]};
+    try{
+      let updatedEvent = await bluebird.fromCallback(cb =>
+        userEventsStorage.updateOne(context.user, query, context.content, cb));
 
-    userEventsStorage.updateOne(context.user, query, context.content,
-      function (err, updatedEvent) {
-        if (err) {
-          return next(errors.unexpectedError(err));
-        }
+      // if update was not done and no errors were catched
+      //, perhaps user is trying to edit core streams
+      if (!updatedEvent) {
+        return next(errors.DeniedEventModification());
+      }
 
-        // if update was not done and no errors were catched
-        //, perhaps user is trying to edit core streams
-        if (!updatedEvent) {
-          return next(errors.DeniedEventModification());
-        }
+      // To remove when streamId not necessary
+      updatedEvent.streamId = updatedEvent.streamIds[0];
 
-        // To remove when streamId not necessary
-        updatedEvent.streamId = updatedEvent.streamIds[0];
+      result.event = updatedEvent;
+      setFileReadToken(context.access, result.event);
+      
+      // if event has 'indexed' streamId- notify service register
+      notifyServiceRegisterForIndexedFieldChange()
 
-        result.event = updatedEvent;
-        setFileReadToken(context.access, result.event);
-        next();
-      });
+      // for core streams - 'active' streamId defines the 'main' event from the stream
+      // not handled yet TODO IEVA
+      // handleEventsWithActiveStreamId()
+    } catch(err){
+      return next(errors.unexpectedError(err));
+    };
+    next();
   }
 
+  function notifyServiceRegisterForIndexedFieldChange (updatedField) {
+    const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
+    serviceRegisterConn.notifyAboutUpdatedIndexedFields([updatedField]);
+  }
   function notify(context, params, result, next) {
     notifications.eventsChanged(context.user);
 

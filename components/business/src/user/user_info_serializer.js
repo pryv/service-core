@@ -9,7 +9,8 @@ const Settings = require('components/api-server/src/settings');
 const readable = 'readable-core-streams',
   allCoreStreams = 'all-core-streams',
   onlyWritableCoreStreams = 'only-writable-core-streams',
-  indexedStreams = 'indexed-core-streams';
+  indexedStreams = 'indexed-core-streams',
+  uniqueStreams = 'unique-core-streams';
 /**
  * Class that converts system->account events to the
  * Account information that matches the previous 
@@ -81,7 +82,27 @@ class UserInfoSerializer {
     let streamsNames = {};
     return getStreamsNames(this.systemStreamsSettings.account, streamsNames, indexedStreams);
   }
+
+/**
+ * Get streamIds of fields that should be unique
+ */
+  getUniqueCoreStreamsIds () {
+    let streamsNames = {};
+    return Object.keys(getStreamsNames(this.systemStreamsSettings.account, streamsNames, uniqueStreams));
+  }
   
+  /**
+   * Get steams that are NOT allowed to edit - this function will be used to 
+   * exclude from queries
+   */
+  getCoreStreamsIdsForbiddenForEditing () {
+    let streamsNames = this.getOnlyWritableCoreStreams();
+    const readableStreams = this.getReadableCoreStreams();
+
+    // manually add username because we do not allow to edit it
+    streamsNames.username = readableStreams.username;
+    return Object.keys(streamsNames);
+  }
   /**
    * Get virtual streams list
    * @param {*} events 
@@ -178,6 +199,11 @@ function getStreamsNames(streams, streamsNames, whatToReturn) {
         break;
       case indexedStreams:
         if (stream.isIndexed === false) {
+          continue;
+        }
+        break;
+      case uniqueStreams:
+        if (stream.isUnique === false) {
           continue;
         }
         break;

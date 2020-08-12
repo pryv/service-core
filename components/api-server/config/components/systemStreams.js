@@ -90,8 +90,8 @@ config.overrides({
  */
 config.argv({
   "ADDITIONAL_CORE_SREAMS_CONFIG_PATH": {
-    alias: 'additionalCoreStramsFields.json',
-    describe: 'path to the json file that contains additional core streams fields information.',
+    alias: 'additionalCoreStramsFields.yaml',
+    describe: 'path to the yaml file that contains additional core streams fields information.',
     demand: false,
     parseValues: true
   }
@@ -119,7 +119,7 @@ function appendCoreStreamsConfigWithAdditionalFields (additionalFields) {
   const keys = Object.keys(additionalFields);
   let i;
   for (i = 0; i < keys.length; i++) {
-    config.set('systemStreams:profile:' + keys[i], _.extend({},
+    config.set('systemStreams:account:' + keys[i], _.extend({},
       defaultValuesForFields, additionalFields[keys]));
   }
 }

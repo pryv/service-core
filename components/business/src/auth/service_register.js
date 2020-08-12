@@ -25,10 +25,9 @@ class ServiceRegister {
   }
 
   async validateUser (
-    email: String,
     username: String,
     invitationtoken: String,
-    registrationIndexedValues: String,
+    uniqueFields: Object,
     core: String,
   ): Promise<void> {
     const url = this._formUrl('/users/validate');
@@ -37,10 +36,9 @@ class ServiceRegister {
     try {
       const res = await superagent.post(url)
                                   .send({ 
-                                    email: email,
                                     username: username,
                                     invitationtoken: invitationtoken,
-                                    registrationIndexedValues: registrationIndexedValues,
+                                    uniqueFields: uniqueFields,
                                     core: core
                                  })
                                   .set('Authorization', this.config.key);                           
@@ -79,6 +77,27 @@ class ServiceRegister {
                                   .send(user)
                                   .set('Authorization', this.config.key);
                          
+      return res.body;
+    } catch (err) {
+      this.logger.error(err);
+      throw new Error(err.message || 'Unexpected error.');
+    }
+  }
+
+  /**
+   * After indexed fields are updated, service-register is notified to update
+   * the information
+   */
+  async notifyAboutUpdatedIndexedFields (): Promise<void> {
+    const url = this._formUrl('/users');
+    // log fact about the event
+    this.logger.info(url);
+
+    try {
+      const res = await superagent.post(url)
+        .send(user)
+        .set('Authorization', this.config.key);
+
       return res.body;
     } catch (err) {
       this.logger.error(err);
