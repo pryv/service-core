@@ -41,7 +41,6 @@ class Context {
 }
 
 type DatabaseShortcuts = {
-  users: storage.Users, 
   sessions: Sessions, 
   
   streams: storage.user.Streams, 
@@ -68,7 +67,6 @@ class UserContext {
   produceDb() {
     const conn = this.context.databaseConn;
     return {
-      users: new storage.Users(conn),
       sessions: new Sessions(conn),
       
       streams: new storage.user.Streams(conn),

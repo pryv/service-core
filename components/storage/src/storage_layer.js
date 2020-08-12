@@ -16,7 +16,6 @@ import type Database from './Database';
 const Versions = require('./Versions');
 const PasswordResetRequests = require('./PasswordResetRequests');
 const Sessions = require('./Sessions');
-const Users = require('./Users');
 const Accesses = require('./user/Accesses');
 const EventFiles = require('./user/EventFiles');
 const Events = require('./user/Events');
@@ -31,7 +30,6 @@ class StorageLayer {
   versions: Versions;
   passwordResetRequests: PasswordResetRequests;
   sessions: Sessions;
-  users: Users;
   accesses: Accesses;
   eventFiles: EventFiles;
   events: Events;
@@ -61,7 +59,6 @@ class StorageLayer {
     this.sessions = new Sessions(
       connection, 
       { maxAge: sessionMaxAge });
-    this.users = new Users(connection);
     this.accesses = new Accesses(connection);
     this.eventFiles = new EventFiles(
       { 
