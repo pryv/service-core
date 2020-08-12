@@ -25,7 +25,6 @@ var deps = module.exports = {
       logging.getLogger('versions')),
     passwordResetRequests: new storage.PasswordResetRequests(database),
     sessions: new storage.Sessions(database),
-    users: new storage.Users(database),
     user: {
       accesses: new storage.user.Accesses(database),
       eventFiles: new storage.user.EventFiles(
