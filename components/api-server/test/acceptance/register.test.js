@@ -307,7 +307,7 @@ describe('User Registration related functionalities', async () => {
         },
         execute: function () {
           require('nock')(this.context.url).post('/users/validate').reply(400, { 
-            errors: [ 'ExistingUsername' ] });
+            errors: [ 'Existing_username' ] });
         }
       });
 
@@ -319,8 +319,8 @@ describe('User Registration related functionalities', async () => {
         id: ErrorIds.InvalidParametersFormat,
         data: [
           {
-            code: ErrorIds.ExistingUsername,
-            message: ErrorMessages[ErrorIds.ExistingUsername],
+            code: ErrorIds.Existing_username,
+            message: ErrorMessages[ErrorIds.Existing_username],
             param: 'username',
             path: '#/username'
           }
@@ -418,7 +418,7 @@ describe('User Registration related functionalities', async () => {
         },
         execute: function () {
           require('nock')(this.context.url).post('/users/validate').reply(400, { 
-            errors: [ 'ExistingUsername', 'ExistingEmail' ] });
+            errors: [ 'Existing_username', 'Existing_email' ] });
         }
       });
 
@@ -430,14 +430,14 @@ describe('User Registration related functionalities', async () => {
         id: ErrorIds.InvalidParametersFormat,
         data: [
           {
-            code: ErrorIds.ExistingUsername,
-            message: ErrorMessages[ErrorIds.ExistingUsername],
+            code: ErrorIds.Existing_username,
+            message: ErrorMessages[ErrorIds.Existing_username],
             param: 'username',
             path: '#/username'
           },
           {
-            code: ErrorIds.ExistingEmail,
-            message: ErrorMessages[ErrorIds.ExistingEmail],
+            code: ErrorIds.Existing_email,
+            message: ErrorMessages[ErrorIds.Existing_email],
             param: 'email',
             path: '#/email'
           }

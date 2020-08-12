@@ -323,8 +323,14 @@ Events.prototype.getUserInfo = async function ({ user, getAll }) {
     } else {
       userProfileStreamsIds = userInfoSerializer.getReadableCoreStreams();
     }
+    //TODO IEVA - active has to be a constant somewhere
     // form the query
-    let query = { "streamIds": { '$in': Object.keys(userProfileStreamsIds) } };
+    let query = {
+      '$and': [
+        { 'streamIds': { '$in': Object.keys(userProfileStreamsIds) } },
+        { 'streamIds': { '$eq': 'active' } }
+      ]
+    };
 
     //  TODO IEVA to prototype?
     const dbItems = await bluebird.fromCallback(cb => this.database.find(
@@ -332,6 +338,7 @@ Events.prototype.getUserInfo = async function ({ user, getAll }) {
       this.applyQueryToDB(query),
       this.applyOptionsToDB({}),
       cb));
+
     const userProfileEvents = this.applyItemsFromDB(dbItems);
     // convert events to the account info structure
     return userInfoSerializer.serializeEventsToAccountInfo(userProfileEvents);
@@ -398,9 +405,15 @@ Events.prototype.createUser = async function (params) {
   let userParams = Object.assign({}, params);
   let user = {}; //console.log('Create user', params);
 
+  // first explicitly create a collection, because it would fail in the transation
+  //await bluebird.fromCallback(cb => this.database.client.createCollection('events', {}, cb));
+  const collectionInfo = this.getCollectionInfoWithoutUserId();
+  await this.database.createCollection(collectionInfo.name);
+  
   // Start a transaction session
   const session = await this.database.startSession();
 
+  // TODO IEVA - check if I can improve options
   const transactionOptions = {
     readPreference: 'primary',
     readConcern: { level: 'local' },
@@ -421,8 +434,9 @@ Events.prototype.createUser = async function (params) {
     // create userId so that userId could be passed
     userParams = converters.createIdIfMissing(userParams);
     // form username event - it is separate because we set the _id 
+    //TODO IEVA - active should be a constant somewhere
     let updateObject = {
-      streamIds: ['username', 'unique'],
+      streamIds: ['username', 'unique', 'active'],
       type: userProfileStreamsIds.username.type,
       content: userParams.username,
       username__unique: userParams.username, // repeated field for uniqueness
@@ -434,7 +448,7 @@ Events.prototype.createUser = async function (params) {
       time: timestamp.now()
     };
     user.id = updateObject.id;
-    const transactionResults = await session.withTransaction(async () => {
+    await session.withTransaction(async () => {
       // insert username event
       const username = await bluebird.fromCallback((cb) =>
         this.insertOne(user, updateObject, cb, {session}));
@@ -474,7 +488,8 @@ Events.prototype.createUser = async function (params) {
           }
 
           // get additional stream ids from the config
-          let streamIds = [streamId];
+          //TODO IEVA - active should be a constant somewhere
+          let streamIds = [streamId, 'active'];
           if (userProfileStreamsIds[streamId].isUnique === true) {
             streamIds.push("unique");
             creationObject[streamId + '__unique'] = parameter; // repeated field for uniqness
@@ -509,10 +524,11 @@ Events.prototype.updateUser = async function ({ userId, userParams }) {
     delete userParams.password;
 
     // update all core streams and do not allow additional properties
+    //TODO IEVA - active should be a constant somewhere
     Object.keys(userProfileStreamsIds).map(streamId => {
       if (userParams[streamId]) {
         return bluebird.fromCallback(cb => Events.super_.prototype.updateOne.call(this,
-          { id: userId },
+          { id: userId, streamIds: 'active' },
           { streamIds: { $in: [streamId] } },
           { content: userParams[streamId] }, cb));
       }

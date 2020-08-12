@@ -20,9 +20,9 @@ const ErrorMessages = {
    * Username reservation validation in the service-register
    */
   [ErrorIds.ReservedUsername]: 'Reserved user starting by pryv',
-  [ErrorIds.ExistingUsername]: 'Existing user',
+  [ErrorIds.Existing_username]: 'Existing user',
   [ErrorIds.InvalidUsername]: 'Username should have from 5 to 23 characters and contain letters or numbers or dashes',
-  [ErrorIds.ExistingEmail]: 'Existing e-mail',
+  [ErrorIds.Existing_email]: 'Existing e-mail',
   [ErrorIds.UsernameRequired]: 'Username is required',
   [ErrorIds.InvalidEmail]: 'Invalid email',
   [ErrorIds.InvalidLanguage]: 'Invalid language',

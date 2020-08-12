@@ -110,11 +110,10 @@ factory.itemAlreadyExists = function (
   resourceType: ?string, conflictingKeys: { [string]: string }, innerError: ?Error
 ) {
   resourceType = resourceType || 'resource';
-  var article = _.includes(['a', 'e', 'i', 'o', 'u'], resourceType[0]) ? 'An ' : 'A ';
   var keysDescription = Object.keys(conflictingKeys).map(function (k) {
     return k + ' "' + conflictingKeys[k] + '"';
   }).join(', ');
-  var message = article + resourceType + ' with ' + keysDescription +
+  var message = functionGetRightArticle(resourceType) + resourceType + ' with ' + keysDescription +
       ' already exists';
   return new APIError(ErrorIds.ItemAlreadyExists, message, {
     httpStatus: 400,
@@ -253,27 +252,22 @@ factory.ReservedUsername = (): APIError => {
 };
 
 /**
- * Check in service-register if username is used
- * The name is used in the service-core and service-register
+ * Check in service-register for uniqness across the platform
  **/
-factory.ExistingUsername = (): APIError => {
-  const opts: APIErrorOptions = {
+factory.existingField = function (fieldName: string) {
+  let message = functionGetRightArticle(fieldName) + fieldName + ' with the same value already exists';
+  let errorCode = fieldName + '-exists';
+  if (ErrorIds['Existing_' + fieldName]) {
+    errorCode = ErrorIds['Existing_' + fieldName];
+    if (ErrorMessages[ErrorIds['Existing_' + fieldName]]) {
+      message = ErrorMessages[ErrorIds['Existing_' + fieldName]];
+    }
+  }
+  return new APIError(errorCode, message, {
     httpStatus: 400,
-    data: {param: 'username'},
-  };
-  return new APIError(ErrorIds.ExistingUsername, ErrorMessages[ErrorIds.ExistingUsername], opts);
-};
-
-/**
- * Check in service-register if email is used
- * The name is used in the service-core and service-register
- **/
-factory.ExistingEmail = (): APIError => {
-  const opts: APIErrorOptions = {
-    httpStatus: 400,
-    data: {param: 'email'},
-  };
-  return new APIError(ErrorIds.ExistingEmail,  ErrorMessages[ErrorIds.ExistingEmail], opts);
+    data: { param: fieldName },
+    dontNotifyAirbrake: true
+  });
 };
 
 /**
@@ -324,3 +318,11 @@ factory.DeniedEventModification = (): APIError => {
     }
   )
 };
+
+/**
+ * Get the right article for the noun
+ * @param {*} noun 
+ */
+function functionGetRightArticle(noun){
+  return _.includes(['a', 'e', 'i', 'o', 'u'], noun[0].toLowerCase()) ? 'An ' : 'A ';
+}
