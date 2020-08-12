@@ -503,12 +503,8 @@ describe('Versions', function () {
     const versions = getVersions('1.6.0');
     const newIndexes = testData.getStructure('1.6.0').indexes;
   
-    const user = { id: 'u_0' };
     const usersStorage = storage.deprecatedUsers;
     const eventsStorage = storage.user.events;
-    const streamsStorage = storage.user.streams;
-
-    
 
     let userInfoSerializer = await UserInfoSerializer.build();
     // get streams ids from the config that should be retrieved
@@ -523,7 +519,7 @@ describe('Versions', function () {
     const eventsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'events' }, cb));
     await bluebird.fromCallback(cb => versions.migrateIfNeeded(cb));
 
-    console.log('checkin users', users);
+    // verify that user accounts were migrated to events
     users.forEach(async (u) => {
       const eventsCursor = await bluebird.fromCallback(cb => eventsCollection.find(
         {
@@ -531,15 +527,13 @@ describe('Versions', function () {
           userId: { $eq: u.id },
         }, cb ));
       const events = await eventsCursor.toArray();
-      console.log('got events for', u, events);
 
       userAccountStreamIds.forEach(streamId => {
         const systemStream = userAccountStreams[streamId];
         const event = getEventByStreamId(events, streamId);
-        console.log('on traite', event, 'pour', u);
         assert.exists(event);
 
-        // those are not yet on core
+        // those are not yet on core, storage used is undefined in some seeded users
         if (! isNewField(streamId) && ! isStorageUsed(streamId)) {
           assert.equal(event.content, u[streamId]);
         }
@@ -552,20 +546,18 @@ describe('Versions', function () {
           assert.exists(event[streamId + '_unique']);
           assert.equal(event[streamId + '_unique'], event.content);
         }
-      });
 
-      function isNewField(streamId) {
-        return streamId === 'invitationToken' || streamId === 'appId' || streamId === 'referer';
-      }
-
-      function isStorageUsed(streamId) {
-        return streamId === 'dbDocuments' || streamId === 'attachedFiles';
-      }
-
-      function getEventByStreamId(events, streamId) {
-        const e = events.filter(e => e.streamIds.indexOf(streamId) >= 0);
-        return e[0];
-      } 
+        function isNewField(streamId) {
+          return streamId === 'invitationToken' || streamId === 'appId' || streamId === 'referer';
+        }
+        function isStorageUsed(streamId) {
+          return streamId === 'dbDocuments' || streamId === 'attachedFiles';
+        }
+        function getEventByStreamId(events, streamId) {
+          const e = events.filter(e => e.streamIds.indexOf(streamId) >= 0);
+          return e[0];
+        }
+      }); 
     });
 
     // check indexes

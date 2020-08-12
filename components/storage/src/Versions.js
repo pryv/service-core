@@ -55,7 +55,6 @@ Versions.prototype.migrateIfNeeded = function (callback) {
     var migrationsToRun = Object.keys(this.migrations).filter(function (vNum) {
       return vNum > currentVNum;
     }).sort();
-    console.log('runnin migrations', migrationsToRun[0], 'with callback', callback);
     async.forEachSeries(migrationsToRun, migrate.bind(this), callback);
   }.bind(this));
 
@@ -68,7 +67,6 @@ Versions.prototype.migrateIfNeeded = function (callback) {
    * @this {Versions}
    */
   function migrate(vNum, done) {
-    console.log('in migrate wid callback', done);
     async.series([
       function (stepDone) {
         var update = {

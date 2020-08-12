@@ -52,8 +52,6 @@ module.exports = async function (context, callback) {
     if (requests.length > 0) {
       const res = await eventsCollection.insertMany(requests);
     }
-
-    console.log('we re going to add', requests.length);
   }
 
   function migrateUser(userParams, userAccountStreams, userAccountStreamIds) {
