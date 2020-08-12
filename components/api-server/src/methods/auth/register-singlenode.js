@@ -29,7 +29,7 @@ module.exports = function (api, logging, storageLayer, servicesSettings, serverS
 
   api.register('auth.register.singlenode',
     // data validation methods
-    commonFns.getParamsValidation(methodsSchema.register.params),
+    registration.validateUserInServiceRegister,
     // validateUser,
     // user registration methods
     registration.prepareUserDataForSaving,
