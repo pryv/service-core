@@ -84,7 +84,6 @@ module.exports = async function (context, callback) {
       }
 
       if (isPropertyUnique(streamId)) {
-        creationObject.streamIds.push('indexed');
         creationObject[buildUniqueMongoField(streamId)] = content; // repeated field for uniqueness
       }
 
