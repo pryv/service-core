@@ -646,6 +646,20 @@ class Database {
       }
       return false;
     };
+    /**
+     * Forks only enforced uniqness for events where fields are saved as fieldname__unique: value
+     */
+    err.duplicateIndex = () => {
+      if (err != null && err.errmsg != null && err.isDuplicate) {
+        // This check depends on the MongoDB storage engine
+        // We assume WiredTiger here (and not MMapV1).
+        const matching = err.errmsg.match(/index:(.+) dup key:/);
+        if (Array.isArray(matching) && matching.length >= 2) {
+          const matchingKeys = matching[1];
+          return matchingKeys.split('__unique')[0].trim();
+        }
+      }
+    }
   }
 
   /// Closes this database connection. After calling this, all other methods 
@@ -657,11 +671,21 @@ class Database {
 
   async startSession () {
     
-    // Make sure we have a connect
+    // Make sure we have a connection
     await bluebird.fromCallback(
       cb => this.ensureConnect(cb)); 
     const session = this.client.startSession();
     return session;
+  }
+
+  /**
+   * Creat a collection manually (needed when using the transactions)
+   * @param string collectionName 
+   */
+  async createCollection (collectionName) {
+    // Make sure we have a connection
+    await bluebird.fromCallback(cb => this.ensureConnect(cb));
+    await bluebird.fromCallback(cb => this.db.createCollection(collectionName, {}, cb));
   }
 }
 
@@ -673,6 +697,7 @@ type MongoDBError = {
   lastErrorObject?: MongoDBError,
   isDuplicate?: boolean,
   isDuplicateIndex?: (key: string) => boolean,
+  duplicateIndex?: () => string,
 }
 
 type DatabaseCallback = (err?: Error | null, result?: mixed) => mixed;

@@ -60,8 +60,9 @@ const ErrorIds = {
    * Username reservation validation in the service-register
    */
   ReservedUsername: 'username-reserved',
-  ExistingUsername: 'username-exists',
-  ExistingEmail: 'email-exists',
+  // TODO IEVA - how to keep it simple and consistent?
+  Existing_username: 'username-exists',
+  Existing_email: 'email-exists',
   InvalidUsername: 'username-invalid',
   UsernameRequired: 'username-required',
   InvalidEmail: 'email-invalid',

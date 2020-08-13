@@ -135,6 +135,7 @@ module.exports = {
           }
         },
         languageCode: {
+          // TODO IEVA - maybe min length?
           MAX_LENGTH: {
             message: ErrorMessages[ErrorIds.InvalidLanguage],
             code: ErrorIds.InvalidLanguage

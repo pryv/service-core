@@ -74,15 +74,22 @@ class Registration {
       let userInfoSerializer = await UserInfoSerializer.build();
       // get streams ids from the config that should be retrieved
       const userStreamsIds = userInfoSerializer.getIndexedCoreStreams();
+      const uniqueStreamsIds = userInfoSerializer.getUniqueCoreStreamsIds();
 
       // form data that should be sent to service-register
       // some default values and indexed/uinique fields of the system
       let saveToServiceRegister = {
-        id: context.user.id,
+        user: {
+          id: context.user.id
+        },
         host: context.user.host
       };
       Object.keys(userStreamsIds).forEach(streamId => {
-        saveToServiceRegister[streamId] = context.user[streamId];
+        saveToServiceRegister.user[streamId] = context.user[streamId];
+      });
+      saveToServiceRegister.unique = [];
+      uniqueStreamsIds.forEach(streamId => {
+        saveToServiceRegister.unique.push(streamId);
       });
 
       const response = await this.serviceRegisterConn.createUser(saveToServiceRegister, params);
@@ -144,7 +151,7 @@ class Registration {
      // TODO IEVA
       // const tempUser = _.clone(userInfo);
       // tempUser.username = context.TEMP_USERNAME_PREFIX + cuid();
-      return next(this.handleCreationErrors(err, params));
+      return next(this.handleCreationErrors(err));
     }
   }
 
@@ -158,10 +165,10 @@ class Registration {
 
     /*
     usersStorage.insertOne(poolUser, (err, tempUser) => {
-      if (err != null) return next(this.handleCreationErrors(err, params));
+      if (err != null) return next(this.handleCreationErrors(err));
 
       return this.initUser(tempUser, username, (err, finalUser) => {
-        if (err != null) return next(this.handleCreationErrors(err, params));
+        if (err != null) return next(this.handleCreationErrors(err));
         result.id = finalUser.id;
         context.user = finalUser;
         return next();
@@ -207,16 +214,13 @@ class Registration {
    * @param {*} params 
    */
   // TODO IEVA static
-  handleCreationErrors (err, params) {
+  handleCreationErrors (err) {
     // Duplicate errors
     // I check for these errors in the validation so they are only used for 
     // deprecated systems.createUser path
     let listApiErrors = [];
-    if (typeof err.isDuplicateIndex === 'function' && err.isDuplicateIndex('email')) {
-      listApiErrors.push(errors.ExistingEmail());
-    }
-    if (typeof err.isDuplicateIndex === 'function' && err.isDuplicateIndex('username')) {
-      listApiErrors.push(errors.ExistingUsername());
+    if (typeof err.isDuplicateIndex === 'function') {
+      listApiErrors.push(errors.existingField(err.duplicateIndex())); 
     }
     // TODO IEVA - error for the other keys
     if (listApiErrors.length > 0) {
@@ -311,7 +315,7 @@ class Registration {
   }
 
   /**
-   * 
+   * Validation and reservation in service-register
    * @param {*} context 
    * @param {*} params 
    * @param {*} result 
@@ -319,14 +323,29 @@ class Registration {
    */
   async validateUserInServiceRegister (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
-      //TODO IEVA reservationKey should be joined indexed fields
-      let reservationKey = params.username + params.email;
-      const response = await this.serviceRegisterConn.validateUser(params.email, params.username, params.invitationtoken, reservationKey, this.hostname);
+      let uniqueFields = {};
+      for (const [key, value] of Object.entries(this.systemStreamsSettings)) {
+        // if key is set as required - add required validation
+        if (value.isUnique && value.isUnique === true) {
+          uniqueFields[key] = params[key];
+        }
+      }
+
+      // do the validation and reservation in service-register
+      const response = await this.serviceRegisterConn.validateUser(params.username, params.invitationtoken, uniqueFields, this.hostname);
 
       if (response?.errors && response.errors.length > 0) {
         // 1. convert list of error ids to the list of api errors
         const listApiErrors = response.errors.map(err => {
-          return errors[err]();
+          // lets check if error thrown by service-register is already defined in errors factory
+          if (typeof errors[err] === 'function'){
+            return errors[err]();
+          } else if (err.startsWith('Existing-')) {
+            const fieldName = err.replace('Existing-', '');
+            return errors.existingField(fieldName);
+          } else {
+            return errors.unexpectedError(errors[err]);
+          }
         });
 
         // 2. convert api errors to validation errors
@@ -372,7 +391,6 @@ class Registration {
     // iterate core stream settings and APPEND validation with relevant properties
     // etc additional required fields or regex validation
     for (const [field, value] of Object.entries(this.systemStreamsSettings)) {
-      console.log(`${field}: ${value}`, value.isRequiredInValidation);
       // if field is set as required - add required validation
       if (value.isRequiredInValidation && value.isRequiredInValidation == true && !methodsSchema.register.params.required.includes(field)) {
         validationSchema.required.push(field)
