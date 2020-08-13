@@ -57,22 +57,18 @@ let logger;
  */
 async function runNightlyTasks(storageLayer, storageSize) {
   logger.info('Starting update of storage size');
-  //TODO IEVA
+
   // Retrieve all existing users
-  const users = await bluebird.fromCallback(
-    (cb) => storageLayer.users.find(
-      {$nor: [{username: /^pool@.*/}, {username: /^temp@.*/}]}, null, cb));
+  const users = await storageLayer.events.findAllUsers();
 
   // Compute storage size used by each user
   for (const user of users) {
-    const computeForUser = bluebird.fromCallback(
-      (cb) => storageSize.computeForUser(user, cb));
-      
-    await computeForUser
-      .catch((err) => {
-        logger.error('Error computing storage size for user "' +
-          user.username + '" ' + '(' + user.id + '): ' + err);
-      });
+    try {
+      await storageSize.computeForUser(user);
+    } catch (err) {
+      logger.error('Error computing storage size for user "' +
+        user.username + '" ' + '(' + user.id + '): ' + err);
+    }
   }
   
   logger.info(users.length + ' users updated.');
