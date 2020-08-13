@@ -7,7 +7,6 @@
 // @flow
 
 const Access = require('./user/Accesses');
-const DeprecatedUsers = require('./DeprecatedUsers');
 const Stream = require('./user/Streams');
 const StorageLayer = require('./storage_layer');
 
@@ -16,7 +15,6 @@ module.exports = {
   PasswordResetRequests: require('./PasswordResetRequests'),
   Sessions: require('./Sessions'),
   Size: require('./Size'),
-  DeprecatedUsers: DeprecatedUsers,
   Versions: require('./Versions'),
   user: {
     Accesses: Access,
@@ -35,4 +33,4 @@ import type { IndexDefinition } from './Database';
 export type { IndexDefinition };
 
 export type {  
-  Access, DeprecatedUsers, Stream };
+  Access, Stream };

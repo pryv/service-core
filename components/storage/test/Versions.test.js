@@ -504,9 +504,9 @@ describe('Versions', function () {
     const newIndexes = testData.getStructure('1.6.0').indexes;
   
     const defaultUser = { id: 'u_0' };
-    const usersStorage = storage.deprecatedUsers;
     const eventsStorage = storage.user.events;
     const eventsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'events' }, cb));
+    const usersCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'users' }, cb));
 
     let userInfoSerializer = await UserInfoSerializer.build();
     // get streams ids from the config that should be retrieved
@@ -514,7 +514,8 @@ describe('Versions', function () {
     const userAccountStreamIds = Object.keys(userAccountStreams);
     
     // get backup of users
-    const users = await bluebird.fromCallback(cb => usersStorage.findAll({}, cb));
+    const usersCursor = await bluebird.fromCallback(cb => usersCollection.find({}, cb ));
+    const users = await usersCursor.toArray();
 
     // perform migration
     await bluebird.fromCallback(cb => testData.restoreFromDump('1.5.22', mongoFolder, cb));
@@ -526,7 +527,7 @@ describe('Versions', function () {
       const eventsCursor = await bluebird.fromCallback(cb => eventsCollection.find(
         {
           streamIds: {$in: userAccountStreamIds},
-          userId: { $eq: u.id },
+          userId: { $eq: u._id }, // we've accessed users through the raw collection
         }, cb ));
       const events = await eventsCursor.toArray();
 
