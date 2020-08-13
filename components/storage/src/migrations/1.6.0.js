@@ -56,6 +56,12 @@ module.exports = async function (context, callback) {
 
   function migrateUser(userParams, userAccountStreams, userAccountStreamIds) {
 
+    // flatten storageUsed
+    if (userParams.storageUsed != null) {
+      userParams.dbDocuments = userParams.storageUsed.dbDocuments;
+      userParams.attachedFiles = userParams.storageUsed.attachedFiles;
+    }  
+
     // create all user account events
     const eventsCreations = [];
     userAccountStreamIds.map(streamId => {

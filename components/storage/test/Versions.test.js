@@ -503,8 +503,10 @@ describe('Versions', function () {
     const versions = getVersions('1.6.0');
     const newIndexes = testData.getStructure('1.6.0').indexes;
   
+    const defaultUser = { id: 'u_0' };
     const usersStorage = storage.deprecatedUsers;
     const eventsStorage = storage.user.events;
+    const eventsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'events' }, cb));
 
     let userInfoSerializer = await UserInfoSerializer.build();
     // get streams ids from the config that should be retrieved
@@ -516,11 +518,11 @@ describe('Versions', function () {
 
     // perform migration
     await bluebird.fromCallback(cb => testData.restoreFromDump('1.5.22', mongoFolder, cb));
-    const eventsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'events' }, cb));
     await bluebird.fromCallback(cb => versions.migrateIfNeeded(cb));
 
     // verify that user accounts were migrated to events
-    users.forEach(async (u) => {
+    for(let i=0; i<users.length; i++) {
+      const u = users[i];
       const eventsCursor = await bluebird.fromCallback(cb => eventsCollection.find(
         {
           streamIds: {$in: userAccountStreamIds},
@@ -558,10 +560,34 @@ describe('Versions', function () {
           return e[0];
         }
       }); 
-    });
+    }
 
-    // check indexes
+    /**
+     * check that new indexes are applied?
+     */
+
+    let eventIndexes = newIndexes.events;
+    eventIndexes = eventIndexes.concat(buildSystemStreamsIndexes(userAccountStreams, userAccountStreamIds));
+    const migratedIndexes = await bluebird.fromCallback(cb => eventsStorage.listIndexes(defaultUser, {}, cb));
+    compareIndexes(newIndexes.events, migratedIndexes);
     // other stuff as well
+
+    function buildSystemStreamsIndexes(userAccountStreams, userAccountStreamIds) {
+      const indexes = [];
+      userAccountStreamIds.forEach(streamId => {
+        const streamData = userAccountStreams[streamId]
+        if (streamData.isUnique) {
+          indexes.push({
+            v: 2,
+            key: {[streamId]: 1},
+            name: streamId + '_unique_1',
+            ns: 'pryv-node.events',
+            background: true
+          });
+        }
+      });
+      return indexes;
+    }
   })
 
   function compareIndexes(expected, actual) {
