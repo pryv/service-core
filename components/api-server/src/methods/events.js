@@ -581,7 +581,7 @@ module.exports = function (
       result.event = updatedEvent;
       setFileReadToken(context.access, result.event);
       
-      // if event has 'indexed' streamId- notify service register
+      // if event belongs to system stream that has to be indexed - notify service register
       notifyServiceRegisterForIndexedFieldChange()
 
       // for core streams - 'active' streamId defines the 'main' event from the stream
