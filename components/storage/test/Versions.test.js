@@ -563,15 +563,10 @@ describe('Versions', function () {
       }); 
     }
 
-    /**
-     * check that new indexes are applied?
-     */
-
     let eventIndexes = newIndexes.events;
     eventIndexes = eventIndexes.concat(buildSystemStreamsIndexes(userAccountStreams, userAccountStreamIds));
     const migratedIndexes = await bluebird.fromCallback(cb => eventsStorage.listIndexes(defaultUser, {}, cb));
     compareIndexes(newIndexes.events, migratedIndexes);
-    // other stuff as well
 
     function buildSystemStreamsIndexes(userAccountStreams, userAccountStreamIds) {
       const indexes = [];
