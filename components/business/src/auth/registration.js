@@ -387,7 +387,7 @@ class Registration {
    */
   loadCustomValidationSettings (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     let validationSchema = Object.assign({}, methodsSchema.register.params);
-   
+
     // iterate core stream settings and APPEND validation with relevant properties
     // etc additional required fields or regex validation
     for (const [field, value] of Object.entries(this.systemStreamsSettings)) {

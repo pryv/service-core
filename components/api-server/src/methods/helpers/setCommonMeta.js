@@ -64,7 +64,7 @@ module.exports.setCommonMeta = function <T: Object>(result: T): T & MetaInfo {
     result.meta = {};
   }
 
-  if (serial == null && config != null) {
+  if (serial && config) {
     serial = config.get('service.serial').str();
   }
   
