@@ -24,6 +24,7 @@ config.overrides({
         isIndexed: true,
         isUnique: true,
         isShown: true,
+        isSentToRegister: true,
         type: 'identifier/string',
         name: 'Username',
         isRequiredInValidation: true
@@ -32,6 +33,7 @@ config.overrides({
         isIndexed: true,
         isUnique: true,
         isShown: true,
+        isSentToRegister: true,
         type: 'email/string',
         name: 'Email',
         isRequiredInValidation: true
@@ -39,6 +41,7 @@ config.overrides({
       language: _.extend({}, defaultValuesForFields, {
         isIndexed: true,
         isShown: true,
+        isSentToRegister: true,
         default: 'en',
         type: 'language/iso-639-1',
         name: 'Language',
