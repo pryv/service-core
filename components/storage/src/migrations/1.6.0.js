@@ -13,7 +13,9 @@ const timestamp = require('unix-timestamp');
 /**
  * v1.6.0: Account in events
  *
- * -
+ * - create events from users collection documents matching the system streams definition
+ * - create indexes for unique fields
+ * - TODO delete users collection
  */
 module.exports = async function (context, callback) {
   console.log('V1.5.22 => v1.6.0 Migration started');
