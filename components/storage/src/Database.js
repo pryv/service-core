@@ -482,7 +482,7 @@ class Database {
   /**
    * Applies the given update to the document(s) matching the given query.
    * Does *not* return the document(s).
-   *
+   * TODO IEVA -seems to be not used
    * @param {Object} collectionInfo
    * @param {Object} query
    * @param {Object} update
