@@ -93,12 +93,12 @@ class ExpressAppLifecycle {
   appStartupBegin(): void {
     const app = this.app; 
     
-    this.go('startupBegon'); 
+    this.go('startupBegun'); 
     
     // Insert a middleware that allows us to intercept requests. This will 
     // be disabled as soon as `this.phase` is not 'startupBegon' anymore. 
     app.use((req: express$Request, res, next) => {
-      if (this.phase === 'startupBegon') {
+      if (this.phase === 'startupBegun') {
         handleRequestDuringStartup(req, res);
       }
       else {
