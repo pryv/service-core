@@ -73,7 +73,7 @@ class ExpressAppLifecycle {
   /** Enter the phase given.  
    */
   go(phase: Phase): void {
-    const phaseOrder = ['init', 'startupBegon', 'startupComplete'];
+    const phaseOrder = ['init', 'startupBegun', 'startupComplete'];
     
     const oldIdx = phaseOrder.indexOf(this.phase);
     const newIdx = phaseOrder.indexOf(phase);

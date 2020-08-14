@@ -28,8 +28,5 @@
   },
   "tcpMessaging": {
     "enabled": false
-  },
-  "openSource": {
-    "isActive": true
   }
 }
