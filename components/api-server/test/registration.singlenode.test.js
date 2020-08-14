@@ -19,8 +19,7 @@ const loadCommonMeta = require("./../src/methods/helpers/setCommonMeta")
 const errorsMiddlewareMod = require("./../src/middleware/errors");
 const utils = require("./../../utils");
 
-let database;
-let storageLayer;
+let app;
 let registerBody;
 let request;
 let res;
@@ -41,20 +40,7 @@ describe("Singlenode registration", function () {
 
     const settings = await Settings.load();
 
-    const app = new Application(settings);
-
-    database = new storage.Database(
-      settings.get('database').obj(), 
-      app.logFactory('database'));
-
-    storageLayer = new storage.StorageLayer(database, 
-      app.logFactory('model'),
-      settings.get('eventFiles.attachmentsDirPath').str(), 
-      settings.get('eventFiles.previewsDirPath').str(), 
-      settings.get('auth.passwordResetRequestMaxAge').num(), 
-      settings.get('auth.sessionMaxAge').num(), 
-      settings.get('systemStreams.account').obj(), 
-    );
+    app = new Application(settings);
 
     app.dependencies.register({ expressApp: expressApp });
     app.dependencies.resolve(
@@ -89,7 +75,7 @@ describe("Singlenode registration", function () {
   });
   describe("Schema validation", function () {
     describe(
-      "username parameter",
+      "when given invalid username parameter",
       testInvalidParameterValidation("username", {
         minLength: 5,
         maxLength: 23,
@@ -98,7 +84,7 @@ describe("Singlenode registration", function () {
       })
     );
     describe(
-      "password parameter",
+      "when given invalid password parameter",
       testInvalidParameterValidation("password", {
         minLength: 4,
         maxLength: 100,
@@ -106,7 +92,7 @@ describe("Singlenode registration", function () {
       })
     );
     describe(
-      "email parameter",
+      "when given invalid email parameter",
       testInvalidParameterValidation("email", {
         maxLength: 300,
         type: "string",
@@ -121,13 +107,13 @@ describe("Singlenode registration", function () {
       })
     );
     describe(
-      "invitationtoken parameter",
+      "when given invalid invitationtoken parameter",
       testInvalidParameterValidation("invitationtoken", {
         type: "string",
       })
     );
     describe(
-      "referer parameter",
+      "when given invalid referer parameter",
       testInvalidParameterValidation("referer", {
         minLength: 1,
         maxLength: 99,
@@ -135,7 +121,7 @@ describe("Singlenode registration", function () {
       })
     );
     describe(
-      "languageCode parameter",
+      "when given invalid languageCode parameter",
       testInvalidParameterValidation("languageCode", {
         minLength: 1,
         maxLength: 5,
@@ -148,7 +134,7 @@ describe("Singlenode registration", function () {
     function() {
       describe('username property', function() {
         before(async function () {
-          await database.deleteMany({name: 'events'});
+          await app.database.deleteMany({name: 'events'});
 
           res = await request.post("/user").send(registerBody);
           assert.equal(res.status, 201);
@@ -164,7 +150,7 @@ describe("Singlenode registration", function () {
           assert.include(error.error.data[0].param, '');
         });
         it('should not store 2nd user in database', async function() {
-          const users = await storageLayer.events.findAllUsers();
+          const users = await app.storageLayer.events.findAllUsers();
           assert.equal(users.length, 1);
           assert.equal(users[0].username, registerBody.username);
         });
