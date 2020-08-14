@@ -340,8 +340,8 @@ class Registration {
           // lets check if error thrown by service-register is already defined in errors factory
           if (typeof errors[err] === 'function'){
             return errors[err]();
-          } else if (err.startsWith('Existing-')) {
-            const fieldName = err.replace('Existing-', '');
+          } else if (err.startsWith('Existing_')) {
+            const fieldName = err.replace('Existing_', '');
             return errors.existingField(fieldName);
           } else {
             return errors.unexpectedError(errors[err]);

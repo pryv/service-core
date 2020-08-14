@@ -6,18 +6,19 @@
  */
 
 var utils = require('components/utils'),
-    errors = require('components/errors').factory,
-    async = require('async'),
-    bluebird = require('bluebird'),
-    commonFns = require('./helpers/commonFunctions'),
-    methodsSchema = require('../schema/eventsMethods'),
-    eventSchema = require('../schema/event'),
-    querying = require('./helpers/querying'),
-    timestamp = require('unix-timestamp'),
-    treeUtils = utils.treeUtils,
-    _ = require('lodash'),
-    SetFileReadTokenStream = require('./streams/SetFileReadTokenStream'),
-    UserInfoSerializer = require('components/business/src/user/user_info_serializer');
+  errors = require('components/errors').factory,
+  async = require('async'),
+  bluebird = require('bluebird'),
+  commonFns = require('./helpers/commonFunctions'),
+  methodsSchema = require('../schema/eventsMethods'),
+  eventSchema = require('../schema/event'),
+  querying = require('./helpers/querying'),
+  timestamp = require('unix-timestamp'),
+  treeUtils = utils.treeUtils,
+  _ = require('lodash'),
+  SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
+const UserInfoSerializer = require('components/business/src/user/user_info_serializer'),
+      ServiceRegister = require('components/business/src/auth/service_register');
 
 const assert = require('assert');
 
@@ -581,7 +582,7 @@ module.exports = function (
       result.event = updatedEvent;
       setFileReadToken(context.access, result.event);
       
-      // if event has 'indexed' streamId- notify service register
+      // if event belongs to system stream that has to be indexed - notify service register
       notifyServiceRegisterForIndexedFieldChange()
 
       // for core streams - 'active' streamId defines the 'main' event from the stream
@@ -595,7 +596,7 @@ module.exports = function (
 
   function notifyServiceRegisterForIndexedFieldChange (updatedField) {
     const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
-    serviceRegisterConn.notifyAboutUpdatedIndexedFields([updatedField]);
+    //serviceRegisterConn.notifyAboutUpdatedIndexedFields([updatedField]);
   }
   function notify(context, params, result, next) {
     notifications.eventsChanged(context.user);

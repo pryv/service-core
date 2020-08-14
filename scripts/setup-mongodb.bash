@@ -2,7 +2,7 @@
 
 # Sets up MongoDB (engine and data) for server app(s).
 # Meant to be run from dev env setup scripts.
-
+# https://www.mongodb.com/try/download/community
 if [ `uname` = "Linux" ]; then
   export MONGO_NAME=mongodb-linux-x86_64-ubuntu1804-v4.2-latest
   export MONGO_DL_BASE_URL=https://fastdl.mongodb.org/linux

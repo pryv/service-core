@@ -24,6 +24,7 @@ const Versions = require('../src/Versions');
 const wrench = require('wrench');
 const _ = require('lodash');
 const buildTree = require('components/utils').treeUtils.buildTree;
+const UserInfoSerializer = require('components/business/src/user/user_info_serializer');
 
 const mongoFolder = __dirname + '/../../../../var-pryv/mongodb-bin'
 
@@ -502,15 +503,87 @@ describe('Versions', function () {
     const versions = getVersions('1.6.0');
     const newIndexes = testData.getStructure('1.6.0').indexes;
   
-    const user = { id: 'u_0' };
-    const usersStorage = storage.users;
+    const defaultUser = { id: 'u_0' };
     const eventsStorage = storage.user.events;
-    const streamsStorage = storage.user.streams;
+    const eventsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'events' }, cb));
+    const usersCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'users' }, cb));
 
+    let userInfoSerializer = await UserInfoSerializer.build();
+    // get streams ids from the config that should be retrieved
+    const userAccountStreams = userInfoSerializer.getAllCoreStreams();
+    const userAccountStreamIds = Object.keys(userAccountStreams);
+    
+    // get backup of users
+    const usersCursor = await bluebird.fromCallback(cb => usersCollection.find({}, cb ));
+    const users = await usersCursor.toArray();
+
+    // perform migration
     await bluebird.fromCallback(cb => testData.restoreFromDump('1.5.22', mongoFolder, cb));
     await bluebird.fromCallback(cb => versions.migrateIfNeeded(cb));
-    //const usersCollection = await bluebird.fromCallback(cb => usersStorage.findAll(cb));
-    //const eventsCollection = await bluebird.fromCallback(cb => eventsStorage.findAll(cb));
+
+    // verify that user accounts were migrated to events
+    for(let i=0; i<users.length; i++) {
+      const u = users[i];
+      const eventsCursor = await bluebird.fromCallback(cb => eventsCollection.find(
+        {
+          streamIds: {$in: userAccountStreamIds},
+          userId: { $eq: u._id }, // we've accessed users through the raw collection
+        }, cb ));
+      const events = await eventsCursor.toArray();
+
+      userAccountStreamIds.forEach(streamId => {
+        const systemStream = userAccountStreams[streamId];
+        const event = getEventByStreamId(events, streamId);
+        assert.exists(event);
+
+        // those are not yet on core, storage used is undefined in some seeded users
+        if (! isNewField(streamId) && ! isStorageUsed(streamId)) {
+          assert.equal(event.content, u[streamId]);
+        }
+        if (isStorageUsed(streamId) && (u.storageUsed != null && u.storageUsed[streamId] != null)) {
+          assert.equal(event.content, u.storageUsed[streamId]);
+        }
+        assert.equal(event.type, systemStream.type);
+
+        if (systemStream.isUnique) {
+          assert.exists(event[streamId + '_unique']);
+          assert.equal(event[streamId + '_unique'], event.content);
+        }
+
+        function isNewField(streamId) {
+          return streamId === 'invitationToken' || streamId === 'appId' || streamId === 'referer';
+        }
+        function isStorageUsed(streamId) {
+          return streamId === 'dbDocuments' || streamId === 'attachedFiles';
+        }
+        function getEventByStreamId(events, streamId) {
+          const e = events.filter(e => e.streamIds.indexOf(streamId) >= 0);
+          return e[0];
+        }
+      }); 
+    }
+
+    let eventIndexes = newIndexes.events;
+    eventIndexes = eventIndexes.concat(buildSystemStreamsIndexes(userAccountStreams, userAccountStreamIds));
+    const migratedIndexes = await bluebird.fromCallback(cb => eventsStorage.listIndexes(defaultUser, {}, cb));
+    compareIndexes(newIndexes.events, migratedIndexes);
+
+    function buildSystemStreamsIndexes(userAccountStreams, userAccountStreamIds) {
+      const indexes = [];
+      userAccountStreamIds.forEach(streamId => {
+        const streamData = userAccountStreams[streamId]
+        if (streamData.isUnique) {
+          indexes.push({
+            v: 2,
+            key: {[streamId]: 1},
+            name: streamId + '_unique_1',
+            ns: 'pryv-node.events',
+            background: true
+          });
+        }
+      });
+      return indexes;
+    }
   })
 
   function compareIndexes(expected, actual) {

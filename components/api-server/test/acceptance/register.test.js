@@ -361,7 +361,7 @@ describe('User Registration related functionalities', async () => {
       });
     });
 
-    it('existing email in service register', async () => {
+    it('[E25A] existing email in service register', async () => {
 
       // var test = {
       //   data: { email: 'wactiv@pryv.io' },
@@ -377,7 +377,7 @@ describe('User Registration related functionalities', async () => {
         },
         execute: function () {
           require('nock')(this.context.url).post('/users/validate').reply(400, { 
-            errors: [ 'ExistingEmail' ] });
+            errors: [ 'Existing_email' ] });
         }
       });
 
@@ -389,8 +389,8 @@ describe('User Registration related functionalities', async () => {
         id: ErrorIds.InvalidParametersFormat,
         data: [
           {
-            code: ErrorIds.ExistingEmail,
-            message: ErrorMessages[ErrorIds.ExistingEmail],
+            code: ErrorIds.Existing_email,
+            message: ErrorMessages[ErrorIds.Existing_email],
             param: 'email',
             path: '#/email'
           }
