@@ -151,4 +151,10 @@ _.merge(config.schema, {
       doc: 'The size of the runs array.'
     },
   },
+  openSource: {
+    isActive: {
+      format: Boolean,
+      default: true
+    }
+  }
 });

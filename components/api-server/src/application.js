@@ -42,6 +42,8 @@ class Application {
   // API for system routes. 
   systemAPI: API; 
   
+  database: storage.Database;
+
   // Storage subsystem
   storageLayer: storage.StorageLayer;
   
@@ -116,13 +118,13 @@ class Application {
   produceStorageSubsystem() {
     const settings = this.settings;
 
-    const database = new storage.Database(
+    this.database = new storage.Database(
       settings.get('database').obj(), 
       this.logFactory('database'));
 
     // 'StorageLayer' is a component that contains all the vertical registries
     // for various database models. 
-    this.storageLayer = new storage.StorageLayer(database, 
+    this.storageLayer = new storage.StorageLayer(this.database, 
       this.logFactory('model'),
       settings.get('eventFiles.attachmentsDirPath').str(), 
       settings.get('eventFiles.previewsDirPath').str(), 
