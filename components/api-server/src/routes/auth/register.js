@@ -20,12 +20,13 @@ module.exports = function (expressApp: express$Application, app: Application) {
 
   // const settings: ConfigAccess = app.settings;
   const api: API = app.api;
+  const isSingleNode = app.settings.get('singleNode').obj().isActive;
   const isOpenSource = app.settings.get('openSource').obj().isActive;
   const context = {};
  
   // POST /user: create a new user
   expressApp.post('/user', function (req: express$Request, res: express$Response, next: express$NextFunction) {
-   if (isOpenSource) {
+   if (isSingleNode) {
       api.call('auth.register.singlenode', context, req.body, methodCallback(res, next, 201));
     }else{
       api.call('auth.register', context, req.body, methodCallback(res, next, 201));

@@ -28,5 +28,11 @@
   },
   "tcpMessaging": {
     "enabled": false
+  },
+  "openSource": {
+    "isActive": false
+  },
+  "singleNode": {
+    "isActive": true
   }
 }
