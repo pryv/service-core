@@ -6,11 +6,15 @@
  */
 const Settings = require('components/api-server/src/settings');
 
-const readable = 'readable-core-streams',
-  allCoreStreams = 'all-core-streams',
-  onlyWritableCoreStreams = 'only-writable-core-streams',
-  indexedStreams = 'indexed-core-streams',
-  uniqueStreams = 'unique-core-streams';
+const readable = 'readable-core-streams';
+const allCoreStreams = 'all-core-streams';
+const onlyWritableCoreStreams = 'only-writable-core-streams';
+const indexedStreams = 'indexed-core-streams';
+const uniqueStreams = 'unique-core-streams';
+
+import { Config, getConfig } from 'components/api-server/config/Config';
+const config: Config = getConfig();
+
 /**
  * Class that converts system->account events to the
  * Account information that matches the previous 
@@ -27,11 +31,8 @@ class UserInfoSerializer {
   }
 
   // set asyncronously system streams settings information
-  static async build () {
-    // Load settings asynchronously because we have to fetch
-    // some values from register via an http-get request.
-    const settings = await Settings.load();
-    const systemStreamsSettings = settings.get('systemStreams').obj();
+  static build () {
+    const systemStreamsSettings = config.get('systemStreams');
     if (systemStreamsSettings == null) {
       throw Error("Not valid system streams settings.");
     }

@@ -25,6 +25,9 @@ const UserInfoSerializer = require('components/business/src/user/user_info_seria
 import type { MethodContext } from 'components/model';
 import type { ApiCallback } from 'components/api-server/src/API';
 
+import { Config, getConfig } from 'components/api-server/config/Config';
+const config: Config = getConfig();
+
 /**
  * Create (register) a new user
  */
@@ -34,9 +37,9 @@ class Registration {
   servicesSettings; // settigns to get the email to send user welcome email
   serviceRegisterConn; // service-register connection
   hostname; // hostname that will be saved in service-register as a 'core' where user is registered
-  systemStreamsSettings;
+  accountStreamsSettings;
 
-  constructor (logging, storageLayer, servicesSettings, serverSettings, systemStreamsSettings) { 
+  constructor (logging, storageLayer, servicesSettings, serverSettings) { 
 
     this.logger = logging.getLogger('methods/system');
     this.storageLayer = storageLayer;
@@ -44,7 +47,7 @@ class Registration {
 
     this.serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
     this.hostname = serverSettings.hostname;
-    this.systemStreamsSettings = systemStreamsSettings.account;
+    this.accountStreamsSettings = config.get('systemStreams:account');
     
     // bind this object to the functions that need it
     this.createUser = this.createUser.bind(this);
@@ -324,7 +327,7 @@ class Registration {
   async validateUserInServiceRegister (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
       let uniqueFields = {};
-      for (const [key, value] of Object.entries(this.systemStreamsSettings)) {
+      for (const [key, value] of Object.entries(this.accountStreamsSettings)) {
         // if key is set as required - add required validation
         if (value.isUnique && value.isUnique === true) {
           uniqueFields[key] = params[key];
@@ -390,7 +393,7 @@ class Registration {
    
     // iterate core stream settings and APPEND validation with relevant properties
     // etc additional required fields or regex validation
-    for (const [field, value] of Object.entries(this.systemStreamsSettings)) {
+    for (const [field, value] of Object.entries(this.accountStreamsSettings)) {
       // if field is set as required - add required validation
       if (value.isRequiredInValidation && value.isRequiredInValidation == true && !methodsSchema.register.params.required.includes(field)) {
         validationSchema.required.push(field)
