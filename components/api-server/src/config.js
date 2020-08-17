@@ -150,5 +150,17 @@ _.merge(config.schema, {
       default: 20,
       doc: 'The size of the runs array.'
     },
+  },
+  openSource: {
+    isActive: {
+      format: Boolean,
+      default: true
+    }
+  },
+  singleNode: {
+    isActive: {
+      format: Boolean,
+      default: true
+    }
   }
 });

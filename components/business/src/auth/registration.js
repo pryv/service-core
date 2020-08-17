@@ -93,7 +93,6 @@ class Registration {
       });
 
       const response = await this.serviceRegisterConn.createUser(saveToServiceRegister, params);
-
       // take only server name
       if (response.server) {
         result.server = response.server;
