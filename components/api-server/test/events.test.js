@@ -777,8 +777,6 @@ describe('events', function () {
       });
     });
 
-
-
     it('[WN86] must return a correct error if an event with the same id already exists', function (done) {
       var data = {
         id: testData.events[0].id,

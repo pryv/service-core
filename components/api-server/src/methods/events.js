@@ -75,7 +75,7 @@ module.exports = function (
     findAccessibleEvents,
     includeDeletionsIfRequested);
 
-  async function applyDefaultsForRetrieval(context, params, result, next) {
+  async function applyDefaultsForRetrieval (context, params, result, next) {
     _.defaults(params, {
       streams: null,
       tags: null,
@@ -473,8 +473,8 @@ module.exports = function (
         
         fieldsForUpdate[fieldName] = [{
           value: contextContent.content,
-          unique: editableCoreStreams[fieldName].isUnique,
-          active: contextContent.streamIds.includes('active'),
+          isUnique: editableCoreStreams[fieldName].isUnique,
+          isActive: contextContent.streamIds.includes('active'),
           creation: creation
         }];
       }
