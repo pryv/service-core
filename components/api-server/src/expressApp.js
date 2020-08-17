@@ -47,7 +47,7 @@ type AirbrakeSettings = {
  * 
  * @see handleRequestDuringStartup
  */
-type Phase = 'init' | 'startupBegon' | 'startupComplete';
+type Phase = 'init' | 'startupBegun' | 'startupComplete';
 class ExpressAppLifecycle {  
   // State for the state machine. 
   phase: Phase;
@@ -73,7 +73,7 @@ class ExpressAppLifecycle {
   /** Enter the phase given.  
    */
   go(phase: Phase): void {
-    const phaseOrder = ['init', 'startupBegon', 'startupComplete'];
+    const phaseOrder = ['init', 'startupBegun', 'startupComplete'];
     
     const oldIdx = phaseOrder.indexOf(this.phase);
     const newIdx = phaseOrder.indexOf(phase);
@@ -96,7 +96,7 @@ class ExpressAppLifecycle {
     this.go('startupBegun'); 
     
     // Insert a middleware that allows us to intercept requests. This will 
-    // be disabled as soon as `this.phase` is not 'startupBegon' anymore. 
+    // be disabled as soon as `this.phase` is not 'startupBegun' anymore. 
     app.use((req: express$Request, res, next) => {
       if (this.phase === 'startupBegun') {
         handleRequestDuringStartup(req, res);

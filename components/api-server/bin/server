@@ -18,6 +18,7 @@ const { Notifier } = require('@airbrake/node');
 
   // Construct application
   const app = new Application(settings);
+  await app.initiate();
   logger = app.logFactory('api-server');
 
   // Setup Airbrake if enabled

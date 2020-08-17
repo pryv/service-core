@@ -11,13 +11,14 @@
 
 const utils = require('components/utils');
 const storage = require('components/storage');
-
 const API = require('./API');
+const expressAppInit = require('./expressApp');
 
 import type { ConfigAccess } from './settings';
 import type { WebhooksSettingsHolder } from './methods/webhooks';
 import type { LogFactory } from 'components/utils';
 import type { Logger } from 'components/utils';
+import type { ExpressAppLifecycle } from './expressApp';
 
 // While we're transitioning to manual DI, we still need to inject some of the 
 // stuff here the old way. Hence: 
@@ -48,6 +49,10 @@ class Application {
   storageLayer: storage.StorageLayer;
   
   dependencies: typeof dependencies;
+
+  expressApp: express$Application;
+
+  lifecycle: ExpressAppLifecycle;
   
   constructor(settings: ConfigAccess) {
     this.settings = settings;
@@ -61,6 +66,46 @@ class Application {
     
     this.dependencies = dependencies;
     this.registerLegacyDependencies();
+  }
+
+  async initiate() {
+    [this.expressApp, this.lifecycle] = await this.createExpressApp();
+    this.initiateRoutes();
+  }
+
+  async createExpressApp(): Promise<[express$Application, ExpressAppLifecycle]> {
+    const {expressApp, lifecycle} = await expressAppInit(this.dependencies, this.settings.get('dnsLess.isActive').bool());
+    this.dependencies.register({expressApp: expressApp});
+    
+    // Make sure that when we receive requests at this point, they get notified 
+    // of startup API unavailability. 
+    lifecycle.appStartupBegin(); 
+    
+    return [expressApp, lifecycle];
+  }
+
+  initiateRoutes() {
+    const isOpenSource = this.settings.get('openSource.isActive').bool();
+    if (isOpenSource) {
+      require('../../www')(this.expressApp, this);
+    }
+
+    require('./routes/auth/register')(this.expressApp, this);
+
+    // system and root MUST come first
+    require('./routes/system')(this.expressApp, this);
+    require('./routes/root')(this.expressApp, this);
+    
+    require('./routes/accesses')(this.expressApp, this);
+    require('./routes/account')(this.expressApp, this);
+    require('./routes/auth/login')(this.expressApp, this);
+    require('./routes/events')(this.expressApp, this);
+    require('./routes/followed-slices')(this.expressApp, this);
+    require('./routes/profile')(this.expressApp, this);
+    require('./routes/service')(this.expressApp, this);
+    require('./routes/streams')(this.expressApp, this);
+
+    if(!isOpenSource) require('./routes/webhooks')(this.expressApp, this);
   }
   
   produceLogSubsystem() {

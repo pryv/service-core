@@ -70,7 +70,7 @@ class Server {
     
     this.publishExpressMiddleware();
     
-    const [expressApp, lifecycle] = await this.createExpressApp(this.isDNSLess); 
+    // const [expressApp, lifecycle] = await this.createExpressApp(this.isDNSLess); 
 
     // start TCP pub messaging
     await this.setupNotificationBus();
@@ -79,15 +79,15 @@ class Server {
     this.registerApiMethods();
 
     // Setup HTTP and register server; setup Socket.IO.
-    const server: net$Server = http.createServer(expressApp);
+    const server: net$Server = http.createServer(this.application.expressApp);
     this.setupSocketIO(server); 
     await this.startListen(server);
 
     // Finish booting the server, start accepting connections.
-    this.addRoutes(expressApp);
+    // this.addRoutes(expressApp);
     
     // Let actual requests pass.
-    lifecycle.appStartupComplete(); 
+    this.application.lifecycle.appStartupComplete(); 
     
     if (! this.isOpenSource) {
       await this.setupReporting();
