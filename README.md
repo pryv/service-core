@@ -25,7 +25,7 @@ You should be able to install these prerequisites by first installing homebrew a
 $ brew install gnatsd node-build influxdb nodenv/nvm
 # Follow post-install instructions by homebrew, especially for nodenv/nvm.
 $ nodenv install 8.8.0
-$ install graphicsmagick
+$ brew install graphicsmagick
 ~~~
 
 You will need to install 'node-gyp' globally as well: `yarn global add node-gyp`. Your environment needs to support C/C++ compilation. On Linux, this includes `sudo apt-get install build-essentials`, on Mac OS X this is XCode + Command Line Utilities.

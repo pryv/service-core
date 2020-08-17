@@ -47,7 +47,7 @@ type AirbrakeSettings = {
  * 
  * @see handleRequestDuringStartup
  */
-type Phase = 'init' | 'startupBegon' | 'startupComplete';
+type Phase = 'init' | 'startupBegun' | 'startupComplete';
 class ExpressAppLifecycle {  
   // State for the state machine. 
   phase: Phase;
@@ -73,7 +73,7 @@ class ExpressAppLifecycle {
   /** Enter the phase given.  
    */
   go(phase: Phase): void {
-    const phaseOrder = ['init', 'startupBegon', 'startupComplete'];
+    const phaseOrder = ['init', 'startupBegun', 'startupComplete'];
     
     const oldIdx = phaseOrder.indexOf(this.phase);
     const newIdx = phaseOrder.indexOf(phase);
@@ -93,12 +93,12 @@ class ExpressAppLifecycle {
   appStartupBegin(): void {
     const app = this.app; 
     
-    this.go('startupBegon'); 
+    this.go('startupBegun'); 
     
     // Insert a middleware that allows us to intercept requests. This will 
-    // be disabled as soon as `this.phase` is not 'startupBegon' anymore. 
+    // be disabled as soon as `this.phase` is not 'startupBegun' anymore. 
     app.use((req: express$Request, res, next) => {
-      if (this.phase === 'startupBegon') {
+      if (this.phase === 'startupBegun') {
         handleRequestDuringStartup(req, res);
       }
       else {
@@ -126,16 +126,18 @@ class ExpressAppLifecycle {
 // `version` should be the version string you want to show to API clients. 
 // 
 async function expressAppInit(dependencies: any, isDNSLess: boolean) {
-  const pv = new ProjectVersion(); 
-  const version = pv.version(); 
-
-  dependencies.register('airbrakeNotifier', {airbrakeNotifier: createAirbrakeNotifierIfNeeded()});
-  
+  const pv = new ProjectVersion();
+  const version = pv.version();
+  var app = express(); // register common middleware
+  dependencies.register({
+    express: app
+  });
+  dependencies.register('airbrakeNotifier', {
+    airbrakeNotifier: createAirbrakeNotifierIfNeeded()
+  });
   const commonHeadersMiddleware = middleware.commonHeaders(version);
-  const requestTraceMiddleware = dependencies.resolve(middleware.requestTrace); 
+  const requestTraceMiddleware = dependencies.resolve(middleware.requestTrace);
   const errorsMiddleware = dependencies.resolve(errorsMiddlewareMod);
-  
-  var app = express();
 
   // register common middleware
 

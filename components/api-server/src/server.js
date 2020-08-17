@@ -70,7 +70,7 @@ class Server {
     
     this.publishExpressMiddleware();
     
-    const [expressApp, lifecycle] = await this.createExpressApp(this.isDNSLess); 
+    await this.application.initiate();
 
     // start TCP pub messaging
     await this.setupNotificationBus();
@@ -79,15 +79,12 @@ class Server {
     this.registerApiMethods();
 
     // Setup HTTP and register server; setup Socket.IO.
-    const server: net$Server = http.createServer(expressApp);
+    const server: net$Server = http.createServer(this.application.expressApp);
     this.setupSocketIO(server); 
     await this.startListen(server);
 
-    // Finish booting the server, start accepting connections.
-    this.addRoutes(expressApp);
-    
     // Let actual requests pass.
-    lifecycle.appStartupComplete(); 
+    this.application.lifecycle.appStartupComplete(); 
     
     if (! this.isOpenSource) {
       await this.setupReporting();
@@ -101,20 +98,6 @@ class Server {
     const DEFAULT_VALUES: Array<string> = ['REPLACE_ME'];
     if (DEFAULT_VALUES.includes(this.settings.get('auth.adminAccessKey').str())) return 'auth.adminAccessKey';
     return null;
-  }
-  
-  async createExpressApp(isDNSLess: boolean): Promise<[express$Application, ExpressAppLifecycle]> {
-    const app = this.application;
-    const dependencies = app.dependencies;
-
-    const {expressApp, lifecycle} = await expressAppInit(dependencies, isDNSLess);
-    dependencies.register({expressApp: expressApp});
-    
-    // Make sure that when we receive requests at this point, they get notified 
-    // of startup API unavailability. 
-    lifecycle.appStartupBegin(); 
-    
-    return [expressApp, lifecycle];
   }
   
   // Requires and registers all API methods. 
@@ -301,34 +284,6 @@ class Server {
     dependencies.register({
       notifications: bus,
     });
-  }
-
-  // Installs actual routes in express and prints 'Server ready'.
-  //
-  addRoutes(expressApp: express$Application) {
-    const application = this.application;
-
-    // For DNS LESS load register
-    if (this.isOpenSource) {
-      require('../../www')(expressApp, this.application);
-    }
-
-    require('./routes/auth/register')(expressApp, application);
-
-    // system and root MUST come first
-    require('./routes/system')(expressApp, application);
-    require('./routes/root')(expressApp, application);
-    
-    require('./routes/accesses')(expressApp, application);
-    require('./routes/account')(expressApp, application);
-    require('./routes/auth/login')(expressApp, application);
-    require('./routes/events')(expressApp, application);
-    require('./routes/followed-slices')(expressApp, application);
-    require('./routes/profile')(expressApp, application);
-    require('./routes/service')(expressApp, application);
-    require('./routes/streams')(expressApp, application);
-
-    if(! this.isOpenSource) require('./routes/webhooks')(expressApp, application);
   }
 
 

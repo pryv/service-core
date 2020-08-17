@@ -96,7 +96,6 @@ class Registration {
       });
 
       const response = await this.serviceRegisterConn.createUser(saveToServiceRegister, params);
-
       // take only server name
       if (response.server) {
         result.server = response.server;
@@ -343,8 +342,8 @@ class Registration {
           // lets check if error thrown by service-register is already defined in errors factory
           if (typeof errors[err] === 'function'){
             return errors[err]();
-          } else if (err.startsWith('Existing-')) {
-            const fieldName = err.replace('Existing-', '');
+          } else if (err.startsWith('Existing_')) {
+            const fieldName = err.replace('Existing_', '');
             return errors.existingField(fieldName);
           } else {
             return errors.unexpectedError(errors[err]);
@@ -390,7 +389,7 @@ class Registration {
    */
   loadCustomValidationSettings (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     let validationSchema = Object.assign({}, methodsSchema.register.params);
-   
+
     // iterate core stream settings and APPEND validation with relevant properties
     // etc additional required fields or regex validation
     for (const [field, value] of Object.entries(this.accountStreamsSettings)) {

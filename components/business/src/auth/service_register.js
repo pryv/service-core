@@ -88,18 +88,30 @@ class ServiceRegister {
    * After indexed fields are updated, service-register is notified to update
    * the information
    */
-  async notifyAboutUpdatedIndexedFields (): Promise<void> {
+  async updateUserInServiceRegister (
+    username: string,
+    user: object,
+    fieldsToDelete: object): Promise<void> {
     const url = this._formUrl('/users');
     // log fact about the event
     this.logger.info(url);
+    user.username = username;
 
+    const request = {
+      user: user,
+      fieldsToDelete: fieldsToDelete,
+    }
     try {
-      const res = await superagent.post(url)
-        .send(user)
+      const res = await superagent.put(url)
+        .send(request)
         .set('Authorization', this.config.key);
 
       return res.body;
     } catch (err) {
+      if (err.status == 400 && err?.response?.body?.errors) {
+        return err.response.body;
+      }
+      // do not log validation errors
       this.logger.error(err);
       throw new Error(err.message || 'Unexpected error.');
     }

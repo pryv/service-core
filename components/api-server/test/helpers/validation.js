@@ -427,7 +427,7 @@ exports.validateCoreEvents = async function (actualCoreEvents) {
           actualCoreEvents[i].streamIds.includes('unique').should.eql(true);
         }
         // validate type
-        actualCoreEvents[i].type.should.eql(expectedCoreStreams[expectedSreamIds[n]].type);
+        actualCoreEvents[i].type.should.eql(expectedCoreStreams[expectedSreamIds[n]].type);actualCoreEvents[i].type.should.eql(expectedCoreStreams[expectedSreamIds[n]].type);
         break;
       }
     }

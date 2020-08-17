@@ -11,6 +11,7 @@ const defaultValuesForFields = {
   isIndexed: false, // if true will be sent to service-register to be able to query across the platform
   isUnique: false, // if true will be sent to service-register and enforced uniqness on mongodb
   isShown: false, // if true, will be shown for the users
+  isEditable: false, // if true, user will be allowed to edit it
   type: 'string/pryv', // event type
   isRequiredInValidation: false // if true, the field will be required in the validation
 };
@@ -24,7 +25,6 @@ function load(config: Config): Config {
           isIndexed: true,
           isUnique: true,
           isShown: true,
-          isSentToRegister: true,
           type: 'identifier/string',
           name: 'Username',
           isRequiredInValidation: true
@@ -33,7 +33,7 @@ function load(config: Config): Config {
           isIndexed: true,
           isUnique: true,
           isShown: true,
-          isSentToRegister: true,
+          isEditable: true,
           type: 'email/string',
           name: 'Email',
           isRequiredInValidation: true
@@ -41,7 +41,7 @@ function load(config: Config): Config {
         language: _.extend({}, defaultValuesForFields, {
           isIndexed: true,
           isShown: true,
-          isSentToRegister: true,
+          isEditable: true,
           default: 'en',
           type: 'language/iso-639-1',
           name: 'Language'
@@ -113,7 +113,6 @@ function load(config: Config): Config {
    * 2. systemStreams:custom
    */
   function readAdditionalFieldsConfig(config) {
-    
     let customStreams = config.get('systemStreams:custom');
     if (customStreams != null) {
       appendSystemStreamsConfigWithAdditionalFields(config, customStreams);
@@ -123,7 +122,6 @@ function load(config: Config): Config {
     if (customStreams != null) {
       appendSystemStreamsConfigWithAdditionalFields(config, customStreams);
     }
-    
   }
 
   /**
@@ -131,7 +129,10 @@ function load(config: Config): Config {
    * set to the main system streams config
    * @param {*} additionalFields
    */
-  function appendSystemStreamsConfigWithAdditionalFields(config: Config, additionalFields): Config {
+  function appendSystemStreamsConfigWithAdditionalFields(
+    config: Config,
+    additionalFields
+  ): Config {
     const keys: Array<string> = Object.keys(additionalFields);
     let i;
     keys.forEach(k => {
