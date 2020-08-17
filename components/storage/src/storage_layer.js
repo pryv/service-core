@@ -24,6 +24,10 @@ const Profile = require('./user/Profile');
 const Streams = require('./user/Streams');
 const Webhooks = require('./user/Webhooks');
 
+const getConfig: () => Config = require('components/api-server/config/Config').getConfig;
+import type { Config } from 'components/api-server/config/Config';
+const config: Config = getConfig();
+
 class StorageLayer {
   connection: Database; 
   
@@ -44,8 +48,7 @@ class StorageLayer {
     attachmentsDirPath: string,
     previewsDirPath: string,
     passwordResetRequestMaxAge: number,
-    sessionMaxAge: number, 
-    systemStreamsSettings: obj, 
+    sessionMaxAge: number,
   ) {
     this.connection = connection;
     
@@ -66,7 +69,7 @@ class StorageLayer {
         previewsDirPath: previewsDirPath,
       }, 
       logger);  
-    this.events = new Events(connection, systemStreamsSettings);
+    this.events = new Events(connection);
     this.followedSlices = new FollowedSlices(connection);
     this.profile = new Profile(connection);
     this.streams = new Streams(connection);

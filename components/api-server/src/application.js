@@ -14,6 +14,10 @@ const storage = require('components/storage');
 const API = require('./API');
 const expressAppInit = require('./expressApp');
 
+const getConfig: () => Config = require('components/api-server/config/Config').getConfig;
+const initConfig: () => Config = require('components/api-server/config/Config').initConfig;
+import type { Config } from 'components/api-server/config/Config';
+
 import type { ConfigAccess } from './settings';
 import type { WebhooksSettingsHolder } from './methods/webhooks';
 import type { LogFactory } from 'components/utils';
@@ -34,6 +38,8 @@ type UpdatesSettingsHolder = {
 class Application {
   // Application settings, see ./settings
   settings: ConfigAccess; 
+  // new config
+  config: Config;
   
   // Application log factory
   logFactory: LogFactory; 
@@ -60,13 +66,13 @@ class Application {
     
     this.api = new API(); 
     this.systemAPI = new API(); 
-    
-    this.produceLogSubsystem(); 
-    this.produceStorageSubsystem(); 
-    this.registerLegacyDependencies();
   }
 
   async initiate() {
+    this.config = await initConfig();
+    this.produceLogSubsystem(); 
+    this.produceStorageSubsystem(); 
+    this.registerLegacyDependencies();
     await this.createExpressApp();
     this.initiateRoutes();
   }
@@ -138,7 +144,7 @@ class Application {
       updatesSettings: settings.get('updates').obj(),
       openSourceSettings: settings.get('openSource').obj(),
       serverSettings: settings.get('server').obj(),
-      systemStreamsSettings: settings.get('systemStreams').obj(),
+      systemStreamsSettings: this.config.get('systemStreams'),
     });
     
     // DI on the topic of storage and MongoDB access
@@ -175,7 +181,7 @@ class Application {
       settings.get('eventFiles.previewsDirPath').str(), 
       settings.get('auth.passwordResetRequestMaxAge').num(), 
       settings.get('auth.sessionMaxAge').num(), 
-      settings.get('systemStreams.account').obj(), 
+      this.config.get('systemStreams:account'), 
     );
   }
   

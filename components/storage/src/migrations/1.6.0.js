@@ -92,13 +92,13 @@ module.exports = async function (context, callback) {
         userId: userParams._id,
       }
 
-      if (isPropertyUnique(streamId)) {
+      if (isPropertyUnique(streamData)) {
         creationObject[buildUniqueMongoField(streamId)] = content; // repeated field for uniqueness
       }
 
       eventsCreations.push(creationObject);
 
-      function isPropertyUnique(streamId) { return streamData.isUnique === true; }
+      function isPropertyUnique(streamData) { return streamData.isUnique === true; }
     });
     return eventsCreations;
   }

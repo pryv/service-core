@@ -52,14 +52,13 @@ class Server {
     this.settings = settings;
     this.isOpenSource = settings.get('openSource.isActive').bool();
     this.isDNSLess = settings.get('dnsLess.isActive').bool();
-    this.logger = application.logFactory('api-server');
   }
     
   // Start the server. 
   //
   async start() {
     
-    const logger = this.logger;
+    
 
 
     const defaultParam: ?string = this.findDefaultParam();
@@ -71,6 +70,8 @@ class Server {
     this.publishExpressMiddleware();
     
     await this.application.initiate();
+    this.logger = this.application.logFactory('api-server');
+    const logger = this.logger;
 
     // start TCP pub messaging
     await this.setupNotificationBus();
