@@ -12,16 +12,20 @@ const fs = require('fs');
 const components = require('./components');
 
 let config = null;
-async function initConfig(): Promise<void> {
+async function initConfig(): Promise<Config> {
   if (config == null) {
     config = new Config();
+  }
+  if (! config.isReady) {
     await config.init();
   }
   return config;
 }
 
 function getConfig(): Config {
-  if (config == null) throw new Error('initialize the config before using it!');
+  if (config == null) { // throw new Error('initialize the config before using it!');
+    config = new Config();
+  }
   return config;
 }
 module.exports = { initConfig, getConfig };
@@ -61,7 +65,7 @@ class Config {
   }
 
   get(key: string): any {
-    return this.get(key);
+    return this.store.get(key);
   }
 
   set(key: string, value: string): void {

@@ -7,14 +7,15 @@
 const _ = require('lodash');
 const Settings = require('components/api-server/src/settings');
 
+const getConfig: () => Config = require('components/api-server/config/Config').getConfig;
+import type { Config } from 'components/api-server/config/Config';
+const config: Config = getConfig();
+
 const readable = 'readable-core-streams';
 const allCoreStreams = 'all-core-streams';
 const editableCoreStreams = 'editable-core-streams';
 const indexedStreams = 'indexed-core-streams';
 const uniqueStreams = 'unique-core-streams';
-
-import { Config, getConfig } from 'components/api-server/config/Config';
-const config: Config = getConfig();
 
 /**
  * Class that converts system->account events to the

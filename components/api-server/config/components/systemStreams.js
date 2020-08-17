@@ -144,4 +144,4 @@ function load(config: Config): Config {
     return config;
   }
 }
-module.exports = load;
+module.exports.load = load;
