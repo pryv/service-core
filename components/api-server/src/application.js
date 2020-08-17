@@ -56,32 +56,31 @@ class Application {
   
   constructor(settings: ConfigAccess) {
     this.settings = settings;
-    
-    this.produceLogSubsystem(); 
+    this.dependencies = dependencies;
     
     this.api = new API(); 
     this.systemAPI = new API(); 
     
+    this.produceLogSubsystem(); 
     this.produceStorageSubsystem(); 
-    
-    this.dependencies = dependencies;
     this.registerLegacyDependencies();
   }
 
   async initiate() {
-    [this.expressApp, this.lifecycle] = await this.createExpressApp();
+    await this.createExpressApp();
     this.initiateRoutes();
   }
 
   async createExpressApp(): Promise<[express$Application, ExpressAppLifecycle]> {
     const {expressApp, lifecycle} = await expressAppInit(this.dependencies, this.settings.get('dnsLess.isActive').bool());
+    this.expressApp = expressApp;
+    this.lifecycle = lifecycle;
+    
     this.dependencies.register({expressApp: expressApp});
     
     // Make sure that when we receive requests at this point, they get notified 
     // of startup API unavailability. 
     lifecycle.appStartupBegin(); 
-    
-    return [expressApp, lifecycle];
   }
 
   initiateRoutes() {
@@ -99,6 +98,7 @@ class Application {
     require('./routes/accesses')(this.expressApp, this);
     require('./routes/account')(this.expressApp, this);
     require('./routes/auth/login')(this.expressApp, this);
+    require('./routes/auth/register')(this.expressApp, this);
     require('./routes/events')(this.expressApp, this);
     require('./routes/followed-slices')(this.expressApp, this);
     require('./routes/profile')(this.expressApp, this);
@@ -110,12 +110,12 @@ class Application {
   
   produceLogSubsystem() {
     const settings = this.settings;
-    const logSystemSettings = settings.get('logs').obj();
+    const logSystemSettings = this.settings.get('logs').obj();
     const logging = utils.logging(logSystemSettings); 
     
     this.logFactory = logging.getLogger;
     
-    dependencies.register({ logging: logging });
+    this.dependencies.register({ logging: logging });
   }
   
   registerLegacyDependencies() {

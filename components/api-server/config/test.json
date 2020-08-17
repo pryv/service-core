@@ -37,6 +37,9 @@
     "name": "pryv-node-test"
   },
   "openSource": {
+    "isActive": false
+  },
+  "singleNode": {
     "isActive": true
   }
 }

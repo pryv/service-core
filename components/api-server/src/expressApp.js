@@ -126,16 +126,18 @@ class ExpressAppLifecycle {
 // `version` should be the version string you want to show to API clients. 
 // 
 async function expressAppInit(dependencies: any, isDNSLess: boolean) {
-  const pv = new ProjectVersion(); 
-  const version = pv.version(); 
-
-  dependencies.register('airbrakeNotifier', {airbrakeNotifier: createAirbrakeNotifierIfNeeded()});
-  
+  const pv = new ProjectVersion();
+  const version = pv.version();
+  var app = express(); // register common middleware
+  dependencies.register({
+    express: app
+  });
+  dependencies.register('airbrakeNotifier', {
+    airbrakeNotifier: createAirbrakeNotifierIfNeeded()
+  });
   const commonHeadersMiddleware = middleware.commonHeaders(version);
-  const requestTraceMiddleware = dependencies.resolve(middleware.requestTrace); 
+  const requestTraceMiddleware = dependencies.resolve(middleware.requestTrace);
   const errorsMiddleware = dependencies.resolve(errorsMiddlewareMod);
-  
-  var app = express();
 
   // register common middleware
 

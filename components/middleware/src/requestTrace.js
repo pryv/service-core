@@ -16,7 +16,7 @@ interface Logger {
   info(msg: string): void; 
 }
 
-module.exports = function (logging: LoggerFactory) {
+module.exports = function (express: any, logging: LoggerFactory) {
   const logger = logging.getLogger('routes');
   const morganLoggerStreamWrite = (msg: string) => logger.info(msg);
   

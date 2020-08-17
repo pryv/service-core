@@ -31,5 +31,8 @@
   },
   "openSource": {
     "isActive": false
+  },
+  "singleNode": {
+    "isActive": true
   }
 }

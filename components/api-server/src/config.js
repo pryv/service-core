@@ -156,5 +156,11 @@ _.merge(config.schema, {
       format: Boolean,
       default: true
     }
+  },
+  singleNode: {
+    isActive: {
+      format: Boolean,
+      default: true
+    }
   }
 });

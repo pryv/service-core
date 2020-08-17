@@ -26,34 +26,18 @@ let res;
 
 describe("Singlenode registration", function () {
   before(async function () {
-    const expressApp = express();
-    expressApp.use(
-      bodyParser.json({
-        limit: "10mb",
-      })
-    );
-    expressApp.use(
-      bodyParser.urlencoded({
-        extended: false,
-      })
-    );
-
     const settings = await Settings.load();
-
+    
     app = new Application(settings);
+    await app.initiate();
+    
+    app.lifecycle.appStartupComplete(); 
 
-    app.dependencies.register({ expressApp: expressApp });
     app.dependencies.resolve(
       require("./../src/methods/auth/register-singlenode")
     );
 
-    require("./../src/routes/auth/register")(expressApp, app);
-
-    expressApp.use(
-      errorsMiddlewareMod(utils.logging(settings.get("logs").obj()))
-    );
-
-    request = supertest(expressApp);
+    request = supertest(app.expressApp);
 
     registerBody = {
       username: charlatan.Lorem.characters(7),
@@ -65,7 +49,7 @@ describe("Singlenode registration", function () {
   describe("when given valid input", function () {
     before(async function () {
       res = await request.post("/user").send(registerBody);
-    });
+        });
     it("should respond with 201", function () {
       assert.equal(res.status, 201);
     });
