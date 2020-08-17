@@ -91,22 +91,14 @@ class ServiceRegister {
   async updateUserInServiceRegister (
     username: string,
     user: object,
-    uniqueFieldsNames: array,
-    fieldsToInsert: array,
     fieldsToDelete: object): Promise<void> {
     const url = this._formUrl('/users');
     // log fact about the event
     this.logger.info(url);
     user.username = username;
-      uniqueFieldsNames, 'uniqueFieldsNames',
-      fieldsToInsert, 'newFieldsNames',
-      fieldsToDelete, 'fieldsForDeletion',
-      username,'username'
-    );
+
     const request = {
       user: user,
-      unique: uniqueFieldsNames,
-      fieldsToInsert: fieldsToInsert,
       fieldsToDelete: fieldsToDelete,
     }
     try {

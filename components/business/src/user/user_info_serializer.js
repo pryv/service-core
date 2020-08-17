@@ -102,6 +102,19 @@ class UserInfoSerializer {
     const notEditableStreamsIds = _.difference(_.keys(allStreams), _.keys(editableStreams));
     return notEditableStreamsIds;
   }
+
+  /**
+   * Get steams that are NOT allowed to view for the user
+   * this function will be used to exclude streamIds from queries
+   */
+  getCoreStreamsIdsForbiddenForReading () {
+    let allStreams = this.getAllCoreStreams();
+    let readableStreams = this.getReadableCoreStreams();
+
+    const notReadableStreamsIds = _.difference(_.keys(allStreams), _.keys(readableStreams));
+    return notReadableStreamsIds;
+  }
+
   /**
    * Get virtual streams list
    * @param {*} events 
