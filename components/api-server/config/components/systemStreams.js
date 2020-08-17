@@ -12,6 +12,7 @@ const defaultValuesForFields = {
   isIndexed: false, // if true will be sent to service-register to be able to query across the platform
   isUnique: false,// if true will be sent to service-register and enforced uniqness on mongodb
   isShown: false, // if true, will be shown for the users
+  isEditable: false, // if true, user will be allowed to edit it
   type: 'string/pryv', // event type
   isRequiredInValidation: false // if true, the field will be required in the validation
 }
@@ -32,6 +33,7 @@ config.overrides({
         isIndexed: true,
         isUnique: true,
         isShown: true,
+        isEditable: true,
         type: 'email/string',
         name: 'Email',
         isRequiredInValidation: true
@@ -39,6 +41,7 @@ config.overrides({
       language: _.extend({}, defaultValuesForFields, {
         isIndexed: true,
         isShown: true,
+        isEditable: true,
         default: 'en',
         type: 'language/iso-639-1',
         name: 'Language',
