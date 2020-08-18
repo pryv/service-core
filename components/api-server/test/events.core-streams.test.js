@@ -6,31 +6,30 @@
  */
 // TODO IEVA - maybe all this config should be added to some root test config
 // to clean the test itself
-const express = require("express");
-const bodyParser = require("body-parser");
-const storage = require('components/storage');
-const assert = require("chai").assert;
-const { describe, before, it, after } = require("mocha");
-const supertest = require("supertest");
-const charlatan = require("charlatan");
-const Settings = require("components/api-server/src/settings");
-const Application = require("components/api-server/src/application");
-const expressAppInit = require("components/api-server/src/expressApp");
-const loadCommonMeta = require("components/api-server/src/methods/helpers/setCommonMeta")
-  .loadSettings;
+const cuid = require('cuid');
+const _ = require('lodash');
+const bluebird = require('bluebird');
+const nock = require('nock');
+const path = require('path');
+const assert = require('chai').assert;
+const { describe, before, it } = require('mocha');
+const supertest = require('supertest');
+const charlatan = require('charlatan');
+const ErrorIds = require('components/errors').ErrorIds;
+const ErrorMessages = require('components/errors/src/ErrorMessages');
+const Settings = require('components/api-server/src/settings');
+const Application = require('components/api-server/src/application');
 const Notifications = require('components/api-server/src/Notifications');
-  
-const errorsMiddlewareMod = require("components/api-server/src/middleware/errors");
-const utils = require("./../../utils");
 
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 const helpers = require('./helpers');
+const validation = helpers.validation;
 
 let app;
-let registerBody;
 let request;
 let res;
+
 
 describe("Events of core-streams", function () {
   let mongoFixtures;
@@ -38,194 +37,517 @@ describe("Events of core-streams", function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
   });
   let basePath;
+  let access;
+  let user;
+  let visibleCoreStreamsIds = ['username', 'email', 'language', 'attachedFiles', 'dbDocuments'];
+  let editableCoreStreamsIds = ['email', 'language'];
 
   before(async function () {
-    let user = await mongoFixtures.user(charlatan.Lorem.characters(7), {});
+    user = await mongoFixtures.user(charlatan.Lorem.characters(7), {
+      insurancenumber: 1234,
+      phoneNumber: '+123'
+    });
     basePath = '/' + user.attrs.username + '/events';
-    const settings = await Settings.load();
 
+    //TODO IEVA - should I put personal access or app?
+    access = await user.access({
+      type: 'app',
+      permissions: [
+        {
+          streamId: '*',
+          level: 'manage',
+        }
+      ],
+      token: cuid(),
+    });
+    access = access.attrs;
+
+    const settings = await Settings.load();
     app = new Application(settings);
     await app.initiate();
     app.lifecycle.appStartupComplete(); 
 
+    // Initialize notifications dependency
+    let axonMsgs = [];
+    const axonSocket = {
+      emit: (...args) => axonMsgs.push(args),
+    };
+    const notifications = new Notifications(axonSocket);
+    
+    notifications.serverReady();
+    app.dependencies.register({ notifications: notifications });
+
     app.dependencies.resolve(
-      require("./../src/methods/events")
+      require("components/api-server/src/methods/events")
     );
-
-    require("./../src/routes/events")(expressApp, app);
-
+    require("components/api-server/src/routes/events")(app.expressApp, app);
     request = supertest(app.expressApp);
   });
-  describe('POST /events', async () => {
-    it('[ED75] When creating an even with non editable core stream id', async () => {
-      it('[6CE0] Should return a 400 error', async () => {
 
+  describe('GET /events', async () => {
+    describe('[C326] When user provide personal token he can get core-streams events', async () => {
+      before(async function () {
+        res = await request.get(basePath).set('authorization', access.token);
+      });
+      it('[36F7] User should not be able to see “not visible” core steams', async () => {
+        // lets separate core events from all other events and validate them separatelly
+        const separatedEvents = validation.separateCoreStreamsAndOtherEvents(res.body.events);
+       
+        // events contains only visible streamIds
+        assert.equal(Object.keys(separatedEvents.events).length, 0);
+        assert.equal(Object.keys(separatedEvents.coreStreamsEvents).length, 7);
+      });
+      
+      it('[C32B] Unique events does not return additional field that enforces the uniqueness', async () => {
+        Object.keys(res.body.events).forEach(event => {
+          assert.equal(event.hasOwnProperty(`${event.streamId}__unique`), false);
+        });
+      });
+    });
+    describe('[1EB4] When user provide access token he can get core-streams events', async () => {
+      let sharedAccess;
+      let separatedEvents;
+      before(async function () {
+        sharedAccess = await user.access({
+          token: cuid(),
+          type: 'shared',
+          permissions: [{
+            streamId: 'account',
+            level: 'manage'
+          }],
+          clientData: 'This is a consent'
+        });
+        res = await request.get(basePath).set('authorization', sharedAccess.attrs.token);
+        // lets separate core events from all other events and validate them separatelly
+        separatedEvents = validation.separateCoreStreamsAndOtherEvents(res.body.events);
+      });
+      
+      it('User should be able to see "visible” core steams', async () => {
+        // events contains only visible streamIds
+        assert.equal(Object.keys(separatedEvents.coreStreamsEvents).length, 7);
+      });
+      it('User should not be able to see “not visible” core steams', async () => {
+        assert.equal(Object.keys(separatedEvents.events).length, 0);
+      });
+    });
+  });
+
+  describe('POST /events', async () => {
+    let eventData;
+    describe('[ED75] When creating an even with non editable core stream id', async () => {
+      before(async function () {
+        eventData = {
+          streamIds: ['username'],
+          content: charlatan.Lorem.characters(7),
+          type: 'string/pryv'
+        };
+
+        res = await request.post(basePath)
+          .send(eventData)
+          .set('authorization', access.token);
+      });
+      it('[6CE0] Should return a 400 error', async () => {
+        assert.equal(res.status, 400);
       });
       it('[90E6] Should return the correct error', async () => {
+        assert.equal(res.body.error.data[0].code, ErrorIds.DeniedEventModification);
+        assert.equal(res.body.error.data[0].message, ErrorMessages[ErrorIds.DeniedEventModification]);
       });
     });
 
-    it('When creating an even with editable core stream id', async () => {
-      it('[7CD9] When saving not indexed and not unique event', async () => {
-        it('[F308] Should return 200', async () => {
+    describe('When creating an even with editable core stream id', async () => {
+      describe('[7CD9] When saving not indexed and not unique event', async () => {
+        before(async function () {
+          eventData = {
+            streamIds: ['phoneNumber'],
+            content: charlatan.Lorem.characters(7),
+            type: 'string/pryv'
+          };
+
+          res = await request.post(basePath)
+            .send(eventData)
+            .set('authorization', access.token);
+        });
+        it('[F308] Should return 201', async () => {
+          assert.equal(res.status, 201);
         });
         it('[9C2D] Should return the created event', async () => {
+          assert.equal(res.body.event.content, eventData.content);
+          assert.equal(res.body.event.type, eventData.type);
+          assert.deepEqual(res.body.event.streamIds, ['phoneNumber', 'active']);
         });
         it('[A9DC] New event gets streamId ‘active’ and ‘active’ stream property is removed from all other events from the same stream ', async () => {
+          assert.equal(res.body.event.streamIds.includes('active'), true);
+          const allEvents = await bluebird.fromCallback(
+            (cb) => user.db.events.find({ id: user.attrs.id }, {streamIds: 'phoneNumber'}, null, cb));
+          assert.equal(allEvents[0].streamIds.includes('active'), true);
+          assert.equal(allEvents[0].streamIds.includes('phoneNumber'), true);
+          assert.equal(allEvents[1].streamIds.includes('phoneNumber'), true);
+          assert.equal(allEvents[1].streamIds.includes('active'), false);
         });
       });
-      it('[4EB9] When event belongs to the unique core stream', async () => {
-        it('[2FA2] When creating an event that is valid', async () => {
-          it('[7A76] Should return 200', async () => {
+      describe('[4EB9] When event belongs to the unique core stream', async () => {
+        describe('[2FA2] When creating an event that is valid', async () => {
+          let allEventsInDb;
+          let serviceRegisterRequest;
+          let scope;
+
+          before(async function () {
+            eventData = {
+              streamIds: ['email'],
+              content: charlatan.Lorem.characters(7),
+              type: 'string/pryv'
+            };
+
+            const settings = _.cloneDeep(helpers.dependencies.settings);
+            scope = nock(settings.services.register.url)
+            scope.put('/users',
+              (body) => {
+              serviceRegisterRequest = body;
+              return true;
+            }).reply(200, { errors: [] });
+
+            res = await request.post(basePath)
+              .send(eventData)
+              .set('authorization', access.token);
+          });
+          it('[7A76] Should return 201', async () => {
+            assert.equal(res.status, 201);
           });
           it('[5831] Should return the created event', async () => {
+            assert.equal(res.body.event.content, eventData.content);
+            assert.equal(res.body.event.type, eventData.type);
+            assert.equal(res.body.event.hasOwnProperty('email__unique'), false);           
           });
           it('[78FE] Unique streamId and event properties enforcing uniqueness are appended', async () => {
+            allEventsInDb = await bluebird.fromCallback(
+              (cb) => user.db.events.find({ id: user.attrs.id }, { streamIds: 'email' }, null, cb));
+            assert.equal(allEventsInDb.length, 2);  
+            assert.equal(allEventsInDb[0].hasOwnProperty('email__unique'), true);  
+            assert.equal(allEventsInDb[1].hasOwnProperty('email__unique'), true);  
           });
           it('[DA23] New event gets streamId ‘active’ and ‘active’ stream property is removed from all other events from the same stream ', async () => {
+            assert.deepEqual(res.body.event.streamIds, ['email', 'active', 'unique']);
+            assert.deepEqual(allEventsInDb[0].streamIds, ['email', 'active', 'unique']);
+            assert.deepEqual(allEventsInDb[1].streamIds, ['email', 'unique']);
           });
           it('[D316] New event data is sent to service-register', async () => {
+            assert.equal(scope.isDone(), true);
+            
+            assert.deepEqual(serviceRegisterRequest, {
+              user: {
+                email: [{
+                  value: eventData.content,
+                  isUnique: true,
+                  isActive: true,
+                  creation: true
+                }],
+                username: user.attrs.username,
+              },
+              fieldsToDelete: {}
+            });
           });
         });
-        it('[7464] When creating an event that is already taken in service-register', async () => {
+        describe('[7464] When creating an event that is already taken in service-register', async () => {
+          before(async function () {
+            eventData = {
+              streamIds: ['email'],
+              content: charlatan.Lorem.characters(7),
+              type: 'string/pryv'
+            };
+
+            const settings = _.cloneDeep(helpers.dependencies.settings);
+            nock(settings.services.register.url).put('/users')
+              .reply(400, {
+                errors: [
+                  {
+                    id: 'Existing_email',
+                    message: 'Not important message',
+                  }
+                ]
+              });
+
+            res = await request.post(basePath)
+              .send(eventData)
+              .set('authorization', access.token);
+          });
+          
           it('[89BC] Should return a 400 error', async () => {
+            assert.equal(res.status, 400);
           });
           it('[89BC] Should return the correct error', async () => {
+            assert.equal(res.body.error.data.length, 1);
+            assert.equal(res.body.error.data[0].code, ErrorIds['Existing_email']);
+            assert.equal(res.body.error.data[0].message, ErrorMessages[ErrorIds['Existing_email']]);
           });
         });
-        it('[6B8D] WWhen creating an event that is already taken only on core', async () => {
+        describe('[6B8D] When creating an event that is already taken only on core', async () => {
+          let serviceRegisterRequest;
+
+          before(async function () {
+            eventData = {
+              streamIds: ['email'],
+              content: charlatan.Lorem.characters(7),
+              type: 'string/pryv'
+            };
+
+            const settings = _.cloneDeep(helpers.dependencies.settings);
+            nock(settings.services.register.url).put('/users',
+              (body) => {
+                serviceRegisterRequest = body;
+                return true;
+              }).times(2).reply(200, { errors: [] });
+
+              await request.post(basePath)
+                .send(eventData)
+                .set('authorization', access.token);
+              res = await request.post(basePath)
+                .send(eventData)
+                .set('authorization', access.token);
+          });
+
           it('[2021] Should return a 400 error', async () => {
+            assert.equal(res.status, 400);
           });
           it('[121E] Should return the correct error', async () => {
+            assert.equal(res.body.error.data.length, 1);
+            assert.equal(res.body.error.data[0].code, ErrorIds['Existing_email']);
+            assert.equal(res.body.error.data[0].message, ErrorMessages[ErrorIds['Existing_email']]);
           });
         });
         describe('When event belongs to the indexed core stream', async () => {
-          it('[6070] When creating an event that is valid', async () => {
-            it('[8C80] Should return 200', async () => {
+          describe('[6070] When creating an event that is valid', async () => {
+            let scope;
+            let serviceRegisterRequest;
+
+            before(async function () {
+              eventData = {
+                streamIds: ['language'],
+                content: charlatan.Lorem.characters(7),
+                type: 'string/pryv'
+              };
+
+              const settings = _.cloneDeep(helpers.dependencies.settings);
+              scope = nock(settings.services.register.url)
+              scope.put('/users',
+                (body) => {
+                  serviceRegisterRequest = body;
+                  return true;
+                }).reply(200, { errors: [] });
+
+              res = await request.post(basePath)
+                .send(eventData)
+                .set('authorization', access.token);
+            });
+
+            it('[8C80] Should return 201', async () => {
+              assert.equal(res.status, 201);
             });
             it('[67F7] Should return the created event', async () => {
+              assert.equal(res.body.event.content, eventData.content);
+              assert.equal(res.body.event.type, eventData.type);
+              assert.deepEqual(res.body.event.streamIds, ['language', 'active']);
             });
             it('[467D] New event gets streamId ‘active’ and ‘active’ stream property is removed from all other events from the same stream', async () => {
+              const allEvents = await bluebird.fromCallback(
+                (cb) => user.db.events.find({ id: user.attrs.id }, { streamIds: 'language' }, null, cb));
+              assert.equal(allEvents[0].streamIds.includes('active'), true);
+              assert.equal(allEvents[0].streamIds.includes('language'), true);
+              assert.equal(allEvents[1].streamIds.includes('active'), false);
+              assert.equal(allEvents[1].streamIds.includes('language'), true);
             });
             it('[199D] New event data is sent to service-register', async () => {
+              assert.equal(scope.isDone(), true);
+
+              assert.deepEqual(serviceRegisterRequest, {
+                user: {
+                  language: [{
+                    value: eventData.content,
+                    isUnique: false,
+                    isActive: true,
+                    creation: true
+                  }],
+                  username: user.attrs.username,
+                },
+                fieldsToDelete: {}
+              });
             });
           });
-        });
-      });
-    });
-
-    describe('When updating editable streams streamId', async () => {
-      it('[5E58] When adding the “active” streamId', async () => {
-        it('[ADA3] Should return a 200', async () => {
-        });
-        it('[0027] Should return the updated event', async () => {
-        });
-        it('[82C3] events of the same streams should be stripped from “active” streamId.', async () => {
         });
       });
     });
   });
 
   describe('PUT /events/<id>', async () => {
-    it('[D1FD] When updating non editable streams', async () => {
+    describe('[D1FD] When updating non editable streams', async () => {
+      before(async function () {
+        eventData = {
+          content: charlatan.Lorem.characters(7),
+          type: 'string/pryv'
+        };
+        const initialEvent = await bluebird.fromCallback(
+          (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: 'username' }, null, cb));
+
+        res = await request.put(path.join(basePath, initialEvent.id))
+          .send(eventData)
+          .set('authorization', access.token);
+      });
       it('[034D] Should return a 400 error', async () => {
+        assert.equal(res.status, 400);
       });
       it('[BB5F] Should return the correct error', async () => {
+        assert.equal(res.body.error.data[0].code, ErrorIds.DeniedEventModification);
+        assert.equal(res.body.error.data[0].message, ErrorMessages[ErrorIds.DeniedEventModification]);
       });
     });
 
-    it('When updating editable streams', async () => {
-      it('[2FA2] Should return 200', async () => {
-      });
-      it('[763A] Should return the updated event', async () => {
-      });
-    });
+    describe('When updating editable streams', async () => {
+      describe('[RT59] Editing not indexed, not unique event with valid data', async () => {
+        before(async function () {
+          eventData = {
+            content: charlatan.Lorem.characters(7),
+            type: 'string/pryv'
+          };
+          const initialEvent = await bluebird.fromCallback(
+            (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: 'phoneNumber' }, null, cb));
 
-    describe('When updating editable streams streamId', async () => {
-      it('[BAE1] When adding the “active” streamId', async () => {
-        it('[562A] Should return a 200', async () => {
+          res = await request.put(path.join(basePath, initialEvent.id))
+            .send(eventData)
+            .set('authorization', access.token);
         });
-        it('[5622] Should return the updated event', async () => {
+        it('[2FA2] Should return 200', async () => {
+          assert.equal(res.status, 200);
         });
-        it('[CF70] events of the same streams should be stripped from “active” streamId.', async () => {
-        });
-      });
-      it('[6AAD] When adding the “active” streamId for a unique stream', async () => {
-        it('[6AAT] Should send a request to service-register to update its user main information', async () => {
-        });
-      });
-      it('[CE66] When adding the “active” streamId for a unique stream', async () => {
-        it('[0D18] Should send a request to service-register to update its user main information', async () => {
+        it('[763A] Should return the updated event', async () => {
+          assert.equal(res.body.event.content, eventData.content);
+          assert.equal(res.body.event.type, eventData.type);
+          assert.deepEqual(res.body.event.streamIds, ['phoneNumber', 'active']);
         });
       });
-      it('[EEE9] When trying to add second core steamId to the event that has a core stream Id', async () => {
-        it('[9004] Should return a 400 error', async () => {
-        });
-        it('[E3AE] Should return the correct error', async () => {
-        });
-      });
-    });
-    describe('When updating an unique field that is already taken', async () => {
-      it('[1127] When the field is not unique in service register', async () => {
-        it('[5A04] Should send a request to service-register to update the unique field', async () => {
-        });
-        it('[F8A8] Should return a 400 as it is already taken in service-register', async () => {
-        });
-      });
-      it('[0FDB] When the field is not unique in mongodb', async () => {
-        it('[5782] Should return a 400 error', async () => {
-        });
-        it('[B285] Should return the correct error', async () => {
-        });
-      });
-    });
-    describe('When updating a unique field that is valid', async () => {
-      it('[290B] Should send a request to service-register to update the unique field', async () => {
-      });
-      it('[4BB1] Should return a 200', async () => {
-      });
-      it('[C457] Should save an additional field to enforce uniqueness in mongodb', async () => {
-      });
-    });
-    describe('When updating an indexed field that is valid', async () => {
-      describe('When service-register working as expected', async () => {
-        it('[ED88] Should send a request to service-register to update the indexed field', async () => {
-        });
-        it('[B23F] Should return a 200', async () => {
-        });
-      });
-      describe('When service-register is out', async () => {
-        it('[645C] Should send a request to service-register to update the indexed field', async () => {
 
+      describe('When updating editable indexed stream with contribute access', async () => {
+        it('[2FA3] Should return 200', async () => {
         });
-        it('[AA92] Should return a 400', async () => {
+        it('[764A] Should return the updated event', async () => {
+        });
+        it('[765A] Should send a request to service-register to update the indexed field', async () => {
+        });
+      });
 
+      describe('When updating streams streamId', async () => {
+        describe('[BAE1] When adding the “active” streamId for not indexed, not unique event', async () => {
+          let additionalEvent;
+          before(async function () {
+            eventData = {
+              streamIds: ['active'],
+              content: charlatan.Lorem.characters(7),
+              type: 'string/pryv'
+            };
+            eventDataForadditionalEvent = {
+              streamIds: ['active'],
+              content: charlatan.Lorem.characters(7),
+              type: 'string/pryv'
+            };
+            const initialEvent = await bluebird.fromCallback(
+              (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: 'phoneNumber' }, null, cb));
+            
+            additionalEvent = await request.put(path.join(basePath, initialEvent.id))
+              .send(eventDataForadditionalEvent)
+              .set('authorization', access.token);
+            
+            res = await request.put(path.join(basePath, initialEvent.id))
+              .send(eventData)
+              .set('authorization', access.token);
+          });
+          it('[562A] Should return a 200', async () => {
+            //assert.equal(res.status, 200);
+          });
+          it('[5622] Should return the updated event', async () => {
+            // console.log(res.body, 'res.body');
+            // assert.equal(res.body.event.content, eventData.content);
+            // assert.equal(res.body.event.type, eventData.type);
+            // assert.deepEqual(res.body.event.streamIds, ['phoneNumber', 'active']);
+          });
+          it('[CF70] events of the same streams should be stripped from “active” streamId.', async () => {
+          });
+        });
+        describe('[6AAD] When adding the “active” streamId for a unique stream', async () => {
+          it('[6AAT] Should send a request to service-register to update its user main information', async () => {
+          });
+        });
+        describe('[CE66] When adding the “active” streamId for a indexed stream', async () => {
+          it('[0D18] Should send a request to service-register to update its user main information', async () => {
+          });
+        });
+        describe('[EEE9] When trying to add second core steamId to the event that has a core stream Id', async () => {
+          it('[9004] Should return a 400 error', async () => {
+          });
+          it('[E3AE] Should return the correct error', async () => {
+          });
+        });
+      });
+      describe('When updating an unique field that is already taken', async () => {
+        describe('[1127] When the field is not unique in service register', async () => {
+          it('[5A04] Should send a request to service-register to update the unique field', async () => {
+          });
+          it('[F8A8] Should return a 400 as it is already taken in service-register', async () => {
+          });
+        });
+        describe('[0FDB] When the field is not unique in mongodb', async () => {
+          it('[5782] Should return a 400 error', async () => {
+          });
+          it('[B285] Should return the correct error', async () => {
+          });
+        });
+      });
+      describe('When updating a unique field that is valid', async () => {
+        it('[290B] Should send a request to service-register to update the unique field', async () => {
+        });
+        it('[4BB1] Should return a 200', async () => {
+        });
+        it('[C457] Should save an additional field to enforce uniqueness in mongodb', async () => {
+        });
+      });
+      describe('When updating an indexed field that is valid', async () => {
+        describe('When service-register working as expected', async () => {
+          it('[ED88] Should send a request to service-register to update the indexed field', async () => {
+          });
+          it('[B23F] Should return a 200', async () => {
+          });
+        });
+        describe('When service-register is out', async () => {
+          it('[645C] Should send a request to service-register to update the indexed field', async () => {
+
+          });
+          it('[AA92] Should return a 400', async () => {
+
+          });
         });
       });
     });
   });
 
   describe('DELETE /events/<id>', async () => {
-    it('[] When deleting editable core-streams event', async () => {
-      it('[] Event has no ‘active’ streamId', async () => {
-        it('[] Event belongs to the unique stream', async () => { 
-          it('[] Should return a 200', async () => { });
-          it('[] Should return a deleted event', async () => { });
-          it('[] Should notify service-register and update only unique property', async () => { });
+    describe('[E7EB] When deleting editable core-streams event', async () => {
+      describe('[04CB] Event has no ‘active’ streamId', async () => {
+        it('[D94D] Event belongs to the unique stream', async () => { 
+          it('[43B1] Should return a 200', async () => { });
+          it('[3E12] Should return a deleted event', async () => { });
+          it('[F328] Should notify service-register and update only unique property', async () => { });
         });
-        it('[] Event belongs to the indexed stream', async () => { 
-          it('[] Should return a 200', async () => { });
-          it('[] Should return a deleted event', async () => { });
+        it('[C84A] Event belongs to the indexed stream', async () => { 
+          it('[1B70] Should return a 200', async () => { });
+          it('[CBB9] Should return a deleted event', async () => { });
         });
       });
-      it('[] Event has ‘active’ streamId', async () => {
-        it('[] Should return a 400', async () => { });
-        it('[] Should return the correct error', async () => { });
+      describe('[B7A2] Event has ‘active’ streamId', async () => {
+        it('[10EC] Should return a 400', async () => { });
+        it('[D4CA] Should return the correct error', async () => { });
       });
     });
-    it('[] When deleting not editable core-streams event', async () => {
-      it('[] Should return a 400', async () => { });
-      it('[] Should return the correct error', async () => { });
+    describe('[CDD1] When deleting not editable core-streams event', async () => {
+      it('[8EDB] Should return a 400', async () => { });
+      it('[A727] Should return the correct error', async () => { });
     });
   });
 });

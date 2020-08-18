@@ -30,17 +30,8 @@ module.exports = Events;
  * @constructor
  */
 function Events (database) {
-  this.systemStreamsSettings = config.get('systemStreams');
-  // TODO IEVA - added temporarily until we do not load the settings in the tests 
-  // in the new way
-  /*
-  if (!this.systemStreamsSettings) {
-    this.systemStreamsSettings = {
-      username: { isUnique: true },
-      email: { isUnique: true },
-    };
-  }
-*/
+  this.systemStreamsSettings = config.get('systemStreams:account');
+
   Events.super_.call(this, database);
 
   _.extend(this.converters, {
@@ -319,7 +310,7 @@ Events.prototype.getUserInfo = async function ({ user, getAll }) {
 
   // get user details
   try {
-    let userInfoSerializer = await UserInfoSerializer.build();
+    let userInfoSerializer = new UserInfoSerializer();
     // get streams ids from the config that should be retrieved
     let userProfileStreamsIds;
     if (getAll) {
@@ -425,9 +416,8 @@ Events.prototype.createUser = async function (params) {
   };
 
   try {
-    let userInfoSerializer = await UserInfoSerializer.build();
     // get streams ids from the config that should be retrieved
-    let userProfileStreamsIds = userInfoSerializer.getAllCoreStreams();
+    let userProfileStreamsIds = (new UserInfoSerializer()).getAllCoreStreams();
 
     // change password into hash (also allow for tests to pass passwordHash directly)
     if (userParams.password && !userParams.passwordHash) {
@@ -517,9 +507,8 @@ Events.prototype.createUser = async function (params) {
  */
 Events.prototype.updateUser = async function ({ userId, userParams }) {
   try {
-    let userInfoSerializer = await UserInfoSerializer.build();
     // get streams ids from the config that should be retrieved
-    let userProfileStreamsIds = userInfoSerializer.getAllCoreStreams();
+    let userProfileStreamsIds = (new UserInfoSerializer()).getAllCoreStreams();
 
     // change password into hash if it exists
     if (userParams.password && !userParams.passwordHash) {

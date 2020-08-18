@@ -75,7 +75,7 @@ class Registration {
    */
   async createUserInServiceRegister (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
-      let userInfoSerializer = await UserInfoSerializer.build();
+      let userInfoSerializer = new UserInfoSerializer();
       // get streams ids from the config that should be retrieved
       const userStreamsIds = userInfoSerializer.getIndexedCoreStreams();
       const uniqueStreamsIds = userInfoSerializer.getUniqueCoreStreamsIds();

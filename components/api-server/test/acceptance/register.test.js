@@ -33,7 +33,8 @@ function defaults() {
     email: charlatan.Internet.email(),
     password: 'abcdefgh',
     invitationtoken: 'enjoy',
-    referer: 'pryv'
+    referer: 'pryv',
+    insurancenumber: charlatan.Number.number()
   };
 }
 

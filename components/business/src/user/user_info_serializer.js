@@ -24,23 +24,14 @@ const uniqueStreams = 'unique-core-streams';
  */
 class UserInfoSerializer {
   systemStreamsSettings;
- 
-  constructor (systemStreamsSettings) {
-    if (typeof systemStreamsSettings === 'undefined') {
-      throw new Error('UserInfoSerializer cannot be called directly');
-    }
-    this.systemStreamsSettings = systemStreamsSettings;
-  }
 
-  // set asyncronously system streams settings information
-  static build () {
-    const systemStreamsSettings = config.get('systemStreams');
-    if (systemStreamsSettings == null) {
+  constructor () {
+    this.systemStreamsSettings = config.get('systemStreams');
+    if (this.systemStreamsSettings == null) {
       throw Error("Not valid system streams settings.");
     }
-    return new UserInfoSerializer(systemStreamsSettings);
   }
-  
+
   /**
    * Convert system->account events to the account object
    * @param {*} events 
@@ -134,7 +125,12 @@ class UserInfoSerializer {
       }
     })
 
-    return streams;
+    return {
+      name: 'account',
+      id: 'account',
+      parentId: 'systemStreams',
+      children: streams
+    };
   }
 }
 
@@ -196,6 +192,7 @@ function getStreamsNames(streams, streamsNames, whatToReturn) {
     stream = streams[streamsKeys[i]];
     // if stream has children recursivelly call the same function
     if (typeof stream.isShown === "undefined") {
+      streamsNames[streamsKeys[i]] = stream;
       streamsNames = getStreamsNames(stream, streamsNames, whatToReturn);
       continue;
     }

@@ -116,6 +116,7 @@ class Server {
       require('./methods/system'),
       require('./methods/utility'),
       require('./methods/auth/login'),
+      //TODO IEVA - remove
       require('./methods/auth/register'),
       require('./methods/auth/register-singlenode'),
     ].forEach(function (moduleDef) {

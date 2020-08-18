@@ -41,5 +41,24 @@
   },
   "singleNode": {
     "isActive": true
+  },
+  "systemStreams": {
+    "custom": {
+      "insurancenumber": {
+        "isIndexed": true,
+        "isShown": true,
+        "type": "string/pryv",
+        "isRequiredInValidation": true,
+        "regexValidation": "^[0-9]*$",
+        "regexError": {
+          "message": "Cool error",
+          "code": "cool-error"
+        }
+      },
+      "phoneNumber": {
+        "isEditable": true,
+        "isShown": true
+      }
+    }
   }
 }

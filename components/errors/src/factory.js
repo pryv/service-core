@@ -308,12 +308,12 @@ factory.NonValidForOpenSource = (): APIError => {
 /**
  * Denied event modification perhaps of belonging to the core streams
  */
-factory.DeniedEventModification = (): APIError => {
+factory.DeniedEventModification = (streamId): APIError => {
   return new APIError(
     ErrorIds.DeniedEventModification, ErrorMessages[ErrorIds.DeniedEventModification],
     {
       httpStatus: 400,
-    //  data: { param: 'username' },
+      data: { param: streamId },
       dontNotifyAirbrake: false,
     }
   )

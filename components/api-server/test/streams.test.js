@@ -830,7 +830,7 @@ describe('streams', function () {
 
             // validate core streams events
             const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
-            await validation.validateCoreEvents(actualCoreStreamsEvents);
+            validation.validateCoreEvents(actualCoreStreamsEvents);
 
             deletedEvents.forEach(function (e) {
               const actual = _.find(events, {id: e.id});

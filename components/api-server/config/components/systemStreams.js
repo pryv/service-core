@@ -113,14 +113,15 @@ function load(config: Config): Config {
    * 2. systemStreams:custom
    */
   function readAdditionalFieldsConfig(config) {
-    let customStreams = config.get('systemStreams:custom');
+    const customStreams = config.get('systemStreams:custom');
+
     if (customStreams != null) {
       appendSystemStreamsConfigWithAdditionalFields(config, customStreams);
     }
 
-    customStreams = config.get(CUSTOM_SYSTEM_STREAMS_FIELDS);
-    if (customStreams != null) {
-      appendSystemStreamsConfigWithAdditionalFields(config, customStreams);
+    const customStreamsEnv = config.get(CUSTOM_SYSTEM_STREAMS_FIELDS);
+    if (customStreamsEnv != null) {
+      appendSystemStreamsConfigWithAdditionalFields(config, customStreamsEnv);
     }
   }
 

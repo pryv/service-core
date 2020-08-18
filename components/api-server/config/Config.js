@@ -52,7 +52,9 @@ class Config {
     store.use('memory').argv().env();
 
     // 3. Values in `config.json`
-    const configFile = store.get('config') || 'development.json';
+    const configFile = store.get('config') ||
+      'config/' + store.get('NODE_ENV') + '.json' || 'development.json';
+    
     store.file({ file: configFile });
 
     loadComponents(store);
