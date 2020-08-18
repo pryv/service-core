@@ -90,7 +90,7 @@ describe("[AGT3] Events of core-streams", function () {
   });
 
   describe('GET /events', async () => {
-    describe('[C326] When user provide personal token he can get core-streams events', async () => {
+    describe('[C326] When user provide app token he can get core-streams events', async () => {
       before(async function () {
         await createUser();
         res = await request.get(basePath).set('authorization', access.token);
@@ -135,6 +135,47 @@ describe("[AGT3] Events of core-streams", function () {
       });
       it('User should not be able to see “not visible” core steams', async () => {
         assert.equal(Object.keys(separatedEvents.events).length, 0);
+      });
+    });
+  });
+
+  describe('GET /events/<id>', async () => {
+    async function findDefaultCoreEvent (streamId) {
+      return await bluebird.fromCallback(
+        (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
+    }
+    describe('[C826] When user retrieves the event from “not visible” core stream', async () => {
+      before(async function () {
+        await createUser();
+        const defaultEvent = await findDefaultCoreEvent('passwordHash');
+        res = await request.get(path.join(basePath, defaultEvent.id)).set('authorization', access.token);
+      });
+      it('Should return 404', async () => {
+        assert.equal(res.status, 404);
+      });
+
+      it('Should return the right error message', async () => {
+        assert.equal(res.body.error.id, ErrorIds.UnknownResource);
+      });
+    });
+    describe('[88BJ] When user retrieves the event from “visible” unique core stream', async () => {
+      let defaultEvent;
+      const streamId = 'username';
+      before(async function () {
+        await createUser();
+        defaultEvent = await findDefaultCoreEvent(streamId);
+        res = await request.get(path.join(basePath, defaultEvent.id)).set('authorization', access.token);
+      });
+      it('Should return 200', async () => { 
+        assert.equal(res.status, 200);
+      });
+      it('Should return the event', async () => {
+        assert.equal(res.body.event.id, defaultEvent.id);
+        assert.equal(res.body.event.streamId, streamId);
+      });
+
+      it('Additional field that was saved to enforce the uniqueness is not returned', async () => {
+        assert.equal(res.body.event.hasOwnProperty(`${streamId}__unique`), false);
       });
     });
   });

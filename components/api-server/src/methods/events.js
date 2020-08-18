@@ -153,7 +153,7 @@ module.exports = function (
    * Remove events that belongs to the core streams and should not be displayed
    * @param query -mongo query object  
    */
-  async function removeNotReadableCoreStreamsFromQuery (query) {
+  function removeNotReadableCoreStreamsFromQuery (query) {
     // get streams ids from the config that should be retrieved
     const userCoreStreams = (new UserInfoSerializer()).getCoreStreamsIdsForbiddenForReading();
     query.streamIds = { ...query.streamIds, ...{ $nin: userCoreStreams } };
@@ -179,7 +179,7 @@ module.exports = function (
     if (params.streams) {
       query.streamIds = {$in: params.streams};
     }
-    query = await removeNotReadableCoreStreamsFromQuery(query);
+    query = removeNotReadableCoreStreamsFromQuery(query);
 
     if (params.tags && params.tags.length > 0) {
       query.tags = {$in: params.tags};
@@ -265,8 +265,10 @@ module.exports = function (
     includeHistoryIfRequested
   );
 
-  function findEvent(context, params, result, next) {
-    userEventsStorage.findOne(context.user, {id: params.id}, null, function (err, event) {
+  function findEvent (context, params, result, next) {
+    const query = removeNotReadableCoreStreamsFromQuery({ id: params.id });
+
+    userEventsStorage.findOne(context.user, query, null, function (err, event) {
       if (err) {
         return next(errors.unexpectedError(err));
       }
