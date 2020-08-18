@@ -56,8 +56,6 @@ class Server {
   // Start the server. 
   //
   async start() {
-    const logger = this.logger;
-
     const defaultParam: ?string = this.findDefaultParam();
     if (defaultParam != null) {
       this.logger.error(`Config parameter "${defaultParam}" has a default value, please change it`);
@@ -66,7 +64,6 @@ class Server {
     
     await this.application.initiate();
     this.logger = this.application.logFactory('api-server');
-    const logger = this.logger;
 
     // start TCP pub messaging
     await this.setupNotificationBus();
@@ -83,7 +80,7 @@ class Server {
       await this.setupReporting();
     }
 
-    logger.info('Server ready.');
+    this.logger.info('Server ready.');
     this.notificationBus.serverReady();
   }
 

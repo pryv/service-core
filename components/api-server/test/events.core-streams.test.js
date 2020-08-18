@@ -61,9 +61,9 @@ describe("[AGT3] Events of core-streams", function () {
   before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
     const settings = await Settings.load();
+
     app = new Application(settings);
     await app.initiate();
-    app.lifecycle.appStartupComplete(); 
 
     // Initialize notifications dependency
     let axonMsgs = [];
@@ -73,12 +73,19 @@ describe("[AGT3] Events of core-streams", function () {
     const notifications = new Notifications(axonSocket);
     
     notifications.serverReady();
-    app.dependencies.register({ notifications: notifications });
+    require("components/api-server/src/methods/events")(
+      app.api,
+      app.storageLayer.events,
+      app.storageLayer.eventFiles,
+      app.settings.get('auth').obj(),
+      app.settings.get('service.eventTypes').str(),
+      notifications,
+      app.logging,
+      app.settings.get('audit').obj(),
+      app.settings.get('updates').obj(),
+      app.settings.get('openSource').obj(),
+      app.settings.get('services').obj());
 
-    app.dependencies.resolve(
-      require("components/api-server/src/methods/events")
-    );
-    require("components/api-server/src/routes/events")(app.expressApp, app);
     request = supertest(app.expressApp);
   });
 
