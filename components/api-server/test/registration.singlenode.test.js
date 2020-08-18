@@ -31,8 +31,6 @@ describe("Singlenode registration", function () {
     app = new Application(settings);
     await app.initiate();
     
-    app.lifecycle.appStartupComplete(); 
-
     require("./../src/methods/auth/register-singlenode")(
       app.api, 
       app.logging, 
@@ -53,7 +51,7 @@ describe("Singlenode registration", function () {
   describe("when given valid input", function () {
     before(async function () {
       res = await request.post("/user").send(registerBody);
-        });
+    });
     it("should respond with 201", function () {
       assert.equal(res.status, 201);
     });

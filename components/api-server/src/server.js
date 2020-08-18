@@ -24,7 +24,6 @@ const url = require('url');
 
 import type { Logger } from 'components/utils';
 import type { ConfigAccess } from './settings';
-import type { ExpressAppLifecycle } from './expressApp';
 
 
 // Server class for api-server process. To use this, you 
@@ -58,9 +57,7 @@ class Server {
   // Start the server. 
   //
   async start() {
-    
     const logger = this.logger;
-
 
     const defaultParam: ?string = this.findDefaultParam();
     if (defaultParam != null) {
@@ -81,9 +78,6 @@ class Server {
     this.setupSocketIO(server); 
     await this.startListen(server);
 
-    // Let actual requests pass.
-    this.application.lifecycle.appStartupComplete(); 
-    
     if (! this.isOpenSource) {
       await this.setupReporting();
     }
