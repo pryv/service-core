@@ -85,9 +85,9 @@ function loadComponents(store: any): any {
 }
 
 async function loadAsyncComponents(store: any): any {
-  const components = Object.values(components);
-  for(let i=0; i<components.length; i++) {
-    if (c.asyncLoad != null) c.asyncLoad(store);
+  const comps = Object.values(components);
+  for(let i=0; i<comps.length; i++) {
+    if (comps[i].asyncLoad != null) comps[i].asyncLoad(store);
   }
   return store;
 }

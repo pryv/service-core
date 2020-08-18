@@ -40,7 +40,7 @@ function defaults() {
 
 describe('User Registration related functionalities', async () => {
   let request = null;
-  var basePath = '/user';
+  var basePath = '/users';
   const settings = _.cloneDeep(helpers.dependencies.settings);
   const defaultServerName = 'abc';
 
@@ -74,7 +74,7 @@ describe('User Registration related functionalities', async () => {
     request = helpers.request(server.url);
   });
 
-  describe('POST /user (create user)', function () {
+  describe('POST /users (create user)', function () {
     // fixes missing appId PR#104
     it('user creation should store all provided fields', async () => {
       // setup registration server mock
