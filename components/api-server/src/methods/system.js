@@ -23,11 +23,11 @@ const bluebird = require('bluebird');
  */
 module.exports = function (
   systemAPI, userAccessesStorage, servicesSettings, api,
-  logging, storageLayer, serverSettings, systemStreamsSettings
+  logging, storageLayer, serverSettings
 ) {
 
   const POOL_REGEX = new RegExp('^' + 'pool@');
-  const registration = new Registration(logging, storageLayer, servicesSettings, serverSettings, systemStreamsSettings);
+  const registration = new Registration(logging, storageLayer, servicesSettings, serverSettings);
 
   // ---------------------------------------------------------------- createUser
   systemAPI.register('system.createUser',

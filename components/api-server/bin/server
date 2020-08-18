@@ -18,7 +18,6 @@ const { Notifier } = require('@airbrake/node');
 
   // Construct application
   const app = new Application(settings);
-  logger = app.logFactory('api-server');
 
   // Setup Airbrake if enabled
   const airbrakeSettings = app.settings.get('logs.airbrake').obj();
@@ -46,7 +45,7 @@ const { Notifier } = require('@airbrake/node');
   });
 
   process.on('exit', () => {
-    logger.info('Server stopped.');
+    console.log('Server stopped.');
   });
   process.on('SIGINT', () => {
     logger.warn('Received SIGINT. Exiting...');
@@ -57,7 +56,7 @@ const { Notifier } = require('@airbrake/node');
   const server = new Server(app); 
   await server.start();
 })()
-  .then(() => logger.info('Startup sequence complete, Server is running.'))
+  .then(() => console.log('Startup sequence complete, Server is running.'))
   .catch(e => {
     if (logger) logger.error(e);
     console.dir(e);

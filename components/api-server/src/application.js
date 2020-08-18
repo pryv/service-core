@@ -17,6 +17,10 @@ const middleware = require('components/middleware');
 const errorsMiddlewareMod = require('./middleware/errors'); 
 const config = require('./config');
 
+const getConfig: () => Config = require('components/api-server/config/Config').getConfig;
+const initConfig: () => Config = require('components/api-server/config/Config').initConfig;
+import type { Config } from 'components/api-server/config/Config';
+
 import type { ConfigAccess } from './settings';
 import type { WebhooksSettingsHolder } from './methods/webhooks';
 import type { LogFactory } from 'components/utils';
@@ -36,6 +40,8 @@ type AirbrakeSettings = {
 class Application {
   // Application settings, see ./settings
   settings: ConfigAccess; 
+  // new config
+  config: Config;
   
   logging: Logger
 
@@ -65,6 +71,9 @@ class Application {
   }
 
   async initiate() {
+    this.config = await initConfig();
+    this.produceLogSubsystem(); 
+    this.produceStorageSubsystem(); 
     await this.createExpressApp();
     this.initiateRoutes();
     this.expressApp.use(middleware.notFound);
@@ -126,7 +135,7 @@ class Application {
       settings.get('eventFiles.previewsDirPath').str(), 
       settings.get('auth.passwordResetRequestMaxAge').num(), 
       settings.get('auth.sessionMaxAge').num(), 
-      settings.get('systemStreams.account').obj(), 
+      settings.get('systemStreams:account'), 
     );
   }
   

@@ -14,6 +14,10 @@ var BaseStorage = require('./BaseStorage'),
   UserInfoSerializer = require('components/business/src/user/user_info_serializer'),
   encryption = require('components/utils').encryption;
 
+import type { Config } from 'components/api-server/config/Config';
+const getConfig: () => Config = require('components/api-server/config/Config').getConfig;
+const config: Config = getConfig();
+
 module.exports = Events;
 /**
  * DB persistence for events.
@@ -25,8 +29,8 @@ module.exports = Events;
  * @param {Database} database
  * @constructor
  */
-function Events (database, systemStreamsSettings) {
-  this.systemStreamsSettings = systemStreamsSettings;
+function Events (database) {
+  this.systemStreamsSettings = config.get('systemStreams');
   // TODO IEVA - added temporarily until we do not load the settings in the tests 
   // in the new way
   /*
