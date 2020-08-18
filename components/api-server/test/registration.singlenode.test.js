@@ -33,9 +33,13 @@ describe("Singlenode registration", function () {
     
     app.lifecycle.appStartupComplete(); 
 
-    app.dependencies.resolve(
-      require("./../src/methods/auth/register-singlenode")
-    );
+    require("./../src/methods/auth/register-singlenode")(
+      app.api, 
+      app.logging, 
+      app.storageLayer, 
+      app.settings.get('services').obj(), 
+      app.settings.get('server').obj(), 
+      app.settings.get('systemStreams').obj());
 
     request = supertest(app.expressApp);
 

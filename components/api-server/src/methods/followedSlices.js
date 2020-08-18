@@ -163,4 +163,3 @@ module.exports = function (api, userFollowedSlicesStorage, notifications){
     });
 
 };
-module.exports.injectDependencies = true;

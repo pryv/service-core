@@ -562,7 +562,6 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   }
 
 };
-module.exports.injectDependencies = true;
 
 /**
  * Returns if an array has all elements contained in another.

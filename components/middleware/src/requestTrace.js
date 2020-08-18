@@ -24,4 +24,3 @@ module.exports = function (express: any, logging: LoggerFactory) {
     write: morganLoggerStreamWrite
   }});
 };
-module.exports.injectDependencies = true; // make it DI-friendly

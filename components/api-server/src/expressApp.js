@@ -125,19 +125,14 @@ class ExpressAppLifecycle {
 // Creates and returns an express application with a standard set of middleware. 
 // `version` should be the version string you want to show to API clients. 
 // 
-async function expressAppInit(dependencies: any, isDNSLess: boolean) {
+async function expressAppInit(isDNSLess: boolean, logging: Logger) {
   const pv = new ProjectVersion();
   const version = pv.version();
   var app = express(); // register common middleware
-  dependencies.register({
-    express: app
-  });
-  dependencies.register('airbrakeNotifier', {
-    airbrakeNotifier: createAirbrakeNotifierIfNeeded()
-  });
   const commonHeadersMiddleware = middleware.commonHeaders(version);
-  const requestTraceMiddleware = dependencies.resolve(middleware.requestTrace);
-  const errorsMiddleware = dependencies.resolve(errorsMiddlewareMod);
+  const requestTraceMiddleware = middleware.requestTrace(app, logging);
+  const errorsMiddleware = errorsMiddlewareMod(logging, createAirbrakeNotifierIfNeeded());
+
 
   // register common middleware
 

@@ -45,4 +45,3 @@ function produceHandleErrorMiddleware(logging: any, airbrakeNotifier: any) {
 }
 
 module.exports = produceHandleErrorMiddleware;
-module.exports.injectDependencies = true;

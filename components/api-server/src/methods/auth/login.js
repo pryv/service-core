@@ -148,4 +148,3 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
   }
 
 };
-module.exports.injectDependencies = true;

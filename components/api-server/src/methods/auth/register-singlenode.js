@@ -29,4 +29,3 @@ module.exports = function (api, logging, storageLayer, servicesSettings, serverS
     registration.sendWelcomeMail
   );
 };
-module.exports.injectDependencies = true;

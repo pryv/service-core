@@ -20,10 +20,6 @@ import type { LogFactory } from 'components/utils';
 import type { Logger } from 'components/utils';
 import type { ExpressAppLifecycle } from './expressApp';
 
-// While we're transitioning to manual DI, we still need to inject some of the 
-// stuff here the old way. Hence: 
-const dependencies = require('dependable').container({useFnAnnotations: true});
-
 type UpdatesSettingsHolder = {
   ignoreProtectedFields: boolean,
 }
@@ -35,6 +31,8 @@ class Application {
   // Application settings, see ./settings
   settings: ConfigAccess; 
   
+  logging: Logger
+
   // Application log factory
   logFactory: LogFactory; 
   
@@ -48,22 +46,18 @@ class Application {
   // Storage subsystem
   storageLayer: storage.StorageLayer;
   
-  dependencies: typeof dependencies;
-
   expressApp: express$Application;
 
   lifecycle: ExpressAppLifecycle;
   
   constructor(settings: ConfigAccess) {
     this.settings = settings;
-    this.dependencies = dependencies;
     
     this.api = new API(); 
     this.systemAPI = new API(); 
     
     this.produceLogSubsystem(); 
     this.produceStorageSubsystem(); 
-    this.registerLegacyDependencies();
   }
 
   async initiate() {
@@ -72,11 +66,11 @@ class Application {
   }
 
   async createExpressApp(): Promise<[express$Application, ExpressAppLifecycle]> {
-    const {expressApp, lifecycle} = await expressAppInit(this.dependencies, this.settings.get('dnsLess.isActive').bool());
+    const {expressApp, lifecycle} = await expressAppInit( 
+      this.settings.get('dnsLess.isActive').bool(), 
+      this.logging);
     this.expressApp = expressApp;
     this.lifecycle = lifecycle;
-    
-    this.dependencies.register({expressApp: expressApp});
     
     // Make sure that when we receive requests at this point, they get notified 
     // of startup API unavailability. 
@@ -111,53 +105,9 @@ class Application {
   produceLogSubsystem() {
     const settings = this.settings;
     const logSystemSettings = this.settings.get('logs').obj();
-    const logging = utils.logging(logSystemSettings); 
+    this.logging = utils.logging(logSystemSettings); 
     
-    this.logFactory = logging.getLogger;
-    
-    this.dependencies.register({ logging: logging });
-  }
-  
-  registerLegacyDependencies() {
-    const settings = this.settings; 
-    
-    dependencies.register({
-      api: this.api,
-      systemAPI: this.systemAPI 
-    });
-
-    // DI on the topic of settings and version info
-    dependencies.register({
-      // settings
-      authSettings: settings.get('auth').obj(),
-      auditSettings: settings.get('audit').obj(),
-      eventFilesSettings: settings.get('eventFiles').obj(),
-      eventTypesUrl: settings.get('service.eventTypes').str(),
-      httpSettings: settings.get('http').obj(),
-      servicesSettings: settings.get('services').obj(),
-      updatesSettings: settings.get('updates').obj(),
-      openSourceSettings: settings.get('openSource').obj(),
-      serverSettings: settings.get('server').obj(),
-      systemStreamsSettings: settings.get('systemStreams').obj(),
-    });
-    
-    // DI on the topic of storage and MongoDB access
-    const sl = this.storageLayer;
-    dependencies.register({
-      // storage
-      versionsStorage: sl.versions,
-      passwordResetRequestsStorage: sl.passwordResetRequests,
-      sessionsStorage: sl.sessions,
-      userAccessesStorage: sl.accesses,
-      userEventFilesStorage: sl.eventFiles,
-      userEventsStorage: sl.events,
-      userFollowedSlicesStorage: sl.followedSlices,
-      userProfileStorage: sl.profile,
-      userStreamsStorage: sl.streams,
-      
-      // and finally, for code that is almost, but not quite there
-      storageLayer: sl, 
-    });
+    this.logFactory = this.logging.getLogger;
   }
 
   produceStorageSubsystem() {
