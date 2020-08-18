@@ -217,5 +217,14 @@ function testInvalidParameterValidation(parameterName, constraints) {
         );
       }
     }
+    describe(
+      'that is null',
+      verifyInvalidInputResponse(
+        {
+          [parameterName]: null,
+        },
+        parameterName,
+      )
+    );
   };
 }
