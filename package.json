@@ -49,7 +49,6 @@
     "cookie-parser": "^1.4.3",
     "cron": "^1.2.1",
     "cross-fetch": "^3.0.4",
-    "dependable": "attentif/dependable#0bb5c4a9ef2b32dded1b24d5d3c0ecccfb0bf7fd",
     "errors": "file:components/errors",
     "express": "^4",
     "flow-bin": "^0.113.0",

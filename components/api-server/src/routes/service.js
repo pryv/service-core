@@ -27,4 +27,3 @@ module.exports = function(expressApp: express$Application, app: Application) {
     api.call('service.info', req.context, req.query, methodCallback(res, next, 200));
   });
 };
-module.exports.injectDependencies = true;

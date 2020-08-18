@@ -31,4 +31,3 @@ module.exports = function (logging) {
       });
   };
 };
-module.exports.injectDependencies = true;

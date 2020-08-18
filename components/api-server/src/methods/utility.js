@@ -109,4 +109,3 @@ module.exports = function (api: API, logging: Logger, storageLayer: StorageLayer
   }
 
 };
-module.exports.injectDependencies = true;

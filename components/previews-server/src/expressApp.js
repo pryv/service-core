@@ -45,4 +45,3 @@ module.exports = function expressApp(
     routesDefined: routesDefined,
   };
 };
-module.exports.injectDependencies = true;
