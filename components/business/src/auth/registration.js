@@ -334,7 +334,7 @@ class Registration {
       }
 
       // do the validation and reservation in service-register
-      const response = await this.serviceRegisterConn.validateUser(params.username, params.invitationtoken, uniqueFields, this.hostname);
+      const response = await this.serviceRegisterConn.validateUser(params.username, params.invitationToken, uniqueFields, this.hostname);
 
       if (response?.errors && response.errors.length > 0) {
         // 1. convert list of error ids to the list of api errors

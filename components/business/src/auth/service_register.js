@@ -26,7 +26,7 @@ class ServiceRegister {
 
   async validateUser (
     username: String,
-    invitationtoken: String,
+    invitationToken: String,
     uniqueFields: Object,
     core: String,
   ): Promise<void> {
@@ -37,7 +37,7 @@ class ServiceRegister {
       const res = await superagent.post(url)
                                   .send({ 
                                     username: username,
-                                    invitationtoken: invitationtoken,
+                                    invitationToken: invitationToken,
                                     uniqueFields: uniqueFields,
                                     core: core
                                  })

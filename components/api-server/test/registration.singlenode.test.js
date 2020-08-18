@@ -86,8 +86,8 @@ describe('Single-node registration', function () {
       })
     );
     describe(
-      'when given an invalid invitationtoken parameter',
-      testInvalidParameterValidation('invitationtoken', {
+      'when given an invalid invitationToken parameter',
+      testInvalidParameterValidation('invitationToken', {
         type: 'string',
       })
     );

@@ -55,7 +55,7 @@ const ErrorIds = {
   /**
    * Invitation token validation in the service-register
    */
-  InvalidInvitationToken: 'invitationtoken-invalid',
+  InvalidInvitationToken: 'invitationToken-invalid',
   /**
    * Username reservation validation in the service-register
    */
