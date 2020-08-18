@@ -56,7 +56,6 @@ class Server {
   // Start the server. 
   //
   async start() {
-    const logger = this.logger;
 
     const defaultParam: ?string = this.findDefaultParam();
     if (defaultParam != null) {
