@@ -428,6 +428,68 @@ describe("[AGT3] Events of core-streams", function () {
         });
       });
     });
+
+
+    describe('[TY63] When creating indexed stream with contribute access token', async () => {
+      let sharedAccess;
+      let initialEvent;
+      let user2;
+      let streamId = 'email';
+      //TODO IEVA
+      before(async function () {
+        user2 = await createUser();
+        sharedAccess = await user.access({
+          token: cuid(),
+          type: 'shared',
+          permissions: [{
+            streamId: streamId,
+            level: 'contribute'
+          }],
+          clientData: 'This is a consent'
+        });
+
+        const settings = _.cloneDeep(helpers.dependencies.settings);
+        scope = nock(settings.services.register.url)
+        scope.put('/users',
+          (body) => {
+            serviceRegisterRequest = body;
+            return true;
+          }).reply(200, { errors: [] });
+        
+        eventData = {
+          streamIds: [streamId],
+          content: charlatan.Lorem.characters(7),
+          type: 'string/pryv'
+        };
+
+        res = await request.post(basePath)
+          .send(eventData)
+          .set('authorization', sharedAccess.attrs.token);
+      });
+
+      it('Should return 201', async () => {
+        assert.equal(res.status, 201);
+      });
+      it('[764A] Should return the updated event', async () => {
+        assert.equal(res.body.event.createdBy, sharedAccess.attrs.id);
+        assert.deepEqual(res.body.event.streamIds, [streamId, UserInfoSerializer.options.STREAM_ID_ACTIVE, 'unique']);
+      });
+      it('[765A] Should send a request to service-register to update the indexed field', async () => {
+        assert.equal(scope.isDone(), true);
+        assert.deepEqual(serviceRegisterRequest, {
+          user: {
+            [streamId]: [{
+              value: res.body.event.content,
+              isUnique: true,
+              isActive: true,
+              creation: true
+            }],
+            username: user.attrs.username,
+          },
+          fieldsToDelete: {}
+        });
+      });
+    });
   });
 
   describe('PUT /events/<id>', async () => {
@@ -520,16 +582,6 @@ describe("[AGT3] Events of core-streams", function () {
           assert.equal(res.body.event.content, eventData.content);
           assert.equal(res.body.event.type, eventData.type);
           assert.deepEqual(res.body.event.streamIds, ['phoneNumber', UserInfoSerializer.options.STREAM_ID_ACTIVE]);
-        });
-      });
-
-      describe('When updating editable indexed stream with contribute access', async () => {
-        it('[2FA3] Should return 200', async () => {
-          //TODO IEVA
-        });
-        it('[764A] Should return the updated event', async () => {
-        });
-        it('[765A] Should send a request to service-register to update the indexed field', async () => {
         });
       });
 
