@@ -17,9 +17,7 @@ const middleware = require('components/middleware');
 const errorsMiddlewareMod = require('./middleware/errors'); 
 const config = require('./config');
 
-const getConfig: () => Config = require('components/api-server/config/Config').getConfig;
-const initConfig: () => Config = require('components/api-server/config/Config').initConfig;
-import type { Config } from 'components/api-server/config/Config';
+const { getConfig, initConfig, Config } = require('components/api-server/config/Config');
 
 import type { ConfigAccess } from './settings';
 import type { WebhooksSettingsHolder } from './methods/webhooks';

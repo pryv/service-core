@@ -25,8 +25,7 @@ const UserInfoSerializer = require('components/business/src/user/user_info_seria
 import type { MethodContext } from 'components/model';
 import type { ApiCallback } from 'components/api-server/src/API';
 
-import type { Config } from 'components/api-server/config/Config';
-const getConfig = require('components/api-server/config/Config').getConfig;
+const { getConfig, Config } = require('components/api-server/config/Config');
 const config: Config = getConfig();
 
 /**
