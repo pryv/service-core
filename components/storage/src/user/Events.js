@@ -312,18 +312,18 @@ Events.prototype.getUserInfo = async function ({ user, getAll }) {
   try {
     let userInfoSerializer = new UserInfoSerializer();
     // get streams ids from the config that should be retrieved
-    let userProfileStreamsIds;
+    let userCoreStreamsIds;
     if (getAll) {
-      userProfileStreamsIds = userInfoSerializer.getAllCoreStreams();
+      userCoreStreamsIds = userInfoSerializer.getAllCoreStreams();
     } else {
-      userProfileStreamsIds = userInfoSerializer.getReadableCoreStreams();
+      userCoreStreamsIds = userInfoSerializer.getReadableCoreStreams();
     }
     //TODO IEVA - active has to be a constant somewhere
     // form the query
     let query = {
       '$and': [
-        { 'streamIds': { '$in': Object.keys(userProfileStreamsIds) } },
-        { 'streamIds': { '$eq': 'active' } }
+        { 'streamIds': { '$in': Object.keys(userCoreStreamsIds) } },
+        { 'streamIds': { '$eq': UserInfoSerializer.options.STREAM_ID_ACTIVE } }
       ]
     };
 
@@ -430,7 +430,7 @@ Events.prototype.createUser = async function (params) {
     // form username event - it is separate because we set the _id 
     //TODO IEVA - active should be a constant somewhere
     let updateObject = {
-      streamIds: ['username', 'unique', 'active'],
+      streamIds: ['username', 'unique', UserInfoSerializer.options.STREAM_ID_ACTIVE],
       type: userProfileStreamsIds.username.type,
       content: userParams.username,
       username__unique: userParams.username, // repeated field for uniqueness
@@ -483,7 +483,7 @@ Events.prototype.createUser = async function (params) {
 
           // get additional stream ids from the config
           //TODO IEVA - active should be a constant somewhere
-          let streamIds = [streamId, 'active'];
+          let streamIds = [streamId, UserInfoSerializer.options.STREAM_ID_ACTIVE];
           if (userProfileStreamsIds[streamId].isUnique === true) {
             streamIds.push("unique");
             creationObject[streamId + '__unique'] = parameter; // repeated field for uniqness
@@ -517,11 +517,10 @@ Events.prototype.updateUser = async function ({ userId, userParams }) {
     delete userParams.password;
 
     // update all core streams and do not allow additional properties
-    //TODO IEVA - active should be a constant somewhere
     Object.keys(userProfileStreamsIds).map(streamId => {
       if (userParams[streamId]) {
         return bluebird.fromCallback(cb => Events.super_.prototype.updateOne.call(this,
-          { id: userId, streamIds: 'active' },
+          { id: userId, streamIds: UserInfoSerializer.options.STREAM_ID_ACTIVE },
           { streamIds: { $in: [streamId] } },
           { content: userParams[streamId] }, cb));
       }

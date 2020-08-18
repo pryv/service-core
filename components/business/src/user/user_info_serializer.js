@@ -232,5 +232,7 @@ function getStreamsNames(streams, streamsNames, whatToReturn) {
   }
   return streamsNames
 }
-
+UserInfoSerializer.options = {
+  STREAM_ID_ACTIVE: 'active'
+}
 module.exports = UserInfoSerializer;
