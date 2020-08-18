@@ -31,11 +31,13 @@ describe("Singlenode registration", function () {
     app = new Application(settings);
     await app.initiate();
     
-    app.lifecycle.appStartupComplete(); 
-
-    app.dependencies.resolve(
-      require("./../src/methods/auth/register-singlenode")
-    );
+    require("./../src/methods/auth/register-singlenode")(
+      app.api, 
+      app.logging, 
+      app.storageLayer, 
+      app.settings.get('services').obj(), 
+      app.settings.get('server').obj(), 
+      app.settings.get('systemStreams').obj());
 
     request = supertest(app.expressApp);
 
@@ -49,7 +51,7 @@ describe("Singlenode registration", function () {
   describe("when given valid input", function () {
     before(async function () {
       res = await request.post("/user").send(registerBody);
-        });
+    });
     it("should respond with 201", function () {
       assert.equal(res.status, 201);
     });

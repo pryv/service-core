@@ -24,7 +24,6 @@ const url = require('url');
 
 import type { Logger } from 'components/utils';
 import type { ConfigAccess } from './settings';
-import type { ExpressAppLifecycle } from './expressApp';
 
 
 // Server class for api-server process. To use this, you 
@@ -57,17 +56,13 @@ class Server {
   // Start the server. 
   //
   async start() {
-    
-    
-
+    const logger = this.logger;
 
     const defaultParam: ?string = this.findDefaultParam();
     if (defaultParam != null) {
       this.logger.error(`Config parameter "${defaultParam}" has a default value, please change it`);
       process.exit(1);
     }
-    
-    this.publishExpressMiddleware();
     
     await this.application.initiate();
     this.logger = this.application.logFactory('api-server');
@@ -84,9 +79,6 @@ class Server {
     this.setupSocketIO(server); 
     await this.startListen(server);
 
-    // Let actual requests pass.
-    this.application.lifecycle.appStartupComplete(); 
-    
     if (! this.isOpenSource) {
       await this.setupReporting();
     }
@@ -105,23 +97,38 @@ class Server {
   // 
   registerApiMethods() {
     const application = this.application;
-    const dependencies = this.application.dependencies;
     const l = (topic) => application.getLogger(topic);
     
-    // Open Heart Surgery ahead: Trying to get rid of DI here, file by file. 
-    // This means that what we want is in the middle there; all the 
-    // dependencies.resolves must go. 
+    require('./methods/system')(application.systemAPI,
+      application.storageLayer.accesses, 
+      application.settings.get('services').obj(), 
+      application.api, 
+      application.logging, 
+      application.storageLayer, 
+      application.settings.get('server').obj(),
+      application.settings.get('systemStreams').obj());
+    
+    require('./methods/utility')(application.api, application.logging, application.storageLayer);
 
-    [
-      require('./methods/system'),
-      require('./methods/utility'),
-      require('./methods/auth/login'),
-      //TODO IEVA - remove
-      require('./methods/auth/register'),
-      require('./methods/auth/register-singlenode'),
-    ].forEach(function (moduleDef) {
-      dependencies.resolve(moduleDef);
-    });
+    require('./methods/auth/login')(application.api, 
+      application.storageLayer.accesses, 
+      application.storageLayer.sessions, 
+      application.storageLayer.events, 
+      application.settings.get('auth').obj());
+    
+    require('./methods/auth/register')(application.api, 
+      application.logging, 
+      application.storageLayer, 
+      application.settings.get('services').obj(), 
+      application.settings.get('server').obj(), 
+      application.settings.get('systemStreams').obj());
+
+    require('./methods/auth/register-singlenode')(application.api, 
+      application.logging, 
+      application.storageLayer, 
+      application.settings.get('services').obj(), 
+      application.settings.get('server').obj(), 
+      application.settings.get('systemStreams').obj());
 
     require('./methods/accesses')(
       application.api, l('methods/accesses'), 
@@ -147,26 +154,37 @@ class Server {
       application.storageLayer,
     );
 
-    [
-      require('./methods/account'),
-      require('./methods/followedSlices'),
-      require('./methods/profile'),
-      require('./methods/streams'),
-      require('./methods/events'),
-    ].forEach(function (moduleDef) {
-      dependencies.resolve(moduleDef);
-    });
-  }
-  
-  // Publishes dependencies for express middleware setup. 
-  // 
-  publishExpressMiddleware() {
-    const dependencies = this.application.dependencies;
+    require('./methods/account')(application.api, 
+      application.storageLayer.events, 
+      application.storageLayer.passwordResetRequests, 
+      application.settings.get('auth').obj(), 
+      application.settings.get('services').obj(), 
+      this.notificationBus);
 
-    dependencies.register({
-      // TODO Do we still need this? Where? Try to eliminate it. 
-      express: express, 
-    });
+    require('./methods/followedSlices')(application.api, application.storageLayer.followedSlices, this.notificationBus);
+
+    require('./methods/profile')(application.api, application.storageLayer.profile);
+
+    require('./methods/streams')(application.api, 
+      application.storageLayer.streams, 
+      application.storageLayer.events, 
+      application.storageLayer.eventFiles, 
+      this.notificationBus, 
+      application.logging, 
+      application.settings.get('audit').obj(), 
+      application.settings.get('updates').obj());
+
+    require('./methods/events')(application.api, 
+      application.storageLayer.events, 
+      application.storageLayer.eventFiles, 
+      application.settings.get('auth').obj(), 
+      application.settings.get('service.eventTypes').str(), 
+      this.notificationBus, 
+      application.logging,
+      application.settings.get('audit').obj(),
+      application.settings.get('updates').obj(), 
+      application.settings.get('openSource').obj(), 
+      application.settings.get('services').obj());
   }
   
   setupSocketIO(server: net$Server) {
@@ -279,13 +297,8 @@ class Server {
   // Sets up `Notifications` bus and registers it for everyone to consume. 
   // 
   async setupNotificationBus() {
-    const dependencies = this.application.dependencies;
     const notificationEvents = await this.openNotificationBus();
     const bus = this.notificationBus = new Notifications(notificationEvents);
-    
-    dependencies.register({
-      notifications: bus,
-    });
   }
 
 
