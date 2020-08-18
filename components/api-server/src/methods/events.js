@@ -1183,4 +1183,3 @@ module.exports = function (
   }
 
 };
-module.exports.injectDependencies = true;

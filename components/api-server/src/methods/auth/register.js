@@ -72,4 +72,3 @@ module.exports = function (api, logging, storageLayer, servicesSettings, serverS
   }
 
 };
-module.exports.injectDependencies = true;

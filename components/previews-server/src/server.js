@@ -7,7 +7,6 @@
 // @flow
 const http = require('http');
 
-const dependencies = require('dependable').container({ useFnAnnotations: true });
 const middleware = require('components/middleware');
 const storage = require('components/storage');
 const utils = require('components/utils');
@@ -43,18 +42,8 @@ async function start() {
 
   const customAuthStepExt = loadCustomAuthStepFn(settings.customExtensions);
 
-  // register base dependencies
-  dependencies.register({
-    // settings
-    authSettings: settings.auth,
-    eventFilesSettings: settings.eventFiles,
-    logsSettings: settings.logs,
+  const logging = utils.logging(settings.logs); 
 
-    // misc utility
-    logging: utils.logging
-  });
-
-  const logging = dependencies.get('logging');
   const logger = logging.getLogger('server');
 
   const database = new storage.Database(
@@ -76,40 +65,14 @@ async function start() {
   const pv = new ProjectVersion();
   const version = pv.version();
 
-  dependencies.register({
-    // storage
-    sessionsStorage: storageLayer.sessions,
-    userAccessesStorage: storageLayer.accesses,
-    userEventFilesStorage: storageLayer.eventFiles,
-    userEventsStorage: storageLayer.events,
-    userStreamsStorage: storageLayer.streams,
-
-    // For the code that hasn't quite migrated away from dependencies yet.
-    storageLayer: storageLayer,
-
-    // Express middleware
-    commonHeadersMiddleware: middleware.commonHeaders(version),
-    errorsMiddleware: require('./middleware/errors'),
-    initContextMiddleware: initContextMiddleware,
-    loadAccessMiddleware: loadAccessMiddleware,
-    requestTraceMiddleware: middleware.requestTrace,
-
-    // Express & app
-    express: require('express'),
-  });
-
-  const { expressApp, routesDefined } = dependencies.resolve(
-    require('./expressApp'));
-  dependencies.register('expressApp', expressApp);
+  const { expressApp, routesDefined } = require('./expressApp')(
+    middleware.commonHeaders(version), 
+    require('./middleware/errors')(logging), 
+    middleware.requestTrace(null, logging));
 
   // setup routes
-
-  [
-    require('./routes/index'),
-    require('./routes/event-previews'),
-  ].forEach(function (routeDefs) {
-    dependencies.resolve(routeDefs);
-  });
+  require('./routes/index')(expressApp);
+  require('./routes/event-previews')(expressApp, initContextMiddleware, loadAccessMiddleware, storageLayer.events, storageLayer.eventFiles, logging);
 
   // Finalize middleware stack: 
   routesDefined();

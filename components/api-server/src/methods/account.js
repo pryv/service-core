@@ -218,4 +218,3 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     }
   }
 };
-module.exports.injectDependencies = true;
