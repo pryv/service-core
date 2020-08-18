@@ -16,7 +16,7 @@ let registerBody;
 let request;
 let res;
 
-describe('Singlenode registration', function () {
+describe('Single-node registration', function () {
   before(async function () {
     const settings = await Settings.load();
     
@@ -54,7 +54,7 @@ describe('Singlenode registration', function () {
   });
   describe('Schema validation', function () {
     describe(
-      'when given invalid username parameter',
+      'when given an invalid username parameter',
       testInvalidParameterValidation('username', {
         minLength: 5,
         maxLength: 23,
@@ -63,7 +63,7 @@ describe('Singlenode registration', function () {
       })
     );
     describe(
-      'when given invalid password parameter',
+      'when given an invalid password parameter',
       testInvalidParameterValidation('password', {
         minLength: 4,
         maxLength: 100,
@@ -71,14 +71,14 @@ describe('Singlenode registration', function () {
       })
     );
     describe(
-      'when given invalid email parameter',
+      'when given an invalid email parameter',
       testInvalidParameterValidation('email', {
         maxLength: 300,
         type: 'string',
       })
     );
     describe(
-      'appId parameter',
+      'when given an invalid appId parameter',
       testInvalidParameterValidation('appId', {
         minLength: 6,
         maxLength: 99,
@@ -86,13 +86,13 @@ describe('Singlenode registration', function () {
       })
     );
     describe(
-      'when given invalid invitationtoken parameter',
+      'when given an invalid invitationtoken parameter',
       testInvalidParameterValidation('invitationtoken', {
         type: 'string',
       })
     );
     describe(
-      'when given invalid referer parameter',
+      'when given an invalid referer parameter',
       testInvalidParameterValidation('referer', {
         minLength: 1,
         maxLength: 99,
@@ -100,7 +100,7 @@ describe('Singlenode registration', function () {
       })
     );
     describe(
-      'when given invalid languageCode parameter',
+      'when given an invalid languageCode parameter',
       testInvalidParameterValidation('languageCode', {
         minLength: 1,
         maxLength: 5,
@@ -165,7 +165,7 @@ function testInvalidParameterValidation(parameterName, constraints) {
   return () => {
     if (constraints.minLength) {
       describe(
-        'when given a too short value',
+        'that is too short',
         verifyInvalidInputResponse(
           {
             [parameterName]: charlatan.Lorem.characters(
@@ -178,7 +178,7 @@ function testInvalidParameterValidation(parameterName, constraints) {
     }
     if (constraints.maxLength) {
       describe(
-        'when given a too long value',
+        'that is too long',
         verifyInvalidInputResponse(
           {
             [parameterName]: charlatan.Lorem.characters(
@@ -191,7 +191,7 @@ function testInvalidParameterValidation(parameterName, constraints) {
     }
     if (constraints.lettersAndDashesOnly) {
       describe(
-        'when given a value with invalid signs',
+        'that has invalid characters',
         verifyInvalidInputResponse(
           {
             [parameterName]: '/#+]\\\'',
@@ -207,7 +207,7 @@ function testInvalidParameterValidation(parameterName, constraints) {
       }
       if (val) {
         describe(
-          'when given a value of invalid type',
+          'that has an invalid type',
           verifyInvalidInputResponse(
             {
               [parameterName]: val,
