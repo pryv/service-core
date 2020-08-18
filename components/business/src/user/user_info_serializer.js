@@ -4,11 +4,12 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+const _ = require('lodash');
 const Settings = require('components/api-server/src/settings');
 
 const readable = 'readable-core-streams',
   allCoreStreams = 'all-core-streams',
-  onlyWritableCoreStreams = 'only-writable-core-streams',
+  editableCoreStreams = 'editable-core-streams',
   indexedStreams = 'indexed-core-streams',
   uniqueStreams = 'unique-core-streams';
 /**
@@ -57,12 +58,11 @@ class UserInfoSerializer {
   }
 
   /**
-   * Get the names of the streams that belongs to the system->account stream
-   * but is not readable for the user (only writable) 
+   * Get only those streams that user is allowed to edit 
    */
-  getOnlyWritableCoreStreams () {
+  getEditableCoreStreams () {
     let streamsNames = {};
-    return getStreamsNames(this.systemStreamsSettings.account, streamsNames, onlyWritableCoreStreams);
+    return getStreamsNames(this.systemStreamsSettings.account, streamsNames, editableCoreStreams);
   }
 
   /**
@@ -90,19 +90,31 @@ class UserInfoSerializer {
     let streamsNames = {};
     return Object.keys(getStreamsNames(this.systemStreamsSettings.account, streamsNames, uniqueStreams));
   }
-  
+
   /**
    * Get steams that are NOT allowed to edit - this function will be used to 
    * exclude from queries
    */
   getCoreStreamsIdsForbiddenForEditing () {
-    let streamsNames = this.getOnlyWritableCoreStreams();
-    const readableStreams = this.getReadableCoreStreams();
+    let allStreams = this.getAllCoreStreams();
+    let editableStreams = this.getEditableCoreStreams();
 
-    // manually add username because we do not allow to edit it
-    streamsNames.username = readableStreams.username;
-    return Object.keys(streamsNames);
+    const notEditableStreamsIds = _.difference(_.keys(allStreams), _.keys(editableStreams));
+    return notEditableStreamsIds;
   }
+
+  /**
+   * Get steams that are NOT allowed to view for the user
+   * this function will be used to exclude streamIds from queries
+   */
+  getCoreStreamsIdsForbiddenForReading () {
+    let allStreams = this.getAllCoreStreams();
+    let readableStreams = this.getReadableCoreStreams();
+
+    const notReadableStreamsIds = _.difference(_.keys(allStreams), _.keys(readableStreams));
+    return notReadableStreamsIds;
+  }
+
   /**
    * Get virtual streams list
    * @param {*} events 
@@ -166,13 +178,12 @@ function formEventsTree(stream, events, user){
   return user;
 }
 
-
 /**
  * Iterate throught the tree and add keys to the flat list streamsNames
  * @param {*} streams - tree structure object
  * @param array streamsNames - flat list of keys
  * @param enum string whatToReturn - enum values should be retrieved with 
- *  getReadableCoreStreams(), getAllCoreStreams (), getOnlyWritableCoreStreams;
+ *  getReadableCoreStreams(), getAllCoreStreams (), getEditableCoreStreams;
  * if they are equal to false or true
  */
 function getStreamsNames(streams, streamsNames, whatToReturn) {
@@ -204,6 +215,11 @@ function getStreamsNames(streams, streamsNames, whatToReturn) {
         break;
       case uniqueStreams:
         if (stream.isUnique === false) {
+          continue;
+        }
+        break;
+      case editableCoreStreams:
+        if (stream.isEditable === false) {
           continue;
         }
         break;

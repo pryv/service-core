@@ -148,18 +148,18 @@ module.exports = function (
   /**
    * Remove events that belongs to the core streams and should not be displayed
    * @param mongo query object query 
-   * @param Boolean shouldRemoveReadable - if true, will add 
+   * @param Boolean shouldAllowEditable - if false, will add
    * all core streams to "$nin" in the query
    */
-  async function removeProfileStreamsFromQuery (query, shouldAllowReadable: Boolean) {
+  async function removeNotReadableCoreStreamsFromQuery (query, shouldAllowEditable: Boolean) {
     let userInfoSerializerObj = await UserInfoSerializer.build();
     // get streams ids from the config that should be retrieved
 
     let userCoreStreams;
-    if (shouldAllowReadable) {
-      userCoreStreams = Object.keys(userInfoSerializerObj.getOnlyWritableCoreStreams());
+    if (shouldAllowEditable) {
+      userCoreStreams = Object.keys(userInfoSerializerObj.getCoreStreamsIdsForbiddenForEditing());
     } else {
-      userCoreStreams = Object.keys(userInfoSerializerObj.getReadableCoreStreams());
+      userCoreStreams = Object.keys(userInfoSerializerObj.getCoreStreamsIdsForbiddenForReading());
     }
     
     query.streamIds = { ...query.streamIds, ...{ $nin: userCoreStreams } };
@@ -174,7 +174,7 @@ module.exports = function (
     if (params.streams) {
       query.streamIds = {$in: params.streams};
     }
-    query = await removeProfileStreamsFromQuery(query, true);
+    query = await removeNotReadableCoreStreamsFromQuery(query, true);
 
     if (params.tags && params.tags.length > 0) {
       query.tags = {$in: params.tags};
@@ -361,7 +361,7 @@ module.exports = function (
     next();
   }
 
-  function createEvent(
+  async function createEvent(
     context, params, result, next) 
   {
 
@@ -378,12 +378,30 @@ module.exports = function (
       context.content.duration = 0; 
     }
 
+    //TODO IEVA - what is isSeriesType???
+    // if event belongs to the core streams, apply additional actions
+    // TODO IEVA - is this way of retrieving username is correct?
+    let removeActiveEvents;
+    let validationErrors;
+    try {
+      context.content, removeActiveEvents, validationErrors = await handleCoreStreams(context.user.username, context.content, true);
+      if (validationErrors.length > 0) {
+        return next(commonFns.apiErrorToValidationErrorsList(validationErrors));
+      }
+    } catch (err) {
+      return next(errors.unexpectedError(err));
+    }
+
     userEventsStorage.insertOne(
       context.user, context.content, function (err, newEvent) {
         if (err != null) {
           // Expecting a duplicate error
           if (err.isDuplicateIndex('id')) {
             return next(errors.itemAlreadyExists('event', {id: params.id}, err));
+          }
+          // Expecting a duplicate error for unique fields
+          if (typeof err.isDuplicateIndex === 'function') {
+            return next(errors.existingField(err.duplicateIndex()));
           }
           // Any other error
           return next(errors.unexpectedError(err));
@@ -392,9 +410,94 @@ module.exports = function (
         // To remove when streamId not necessary
         newEvent.streamId = newEvent.streamIds[0];
 
+        if (removeActiveEvents) {
+          handleEventsWithActiveStreamId(context.user, newEvent.streamId, newEvent.id);
+        }
         result.event = newEvent;
         next();
       });
+  }
+
+  /**
+   * Append properties like streamId and additional field to event
+   * that helps to enforce uniqness
+   * @param object contextContent 
+   * @param string fieldName 
+   */
+  function enforceEventUniqueness (contextContent: object, fieldName: string) {
+    if (!contextContent.streamIds.includes('unique')) {
+      contextContent.streamIds.push('unique');
+    }
+    contextContent[`${fieldName}__unique`] = contextContent.content;
+    return contextContent;
+  }
+
+  /**
+   * Do additional actions if event belongs to the core stream and is
+   * 1) unique
+   * 2) indexed
+   * 3) active
+   * Additional actions like
+   * a) adding property to enforce uniqness
+   * b) sending data update to service-regsiter
+   * c) saving streamId 'active' has to be handles in the different way that
+   * for all other events
+   *
+   * @param string username 
+   * @param object contextContent 
+   * @param boolean creation - if true - active streamId will be added by default
+   */
+  async function handleCoreStreams (username:string, contextContent: object, creation: Boolean) {
+    const editableCoreStreams = (await UserInfoSerializer.build()).getEditableCoreStreams();
+    let removeActiveEvents = false;
+    let validationErrors = [];
+    const fieldName = (typeof contextContent.streamIds === 'object')? contextContent.streamIds[0]: '';
+
+    // check if event belongs to core stream ids
+    if (Object.keys(editableCoreStreams).includes(fieldName)) {
+      // after event will be saved, active property will be removed from the other events
+      removeActiveEvents = true;
+
+      // append active stream id if it is a new event 
+      // TODO IEVA active should be a constant
+      let fieldsForUpdate = {};
+      if (creation) {
+        contextContent.streamIds.push('active');
+      }
+
+      // if stream is unique append properties that enforce uniqueness
+      if (editableCoreStreams[fieldName].isUnique || editableCoreStreams[fieldName].isIndexed) {
+        if (editableCoreStreams[fieldName].isUnique) {
+          contextContent = enforceEventUniqueness(contextContent, fieldName);
+        }
+        
+        fieldsForUpdate[fieldName] = [{
+          value: contextContent.content,
+          unique: editableCoreStreams[fieldName].isUnique,
+          active: contextContent.streamIds.includes('active'),
+          creation: creation
+        }];
+      }
+      
+      // initialize service-register connection
+      const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
+
+      try {
+        // send information update to service regsiter
+        const response = await serviceRegisterConn.updateUserInServiceRegister(
+          username, fieldsForUpdate, {});
+
+        if (response.errors && response.errors.length > 0) {
+          validationErrors = response.errors.map(err => {
+            const fieldName = err.id.replace('Existing_', '');
+            return errors.existingField(fieldName);
+          });
+        }
+      } catch (err) {
+        throw err;
+      }
+    }
+    return contextContent, removeActiveEvents, validationErrors;
   }
 
   /**
@@ -565,8 +668,20 @@ module.exports = function (
       $and: [
         { _id: context.content.id },
         { streamIds: { $nin: userCoreStreamsIds } }
-    ]};
-    try{
+      ]
+    };
+
+    try {
+      // if events belongs to system streams additional actions may be needed
+      // TODO IEVA - is this way of finding the username is correct if I am logged in with another user?
+      let removeActiveEvents;
+      let validationErrors;
+
+      context.content, removeActiveEvents, validationErrors = await handleCoreStreams(context.user.username, context.content, false);
+      if (validationErrors.length > 0) {
+        return next(commonFns.apiErrorToValidationErrorsList(validationErrors));
+      }
+
       let updatedEvent = await bluebird.fromCallback(cb =>
         userEventsStorage.updateOne(context.user, query, context.content, cb));
 
@@ -581,23 +696,39 @@ module.exports = function (
 
       result.event = updatedEvent;
       setFileReadToken(context.access, result.event);
-      
-      // if event belongs to system stream that has to be indexed - notify service register
-      notifyServiceRegisterForIndexedFieldChange()
 
-      // for core streams - 'active' streamId defines the 'main' event from the stream
-      // not handled yet TODO IEVA
-      // handleEventsWithActiveStreamId()
     } catch(err){
       return next(errors.unexpectedError(err));
     };
     next();
   }
 
-  function notifyServiceRegisterForIndexedFieldChange (updatedField) {
-    const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
-    //serviceRegisterConn.notifyAboutUpdatedIndexedFields([updatedField]);
+
+  /**
+   * for core streams - 'active' streamId defines the 'main' event from the stream
+   * if there are many events (like many emails), only one should be main/active
+   * @param {*} user 
+   * @param {*} streamId 
+   * @param {*} eventIdToExclude 
+   */
+  async function handleEventsWithActiveStreamId (user, streamId, eventIdToExclude) {
+    // TODO IEVA - active streamId
+    // make update for all events in the stream with active streamId in
+    // 2 steps, so that all properties would be edited in the right way
+    let eventsForUpdate = await bluebird.fromCallback(cb =>
+      userEventsStorage.find(user, {
+        _id: { $ne: eventIdToExclude },
+        streamIds: { $in: [streamId, 'active'] }
+      }, null, cb));
+    let i;
+    for (i = 0; i < eventsForUpdate.length; i++){
+      await bluebird.fromCallback(cb =>
+        userEventsStorage.updateOne(user, 
+          { _id: eventsForUpdate[i]._id},
+          { streamIds: eventsForUpdate[i].streamIds.filter(s => s !== 'active') }, cb));
+    }
   }
+
   function notify(context, params, result, next) {
     notifications.eventsChanged(context.user);
 
@@ -1000,7 +1131,7 @@ module.exports = function (
   }
 
   async function checkEventForDelete (context, eventId, callback) {
-    let query = await removeProfileStreamsFromQuery({ id: eventId }, false);
+    let query = await removeNotReadableCoreStreamsFromQuery({ id: eventId }, false);
 
     userEventsStorage.findOne(context.user, query, null, function (err, event) {
       if (err) {

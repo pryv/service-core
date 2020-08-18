@@ -311,7 +311,7 @@ BaseStorage.prototype.updateMany = function(
 
 /**
  * Update.
- *
+ * TODO IEVA -seems to be not used
  * @param user
  * @param query
  * @param updatedData
