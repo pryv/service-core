@@ -289,11 +289,11 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
     //  db.users.removeOne(user, {username: username}, cb));
     let userInfoSerializer = new UserInfoSerializer();
     // get streams ids from the config that should be deleted
-    const coreStreams = userInfoSerializer.getAllCoreStreams();
+    const accountStreams = userInfoSerializer.getAllAccountStreams();
     const removeUser = bluebird.fromCallback((cb) => {
       db.events.removeMany(this.context.user, {
         $and:[
-          { streamIds: { $in: Object.keys(coreStreams) } }]
+          { streamIds: { $in: Object.keys(accountStreams) } }]
       }, cb)
     });
     

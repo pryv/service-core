@@ -77,8 +77,8 @@ class Registration {
     try {
       let userInfoSerializer = new UserInfoSerializer();
       // get streams ids from the config that should be retrieved
-      const userStreamsIds = userInfoSerializer.getIndexedCoreStreams();
-      const uniqueStreamsIds = userInfoSerializer.getUniqueCoreStreamsIds();
+      const userStreamsIds = userInfoSerializer.getIndexedAccountStreams();
+      const uniqueStreamsIds = userInfoSerializer.getUniqueAccountStreamsIds();
 
       // form data that should be sent to service-register
       // some default values and indexed/uinique fields of the system
@@ -392,7 +392,7 @@ class Registration {
   loadCustomValidationSettings (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     let validationSchema = Object.assign({}, methodsSchema.register.params);
 
-    // iterate core stream settings and APPEND validation with relevant properties
+    // iterate account stream settings and APPEND validation with relevant properties
     // etc additional required fields or regex validation
     for (const [field, value] of Object.entries(this.accountStreamsSettings)) {
       // if field is set as required - add required validation

@@ -132,11 +132,11 @@ describe("[AGT3] Events of core-streams", function () {
       });
       it('[36F7] User should not be able to see “not visible” core steams', async () => {
         // lets separate core events from all other events and validate them separatelly
-        const separatedEvents = validation.separateCoreStreamsAndOtherEvents(res.body.events);
+        const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
        
         // events contains only visible streamIds
         assert.equal(Object.keys(separatedEvents.events).length, 0);
-        assert.equal(Object.keys(separatedEvents.coreStreamsEvents).length, 7);
+        assert.equal(Object.keys(separatedEvents.accountStreamsEvents).length, 7);
       });
       
       it('[C32B] Unique events does not return additional field that enforces the uniqueness', async () => {
@@ -161,12 +161,12 @@ describe("[AGT3] Events of core-streams", function () {
         });
         res = await request.get(basePath).set('authorization', sharedAccess.attrs.token);
         // lets separate core events from all other events and validate them separatelly
-        separatedEvents = validation.separateCoreStreamsAndOtherEvents(res.body.events);
+        separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
       });
       
       it('User should be able to see "visible” core steams', async () => {
         // events contains only visible streamIds
-        assert.equal(Object.keys(separatedEvents.coreStreamsEvents).length, 7);
+        assert.equal(Object.keys(separatedEvents.accountStreamsEvents).length, 7);
       });
       it('User should not be able to see “not visible” core steams', async () => {
         assert.equal(Object.keys(separatedEvents.events).length, 0);
@@ -179,7 +179,7 @@ describe("[AGT3] Events of core-streams", function () {
       return await bluebird.fromCallback(
         (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
     }
-    describe('[C826] When user retrieves the event from “not visible” core stream', async () => {
+    describe('[C826] When user retrieves the event from “not visible” account stream', async () => {
       before(async function () {
         await createUser();
         const defaultEvent = await findDefaultCoreEvent('passwordHash');
@@ -193,7 +193,7 @@ describe("[AGT3] Events of core-streams", function () {
         assert.equal(res.body.error.id, ErrorIds.UnknownResource);
       });
     });
-    describe('[88BJ] When user retrieves the event from “visible” unique core stream', async () => {
+    describe('[88BJ] When user retrieves the event from “visible” unique account stream', async () => {
       let defaultEvent;
       const streamId = 'username';
       before(async function () {
@@ -217,7 +217,7 @@ describe("[AGT3] Events of core-streams", function () {
 
   describe('POST /events', async () => {
     let eventData;
-    describe('[ED75] When creating an even with non editable core stream id', async () => {
+    describe('[ED75] When creating an even with non editable account stream id', async () => {
       before(async function () {
         await createUser();
         eventData = {
@@ -239,7 +239,7 @@ describe("[AGT3] Events of core-streams", function () {
       });
     });
 
-    describe('When creating an even with editable core stream id', async () => {
+    describe('When creating an even with editable account stream id', async () => {
       describe('[7CD9] When saving not indexed and not unique event', async () => {
         before(async function () {
           await createUser();
@@ -273,7 +273,7 @@ describe("[AGT3] Events of core-streams", function () {
           assert.deepEqual(allEvents[1].streamIds, ['phoneNumber']);
         });
       });
-      describe('[4EB9] When event belongs to the unique core stream', async () => {
+      describe('[4EB9] When event belongs to the unique account stream', async () => {
         describe('[2FA2] When creating an event that is valid', async () => {
           let allEventsInDb;
 
@@ -403,7 +403,7 @@ describe("[AGT3] Events of core-streams", function () {
             assert.equal(res.body.error.data[0].message, ErrorMessages[ErrorIds['Existing_email']]);
           });
         });
-        describe('When event belongs to the indexed core stream', async () => {
+        describe('When event belongs to the indexed account stream', async () => {
           describe('[6070] When creating an event that is valid', async () => {
 
             before(async function () {
@@ -681,7 +681,7 @@ describe("[AGT3] Events of core-streams", function () {
             });
           });
         });
-        describe('When trying to add second core steamId to the event that has a core stream Id', async () => {
+        describe('When trying to add second core steamId to the event that has a account stream Id', async () => {
           describe('[EEE9] When editing with 2 streamIds at the time', async () => {
             before(async function () {
               await createUser();
@@ -701,11 +701,11 @@ describe("[AGT3] Events of core-streams", function () {
               assert.equal(res.status, 400);
             });
             it('[E3AE] Should return the correct error', async () => {
-              assert.equal(res.body.error.data[0].code, ErrorIds.DeniedMultipleCoreStreams);
-              assert.equal(res.body.error.data[0].message, ErrorMessages[ErrorIds.DeniedMultipleCoreStreams]);
+              assert.equal(res.body.error.data[0].code, ErrorIds.DeniedMultipleAccountStreams);
+              assert.equal(res.body.error.data[0].message, ErrorMessages[ErrorIds.DeniedMultipleAccountStreams]);
             });
           });
-          describe('[EEV9] When changing core stream with another core steram', async () => {
+          describe('[EEV9] When changing account stream with another core steram', async () => {
             before(async function () {
               await createUser();
               eventData = {
@@ -724,8 +724,8 @@ describe("[AGT3] Events of core-streams", function () {
               assert.equal(res.status, 400);
             });
             it('[E3AE] Should return the correct error', async () => {
-              assert.equal(res.body.error.data[0].code, ErrorIds.DeniedMultipleCoreStreams);
-              assert.equal(res.body.error.data[0].message, ErrorMessages[ErrorIds.DeniedMultipleCoreStreams]);
+              assert.equal(res.body.error.data[0].code, ErrorIds.DeniedMultipleAccountStreams);
+              assert.equal(res.body.error.data[0].message, ErrorMessages[ErrorIds.DeniedMultipleAccountStreams]);
             });
           });
         });

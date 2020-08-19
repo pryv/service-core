@@ -32,11 +32,11 @@ const ErrorMessages = {
   [ErrorIds.MissingRequiredField]: 'Missing required field',
   [ErrorIds.NonValidForOpenSource]: 'Not valid method for open pryv',
   // TODO IEVA - wording
-  [ErrorIds.DeniedEventModification]: 'Event modification was not done, perhaps you are trying to edit a core stream event like user data.',
+  [ErrorIds.DeniedEventModification]: 'Event modification was not done, perhaps you are trying to edit a account stream event like user data.',
   [ErrorIds.EmailRequired]: 'Email is required',
   [ErrorIds.PasswordRequired]: 'Password is required',
   [ErrorIds.InvalidPassword]: 'Password should have from 5 to 23 characters',
-  [ErrorIds.DeniedMultipleCoreStreams]: 'It is not allowed to save the event with multiple core streams',
+  [ErrorIds.DeniedMultipleAccountStreams]: 'It is not allowed to save the event with multiple account streams',
   [ErrorIds.UnexpectedErrorWhileSavingTheEvent]: 'Unexpected error while saving the event, please try again in a minute.',
 };
 Object.freeze(ErrorMessages);

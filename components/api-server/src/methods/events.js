@@ -152,13 +152,13 @@ module.exports = function (
   }
 
   /**
-   * Remove events that belongs to the core streams and should not be displayed
+   * Remove events that belongs to the account streams and should not be displayed
    * @param query -mongo query object  
    */
-  function removeNotReadableCoreStreamsFromQuery (query) {
+  function removeNotReadableAccountStreamsFromQuery (query) {
     // get streams ids from the config that should be retrieved
-    const userCoreStreams = (new UserInfoSerializer()).getCoreStreamsIdsForbiddenForReading();
-    query.streamIds = { ...query.streamIds, ...{ $nin: userCoreStreams } };
+    const userAccountStreams = (new UserInfoSerializer()).getAccountStreamsIdsForbiddenForReading();
+    query.streamIds = { ...query.streamIds, ...{ $nin: userAccountStreams } };
 
     return query;
   }
@@ -170,7 +170,7 @@ module.exports = function (
     if (params.streams) {
       query.streamIds = {$in: params.streams};
     }
-    query = removeNotReadableCoreStreamsFromQuery(query);
+    query = removeNotReadableAccountStreamsFromQuery(query);
 
     if (params.tags && params.tags.length > 0) {
       query.tags = {$in: params.tags};
@@ -257,7 +257,7 @@ module.exports = function (
   );
 
   function findEvent (context, params, result, next) {
-    const query = removeNotReadableCoreStreamsFromQuery({ id: params.id });
+    const query = removeNotReadableAccountStreamsFromQuery({ id: params.id });
 
     userEventsStorage.findOne(context.user, query, null, function (err, event) {
       if (err) {
@@ -362,7 +362,7 @@ module.exports = function (
   async function createEvent(
     context, params, result, next) 
   {
-
+    let accountStreamsInfo = { removeActiveEvents: false};
     if (isSeriesType(context.content.type)) {
       if (openSourceSettings.isActive) {
         return next(errors.unavailableMethod());
@@ -374,22 +374,20 @@ module.exports = function (
         
       // As long as there is no data, event duration is considered to be 0.
       context.content.duration = 0; 
-    }
+    } else {
+      // if event belongs to the account streams, apply additional actions
+      try {
+        accountStreamsInfo = await handleAccountStreams(context.user.username, context, true);
+        context.content = accountStreamsInfo.context;
 
-    //TODO IEVA - what is isSeriesType???
-    
-    let coreStreamsInfo;
-    try {
-      // if event belongs to the core streams, apply additional actions
-      coreStreamsInfo = await handleCoreStreams(context.user.username, context, true);
-      context.content = coreStreamsInfo.context;
-
-      if (coreStreamsInfo.validationErrors.length > 0) {
-        return next(commonFns.apiErrorToValidationErrorsList(coreStreamsInfo.validationErrors));
+        if (accountStreamsInfo.validationErrors.length > 0) {
+          return next(commonFns.apiErrorToValidationErrorsList(accountStreamsInfo.validationErrors));
+        }
+      } catch (err) {
+        return next(errors.unexpectedError(err));
       }
-    } catch (err) {
-      return next(errors.unexpectedError(err));
     }
+
 
     userEventsStorage.insertOne(
       context.user, context.content, function (err, newEvent) {
@@ -410,7 +408,7 @@ module.exports = function (
         // To remove when streamId not necessary
         newEvent.streamId = newEvent.streamIds[0];
 
-        if (coreStreamsInfo.removeActiveEvents) {
+        if (accountStreamsInfo.removeActiveEvents) {
           handleEventsWithActiveStreamId(context.user, newEvent.streamId, newEvent.id);
         }
         // remove redundant field for the result that enforces uniqness
@@ -437,7 +435,7 @@ module.exports = function (
   }
 
   /**
-   * Do additional actions if event belongs to the core stream and is
+   * Do additional actions if event belongs to the account stream and is
    * 1) unique
    * 2) indexed
    * 3) active
@@ -451,21 +449,21 @@ module.exports = function (
    * @param object contextContent 
    * @param boolean creation - if true - active streamId will be added by default
    */
-  async function handleCoreStreams (username:string, context: object, creation: Boolean) {
+  async function handleAccountStreams (username:string, context: object, creation: Boolean) {
     const userInfoSerializerObj = new UserInfoSerializer();
-    const nonEditableCoreStreamsIds = userInfoSerializerObj.getCoreStreamsIdsForbiddenForEditing();
-    const editableCoreStreams = userInfoSerializerObj.getEditableCoreStreams();
+    const nonEditableAccountStreamsIds = userInfoSerializerObj.getAccountStreamsIdsForbiddenForEditing();
+    const editableAccountStreams = userInfoSerializerObj.getEditableAccountStreams();
     let removeActiveEvents = false;
     let validationErrors = [];
     let contextContent = context.content;
     let oldContentStreamIds = (context?.oldContent?.streamIds) ? context.oldContent.streamIds: [];
     const fieldName = (typeof contextContent.streamIds === 'object')? contextContent.streamIds[0]: '';
 
-    // check if event belongs to core stream ids
-    const matchingCoreStreams = _.intersection(contextContent.streamIds, Object.keys(editableCoreStreams));
-    if (matchingCoreStreams.length === 1 &&
-      (creation || _.intersection(matchingCoreStreams, oldContentStreamIds).length >= 1)) {
-      // check that core stream id was not changed
+    // check if event belongs to account stream ids
+    const matchingAccountStreams = _.intersection(contextContent.streamIds, Object.keys(editableAccountStreams));
+    if (matchingAccountStreams.length === 1 &&
+      (creation || _.intersection(matchingAccountStreams, oldContentStreamIds).length >= 1)) {
+      // check that account stream id was not changed
 
       // append active stream id if it is a new event 
       if (creation) {
@@ -479,15 +477,15 @@ module.exports = function (
       }
 
       // if stream is unique append properties that enforce uniqueness
-      if (editableCoreStreams[fieldName].isUnique || editableCoreStreams[fieldName].isIndexed) {
+      if (editableAccountStreams[fieldName].isUnique || editableAccountStreams[fieldName].isIndexed) {
         let fieldsForUpdate = {};
-        if (editableCoreStreams[fieldName].isUnique) {
+        if (editableAccountStreams[fieldName].isUnique) {
           contextContent = enforceEventUniqueness(contextContent, fieldName);
         }
         
         fieldsForUpdate[fieldName] = [{
           value: contextContent.content,
-          isUnique: editableCoreStreams[fieldName].isUnique,
+          isUnique: editableAccountStreams[fieldName].isUnique,
           isActive: contextContent.streamIds.includes(UserInfoSerializer.options.STREAM_ID_ACTIVE) ||
             oldContentStreamIds.includes(UserInfoSerializer.options.STREAM_ID_ACTIVE),
           creation: creation
@@ -512,11 +510,11 @@ module.exports = function (
         }
       }
       
-    } else if (nonEditableCoreStreamsIds.includes(fieldName)) {
+    } else if (nonEditableAccountStreamsIds.includes(fieldName)) {
       validationErrors.push(errors.DeniedEventModification(fieldName));
-    } else if (matchingCoreStreams.length > 1 || (!creation && _.intersection(matchingCoreStreams, oldContentStreamIds).length === 0)) {
-      // check if streamId includes only 1 core stream
-      validationErrors.push(errors.DeniedMultipleCoreStreams(fieldName));
+    } else if (matchingAccountStreams.length > 1 || (!creation && _.intersection(matchingAccountStreams, oldContentStreamIds).length === 0)) {
+      // check if streamId includes only 1 account stream
+      validationErrors.push(errors.DeniedMultipleAccountStreams(fieldName));
     }
     return {
       context: contextContent,
@@ -688,18 +686,18 @@ module.exports = function (
   async function updateEvent (context, params, result, next) {
     try {
       // if events belongs to system streams additional actions may be needed
-      const coreStreamsInfo = await handleCoreStreams(context.user.username, context, false);
-      context.content = coreStreamsInfo.context;
+      const accountStreamsInfo = await handleAccountStreams(context.user.username, context, false);
+      context.content = accountStreamsInfo.context;
 
-      if (coreStreamsInfo.validationErrors.length > 0) {
-        return next(commonFns.apiErrorToValidationErrorsList(coreStreamsInfo.validationErrors));
+      if (accountStreamsInfo.validationErrors.length > 0) {
+        return next(commonFns.apiErrorToValidationErrorsList(accountStreamsInfo.validationErrors));
       }
       
       let updatedEvent = await bluebird.fromCallback(cb =>
         userEventsStorage.updateOne(context.user, { _id: context.content.id }, context.content, cb));
 
       // if update was not done and no errors were catched
-      //, perhaps user is trying to edit core streams
+      //, perhaps user is trying to edit account streams
       if (!updatedEvent) {
         return next(errors.DeniedEventModification());
       }
@@ -707,8 +705,8 @@ module.exports = function (
       // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];
 
-      // if it is needed update events from the same core stream
-      if (coreStreamsInfo.removeActiveEvents) {
+      // if it is needed update events from the same account stream
+      if (accountStreamsInfo.removeActiveEvents) {
         handleEventsWithActiveStreamId(context.user, updatedEvent.streamId, updatedEvent.id);
       }
 
@@ -723,7 +721,7 @@ module.exports = function (
 
 
   /**
-   * for core streams - 'active' streamId defines the 'main' event from the stream
+   * for account streams - 'active' streamId defines the 'main' event from the stream
    * if there are many events (like many emails), only one should be main/active
    * @param {*} user 
    * @param {*} streamId 
@@ -984,7 +982,7 @@ module.exports = function (
     }, notify);
 
   /**
-   * If event belongs to the core stream - !!! checks for unique value
+   * If event belongs to the account stream - !!! checks for unique value
    * and not a stream id
    * 1) deal with properties that enforces uniqueness
    * 2) send to service-register if needed
@@ -1027,7 +1025,7 @@ module.exports = function (
         userEventsStorage.updateOne(context.user, { _id: params.id }, updatedData, cb));
 
       // if update was not done and no errors were catched
-      //, perhaps user is trying to edit core streams
+      //, perhaps user is trying to edit account streams
       if (!updatedEvent) {
         return next(errors.DeniedEventModification());
       }
@@ -1126,7 +1124,7 @@ module.exports = function (
           userEventsStorage.updateOne(context.user, { _id: params.id }, updatedData, cb));
 
         // if update was not done and no errors were catched
-        //, perhaps user is trying to edit core streams
+        //, perhaps user is trying to edit account streams
         if (!alreadyUpdatedEvent) {
           return next(errors.DeniedEventModification());
         }
@@ -1183,8 +1181,8 @@ module.exports = function (
       }
       if (! canDeleteEvent) return callback(errors.forbidden());
 
-      // check if event belongs to core streams and if it is allowed to delete it
-      const allowedToDelete = handleCoreStreamsDeletion(event);
+      // check if event belongs to account streams and if it is allowed to delete it
+      const allowedToDelete = handleAccountStreamsDeletion(event);
       if (!allowedToDelete) return callback(errors.DeniedEventModification('streamId'));
 
       callback(null, event);
@@ -1192,17 +1190,17 @@ module.exports = function (
   }
 
   /**
- * Remove events that belongs to the core streams and should not be allowed for editing
+ * Remove events that belongs to the account streams and should not be allowed for editing
  * @param query - mongo query object 
  */
-  function handleCoreStreamsDeletion (event): Boolean {
+  function handleAccountStreamsDeletion (event): Boolean {
     let allowedToDelete = true;
-    let forbidenUserCoreStreams = (new UserInfoSerializer()).getCoreStreamsIdsForbiddenForEditing();
-    const editableCoreStreams = Object.keys((new UserInfoSerializer()).getEditableCoreStreams());
+    let forbidenUserAccountStreams = (new UserInfoSerializer()).getAccountStreamsIdsForbiddenForEditing();
+    const editableAccountStreams = Object.keys((new UserInfoSerializer()).getEditableAccountStreams());
     if (event?.streamIds) {
-      if (_.intersection(event.streamIds, forbidenUserCoreStreams).length > 0) {
+      if (_.intersection(event.streamIds, forbidenUserAccountStreams).length > 0) {
         allowedToDelete = false;
-      } else if (_.intersection(event.streamIds, editableCoreStreams).length > 0
+      } else if (_.intersection(event.streamIds, editableAccountStreams).length > 0
         && event.streamIds.includes(UserInfoSerializer.options.STREAM_ID_ACTIVE)) {
         allowedToDelete = false;
       }

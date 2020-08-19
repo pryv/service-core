@@ -792,13 +792,13 @@ describe('events.streamIds', function () {
               .set('Authorization', manageAccessToken);
 
             // lets separate core events from all other events and validate them separatelly
-            const separatedEvents = validation.separateCoreStreamsAndOtherEvents(res.body.events);
+            const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
             const events = separatedEvents.events;
             assert.equal(events.length, 3);
             
-            // validate core streams events
-            const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
-            validation.validateCoreEvents(actualCoreStreamsEvents);
+            // validate account streams events
+            const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
+            validation.validateCoreEvents(actualAccountStreamsEvents);
             
             let foundAandA_A = false;
             let foundA_AandA_A_A = false;

@@ -306,7 +306,7 @@ factory.NonValidForOpenSource = (): APIError => {
     }
   )};
 /**
- * Denied event modification perhaps of belonging to the core streams
+ * Denied event modification perhaps of belonging to the account streams
  */
 factory.DeniedEventModification = (streamId): APIError => {
   return new APIError(
@@ -320,11 +320,11 @@ factory.DeniedEventModification = (streamId): APIError => {
 };
 
 /**
- * Denied to save multiple core streams for the same event
+ * Denied to save multiple account streams for the same event
  */
-factory.DeniedMultipleCoreStreams = (streamId): APIError => {
+factory.DeniedMultipleAccountStreams = (streamId): APIError => {
   return new APIError(
-    ErrorIds.DeniedMultipleCoreStreams, ErrorMessages[ErrorIds.DeniedMultipleCoreStreams],
+    ErrorIds.DeniedMultipleAccountStreams, ErrorMessages[ErrorIds.DeniedMultipleAccountStreams],
     {
       httpStatus: 400,
       data: { param: streamId },
