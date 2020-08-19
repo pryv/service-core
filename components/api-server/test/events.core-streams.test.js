@@ -58,6 +58,41 @@ describe("[AGT3] Events of core-streams", function () {
     return user;
   }
 
+  /**
+   * Create additional event
+   * @param string streamId 
+   */
+  async function createAdditionalEvent (streamId) {
+    eventDataForadditionalEvent = {
+      streamIds: [streamId],
+      content: charlatan.Lorem.characters(7),
+      type: 'string/pryv'
+    };
+    return await request.post(basePath)
+      .send(eventDataForadditionalEvent)
+      .set('authorization', access.token);
+  }
+
+  async function createAdditionalEventAndupdateMainOne (streamId) {
+    eventData = {
+      streamIds: [streamId, UserInfoSerializer.options.STREAM_ID_ACTIVE],
+      content: charlatan.Lorem.characters(7),
+      type: 'string/pryv'
+    };
+
+    const initialEvent = await bluebird.fromCallback(
+      (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
+
+    // create an additional event
+    await createAdditionalEvent(streamId);
+
+    let response = await request.put(path.join(basePath, initialEvent.id))
+      .send(eventData)
+      .set('authorization', access.token);
+    return response;
+  }
+
+
   before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
     const settings = await Settings.load();
@@ -493,7 +528,6 @@ describe("[AGT3] Events of core-streams", function () {
   });
 
   describe('PUT /events/<id>', async () => {
-    let res;
     describe('[D1FD] When updating non editable streams', async () => {
       before(async function () {
         await createUser();
@@ -518,31 +552,6 @@ describe("[AGT3] Events of core-streams", function () {
     });
 
     describe('When updating editable streams', async () => {
-      async function createAdditionalEventAndupdateMainOne (streamId) {
-        eventData = {
-          streamIds: [streamId, UserInfoSerializer.options.STREAM_ID_ACTIVE],
-          content: charlatan.Lorem.characters(7),
-          type: 'string/pryv'
-        };
-
-        const initialEvent = await bluebird.fromCallback(
-          (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
-
-        // create an additional event
-        eventDataForadditionalEvent = {
-          streamIds: [streamId],
-          content: charlatan.Lorem.characters(7),
-          type: 'string/pryv'
-        };
-        const additionalEvent = await request.post(basePath)
-          .send(eventDataForadditionalEvent)
-          .set('authorization', access.token);
-
-        let response = await request.put(path.join(basePath, initialEvent.id))
-          .send(eventData)
-          .set('authorization', access.token);
-        return response;
-      }
 
       async function editEvent (streamId) {
         eventData = {
@@ -909,24 +918,120 @@ describe("[AGT3] Events of core-streams", function () {
   describe('DELETE /events/<id>', async () => {
     describe('[E7EB] When deleting editable core-streams event', async () => {
       describe('[04CB] Event has no ‘active’ streamId', async () => {
-        it('[D94D] Event belongs to the unique stream', async () => { 
-          it('[43B1] Should return a 200', async () => { });
-          it('[3E12] Should return a deleted event', async () => { });
-          it('[F328] Should notify service-register and update only unique property', async () => { });
+        describe('[D94D] Event belongs to the unique stream', async () => { 
+          let streamId = 'email';
+          let initialEvent;
+          before(async function () {
+            const settings = _.cloneDeep(helpers.dependencies.settings);
+            scope = nock(settings.services.register.url)
+            scope.put('/users',
+              (body) => {
+                serviceRegisterRequest = body;
+                return true;
+              }).times(2).reply(200, { errors: [] });
+            await createUser();
+            initialEvent = await bluebird.fromCallback(
+              (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
+
+            await createAdditionalEvent(streamId);
+
+            res = await request.delete(path.join(basePath, initialEvent.id))
+              .set('authorization', access.token);
+          });
+          it('[43B1] Should return a 200', async () => { 
+            assert.equal(res.status, 200);
+          });
+          it('[3E12] Should return a deleted event', async () => {
+            assert.equal(res.body.event.id, initialEvent.id);
+            assert.equal(res.body.event.trashed, true);
+           });
+          it('Event should not have property that enforces uniqueness anymore', async () => { 
+            //TODO IEVA - should I implement real deletion
+            assert.notEqual(res.body.event[`${streamId}__unique`], initialEvent[`${streamId}__unique`]);
+          });
+          it('[F328] Deleted event data is sent to service-register', async () => { 
+            assert.equal(scope.isDone(), true);
+            assert.deepEqual(serviceRegisterRequest, {
+              user: {
+                username: user.attrs.username,
+              },
+              fieldsToDelete: { [streamId]: initialEvent.content}
+            });
+          });
         });
-        it('[C84A] Event belongs to the indexed stream', async () => { 
-          it('[1B70] Should return a 200', async () => { });
-          it('[CBB9] Should return a deleted event', async () => { });
+        describe('[C84A] Event belongs to the indexed stream', async () => { 
+          let streamId = 'language';
+          let initialEvent;
+          before(async function () {
+            const settings = _.cloneDeep(helpers.dependencies.settings);
+            scope = nock(settings.services.register.url)
+            scope.put('/users',
+              (body) => {
+                serviceRegisterRequest = body;
+                return true;
+              }).times(1).reply(200, { errors: [] });
+            await createUser();
+            initialEvent = await bluebird.fromCallback(
+              (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
+
+            await createAdditionalEvent(streamId);
+
+            res = await request.delete(path.join(basePath, initialEvent.id))
+              .set('authorization', access.token);
+          });
+          it('[1B70] Should return a 200', async () => { 
+            assert.equal(res.status, 200);
+          });
+          it('[CBB9] Should return a deleted event', async () => { 
+            assert.equal(res.body.event.id, initialEvent.id);
+            assert.equal(res.body.event.trashed, true);
+          });
         });
       });
       describe('[B7A2] Event has ‘active’ streamId', async () => {
-        it('[10EC] Should return a 400', async () => { });
-        it('[D4CA] Should return the correct error', async () => { });
+        let streamId = 'language';
+        let initialEvent;
+        before(async function () {
+          await createUser();
+          initialEvent = await bluebird.fromCallback(
+            (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
+          res = await request.delete(path.join(basePath, initialEvent.id))
+            .set('authorization', access.token);
+        });
+        it('[10EC] Should return a 400', async () => { 
+          assert.equal(res.status, 400);
+        });
+        it('[D4CA] Should return the correct error', async () => { 
+          assert.equal(res.body.error.id, ErrorIds.DeniedEventModification);
+        });
       });
     });
     describe('[CDD1] When deleting not editable core-streams event', async () => {
-      it('[8EDB] Should return a 400', async () => { });
-      it('[A727] Should return the correct error', async () => { });
+      let streamId = 'username';
+      let initialEvent;
+      before(async function () {
+        const settings = _.cloneDeep(helpers.dependencies.settings);
+        scope = nock(settings.services.register.url)
+        scope.put('/users',
+          (body) => {
+            serviceRegisterRequest = body;
+            return true;
+          }).times(2).reply(200, { errors: [] });
+        await createUser();
+        initialEvent = await bluebird.fromCallback(
+          (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
+
+        await createAdditionalEvent(streamId);
+
+        res = await request.delete(path.join(basePath, initialEvent.id))
+          .set('authorization', access.token);
+      });
+      it('[8EDB] Should return a 400', async () => { 
+        assert.equal(res.status, 400);
+      });
+      it('[A727] Should return the correct error', async () => {
+        assert.equal(res.body.error.id, ErrorIds.DeniedEventModification);
+      });
     });
   });
 });

@@ -5,7 +5,8 @@
  * Proprietary and confidential
  */
 
-var utils = require('components/utils'),
+var cuid = require('cuid'),
+  utils = require('components/utils'),
   errors = require('components/errors').factory,
   async = require('async'),
   bluebird = require('bluebird'),
@@ -17,11 +18,12 @@ var utils = require('components/utils'),
   treeUtils = utils.treeUtils,
   _ = require('lodash'),
   SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
+
 const UserInfoSerializer = require('components/business/src/user/user_info_serializer'),
   ServiceRegister = require('components/business/src/auth/service_register'),
   Registration = require('components/business/src/auth/registration'),
   ErrorMessages = require('components/errors/src/ErrorMessages'),
-  ErrorIds = require('components/errors').ErrorIds;;
+  ErrorIds = require('components/errors').ErrorIds;
 
 const assert = require('assert');
 
@@ -158,17 +160,6 @@ module.exports = function (
     const userCoreStreams = (new UserInfoSerializer()).getCoreStreamsIdsForbiddenForReading();
     query.streamIds = { ...query.streamIds, ...{ $nin: userCoreStreams } };
 
-    return query;
-  }
-
-/**
- * Remove events that belongs to the core streams and should not be allowed for editing
- * @param query - mongo query object 
- */
-  async function removeNotEditableCoreStreamsFromQuery (query) {
-
-    const userCoreStreams = (new UserInfoSerializer()).getCoreStreamsIdsForbiddenForEditing();
-    query.streamIds = { ...query.streamIds, ...{ $nin: userCoreStreams } };
     return query;
   }
 
@@ -386,10 +377,10 @@ module.exports = function (
     }
 
     //TODO IEVA - what is isSeriesType???
-    // if event belongs to the core streams, apply additional actions
-    // TODO IEVA - is this way of retrieving username is correct?
+    
     let coreStreamsInfo;
     try {
+      // if event belongs to the core streams, apply additional actions
       coreStreamsInfo = await handleCoreStreams(context.user.username, context, true);
       context.content = coreStreamsInfo.context;
 
@@ -697,7 +688,6 @@ module.exports = function (
   async function updateEvent (context, params, result, next) {
     try {
       // if events belongs to system streams additional actions may be needed
-      // TODO IEVA - is this way of finding the username is correct if I am logged in with another user?
       const coreStreamsInfo = await handleCoreStreams(context.user.username, context, false);
       context.content = coreStreamsInfo.context;
 
@@ -740,24 +730,13 @@ module.exports = function (
    * @param {*} eventIdToExclude 
    */
   async function handleEventsWithActiveStreamId (user, streamId, eventIdToExclude) {
-    // TODO IEVA - active streamId and maybe simplify?
-    // make update for all events in the stream with active streamId in
-    // 2 steps, so that all properties would be edited in the right way
-    let eventsForUpdate = await bluebird.fromCallback(cb =>
-      userEventsStorage.find(user, {
-        id: { $ne: eventIdToExclude },
-        streamIds: { $all: [streamId, UserInfoSerializer.options.STREAM_ID_ACTIVE] }
-      }, null, cb));
-    let i;
-    for (i = 0; i < eventsForUpdate.length; i++) {
-      const streamIdsWithoutActive = eventsForUpdate[i].streamIds.filter(s => s !== UserInfoSerializer.options.STREAM_ID_ACTIVE);
-      let updatedEvent = eventsForUpdate[i];
-      updatedEvent.streamIds = streamIdsWithoutActive;
-      const response = await bluebird.fromCallback(cb =>
-        userEventsStorage.updateOne(user,
-          { id: eventsForUpdate[i].id },
-          updatedEvent, cb));
-    }
+    await bluebird.fromCallback(cb =>
+      userEventsStorage.updateMany(user,
+        {
+          id: { $ne: eventIdToExclude },
+          streamIds: { $all: [streamId, UserInfoSerializer.options.STREAM_ID_ACTIVE] }
+        },
+        { $pull: { streamIds: UserInfoSerializer.options.STREAM_ID_ACTIVE } }, cb));
   }
 
   function notify(context, params, result, next) {
@@ -1004,36 +983,65 @@ module.exports = function (
       });
     }, notify);
 
+  /**
+   * If event belongs to the core stream - !!! checks for unique value
+   * and not a stream id
+   * 1) deal with properties that enforces uniqueness
+   * 2) send to service-register if needed
+   * @param {*} event 
+   */
+  async function handleUniqueFields (user, event, id) {
+    let updatedEvent;
+    // if needed remove field that enforces uniqueness
+    const existingUniqueProperty = Object.keys(event)
+      .find(function (item) { return item.includes("__unique") });
+
+    if (typeof existingUniqueProperty === 'string' && existingUniqueProperty.length > 0) {
+      try {
+        updatedEvent = await bluebird.fromCallback(cb =>
+          userEventsStorage.updateOne(user, { _id: id },
+            { [existingUniqueProperty]: cuid() }, cb));
+
+        // initialize service-register connection
+        const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
+      
+        // send information update to service regsiter
+        const response = await serviceRegisterConn.updateUserInServiceRegister(
+          user.username, {}, { [existingUniqueProperty.split('__unique')[0]]: event[existingUniqueProperty]});
+      } catch (err) {
+        console.log(err,'err');
+        throw err;
+      }
+    }
+    return updatedEvent;
+  }
   async function flagAsTrashed(context, params, result, next) {
-    var updatedData = {trashed: true};
-    context.updateTrackingProperties(updatedData);
-
-    const userCoreStreams = (new UserInfoSerializer()).getAllCoreStreams();
-    // exclude core streams from the query
-    let query = {
-      $and: [
-        { _id: params.id },
-        { streamIds: { $nin: Object.keys(userCoreStreams) } }
-      ]
+    var updatedData = {
+      trashed: true
     };
-    userEventsStorage.updateOne(context.user, query, updatedData,
-      function (err, updatedEvent) {
-        if (err) { return next(errors.unexpectedError(err)); }
+    context.updateTrackingProperties(updatedData);
+    try {
+      let updatedEvent = await handleUniqueFields(context.user, context.event, params.id);
+      
+      updatedEvent = await bluebird.fromCallback(cb =>
+        userEventsStorage.updateOne(context.user, { _id: params.id }, updatedData, cb));
 
-        // if update was not done and no errors were catched
-        //, perhaps user is trying to edit core streams
-        if (!updatedEvent) {
-          return next(errors.DeniedEventModification());
-        }
+      // if update was not done and no errors were catched
+      //, perhaps user is trying to edit core streams
+      if (!updatedEvent) {
+        return next(errors.DeniedEventModification());
+      }
 
-        // To remove when streamId not necessary
-        updatedEvent.streamId = updatedEvent.streamIds[0];
+      // To remove when streamId not necessary
+      updatedEvent.streamId = updatedEvent.streamIds[0];
 
-        result.event = updatedEvent;
-        setFileReadToken(context.access, result.event);
+      result.event = updatedEvent;
+      setFileReadToken(context.access, result.event);
 
-        next();
-      });
+      next();
+    } catch (err) {
+      return next(errors.unexpectedError(err));
+    }
   }
 
   function deleteWithData(context, params, result, next) {
@@ -1101,6 +1109,7 @@ module.exports = function (
       try {
         updatedEvent = await bluebird.fromCallback(cb =>
           checkEventForDelete(context, params.id, cb));
+
         var attIndex = getAttachmentIndex(updatedEvent.attachments, params.fileId);
         if (attIndex === -1) {
           return next(errors.unknownResource(
@@ -1113,17 +1122,8 @@ module.exports = function (
         var updatedData = { attachments: updatedEvent.attachments };
         context.updateTrackingProperties(updatedData);
 
-        // exclude core streams from the query
-        const userCoreStreams = (new UserInfoSerializer()).getAllCoreStreams();
-        let query = {
-          $and: [
-            { _id: params.id },
-            { streamIds: { $nin: Object.keys(userCoreStreams) } }
-          ]
-        };
-
         let alreadyUpdatedEvent = await bluebird.fromCallback(cb =>
-          userEventsStorage.updateOne(context.user, query, updatedData, cb));
+          userEventsStorage.updateOne(context.user, { _id: params.id }, updatedData, cb));
 
         // if update was not done and no errors were catched
         //, perhaps user is trying to edit core streams
@@ -1163,9 +1163,7 @@ module.exports = function (
   }
 
   async function checkEventForDelete (context, eventId, callback) {
-    let query = await removeNotEditableCoreStreamsFromQuery({ id: eventId });
-
-    userEventsStorage.findOne(context.user, query, null, function (err, event) {
+    userEventsStorage.findOne(context.user, { id: eventId }, null, function (err, event) {
       if (err) {
         return callback(errors.unexpectedError(err));
       }
@@ -1176,6 +1174,7 @@ module.exports = function (
       }
       
       let canDeleteEvent = false;
+
       for (let i = 0; i < event.streamIds.length; i++) {
         if (context.canUpdateContext(event.streamIds[i], event.tags)) {
           canDeleteEvent = true;
@@ -1184,8 +1183,31 @@ module.exports = function (
       }
       if (! canDeleteEvent) return callback(errors.forbidden());
 
+      // check if event belongs to core streams and if it is allowed to delete it
+      const allowedToDelete = handleCoreStreamsDeletion(event);
+      if (!allowedToDelete) return callback(errors.DeniedEventModification('streamId'));
+
       callback(null, event);
     });
+  }
+
+  /**
+ * Remove events that belongs to the core streams and should not be allowed for editing
+ * @param query - mongo query object 
+ */
+  function handleCoreStreamsDeletion (event): Boolean {
+    let allowedToDelete = true;
+    let forbidenUserCoreStreams = (new UserInfoSerializer()).getCoreStreamsIdsForbiddenForEditing();
+    const editableCoreStreams = Object.keys((new UserInfoSerializer()).getEditableCoreStreams());
+    if (event?.streamIds) {
+      if (_.intersection(event.streamIds, forbidenUserCoreStreams).length > 0) {
+        allowedToDelete = false;
+      } else if (_.intersection(event.streamIds, editableCoreStreams).length > 0
+        && event.streamIds.includes(UserInfoSerializer.options.STREAM_ID_ACTIVE)) {
+        allowedToDelete = false;
+      }
+    }
+    return allowedToDelete;
   }
 
   /**
