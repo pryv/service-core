@@ -111,7 +111,7 @@ describe('events', function () {
           async () => {
             try {
               // lets separate core events from all other events and validate them separatelly
-              const separatedEvents = await validation.separateCoreStreamsAndOtherEvents(response.body.events);
+              const separatedEvents = validation.separateCoreStreamsAndOtherEvents(response.body.events);
               response.body.events = separatedEvents.events;
               coreStreamsEvents = separatedEvents.coreStreamsEvents;
             } catch (error) {
@@ -364,10 +364,10 @@ describe('events', function () {
       request.get(basePath).query({ state: 'all', limit: 1000 }).end(async function (res) {
         try{
           // lets separate core events from all other events and validate them separatelly
-          const separatedEvents = await validation.separateCoreStreamsAndOtherEvents(res.body.events);
+          const separatedEvents = validation.separateCoreStreamsAndOtherEvents(res.body.events);
           res.body.events = separatedEvents.events;
           const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
-          await validation.validateCoreEvents(actualCoreStreamsEvents);
+          validation.validateCoreEvents(actualCoreStreamsEvents);
 
           validation.check(res, {
             status: 200,
@@ -399,10 +399,10 @@ describe('events', function () {
       request.get(basePath).query(params).end(async function (res) {
         try{
           // lets separate core events from all other events and validate them separatelly
-          const separatedEvents = await validation.separateCoreStreamsAndOtherEvents(res.body.events);
+          const separatedEvents = validation.separateCoreStreamsAndOtherEvents(res.body.events);
           res.body.events = separatedEvents.events;
           const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
-          await validation.validateCoreEvents(actualCoreStreamsEvents);
+          validation.validateCoreEvents(actualCoreStreamsEvents);
 
           validation.check(res, {
             status: 200,
@@ -438,10 +438,10 @@ describe('events', function () {
       request.get(basePath).query(params).end(async function (res) {
         try{
           // lets separate core events from all other events and validate them separatelly
-          const separatedEvents = await validation.separateCoreStreamsAndOtherEvents(res.body.events);
+          const separatedEvents = validation.separateCoreStreamsAndOtherEvents(res.body.events);
           res.body.events = separatedEvents.events;
           const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
-          await validation.validateCoreEvents(actualCoreStreamsEvents);
+          validation.validateCoreEvents(actualCoreStreamsEvents);
           
           await bluebird.fromCallback(
             (cb) => validation.check(res, {
@@ -776,8 +776,6 @@ describe('events', function () {
         validation.checkErrorInvalidParams(res, done);
       });
     });
-
-
 
     it('[WN86] must return a correct error if an event with the same id already exists', function (done) {
       var data = {
@@ -2010,10 +2008,10 @@ describe('events', function () {
           function verifyEventData(stepDone) {
             storage.findAll(user, null, async function (err, events) {
               try{
-                const separatedEvents = await validation.separateCoreStreamsAndOtherEvents(events);
+                const separatedEvents = validation.separateCoreStreamsAndOtherEvents(events);
                 events = separatedEvents.events;
                 const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
-                await validation.validateCoreEvents(actualCoreStreamsEvents);
+                validation.validateCoreEvents(actualCoreStreamsEvents);
 
                 events.length.should.eql(testData.events.length, 'events');
 

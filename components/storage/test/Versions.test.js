@@ -508,9 +508,8 @@ describe('Versions', function () {
     const eventsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'events' }, cb));
     const usersCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'users' }, cb));
 
-    let userInfoSerializer = await UserInfoSerializer.build();
     // get streams ids from the config that should be retrieved
-    const userAccountStreams = userInfoSerializer.getAllCoreStreams();
+    const userAccountStreams = (new UserInfoSerializer()).getAllCoreStreams();
     const userAccountStreamIds = Object.keys(userAccountStreams);
     
     // get backup of users

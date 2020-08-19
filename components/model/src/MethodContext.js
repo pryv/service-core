@@ -37,6 +37,7 @@ class MethodContext {
   user: ?User;
   access: ?Access;
   streams: ?Array<Stream>;
+  userCoreStreams: ?Array<Stream>;
 
   accessToken: ?string;
   callerId: ?string;
@@ -262,19 +263,34 @@ class MethodContext {
     const user = this.user;
     const streams = await bluebird.fromCallback(
       cb => storage.streams.find(user, {}, null, cb));
-    // TODO IEVA - maybe here I should mix virtual streams
-    let userInfoSerializer = await UserInfoSerializer.build();
-    // get streams ids from the config that should be retrieved
-    const userCoreStreams = userInfoSerializer.getVirtualStreamsList();
 
+    // get streams ids from the config that should be retrieved
+    // TODO IEVA -remove from the class variables
+    const userCoreStreams = (new UserInfoSerializer()).getVirtualStreamsList();
     this.streams = streams.concat(userCoreStreams);
   }
 
   // Set this contexts stream by looking in this.streams. DEPRECATED.
-  setStreamList(streamIds: array) {
+  // used only in the events creation and update
+  // TODO IEVA - verify solutions with Ilia
+  setStreamList(streamIds: array, allowAdditionalCoreStreams: Boolean) {
     if (!streamIds || streamIds.length === 0) return;
+
+    // check if streams contains any core stream
+    const userCoreStreamsIds = Object.keys((new UserInfoSerializer()).getReadableCoreStreams());
+    const containsCoreStream = _.intersection(streamIds, userCoreStreamsIds);
+    
     streamIds.forEach(function (streamId) {
       let stream = treeUtils.findById(this.streams, streamId);
+
+      if (allowAdditionalCoreStreams &&
+        !stream &&
+        streamId === UserInfoSerializer.options.STREAM_ID_ACTIVE &&
+        containsCoreStream) {
+        stream = {
+          id: UserInfoSerializer.options.STREAM_ID_ACTIVE
+        }
+      }
       if (stream) {
         if (!this.streamList) this.streamList = [];
         this.streamList.push(stream);

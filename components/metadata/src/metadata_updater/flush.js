@@ -122,11 +122,18 @@ class UserRepository {
   async resolveFromDB(name: string): Promise<User> {
     const db = this.db; 
     
-    const query = { username: name };
     const options = {};
     // TODO IEVA
-    const user = await bluebird.fromCallback(
-      cb => db.users.findOne(query, options, cb));
+
+    // get userId by his username
+    const userId = await storage.events.getUserIdByUsername(name);
+
+    // get user details
+    console.log(options,'options');
+    const user = await db.events.getUserInfo({
+      user: { id: userId },
+      getAll: false
+    });
       
     return user;
   }

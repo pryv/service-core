@@ -798,7 +798,7 @@ describe('events.streamIds', function () {
             
             // validate core streams events
             const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
-            await validation.validateCoreEvents(actualCoreStreamsEvents);
+            validation.validateCoreEvents(actualCoreStreamsEvents);
             
             let foundAandA_A = false;
             let foundA_AandA_A_A = false;

@@ -368,18 +368,18 @@ exports.removeDeletionsAndHistory = function (items) {
 };
 
 exports.removeCoreStreamsEvents = async function (items) {
-  let userInfoSerializer = await UserInfoSerializer.build();
   // get streams ids from the config that should be retrieved
-  const expectedCoreStreams = userInfoSerializer.getAllCoreStreams();
+  const expectedCoreStreams = (new UserInfoSerializer()).getAllCoreStreams();
   return items.filter(function (e) { return !(e.streamIds.some(streamId => Object.keys(expectedCoreStreams).indexOf(streamId) >= 0)); });
 };
 
 exports.separateCoreStreamsAndOtherEvents = function (items) {
+  const readableCoreStreams = ['username', 'email', 'language', 'attachedFiles', 'dbDocuments', 'insurancenumber', 'phoneNumber'];
   const normalEvents = items.filter(function (e) {
-    return (!e.streamIds) || !(e.streamIds.some(streamId => ['username', 'email', 'language', 'attachedFiles', 'dbDocuments', 'passwordHash'].indexOf(streamId) >= 0));
+    return (!e.streamIds) || !(e.streamIds.some(streamId => readableCoreStreams.indexOf(streamId) >= 0));
   });
   const coreStreamsEvents = items.filter(function (e) {
-    return (e.streamIds) && (e.streamIds.some(streamId => ['username', 'email', 'language', 'attachedFiles', 'dbDocuments', 'passwordHash'].indexOf(streamId) >= 0));
+    return (e.streamIds) && (e.streamIds.some(streamId => readableCoreStreams.indexOf(streamId) >= 0));
   });
   return { events: normalEvents, coreStreamsEvents: coreStreamsEvents }
 }
@@ -407,14 +407,17 @@ exports.removeTrackingProperties = function (items) {
  * Validate that core events consist of values matching the configuration
  * and has properties that are usual for the events
  */
-exports.validateCoreEvents = async function (actualCoreEvents) {
-  // get all values from the settings that should be displayed for the user
-  let userInfoSerializer = await UserInfoSerializer.build();
+exports.validateCoreEvents = function (actualCoreEvents) {
   // get streams ids from the config that should be retrieved
-  const expectedCoreStreams = userInfoSerializer.getReadableCoreStreams();
+  let expectedCoreStreams = (new UserInfoSerializer()).getReadableCoreStreams();
 
   // iterate through expected core events and check that they exists in actual
-  // core events
+  // core events (skip nested streams)
+  Object.keys(expectedCoreStreams).forEach(key => {
+    if (Object.keys(expectedCoreStreams[key]).length > 1) {
+      delete expectedCoreStreams[key];
+    }
+  });
   const expectedSreamIds = Object.keys(expectedCoreStreams);
   for (n in expectedSreamIds) {
     let foundEvent = false;

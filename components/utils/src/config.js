@@ -316,6 +316,10 @@ config.schema = {
           'by default because of a security vulnerability',
       }
     }
+  },
+   // TODO IEVA - maybe describe more
+  systemStreams: {
+    custom: {}
   }
 };
 

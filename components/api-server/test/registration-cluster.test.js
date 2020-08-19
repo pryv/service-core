@@ -35,7 +35,8 @@ function defaults() {
     email: charlatan.Internet.email(),
     password: 'abcdefgh',
     invitationToken: 'enjoy',
-    referer: 'pryv'
+    referer: 'pryv',
+    insurancenumber: charlatan.Number.number(),
   };
 }
 

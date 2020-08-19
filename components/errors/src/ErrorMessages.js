@@ -36,6 +36,8 @@ const ErrorMessages = {
   [ErrorIds.EmailRequired]: 'Email is required',
   [ErrorIds.PasswordRequired]: 'Password is required',
   [ErrorIds.InvalidPassword]: 'Password should have from 5 to 23 characters',
+  [ErrorIds.DeniedMultipleCoreStreams]: 'It is not allowed to save the event with multiple core streams',
+  [ErrorIds.UnexpectedErrorWhileSavingTheEvent]: 'Unexpected error while saving the event, please try again in a minute.',
 };
 Object.freeze(ErrorMessages);
 

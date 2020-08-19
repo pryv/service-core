@@ -214,7 +214,7 @@ describe('Socket.IO', function () {
 
         // validate core streams events
         const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
-        await validation.validateCoreEvents(actualCoreStreamsEvents);
+        validation.validateCoreEvents(actualCoreStreamsEvents);
         
         result.events.should.eql(expectedEvents);
         

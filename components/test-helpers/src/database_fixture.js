@@ -287,7 +287,7 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
     // this.attrs.
     //const removeUser = bluebird.fromCallback((cb) => 
     //  db.users.removeOne(user, {username: username}, cb));
-    let userInfoSerializer = await UserInfoSerializer.build();
+    let userInfoSerializer = new UserInfoSerializer();
     // get streams ids from the config that should be deleted
     const coreStreams = userInfoSerializer.getAllCoreStreams();
     const removeUser = bluebird.fromCallback((cb) => {

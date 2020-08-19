@@ -74,7 +74,7 @@ class Registration {
    */
   async createUserInServiceRegister (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
-      let userInfoSerializer = await UserInfoSerializer.build();
+      let userInfoSerializer = new UserInfoSerializer();
       // get streams ids from the config that should be retrieved
       const userStreamsIds = userInfoSerializer.getIndexedCoreStreams();
       const uniqueStreamsIds = userInfoSerializer.getUniqueCoreStreamsIds();
@@ -153,7 +153,7 @@ class Registration {
      // TODO IEVA
       // const tempUser = _.clone(userInfo);
       // tempUser.username = context.TEMP_USERNAME_PREFIX + cuid();
-      return next(this.handleCreationErrors(err));
+      return next(this.handleUniqnessErrors(err));
     }
   }
 
@@ -167,10 +167,10 @@ class Registration {
 
     /*
     usersStorage.insertOne(poolUser, (err, tempUser) => {
-      if (err != null) return next(this.handleCreationErrors(err));
+      if (err != null) return next(this.handleUniqnessErrors(err));
 
       return this.initUser(tempUser, username, (err, finalUser) => {
-        if (err != null) return next(this.handleCreationErrors(err));
+        if (err != null) return next(this.handleUniqnessErrors(err));
         result.id = finalUser.id;
         context.user = finalUser;
         return next();
@@ -209,30 +209,31 @@ class Registration {
       }
     });
   }
-
   /**
    * Form errors for api response
    * @param {*} err 
    * @param {*} params 
    */
   // TODO IEVA static
-  handleCreationErrors (err) {
+  static handleUniqnessErrors (err, message) {
     // Duplicate errors
     // I check for these errors in the validation so they are only used for 
     // deprecated systems.createUser path
     let listApiErrors = [];
     if (typeof err.isDuplicateIndex === 'function') {
-      listApiErrors.push(errors.existingField(err.duplicateIndex())); 
+      listApiErrors.push(errors.existingField(err.duplicateIndex()));
     }
     // TODO IEVA - error for the other keys
     if (listApiErrors.length > 0) {
       return commonFns.apiErrorToValidationErrorsList(listApiErrors);
     }
     // Any other error
-    return errors.unexpectedError(err, 'Unexpected error while saving user.'); 
+    console.log(message,'message');
+    if (!message) {
+      message = 'Unexpected error while saving user.';
+    }
+    return errors.unexpectedError(err, message);
   }
-
-
   /**
    * 
    * @param {*} context 

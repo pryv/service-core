@@ -65,7 +65,6 @@ class Server {
     
     await this.application.initiate();
     this.logger = this.application.logFactory('api-server');
-    const logger = this.logger;
 
     // start TCP pub messaging
     await this.setupNotificationBus();
@@ -82,7 +81,7 @@ class Server {
       await this.setupReporting();
     }
 
-    logger.info('Server ready.');
+    this.logger.info('Server ready.');
     this.notificationBus.serverReady();
   }
 

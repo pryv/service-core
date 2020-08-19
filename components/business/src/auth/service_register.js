@@ -101,6 +101,7 @@ class ServiceRegister {
       user: user,
       fieldsToDelete: fieldsToDelete,
     }
+
     try {
       const res = await superagent.put(url)
         .send(request)

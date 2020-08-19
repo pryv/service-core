@@ -257,10 +257,10 @@ factory.ReservedUsername = (): APIError => {
 factory.existingField = function (fieldName: string) {
   let message = functionGetRightArticle(fieldName) + fieldName + ' with the same value already exists';
   let errorCode = fieldName + '-exists';
-  if (ErrorIds['Existing_' + fieldName]) {
-    errorCode = ErrorIds['Existing_' + fieldName];
-    if (ErrorMessages[ErrorIds['Existing_' + fieldName]]) {
-      message = ErrorMessages[ErrorIds['Existing_' + fieldName]];
+  if (ErrorIds[`Existing_${fieldName}`]) {
+    errorCode = ErrorIds[`Existing_${fieldName}`];
+    if (ErrorMessages[ErrorIds[`Existing_${fieldName}`]]) {
+      message = ErrorMessages[ErrorIds[`Existing_${fieldName}`]];
     }
   }
   return new APIError(errorCode, message, {
@@ -308,17 +308,30 @@ factory.NonValidForOpenSource = (): APIError => {
 /**
  * Denied event modification perhaps of belonging to the core streams
  */
-factory.DeniedEventModification = (): APIError => {
+factory.DeniedEventModification = (streamId): APIError => {
   return new APIError(
     ErrorIds.DeniedEventModification, ErrorMessages[ErrorIds.DeniedEventModification],
     {
       httpStatus: 400,
-    //  data: { param: 'username' },
+      data: { param: streamId },
       dontNotifyAirbrake: false,
     }
   )
 };
 
+/**
+ * Denied to save multiple core streams for the same event
+ */
+factory.DeniedMultipleCoreStreams = (streamId): APIError => {
+  return new APIError(
+    ErrorIds.DeniedMultipleCoreStreams, ErrorMessages[ErrorIds.DeniedMultipleCoreStreams],
+    {
+      httpStatus: 400,
+      data: { param: streamId },
+      dontNotifyAirbrake: false,
+    }
+  )
+};
 /**
  * Get the right article for the noun
  * @param {*} noun 

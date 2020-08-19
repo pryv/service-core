@@ -20,9 +20,8 @@ const timestamp = require('unix-timestamp');
 module.exports = async function (context, callback) {
   console.log('V1.5.22 => v1.6.0 Migration started');
   
-  let userInfoSerializer = await UserInfoSerializer.build();
   // get streams ids from the config that should be retrieved
-  const userAccountStreams = userInfoSerializer.getAllCoreStreams();
+  const userAccountStreams = (new UserInfoSerializer()).getAllCoreStreams();
   const userAccountStreamIds = Object.keys(userAccountStreams);
 
   const eventsCollection = await bluebird.fromCallback(cb => context.database.getCollection({ name: 'events' }, cb));

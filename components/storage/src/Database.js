@@ -655,8 +655,9 @@ class Database {
         // We assume WiredTiger here (and not MMapV1).
         const matching = err.errmsg.match(/index:(.+) dup key:/);
         if (Array.isArray(matching) && matching.length >= 2) {
-          const matchingKeys = matching[1];
-          return matchingKeys.split('__unique')[0].trim();
+          const matchingKeys = matching[1].split('__unique')[0].trim();
+          const separatedKeys = matchingKeys.split('_');
+          return separatedKeys[separatedKeys.length -1 ];
         }
       }
     }
