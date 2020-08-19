@@ -21,8 +21,8 @@ const Notifications = require('components/api-server/src/Notifications');
 const UserInfoSerializer = require('components/business/src/user/user_info_serializer');
 
 const { databaseFixture } = require('components/test-helpers');
-const { produceMongoConnection } = require('./test-helpers');
-const helpers = require('./helpers');
+const { produceMongoConnection } = require('components/api-server/test/test-helpers');
+const helpers = require('components/api-server/test/helpers');
 const validation = helpers.validation;
 
 
