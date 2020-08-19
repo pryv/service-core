@@ -8,7 +8,6 @@ const cuid = require('cuid');
 const _ = require('lodash');
 const bluebird = require('bluebird');
 const nock = require('nock');
-const path = require('path');
 const assert = require('chai').assert;
 const { describe, before, it } = require('mocha');
 const supertest = require('supertest');
@@ -23,7 +22,6 @@ const DefaultStreamsSerializer = require('components/business/src/user/user_info
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
 const helpers = require('components/api-server/test/helpers');
-const validation = helpers.validation;
 
 
 describe("[841C] Account with default-streams", function () {
@@ -174,11 +172,33 @@ describe("[841C] Account with default-streams", function () {
     });
   });
 
-  describe('POST /events', async () => {
-
+  describe('POST /change-password', async () => {
+    describe('[TIB0] When valid data is provided', async () => {
+      let passwordBefore;
+      let passwordAfter;
+      before(async function () {
+        await createUser();
+        basePath += '/change-password'
+        // modify account info
+        passwordBefore = await getActiveEvent('passwordHash');
+        res = await request.post(basePath)
+          .send({
+            newPassword: charlatan.Lorem.characters(7),
+            oldPassword: user.attrs.password,
+          })
+          .set('authorization', access.token);
+        passwordAfter = await getActiveEvent('passwordHash');
+      });
+      it('Should return 200', async () => {
+        assert.equal(res.status, 200);
+      });
+      it('Event with password hash should be updated', async () => {
+        assert.notEqual(passwordBefore.content, passwordAfter.content);
+      });
+    });
   });
 
-  describe('PUT /events/<id>', async () => {
+  describe('PUT /account', async () => {
     describe('[11B0] When user tries to modify the username', async () => {
       before(async function () {
         await createUser();
