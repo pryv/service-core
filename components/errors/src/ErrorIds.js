@@ -80,7 +80,7 @@ const ErrorIds = {
    * Denied event modification perhaps of belonging to the account streams
    */
   DeniedEventModification: 'denied-event-modification',
-  DeniedMultipleAccountStreams: 'denied-multiple-core-streams-events',
+  DeniedMultipleAccountStreams: 'denied-multiple-default-streams-events',
   EmailRequired: 'email-required',
   PasswordRequired: 'password-required',
   UnexpectedErrorWhileSavingTheEvent: 'unexpected-error-while-saving-the-event',

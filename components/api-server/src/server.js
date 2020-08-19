@@ -156,7 +156,9 @@ class Server {
       application.storageLayer.passwordResetRequests, 
       application.settings.get('auth').obj(), 
       application.settings.get('services').obj(), 
-      this.notificationBus);
+      this.notificationBus,
+      application.logging
+    );
 
     require('./methods/followedSlices')(application.api, application.storageLayer.followedSlices, this.notificationBus);
 

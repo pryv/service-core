@@ -252,15 +252,16 @@ factory.ReservedUsername = (): APIError => {
 };
 
 /**
- * Check in service-register for uniqness across the platform
+ * Check in service-register for uniqueness across the platform
  **/
 factory.existingField = function (fieldName: string) {
   let message = functionGetRightArticle(fieldName) + fieldName + ' with the same value already exists';
   let errorCode = fieldName + '-exists';
-  if (ErrorIds[`Existing_${fieldName}`]) {
-    errorCode = ErrorIds[`Existing_${fieldName}`];
-    if (ErrorMessages[ErrorIds[`Existing_${fieldName}`]]) {
-      message = ErrorMessages[ErrorIds[`Existing_${fieldName}`]];
+  const errorId = `Existing_${fieldName}`;
+  if (ErrorIds[errorId]) {
+    errorCode = ErrorIds[errorId];
+    if (ErrorMessages[ErrorIds[errorId]]) {
+      message = ErrorMessages[ErrorIds[errorId]];
     }
   }
   return new APIError(errorCode, message, {

@@ -11,11 +11,11 @@ const getConfig: () => Config = require('components/api-server/config/Config').g
 import type { Config } from 'components/api-server/config/Config';
 const config: Config = getConfig();
 
-const readable = 'readable-core-streams';
-const allAccountStreams = 'all-core-streams';
-const editableAccountStreams = 'editable-core-streams';
-const indexedStreams = 'indexed-core-streams';
-const uniqueStreams = 'unique-core-streams';
+const readable = 'readable-default-streams';
+const allAccountStreams = 'all-default-streams';
+const editableAccountStreams = 'editable-default-streams';
+const indexedStreams = 'indexed-default-streams';
+const uniqueStreams = 'unique-default-streams';
 
 /**
  * Class that converts system->account events to the
@@ -108,13 +108,15 @@ class UserInfoSerializer {
     return notReadableStreamsIds;
   }
 
+  
   /**
    * Get virtual streams list
-   * @param {*} events 
-   * TODO IEVA - perhaps delete
+   * //TODO IEVA - improve it
    */
+
   getVirtualStreamsList () {
     let streamsNames = {};
+
     const streamsName = getStreamsNames(this.systemStreamsSettings.account, streamsNames, readable);
     const streams = Object.keys(streamsName).map(streamName => {
       return {
@@ -133,7 +135,33 @@ class UserInfoSerializer {
     };
   }
 }
+/*
+function getVirtualStreams (streams, virtualStreams) {
+  let i;
+  let stream;
+  const streamsKeys = Object.keys(streams);
+  for (i = 0; i < streamsKeys.length; i++) {
+    stream = streams[streamsKeys[i]];
+    // if stream has children recursivelly call the same function
+    if (typeof stream.isShown === "undefined") { 
+      virtualStreams[streamsKeys[i]] = stream;
+      virtualStreams = getVirtualStreams(stream, virtualStreams, whatToReturn);
+    }
 
+    if (stream.isShown === false) {
+      continue;
+    }
+  
+    virtualStreams.push({
+      
+      name: streamsKeys[i].name ? streamsKeys[i].name: streamsKeys[i],
+      id: streamsKeys[i],
+      parentId: 'systemStreams',
+      children: streams
+    });
+  }
+}
+*/
 /**
  * Form events depending on the system streams structure
  * @param {*} stream - streams structure

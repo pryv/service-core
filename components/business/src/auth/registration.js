@@ -215,7 +215,6 @@ class Registration {
    * @param {*} err 
    * @param {*} params 
    */
-  // TODO IEVA static
   static handleUniqnessErrors (err, message) {
     // Duplicate errors
     // I check for these errors in the validation so they are only used for 
@@ -229,9 +228,24 @@ class Registration {
       return commonFns.apiErrorToValidationErrorsList(listApiErrors);
     }
     // Any other error
-    console.log(message,'message');
     if (!message) {
       message = 'Unexpected error while saving user.';
+    }
+    return errors.unexpectedError(err, message);
+  }
+  /**
+ * Form errors for api response
+ * @param {*} err 
+ * @param {*} params 
+ */
+  static handleUniqnessErrorsInSingleErrorFormat (err, message) {
+    // Uniquenss errors
+    if (typeof err.isDuplicateIndex === 'function') {
+      return errors.existingField(err.duplicateIndex());
+    }
+    // Any other error
+    if (!message) {
+      message = 'Unexpected error while saving the user.';
     }
     return errors.unexpectedError(err, message);
   }

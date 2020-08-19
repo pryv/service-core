@@ -986,7 +986,9 @@ module.exports = function (
    * and not a stream id
    * 1) deal with properties that enforces uniqueness
    * 2) send to service-register if needed
-   * @param {*} event 
+   * @param object user {id: '', username: ''}
+   * @param object event
+   * @param string id 
    */
   async function handleUniqueFields (user, event, id) {
     let updatedEvent;
@@ -1004,7 +1006,7 @@ module.exports = function (
         const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
       
         // send information update to service regsiter
-        const response = await serviceRegisterConn.updateUserInServiceRegister(
+        await serviceRegisterConn.updateUserInServiceRegister(
           user.username, {}, { [existingUniqueProperty.split('__unique')[0]]: event[existingUniqueProperty]});
       } catch (err) {
         console.log(err,'err');
@@ -1013,6 +1015,7 @@ module.exports = function (
     }
     return updatedEvent;
   }
+  
   async function flagAsTrashed(context, params, result, next) {
     var updatedData = {
       trashed: true

@@ -26,7 +26,7 @@ const helpers = require('components/api-server/test/helpers');
 const validation = helpers.validation;
 
 
-describe("[AGT3] Events of core-streams", function () {
+describe("[AGT3] Events of default-streams", function () {
   let app;
   let request;
   let res;
@@ -43,7 +43,6 @@ describe("[AGT3] Events of core-streams", function () {
       phoneNumber: '+123'
     });
     basePath = '/' + user.attrs.username + '/events';
-    //TODO IEVA - should I put personal access or app?
     access = await user.access({
       type: 'app',
       permissions: [
@@ -125,7 +124,7 @@ describe("[AGT3] Events of core-streams", function () {
   });
 
   describe('GET /events', async () => {
-    describe('[C326] When user provide app token he can get core-streams events', async () => {
+    describe('[C326] When user provide app token he can get default-streams events', async () => {
       before(async function () {
         await createUser();
         res = await request.get(basePath).set('authorization', access.token);
@@ -145,7 +144,7 @@ describe("[AGT3] Events of core-streams", function () {
         });
       });
     });
-    describe('[1EB4] When user provide access token he can get core-streams events', async () => {
+    describe('[1EB4] When user provide access token he can get default-streams events', async () => {
       let sharedAccess;
       let separatedEvents;
       before(async function () {
@@ -916,7 +915,7 @@ describe("[AGT3] Events of core-streams", function () {
   });
 
   describe('DELETE /events/<id>', async () => {
-    describe('[E7EB] When deleting editable core-streams event', async () => {
+    describe('[E7EB] When deleting editable default streams event', async () => {
       describe('[04CB] Event has no ‘active’ streamId', async () => {
         describe('[D94D] Event belongs to the unique stream', async () => { 
           let streamId = 'email';
@@ -1006,7 +1005,7 @@ describe("[AGT3] Events of core-streams", function () {
         });
       });
     });
-    describe('[CDD1] When deleting not editable core-streams event', async () => {
+    describe('[CDD1] When deleting not editable default streams event', async () => {
       let streamId = 'username';
       let initialEvent;
       before(async function () {
