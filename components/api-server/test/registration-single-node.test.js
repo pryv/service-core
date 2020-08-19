@@ -8,28 +8,28 @@ const assert = require('chai').assert;
 const { describe, before, it, after } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
-const Settings = require('./../src/settings');
-const Application = require('./../src/application');
+const Settings = require('../src/settings');
+const Application = require('../src/application');
 
 let app;
 let registerBody;
 let request;
 let res;
 
-describe('Single-node registration', function () {
+describe('registration: single-node', function () {
   before(async function () {
     const settings = await Settings.load();
     
     app = new Application(settings);
     await app.initiate();
     
-    require("./../src/methods/auth/register-singlenode")(
+    require('../src/methods/auth/register-singlenode')(
       app.api, 
       app.logging, 
       app.storageLayer, 
       app.settings.get('services').obj(), 
       app.settings.get('server').obj(), 
-      app.settings.get('systemStreams').obj());
+    );
 
     request = supertest(app.expressApp);
 
@@ -47,9 +47,12 @@ describe('Single-node registration', function () {
     it('should respond with status 201', function () {
       assert.equal(res.status, 201);
     });
-    it('should respond with a username and apiEndpoint in the request body', function () {
+    it('should respond with a username and apiEndpoint (TODO) in the request body', function () {
       assert.equal(res.body.username, registerBody.username);
       //assert.equal(res.body.apiEndpoint, registerBody);
+    });
+    it('should store all the fields', function () {
+      
     });
   });
   describe('Schema validation', function () {
@@ -126,7 +129,7 @@ describe('Single-node registration', function () {
         const error = JSON.parse(res.error.text);
         assert.include(error.error.data[0].param, '');
       });
-      it('should not store 2nd user in database', async function() {
+      it('should not store the user in the database twice', async function() {
         const users = await app.storageLayer.events.findAllUsers();
         assert.equal(users.length, 1);
         assert.equal(users[0].username, registerBody.username);

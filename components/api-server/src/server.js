@@ -119,15 +119,13 @@ class Server {
       application.logging, 
       application.storageLayer, 
       application.settings.get('services').obj(), 
-      application.settings.get('server').obj(), 
-      application.settings.get('systemStreams').obj());
+      application.settings.get('server').obj());
 
     require('./methods/auth/register-singlenode')(application.api, 
       application.logging, 
       application.storageLayer, 
       application.settings.get('services').obj(), 
-      application.settings.get('server').obj(), 
-      application.settings.get('systemStreams').obj());
+      application.settings.get('server').obj());
 
     require('./methods/accesses')(
       application.api, l('methods/accesses'), 

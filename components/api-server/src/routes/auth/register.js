@@ -11,6 +11,7 @@ const API = require('../../API');
 import type Application from '../../application';
 const errors = require('components/errors').factory;
 const _ = require('lodash');
+const { config, getConfig } = require('components/api-server/config/Config');
 
 /**
  * Routes for users
@@ -18,10 +19,10 @@ const _ = require('lodash');
  */
 module.exports = function (expressApp: express$Application, app: Application) {
 
-  // const settings: ConfigAccess = app.settings;
+  const config: Config = getConfig();
   const api: API = app.api;
-  const isSingleNode = app.settings.get('singleNode').obj().isActive;
-  const isOpenSource = app.settings.get('openSource').obj().isActive;
+  const isSingleNode = config.get('singleNode:isActive');
+  const isOpenSource = config.get('openSource:isActive');
   const context = {};
  
   // POST /users: create a new user
