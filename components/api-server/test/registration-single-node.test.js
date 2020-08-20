@@ -44,14 +44,14 @@ describe('registration: single-node', function () {
     before(async function () {
       res = await request.post('/users').send(registerBody);
         });
-    it('should respond with status 201', function () {
+    it('[KB3T] should respond with status 201', function () {
       assert.equal(res.status, 201);
     });
-    it('should respond with a username and apiEndpoint (TODO) in the request body', function () {
+    it('[VDA8] should respond with a username and apiEndpoint (TODO) in the request body', function () {
       assert.equal(res.body.username, registerBody.username);
       //assert.equal(res.body.apiEndpoint, registerBody);
     });
-    it('should store all the fields', function () {
+    it('[M5XB] should store all the fields', function () {
       
     });
   });
@@ -120,16 +120,16 @@ describe('registration: single-node', function () {
         assert.equal(res.status, 201);
         res = await request.post('/users').send(registerBody);
       });
-      it('should respond with status 400', function() {
+      it('[LZ1K] should respond with status 400', function() {
         assert.equal(res.status, 400);
       });
-      it('should respond with the correct error message', function() {
+      it('[M2HD] should respond with the correct error message', function() {
         assert.exists(res.error);
         assert.exists(res.error.text);
         const error = JSON.parse(res.error.text);
         assert.include(error.error.data[0].param, '');
       });
-      it('should not store the user in the database twice', async function() {
+      it('[9L3R] should not store the user in the database twice', async function() {
         const users = await app.storageLayer.events.findAllUsers();
         assert.equal(users.length, 1);
         assert.equal(users[0].username, registerBody.username);
@@ -152,10 +152,10 @@ function verifyInvalidInputResponse(
       );
       res = await request.post('/users').send(invalidRegisterBody);
     });
-    it('should respond with status 400', function () {
+    it('[BP8L] should respond with status 400', function () {
       assert.equal(res.status, 400);
     });
-    it('should respond with the correct error message', function () {
+    it('[LKC1] should respond with the correct error message', function () {
       assert.exists(res.error);
       assert.exists(res.error.text);
       const error = JSON.parse(res.error.text);

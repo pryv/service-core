@@ -116,10 +116,10 @@ describe('registration: cluster', function() {
         await request.post(methodPath).send(userData);
         res = await request.post(methodPath).send(userData);
       });
-      it('should respond with status 201', () => {
+      it('[GRAW] should respond with status 201', () => {
         assert.equal(res.status, 201);
       });
-      it('should respond with the username and apiEndpoint (TODO)', () => {
+      it('[AY44] should respond with the username and apiEndpoint (TODO)', () => {
         const body = res.body;
         assert.equal(body.username, userData.username);
       });
@@ -136,10 +136,10 @@ describe('registration: cluster', function() {
   
         res = await request.post(methodPath).send(userData);
       });
-      it('should respond with status 400', () => {
+      it('[NUC9] should respond with status 400', () => {
         assert.equal(res.status, 400);  
       });
-      it('should respond with the correct error', () => {
+      it('[X1IA] should respond with the correct error', () => {
         const error = res.body.error;
         assert.equal(error.id, ErrorIds.ItemAlreadyExists);
         assert.equal(error.data.username, userData.username);
@@ -158,10 +158,10 @@ describe('registration: cluster', function() {
   
         res = await request.post(methodPath).send(userData);
       });
-      it('should respond with status 400', () => {
+      it('[SJXN] should respond with status 400', () => {
         assert.equal(res.status, 400);
       });
-      it('should respond with the correct error', () => {
+      it('[U0ZN] should respond with the correct error', () => {
         const error = res.body.error;
         assert.equal(error.id, ErrorIds.ItemAlreadyExists);
         assert.equal(error.data.email, userData.email);
@@ -183,10 +183,10 @@ describe('registration: cluster', function() {
   
         res = await request.post(methodPath).send(userData);
       });
-      it('should respond with status 400', () => {
+      it('[I0HG] should respond with status 400', () => {
         assert.equal(res.status, 400);
       });
-      it('should respond with the correct error', () => {
+      it('[QFVZ] should respond with the correct error', () => {
         const error = res.body.error;
         assert.equal(error.id, ErrorIds.ItemAlreadyExists);
         assert.equal(error.data.email, userData.email);
@@ -233,7 +233,7 @@ describe('registration: cluster', function() {
       return `/${username}/check_username`;
     }
 
-    it('when checking a valid available username, it should respond with status 200 and {reserved:false}', async () => {
+    it('[7T9L] when checking a valid available username, it should respond with status 200 and {reserved:false}', async () => {
       nock(regUrl)
         .get(path(userData.username))
         .reply(200, {
@@ -247,7 +247,7 @@ describe('registration: cluster', function() {
       assert.isFalse(body.reserved);
     });
 
-    it('when checking a valid taken username, it should respond with status 400 and the correct error', async () => {
+    it('[153Q] when checking a valid taken username, it should respond with status 400 and the correct error', async () => {
       const userData = defaults();
 
       nock(regUrl)
@@ -264,7 +264,7 @@ describe('registration: cluster', function() {
       assert.deepEqual(body.error.data, { username: userData.username });
     });
 
-    it('when checking a too short username, it should respond with status 400 and the correct error', async () => {
+    it('[H09H] when checking a too short username, it should respond with status 400 and the correct error', async () => {
       const res = await request.get(path('a'.repeat(4)));
 
       const body = res.body;
@@ -272,7 +272,7 @@ describe('registration: cluster', function() {
       assert.equal(body.error.id, ErrorIds.InvalidParametersFormat);
       assert.isTrue(body.error.data[0].code.includes('username'));
     });
-    it('when checking a too long username, it should respond with status 400 and the correct error', async () => {
+    it('[VFE1] when checking a too long username, it should respond with status 400 and the correct error', async () => {
       const res = await request.get(path('a'.repeat(24)));
 
       const body = res.body;
@@ -280,7 +280,7 @@ describe('registration: cluster', function() {
       assert.equal(body.error.id, ErrorIds.InvalidParametersFormat);
       assert.isTrue(body.error.data[0].code.includes('username'));
     });
-    it('when checking a username with invalid characters, it should respond with status 400 and the correct error', async () => {
+    it('[FDTC] when checking a username with invalid characters, it should respond with status 400 and the correct error', async () => {
       const res = await request.get(path('abc:def'));
 
       const body = res.body;
@@ -303,7 +303,7 @@ describe('Undefined invitationTokens', function() {
   //   config.set('invitationTokens', defaultConfigInvitationTokens);
   // });
 
-  it('should succeed when providing anything in the "invitationToken" field', async () => {
+  it('[4QCK] should succeed when providing anything in the "invitationToken" field', async () => {
     const userData = _.extend({}, defaults(), {
       invitationToken: 'anythingAtAll'
     });
@@ -320,7 +320,7 @@ describe('Undefined invitationTokens', function() {
     });
   });
 
-  it('should succeed when the "invitationToken" field is missing', async () => {
+  it('[RUQS] should succeed when the "invitationToken" field is missing', async () => {
     const userData = _.extend({}, defaults());
     delete userData.invitationToken;
 
