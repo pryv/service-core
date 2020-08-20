@@ -450,9 +450,9 @@ module.exports = function (
    * @param boolean creation - if true - active streamId will be added by default
    */
   async function handleAccountStreams (username:string, context: object, creation: Boolean) {
-    const userInfoSerializerObj = new UserInfoSerializer();
-    const nonEditableAccountStreamsIds = userInfoSerializerObj.getAccountStreamsIdsForbiddenForEditing();
-    const editableAccountStreams = userInfoSerializerObj.getEditableAccountStreams();
+    const defaultStreamsSerializerObj = new UserInfoSerializer();
+    const nonEditableAccountStreamsIds = defaultStreamsSerializerObj.getAccountStreamsIdsForbiddenForEditing();
+    const editableAccountStreams = defaultStreamsSerializerObj.getEditableAccountStreams();
     let removeActiveEvents = false;
     let validationErrors = [];
     let contextContent = context.content;

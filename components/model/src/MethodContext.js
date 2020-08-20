@@ -37,7 +37,6 @@ class MethodContext {
   user: ?User;
   access: ?Access;
   streams: ?Array<Stream>;
-  userAccountStreams: ?Array<Stream>;
 
   accessToken: ?string;
   callerId: ?string;

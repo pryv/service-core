@@ -315,7 +315,35 @@ factory.DeniedEventModification = (streamId): APIError => {
     {
       httpStatus: 400,
       data: { param: streamId },
-      dontNotifyAirbrake: false,
+      dontNotifyAirbrake: true,
+    }
+  )
+};
+
+/**
+ * Denied event modification perhaps of belonging to the account streams
+ */
+factory.DeniedStreamAccess = (streamId): APIError => {
+  return new APIError(
+    ErrorIds.DeniedStreamAccess, ErrorMessages[ErrorIds.DeniedStreamAccess],
+    {
+      httpStatus: 400,
+      data: { param: streamId },
+      dontNotifyAirbrake: true,
+    }
+  )
+};
+
+/**
+ * Denied event modification perhaps of belonging to the account streams
+ */
+factory.TooHighAccessForAccountStreams = (streamId): APIError => {
+  return new APIError(
+    ErrorIds.TooHighAccessForAccountStreams, ErrorMessages[ErrorIds.TooHighAccessForAccountStreams],
+    {
+      httpStatus: 400,
+      data: { param: streamId },
+      dontNotifyAirbrake: true,
     }
   )
 };
@@ -329,7 +357,7 @@ factory.DeniedMultipleAccountStreams = (streamId): APIError => {
     {
       httpStatus: 400,
       data: { param: streamId },
-      dontNotifyAirbrake: false,
+      dontNotifyAirbrake: true,
     }
   )
 };
