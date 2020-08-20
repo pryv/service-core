@@ -511,14 +511,17 @@ module.exports = function (
       }
       
     } else if (nonEditableAccountStreamsIds.includes(fieldName)) {
+      // if user tries to add new streamId from non editable streamsIds
       validationErrors.push(errors.DeniedEventModification(fieldName));
-    } else if (matchingAccountStreams.length > 1 ||
-      (!creation &&
-        matchingAccountStreams.length > 0 &&
-        _.intersection(matchingAccountStreams, oldContentStreamIds).length === 0)) {
-      // check if streamId includes only 1 account stream
-      validationErrors.push(contextContent.streamIds,'contextContent.streamIds',errors.DeniedMultipleAccountStreams(fieldName));
+    } else if (matchingAccountStreams.length > 1) {
+      // if user tries to add several streamIds from account streams
+      validationErrors.push(errors.DeniedMultipleAccountStreams(fieldName));
+    }else if (!creation && matchingAccountStreams.length > 0 &&
+      _.intersection(matchingAccountStreams, oldContentStreamIds).length === 0){
+      // if user tries to change streamId of systemStreams
+      validationErrors.push(errors.DeniedMultipleAccountStreams(fieldName));
     }
+
     return {
       context: contextContent,
       removeActiveEvents: removeActiveEvents,
