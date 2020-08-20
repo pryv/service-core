@@ -37,11 +37,11 @@ module.exports = function (expressApp: express$Application, app: Application) {
   /**
    * POST /username/check_username: check the existence/validity of a given username
    */
-  expressApp.post('/username/check', (req: express$Request, res, next) => {
+  expressApp.get('/:username/check_username', (req: express$Request, res, next) => {
     if (isOpenSource) { // we will have to implement a singleNode version of this
       return next(errors.NonValidForOpenSource());
     } else {
-      api.call('auth.usernameCheck', context, req.body, methodCallback(res, next, 200));
+      api.call('auth.usernameCheck', context, req.params, methodCallback(res, next, 200));
     }
   });
 

@@ -45,7 +45,6 @@ class ServiceRegister {
         });
       return res.body;
     } catch (err) {
-      console.log('got err', err.response.body);
       if(err.status == 400 && err?.response?.body?.errors){
         return err.response.body;
       }

@@ -23,24 +23,19 @@ const { produceMongoConnection, context } = require('./test-helpers');
 const ErrorIds = require('components/errors/src/ErrorIds');
 const ErrorMessages = require('components/errors/src/ErrorMessages');
 
-//TODO IEVA
-function randomuser() {
-  return 'testpfx' + Math.floor(Math.random() * 100000);
-}
-
 function defaults() {
   return {
     appId: 'pryv-test',
-    username: randomuser(),
+    username: charlatan.Lorem.characters(7),
     email: charlatan.Internet.email(),
     password: 'abcdefgh',
     invitationToken: 'enjoy',
     referer: 'pryv',
-    insurancenumber: charlatan.Number.number(),
+    insurancenumber: charlatan.Number.number()
   };
 }
 
-describe('registration: cluster', async () => {
+describe('registration: cluster', function() {
   let app;
   let registerBody;
   let request;
@@ -48,6 +43,7 @@ describe('registration: cluster', async () => {
   let settings;
   let config;
   let regUrl;
+  let userData;
 
   before(async function() {
     settings = await Settings.load();
@@ -110,83 +106,106 @@ describe('registration: cluster', async () => {
   }
 
   describe('POST /users (create user)', function() {
-    it('existing username in service-register', async () => {
-      const userData = _.extend({}, defaults(), { username: 'wactiv' });
+    describe('when the username exists in core but not in register', () => {
+      before(async () => {
+        // pretend saving user only in service-core
+        userData = defaults();
 
-      nock(regUrl)
-        .post('/users/validate')
-        .reply(400, {
-          errors: ['Existing_username']
-        });
+        // allow all requests to service-register twice
+        nock(regUrl)
+          .post('/users/validate')
+          .times(2)
+          .reply(200, { errors: [] });
+        nock(regUrl)
+          .post('/users')
+          .times(2)
+          .reply(200, {
+            username: 'anyusername'
+          });
 
-      const res = await request.post(methodPath).send(userData);
-      const error = res.body.error;
-      assert.equal(res.status, 400);
-      assert.equal(error.id, ErrorIds.ItemAlreadyExists);
-      assert.equal(error.data.username, userData.username);
-    });
-
-    it('existing username in service-core but not in service-register', async () => {
-      // pretend saving user only in service-core
-      const userData = defaults();
-
-      // allow all requests to service-register twice
-      nock(regUrl)
-        .post('/users/validate')
-        .times(2)
-        .reply(200, { errors: [] });
-      nock(regUrl)
-        .post('/users')
-        .times(2)
-        .reply(200, {
-          username: 'anyusername'
-        });
-
-      await request.post(methodPath).send(userData);
-      const res = await request.post(methodPath).send(userData);
-      const body = res.body;
-      assert.equal(res.status, 201);
-      assert.equal(body.username, userData.username);
-    });
-
-    it('existing email in service register', async () => {
-      const userData = _.extend({}, defaults(), { email: 'wactiv@pryv.io' });
-
-      nock(regUrl)
-        .post('/users/validate')
-        .reply(400, {
-          errors: ['Existing_email']
-        });
-
-      const res = await request.post(methodPath).send(userData);
-      const error = res.body.error;
-      assert.equal(res.status, 400);
-      assert.equal(error.id, ErrorIds.ItemAlreadyExists);
-      assert.equal(error.data.email, userData.email);
-    });
-
-    it('existing user and email', async () => {
-      const userData = _.extend({}, defaults(), {
-        username: 'wactiv',
-        email: 'wactiv@pryv.io'
+        await request.post(methodPath).send(userData);
+        res = await request.post(methodPath).send(userData);
       });
+      it('should respond with status 201', () => {
+        assert.equal(res.status, 201);
+      });
+      it('should respond with the username and apiEndpoint (TODO)', () => {
+        const body = res.body;
+        assert.equal(body.username, userData.username);
+      });
+    });
+    describe('when the username exists in register', () => {
+      before(async () => {
+        userData = _.extend({}, defaults(), { username: 'wactiv' });
 
-      nock(regUrl)
-        .post('/users/validate')
-        .reply(400, {
-          errors: ['Existing_email', 'Existing_username']
-        });
-
-      const res = await request.post(methodPath).send(userData);
-      const error = res.body.error;
-      assert.equal(res.status, 400);
-      assert.equal(error.id, ErrorIds.ItemAlreadyExists);
-      assert.equal(error.data.email, userData.email);
-      assert.equal(error.id, ErrorIds.ItemAlreadyExists);
-      assert.equal(error.data.username, userData.username);
+        nock(regUrl)
+          .post('/users/validate')
+          .reply(400, {
+            errors: ['Existing_username']
+          });
+  
+        res = await request.post(methodPath).send(userData);
+      });
+      it('should respond with status 400', () => {
+        assert.equal(res.status, 400);  
+      });
+      it('should respond with the correct error', () => {
+        const error = res.body.error;
+        assert.equal(error.id, ErrorIds.ItemAlreadyExists);
+        assert.equal(error.data.username, userData.username);
+      });
     });
 
-    it('Fail to register when reservation is not successful', async () => {
+    describe('when the email exists in register', () => {
+      before(async () => {
+        userData = _.extend({}, defaults(), { email: 'wactiv@pryv.io' });
+
+        nock(regUrl)
+          .post('/users/validate')
+          .reply(400, {
+            errors: ['Existing_email']
+          });
+  
+        res = await request.post(methodPath).send(userData);
+      });
+      it('should respond with status 400', () => {
+        assert.equal(res.status, 400);
+      });
+      it('should respond with the correct error', () => {
+        const error = res.body.error;
+        assert.equal(error.id, ErrorIds.ItemAlreadyExists);
+        assert.equal(error.data.email, userData.email);
+      });
+    });
+
+    describe('when the user and email exist in register', () => {
+      before(async () => {
+        userData = _.extend({}, defaults(), {
+          username: 'wactiv',
+          email: 'wactiv@pryv.io'
+        });
+  
+        nock(regUrl)
+          .post('/users/validate')
+          .reply(400, {
+            errors: ['Existing_email', 'Existing_username']
+          });
+  
+        res = await request.post(methodPath).send(userData);
+      });
+      it('should respond with status 400', () => {
+        assert.equal(res.status, 400);
+      });
+      it('should respond with the correct error', () => {
+        const error = res.body.error;
+        assert.equal(error.id, ErrorIds.ItemAlreadyExists);
+        assert.equal(error.data.email, userData.email);
+        assert.equal(error.id, ErrorIds.ItemAlreadyExists);
+        assert.equal(error.data.username, userData.username);
+      });
+    });
+
+    it.skip('Fail to register when reservation is not successful', async () => {
       const userData = _.extend({}, defaults());
       helpers.instanceTestSetup.set(settings, {
         context: {
@@ -218,55 +237,71 @@ describe('registration: cluster', async () => {
       });
     });
   });
-  describe('POST /username/check', function() {
-
+  describe('GET /:username/check', function() {
     const userData = defaults();
-    const path = '/username/check';
+    function path(username) {
+      return `/${username}/check_username`;
+    }
 
-    it('available', async () => {
-    
+    it('when checking a valid available username, it should respond with status 200 and {reserved:false}', async () => {
       nock(regUrl)
-        .get(`/${userData.username}/check_username`)
+        .get(path(userData.username))
         .reply(200, {
           reserved: false
         });
 
-      const res = await request
-        .post(path)
-        .send({
-          username: userData.username
-        });
+      const res = await request.get(path(userData.username))
 
       const body = res.body;
       assert.equal(res.status, 200);
       assert.isFalse(body.reserved);
     });
 
-    it('unavailable', async () => {
+    it('when checking a valid taken username, it should respond with status 400 and the correct error', async () => {
       const userData = defaults();
 
       nock(regUrl)
-        .get(`/${userData.username}/check_username`)
+        .get(path(userData.username))
         .reply(400, {
           reserved: true
         });
 
-      const res = await request
-        .post(path)
-        .send({
-          username: userData.username
-        });
+      const res = await request.get(path(userData.username))
 
       const body = res.body;
-      console.log(body)
       assert.equal(res.status, 400);
       assert.equal(body.error.id, ErrorIds.ItemAlreadyExists);
       assert.deepEqual(body.error.data, { username: userData.username });
     });
+
+    it('when checking a too short username, it should respond with status 400 and the correct error', async () => {
+      const res = await request.get(path('a'.repeat(4)));
+
+      const body = res.body;
+      assert.equal(res.status, 400);
+      assert.equal(body.error.id, ErrorIds.InvalidParametersFormat);
+      assert.isTrue(body.error.data[0].code.includes('username'));
+    });
+    it('when checking a too long username, it should respond with status 400 and the correct error', async () => {
+      const res = await request.get(path('a'.repeat(24)));
+
+      const body = res.body;
+      assert.equal(res.status, 400);
+      assert.equal(body.error.id, ErrorIds.InvalidParametersFormat);
+      assert.isTrue(body.error.data[0].code.includes('username'));
+    });
+    it('when checking a username with invalid characters, it should respond with status 400 and the correct error', async () => {
+      const res = await request.get(path('abc:def'));
+
+      const body = res.body;
+      assert.equal(res.status, 400);
+      assert.equal(body.error.id, ErrorIds.InvalidParametersFormat);
+      assert.isTrue(body.error.data[0].code.includes('username'));
+    });
   });
 });
 
-describe('Undefined invitationTokens', async () => {
+describe('Undefined invitationTokens', function() {
   // let defaultConfigInvitationTokens;
 
   // before(function () {
@@ -310,216 +345,5 @@ describe('Undefined invitationTokens', async () => {
         server: defaultServerName
       }
     });
-  });
-});
-
-describe('GET /:username/check_username', function() {
-  it('too short', async () => {
-    // var test = {
-    //   username: 'abcd', status: 400, desc: 'too short ',
-    //   JSchema: schemas.error, JValues: { 'id': 'INVALID_USER_NAME' }
-    // };
-
-    const username = 'abc';
-
-    await new Promise(server.ensureStarted.bind(server, settings));
-    const res = await bluebird.fromCallback(cb =>
-      request.get(`/${username}/check_username`).end(res => {
-        cb(null, res);
-      })
-    );
-    validation.checkError(res, {
-      status: 400,
-      id: ErrorIds.InvalidParametersFormat,
-      data: [
-        {
-          code: ErrorIds.InvalidUsername,
-          message: ErrorMessages[ErrorIds.InvalidUsername],
-          param: 'username',
-          path: '#/username'
-        }
-      ]
-    });
-  });
-
-  it('invalid username', async () => {
-    // var test = {
-    //   username: 'abcdefghijklmnopqrstuvwxyzasaasaaas' +
-    //     'abcdefghijklmnopqrstuvwxyzasaasaaas' +
-    //     'abcdefghijklmnopqrstuvwxyzasaasaaas' +
-    //     'abcdefghijklmnopqrstuvwxyzasaasaaas', status: 400, desc: 'too long ',
-    //   JSchema: schemas.error, JValues: { 'id': 'INVALID_USER_NAME' }
-    // };
-
-    const username =
-      'abcdefghijklmnopqrstuvwxyzasaasaaas' +
-      'abcdefghijklmnopqrstuvwxyzasaasaaas' +
-      'abcdefghijklmnopqrstuvwxyzasaasaaas' +
-      'abcdefghijklmnopqrstuvwxyzasaasaaas';
-
-    await new Promise(server.ensureStarted.bind(server, settings));
-    const res = await bluebird.fromCallback(cb =>
-      request.get(`/${username}/check_username`).end(res => {
-        cb(null, res);
-      })
-    );
-    validation.checkError(res, {
-      status: 400,
-      id: ErrorIds.InvalidParametersFormat,
-      data: [
-        {
-          code: ErrorIds.InvalidUsername,
-          message: ErrorMessages[ErrorIds.InvalidUsername],
-          param: 'username',
-          path: '#/username'
-        }
-      ]
-    });
-  });
-
-  it('invalid character 1', async () => {
-    // var test = {
-    //   username: 'abc%20def', status: 400, desc: 'invalid character 1',
-    //   JSchema: schemas.error, JValues: { 'id': 'INVALID_USER_NAME' }
-    // };
-    const username = 'abc%20def';
-    await new Promise(server.ensureStarted.bind(server, settings));
-    const res = await bluebird.fromCallback(cb =>
-      request.get(`/${username}/check_username`).end(res => {
-        cb(null, res);
-      })
-    );
-    validation.checkError(res, {
-      status: 400,
-      id: ErrorIds.InvalidParametersFormat,
-      data: [
-        {
-          code: ErrorIds.InvalidUsername,
-          message: ErrorMessages[ErrorIds.InvalidUsername],
-          param: 'username',
-          path: '#/username'
-        }
-      ]
-    });
-  });
-
-  it('invalid character 2', async () => {
-    // var test = {
-    //   username: 'abc.def', status: 400, desc: 'invalid character 2',
-    //   JSchema: schemas.error, JValues: { 'id': 'INVALID_USER_NAME' }
-    // };
-
-    const username = 'abc.def';
-    await new Promise(server.ensureStarted.bind(server, settings));
-    const res = await bluebird.fromCallback(cb =>
-      request.get(`/${username}/check_username`).end(res => {
-        cb(null, res);
-      })
-    );
-    validation.checkError(res, {
-      status: 400,
-      id: ErrorIds.InvalidParametersFormat,
-      data: [
-        {
-          code: ErrorIds.InvalidUsername,
-          message: ErrorMessages[ErrorIds.InvalidUsername],
-          param: 'username',
-          path: '#/username'
-        }
-      ]
-    });
-  });
-
-  it('authorized', async () => {
-    // var test = {
-    //   username: 'abcd-ef', status: 200, desc: '- authorized ',
-    //   JSchema: schemas.checkUID
-    // };
-    const username = 'abcd-ef';
-    helpers.instanceTestSetup.set(settings, {
-      context: {
-        url: settings.services.register.url,
-        username: username
-      },
-      execute: function() {
-        require('nock')(this.context.url)
-          .get('/' + this.context.username + '/check_username')
-          .reply(200, { reserved: false, reason: 'RESERVED_USER_NAME' });
-      }
-    });
-    await new Promise(server.ensureStarted.bind(server, settings));
-    const res = await bluebird.fromCallback(cb =>
-      request.get(`/${username}/check_username`).end(res => {
-        cb(null, res);
-      })
-    );
-    validation.check(res, {
-      status: 200,
-      id: ErrorIds.InvalidParametersFormat
-    });
-  });
-
-  it('correct', async () => {
-    // var test = {
-    //   username: 'wactiv', status: 200, desc: 'correct ',
-    //   JSchema: schemas.checkUID
-    // };
-
-    const username = 'wactiv';
-    helpers.instanceTestSetup.set(settings, {
-      context: {
-        url: settings.services.register.url,
-        username: username
-      },
-      execute: function() {
-        require('nock')(this.context.url)
-          .get(`/${this.context.username}/check_username`)
-          .reply(200, { reserved: false, reason: 'RESERVED_USER_NAME' });
-      }
-    });
-
-    await new Promise(server.ensureStarted.bind(server, settings));
-    const res = await bluebird.fromCallback(cb =>
-      request.get(`/${username}/check_username`).end(res => {
-        cb(null, res);
-      })
-    );
-    validation.check(res, {
-      status: 200,
-      reserved: false
-    });
-  });
-});
-
-it('reserved dns', async () => {
-  // var test = {
-  //   username: 'access', status: 200, desc: 'reserved dns',
-  //   JSchema: schemas.checkUID, JValues: { reserved: true, reason: 'RESERVED_USER_NAME' }
-  // };
-
-  const username = 'access';
-  helpers.instanceTestSetup.set(settings, {
-    context: {
-      url: settings.services.register.url,
-      username: username
-    },
-    execute: function() {
-      require('nock')(this.context.url)
-        .get(`/${this.context.username}/check_username`)
-        .reply(200, { reserved: false, reason: 'RESERVED_USER_NAME' });
-    }
-  });
-
-  await new Promise(server.ensureStarted.bind(server, settings));
-  const res = await bluebird.fromCallback(cb =>
-    request.get(`/${username}/check_username`).end(res => {
-      cb(null, res);
-    })
-  );
-
-  validation.check(res, {
-    status: 200,
-    reserved: false,
-    reason: ErrorIds.ReservedUsername
   });
 });
