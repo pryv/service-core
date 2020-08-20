@@ -215,7 +215,7 @@ class Registration {
    * @param {*} params 
    */
   // TODO IEVA static
-  static handleUniqnessErrors (err, message) {
+  static handleUniquenessErrors (err, message) {
     // Duplicate errors
     // I check for these errors in the validation so they are only used for 
     // deprecated systems.createUser path
@@ -338,21 +338,31 @@ class Registration {
       const response = await this.serviceRegisterConn.validateUser(params.username, params.invitationToken, uniqueFields, this.hostname);
 
       if (response?.errors && response.errors.length > 0) {
+        const sentValues: { string: string } = _.merge({
+          username: params.username,
+          invitationToken: params.invitationToken,
+        }, uniqueFields);
+        const uniquenessErrors = {};
+        const unexpectedErrors = [];
+        const impossibleErrors = [];
         // 1. convert list of error ids to the list of api errors
-        const listApiErrors = response.errors.map(err => {
+        response.errors.forEach(err => {
           // lets check if error thrown by service-register is already defined in errors factory
           if (typeof errors[err] === 'function'){
-            return errors[err]();
+            console.log('HOW AM I HERE', err);
+            impossibleErrors.push(errors[err]());
           } else if (err.startsWith('Existing_')) {
             const fieldName = err.replace('Existing_', '');
-            return errors.existingField(fieldName);
+            uniquenessErrors[fieldName] = sentValues[fieldName];
           } else {
-            return errors.unexpectedError(errors[err]);
+            unexpectedErrors.pop(errors.unexpectedError(errors[err]));
           }
         });
 
+        // handle unexpected & impossible
+
         // 2. convert api errors to validation errors
-        return next(commonFns.apiErrorToValidationErrorsList(listApiErrors));
+        return next(errors.itemAlreadyExists('user', uniquenessErrors));
       }
     } catch (error) {
       return next(errors.unexpectedError(error));

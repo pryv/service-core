@@ -406,7 +406,7 @@ module.exports = function (
             return next(errors.itemAlreadyExists('event', {id: params.id}, err));
           }
           // Expecting a duplicate error for unique fields
-          if (typeof err.isDuplicateIndex === 'function') {
+          if (typeof err.isDuplicateIndex === 'function') { // why such check? why not err.isDuplicate
             return next(commonFns.apiErrorToValidationErrorsList(
               [errors.existingField(err.duplicateIndex())]));
           }

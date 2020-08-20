@@ -78,7 +78,6 @@ describe('registration: cluster', async () => {
   });
 
   const methodPath = '/users';
-  //const settings = _.cloneDeep(helpers.dependencies.settings);
   const defaultServerName = 'abc';
 
   async function successfulServiceRegisterMockup() {
@@ -110,197 +109,159 @@ describe('registration: cluster', async () => {
     );
   }
 
-  /*beforeEach(async () => {
-    await new Promise(
-      server.ensureStarted.bind(server, helpers.dependencies.settings)
-    );
-    request = helpers.request(server.url);
-  });*/
-
   describe('POST /users (create user)', function() {
-    it('[XXXX] existing username in service-register', async () => {
-      // var test = {
-      //   data: { username: 'wactiv' },
-      //   status: 400, desc: 'Existing user',
-      //   JSchema: schemas.multipleErrors,
-      //   JValues: { 'id': 'EXISTING_USER_NAME' }
-      // }
-      console.log('got url', regUrl)
+    it('existing username in service-register', async () => {
+      const userData = _.extend({}, defaults(), { username: 'wactiv' });
+
       nock(regUrl)
         .post('/users/validate')
         .reply(400, {
           errors: ['Existing_username']
-      });
+        });
 
-      const userData = _.extend({}, defaults(), { username: 'wactiv' });
       const res = await request.post(methodPath).send(userData);
-      console.log('got', JSON.stringify(res.body, null, 2));
       const error = res.body.error;
       assert.equal(res.status, 400);
-      assert.equal(error.id, ErrorIds.Existing_username);
-      assert.equal(error.message, ErrorIds.Existing_username);
-    });
-  });
-
-  it('[EUIS] existing username in service-core but not in service-register', async () => {
-    // pretend saving user only in service-core
-    const userData = defaults();
-
-    // allow all requests to service-register twice
-    helpers.instanceTestSetup.set(settings, {
-      context: {
-        url: settings.services.register.url,
-        defaultServerName: defaultServerName
-      },
-      execute: function() {
-        const scope = require('nock')(this.context.url);
-        scope
-          .post('/users/validate')
-          .times(2)
-          .reply(200, { errors: [] });
-        scope
-          .post('/users')
-          .times(2)
-          .reply(200, {
-            username: 'anyusername',
-            server: this.context.defaultServerName
-          });
-      }
-    });
-    await new Promise(server.ensureStarted.bind(server, settings));
-    await registrationRequest(userData);
-
-    const res = await registrationRequest(userData);
-    validation.check(res, {
-      status: 201,
-      schema: authSchema.register.result,
-      body: {
-        username: userData.username,
-        server: defaultServerName
-      }
-    });
-  });
-
-  it('[E25A] existing email in service register', async () => {
-    // var test = {
-    //   data: { email: 'wactiv@pryv.io' },
-    //   status: 400, desc: 'Existing e-mail',
-    //   JSchema: schemas.multipleErrors,
-    //   JValues: { 'id': 'EXISTING_EMAIL' }
-    // };
-
-    const userData = _.extend({}, defaults(), { email: 'wactiv@pryv.io' });
-    helpers.instanceTestSetup.set(settings, {
-      context: {
-        url: settings.services.register.url
-      },
-      execute: function() {
-        require('nock')(this.context.url)
-          .post('/users/validate')
-          .reply(400, {
-            errors: ['Existing_email']
-          });
-      }
+      assert.equal(error.id, ErrorIds.ItemAlreadyExists);
+      assert.equal(error.data.username, userData.username);
     });
 
-    await new Promise(server.ensureStarted.bind(server, settings));
-    const res = await registrationRequest(userData);
+    it('existing username in service-core but not in service-register', async () => {
+      // pretend saving user only in service-core
+      const userData = defaults();
 
-    validation.checkError(res, {
-      status: 400,
-      id: ErrorIds.InvalidParametersFormat,
-      data: [
-        {
-          code: ErrorIds.Existing_email,
-          message: ErrorMessages[ErrorIds.Existing_email],
-          param: 'email',
-          path: '#/email'
-        }
-      ]
-    });
-  });
-
-  it('existing user and email', async () => {
-    // var test = {
-    //   data: { username: 'wactiv', email: 'wactiv@pryv.io' },
-    //   status: 400, desc: 'Existing e-mail & username',
-    //   JSchema: schemas.multipleErrors,
-    //   JValues: {
-    //     'id': 'INVALID_DATA',
-    //     'errors': [{ 'id': 'EXISTING_USER_NAME' }, { 'id': 'EXISTING_EMAIL' }]
-    //   }
-    // };
-
-    const userData = _.extend({}, defaults(), {
-      username: 'wactiv',
-      email: 'wactiv@pryv.io'
-    });
-    helpers.instanceTestSetup.set(settings, {
-      context: {
-        url: settings.services.register.url,
-        userData: userData
-      },
-      execute: function() {
-        require('nock')(this.context.url)
-          .post('/users/validate')
-          .reply(400, {
-            errors: ['Existing_username', 'Existing_email']
-          });
-      }
-    });
-
-    await new Promise(server.ensureStarted.bind(server, settings));
-    const res = await registrationRequest(userData);
-
-    validation.checkError(res, {
-      status: 400,
-      id: ErrorIds.InvalidParametersFormat,
-      data: [
-        {
-          code: ErrorIds.Existing_username,
-          message: ErrorMessages[ErrorIds.Existing_username],
-          param: 'username',
-          path: '#/username'
-        },
-        {
-          code: ErrorIds.Existing_email,
-          message: ErrorMessages[ErrorIds.Existing_email],
-          param: 'email',
-          path: '#/email'
-        }
-      ]
-    });
-  });
-
-  it('Fail to register when reservation is not successful', async () => {
-    const userData = _.extend({}, defaults());
-    helpers.instanceTestSetup.set(settings, {
-      context: {
-        url: settings.services.register.url
-      },
-      execute: function() {
-        const scope = require('nock')(this.context.url);
-        scope.post('/users/validate').reply(400, {
-          success: false,
-          errors: ['DuplicatedUserRegistration']
+      // allow all requests to service-register twice
+      nock(regUrl)
+        .post('/users/validate')
+        .times(2)
+        .reply(200, { errors: [] });
+      nock(regUrl)
+        .post('/users')
+        .times(2)
+        .reply(200, {
+          username: 'anyusername'
         });
-      }
+
+      await request.post(methodPath).send(userData);
+      const res = await request.post(methodPath).send(userData);
+      const body = res.body;
+      assert.equal(res.status, 201);
+      assert.equal(body.username, userData.username);
     });
 
-    await new Promise(server.ensureStarted.bind(server, settings));
-    const res = await registrationRequest(userData);
+    it('existing email in service register', async () => {
+      const userData = _.extend({}, defaults(), { email: 'wactiv@pryv.io' });
 
-    validation.checkError(res, {
-      status: 400,
-      id: ErrorIds.InvalidParametersFormat,
-      data: [
-        {
-          code: ErrorIds.DuplicatedUserRegistration,
-          message: ErrorMessages[ErrorIds.DuplicatedUserRegistration],
-          path: '#/username',
-          param: 'username'
+      nock(regUrl)
+        .post('/users/validate')
+        .reply(400, {
+          errors: ['Existing_email']
+        });
+
+      const res = await request.post(methodPath).send(userData);
+      const error = res.body.error;
+      assert.equal(res.status, 400);
+      assert.equal(error.id, ErrorIds.ItemAlreadyExists);
+      assert.equal(error.data.email, userData.email);
+    });
+
+    it('existing user and email', async () => {
+      const userData = _.extend({}, defaults(), {
+        username: 'wactiv',
+        email: 'wactiv@pryv.io'
+      });
+
+      nock(regUrl)
+        .post('/users/validate')
+        .reply(400, {
+          errors: ['Existing_email', 'Existing_username']
+        });
+
+      const res = await request.post(methodPath).send(userData);
+      const error = res.body.error;
+      assert.equal(res.status, 400);
+      assert.equal(error.id, ErrorIds.ItemAlreadyExists);
+      assert.equal(error.data.email, userData.email);
+      assert.equal(error.id, ErrorIds.ItemAlreadyExists);
+      assert.equal(error.data.username, userData.username);
+    });
+
+    it('Fail to register when reservation is not successful', async () => {
+      const userData = _.extend({}, defaults());
+      helpers.instanceTestSetup.set(settings, {
+        context: {
+          url: settings.services.register.url
+        },
+        execute: function() {
+          const scope = require('nock')(this.context.url);
+          scope.post('/users/validate').reply(400, {
+            success: false,
+            errors: ['DuplicatedUserRegistration']
+          });
         }
-      ]
+      });
+
+      await new Promise(server.ensureStarted.bind(server, settings));
+      const res = await registrationRequest(userData);
+
+      validation.checkError(res, {
+        status: 400,
+        id: ErrorIds.InvalidParametersFormat,
+        data: [
+          {
+            code: ErrorIds.DuplicatedUserRegistration,
+            message: ErrorMessages[ErrorIds.DuplicatedUserRegistration],
+            path: '#/username',
+            param: 'username'
+          }
+        ]
+      });
+    });
+  });
+  describe('POST /username/check', function() {
+
+    const userData = defaults();
+    const path = '/username/check';
+
+    it('available', async () => {
+    
+      nock(regUrl)
+        .get(`/${userData.username}/check_username`)
+        .reply(200, {
+          reserved: false
+        });
+
+      const res = await request
+        .post(path)
+        .send({
+          username: userData.username
+        });
+
+      const body = res.body;
+      assert.equal(res.status, 200);
+      assert.isFalse(body.reserved);
+    });
+
+    it('unavailable', async () => {
+      const userData = defaults();
+
+      nock(regUrl)
+        .get(`/${userData.username}/check_username`)
+        .reply(400, {
+          reserved: true
+        });
+
+      const res = await request
+        .post(path)
+        .send({
+          username: userData.username
+        });
+
+      const body = res.body;
+      console.log(body)
+      assert.equal(res.status, 400);
+      assert.equal(body.error.id, ErrorIds.ItemAlreadyExists);
+      assert.deepEqual(body.error.data, { username: userData.username });
     });
   });
 });
@@ -349,80 +310,6 @@ describe('Undefined invitationTokens', async () => {
         server: defaultServerName
       }
     });
-  });
-});
-
-describe('POST /username/check', function() {
-  let usernameCheckPath = '/username/check';
-
-  it('reserved list', async () => {
-    const userData = defaults();
-    helpers.instanceTestSetup.set(settings, {
-      context: {
-        url: settings.services.register.url
-      },
-      execute: function() {
-        const scope = require('nock')(this.context.url);
-        scope.post('/username/check').reply(200, false);
-      }
-    });
-
-    await new Promise(server.ensureStarted.bind(server, settings));
-    const res = await bluebird.fromCallback(cb =>
-      request
-        .post(usernameCheckPath)
-        .send(userData)
-        .end(res => {
-          cb(null, res);
-        })
-    );
-
-    validation.check(res, {
-      status: 200,
-      body: false,
-      error: false
-    });
-    validation.checkHeaders(res, [
-      {
-        name: 'content-type',
-        value: 'text/plain; charset=utf-8'
-      }
-    ]);
-  });
-
-  it('available', async () => {
-    const userData = defaults();
-    helpers.instanceTestSetup.set(settings, {
-      context: {
-        url: settings.services.register.url
-      },
-      execute: function() {
-        const scope = require('nock')(this.context.url);
-        scope.post('/username/check').reply(200, true);
-      }
-    });
-
-    await new Promise(server.ensureStarted.bind(server, settings));
-    const res = await bluebird.fromCallback(cb =>
-      request
-        .post(usernameCheckPath)
-        .send(userData)
-        .end(res => {
-          cb(null, res);
-        })
-    );
-
-    validation.check(res, {
-      status: 200,
-      text: 'true',
-      error: false
-    });
-    validation.checkHeaders(res, [
-      {
-        name: 'content-type',
-        value: 'text/plain; charset=utf-8'
-      }
-    ]);
   });
 });
 
