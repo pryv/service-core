@@ -10,224 +10,231 @@ const supertest = require('supertest');
 const charlatan = require('charlatan');
 const Settings = require('../src/settings');
 const Application = require('../src/application');
+const { getConfig } = require('components/api-server/config/Config');
 
 let app;
 let registerBody;
 let request;
 let res;
 
-describe('registration: single-node', function () {
-  before(async function () {
-    const settings = await Settings.load();
-    
-    app = new Application(settings);
-    await app.initiate();
-    
-    require('../src/methods/auth/register-singlenode')(
-      app.api, 
-      app.logging, 
-      app.storageLayer, 
-      app.settings.get('services').obj(), 
-      app.settings.get('server').obj(), 
-    );
+describe('registration: single-node', () => {
+  describe('POST /users', () => {
+    before(async function() {
+      const settings = await Settings.load();
+      const config = getConfig();
+      config.set('systemStreams:custom', null);
+      console.log('got', config.get('systemStreams:custom'));
+      app = new Application(settings);
+      await app.initiate();
 
-    request = supertest(app.expressApp);
+      require('../src/methods/auth/register-singlenode')(
+        app.api,
+        app.logging,
+        app.storageLayer,
+        app.settings.get('services').obj(),
+        app.settings.get('server').obj()
+      );
 
-    registerBody = {
-      username: charlatan.Lorem.characters(7),
-      password: charlatan.Lorem.characters(7),
-      email: charlatan.Internet.email(),
-      appId: charlatan.Lorem.characters(7),
-    };
-  });
-  describe('when given valid input', function () {
-    before(async function () {
-      res = await request.post('/users').send(registerBody);
-        });
-    it('[KB3T] should respond with status 201', function () {
-      assert.equal(res.status, 201);
-    });
-    it('[VDA8] should respond with a username and apiEndpoint (TODO) in the request body', function () {
-      assert.equal(res.body.username, registerBody.username);
-      //assert.equal(res.body.apiEndpoint, registerBody);
-    });
-    it('[M5XB] should store all the fields', function () {
-      
-    });
-  });
-  describe('Schema validation', function () {
-    describe(
-      'when given an invalid username parameter',
-      testInvalidParameterValidation('username', {
-        minLength: 5,
-        maxLength: 23,
-        lettersAndDashesOnly: true,
-        type: 'string',
-      })
-    );
-    describe(
-      'when given an invalid password parameter',
-      testInvalidParameterValidation('password', {
-        minLength: 4,
-        maxLength: 100,
-        type: 'string',
-      })
-    );
-    describe(
-      'when given an invalid email parameter',
-      testInvalidParameterValidation('email', {
-        maxLength: 300,
-        type: 'string',
-      })
-    );
-    describe(
-      'when given an invalid appId parameter',
-      testInvalidParameterValidation('appId', {
-        minLength: 6,
-        maxLength: 99,
-        type: 'string',
-      })
-    );
-    describe(
-      'when given an invalid invitationToken parameter',
-      testInvalidParameterValidation('invitationToken', {
-        type: 'string',
-      })
-    );
-    describe(
-      'when given an invalid referer parameter',
-      testInvalidParameterValidation('referer', {
-        minLength: 1,
-        maxLength: 99,
-        type: 'string',
-      })
-    );
-    describe(
-      'when given an invalid languageCode parameter',
-      testInvalidParameterValidation('languageCode', {
-        minLength: 1,
-        maxLength: 5,
-        type: 'string',
-      })
-    );
-  });
-  describe('Property values uniqueness',function() {
-    describe('username property', function() {
-      before(async function () {
-        await app.database.deleteMany({name: 'events'});
+      request = supertest(app.expressApp);
 
+      registerBody = {
+        username: charlatan.Lorem.characters(7),
+        password: charlatan.Lorem.characters(7),
+        email: charlatan.Internet.email(),
+        appId: charlatan.Lorem.characters(7)
+      };
+    });
+    describe('when given valid input', function() {
+      before(async function() {
         res = await request.post('/users').send(registerBody);
+      });
+      it('[KB3T] should respond with status 201', function() {
         assert.equal(res.status, 201);
-        res = await request.post('/users').send(registerBody);
       });
-      it('[LZ1K] should respond with status 400', function() {
-        assert.equal(res.status, 400);
+      it('[VDA8] should respond with a username and apiEndpoint (TODO) in the request body', function() {
+        assert.equal(res.body.username, registerBody.username);
+        //assert.equal(res.body.apiEndpoint, registerBody);
       });
-      it('[M2HD] should respond with the correct error message', function() {
-        assert.exists(res.error);
-        assert.exists(res.error.text);
-        const error = JSON.parse(res.error.text);
-        assert.include(error.error.data[0].param, '');
-      });
-      it('[9L3R] should not store the user in the database twice', async function() {
-        const users = await app.storageLayer.events.findAllUsers();
-        assert.equal(users.length, 1);
-        assert.equal(users[0].username, registerBody.username);
-      });
+      it('[M5XB] should store all the fields', function() {});
     });
-    }
-  );
-});
+    describe('Schema validation', function() {
+      describe(
+        'when given an invalid username parameter',
+        testInvalidParameterValidation('username', {
+          minLength: 5,
+          maxLength: 23,
+          lettersAndDashesOnly: true,
+          type: 'string'
+        })
+      );
+      describe(
+        'when given an invalid password parameter',
+        testInvalidParameterValidation('password', {
+          minLength: 4,
+          maxLength: 100,
+          type: 'string'
+        })
+      );
+      describe(
+        'when given an invalid email parameter',
+        testInvalidParameterValidation('email', {
+          maxLength: 300,
+          type: 'string'
+        })
+      );
+      describe(
+        'when given an invalid appId parameter',
+        testInvalidParameterValidation('appId', {
+          minLength: 6,
+          maxLength: 99,
+          type: 'string'
+        })
+      );
+      describe(
+        'when given an invalid invitationToken parameter',
+        testInvalidParameterValidation('invitationToken', {
+          type: 'string'
+        })
+      );
+      describe(
+        'when given an invalid referer parameter',
+        testInvalidParameterValidation('referer', {
+          minLength: 1,
+          maxLength: 99,
+          type: 'string'
+        })
+      );
+      describe(
+        'when given an invalid languageCode parameter',
+        testInvalidParameterValidation('languageCode', {
+          minLength: 1,
+          maxLength: 5,
+          type: 'string'
+        })
+      );
+    });
+    describe('Property values uniqueness', function() {
+      describe('username property', function() {
+        before(async function() {
+          await app.database.deleteMany({ name: 'events' });
 
-function verifyInvalidInputResponse(
-  registerBodyModification,
-  expectedErrorParam
-) {
-  return () => {
-    before(async function () {
-      const invalidRegisterBody = Object.assign(
-        {},
-        registerBody,
-        registerBodyModification
-      );
-      res = await request.post('/users').send(invalidRegisterBody);
+          res = await request.post('/users').send(registerBody);
+          console.log('got', JSON.stringify(res.body, null, 2));
+          assert.equal(res.status, 201);
+          res = await request.post('/users').send(registerBody);
+        });
+        it('[LZ1K] should respond with status 400', function() {
+          assert.equal(res.status, 400);
+        });
+        it('[M2HD] should respond with the correct error message', function() {
+          assert.exists(res.error);
+          assert.exists(res.error.text);
+          const error = JSON.parse(res.error.text);
+          assert.include(error.error.data[0].param, '');
+        });
+        it('[9L3R] should not store the user in the database twice', async function() {
+          const users = await app.storageLayer.events.findAllUsers();
+          assert.equal(users.length, 1);
+          assert.equal(users[0].username, registerBody.username);
+        });
+      });
     });
-    it('[BP8L] should respond with status 400', function () {
-      assert.equal(res.status, 400);
-    });
-    it('[LKC1] should respond with the correct error message', function () {
-      assert.exists(res.error);
-      assert.exists(res.error.text);
-      const error = JSON.parse(res.error.text);
-      assert.include(error.error.data[0].param, expectedErrorParam);
-    });
-  };
-}
 
-function testInvalidParameterValidation(parameterName, constraints) {
-  return () => {
-    if (constraints.minLength) {
-      describe(
-        'that is too short',
-        verifyInvalidInputResponse(
-          {
-            [parameterName]: charlatan.Lorem.characters(
-              constraints.minLength - 1
-            ),
-          },
-          parameterName
-        )
-      );
+    function verifyInvalidInputResponse(
+      registerBodyModification,
+      expectedErrorParam
+    ) {
+      return () => {
+        before(async function() {
+          const invalidRegisterBody = Object.assign(
+            {},
+            registerBody,
+            registerBodyModification
+          );
+          res = await request.post('/users').send(invalidRegisterBody);
+        });
+        it('[BP8L] should respond with status 400', function() {
+          assert.equal(res.status, 400);
+        });
+        it('[LKC1] should respond with the correct error message', function() {
+          assert.exists(res.error);
+          assert.exists(res.error.text);
+          const error = JSON.parse(res.error.text);
+          assert.include(error.error.data[0].param, expectedErrorParam);
+        });
+      };
     }
-    if (constraints.maxLength) {
-      describe(
-        'that is too long',
-        verifyInvalidInputResponse(
-          {
-            [parameterName]: charlatan.Lorem.characters(
-              constraints.maxLength + 1
-            ),
-          },
-          parameterName
-        )
-      );
-    }
-    if (constraints.lettersAndDashesOnly) {
-      describe(
-        'that has invalid characters',
-        verifyInvalidInputResponse(
-          {
-            [parameterName]: '/#+]\\\'',
-          },
-          parameterName
-        )
-      );
-    }
-    if (constraints.type) {
-      let val;
-      if (constraints.type === 'string') {
-        val = true;
-      }
-      if (val) {
+
+    function testInvalidParameterValidation(parameterName, constraints) {
+      return () => {
+        if (constraints.minLength) {
+          describe(
+            'that is too short',
+            verifyInvalidInputResponse(
+              {
+                [parameterName]: charlatan.Lorem.characters(
+                  constraints.minLength - 1
+                )
+              },
+              parameterName
+            )
+          );
+        }
+        if (constraints.maxLength) {
+          describe(
+            'that is too long',
+            verifyInvalidInputResponse(
+              {
+                [parameterName]: charlatan.Lorem.characters(
+                  constraints.maxLength + 1
+                )
+              },
+              parameterName
+            )
+          );
+        }
+        if (constraints.lettersAndDashesOnly) {
+          describe(
+            'that has invalid characters',
+            verifyInvalidInputResponse(
+              {
+                [parameterName]: "/#+]\\'"
+              },
+              parameterName
+            )
+          );
+        }
+        if (constraints.type) {
+          let val;
+          if (constraints.type === 'string') {
+            val = true;
+          }
+          if (val) {
+            describe(
+              'that has an invalid type',
+              verifyInvalidInputResponse(
+                {
+                  [parameterName]: val
+                },
+                parameterName
+              )
+            );
+          }
+        }
         describe(
-          'that has an invalid type',
+          'that is null',
           verifyInvalidInputResponse(
             {
-              [parameterName]: val,
+              [parameterName]: null
             },
             parameterName
           )
         );
-      }
+      };
     }
-    describe(
-      'that is null',
-      verifyInvalidInputResponse(
-        {
-          [parameterName]: null,
-        },
-        parameterName,
-      )
-    );
-  };
-}
+  });
+  describe('GET /:username/check_username', () => {
+    
+
+  });
+});

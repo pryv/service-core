@@ -28,4 +28,28 @@ module.exports = function (api, logging, storageLayer, servicesSettings, serverS
     registration.createUser,
     registration.sendWelcomeMail
   );
+
+  // Username check
+  api.register('auth.usernameCheck.singlenode',
+    commonFns.getParamsValidation(methodsSchema.usernameCheck.params),
+    checkUsername
+  );
+
+  /**
+   * Check in service-register if user id is reserved
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  async function checkUsername(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    result.reserved = false;
+    try {
+      //const user = storage.
+      
+    } catch (error) {
+      return next(errors.unexpectedError(error));
+    }
+    next();
+  }
 };

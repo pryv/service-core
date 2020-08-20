@@ -16,7 +16,7 @@ const supertest = require('supertest');
 const assert = require('chai').assert;
 
 const Settings = require('../src/settings');
-const { config, getConfig } = require('components/api-server/config/Config');
+const { getConfig } = require('components/api-server/config/Config');
 const Application = require('../src/application');
 const ErrorIds = require('components/errors/src/ErrorIds');
 const ErrorMessages = require('components/errors/src/ErrorMessages');
