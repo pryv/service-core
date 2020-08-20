@@ -367,14 +367,14 @@ exports.removeDeletionsAndHistory = function (items) {
   return items.filter(function (e) { return ! (e.deleted || e.headId); });
 };
 
-exports.removeAccountStreamsEvents = async function (items) {
+exports.removeAccountStreamsEvents = function (items) {
   // get streams ids from the config that should be retrieved
   const expectedAccountStreams = (new UserInfoSerializer()).getAllAccountStreams();
   return items.filter(function (e) { return !(e.streamIds.some(streamId => Object.keys(expectedAccountStreams).indexOf(streamId) >= 0)); });
 };
 
 exports.separateAccountStreamsAndOtherEvents = function (items) {
-  const readableAccountStreams = ['username', 'email', 'language', 'attachedFiles', 'dbDocuments', 'insurancenumber', 'phoneNumber'];
+  const readableAccountStreams = ['username', 'email', 'language', 'attachedFiles', 'dbDocuments', 'insurancenumber', 'phoneNumber', 'passwordHash'];
   const normalEvents = items.filter(function (e) {
     return (!e.streamIds) || !(e.streamIds.some(streamId => readableAccountStreams.indexOf(streamId) >= 0));
   });

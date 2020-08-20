@@ -39,8 +39,8 @@ describe("[B5FF] Account with default-streams", function () {
 
   async function createUser () {
     user = await mongoFixtures.user(charlatan.Lorem.characters(7), {
-      insurancenumber: 1234,
-      phoneNumber: '+123'
+      insurancenumber: charlatan.Number.number(4),
+      phoneNumber: charlatan.Lorem.characters(3)
     });
 
     basePath = '/' + user.attrs.username + '/accesses';
