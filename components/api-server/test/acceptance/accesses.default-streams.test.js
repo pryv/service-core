@@ -19,6 +19,7 @@ const Settings = require('components/api-server/src/settings');
 const Application = require('components/api-server/src/application');
 const Notifications = require('components/api-server/src/Notifications');
 const accessLogic = require('components/model/src/accessLogic');
+const validation = require('components/api-server/test/helpers').validation;
 
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
@@ -207,7 +208,7 @@ describe("[B5FF] Account with default-streams", function () {
         it('User can access visible events in storageUsed with this access', async () => {
           res = await request.get(eventsBasePath).set('authorization', accessInDb.token);
           assert.equal(res.body.events.length, 7);
-          //TODO IEVA assert.equal(res.body.events[0].streamId, streamId);
+          validation.validateAccountEvents(res.body.events);
         });
       });
       describe('[274A] When user tries to create access for “storageUsed” stream', async () => {
@@ -224,8 +225,9 @@ describe("[B5FF] Account with default-streams", function () {
         });
         it('User can access visible events in storageUsed with this access', async () => {
           res = await request.get(eventsBasePath).set('authorization', accessInDb.token);
-          //TODO IEVAassert.equal(res.body.events.length, 2);
-          //TODO IEVAassert.equal(res.body.events[0].streamId, streamId);
+          assert.equal(res.body.events.length, 2);
+          assert.equal(res.body.events[0].streamId, 'attachedFiles');
+          assert.equal(res.body.events[1].streamId, 'dbDocuments');
         });
       });
     });

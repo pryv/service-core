@@ -798,7 +798,7 @@ describe('events.streamIds', function () {
             
             // validate account streams events
             const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
-            validation.validateCoreEvents(actualAccountStreamsEvents);
+            validation.validateAccountEvents(actualAccountStreamsEvents);
             
             let foundAandA_A = false;
             let foundA_AandA_A_A = false;

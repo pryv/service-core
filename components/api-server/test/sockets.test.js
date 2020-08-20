@@ -214,7 +214,7 @@ describe('Socket.IO', function () {
 
         // validate account streams events
         const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
-        validation.validateCoreEvents(actualAccountStreamsEvents);
+        validation.validateAccountEvents(actualAccountStreamsEvents);
         
         result.events.should.eql(expectedEvents);
         
