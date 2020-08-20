@@ -18,8 +18,6 @@ const assert = require('chai').assert;
 const Settings = require('../src/settings');
 const { config, getConfig } = require('components/api-server/config/Config');
 const Application = require('../src/application');
-const { databaseFixture } = require('components/test-helpers');
-const { produceMongoConnection, context } = require('./test-helpers');
 const ErrorIds = require('components/errors/src/ErrorIds');
 const ErrorMessages = require('components/errors/src/ErrorMessages');
 
@@ -37,7 +35,6 @@ function defaults() {
 
 describe('registration: cluster', function() {
   let app;
-  let registerBody;
   let request;
   let res;
   let settings;
@@ -64,13 +61,6 @@ describe('registration: cluster', function() {
     );
 
     request = supertest(app.expressApp);
-
-    registerBody = {
-      username: charlatan.Lorem.characters(7),
-      password: charlatan.Lorem.characters(7),
-      email: charlatan.Internet.email(),
-      appId: charlatan.Lorem.characters(7)
-    };
   });
 
   const methodPath = '/users';
