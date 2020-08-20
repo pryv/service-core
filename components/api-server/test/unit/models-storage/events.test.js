@@ -79,7 +79,6 @@ describe('Events storage', () => {
         // FLOW: we ensure that err contains the isDuplicateIndex function with assert
         const isDuplicateIndex = err.isDuplicateIndex;
         assert.isFunction(isDuplicateIndex);
-        console.log(isDuplicateIndex,'isDuplicateIndex');
         assert.isTrue(isDuplicateIndex('username__unique'));
       }
     });

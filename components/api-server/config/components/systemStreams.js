@@ -18,74 +18,83 @@ const defaultValuesForFields = {
 
 function load(config: Config): Config {
   // default system streams that sould be not changed
-  config.overrides({
-    systemStreams: {
-      account: {
-        username: _.extend({}, defaultValuesForFields, {
+  config.set('systemStreams',{
+      account: [
+        _.extend({}, defaultValuesForFields, {
           isIndexed: true,
           isUnique: true,
           isShown: true,
           type: 'identifier/string',
           name: 'Username',
+          id: 'username',
           isRequiredInValidation: true
         }),
-        email: _.extend({}, defaultValuesForFields, {
+        _.extend({}, defaultValuesForFields, {
           isIndexed: true,
           isUnique: true,
           isShown: true,
           isEditable: true,
           type: 'email/string',
           name: 'Email',
+          id: 'email',
           isRequiredInValidation: true
         }),
-        language: _.extend({}, defaultValuesForFields, {
+        _.extend({}, defaultValuesForFields, {
           isIndexed: true,
           isShown: true,
           isEditable: true,
           default: 'en',
           type: 'language/iso-639-1',
-          name: 'Language'
+          name: 'Language',
+          id: 'language'
         }),
-        appId: _.extend({}, defaultValuesForFields, {
+        _.extend({}, defaultValuesForFields, {
           isIndexed: true,
           isRequiredInValidation: true,
           isIndexed: true,
           type: 'identifier/string',
-          name: 'appId'
+          name: 'appId',
+          id: 'appId'
         }),
-        invitationToken: _.extend({}, defaultValuesForFields, {
+        _.extend({}, defaultValuesForFields, {
           isIndexed: true,
           default: 'no-token',
           type: 'token/string',
-          name: 'Invitation Token'
+          name: 'Invitation Token',
+          id: 'invitationToken'
         }),
-        passwordHash: _.extend({}, defaultValuesForFields, {
+        _.extend({}, defaultValuesForFields, {
           type: 'password-hash/string',
-          name: 'Password Hash'
+          name: 'Password Hash',
+          id: 'passwordHash'
         }),
-        referer: _.extend({}, defaultValuesForFields, {
+        _.extend({}, defaultValuesForFields, {
           isIndexed: true,
           default: null,
           type: 'identifier/string',
-          name: 'Referer'
+          name: 'Referer',
+          id: 'referer'
         }),
-        storageUsed: {
-          dbDocuments: _.extend({}, defaultValuesForFields, {
-            isShown: true,
-            default: 0,
-            displayName: 'dbDocuments',
-            type: 'data-quantity/b',
-            name: 'Storage used'
-          }),
-          attachedFiles: _.extend({}, defaultValuesForFields, {
-            isShown: true,
-            default: 0,
-            type: 'data-quantity/b',
-            name: 'Attached files'
-          })
+        {
+          id: 'storageUsed',
+          children: [
+            _.extend({}, defaultValuesForFields, {
+              isShown: true,
+              default: 0,
+              type: 'data-quantity/b',
+              name: 'Db Documents',
+              id: 'dbDocuments'
+            }),
+            _.extend({}, defaultValuesForFields, {
+              isShown: true,
+              default: 0,
+              type: 'data-quantity/b',
+              name: 'Attached files',
+              id: 'attachedFiles'
+            })
+          ]
         }
-      }
-    }
+      ]
   });
 
   const CUSTOM_SYSTEM_STREAMS_FIELDS = 'CUSTOM_SYSTEM_STREAMS_FIELDS';
@@ -104,7 +113,7 @@ function load(config: Config): Config {
     }
   });
 
-  readAdditionalFieldsConfig(config);
+  readAdditionalFieldsConfig(config); 
   return config;
 
   /**
@@ -135,13 +144,14 @@ function load(config: Config): Config {
     additionalFields
   ): Config {
     const keys: Array<string> = Object.keys(additionalFields);
-    let i;
+    let systemStreamsConfig = config.get('systemStreams:account');
     keys.forEach(k => {
-      config.set(
-        'systemStreams:account:' + k,
-        _.extend({}, defaultValuesForFields, additionalFields[k])
-      );
+      systemStreamsConfig.push(_.extend({}, defaultValuesForFields, additionalFields[k]));
     });
+    config.set(
+      'systemStreams:account',
+      systemStreamsConfig
+    );
     return config;
   }
 }

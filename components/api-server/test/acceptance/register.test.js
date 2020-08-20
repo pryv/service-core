@@ -165,7 +165,7 @@ describe('User Registration related functionalities', async () => {
       });
     });
 
-    it('reserved username', async () => {
+    it('[2EFB] reserved username', async () => {
 
       // var test = {
       //   data: { username: 'pryvwa' },

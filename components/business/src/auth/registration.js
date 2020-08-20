@@ -20,7 +20,7 @@ const mailing = require('components/api-server/src/methods/helpers/mailing');
 const ServiceRegister = require('./service_register');
 const methodsSchema = require('components/api-server/src/schema/authMethods');
 var string = require('components/api-server/src/schema/helpers').string;
-const UserInfoSerializer = require('components/business/src/user/user_info_serializer');
+const DefaultStreamsSerializer = require('components/business/src/user/user_info_serializer');
 
 import type { MethodContext } from 'components/model';
 import type { ApiCallback } from 'components/api-server/src/API';
@@ -48,7 +48,8 @@ class Registration {
 
     this.serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
     this.hostname = serverSettings.hostname;
-    this.accountStreamsSettings = config.get('systemStreams:account');
+    this.deafultStreamsSerializer = new DefaultStreamsSerializer();
+    this.accountStreamsSettings = this.deafultStreamsSerializer.getFlatAccountStreamSettings();
     
     // bind this object to the functions that need it
     this.createUser = this.createUser.bind(this);
@@ -75,10 +76,10 @@ class Registration {
    */
   async createUserInServiceRegister (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
-      let userInfoSerializer = new UserInfoSerializer();
+      let deafultStreamsSerializer = new DefaultStreamsSerializer();
       // get streams ids from the config that should be retrieved
-      const userStreamsIds = userInfoSerializer.getIndexedAccountStreams();
-      const uniqueStreamsIds = userInfoSerializer.getUniqueAccountStreamsIds();
+      const userStreamsIds = deafultStreamsSerializer.getIndexedAccountStreams();
+      const uniqueStreamsIds = deafultStreamsSerializer.getUniqueAccountStreamsIds();
 
       // form data that should be sent to service-register
       // some default values and indexed/uinique fields of the system
@@ -154,7 +155,7 @@ class Registration {
      // TODO IEVA
       // const tempUser = _.clone(userInfo);
       // tempUser.username = context.TEMP_USERNAME_PREFIX + cuid();
-      return next(this.handleUniqnessErrors(err));
+      return next(Registration.handleUniqnessErrors(err));
     }
   }
 
@@ -403,7 +404,7 @@ class Registration {
    * @param {*} result 
    * @param {*} next 
    */
-  loadCustomValidationSettings (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  loadCustomValidationSettings (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {   
     let validationSchema = Object.assign({}, methodsSchema.register.params);
 
     // iterate account stream settings and APPEND validation with relevant properties

@@ -43,8 +43,9 @@
     "isActive": true
   },
   "systemStreams": {
-    "custom": {
-      "insurancenumber": {
+    "custom": [
+       {
+        "id": "insurancenumber",
         "isIndexed": true,
         "isShown": true,
         "type": "string/pryv",
@@ -55,10 +56,11 @@
           "code": "cool-error"
         }
       },
-      "phoneNumber": {
+      {
+        "id": "phoneNumber",
         "isEditable": true,
         "isShown": true
       }
-    }
+    ]
   }
 }

@@ -512,9 +512,12 @@ module.exports = function (
       
     } else if (nonEditableAccountStreamsIds.includes(fieldName)) {
       validationErrors.push(errors.DeniedEventModification(fieldName));
-    } else if (matchingAccountStreams.length > 1 || (!creation && _.intersection(matchingAccountStreams, oldContentStreamIds).length === 0)) {
+    } else if (matchingAccountStreams.length > 1 ||
+      (!creation &&
+        matchingAccountStreams.length > 0 &&
+        _.intersection(matchingAccountStreams, oldContentStreamIds).length === 0)) {
       // check if streamId includes only 1 account stream
-      validationErrors.push(errors.DeniedMultipleAccountStreams(fieldName));
+      validationErrors.push(contextContent.streamIds,'contextContent.streamIds',errors.DeniedMultipleAccountStreams(fieldName));
     }
     return {
       context: contextContent,
@@ -1009,7 +1012,6 @@ module.exports = function (
         await serviceRegisterConn.updateUserInServiceRegister(
           user.username, {}, { [existingUniqueProperty.split('__unique')[0]]: event[existingUniqueProperty]});
       } catch (err) {
-        console.log(err,'err');
         throw err;
       }
     }

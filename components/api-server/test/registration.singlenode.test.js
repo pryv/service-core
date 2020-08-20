@@ -24,7 +24,7 @@ let registerBody;
 let request;
 let res;
 
-describe("Singlenode registration", function () {
+describe("[YYY2] Singlenode registration", function () {
   before(async function () {
     const settings = await Settings.load();
     
@@ -46,6 +46,8 @@ describe("Singlenode registration", function () {
       password: charlatan.Lorem.characters(7),
       email: charlatan.Internet.email(),
       appId: charlatan.Lorem.characters(7),
+      insurancenumber: charlatan.Number.number(3),
+      phoneNumber: charlatan.Number.number(3)
     };
   });
   describe("when given valid input", function () {
