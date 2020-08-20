@@ -450,9 +450,9 @@ module.exports = function (
    * @param boolean creation - if true - active streamId will be added by default
    */
   async function handleAccountStreams (username:string, context: object, creation: Boolean) {
-    const userInfoSerializerObj = new UserInfoSerializer();
-    const nonEditableAccountStreamsIds = userInfoSerializerObj.getAccountStreamsIdsForbiddenForEditing();
-    const editableAccountStreams = userInfoSerializerObj.getEditableAccountStreams();
+    const defaultStreamsSerializerObj = new UserInfoSerializer();
+    const nonEditableAccountStreamsIds = defaultStreamsSerializerObj.getAccountStreamsIdsForbiddenForEditing();
+    const editableAccountStreams = defaultStreamsSerializerObj.getEditableAccountStreams();
     let removeActiveEvents = false;
     let validationErrors = [];
     let contextContent = context.content;
@@ -511,11 +511,17 @@ module.exports = function (
       }
       
     } else if (nonEditableAccountStreamsIds.includes(fieldName)) {
+      // if user tries to add new streamId from non editable streamsIds
       validationErrors.push(errors.DeniedEventModification(fieldName));
-    } else if (matchingAccountStreams.length > 1 || (!creation && _.intersection(matchingAccountStreams, oldContentStreamIds).length === 0)) {
-      // check if streamId includes only 1 account stream
+    } else if (matchingAccountStreams.length > 1) {
+      // if user tries to add several streamIds from account streams
+      validationErrors.push(errors.DeniedMultipleAccountStreams(fieldName));
+    }else if (!creation && matchingAccountStreams.length > 0 &&
+      _.intersection(matchingAccountStreams, oldContentStreamIds).length === 0){
+      // if user tries to change streamId of systemStreams
       validationErrors.push(errors.DeniedMultipleAccountStreams(fieldName));
     }
+
     return {
       context: contextContent,
       removeActiveEvents: removeActiveEvents,
@@ -1009,7 +1015,6 @@ module.exports = function (
         await serviceRegisterConn.updateUserInServiceRegister(
           user.username, {}, { [existingUniqueProperty.split('__unique')[0]]: event[existingUniqueProperty]});
       } catch (err) {
-        console.log(err,'err');
         throw err;
       }
     }

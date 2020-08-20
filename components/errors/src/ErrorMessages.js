@@ -33,6 +33,8 @@ const ErrorMessages = {
   [ErrorIds.NonValidForOpenSource]: 'Not valid method for open pryv',
   // TODO IEVA - wording
   [ErrorIds.DeniedEventModification]: 'Event modification was not done, perhaps you are trying to edit a account stream event like user data.',
+  [ErrorIds.DeniedStreamAccess]: 'It is forbidden to access this stream.',
+  [ErrorIds.TooHighAccessForAccountStreams]: 'Only read and contribute acceesses are allowed for the account sterams',
   [ErrorIds.EmailRequired]: 'Email is required',
   [ErrorIds.PasswordRequired]: 'Password is required',
   [ErrorIds.InvalidPassword]: 'Password should have from 5 to 23 characters',

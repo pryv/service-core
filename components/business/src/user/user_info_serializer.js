@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 const _ = require('lodash');
-const Settings = require('components/api-server/src/settings');
+const treeUtils = require('components/utils').treeUtils;
 
 const getConfig: () => Config = require('components/api-server/config/Config').getConfig;
 import type { Config } from 'components/api-server/config/Config';
@@ -24,12 +24,14 @@ const uniqueStreams = 'unique-default-streams';
  */
 class UserInfoSerializer {
   systemStreamsSettings;
+  accountStreamsSettings;
 
   constructor () {
     this.systemStreamsSettings = config.get('systemStreams');
     if (this.systemStreamsSettings == null) {
       throw Error("Not valid system streams settings.");
     }
+    this.accountStreamsSettings = this.systemStreamsSettings.account;
   }
 
   /**
@@ -38,7 +40,7 @@ class UserInfoSerializer {
    */
   serializeEventsToAccountInfo(events){
     let user = {};
-    return formEventsTree(this.systemStreamsSettings.account, events, user);
+    return formEventsTree(this.accountStreamsSettings, events, user);
   }
 
   /**
@@ -47,7 +49,7 @@ class UserInfoSerializer {
    */
   getReadableAccountStreams () {
     let streamsNames = {};
-    return getStreamsNames(this.systemStreamsSettings.account, streamsNames, readable);
+    return getStreamsNames(this.accountStreamsSettings, streamsNames, readable);
   }
 
   /**
@@ -55,7 +57,7 @@ class UserInfoSerializer {
    */
   getEditableAccountStreams () {
     let streamsNames = {};
-    return getStreamsNames(this.systemStreamsSettings.account, streamsNames, editableAccountStreams);
+    return getStreamsNames(this.accountStreamsSettings, streamsNames, editableAccountStreams);
   }
 
   /**
@@ -65,7 +67,7 @@ class UserInfoSerializer {
    */
   getAllAccountStreams () {
     let streamsNames = {};
-    return getStreamsNames(this.systemStreamsSettings.account, streamsNames, allAccountStreams);
+    return getStreamsNames(this.accountStreamsSettings, streamsNames, allAccountStreams);
   }
 
 /**
@@ -73,7 +75,7 @@ class UserInfoSerializer {
  */
   getIndexedAccountStreams () {
     let streamsNames = {};
-    return getStreamsNames(this.systemStreamsSettings.account, streamsNames, indexedStreams);
+    return getStreamsNames(this.accountStreamsSettings, streamsNames, indexedStreams);
   }
 
 /**
@@ -81,7 +83,7 @@ class UserInfoSerializer {
  */
   getUniqueAccountStreamsIds () {
     let streamsNames = {};
-    return Object.keys(getStreamsNames(this.systemStreamsSettings.account, streamsNames, uniqueStreams));
+    return Object.keys(getStreamsNames(this.accountStreamsSettings, streamsNames, uniqueStreams));
   }
 
   /**
@@ -108,95 +110,73 @@ class UserInfoSerializer {
     return notReadableStreamsIds;
   }
 
-  
   /**
-   * Get virtual streams list
-   * //TODO IEVA - improve it
+   * Iterate the tree and change all its properties except the children
+   * // TODO IEVA -now only account streams are processed
    */
-
   getVirtualStreamsList () {
-    let streamsNames = {};
-
-    const streamsName = getStreamsNames(this.systemStreamsSettings.account, streamsNames, readable);
-    const streams = Object.keys(streamsName).map(streamName => {
-      return {
-        name: streamName,
-        id: streamName,
-        parentId: 'account',
-        children: []
+    let virtualStreams = [];
+    const flatStreamsList = treeUtils.flattenTree(this.accountStreamsSettings);
+   
+    let i;
+    for (i = 0; i < flatStreamsList.length; i++) {
+      if (flatStreamsList[i].isShown === true ||
+        (typeof flatStreamsList[i].isShown === 'undefined' &&
+          flatStreamsList[i].parentId === null)) {
+        virtualStreams.push({
+          name: flatStreamsList[i].name ? flatStreamsList[i].name : flatStreamsList[i].id ,
+          id: flatStreamsList[i].id,
+          parentId: flatStreamsList[i].parentId ? flatStreamsList[i].parentId: 'account',
+          children: flatStreamsList[i].children ? flatStreamsList[i].children: []
+        });
       }
-    })
-
+    }
+    //TODO IEVA - do in more dynamic way
     return {
       name: 'account',
       id: 'account',
-      parentId: 'systemStreams',
-      children: streams
+      parentId: null,
+      children: virtualStreams
     };
   }
-}
-/*
-function getVirtualStreams (streams, virtualStreams) {
-  let i;
-  let stream;
-  const streamsKeys = Object.keys(streams);
-  for (i = 0; i < streamsKeys.length; i++) {
-    stream = streams[streamsKeys[i]];
-    // if stream has children recursivelly call the same function
-    if (typeof stream.isShown === "undefined") { 
-      virtualStreams[streamsKeys[i]] = stream;
-      virtualStreams = getVirtualStreams(stream, virtualStreams, whatToReturn);
-    }
 
-    if (stream.isShown === false) {
-      continue;
+  /**
+   * Form flattened account stream settings and converted from an array to object
+   */
+  getFlatAccountStreamSettings () {
+    let accountSettings = {};
+    const flatStreamsList = treeUtils.flattenTree(this.accountStreamsSettings);
+    
+    // convert list to object
+    let i;
+    for (i = 0; i < flatStreamsList.length; i++) {
+      accountSettings[flatStreamsList[i].id] = flatStreamsList[i];
     }
-  
-    virtualStreams.push({
-      
-      name: streamsKeys[i].name ? streamsKeys[i].name: streamsKeys[i],
-      id: streamsKeys[i],
-      parentId: 'systemStreams',
-      children: streams
-    });
+    return accountSettings;
   }
 }
-*/
-/**
- * Form events depending on the system streams structure
- * @param {*} stream - streams structure
- * @param {*} events - flat list of the events
- * @param {*} user - object that will be returned after it is updated
- */
-function formEventsTree(stream, events, user){
+
+function formEventsTree (streams, events, user) {
   let streamIndex;
-  const streamsNames = Object.keys(stream);
-  for (streamIndex = 0; streamIndex < streamsNames.length; streamIndex++) {
-    const streamName = streamsNames[streamIndex];
+  for (streamIndex = 0; streamIndex < streams.length; streamIndex++) {
+    const streamName = streams[streamIndex].id;
 
     // if stream has children recursivelly call the same function
-    if (typeof stream[streamName].isShown === "undefined") {
+    if (typeof streams[streamIndex].children !== "undefined") {
       user[streamName] = {};
-      user[streamName] = formEventsTree(stream[streamName], events, user[streamName])
+      user[streamName] = formEventsTree(streams[streamIndex].children, events, user[streamName])
     }
 
-    // if the stream value is equal to false, it should be not visible
-    /*TODO IEVA   if (stream[streamName].isShown === false){
-         continue;
-       }*/
+    // if the stream is not visible, dont add it to the tree
+    // if (streams[streamIndex].isShown === false){
+    //   continue;
+    // }
 
     // get value for the stream element
     let i;
     for (i = 0; i < events.length; i++) {
       if (events[i].streamIds.includes(streamName)) {
-        // allow to display variable with different name 
-        // currently setting is adapted only on dbDocuments case and do not
-        // handle edge cases
-        if (stream[streamName].displayName) {
-          user[stream[streamName].displayName] = events[i].content;
-        } else {
-          user[streamName] = events[i].content;
-        }
+        user[streamName] = events[i].content;
         break;
       }
     }
@@ -213,53 +193,48 @@ function formEventsTree(stream, events, user){
  * if they are equal to false or true
  */
 function getStreamsNames(streams, streamsNames, whatToReturn) {
-  let i;
-  let stream;
-  const streamsKeys = Object.keys(streams);
-  for (i = 0; i < streamsKeys.length; i++) {
-    stream = streams[streamsKeys[i]];
-    // if stream has children recursivelly call the same function
-    if (typeof stream.isShown === "undefined") {
-      streamsNames[streamsKeys[i]] = stream;
-      streamsNames = getStreamsNames(stream, streamsNames, whatToReturn);
-      continue;
-    }
+  const flatStreamsList = treeUtils.flattenTree(streams);
 
+  // convert list to objects
+  let flatStreamsListObj = {};
+  let i;
+  for (i = 0; i < flatStreamsList.length; i++){
     // if the stream value is equal to false, it should be not visible 
     // (except when all account streams should be returned)
     switch (whatToReturn) {
       case readable:
-        if (stream.isShown === false) {
+        if (flatStreamsList[i].isShown === false) {
           continue;
         }
         break;
       case allAccountStreams:
         break;
       case indexedStreams:
-        if (stream.isIndexed === false) {
+        if (flatStreamsList[i].isIndexed === false) {
           continue;
         }
         break;
       case uniqueStreams:
-        if (stream.isUnique === false) {
+        if (flatStreamsList[i].isUnique === false) {
           continue;
         }
         break;
       case editableAccountStreams:
-        if (stream.isEditable === false) {
+        if (flatStreamsList[i].isEditable === false) {
           continue;
         }
         break;
       default:
-        if (stream.isShown === true) {
+        if (flatStreamsList[i].isShown === false) {
           continue;
         }
         break;
     }
-    streamsNames[streamsKeys[i]] = stream;
+    flatStreamsListObj[flatStreamsList[i].id] = flatStreamsList[i]
   }
-  return streamsNames
+  return flatStreamsListObj;
 }
+
 UserInfoSerializer.options = {
   STREAM_ID_ACTIVE: 'active'
 }

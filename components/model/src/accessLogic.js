@@ -27,7 +27,10 @@ Object.freeze(PermissionLevels);
  * Usage example: _.extend(plainAccessObject, accessLogic);
  */
 const accessLogic = module.exports = {
-
+  PERMISSION_LEVEL_CONTRIBUTE: 'contribute',
+  PERMISSION_LEVEL_MANAGE: 'manage',
+  PERMISSION_LEVEL_READ: 'read',
+  PERMISSION_LEVEL_CREATE_ONLY: 'create-only',
   isPersonal: function () {
     return this.type === 'personal';
   },
@@ -132,6 +135,10 @@ const accessLogic = module.exports = {
 
   canReadAllStreams: function () {
     return this.isPersonal() || !! this.getStreamPermissionLevel('*');
+  },
+
+  canCreateAccessForAccountStream: function (permissionLevel) {
+    return isHigherOrEqualLevel(this.PERMISSION_LEVEL_CONTRIBUTE, permissionLevel);
   },
 
   canReadStream: function (streamId) {

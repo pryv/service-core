@@ -41,7 +41,9 @@ describe('registration: single-node', () => {
         username: charlatan.Lorem.characters(7),
         password: charlatan.Lorem.characters(7),
         email: charlatan.Internet.email(),
-        appId: charlatan.Lorem.characters(7)
+        appId: charlatan.Lorem.characters(7),
+        insurancenumber: charlatan.Number.number(3),
+        phoneNumber: charlatan.Number.number(3),
       };
     });
     describe('when given valid input', function() {

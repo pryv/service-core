@@ -37,7 +37,6 @@ class MethodContext {
   user: ?User;
   access: ?Access;
   streams: ?Array<Stream>;
-  userAccountStreams: ?Array<Stream>;
 
   accessToken: ?string;
   callerId: ?string;
@@ -265,7 +264,6 @@ class MethodContext {
       cb => storage.streams.find(user, {}, null, cb));
 
     // get streams ids from the config that should be retrieved
-    // TODO IEVA -remove from the class variables
     const userAccountStreams = (new UserInfoSerializer()).getVirtualStreamsList();
     this.streams = streams.concat(userAccountStreams);
   }

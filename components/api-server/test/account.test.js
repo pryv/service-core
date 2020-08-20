@@ -98,11 +98,17 @@ describe('account', function () {
           context: _.defaults({username: user.username}, settings.services.register),
           execute: function () {
             const path = '/users/' + this.context.username + '/change-email';
-            require('nock')(this.context.url).post(path)
+            const scope = require('nock')(this.context.url);
+            scope.post(path)
               .matchHeader('Authorization', this.context.key)
               .reply(200, function (uri, requestBody) {
                 this.context.messagingSocket.emit('reg-server-called', JSON.parse(requestBody));
               }.bind(this));
+            scope.put('/users',
+              (body) => {
+                serviceRegisterRequest = body;
+                return true;
+              }).reply(200, { errors: [] });
           }
         });
         
