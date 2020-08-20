@@ -76,8 +76,8 @@ class Registration {
     try {
       let userInfoSerializer = new UserInfoSerializer();
       // get streams ids from the config that should be retrieved
-      const userStreamsIds = userInfoSerializer.getIndexedCoreStreams();
-      const uniqueStreamsIds = userInfoSerializer.getUniqueCoreStreamsIds();
+      const userStreamsIds = userInfoSerializer.getIndexedAccountStreams();
+      const uniqueStreamsIds = userInfoSerializer.getUniqueAccountStreamsIds();
 
       // form data that should be sent to service-register
       // some default values and indexed/uinique fields of the system
@@ -214,7 +214,6 @@ class Registration {
    * @param {*} err 
    * @param {*} params 
    */
-  // TODO IEVA static
   static handleUniquenessErrors (err, message) {
     // Duplicate errors
     // I check for these errors in the validation so they are only used for 
@@ -228,9 +227,24 @@ class Registration {
       return commonFns.apiErrorToValidationErrorsList(listApiErrors);
     }
     // Any other error
-    console.log(message,'message');
     if (!message) {
       message = 'Unexpected error while saving user.';
+    }
+    return errors.unexpectedError(err, message);
+  }
+  /**
+ * Form errors for api response
+ * @param {*} err 
+ * @param {*} params 
+ */
+  static handleUniqnessErrorsInSingleErrorFormat (err, message) {
+    // Uniquenss errors
+    if (typeof err.isDuplicateIndex === 'function') {
+      return errors.existingField(err.duplicateIndex());
+    }
+    // Any other error
+    if (!message) {
+      message = 'Unexpected error while saving the user.';
     }
     return errors.unexpectedError(err, message);
   }
@@ -401,7 +415,7 @@ class Registration {
   loadCustomValidationSettings (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     let validationSchema = Object.assign({}, methodsSchema.register.params);
 
-    // iterate core stream settings and APPEND validation with relevant properties
+    // iterate account stream settings and APPEND validation with relevant properties
     // etc additional required fields or regex validation
     for (const [field, value] of Object.entries(this.accountStreamsSettings)) {
       // if field is set as required - add required validation

@@ -90,7 +90,7 @@ describe('events', function () {
         }
         let response;
         let allEvents;
-        let coreStreamsEvents;
+        let accountStreamsEvents;
         async.series([
           storage.insertMany.bind(storage, user, additionalEvents),
           function getDefault (stepDone) {
@@ -111,9 +111,9 @@ describe('events', function () {
           async () => {
             try {
               // lets separate core events from all other events and validate them separatelly
-              const separatedEvents = validation.separateCoreStreamsAndOtherEvents(response.body.events);
+              const separatedEvents = validation.separateAccountStreamsAndOtherEvents(response.body.events);
               response.body.events = separatedEvents.events;
-              coreStreamsEvents = separatedEvents.coreStreamsEvents;
+              accountStreamsEvents = separatedEvents.accountStreamsEvents;
             } catch (error) {
               throw error;
             }
@@ -124,7 +124,7 @@ describe('events', function () {
               schema: methodsSchema.get.result,
               sanitizeFn: validation.sanitizeEvents,
               sanitizeTarget: 'events',
-              body: { events: _.take(_.sortBy(allEvents, 'time').reverse(), 20 - coreStreamsEvents.length) }
+              body: { events: _.take(_.sortBy(allEvents, 'time').reverse(), 20 - accountStreamsEvents.length) }
             }, stepDone);
           },
           testData.resetEvents
@@ -364,10 +364,10 @@ describe('events', function () {
       request.get(basePath).query({ state: 'all', limit: 1000 }).end(async function (res) {
         try{
           // lets separate core events from all other events and validate them separatelly
-          const separatedEvents = validation.separateCoreStreamsAndOtherEvents(res.body.events);
+          const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
           res.body.events = separatedEvents.events;
-          const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
-          validation.validateCoreEvents(actualCoreStreamsEvents);
+          const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
+          validation.validateCoreEvents(actualAccountStreamsEvents);
 
           validation.check(res, {
             status: 200,
@@ -399,10 +399,10 @@ describe('events', function () {
       request.get(basePath).query(params).end(async function (res) {
         try{
           // lets separate core events from all other events and validate them separatelly
-          const separatedEvents = validation.separateCoreStreamsAndOtherEvents(res.body.events);
+          const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
           res.body.events = separatedEvents.events;
-          const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
-          validation.validateCoreEvents(actualCoreStreamsEvents);
+          const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
+          validation.validateCoreEvents(actualAccountStreamsEvents);
 
           validation.check(res, {
             status: 200,
@@ -438,10 +438,10 @@ describe('events', function () {
       request.get(basePath).query(params).end(async function (res) {
         try{
           // lets separate core events from all other events and validate them separatelly
-          const separatedEvents = validation.separateCoreStreamsAndOtherEvents(res.body.events);
+          const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
           res.body.events = separatedEvents.events;
-          const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
-          validation.validateCoreEvents(actualCoreStreamsEvents);
+          const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
+          validation.validateCoreEvents(actualAccountStreamsEvents);
           
           await bluebird.fromCallback(
             (cb) => validation.check(res, {
@@ -2008,10 +2008,10 @@ describe('events', function () {
           function verifyEventData(stepDone) {
             storage.findAll(user, null, async function (err, events) {
               try{
-                const separatedEvents = validation.separateCoreStreamsAndOtherEvents(events);
+                const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);
                 events = separatedEvents.events;
-                const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
-                validation.validateCoreEvents(actualCoreStreamsEvents);
+                const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
+                validation.validateCoreEvents(actualAccountStreamsEvents);
 
                 events.length.should.eql(testData.events.length, 'events');
 

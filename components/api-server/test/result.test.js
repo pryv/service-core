@@ -110,14 +110,6 @@ function SimpleTransformStream() {
 inherits(SimpleTransformStream, Transform);
 
 SimpleTransformStream.prototype._transform = function (item, encoding, callback) {
-  // remove event values used for enforcing uniqness in database level
-  // (the fields are formed "streamId + __unique")
-  /* TODO IEVA  item = Object.keys(item)
-    .filter(key => ! /__unique/.test(key))
-    .reduce((obj, key) => {
-      obj[key] = item[key];
-      return obj;
-    }, {});*/
   this.push(item);
   callback();
 };

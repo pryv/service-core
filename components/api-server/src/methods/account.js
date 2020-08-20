@@ -10,8 +10,14 @@ var errors = require('components/errors').factory,
     encryption = require('components/utils').encryption,
     methodsSchema = require('../schema/accountMethods'),
     request = require('superagent'),
-    bluebird = require('bluebird');
-/**
+  bluebird = require('bluebird');
+const DefaultStreamsSerializer = require('components/business/src/user/user_info_serializer'),
+  Registration = require('components/business/src/auth/registration'),
+  ErrorMessages = require('components/errors/src/ErrorMessages'),
+  ErrorIds = require('components/errors').ErrorIds,
+  ServiceRegister = require('components/business/src/auth/service_register');
+
+  /**
  * @param api
  * @param usersStorage
  * @param passwordResetRequestsStorage
@@ -20,7 +26,7 @@ var errors = require('components/errors').factory,
  * @param notifications
  */
 module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
-  authSettings, servicesSettings, notifications) {
+  authSettings, servicesSettings, notifications, logging) {
 
   var registerSettings = servicesSettings.register,
     emailSettings = servicesSettings.email,
@@ -161,7 +167,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     });
   }
 
-  function notifyEmailChangeToRegister(context, params, result, next) {
+  async function notifyEmailChangeToRegister(context, params, result, next) {
     const currentEmail = context.user.email;
     const newEmail = params.update.email;
 
@@ -174,7 +180,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     request.post(regChangeEmailURL)
       .set('Authorization', registerSettings.key)
       .send({ email: newEmail })
-      .end(function (err, res) {
+      .end(async (err, res) => {
 
         if (err != null || (res && ! res.ok)) {
           let errMsg = 'Failed to update email on register. ';
@@ -186,21 +192,58 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
           }
           return next(errors.invalidOperation(errMsg, { email: newEmail }, err));
         }
-
+        // update language in service-register
+        if (params.update.hasOwnProperty('language')){
+          await notifyRegisterAboutUserDataChanges(context.user.username,
+            {
+              language: {
+                value: params.update.language,
+                creation: false,
+                isUnique: false,
+                isActive: true
+              }
+            });
+        }
         next();
       });
+  }
+
+  /**
+   * This function should be called only for the indexed or unique fields.
+   * Curently there is only language that should be updated, and account
+   * methods will deprecate so the logic is simplified
+   */
+  async function notifyRegisterAboutUserDataChanges (username, fieldsForUpdate) {
+    // initialize service-register connection
+    const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
+    let validationErrors = [];
+    try {
+      // send information update to service regsiter
+      await serviceRegisterConn.updateUserInServiceRegister(username, fieldsForUpdate, {});
+      // !!!!!! Now only language is updated and no validation errors should be thrown
+    } catch (err) {
+      throw err;
+    }
+    return validationErrors;
   }
 
   async function updateAccount(context, params, result, next) {
     try {
       // form tasks to update the events
       const fieldsToUpdate = Object.keys(params.update);
-      Object.keys(params.update).map(paramKey => {
-        return bluebird.fromCallback(cb => userEventsStorage.updateOne(
+      const uniqueaccountStreamIds = (new DefaultStreamsSerializer).getUniqueAccountStreamsIds();
+      let i;
+      for (i = 0; i < fieldsToUpdate.length; i++){
+        let updateData = { content: params.update[fieldsToUpdate[i]]};
+        if (uniqueaccountStreamIds.includes(fieldsToUpdate[i])) {
+          updateData[`${fieldsToUpdate[i]}__unique`] = params.update[fieldsToUpdate[i]];
+        }
+
+        await bluebird.fromCallback(cb => userEventsStorage.updateOne(
           { id: context.user.id },
-          { streamIds: paramKey },
-          { content: params.update[paramKey] }, cb));
-      });
+          { streamIds: { $all: [fieldsToUpdate[i], DefaultStreamsSerializer.options.STREAM_ID_ACTIVE] } },
+          updateData, cb));
+      }
 
       // retrieve and form user info
     /* TODO IEVA  is this exception is really necessary ?*/
@@ -214,7 +257,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
       notifications.accountChanged(context.user);
       next();
     } catch (err) {
-      return next(errors.unexpectedError(err));
+      return next(Registration.handleUniqnessErrorsInSingleErrorFormat(err, ErrorMessages[ErrorIds.UnexpectedErrorWhileSavingTheEvent]));
     }
   }
 };

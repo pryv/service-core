@@ -374,9 +374,9 @@ function setup(configDefault) {
   if (overridesFilePath) {
     loadFile(overridesFilePath);
   }
-
-  instance.validate();
-  
+  if (!instance.get('env') === 'test') {
+    instance.validate();
+  }
   return instance; 
 
   function loadFile(fPath) {

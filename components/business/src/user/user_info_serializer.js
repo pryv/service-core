@@ -11,11 +11,11 @@ const getConfig: () => Config = require('components/api-server/config/Config').g
 import type { Config } from 'components/api-server/config/Config';
 const config: Config = getConfig();
 
-const readable = 'readable-core-streams';
-const allCoreStreams = 'all-core-streams';
-const editableCoreStreams = 'editable-core-streams';
-const indexedStreams = 'indexed-core-streams';
-const uniqueStreams = 'unique-core-streams';
+const readable = 'readable-default-streams';
+const allAccountStreams = 'all-default-streams';
+const editableAccountStreams = 'editable-default-streams';
+const indexedStreams = 'indexed-default-streams';
+const uniqueStreams = 'unique-default-streams';
 
 /**
  * Class that converts system->account events to the
@@ -45,7 +45,7 @@ class UserInfoSerializer {
    * Get the names of all readable streams that belongs to the system->account stream
    * and could be returned to the user
    */
-  getReadableCoreStreams () {
+  getReadableAccountStreams () {
     let streamsNames = {};
     return getStreamsNames(this.systemStreamsSettings.account, streamsNames, readable);
   }
@@ -53,9 +53,9 @@ class UserInfoSerializer {
   /**
    * Get only those streams that user is allowed to edit 
    */
-  getEditableCoreStreams () {
+  getEditableAccountStreams () {
     let streamsNames = {};
-    return getStreamsNames(this.systemStreamsSettings.account, streamsNames, editableCoreStreams);
+    return getStreamsNames(this.systemStreamsSettings.account, streamsNames, editableAccountStreams);
   }
 
   /**
@@ -63,15 +63,15 @@ class UserInfoSerializer {
    * should be used only for internal usage because contains fields that 
    * should not be returned to the user
    */
-  getAllCoreStreams () {
+  getAllAccountStreams () {
     let streamsNames = {};
-    return getStreamsNames(this.systemStreamsSettings.account, streamsNames, allCoreStreams);
+    return getStreamsNames(this.systemStreamsSettings.account, streamsNames, allAccountStreams);
   }
 
 /**
  * Get streamIds of fields that should be indexed
  */
-  getIndexedCoreStreams () {
+  getIndexedAccountStreams () {
     let streamsNames = {};
     return getStreamsNames(this.systemStreamsSettings.account, streamsNames, indexedStreams);
   }
@@ -79,7 +79,7 @@ class UserInfoSerializer {
 /**
  * Get streamIds of fields that should be unique
  */
-  getUniqueCoreStreamsIds () {
+  getUniqueAccountStreamsIds () {
     let streamsNames = {};
     return Object.keys(getStreamsNames(this.systemStreamsSettings.account, streamsNames, uniqueStreams));
   }
@@ -88,9 +88,9 @@ class UserInfoSerializer {
    * Get steams that are NOT allowed to edit - this function will be used to 
    * exclude from queries
    */
-  getCoreStreamsIdsForbiddenForEditing () {
-    let allStreams = this.getAllCoreStreams();
-    let editableStreams = this.getEditableCoreStreams();
+  getAccountStreamsIdsForbiddenForEditing () {
+    let allStreams = this.getAllAccountStreams();
+    let editableStreams = this.getEditableAccountStreams();
 
     const notEditableStreamsIds = _.difference(_.keys(allStreams), _.keys(editableStreams));
     return notEditableStreamsIds;
@@ -100,21 +100,23 @@ class UserInfoSerializer {
    * Get steams that are NOT allowed to view for the user
    * this function will be used to exclude streamIds from queries
    */
-  getCoreStreamsIdsForbiddenForReading () {
-    let allStreams = this.getAllCoreStreams();
-    let readableStreams = this.getReadableCoreStreams();
+  getAccountStreamsIdsForbiddenForReading () {
+    let allStreams = this.getAllAccountStreams();
+    let readableStreams = this.getReadableAccountStreams();
 
     const notReadableStreamsIds = _.difference(_.keys(allStreams), _.keys(readableStreams));
     return notReadableStreamsIds;
   }
 
+  
   /**
    * Get virtual streams list
-   * @param {*} events 
-   * TODO IEVA - perhaps delete
+   * //TODO IEVA - improve it
    */
+
   getVirtualStreamsList () {
     let streamsNames = {};
+
     const streamsName = getStreamsNames(this.systemStreamsSettings.account, streamsNames, readable);
     const streams = Object.keys(streamsName).map(streamName => {
       return {
@@ -133,7 +135,33 @@ class UserInfoSerializer {
     };
   }
 }
+/*
+function getVirtualStreams (streams, virtualStreams) {
+  let i;
+  let stream;
+  const streamsKeys = Object.keys(streams);
+  for (i = 0; i < streamsKeys.length; i++) {
+    stream = streams[streamsKeys[i]];
+    // if stream has children recursivelly call the same function
+    if (typeof stream.isShown === "undefined") { 
+      virtualStreams[streamsKeys[i]] = stream;
+      virtualStreams = getVirtualStreams(stream, virtualStreams, whatToReturn);
+    }
 
+    if (stream.isShown === false) {
+      continue;
+    }
+  
+    virtualStreams.push({
+      
+      name: streamsKeys[i].name ? streamsKeys[i].name: streamsKeys[i],
+      id: streamsKeys[i],
+      parentId: 'systemStreams',
+      children: streams
+    });
+  }
+}
+*/
 /**
  * Form events depending on the system streams structure
  * @param {*} stream - streams structure
@@ -181,7 +209,7 @@ function formEventsTree(stream, events, user){
  * @param {*} streams - tree structure object
  * @param array streamsNames - flat list of keys
  * @param enum string whatToReturn - enum values should be retrieved with 
- *  getReadableCoreStreams(), getAllCoreStreams (), getEditableCoreStreams;
+ *  getReadableAccountStreams(), getAllAccountStreams (), getEditableAccountStreams;
  * if they are equal to false or true
  */
 function getStreamsNames(streams, streamsNames, whatToReturn) {
@@ -198,14 +226,14 @@ function getStreamsNames(streams, streamsNames, whatToReturn) {
     }
 
     // if the stream value is equal to false, it should be not visible 
-    // (except when all core streams should be returned)
+    // (except when all account streams should be returned)
     switch (whatToReturn) {
       case readable:
         if (stream.isShown === false) {
           continue;
         }
         break;
-      case allCoreStreams:
+      case allAccountStreams:
         break;
       case indexedStreams:
         if (stream.isIndexed === false) {
@@ -217,7 +245,7 @@ function getStreamsNames(streams, streamsNames, whatToReturn) {
           continue;
         }
         break;
-      case editableCoreStreams:
+      case editableAccountStreams:
         if (stream.isEditable === false) {
           continue;
         }

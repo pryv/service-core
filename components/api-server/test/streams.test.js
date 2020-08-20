@@ -824,13 +824,13 @@ describe('streams', function () {
           eventsStorage.findAll(user, null, async function (err, events) {
 
             // lets separate core events from all other events and validate them separatelly
-            const separatedEvents = validation.separateCoreStreamsAndOtherEvents(events);
+            const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);
             events = separatedEvents.events;
             events.length.should.eql(testData.events.length, 'events');
 
-            // validate core streams events
-            const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
-            validation.validateCoreEvents(actualCoreStreamsEvents);
+            // validate account streams events
+            const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
+            validation.validateCoreEvents(actualAccountStreamsEvents);
 
             deletedEvents.forEach(function (e) {
               const actual = _.find(events, {id: e.id});

@@ -209,12 +209,12 @@ describe('Socket.IO', function () {
         const expectedEvents = validation.removeDeletionsAndHistory(chronologicalEvents);
         
         // lets separate core events from all other events and validate them separatelly
-        const separatedEvents = validation.separateCoreStreamsAndOtherEvents(result.events);
+        const separatedEvents = validation.separateAccountStreamsAndOtherEvents(result.events);
         result.events = separatedEvents.events;
 
-        // validate core streams events
-        const actualCoreStreamsEvents = separatedEvents.coreStreamsEvents;
-        validation.validateCoreEvents(actualCoreStreamsEvents);
+        // validate account streams events
+        const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
+        validation.validateCoreEvents(actualAccountStreamsEvents);
         
         result.events.should.eql(expectedEvents);
         

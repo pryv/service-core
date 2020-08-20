@@ -77,10 +77,10 @@ const ErrorIds = {
    */
   NonValidForOpenSource: 'not-valid-for-open-pryv',
   /**
-   * Denied event modification perhaps of belonging to the core streams
+   * Denied event modification perhaps of belonging to the account streams
    */
   DeniedEventModification: 'denied-event-modification',
-  DeniedMultipleCoreStreams: 'denied-multiple-core-streams-events',
+  DeniedMultipleAccountStreams: 'denied-multiple-default-streams-events',
   EmailRequired: 'email-required',
   PasswordRequired: 'password-required',
   UnexpectedErrorWhileSavingTheEvent: 'unexpected-error-while-saving-the-event',

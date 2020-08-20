@@ -367,21 +367,21 @@ exports.removeDeletionsAndHistory = function (items) {
   return items.filter(function (e) { return ! (e.deleted || e.headId); });
 };
 
-exports.removeCoreStreamsEvents = async function (items) {
+exports.removeAccountStreamsEvents = async function (items) {
   // get streams ids from the config that should be retrieved
-  const expectedCoreStreams = (new UserInfoSerializer()).getAllCoreStreams();
-  return items.filter(function (e) { return !(e.streamIds.some(streamId => Object.keys(expectedCoreStreams).indexOf(streamId) >= 0)); });
+  const expectedAccountStreams = (new UserInfoSerializer()).getAllAccountStreams();
+  return items.filter(function (e) { return !(e.streamIds.some(streamId => Object.keys(expectedAccountStreams).indexOf(streamId) >= 0)); });
 };
 
-exports.separateCoreStreamsAndOtherEvents = function (items) {
-  const readableCoreStreams = ['username', 'email', 'language', 'attachedFiles', 'dbDocuments', 'insurancenumber', 'phoneNumber'];
+exports.separateAccountStreamsAndOtherEvents = function (items) {
+  const readableAccountStreams = ['username', 'email', 'language', 'attachedFiles', 'dbDocuments', 'insurancenumber', 'phoneNumber'];
   const normalEvents = items.filter(function (e) {
-    return (!e.streamIds) || !(e.streamIds.some(streamId => readableCoreStreams.indexOf(streamId) >= 0));
+    return (!e.streamIds) || !(e.streamIds.some(streamId => readableAccountStreams.indexOf(streamId) >= 0));
   });
-  const coreStreamsEvents = items.filter(function (e) {
-    return (e.streamIds) && (e.streamIds.some(streamId => readableCoreStreams.indexOf(streamId) >= 0));
+  const accountStreamsEvents = items.filter(function (e) {
+    return (e.streamIds) && (e.streamIds.some(streamId => readableAccountStreams.indexOf(streamId) >= 0));
   });
-  return { events: normalEvents, coreStreamsEvents: coreStreamsEvents }
+  return { events: normalEvents, accountStreamsEvents: accountStreamsEvents }
 }
 /*
  * Strips off item from tracking properties
@@ -409,16 +409,16 @@ exports.removeTrackingProperties = function (items) {
  */
 exports.validateCoreEvents = function (actualCoreEvents) {
   // get streams ids from the config that should be retrieved
-  let expectedCoreStreams = (new UserInfoSerializer()).getReadableCoreStreams();
+  let expectedAccountStreams = (new UserInfoSerializer()).getReadableAccountStreams();
 
   // iterate through expected core events and check that they exists in actual
   // core events (skip nested streams)
-  Object.keys(expectedCoreStreams).forEach(key => {
-    if (Object.keys(expectedCoreStreams[key]).length > 1) {
-      delete expectedCoreStreams[key];
+  Object.keys(expectedAccountStreams).forEach(key => {
+    if (Object.keys(expectedAccountStreams[key]).length > 1) {
+      delete expectedAccountStreams[key];
     }
   });
-  const expectedSreamIds = Object.keys(expectedCoreStreams);
+  const expectedSreamIds = Object.keys(expectedAccountStreams);
   for (n in expectedSreamIds) {
     let foundEvent = false;
     let i;
@@ -426,11 +426,11 @@ exports.validateCoreEvents = function (actualCoreEvents) {
       if (actualCoreEvents[i].streamIds.includes(expectedSreamIds[n])) {
         foundEvent = true;
         // validate that event is indexed if needed
-        if (expectedCoreStreams[expectedSreamIds[n]].isUnique === true) {
+        if (expectedAccountStreams[expectedSreamIds[n]].isUnique === true) {
           actualCoreEvents[i].streamIds.includes('unique').should.eql(true);
         }
         // validate type
-        actualCoreEvents[i].type.should.eql(expectedCoreStreams[expectedSreamIds[n]].type);actualCoreEvents[i].type.should.eql(expectedCoreStreams[expectedSreamIds[n]].type);
+        actualCoreEvents[i].type.should.eql(expectedAccountStreams[expectedSreamIds[n]].type);actualCoreEvents[i].type.should.eql(expectedAccountStreams[expectedSreamIds[n]].type);
         break;
       }
     }

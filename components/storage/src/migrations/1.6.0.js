@@ -21,7 +21,7 @@ module.exports = async function (context, callback) {
   console.log('V1.5.22 => v1.6.0 Migration started');
   
   // get streams ids from the config that should be retrieved
-  const userAccountStreams = (new UserInfoSerializer()).getAllCoreStreams();
+  const userAccountStreams = (new UserInfoSerializer()).getAllAccountStreams();
   const userAccountStreamIds = Object.keys(userAccountStreams);
 
   const eventsCollection = await bluebird.fromCallback(cb => context.database.getCollection({ name: 'events' }, cb));

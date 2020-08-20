@@ -37,7 +37,7 @@ class MethodContext {
   user: ?User;
   access: ?Access;
   streams: ?Array<Stream>;
-  userCoreStreams: ?Array<Stream>;
+  userAccountStreams: ?Array<Stream>;
 
   accessToken: ?string;
   callerId: ?string;
@@ -266,24 +266,24 @@ class MethodContext {
 
     // get streams ids from the config that should be retrieved
     // TODO IEVA -remove from the class variables
-    const userCoreStreams = (new UserInfoSerializer()).getVirtualStreamsList();
-    this.streams = streams.concat(userCoreStreams);
+    const userAccountStreams = (new UserInfoSerializer()).getVirtualStreamsList();
+    this.streams = streams.concat(userAccountStreams);
   }
 
   // Set this contexts stream by looking in this.streams. DEPRECATED.
   // used only in the events creation and update
   // TODO IEVA - verify solutions with Ilia
-  setStreamList(streamIds: array, allowAdditionalCoreStreams: Boolean) {
+  setStreamList(streamIds: array, allowAdditionalAccountStreams: Boolean) {
     if (!streamIds || streamIds.length === 0) return;
 
-    // check if streams contains any core stream
-    const userCoreStreamsIds = Object.keys((new UserInfoSerializer()).getReadableCoreStreams());
-    const containsCoreStream = _.intersection(streamIds, userCoreStreamsIds);
+    // check if streams contains any account stream
+    const userAccountStreamsIds = Object.keys((new UserInfoSerializer()).getReadableAccountStreams());
+    const containsCoreStream = _.intersection(streamIds, userAccountStreamsIds);
     
     streamIds.forEach(function (streamId) {
       let stream = treeUtils.findById(this.streams, streamId);
 
-      if (allowAdditionalCoreStreams &&
+      if (allowAdditionalAccountStreams &&
         !stream &&
         streamId === UserInfoSerializer.options.STREAM_ID_ACTIVE &&
         containsCoreStream) {

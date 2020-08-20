@@ -29,7 +29,7 @@ var deps = module.exports = {
       accesses: new storage.user.Accesses(database),
       eventFiles: new storage.user.EventFiles(
         settings.eventFiles, logging.getLogger('eventFiles')),
-      events: new storage.user.Events(database), // TODO IEVA add , settings.systemStreams
+      events: new storage.user.Events(database), 
       followedSlices: new storage.user.FollowedSlices(database),
       streams: new storage.user.Streams(database),
       profile: new storage.user.Profile(database),

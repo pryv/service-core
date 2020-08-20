@@ -21,7 +21,7 @@ _.merge(config.schema, {
   audit: {
     forceKeepHistory: {
       format: Boolean,
-      default: false,
+      default: false,//TODO IEVA also merge with parents
       doc: 'When true, modification history of items is stored.'
     },
     deletionMode: {

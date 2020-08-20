@@ -311,17 +311,16 @@ Events.prototype.getUserInfo = async function ({ user, getAll }) {
   try {
     let userInfoSerializer = new UserInfoSerializer();
     // get streams ids from the config that should be retrieved
-    let userCoreStreamsIds;
+    let userAccountStreamsIds;
     if (getAll) {
-      userCoreStreamsIds = userInfoSerializer.getAllCoreStreams();
+      userAccountStreamsIds = userInfoSerializer.getAllAccountStreams();
     } else {
-      userCoreStreamsIds = userInfoSerializer.getReadableCoreStreams();
+      userAccountStreamsIds = userInfoSerializer.getReadableAccountStreams();
     }
-    //TODO IEVA - active has to be a constant somewhere
     // form the query
     let query = {
       '$and': [
-        { 'streamIds': { '$in': Object.keys(userCoreStreamsIds) } },
+        { 'streamIds': { '$in': Object.keys(userAccountStreamsIds) } },
         { 'streamIds': { '$eq': UserInfoSerializer.options.STREAM_ID_ACTIVE } }
       ]
     };
@@ -416,7 +415,7 @@ Events.prototype.createUser = async function (params) {
 
   try {
     // get streams ids from the config that should be retrieved
-    let userProfileStreamsIds = (new UserInfoSerializer()).getAllCoreStreams();
+    let userProfileStreamsIds = (new UserInfoSerializer()).getAllAccountStreams();
 
     // change password into hash (also allow for tests to pass passwordHash directly)
     if (userParams.password && !userParams.passwordHash) {
@@ -507,7 +506,7 @@ Events.prototype.createUser = async function (params) {
 Events.prototype.updateUser = async function ({ userId, userParams }) {
   try {
     // get streams ids from the config that should be retrieved
-    let userProfileStreamsIds = (new UserInfoSerializer()).getAllCoreStreams();
+    let userProfileStreamsIds = (new UserInfoSerializer()).getAllAccountStreams();
 
     // change password into hash if it exists
     if (userParams.password && !userParams.passwordHash) {
@@ -515,7 +514,7 @@ Events.prototype.updateUser = async function ({ userId, userParams }) {
     }
     delete userParams.password;
 
-    // update all core streams and do not allow additional properties
+    // update all account streams and do not allow additional properties
     Object.keys(userProfileStreamsIds).map(streamId => {
       if (userParams[streamId]) {
         return bluebird.fromCallback(cb => Events.super_.prototype.updateOne.call(this,
