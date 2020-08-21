@@ -271,58 +271,60 @@ describe('registration: cluster', function() {
       assert.isTrue(body.error.data[0].code.includes('username'));
     });
   });
-});
 
-describe('Undefined invitationTokens', function() {
-  async function successfulServiceRegisterMockup() {
-    helpers.instanceTestSetup.set(settings, {
-      context: {
-        url: settings.services.register.url,
-        defaultServerName: defaultServerName
-      },
-      execute: function() {
-        const scope = nock(this.context.url);
-        scope.post('/users/validate').reply(200, { errors: [] });
-        scope.post('/users').reply(200, {
-          username: 'anyusername',
-          server: this.context.defaultServerName
-        });
-      }
+  describe('Undefined invitationTokens', function() {
+    async function successfulServiceRegisterMockup() {
+      helpers.instanceTestSetup.set(settings, {
+        context: {
+          url: app.settings.get('services.register.url').str(),
+          defaultServerName: defaultServerName
+        },
+        execute: function() {
+          const scope = nock(this.context.url);
+          scope.post('/users/validate').reply(200, { errors: [] });
+          scope.post('/users').reply(200, {
+            username: 'anyusername',
+            server: this.context.defaultServerName
+          });
+        }
+      });
+      await new Promise(server.ensureStarted.bind(server, settings));
+    }
+  
+    it('[4QCK] should succeed when providing anything in the "invitationToken" field', async () => {
+      const userData = _.extend({}, defaults(), {
+        invitationToken: 'anythingAtAll'
+      });
+      await successfulServiceRegisterMockup();
+      const res = await registrationRequest(userData);
+  
+      validation.check(res, {
+        status: 201,
+        schema: authSchema.register.result,
+        body: {
+          username: userData.username,
+          server: defaultServerName
+        }
+      });
     });
-    await new Promise(server.ensureStarted.bind(server, settings));
-  }
-
-  it('[4QCK] should succeed when providing anything in the "invitationToken" field', async () => {
-    const userData = _.extend({}, defaults(), {
-      invitationToken: 'anythingAtAll'
-    });
-    await successfulServiceRegisterMockup();
-    const res = await registrationRequest(userData);
-
-    validation.check(res, {
-      status: 201,
-      schema: authSchema.register.result,
-      body: {
-        username: userData.username,
-        server: defaultServerName
-      }
+  
+    it('[RUQS] should succeed when the "invitationToken" field is missing', async () => {
+      const userData = _.extend({}, defaults());
+      delete userData.invitationToken;
+  
+      await successfulServiceRegisterMockup();
+      const res = await registrationRequest(userData);
+  
+      validation.check(res, {
+        status: 201,
+        schema: authSchema.register.result,
+        body: {
+          username: userData.username,
+          server: defaultServerName
+        }
+      });
     });
   });
-
-  it('[RUQS] should succeed when the "invitationToken" field is missing', async () => {
-    const userData = _.extend({}, defaults());
-    delete userData.invitationToken;
-
-    await successfulServiceRegisterMockup();
-    const res = await registrationRequest(userData);
-
-    validation.check(res, {
-      status: 201,
-      schema: authSchema.register.result,
-      body: {
-        username: userData.username,
-        server: defaultServerName
-      }
-    });
-  });
 });
+
+
