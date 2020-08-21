@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 var async = require('async'),
-    toString = require('components/utils').toString;
+  toString = require('components/utils').toString;
 
 /**
  * v0.4.0:

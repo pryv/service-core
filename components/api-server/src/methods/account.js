@@ -11,7 +11,7 @@ var errors = require('components/errors').factory,
     methodsSchema = require('../schema/accountMethods'),
     request = require('superagent'),
   bluebird = require('bluebird');
-const DefaultStreamsSerializer = require('components/business/src/user/user_info_serializer'),
+const SystemStreamsSerializer = require('components/business/src/system-streams/serializer'),
   Registration = require('components/business/src/auth/registration'),
   ErrorMessages = require('components/errors/src/ErrorMessages'),
   ErrorIds = require('components/errors').ErrorIds,
@@ -231,17 +231,17 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     try {
       // form tasks to update the events
       const fieldsToUpdate = Object.keys(params.update);
-      const uniqueaccountStreamIds = (new DefaultStreamsSerializer).getUniqueAccountStreamsIds();
+      const uniqueAccountStreamIds = (new SystemStreamsSerializer).getUniqueAccountStreamsIds();
       let i;
       for (i = 0; i < fieldsToUpdate.length; i++){
         let updateData = { content: params.update[fieldsToUpdate[i]]};
-        if (uniqueaccountStreamIds.includes(fieldsToUpdate[i])) {
+        if (uniqueAccountStreamIds.includes(fieldsToUpdate[i])) {
           updateData[`${fieldsToUpdate[i]}__unique`] = params.update[fieldsToUpdate[i]];
         }
 
         await bluebird.fromCallback(cb => userEventsStorage.updateOne(
           { id: context.user.id },
-          { streamIds: { $all: [fieldsToUpdate[i], DefaultStreamsSerializer.options.STREAM_ID_ACTIVE] } },
+          { streamIds: { $all: [fieldsToUpdate[i], SystemStreamsSerializer.options.STREAM_ID_ACTIVE] } },
           updateData, cb));
       }
 

@@ -17,7 +17,7 @@ const ErrorMessages = require('components/errors/src/ErrorMessages');
 const Settings = require('components/api-server/src/settings');
 const Application = require('components/api-server/src/application');
 const Notifications = require('components/api-server/src/Notifications');
-const DefaultStreamsSerializer = require('components/business/src/user/user_info_serializer');
+const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
@@ -54,12 +54,12 @@ describe("[841C] Account with default-streams", function () {
 
   async function getActiveEvent (streamId) {
     return await bluebird.fromCallback(
-      (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: { $all: [DefaultStreamsSerializer.options.STREAM_ID_ACTIVE, streamId] } }, null, cb));
+      (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: { $all: [SystemStreamsSerializer.options.STREAM_ID_ACTIVE, streamId] } }, null, cb));
   }
 
   async function getNotActiveEvent (streamId) {
     return await bluebird.fromCallback(
-      (cb) => user.db.events.findOne({ id: user.attrs.id }, { $and: [{ streamIds: streamId }, { streamIds: { $ne: DefaultStreamsSerializer.options.STREAM_ID_ACTIVE } }] }, null, cb));
+      (cb) => user.db.events.findOne({ id: user.attrs.id }, { $and: [{ streamIds: streamId }, { streamIds: { $ne: SystemStreamsSerializer.options.STREAM_ID_ACTIVE } }] }, null, cb));
   }
   /**
    * Create additional event
@@ -140,7 +140,7 @@ describe("[841C] Account with default-streams", function () {
             {
               $and: [
                 { streamIds: { $in: visibleStreamsIds } },
-                { streamIds: DefaultStreamsSerializer.options.STREAM_ID_ACTIVE }]
+                { streamIds: SystemStreamsSerializer.options.STREAM_ID_ACTIVE }]
             }, null, cb));
         // get account info
         res = await request.get(basePath).set('authorization', access.token);
@@ -149,7 +149,7 @@ describe("[841C] Account with default-streams", function () {
         assert.equal(res.status, 200);
       });
       it('Should return account information in the structure that is defined in default streams and only active events are returned', async () => {
-        //const defaultStreamsSerializer = new DefaultStreamsSerializer();
+        //const systemStreamsSerializer = new SystemStreamsSerializer();
         const usernameAccountEvent = allVisibleAccountEvents.filter(event => event.streamIds.includes('username'))[0];
         const emailAccountEvent = allVisibleAccountEvents.filter(event => event.streamIds.includes('email'))[0];
         const languageAccountEvent = allVisibleAccountEvents.filter(event => event.streamIds.includes('language'))[0];

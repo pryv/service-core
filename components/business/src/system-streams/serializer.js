@@ -22,7 +22,7 @@ const uniqueStreams = 'unique-default-streams';
  * Account information that matches the previous 
  * structure of the account info
  */
-class UserInfoSerializer {
+class SystemStreamsSerializer {
   systemStreamsSettings;
   accountStreamsSettings;
 
@@ -248,7 +248,7 @@ function getStreamsNames(streams, whatToReturn) {
   return flatStreamsListObj;
 }
 
-UserInfoSerializer.options = {
+SystemStreamsSerializer.options = {
   STREAM_ID_ACTIVE: 'active'
 }
-module.exports = UserInfoSerializer;
+module.exports = SystemStreamsSerializer;

@@ -6,7 +6,7 @@
  */
 const bluebird = require('bluebird');
 const cuid = require('cuid');
-const UserInfoSerializer = require('components/business/src/user/user_info_serializer');
+const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 const converters = require('../converters');
 const timestamp = require('unix-timestamp');
 
@@ -21,7 +21,7 @@ module.exports = async function (context, callback) {
   console.log('V1.5.22 => v1.6.0 Migration started');
   
   // get streams ids from the config that should be retrieved
-  const userAccountStreams = (new UserInfoSerializer()).getAllAccountStreams();
+  const userAccountStreams = (new SystemStreamsSerializer()).getAllAccountStreams();
   const userAccountStreamIds = Object.keys(userAccountStreams);
 
   const eventsCollection = await bluebird.fromCallback(cb => context.database.getCollection({ name: 'events' }, cb));

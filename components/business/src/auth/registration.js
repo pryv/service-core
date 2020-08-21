@@ -20,7 +20,7 @@ const mailing = require('components/api-server/src/methods/helpers/mailing');
 const ServiceRegister = require('./service_register');
 const methodsSchema = require('components/api-server/src/schema/authMethods');
 var string = require('components/api-server/src/schema/helpers').string;
-const DefaultStreamsSerializer = require('components/business/src/user/user_info_serializer');
+const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
 import type { MethodContext } from 'components/model';
 import type { ApiCallback } from 'components/api-server/src/API';
@@ -47,7 +47,7 @@ class Registration {
 
     this.serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
     this.hostname = serverSettings.hostname;
-    this.deafultStreamsSerializer = new DefaultStreamsSerializer();
+    this.deafultStreamsSerializer = new SystemStreamsSerializer();
     this.accountStreamsSettings = this.deafultStreamsSerializer.getFlatAccountStreamSettings();
     
     // bind this object to the functions that need it
@@ -75,7 +75,7 @@ class Registration {
    */
   async createUserInServiceRegister (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
-      let deafultStreamsSerializer = new DefaultStreamsSerializer();
+      let deafultStreamsSerializer = new SystemStreamsSerializer();
       // get streams ids from the config that should be retrieved
       const userStreamsIds = deafultStreamsSerializer.getIndexedAccountStreams();
       const uniqueStreamsIds = deafultStreamsSerializer.getUniqueAccountStreamsIds();

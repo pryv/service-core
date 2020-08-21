@@ -24,7 +24,7 @@ const Versions = require('../src/Versions');
 const wrench = require('wrench');
 const _ = require('lodash');
 const buildTree = require('components/utils').treeUtils.buildTree;
-const UserInfoSerializer = require('components/business/src/user/user_info_serializer');
+const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
 const mongoFolder = __dirname + '/../../../../var-pryv/mongodb-bin'
 
@@ -509,7 +509,7 @@ describe('Versions', function () {
     const usersCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'users' }, cb));
 
     // get streams ids from the config that should be retrieved
-    const userAccountStreams = (new UserInfoSerializer()).getAllAccountStreams();
+    const userAccountStreams = (new SystemStreamsSerializer()).getAllAccountStreams();
     const userAccountStreamIds = Object.keys(userAccountStreams);
     
     // get backup of users

@@ -18,7 +18,7 @@ const _ = require('lodash');
 const storage = require('components/storage');
 
 const Webhook = require("components/business").webhooks.Webhook;
-const UserInfoSerializer = require('components/business/src/user/user_info_serializer');
+const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
 class Context {
   databaseConn: storage.Database; 
@@ -286,9 +286,9 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
     // this.attrs.
     //const removeUser = bluebird.fromCallback((cb) => 
     //  db.users.removeOne(user, {username: username}, cb));
-    let userInfoSerializer = new UserInfoSerializer();
+    let systemStreamsSerializer = new SystemStreamsSerializer();
     // get streams ids from the config that should be deleted
-    const accountStreams = userInfoSerializer.getAllAccountStreams();
+    const accountStreams = systemStreamsSerializer.getAllAccountStreams();
     const removeUser = bluebird.fromCallback((cb) => {
       db.events.removeMany(this.context.user, {
         $and:[

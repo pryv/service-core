@@ -15,7 +15,7 @@ const accessLogic = require('./accessLogic');
 const APIError = require('components/errors').APIError;
 const errors = require('components/errors').factory;
 const treeUtils = require('components/utils').treeUtils;
-const UserInfoSerializer = require('components/business/src/user/user_info_serializer');
+const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
 import type { StorageLayer } from 'components/storage';
 
@@ -264,7 +264,7 @@ class MethodContext {
       cb => storage.streams.find(user, {}, null, cb));
 
     // get streams ids from the config that should be retrieved
-    const userAccountStreams = (new UserInfoSerializer()).getVirtualStreamsList();
+    const userAccountStreams = (new SystemStreamsSerializer()).getVirtualStreamsList();
     this.streams = streams.concat(userAccountStreams);
   }
 
@@ -275,7 +275,7 @@ class MethodContext {
     if (!streamIds || streamIds.length === 0) return;
 
     // check if streams contains any account stream
-    const userAccountStreamsIds = Object.keys((new UserInfoSerializer()).getReadableAccountStreams());
+    const userAccountStreamsIds = Object.keys((new SystemStreamsSerializer()).getReadableAccountStreams());
     const containsCoreStream = _.intersection(streamIds, userAccountStreamsIds);
     
     streamIds.forEach(function (streamId) {
@@ -283,10 +283,10 @@ class MethodContext {
 
       if (allowAdditionalAccountStreams &&
         !stream &&
-        streamId === UserInfoSerializer.options.STREAM_ID_ACTIVE &&
+        streamId === SystemStreamsSerializer.options.STREAM_ID_ACTIVE &&
         containsCoreStream) {
         stream = {
-          id: UserInfoSerializer.options.STREAM_ID_ACTIVE
+          id: SystemStreamsSerializer.options.STREAM_ID_ACTIVE
         }
       }
       if (stream) {

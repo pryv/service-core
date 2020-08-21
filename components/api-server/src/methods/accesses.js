@@ -22,7 +22,7 @@ const commonFns = require('./helpers/commonFunctions');
 const methodsSchema = require('../schema/accessesMethods');
 const accessSchema = require('../schema/access');
 const string = require('./helpers/string');
-const DefaultStreamsSerializer = require('components/business/src/user/user_info_serializer');
+const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
 import type { StorageLayer } from 'components/storage';
 import type { Logger } from 'components/utils';
@@ -217,9 +217,9 @@ module.exports = function produceAccessesApiMethods(
   function applyAccountStreamsValidation (context, params, result, next) {
     if (params.permissions == null) return next();
 
-    const defaultStreamsSerializerObj = new DefaultStreamsSerializer();
-    const notVisibleAccountStreamsIds = defaultStreamsSerializerObj.getAccountStreamsIdsForbiddenForReading();
-    const visibleAccountStreamsIds = Object.keys(defaultStreamsSerializerObj.getReadableAccountStreams());
+    const systemStreamsSerializerObj = new SystemStreamsSerializer();
+    const notVisibleAccountStreamsIds = systemStreamsSerializerObj.getAccountStreamsIdsForbiddenForReading();
+    const visibleAccountStreamsIds = Object.keys(systemStreamsSerializerObj.getReadableAccountStreams());
 
     // don't allow user to give access to not visible stream
     let i;

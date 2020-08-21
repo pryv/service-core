@@ -16,7 +16,7 @@ const validator = new Validator();
 const { assert, expect } = require('chai');
 const util = require('util');
 const _ = require('lodash');
-const UserInfoSerializer = require('components/business/src/user/user_info_serializer');
+const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
 /**
  * Expose common JSON schemas.
@@ -369,7 +369,7 @@ exports.removeDeletionsAndHistory = function (items) {
 
 exports.removeAccountStreamsEvents = function (items) {
   // get streams ids from the config that should be retrieved
-  const expectedAccountStreams = (new UserInfoSerializer()).getAllAccountStreams();
+  const expectedAccountStreams = (new SystemStreamsSerializer()).getAllAccountStreams();
   return items.filter(function (e) { return !(e.streamIds.some(streamId => Object.keys(expectedAccountStreams).indexOf(streamId) >= 0)); });
 };
 
@@ -409,7 +409,7 @@ exports.removeTrackingProperties = function (items) {
  */
 exports.validateAccountEvents = function (actualAccountEvents) {
   // get streams ids from the config that should be retrieved
-  let expectedAccountStreams = (new UserInfoSerializer()).getReadableAccountStreams();
+  let expectedAccountStreams = (new SystemStreamsSerializer()).getReadableAccountStreams();
 
   // iterate through expected account events and check that they exists in actual
   // account events (skip nested streams parents)

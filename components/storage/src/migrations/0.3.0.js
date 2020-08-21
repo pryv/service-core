@@ -8,7 +8,7 @@ var async = require('async'),
     exec = require('child_process').exec,
     fs = require('fs'),
     path = require('path'),
-    toString = require('components/utils').toString,
+  toString = require('components/utils').toString,
     _ = require('lodash');
 
 /**

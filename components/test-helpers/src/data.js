@@ -18,7 +18,7 @@ const fs = require('fs');
 const path = require('path');
 const rimraf = require('rimraf');
 const _ = require('lodash');
-const DefaultStreamsSerializer = require('components/business/src/user/user_info_serializer');
+const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
 // users
 const users = exports.users = require('./data/users');
@@ -86,8 +86,8 @@ exports.resetEvents = function (done, user) {
   user = user || defaultUser;
   //TODO IEVA - make stremIds dynamic
 
-  const defaultStreamsSerializerObj = new DefaultStreamsSerializer();
-  const allAccountStreamIds = Objec.keys(defaultStreamsSerializerObj.getAllAccountStreams());
+  const systemStreamsSerializerObj = new SystemStreamsSerializer();
+  const allAccountStreamIds = Objec.keys(systemStreamsSerializerObj.getAllAccountStreams());
 
   async.series([
     storage.user.events.removeMany.bind(storage.user.events, 

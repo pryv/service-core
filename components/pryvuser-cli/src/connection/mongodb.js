@@ -53,7 +53,6 @@ class MongoDB {
 
   async deleteUser(username: string): Promise<void> {
     const storage = this.storageLayer;
-
     const user = await this.findUser(username);
     if (user == null) 
       throw new Error('AF: User must exist');
@@ -96,12 +95,7 @@ class MongoDB {
   }
 
   findUser(username: string): Promise<?UserAttributes> {
-    const storage = this.storageLayer;
-    const query = { content: username };
-    const options = {};
-//TODO IEVA
-    return bluebird.fromCallback(
-      cb => storage.events.findOne(query, options, cb)); 
+    return this.storageLayer.events.getUserInfoByUsername(username, false)
   }
 
   close(): Promise<void> {

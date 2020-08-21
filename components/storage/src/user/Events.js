@@ -11,7 +11,7 @@ var BaseStorage = require('./BaseStorage'),
   _ = require('lodash'),
   bluebird = require('bluebird'),
   ApplyEventsFromDbStream = require('./../ApplyEventsFromDbStream'),
-  DefaultStreamsSerializer = require('components/business/src/user/user_info_serializer'),
+  SystemStreamsSerializer = require('components/business/src/system-streams/serializer'),
   encryption = require('components/utils').encryption;
 
 const { getConfig, Config } = require('components/api-server/config/Config');
@@ -309,19 +309,19 @@ Events.prototype.getUserInfo = async function ({ user, getAll }) {
 
   // get user details
   try {
-    let defaultStreamsSerializer = new DefaultStreamsSerializer();
+    let systemStreamsSerializer = new SystemStreamsSerializer();
     // get streams ids from the config that should be retrieved
     let userAccountStreamsIds;
     if (getAll) {
-      userAccountStreamsIds = defaultStreamsSerializer.getAllAccountStreams();
+      userAccountStreamsIds = systemStreamsSerializer.getAllAccountStreams();
     } else {
-      userAccountStreamsIds = defaultStreamsSerializer.getReadableAccountStreams();
+      userAccountStreamsIds = systemStreamsSerializer.getReadableAccountStreams();
     }
     // form the query
     let query = {
       '$and': [
         { 'streamIds': { '$in': Object.keys(userAccountStreamsIds) } },
-        { 'streamIds': { '$eq': DefaultStreamsSerializer.options.STREAM_ID_ACTIVE } }
+        { 'streamIds': { '$eq': SystemStreamsSerializer.options.STREAM_ID_ACTIVE } }
       ]
     };
 
@@ -333,7 +333,7 @@ Events.prototype.getUserInfo = async function ({ user, getAll }) {
 
     const userProfileEvents = this.applyItemsFromDB(dbItems);
     // convert events to the account info structure
-    return defaultStreamsSerializer.serializeEventsToAccountInfo(userProfileEvents);
+    return systemStreamsSerializer.serializeEventsToAccountInfo(userProfileEvents);
   } catch (error) {
     throw error;
   }
@@ -358,6 +358,34 @@ Events.prototype.getUserIdByUsername = async function (username): integer {
 
     if (userIdEvent && userIdEvent.userId) {
       return userIdEvent.userId;
+    } else {
+      return 0;
+    }
+
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+/**
+ * Get user info from username
+ */
+Events.prototype.getUserInfoByUsername = async function (username: string, getAll): object {
+  try {
+    // TODO IEVA validate for deleted users
+    const userIdEvent = await bluebird.fromCallback(cb =>
+      this.database.findOne(
+        this.getCollectionInfoWithoutUserId(),
+        this.applyQueryToDB({
+          $and: [
+            { "streamIds": { '$in': ['username'] } },
+            { "content": { $eq: username } }]
+        }),
+        null, cb));
+
+    if (userIdEvent && userIdEvent.userId) {
+      return getUserInfo({ user: { id: userIdEvent.userId }, getAll: getAll });
     } else {
       return 0;
     }
@@ -414,7 +442,7 @@ Events.prototype.createUser = async function (params) {
 
   try {
     // get streams ids from the config that should be retrieved
-    let userAccountStreamsIds = (new DefaultStreamsSerializer()).getAllAccountStreams();
+    let userAccountStreamsIds = (new SystemStreamsSerializer()).getAllAccountStreams();
     //TODO IEVA console.log(userAccountStreamsIds['insurancenumber'],'userAccountStreamsIdsssssssssssssssss');
     // change password into hash (also allow for tests to pass passwordHash directly)
     if (userParams.password && !userParams.passwordHash) {
@@ -426,7 +454,7 @@ Events.prototype.createUser = async function (params) {
     userParams = converters.createIdIfMissing(userParams);
     // form username event - it is separate because we set the _id 
     let updateObject = {
-      streamIds: ['username', 'unique', DefaultStreamsSerializer.options.STREAM_ID_ACTIVE],
+      streamIds: ['username', 'unique', SystemStreamsSerializer.options.STREAM_ID_ACTIVE],
       type: userAccountStreamsIds.username.type,
       content: userParams.username,
       username__unique: userParams.username, // repeated field for uniqueness
@@ -478,7 +506,7 @@ Events.prototype.createUser = async function (params) {
           }
 
           // get additional stream ids from the config
-          let streamIds = [streamId, DefaultStreamsSerializer.options.STREAM_ID_ACTIVE];
+          let streamIds = [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE];
           if (userAccountStreamsIds[streamId].isUnique === true) {
             streamIds.push("unique");
             creationObject[streamId + '__unique'] = parameter; // repeated field for uniqness
@@ -503,7 +531,7 @@ Events.prototype.createUser = async function (params) {
 Events.prototype.updateUser = async function ({ userId, userParams }) {
   try {
     // get streams ids from the config that should be retrieved
-    let userAccountStreamsIds = (new DefaultStreamsSerializer()).getAllAccountStreams();
+    let userAccountStreamsIds = (new SystemStreamsSerializer()).getAllAccountStreams();
 
     // change password into hash if it exists
     if (userParams.password && !userParams.passwordHash) {
@@ -515,7 +543,7 @@ Events.prototype.updateUser = async function ({ userId, userParams }) {
     Object.keys(userAccountStreamsIds).map(streamId => {
       if (userParams[streamId]) {
         return bluebird.fromCallback(cb => Events.super_.prototype.updateOne.call(this,
-          { id: userId, streamIds: DefaultStreamsSerializer.options.STREAM_ID_ACTIVE },
+          { id: userId, streamIds: SystemStreamsSerializer.options.STREAM_ID_ACTIVE },
           { streamIds: { $in: [streamId] } },
           { content: userParams[streamId] }, cb));
       }
@@ -543,9 +571,9 @@ Events.prototype.findAllUsernames = async function () {
   );
   const usersCount = usersNames.length;
   let user;
-  let defaultStreamsSerializer = new DefaultStreamsSerializer();
+  let systemStreamsSerializer = new SystemStreamsSerializer();
   for (var i = 0; i < usersCount; i++) {
-    user = defaultStreamsSerializer.serializeEventsToAccountInfo([usersNames[i]]);
+    user = systemStreamsSerializer.serializeEventsToAccountInfo([usersNames[i]]);
     user.id = usersNames[i].userId;
     users.push(user);
   }

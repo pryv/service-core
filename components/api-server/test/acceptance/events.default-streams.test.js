@@ -18,7 +18,7 @@ const ErrorMessages = require('components/errors/src/ErrorMessages');
 const Settings = require('components/api-server/src/settings');
 const Application = require('components/api-server/src/application');
 const Notifications = require('components/api-server/src/Notifications');
-const UserInfoSerializer = require('components/business/src/user/user_info_serializer');
+const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
@@ -74,7 +74,7 @@ describe("[AGT3] Events of default-streams", function () {
 
   async function createAdditionalEventAndupdateMainOne (streamId) {
     eventData = {
-      streamIds: [streamId, UserInfoSerializer.options.STREAM_ID_ACTIVE],
+      streamIds: [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE],
       content: charlatan.Lorem.characters(7),
       type: 'string/pryv'
     };
@@ -258,17 +258,17 @@ describe("[AGT3] Events of default-streams", function () {
         it('[9C2D] Should return the created event', async () => {
           assert.equal(res.body.event.content, eventData.content);
           assert.equal(res.body.event.type, eventData.type);
-          assert.deepEqual(res.body.event.streamIds, ['phoneNumber', UserInfoSerializer.options.STREAM_ID_ACTIVE]);
+          assert.deepEqual(res.body.event.streamIds, ['phoneNumber', SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
         });
         it('[A9DC] New event gets streamId ‘active’ and ‘active’ stream property is removed from all other events from the same stream ', async () => {
-          assert.equal(res.body.event.streamIds.includes(UserInfoSerializer.options.STREAM_ID_ACTIVE), true);
+          assert.equal(res.body.event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE), true);
           const allEvents = await bluebird.fromCallback(
             (cb) => user.db.events.find({ id: user.attrs.id }, {streamIds: 'phoneNumber'}, null, cb));
           assert.equal(allEvents.length, 2);
           // check the order
           assert.deepEqual(allEvents[0].id, res.body.event.id);
           // verify streamIds
-          assert.deepEqual(allEvents[0].streamIds, ['phoneNumber', UserInfoSerializer.options.STREAM_ID_ACTIVE]);
+          assert.deepEqual(allEvents[0].streamIds, ['phoneNumber', SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
           assert.deepEqual(allEvents[1].streamIds, ['phoneNumber']);
         });
       });
@@ -313,8 +313,8 @@ describe("[AGT3] Events of default-streams", function () {
             assert.equal(allEventsInDb[1].hasOwnProperty('email__unique'), true);  
           });
           it('[DA23] New event gets streamId ‘active’ and ‘active’ stream property is removed from all other events from the same stream ', async () => {
-            assert.deepEqual(res.body.event.streamIds, ['email', UserInfoSerializer.options.STREAM_ID_ACTIVE, 'unique']);
-            assert.deepEqual(allEventsInDb[0].streamIds, ['email', UserInfoSerializer.options.STREAM_ID_ACTIVE, 'unique']);
+            assert.deepEqual(res.body.event.streamIds, ['email', SystemStreamsSerializer.options.STREAM_ID_ACTIVE, 'unique']);
+            assert.deepEqual(allEventsInDb[0].streamIds, ['email', SystemStreamsSerializer.options.STREAM_ID_ACTIVE, 'unique']);
             assert.deepEqual(allEventsInDb[1].streamIds, ['email', 'unique']);
           });
           it('[D316] New event data is sent to service-register', async () => {
@@ -436,14 +436,14 @@ describe("[AGT3] Events of default-streams", function () {
             it('[67F7] Should return the created event', async () => {
               assert.equal(res.body.event.content, eventData.content);
               assert.equal(res.body.event.type, eventData.type);
-              assert.deepEqual(res.body.event.streamIds, ['language', UserInfoSerializer.options.STREAM_ID_ACTIVE]);
+              assert.deepEqual(res.body.event.streamIds, ['language', SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
             });
             it('[467D] New event gets streamId ‘active’ and ‘active’ stream property is removed from all other events from the same stream', async () => {
               const allEvents = await bluebird.fromCallback(
                 (cb) => user.db.events.find({ id: user.attrs.id }, { streamIds: 'language' }, null, cb));
-              assert.equal(allEvents[0].streamIds.includes(UserInfoSerializer.options.STREAM_ID_ACTIVE), true);
+              assert.equal(allEvents[0].streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE), true);
               assert.equal(allEvents[0].streamIds.includes('language'), true);
-              assert.equal(allEvents[1].streamIds.includes(UserInfoSerializer.options.STREAM_ID_ACTIVE), false);
+              assert.equal(allEvents[1].streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE), false);
               assert.equal(allEvents[1].streamIds.includes('language'), true);
             });
             it('[199D] New event data is sent to service-register', async () => {
@@ -511,7 +511,7 @@ describe("[AGT3] Events of default-streams", function () {
       });
       it('[764A] Should return the updated event', async () => {
         assert.equal(res.body.event.createdBy, sharedAccess.attrs.id);
-        assert.deepEqual(res.body.event.streamIds, [streamId, UserInfoSerializer.options.STREAM_ID_ACTIVE, 'unique']);
+        assert.deepEqual(res.body.event.streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE, 'unique']);
       });
       it('[765A] Should send a request to service-register to update the indexed field', async () => {
         assert.equal(scope.isDone(), true);
@@ -592,7 +592,7 @@ describe("[AGT3] Events of default-streams", function () {
         it('[763A] Should return the updated event', async () => {
           assert.equal(res.body.event.content, eventData.content);
           assert.equal(res.body.event.type, eventData.type);
-          assert.deepEqual(res.body.event.streamIds, ['phoneNumber', UserInfoSerializer.options.STREAM_ID_ACTIVE]);
+          assert.deepEqual(res.body.event.streamIds, ['phoneNumber', SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
         });
       });
 
@@ -611,7 +611,7 @@ describe("[AGT3] Events of default-streams", function () {
           it('[5622] Should return the updated event', async () => {
              assert.equal(res.body.event.content, eventData.content);
              assert.equal(res.body.event.type, eventData.type);
-            assert.deepEqual(res.body.event.streamIds, ['phoneNumber', UserInfoSerializer.options.STREAM_ID_ACTIVE]);
+            assert.deepEqual(res.body.event.streamIds, ['phoneNumber', SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
           });
           it('[CF70] events of the same streams should be stripped from “active” streamId.', async () => {
             const allEvents = await bluebird.fromCallback(
@@ -621,7 +621,7 @@ describe("[AGT3] Events of default-streams", function () {
             assert.deepEqual(allEvents[1].id, res.body.event.id);
             // verify streamIds
             assert.deepEqual(allEvents[0].streamIds, ['phoneNumber']);
-            assert.deepEqual(allEvents[1].streamIds, ['phoneNumber', UserInfoSerializer.options.STREAM_ID_ACTIVE]);
+            assert.deepEqual(allEvents[1].streamIds, ['phoneNumber', SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
           });
         });
         describe('[6AAD] When adding the “active” streamId for a unique stream', async () => {

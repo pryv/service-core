@@ -19,7 +19,7 @@ var cuid = require('cuid'),
   _ = require('lodash'),
   SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
 
-const UserInfoSerializer = require('components/business/src/user/user_info_serializer'),
+const SystemStreamsSerializer = require('components/business/src/system-streams/serializer'),
   ServiceRegister = require('components/business/src/auth/service_register'),
   Registration = require('components/business/src/auth/registration'),
   ErrorMessages = require('components/errors/src/ErrorMessages'),
@@ -157,7 +157,7 @@ module.exports = function (
    */
   function removeNotReadableAccountStreamsFromQuery (query) {
     // get streams ids from the config that should be retrieved
-    const userAccountStreams = (new UserInfoSerializer()).getAccountStreamsIdsForbiddenForReading();
+    const userAccountStreams = (new SystemStreamsSerializer()).getAccountStreamsIdsForbiddenForReading();
     query.streamIds = { ...query.streamIds, ...{ $nin: userAccountStreams } };
 
     return query;
@@ -450,9 +450,9 @@ module.exports = function (
    * @param boolean creation - if true - active streamId will be added by default
    */
   async function handleAccountStreams (username:string, context: object, creation: Boolean) {
-    const defaultStreamsSerializerObj = new UserInfoSerializer();
-    const nonEditableAccountStreamsIds = defaultStreamsSerializerObj.getAccountStreamsIdsForbiddenForEditing();
-    const editableAccountStreams = defaultStreamsSerializerObj.getEditableAccountStreams();
+    const systemStreamsSerializerObj = new SystemStreamsSerializer();
+    const nonEditableAccountStreamsIds = systemStreamsSerializerObj.getAccountStreamsIdsForbiddenForEditing();
+    const editableAccountStreams = systemStreamsSerializerObj.getEditableAccountStreams();
     let removeActiveEvents = false;
     let validationErrors = [];
     let contextContent = context.content;
@@ -467,11 +467,11 @@ module.exports = function (
 
       // append active stream id if it is a new event 
       if (creation) {
-        contextContent.streamIds.push(UserInfoSerializer.options.STREAM_ID_ACTIVE);
+        contextContent.streamIds.push(SystemStreamsSerializer.options.STREAM_ID_ACTIVE);
         // after event will be saved, active property will be removed from the other events
         removeActiveEvents = true;
-      } else if (!oldContentStreamIds.includes(UserInfoSerializer.options.STREAM_ID_ACTIVE)
-        && contextContent.streamIds.includes(UserInfoSerializer.options.STREAM_ID_ACTIVE)) {
+      } else if (!oldContentStreamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE)
+        && contextContent.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE)) {
         // after event will be saved, active property will be removed from the other events
         removeActiveEvents = true;
       }
@@ -486,8 +486,8 @@ module.exports = function (
         fieldsForUpdate[fieldName] = [{
           value: contextContent.content,
           isUnique: editableAccountStreams[fieldName].isUnique,
-          isActive: contextContent.streamIds.includes(UserInfoSerializer.options.STREAM_ID_ACTIVE) ||
-            oldContentStreamIds.includes(UserInfoSerializer.options.STREAM_ID_ACTIVE),
+          isActive: contextContent.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE) ||
+            oldContentStreamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE),
           creation: creation
         }];
 
@@ -738,9 +738,9 @@ module.exports = function (
       userEventsStorage.updateMany(user,
         {
           id: { $ne: eventIdToExclude },
-          streamIds: { $all: [streamId, UserInfoSerializer.options.STREAM_ID_ACTIVE] }
+          streamIds: { $all: [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE] }
         },
-        { $pull: { streamIds: UserInfoSerializer.options.STREAM_ID_ACTIVE } }, cb));
+        { $pull: { streamIds: SystemStreamsSerializer.options.STREAM_ID_ACTIVE } }, cb));
   }
 
   function notify(context, params, result, next) {
@@ -936,7 +936,7 @@ module.exports = function (
     //if (!files) { return process.nextTick(callback); }
     if (!files) { return; }
 
-    var attachments = eventInfo.attachments ? eventInfo.attachments.slice() : [],
+    var attachments = eventInfo.attachments ? eventInfo.attachments.slice() : [];
     // TODO IEVA validate and handle errors
     try {
       let i;
@@ -1202,13 +1202,13 @@ module.exports = function (
  */
   function handleAccountStreamsDeletion (event): Boolean {
     let allowedToDelete = true;
-    let forbidenUserAccountStreams = (new UserInfoSerializer()).getAccountStreamsIdsForbiddenForEditing();
-    const editableAccountStreams = Object.keys((new UserInfoSerializer()).getEditableAccountStreams());
+    let forbidenUserAccountStreams = (new SystemStreamsSerializer()).getAccountStreamsIdsForbiddenForEditing();
+    const editableAccountStreams = Object.keys((new SystemStreamsSerializer()).getEditableAccountStreams());
     if (event?.streamIds) {
       if (_.intersection(event.streamIds, forbidenUserAccountStreams).length > 0) {
         allowedToDelete = false;
       } else if (_.intersection(event.streamIds, editableAccountStreams).length > 0
-        && event.streamIds.includes(UserInfoSerializer.options.STREAM_ID_ACTIVE)) {
+        && event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE)) {
         allowedToDelete = false;
       }
     }

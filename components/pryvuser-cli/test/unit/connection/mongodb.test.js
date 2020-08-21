@@ -143,7 +143,6 @@ describe('Connection/MongoDB', () => {
     describe('#deleteUser(username)', () => {
       it('[5NSD] deletes the user from MongoDB', async () => {
         await mongodb.deleteUser(userId);
-
         const user = await mongodb.findUser(userId);
         assert.isNull(user);
       });
