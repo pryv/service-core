@@ -129,10 +129,6 @@ module.exports = function (
     } catch (err) {
       return next(errors.unexpectedError(err));
     }
-    /*
-//TODO IEVA check this - if I give the same data as before
-      // 'username', 'lastAccess', 'callsTotal', 'callsDetail', 'storageUsed'
-    });*/
   }
 
   function getUserInfoInit(context, params, result, next) {

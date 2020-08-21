@@ -140,7 +140,6 @@ module.exports = function (context, callback) {
 
         function cleanDest(next) {
           if (counts == 0) { return next(); }
-          console.log('cleanDest');//TODO IEVA
           destination.deleteMany({'userId': user._id},function (err, res) {
             next(err);
           });

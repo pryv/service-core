@@ -317,7 +317,8 @@ config.schema = {
       }
     }
   },
-   // TODO IEVA - maybe describe more
+  // Default main system streams and custom ones - the structure is predefined in
+  // api-server/config/components
   systemStreams: {
     custom: {}
   }
@@ -363,7 +364,6 @@ function setup(configDefault) {
   autoSetEnvAndArg(config.schema);
 
   var instance = convict(config.schema);
-
   var filePath = instance.get('config') ||
                  configDefault ||
                  'config/' + instance.get('env') + '.json';
@@ -373,7 +373,7 @@ function setup(configDefault) {
   var overridesFilePath = instance.get('configOverrides');
   if (overridesFilePath) {
     loadFile(overridesFilePath);
-  }
+  } 
   if (!instance.get('env') === 'test') {
     instance.validate();
   }

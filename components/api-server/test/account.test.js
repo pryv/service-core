@@ -251,7 +251,7 @@ describe('account', function () {
       
       // Verify updated storage usage
       const updatedStorageUsed = await storageSize.computeForUser(user);
-        
+
       updatedStorageUsed.dbDocuments.should.be.above(initialStorageUsed.dbDocuments);
       updatedStorageUsed.attachedFiles.should.be.approximately(
         initialStorageUsed.attachedFiles + newAtt.size, filesystemBlockSize);

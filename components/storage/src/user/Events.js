@@ -11,7 +11,7 @@ var BaseStorage = require('./BaseStorage'),
   _ = require('lodash'),
   bluebird = require('bluebird'),
   ApplyEventsFromDbStream = require('./../ApplyEventsFromDbStream'),
-  UserInfoSerializer = require('components/business/src/user/user_info_serializer'),
+  DefaultStreamsSerializer = require('components/business/src/user/user_info_serializer'),
   encryption = require('components/utils').encryption;
 
 const { getConfig, Config } = require('components/api-server/config/Config');
@@ -309,23 +309,22 @@ Events.prototype.getUserInfo = async function ({ user, getAll }) {
 
   // get user details
   try {
-    let userInfoSerializer = new UserInfoSerializer();
+    let defaultStreamsSerializer = new DefaultStreamsSerializer();
     // get streams ids from the config that should be retrieved
     let userAccountStreamsIds;
     if (getAll) {
-      userAccountStreamsIds = userInfoSerializer.getAllAccountStreams();
+      userAccountStreamsIds = defaultStreamsSerializer.getAllAccountStreams();
     } else {
-      userAccountStreamsIds = userInfoSerializer.getReadableAccountStreams();
+      userAccountStreamsIds = defaultStreamsSerializer.getReadableAccountStreams();
     }
     // form the query
     let query = {
       '$and': [
         { 'streamIds': { '$in': Object.keys(userAccountStreamsIds) } },
-        { 'streamIds': { '$eq': UserInfoSerializer.options.STREAM_ID_ACTIVE } }
+        { 'streamIds': { '$eq': DefaultStreamsSerializer.options.STREAM_ID_ACTIVE } }
       ]
     };
 
-    //  TODO IEVA to prototype?
     const dbItems = await bluebird.fromCallback(cb => this.database.find(
       this.getCollectionInfo(user),
       this.applyQueryToDB(query),
@@ -334,7 +333,7 @@ Events.prototype.getUserInfo = async function ({ user, getAll }) {
 
     const userProfileEvents = this.applyItemsFromDB(dbItems);
     // convert events to the account info structure
-    return userInfoSerializer.serializeEventsToAccountInfo(userProfileEvents);
+    return defaultStreamsSerializer.serializeEventsToAccountInfo(userProfileEvents);
   } catch (error) {
     throw error;
   }
@@ -415,7 +414,7 @@ Events.prototype.createUser = async function (params) {
 
   try {
     // get streams ids from the config that should be retrieved
-    let userAccountStreamsIds = (new UserInfoSerializer()).getAllAccountStreams();
+    let userAccountStreamsIds = (new DefaultStreamsSerializer()).getAllAccountStreams();
     //TODO IEVA console.log(userAccountStreamsIds['insurancenumber'],'userAccountStreamsIdsssssssssssssssss');
     // change password into hash (also allow for tests to pass passwordHash directly)
     if (userParams.password && !userParams.passwordHash) {
@@ -426,9 +425,8 @@ Events.prototype.createUser = async function (params) {
     // create userId so that userId could be passed
     userParams = converters.createIdIfMissing(userParams);
     // form username event - it is separate because we set the _id 
-    //TODO IEVA - active should be a constant somewhere
     let updateObject = {
-      streamIds: ['username', 'unique', UserInfoSerializer.options.STREAM_ID_ACTIVE],
+      streamIds: ['username', 'unique', DefaultStreamsSerializer.options.STREAM_ID_ACTIVE],
       type: userAccountStreamsIds.username.type,
       content: userParams.username,
       username__unique: userParams.username, // repeated field for uniqueness
@@ -480,7 +478,7 @@ Events.prototype.createUser = async function (params) {
           }
 
           // get additional stream ids from the config
-          let streamIds = [streamId, UserInfoSerializer.options.STREAM_ID_ACTIVE];
+          let streamIds = [streamId, DefaultStreamsSerializer.options.STREAM_ID_ACTIVE];
           if (userAccountStreamsIds[streamId].isUnique === true) {
             streamIds.push("unique");
             creationObject[streamId + '__unique'] = parameter; // repeated field for uniqness
@@ -505,7 +503,7 @@ Events.prototype.createUser = async function (params) {
 Events.prototype.updateUser = async function ({ userId, userParams }) {
   try {
     // get streams ids from the config that should be retrieved
-    let userAccountStreamsIds = (new UserInfoSerializer()).getAllAccountStreams();
+    let userAccountStreamsIds = (new DefaultStreamsSerializer()).getAllAccountStreams();
 
     // change password into hash if it exists
     if (userParams.password && !userParams.passwordHash) {
@@ -517,7 +515,7 @@ Events.prototype.updateUser = async function ({ userId, userParams }) {
     Object.keys(userAccountStreamsIds).map(streamId => {
       if (userParams[streamId]) {
         return bluebird.fromCallback(cb => Events.super_.prototype.updateOne.call(this,
-          { id: userId, streamIds: UserInfoSerializer.options.STREAM_ID_ACTIVE },
+          { id: userId, streamIds: DefaultStreamsSerializer.options.STREAM_ID_ACTIVE },
           { streamIds: { $in: [streamId] } },
           { content: userParams[streamId] }, cb));
       }
@@ -529,6 +527,30 @@ Events.prototype.updateUser = async function ({ userId, userParams }) {
 };
 
 
+Events.prototype.findAllUsernames = async function () {
+  let users = [];
+  // get list of user ids and usernames
+  let query = {
+    streamIds: { $in: ['username'] },
+    deleted: null,
+    headId: null
+  }
+  const usersNames = await bluebird.fromCallback(cb =>
+    this.database.find(
+      this.getCollectionInfoWithoutUserId(),
+      this.applyQueryToDB(query),
+      this.applyOptionsToDB(null), cb)
+  );
+  const usersCount = usersNames.length;
+  let user;
+  let defaultStreamsSerializer = new DefaultStreamsSerializer();
+  for (var i = 0; i < usersCount; i++) {
+    user = defaultStreamsSerializer.serializeEventsToAccountInfo([usersNames[i]]);
+    user.id = usersNames[i].userId;
+    users.push(user);
+  }
+  return users;
+}
 /**
  * Get All users
  * (Used ONLY for testing to make each user structure compatible with a 

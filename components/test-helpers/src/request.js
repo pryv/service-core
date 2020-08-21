@@ -79,11 +79,6 @@ Request.prototype.login = function (user: any, callback: any) {
   return superagent.post(targetURL)
     .set('Origin', 'http://test.pryv.local')
     .send(authData).end(function (err, res) {
-      // TODO IEVA
-      if (err) {
-        console.log(authData, 'authData', user, 'user');
-        console.log(err.response.error, 'err Request.prototype.login', authData);
-      }
       assert.isNull(err, 'Request must be a success');
       assert.isDefined(res, 'Request has a result');
       res.statusCode.should.eql(200);

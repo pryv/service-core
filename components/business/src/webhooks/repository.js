@@ -29,21 +29,10 @@ class Repository {
    * Returns all webhooks in a map <username, Arrra<webhooks>>
    */
   async getAll(): Promise<Map<string, Array<Webhook>>> {
-    //TODO IEVA validate
-    // const usersQuery = {};
-    // const usersOptions = { projection: { username: 1 } };
-
-    // const users = await bluebird.fromCallback(
-    //   (cb) => this.usersStorageeee.find(usersQuery, usersOptions, cb)
-    // );
     let users;
     try {
-      users = await bluebird.fromCallback(cb => {
-        this.userEventsStorage.count({}, { streamIds: 'username' }, cb);
-      });
+      users = await this.userEventsStorage.findAllUsernames();
     } catch (error) {
-      //TODO IEVA logging
-      this.logger.error(error);
       throw error;
     }
 

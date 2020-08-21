@@ -15,6 +15,7 @@ const bluebird = require('bluebird');
 
 const { databaseFixture } = require('components/test-helpers');
 const { webhooksStorage } = require('../test-helpers');
+const userStorage = require('components/test-helpers').dependencies.storage.user.events;
 
 require('components/api-server/test/test-helpers');
 const { produceMongoConnection, context } = require('components/api-server/test/test-helpers');
@@ -22,8 +23,7 @@ const { produceMongoConnection, context } = require('components/api-server/test/
 const WebhooksApp = require('../../src/application');
 
 const { Webhook, Repository } = require('components/business').webhooks;
-
-const repository = new Repository(webhooksStorage);
+const repository = new Repository(webhooksStorage, userStorage);
 const HttpServer = require('components/business/test/acceptance/webhooks/support/httpServer');
 
 const BOOT_MESSAGE = require('../../src/messages').BOOT_MESSAGE;
@@ -37,7 +37,7 @@ describe('webhooks', function() {
       notificationsServer;
 
   let mongoFixtures;
-  before(async function() {
+  before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
   });
 
@@ -56,6 +56,9 @@ describe('webhooks', function() {
     apiServer = await context.spawn({
       webhooks: {
         minIntervalMs: 10,
+      },
+      "openSource": {
+        "isActive": false
       }
     });
   });

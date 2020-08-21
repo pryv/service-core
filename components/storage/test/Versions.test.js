@@ -168,7 +168,7 @@ describe('Versions', function () {
   it.skip('must handle data migration from v0.5.0 to v0.7.0', function (done) {
     var versions = getVersions('0.7.0'),
         userId = 'u_0',
-        usersStorage = helpers.dependencies.storage.users;
+        usersStorage = helpers.dependencies.storage.events;
 
     async.series({
       // don't restore, just use the current state (i.e. v0.5.0)

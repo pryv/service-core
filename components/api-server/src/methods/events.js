@@ -932,13 +932,11 @@ module.exports = function (
    * @param files Express-style uploaded files object (as in req.files)
    */
   async function attachFiles (context, eventInfo, files) {
-    // TODO IEVA ? process.nextTick(callback)
+    // TODO IEVA
     //if (!files) { return process.nextTick(callback); }
     if (!files) { return; }
 
     var attachments = eventInfo.attachments ? eventInfo.attachments.slice() : [],
-      sizeDelta = 0;
-
     // TODO IEVA validate and handle errors
     try {
       let i;

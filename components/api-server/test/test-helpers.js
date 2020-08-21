@@ -26,12 +26,10 @@ after(async () => {
 });
 
 const { Database } = require('components/storage');
-// FLOW the case when __dirname can be undefined is almost impossible
-const Settings = require(__dirname + '/../src/settings');
+const Settings = require('components/api-server/src/settings');
 const NullLogger = require('components/utils/src/logging').NullLogger;
 
 // Produces and returns a connection to MongoDB. 
-// 
 async function produceMongoConnection(): Promise<Database> {
   const settings = await Settings.load();
   const database = new Database(

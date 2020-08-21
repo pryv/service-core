@@ -289,7 +289,6 @@ const accessLogic = module.exports = {
     if (this.isPersonal()) {
       return 'manage';
     } else {
-      //TODO IEVA console.log(this.streamPermissionsMap,'this.streamPermissionsMapppppppppppppp');
       var permission = this.streamPermissionsMap[streamId] || this.streamPermissionsMap['*'];
       return permission ? permission.level : null;
     }

@@ -35,6 +35,6 @@ function produceMongoConnection(): Database {
 }
 
 module.exports = {
-  usersStorage: new storage.Users(produceMongoConnection()),
+  usersStorage: new storage.user.Events(produceMongoConnection()),
   webhooksStorage: new storage.user.Webhooks(produceMongoConnection()),
 };

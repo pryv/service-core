@@ -18,14 +18,13 @@ const fs = require('fs');
 const path = require('path');
 const rimraf = require('rimraf');
 const _ = require('lodash');
+const DefaultStreamsSerializer = require('components/business/src/user/user_info_serializer');
 
 // users
-// TODO IEVA update data/users with events structure users
 const users = exports.users = require('./data/users');
 const defaultUser = users[0];
 
 exports.resetUsers = async () => {
-  // TODO IEVA
   await bluebird.fromCallback(cb => storage.user.events.database.deleteMany(
     { name: 'events' }, {}, cb));
 
@@ -86,13 +85,16 @@ exports.resetEvents = function (done, user) {
   // deleteData(storage.user.events, user || defaultUser, events, done);
   user = user || defaultUser;
   //TODO IEVA - make stremIds dynamic
+
+  const defaultStreamsSerializerObj = new DefaultStreamsSerializer();
+  const allAccountStreamIds = Objec.keys(defaultStreamsSerializerObj.getAllAccountStreams());
+
   async.series([
     storage.user.events.removeMany.bind(storage.user.events, 
       user,
       {
         streamIds: {
-          $nin: [
-            'username', 'passwordHash', 'email', 'attachedFiles', 'dbDocuments', 'language']
+          $nin: allAccountStreamIds
         }
       }
     ),
@@ -151,7 +153,6 @@ exports.resetAttachments = function (done, user) {
   }
   async.series([
     function (stepDone) {
-      //TODO IEVA
       storage.user.eventFiles.removeAllForUser(user, stepDone);
     },
     copyAttachmentFn(attachments.document, user, events[0].id),

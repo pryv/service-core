@@ -70,7 +70,6 @@ class UserContext {
       sessions: new Sessions(conn),
       
       streams: new storage.user.Streams(conn),
-      // TODO IEVA - add here systemStreamsSettings
       events: new storage.user.Events(conn),
       accesses: new storage.user.Accesses(conn),
       webhooks: new storage.user.Webhooks(conn),

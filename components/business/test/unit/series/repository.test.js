@@ -13,6 +13,7 @@
 const influx = require('influx');
 
 const series = require('../../../src/index.js').series; 
+const userStorage = require('components/test-helpers').dependencies.storage.user.events;
 const Repository = series.Repository; 
 const DataMatrix = series.DataMatrix; 
 
@@ -33,7 +34,7 @@ describe('business.series.Repository', function () {
     };
 
     it('[0UEA] should produce series objects for events', function () {
-      const repository = new Repository(influxConnection);
+      const repository = new Repository(influxConnection, userStorage);
       const series = repository.get(namespace, seriesName);
       
       return series

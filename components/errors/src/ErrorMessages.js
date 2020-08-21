@@ -31,7 +31,6 @@ const ErrorMessages = {
   [ErrorIds.DuplicatedUserRegistration]: 'Duplicated user registration. User already started registration process in another server.',
   [ErrorIds.MissingRequiredField]: 'Missing required field',
   [ErrorIds.NonValidForOpenSource]: 'Not valid method for open pryv',
-  // TODO IEVA - wording
   [ErrorIds.DeniedEventModification]: 'Event modification was not done, perhaps you are trying to edit a account stream event like user data.',
   [ErrorIds.DeniedStreamAccess]: 'It is forbidden to access this stream.',
   [ErrorIds.TooHighAccessForAccountStreams]: 'Only read and contribute acceesses are allowed for the account sterams',
