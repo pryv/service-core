@@ -61,57 +61,84 @@ describe('registration: single-node', () => {
     describe('Schema validation', function() {
       describe(
         'when given an invalid username parameter',
-        testInvalidParameterValidation('username', {
-          minLength: 5,
-          maxLength: 23,
-          lettersAndDashesOnly: true,
-          type: 'string'
-        })
+        testInvalidParameterValidation(
+          'username', 
+          {
+            minLength: 5,
+            maxLength: 23,
+            lettersAndDashesOnly: true,
+            type: 'string',
+          }, 
+          ['G81N','JQ7V','EIKE','XTD0','TSC6','TL2W','MST7','WG46','M6CD','3Q1H'],
+        )
       );
       describe(
         'when given an invalid password parameter',
-        testInvalidParameterValidation('password', {
-          minLength: 4,
-          maxLength: 100,
-          type: 'string'
-        })
+        testInvalidParameterValidation(
+          'password', 
+          {
+            minLength: 4,
+            maxLength: 100,
+            type: 'string',
+          },
+          ['MP5F','T56V','XFG4','SBCX','LQWX','KJGF','OYZM','FSE9'],
+        )
       );
       describe(
         'when given an invalid email parameter',
-        testInvalidParameterValidation('email', {
-          maxLength: 300,
-          type: 'string'
-        })
+        testInvalidParameterValidation(
+          'email', {
+            maxLength: 300,
+            type: 'string',
+          },
+          ['PJY5','6SID','6OX5','GV6I','1JN8','S8U8'],
+        )
       );
       describe(
         'when given an invalid appId parameter',
-        testInvalidParameterValidation('appId', {
-          minLength: 6,
-          maxLength: 99,
-          type: 'string'
-        })
+        testInvalidParameterValidation(
+          'appId', 
+          {
+            minLength: 6,
+            maxLength: 99,
+            type: 'string',
+          },
+          ['NZ4J','K4LE','8G9V','4XCV','HI9V','AQFL','I9QE','5P2E']
+        )
       );
       describe(
         'when given an invalid invitationToken parameter',
-        testInvalidParameterValidation('invitationToken', {
-          type: 'string'
-        })
+        testInvalidParameterValidation(
+          'invitationToken', 
+          {
+            type: 'string',
+          },
+          ['FJ51','UEKC','79A5','CYW6'],
+        )
       );
       describe(
         'when given an invalid referer parameter',
-        testInvalidParameterValidation('referer', {
-          minLength: 1,
-          maxLength: 99,
-          type: 'string'
-        })
+        testInvalidParameterValidation(
+          'referer', 
+          {
+            minLength: 1,
+            maxLength: 99,
+            type: 'string',
+          },
+          ['MYTP','DUQN','VTN5','C4PK','AFUH','J1DW','V51E','5BNJ'],
+        )
       );
       describe(
         'when given an invalid languageCode parameter',
-        testInvalidParameterValidation('languageCode', {
-          minLength: 1,
-          maxLength: 5,
-          type: 'string'
-        })
+        testInvalidParameterValidation(
+          'languageCode', 
+          {
+            minLength: 1,
+            maxLength: 5,
+            type: 'string',
+          },
+          ['0QGW','RHT6','E95A','R1LT','LP4S','GDMW','QYT8','UPWY'],
+        )
       );
     });
     describe('Property values uniqueness', function() {
@@ -142,7 +169,8 @@ describe('registration: single-node', () => {
 
     function verifyInvalidInputResponse(
       registerBodyModification,
-      expectedErrorParam
+      expectedErrorParam,
+      testTags,
     ) {
       return () => {
         before(async function() {
@@ -153,10 +181,10 @@ describe('registration: single-node', () => {
           );
           res = await request.post('/users').send(invalidRegisterBody);
         });
-        it('[BP8L] should respond with status 400', function() {
+        it('[' + testTags[0] + '] should respond with status 400', function() {
           assert.equal(res.status, 400);
         });
-        it('[LKC1] should respond with the correct error message', function() {
+        it('[' + testTags[1] + '] should respond with the correct error message', function() {
           assert.exists(res.error);
           assert.exists(res.error.text);
           const error = JSON.parse(res.error.text);
@@ -165,7 +193,7 @@ describe('registration: single-node', () => {
       };
     }
 
-    function testInvalidParameterValidation(parameterName, constraints) {
+    function testInvalidParameterValidation(parameterName, constraints, testTags) {
       return () => {
         if (constraints.minLength) {
           describe(
@@ -176,7 +204,8 @@ describe('registration: single-node', () => {
                   constraints.minLength - 1
                 )
               },
-              parameterName
+              parameterName,
+              [ testTags.pop(), testTags.pop() ]
             )
           );
         }
@@ -189,7 +218,8 @@ describe('registration: single-node', () => {
                   constraints.maxLength + 1
                 )
               },
-              parameterName
+              parameterName,
+              [ testTags.pop(), testTags.pop() ]
             )
           );
         }
@@ -200,7 +230,8 @@ describe('registration: single-node', () => {
               {
                 [parameterName]: "/#+]\\'"
               },
-              parameterName
+              parameterName,
+              [ testTags.pop(), testTags.pop() ]
             )
           );
         }
@@ -216,7 +247,8 @@ describe('registration: single-node', () => {
                 {
                   [parameterName]: val
                 },
-                parameterName
+                parameterName,
+                [ testTags.pop(), testTags.pop() ]
               )
             );
           }
@@ -227,7 +259,8 @@ describe('registration: single-node', () => {
             {
               [parameterName]: null
             },
-            parameterName
+            parameterName,
+            [ testTags.pop(), testTags.pop() ]
           )
         );
       };
