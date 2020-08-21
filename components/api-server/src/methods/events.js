@@ -988,10 +988,11 @@ module.exports = function (
     }, notify);
 
   /**
-   * If event belongs to the account stream - !!! checks for unique value
-   * and not a stream id
+   * If event belongs to the account stream - 
    * 1) deal with properties that enforces uniqueness
    * 2) send to service-register if needed
+   * 
+   * !!! this function checks for the unique value and not a stream id
    * @param object user {id: '', username: ''}
    * @param object event
    * @param string id 

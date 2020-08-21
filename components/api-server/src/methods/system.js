@@ -114,7 +114,7 @@ module.exports = function (
       const userId = await storageLayer.events.getUserIdByUsername(params.username);
 
       if (!userId) {
-        return next(errors.unknownResource('user', this.username));
+        return next(errors.unknownResource('user', params.username));
       }
       context.user = await storageLayer.events.getUserInfo({
         user: { id: userId },
@@ -122,8 +122,8 @@ module.exports = function (
       });
       context.user.id = userId;
 
-      if (!context.user) {
-        return next(errors.unknownResource('user', this.username));
+      if (! context.user) {
+        return next(errors.unknownResource('user', params.username));
       }
       next();
     } catch (err) {

@@ -397,7 +397,7 @@ Events.prototype.insertOne = function (user, item, callback, options) {
  */
 Events.prototype.createUser = async function (params) {
   let userParams = Object.assign({}, params);
-  let user = {}; //console.log('Create user', params);
+  let user = {};
 
   // first explicitly create a collection, because it would fail in the transation
   //await bluebird.fromCallback(cb => this.database.client.createCollection('events', {}, cb));
@@ -416,8 +416,8 @@ Events.prototype.createUser = async function (params) {
 
   try {
     // get streams ids from the config that should be retrieved
-    let userProfileStreamsIds = (new UserInfoSerializer()).getAllAccountStreams();
-
+    let userAccountStreamsIds = (new UserInfoSerializer()).getAllAccountStreams();
+    //TODO IEVA console.log(userAccountStreamsIds['insurancenumber'],'userAccountStreamsIdsssssssssssssssss');
     // change password into hash (also allow for tests to pass passwordHash directly)
     if (userParams.password && !userParams.passwordHash) {
       userParams.passwordHash = await bluebird.fromCallback((cb) => encryption.hash(userParams.password, cb));
@@ -430,7 +430,7 @@ Events.prototype.createUser = async function (params) {
     //TODO IEVA - active should be a constant somewhere
     let updateObject = {
       streamIds: ['username', 'unique', UserInfoSerializer.options.STREAM_ID_ACTIVE],
-      type: userProfileStreamsIds.username.type,
+      type: userAccountStreamsIds.username.type,
       content: userParams.username,
       username__unique: userParams.username, // repeated field for uniqueness
       id: userParams.id,
@@ -448,12 +448,12 @@ Events.prototype.createUser = async function (params) {
       user.username = username.content;
 
       // delete username so it won't be saved the second time
-      delete userProfileStreamsIds['username'];
+      delete userAccountStreamsIds['username'];
 
       // create all user account events
-      const eventsCreationActions = Object.keys(userProfileStreamsIds).map(streamId => {
-        if (userParams[streamId] || typeof userProfileStreamsIds[streamId].default !== 'undefined') {
-          let parameter = userProfileStreamsIds[streamId].default;
+      const eventsCreationActions = Object.keys(userAccountStreamsIds).map(streamId => {
+        if (userParams[streamId] || typeof userAccountStreamsIds[streamId].default !== 'undefined') {
+          let parameter = userAccountStreamsIds[streamId].default;
 
           // set default value if undefined
           if (typeof userParams[streamId] !== 'undefined') {
@@ -465,8 +465,8 @@ Events.prototype.createUser = async function (params) {
 
           // get type for the event from the config
           let eventType = 'string';
-          if (userProfileStreamsIds[streamId].type) {
-            eventType = userProfileStreamsIds[streamId].type;
+          if (userAccountStreamsIds[streamId].type) {
+            eventType = userAccountStreamsIds[streamId].type;
           }
 
           // create the event
@@ -481,9 +481,8 @@ Events.prototype.createUser = async function (params) {
           }
 
           // get additional stream ids from the config
-          //TODO IEVA - active should be a constant somewhere
           let streamIds = [streamId, UserInfoSerializer.options.STREAM_ID_ACTIVE];
-          if (userProfileStreamsIds[streamId].isUnique === true) {
+          if (userAccountStreamsIds[streamId].isUnique === true) {
             streamIds.push("unique");
             creationObject[streamId + '__unique'] = parameter; // repeated field for uniqness
           }
@@ -507,7 +506,7 @@ Events.prototype.createUser = async function (params) {
 Events.prototype.updateUser = async function ({ userId, userParams }) {
   try {
     // get streams ids from the config that should be retrieved
-    let userProfileStreamsIds = (new UserInfoSerializer()).getAllAccountStreams();
+    let userAccountStreamsIds = (new UserInfoSerializer()).getAllAccountStreams();
 
     // change password into hash if it exists
     if (userParams.password && !userParams.passwordHash) {
@@ -516,7 +515,7 @@ Events.prototype.updateUser = async function ({ userId, userParams }) {
     delete userParams.password;
 
     // update all account streams and do not allow additional properties
-    Object.keys(userProfileStreamsIds).map(streamId => {
+    Object.keys(userAccountStreamsIds).map(streamId => {
       if (userParams[streamId]) {
         return bluebird.fromCallback(cb => Events.super_.prototype.updateOne.call(this,
           { id: userId, streamIds: UserInfoSerializer.options.STREAM_ID_ACTIVE },

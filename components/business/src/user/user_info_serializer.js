@@ -48,16 +48,14 @@ class UserInfoSerializer {
    * and could be returned to the user
    */
   getReadableAccountStreams () {
-    let streamsNames = {};
-    return getStreamsNames(this.accountStreamsSettings, streamsNames, readable);
+    return getStreamsNames(this.accountStreamsSettings, readable);
   }
 
   /**
    * Get only those streams that user is allowed to edit 
    */
   getEditableAccountStreams () {
-    let streamsNames = {};
-    return getStreamsNames(this.accountStreamsSettings, streamsNames, editableAccountStreams);
+    return getStreamsNames(this.accountStreamsSettings, editableAccountStreams);
   }
 
   /**
@@ -66,24 +64,21 @@ class UserInfoSerializer {
    * should not be returned to the user
    */
   getAllAccountStreams () {
-    let streamsNames = {};
-    return getStreamsNames(this.accountStreamsSettings, streamsNames, allAccountStreams);
+    return getStreamsNames(this.accountStreamsSettings, allAccountStreams);
   }
 
 /**
  * Get streamIds of fields that should be indexed
  */
   getIndexedAccountStreams () {
-    let streamsNames = {};
-    return getStreamsNames(this.accountStreamsSettings, streamsNames, indexedStreams);
+    return getStreamsNames(this.accountStreamsSettings, indexedStreams);
   }
 
 /**
  * Get streamIds of fields that should be unique
  */
   getUniqueAccountStreamsIds () {
-    let streamsNames = {};
-    return Object.keys(getStreamsNames(this.accountStreamsSettings, streamsNames, uniqueStreams));
+    return Object.keys(getStreamsNames(this.accountStreamsSettings, uniqueStreams));
   }
 
   /**
@@ -206,12 +201,11 @@ function formEventsTree (streams:object, events: array, user:object):object {
 /**
  * Iterate throught the tree and add keys to the flat list streamsNames
  * @param {*} streams - tree structure object
- * @param array streamsNames - flat list of keys
  * @param enum string whatToReturn - enum values should be retrieved with 
  *  getReadableAccountStreams(), getAllAccountStreams (), getEditableAccountStreams;
  * if they are equal to false or true
  */
-function getStreamsNames(streams, streamsNames, whatToReturn) {
+function getStreamsNames(streams, whatToReturn) {
   const flatStreamsList = treeUtils.flattenTree(streams);
 
   // convert list to objects
@@ -222,29 +216,29 @@ function getStreamsNames(streams, streamsNames, whatToReturn) {
     // (except when all account streams should be returned)
     switch (whatToReturn) {
       case readable:
-        if (flatStreamsList[i].isShown === false) {
+        if (!flatStreamsList[i].isShown) {
           continue;
         }
         break;
       case allAccountStreams:
         break;
       case indexedStreams:
-        if (flatStreamsList[i].isIndexed === false) {
+        if (!flatStreamsList[i].isIndexed) {
           continue;
         }
         break;
       case uniqueStreams:
-        if (flatStreamsList[i].isUnique === false) {
+        if (!flatStreamsList[i].isUnique) {
           continue;
         }
         break;
       case editableAccountStreams:
-        if (flatStreamsList[i].isEditable === false) {
+        if (!flatStreamsList[i].isEditable) {
           continue;
         }
         break;
       default:
-        if (flatStreamsList[i].isShown === false) {
+        if (!flatStreamsList[i].isShown) {
           continue;
         }
         break;

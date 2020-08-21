@@ -8,6 +8,7 @@ const cuid = require('cuid');
 const _ = require('lodash');
 const path = require('path');
 const bluebird = require('bluebird');
+const nock = require('nock');
 const assert = require('chai').assert;
 const { describe, before, it } = require('mocha');
 const supertest = require('supertest');
@@ -19,7 +20,8 @@ const Settings = require('components/api-server/src/settings');
 const Application = require('components/api-server/src/application');
 const Notifications = require('components/api-server/src/Notifications');
 const accessLogic = require('components/model/src/accessLogic');
-const validation = require('components/api-server/test/helpers').validation;
+const helpers = require('components/api-server/test/helpers');
+const validation = helpers.validation;
 
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
@@ -191,6 +193,28 @@ describe("[B5FF] Account with default-streams", function () {
         });
         it('Access should be created in the database', async () => {
           assert.deepEqual(accessInDb.permissions, [{ streamId: streamId, level: permissionLevel }]);
+        });
+        it('User can create visible stream event with this access', async () => {
+          const settings = _.cloneDeep(helpers.dependencies.settings);
+
+          scope = nock(settings.services.register.url)
+          scope.put('/users',
+            (body) => {
+              serviceRegisterRequest = body;
+              return true;
+            }).reply(200, { errors: [] });
+
+          const newEvent = await request.post(eventsBasePath)
+            .send({
+              streamIds: [streamId],
+              content: charlatan.Lorem.characters(7),
+              type: 'string/pryv'
+            })
+            .set('authorization', accessInDb.token);
+
+          assert.equal(newEvent.status, 201);
+          assert.equal(newEvent.body.hasOwnProperty('event'), true);
+          assert.equal(newEvent.body.event.streamId, streamId);
         });
       });
       describe('[5ECB] When user tries to create access for “account” stream', async () => {
