@@ -57,7 +57,7 @@ class ServiceRegister {
   async checkUsername(username: string): Promise<any> {
     const url = this._formUrl(`/${username}/check_username`);
     // log fact about the event
-    this.logger.info(`GET ${url} for username: ${user.username}`);
+    this.logger.info(`GET ${url} for username: ${username}`);
     try {
       const res = await superagent
         .get(url);
