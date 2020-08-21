@@ -14,7 +14,7 @@ const async = require('async');
 const cuid = require('cuid');
 const bluebird = require('bluebird');
 const errors = require('components/errors').factory;
-const errorHandling = require('components/errors').errorHandling;
+const { ErrorMessages, errorHandling } = require('components/errors');
 const commonFns = require('components/api-server/src/methods/helpers/commonFunctions');
 const mailing = require('components/api-server/src/methods/helpers/mailing');
 const ServiceRegister = require('./service_register');
@@ -365,24 +365,28 @@ class Registration {
         const uniquenessErrors = {};
         const unexpectedErrors = [];
         const impossibleErrors = [];
+        let hasInvalidTokenError = null;
         // 1. convert list of error ids to the list of api errors
         response.errors.forEach(err => {
           // lets check if error thrown by service-register is already defined in errors factory
-          if (typeof errors[err] === 'function'){
-            console.log('HOW AM I HERE', err);
-            impossibleErrors.push(errors[err]());
+          if (err === 'DuplicatedUserRegistration') {
+            // currently do nothing as we don't receive the conflicting keys from register on this path
           } else if (err.startsWith('Existing_')) {
             const fieldName = err.replace('Existing_', '');
             uniquenessErrors[fieldName] = sentValues[fieldName];
+          } else if (err === 'InvalidInvitationToken') {
+            hasInvalidTokenError = true;
           } else {
-            unexpectedErrors.pop(errors.unexpectedError(errors[err]));
+            unexpectedErrors.push(errors.unexpectedError(errors[err]));
           }
         });
-
-        // handle unexpected & impossible
-
-        // 2. convert api errors to validation errors
-        return next(errors.itemAlreadyExists('user', uniquenessErrors));
+        if (hasInvalidTokenError) {
+          return next(errors.invalidOperation(ErrorMessages.InvalidInvitationToken));
+        } else if (unexpectedErrors.length > 0) {
+          return next(unexpectedErrors[0]);
+        } else {
+          return next(errors.itemAlreadyExists('user', uniquenessErrors));
+        }
       }
     } catch (error) {
       return next(errors.unexpectedError(error));

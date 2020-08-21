@@ -11,7 +11,7 @@ const API = require('../../API');
 import type Application from '../../application';
 const errors = require('components/errors').factory;
 const _ = require('lodash');
-const { config, getConfig } = require('components/api-server/config/Config');
+const { Config, getConfig } = require('components/api-server/config/Config');
 
 /**
  * Routes for users
@@ -27,9 +27,9 @@ module.exports = function (expressApp: express$Application, app: Application) {
  
   // POST /users: create a new user
   expressApp.post('/users', function (req: express$Request, res: express$Response, next: express$NextFunction) {
-   if (isSingleNode) {
+    if (isSingleNode) {
       api.call('auth.register.singlenode', context, req.body, methodCallback(res, next, 201));
-    }else{
+    } else {
       api.call('auth.register', context, req.body, methodCallback(res, next, 201));
     }
   });
