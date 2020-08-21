@@ -23,7 +23,6 @@ describe('registration: single-node', () => {
       const settings = await Settings.load();
       const config = getConfig();
       config.set('systemStreams:custom', null);
-      console.log('got', config.get('systemStreams:custom'));
       app = new Application(settings);
       await app.initiate();
 
@@ -121,7 +120,6 @@ describe('registration: single-node', () => {
           await app.database.deleteMany({ name: 'events' });
 
           res = await request.post('/users').send(registerBody);
-          console.log('got', JSON.stringify(res.body, null, 2));
           assert.equal(res.status, 201);
           res = await request.post('/users').send(registerBody);
         });

@@ -66,24 +66,6 @@ describe('registration: cluster', function() {
   const methodPath = '/users';
   const defaultServerName = 'abc';
 
-  async function successfulServiceRegisterMockup() {
-    helpers.instanceTestSetup.set(settings, {
-      context: {
-        url: settings.services.register.url,
-        defaultServerName: defaultServerName
-      },
-      execute: function() {
-        const scope = nock(this.context.url);
-        scope.post('/users/validate').reply(200, { errors: [] });
-        scope.post('/users').reply(200, {
-          username: 'anyusername',
-          server: this.context.defaultServerName
-        });
-      }
-    });
-    await new Promise(server.ensureStarted.bind(server, settings));
-  }
-
   async function registrationRequest(userData) {
     return await bluebird.fromCallback(cb =>
       request
@@ -292,16 +274,23 @@ describe('registration: cluster', function() {
 });
 
 describe('Undefined invitationTokens', function() {
-  // let defaultConfigInvitationTokens;
-
-  // before(function () {
-  //   defaultConfigInvitationTokens = config.get('invitationTokens');
-  //   config.set('invitationTokens', null);
-  // });
-
-  // after(function () {
-  //   config.set('invitationTokens', defaultConfigInvitationTokens);
-  // });
+  async function successfulServiceRegisterMockup() {
+    helpers.instanceTestSetup.set(settings, {
+      context: {
+        url: settings.services.register.url,
+        defaultServerName: defaultServerName
+      },
+      execute: function() {
+        const scope = nock(this.context.url);
+        scope.post('/users/validate').reply(200, { errors: [] });
+        scope.post('/users').reply(200, {
+          username: 'anyusername',
+          server: this.context.defaultServerName
+        });
+      }
+    });
+    await new Promise(server.ensureStarted.bind(server, settings));
+  }
 
   it('[4QCK] should succeed when providing anything in the "invitationToken" field', async () => {
     const userData = _.extend({}, defaults(), {

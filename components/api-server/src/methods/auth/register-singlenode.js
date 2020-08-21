@@ -6,7 +6,8 @@
  */
 const _ = require('lodash');
 const Registration = require('components/business/src/auth/registration');
-
+const commonFns = require('./../helpers/commonFunctions');
+const methodsSchema = require('components/api-server/src/schema/authMethods');
 
 /**
  * Auth API methods implementations.

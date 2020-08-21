@@ -720,7 +720,7 @@ module.exports = function (
       setFileReadToken(context.access, result.event);
 
     } catch (err) {
-      return next(Registration.handleUniqnessErrors(err, ErrorMessages[ErrorIds.UnexpectedErrorWhileSavingTheEvent]));
+      return next(Registration.handleUniquenessErrors(err, ErrorMessages[ErrorIds.UnexpectedErrorWhileSavingTheEvent]));
     };
     next();
   }

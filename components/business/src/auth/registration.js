@@ -154,7 +154,7 @@ class Registration {
      // TODO IEVA
       // const tempUser = _.clone(userInfo);
       // tempUser.username = context.TEMP_USERNAME_PREFIX + cuid();
-      return next(Registration.handleUniqnessErrors(err));
+      return next(Registration.handleUniquenessErrors(err));
     }
   }
 
@@ -238,7 +238,7 @@ class Registration {
  * @param {*} err 
  * @param {*} params 
  */
-  static handleUniqnessErrorsInSingleErrorFormat (err, message) {
+  static handleUniquenessErrorsInSingleErrorFormat (err, message) {
     // Uniquenss errors
     if (typeof err.isDuplicateIndex === 'function') {
       return errors.existingField(err.duplicateIndex());
