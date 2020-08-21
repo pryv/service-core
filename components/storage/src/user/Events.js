@@ -14,8 +14,7 @@ var BaseStorage = require('./BaseStorage'),
   UserInfoSerializer = require('components/business/src/user/user_info_serializer'),
   encryption = require('components/utils').encryption;
 
-import type { Config } from 'components/api-server/config/Config';
-const getConfig: () => Config = require('components/api-server/config/Config').getConfig;
+const { getConfig, Config } = require('components/api-server/config/Config');
 const config: Config = getConfig();
 
 module.exports = Events;

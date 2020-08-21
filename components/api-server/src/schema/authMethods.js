@@ -49,7 +49,7 @@ module.exports = {
         minLength: 6,
         maxLength: 99,
       }),
-      invitationtoken: string(),
+      invitationToken: string(),
       referer: helpers.string({
         minLength: 1,
         maxLength: 99,
@@ -114,7 +114,7 @@ module.exports = {
             code: ErrorIds.EmailRequired
           }
         },
-        invitationtoken: {
+        invitationToken: {
           INVALID_TYPE: {
             message: ErrorMessages[ErrorIds.InvalidInvitationToken],
             code: ErrorIds.InvalidInvitationToken

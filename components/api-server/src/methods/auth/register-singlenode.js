@@ -6,7 +6,8 @@
  */
 const _ = require('lodash');
 const Registration = require('components/business/src/auth/registration');
-
+const commonFns = require('./../helpers/commonFunctions');
+const methodsSchema = require('components/api-server/src/schema/authMethods');
 
 /**
  * Auth API methods implementations.
@@ -28,4 +29,28 @@ module.exports = function (api, logging, storageLayer, servicesSettings, serverS
     registration.createUser,
     registration.sendWelcomeMail
   );
+
+  // Username check
+  api.register('auth.usernameCheck.singlenode',
+    commonFns.getParamsValidation(methodsSchema.usernameCheck.params),
+    checkUsername
+  );
+
+  /**
+   * Check in service-register if user id is reserved
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  async function checkUsername(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    result.reserved = false;
+    try {
+      //const user = storage.
+      
+    } catch (error) {
+      return next(errors.unexpectedError(error));
+    }
+    next();
+  }
 };

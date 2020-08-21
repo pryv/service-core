@@ -257,7 +257,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
       notifications.accountChanged(context.user);
       next();
     } catch (err) {
-      return next(Registration.handleUniqnessErrorsInSingleErrorFormat(err, ErrorMessages[ErrorIds.UnexpectedErrorWhileSavingTheEvent]));
+      return next(Registration.handleUniquenessErrorsInSingleErrorFormat(err, ErrorMessages[ErrorIds.UnexpectedErrorWhileSavingTheEvent]));
     }
   }
 };

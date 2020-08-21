@@ -26,7 +26,7 @@ class ServiceRegister {
 
   async validateUser (
     username: String,
-    invitationtoken: String,
+    invitationToken: String,
     uniqueFields: Object,
     core: String,
   ): Promise<void> {
@@ -34,17 +34,17 @@ class ServiceRegister {
     // log fact about the event
     this.logger.info(`POST ${url} for username: ${username}`);
     try {
-      const res = await superagent.post(url)
-                                  .send({ 
-                                    username: username,
-                                    invitationtoken: invitationtoken,
-                                    uniqueFields: uniqueFields,
-                                    core: core
-                                 })
-                                  .set('Authorization', this.config.key);                           
+      const res = await superagent
+        .post(url)
+        .set('Authorization', this.config.key)
+        .send({ 
+          username: username,
+          invitationToken: invitationToken,
+          uniqueFields: uniqueFields,
+          core: core
+        });
       return res.body;
     } catch (err) {
-      
       if(err.status == 400 && err?.response?.body?.errors){
         return err.response.body;
       }
@@ -54,14 +54,18 @@ class ServiceRegister {
     }
   }
 
-  async checkUsername(username: string): Promise<void> {
+  async checkUsername(username: string): Promise<any> {
     const url = this._formUrl(`/${username}/check_username`);
     // log fact about the event
     this.logger.info(`GET ${url} for username: ${user.username}`);
     try {
-      const res = await superagent.get(url);
+      const res = await superagent
+        .get(url);
       return res.body;
     } catch (err) {
+      if (err?.response?.body?.reserved === true) {
+        return err.response.body;
+      }
       this.logger.error(err);
       throw new Error(err.message || 'Unexpected error.');
     }
@@ -73,10 +77,10 @@ class ServiceRegister {
     this.logger.info(`POST ${url} for username:${user.username}`);
 
     try {
-      const res = await superagent.post(url)
-                                  .send(user)
-                                  .set('Authorization', this.config.key);
-                         
+      const res = await superagent
+        .post(url)
+        .set('Authorization', this.config.key)
+        .send(user);     
       return res.body;
     } catch (err) {
       this.logger.error(err);

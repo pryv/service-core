@@ -26,6 +26,7 @@ import type { ApiCallback } from '../API';
 module.exports = function (api, logging, storageLayer, servicesSettings, serverSettings) {
   // REGISTER
   const registration = new Registration(logging, storageLayer, servicesSettings, serverSettings);
+  const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
 
   api.register('auth.register',
     // data validation methods
@@ -56,15 +57,16 @@ module.exports = function (api, logging, storageLayer, servicesSettings, serverS
   async function checkUsername(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     result.reserved = false;
     try {
-      const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
       const response = await serviceRegisterConn.checkUsername(params.username);
 
-      if(response?.reserved){
+      if (response.reserved === true) {
+        return next(errors.itemAlreadyExists('username', { username: params.username }));
+      }
+
+      if (response.reserved != null) {
         result.reserved = response.reserved;
       }
-      if(response?.reason){
-        result.reason = response.reason;
-      }
+      
     } catch (error) {
       return next(errors.unexpectedError(error));
     }

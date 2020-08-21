@@ -56,6 +56,7 @@ class Server {
   // Start the server. 
   //
   async start() {
+
     const defaultParam: ?string = this.findDefaultParam();
     if (defaultParam != null) {
       this.logger.error(`Config parameter "${defaultParam}" has a default value, please change it`);
@@ -117,15 +118,13 @@ class Server {
       application.logging, 
       application.storageLayer, 
       application.settings.get('services').obj(), 
-      application.settings.get('server').obj(), 
-      application.settings.get('systemStreams').obj());
+      application.settings.get('server').obj());
 
     require('./methods/auth/register-singlenode')(application.api, 
       application.logging, 
       application.storageLayer, 
       application.settings.get('services').obj(), 
-      application.settings.get('server').obj(), 
-      application.settings.get('systemStreams').obj());
+      application.settings.get('server').obj());
 
     require('./methods/accesses')(
       application.api, l('methods/accesses'), 

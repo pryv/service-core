@@ -4,6 +4,8 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+// @flow
+
 'use strict';
 const _ = require('lodash');
 
@@ -97,7 +99,7 @@ function load(config: Config): Config {
       ]
   });
 
-  const CUSTOM_SYSTEM_STREAMS_FIELDS = 'CUSTOM_SYSTEM_STREAMS_FIELDS';
+  const CUSTOM_SYSTEM_STREAMS_FIELDS: string = 'CUSTOM_SYSTEM_STREAMS_FIELDS';
 
   /**
    * Or if it is a simple config, just pass json by env variable

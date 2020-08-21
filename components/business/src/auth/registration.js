@@ -25,8 +25,7 @@ const DefaultStreamsSerializer = require('components/business/src/user/user_info
 import type { MethodContext } from 'components/model';
 import type { ApiCallback } from 'components/api-server/src/API';
 
-import type { Config } from 'components/api-server/config/Config';
-const getConfig = require('components/api-server/config/Config').getConfig;
+const { getConfig, Config } = require('components/api-server/config/Config');
 const config: Config = getConfig();
 
 /**
@@ -155,7 +154,7 @@ class Registration {
      // TODO IEVA
       // const tempUser = _.clone(userInfo);
       // tempUser.username = context.TEMP_USERNAME_PREFIX + cuid();
-      return next(Registration.handleUniqnessErrors(err));
+      return next(Registration.handleUniquenessErrors(err));
     }
   }
 
@@ -216,7 +215,7 @@ class Registration {
    * @param {*} err 
    * @param {*} params 
    */
-  static handleUniqnessErrors (err, message) {
+  static handleUniquenessErrors (err, message) {
     // Duplicate errors
     // I check for these errors in the validation so they are only used for 
     // deprecated systems.createUser path
@@ -239,7 +238,7 @@ class Registration {
  * @param {*} err 
  * @param {*} params 
  */
-  static handleUniqnessErrorsInSingleErrorFormat (err, message) {
+  static handleUniquenessErrorsInSingleErrorFormat (err, message) {
     // Uniquenss errors
     if (typeof err.isDuplicateIndex === 'function') {
       return errors.existingField(err.duplicateIndex());
@@ -356,24 +355,34 @@ class Registration {
       }
 
       // do the validation and reservation in service-register
-      const response = await this.serviceRegisterConn.validateUser(params.username, params.invitationtoken, uniqueFields, this.hostname);
+      const response = await this.serviceRegisterConn.validateUser(params.username, params.invitationToken, uniqueFields, this.hostname);
 
       if (response?.errors && response.errors.length > 0) {
+        const sentValues: { string: string } = _.merge({
+          username: params.username,
+          invitationToken: params.invitationToken,
+        }, uniqueFields);
+        const uniquenessErrors = {};
+        const unexpectedErrors = [];
+        const impossibleErrors = [];
         // 1. convert list of error ids to the list of api errors
-        const listApiErrors = response.errors.map(err => {
+        response.errors.forEach(err => {
           // lets check if error thrown by service-register is already defined in errors factory
           if (typeof errors[err] === 'function'){
-            return errors[err]();
+            console.log('HOW AM I HERE', err);
+            impossibleErrors.push(errors[err]());
           } else if (err.startsWith('Existing_')) {
             const fieldName = err.replace('Existing_', '');
-            return errors.existingField(fieldName);
+            uniquenessErrors[fieldName] = sentValues[fieldName];
           } else {
-            return errors.unexpectedError(errors[err]);
+            unexpectedErrors.pop(errors.unexpectedError(errors[err]));
           }
         });
 
+        // handle unexpected & impossible
+
         // 2. convert api errors to validation errors
-        return next(commonFns.apiErrorToValidationErrorsList(listApiErrors));
+        return next(errors.itemAlreadyExists('user', uniquenessErrors));
       }
     } catch (error) {
       return next(errors.unexpectedError(error));
