@@ -290,6 +290,9 @@ class Registration {
 
   /**
    * Check in service-register if email already exists
+   * 
+   * !!! Not solved scenario if main user info was saved in service-register, but 
+   * additional unique fields were not TODO IEVA
    * @param {*} context 
    * @param {*} params 
    * @param {*} result 
@@ -298,6 +301,7 @@ class Registration {
   async validateThatUserDoesNotExistInLocalDb (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
       // check email in service-core
+      //TODO IEVA- here should be all unique fields also seems to be not tested scenario
       const existingUser = await bluebird.fromCallback(
         (cb) => this.storageLayer.events.findOne({},
           {
@@ -317,8 +321,9 @@ class Registration {
 
         //append context with the same values that would be saved by createUser function
         // TODO IEVA maybe worth it doing more dynamically
+        // get userId by his username
         context.user = await this.storageLayer.events.getUserInfo({
-          user: { id: context.user.id },
+          user: { id: existingUser.userId },
           getAll: true
         });
 

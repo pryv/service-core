@@ -30,9 +30,13 @@ exports.resetUsers = async () => {
     { name: 'events' }, {}, cb));
 
   let i;
+  try{
   for (i = 0; i < users.length; i++){
     const user = Object.assign({}, users[i]);
     await storage.user.events.createUser(user);
+  }
+  } catch (error) {
+    throw error;
   }
 };
 

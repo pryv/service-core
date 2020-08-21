@@ -32,7 +32,7 @@ class ServiceRegister {
   ): Promise<void> {
     const url = this._formUrl('/users/validate');
     // log fact about the event
-    this.logger.info(url);
+    this.logger.info(`POST ${url} for username: ${username}`);
     try {
       const res = await superagent
         .post(url)
@@ -57,7 +57,7 @@ class ServiceRegister {
   async checkUsername(username: string): Promise<any> {
     const url = this._formUrl(`/${username}/check_username`);
     // log fact about the event
-    this.logger.info(url);
+    this.logger.info(`GET ${url} for username: ${user.username}`);
     try {
       const res = await superagent
         .get(url);
@@ -74,7 +74,7 @@ class ServiceRegister {
   async createUser(user): Promise<void> {
     const url = this._formUrl('/users');
     // log fact about the event
-    this.logger.info(url);
+    this.logger.info(`POST ${url} for username:${user.username}`);
 
     try {
       const res = await superagent
@@ -98,7 +98,7 @@ class ServiceRegister {
     fieldsToDelete: object): Promise<void> {
     const url = this._formUrl('/users');
     // log fact about the event
-    this.logger.info(url);
+    this.logger.info(`PUT ${url} for username:${username}`);
     user.username = username;
 
     const request = {
