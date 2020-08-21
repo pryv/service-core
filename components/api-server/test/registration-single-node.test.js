@@ -22,6 +22,8 @@ describe('registration: single-node', () => {
     before(async function() {
       const settings = await Settings.load();
       const config = getConfig();
+      config.set('singleNode:isActive', true);
+      config.set('openSource:isActive', false);
       config.set('systemStreams:custom', null);
       app = new Application(settings);
       await app.initiate();
@@ -35,7 +37,7 @@ describe('registration: single-node', () => {
       );
 
       request = supertest(app.expressApp);
-
+      
       registerBody = {
         username: charlatan.Lorem.characters(7),
         password: charlatan.Lorem.characters(7),
