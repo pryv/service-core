@@ -28,6 +28,7 @@ const ErrorMessages = {
   [ErrorIds.InvalidLanguage]: 'Invalid language',
   [ErrorIds.InvalidAppId]: 'Invalid app Id',
   [ErrorIds.Invalidreferer]: 'Invalid referer',
+  [ErrorIds.InvalidInvitationToken]: 'Invalid invitation token',
   [ErrorIds.DuplicatedUserRegistration]: 'Duplicated user registration. User already started registration process in another server.',
   [ErrorIds.MissingRequiredField]: 'Missing required field',
   [ErrorIds.NonValidForOpenSource]: 'Not valid method for open pryv',

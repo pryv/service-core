@@ -197,7 +197,7 @@ describe('registration: cluster', function() {
       });
     });
 
-    describe('When invitationTokens are undefined', () => {
+    describe('when invitationTokens are undefined', () => {
       describe('and a random string is provided as "invitationToken"', () => {
         before(async () => {
           userData = defaults();
@@ -209,7 +209,7 @@ describe('registration: cluster', function() {
           nock(regUrl)
             .post('/users')
             .reply(200, {
-              username: 'anyusername'
+              username: userData.username
             });
           res = await request.post(methodPath).send(userData);
         });
@@ -228,7 +228,7 @@ describe('registration: cluster', function() {
           nock(regUrl)
             .post('/users')
             .reply(200, {
-              username: 'anyusername'
+              username: userData.username,
             });
           res = await request.post(methodPath).send(userData);
         });
@@ -237,6 +237,55 @@ describe('registration: cluster', function() {
         });
       });
     
+    });
+
+    describe('when invitationTokens are defined', () => {
+      describe('when a valid one is provided', () => {
+        before(async () => {
+          userData = defaults();
+
+          nock(regUrl)
+            .post('/users/validate')
+            .reply(200, { errors: [] });
+          nock(regUrl)
+            .post('/users')
+            .reply(200, {
+              username: userData.username,
+            });
+          res = await request.post(methodPath).send(userData);
+        });
+        it('[Z2ZY] should respond with status 201', () => {
+          assert.equal(res.status, 201);
+        });
+      });
+      describe('when an invalid one is provided', () => {
+        before(async () => {
+          userData = defaults();
+
+          nock(regUrl)
+            .post('/users/validate')
+            .reply(400, { errors: ['InvalidInvitationToken'] });
+          res = await request.post(methodPath).send(userData);
+        });
+        it('[4GON] should respond with status 400', () => {
+          assert.equal(res.status, 400);
+        });
+      });
+    });
+    describe('when invitationTokens are set to [] (forbidden creation)', () => {
+      describe('when any string is provided', () => {
+        before(async () => {
+          userData = defaults();
+
+          nock(regUrl)
+            .post('/users/validate')
+            .reply(400, { errors: ['InvalidInvitationToken'] });
+          res = await request.post(methodPath).send(userData);
+        });
+        it('[CX9N] should respond with status 400', () => {
+          assert.equal(res.status, 400);
+        });
+      });
     });
   });
   describe('GET /:username/check', function() {
