@@ -115,28 +115,11 @@ class UserInfoSerializer {
    * // TODO IEVA -now only account streams are processed
    */
   getVirtualStreamsList () {
-    let virtualStreams = [];
-    const flatStreamsList = treeUtils.flattenTree(this.accountStreamsSettings);
-   
-    let i;
-    for (i = 0; i < flatStreamsList.length; i++) {
-      if (flatStreamsList[i].isShown === true ||
-        (typeof flatStreamsList[i].isShown === 'undefined' &&
-          flatStreamsList[i].parentId === null)) {
-        virtualStreams.push({
-          name: flatStreamsList[i].name ? flatStreamsList[i].name : flatStreamsList[i].id ,
-          id: flatStreamsList[i].id,
-          parentId: flatStreamsList[i].parentId ? flatStreamsList[i].parentId: 'account',
-          children: flatStreamsList[i].children ? flatStreamsList[i].children: []
-        });
-      }
-    }
-    //TODO IEVA - do in more dynamic way
     return {
       name: 'account',
       id: 'account',
       parentId: null,
-      children: virtualStreams
+      children: formSystemStreamsFromSettings(this.systemStreamsSettings.account, [], 'account')
     };
   }
 
@@ -156,7 +139,48 @@ class UserInfoSerializer {
   }
 }
 
-function formEventsTree (streams, events, user) {
+/**
+ * Converts systemStreams settings to the actual simple streams objects
+ * @param object settings 
+ * @param array systemStreams 
+ * @param string parentName 
+ */
+function formSystemStreamsFromSettings (settings, systemStreams, parentName: string):array {
+  let streamIndex;
+  
+  for (streamIndex = 0; streamIndex < settings.length; streamIndex++) {
+    // if stream has children recursivelly call the same function
+    if (typeof settings[streamIndex].children !== "undefined") {
+      systemStreams.push({
+        name: settings[streamIndex].name ? settings[streamIndex].name : settings[streamIndex].id,
+        id: settings[streamIndex].id,
+        parentId: parentName,
+        children: []
+      });
+      systemStreams[systemStreams.length - 1].children = formSystemStreamsFromSettings(settings[streamIndex].children, systemStreams[systemStreams.length - 1].children, settings[streamIndex].id)
+    }
+
+    // if the stream is not visible, dont add it to the tree
+    if (settings[streamIndex].isShown) {
+      systemStreams.push({
+        name: settings[streamIndex].name ? settings[streamIndex].name : settings[streamIndex].id ,
+        id: settings[streamIndex].id,
+        parentId: parentName,
+        children: []
+      });
+    }
+  };
+  return systemStreams;
+}
+
+/**
+ * Takes the list of the streams, events list
+ * and object where events will be saved in a tree structure
+ * @param object streams
+ * @param array events
+ * @param object user 
+ */
+function formEventsTree (streams:object, events: array, user:object):object {
   let streamIndex;
   for (streamIndex = 0; streamIndex < streams.length; streamIndex++) {
     const streamName = streams[streamIndex].id;
@@ -166,11 +190,6 @@ function formEventsTree (streams, events, user) {
       user[streamName] = {};
       user[streamName] = formEventsTree(streams[streamIndex].children, events, user[streamName])
     }
-
-    // if the stream is not visible, dont add it to the tree
-    // if (streams[streamIndex].isShown === false){
-    //   continue;
-    // }
 
     // get value for the stream element
     let i;

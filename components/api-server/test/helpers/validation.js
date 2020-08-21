@@ -367,14 +367,14 @@ exports.removeDeletionsAndHistory = function (items) {
   return items.filter(function (e) { return ! (e.deleted || e.headId); });
 };
 
-exports.removeAccountStreamsEvents = async function (items) {
+exports.removeAccountStreamsEvents = function (items) {
   // get streams ids from the config that should be retrieved
   const expectedAccountStreams = (new UserInfoSerializer()).getAllAccountStreams();
   return items.filter(function (e) { return !(e.streamIds.some(streamId => Object.keys(expectedAccountStreams).indexOf(streamId) >= 0)); });
 };
 
 exports.separateAccountStreamsAndOtherEvents = function (items) {
-  const readableAccountStreams = ['username', 'email', 'language', 'attachedFiles', 'dbDocuments', 'insurancenumber', 'phoneNumber'];
+  const readableAccountStreams = ['username', 'email', 'language', 'attachedFiles', 'dbDocuments', 'insurancenumber', 'phoneNumber', 'passwordHash'];
   const normalEvents = items.filter(function (e) {
     return (!e.streamIds) || !(e.streamIds.some(streamId => readableAccountStreams.indexOf(streamId) >= 0));
   });
@@ -404,33 +404,32 @@ exports.removeTrackingProperties = function (items) {
 };
 
 /**
- * Validate that core events consist of values matching the configuration
+ * Validate that account events consist of values matching the configuration
  * and has properties that are usual for the events
  */
-exports.validateCoreEvents = function (actualCoreEvents) {
+exports.validateAccountEvents = function (actualAccountEvents) {
   // get streams ids from the config that should be retrieved
   let expectedAccountStreams = (new UserInfoSerializer()).getReadableAccountStreams();
 
-  // iterate through expected core events and check that they exists in actual
-  // core events (skip nested streams)
-  Object.keys(expectedAccountStreams).forEach(key => {
-    if (Object.keys(expectedAccountStreams[key]).length > 1) {
-      delete expectedAccountStreams[key];
-    }
-  });
+  // iterate through expected account events and check that they exists in actual
+  // account events (skip nested streams parents)
   const expectedSreamIds = Object.keys(expectedAccountStreams);
   for (n in expectedSreamIds) {
+    // skip parent streams like storageUsed
+    if (!expectedAccountStreams[expectedSreamIds[n]]?.isShown) {
+      continue;
+    }
     let foundEvent = false;
     let i;
-    for (i in actualCoreEvents) {
-      if (actualCoreEvents[i].streamIds.includes(expectedSreamIds[n])) {
+    for (i in actualAccountEvents) {
+      if (actualAccountEvents[i].streamIds.includes(expectedSreamIds[n])) {
         foundEvent = true;
-        // validate that event is indexed if needed
+        // validate that event is indexed/unique if needed
         if (expectedAccountStreams[expectedSreamIds[n]].isUnique === true) {
-          actualCoreEvents[i].streamIds.includes('unique').should.eql(true);
+          actualAccountEvents[i].streamIds.includes('unique').should.eql(true);
         }
         // validate type
-        actualCoreEvents[i].type.should.eql(expectedAccountStreams[expectedSreamIds[n]].type);actualCoreEvents[i].type.should.eql(expectedAccountStreams[expectedSreamIds[n]].type);
+        actualAccountEvents[i].type.should.eql(expectedAccountStreams[expectedSreamIds[n]].type);
         break;
       }
     }
