@@ -33,7 +33,7 @@ describe('registration: single-node', () => {
         app.logging,
         app.storageLayer,
         app.settings.get('services').obj(),
-        app.settings.get('server').obj()
+        app.settings.get('server').obj(),
       );
 
       request = supertest(app.expressApp);

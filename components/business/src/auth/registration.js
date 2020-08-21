@@ -363,21 +363,21 @@ class Registration {
         // 1. convert list of error ids to the list of api errors
         response.errors.forEach(err => {
           // lets check if error thrown by service-register is already defined in errors factory
-          if (typeof errors[err] === 'function'){
-            console.log('HOW AM I HERE', err);
-            impossibleErrors.push(errors[err]());
+          if (err === 'DuplicatedUserRegistration'){
+            // currently do nothing as we don't receive the conflicting keys from register on this path
           } else if (err.startsWith('Existing_')) {
             const fieldName = err.replace('Existing_', '');
             uniquenessErrors[fieldName] = sentValues[fieldName];
           } else {
-            unexpectedErrors.pop(errors.unexpectedError(errors[err]));
+            unexpectedErrors.push(errors.unexpectedError(errors[err]));
           }
         });
 
-        // handle unexpected & impossible
-
-        // 2. convert api errors to validation errors
-        return next(errors.itemAlreadyExists('user', uniquenessErrors));
+        if (unexpectedErrors.length > 0) {
+          return next(unexpectedErrors[0]);
+        } else {
+          return next(errors.itemAlreadyExists('user', uniquenessErrors));
+        }
       }
     } catch (error) {
       return next(errors.unexpectedError(error));

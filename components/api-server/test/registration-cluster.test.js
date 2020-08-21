@@ -6,8 +6,6 @@
  */
 // @flow
 
-const helpers = require('./helpers'); // so it doesnt break
-
 const nock = require('nock');
 const charlatan = require('charlatan');
 const _ = require('lodash');
@@ -177,36 +175,68 @@ describe('registration: cluster', function() {
       });
     });
 
-    it.skip('Fail to register when reservation is not successful', async () => {
-      const userData = _.extend({}, defaults());
-      helpers.instanceTestSetup.set(settings, {
-        context: {
-          url: settings.services.register.url
-        },
-        execute: function() {
-          const scope = require('nock')(this.context.url);
-          scope.post('/users/validate').reply(400, {
-            success: false,
+    describe('when there is a simultaneous registration', () => {
+      before(async () => {
+        userData = defaults();
+  
+        nock(regUrl)
+          .post('/users/validate')
+          .reply(400, {
             errors: ['DuplicatedUserRegistration']
           });
-        }
+  
+        res = await request.post(methodPath).send(userData);
       });
-
-      await new Promise(server.ensureStarted.bind(server, settings));
-      const res = await registrationRequest(userData);
-
-      validation.checkError(res, {
-        status: 400,
-        id: ErrorIds.InvalidParametersFormat,
-        data: [
-          {
-            code: ErrorIds.DuplicatedUserRegistration,
-            message: ErrorMessages[ErrorIds.DuplicatedUserRegistration],
-            path: '#/username',
-            param: 'username'
-          }
-        ]
+      it('[I0HG] should respond with status 400', () => {
+        assert.equal(res.status, 400);
       });
+      it('[QFVZ] should respond with the correct error', () => {
+        const error = res.body.error;
+        assert.equal(error.id, ErrorIds.ItemAlreadyExists);
+        // we don't receive conflicting keys yet
+      });
+    });
+
+    describe('When invitationTokens are undefined', () => {
+      describe('and a random string is provided as "invitationToken"', () => {
+        before(async () => {
+          userData = defaults();
+          userData.invitationToken = charlatan.Lorem.characters(25);
+
+          nock(regUrl)
+            .post('/users/validate')
+            .reply(200, { errors: [] });
+          nock(regUrl)
+            .post('/users')
+            .reply(200, {
+              username: 'anyusername'
+            });
+          res = await request.post(methodPath).send(userData);
+        });
+        it('[CMOV] should respond with status 201', () => {
+          assert.equal(res.status, 201);
+        });
+      });
+      describe('and "invitationToken" is missing', () => {
+        before(async () => {
+          userData = defaults();
+          delete userData.invitationToken;
+
+          nock(regUrl)
+            .post('/users/validate')
+            .reply(200, { errors: [] });
+          nock(regUrl)
+            .post('/users')
+            .reply(200, {
+              username: 'anyusername'
+            });
+          res = await request.post(methodPath).send(userData);
+        });
+        it('[LOIB] should respond with status 201', () => {
+          assert.equal(res.status, 201);
+        });
+      });
+    
     });
   });
   describe('GET /:username/check', function() {
@@ -272,59 +302,7 @@ describe('registration: cluster', function() {
     });
   });
 
-  describe('Undefined invitationTokens', function() {
-    async function successfulServiceRegisterMockup() {
-      helpers.instanceTestSetup.set(settings, {
-        context: {
-          url: app.settings.get('services.register.url').str(),
-          defaultServerName: defaultServerName
-        },
-        execute: function() {
-          const scope = nock(this.context.url);
-          scope.post('/users/validate').reply(200, { errors: [] });
-          scope.post('/users').reply(200, {
-            username: 'anyusername',
-            server: this.context.defaultServerName
-          });
-        }
-      });
-      await new Promise(server.ensureStarted.bind(server, settings));
-    }
   
-    it('[4QCK] should succeed when providing anything in the "invitationToken" field', async () => {
-      const userData = _.extend({}, defaults(), {
-        invitationToken: 'anythingAtAll'
-      });
-      await successfulServiceRegisterMockup();
-      const res = await registrationRequest(userData);
-  
-      validation.check(res, {
-        status: 201,
-        schema: authSchema.register.result,
-        body: {
-          username: userData.username,
-          server: defaultServerName
-        }
-      });
-    });
-  
-    it('[RUQS] should succeed when the "invitationToken" field is missing', async () => {
-      const userData = _.extend({}, defaults());
-      delete userData.invitationToken;
-  
-      await successfulServiceRegisterMockup();
-      const res = await registrationRequest(userData);
-  
-      validation.check(res, {
-        status: 201,
-        schema: authSchema.register.result,
-        body: {
-          username: userData.username,
-          server: defaultServerName
-        }
-      });
-    });
-  });
 });
 
 
