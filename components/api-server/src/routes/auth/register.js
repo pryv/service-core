@@ -37,7 +37,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
    */
   expressApp.get('/:username/check_username', (req: express$Request, res, next) => {
     if (isSingleNode) {
-      api.call('auth.usernameCheck.singlenode', context, req.body, methodCallback(res, next, 200));
+      api.call('auth.usernameCheck.singlenode', context, req.params, methodCallback(res, next, 200));
     } else {
       api.call('auth.usernameCheck', context, req.params, methodCallback(res, next, 200));
     }
