@@ -19,6 +19,7 @@ const path = require('path');
 const rimraf = require('rimraf');
 const _ = require('lodash');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
+const UserService = require('components/business/src/users/User');
 
 // users
 const users = exports.users = require('./data/users');
@@ -28,12 +29,14 @@ exports.resetUsers = async () => {
   await bluebird.fromCallback(cb => storage.user.events.database.deleteMany(
     { name: 'events' }, {}, cb));
 
+  const userService = new UserService({ storage: storage.user.events });
+  
   let i;
   try{
-  for (i = 0; i < users.length; i++){
-    const user = Object.assign({}, users[i]);
-    await storage.user.events.createUser(user);
-  }
+    for (i = 0; i < users.length; i++){
+      const user = Object.assign({}, users[i]);
+      await userService.save(user);
+    }
   } catch (error) {
     throw error;
   }
@@ -87,7 +90,7 @@ exports.resetEvents = function (done, user) {
   //TODO IEVA - make stremIds dynamic
 
   const systemStreamsSerializerObj = new SystemStreamsSerializer();
-  const allAccountStreamIds = Objec.keys(systemStreamsSerializerObj.getAllAccountStreams());
+  const allAccountStreamIds = Object.keys(systemStreamsSerializerObj.getAllAccountStreams());
 
   async.series([
     storage.user.events.removeMany.bind(storage.user.events, 

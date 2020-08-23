@@ -14,6 +14,7 @@ import type { MongoDbSettings } from '../configuration';
 
 const { Database, StorageLayer } = require('components/storage');
 const NullLogger = require('components/utils/src/logging').NullLogger;
+const UserService = require('components/business/src/users/User');
 
 class MongoDB {
   database: *; 
@@ -94,8 +95,9 @@ class MongoDB {
         { data: query }, cb));
   }
 
-  findUser(username: string): Promise<?UserAttributes> {
-    return this.storageLayer.events.getUserInfoByUsername(username, false)
+  async findUser (username: string): Promise<?UserAttributes> {
+    const userService = new UserService({ username: username, storage: this.storageLayer.events });
+    return await userService.getUserInfo();
   }
 
   close(): Promise<void> {

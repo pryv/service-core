@@ -9,7 +9,6 @@
 const methodCallback = require('../methodCallback');
 const API = require('../../API');
 import type Application from '../../application';
-const errors = require('components/errors').factory;
 const _ = require('lodash');
 const { Config, getConfig } = require('components/api-server/config/Config');
 
@@ -22,7 +21,6 @@ module.exports = function (expressApp: express$Application, app: Application) {
   const config: Config = getConfig();
   const api: API = app.api;
   const isSingleNode = config.get('singleNode:isActive');
-  const isOpenSource = config.get('openSource:isActive');
   const context = {};
  
   // POST /users: create a new user
@@ -38,8 +36,8 @@ module.exports = function (expressApp: express$Application, app: Application) {
    * POST /username/check_username: check the existence/validity of a given username
    */
   expressApp.get('/:username/check_username', (req: express$Request, res, next) => {
-    if (isOpenSource) { // we will have to implement a singleNode version of this
-      return next(errors.NonValidForOpenSource());
+    if (isSingleNode) {
+      api.call('auth.usernameCheck.singlenode', context, req.body, methodCallback(res, next, 200));
     } else {
       api.call('auth.usernameCheck', context, req.params, methodCallback(res, next, 200));
     }

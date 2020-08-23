@@ -4,8 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const async = require('async');
 const bluebird = require('bluebird');
+
+const UserService = require('components/business/src/users/User');
 
 class Size {
 
@@ -38,7 +39,9 @@ class Size {
       dbDocuments: await computeCategory(this.dbDocumentsItems),
       attachedFiles: await computeCategory(this.attachedFilesItems),
     }
-    await this.userEventsStorage.updateUser({ userId: user.id, userParams: storageUsed });
+    const userService = new UserService({ id: user.id, storage: this.userEventsStorage });
+    await userService.update(storageUsed);
+
     return storageUsed;
 
     async function computeCategory(storageItems) {

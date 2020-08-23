@@ -10,7 +10,7 @@ const LRU = require('lru-cache');
 const bluebird = require('bluebird');
 
 const storage = require('components/storage');
-
+const UserService = require('components/business/src/users/User');
 const { PendingUpdate } = require('./pending_updates');
 
 import type { LRUCache } from 'lru-cache';
@@ -120,22 +120,10 @@ class UserRepository {
   }
   
   async resolveFromDB(name: string): Promise<User> {
-    const db = this.db; 
-    
-    const options = {};
     // TODO IEVA
-
-    // get userId by his username
-    const userId = await storage.events.getUserIdByUsername(name);
-
-    // get user details
-    console.log(options,'options');
-    const user = await db.events.getUserInfo({
-      user: { id: userId },
-      getAll: false
-    });
-      
-    return user;
+    // get user information by the username
+    const userService = new UserService({ username: name, storage: this.db.events });
+    return await userService.getUserInfo();
   }
 }
 

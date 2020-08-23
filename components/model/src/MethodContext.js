@@ -16,7 +16,7 @@ const APIError = require('components/errors').APIError;
 const errors = require('components/errors').factory;
 const treeUtils = require('components/utils').treeUtils;
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-
+const UserService = require('components/business/src/users/User');
 import type { StorageLayer } from 'components/storage';
 
 export type CustomAuthFunctionCallback = (err: any) => void;
@@ -93,18 +93,14 @@ class MethodContext {
   // 
   async retrieveUser(storage: StorageLayer) {
 
-    //TODO IEVA - join id and info requests
+    //TODO IEVA
     try {
-      this.user = {};
-      // get userId by his username
-      const userId = await storage.events.getUserIdByUsername(this.username);
-
-      if (!userId)
-        throw errors.unknownResource('user', this.username);
+      const userService = new UserService({ username: this.username, storage: storage.events });
       // get user details
-
-      this.user = await storage.events.getUserInfo({ user: {id: userId}, getAll: false});
-      this.user.id = userId;
+      this.user = await userService.getUserInfo(true);
+      //TODO IEVA ?
+      if (!this.user?.id)
+        throw errors.unknownResource('user', this.username);
     } catch (err) {
       throw errors.unknownResource('user', this.username);
     }

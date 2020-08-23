@@ -8,6 +8,7 @@ const _ = require('lodash');
 const Registration = require('components/business/src/auth/registration');
 const commonFns = require('./../helpers/commonFunctions');
 const methodsSchema = require('components/api-server/src/schema/authMethods');
+const UserService = require('components/business/src/users/User');
 
 /**
  * Auth API methods implementations.
@@ -46,8 +47,14 @@ module.exports = function (api, logging, storageLayer, servicesSettings, serverS
   async function checkUsername(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     result.reserved = false;
     try {
-      //const user = storage.
-      
+      const userService = new UserService({ storage: this.storageLayer.events });
+      const existingUser = await userService.checkUserFieldsUniqueness({ username: params.username});
+
+      if (existingUser?.content) {
+        result.reserved = true;
+        return next(errors.itemAlreadyExists('username', { username: params.username }));
+      }
+      next();
     } catch (error) {
       return next(errors.unexpectedError(error));
     }

@@ -23,7 +23,8 @@ const SystemStreamsSerializer = require('components/business/src/system-streams/
   ServiceRegister = require('components/business/src/auth/service_register'),
   Registration = require('components/business/src/auth/registration'),
   ErrorMessages = require('components/errors/src/ErrorMessages'),
-  ErrorIds = require('components/errors').ErrorIds;
+  ErrorIds = require('components/errors').ErrorIds,
+  UserService = require('components/business/src/users/User');
 
 const assert = require('assert');
 
@@ -942,6 +943,7 @@ module.exports = function (
       let i;
       let fileInfo;
       const filesKeys = Object.keys(files);
+      const userService = new UserService({ id: context.user.id, storage: userEventsStorage });
       for (i = 0; i < filesKeys.length; i++) {
         //saveFile
         fileInfo = files[filesKeys[i]];
@@ -956,7 +958,8 @@ module.exports = function (
         });
         // approximately update account storage size
         context.user.storageUsed.attachedFiles += fileInfo.size;
-        await userEventsStorage.updateUser({ userId: context.user.id, userParams: { attachedFiles: context.user.storageUsed.attachedFiles } });
+        
+        await userService.update({ attachedFiles: context.user.storageUsed.attachedFiles });
       }
       return attachments;
     } catch (err) {
@@ -1091,7 +1094,8 @@ module.exports = function (
         }
         context.user.storageUsed.attachedFiles -= getTotalAttachmentsSize(context.event);
         // TODO IEVA test
-        await userEventsStorage.updateUser({ userId: context.user.id, userParams: context.user.storageUsed });
+        const userService = new UserService({ id: context.user.id, storage: userEventsStorage });
+        await userService.update(context.user.storageUsed);
       }
     ], next);
   }
@@ -1147,7 +1151,8 @@ module.exports = function (
         // approximately update account storage size
         context.user.storageUsed.attachedFiles -= deletedAtt.size;
         // TODO IEVA validate
-        await userEventsStorage.updateUser({ userId: context.user.id, userParams: context.user.storageUsed });
+        const userService = new UserService({ id: context.user.id, storage: userEventsStorage });
+        await userService.update(context.user.storageUsed);
         notifications.eventsChanged(context.user);
         next();
       } catch (err) {

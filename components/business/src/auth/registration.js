@@ -21,6 +21,7 @@ const ServiceRegister = require('./service_register');
 const methodsSchema = require('components/api-server/src/schema/authMethods');
 var string = require('components/api-server/src/schema/helpers').string;
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
+const UserService = require('components/business/src/users/User');
 
 import type { MethodContext } from 'components/model';
 import type { ApiCallback } from 'components/api-server/src/API';
@@ -127,6 +128,7 @@ class Registration {
     }
 
     try {
+      const userService = new UserService({ storage: this.storageLayer.events });
       // Consume a pool user if available or use default creation
       // const user = await Registration.createUserOrConsumePool(params, context, params);
       /* TODO IEVA - do not understand what this part does here
@@ -138,7 +140,7 @@ class Registration {
       context.user = {
         username: params.username
       }
-      const user = await this.storageLayer.events.createUser(params);
+      const user = await userService.save(params);
       context.user = { ...context.user, ...user}
       context.user.host = { name: this.hostname };
 
@@ -300,38 +302,28 @@ class Registration {
    */
   async validateThatUserDoesNotExistInLocalDb (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
-      // check email in service-core
-      //TODO IEVA- here should be all unique fields also seems to be not tested scenario
-      const existingUser = await bluebird.fromCallback(
-        (cb) => this.storageLayer.events.findOne({},
-          {
-            $or: [{ $and: [{ streamIds: 'username' }, { content: params.username }] },
-            { $and: [{ streamIds: 'email' }, { content: params.email }] }]
-          },
-          null, cb)
-      );
-
-      // if email was already saved, it means that there were an error 
+      // TODO IEVA -verify this logic with Ilia, because there 
+      // could be additional unique fields
+      const userService = new UserService({ storage: this.storageLayer.events });
+      const existingUser = await userService.checkUserFieldsUniqueness(params);
+      // if any of unique fields were already saved, it means that there were an error 
       // saving in service register (above there is a check that email does not exist in
       // service register)
-      if (existingUser?.content) { // TODO IEVA is this check ok
+      if (existingUser?.content) {
 
         // skip all steps exept registrattion in service-register and welcome email
         context.skip = true;
 
         //append context with the same values that would be saved by createUser function
-        // TODO IEVA maybe worth it doing more dynamically
-        // get userId by his username
-        context.user = await this.storageLayer.events.getUserInfo({
-          user: { id: existingUser.userId },
-          getAll: true
-        });
+        const userService = new UserService({ id: existingUser.userId, storage: this.storageLayer.events });
+        context.user = await userService.getUserInfo(true, true);
 
         // set result as current username
         result.username = context.user.username;
         this.logger.error(`User with id ${existingUser.id} tried to register and application is skipping the user creation on service-core db`);
       }
     } catch (error) {
+      console.log(error,'error');
       return next(errors.unexpectedError(error));
     }
     next();

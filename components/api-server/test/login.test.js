@@ -68,7 +68,7 @@ describe('auth', function() {
               .post(path(authData.username))
               .set('Origin', trustedOrigin)
               .send(authData)
-              .end(function(err, res) {
+              .end(function (err, res) {
                 assert.strictEqual(res.statusCode, 200);
 
                 should.exist(res.body.token);

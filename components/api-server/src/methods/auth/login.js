@@ -6,12 +6,11 @@
  */
 var commonFns = require('components/api-server/src/methods/helpers/commonFunctions'),
     utils = require('components/utils'),
-    bluebird = require('bluebird'),
     encryption = utils.encryption,
     errors = require('components/errors').factory,
     methodsSchema = require('components/api-server/src/schema/authMethods'), 
     _ = require('lodash');
-
+const UserService = require('components/business/src/users/User');
 /**
  * Auth API methods implementations.
  *
@@ -42,8 +41,8 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
   }
 
   async function checkPassword (context, params, result, next) {
-    const userPass = await userEventsStorage.getUserPasswordHash(context.user.id);
-
+    const userService = new UserService({ id: context.user.id, storage: userEventsStorage });
+    const userPass = await userService.getUserPasswordHash();
     // TODO IEVA should I throw a different error
     if (userPass == null)
       throw errors.unknownResource('user', context.user.username);

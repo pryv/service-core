@@ -12,6 +12,7 @@ const helpers = require('components/api-server/test/helpers');
 const eventsStorage = helpers.dependencies.storage.user.events;
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('components/api-server/test/test-helpers');
+const UserService = require('components/business/src/users/User');
 
 describe('Events storage', () => {
   let server;
@@ -65,8 +66,8 @@ describe('Events storage', () => {
           password: charlatan.App.name(),
           email: charlatan.Internet.email(),
         });
-
-        const allUsers = await eventsStorage.findAllUsers();
+        const userService = new UserService({ storage: eventsStorage });
+        const allUsers = await userService.get();
         //console.log('Test failed because error was not thrown', allUsers, 'allUsers', username,'username');
         assert.isTrue(false);
       } catch (err) {

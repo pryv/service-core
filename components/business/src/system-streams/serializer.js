@@ -52,6 +52,16 @@ class SystemStreamsSerializer {
   }
 
   /**
+   * The same as getReadableAccountStreams (), just skips storageUsed stream because it is 
+   * a perrent and no events are created by default for it dirrectly
+   */
+  getReadableAccountStreamsForTests () {
+    let streams = getStreamsNames(this.accountStreamsSettings, readable);
+    delete streams.storageUsed;
+    return streams;
+  }
+
+  /**
    * Get only those streams that user is allowed to edit 
    */
   getEditableAccountStreams () {
@@ -65,6 +75,18 @@ class SystemStreamsSerializer {
    */
   getAllAccountStreams () {
     return getStreamsNames(this.accountStreamsSettings, allAccountStreams);
+  }
+  /**
+   * The same as getAllAccountStreams () but returnes only streams leaves (not parents)
+   */
+  getAllAccountStreamsLeaves () {
+    const flatStreamsList = treeUtils.flattenTreeWithoutParents(this.accountStreamsSettings);
+    let flatStreamsListObj = {};
+    let i;
+    for (i = 0; i < flatStreamsList.length; i++) {
+      flatStreamsListObj[flatStreamsList[i].id] = flatStreamsList[i]
+    }
+    return flatStreamsListObj;
   }
 
 /**
@@ -100,7 +122,6 @@ class SystemStreamsSerializer {
   getAccountStreamsIdsForbiddenForReading () {
     let allStreams = this.getAllAccountStreams();
     let readableStreams = this.getReadableAccountStreams();
-
     const notReadableStreamsIds = _.difference(_.keys(allStreams), _.keys(readableStreams));
     return notReadableStreamsIds;
   }
@@ -181,7 +202,7 @@ function formEventsTree (streams:object, events: array, user:object):object {
     const streamName = streams[streamIndex].id;
 
     // if stream has children recursivelly call the same function
-    if (typeof streams[streamIndex].children !== "undefined") {
+    if (typeof streams[streamIndex].children !== 'undefined') {
       user[streamName] = {};
       user[streamName] = formEventsTree(streams[streamIndex].children, events, user[streamName])
     }

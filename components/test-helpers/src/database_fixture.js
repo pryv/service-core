@@ -19,6 +19,7 @@ const storage = require('components/storage');
 
 const Webhook = require("components/business").webhooks.Webhook;
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
+const UserService = require('components/business/src/users/User');
 
 class Context {
   databaseConn: storage.Database; 
@@ -267,7 +268,8 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
   async createUser (): Object<mixed> {
     const db = this.db;
     const attributes = this.attrs;
-    await db.events.createUser(attributes);
+    const userService = new UserService({ storage: db.events });
+    await userService.save(attributes);
     return this.attrs;
   }
 

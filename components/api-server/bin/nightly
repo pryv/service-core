@@ -3,9 +3,9 @@
 // Binary for nightly tasks setup. 
 
 const Settings = require('../src/settings');
-const bluebird = require('bluebird');
 const Application = require('../src/application');
 let logger;
+const UserService = require('components/business/src/users/User');
 
 (async () => {
   // Load settings asynchronously because we have to fetch
@@ -59,7 +59,8 @@ async function runNightlyTasks(storageLayer, storageSize) {
   logger.info('Starting update of storage size');
 
   // Retrieve all existing users
-  const users = await storageLayer.events.findAllUsers();
+  const userService = new UserService({ storage: storageLayer.events });
+  const users = await userService.get();
 
   // Compute storage size used by each user
   for (const user of users) {

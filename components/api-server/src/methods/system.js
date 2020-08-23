@@ -11,6 +11,7 @@ const methodsSchema = require('../schema/systemMethods');
 const string = require('./helpers/string');
 const _ = require('lodash');
 const bluebird = require('bluebird');
+const UserService = require('components/business/src/users/User');
 
 /**
  * @param systemAPI
@@ -40,6 +41,7 @@ module.exports = function (
 
   /**
  * Check in service-register if email already exists
+ * TODO IEVA
  * @param {*} context 
  * @param {*} params 
  * @param {*} result 
@@ -110,19 +112,10 @@ module.exports = function (
 
   async function retrieveUser(context, params, result, next) {
     try {
-      // get userId by his username
-      const userId = await storageLayer.events.getUserIdByUsername(params.username);
-
-      if (!userId) {
-        return next(errors.unknownResource('user', params.username));
-      }
-      context.user = await storageLayer.events.getUserInfo({
-        user: { id: userId },
-        getAll: false
-      });
-      context.user.id = userId;
-
-      if (! context.user) {
+      const userService = new UserService({ username: params.username, storage: storageLayer.events });
+      context.user = await userService.getUserInfo(true);
+      //TODO IEVA -do I handle this now?
+      if (! context.user?.id) {
         return next(errors.unknownResource('user', params.username));
       }
       next();
