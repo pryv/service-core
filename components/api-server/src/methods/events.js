@@ -522,7 +522,7 @@ module.exports = function (
       // if user tries to change streamId of systemStreams
       validationErrors.push(errors.DeniedMultipleAccountStreams(fieldName));
     }
-
+    
     return {
       context: contextContent,
       removeActiveEvents: removeActiveEvents,
@@ -657,6 +657,19 @@ module.exports = function (
 
   }
 
+  /**
+   * Remove event properties that enforces uniqueness
+   * @param object event 
+   */
+  function removeUniqueFields (event) {
+    Object.keys(event).forEach(key => {
+      if (key.match('__unique')) {
+        delete event[key];
+      }
+    });
+    return event;
+  }
+
   function generateLogIfNeeded(context, params, result, next) {
     if (!auditSettings.forceKeepHistory) {
       return next();
@@ -664,12 +677,12 @@ module.exports = function (
 
     context.oldContent = _.extend(context.oldContent, {headId: context.content.id});
     delete context.oldContent.id;
+    context.oldContent = removeUniqueFields(context.oldContent);
 
     userEventsStorage.insertOne(context.user, context.oldContent, function (err) {
       if (err) {
         return next(errors.unexpectedError(err));
       }
-      delete context.oldContent;
       next();
     });
   }
@@ -717,6 +730,7 @@ module.exports = function (
         handleEventsWithActiveStreamId(context.user, updatedEvent.streamId, updatedEvent.id);
       }
 
+      updatedEvent = removeUniqueFields(updatedEvent);
       result.event = updatedEvent;
       setFileReadToken(context.access, result.event);
 
@@ -789,7 +803,6 @@ module.exports = function (
   }
 
   function normalizeStreamIdAndStreamIds(context, params, result, next) {
-
     const event = isEventsUpdateMethod() ? params.update : params;
 
     // forbid providing both streamId and streamIds
@@ -1002,7 +1015,7 @@ module.exports = function (
     let updatedEvent;
     // if needed remove field that enforces uniqueness
     const existingUniqueProperty = Object.keys(event)
-      .find(function (item) { return item.includes("__unique") });
+      .find(function (item) { return item.includes('__unique') });
 
     if (typeof existingUniqueProperty === 'string' && existingUniqueProperty.length > 0) {
       try {

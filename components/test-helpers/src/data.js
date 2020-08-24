@@ -87,8 +87,6 @@ const events = exports.events = require('./data/events');
 exports.resetEvents = function (done, user) {
   // deleteData(storage.user.events, user || defaultUser, events, done);
   user = user || defaultUser;
-  //TODO IEVA - make stremIds dynamic
-
   const systemStreamsSerializerObj = new SystemStreamsSerializer();
   const allAccountStreamIds = Object.keys(systemStreamsSerializerObj.getAllAccountStreams());
 

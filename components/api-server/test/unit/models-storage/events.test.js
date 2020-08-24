@@ -59,19 +59,17 @@ describe('Events storage', () => {
 
     it('[7C22] must throw a duplicate error when username field is not unique', async () => {
       try {
+        const userService = new UserService({ storage: eventsStorage });
         const id = charlatan.App.name();
-        await eventsStorage.createUser({
+        await userService.save({
           id: id,
           username: username,
           password: charlatan.App.name(),
           email: charlatan.Internet.email(),
         });
-        const userService = new UserService({ storage: eventsStorage });
-        const allUsers = await userService.get();
-        //console.log('Test failed because error was not thrown', allUsers, 'allUsers', username,'username');
+
         assert.isTrue(false);
       } catch (err) {
-        console.log(err,'err');
         assert.isNotNull(err);
         // FLOW: we ensure that err contains the isDuplicate boolean with assert
         const isDuplicate = err.isDuplicate;
@@ -86,7 +84,8 @@ describe('Events storage', () => {
 
     it('[6CFE] must throw a duplicate error when email field is not unique', async () => {
       try {
-        await eventsStorage.createUser({
+        const userService = new UserService({ storage: eventsStorage });
+        await userService.save({
           id: charlatan.App.name(),
           email: email
         });

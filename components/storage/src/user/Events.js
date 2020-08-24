@@ -28,6 +28,7 @@ function Events (database) {
   // TODO IEVA - maybe I should retrieve all and not only account streams here?
   // get streams ids of account streams from the config
   this.systemStreamsFlatList = systemStreamsSerializer.getAllAccountStreams();
+  this.uniqueStreamIdsList = systemStreamsSerializer.getUniqueAccountStreamsIds();
 
   Events.super_.call(this, database);
 
@@ -120,11 +121,11 @@ function getDbIndexes (systemStreamsFlatList) {
       if (systemStreamsFlatList[streamId].isUnique === true) {
         //console.log(streamId,'streamId');
         indexes.push({
-          index: { [streamId + '__unique']: 1 },
+          index: { [`${streamId}__unique`]: 1 },
           options: {
             unique: true,
             partialFilterExpression: {
-              [streamId + '__unique']: { $exists: true },
+              [`${streamId}__unique`]: { $exists: true },
               streamIds: 'unique'
             }
           }
@@ -238,6 +239,10 @@ Events.prototype.minimizeEventsHistory = function (user, headId, callback) {
       createdBy: 1,
     },
   };
+  this.uniqueStreamIdsList.forEach(uniqueKeys => {
+    update['$unset'][`${uniqueKeys}__unique`] = 1;
+  });
+
   this.database.updateMany(
     this.getCollectionInfo(user),
     this.applyQueryToDB({ headId: headId }),
@@ -294,6 +299,10 @@ Events.prototype.delete = function (user, query, deletionMode, callback) {
       };
       break;
   }
+  this.uniqueStreamIdsList.forEach(uniqueKeys => {
+    update['$unset'][`${uniqueKeys}__unique`] = 1;
+  });
+
   this.database.updateMany(
     this.getCollectionInfo(user),
     this.applyQueryToDB(query),
