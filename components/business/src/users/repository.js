@@ -334,7 +334,7 @@ class Repository {
   async updateOne (userId: string, update: {}): Promise<void> {
     try {
       // get streams ids from the config that should be retrieved
-      let userAccountStreamsIds = (new SystemStreamsSerializer()).getAllAccountStreams();
+      let userAccountStreamsIds = Object.keys((new SystemStreamsSerializer()).getAllAccountStreams());
 
       // change password into hash if it exists
       if (update.password && !update.passwordHash) {
@@ -343,15 +343,17 @@ class Repository {
       delete update.password;
 
       // update all account streams and do not allow additional properties
-      // TODO IEVA -await?
-      Object.keys(userAccountStreamsIds).map(streamId => {
+      let i;
+      let streamId;
+      for (i = 0; i < userAccountStreamsIds.length; i++){
+        streamId = userAccountStreamsIds[i];
         if (update[streamId]) {
-          return bluebird.fromCallback(cb => this.storage.updateOne(
+          await bluebird.fromCallback(cb => this.storage.updateOne(
             { id: userId, streamIds: SystemStreamsSerializer.options.STREAM_ID_ACTIVE },
             { streamIds: { $in: [streamId] } },
             { content: update[streamId] }, cb));
         }
-      });
+      }
       return true;//TODO IEVA??
     } catch (error) {
       throw error;

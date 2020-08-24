@@ -147,10 +147,14 @@ function load(config: Config): Config {
     config: Config,
     additionalFields
   ): Config {
-    const keys: Array<string> = Object.keys(additionalFields);
     let systemStreamsConfig = config.get('systemStreams:account');
-    keys.forEach(k => {
-      systemStreamsConfig.push(_.extend({}, defaultValuesForFields, additionalFields[k]));
+    let exists;
+    additionalFields.forEach(additionalField => {
+      // do not allow override default streams
+      exists = systemStreamsConfig.filter(streamConfig => streamConfig.id == additionalField.id);
+      if (exists.length == 0){
+        systemStreamsConfig.push(_.extend({}, defaultValuesForFields, additionalField));
+      }
     });
     config.set(
       'systemStreams:account',

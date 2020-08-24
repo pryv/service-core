@@ -103,8 +103,7 @@ class Server {
       application.api, 
       application.logging, 
       application.storageLayer, 
-      application.settings.get('server').obj(),
-      application.settings.get('systemStreams').obj());
+      application.settings.get('server').obj());
     
     require('./methods/utility')(application.api, application.logging, application.storageLayer);
 

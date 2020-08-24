@@ -92,8 +92,6 @@ class MethodContext {
   // Load the user identified by `this.username`, storing it in `this.user`.
   // 
   async retrieveUser(storage: StorageLayer) {
-
-    //TODO IEVA
     try {
       const userService = new UserService({ username: this.username, storage: storage.events });
       // get user details

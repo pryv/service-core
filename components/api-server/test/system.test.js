@@ -29,6 +29,7 @@ const encryption = require('components/utils').encryption;
 const storage = helpers.dependencies.storage.user.events;
 const testData = helpers.data;
 const UserService = require('components/business/src/users/User');
+const charlatan = require('charlatan');
 
 require('date-utils');
 
@@ -259,7 +260,8 @@ describe('system (ex-register)', function () {
             username: testData.users[0].username,
             passwordHash: '$-1s-b4d-f0r-U',
             email: 'roudoudou@choupinou.ch',
-            language: 'fr'
+            language: 'fr',
+            insurancenumber: charlatan.Number.number(4)//TODO IEVA
           };
           try{
             const res = await bluebird.fromCallback(cb => post(data, cb));

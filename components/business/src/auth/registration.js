@@ -135,7 +135,6 @@ class Registration {
        const updatedUser = await bluebird.fromCallback(
          (cb) => context.usersStorage.findOneAndUpdate({ username: { $regex: context.POOL_REGEX } }, params, cb));      
        if (updatedUser === null) {
-         throw Error("Bad, really bad");//TODO IEVA
        }*/
       context.user = {
         username: params.username
@@ -388,18 +387,24 @@ class Registration {
 
   /**
    * Do minimal manipulation with data like username convertion to lowercase
-   * TODO IEVA -email to lowercase - why?
    * @param {*} context 
    * @param {*} params 
    * @param {*} result 
    * @param {*} next 
    */
-  async prepareUserDataForSaving (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    params.username = params.username.toLowerCase();
-    params.email = params.email.toLowerCase();
+  async prepareUserData (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    if (params.username && typeof params.username === 'string'){
+      params.username = params.username.toLowerCase();
+    }
+    if (params.email && typeof params.email === 'string') {
+      params.email = params.email.toLowerCase();
+    }
+    next();
+  }
 
+  async prepareUserDataForSaving (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     // change parameter name
-    if (params.languageCode){
+    if (params.languageCode) {
       params.language = params.languageCode;
     }
     delete params.languageCode;

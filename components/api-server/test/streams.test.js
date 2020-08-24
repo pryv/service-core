@@ -48,7 +48,7 @@ describe('streams', function () {
 
   before(function (done) {
     async.series([
-      testData.resetUsers,
+      testData.resetUsersWithAdditionalProperties,
       testData.resetAccesses,
       server.ensureStarted.bind(server, helpers.dependencies.settings),
       function (stepDone) {
@@ -834,7 +834,7 @@ describe('streams', function () {
 
             // validate account streams events
             const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
-            //TODO IEVA validation.validateAccountEvents(actualAccountStreamsEvents);
+            validation.validateAccountEvents(actualAccountStreamsEvents);
 
             deletedEvents.forEach(function (e) {
               const actual = _.find(events, {id: e.id});

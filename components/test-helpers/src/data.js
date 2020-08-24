@@ -20,6 +20,7 @@ const rimraf = require('rimraf');
 const _ = require('lodash');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 const UserService = require('components/business/src/users/User');
+const charlatan = require('charlatan');
 
 // users
 const users = exports.users = require('./data/users');
@@ -34,7 +35,26 @@ exports.resetUsers = async () => {
   let i;
   try{
     for (i = 0; i < users.length; i++){
-      const user = Object.assign({}, users[i]);
+      let user = Object.assign({}, users[i]);
+      await userService.save(user);
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+exports.resetUsersWithAdditionalProperties = async () => {
+  await bluebird.fromCallback(cb => storage.user.events.database.deleteMany(
+    { name: 'events' }, {}, cb));
+
+  const userService = new UserService({ storage: storage.user.events });
+
+  let i;
+  try {
+    for (i = 0; i < users.length; i++) {
+      let user = Object.assign({}, users[i]);
+      user.insurancenumber = charlatan.Number.number(3);
+      user.phoneNumber = charlatan.Number.number(3);
       await userService.save(user);
     }
   } catch (error) {
