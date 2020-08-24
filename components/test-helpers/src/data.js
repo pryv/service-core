@@ -87,7 +87,7 @@ exports.resetEvents = function (done, user) {
   //TODO IEVA - make stremIds dynamic
 
   const systemStreamsSerializerObj = new SystemStreamsSerializer();
-  const allAccountStreamIds = Objec.keys(systemStreamsSerializerObj.getAllAccountStreams());
+  const allAccountStreamIds = Object.keys(systemStreamsSerializerObj.getAllAccountStreams());
 
   async.series([
     storage.user.events.removeMany.bind(storage.user.events, 
