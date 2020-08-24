@@ -14,7 +14,7 @@ const defaultValuesForFields = {
   isUnique: false, // if true will be sent to service-register and enforced uniqness on mongodb
   isShown: false, // if true, will be shown for the users
   isEditable: false, // if true, user will be allowed to edit it
-  type: 'string/pryv', // event type
+  type: 'string/pryv', // event type TODO IEVA - should it be so?
   isRequiredInValidation: false // if true, the field will be required in the validation
 };
 
@@ -79,6 +79,8 @@ function load(config: Config): Config {
         }),
         {
           id: 'storageUsed',
+          isShown: true,
+          name: 'Storage used',
           children: [
             _.extend({}, defaultValuesForFields, {
               isShown: true,

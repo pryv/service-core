@@ -110,7 +110,7 @@ function checkJSON(response, schema) {
  * @param data
  * @param {Object} schema
  */
-function checkSchema(data, schema) {
+function checkSchema (data, schema) {
   validator.validate(data, schema).should.equal(true,
     util.inspect(validator.getLastErrors(), {depth: 5}));
 }
@@ -374,7 +374,7 @@ exports.removeAccountStreamsEvents = function (items) {
 };
 
 exports.separateAccountStreamsAndOtherEvents = function (items) {
-  const readableAccountStreams = ['username', 'email', 'language', 'attachedFiles', 'dbDocuments', 'insurancenumber', 'phoneNumber', 'passwordHash'];
+  const readableAccountStreams = ['username', 'email', 'language', 'attachedFiles', 'dbDocuments', 'insurancenumber', 'phoneNumber', 'passwordHash', 'invitationToken', 'appId', 'referer'];
   const normalEvents = items.filter(function (e) {
     return (!e.streamIds) || !(e.streamIds.some(streamId => readableAccountStreams.indexOf(streamId) >= 0));
   });
@@ -409,7 +409,7 @@ exports.removeTrackingProperties = function (items) {
  */
 exports.validateAccountEvents = function (actualAccountEvents) {
   // get streams ids from the config that should be retrieved
-  let expectedAccountStreams = (new SystemStreamsSerializer()).getReadableAccountStreams();
+  let expectedAccountStreams = (new SystemStreamsSerializer()).getReadableAccountStreamsForTests();
 
   // iterate through expected account events and check that they exists in actual
   // account events (skip nested streams parents)

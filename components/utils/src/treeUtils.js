@@ -62,6 +62,30 @@ function verifyFlatItem(item) {
   }
 }
 
+exports.flattenTreeWithoutParents = function (array) {
+  if (!_.isArray(array)) {
+    throw new Error('Invalid argument: expected an array');
+  }
+
+  var result = [];
+  flattenRecursiveWithoutParents(array, null, result);
+  return result;
+};
+
+function flattenRecursiveWithoutParents (originalArray, parentId, resultArray) {
+  originalArray.forEach(function (item) {
+    var clone = _.clone(item);
+
+    clone.parentId = parentId;
+    if (clone.hasOwnProperty('children')) {
+      flattenRecursive(clone.children, clone.id, resultArray);
+      delete clone.children;
+    } else {
+      resultArray.push(clone);
+    }
+  });
+}
+
 exports.flattenTree = function (array) {
   if (! _.isArray(array)) {
     throw new Error('Invalid argument: expected an array');

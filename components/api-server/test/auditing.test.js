@@ -84,6 +84,8 @@ describe('Auditing', function () {
       var queryParams = {limit: 100};
 
       request.get(pathToEvent(null)).query(queryParams).end(function (res) {
+        const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
+        res.body.events = separatedEvents.events;
         validation.check(res, {
           status: 200,
           schema: eventsMethodsSchema.get.result

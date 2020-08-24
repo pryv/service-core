@@ -282,6 +282,8 @@ describe('events', function () {
       };
       
       request.get(basePath).query(params).end(function (res) {
+        const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
+        res.body.events = separatedEvents.events;
         validation.check(res, {
           status: 200,
           schema: methodsSchema.get.result,
@@ -2010,7 +2012,7 @@ describe('events', function () {
               try{
                 const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);
                 events = separatedEvents.events;
-                const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
+                //const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
                 //TODO IEVA validation.validateAccountEvents(actualAccountStreamsEvents);
 
                 events.length.should.eql(testData.events.length, 'events');

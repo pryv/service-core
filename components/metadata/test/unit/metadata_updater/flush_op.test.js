@@ -14,6 +14,7 @@ const chai = require('chai');
 const assert = chai.assert; 
 const cuid = require('cuid');
 const bluebird = require('bluebird');
+const charlatan = require('charlatan');
 
 const storage = require('components/storage');
 const { databaseFixture } = require('components/test-helpers');
@@ -139,10 +140,11 @@ describe('UserRepository', () => {
 
   // Construct a simple database fixture containing an event to update
   let userId;
+  let username;
   before(() => {
     userId = cuid(); 
-    
-    return pryv.user('user_name', { id: userId });
+    username = charlatan.App.name();
+    return pryv.user(username, { id: userId });
   });
 
   let repository: UserRepository;
@@ -152,19 +154,19 @@ describe('UserRepository', () => {
   
   describe('#resolve(name)', () => {
     it('[80TC] returns the user id', async () => {
-      const user = await repository.resolve('user_name'); 
+      const user = await repository.resolve(username); 
       assert.strictEqual(user.id, userId);
     });
     it('[8K9H] caches the user information for a while', async () => {
       // Prime the cache
-      await repository.resolve('user_name'); 
+      await repository.resolve(username); 
       
       // Disable the database access for now; results can only come from the
       // cache. 
       // FLOW (These are not the robots you're looking for).
       repository.db = null; 
       
-      const user = await repository.resolve('user_name'); 
+      const user = await repository.resolve(username); 
       assert.strictEqual(user.id, userId);
     });
   });

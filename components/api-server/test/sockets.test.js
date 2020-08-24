@@ -200,20 +200,20 @@ describe('Socket.IO', function () {
         modifiedSince: -10000,
         limit: 1000
       };
+
       ioCons.con.emit('events.get', params, async function (err, result) {
+        const separatedEvents = validation.separateAccountStreamsAndOtherEvents(result.events);
+        result.events = separatedEvents.events;
         validation.checkSchema(result, eventsMethodsSchema.get.result);
         validation.sanitizeEvents(result.events);
-    
         const testEvents = _.clone(testData.events);
         const chronologicalEvents = _.sortBy(testEvents, 'time');
         const expectedEvents = validation.removeDeletionsAndHistory(chronologicalEvents);
-        
+
         // lets separate core events from all other events and validate them separatelly
-        const separatedEvents = validation.separateAccountStreamsAndOtherEvents(result.events);
-        result.events = separatedEvents.events;
 
         // validate account streams events
-        const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
+        //const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
         // TODO IEVA validation.validateAccountEvents(actualAccountStreamsEvents);
         
         result.events.should.eql(expectedEvents);

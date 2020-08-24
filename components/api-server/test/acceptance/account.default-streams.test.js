@@ -239,7 +239,6 @@ describe("[841C] Account with default-streams", function () {
         before(async function () {
           const user2 = await createUser();
           await createUser();
-          
           const settings = _.cloneDeep(helpers.dependencies.settings);
           scope = nock(settings.services.register.url)
           scope.post(`/users/${user.attrs.id}/change-email`)

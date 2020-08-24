@@ -17,6 +17,7 @@ const debug = require('debug')('store_data.test');
 const bluebird = require('bluebird');
 const lodash = require('lodash');
 const awaiting = require('awaiting');
+const UserService = require('components/business/src/users/User');
 
 const { 
   spawnContext, produceMongoConnection, 
@@ -61,7 +62,10 @@ describe('Storing data in a HF series', function() {
     let server; 
     before(async () => {
       debug('spawning');
-      server = await spawnContext.spawn(); 
+      server = await spawnContext.spawn({
+        openSource: {
+          isActive: false
+        }}); 
     });
     after(() => {
       server.stop(); 
@@ -240,6 +244,9 @@ describe('Storing data in a HF series', function() {
       debug('spawning');
       hfServer = await spawnContext.spawn();
       apiServer = await apiServerContext.spawn({
+        openSource: {
+          isActive: false
+        },
         reporting: {
           licenseName: 'pryv.io-test-license',
           templateVersion: '1.0.0',
@@ -287,10 +294,8 @@ describe('Storing data in a HF series', function() {
         { streamIds: [parentStreamId], time: Date.now() / 1000 },
         attrs
       );
-
-      const user = await bluebird.fromCallback(
-        cb => storageLayer.users.findOne(userQuery, null, cb));
-
+      const userService = new UserService({ id: userId, storage: storageLayer.events });
+      const user = await userService.getUserInfo(true);
       assert.isNotNull(user);
 
       const event = await bluebird.fromCallback(
@@ -328,13 +333,12 @@ describe('Storing data in a HF series', function() {
     }
 
 
-    function storeData(eventId, data): any {
+    async function storeData(eventId, data): any {
       const request = hfServer.request();
-      const response = request
+      const response = await request
         .post(`/${userId}/events/${eventId}/series`)
         .set('authorization', accessToken)
         .send(data);
-
       return response;
     }
 
@@ -788,8 +792,8 @@ describe('Storing data in a HF series', function() {
           attrs
         );
 
-        const user = await bluebird.fromCallback(
-          cb => storageLayer.users.findOne(userQuery, null, cb));
+        const userService = new UserService({ id: userId, storage: storageLayer.events });
+        const user = await userService.getUserInfo(true);
         
         assert.isNotNull(user);
           

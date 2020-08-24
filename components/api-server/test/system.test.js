@@ -17,6 +17,8 @@ const url = require('url');
 const _ = require('lodash');
 const assert = require('chai').assert; 
 const bluebird = require('bluebird');
+const os = require('os');
+const fs = require('fs');
 
 const helpers = require('./helpers');
 const ErrorIds = require('components/errors').ErrorIds;
@@ -26,9 +28,7 @@ const validation = helpers.validation;
 const encryption = require('components/utils').encryption;
 const storage = helpers.dependencies.storage.user.events;
 const testData = helpers.data;
-
-const os = require('os');
-const fs = require('fs');
+const UserService = require('components/business/src/users/User');
 
 require('date-utils');
 
@@ -55,7 +55,7 @@ describe('system (ex-register)', function () {
     function path() {
       return basePath() + '/create-user';
     }
-    function post(data, callback) {
+    function post (data, callback) {
       return request.post(path())
         .set('authorization', helpers.dependencies.settings.auth.adminAccessKey)
         .send(data)
@@ -100,9 +100,9 @@ describe('system (ex-register)', function () {
         });
         await (new Promise(server.ensureStarted.bind(server, settings)));
 
-        const originalUsers = await storage.findAllUsers();
+        const userService = new UserService({ storage: storage });
+        const originalUsers = await userService.get();
         originalCount = originalUsers.length;
-
         // create user
         const res = await bluebird.fromCallback(cb => post(newUserData, cb));
         validation.check(res, {
@@ -113,7 +113,7 @@ describe('system (ex-register)', function () {
         mailSent.should.eql(true);
 
         // getUpdatedUsers
-        const users = await storage.findAllUsers();
+        const users = await userService.get();
         users.length.should.eql(originalCount + 1, 'users');
 
         var expected = _.cloneDeep(newUserData);
@@ -196,7 +196,8 @@ describe('system (ex-register)', function () {
 
           await (new Promise(server.ensureStarted.bind(server, settings)));
 
-          originalUsers = await storage.findAllUsers();
+          const userService = new UserService({ storage: storage });
+          originalUsers = await userService.get();
           originalCount = originalUsers.length;
 
           // create user
@@ -215,7 +216,7 @@ describe('system (ex-register)', function () {
           createdUserId = res.body.id;
 
           // getUpdatedUsers
-          const users = await storage.findAllUsers();
+          const users = await userService.get();
           users.length.should.eql(originalCount, 'users');
           should.not.exist(_.find(users, { id: createdUserId }));
         });

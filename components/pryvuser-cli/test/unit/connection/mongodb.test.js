@@ -173,7 +173,7 @@ describe('Connection/MongoDB', () => {
   
 });
 
-async function assertIsEmpty(storage, userId) {
+async function assertIsEmpty (storage, userId) {
   const items = await bluebird.fromCallback(cb =>
     storage.find({ id: userId }, {}, {}, cb)
   );
