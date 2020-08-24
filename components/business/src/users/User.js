@@ -71,8 +71,14 @@ class User {
     if (typeof shouldReturnUserId === 'undefined') {
       shouldReturnUserId = false;
     }
-    try{
+    // if user is not found, as before , just return null
+    try {
       await this._checkForUserId();
+    } catch (err) {
+      return null;
+    }
+
+    try{
       let user = await this.repository.getById({ id: this.id }, shouldReturnAllInfo);
       if (user && shouldReturnUserId === true) {
         user.id = this.id;
@@ -87,7 +93,7 @@ class User {
     // get userId if only username was used to initialize the class
     await this.getUserIdByUsername();
     if (!this.id) {
-      throw new Error('Id is necessary to get user info');
+      throw new Error('No such user');
     }
   }
 
@@ -112,6 +118,7 @@ class User {
 
   async delete (): Promise<void> {
     // TODO IEVA left for implementation with user deletion feature
+    return await this.repository.deleteMany(this.id);
   }
 
   async getUserPasswordHash (): Promise<void> {

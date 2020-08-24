@@ -343,6 +343,7 @@ class Repository {
       delete update.password;
 
       // update all account streams and do not allow additional properties
+      // TODO IEVA -await?
       Object.keys(userAccountStreamsIds).map(streamId => {
         if (update[streamId]) {
           return bluebird.fromCallback(cb => this.storage.updateOne(
@@ -358,10 +359,16 @@ class Repository {
   }
 
   /**
-   * Deletes a webhook for a user, given the webhook's id
+   * Deletes a user by id
+   * TODO IEVA - not functioning yet so commented
    */
-  async deleteOne (user: {}, webhookId: string): Promise<void> {
-
+  async deleteMany (userId: string): Promise<void> {
+    /*
+    let systemStreamsSerializer = new SystemStreamsSerializer();
+    const userAccountStreamsIds = Object.keys(systemStreamsSerializer.getAllAccountStreams());
+    await bluebird.fromCallback(cb => this.storage.database.deleteMany(
+      this.storage.getCollectionInfo({ id: userId }), { streamIds: { $in: userAccountStreamsIds}}, cb));
+  */
   }
 
   /**

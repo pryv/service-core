@@ -280,6 +280,9 @@ Events.prototype.delete = function (user, query, deletionMode, callback) {
         modified: 1,
         modifiedBy: 1,
       };
+      this.uniqueStreamIdsList.forEach(uniqueKeys => {
+        update['$unset'][`${uniqueKeys}__unique`] = 1;
+      });
       break;
     case 'keep-authors':
       update.$unset = {
@@ -297,11 +300,11 @@ Events.prototype.delete = function (user, query, deletionMode, callback) {
         created: 1,
         createdBy: 1,
       };
+      this.uniqueStreamIdsList.forEach(uniqueKeys => {
+        update['$unset'][`${uniqueKeys}__unique`] = 1;
+      });
       break;
   }
-  this.uniqueStreamIdsList.forEach(uniqueKeys => {
-    update['$unset'][`${uniqueKeys}__unique`] = 1;
-  });
 
   this.database.updateMany(
     this.getCollectionInfo(user),
