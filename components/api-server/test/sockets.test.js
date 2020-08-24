@@ -246,7 +246,8 @@ describe('Socket.IO', function () {
     });
     it('[O3SW] must properly route method call messages for streams and return the results', function (done) {
       ioCons.con = connect(namespace, {auth: token});
-      ioCons.con.emit('streams.get', {state: 'all'}, function (err, result) {
+      ioCons.con.emit('streams.get', { state: 'all' }, function (err, result) {
+        result.streams = validation.removeAccountStreams(result.streams);
         validation.checkSchema(result, streamsMethodsSchema.get.result);
         result.streams.should.eql(validation.removeDeletions(testData.streams));
         done();

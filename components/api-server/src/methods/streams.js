@@ -15,6 +15,7 @@ var errors = require('components/errors').factory,
   utils = require('components/utils'),
   treeUtils = utils.treeUtils,
   _ = require('lodash');
+const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
 /**
  * Event streams API methods implementation.
@@ -55,6 +56,9 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     userStreamsStorage.find(context.user, {}, null, function (err, streams) {
 
       if (err) { return next(errors.unexpectedError(err)); }
+
+      const virtualStreams = (new SystemStreamsSerializer()).getVirtualStreamsList();
+      streams = streams.concat(virtualStreams);
 
       if (params.parentId) {
         var parent = treeUtils.findById(streams, params.parentId);
@@ -108,6 +112,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   // CREATION
 
   api.register('streams.create',
+    removeAccountStreamsFromContext,
     commonFns.getParamsValidation(methodsSchema.create.params),
     applyDefaultsForCreation,
     applyPrerequisitesForCreation,
@@ -174,10 +179,31 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   // UPDATE
 
   api.register('streams.update',
+    removeAccountStreamsFromContext,
     commonFns.getParamsValidation(methodsSchema.update.params),
     commonFns.catchForbiddenUpdate(streamSchema('update'), updatesSettings.ignoreProtectedFields, logger),
     applyPrerequisitesForUpdate,
     updateStream);
+
+  /**
+   * Remove account streams, maybe later all virtual streams from the context
+   * so that it would be not allowed to make update/delete actions with
+   * these streams 
+   * 
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  function removeAccountStreamsFromContext (context, params, result, next) {
+    var i = context.streams.length
+    while (i--) {
+      if (context.streams[i].id && context.streams[i].id === 'account') {
+        context.streams.splice(i, 1);
+      }
+    }
+    next();
+  }
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
     // check stream
@@ -234,6 +260,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   // DELETION
 
   api.register('streams.delete',
+    removeAccountStreamsFromContext,
     commonFns.getParamsValidation(methodsSchema.del.params),
     verifyStreamExistenceAndPermissions,
     deleteStream);

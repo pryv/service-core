@@ -74,6 +74,7 @@ describe('streams', function () {
         // manually filter out trashed items
         var expected = treeUtils.filterTree(validation.removeDeletionsAndHistory(testData.streams),
           false, function (s) { return !s.trashed; });
+        res.body.streams = validation.removeAccountStreams(res.body.streams);
         validation.check(res, {
           status: 200,
           schema: methodsSchema.get.result,
@@ -83,7 +84,8 @@ describe('streams', function () {
     });
 
     it('[DPWG] must return all streams (trashed or not) when requested', function (done) {
-      request.get(basePath).query({state: 'all'}).end(function (res) {
+      request.get(basePath).query({ state: 'all' }).end(function (res) {
+        res.body.streams = validation.removeAccountStreams(res.body.streams);
         validation.check(res, {
           status: 200,
           schema: methodsSchema.get.result,
@@ -95,6 +97,7 @@ describe('streams', function () {
     it('[RDD5] must include stream deletions (since the given time) when requested', function (done) {
       var params = {includeDeletionsSince: timestamp.now('-45m')};
       request.get(basePath).query(params).end(function (res) {
+        res.body.streams = validation.removeAccountStreams(res.body.streams);
         validation.check(res, {
           status: 200,
           schema: methodsSchema.get.result
@@ -107,6 +110,7 @@ describe('streams', function () {
     it('[T8AM] must include stream deletions even when the given time is 0', function (done) {
       var params = {includeDeletionsSince: 0};
       request.get(basePath).query(params).end(function (res) {
+        res.body.streams = validation.removeAccountStreams(res.body.streams);
         validation.check(res, {
           status: 200,
           schema: methodsSchema.get.result

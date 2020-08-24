@@ -355,14 +355,16 @@ describe('Access permissions', function () {
 
     it('[NJ1A] must allow access to all streams when no specific stream permissions are defined',
         function (done) {
-      request.get(basePath, token(2)).query({state: 'all'}).end(function (res) {
-        res.body.streams.should.eql(validation.removeDeletions(testData.streams));
-        done();
+          request.get(basePath, token(2)).query({ state: 'all' }).end(function (res) {
+            res.body.streams = validation.removeAccountStreams(res.body.streams);
+            res.body.streams.should.eql(validation.removeDeletions(testData.streams));
+            done();
       });
     });
 
     it('[ZGK0] must allow access to all streams when only tag permissions are defined', function (done) {
       request.get(basePath, token(5)).query({state: 'all'}).end(function (res) {
+        res.body.streams = validation.removeAccountStreams(res.body.streams);
         res.body.streams.should.eql(validation.removeDeletionsAndHistory(testData.streams));
         done();
       });

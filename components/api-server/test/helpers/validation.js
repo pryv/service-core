@@ -383,6 +383,17 @@ exports.separateAccountStreamsAndOtherEvents = function (items) {
   });
   return { events: normalEvents, accountStreamsEvents: accountStreamsEvents }
 }
+
+exports.removeAccountStreams = function (streams) {
+  var i = streams.length
+  while (i--) {
+    if (streams[i].id && streams[i].id === 'account') {
+      streams.splice(i, 1);
+    }
+  }
+  return streams;
+}
+
 /*
  * Strips off item from tracking properties
  */
