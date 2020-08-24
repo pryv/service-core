@@ -32,11 +32,11 @@ const config: Config = getConfig();
  * Create (register) a new user
  */
 class Registration {
-  logger;
-  storageLayer; // used for initUser
+  logger: any;
+  storageLayer: any; // used for initUser
   servicesSettings; // settigns to get the email to send user welcome email
-  serviceRegisterConn; // service-register connection
-  hostname; // hostname that will be saved in service-register as a 'core' where user is registered
+  serviceRegisterConn: ServiceRegister; // service-register connection
+  hostname: string; // hostname that will be saved in service-register as a 'core' where user is registered
   accountStreamsSettings;
 
   constructor (logging, storageLayer, servicesSettings, serverSettings) { 
