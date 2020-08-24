@@ -46,7 +46,7 @@ module.exports = function (action) {
     break;
     case Action.STORE:
       // TODO IEVA -why id was here?
-    schema.required = [ 'username', 'passwordHash', 'email', 'language', 'storageUsed' ];
+    schema.required = ['username', 'email', 'language', 'storageUsed' ];
     break;
   case Action.CREATE:
     schema.required = [ 'username', 'passwordHash', 'email', 'language' ];
