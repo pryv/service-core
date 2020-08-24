@@ -49,7 +49,7 @@ class Repository {
       const usersCount = usersNames.length;
       let user;
       for (var i = 0; i < usersCount; i++) {
-        user = await this.getById({ id: usersNames[i].userId }, true );
+        user = await this.getById({ id: usersNames[i].userId }, true);
         user.id = usersNames[i].userId;
 
         // for the crazy unknown reason in the tests invitation token, appId and referer
@@ -103,6 +103,9 @@ class Repository {
     }
   }
 
+  /**
+   * Get the list of all users - only username and id
+   */
   async getAllUsernames (): Promise<Array<User>> {
     let users = [];
     // get list of user ids and usernames
@@ -131,7 +134,7 @@ class Repository {
   /**
    * Returns a webhook for a user, fetched by its id
    */
-  async getById (user: { }, getAll: Boolean): Promise<?User> {
+  async getById (user: {}, getAll: Boolean): Promise<?User> {
 
     // get user details
     try {
@@ -198,8 +201,8 @@ class Repository {
   async checkUserFieldsUniqueness (fields: object): integer {
     try {
       let query = { $or: [] }
-      Object.keys(fields).forEach(key => { 
-        query['$or'].push({ [`${key}__unique`]: fields[key]} );
+      Object.keys(fields).forEach(key => {
+        query['$or'].push({ [`${key}__unique`]: fields[key] });
       });
       const existingUser = await bluebird.fromCallback(
         (cb) => this.storage.database.findOne(
@@ -225,7 +228,7 @@ class Repository {
     const collectionInfo = this.storage.getCollectionInfoWithoutUserId();
     await this.storage.database.createCollection(collectionInfo.name);
 
-      // Start a transaction session
+    // Start a transaction session
     const session = await this.storage.database.startSession();
 
     // TODO IEVA - check if I can improve options
@@ -377,7 +380,6 @@ class Repository {
         this.storage.applyOptionsToDB(null), cb));
     return (userPass?.content) ? userPass.content : null;
   }
-
 }
 module.exports = Repository;
 /*

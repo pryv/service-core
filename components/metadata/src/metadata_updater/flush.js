@@ -120,10 +120,9 @@ class UserRepository {
   }
   
   async resolveFromDB(name: string): Promise<User> {
-    // TODO IEVA
     // get user information by the username
     const userService = new UserService({ username: name, storage: this.db.events });
-    return await userService.getUserInfo();
+    return await userService.getUserInfo(true);
   }
 }
 
