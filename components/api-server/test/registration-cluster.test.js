@@ -327,9 +327,8 @@ describe('registration: cluster', function() {
         it('[LOIB] should respond with status 201', () => {
           assert.equal(res.status, 201);
         });
-        it('[F0MO] should send the right data to register', () => {
+        it('[5O4Q] should send the right data to register', () => {
           const validationSent = serviceRegisterRequests[0];
-          console.log('got', validationSent, buildValidationRequest(userData, false))
           assert.deepEqual(validationSent, buildValidationRequest(userData, false));
           let registrationSent = serviceRegisterRequests[1];
           registrationSent = stripRegistrationRequest(registrationSent);
@@ -364,6 +363,13 @@ describe('registration: cluster', function() {
         it('[Z2ZY] should respond with status 201', () => {
           assert.equal(res.status, 201);
         });
+        it('[DIFS] should send the right data to register', () => {
+          const validationSent = serviceRegisterRequests[0];
+          assert.deepEqual(validationSent, buildValidationRequest(userData));
+          let registrationSent = serviceRegisterRequests[1];
+          registrationSent = stripRegistrationRequest(registrationSent);
+          assert.deepEqual(registrationSent, buildRegistrationRequest(userData));
+        });
       });
       describe('when an invalid one is provided', () => {
         before(async () => {
@@ -380,6 +386,10 @@ describe('registration: cluster', function() {
         });
         it('[4GON] should respond with status 400', () => {
           assert.equal(res.status, 400);
+        });
+        it('[ZBYW] should send the right data to register', () => {
+          const validationSent = serviceRegisterRequests[0];
+          assert.deepEqual(validationSent, buildValidationRequest(userData));
         });
       });
     });
@@ -399,6 +409,10 @@ describe('registration: cluster', function() {
         });
         it('[CX9N] should respond with status 400', () => {
           assert.equal(res.status, 400);
+        });
+        it('[IH6K] should send the right data to register', () => {
+          const validationSent = serviceRegisterRequests[0];
+          assert.deepEqual(validationSent, buildValidationRequest(userData));
         });
       });
     });
