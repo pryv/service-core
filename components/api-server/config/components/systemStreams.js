@@ -33,16 +33,6 @@ function load(config: Config): Config {
         }),
         _.extend({}, defaultValuesForFields, {
           isIndexed: true,
-          isUnique: true,
-          isShown: true,
-          isEditable: true,
-          type: 'email/string',
-          name: 'Email',
-          id: 'email',
-          isRequiredInValidation: true
-        }),
-        _.extend({}, defaultValuesForFields, {
-          isIndexed: true,
           isShown: true,
           isEditable: true,
           default: 'en',

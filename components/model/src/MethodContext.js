@@ -275,6 +275,7 @@ class MethodContext {
     streamIds.forEach(function (streamId) {
       let stream = treeUtils.findById(this.streams, streamId);
 
+      //TODO IEVA - mode comments
       if (allowAdditionalAccountStreams &&
         !stream &&
         streamId === SystemStreamsSerializer.options.STREAM_ID_ACTIVE &&

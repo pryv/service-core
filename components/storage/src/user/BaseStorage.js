@@ -309,31 +309,6 @@ BaseStorage.prototype.updateMany = function(
   );
 };
 
-/**
- * Update.
- * TODO IEVA -seems to be not used
- * @param user
- * @param query
- * @param updatedData
- * @param options
- * @param callback
- */
-BaseStorage.prototype.updateWithOptions = function (
-  user,
-  query,
-  updatedData,
-  options,
-  callback
-) {
-  this.database.updateWithOptions(
-    this.getCollectionInfo(user),
-    this.applyQueryToDB(query),
-    this.applyUpdateToDB(updatedData),
-    options,
-    callback
-  );
-};
-
 /* jshint -W024, -W098 */
 /**
  * Deletes the document(s), replacing them with a deletion record (i.e. id and deletion date).

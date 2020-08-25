@@ -7,8 +7,6 @@
 // @flow
 
 const nconf = require('nconf');
-const yaml = require('js-yaml');
-const fs = require('fs');
 const components = require('./components');
 
 let config = null;

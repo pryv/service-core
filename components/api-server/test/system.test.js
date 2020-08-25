@@ -260,13 +260,12 @@ describe('system (ex-register)', function () {
             username: testData.users[0].username,
             passwordHash: '$-1s-b4d-f0r-U',
             email: 'roudoudou@choupinou.ch',
-            language: 'fr',
-            insurancenumber: charlatan.Number.number(4)//TODO IEVA
+            language: 'fr'
           };
           try{
             const res = await bluebird.fromCallback(cb => post(data, cb));
             false.should.be.equal(true);
-          } catch(err){
+          } catch (err) {
             validation.checkError(err.response, {
               status: 400,
               id: ErrorIds.ItemAlreadyExists,
