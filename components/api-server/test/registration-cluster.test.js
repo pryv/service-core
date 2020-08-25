@@ -67,29 +67,31 @@ describe('registration: cluster', function() {
   const methodPath = '/users';
   const defaultServerName = 'abc';
 
-  function buildValidationRequest(user) {
-    return {
+  function buildValidationRequest(user, hasToken = true) {
+    const validationRequest = {
       username: user.username,
       core: hostname,
-      invitationToken: user.invitationToken,
       uniqueFields: {
         username: user.username,
         email: user.email,
       },
     };
+    if (hasToken) validationRequest.invitationToken = user.invitationToken;
+    return validationRequest;
   }
-  function buildRegistrationRequest(user) {
-    return {
+  function buildRegistrationRequest(user, hasToken = true) {
+    const registrationRequest = {
       host: { name: hostname },
       unique: [ 'username', 'email' ],
       user: {
         username: user.username,
         email: user.email,
         appId: user.appId,
-        invitationToken: user.invitationToken,
         referer: user.referer,
       }
     };
+    if (hasToken) registrationRequest.user.invitationToken = user.invitationToken;
+    return registrationRequest;
   }
   function stripRegistrationRequest(request) {
     delete request.user.language;
@@ -293,7 +295,6 @@ describe('registration: cluster', function() {
           assert.equal(res.status, 201);
         });
         it('[F0MO] should send the right data to register', () => {
-          console.log('got', serviceRegisterRequests)
           const validationSent = serviceRegisterRequests[0];
           assert.deepEqual(validationSent, buildValidationRequest(userData));
           let registrationSent = serviceRegisterRequests[1];
@@ -325,6 +326,14 @@ describe('registration: cluster', function() {
         });
         it('[LOIB] should respond with status 201', () => {
           assert.equal(res.status, 201);
+        });
+        it('[F0MO] should send the right data to register', () => {
+          const validationSent = serviceRegisterRequests[0];
+          console.log('got', validationSent, buildValidationRequest(userData, false))
+          assert.deepEqual(validationSent, buildValidationRequest(userData, false));
+          let registrationSent = serviceRegisterRequests[1];
+          registrationSent = stripRegistrationRequest(registrationSent);
+          assert.deepEqual(registrationSent, buildRegistrationRequest(userData, false));
         });
       });
     

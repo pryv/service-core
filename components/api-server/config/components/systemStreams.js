@@ -60,7 +60,7 @@ function load(config: Config): Config {
         }),
         _.extend({}, defaultValuesForFields, {
           isIndexed: true,
-          default: 'no-token',
+          default: null,
           type: 'token/string',
           name: 'Invitation Token',
           id: 'invitationToken'

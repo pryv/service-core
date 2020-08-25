@@ -291,7 +291,7 @@ class Registration {
         host: context.user.host
       };
       Object.keys(userStreamsIds).forEach(streamId => {
-        userData.user[streamId] = context.user[streamId];
+        if (context.user[streamId] != null) userData.user[streamId] = context.user[streamId];
       });
       userData.unique = [];
       uniqueStreamsIds.forEach(streamId => {
