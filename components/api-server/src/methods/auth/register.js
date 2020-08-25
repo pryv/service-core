@@ -25,20 +25,20 @@ import type { ApiCallback } from '../API';
  */
 module.exports = function (api, logging, storageLayer, servicesSettings, serverSettings) {
   // REGISTER
-  const registration = new Registration(logging, storageLayer, servicesSettings, serverSettings);
-  const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
+  const registration: Registration = new Registration(logging, storageLayer, servicesSettings, serverSettings);
+  const serviceRegisterConn: ServiceRegister = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
 
   api.register('auth.register',
     // data validation methods
-    registration.loadCustomValidationSettings,
-    registration.validateUserInServiceRegister,
+    registration.loadCustomValidationSettings.bind(registration),
+    registration.validateUserInServiceRegister.bind(registration),
 
     // user registration methods
-    registration.prepareUserDataForSaving,
-    registration.validateThatUserDoesNotExistInLocalDb,
-    registration.createUser,
-    registration.createUserInServiceRegister,
-    registration.sendWelcomeMail
+    registration.prepareUserDataForSaving.bind(registration),
+    registration.validateThatUserDoesNotExistInLocalDb.bind(registration),
+    registration.createUser.bind(registration),
+    registration.createUserInServiceRegister.bind(registration),
+    registration.sendWelcomeMail.bind(registration),
   );
   
   // Username check

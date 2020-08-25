@@ -25,11 +25,11 @@ module.exports = function (api, logging, storageLayer, servicesSettings, serverS
 
   api.register('auth.register.singlenode',
     // data validation methods
-    registration.loadCustomValidationSettings,
+    registration.loadCustomValidationSettings.bind(registration),
     // user registration methods
     registration.prepareUserDataForSaving,
-    registration.createUser,
-    registration.sendWelcomeMail
+    registration.createUser.bind(registration),
+    registration.sendWelcomeMail.bind(registration),
   );
 
   // Username check

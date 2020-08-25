@@ -35,36 +35,23 @@ const config: Config = getConfig();
 class Registration {
   logger: any;
   storageLayer: any; // used for initUser
-  servicesSettings; // settigns to get the email to send user welcome email
+  defaultStreamsSerializer: SystemStreamsSerializer = new SystemStreamsSerializer();
   serviceRegisterConn: ServiceRegister; // service-register connection
   hostname: string; // hostname that will be saved in service-register as a 'core' where user is registered
-  accountStreamsSettings;
+  accountStreamsSettings: any = this.defaultStreamsSerializer.getFlatAccountStreamSettings();
+  servicesSettings: any; // settigns to get the email to send user welcome email
+  POOL_USERNAME_PREFIX: string = 'pool@';
+  TEMP_USERNAME_PREFIX: string = 'temp@';
+  // TODO IEVA - is it needed
+  POOL_REGEX: RegExp = new RegExp('^' + this.POOL_USERNAME_PREFIX);
 
   constructor (logging, storageLayer, servicesSettings, serverSettings) { 
-
-    this.logger = logging.getLogger('methods/system');
+    this.logger = logging.getLogger('business/registration');
     this.storageLayer = storageLayer;
     this.servicesSettings = servicesSettings;
 
     this.serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
     this.hostname = serverSettings.hostname;
-    this.deafultStreamsSerializer = new SystemStreamsSerializer();
-    this.accountStreamsSettings = this.deafultStreamsSerializer.getFlatAccountStreamSettings();
-    
-    // bind this object to the functions that need it
-    this.createUser = this.createUser.bind(this);
-    this.createUserInServiceRegister = this.createUserInServiceRegister.bind(this);
-    this.sendWelcomeMail = this.sendWelcomeMail.bind(this);
-    this.validateThatUserDoesNotExistInLocalDb = this.validateThatUserDoesNotExistInLocalDb.bind(this);
-    this.validateUserInServiceRegister = this.validateUserInServiceRegister.bind(this);
-    this.initUser = this.initUser.bind(this);
-    this.createPoolUser = this.createPoolUser.bind(this);
-    this.loadCustomValidationSettings = this.loadCustomValidationSettings.bind(this);
-
-    this.POOL_USERNAME_PREFIX = 'pool@';
-    this.TEMP_USERNAME_PREFIX = 'temp@';
-    // TODO IEVA - is it needed
-    this.POOL_REGEX = new RegExp('^' + this.POOL_USERNAME_PREFIX);
   }
 
   /**
@@ -76,28 +63,28 @@ class Registration {
    */
   async createUserInServiceRegister (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     try {
-      let deafultStreamsSerializer = new SystemStreamsSerializer();
+      const defaultStreamsSerializer = this.defaultStreamsSerializer;
       // get streams ids from the config that should be retrieved
-      const userStreamsIds = deafultStreamsSerializer.getIndexedAccountStreams();
-      const uniqueStreamsIds = deafultStreamsSerializer.getUniqueAccountStreamsIds();
+      const userStreamsIds = defaultStreamsSerializer.getIndexedAccountStreams();
+      const uniqueStreamsIds = defaultStreamsSerializer.getUniqueAccountStreamsIds();
 
       // form data that should be sent to service-register
       // some default values and indexed/uinique fields of the system
-      let saveToServiceRegister = {
+      const userData = {
         user: {
           id: context.user.id
         },
         host: context.user.host
       };
       Object.keys(userStreamsIds).forEach(streamId => {
-        saveToServiceRegister.user[streamId] = context.user[streamId];
+        userData.user[streamId] = context.user[streamId];
       });
-      saveToServiceRegister.unique = [];
+      userData.unique = [];
       uniqueStreamsIds.forEach(streamId => {
-        saveToServiceRegister.unique.push(streamId);
+        userData.unique.push(streamId);
       });
 
-      const response = await this.serviceRegisterConn.createUser(saveToServiceRegister, params);
+      const response = await this.serviceRegisterConn.createUser(userData);
       // take only server name
       if (response.server) {
         result.server = response.server;

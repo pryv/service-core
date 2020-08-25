@@ -35,8 +35,8 @@ module.exports = function (
     commonFns.getParamsValidation(methodsSchema.createUser.params),
     registration.prepareUserDataForSaving,
     validateUserExistanceInTheDatabase,
-    registration.createUser,
-    registration.sendWelcomeMail
+    registration.createUser.bind(registration),
+    registration.sendWelcomeMail.bind(registration),
     );
 
   /**
@@ -78,8 +78,8 @@ module.exports = function (
 
   // ------------------------------------------------------------ createPoolUser
   systemAPI.register('system.createPoolUser',
-    registration.createPoolUser,
-    registration.createUser
+    registration.createPoolUser.bind(registration),
+    registration.createUser.bind(registration),
   );
 
   // ---------------------------------------------------------- getUsersPoolSize
