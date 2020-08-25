@@ -35,7 +35,6 @@ module.exports = function (
     registration.prepareUserData,
     commonFns.getParamsValidation(methodsSchema.createUser.params),
     registration.prepareUserDataForSaving,
-    validateUserExistanceInTheDatabase,
     registration.createUser.bind(registration),
     registration.sendWelcomeMail.bind(registration),
     );

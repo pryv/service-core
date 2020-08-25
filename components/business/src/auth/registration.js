@@ -111,6 +111,23 @@ class Registration {
       next
     );
   }
+  
+  /**
+   * Do minimal manipulation with data like username convertion to lowercase
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  async prepareUserData (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    if (params.username && typeof params.username === 'string') {
+      params.username = params.username.toLowerCase();
+    }
+    if (params.email && typeof params.email === 'string') {
+      params.email = params.email.toLowerCase();
+    }
+    next();
+  }
 
   /**
    * Validation and reservation in service-register
