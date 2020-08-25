@@ -76,7 +76,7 @@ describe("Virtual streams", function () {
   });
 
   describe('GET /streams', async () => {
-    it('Should return all streams - including default ones', async () => {
+    it('[9CGO] Should return all streams - including default ones', async () => {
       await createUser();
       res = await request.get(basePath).set('authorization', access.token);
       assert.deepEqual(res.body.streams, [
@@ -165,10 +165,10 @@ describe("Virtual streams", function () {
           })
           .set('authorization', access.token);
       });
-      it('Should return status 400', async () => {
+      it('[GRI4] Should return status 400', async () => {
         assert.equal(res.status, 400);
       });
-      it('Should return the correct error', async () => {
+      it('[XP07] Should return the correct error', async () => {
         assert.equal(res.body.error.id, ErrorIds.UnknownReferencedResource);
       });
     });
@@ -186,10 +186,10 @@ describe("Virtual streams", function () {
           .send(streamData)
           .set('authorization', access.token);
       });
-      it('Should return status 404', async () => {
+      it('[SLIR] Should return status 404', async () => {
         assert.equal(res.status, 404);
       });
-      it('Should return the correct error', async () => {
+      it('[V6HC] Should return the correct error', async () => {
         assert.equal(res.body.error.id, ErrorIds.UnknownResource);
       });
     });
@@ -202,10 +202,10 @@ describe("Virtual streams", function () {
         res = await request.delete(path.join(basePath, 'language'))
           .set('authorization', access.token);
       });
-      it('Should return status 404', async () => { 
+      it('[1R35] Should return status 404', async () => { 
         assert.equal(res.status, 404);
       });
-      it('Should return the correct error', async () => {
+      it('[4939] Should return the correct error', async () => {
         assert.equal(res.body.error.id, ErrorIds.UnknownResource);
       });
     });

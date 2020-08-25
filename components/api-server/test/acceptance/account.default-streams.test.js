@@ -145,10 +145,10 @@ describe("[841C] Account with default-streams", function () {
         // get account info
         res = await request.get(basePath).set('authorization', access.token);
       });
-      it('Should return 200', async () => {
+      it('[XRKX] Should return 200', async () => {
         assert.equal(res.status, 200);
       });
-      it('Should return account information in the structure that is defined in default streams and only active events are returned', async () => {
+      it('[JUHR] Should return account information in the structure that is defined in default streams and only active events are returned', async () => {
         //const systemStreamsSerializer = new SystemStreamsSerializer();
         const usernameAccountEvent = allVisibleAccountEvents.filter(event => event.streamIds.includes('username'))[0];
         const emailAccountEvent = allVisibleAccountEvents.filter(event => event.streamIds.includes('email'))[0];
@@ -166,7 +166,7 @@ describe("[841C] Account with default-streams", function () {
         assert.equal(res.body.account.insurancenumber, insurancenumberAccountEvent.content);
         assert.equal(res.body.account.phoneNumber, phoneNumberAccountEvent.content);
       });
-      it('Only visible default stream events are returned', async () => {
+      it('[R5S0] Only visible default stream events are returned', async () => {
         assert.equal(Object.keys(res.body.account).length, 6);
       });
     });
@@ -189,10 +189,10 @@ describe("[841C] Account with default-streams", function () {
           .set('authorization', access.token);
         passwordAfter = await getActiveEvent('passwordHash');
       });
-      it('Should return 200', async () => {
+      it('[X9VQ] Should return 200', async () => {
         assert.equal(res.status, 200);
       });
-      it('Event with password hash should be updated', async () => {
+      it('[PWAA] Event with password hash should be updated', async () => {
         assert.notEqual(passwordBefore.content, passwordAfter.content);
       });
     });
@@ -207,10 +207,10 @@ describe("[841C] Account with default-streams", function () {
           .send({username: charlatan.Lorem.characters(7)})
           .set('authorization', access.token);
       });
-      it('Should return 400', async () => {
+      it('[P69J] Should return 400', async () => {
         assert.equal(res.status, 400);
       });
-      it('Should return the correct error', async () => {
+      it('[DBM6] Should return the correct error', async () => {
         // currently stupid z-schema error is thrown, so let like this because the method will be deprecated
         assert.equal(res.body.error.data.length, 1);
         assert.equal(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
@@ -224,10 +224,10 @@ describe("[841C] Account with default-streams", function () {
           .send({ attachedFiles: 2 })
           .set('authorization', access.token);
       });
-      it('Should return 400', async () => {
+      it('[90N3] Should return 400', async () => {
         assert.equal(res.status, 400);
       });
-      it('Should return the correct error', async () => {
+      it('[QHZ4] Should return the correct error', async () => {
         // currently stupid z-schema error is thrown, so let like this because the method will be deprecated
         assert.equal(res.body.error.data.length, 1);
         assert.equal(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
@@ -249,10 +249,10 @@ describe("[841C] Account with default-streams", function () {
             .send({ email: user2.attrs.email })
             .set('authorization', access.token);
         });
-        it('Should return a 400 error', async () => {
+        it('[K3X9] Should return a 400 error', async () => {
           assert.equal(res.status, 400);
         });
-        it('Should return the correct error', async () => {
+        it('[8TRP] Should return the correct error', async () => {
           assert.equal(res.body.error.id, ErrorIds['Existing_email']);
           assert.equal(res.body.error.message, ErrorMessages[ErrorIds['Existing_email']]);
         });
@@ -305,10 +305,10 @@ describe("[841C] Account with default-streams", function () {
         activeLanguageAfter = await getActiveEvent('language');
         notActiveLanguageAfter = await getNotActiveEvent('language');
       });
-      it('Should return 200', async () => {
+      it('[JJ81] Should return 200', async () => {
         assert.equal(res.status, 200);
       });
-      it('Should returned updated account data', async () => {
+      it('[K9IC] Should returned updated account data', async () => {
         assert.deepEqual(res.body.account, {
             username: user.attrs.username,
             email: newEmail,
@@ -318,7 +318,7 @@ describe("[841C] Account with default-streams", function () {
             phoneNumber: user.attrs.phoneNumber
         });
       });
-      it('Only active events are updated in the database', async () => {
+      it('[JQHX] Only active events are updated in the database', async () => {
         assert.deepEqual(notActiveEmailBefore, notActiveEmailAfter);
         assert.deepEqual(notActiveLanguageBefore, notActiveLanguageAfter);
         assert.notEqual(activeEmailBefore.content, activeEmailAfter.content);
@@ -326,7 +326,7 @@ describe("[841C] Account with default-streams", function () {
         assert.equal(activeEmailAfter.content, newEmail);
         assert.equal(activeLanguageAfter.content, newLanguage);
       });
-      it('Should send a request to service-register to update its user main information and unique fields', async () => {
+      it('[Y6MC] Should send a request to service-register to update its user main information and unique fields', async () => {
         // email is already skipped
         assert.deepEqual(serviceRegisterRequest, {
           user: {

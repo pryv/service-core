@@ -163,11 +163,11 @@ describe("[AGT3] Events of default-streams", function () {
         separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
       });
       
-      it('User should be able to see "visible” core steams', async () => {
+      it('[DRFH] User should be able to see "visible” core steams', async () => {
         // events contains only visible streamIds
         assert.equal(Object.keys(separatedEvents.accountStreamsEvents).length, 7);
       });
-      it('User should not be able to see “not visible” core steams', async () => {
+      it('[XVWH] User should not be able to see “not visible” core steams', async () => {
         assert.equal(Object.keys(separatedEvents.events).length, 0);
       });
     });
@@ -184,11 +184,11 @@ describe("[AGT3] Events of default-streams", function () {
         const defaultEvent = await findDefaultCoreEvent('passwordHash');
         res = await request.get(path.join(basePath, defaultEvent.id)).set('authorization', access.token);
       });
-      it('Should return 404', async () => {
+      it('[Y2OA] Should return 404', async () => {
         assert.equal(res.status, 404);
       });
 
-      it('Should return the right error message', async () => {
+      it('[DHZE] Should return the right error message', async () => {
         assert.equal(res.body.error.id, ErrorIds.UnknownResource);
       });
     });
@@ -200,15 +200,15 @@ describe("[AGT3] Events of default-streams", function () {
         defaultEvent = await findDefaultCoreEvent(streamId);
         res = await request.get(path.join(basePath, defaultEvent.id)).set('authorization', access.token);
       });
-      it('Should return 200', async () => { 
+      it('[9IEX] Should return 200', async () => { 
         assert.equal(res.status, 200);
       });
-      it('Should return the event', async () => {
+      it('[IYE6] Should return the event', async () => {
         assert.equal(res.body.event.id, defaultEvent.id);
         assert.equal(res.body.event.streamId, streamId);
       });
 
-      it('Additional field that was saved to enforce the uniqueness is not returned', async () => {
+      it('[4Q5L] Additional field that was saved to enforce the uniqueness is not returned', async () => {
         assert.equal(res.body.event.hasOwnProperty(`${streamId}__unique`), false);
       });
     });
@@ -505,7 +505,7 @@ describe("[AGT3] Events of default-streams", function () {
           .set('authorization', sharedAccess.attrs.token);
       });
 
-      it('Should return 201', async () => {
+      it('[X49R] Should return 201', async () => {
         assert.equal(res.status, 201);
       });
       it('[764A] Should return the updated event', async () => {
@@ -828,7 +828,7 @@ describe("[AGT3] Events of default-streams", function () {
             }).reply(200, { errors: [] });
           await editEvent(streamId);
         });
-        it('Should send a request to service-register to update the unique field', async () => {
+        it('[GWHU] Should send a request to service-register to update the unique field', async () => {
           assert.equal(scope.isDone(), true);
           assert.deepEqual(serviceRegisterRequest, {
             user: {
@@ -869,7 +869,7 @@ describe("[AGT3] Events of default-streams", function () {
               }).reply(200, { errors: [] });
             await editEvent(streamId);
           });
-          it('Should send a request to service-register to update the indexed field', async () => {
+          it('[XHIA] Should send a request to service-register to update the indexed field', async () => {
             assert.equal(scope.isDone(), true);
             assert.deepEqual(serviceRegisterRequest, {
               user: {
@@ -884,7 +884,7 @@ describe("[AGT3] Events of default-streams", function () {
               fieldsToDelete: {}
             });
           });
-          it('Should return a 200', async () => {
+          it('[RR2E] Should return a 200', async () => {
             assert.equal(res.status, 200);
           });
         });
@@ -959,7 +959,7 @@ describe("[AGT3] Events of default-streams", function () {
             assert.equal(res.body.event.id, initialEvent.id);
             assert.equal(res.body.event.trashed, true);
            });
-          it('Event should not have property that enforces uniqueness anymore', async () => { 
+          it('[FJK3] Event should not have property that enforces uniqueness anymore', async () => { 
             //TODO IEVA - should I implement real deletion
             assert.notEqual(res.body.event[`${streamId}__unique`], initialEvent[`${streamId}__unique`]);
           });
