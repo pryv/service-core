@@ -40,10 +40,6 @@ class Registration {
   hostname: string; // hostname that will be saved in service-register as a 'core' where user is registered
   accountStreamsSettings: any = this.defaultStreamsSerializer.getFlatAccountStreamSettings();
   servicesSettings: any; // settigns to get the email to send user welcome email
-  POOL_USERNAME_PREFIX: string = 'pool@';
-  TEMP_USERNAME_PREFIX: string = 'temp@';
-  // TODO IEVA - is it needed
-  POOL_REGEX: RegExp = new RegExp('^' + this.POOL_USERNAME_PREFIX);
 
   constructor(logging, storageLayer, servicesSettings, serverSettings) {
     this.logger = logging.getLogger('business/registration');
@@ -55,6 +51,9 @@ class Registration {
       logging.getLogger('service-register')
     );
     this.hostname = serverSettings.hostname;
+    this.POOL_USERNAME_PREFIX = 'pool@';
+    this.TEMP_USERNAME_PREFIX = 'temp@';
+    this.POOL_REGEX = new RegExp('^' + this.POOL_USERNAME_PREFIX);
   }
 
   /**
@@ -185,23 +184,12 @@ class Registration {
     next();
   }
 
-  /**
-   * Do minimal manipulation with data like username convertion to lowercase
-   * TODO IEVA -email to lowercase - why?
-   * @param {*} context
-   * @param {*} params
-   * @param {*} result
-   * @param {*} next
-   */
   async prepareUserDataForSaving(
     context: MethodContext,
     params: mixed,
     result: Result,
     next: ApiCallback
   ) {
-    params.username = params.username.toLowerCase();
-    params.email = params.email.toLowerCase();
-
     // change parameter name
     if (params.languageCode) {
       params.language = params.languageCode;
@@ -344,7 +332,6 @@ class Registration {
        const updatedUser = await bluebird.fromCallback(
          (cb) => context.usersStorage.findOneAndUpdate({ username: { $regex: context.POOL_REGEX } }, params, cb));      
        if (updatedUser === null) {
-         throw Error("Bad, really bad");//TODO IEVA
        }*/
       context.user = {
         username: params.username
@@ -428,65 +415,8 @@ class Registration {
     params.language = 'en';
     params.email = this.POOL_USERNAME_PREFIX + uniqueId + '@email';
     next();
-
-    /*
-    usersStorage.insertOne(poolUser, (err, tempUser) => {
-      if (err != null) return next(this.handleUniqnessErrors(err));
-
-      return this.initUser(tempUser, username, (err, finalUser) => {
-        if (err != null) return next(this.handleUniqnessErrors(err));
-        result.id = finalUser.id;
-        context.user = finalUser;
-        return next();
-      });
-    });*/
   }
 
-  /**
-   *
-   * @param {*} tempUser
-   * @param {*} username
-   * @param {*} callback
-   */
-  async initUser(tempUser, username, callback) {
-    const repositories = [
-      this.storageLayer.accesses,
-      this.storageLayer.events,
-      this.storageLayer.followedSlices,
-      this.storageLayer.profile,
-      this.storageLayer.streams
-    ];
-    // Init user's repositories (create collections and indexes)
-    async.eachSeries(
-      repositories,
-      (repository, stepDone) => {
-        repository.initCollection(tempUser, stepDone);
-      },
-      async err => {
-        if (err != null) return callback(err);
-        // Rename temp username
-        try {
-          //TODO IEVA - validate
-          const finalUser = await bluebird.fromCallback(cb =>
-            this.storageLayer.events.updateOne(
-              {},
-              {
-                $and: [
-                  { streamIds: 'username' },
-                  { content: { $eq: tempUser.username } }
-                ]
-              },
-              { content: username },
-              cb
-            )
-          );
-          return callback(null, finalUser);
-        } catch (e) {
-          return callback(e);
-        }
-      }
-    );
-  }
   /**
    * Form errors for api response
    * @param {*} err
@@ -500,7 +430,6 @@ class Registration {
     if (typeof err.isDuplicateIndex === 'function') {
       listApiErrors.push(errors.existingField(err.duplicateIndex()));
     }
-    // TODO IEVA - error for the other keys
     if (listApiErrors.length > 0) {
       return commonFns.apiErrorToValidationErrorsList(listApiErrors);
     }

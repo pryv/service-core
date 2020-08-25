@@ -32,49 +32,13 @@ module.exports = function (
 
   // ---------------------------------------------------------------- createUser
   systemAPI.register('system.createUser',
+    registration.prepareUserData,
     commonFns.getParamsValidation(methodsSchema.createUser.params),
     registration.prepareUserDataForSaving,
     validateUserExistanceInTheDatabase,
     registration.createUser.bind(registration),
     registration.sendWelcomeMail.bind(registration),
     );
-
-  /**
- * Check in service-register if email already exists
- * TODO IEVA
- * @param {*} context 
- * @param {*} params 
- * @param {*} result 
- * @param {*} next 
- */
-  async function validateUserExistanceInTheDatabase(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    try {
-      // check email in service-core
-      const existingUser = await bluebird.fromCallback(
-        (cb) => storageLayer.events.findOne({},
-          {
-            $or: [{ $and: [{ streamIds: 'username' }, { content: params.username }] },
-            { $and: [{ streamIds: 'email' }, { content: params.email }] }]
-          },
-          null, cb)
-      );
-
-      // if email was already saved, throw an error
-      if (existingUser?.streamIds) {
-        if (existingUser.streamIds.includes('username')) {
-          return next(errors.itemAlreadyExists('user', { username: params.username }));
-        }
-        if (existingUser.streamIds.includes('email')) {
-          return next(errors.itemAlreadyExists('user', { email: params.email }));
-        }
-        // Any other error
-        return next(errors.unexpectedError('Unexpected error while saving user.'));
-      }
-    } catch (error) {
-      return next(errors.unexpectedError(error, 'Unexpected error while saving user.'));
-    }
-    next();
-  }
 
   // ------------------------------------------------------------ createPoolUser
   systemAPI.register('system.createPoolUser',
@@ -114,7 +78,7 @@ module.exports = function (
     try {
       const userService = new UserService({ username: params.username, storage: storageLayer.events });
       context.user = await userService.getUserInfo(true);
-      //TODO IEVA -do I handle this now?
+
       if (! context.user?.id) {
         return next(errors.unknownResource('user', params.username));
       }

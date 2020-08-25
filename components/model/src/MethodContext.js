@@ -92,13 +92,10 @@ class MethodContext {
   // Load the user identified by `this.username`, storing it in `this.user`.
   // 
   async retrieveUser(storage: StorageLayer) {
-
-    //TODO IEVA
     try {
       const userService = new UserService({ username: this.username, storage: storage.events });
       // get user details
       this.user = await userService.getUserInfo(true);
-      //TODO IEVA ?
       if (!this.user?.id)
         throw errors.unknownResource('user', this.username);
     } catch (err) {
@@ -266,25 +263,12 @@ class MethodContext {
 
   // Set this contexts stream by looking in this.streams. DEPRECATED.
   // used only in the events creation and update
-  // TODO IEVA - verify solutions with Ilia
-  setStreamList(streamIds: array, allowAdditionalAccountStreams: Boolean) {
+  setStreamList(streamIds: array) {
     if (!streamIds || streamIds.length === 0) return;
 
-    // check if streams contains any account stream
-    const userAccountStreamsIds = Object.keys((new SystemStreamsSerializer()).getReadableAccountStreams());
-    const containsCoreStream = _.intersection(streamIds, userAccountStreamsIds);
-    
     streamIds.forEach(function (streamId) {
       let stream = treeUtils.findById(this.streams, streamId);
 
-      if (allowAdditionalAccountStreams &&
-        !stream &&
-        streamId === SystemStreamsSerializer.options.STREAM_ID_ACTIVE &&
-        containsCoreStream) {
-        stream = {
-          id: SystemStreamsSerializer.options.STREAM_ID_ACTIVE
-        }
-      }
       if (stream) {
         if (!this.streamList) this.streamList = [];
         this.streamList.push(stream);

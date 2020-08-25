@@ -27,7 +27,7 @@ function defaults() {
     password: 'abcdefgh',
     invitationToken: 'enjoy',
     referer: 'pryv',
-    insurancenumber: charlatan.Number.number()
+    insurancenumber: charlatan.Number.number(3)
   };
 }
 

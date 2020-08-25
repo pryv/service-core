@@ -547,7 +547,7 @@ describe('events.streamIds', function () {
         return `/${userId}/${resource}`;
       }
   
-      it('should retrieve the attachment with the app token', async () => {
+      it('[JNS8] should retrieve the attachment with the app token', async () => {
         const res = await server.request()
           .get(path(`events/${event.id}/${event.attachments[0].id}`))
           .set('Authorization', appToken);
@@ -556,7 +556,7 @@ describe('events.streamIds', function () {
         const retrievedAttachment = res.body;
         assert.exists(retrievedAttachment);
       });
-      it('should retrieve the attachment with the shared access readToken', async () => {
+      it('[NH1O] should retrieve the attachment with the shared access readToken', async () => {
         const res = await server.request()
           .get(path(`events/${event.id}/${event.attachments[0].id}?readToken=${appReadToken}`))
         const status = res.status;
@@ -564,7 +564,7 @@ describe('events.streamIds', function () {
         const retrievedAttachment = res.body;
         assert.exists(retrievedAttachment);
       });
-      it('should retrieve the attachment with the shared access token', async () => {
+      it('[9KAF] should retrieve the attachment with the shared access token', async () => {
         const res = await server.request()
           .get(path(`events/${event.id}/${event.attachments[0].id}`))
           .set('Authorization', sharedToken);
@@ -573,7 +573,7 @@ describe('events.streamIds', function () {
         const retrievedAttachment = res.body;
         assert.exists(retrievedAttachment);
       });
-      it('should retrieve the attachment with the shared access readToken', async () => {
+      it('[9MEL] should retrieve the attachment with the shared access readToken', async () => {
         const res = await server.request()
           .get(path(`events/${event.id}/${event.attachments[0].id}?readToken=${sharedReadToken}`))
         const status = res.status;
@@ -798,7 +798,7 @@ describe('events.streamIds', function () {
             
             // validate account streams events
             const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
-            //TODO IEVA validation.validateAccountEvents(actualAccountStreamsEvents);
+            validation.validateAccountEvents(actualAccountStreamsEvents);
             
             let foundAandA_A = false;
             let foundA_AandA_A_A = false;

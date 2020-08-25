@@ -825,7 +825,7 @@ module.exports = function (
     context.content = event;
 
     // check that streamIds are known
-    context.setStreamList(context.content.streamIds, isEventsUpdateMethod());
+    context.setStreamList(context.content.streamIds);
 
     if (event.streamIds != null && ! checkStreams(context, next)) return;
     
@@ -946,12 +946,10 @@ module.exports = function (
    * @param files Express-style uploaded files object (as in req.files)
    */
   async function attachFiles (context, eventInfo, files) {
-    // TODO IEVA
-    //if (!files) { return process.nextTick(callback); }
     if (!files) { return; }
 
     var attachments = eventInfo.attachments ? eventInfo.attachments.slice() : [];
-    // TODO IEVA validate and handle errors
+
     try {
       let i;
       let fileInfo;
@@ -1106,7 +1104,6 @@ module.exports = function (
           return;
         }
         context.user.storageUsed.attachedFiles -= getTotalAttachmentsSize(context.event);
-        // TODO IEVA test
         const userService = new UserService({ id: context.user.id, storage: userEventsStorage });
         await userService.update(context.user.storageUsed);
       }
@@ -1163,7 +1160,6 @@ module.exports = function (
 
         // approximately update account storage size
         context.user.storageUsed.attachedFiles -= deletedAtt.size;
-        // TODO IEVA validate
         const userService = new UserService({ id: context.user.id, storage: userEventsStorage });
         await userService.update(context.user.storageUsed);
         notifications.eventsChanged(context.user);

@@ -246,7 +246,6 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
       }
 
       // retrieve and form user info
-    /* TODO IEVA  is this exception is really necessary ?*/
       if (!fieldsToUpdate.includes('passwordHash')) {
         result.account = await userService.getUserInfo();
       }

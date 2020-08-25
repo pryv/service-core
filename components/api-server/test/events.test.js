@@ -51,7 +51,7 @@ describe('events', function () {
 
   before(function (done) {
     async.series([
-      testData.resetUsers,
+      testData.resetUsersWithAdditionalProperties,
       testData.resetAccesses,
       testData.resetStreams,
       server.ensureStarted.bind(server, helpers.dependencies.settings),
@@ -369,7 +369,7 @@ describe('events', function () {
           const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
           res.body.events = separatedEvents.events;
           const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
-          //TODO IEVA validation.validateAccountEvents(actualAccountStreamsEvents);
+          validation.validateAccountEvents(actualAccountStreamsEvents);
 
           validation.check(res, {
             status: 200,
@@ -404,7 +404,7 @@ describe('events', function () {
           const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
           res.body.events = separatedEvents.events;
           const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
-          //TODO IEVA validation.validateAccountEvents(actualAccountStreamsEvents);
+          validation.validateAccountEvents(actualAccountStreamsEvents);
 
           validation.check(res, {
             status: 200,
@@ -443,7 +443,7 @@ describe('events', function () {
           const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
           res.body.events = separatedEvents.events;
           const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
-          // TODO IEVA validation.validateAccountEvents(actualAccountStreamsEvents);
+          validation.validateAccountEvents(actualAccountStreamsEvents);
           
           await bluebird.fromCallback(
             (cb) => validation.check(res, {
@@ -2012,8 +2012,8 @@ describe('events', function () {
               try{
                 const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);
                 events = separatedEvents.events;
-                //const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
-                //TODO IEVA validation.validateAccountEvents(actualAccountStreamsEvents);
+                const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
+                validation.validateAccountEvents(actualAccountStreamsEvents);
 
                 events.length.should.eql(testData.events.length, 'events');
 

@@ -43,7 +43,6 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
   async function checkPassword (context, params, result, next) {
     const userService = new UserService({ id: context.user.id, storage: userEventsStorage });
     const userPass = await userService.getUserPasswordHash();
-    // TODO IEVA should I throw a different error
     if (userPass == null)
       throw errors.unknownResource('user', context.user.username);
     

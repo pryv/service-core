@@ -91,9 +91,8 @@ class Application {
       require('../../www')(this.expressApp, this);
     }
 
+    // system, root and register MUST come first
     require('./routes/auth/register')(this.expressApp, this);
-
-    // system and root MUST come first
     require('./routes/system')(this.expressApp, this);
     require('./routes/root')(this.expressApp, this);
     
@@ -132,8 +131,7 @@ class Application {
       settings.get('eventFiles.attachmentsDirPath').str(), 
       settings.get('eventFiles.previewsDirPath').str(), 
       settings.get('auth.passwordResetRequestMaxAge').num(), 
-      settings.get('auth.sessionMaxAge').num(), 
-      settings.get('systemStreams:account'), //TODO IEVA - is it used?
+      settings.get('auth.sessionMaxAge').num()
     );
   }
   

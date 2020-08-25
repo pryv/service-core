@@ -34,5 +34,30 @@
   },
   "singleNode": {
     "isActive": true
+  },
+  "systemStreams": {
+    "custom": {
+      "account": [
+        {
+          "isIndexed": true,
+          "isUnique": true,
+          "isShown": true,
+          "isEditable": true,
+          "type": "email/string",
+          "name": "Email",
+          "id": "email",
+          "isRequiredInValidation": true
+        }
+      ],
+      "myCustomStream": [
+        {
+          "isShown": true,
+          "isEditable": true,
+          "type": "myCustomStream/string",
+          "name": "myCustomStream",
+          "id": "myCustomStream"
+        }
+      ]
+    }
   }
 }

@@ -29,6 +29,7 @@ const encryption = require('components/utils').encryption;
 const storage = helpers.dependencies.storage.user.events;
 const testData = helpers.data;
 const UserService = require('components/business/src/users/User');
+const charlatan = require('charlatan');
 
 require('date-utils');
 
@@ -264,7 +265,7 @@ describe('system (ex-register)', function () {
           try{
             const res = await bluebird.fromCallback(cb => post(data, cb));
             false.should.be.equal(true);
-          } catch(err){
+          } catch (err) {
             validation.checkError(err.response, {
               status: 400,
               id: ErrorIds.ItemAlreadyExists,

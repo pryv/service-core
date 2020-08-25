@@ -7,8 +7,6 @@
 // @flow
 
 const nconf = require('nconf');
-const yaml = require('js-yaml');
-const fs = require('fs');
 const components = require('./components');
 
 let config = null;
@@ -52,11 +50,15 @@ class Config {
     store.use('memory').argv().env();
 
     // 3. Values in `config.json`
-    const configFile = store.get('config') ||
-      'config/' + store.get('NODE_ENV') + '.json' || 'development.json';
-    
+    let configFile;
+    if (store.get('config')) {
+      configFile = store.get('config')
+    } else if (store.get('NODE_ENV')) {
+      configFile = 'config/' + store.get('NODE_ENV') + '.json';
+    } else {
+      configFile = 'config/development.json';
+    }
     store.file({ file: configFile });
-
     loadComponents(store);
     this.store = store;
   }

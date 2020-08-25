@@ -92,7 +92,7 @@ describe('Socket.IO', function () {
     var request = null,
         otherRequest = null;
     async.series([
-      testData.resetUsers,
+      testData.resetUsersWithAdditionalProperties,
       testData.resetAccesses,
       function (stepDone) {
         // have some accesses ready for another account to check notifications
@@ -213,8 +213,8 @@ describe('Socket.IO', function () {
         // lets separate core events from all other events and validate them separatelly
 
         // validate account streams events
-        //const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
-        // TODO IEVA validation.validateAccountEvents(actualAccountStreamsEvents);
+        const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
+        validation.validateAccountEvents(actualAccountStreamsEvents);
         
         result.events.should.eql(expectedEvents);
         
@@ -246,7 +246,8 @@ describe('Socket.IO', function () {
     });
     it('[O3SW] must properly route method call messages for streams and return the results', function (done) {
       ioCons.con = connect(namespace, {auth: token});
-      ioCons.con.emit('streams.get', {state: 'all'}, function (err, result) {
+      ioCons.con.emit('streams.get', { state: 'all' }, function (err, result) {
+        result.streams = validation.removeAccountStreams(result.streams);
         validation.checkSchema(result, streamsMethodsSchema.get.result);
         result.streams.should.eql(validation.removeDeletions(testData.streams));
         done();

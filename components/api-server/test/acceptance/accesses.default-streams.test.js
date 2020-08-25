@@ -123,10 +123,10 @@ describe("[B5FF] Account with default-streams", function () {
       before(async function () {
         await createUserAndAccess('read', streamId);
       });
-      it('Should return 400', async () => {
+      it('[ATGU] Should return 400', async () => {
         assert.equal(accountAccess.status, 400);
       });
-      it('Should return the correct error', async () => {
+      it('[Q2KZ] Should return the correct error', async () => {
         assert.deepEqual(accountAccess.body.error, {
           id: ErrorIds.DeniedStreamAccess,
           message: ErrorMessages[ErrorIds.DeniedStreamAccess],
@@ -140,10 +140,10 @@ describe("[B5FF] Account with default-streams", function () {
         before(async function () {
           await createUserAndAccess(accessLogic.PERMISSION_LEVEL_MANAGE, streamId);
         });
-        it('Should return 400', async () => {
+        it('[93HO] Should return 400', async () => {
           assert.equal(accountAccess.status, 400);
         });
-        it('Should return the correct error', async () => {
+        it('[YPHX] Should return the correct error', async () => {
           assert.deepEqual(accountAccess.body.error, {
             id: ErrorIds.TooHighAccessForAccountStreams,
             message: ErrorMessages[ErrorIds.TooHighAccessForAccountStreams],
@@ -157,13 +157,13 @@ describe("[B5FF] Account with default-streams", function () {
         before(async function () {
           await createUserAndAccess(permissionLevel, streamId);
         });
-        it('Should return 201', async () => {
+        it('[UE9G] Should return 201', async () => {
           assert.equal(accountAccess.status, 201);
         });
-        it('Access should be created in the database', async () => {
+        it('[BUYP] Access should be created in the database', async () => {
           assert.deepEqual(accessInDb.permissions, [{ streamId: streamId, level: permissionLevel }]);
         });
-        it('User can read visible stream event with this access', async () => {
+        it('[S3IQ] User can read visible stream event with this access', async () => {
           res = await request.get(eventsBasePath).set('authorization', accessInDb.token);
           assert.equal(res.body.events.length, 1);
           assert.equal(res.body.events[0].streamId, streamId);
@@ -175,10 +175,10 @@ describe("[B5FF] Account with default-streams", function () {
         before(async function () {
           await createUserAndAccess(permissionLevel, streamId);
         });
-        it('Should return 201', async () => {
+        it('[IWMQ] Should return 201', async () => {
           assert.equal(accountAccess.status, 201);
         });
-        it('Access should be created in the database', async () => {
+        it('[APYN] Access should be created in the database', async () => {
           assert.deepEqual(accessInDb.permissions, [{ streamId: streamId, level: permissionLevel }]);
         });
       });
@@ -188,13 +188,13 @@ describe("[B5FF] Account with default-streams", function () {
         before(async function () {
           await createUserAndAccess(permissionLevel, streamId);
         });
-        it('Should return 201', async () => {
+        it('[R0M1] Should return 201', async () => {
           assert.equal(accountAccess.status, 201);
         });
-        it('Access should be created in the database', async () => {
+        it('[Q8R8] Access should be created in the database', async () => {
           assert.deepEqual(accessInDb.permissions, [{ streamId: streamId, level: permissionLevel }]);
         });
-        it('User can create visible stream event with this access', async () => {
+        it('[TI1X] User can create visible stream event with this access', async () => {
           const settings = _.cloneDeep(helpers.dependencies.settings);
 
           scope = nock(settings.services.register.url)
@@ -223,13 +223,13 @@ describe("[B5FF] Account with default-streams", function () {
         before(async function () {
           await createUserAndAccess(permissionLevel, streamId);
         });
-        it('Should return 201', async () => {
+        it('[XEAK] Should return 201', async () => {
           assert.equal(accountAccess.status, 201);
         });
-        it('Access should be created in the database', async () => {
+        it('[65I4] Access should be created in the database', async () => {
           assert.deepEqual(accessInDb.permissions, [{ streamId: streamId, level: permissionLevel }]);
         });
-        it('User can access visible events in storageUsed with this access', async () => {
+        it('[L99L] User can access visible events in storageUsed with this access', async () => {
           res = await request.get(eventsBasePath).set('authorization', accessInDb.token);
           assert.equal(res.body.events.length, 7);
           validation.validateAccountEvents(res.body.events);
@@ -241,13 +241,13 @@ describe("[B5FF] Account with default-streams", function () {
         before(async function () {
           await createUserAndAccess(permissionLevel, streamId);
         });
-        it('Should return 201', async () => {
+        it('[EPEP] Should return 201', async () => {
           assert.equal(accountAccess.status, 201);
         });
-        it('Access should be created in the database', async () => {
+        it('[U3UM] Access should be created in the database', async () => {
           assert.deepEqual(accessInDb.permissions, [{ streamId: streamId, level: permissionLevel }]);
         });
-        it('User can access visible events in storageUsed with this access', async () => {
+        it('[A4UP] User can access visible events in storageUsed with this access', async () => {
           res = await request.get(eventsBasePath).set('authorization', accessInDb.token);
           assert.equal(res.body.events.length, 2);
           assert.equal(res.body.events[0].streamId, 'attachedFiles');
@@ -266,10 +266,10 @@ describe("[B5FF] Account with default-streams", function () {
         res = await request.delete(path.join(basePath, accountAccess.body.access.id))
           .set('authorization', access.token);
       });
-      it('Should return 200', async () => {
+      it('[Z40J] Should return 200', async () => {
         assert.equal(res.status, 200);
       });
-      it('Access should be deleted from the database', async () => {
+      it('[MP9T] Access should be deleted from the database', async () => {
         const deletedAccess = await getAccessInDb(accountAccess.body.access.id);
         assert.equal(deletedAccess, null);
       });

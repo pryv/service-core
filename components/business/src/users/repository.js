@@ -86,7 +86,6 @@ class Repository {
       const usersCount = usersNames.length;
       let user;
       for (var i = 0; i < usersCount; i++) {
-        // TODO IEVA
         user = await this.getById({ id: usersNames[i].userId }, true);
         user.id = usersNames[i].userId;
         // for the crazy unknown reason in the tests invitation token, appId and referer
@@ -174,14 +173,13 @@ class Repository {
   async getUserIdByUsername (username: string): integer {
     try {
       // TODO IEVA validate for deleted users 
-      // TODO IEVA - dirty query
       const userIdEvent = await bluebird.fromCallback(cb =>
         this.storage.database.findOne(
           this.storage.getCollectionInfoWithoutUserId(),
           this.storage.applyQueryToDB({
             $and: [
-              { "streamIds": { '$in': ['username'] } },
-              { "content": { $eq: username } }]
+              { streamIds: { '$in': ['username'] } },
+              { content: { $eq: username } }]
           }),
           null, cb));
 
@@ -224,14 +222,12 @@ class Repository {
     let user = {};
 
     // first explicitly create a collection, because it would fail in the transation
-    // TODO IEVA await bluebird.fromCallback(cb => this.database.client.createCollection('events', {}, cb));
     const collectionInfo = this.storage.getCollectionInfoWithoutUserId();
     await this.storage.database.createCollection(collectionInfo.name);
 
     // Start a transaction session
     const session = await this.storage.database.startSession();
 
-    // TODO IEVA - check if I can improve options
     const transactionOptions = {
       readPreference: 'primary',
       readConcern: { level: 'local' },
@@ -241,7 +237,6 @@ class Repository {
     try {
       // get streams ids from the config that should be retrieved
       let userAccountStreamsIds = (new SystemStreamsSerializer()).getAllAccountStreamsLeaves();
-      //TODO IEVA console.log(userAccountStreamsIds['insurancenumber'],'userAccountStreamsIdsssssssssssssssss');
       // change password into hash (also allow for tests to pass passwordHash directly)
       if (userParams.password && !userParams.passwordHash) {
         userParams.passwordHash = await bluebird.fromCallback((cb) => encryption.hash(userParams.password, cb));
@@ -334,7 +329,7 @@ class Repository {
   async updateOne (userId: string, update: {}): Promise<void> {
     try {
       // get streams ids from the config that should be retrieved
-      let userAccountStreamsIds = (new SystemStreamsSerializer()).getAllAccountStreams();
+      let userAccountStreamsIds = Object.keys((new SystemStreamsSerializer()).getAllAccountStreams());
 
       // change password into hash if it exists
       if (update.password && !update.passwordHash) {
@@ -343,16 +338,18 @@ class Repository {
       delete update.password;
 
       // update all account streams and do not allow additional properties
-      // TODO IEVA -await?
-      Object.keys(userAccountStreamsIds).map(streamId => {
+      let i;
+      let streamId;
+      for (i = 0; i < userAccountStreamsIds.length; i++){
+        streamId = userAccountStreamsIds[i];
         if (update[streamId]) {
-          return bluebird.fromCallback(cb => this.storage.updateOne(
+          await bluebird.fromCallback(cb => this.storage.updateOne(
             { id: userId, streamIds: SystemStreamsSerializer.options.STREAM_ID_ACTIVE },
             { streamIds: { $in: [streamId] } },
             { content: update[streamId] }, cb));
         }
-      });
-      return true;//TODO IEVA??
+      }
+      return true;
     } catch (error) {
       throw error;
     }

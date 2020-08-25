@@ -30,7 +30,9 @@ module.exports = function (api, logging, storageLayer, servicesSettings, serverS
 
   api.register('auth.register',
     // data validation methods
+    registration.prepareUserData,           
     registration.loadCustomValidationSettings.bind(registration),
+    registration.prepareUserDataForSaving,
     registration.validateUserInServiceRegister.bind(registration),
 
     // user registration methods
