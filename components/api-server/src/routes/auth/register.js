@@ -22,7 +22,6 @@ module.exports = function (expressApp: express$Application, app: Application) {
   const api: API = app.api;
   const isSingleNode = config.get('singleNode:isActive');
 
- 
   // POST /users: create a new user
   expressApp.post('/users', function (req: express$Request, res: express$Response, next: express$NextFunction) {
     if (isSingleNode) {

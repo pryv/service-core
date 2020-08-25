@@ -100,13 +100,53 @@ describe('registration: cluster', function() {
   }
 
   describe('POST /users (create user)', function() {
-    describe('when the username exists in core but not in register', () => {
+    describe.skip('when a user with the same username only already exists in core but not in register', () => {
       before(async () => {
-        // pretend saving user only in service-core
         userData = defaults();
         serviceRegisterRequests = [];
 
-        // allow all requests to service-register twice
+        nock(regUrl)
+          .post('/users/validate', (body) => {
+            serviceRegisterRequests.push(body);
+            return true;
+          })
+          .times(2)
+          .reply(200, { errors: [] });
+        nock(regUrl)
+          .post('/users', (body) => {
+            serviceRegisterRequests.push(body);
+            return true;
+          })
+          .times(2)
+          .reply(200, {
+            username: 'anyusername'
+          });
+
+        await request.post(methodPath).send(userData);
+        userData.email = charlatan.Internet.email();
+        res = await request.post(methodPath).send(userData);
+      });
+      it('[GRAW] should respond with status 201', () => {
+        assert.equal(res.status, 201);
+      });
+      it('[AY44] should respond with the username and apiEndpoint (TODO)', () => {
+        const body = res.body;
+        assert.equal(body.username, userData.username);
+      });
+      it('[MIOA] should send the right data to register', () => {
+        const validationSent = serviceRegisterRequests[0];
+        assert.deepEqual(validationSent, serviceRegisterRequests[2]);
+        assert.deepEqual(validationSent, buildValidationRequest(userData));
+        let registrationSent = serviceRegisterRequests[1];
+        registrationSent = stripRegistrationRequest(registrationSent);
+        assert.deepEqual(registrationSent, buildRegistrationRequest(userData));
+      });
+    });
+    describe('when the same user already exists in core but not in register', () => {
+      before(async () => {
+        userData = defaults();
+        serviceRegisterRequests = [];
+
         nock(regUrl)
           .post('/users/validate', (body) => {
             serviceRegisterRequests.push(body);
