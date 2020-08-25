@@ -119,7 +119,6 @@ function getDbIndexes (systemStreamsFlatList) {
   if (systemStreamsFlatList) {
     Object.keys(systemStreamsFlatList).forEach(streamId => {
       if (systemStreamsFlatList[streamId].isUnique === true) {
-        //console.log(streamId,'streamId');
         indexes.push({
           index: { [`${streamId}__unique`]: 1 },
           options: {

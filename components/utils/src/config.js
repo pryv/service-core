@@ -320,18 +320,21 @@ config.schema = {
   // Default main system streams and custom ones - the structure is predefined in
   // api-server/config/components
   systemStreams: {
-    custom: [
-      {
-        isIndexed: true,
-        isUnique: true,
-        isShown: true,
-        isEditable: true,
-        type: 'email/string',
-        name: 'Email',
-        id: 'email',
-        isRequiredInValidation: true
-      }
-    ]
+    custom:
+    {
+      account: [
+        {
+          isIndexed: true,
+          isUnique: true,
+          isShown: true,
+          isEditable: true,
+          type: 'email/string',
+          name: 'Email',
+          id: 'email',
+          isRequiredInValidation: true
+        }
+      ]
+    }
   }
 };
 

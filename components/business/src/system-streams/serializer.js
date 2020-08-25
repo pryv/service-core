@@ -31,6 +31,8 @@ class SystemStreamsSerializer {
     if (this.systemStreamsSettings == null) {
       throw Error("Not valid system streams settings.");
     }
+    // for some reason I cannot ddelete custom streams in the config level, so lets remove it here
+    delete this.systemStreamsSettings.custom;
     this.accountStreamsSettings = this.systemStreamsSettings.account;
   }
 
@@ -127,16 +129,23 @@ class SystemStreamsSerializer {
   }
 
   /**
-   * Iterate the tree and change all its properties except the children
-   * // TODO IEVA -now only account streams are processed
+   * Form streams from systemStreams settings
+   * parent is formed just providing hte name, id, parentId null and children
    */
   getVirtualStreamsList () {
-    return {
-      name: 'account',
-      id: 'account',
-      parentId: null,
-      children: formSystemStreamsFromSettings(this.systemStreamsSettings.account, [], 'account')
-    };
+    let virtualStreams = [];
+    let i;
+    const streamKeys = Object.keys(this.systemStreamsSettings);
+
+    for (i = 0; i < streamKeys.length; i++){
+      virtualStreams.push({
+        name: streamKeys[i],
+        id: streamKeys[i],
+        parentId: null,
+        children: formSystemStreamsFromSettings(this.systemStreamsSettings[streamKeys[i]], [], streamKeys[i])
+      })
+    }
+    return virtualStreams;
   }
 
   /**

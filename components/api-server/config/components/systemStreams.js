@@ -14,82 +14,89 @@ const defaultValuesForFields = {
   isUnique: false, // if true will be sent to service-register and enforced uniqness on mongodb
   isShown: false, // if true, will be shown for the users
   isEditable: false, // if true, user will be allowed to edit it
-  type: 'string/pryv', // event type TODO IEVA - should it be so?
   isRequiredInValidation: false // if true, the field will be required in the validation
 };
 
 function load(config: Config): Config {
   // default system streams that sould be not changed
-  config.set('systemStreams',{
-      account: [
+  config.set('systemStreams:account', [
+    _.extend({}, defaultValuesForFields, {
+      isIndexed: true,
+      isUnique: true,
+      isShown: true,
+      type: 'identifier/string',
+      name: 'Username',
+      id: 'username',
+      isRequiredInValidation: true
+    }),
+    _.extend({}, defaultValuesForFields, {
+      isIndexed: true,
+      isShown: true,
+      isEditable: true,
+      default: 'en',
+      type: 'language/iso-639-1',
+      name: 'Language',
+      id: 'language'
+    }),
+    _.extend({}, defaultValuesForFields, {
+      isIndexed: true,
+      isRequiredInValidation: true,
+      isIndexed: true,
+      type: 'identifier/string',
+      name: 'appId',
+      id: 'appId'
+    }),
+    _.extend({}, defaultValuesForFields, {
+      isIndexed: true,
+      default: 'no-token',
+      type: 'token/string',
+      name: 'Invitation Token',
+      id: 'invitationToken'
+    }),
+    _.extend({}, defaultValuesForFields, {
+      type: 'password-hash/string',
+      name: 'Password Hash',
+      id: 'passwordHash'
+    }),
+    _.extend({}, defaultValuesForFields, {
+      isIndexed: true,
+      default: null,
+      type: 'identifier/string',
+      name: 'Referer',
+      id: 'referer'
+    }),
+    {
+      id: 'storageUsed',
+      isShown: true,
+      name: 'Storage used',
+      children: [
         _.extend({}, defaultValuesForFields, {
-          isIndexed: true,
-          isUnique: true,
           isShown: true,
-          type: 'identifier/string',
-          name: 'Username',
-          id: 'username',
-          isRequiredInValidation: true
+          default: 0,
+          type: 'data-quantity/b',
+          name: 'Db Documents',
+          id: 'dbDocuments'
         }),
         _.extend({}, defaultValuesForFields, {
-          isIndexed: true,
           isShown: true,
-          isEditable: true,
-          default: 'en',
-          type: 'language/iso-639-1',
-          name: 'Language',
-          id: 'language'
-        }),
-        _.extend({}, defaultValuesForFields, {
-          isIndexed: true,
-          isRequiredInValidation: true,
-          isIndexed: true,
-          type: 'identifier/string',
-          name: 'appId',
-          id: 'appId'
-        }),
-        _.extend({}, defaultValuesForFields, {
-          isIndexed: true,
-          default: 'no-token',
-          type: 'token/string',
-          name: 'Invitation Token',
-          id: 'invitationToken'
-        }),
-        _.extend({}, defaultValuesForFields, {
-          type: 'password-hash/string',
-          name: 'Password Hash',
-          id: 'passwordHash'
-        }),
-        _.extend({}, defaultValuesForFields, {
-          isIndexed: true,
-          default: null,
-          type: 'identifier/string',
-          name: 'Referer',
-          id: 'referer'
-        }),
-        {
-          id: 'storageUsed',
-          isShown: true,
-          name: 'Storage used',
-          children: [
-            _.extend({}, defaultValuesForFields, {
-              isShown: true,
-              default: 0,
-              type: 'data-quantity/b',
-              name: 'Db Documents',
-              id: 'dbDocuments'
-            }),
-            _.extend({}, defaultValuesForFields, {
-              isShown: true,
-              default: 0,
-              type: 'data-quantity/b',
-              name: 'Attached files',
-              id: 'attachedFiles'
-            })
-          ]
-        }
+          default: 0,
+          type: 'data-quantity/b',
+          name: 'Attached files',
+          id: 'attachedFiles'
+        })
       ]
-  });
+    }
+  ]);
+  config.set('systemStreams:helpers', [
+    _.extend({}, defaultValuesForFields, {
+      isIndexed: false,
+      isUnique: false,
+      isShown: true,
+      type: 'identifier/string',
+      name: 'Active',
+      id: 'active',
+    })
+  ]);
 
   const CUSTOM_SYSTEM_STREAMS_FIELDS: string = 'CUSTOM_SYSTEM_STREAMS_FIELDS';
 
@@ -121,7 +128,6 @@ function load(config: Config): Config {
     if (customStreams != null) {
       appendSystemStreamsConfigWithAdditionalFields(config, customStreams);
     }
-
     const customStreamsEnv = config.get(CUSTOM_SYSTEM_STREAMS_FIELDS);
     if (customStreamsEnv != null) {
       appendSystemStreamsConfigWithAdditionalFields(config, customStreamsEnv);
@@ -137,19 +143,25 @@ function load(config: Config): Config {
     config: Config,
     additionalFields
   ): Config {
-    let systemStreamsConfig = config.get('systemStreams:account');
-    let exists;
-    additionalFields.forEach(additionalField => {
-      // do not allow override default streams
-      exists = systemStreamsConfig.filter(streamConfig => streamConfig.id == additionalField.id);
-      if (exists.length == 0){
-        systemStreamsConfig.push(_.extend({}, defaultValuesForFields, additionalField));
-      }
-    });
-    config.set(
-      'systemStreams:account',
-      systemStreamsConfig
-    );
+    let defaultConfig = config.get('systemStreams');
+    // first merge config with already existing keys (like account, helpers)
+    let i;
+    let configKeys = Object.keys(defaultConfig);
+    for (i = 0; i < configKeys.length; i++){
+      defaultConfig[configKeys[i]] = _.values(_.merge(
+        _.keyBy(defaultConfig[configKeys[i]], 'id'),
+        _.keyBy(additionalFields[configKeys[i]], 'id')
+      ));
+    }
+    // second append new config
+    let newConfigKeys = Object.keys(additionalFields);
+    for (i = 0; i < newConfigKeys.length; i++) {
+      if (configKeys.includes(newConfigKeys[i])) continue;
+      defaultConfig[newConfigKeys[i]] = additionalFields[newConfigKeys[i]];
+    }
+    config.set('systemStreams', defaultConfig);
+    // This seems to not work as expected
+    config.remove('systemStreams:custom');
     return config;
   }
 }

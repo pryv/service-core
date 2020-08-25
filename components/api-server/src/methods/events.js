@@ -825,7 +825,7 @@ module.exports = function (
     context.content = event;
 
     // check that streamIds are known
-    context.setStreamList(context.content.streamIds, isEventsUpdateMethod());
+    context.setStreamList(context.content.streamIds);
 
     if (event.streamIds != null && ! checkStreams(context, next)) return;
     

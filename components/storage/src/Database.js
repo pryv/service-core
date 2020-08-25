@@ -479,25 +479,6 @@ class Database {
     });
   }
 
-  /**
-   * Applies the given update to the document(s) matching the given query.
-   * Does *not* return the document(s).
-   * TODO IEVA -seems to be not used
-   * @param {Object} collectionInfo
-   * @param {Object} query
-   * @param {Object} update
-   * @param {Object} options
-   * @param {Function} callback
-   */
-  updateWithOptions(collectionInfo: CollectionInfo, query: Object, update: Object, options: Object, callback: DatabaseCallback) {
-    const opts = lodash.clone(options); // apply defaults
-    opts.w = 1;
-    opts.j = true;
-    this.addUserIdIfneed(collectionInfo, query);
-    this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.updateMany(query, update, opts, callback);
-    });
-  }
 
   /**
    * Applies the given update to the document matching the given query, returning the updated

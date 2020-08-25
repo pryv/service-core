@@ -241,7 +241,6 @@ class Repository {
     try {
       // get streams ids from the config that should be retrieved
       let userAccountStreamsIds = (new SystemStreamsSerializer()).getAllAccountStreamsLeaves();
-      //TODO IEVA console.log(userAccountStreamsIds['insurancenumber'],'userAccountStreamsIdsssssssssssssssss');
       // change password into hash (also allow for tests to pass passwordHash directly)
       if (userParams.password && !userParams.passwordHash) {
         userParams.passwordHash = await bluebird.fromCallback((cb) => encryption.hash(userParams.password, cb));

@@ -91,7 +91,6 @@ describe("Virtual streams", function () {
               parentId: 'account',
               children: []
             },
-            { name: 'Email', id: 'email', parentId: 'account', children: [] },
             {
               name: 'Language',
               id: 'language',
@@ -134,8 +133,22 @@ describe("Virtual streams", function () {
               id: 'phoneNumber',
               parentId: 'account',
               children: []
-            }
+            },
+            { name: 'Email', id: 'email', parentId: 'account', children: [] },
           ]
+        },
+        {
+          id: "helpers",
+          name: "helpers",
+          parentId: null,
+          children: [
+            {
+              id: "active",
+              name: "Active",
+              parentId: "helpers",
+              children: []
+            }
+          ] 
         }
       ]);
     });

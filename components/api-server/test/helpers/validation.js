@@ -389,6 +389,8 @@ exports.removeAccountStreams = function (streams) {
   while (i--) {
     if (streams[i].id && streams[i].id === 'account') {
       streams.splice(i, 1);
+    } else if (streams[i].id && streams[i].id === 'helpers') {
+      streams.splice(i, 1);
     }
   }
   return streams;

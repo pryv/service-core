@@ -473,7 +473,6 @@ describe("[AGT3] Events of default-streams", function () {
       let initialEvent;
       let user2;
       let streamId = 'email';
-      //TODO IEVA
       before(async function () {
         user2 = await createUser();
         sharedAccess = await user.access({
@@ -922,7 +921,6 @@ describe("[AGT3] Events of default-streams", function () {
             });
           });
           it('[AA92] Should return a 500', async () => {
-            //TODO IEVA - 500?
             assert.equal(res.status, 500);
           });
         });
