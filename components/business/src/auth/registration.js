@@ -14,7 +14,7 @@ const async = require('async');
 const cuid = require('cuid');
 const bluebird = require('bluebird');
 const errors = require('components/errors').factory;
-const { ErrorMessages, errorHandling } = require('components/errors');
+const { ErrorMessages, errorHandling } = require('components/errors');
 const commonFns = require('components/api-server/src/methods/helpers/commonFunctions');
 const mailing = require('components/api-server/src/methods/helpers/mailing');
 const ServiceRegister = require('./service_register');
@@ -45,23 +45,237 @@ class Registration {
   // TODO IEVA - is it needed
   POOL_REGEX: RegExp = new RegExp('^' + this.POOL_USERNAME_PREFIX);
 
-  constructor (logging, storageLayer, servicesSettings, serverSettings) { 
+  constructor(logging, storageLayer, servicesSettings, serverSettings) {
     this.logger = logging.getLogger('business/registration');
     this.storageLayer = storageLayer;
     this.servicesSettings = servicesSettings;
 
-    this.serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
+    this.serviceRegisterConn = new ServiceRegister(
+      servicesSettings.register,
+      logging.getLogger('service-register')
+    );
     this.hostname = serverSettings.hostname;
   }
 
   /**
-   * Save user in service-register
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
+   * Append validation settings to validation schema and save new object to the context
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
    */
-  async createUserInServiceRegister (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+  loadCustomValidationSettings(
+    context: MethodContext,
+    params: mixed,
+    result: Result,
+    next: ApiCallback
+  ) {
+    let validationSchema = Object.assign({}, methodsSchema.register.params);
+
+    // iterate account stream settings and APPEND validation with relevant properties
+    // etc additional required fields or regex validation
+    for (const [field, value] of Object.entries(this.accountStreamsSettings)) {
+      // if field is set as required - add required validation
+      if (
+        value.isRequiredInValidation &&
+        value.isRequiredInValidation == true &&
+        !methodsSchema.register.params.required.includes(field)
+      ) {
+        validationSchema.required.push(field);
+        //TODO IEVA - the error message of required property by z-schema is still a hell
+      }
+
+      // if field has type valiadtion - add regex type rule
+      // etc : '^(series:)?[a-z0-9-]+/[a-z0-9-]+$'
+      if (
+        value.regexValidation &&
+        !methodsSchema.register.params.properties.hasOwnProperty(field)
+      ) {
+        validationSchema.properties[field] = string({
+          pattern: value.regexValidation
+        });
+
+        // if there is an error message and code specified, set those too
+        if (
+          value.regexError &&
+          !methodsSchema.register.params.messages.hasOwnProperty(field)
+        ) {
+          validationSchema.messages[field] = { PATTERN: value.regexError };
+        }
+      }
+    }
+
+    commonFns.getParamsValidation(validationSchema)(
+      context,
+      params,
+      result,
+      next
+    );
+  }
+
+  /**
+   * Validation and reservation in service-register
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
+   */
+  async validateUserInServiceRegister(
+    context: MethodContext,
+    params: mixed,
+    result: Result,
+    next: ApiCallback
+  ) {
+    try {
+      let uniqueFields = {};
+      for (const [key, value] of Object.entries(this.accountStreamsSettings)) {
+        // if key is set as required - add required validation
+        if (value.isUnique && value.isUnique === true) {
+          uniqueFields[key] = params[key];
+        }
+      }
+
+      // do the validation and reservation in service-register
+      const response = await this.serviceRegisterConn.validateUser(
+        params.username,
+        params.invitationToken,
+        uniqueFields,
+        this.hostname
+      );
+
+      if (response?.errors && response.errors.length > 0) {
+        const sentValues: { string: string } = _.merge(
+          {
+            username: params.username,
+            invitationToken: params.invitationToken
+          },
+          uniqueFields
+        );
+        const uniquenessErrors = {};
+        const unexpectedErrors = [];
+        const impossibleErrors = [];
+        let hasInvalidTokenError = null;
+        // 1. convert list of error ids to the list of api errors
+        response.errors.forEach(err => {
+          // lets check if error thrown by service-register is already defined in errors factory
+          if (err === 'DuplicatedUserRegistration') {
+            // currently do nothing as we don't receive the conflicting keys from register on this path
+          } else if (err.startsWith('Existing_')) {
+            const fieldName = err.replace('Existing_', '');
+            uniquenessErrors[fieldName] = sentValues[fieldName];
+          } else if (err === 'InvalidInvitationToken') {
+            hasInvalidTokenError = true;
+          } else {
+            unexpectedErrors.push(errors.unexpectedError(errors[err]));
+          }
+        });
+        if (hasInvalidTokenError) {
+          return next(
+            errors.invalidOperation(ErrorMessages.InvalidInvitationToken)
+          );
+        } else if (unexpectedErrors.length > 0) {
+          return next(unexpectedErrors[0]);
+        } else {
+          return next(errors.itemAlreadyExists('user', uniquenessErrors));
+        }
+      }
+    } catch (error) {
+      return next(errors.unexpectedError(error));
+    }
+    next();
+  }
+
+  /**
+   * Do minimal manipulation with data like username convertion to lowercase
+   * TODO IEVA -email to lowercase - why?
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
+   */
+  async prepareUserDataForSaving(
+    context: MethodContext,
+    params: mixed,
+    result: Result,
+    next: ApiCallback
+  ) {
+    params.username = params.username.toLowerCase();
+    params.email = params.email.toLowerCase();
+
+    // change parameter name
+    if (params.languageCode) {
+      params.language = params.languageCode;
+    }
+    delete params.languageCode;
+
+    next();
+  }
+
+  /**
+   * Check in service-register if email already exists
+   *
+   * !!! Not solved scenario if main user info was saved in service-register, but
+   * additional unique fields were not TODO IEVA
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
+   */
+  async validateThatUserDoesNotExistInLocalDb(
+    context: MethodContext,
+    params: mixed,
+    result: Result,
+    next: ApiCallback
+  ) {
+    try {
+      // TODO IEVA -verify this logic with Ilia, because there
+      // could be additional unique fields
+      const userService = new UserService({
+        storage: this.storageLayer.events
+      });
+      const existingUser = await userService.checkUserFieldsUniqueness(params);
+      // if any of unique fields were already saved, it means that there were an error
+      // saving in service register (above there is a check that email does not exist in
+      // service register)
+      if (existingUser?.content) {
+        // skip all steps exept registrattion in service-register and welcome email
+        context.skip = true;
+
+        //append context with the same values that would be saved by createUser function
+        const userService = new UserService({
+          id: existingUser.userId,
+          storage: this.storageLayer.events
+        });
+        context.user = await userService.getUserInfo(true, true);
+
+        // set result as current username
+        result.username = context.user.username;
+        this.logger.error(
+          `User with id ${
+            existingUser.id
+          } tried to register and application is skipping the user creation on service-core db`
+        );
+      }
+    } catch (error) {
+      console.log(error, 'error');
+      return next(errors.unexpectedError(error));
+    }
+    next();
+  }
+
+  /**
+   * Save user in service-register
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
+   */
+  async createUserInServiceRegister(
+    context: MethodContext,
+    params: mixed,
+    result: Result,
+    next: ApiCallback
+  ) {
     try {
       const defaultStreamsSerializer = this.defaultStreamsSerializer;
       // get streams ids from the config that should be retrieved
@@ -90,7 +304,6 @@ class Registration {
         result.server = response.server;
         return next();
       }
-
     } catch (error) {
       return next(errors.unexpectedError(error));
     }
@@ -99,13 +312,20 @@ class Registration {
 
   /**
    * Save user to the database
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
    */
-  async createUser (context: MethodContext, params: mixed, result, next: ApiCallback) {
-    if (context.skip === true) { return next() };
+  async createUser(
+    context: MethodContext,
+    params: mixed,
+    result,
+    next: ApiCallback
+  ) {
+    if (context.skip === true) {
+      return next();
+    }
 
     // if it is testing user, skip registration process
     if (params.username === 'recla') {
@@ -115,7 +335,9 @@ class Registration {
     }
 
     try {
-      const userService = new UserService({ storage: this.storageLayer.events });
+      const userService = new UserService({
+        storage: this.storageLayer.events
+      });
       // Consume a pool user if available or use default creation
       // const user = await Registration.createUserOrConsumePool(params, context, params);
       /* TODO IEVA - do not understand what this part does here
@@ -126,9 +348,9 @@ class Registration {
        }*/
       context.user = {
         username: params.username
-      }
+      };
       const user = await userService.save(params);
-      context.user = { ...context.user, ...user}
+      context.user = { ...context.user, ...user };
       context.user.host = { name: this.hostname };
 
       // form the result for system call or full registration call
@@ -139,15 +361,67 @@ class Registration {
       }
       next();
     } catch (err) {
-      console.log(err,'err');
-     // TODO IEVA
+      console.log(err, 'err');
+      // TODO IEVA
       // const tempUser = _.clone(userInfo);
       // tempUser.username = context.TEMP_USERNAME_PREFIX + cuid();
       return next(Registration.handleUniquenessErrors(err));
     }
   }
 
-  createPoolUser (context, params, result, next) {
+  /**
+   *
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
+   */
+  sendWelcomeMail(
+    context: MethodContext,
+    params: mixed,
+    result,
+    next: ApiCallback
+  ) {
+    const emailSettings = this.servicesSettings.email;
+
+    // Skip this step if welcome mail is deactivated
+    const isMailActivated = emailSettings.enabled;
+    if (
+      isMailActivated === false ||
+      (isMailActivated != null && isMailActivated.welcome === false)
+    ) {
+      return next();
+    }
+
+    const recipient = {
+      email: context.user.email,
+      name: context.user.username,
+      type: 'to'
+    };
+
+    const substitutions = {
+      USERNAME: context.user.username,
+      EMAIL: context.user.email
+    };
+
+    mailing.sendmail(
+      emailSettings,
+      emailSettings.welcomeTemplate,
+      recipient,
+      substitutions,
+      context.user.language,
+      err => {
+        // Don't fail creation process itself (mail isn't critical), just log error
+        if (err) {
+          errorHandling.logError(err, null, this.logger);
+        }
+
+        next();
+      }
+    );
+  }
+
+  createPoolUser(context, params, result, next) {
     const uniqueId = cuid();
     params.username = this.POOL_USERNAME_PREFIX + uniqueId;
     params.passwordHash = 'changeMe';
@@ -169,44 +443,58 @@ class Registration {
   }
 
   /**
-   * 
-   * @param {*} tempUser 
-   * @param {*} username 
-   * @param {*} callback 
+   *
+   * @param {*} tempUser
+   * @param {*} username
+   * @param {*} callback
    */
-  async initUser (tempUser, username, callback) {
+  async initUser(tempUser, username, callback) {
     const repositories = [
       this.storageLayer.accesses,
       this.storageLayer.events,
       this.storageLayer.followedSlices,
       this.storageLayer.profile,
-      this.storageLayer.streams];
+      this.storageLayer.streams
+    ];
     // Init user's repositories (create collections and indexes)
-    async.eachSeries(repositories, (repository, stepDone) => {
-      repository.initCollection(tempUser, stepDone);
-    }, async (err) => {
-      if (err != null) return callback(err);
-      // Rename temp username
-      try {
-        //TODO IEVA - validate
-        const finalUser = await bluebird.fromCallback(
-          (cb) => this.storageLayer.events.updateOne({},
-            { $and: [{ streamIds: 'username' }, { content: { $eq: tempUser.username } }] },
-            { content: username }, cb));
-        return callback(null, finalUser);
-      } catch (e) {
-        return callback(e);
+    async.eachSeries(
+      repositories,
+      (repository, stepDone) => {
+        repository.initCollection(tempUser, stepDone);
+      },
+      async err => {
+        if (err != null) return callback(err);
+        // Rename temp username
+        try {
+          //TODO IEVA - validate
+          const finalUser = await bluebird.fromCallback(cb =>
+            this.storageLayer.events.updateOne(
+              {},
+              {
+                $and: [
+                  { streamIds: 'username' },
+                  { content: { $eq: tempUser.username } }
+                ]
+              },
+              { content: username },
+              cb
+            )
+          );
+          return callback(null, finalUser);
+        } catch (e) {
+          return callback(e);
+        }
       }
-    });
+    );
   }
   /**
    * Form errors for api response
-   * @param {*} err 
-   * @param {*} params 
+   * @param {*} err
+   * @param {*} params
    */
-  static handleUniquenessErrors (err, message) {
+  static handleUniquenessErrors(err, message) {
     // Duplicate errors
-    // I check for these errors in the validation so they are only used for 
+    // I check for these errors in the validation so they are only used for
     // deprecated systems.createUser path
     let listApiErrors = [];
     if (typeof err.isDuplicateIndex === 'function') {
@@ -222,12 +510,13 @@ class Registration {
     }
     return errors.unexpectedError(err, message);
   }
+
   /**
- * Form errors for api response
- * @param {*} err 
- * @param {*} params 
- */
-  static handleUniquenessErrorsInSingleErrorFormat (err, message) {
+   * Form errors for api response
+   * @param {*} err
+   * @param {*} params
+   */
+  static handleUniquenessErrorsInSingleErrorFormat(err, message) {
     // Uniquenss errors
     if (typeof err.isDuplicateIndex === 'function') {
       return errors.existingField(err.duplicateIndex());
@@ -238,195 +527,6 @@ class Registration {
     }
     return errors.unexpectedError(err, message);
   }
-  /**
-   * 
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
-   */
-  sendWelcomeMail (context: MethodContext, params: mixed, result, next: ApiCallback) {
-    const emailSettings = this.servicesSettings.email;
-
-    // Skip this step if welcome mail is deactivated
-    const isMailActivated = emailSettings.enabled;
-    if (isMailActivated === false ||
-      (isMailActivated != null && isMailActivated.welcome === false)) {
-      return next();
-    }
-
-    const recipient = {
-      email: context.user.email,
-      name: context.user.username,
-      type: 'to'
-    };
-
-    const substitutions = {
-      USERNAME: context.user.username,
-      EMAIL: context.user.email
-    };
-
-    mailing.sendmail(emailSettings, emailSettings.welcomeTemplate, recipient,
-      substitutions, context.user.language, (err) => {
-        // Don't fail creation process itself (mail isn't critical), just log error
-        if (err) {
-          errorHandling.logError(err, null, this.logger);
-        }
-
-        next();
-      });
-  }
-
-  /**
-   * Check in service-register if email already exists
-   * 
-   * !!! Not solved scenario if main user info was saved in service-register, but 
-   * additional unique fields were not TODO IEVA
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
-   */
-  async validateThatUserDoesNotExistInLocalDb (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    try {
-      // TODO IEVA -verify this logic with Ilia, because there 
-      // could be additional unique fields
-      const userService = new UserService({ storage: this.storageLayer.events });
-      const existingUser = await userService.checkUserFieldsUniqueness(params);
-      // if any of unique fields were already saved, it means that there were an error 
-      // saving in service register (above there is a check that email does not exist in
-      // service register)
-      if (existingUser?.content) {
-
-        // skip all steps exept registrattion in service-register and welcome email
-        context.skip = true;
-
-        //append context with the same values that would be saved by createUser function
-        const userService = new UserService({ id: existingUser.userId, storage: this.storageLayer.events });
-        context.user = await userService.getUserInfo(true, true);
-
-        // set result as current username
-        result.username = context.user.username;
-        this.logger.error(`User with id ${existingUser.id} tried to register and application is skipping the user creation on service-core db`);
-      }
-    } catch (error) {
-      console.log(error,'error');
-      return next(errors.unexpectedError(error));
-    }
-    next();
-  }
-
-  /**
-   * Validation and reservation in service-register
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
-   */
-  async validateUserInServiceRegister (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    try {
-      let uniqueFields = {};
-      for (const [key, value] of Object.entries(this.accountStreamsSettings)) {
-        // if key is set as required - add required validation
-        if (value.isUnique && value.isUnique === true) {
-          uniqueFields[key] = params[key];
-        }
-      }
-
-      // do the validation and reservation in service-register
-      const response = await this.serviceRegisterConn.validateUser(params.username, params.invitationToken, uniqueFields, this.hostname);
-
-      if (response?.errors && response.errors.length > 0) {
-        const sentValues: { string: string } = _.merge({
-          username: params.username,
-          invitationToken: params.invitationToken,
-        }, uniqueFields);
-        const uniquenessErrors = {};
-        const unexpectedErrors = [];
-        const impossibleErrors = [];
-        let hasInvalidTokenError = null;
-        // 1. convert list of error ids to the list of api errors
-        response.errors.forEach(err => {
-          // lets check if error thrown by service-register is already defined in errors factory
-          if (err === 'DuplicatedUserRegistration') {
-            // currently do nothing as we don't receive the conflicting keys from register on this path
-          } else if (err.startsWith('Existing_')) {
-            const fieldName = err.replace('Existing_', '');
-            uniquenessErrors[fieldName] = sentValues[fieldName];
-          } else if (err === 'InvalidInvitationToken') {
-            hasInvalidTokenError = true;
-          } else {
-            unexpectedErrors.push(errors.unexpectedError(errors[err]));
-          }
-        });
-        if (hasInvalidTokenError) {
-          return next(errors.invalidOperation(ErrorMessages.InvalidInvitationToken));
-        } else if (unexpectedErrors.length > 0) {
-          return next(unexpectedErrors[0]);
-        } else {
-          return next(errors.itemAlreadyExists('user', uniquenessErrors));
-        }
-      }
-    } catch (error) {
-      return next(errors.unexpectedError(error));
-    }
-    next();
-  }
-
-  /**
-   * Do minimal manipulation with data like username convertion to lowercase
-   * TODO IEVA -email to lowercase - why?
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
-   */
-  async prepareUserDataForSaving (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    params.username = params.username.toLowerCase();
-    params.email = params.email.toLowerCase();
-
-    // change parameter name
-    if (params.languageCode){
-      params.language = params.languageCode;
-    }
-    delete params.languageCode;
-
-    next();
-  }
-
-  /**
-   * Append validation settings to validation schema and save new object to the context
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
-   */
-  loadCustomValidationSettings (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {   
-    let validationSchema = Object.assign({}, methodsSchema.register.params);
-
-    // iterate account stream settings and APPEND validation with relevant properties
-    // etc additional required fields or regex validation
-    for (const [field, value] of Object.entries(this.accountStreamsSettings)) {
-      // if field is set as required - add required validation
-      if (value.isRequiredInValidation && value.isRequiredInValidation == true && !methodsSchema.register.params.required.includes(field)) {
-        validationSchema.required.push(field)
-        //TODO IEVA - the error message of required property by z-schema is still a hell
-      }
-
-      // if field has type valiadtion - add regex type rule
-      // etc : '^(series:)?[a-z0-9-]+/[a-z0-9-]+$'
-      if (value.regexValidation && !methodsSchema.register.params.properties.hasOwnProperty(field)) {
-        validationSchema.properties[field] = string({ pattern: value.regexValidation });
-        
-        // if there is an error message and code specified, set those too
-        if (value.regexError && !methodsSchema.register.params.messages.hasOwnProperty(field)) {
-          validationSchema.messages[field] = { 'PATTERN': value.regexError };
-        }
-      }
-    }
-
-    commonFns.getParamsValidation(validationSchema)(context, params, result, next);
-  }
-};
+}
 
 module.exports = Registration;
