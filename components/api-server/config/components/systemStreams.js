@@ -8,6 +8,7 @@
 
 'use strict';
 const _ = require('lodash');
+const treeUtils = require('components/utils/src/treeUtils');
 
 const defaultValuesForFields = {
   isIndexed: false, // if true will be sent to service-register to be able to query across the platform
@@ -69,6 +70,7 @@ function load(config: Config): Config {
       id: 'storageUsed',
       isShown: true,
       name: 'Storage used',
+      type: 'data-quantity/b',
       children: [
         _.extend({}, defaultValuesForFields, {
           isShown: true,
@@ -135,6 +137,24 @@ function load(config: Config): Config {
   }
 
   /**
+   * Extend each stream with default values
+   * @param {*} additionalFields 
+   */
+  function extendSystemStreamsWithDefaultValues (
+    additionalFields: object
+  ): object{
+    let i;
+    for (i = 0; i < additionalFields.length; i++) {
+      additionalFields[i] = _.extend({}, defaultValuesForFields, additionalFields[i]);
+      // if stream has children recursivelly call the same function
+      if (typeof additionalFields[i].children !== 'undefined') {
+        additionalFields[i].children = extendSystemStreamsWithDefaultValues(additionalFields[i].children)
+      }
+    };
+    return additionalFields;
+  }
+
+  /**
    * Iterate through additional fields, add default values and
    * set to the main system streams config
    * @param {*} additionalFields
@@ -144,8 +164,15 @@ function load(config: Config): Config {
     additionalFields
   ): Config {
     let defaultConfig = config.get('systemStreams');
-    // first merge config with already existing keys (like account, helpers)
     let i;
+
+    // extend systemStreams with default values
+    let newConfigKeys = Object.keys(additionalFields);
+    for (i = 0; i < newConfigKeys.length; i++) {
+      additionalFields[newConfigKeys[i]] = extendSystemStreamsWithDefaultValues(additionalFields[newConfigKeys[i]]);
+    }
+
+    // first merge config with already existing keys (like account, helpers)
     let configKeys = Object.keys(defaultConfig);
     for (i = 0; i < configKeys.length; i++){
       defaultConfig[configKeys[i]] = _.values(_.merge(
@@ -154,11 +181,27 @@ function load(config: Config): Config {
       ));
     }
     // second append new config
-    let newConfigKeys = Object.keys(additionalFields);
     for (i = 0; i < newConfigKeys.length; i++) {
       if (configKeys.includes(newConfigKeys[i])) continue;
       defaultConfig[newConfigKeys[i]] = additionalFields[newConfigKeys[i]];
     }
+
+    // delete custom config
+    delete defaultConfig.custom;
+
+    // validate that each config stream has a type
+    let allConfigKeys = Object.keys(defaultConfig);
+    allConfigKeys.forEach(configKey => {
+      const flatStreamsList = treeUtils.flattenTree(defaultConfig[configKey]);
+      // check if each stream has a type
+      flatStreamsList.forEach(stream => {
+        if (!stream.type) {
+          throw new Error(`SystemStreams streams must have a type. Please fix the config systemStreams.custom ${stream.id} so that all custom streams would include type. It will be used while creating the events.`);
+        }
+      });
+    });
+    
+
     config.set('systemStreams', defaultConfig);
     // This seems to not work as expected
     config.remove('systemStreams:custom');

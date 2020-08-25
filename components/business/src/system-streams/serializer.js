@@ -23,8 +23,8 @@ const uniqueStreams = 'unique-default-streams';
  * structure of the account info
  */
 class SystemStreamsSerializer {
-  systemStreamsSettings;
-  accountStreamsSettings;
+  systemStreamsSettings: Config;
+  accountStreamsSettings: Config;
 
   constructor () {
     this.systemStreamsSettings = config.get('systemStreams');
