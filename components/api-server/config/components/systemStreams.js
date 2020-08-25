@@ -126,7 +126,6 @@ function load(config: Config): Config {
    */
   function readAdditionalFieldsConfig(config) {
     const customStreams = config.get('systemStreams:custom');
-
     if (customStreams != null) {
       appendSystemStreamsConfigWithAdditionalFields(config, customStreams);
     }
@@ -154,6 +153,12 @@ function load(config: Config): Config {
     return additionalFields;
   }
 
+  function denyDefaultStreamsOverride (objValue, srcValue) {
+    if (objValue && objValue.id && srcValue && srcValue.id && objValue.id == srcValue.id){
+      return objValue;
+    }
+    return _.merge(srcValue, objValue);
+  }
   /**
    * Iterate through additional fields, add default values and
    * set to the main system streams config
@@ -175,9 +180,9 @@ function load(config: Config): Config {
     // first merge config with already existing keys (like account, helpers)
     let configKeys = Object.keys(defaultConfig);
     for (i = 0; i < configKeys.length; i++){
-      defaultConfig[configKeys[i]] = _.values(_.merge(
+      defaultConfig[configKeys[i]] = _.values(_.mergeWith(
         _.keyBy(defaultConfig[configKeys[i]], 'id'),
-        _.keyBy(additionalFields[configKeys[i]], 'id')
+        _.keyBy(additionalFields[configKeys[i]], 'id'), denyDefaultStreamsOverride
       ));
     }
     // second append new config
@@ -204,7 +209,7 @@ function load(config: Config): Config {
 
     config.set('systemStreams', defaultConfig);
     // This seems to not work as expected
-    config.remove('systemStreams:custom');
+    config.clear('systemStreams:custom');
     return config;
   }
 }

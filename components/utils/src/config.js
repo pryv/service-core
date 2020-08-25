@@ -322,18 +322,7 @@ config.schema = {
   systemStreams: {
     custom:
     {
-      account: [
-        {
-          isIndexed: true,
-          isUnique: true,
-          isShown: true,
-          isEditable: true,
-          type: 'email/string',
-          name: 'Email',
-          id: 'email',
-          isRequiredInValidation: true
-        }
-      ]
+      account: []
     }
   }
 };
