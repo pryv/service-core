@@ -537,7 +537,6 @@ class Sessions {
   }
   
   removeForUser (userName: string, cb: () => void) {
-    // TODO IEVA
     this.databaseConn.deleteMany(
       this.collectionInfo, 
       {'data.username': userName}, 

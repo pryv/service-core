@@ -960,7 +960,6 @@ describe("[AGT3] Events of default-streams", function () {
             assert.equal(res.body.event.trashed, true);
            });
           it('[FJK3] Event should not have property that enforces uniqueness anymore', async () => { 
-            //TODO IEVA - should I implement real deletion
             assert.notEqual(res.body.event[`${streamId}__unique`], initialEvent[`${streamId}__unique`]);
           });
           it('[F328] Deleted event data is sent to service-register', async () => { 

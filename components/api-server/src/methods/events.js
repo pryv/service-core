@@ -949,7 +949,7 @@ module.exports = function (
     if (!files) { return; }
 
     var attachments = eventInfo.attachments ? eventInfo.attachments.slice() : [];
-    // TODO IEVA validate and handle errors
+
     try {
       let i;
       let fileInfo;
@@ -1104,7 +1104,6 @@ module.exports = function (
           return;
         }
         context.user.storageUsed.attachedFiles -= getTotalAttachmentsSize(context.event);
-        // TODO IEVA test
         const userService = new UserService({ id: context.user.id, storage: userEventsStorage });
         await userService.update(context.user.storageUsed);
       }
@@ -1161,7 +1160,6 @@ module.exports = function (
 
         // approximately update account storage size
         context.user.storageUsed.attachedFiles -= deletedAtt.size;
-        // TODO IEVA validate
         const userService = new UserService({ id: context.user.id, storage: userEventsStorage });
         await userService.update(context.user.storageUsed);
         notifications.eventsChanged(context.user);

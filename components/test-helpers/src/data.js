@@ -285,7 +285,6 @@ exports.getStructure = function (version) {
 };
 
 function clearAllData (callback) {
-  console.log('clearAllData');//TODO IEVA
   async.series([
     storage.database.dropDatabase.bind(storage.database),
     storage.user.eventFiles.removeAll.bind(storage.user.eventFiles)

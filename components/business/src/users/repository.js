@@ -86,7 +86,6 @@ class Repository {
       const usersCount = usersNames.length;
       let user;
       for (var i = 0; i < usersCount; i++) {
-        // TODO IEVA
         user = await this.getById({ id: usersNames[i].userId }, true);
         user.id = usersNames[i].userId;
         // for the crazy unknown reason in the tests invitation token, appId and referer
@@ -174,14 +173,13 @@ class Repository {
   async getUserIdByUsername (username: string): integer {
     try {
       // TODO IEVA validate for deleted users 
-      // TODO IEVA - dirty query
       const userIdEvent = await bluebird.fromCallback(cb =>
         this.storage.database.findOne(
           this.storage.getCollectionInfoWithoutUserId(),
           this.storage.applyQueryToDB({
             $and: [
-              { "streamIds": { '$in': ['username'] } },
-              { "content": { $eq: username } }]
+              { streamIds: { '$in': ['username'] } },
+              { content: { $eq: username } }]
           }),
           null, cb));
 
@@ -224,14 +222,12 @@ class Repository {
     let user = {};
 
     // first explicitly create a collection, because it would fail in the transation
-    // TODO IEVA await bluebird.fromCallback(cb => this.database.client.createCollection('events', {}, cb));
     const collectionInfo = this.storage.getCollectionInfoWithoutUserId();
     await this.storage.database.createCollection(collectionInfo.name);
 
     // Start a transaction session
     const session = await this.storage.database.startSession();
 
-    // TODO IEVA - check if I can improve options
     const transactionOptions = {
       readPreference: 'primary',
       readConcern: { level: 'local' },
@@ -353,7 +349,7 @@ class Repository {
             { content: update[streamId] }, cb));
         }
       }
-      return true;//TODO IEVA??
+      return true;
     } catch (error) {
       throw error;
     }

@@ -25,7 +25,8 @@ module.exports = Events;
  */
 function Events (database) {
   let systemStreamsSerializer = new SystemStreamsSerializer();
-  // TODO IEVA - maybe I should retrieve all and not only account streams here?
+  // TODO - maybe I should retrieve all and not only account streams here?
+  // So that unicity, indexing would be broader functionality?
   // get streams ids of account streams from the config
   this.systemStreamsFlatList = systemStreamsSerializer.getAllAccountStreams();
   this.uniqueStreamIdsList = systemStreamsSerializer.getUniqueAccountStreamsIds();

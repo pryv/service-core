@@ -18,8 +18,7 @@ class User {
 
   constructor (params: {
     id?: string,
-    username?: string,
-    //storage,//TODO IEVA -events storage 
+    username?: string
   }) {
     this.id = params?.id;
     this.username = params?.username;

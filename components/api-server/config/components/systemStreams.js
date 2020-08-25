@@ -206,10 +206,9 @@ function load(config: Config): Config {
       });
     });
     
-
     config.set('systemStreams', defaultConfig);
-    // This seems to not work as expected
-    config.clear('systemStreams:custom');
+    // clear the settings seems to not work as expected
+    config.set('systemStreams:custom', null);
     return config;
   }
 }

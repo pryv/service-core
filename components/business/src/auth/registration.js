@@ -57,7 +57,6 @@ class Registration {
     this.sendWelcomeMail = this.sendWelcomeMail.bind(this);
     this.validateThatUserDoesNotExistInLocalDb = this.validateThatUserDoesNotExistInLocalDb.bind(this);
     this.validateUserInServiceRegister = this.validateUserInServiceRegister.bind(this);
-    this.initUser = this.initUser.bind(this);
     this.createPoolUser = this.createPoolUser.bind(this);
     this.loadCustomValidationSettings = this.loadCustomValidationSettings.bind(this);
 
@@ -166,51 +165,8 @@ class Registration {
     params.language = 'en';
     params.email = this.POOL_USERNAME_PREFIX + uniqueId + '@email';
     next();
-
-    /*
-    usersStorage.insertOne(poolUser, (err, tempUser) => {
-      if (err != null) return next(this.handleUniqnessErrors(err));
-
-      return this.initUser(tempUser, username, (err, finalUser) => {
-        if (err != null) return next(this.handleUniqnessErrors(err));
-        result.id = finalUser.id;
-        context.user = finalUser;
-        return next();
-      });
-    });*/
   }
 
-  /**
-   * 
-   * @param {*} tempUser 
-   * @param {*} username 
-   * @param {*} callback 
-   */
-  async initUser (tempUser, username, callback) {
-    const repositories = [
-      this.storageLayer.accesses,
-      this.storageLayer.events,
-      this.storageLayer.followedSlices,
-      this.storageLayer.profile,
-      this.storageLayer.streams];
-    // Init user's repositories (create collections and indexes)
-    async.eachSeries(repositories, (repository, stepDone) => {
-      repository.initCollection(tempUser, stepDone);
-    }, async (err) => {
-      if (err != null) return callback(err);
-      // Rename temp username
-      try {
-        //TODO IEVA - validate
-        const finalUser = await bluebird.fromCallback(
-          (cb) => this.storageLayer.events.updateOne({},
-            { $and: [{ streamIds: 'username' }, { content: { $eq: tempUser.username } }] },
-            { content: username }, cb));
-        return callback(null, finalUser);
-      } catch (e) {
-        return callback(e);
-      }
-    });
-  }
   /**
    * Form errors for api response
    * @param {*} err 
@@ -224,7 +180,6 @@ class Registration {
     if (typeof err.isDuplicateIndex === 'function') {
       listApiErrors.push(errors.existingField(err.duplicateIndex()));
     }
-    // TODO IEVA - error for the other keys
     if (listApiErrors.length > 0) {
       return commonFns.apiErrorToValidationErrorsList(listApiErrors);
     }

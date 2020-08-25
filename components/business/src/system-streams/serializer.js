@@ -31,6 +31,8 @@ class SystemStreamsSerializer {
     if (this.systemStreamsSettings == null) {
       throw Error("Not valid system streams settings.");
     }
+    // for some reason I cannot ddelete custom streams in the config level, so lets remove it here
+    delete this.systemStreamsSettings.custom;
     this.accountStreamsSettings = this.systemStreamsSettings.account;
   }
 
