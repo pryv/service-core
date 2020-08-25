@@ -21,14 +21,14 @@ module.exports = function (expressApp: express$Application, app: Application) {
   const config: Config = getConfig();
   const api: API = app.api;
   const isSingleNode = config.get('singleNode:isActive');
-  const context = {};
+
  
   // POST /users: create a new user
   expressApp.post('/users', function (req: express$Request, res: express$Response, next: express$NextFunction) {
     if (isSingleNode) {
-      api.call('auth.register.singlenode', context, req.body, methodCallback(res, next, 201));
+      api.call('auth.register.singlenode', {}, req.body, methodCallback(res, next, 201));
     } else {
-      api.call('auth.register', context, req.body, methodCallback(res, next, 201));
+      api.call('auth.register', {}, req.body, methodCallback(res, next, 201));
     }
   });
 
@@ -37,9 +37,9 @@ module.exports = function (expressApp: express$Application, app: Application) {
    */
   expressApp.get('/:username/check_username', (req: express$Request, res, next) => {
     if (isSingleNode) {
-      api.call('auth.usernameCheck.singlenode', context, req.params, methodCallback(res, next, 200));
+      api.call('auth.usernameCheck.singlenode', {}, req.params, methodCallback(res, next, 200));
     } else {
-      api.call('auth.usernameCheck', context, req.params, methodCallback(res, next, 200));
+      api.call('auth.usernameCheck', {}, req.params, methodCallback(res, next, 200));
     }
   });
 
