@@ -40,7 +40,8 @@
     "isActive": false
   },
   "singleNode": {
-    "isActive": true
+    "isActive": true,
+    "publicUrl": "http://localhost/"
   },
   "systemStreams": {
     "custom": {

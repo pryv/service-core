@@ -6,4 +6,5 @@
  */
 module.exports = {
   systemStreams: require('./systemStreams'),
+  serviceInfo: require('./serviceInfo'),
 };

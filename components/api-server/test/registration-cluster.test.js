@@ -74,9 +74,9 @@ describe('registration: cluster', function() {
       uniqueFields: {
         username: user.username,
         email: user.email,
-        invitationToken: user.invitationToken,
       },
     };
+    hasToken ? validationRequest.invitationToken = user.invitationToken : null;
     return validationRequest;
   }
   function buildRegistrationRequest(user, hasToken = true) {
@@ -88,9 +88,10 @@ describe('registration: cluster', function() {
         email: user.email,
         appId: user.appId,
         referer: user.referer,
-        invitationToken: user.invitationToken,
+        insurancenumber: user.insurancenumber,
       }
     };
+    hasToken ? registrationRequest.user.invitationToken = user.invitationToken : null;
     return registrationRequest;
   }
   function stripRegistrationRequest(request) {
@@ -132,6 +133,7 @@ describe('registration: cluster', function() {
       it('[AY44] should respond with the username and apiEndpoint (TODO)', () => {
         const body = res.body;
         assert.equal(body.username, userData.username);
+        
       });
       it('[MIOA] should send the right data to register', () => {
         const validationSent = serviceRegisterRequests[0];
@@ -174,7 +176,7 @@ describe('registration: cluster', function() {
         const body = res.body;
         assert.equal(body.username, userData.username);
       });
-      it('[MIOA] should send the right data to register', () => {
+      it('[ZHYX] should send the right data to register', () => {
         const validationSent = serviceRegisterRequests[0];
         assert.deepEqual(validationSent, serviceRegisterRequests[2]);
         assert.deepEqual(validationSent, buildValidationRequest(userData));

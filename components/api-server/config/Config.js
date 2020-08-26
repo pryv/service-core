@@ -64,7 +64,7 @@ class Config {
   }
 
   async init() {
-    await loadAsyncComponents();
+    await loadAsyncComponents(this.store);
     this.isReady = true;
   }
 
@@ -91,7 +91,7 @@ function loadComponents(store: any): any {
 async function loadAsyncComponents(store: any): any {
   const comps = Object.values(components);
   for(let i=0; i<comps.length; i++) {
-    if (comps[i].asyncLoad != null) comps[i].asyncLoad(store);
+    if (comps[i].asyncLoad != null) await comps[i].asyncLoad(store);
   }
   return store;
 }
