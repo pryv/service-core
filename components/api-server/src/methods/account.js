@@ -192,16 +192,20 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
           return next(errors.invalidOperation(errMsg, { email: newEmail }, err));
         }
         // update language in service-register
-        if (params.update.hasOwnProperty('language')){
-          await notifyRegisterAboutUserDataChanges(context.user.username,
-            {
-              language: {
-                value: params.update.language,
-                creation: false,
-                isUnique: false,
-                isActive: true
-              }
-            });
+        if (params.update.hasOwnProperty('language')) {
+          try {
+            await notifyRegisterAboutUserDataChanges(context.user.username,
+              {
+                language: {
+                  value: params.update.language,
+                  creation: false,
+                  isUnique: false,
+                  isActive: true
+                }
+              });
+          } catch (error) {
+            next(error);
+          }
         }
         next();
       });
@@ -215,7 +219,6 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
   async function notifyRegisterAboutUserDataChanges (username, fieldsForUpdate) {
     // initialize service-register connection
     const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
-    let validationErrors = [];
     try {
       // send information update to service regsiter
       await serviceRegisterConn.updateUserInServiceRegister(username, fieldsForUpdate, {});
@@ -223,7 +226,6 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     } catch (err) {
       throw err;
     }
-    return validationErrors;
   }
 
   async function updateAccount(context, params, result, next) {
@@ -254,7 +256,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
       notifications.accountChanged(context.user);
       next();
     } catch (err) {
-      return next(Registration.handleUniquenessErrorsInSingleErrorFormat(err, ErrorMessages[ErrorIds.UnexpectedErrorWhileSavingTheEvent]), params.update);
+      return next(Registration.handleUniquenessErrors(err, ErrorMessages[ErrorIds.UnexpectedErrorWhileSavingTheEvent], params.update));
     }
   }
 };

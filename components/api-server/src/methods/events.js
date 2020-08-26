@@ -364,7 +364,7 @@ module.exports = function (
   async function createEvent(
     context, params, result, next) 
   {
-    let accountStreamsInfo = { removeActiveEvents: false};
+    let accountStreamsInfo = { removeActiveEvents: false };
     if (isSeriesType(context.content.type)) {
       if (openSourceSettings.isActive) {
         return next(errors.unavailableMethod());
@@ -382,11 +382,11 @@ module.exports = function (
         accountStreamsInfo = await handleAccountStreams(context.user.username, context, true);
         context.content = accountStreamsInfo.context;
 
-        if (accountStreamsInfo.validationErrors.length > 0) {
-          return next(commonFns.apiErrorToValidationErrorsList(accountStreamsInfo.validationErrors));
-        }
+        // if (accountStreamsInfo.validationErrors.length > 0) {
+        //   return next(commonFns.apiErrorToValidationErrorsList(accountStreamsInfo.validationErrors));
+        // }
       } catch (err) {
-        return next(errors.unexpectedError(err));
+        return next(err);
       }
     }
 
@@ -456,7 +456,6 @@ module.exports = function (
     const nonEditableAccountStreamsIds = systemStreamsSerializerObj.getAccountStreamsIdsForbiddenForEditing();
     const editableAccountStreams = systemStreamsSerializerObj.getEditableAccountStreams();
     let removeActiveEvents = false;
-    let validationErrors = [];
     let contextContent = context.content;
     let oldContentStreamIds = (context?.oldContent?.streamIds) ? context.oldContent.streamIds: [];
     const fieldName = (typeof contextContent.streamIds === 'object')? contextContent.streamIds[0]: '';
@@ -498,36 +497,27 @@ module.exports = function (
 
         try {
           // send information update to service regsiter
-          const response = await serviceRegisterConn.updateUserInServiceRegister(
+          await serviceRegisterConn.updateUserInServiceRegister(
             username, fieldsForUpdate, {});
-
-          if (response.errors && response.errors.length > 0) {
-            validationErrors = response.errors.map(err => {
-              const fieldName = err.id.replace('Existing_', '');
-              return errors.existingField(fieldName);
-            });
-          }
         } catch (err) {
           throw err;
         }
       }
-      
     } else if (nonEditableAccountStreamsIds.includes(fieldName)) {
       // if user tries to add new streamId from non editable streamsIds
-      validationErrors.push(errors.DeniedEventModification(fieldName));
+      throw errors.DeniedEventModification(fieldName);
     } else if (matchingAccountStreams.length > 1) {
       // if user tries to add several streamIds from account streams
-      validationErrors.push(errors.DeniedMultipleAccountStreams(fieldName));
-    }else if (!creation && matchingAccountStreams.length > 0 &&
-      _.intersection(matchingAccountStreams, oldContentStreamIds).length === 0){
+      throw errors.DeniedMultipleAccountStreams(fieldName);
+    } else if (!creation && matchingAccountStreams.length > 0 &&
+      _.intersection(matchingAccountStreams, oldContentStreamIds).length === 0) {
       // if user tries to change streamId of systemStreams
-      validationErrors.push(errors.DeniedMultipleAccountStreams(fieldName));
+      throw errors.DeniedMultipleAccountStreams(fieldName);
     }
     
     return {
       context: contextContent,
-      removeActiveEvents: removeActiveEvents,
-      validationErrors: validationErrors
+      removeActiveEvents: removeActiveEvents
     };
   }
 
@@ -705,15 +695,16 @@ module.exports = function (
   }
 
   async function updateEvent (context, params, result, next) {
+    let accountStreamsInfo = {};
     try {
       // if events belongs to system streams additional actions may be needed
-      const accountStreamsInfo = await handleAccountStreams(context.user.username, context, false);
+      accountStreamsInfo = await handleAccountStreams(context.user.username, context, false);
       context.content = accountStreamsInfo.context;
+    } catch (err) {
+      return next(err);
+    }
 
-      if (accountStreamsInfo.validationErrors.length > 0) {
-        return next(commonFns.apiErrorToValidationErrorsList(accountStreamsInfo.validationErrors));
-      }
-      
+    try {
       let updatedEvent = await bluebird.fromCallback(cb =>
         userEventsStorage.updateOne(context.user, { _id: context.content.id }, context.content, cb));
 
@@ -736,7 +727,7 @@ module.exports = function (
       setFileReadToken(context.access, result.event);
 
     } catch (err) {
-      return next(Registration.handleUniquenessErrors(err, ErrorMessages[ErrorIds.UnexpectedErrorWhileSavingTheEvent]), params);
+      return next(Registration.handleUniquenessErrors(err, null, { [context.content.streamIds[0]]: context.content.content}));
     };
     next();
   }

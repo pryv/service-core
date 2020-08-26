@@ -14,7 +14,7 @@ const async = require('async');
 const cuid = require('cuid');
 const bluebird = require('bluebird');
 const errors = require('components/errors').factory;
-const { ErrorMessages, errorHandling } = require('components/errors');
+const { ErrorIds, ErrorMessages, errorHandling } = require('components/errors');
 const commonFns = require('components/api-server/src/methods/helpers/commonFunctions');
 const mailing = require('components/api-server/src/methods/helpers/mailing');
 const ServiceRegister = require('./service_register');
@@ -155,39 +155,14 @@ class Registration {
       }
 
       // do the validation and reservation in service-register
-      const response = await this.serviceRegisterConn.validateUser(
+      await this.serviceRegisterConn.validateUser(
         params.username,
         params.invitationToken,
         uniqueFields,
         this.hostname
       );
-
-      if (response?.errors && response.errors.length > 0) {
-        const uniquenessErrors = {};
-        let hasInvalidTokenError = false;
-        let fieldName;
-        // 1. convert list of error ids to the list of api errors
-        response.errors.forEach(err => {
-          // lets check if error thrown by service-register is already defined in errors factory
-          if (err.startsWith('Existing_')) {
-            fieldName = err.replace('Existing_', '');
-            uniquenessErrors[fieldName] = params[fieldName];
-          } else if (err === 'InvalidInvitationToken') {
-            hasInvalidTokenError = true;
-          } else {
-            throw errors.unexpectedError(errors[err]);
-          }
-        });
-        if (hasInvalidTokenError) {
-          return next(
-            errors.invalidOperation(ErrorMessages.InvalidInvitationToken)
-          );
-        } else {
-          return next(errors.itemAlreadyExists('user', uniquenessErrors));
-        }
-      }
     } catch (error) {
-      return next(errors.unexpectedError(error));
+      return next(error);
     }
     next();
   }
@@ -429,23 +404,6 @@ class Registration {
     // Any other error
     if (!message) {
       message = 'Unexpected error while saving user.';
-    }
-    return errors.unexpectedError(err, message);
-  }
-
-  /**
-   * Form errors for api response
-   * @param {*} err
-   * @param {*} params
-   */
-  static handleUniquenessErrorsInSingleErrorFormat(err, message) {
-    // Uniquenss errors
-    if (typeof err.isDuplicateIndex === 'function') {
-      return errors.existingField(err.duplicateIndex());
-    }
-    // Any other error
-    if (!message) {
-      message = 'Unexpected error while saving the user.';
     }
     return errors.unexpectedError(err, message);
   }

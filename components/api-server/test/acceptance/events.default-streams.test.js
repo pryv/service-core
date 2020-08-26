@@ -233,8 +233,9 @@ describe("[AGT3] Events of default-streams", function () {
         assert.equal(res.status, 400);
       });
       it('[90E6] Should return the correct error', async () => {
-        assert.equal(res.body.error.data[0].code, ErrorIds.DeniedEventModification);
-        assert.equal(res.body.error.data[0].message, ErrorMessages[ErrorIds.DeniedEventModification]);
+        assert.equal(res.body.error.id, ErrorIds.DeniedEventModification);
+        assert.deepEqual(res.body.error.data, { streamId: 'username'});
+        assert.equal(res.body.error.message, ErrorMessages[ErrorIds.DeniedEventModification]);
       });
     });
 
@@ -347,12 +348,12 @@ describe("[AGT3] Events of default-streams", function () {
             nock.cleanAll();
             nock(settings.services.register.url).put('/users')
               .reply(400, {
-                errors: [
-                  {
-                    id: 'Existing_email',
-                    message: 'Not important message',
+                error: {
+                  id: ErrorIds.ItemAlreadyExists,
+                  data: {
+                    email: eventData.content
                   }
-                ]
+                }
               });
 
             res = await request.post(basePath)
@@ -364,9 +365,8 @@ describe("[AGT3] Events of default-streams", function () {
             assert.equal(res.status, 400);
           });
           it('[89BC] Should return the correct error', async () => {
-            assert.equal(res.body.error.data.length, 1);
-            assert.equal(res.body.error.data[0].code, ErrorIds['Existing_email']);
-            assert.equal(res.body.error.data[0].message, ErrorMessages[ErrorIds['Existing_email']]);
+            assert.equal(res.body.error.id, ErrorIds.ItemAlreadyExists);
+            assert.deepEqual(res.body.error.data, { email: eventData.content});
           });
         });
         describe('[6B8D] When creating an event that is already taken only on core', async () => {
@@ -549,8 +549,9 @@ describe("[AGT3] Events of default-streams", function () {
         assert.equal(res.status, 400);
       });
       it('[BB5F] Should return the correct error', async () => {
-        assert.equal(res.body.error.data[0].code, ErrorIds.DeniedEventModification);
-        assert.equal(res.body.error.data[0].message, ErrorMessages[ErrorIds.DeniedEventModification]);
+        assert.equal(res.body.error.id, ErrorIds.DeniedEventModification);
+        assert.equal(res.body.error.message, ErrorMessages[ErrorIds.DeniedEventModification]);
+        assert.deepEqual(res.body.error.data, {streamId: 'username'});
       });
     });
 
@@ -704,8 +705,9 @@ describe("[AGT3] Events of default-streams", function () {
               assert.equal(res.status, 400);
             });
             it('[E3AE] Should return the correct error', async () => {
-              assert.equal(res.body.error.data[0].code, ErrorIds.DeniedMultipleAccountStreams);
-              assert.equal(res.body.error.data[0].message, ErrorMessages[ErrorIds.DeniedMultipleAccountStreams]);
+              assert.equal(res.body.error.id, ErrorIds.DeniedMultipleAccountStreams);
+              assert.equal(res.body.error.message, ErrorMessages[ErrorIds.DeniedMultipleAccountStreams]);
+              assert.deepEqual(res.body.error.data, { streamId: 'email'});
             });
           });
           describe('[EEV9] When changing account stream with another core steram', async () => {
@@ -727,8 +729,9 @@ describe("[AGT3] Events of default-streams", function () {
               assert.equal(res.status, 400);
             });
             it('[E3AE] Should return the correct error', async () => {
-              assert.equal(res.body.error.data[0].code, ErrorIds.DeniedMultipleAccountStreams);
-              assert.equal(res.body.error.data[0].message, ErrorMessages[ErrorIds.DeniedMultipleAccountStreams]);
+              assert.equal(res.body.error.id, ErrorIds.DeniedMultipleAccountStreams);
+              assert.equal(res.body.error.message, ErrorMessages[ErrorIds.DeniedMultipleAccountStreams]);
+              assert.deepEqual(res.body.error.data, {streamId: 'email'});
             });
           });
         });
@@ -750,7 +753,14 @@ describe("[AGT3] Events of default-streams", function () {
               (body) => {
                 serviceRegisterRequest = body;
                 return true;
-              }).reply(400, { errors: [{ id: `Existing_${streamId}`}] });
+              }).reply(400, {
+                error: {
+                  id: ErrorIds.ItemAlreadyExists,
+                  data: {
+                    [streamId]: eventData.content
+                  }
+                }
+              });
             const initialEvent = await bluebird.fromCallback(
               (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
 
@@ -776,8 +786,8 @@ describe("[AGT3] Events of default-streams", function () {
           });
           it('[F8A8] Should return a 400 as it is already taken in service-register', async () => {
             assert.equal(res.status, 400);
-            assert.equal(res.body.error.data[0].code, ErrorIds['Existing_email']);
-            assert.equal(res.body.error.data[0].message, ErrorMessages[ErrorIds['Existing_email']]);
+            assert.equal(res.body.error.id, ErrorIds.ItemAlreadyExists);
+            assert.deepEqual(res.body.error.data, { email: eventData.content});
           });
         });
         describe('[0FDB] When the field is not unique in mongodb', async () => {
@@ -809,8 +819,9 @@ describe("[AGT3] Events of default-streams", function () {
             assert.equal(res.status, 400);
           });
           it('[B285] Should return the correct error', async () => {
-            assert.equal(res.body.error.data[0].code, ErrorIds['Existing_email']);
-            assert.equal(res.body.error.data[0].message, ErrorMessages[ErrorIds['Existing_email']]);
+            const error = res.body.error;
+            assert.equal(error.id, ErrorIds.ItemAlreadyExists);
+            assert.equal(error.data.email, eventData.content);
           });
         });
       });

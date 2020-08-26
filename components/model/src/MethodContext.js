@@ -90,7 +90,6 @@ class MethodContext {
   }
 
   // Load the user identified by `this.username`, storing it in `this.user`.
-  // 
   async retrieveUser(storage: StorageLayer) {
     try {
       const userRepository = new UserRepository(storage.events);

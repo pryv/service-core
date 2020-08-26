@@ -196,7 +196,10 @@ describe('registration: cluster', function() {
             return true;
           })
           .reply(400, {
-            errors: ['Existing_username']
+            error: {
+              id: ErrorIds.ItemAlreadyExists,
+              data: { username: 'wactiv' }
+            }
           });
   
         res = await request.post(methodPath).send(userData);
@@ -226,7 +229,10 @@ describe('registration: cluster', function() {
             return true;
           })
           .reply(400, {
-            errors: ['Existing_email']
+            error: {
+              id: ErrorIds.ItemAlreadyExists,
+              data: { email: 'wactiv@pryv.io' }
+            }
           });
   
         res = await request.post(methodPath).send(userData);
@@ -259,7 +265,13 @@ describe('registration: cluster', function() {
             return true;
           })
           .reply(400, {
-            errors: ['Existing_email', 'Existing_username']
+            error: {
+              id: ErrorIds.ItemAlreadyExists,
+              data: {
+                email: 'wactiv@pryv.io',
+                username: 'wactiv'
+              }
+            }
           });
   
         res = await request.post(methodPath).send(userData);
@@ -291,7 +303,12 @@ describe('registration: cluster', function() {
             return true;
           })
           .reply(400, {
-            errors: ['Existing_username']
+            error: {
+              id: ErrorIds.ItemAlreadyExists,
+              data: {
+                username: userData.username
+              }
+            }
           });
   
         res = await request.post(methodPath).send(userData);
@@ -423,7 +440,11 @@ describe('registration: cluster', function() {
               serviceRegisterRequests.push(body);
               return true;
             })
-            .reply(400, { errors: ['InvalidInvitationToken'] });
+            .reply(400, {
+              error: {
+                id: ErrorIds.InvalidInvitationToken
+              }
+             });
           res = await request.post(methodPath).send(userData);
         });
         it('[4GON] should respond with status 400', () => {
@@ -446,7 +467,10 @@ describe('registration: cluster', function() {
               serviceRegisterRequests.push(body);
               return true;
             })
-            .reply(400, { errors: ['InvalidInvitationToken'] });
+            .reply(400, {
+              error: {
+                id: ErrorIds.InvalidInvitationToken
+              } });
           res = await request.post(methodPath).send(userData);
         });
         it('[CX9N] should respond with status 400', () => {
