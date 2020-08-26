@@ -16,7 +16,8 @@ const SystemStreamsSerializer = require('components/business/src/system-streams/
   ErrorMessages = require('components/errors/src/ErrorMessages'),
   ErrorIds = require('components/errors').ErrorIds,
   ServiceRegister = require('components/business/src/auth/service_register'),
-  UserService = require('components/business/src/users/UserService');
+  UserRepository = require('components/business/src/users/repository');
+  User = require('components/business/src/users/User');
 
   /**
  * @param api
@@ -32,6 +33,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
   var registerSettings = servicesSettings.register,
     emailSettings = servicesSettings.email,
     requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);
+    userRepository = new UserRepository(userEventsStorage);
 
   // RETRIEVAL
 
@@ -40,8 +42,9 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     commonFns.getParamsValidation(methodsSchema.get.params),
     async function (context, params, result, next) {
       try {
-        const userService = new UserService({ id: context.user.id, storage: userEventsStorage });
-        result.account = await userService.getUserInfo();
+        const userObj: User = await userRepository.getById(context.user.id);
+        result.account = userObj.getAccount();
+        delete result.account.id;
         next();
       } catch (err) {
         return next(errors.unexpectedError(err));
@@ -66,21 +69,18 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     updateAccount);
 
   async function verifyOldPassword (context, params, result, next) {
-    const userService = new UserService({ id: context.user.id, storage: userEventsStorage });
-    const userPass = await userService.getUserPasswordHash();
-
-    if (userPass == null)
-      throw errors.unknownResource('user', context.user.username);
-
-    encryption.compare(params.oldPassword, userPass, function (err, isValid) {
-      if (err) { return next(errors.unexpectedError(err)); }
-
-      if (! isValid) {
+    const userRepository = new UserRepository(userEventsStorage);
+    try{
+      const isValid = await userRepository.checkUserPassword(context.user.id, params.oldPassword);
+      if (!isValid) {
         return next(errors.invalidOperation(
           'The given password does not match.'));
       }
       next();
-    });
+    } catch (err) {
+      // handles unknownResource and unexpected errors
+      return next(err);
+    }
   }
 
   // REQUEST PASSWORD RESET
@@ -232,7 +232,6 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
       const fieldsToUpdate = Object.keys(params.update);
       const uniqueAccountStreamIds = (new SystemStreamsSerializer).getUniqueAccountStreamsIds();
       let i;
-      const userService = new UserService({ id: context.user.id, storage: userEventsStorage });
       for (i = 0; i < fieldsToUpdate.length; i++){
         let updateData = { content: params.update[fieldsToUpdate[i]]};
         if (uniqueAccountStreamIds.includes(fieldsToUpdate[i])) {
@@ -247,13 +246,15 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
 
       // retrieve and form user info
       if (!fieldsToUpdate.includes('passwordHash')) {
-        result.account = await userService.getUserInfo();
+        const userObj: User = await userRepository.getById(context.user.id);
+        result.account = userObj.getAccount();
+        delete result.account.id;
       }
 
       notifications.accountChanged(context.user);
       next();
     } catch (err) {
-      return next(Registration.handleUniquenessErrorsInSingleErrorFormat(err, ErrorMessages[ErrorIds.UnexpectedErrorWhileSavingTheEvent]));
+      return next(Registration.handleUniquenessErrorsInSingleErrorFormat(err, ErrorMessages[ErrorIds.UnexpectedErrorWhileSavingTheEvent]), params.update);
     }
   }
 };

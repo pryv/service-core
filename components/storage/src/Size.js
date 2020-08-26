@@ -6,7 +6,7 @@
  */
 const bluebird = require('bluebird');
 
-const UserService = require('components/business/src/users/UserService');
+const UserRepository = require('components/business/src/users/repository');
 
 class Size {
 
@@ -39,8 +39,8 @@ class Size {
       dbDocuments: await computeCategory(this.dbDocumentsItems),
       attachedFiles: await computeCategory(this.attachedFilesItems),
     }
-    const userService = new UserService({ id: user.id, storage: this.userEventsStorage });
-    await userService.update(storageUsed);
+    const userRepository = new UserRepository(this.userEventsStorage);
+    await userRepository.updateOne(user.id, storageUsed);
 
     return storageUsed;
 

@@ -31,7 +31,7 @@ class Repository {
   * compatible with a previous account structure and it is implemented in
   * inefficiant way)
   */
-  async getAll (): Promise<Map<string, Array<Webhook>>> {
+  async getAll (): Promise<Map<string, Array<User>>> {
     let users = [];
     try {
       // get list of user ids and usernames
@@ -50,14 +50,14 @@ class Repository {
 
       const usersCount = usersNames.length;
       let user;
+      let userObj;
       for (var i = 0; i < usersCount; i++) {
-        user = await this.getById({ id: usersNames[i].userId }, true);
-        user = user.getAccount();
-        user.id = usersNames[i].userId;
-
+        userObj = await this.getById({ id: usersNames[i].userId }, true);
         // for the crazy unknown reason in the tests invitation token, appId and referer
         // values are not validated, so lets remove them until find out how often this is the
         // case
+        //TODO IEVA - somehow deal that not in the repo
+        let user = userObj.getAccount();
         delete user.referer;
         delete user.appId;
         delete user.invitationToken;
@@ -88,22 +88,19 @@ class Repository {
         this.storage.applyQueryToDB(query),
         this.storage.applyOptionsToDB(null), cb)
     );
-    const usersCount = usersNames.length;
-    let user;
-    let systemStreamsSerializer = new SystemStreamsSerializer();
-    for (var i = 0; i < usersCount; i++) {
-      user = systemStreamsSerializer.serializeEventsToAccountInfo([usersNames[i]]);
-      user = user.getAccount();
-      user.id = usersNames[i].userId;
-      users.push(user);
+
+    for (var i = 0; i < usersNames.length; i++) {
+      users.push(new User(usersNames[i].userId, [usersNames[i]]));
     }
     return users;
   }
 
   /**
-   * Returns a webhook for a user, fetched by its id
+   * Returns a User object retrieved by userId
+   * @param string userId 
+   * @param boolean getAll 
    */
-  async getById (user: {}, getAll: Boolean): Promise<?User> {
+  async getById (userId: string, getAll: boolean): Promise<?User> {
 
     // get user details
     try {
@@ -116,6 +113,7 @@ class Repository {
         userAccountStreamsIds = systemStreamsSerializer.getReadableAccountStreams();
       }
       // form the query
+      //TODO IEVA -query
       let query = {
         '$and': [
           { 'streamIds': { '$in': Object.keys(userAccountStreamsIds) } },
@@ -123,24 +121,20 @@ class Repository {
         ]
       };
       
-      const dbItems = await bluebird.fromCallback(cb => this.storage.database.find(
-        this.storage.getCollectionInfo(user),
-        this.storage.applyQueryToDB(query),
-        this.storage.applyOptionsToDB({}),
-        cb));
-      const userProfileEvents = this.storage.applyItemsFromDB(dbItems);
+      //const dbItems = await bluebird.fromCallback(cb => this.storage.find({ id: userId }, query, null, cb));
+      const userProfileEvents = await bluebird.fromCallback(cb =>
+        this.storage.find({ id: userId }, query, null, cb));
       // convert events to the account info structure
-      return new User(userProfileEvents);
+      return new User(userId, userProfileEvents);
     } catch (error) {
       throw error;
     }
-    //return initUser(user, this, webhook);
   }
 
   /**
    * Get user id from username
    */
-  async getUserIdByUsername (username: string): integer {
+  async getAccountByUsername (username: string): Promise<?User> {
     try {
       // TODO IEVA validate for deleted users 
       const userIdEvent = await bluebird.fromCallback(cb =>
@@ -154,9 +148,13 @@ class Repository {
           null, cb));
 
       if (userIdEvent && userIdEvent.userId) {
-        return userIdEvent.userId;
+        return this.getById(userIdEvent.userId);
+        /*return {
+          id: userIdEvent.userId,
+          username: username
+        };*/
       } else {
-        return 0;
+        return null;
       }
     } catch (error) {
       throw error;
@@ -165,6 +163,7 @@ class Repository {
 
   /**
    * Get user id from username
+   * @param object ({key: value}) fields 
    */
   async checkUserFieldsUniqueness (fields: object): integer {
     try {
@@ -187,7 +186,7 @@ class Repository {
    * @param userParams - parameters to be saved
    * @return object with created user information in flat format
    */
-  async insertOne (params: object): Promise<void> {
+  async insertOne (params: object): Promise<object> {
     let userParams = Object.assign({}, params);
     let user = {};
 
@@ -233,6 +232,7 @@ class Repository {
       user.id = updateObject.id;
       await session.withTransaction(async () => {
         // insert username event
+        //TODO IEVA -insert many
         const username = await bluebird.fromCallback((cb) =>
           this.storage.insertOne(user, updateObject, cb, { session }));
         user.username = username.content;
@@ -275,7 +275,7 @@ class Repository {
             // get additional stream ids from the config
             let streamIds = [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE];
             if (userAccountStreamsIds[streamId].isUnique === true) {
-              streamIds.push("unique");
+              streamIds.push('unique');
               creationObject[streamId + '__unique'] = parameter; // repeated field for uniqness
             }
             creationObject.streamIds = streamIds;
@@ -341,7 +341,7 @@ class Repository {
   /**
    * Get user password hash
    */
-  async getUserPasswordHash (userId: string): Promise<void> {
+  async _getUserPasswordHash (userId: string): Promise<void> {
     let userPass;
     userPass = await bluebird.fromCallback(cb =>
       this.storage.database.findOne(
@@ -354,14 +354,26 @@ class Repository {
         this.storage.applyOptionsToDB(null), cb));
     return (userPass?.content) ? userPass.content : null;
   }
+
+  /**
+   * Checks if passwword is valid for the given userId
+   * @param string userId 
+   * @param string password
+   */
+  async checkUserPassword (userId: string, password: string): boolean {
+    try {
+      const currentPass = await this._getUserPasswordHash(userId);
+      
+      if (currentPass == null)
+        throw errors.unknownResource('user', context.user.username);
+
+      const isValid: boolean = await bluebird.fromCallback(cb =>
+        encryption.compare(password, currentPass, cb));
+
+      return isValid;
+    } catch (err) {
+      return next(errors.unexpectedError(err));
+    }
+  }
 }
 module.exports = Repository;
-
-/*
-function initUser (user: {}, repository: Repository): User {
-  return new User(_.merge({
-    usersRepository: repository,
-    user: User,
-  }, user));
-}
-*/

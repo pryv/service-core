@@ -23,7 +23,7 @@ const testData = helpers.data;
 const _ = require('lodash');
 const bluebird = require('bluebird');
 const { resolveCname } = require('dns');
-const UserService = require('components/business/src/users/UserService');
+const UserRepository = require('components/business/src/users/repository');
 
 describe('account', function () {
   const user = Object.assign({}, testData.users[0]);
@@ -221,9 +221,9 @@ describe('account', function () {
       assert.approximately(storageUsed.attachedFiles, initialStorageUsed.attachedFiles +
         newAtt.size, filesystemBlockSize);
       const updatedStorageUsed = storageUsed;
-      const userService = new UserService({ id: user.id, storage: storage });
-      const account = await userService.getUserInfo();
-      assert.deepEqual(account.storageUsed, updatedStorageUsed);
+      const userRepository = new UserRepository(storage);
+      let userObj = await userRepository.getById(user.id);
+      assert.deepEqual(userObj.getAccount().storageUsed, updatedStorageUsed);
     });
 
     // test nightly job script
@@ -266,11 +266,11 @@ describe('account', function () {
     it('[0QVH] must be approximately updated (diff) when adding an attached file', function (done) {
       var initialStorageUsed,
         newAtt = testData.attachments.image;
-      const userService = new UserService({ id: user.id, storage: storage });
+      const userRepository = new UserRepository(storage);
       async.series([
         async function checkInitial () {
-          const account = await userService.getUserInfo();
-          initialStorageUsed = account.storageUsed;
+          const userObj = await userRepository.getById(user.id);
+          initialStorageUsed = userObj.getAccount().storageUsed;
         },
         function addAttachment(stepDone) {
           request.post('/' + user.username + '/events/' + testData.events[0].id)
@@ -281,7 +281,8 @@ describe('account', function () {
               });
         },
         async function checkUpdated () {
-          const account = await userService.getUserInfo();
+          const userObj = await userRepository.getById(user.id);
+          const account = userObj.getAccount();
           initialStorageUsed = account.storageUsed;
           account.storageUsed.dbDocuments.should.eql(initialStorageUsed.dbDocuments);
           account.storageUsed.attachedFiles.should.be.approximately(

@@ -159,6 +159,8 @@ describe('registration: single-node', () => {
         it('[M2HD] should respond with the correct error message', function() {
           assert.exists(res.error);
           assert.exists(res.error.text);
+          console.log(res.error, 'res.errorrrrrrrrrrrrr');
+          // changed to new error format to match the cluster
           const error = JSON.parse(res.error.text);
           assert.include(error.error.data[0].param, '');
         });

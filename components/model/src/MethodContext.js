@@ -16,7 +16,7 @@ const APIError = require('components/errors').APIError;
 const errors = require('components/errors').factory;
 const treeUtils = require('components/utils').treeUtils;
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const UserService = require('components/business/src/users/UserService');
+const UserRepository = require('components/business/src/users/repository');
 import type { StorageLayer } from 'components/storage';
 
 export type CustomAuthFunctionCallback = (err: any) => void;
@@ -93,9 +93,10 @@ class MethodContext {
   // 
   async retrieveUser(storage: StorageLayer) {
     try {
-      const userService = new UserService({ username: this.username, storage: storage.events });
+      const userRepository = new UserRepository(storage.events);
       // get user details
-      this.user = await userService.getUserInfo(true);
+      const userObj = await userRepository.getAccountByUsername(this.username, true);
+      this.user = userObj.getAccount();
       if (!this.user?.id)
         throw errors.unknownResource('user', this.username);
     } catch (err) {

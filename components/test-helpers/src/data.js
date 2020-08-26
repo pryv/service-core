@@ -19,7 +19,7 @@ const path = require('path');
 const rimraf = require('rimraf');
 const _ = require('lodash');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const UserService = require('components/business/src/users/UserService');
+const UserRepository = require('components/business/src/users/repository');
 const charlatan = require('charlatan');
 
 // users
@@ -30,13 +30,13 @@ exports.resetUsers = async () => {
   await bluebird.fromCallback(cb => storage.user.events.database.deleteMany(
     { name: 'events' }, {}, cb));
 
-  const userService = new UserService({ storage: storage.user.events });
+  const userRepository = new UserRepository(storage.user.events);
   
   let i;
   try{
     for (i = 0; i < users.length; i++){
       let user = Object.assign({}, users[i]);
-      await userService.save(user);
+      await userRepository.insertOne(user);
     }
   } catch (error) {
     throw error;
@@ -47,7 +47,7 @@ exports.resetUsersWithAdditionalProperties = async () => {
   await bluebird.fromCallback(cb => storage.user.events.database.deleteMany(
     { name: 'events' }, {}, cb));
 
-  const userService = new UserService({ storage: storage.user.events });
+  const userRepository = new UserRepository(storage.user.events);
 
   let i;
   try {
@@ -55,7 +55,7 @@ exports.resetUsersWithAdditionalProperties = async () => {
       let user = Object.assign({}, users[i]);
       user.insurancenumber = charlatan.Number.number(3);
       user.phoneNumber = charlatan.Number.number(3);
-      await userService.save(user);
+      await userRepository.insertOne(user);
     }
   } catch (error) {
     throw error;

@@ -8,7 +8,7 @@ const _ = require('lodash');
 const Registration = require('components/business/src/auth/registration');
 const commonFns = require('./../helpers/commonFunctions');
 const methodsSchema = require('components/api-server/src/schema/authMethods');
-const UserService = require('components/business/src/users/UserService');
+const UserRepository = require('components/business/src/users/repository');
 const errors = require('components/errors').factory;
 
 /**
@@ -29,7 +29,6 @@ module.exports = function (api, logging, storageLayer, servicesSettings, serverS
     registration.loadCustomValidationSettings.bind(registration),
     registration.prepareUserDataForSaving,
     // user registration methods
-    registration.prepareUserDataForSaving,
     registration.createUser.bind(registration),
     registration.sendWelcomeMail.bind(registration),
   );
@@ -50,8 +49,8 @@ module.exports = function (api, logging, storageLayer, servicesSettings, serverS
   async function checkUsername(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     result.reserved = false;
     try {
-      const userService = new UserService({ storage: storageLayer.events });
-      const existingUser = await userService.checkUserFieldsUniqueness({ username: params.username});
+      const userRepository = new UserRepository(storageLayer.events);
+      const existingUser = await userRepository.checkUserFieldsUniqueness({ username: params.username});
 
       if (existingUser?.content) {
         result.reserved = true;

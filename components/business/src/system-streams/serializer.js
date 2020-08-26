@@ -37,15 +37,6 @@ class SystemStreamsSerializer {
   }
 
   /**
-   * Convert system->account events to the account object
-   * @param {*} events 
-   */
-  serializeEventsToAccountInfo(events){
-    let user = {};
-    return formEventsTree(this.accountStreamsSettings, events, user);
-  }
-
-  /**
    * Get the names of all readable streams that belongs to the system->account stream
    * and could be returned to the user
    */
@@ -196,36 +187,6 @@ function formSystemStreamsFromSettings (settings, systemStreams, parentName: str
     }
   };
   return systemStreams;
-}
-
-/**
- * Takes the list of the streams, events list
- * and object where events will be saved in a tree structure
- * @param object streams
- * @param array events
- * @param object user 
- */
-function formEventsTree (streams:object, events: array, user:object):object {
-  let streamIndex;
-  for (streamIndex = 0; streamIndex < streams.length; streamIndex++) {
-    const streamName = streams[streamIndex].id;
-
-    // if stream has children recursivelly call the same function
-    if (typeof streams[streamIndex].children !== 'undefined') {
-      user[streamName] = {};
-      user[streamName] = formEventsTree(streams[streamIndex].children, events, user[streamName])
-    }
-
-    // get value for the stream element
-    let i;
-    for (i = 0; i < events.length; i++) {
-      if (events[i].streamIds.includes(streamName)) {
-        user[streamName] = events[i].content;
-        break;
-      }
-    }
-  };
-  return user;
 }
 
 /**

@@ -12,7 +12,7 @@ const helpers = require('components/api-server/test/helpers');
 const eventsStorage = helpers.dependencies.storage.user.events;
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('components/api-server/test/test-helpers');
-const UserService = require('components/business/src/users/UserService');
+const UserRepository = require('components/business/src/users/repository');
 
 describe('Events storage', () => {
   let server;
@@ -59,9 +59,9 @@ describe('Events storage', () => {
 
     it('[7C22] must throw a duplicate error when username field is not unique', async () => {
       try {
-        const userService = new UserService({ storage: eventsStorage });
+        const userRepository = new UserRepository(eventsStorage);
         const id = charlatan.App.name();
-        await userService.save({
+        await userRepository.insertOne({
           id: id,
           username: username,
           password: charlatan.App.name(),
@@ -84,8 +84,8 @@ describe('Events storage', () => {
 
     it('[6CFE] must throw a duplicate error when email field is not unique', async () => {
       try {
-        const userService = new UserService({ storage: eventsStorage });
-        await userService.save({
+        const userRepository = new UserRepository(eventsStorage);
+        await userRepository.insertOne({
           id: charlatan.App.name(),
           email: email
         });

@@ -88,10 +88,8 @@ describe('Flush', () => {
     });
     
     it('[D5N1] writes event metadata to disk', async () => {
-      await op.run(); 
-      
+      await op.run();
       const event = await loadEvent(db, userId, eventId);
-      
       assert.strictEqual(event.modifiedBy, 'author123');
       assert.approximately(event.modified, modifiedTime, 2);
       assert.strictEqual(event.duration, to); 

@@ -10,7 +10,7 @@ const LRU = require('lru-cache');
 const bluebird = require('bluebird');
 
 const storage = require('components/storage');
-const UserService = require('components/business/src/users/UserService');
+const UserRepo = require('components/business/src/users/repository');
 const { PendingUpdate } = require('./pending_updates');
 
 import type { LRUCache } from 'lru-cache';
@@ -36,7 +36,7 @@ class Flush implements Operation {
     this.db = db;
     this.logger = logger; 
     
-    this.users = new UserRepository(db); 
+    this.users = new UserRepository(db);     
   }
   
   // Flushes the information in `this.update` to disk (MongoDB).
@@ -50,6 +50,7 @@ class Flush implements Operation {
     logger.debug(`Flushing update to ${request.userId}/${request.eventId}, author ${request.author}`);
     // update.userId contains the user _name_. To be able to update, we must 
     // first load the user and resolve his id. 
+    //TODO IEVA
     const users = this.users; 
     const user = await users.resolve(request.userId);
     
@@ -74,8 +75,9 @@ class Flush implements Operation {
       modified: request.timestamp,
      
     };
+    //TODO IEVA - how to deal with this user repository and object?
     await bluebird.fromCallback(
-      cb => db.events.updateOne(user, query, updatedData, cb));
+            cb => db.events.updateOne(user, query, updatedData, cb));
       
     return true;
   }
@@ -119,10 +121,14 @@ class UserRepository {
     return user; 
   }
   
-  async resolveFromDB(name: string): Promise<User> {
-    // get user information by the username
-    const userService = new UserService({ username: name, storage: this.db.events });
-    return await userService.getUserInfo(true);
+  /**
+   * get user information by the username
+   * @param string name 
+   */
+  async resolveFromDB (name: string): Promise<User> {
+    const userRepository = new UserRepo(this.db.events); 
+    const userObj = await userRepository.getAccountByUsername(name, true);
+    return userObj.getAccount();
   }
 }
 

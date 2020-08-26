@@ -14,14 +14,16 @@ const config: Config = getConfig();
 //const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
 class User {
+  userId: string;
   events: [];
   account: Object;
   //serializer: ?SystemStreamsSerializer;
   accountStreamsSettings: [];
 
-  constructor (events: [] ) {
+  constructor (userId, events: [] ) {
     //this.serializer = new SystemStreamsSerializer();
     this.events = events;
+    this.userId = userId;
     this.accountStreamsSettings = config.get('systemStreams:account');
     this.formAccountDataFromListOfEvents();
   }
@@ -32,6 +34,7 @@ class User {
   formAccountDataFromListOfEvents () {
     let user = {};
     this.account = formEventsTree(this.accountStreamsSettings, this.events, user);
+    this.account.id = this.userId;
   }
 
   getAccount () {
