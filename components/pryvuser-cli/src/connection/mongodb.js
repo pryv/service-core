@@ -14,11 +14,12 @@ import type { MongoDbSettings } from '../configuration';
 
 const { Database, StorageLayer } = require('components/storage');
 const NullLogger = require('components/utils/src/logging').NullLogger;
-const UserService = require('components/business/src/users/UserService');
+const UserRepository = require('components/business/src/users/repository');
+const User = require('components/business/src/users/User');
 
 class MongoDB {
   database: *; 
-  storageLayer: *; 
+  storageLayer: *;
 
   constructor(config: MongoDbSettings) {
     const nullLogger = new NullLogger(); 
@@ -82,8 +83,8 @@ class MongoDB {
     await Promise.all(drops);
 
     // Drop the user itself.
-    const userService = new UserService({ id: user.id, storage: storage.events });
-    // TODO IEVA - implementation is not finished await userService.delete();
+    const userRepository = new UserRepository(storage.events);
+    // TODO IEVA - implementation is not finished await userRepository.delete(user.id);
 
     await bluebird.fromCallback(
       cb => storage.sessions.remove( 
@@ -91,9 +92,10 @@ class MongoDB {
   }
 
   async findUser (username: string): Promise<?UserAttributes> {
-    const userService = new UserService({ username: username, storage: this.storageLayer.events });
+    const userRepository = new UserRepository(this.storageLayer.events);
     
-    return await userService.getUserInfo(true, true);
+    const userObj: User = await userRepository.getAccountByUsername(username, true, true);
+    return userObj.getAccount();
   }
 
   close(): Promise<void> {

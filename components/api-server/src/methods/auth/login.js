@@ -10,7 +10,7 @@ var commonFns = require('components/api-server/src/methods/helpers/commonFunctio
     errors = require('components/errors').factory,
     methodsSchema = require('components/api-server/src/schema/authMethods'), 
     _ = require('lodash');
-const UserService = require('components/business/src/users/UserService');
+const UserRepository = require('components/business/src/users/repository');
 /**
  * Auth API methods implementations.
  *
@@ -41,20 +41,18 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
   }
 
   async function checkPassword (context, params, result, next) {
-    const userService = new UserService({ id: context.user.id, storage: userEventsStorage });
-    const userPass = await userService.getUserPasswordHash();
-    if (userPass == null)
-      throw errors.unknownResource('user', context.user.username);
-    
-    encryption.compare(params.password, userPass, function (err, isValid) {
-      delete params.password;
-      if (err) { return next(errors.unexpectedError(err)); }
-
-      if (! isValid) {
+    const userRepository = new UserRepository(userEventsStorage);
+    try {
+      const isValid = await userRepository.checkUserPassword(context.user.id, params.password);
+      if (!isValid) {
+        //TODO IEVA -different error than while changing the password
         return next(errors.invalidCredentials());
       }
       next();
-    });
+    } catch (err) {
+      // handles unknownResource and unexpected errors
+      return next(err);
+    }
   }
 
   function openSession(context, params, result, next) {

@@ -11,7 +11,8 @@ const methodsSchema = require('../schema/systemMethods');
 const string = require('./helpers/string');
 const _ = require('lodash');
 const bluebird = require('bluebird');
-const UserService = require('components/business/src/users/UserService');
+const UserRepository = require('components/business/src/users/repository');
+const User = require('components/business/src/users/User');
 
 /**
  * @param systemAPI
@@ -75,8 +76,9 @@ module.exports = function (
 
   async function retrieveUser(context, params, result, next) {
     try {
-      const userService = new UserService({ username: params.username, storage: storageLayer.events });
-      context.user = await userService.getUserInfo(true);
+      const userRepository = new UserRepository(storageLayer.events);
+      const userObj: User = await userRepository.getAccountByUsername(params.username, true);
+      context.user = userObj.getAccount();
 
       if (! context.user?.id) {
         return next(errors.unknownResource('user', params.username));

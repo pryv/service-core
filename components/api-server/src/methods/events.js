@@ -24,7 +24,7 @@ const SystemStreamsSerializer = require('components/business/src/system-streams/
   Registration = require('components/business/src/auth/registration'),
   ErrorMessages = require('components/errors/src/ErrorMessages'),
   ErrorIds = require('components/errors').ErrorIds,
-  UserService = require('components/business/src/users/UserService');
+  UserRepository = require('components/business/src/users/repository');
 
 const assert = require('assert');
 
@@ -56,7 +56,8 @@ module.exports = function (
   auditSettings, updatesSettings, openSourceSettings, servicesSettings
 ) {
 
-  
+  const userRepository = new UserRepository(userEventsStorage);
+
   // Initialise the project version as soon as we can. 
   const pv = new ProjectVersion();
   let version = pv.version();
@@ -735,7 +736,7 @@ module.exports = function (
       setFileReadToken(context.access, result.event);
 
     } catch (err) {
-      return next(Registration.handleUniquenessErrors(err, ErrorMessages[ErrorIds.UnexpectedErrorWhileSavingTheEvent]));
+      return next(Registration.handleUniquenessErrors(err, ErrorMessages[ErrorIds.UnexpectedErrorWhileSavingTheEvent]), params);
     };
     next();
   }
@@ -954,7 +955,6 @@ module.exports = function (
       let i;
       let fileInfo;
       const filesKeys = Object.keys(files);
-      const userService = new UserService({ id: context.user.id, storage: userEventsStorage });
       for (i = 0; i < filesKeys.length; i++) {
         //saveFile
         fileInfo = files[filesKeys[i]];
@@ -970,7 +970,9 @@ module.exports = function (
         // approximately update account storage size
         context.user.storageUsed.attachedFiles += fileInfo.size;
         
-        await userService.update({ attachedFiles: context.user.storageUsed.attachedFiles });
+        await userRepository.updateOne(
+          context.user.id,
+          { attachedFiles: context.user.storageUsed.attachedFiles });
       }
       return attachments;
     } catch (err) {
@@ -1104,8 +1106,7 @@ module.exports = function (
           return;
         }
         context.user.storageUsed.attachedFiles -= getTotalAttachmentsSize(context.event);
-        const userService = new UserService({ id: context.user.id, storage: userEventsStorage });
-        await userService.update(context.user.storageUsed);
+        await userRepository.updateOne(context.user.id, context.user.storageUsed);
       }
     ], next);
   }
@@ -1160,8 +1161,7 @@ module.exports = function (
 
         // approximately update account storage size
         context.user.storageUsed.attachedFiles -= deletedAtt.size;
-        const userService = new UserService({ id: context.user.id, storage: userEventsStorage });
-        await userService.update(context.user.storageUsed);
+        await userRepository.updateOne(context.user.id, context.user.storageUsed);
         notifications.eventsChanged(context.user);
         next();
       } catch (err) {

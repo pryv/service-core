@@ -21,7 +21,8 @@ const ServiceRegister = require('./service_register');
 const methodsSchema = require('components/api-server/src/schema/authMethods');
 var string = require('components/api-server/src/schema/helpers').string;
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const UserService = require('components/business/src/users/UserService');
+const UserRepository = require('components/business/src/users/repository');
+const User = require('components/business/src/users/User');
 
 import type { MethodContext } from 'components/model';
 import type { ApiCallback } from 'components/api-server/src/API';
@@ -37,6 +38,7 @@ class Registration {
   storageLayer: any; // used for initUser
   defaultStreamsSerializer: SystemStreamsSerializer = new SystemStreamsSerializer();
   serviceRegisterConn: ServiceRegister; // service-register connection
+  userRepository: UserRepository; 
   hostname: string; // hostname that will be saved in service-register as a 'core' where user is registered
   accountStreamsSettings: any = this.defaultStreamsSerializer.getFlatAccountStreamSettings();
   servicesSettings: any; // settigns to get the email to send user welcome email
@@ -50,6 +52,7 @@ class Registration {
       servicesSettings.register,
       logging.getLogger('service-register')
     );
+    this.userRepository = new UserRepository(this.storageLayer.events);
     this.hostname = serverSettings.hostname;
     this.POOL_USERNAME_PREFIX = 'pool@';
     this.TEMP_USERNAME_PREFIX = 'temp@';
@@ -223,10 +226,7 @@ class Registration {
     try {
       // TODO IEVA -verify this logic with Ilia, because there
       // could be additional unique fields
-      const userService = new UserService({
-        storage: this.storageLayer.events
-      });
-      const existingUser = await userService.checkUserFieldsUniqueness(params);
+      const existingUser = await this.userRepository.checkUserFieldsUniqueness(params);
       // if any of unique fields were already saved, it means that there were an error
       // saving in service register (above there is a check that email does not exist in
       // service register)
@@ -235,11 +235,8 @@ class Registration {
         context.skip = true;
 
         //append context with the same values that would be saved by createUser function
-        const userService = new UserService({
-          id: existingUser.userId,
-          storage: this.storageLayer.events
-        });
-        context.user = await userService.getUserInfo(true, true);
+        const userObj: User = await this.userRepository.getById(existingUser.userId, true);
+        context.user = userObj.getAccount();
 
         // set result as current username
         result.username = context.user.username;
@@ -329,11 +326,10 @@ class Registration {
     }
 
     try {
-      const userService = new UserService({ storage: this.storageLayer.events });
       context.user = {
         username: params.username
       };
-      const user = await userService.save(params);
+      const user = await this.userRepository.insertOne(params);
       context.user = { ...context.user, ...user };
       context.user.host = { name: this.hostname };
 
@@ -345,7 +341,7 @@ class Registration {
       }
       next();
     } catch (err) {
-      return next(Registration.handleUniquenessErrors(err));
+      return next(Registration.handleUniquenessErrors(err, null, params));
     }
   }
 
@@ -395,7 +391,6 @@ class Registration {
         if (err) {
           errorHandling.logError(err, null, this.logger);
         }
-
         next();
       }
     );
@@ -422,16 +417,14 @@ class Registration {
    * @param {*} err
    * @param {*} params
    */
-  static handleUniquenessErrors(err, message) {
+  static handleUniquenessErrors (err, message, params) {
     // Duplicate errors
-    // I check for these errors in the validation so they are only used for
-    // deprecated systems.createUser path
-    let listApiErrors = [];
+    let uniquenessErrors = {};
     if (typeof err.isDuplicateIndex === 'function') {
-      listApiErrors.push(errors.existingField(err.duplicateIndex()));
+      uniquenessErrors[err.duplicateIndex()] = params[err.duplicateIndex()];
     }
-    if (listApiErrors.length > 0) {
-      return commonFns.apiErrorToValidationErrorsList(listApiErrors);
+    if (Object.keys(uniquenessErrors).length > 0) {
+      return errors.itemAlreadyExists('user', uniquenessErrors);
     }
     // Any other error
     if (!message) {

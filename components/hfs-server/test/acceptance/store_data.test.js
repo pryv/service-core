@@ -17,7 +17,8 @@ const debug = require('debug')('store_data.test');
 const bluebird = require('bluebird');
 const lodash = require('lodash');
 const awaiting = require('awaiting');
-const UserService = require('components/business/src/users/UserService');
+const UserRepository = require('components/business/src/users/repository');
+const User = require('components/business/src/users/User');
 
 const { 
   spawnContext, produceMongoConnection, 
@@ -294,8 +295,9 @@ describe('Storing data in a HF series', function() {
         { streamIds: [parentStreamId], time: Date.now() / 1000 },
         attrs
       );
-      const userService = new UserService({ id: userId, storage: storageLayer.events });
-      const user = await userService.getUserInfo(true);
+      const userRepository = new UserRepository(storageLayer.events);
+      const userObj: User = await userRepository.getById(userId);
+      const user = user.account();
       assert.isNotNull(user);
 
       const event = await bluebird.fromCallback(
@@ -792,9 +794,10 @@ describe('Storing data in a HF series', function() {
           attrs
         );
 
-        const userService = new UserService({ id: userId, storage: storageLayer.events });
-        const user = await userService.getUserInfo(true);
-        
+        const userRepository = new UserRepository(storageLayer.events);
+        const userObj: User = await userRepository.getById(userId);
+        const user = userObj.getAccount();
+
         assert.isNotNull(user);
           
         const event = await bluebird.fromCallback(
