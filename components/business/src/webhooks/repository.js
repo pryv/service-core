@@ -12,7 +12,7 @@ const _ = require('lodash');
 const Webhook = require('./Webhook');
 const WebhooksStorage = require('components/storage').StorageLayer.webhooks;
 const UserEventsStorage = require('components/storage').StorageLayer.events;
-const UserService = require('components/business/src/users/User');
+const UsersRepository = require('components/business/src/users/repository');
 
 /** 
  * Repository of all Webhooks in this Pryv.io instance. 
@@ -32,8 +32,8 @@ class Repository {
   async getAll(): Promise<Map<string, Array<Webhook>>> {
     let users;
     try {
-      const userService = new UserService({ storage: this.userEventsStorage });
-      users = await userService.getAllUsernames();
+      const usersRepository = new UsersRepository(this.userEventsStorage);
+      users = await usersRepository.getAllUsernames();
     } catch (error) {
       throw error;
     }

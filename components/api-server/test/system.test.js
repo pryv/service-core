@@ -28,8 +28,7 @@ const validation = helpers.validation;
 const encryption = require('components/utils').encryption;
 const storage = helpers.dependencies.storage.user.events;
 const testData = helpers.data;
-const UserService = require('components/business/src/users/User');
-const charlatan = require('charlatan');
+const Repository = require('components/business/src/users/repository');
 
 require('date-utils');
 
@@ -101,8 +100,9 @@ describe('system (ex-register)', function () {
         });
         await (new Promise(server.ensureStarted.bind(server, settings)));
 
-        const userService = new UserService({ storage: storage });
-        const originalUsers = await userService.get();
+        const usersRepository = new Repository(storage);
+        const originalUsers = await usersRepository.get();
+
         originalCount = originalUsers.length;
         // create user
         const res = await bluebird.fromCallback(cb => post(newUserData, cb));
@@ -114,7 +114,7 @@ describe('system (ex-register)', function () {
         mailSent.should.eql(true);
 
         // getUpdatedUsers
-        const users = await userService.get();
+        const users = await usersRepository.get();
         users.length.should.eql(originalCount + 1, 'users');
 
         var expected = _.cloneDeep(newUserData);
@@ -197,8 +197,8 @@ describe('system (ex-register)', function () {
 
           await (new Promise(server.ensureStarted.bind(server, settings)));
 
-          const userService = new UserService({ storage: storage });
-          originalUsers = await userService.get();
+          const usersRepository = new Repository(storage);
+          originalUsers = await usersRepository.get();
           originalCount = originalUsers.length;
 
           // create user
@@ -217,7 +217,7 @@ describe('system (ex-register)', function () {
           createdUserId = res.body.id;
 
           // getUpdatedUsers
-          const users = await userService.get();
+          const users = await usersRepository.get();
           users.length.should.eql(originalCount, 'users');
           should.not.exist(_.find(users, { id: createdUserId }));
         });

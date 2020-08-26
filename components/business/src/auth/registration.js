@@ -160,37 +160,25 @@ class Registration {
       );
 
       if (response?.errors && response.errors.length > 0) {
-        const sentValues: { string: string } = _.merge(
-          {
-            username: params.username,
-            invitationToken: params.invitationToken
-          },
-          uniqueFields
-        );
-        const uniquenessErrors = {};
-        const unexpectedErrors = [];
-        const impossibleErrors = [];
-        let hasInvalidTokenError = null;
+        const uniquenessErrors = [];
+        let hasInvalidTokenError = false;
+        let fieldName;
         // 1. convert list of error ids to the list of api errors
         response.errors.forEach(err => {
           // lets check if error thrown by service-register is already defined in errors factory
-          if (err === 'DuplicatedUserRegistration') {
-            // currently do nothing as we don't receive the conflicting keys from register on this path
-          } else if (err.startsWith('Existing_')) {
-            const fieldName = err.replace('Existing_', '');
-            uniquenessErrors[fieldName] = sentValues[fieldName];
+          if (err.startsWith('Existing_')) {
+            fieldName = err.replace('Existing_', '');
+            uniquenessErrors[fieldName] = params[fieldName];
           } else if (err === 'InvalidInvitationToken') {
             hasInvalidTokenError = true;
           } else {
-            unexpectedErrors.push(errors.unexpectedError(errors[err]));
+            throw errors.unexpectedError(errors[err]);
           }
         });
         if (hasInvalidTokenError) {
           return next(
             errors.invalidOperation(ErrorMessages.InvalidInvitationToken)
           );
-        } else if (unexpectedErrors.length > 0) {
-          return next(unexpectedErrors[0]);
         } else {
           return next(errors.itemAlreadyExists('user', uniquenessErrors));
         }
@@ -317,10 +305,11 @@ class Registration {
 
   /**
    * Save user to the database
-   * @param {*} context
-   * @param {*} params
-   * @param {*} result
-   * @param {*} next
+   * Pool user is not consumed anymore
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
    */
   async createUser(
     context: MethodContext,
@@ -340,16 +329,7 @@ class Registration {
     }
 
     try {
-      const userService = new UserService({
-        storage: this.storageLayer.events
-      });
-      // Consume a pool user if available or use default creation
-      // const user = await Registration.createUserOrConsumePool(params, context, params);
-      /* TODO IEVA - do not understand what this part does here
-       const updatedUser = await bluebird.fromCallback(
-         (cb) => context.usersStorage.findOneAndUpdate({ username: { $regex: context.POOL_REGEX } }, params, cb));      
-       if (updatedUser === null) {
-       }*/
+      const userService = new UserService({ storage: this.storageLayer.events });
       context.user = {
         username: params.username
       };
@@ -365,10 +345,6 @@ class Registration {
       }
       next();
     } catch (err) {
-      console.log(err, 'err');
-      // TODO IEVA
-      // const tempUser = _.clone(userInfo);
-      // tempUser.username = context.TEMP_USERNAME_PREFIX + cuid();
       return next(Registration.handleUniquenessErrors(err));
     }
   }

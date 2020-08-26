@@ -5,7 +5,7 @@
 const Settings = require('../src/settings');
 const Application = require('../src/application');
 let logger;
-const UserService = require('components/business/src/users/User');
+const Repository = require('components/business/src/users/repository');
 
 (async () => {
   // Load settings asynchronously because we have to fetch
@@ -59,8 +59,8 @@ async function runNightlyTasks(storageLayer, storageSize) {
   logger.info('Starting update of storage size');
 
   // Retrieve all existing users
-  const userService = new UserService({ storage: storageLayer.events });
-  const users = await userService.get();
+  const usersRepository = new Repository(storageLayer.events);
+  const users = await usersRepository.get();
 
   // Compute storage size used by each user
   for (const user of users) {

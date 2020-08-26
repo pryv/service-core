@@ -11,7 +11,7 @@ const charlatan = require('charlatan');
 const Settings = require('../src/settings');
 const Application = require('../src/application');
 const { getConfig } = require('components/api-server/config/Config');
-const UserService = require('components/business/src/users/User');
+const Repository = require('components/business/src/users/repository');
 
 let app;
 let registerBody;
@@ -163,8 +163,8 @@ describe('registration: single-node', () => {
           assert.include(error.error.data[0].param, '');
         });
         it('[9L3R] should not store the user in the database twice', async function() {
-          const userService = new UserService({ storage: app.storageLayer.events });
-          const users = await userService.get();
+          const usersRepository = new Repository(app.storageLayer.events);
+          const users = await usersRepository.get();
           assert.equal(users.length, 1);
           assert.equal(users[0].username, registerBody.username);
         });

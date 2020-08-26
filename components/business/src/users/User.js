@@ -8,13 +8,14 @@
 
 const _ = require('lodash');
 
-const Repository = require('./repository');
+const Repository = require('components/business/src/users/repository');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
 class User {
   id: string;
   username: string;
   repository: ?Repository;
+  serializer: ?SystemStreamsSerializer;
 
   constructor (params: {
     id?: string,
@@ -22,6 +23,8 @@ class User {
   }) {
     this.id = params?.id;
     this.username = params?.username;
+    this.serializer = new SystemStreamsSerializer();
+
     if (params.storage == null) {
       throw new Error('events storage is not set for User object.');
     }
@@ -36,25 +39,6 @@ class User {
         this.user = { id: this.id };
       }
     }
-  }
-
-  /**
-   * Get All users
-   * (Used for testing and for the nighty job to make each user structure 
-   * compatible with a previous account structure and it is implemented in 
-   * inefficiant way)
-   */
-  async get (): Promise<void> {
-    return await this.repository.get();
-  }
-
-/**
- * Get All usernames
- * Does the same as this.get(), just retrieves only usernames and ids.
- * Used for the webhooks
- */
-  async getAllUsernames (): Promise<void> {
-    return await this.repository.getAllUsernames();
   }
 
   /**
@@ -133,8 +117,7 @@ class User {
     if (!fields || typeof fields !== 'object') {
       throw new Error('Please provide fields to checkUserFieldsUniqueness');
     }
-    const systemStreamsSerializerObj = new SystemStreamsSerializer();
-    const uniqueStreamsIds = systemStreamsSerializerObj.getUniqueAccountStreamsIds();
+    const uniqueStreamsIds = this.serializer.getUniqueAccountStreamsIds();
 
     const uniqueFields = Object.keys(fields)
       .filter(key => uniqueStreamsIds.includes(key))

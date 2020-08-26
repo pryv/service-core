@@ -66,6 +66,12 @@ class Repository {
     }
   }
 
+  /**
+  * Get All users
+  * (Used for testing and for the nighty job to make each user structure
+  * compatible with a previous account structure and it is implemented in
+  * inefficiant way)
+  */
   async get (): Promise<Array<User>> {
     try {
       let users = [];
@@ -103,7 +109,9 @@ class Repository {
   }
 
   /**
-   * Get the list of all users - only username and id
+   * Get All usernames
+   * Does the same as this.get(), just retrieves - only username and id
+   * Used for the webhooks
    */
   async getAllUsernames (): Promise<Array<User>> {
     let users = [];
