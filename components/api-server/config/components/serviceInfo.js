@@ -37,7 +37,7 @@ async function asyncLoad(config: Config): Config {
   let isSingleNode: boolean = config.get('singleNode:isActive');
 
   try {
-    let serviceInfo?: {};
+    let serviceInfo: ?{};
     if (isSingleNode) {
       serviceInfo = buildServiceInfo(config);
     } else if (isFileUrl(serviceInfoUrl)) {
