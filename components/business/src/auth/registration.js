@@ -21,7 +21,7 @@ const ServiceRegister = require('./service_register');
 const methodsSchema = require('components/api-server/src/schema/authMethods');
 var string = require('components/api-server/src/schema/helpers').string;
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const UserService = require('components/business/src/users/User');
+const UserService = require('components/business/src/users/UserService');
 
 import type { MethodContext } from 'components/model';
 import type { ApiCallback } from 'components/api-server/src/API';
@@ -160,7 +160,7 @@ class Registration {
       );
 
       if (response?.errors && response.errors.length > 0) {
-        const uniquenessErrors = [];
+        const uniquenessErrors = {};
         let hasInvalidTokenError = false;
         let fieldName;
         // 1. convert list of error ids to the list of api errors
@@ -401,6 +401,13 @@ class Registration {
     );
   }
 
+  /**
+   * DEPRECATED
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
   createPoolUser(context, params, result, next) {
     const uniqueId = cuid();
     params.username = this.POOL_USERNAME_PREFIX + uniqueId;

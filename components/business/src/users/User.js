@@ -8,125 +8,65 @@
 
 const _ = require('lodash');
 
-const Repository = require('components/business/src/users/repository');
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
+const getConfig: () => Config = require('components/api-server/config/Config').getConfig;
+import type { Config } from 'components/api-server/config/Config';
+const config: Config = getConfig();
+//const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
 class User {
-  id: string;
-  username: string;
-  repository: ?Repository;
-  serializer: ?SystemStreamsSerializer;
+  events: [];
+  account: Object;
+  //serializer: ?SystemStreamsSerializer;
+  accountStreamsSettings: [];
 
-  constructor (params: {
-    id?: string,
-    username?: string
-  }) {
-    this.id = params?.id;
-    this.username = params?.username;
-    this.serializer = new SystemStreamsSerializer();
-
-    if (params.storage == null) {
-      throw new Error('events storage is not set for User object.');
-    }
-    this.repository = new Repository(params.storage);
-    this.user = { id: params?.id };
-  }
-
-  async getUserIdByUsername () {
-    if (!this.id && this.username) {
-      this.id = await this.repository.getUserIdByUsername(this.username);
-      if (this.id) {
-        this.user = { id: this.id };
-      }
-    }
+  constructor (events: [] ) {
+    //this.serializer = new SystemStreamsSerializer();
+    this.events = events;
+    this.accountStreamsSettings = config.get('systemStreams:account');
+    this.formAccountDataFromListOfEvents();
   }
 
   /**
-   * User object
-   * @param Boolean shouldReturnUserId
-   * @param Boolean shouldReturnAllInfo
+   * Convert system->account events to the account object
    */
-  async getUserInfo (shouldReturnUserId: Boolean, shouldReturnAllInfo: Boolean): Promise<void> {
-    // set default values
-    if (typeof shouldReturnAllInfo === 'undefined') {
-      shouldReturnAllInfo = false;
-    }
-    if (typeof shouldReturnUserId === 'undefined') {
-      shouldReturnUserId = false;
-    }
-    // if user is not found, as before , just return null
-    try {
-      await this._checkForUserId();
-    } catch (err) {
-      return null;
-    }
-
-    try{
-      let user = await this.repository.getById({ id: this.id }, shouldReturnAllInfo);
-      if (user && shouldReturnUserId === true) {
-        user.id = this.id;
-      }
-      return user;
-    } catch (err) {
-      throw err;
-    }
+  formAccountDataFromListOfEvents () {
+    let user = {};
+    this.account = formEventsTree(this.accountStreamsSettings, this.events, user);
   }
 
-  async _checkForUserId () {
-    // get userId if only username was used to initialize the class
-    await this.getUserIdByUsername();
-    if (!this.id) {
-      throw new Error('No such user');
-    }
-  }
-
-  async save (params): Promise<void> {
-    return await this.repository.insertOne(params);
-  }
-
-  async update (fieldsToUpdate: {}): Promise<void> {
-    /*
-    const fields = Object.keys(fieldsToUpdate);
-    _.merge(this, fieldsToUpdate);
-    await makeUpdate(fields, this);
-    */
-    try {
-      await this._checkForUserId();
-      const updatedUser = await this.repository.updateOne(this.id, fieldsToUpdate);
-      return updatedUser;
-    } catch (err) {
-      throw err;
-    }
-  }
-
-  async delete (): Promise<void> {
-    // TODO IEVA left for implementation with user deletion feature
-    return await this.repository.deleteMany(this.id);
-  }
-
-  async getUserPasswordHash (): Promise<void> {
-    return await this.repository.getUserPasswordHash(this.id);
-  }
-
-  /**
-   * Check each provided field if it should be unique in the local db
-   * and if it has a unique value
-   * @param {*} fields 
-   */
-  async checkUserFieldsUniqueness (fields): Promise<void> {
-    if (!fields || typeof fields !== 'object') {
-      throw new Error('Please provide fields to checkUserFieldsUniqueness');
-    }
-    const uniqueStreamsIds = this.serializer.getUniqueAccountStreamsIds();
-
-    const uniqueFields = Object.keys(fields)
-      .filter(key => uniqueStreamsIds.includes(key))
-      .reduce((obj, key) => {
-        obj[key] = fields[key];
-        return obj;
-      }, {});
-
-    return await this.repository.checkUserFieldsUniqueness(uniqueFields);
+  getAccount () {
+    return this.account;
   }
 }
+
+/**
+ * Takes the list of the streams, events list
+ * and object where events will be saved in a tree structure
+ * @param object streams
+ * @param array events
+ * @param object user 
+ */
+function formEventsTree (streams: object, events: array, user: object): object {
+  let streamIndex;
+  for (streamIndex = 0; streamIndex < streams.length; streamIndex++) {
+    const streamName = streams[streamIndex].id;
+
+    // if stream has children recursivelly call the same function
+    if (typeof streams[streamIndex].children !== 'undefined') {
+      user[streamName] = {};
+      user[streamName] = formEventsTree(streams[streamIndex].children, events, user[streamName])
+    }
+
+    // get value for the stream element
+    let i;
+    for (i = 0; i < events.length; i++) {
+      if (events[i].streamIds.includes(streamName)) {
+        user[streamName] = events[i].content;
+        break;
+      }
+    }
+  };
+  return user;
+}
+
 module.exports = User;

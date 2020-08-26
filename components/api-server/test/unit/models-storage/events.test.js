@@ -12,7 +12,7 @@ const helpers = require('components/api-server/test/helpers');
 const eventsStorage = helpers.dependencies.storage.user.events;
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('components/api-server/test/test-helpers');
-const UserService = require('components/business/src/users/User');
+const UserService = require('components/business/src/users/UserService');
 
 describe('Events storage', () => {
   let server;

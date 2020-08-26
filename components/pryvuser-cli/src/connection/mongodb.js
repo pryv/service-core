@@ -14,7 +14,7 @@ import type { MongoDbSettings } from '../configuration';
 
 const { Database, StorageLayer } = require('components/storage');
 const NullLogger = require('components/utils/src/logging').NullLogger;
-const UserService = require('components/business/src/users/User');
+const UserService = require('components/business/src/users/UserService');
 
 class MongoDB {
   database: *; 

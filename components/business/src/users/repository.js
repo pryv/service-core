@@ -11,7 +11,6 @@ const _ = require('lodash');
 const timestamp = require('unix-timestamp');
 
 const User = require('./User');
-//const Storage = require('components/storage');//.StorageLayer.events;
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 let encryption = require('components/utils').encryption;
 let converters = require('components/storage/src/converters');
@@ -20,15 +19,18 @@ let converters = require('components/storage/src/converters');
  * Repository of the users
  */
 class Repository {
-  storage;//: Storage
+  storage;
 
-  constructor (storage) {//: Storage
+  constructor (storage) {
     this.storage = storage;
   }
 
-  /**
-   * Returns all webhooks in a map <username, Arrra<webhooks>>
-   */
+ /**
+  * Get All users
+  * (Used for testing and for the nighty job to make each user structure
+  * compatible with a previous account structure and it is implemented in
+  * inefficiant way)
+  */
   async getAll (): Promise<Map<string, Array<Webhook>>> {
     let users = [];
     try {
@@ -40,49 +42,6 @@ class Repository {
       }
       
       const usersNames = await bluebird.fromCallback(cb =>
-        this.storage.find(
-          this.storage.getCollectionInfoWithoutUserId(),
-          this.storage.applyQueryToDB(query),
-          this.storage.applyOptionsToDB(null), cb)
-      );
-
-      const usersCount = usersNames.length;
-      let user;
-      for (var i = 0; i < usersCount; i++) {
-        user = await this.getById({ id: usersNames[i].userId }, true);
-        user.id = usersNames[i].userId;
-
-        // for the crazy unknown reason in the tests invitation token, appId and referer
-        // values are not validated, so lets remove them until find out how often this is the
-        // case
-        delete user.referer;
-        delete user.appId;
-        delete user.invitationToken;
-        users.push(user);
-      }
-      return users;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  /**
-  * Get All users
-  * (Used for testing and for the nighty job to make each user structure
-  * compatible with a previous account structure and it is implemented in
-  * inefficiant way)
-  */
-  async get (): Promise<Array<User>> {
-    try {
-      let users = [];
-      // get list of user ids and usernames
-      let query = {
-        streamIds: { $in: ['username'] },
-        deleted: null,
-        headId: null
-      }
-
-      const usersNames = await bluebird.fromCallback(cb =>
         this.storage.database.find(
           this.storage.getCollectionInfoWithoutUserId(),
           this.storage.applyQueryToDB(query),
@@ -93,7 +52,9 @@ class Repository {
       let user;
       for (var i = 0; i < usersCount; i++) {
         user = await this.getById({ id: usersNames[i].userId }, true);
+        user = user.getAccount();
         user.id = usersNames[i].userId;
+
         // for the crazy unknown reason in the tests invitation token, appId and referer
         // values are not validated, so lets remove them until find out how often this is the
         // case
@@ -110,7 +71,7 @@ class Repository {
 
   /**
    * Get All usernames
-   * Does the same as this.get(), just retrieves - only username and id
+   * Does the same as this.getAll(), just retrieves - only username and id
    * Used for the webhooks
    */
   async getAllUsernames (): Promise<Array<User>> {
@@ -132,6 +93,7 @@ class Repository {
     let systemStreamsSerializer = new SystemStreamsSerializer();
     for (var i = 0; i < usersCount; i++) {
       user = systemStreamsSerializer.serializeEventsToAccountInfo([usersNames[i]]);
+      user = user.getAccount();
       user.id = usersNames[i].userId;
       users.push(user);
     }
@@ -168,7 +130,7 @@ class Repository {
         cb));
       const userProfileEvents = this.storage.applyItemsFromDB(dbItems);
       // convert events to the account info structure
-      return systemStreamsSerializer.serializeEventsToAccountInfo(userProfileEvents);
+      return new User(userProfileEvents);
     } catch (error) {
       throw error;
     }
@@ -394,6 +356,7 @@ class Repository {
   }
 }
 module.exports = Repository;
+
 /*
 function initUser (user: {}, repository: Repository): User {
   return new User(_.merge({

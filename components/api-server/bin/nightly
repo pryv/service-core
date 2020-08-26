@@ -60,7 +60,7 @@ async function runNightlyTasks(storageLayer, storageSize) {
 
   // Retrieve all existing users
   const usersRepository = new Repository(storageLayer.events);
-  const users = await usersRepository.get();
+  const users = await usersRepository.getAll();
 
   // Compute storage size used by each user
   for (const user of users) {

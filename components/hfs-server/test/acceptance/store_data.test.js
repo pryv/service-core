@@ -17,7 +17,7 @@ const debug = require('debug')('store_data.test');
 const bluebird = require('bluebird');
 const lodash = require('lodash');
 const awaiting = require('awaiting');
-const UserService = require('components/business/src/users/User');
+const UserService = require('components/business/src/users/UserService');
 
 const { 
   spawnContext, produceMongoConnection, 

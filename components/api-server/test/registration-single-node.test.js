@@ -164,7 +164,7 @@ describe('registration: single-node', () => {
         });
         it('[9L3R] should not store the user in the database twice', async function() {
           const usersRepository = new Repository(app.storageLayer.events);
-          const users = await usersRepository.get();
+          const users = await usersRepository.getAll();
           assert.equal(users.length, 1);
           assert.equal(users[0].username, registerBody.username);
         });

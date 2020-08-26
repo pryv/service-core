@@ -6,7 +6,7 @@
  */
 const bluebird = require('bluebird');
 
-const UserService = require('components/business/src/users/User');
+const UserService = require('components/business/src/users/UserService');
 
 class Size {
 

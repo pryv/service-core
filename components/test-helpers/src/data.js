@@ -19,7 +19,7 @@ const path = require('path');
 const rimraf = require('rimraf');
 const _ = require('lodash');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const UserService = require('components/business/src/users/User');
+const UserService = require('components/business/src/users/UserService');
 const charlatan = require('charlatan');
 
 // users

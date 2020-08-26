@@ -19,7 +19,7 @@ const storage = require('components/storage');
 
 const Webhook = require("components/business").webhooks.Webhook;
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const UserService = require('components/business/src/users/User');
+const UserService = require('components/business/src/users/UserService');
 
 class Context {
   databaseConn: storage.Database; 

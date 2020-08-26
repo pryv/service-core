@@ -16,7 +16,7 @@ const SystemStreamsSerializer = require('components/business/src/system-streams/
   ErrorMessages = require('components/errors/src/ErrorMessages'),
   ErrorIds = require('components/errors').ErrorIds,
   ServiceRegister = require('components/business/src/auth/service_register'),
-  UserService = require('components/business/src/users/User');
+  UserService = require('components/business/src/users/UserService');
 
   /**
  * @param api

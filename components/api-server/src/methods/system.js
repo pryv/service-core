@@ -11,7 +11,7 @@ const methodsSchema = require('../schema/systemMethods');
 const string = require('./helpers/string');
 const _ = require('lodash');
 const bluebird = require('bluebird');
-const UserService = require('components/business/src/users/User');
+const UserService = require('components/business/src/users/UserService');
 
 /**
  * @param systemAPI

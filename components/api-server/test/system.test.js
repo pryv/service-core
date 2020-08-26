@@ -101,7 +101,7 @@ describe('system (ex-register)', function () {
         await (new Promise(server.ensureStarted.bind(server, settings)));
 
         const usersRepository = new Repository(storage);
-        const originalUsers = await usersRepository.get();
+        const originalUsers = await usersRepository.getAll();
 
         originalCount = originalUsers.length;
         // create user
@@ -114,7 +114,7 @@ describe('system (ex-register)', function () {
         mailSent.should.eql(true);
 
         // getUpdatedUsers
-        const users = await usersRepository.get();
+        const users = await usersRepository.getAll();
         users.length.should.eql(originalCount + 1, 'users');
 
         var expected = _.cloneDeep(newUserData);
@@ -198,7 +198,7 @@ describe('system (ex-register)', function () {
           await (new Promise(server.ensureStarted.bind(server, settings)));
 
           const usersRepository = new Repository(storage);
-          originalUsers = await usersRepository.get();
+          originalUsers = await usersRepository.getAll();
           originalCount = originalUsers.length;
 
           // create user
@@ -217,7 +217,7 @@ describe('system (ex-register)', function () {
           createdUserId = res.body.id;
 
           // getUpdatedUsers
-          const users = await usersRepository.get();
+          const users = await usersRepository.getAll();
           users.length.should.eql(originalCount, 'users');
           should.not.exist(_.find(users, { id: createdUserId }));
         });

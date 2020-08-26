@@ -10,7 +10,7 @@ var commonFns = require('components/api-server/src/methods/helpers/commonFunctio
     errors = require('components/errors').factory,
     methodsSchema = require('components/api-server/src/schema/authMethods'), 
     _ = require('lodash');
-const UserService = require('components/business/src/users/User');
+const UserService = require('components/business/src/users/UserService');
 /**
  * Auth API methods implementations.
  *

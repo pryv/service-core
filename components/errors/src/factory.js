@@ -114,7 +114,8 @@ factory.itemAlreadyExists = function (
     return k + ' "' + conflictingKeys[k] + '"';
   }).join(', ');
   var message = functionGetRightArticle(resourceType) + resourceType + ' with ' + keysDescription +
-      ' already exists';
+    ' already exists';
+
   return new APIError(ErrorIds.ItemAlreadyExists, message, {
     httpStatus: 400,
     innerError: innerError || null,

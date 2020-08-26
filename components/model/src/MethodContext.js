@@ -16,7 +16,7 @@ const APIError = require('components/errors').APIError;
 const errors = require('components/errors').factory;
 const treeUtils = require('components/utils').treeUtils;
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const UserService = require('components/business/src/users/User');
+const UserService = require('components/business/src/users/UserService');
 import type { StorageLayer } from 'components/storage';
 
 export type CustomAuthFunctionCallback = (err: any) => void;

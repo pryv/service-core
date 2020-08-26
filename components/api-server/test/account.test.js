@@ -23,7 +23,7 @@ const testData = helpers.data;
 const _ = require('lodash');
 const bluebird = require('bluebird');
 const { resolveCname } = require('dns');
-const UserService = require('components/business/src/users/User');
+const UserService = require('components/business/src/users/UserService');
 
 describe('account', function () {
   const user = Object.assign({}, testData.users[0]);

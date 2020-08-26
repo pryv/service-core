@@ -24,7 +24,7 @@ const SystemStreamsSerializer = require('components/business/src/system-streams/
   Registration = require('components/business/src/auth/registration'),
   ErrorMessages = require('components/errors/src/ErrorMessages'),
   ErrorIds = require('components/errors').ErrorIds,
-  UserService = require('components/business/src/users/User');
+  UserService = require('components/business/src/users/UserService');
 
 const assert = require('assert');
 

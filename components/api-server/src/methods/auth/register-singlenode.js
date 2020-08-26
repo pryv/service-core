@@ -8,7 +8,7 @@ const _ = require('lodash');
 const Registration = require('components/business/src/auth/registration');
 const commonFns = require('./../helpers/commonFunctions');
 const methodsSchema = require('components/api-server/src/schema/authMethods');
-const UserService = require('components/business/src/users/User');
+const UserService = require('components/business/src/users/UserService');
 const errors = require('components/errors').factory;
 
 /**
