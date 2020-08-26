@@ -13,15 +13,12 @@ const path = require('path');
 
 const Config = require('../Config');
 
-const regPath = require('components/api-server/src/routes/Paths').Register;
-const wwwPath = require('components/api-server/src/routes/Paths').WWW;
+const regPath: string = require('components/api-server/src/routes/Paths').Register;
+const wwwPath: string = require('components/api-server/src/routes/Paths').WWW;
 
-const FILE_PROTOCOL = 'file://';
-const FILE_PROTOCOL_LENGTH = FILE_PROTOCOL.length;
-const SERVICE_INFO_PATH = '/service/info';
-const REGISTER_URL_CONFIG = 'services.register.url';
-const SERVICE_INFO_URL_CONFIG = 'serviceInfoUrl';
-const DNS_LESS_PUBLIC_URL_CONFIG = 'dnsLess.publicUrl';
+const FILE_PROTOCOL: string = 'file://';
+const FILE_PROTOCOL_LENGTH: number = FILE_PROTOCOL.length;
+const SERVICE_INFO_PATH: string = '/service/info';
 
 async function asyncLoad(config: Config): Config {
   const serviceInfoUrl: string = config.get('serviceInfoUrl');
@@ -37,10 +34,10 @@ async function asyncLoad(config: Config): Config {
     return null;
   }
 
-  let isSingleNode = config.get('singleNode:isActive');
+  let isSingleNode: boolean = config.get('singleNode:isActive');
 
   try {
-    let serviceInfo;
+    let serviceInfo?: {};
     if (isSingleNode) {
       serviceInfo = buildServiceInfo(config);
     } else if (isFileUrl(serviceInfoUrl)) {
@@ -60,9 +57,9 @@ async function asyncLoad(config: Config): Config {
 module.exports.asyncLoad = asyncLoad;
 
 function buildServiceInfo(config: {}): {} {
-  let serviceInfo = {};
+  let serviceInfo: {} = {};
 
-  let dnsLessPublicUrl = config.get('singleNode:publicUrl');
+  let dnsLessPublicUrl: string = config.get('singleNode:publicUrl');
   if (dnsLessPublicUrl.slice(-1) === '/') dnsLessPublicUrl = dnsLessPublicUrl.slice(0, -1);
 
   serviceInfo.serial = 't' + Math.round(Date.now() / 1000);
@@ -80,17 +77,17 @@ async function loadFromUrl(serviceInfoUrl: string): Promise<{}> {
   return res.body;
 }
 
-function loadFromFile(serviceInfoUrl): any {
-  const filePath = stripFileProtocol(serviceInfoUrl);
+function loadFromFile(serviceInfoUrl: string): {} {
+  const filePath: string = stripFileProtocol(serviceInfoUrl);
 
   if (isRelativePath(filePath)) {
-    const serviceCorePath = path.resolve(__dirname, '../../../../../');
+    const serviceCorePath: string = path.resolve(__dirname, '../../../../../');
     serviceInfoUrl = path.resolve(serviceCorePath, filePath);
     serviceInfoUrl = 'file://' + serviceInfoUrl;
   } else {
     // absolute path, do nothing.
   }
-  const serviceInfo = JSON.parse(
+  const serviceInfo: {} = JSON.parse(
     fs.readFileSync(stripFileProtocol(serviceInfoUrl), 'utf8')
   );
   return serviceInfo;
