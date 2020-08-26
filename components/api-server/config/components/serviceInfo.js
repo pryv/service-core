@@ -95,7 +95,7 @@ function loadFromFile(serviceInfoUrl: string): {} {
 
 function exitServiceInfoNotFound(serviceInfoUrl: string, err?: {}): void {
   if (err == null) err.message = 'error';
-  console.error('Failed fetching serviceInfo at URL ' + serviceInfoUrl + ' with error' + err.message);
+  console.error('Failed fetching serviceInfo at URL ' + serviceInfoUrl + ' with error: ' + err.message);
   process.exit(2);
 }
 

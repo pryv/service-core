@@ -17,7 +17,7 @@ const middleware = require('components/middleware');
 const errorsMiddlewareMod = require('./middleware/errors'); 
 const config = require('./config');
 
-const { getConfig, initConfig, Config } = require('components/api-server/config/Config');
+const { getConfig, Config } = require('components/api-server/config/Config');
 
 import type { ConfigAccess } from './settings';
 import type { WebhooksSettingsHolder } from './methods/webhooks';
@@ -65,11 +65,12 @@ class Application {
     this.systemAPI = new API(); 
     
     this.produceLogSubsystem(); 
-    this.produceStorageSubsystem(); 
+    this.produceStorageSubsystem();
+    this.config = getConfig();
   }
 
   async initiate() {
-    this.config = await initConfig();
+    await this.config.init();
     this.produceLogSubsystem(); 
     this.produceStorageSubsystem(); 
     await this.createExpressApp();
