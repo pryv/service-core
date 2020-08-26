@@ -1,5 +1,9 @@
 ## 1.5
 
+### 1.5.23
+
+- Bump bcrypt from 3.0.8 to 5.0.0
+
 ### 1.5.22
 
 - fix deleting app access deletes shared accesses it created
