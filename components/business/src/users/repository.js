@@ -216,18 +216,19 @@ class Repository {
       username: username,
       appId: appId
     }
-    //TODO IEVA - use session 
     const sessionId = await bluebird.fromCallback((cb) =>
-      sessionsStorage.generate(sessionData, cb));
+      sessionsStorage.generate(sessionData, cb, { session }));
     return sessionId;
   }
 
   async createPersonalAccessForUser (
     userId: string,
+    token: string,
     appId: string,
     accessStorage,
     session) {
     let accessData = {
+      token: token,
       name: appId,
       type: 'personal',
       created: timestamp.now(),
@@ -237,9 +238,9 @@ class Repository {
     };
 
     const access = await bluebird.fromCallback((cb) =>
-      accessStorage.insertOne({ id: userId }, accessData, cb));
-    console.log(access,'access')
-    return access?.id;
+      accessStorage.insertOne({ id: userId }, accessData, cb, { session }));
+
+    return access;
   }
 
   
@@ -280,12 +281,14 @@ class Repository {
 
     await session.withTransaction(async () => {
       // if sessionStorage is not provided, session will be not created
-     // if (sessionsStorage) {
-        //const sessionId = await this.createSessionForUser(user.username, params.appId, sessionsStorage, session);
       let accessId = '';
-      if (accessStorage) {
-        accessId = await this.createPersonalAccessForUser(
-          user.id, userParams.appId, accessStorage, session);
+      if (sessionsStorage && accessStorage) {
+        const token = await this.createSessionForUser(params.username, params.appId, sessionsStorage, session);
+
+        const access = await this.createPersonalAccessForUser(
+          user.id, token, userParams.appId, accessStorage, session);
+        accessId = access?.id;
+        user.token = access.token;
       }
 
       // create all user account events
@@ -304,10 +307,7 @@ class Repository {
 
           let creationObject = this.createEventObject(
             streamId, parameter, userAccountStreamsIds, accessId);
-          
-          // if (streamId === 'username') {
-          //   creationObject.id = user.id;
-          // }
+
           creationObjects.push(creationObject);
         }
       });

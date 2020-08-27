@@ -302,7 +302,9 @@ class Registration {
       const user = await this.userRepository.insertOne(
         params,
         this.storageLayer.sessions,
-        this.storageLayer.accesses);
+        this.storageLayer.accesses,
+       );
+
       context.user = { ...context.user, ...user };
       context.user.host = { name: this.hostname };
 
@@ -311,6 +313,7 @@ class Registration {
         result.id = context.user.id;
       } else {
         result.username = context.user.username;
+        result.token = context.user.token;
       }
       next();
     } catch (err) {

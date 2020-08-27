@@ -435,10 +435,16 @@ class Database {
   /**
    * Inserts an array of items (each item must have a valid id already).
    */
-  insertMany(collectionInfo: CollectionInfo, items: Array<Object>, callback: DatabaseCallback) {
+  insertMany (collectionInfo: CollectionInfo, items: Array<Object>, callback: DatabaseCallback, options: Object) {
+    const defaultOptions = { w: 1, j: true };
+    if (typeof options !== 'object') {
+      options = defaultOptions;
+    } else {
+      options = { ...options, ...defaultOptions };
+    }
     this.addUserIdIfneed(collectionInfo, items);
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.insertMany(items, { w: 1, j: true }, (err, res) => {
+      collection.insertMany(items, options, (err, res) => {
         if (err != null) {
           Database.handleDuplicateError(err);
         }
