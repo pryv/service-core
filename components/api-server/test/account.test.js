@@ -222,8 +222,8 @@ describe('account', function () {
         newAtt.size, filesystemBlockSize);
       const updatedStorageUsed = storageUsed;
       const userRepository = new UserRepository(storage);
-      let userObj = await userRepository.getById(user.id);
-      assert.deepEqual(userObj.getAccount().storageUsed, updatedStorageUsed);
+      const retrievedUser = await userRepository.getById(user.id);
+      assert.deepEqual(retrievedUser.storageUsed, updatedStorageUsed);
     });
 
     // test nightly job script
@@ -269,8 +269,8 @@ describe('account', function () {
       const userRepository = new UserRepository(storage);
       async.series([
         async function checkInitial () {
-          const userObj = await userRepository.getById(user.id);
-          initialStorageUsed = userObj.getAccount().storageUsed;
+          const retrievedUser = await userRepository.getById(user.id);
+          initialStorageUsed = retrievedUser.storageUsed;
         },
         function addAttachment(stepDone) {
           request.post('/' + user.username + '/events/' + testData.events[0].id)
@@ -281,11 +281,10 @@ describe('account', function () {
               });
         },
         async function checkUpdated () {
-          const userObj = await userRepository.getById(user.id);
-          const account = userObj.getAccount();
-          initialStorageUsed = account.storageUsed;
-          account.storageUsed.dbDocuments.should.eql(initialStorageUsed.dbDocuments);
-          account.storageUsed.attachedFiles.should.be.approximately(
+          const retrievedUser = await userRepository.getById(user.id);
+          initialStorageUsed = retrievedUser.storageUsed;
+          retrievedUser.storageUsed.dbDocuments.should.eql(initialStorageUsed.dbDocuments);
+          retrievedUser.storageUsed.attachedFiles.should.be.approximately(
                   initialStorageUsed.attachedFiles + newAtt.size, filesystemBlockSize);
         }
       ], done);

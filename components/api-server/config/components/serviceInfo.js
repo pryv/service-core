@@ -60,6 +60,12 @@ function buildServiceInfo(config: {}): {} {
   let serviceInfo: {} = {};
 
   let dnsLessPublicUrl: string = config.get('singleNode:publicUrl');
+
+  if (dnsLessPublicUrl == null || (typeof dnsLessPublicUrl != 'string')) {
+    console.error('Core started in singleNode mode, but invalid publicUrl was set: "' + dnsLessPublicUrl + '". Exiting');
+    process.exit(2);
+  }
+
   if (dnsLessPublicUrl.slice(-1) === '/') dnsLessPublicUrl = dnsLessPublicUrl.slice(0, -1);
 
   serviceInfo.serial = 't' + Math.round(Date.now() / 1000);

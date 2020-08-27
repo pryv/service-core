@@ -127,8 +127,8 @@ class UserRepository {
    */
   async resolveFromDB (name: string): Promise<User> {
     const userRepository = new UserRepo(this.db.events); 
-    const userObj = await userRepository.getAccountByUsername(name, true);
-    return userObj.getAccount();
+    const user = await userRepository.getAccountByUsername(name, true);
+    return user;
   }
 }
 

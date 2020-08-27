@@ -116,10 +116,10 @@ class Repository {
     };
     
     //const dbItems = await bluebird.fromCallback(cb => this.storage.find({ id: userId }, query, null, cb));
-    const userProfileEvents = await bluebird.fromCallback(cb =>
+    const userAccountEvents = await bluebird.fromCallback(cb =>
       this.storage.find({ id: userId }, query, null, cb));
     // convert events to the account info structure
-    return new User(userId, userProfileEvents);
+    return new User(userId, userAccountEvents);
   }
 
   /**

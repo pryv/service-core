@@ -794,8 +794,7 @@ describe('Storing data in a HF series', function() {
         );
 
         const userRepository = new UserRepository(storageLayer.events);
-        const userObj: User = await userRepository.getById(userId);
-        const user = userObj.getAccount();
+        const user: User = await userRepository.getById(userId);
 
         assert.isNotNull(user);
           

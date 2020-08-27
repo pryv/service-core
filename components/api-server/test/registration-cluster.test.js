@@ -18,6 +18,8 @@ const { getConfig } = require('components/api-server/config/Config');
 const Application = require('../src/application');
 const ErrorIds = require('components/errors/src/ErrorIds');
 const ErrorMessages = require('components/errors/src/ErrorMessages');
+const { databaseFixture } = require('components/test-helpers');
+const { produceMongoConnection } = require('./test-helpers');
 
 function defaults() {
   return {
@@ -42,7 +44,11 @@ describe('registration: cluster', function() {
   let serviceRegisterRequests = [];
   let hostname;
 
-  before(async function() {
+  before(async function () {
+    // clean the database
+    mongoFixtures = databaseFixture(await produceMongoConnection());
+    mongoFixtures.context.cleanEverything();
+
     settings = await Settings.load();
     config = getConfig();
     config.set('singleNode:isActive', false);
@@ -63,7 +69,6 @@ describe('registration: cluster', function() {
 
     request = supertest(app.expressApp);
   });
-
   const methodPath = '/users';
   const defaultServerName = 'abc';
 
@@ -127,7 +132,7 @@ describe('registration: cluster', function() {
         userData.email = charlatan.Internet.email();
         res = await request.post(methodPath).send(userData);
       });
-      it('[GRAW] should respond with status 201', () => {
+      it('should respond with status 201', () => {
         assert.equal(res.status, 201);
       });
       it('[AY44] should respond with the username and apiEndpoint (TODO)', () => {
