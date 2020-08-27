@@ -408,7 +408,7 @@ class Registration {
       if (fieldName == 'deviceName') {
         fieldName = 'username';
       }
-      uniquenessErrors[fieldName] = params[fieldName];
+      uniquenessErrors[fieldName] = params[fieldName];     
     }
 
     if (Object.keys(uniquenessErrors).length > 0) {

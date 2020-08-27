@@ -38,11 +38,11 @@ exports.resetUsers = async () => {
     await userRepository.insertOne(user);
   }
 };
-
+//TODO IEVA - do I still need this?
 exports.resetUsersWithAdditionalProperties = async () => {
   await bluebird.fromCallback(cb => storage.user.events.database.deleteMany(
     { name: 'events' }, {}, cb));
-
+  
   const userRepository = new UserRepository(storage.user.events);
 
   let i;
@@ -63,9 +63,10 @@ exports.resetAccesses = function (done, user, personalAccessToken, addToId) {
   if (personalAccessToken) {
     accesses[0].token = personalAccessToken;
   }
+  
   if (addToId) {
     var data = JSON.parse(JSON.stringify(accesses));
-    for (var i=0; i < data.length; i++) {
+    for (var i = 0; i < data.length; i++) {
       data[i].id += u.id;
     }
     resetData(storage.user.accesses, u, data, done);

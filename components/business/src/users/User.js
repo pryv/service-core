@@ -35,6 +35,10 @@ class User {
   getAccount () {
     return _.pick(this, this.accountFields);
   }
+
+  getAccountWithId () {
+    return _.pick(this, _.concat(this.accountFields, ['id']));
+  }
 }
 
 /**

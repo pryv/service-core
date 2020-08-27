@@ -59,11 +59,8 @@ describe('Socket.IO', function () {
     
     return conn; 
   }
-  // Disconnects all connections in cleanupConnections; then empties it. 
+
   afterEach(async () => {
-    let mongoFixtures = databaseFixture(await produceMongoConnection());
-    await mongoFixtures.context.cleanEverything();
-    
     for (const conn of cleanupConnections) {
       conn.disconnect(); 
     }

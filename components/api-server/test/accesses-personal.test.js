@@ -115,7 +115,7 @@ describe('accesses (personal)', function () {
             stepDone();
           });
         },
-        function addNew(stepDone) {
+        function addNew (stepDone) {
           req().post(basePath).send(data).end(function (res) {
             time = timestamp.now();
             validation.check(res, {

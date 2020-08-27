@@ -31,10 +31,11 @@ const testData = helpers.data;
 const Repository = require('components/business/src/users/repository');
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('./test-helpers');
+const charlatan = require('charlatan');
 
 require('date-utils');
 
-describe('system (ex-register)', function () {
+describe('[373T] system (ex-register)', function () {
   let mongoFixtures;
   
   this.timeout(5000);
@@ -44,6 +45,7 @@ describe('system (ex-register)', function () {
 
   before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
+    await mongoFixtures.context.cleanEverything();
   });
 
   beforeEach(function (done) {
@@ -60,7 +62,7 @@ describe('system (ex-register)', function () {
   // keep test code simple, test order is important. The first test configures
   // the mock service in order to test email sending, the second one
   // reconfigures it so that it just replies OK for subsequent tests.   
-  describe('POST /create-user', function () {
+  describe('[0JKK] POST /create-user', function () {
 
     function path() {
       return basePath() + '/create-user';
@@ -80,7 +82,10 @@ describe('system (ex-register)', function () {
       language: 'fr'
     };
 
-    describe('when email sending really works', function() {
+    describe('[080B] when email sending really works', function () {
+      before(async function () {
+        await mongoFixtures.context.cleanEverything();
+      });
       it('[FUTR] must create a new user with the sent data, sending a welcome email', async function () {
         let settings = _.cloneDeep(helpers.dependencies.settings);
         settings.services.email.enabled = true;
@@ -116,6 +121,7 @@ describe('system (ex-register)', function () {
         originalCount = originalUsers.length;
         // create user
         const res = await bluebird.fromCallback(cb => post(newUserData, cb));
+
         validation.check(res, {
           status: 201,
           schema: methodsSchema.createUser.result
@@ -124,7 +130,7 @@ describe('system (ex-register)', function () {
         mailSent.should.eql(true);
 
         // getUpdatedUsers
-        const users = await usersRepository.getAll();
+        const users = await usersRepository.getAll(true);
         users.length.should.eql(originalCount + 1, 'users');
 
         var expected = _.cloneDeep(newUserData);
@@ -133,8 +139,9 @@ describe('system (ex-register)', function () {
         var actual = _.find(users, function (user) {
           return user.id === createdUserId;
         });
-        validation.checkStoredItem(actual, 'user');
-        actual.should.eql(expected);
+        let actualAccount = actual.getAccountWithId();
+        validation.checkStoredItem(actualAccount, 'user');
+        actualAccount.should.eql(expected);
       });
     });
     
@@ -186,7 +193,9 @@ describe('system (ex-register)', function () {
 
     describe('when it just replies OK', function() {
       before(server.ensureStarted.bind(server, helpers.dependencies.settings));
-    
+      before(async function () {
+        await mongoFixtures.context.cleanEverything();
+      });
       it('[9K71] must run the process but not save anything for test username "recla"', 
         async function () {
           var originalCount,
@@ -285,7 +294,7 @@ describe('system (ex-register)', function () {
         });
       it('[NPJE] must return a correct 400 error if a user with the same email address already exists', function (done) {
         const data = {
-          username: testData.users[0].username + '1',
+          username: charlatan.App.name(),
           passwordHash: '$-1s-b4d-f0r-U',
           email: 'zero@test.com',
           language: 'fr'

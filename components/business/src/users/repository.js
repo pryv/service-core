@@ -48,19 +48,16 @@ class Repository {
     );
 
     const usersCount = usersNames.length;
-    let user;
     let userObj;
     for (var i = 0; i < usersCount; i++) {
       userObj = await this.getById(usersNames[i].userId, true);
       // for the crazy unknown reason in the tests invitation token, appId and referer
       // values are not validated, so lets remove them until find out how often this is the
       // case
-      //TODO IEVA - somehow deal that not in the repo
-      user = userObj.getAccount();
-      delete user.referer;
-      delete user.appId;
-      delete user.invitationToken;
-      users.push(user);
+      delete userObj.referer;
+      delete userObj.appId;
+      delete userObj.invitationToken;
+      users.push(userObj);
     }
     return users;
   }
@@ -283,9 +280,8 @@ class Repository {
     await session.withTransaction(async () => {
       // if sessionStorage is not provided, session will be not created
       let accessId = '';
-      if (sessionsStorage && accessStorage) {
+      if (sessionsStorage && accessStorage && params.appId) {
         const token = await this.createSessionForUser(params.username, params.appId, sessionsStorage, session);
-
         const access = await this.createPersonalAccessForUser(
           user.id, token, userParams.appId, accessStorage, session);
         accessId = access?.id;
