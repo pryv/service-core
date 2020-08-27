@@ -321,7 +321,7 @@ Events.prototype.delete = function (user, query, deletionMode, callback) {
  * @param {*} item 
  * @param {*} callback 
  */
-Events.prototype.insertOne = function (user, item, callback, options) {
+Events.prototype.insertOne = function (user, item, callback) {
   this.database.insertOne(
     this.getCollectionInfo(user),
     this.applyItemToDB(this.applyItemDefaults(item)),
@@ -330,7 +330,6 @@ Events.prototype.insertOne = function (user, item, callback, options) {
         return callback(err);
       }
       callback(null, item);
-    },
-    options
+    }
   );
 };

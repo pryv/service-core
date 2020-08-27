@@ -10,11 +10,9 @@
  * Extension of database.js dedicated to user management
  */
 const _ = require('lodash');
-const async = require('async');
 const cuid = require('cuid');
-const bluebird = require('bluebird');
 const errors = require('components/errors').factory;
-const { ErrorIds, ErrorMessages, errorHandling } = require('components/errors');
+const { errorHandling } = require('components/errors');
 const commonFns = require('components/api-server/src/methods/helpers/commonFunctions');
 const mailing = require('components/api-server/src/methods/helpers/mailing');
 const ServiceRegister = require('./service_register');
@@ -26,9 +24,6 @@ const User = require('components/business/src/users/User');
 
 import type { MethodContext } from 'components/model';
 import type { ApiCallback } from 'components/api-server/src/API';
-
-const { getConfig, Config } = require('components/api-server/config/Config');
-const config: Config = getConfig();
 
 /**
  * Create (register) a new user
@@ -304,7 +299,10 @@ class Registration {
       context.user = {
         username: params.username
       };
-      const user = await this.userRepository.insertOne(params);
+      const user = await this.userRepository.insertOne(
+        params,
+        this.storageLayer.sessions,
+        this.storageLayer.accesses);
       context.user = { ...context.user, ...user };
       context.user.host = { name: this.hostname };
 
