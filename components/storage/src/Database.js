@@ -647,9 +647,16 @@ class Database {
         // We assume WiredTiger here (and not MMapV1).
         const matching = err.errmsg.match(/index:(.+) dup key:/);
         if (Array.isArray(matching) && matching.length >= 2) {
-          const matchingKeys = matching[1].split('__unique')[0].trim();
-          const separatedKeys = matchingKeys.split('_');
-          return separatedKeys[separatedKeys.length -1 ];
+          const matchingKeys = matching[1].split('__unique');
+          const matchingKey = matchingKeys[0].trim();
+          const separatedKeys = matchingKey.split('_');
+
+          // there are some cases for other unique fields to fail
+          if (matchingKeys.length == 1 && separatedKeys.length > 1) {
+            return separatedKeys[separatedKeys.length - 2];
+          } else {
+            return separatedKeys[separatedKeys.length - 1];
+          }
         }
       }
     }

@@ -30,10 +30,10 @@ describe('root', function() {
   let mongoFixtures;
   before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
-    mongoFixtures.context.cleanEverything();
+    await mongoFixtures.context.cleanEverything();
   });
-  after(() => {
-    mongoFixtures.clean();
+  after(async () => {
+    await mongoFixtures.context.cleanEverything();
   });
 
   let username, personalAccess, personalAccessToken,

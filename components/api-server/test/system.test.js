@@ -29,15 +29,22 @@ const encryption = require('components/utils').encryption;
 const storage = helpers.dependencies.storage.user.events;
 const testData = helpers.data;
 const Repository = require('components/business/src/users/repository');
+const { databaseFixture } = require('components/test-helpers');
+const { produceMongoConnection } = require('./test-helpers');
 
 require('date-utils');
 
 describe('system (ex-register)', function () {
-
+  let mongoFixtures;
+  
   this.timeout(5000);
   function basePath() {
     return url.resolve(server.url, '/system');
   }
+
+  before(async function () {
+    mongoFixtures = databaseFixture(await produceMongoConnection());
+  });
 
   beforeEach(function (done) {
     async.series([
@@ -46,6 +53,9 @@ describe('system (ex-register)', function () {
     ], done);
   });
 
+  after(async function () {
+    await mongoFixtures.context.cleanEverything();
+  });
   // NOTE: because we mock the email sending service for user creation and to
   // keep test code simple, test order is important. The first test configures
   // the mock service in order to test email sending, the second one

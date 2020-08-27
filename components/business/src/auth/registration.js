@@ -298,11 +298,18 @@ class Registration {
       context.user = {
         username: params.username
       };
-      const user = await this.userRepository.insertOne(
-        params,
-        this.storageLayer.sessions,
-        this.storageLayer.accesses,
-       );
+      let user = {};
+      if (context.calledMethodId === 'system.createPoolUser') {
+        user = await this.userRepository.insertOne(
+          params
+        );
+      } else {
+        user = await this.userRepository.insertOne(
+          params,
+          this.storageLayer.sessions,
+          this.storageLayer.accesses,
+        );
+      }
 
       context.user = { ...context.user, ...user };
       context.user.host = { name: this.hostname };
@@ -396,7 +403,12 @@ class Registration {
     // Duplicate errors
     let uniquenessErrors = {};
     if (typeof err.isDuplicateIndex === 'function') {
-      uniquenessErrors[err.duplicateIndex()] = params[err.duplicateIndex()];
+      let fieldName = err.duplicateIndex();
+      // uniqueness constrain for username in acccess
+      if (fieldName == 'deviceName') {
+        fieldName = 'username';
+      }
+      uniquenessErrors[fieldName] = params[fieldName];
     }
 
     if (Object.keys(uniquenessErrors).length > 0) {

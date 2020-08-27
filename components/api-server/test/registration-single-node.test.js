@@ -12,6 +12,8 @@ const Settings = require('../src/settings');
 const Application = require('../src/application');
 const { getConfig } = require('components/api-server/config/Config');
 const Repository = require('components/business/src/users/repository');
+const { databaseFixture } = require('components/test-helpers');
+const { produceMongoConnection } = require('./test-helpers');
 
 let app;
 let registerBody;
@@ -47,6 +49,10 @@ describe('registration: single-node', () => {
         insurancenumber: charlatan.Number.number(3),
         phoneNumber: charlatan.Number.number(3),
       };
+    });
+    after(async function () {
+      let mongoFixtures = databaseFixture(await produceMongoConnection());
+      await mongoFixtures.context.cleanEverything();
     });
     describe('when given valid input', function() {
       before(async function() {
@@ -146,7 +152,9 @@ describe('registration: single-node', () => {
     });
     describe('Property values uniqueness', function() {
       describe('username property', function() {
-        before(async function() {
+        before(async function () {
+          let mongoFixtures = databaseFixture(await produceMongoConnection());
+          await mongoFixtures.context.cleanEverything();
           await app.database.deleteMany({ name: 'events' });
 
           res = await request.post('/users').send(registerBody);

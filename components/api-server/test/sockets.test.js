@@ -33,6 +33,8 @@ const streamsMethodsSchema = require('../src/schema/streamsMethods');
 const eventsMethodsSchema = require('../src/schema/eventsMethods');
 const validation = helpers.validation;
 const testData = helpers.data;
+const { databaseFixture } = require('components/test-helpers');
+const { produceMongoConnection } = require('./test-helpers');
 
 const { ConditionVariable } = require('components/test-helpers').syncPrimitives; 
 
@@ -58,7 +60,10 @@ describe('Socket.IO', function () {
     return conn; 
   }
   // Disconnects all connections in cleanupConnections; then empties it. 
-  afterEach(() => {
+  afterEach(async () => {
+    let mongoFixtures = databaseFixture(await produceMongoConnection());
+    await mongoFixtures.context.cleanEverything();
+    
     for (const conn of cleanupConnections) {
       conn.disconnect(); 
     }

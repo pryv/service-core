@@ -41,7 +41,7 @@ describe('access deletions', () => {
     let mongoFixtures;
     before(async () => {
       mongoFixtures = databaseFixture(await produceMongoConnection());
-      mongoFixtures.context.cleanEverything();
+      await mongoFixtures.context.cleanEverything();
       const user = await mongoFixtures.user(userId);
       await user.stream({ id: streamId }, () => {});
 
@@ -58,8 +58,8 @@ describe('access deletions', () => {
       await user.access({ token: accessToken, type: 'personal' });
       await user.session(accessToken);
     });
-    after(() => {
-      mongoFixtures.context.cleanEverything();
+    after(async () => {
+      await mongoFixtures.context.cleanEverything();
     });
 
     let server;
@@ -393,8 +393,8 @@ describe('access expiry', () => {
       await user.access({token: accessToken, type: 'personal'});
       await user.session(accessToken);
     });
-    after(() => {
-      mongoFixtures.context.cleanEverything();
+    after(async () => {
+      await mongoFixtures.context.cleanEverything();
     });
 
     let server;
@@ -684,8 +684,8 @@ describe('access client data', () => {
       await user.access(emptyClientDataAccess);
       await user.session(accessToken);
     });
-    after(() => {
-      mongoFixtures.context.cleanEverything();
+    after(async () => {
+      await mongoFixtures.context.cleanEverything();
     });
 
     let server;
@@ -879,8 +879,8 @@ describe('access-info', () => {
       }],
     });
   });
-  after(() => {
-    mongoFixtures.context.cleanEverything();
+  after(async () => {
+    await mongoFixtures.context.cleanEverything();
   });
 
   let server;

@@ -83,6 +83,9 @@ describe("[B5FF] Account with default-streams", function () {
 
   before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
+    // clean the database
+    await mongoFixtures.context.cleanEverything();
+
     const settings = await Settings.load();
 
     app = new Application(settings);

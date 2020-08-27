@@ -229,10 +229,11 @@ class Repository {
     session) {
     let accessData = {
       token: token,
+      userId: userId,
       name: appId,
       type: 'personal',
       created: timestamp.now(),
-      createdBy: 'system',//Should be a constant, but there is no business class for accesses or system
+      createdBy: 'system',//TODO IEVA -put inito registration REGISTRATION_ACCESS_ID Should be a constant, but there is no business class for accesses or system
       modified: timestamp.now(),
       modifiedBy: 'system',//Should be a constant, but there is no business class for accesses or system
     };

@@ -23,11 +23,14 @@ const testData = helpers.data;
 const timestamp = require('unix-timestamp');
 const treeUtils = require('components/utils').treeUtils;
 const _ = require('lodash');
+const { databaseFixture } = require('components/test-helpers');
+const { produceMongoConnection } = require('./test-helpers');
+
 
 const chai = require('chai');
 const assert = chai.assert; 
 
-describe('streams', function () {
+describe('[JI3F] streams', function () {
 
   var user = Object.assign({}, testData.users[0]),
       initialRootStreamId = testData.streams[0].id,
@@ -45,6 +48,11 @@ describe('streams', function () {
       eventsNotifCount;
   server.on('streams-changed', function () { streamsNotifCount++; });
   server.on('events-changed', function () { eventsNotifCount++; });
+
+  before(async function () {
+    let mongoFixtures = databaseFixture(await produceMongoConnection());
+    await mongoFixtures.context.cleanEverything();
+  });
 
   before(function (done) {
     async.series([

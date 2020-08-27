@@ -43,12 +43,9 @@ describe('registration: cluster', function() {
   let userData;
   let serviceRegisterRequests = [];
   let hostname;
+  let mongoFixtures;
 
   before(async function () {
-    // clean the database
-    mongoFixtures = databaseFixture(await produceMongoConnection());
-    mongoFixtures.context.cleanEverything();
-
     settings = await Settings.load();
     config = getConfig();
     config.set('singleNode:isActive', false);
@@ -69,6 +66,11 @@ describe('registration: cluster', function() {
 
     request = supertest(app.expressApp);
   });
+  after(async function () {
+    mongoFixtures = databaseFixture(await produceMongoConnection());
+    await mongoFixtures.context.cleanEverything();
+  });
+
   const methodPath = '/users';
   const defaultServerName = 'abc';
 
@@ -135,12 +137,11 @@ describe('registration: cluster', function() {
       it('should respond with status 201', () => {
         assert.equal(res.status, 201);
       });
-      it('[AY44] should respond with the username and apiEndpoint (TODO)', () => {
+      it('should respond with the username and apiEndpoint (TODO)', () => {
         const body = res.body;
         assert.equal(body.username, userData.username);
-        
       });
-      it('[MIOA] should send the right data to register', () => {
+      it('should send the right data to register', () => {
         const validationSent = serviceRegisterRequests[0];
         assert.deepEqual(validationSent, serviceRegisterRequests[2]);
         assert.deepEqual(validationSent, buildValidationRequest(userData));
@@ -151,6 +152,10 @@ describe('registration: cluster', function() {
     });
     describe('when the same user already exists in core but not in register', () => {
       before(async () => {
+        // clean the database
+        mongoFixtures = databaseFixture(await produceMongoConnection());
+        await mongoFixtures.context.cleanEverything();
+        
         userData = defaults();
         serviceRegisterRequests = [];
 
@@ -333,8 +338,10 @@ describe('registration: cluster', function() {
     });
 
     describe('when invitationTokens are undefined', () => {
-      describe('and a random string is provided as "invitationToken"', () => {
+      describe('and a random string is provided as "invitationToken"', async () => {
         before(async () => {
+          mongoFixtures = databaseFixture(await produceMongoConnection());
+          await mongoFixtures.context.cleanEverything();
           userData = defaults();
           userData.invitationToken = charlatan.Lorem.characters(25);
           serviceRegisterRequests = [];
@@ -368,6 +375,8 @@ describe('registration: cluster', function() {
       });
       describe('and "invitationToken" is missing', () => {
         before(async () => {
+          mongoFixtures = databaseFixture(await produceMongoConnection());
+          await mongoFixtures.context.cleanEverything();
           userData = defaults();
           delete userData.invitationToken;
           serviceRegisterRequests = [];
@@ -405,6 +414,8 @@ describe('registration: cluster', function() {
     describe('when invitationTokens are defined', () => {
       describe('when a valid one is provided', () => {
         before(async () => {
+          mongoFixtures = databaseFixture(await produceMongoConnection());
+          await mongoFixtures.context.cleanEverything();
           userData = defaults();
           serviceRegisterRequests = [];
 

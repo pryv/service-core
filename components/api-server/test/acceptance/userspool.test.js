@@ -18,16 +18,23 @@ const helpers = require('../helpers');
 const storage = require('components/test-helpers').dependencies.storage.user.events;
 const database = require('components/test-helpers').dependencies.storage.database;
 
-describe('users pool', () => {
+describe('[55JP] users pool', () => {
   const adminKey = helpers.dependencies.settings.auth.adminAccessKey;
   let server;
+  let mongoFixtures;
   before(async () => {
     server = await context.spawn();
   });
   after(() => {
     server.stop(); 
   });
-
+  before(async () => {
+    mongoFixtures = databaseFixture(await produceMongoConnection());
+    await mongoFixtures.context.cleanEverything();
+  });
+  after(async () => {
+    await mongoFixtures.context.cleanEverything();
+  });
 
   describe('create pool user', () => {
     let res;
@@ -38,10 +45,6 @@ describe('users pool', () => {
 
       res = await createPoolUser(); 
       poolUser = res.body;
-    });
-
-    after(async () => {
-      await mongoFixtures.context.cleanEverything();
     });
 
     it('[80HI] succeeds', () => {
@@ -79,6 +82,7 @@ describe('users pool', () => {
     describe('when empty', () => {
 
       before(async () => {
+        await mongoFixtures.context.cleanEverything();
         res = await server.request()
           .get('/system/pool/size')
           .set('Authorization', adminKey);
@@ -98,7 +102,6 @@ describe('users pool', () => {
     describe('when adding pool users', () => {
 
       before(async () => {
-        mongoFixtures = databaseFixture(await produceMongoConnection());
         await createPoolUser();
         await createPoolUser();
         await createPoolUser();
@@ -109,11 +112,7 @@ describe('users pool', () => {
 
         poolSize = res.body.size;
       });
-
-      after(async () => {
-        await mongoFixtures.context.cleanEverything();
-      });
-
+      
       it('[CTP7] succeeds', () => {
         assert.isTrue(res.ok, 'response not ok');
         assert.notExists(res.body.error, 'response contains an error');
