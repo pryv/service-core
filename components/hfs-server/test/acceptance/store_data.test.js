@@ -297,7 +297,7 @@ describe('Storing data in a HF series', function() {
       );
       const userRepository = new UserRepository(storageLayer.events);
       const userObj: User = await userRepository.getById(userId);
-      const user = user.account();
+      const user = userObj.getAccount();
       assert.isNotNull(user);
 
       const event = await bluebird.fromCallback(
@@ -788,7 +788,6 @@ describe('Storing data in a HF series', function() {
       // true if the whole operation is successful. 
       // 
       async function tryStore(attrs: Object, header: Header, data: Rows): Promise<TryOpResult> {
-        const userQuery = {id: userId};
         const effectiveAttrs = lodash.merge(
           { streamIds: [ parentStreamId ] , time: Date.now() / 1000}, 
           attrs

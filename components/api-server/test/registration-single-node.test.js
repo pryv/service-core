@@ -159,10 +159,10 @@ describe('registration: single-node', () => {
         it('[M2HD] should respond with the correct error message', function() {
           assert.exists(res.error);
           assert.exists(res.error.text);
-          console.log(res.error, 'res.errorrrrrrrrrrrrr');
+          
           // changed to new error format to match the cluster
           const error = JSON.parse(res.error.text);
-          assert.include(error.error.data[0].param, '');
+          assert.deepEqual(error.error.data, { username: registerBody.username });
         });
         it('[9L3R] should not store the user in the database twice', async function() {
           const usersRepository = new Repository(app.storageLayer.events);

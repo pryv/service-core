@@ -109,14 +109,10 @@ describe('events', function () {
             });
           },
           async () => {
-            try {
-              // lets separate core events from all other events and validate them separatelly
-              const separatedEvents = validation.separateAccountStreamsAndOtherEvents(response.body.events);
-              response.body.events = separatedEvents.events;
-              accountStreamsEvents = separatedEvents.accountStreamsEvents;
-            } catch (error) {
-              throw error;
-            }
+            // lets separate core events from all other events and validate them separatelly
+            const separatedEvents = validation.separateAccountStreamsAndOtherEvents(response.body.events);
+            response.body.events = separatedEvents.events;
+            accountStreamsEvents = separatedEvents.accountStreamsEvents;
           },
           function checkResponse (stepDone) {
             validation.check(response, {
@@ -364,26 +360,22 @@ describe('events', function () {
 
     it('[6H0Z] must return all events (trashed or not) when requested', function (done) {
       request.get(basePath).query({ state: 'all', limit: 1000 }).end(async function (res) {
-        try{
-          // lets separate core events from all other events and validate them separatelly
-          const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
-          res.body.events = separatedEvents.events;
-          const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
-          validation.validateAccountEvents(actualAccountStreamsEvents);
+        // lets separate core events from all other events and validate them separatelly
+        const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
+        res.body.events = separatedEvents.events;
+        const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
+        validation.validateAccountEvents(actualAccountStreamsEvents);
 
-          validation.check(res, {
-            status: 200,
-            schema: methodsSchema.get.result,
-            sanitizeFn: validation.sanitizeEvents,
-            sanitizeTarget: 'events',
-            body: {
-              events: _.sortBy(validation.removeDeletionsAndHistory(testData.events), 'time')
-                .reverse()
-            }
-          }, done);
-        } catch (error) {
-          throw error;
-        }
+        validation.check(res, {
+          status: 200,
+          schema: methodsSchema.get.result,
+          sanitizeFn: validation.sanitizeEvents,
+          sanitizeTarget: 'events',
+          body: {
+            events: _.sortBy(validation.removeDeletionsAndHistory(testData.events), 'time')
+              .reverse()
+          }
+        }, done);
       });
     });
 
@@ -399,25 +391,21 @@ describe('events', function () {
         return (b.time - a.time);
       });
       request.get(basePath).query(params).end(async function (res) {
-        try{
-          // lets separate core events from all other events and validate them separatelly
-          const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
-          res.body.events = separatedEvents.events;
-          const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
-          validation.validateAccountEvents(actualAccountStreamsEvents);
+        // lets separate core events from all other events and validate them separatelly
+        const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
+        res.body.events = separatedEvents.events;
+        const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
+        validation.validateAccountEvents(actualAccountStreamsEvents);
 
-          validation.check(res, {
-            status: 200,
-            schema: methodsSchema.get.result,
-            sanitizeFn: validation.sanitizeEvents,
-            sanitizeTarget: 'events',
-            body: {
-              events: events
-            }
-          }, done);
-        } catch (error) {
-          throw error;
-        }
+        validation.check(res, {
+          status: 200,
+          schema: methodsSchema.get.result,
+          sanitizeFn: validation.sanitizeEvents,
+          sanitizeTarget: 'events',
+          body: {
+            events: events
+          }
+        }, done);
       });
     });
 
@@ -2009,27 +1997,23 @@ describe('events', function () {
           },
           function verifyEventData(stepDone) {
             storage.findAll(user, null, async function (err, events) {
-              try{
-                const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);
-                events = separatedEvents.events;
-                const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
-                validation.validateAccountEvents(actualAccountStreamsEvents);
+              const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);
+              events = separatedEvents.events;
+              const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
+              validation.validateAccountEvents(actualAccountStreamsEvents);
 
-                events.length.should.eql(testData.events.length, 'events');
+              events.length.should.eql(testData.events.length, 'events');
 
-                var deletion = _.find(events, function (event) {
-                  return event.id === id;
-                });
-                should.exist(deletion);
-                validation.checkObjectEquality(deletion, { id: id, deleted: deletionTime });
+              var deletion = _.find(events, function (event) {
+                return event.id === id;
+              });
+              should.exist(deletion);
+              validation.checkObjectEquality(deletion, { id: id, deleted: deletionTime });
 
-                var dirPath = eventFilesStorage.getAttachedFilePath(user, id);
-                fs.existsSync(dirPath).should.eql(false, 'deleted event directory existence');
+              var dirPath = eventFilesStorage.getAttachedFilePath(user, id);
+              fs.existsSync(dirPath).should.eql(false, 'deleted event directory existence');
 
-                stepDone();
-              } catch (error) {
-                throw error;
-              }
+              stepDone();
             });
           }
         ],

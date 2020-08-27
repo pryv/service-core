@@ -315,7 +315,7 @@ factory.DeniedEventModification = (streamId): APIError => {
     ErrorIds.DeniedEventModification, ErrorMessages[ErrorIds.DeniedEventModification],
     {
       httpStatus: 400,
-      data: { param: streamId },
+      data: { streamId: streamId },
       dontNotifyAirbrake: true,
     }
   )
@@ -357,7 +357,7 @@ factory.DeniedMultipleAccountStreams = (streamId): APIError => {
     ErrorIds.DeniedMultipleAccountStreams, ErrorMessages[ErrorIds.DeniedMultipleAccountStreams],
     {
       httpStatus: 400,
-      data: { param: streamId },
+      data: { streamId: streamId },
       dontNotifyAirbrake: true,
     }
   )

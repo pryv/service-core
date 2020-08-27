@@ -18,6 +18,7 @@ const { getConfig } = require('components/api-server/config/Config');
 const Application = require('../src/application');
 const ErrorIds = require('components/errors/src/ErrorIds');
 const ErrorMessages = require('components/errors/src/ErrorMessages');
+const User = require('components/business/src/users/User');
 
 function defaults() {
   return {
@@ -29,6 +30,11 @@ function defaults() {
     referer: 'pryv',
     insurancenumber: charlatan.Number.number(3)
   };
+}
+
+function buildUser(userData) {
+  const user = new User({ account: userData });
+  return user;
 }
 
 describe('registration: cluster', function() {
@@ -101,7 +107,7 @@ describe('registration: cluster', function() {
   }
 
   describe('POST /users (create user)', function() {
-    describe.skip('when a user with the same username only already exists in core but not in register', () => {
+    describe('when a user with the same username only already exists in core but not in register', () => {
       before(async () => {
         userData = defaults();
         serviceRegisterRequests = [];
@@ -133,7 +139,7 @@ describe('registration: cluster', function() {
       it('[AY44] should respond with the username and apiEndpoint (TODO)', () => {
         const body = res.body;
         assert.equal(body.username, userData.username);
-        
+        assert.equal(body.apiEndpoint, buildUser(userData).getApiEndpoint());
       });
       it('[MIOA] should send the right data to register', () => {
         const validationSent = serviceRegisterRequests[0];
@@ -196,7 +202,10 @@ describe('registration: cluster', function() {
             return true;
           })
           .reply(400, {
-            errors: ['Existing_username']
+            error: {
+              id: ErrorIds.ItemAlreadyExists,
+              data: { username: 'wactiv' }
+            }
           });
   
         res = await request.post(methodPath).send(userData);
@@ -226,7 +235,10 @@ describe('registration: cluster', function() {
             return true;
           })
           .reply(400, {
-            errors: ['Existing_email']
+            error: {
+              id: ErrorIds.ItemAlreadyExists,
+              data: { email: 'wactiv@pryv.io' }
+            }
           });
   
         res = await request.post(methodPath).send(userData);
@@ -259,7 +271,13 @@ describe('registration: cluster', function() {
             return true;
           })
           .reply(400, {
-            errors: ['Existing_email', 'Existing_username']
+            error: {
+              id: ErrorIds.ItemAlreadyExists,
+              data: {
+                email: 'wactiv@pryv.io',
+                username: 'wactiv'
+              }
+            }
           });
   
         res = await request.post(methodPath).send(userData);
@@ -291,7 +309,12 @@ describe('registration: cluster', function() {
             return true;
           })
           .reply(400, {
-            errors: ['Existing_username']
+            error: {
+              id: ErrorIds.ItemAlreadyExists,
+              data: {
+                username: userData.username
+              }
+            }
           });
   
         res = await request.post(methodPath).send(userData);
@@ -423,7 +446,11 @@ describe('registration: cluster', function() {
               serviceRegisterRequests.push(body);
               return true;
             })
-            .reply(400, { errors: ['InvalidInvitationToken'] });
+            .reply(400, {
+              error: {
+                id: ErrorIds.InvalidInvitationToken
+              }
+             });
           res = await request.post(methodPath).send(userData);
         });
         it('[4GON] should respond with status 400', () => {
@@ -446,7 +473,10 @@ describe('registration: cluster', function() {
               serviceRegisterRequests.push(body);
               return true;
             })
-            .reply(400, { errors: ['InvalidInvitationToken'] });
+            .reply(400, {
+              error: {
+                id: ErrorIds.InvalidInvitationToken
+              } });
           res = await request.post(methodPath).send(userData);
         });
         it('[CX9N] should respond with status 400', () => {

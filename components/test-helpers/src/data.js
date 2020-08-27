@@ -33,13 +33,9 @@ exports.resetUsers = async () => {
   const userRepository = new UserRepository(storage.user.events);
   
   let i;
-  try{
-    for (i = 0; i < users.length; i++){
-      let user = Object.assign({}, users[i]);
-      await userRepository.insertOne(user);
-    }
-  } catch (error) {
-    throw error;
+  for (i = 0; i < users.length; i++){
+    let user = Object.assign({}, users[i]);
+    await userRepository.insertOne(user);
   }
 };
 
@@ -50,15 +46,11 @@ exports.resetUsersWithAdditionalProperties = async () => {
   const userRepository = new UserRepository(storage.user.events);
 
   let i;
-  try {
-    for (i = 0; i < users.length; i++) {
-      let user = Object.assign({}, users[i]);
-      user.insurancenumber = charlatan.Number.number(3);
-      user.phoneNumber = charlatan.Number.number(3);
-      await userRepository.insertOne(user);
-    }
-  } catch (error) {
-    throw error;
+  for (i = 0; i < users.length; i++) {
+    let user = Object.assign({}, users[i]);
+    user.insurancenumber = charlatan.Number.number(3);
+    user.phoneNumber = charlatan.Number.number(3);
+    await userRepository.insertOne(user);
   }
 };
 

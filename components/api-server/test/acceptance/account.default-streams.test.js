@@ -236,8 +236,9 @@ describe("[841C] Account with default-streams", function () {
     describe('[FD2E] When updating an unique field that is already taken', async () => {
       describe('[7CEE] When the field is not unique in mongodb', async () => {
         let scope;
+        let user2;
         before(async function () {
-          const user2 = await createUser();
+          user2 = await createUser();
           await createUser();
           const settings = _.cloneDeep(helpers.dependencies.settings);
           scope = nock(settings.services.register.url)
@@ -253,8 +254,8 @@ describe("[841C] Account with default-streams", function () {
           assert.equal(res.status, 400);
         });
         it('[8TRP] Should return the correct error', async () => {
-          assert.equal(res.body.error.id, ErrorIds['Existing_email']);
-          assert.equal(res.body.error.message, ErrorMessages[ErrorIds['Existing_email']]);
+          assert.equal(res.body.error.id, ErrorIds.ItemAlreadyExists);
+          assert.deepEqual(res.body.error.data, { email: user2.attrs.email});
         });
       });
     });

@@ -31,12 +31,8 @@ class Repository {
    */
   async getAll(): Promise<Map<string, Array<Webhook>>> {
     let users;
-    try {
-      const usersRepository = new UsersRepository(this.userEventsStorage);
-      users = await usersRepository.getAllUsernames();
-    } catch (error) {
-      throw error;
-    }
+    const usersRepository = new UsersRepository(this.userEventsStorage);
+    users = await usersRepository.getAllUsernames();
 
     const allWebhooks = new Map();
     

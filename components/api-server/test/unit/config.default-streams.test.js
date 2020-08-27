@@ -61,7 +61,6 @@ describe('SystemStreams config', () => {
             },
           ]
         });
-      //console.log(store.get('systemStreams:custom'),'zzzzzzz');
       systemStreamsConfig.load(store);
     });
     it('[V9QB] New config does not override default one', async () => {
@@ -86,7 +85,7 @@ describe('SystemStreams config', () => {
     });
     it('[5T5S] Account config is merged correctly and New values are extended with default streams values', async () => {
       const newConfig = store.get('systemStreams:account');
-      console.log(newConfig[6], 'newConfig');
+
       assert.deepEqual(newConfig, [
         {
           isIndexed: true,
@@ -223,7 +222,6 @@ describe('SystemStreams config', () => {
     });
     it('[ARD9] New systemStreams config is merged correctly', async () => {
       const newConfig = store.get('systemStreams:myNewStream');
-      console.log(newConfig, 'newConfig');
       assert.deepEqual(newConfig, [
         {
           isIndexed: false,

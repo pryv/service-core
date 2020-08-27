@@ -217,6 +217,7 @@ BaseStorage.prototype.aggregate = function(
   );
 };
 
+//TODO IEVA - maybe add session here?
 BaseStorage.prototype.insertOne = function (user, item, callback) {
   this.database.insertOne(
     this.getCollectionInfo(user),

@@ -10,7 +10,9 @@ const urllib = require('url');
 const superagent = require('superagent');
 import type { Logger } from 'components/utils/src/logging';
 import type { RegistrySettings } from 'components/pryvuser-cli/src/configuration';
-
+const ErrorIds = require('components/errors').ErrorIds,
+  errors = require('components/errors').factory,
+  ErrorMessages = require('components/errors/src/ErrorMessages');
 class ServiceRegister {
   config: RegistrySettings; 
   logger: Logger;
@@ -43,14 +45,23 @@ class ServiceRegister {
           uniqueFields: uniqueFields,
           core: core
         });
-      return res.body;
     } catch (err) {
-      if(err.status == 400 && err?.response?.body?.errors){
-        return err.response.body;
+      if(err.status == 400 && err?.response?.body?.error){
+
+        console.log(err.response.body.error.id, ErrorIds.InvalidInvitationToken,'error validateUser');
+        if (err.response.body.error != null) {
+          if (err.response.body.error.id === ErrorIds.InvalidInvitationToken) {
+            throw errors.invalidOperation(ErrorMessages.InvalidInvitationToken);
+          } else if (err.response.body.error.id === ErrorIds.ItemAlreadyExists) {
+            throw errors.itemAlreadyExists('user', err.response.body.error.data);
+          } else {
+            throw errors.unexpectedError(err.response.body.error);
+          }
+        }
       }
       // do not log validation errors
       this.logger.error(err);
-      throw new Error(err.message || 'Unexpected error.');
+      throw errors.unexpectedError(new Error(err.message || 'Unexpected error.'));
     }
   }
 
@@ -113,12 +124,17 @@ class ServiceRegister {
 
       return res.body;
     } catch (err) {
-      if (err.status == 400 && err?.response?.body?.errors) {
-        return err.response.body;
+      if (err.status == 400 && err.response.body.error != null) {
+        if (err.response.body.error.id === ErrorIds.ItemAlreadyExists) {
+          throw errors.itemAlreadyExists('user', err.response.body.error.data);
+        } else {
+          this.logger.error(err.response.body.error);
+          throw errors.unexpectedError(err.response.body.error);
+        }
       }
       // do not log validation errors
       this.logger.error(err);
-      throw new Error(err.message || 'Unexpected error.');
+      throw errors.unexpectedError(new Error(err.message || 'Unexpected error.'));
     }
   }
 }
