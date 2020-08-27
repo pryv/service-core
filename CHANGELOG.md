@@ -1,8 +1,9 @@
 ## 1.5
 
-### 1.5.23
+### 1.5.23-4
 
 - Bump bcrypt from 3.0.8 to 5.0.0
+- Remove it from components/utils as it is in root package.json
 
 ### 1.5.22
 
