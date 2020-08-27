@@ -240,6 +240,7 @@ function getStreamsNames(streams, whatToReturn) {
 }
 
 SystemStreamsSerializer.options = {
-  STREAM_ID_ACTIVE: 'active'
+  STREAM_ID_ACTIVE: 'active',
+  STREAM_ID_UNIQUE: 'unique'
 }
 module.exports = SystemStreamsSerializer;

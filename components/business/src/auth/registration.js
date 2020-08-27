@@ -398,6 +398,7 @@ class Registration {
     if (typeof err.isDuplicateIndex === 'function') {
       uniquenessErrors[err.duplicateIndex()] = params[err.duplicateIndex()];
     }
+
     if (Object.keys(uniquenessErrors).length > 0) {
       return errors.itemAlreadyExists('user', uniquenessErrors);
     }

@@ -438,7 +438,12 @@ class Database {
   insertMany(collectionInfo: CollectionInfo, items: Array<Object>, callback: DatabaseCallback) {
     this.addUserIdIfneed(collectionInfo, items);
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.insertMany(items, {w: 1, j: true}, callback);
+      collection.insertMany(items, { w: 1, j: true }, (err, res) => {
+        if (err != null) {
+          Database.handleDuplicateError(err);
+        }
+        callback(err, res);
+      });
     });
   }
 

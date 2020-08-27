@@ -52,12 +52,12 @@ class Repository {
       let user;
       let userObj;
       for (var i = 0; i < usersCount; i++) {
-        userObj = await this.getById({ id: usersNames[i].userId }, true);
+        userObj = await this.getById(usersNames[i].userId, true);
         // for the crazy unknown reason in the tests invitation token, appId and referer
         // values are not validated, so lets remove them until find out how often this is the
         // case
         //TODO IEVA - somehow deal that not in the repo
-        let user = userObj.getAccount();
+        user = userObj.getAccount();
         delete user.referer;
         delete user.appId;
         delete user.invitationToken;
@@ -204,8 +204,9 @@ class Repository {
     };
 
     try {
-      // get streams ids from the config that should be retrieved
+      // get streams ids from the config
       let userAccountStreamsIds = (new SystemStreamsSerializer()).getAllAccountStreamsLeaves();
+
       // change password into hash (also allow for tests to pass passwordHash directly)
       if (userParams.password && !userParams.passwordHash) {
         userParams.passwordHash = await bluebird.fromCallback((cb) => encryption.hash(userParams.password, cb));
@@ -214,9 +215,10 @@ class Repository {
 
       // create userId so that userId could be passed
       userParams = converters.createIdIfMissing(userParams);
+
       // form username event - it is separate because we set the _id 
       let updateObject = {
-        streamIds: ['username', 'unique', SystemStreamsSerializer.options.STREAM_ID_ACTIVE],
+        streamIds: ['username', SystemStreamsSerializer.options.STREAM_ID_UNIQUE, SystemStreamsSerializer.options.STREAM_ID_ACTIVE],
         type: userAccountStreamsIds.username.type,
         content: userParams.username,
         username__unique: userParams.username, // repeated field for uniqueness
@@ -232,7 +234,6 @@ class Repository {
       user.id = updateObject.id;
       await session.withTransaction(async () => {
         // insert username event
-        //TODO IEVA -insert many
         const username = await bluebird.fromCallback((cb) =>
           this.storage.insertOne(user, updateObject, cb, { session }));
         user.username = username.content;
@@ -241,7 +242,8 @@ class Repository {
         delete userAccountStreamsIds['username'];
 
         // create all user account events
-        const eventsCreationActions = Object.keys(userAccountStreamsIds).map(streamId => {
+        let creationObjects = [];
+        Object.keys(userAccountStreamsIds).forEach(streamId => {
           if (userParams[streamId] || typeof userAccountStreamsIds[streamId].default !== 'undefined') {
             let parameter = userAccountStreamsIds[streamId].default;
 
@@ -261,6 +263,8 @@ class Repository {
 
             // create the event
             let creationObject = {
+              // add active stream id by default
+              streamIds: [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE],
               type: eventType,
               content: parameter,
               created: timestamp.now(),
@@ -271,19 +275,20 @@ class Repository {
               attachements: [],
               tags: []
             }
+            creationObject = converters.createIdIfMissing(creationObject);
 
-            // get additional stream ids from the config
-            let streamIds = [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE];
+            // if fields has to be unique , add stream id and the field that enforces uniqueness
             if (userAccountStreamsIds[streamId].isUnique === true) {
-              streamIds.push('unique');
-              creationObject[streamId + '__unique'] = parameter; // repeated field for uniqness
+              creationObject.streamIds.push(SystemStreamsSerializer.options.STREAM_ID_UNIQUE);
+              // repeated field for uniqness
+              creationObject[streamId + '__unique'] = parameter; 
             }
-            creationObject.streamIds = streamIds;
-            return bluebird.fromCallback((cb) =>
-              this.storage.insertOne(user, creationObject, cb, { session }));
+            creationObjects.push(creationObject);
           }
         });
-        await Promise.all(eventsCreationActions);
+
+        await bluebird.fromCallback((cb) =>
+           this.storage.insertMany(user, creationObjects, cb, { session }));
       }, transactionOptions);
       return user;
     } catch (error) {

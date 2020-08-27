@@ -453,8 +453,42 @@ module.exports = function (
    */
   async function handleAccountStreams (username:string, context: object, creation: Boolean) {
     const systemStreamsSerializerObj = new SystemStreamsSerializer();
-    const nonEditableAccountStreamsIds = systemStreamsSerializerObj.getAccountStreamsIdsForbiddenForEditing();
+    // get editable account streams
     const editableAccountStreams = systemStreamsSerializerObj.getEditableAccountStreams();
+
+    /**
+     * Deny event editing if event has non editable core stream
+     * @param string streamId 
+     */
+    function checkIfStreamIdIsNotEditable (streamId: string): boolean {
+      const nonEditableAccountStreamsIds = systemStreamsSerializerObj.getAccountStreamsIdsForbiddenForEditing();
+      return nonEditableAccountStreamsIds.includes(streamId);
+    }
+
+    /**
+     * Form request and send data to service-register about unique or indexed fields update
+     * @param {*} fieldName 
+     * @param {*} contextContent 
+     * @param {*} creation 
+     */
+    async function sendDataToServiceRegister (fieldName, contextContent, creation) {
+      let fieldsForUpdate = {};
+      fieldsForUpdate[fieldName] = [{
+        value: contextContent.content,
+        isUnique: editableAccountStreams[fieldName].isUnique,
+        isActive: contextContent.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE) ||
+          oldContentStreamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE),
+        creation: creation
+      }];
+
+      // initialize service-register connection
+      const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
+
+      // send information update to service regsiter
+      await serviceRegisterConn.updateUserInServiceRegister(
+        username, fieldsForUpdate, {});
+    }
+ 
     let removeActiveEvents = false;
     let contextContent = context.content;
     let oldContentStreamIds = (context?.oldContent?.streamIds) ? context.oldContent.streamIds: [];
@@ -477,42 +511,28 @@ module.exports = function (
         removeActiveEvents = true;
       }
 
-      // if stream is unique append properties that enforce uniqueness
       if (editableAccountStreams[fieldName].isUnique || editableAccountStreams[fieldName].isIndexed) {
-        let fieldsForUpdate = {};
+        
+        // if stream is unique append properties that enforce uniqueness
         if (editableAccountStreams[fieldName].isUnique) {
           contextContent = enforceEventUniqueness(contextContent, fieldName);
         }
-        
-        fieldsForUpdate[fieldName] = [{
-          value: contextContent.content,
-          isUnique: editableAccountStreams[fieldName].isUnique,
-          isActive: contextContent.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE) ||
-            oldContentStreamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE),
-          creation: creation
-        }];
-
-        // initialize service-register connection
-        const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
-
-        try {
-          // send information update to service regsiter
-          await serviceRegisterConn.updateUserInServiceRegister(
-            username, fieldsForUpdate, {});
-        } catch (err) {
-          throw err;
-        }
+        // send update to service-register
+        await sendDataToServiceRegister(fieldName, contextContent, creation);
       }
-    } else if (nonEditableAccountStreamsIds.includes(fieldName)) {
+    } else if (checkIfStreamIdIsNotEditable(fieldName)) {
       // if user tries to add new streamId from non editable streamsIds
       throw errors.DeniedEventModification(fieldName);
+
     } else if (matchingAccountStreams.length > 1) {
       // if user tries to add several streamIds from account streams
       throw errors.DeniedMultipleAccountStreams(fieldName);
+
     } else if (!creation && matchingAccountStreams.length > 0 &&
       _.intersection(matchingAccountStreams, oldContentStreamIds).length === 0) {
-      // if user tries to change streamId of systemStreams
+      // if user tries to change streamId of systemStreams event
       throw errors.DeniedMultipleAccountStreams(fieldName);
+
     }
     
     return {

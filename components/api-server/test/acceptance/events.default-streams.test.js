@@ -882,6 +882,7 @@ describe("[AGT3] Events of default-streams", function () {
           });
           it('[XHIA] Should send a request to service-register to update the indexed field', async () => {
             assert.equal(scope.isDone(), true);
+            
             assert.deepEqual(serviceRegisterRequest, {
               user: {
                 [streamId]: [{
