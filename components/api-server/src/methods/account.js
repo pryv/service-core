@@ -42,8 +42,8 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     commonFns.getParamsValidation(methodsSchema.get.params),
     async function (context, params, result, next) {
       try {
-        const userObj: User = await userRepository.getById(context.user.id);
-        result.account = userObj.getAccount();
+        const user: User = await userRepository.getById(context.user.id);
+        result.account = user.getAccount();
         delete result.account.id;
         next();
       } catch (err) {
@@ -246,8 +246,8 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
 
       // retrieve and form user info
       if (!fieldsToUpdate.includes('passwordHash')) {
-        const userObj: User = await userRepository.getById(context.user.id);
-        result.account = userObj.getAccount();
+        const user: User = await userRepository.getById(context.user.id);
+        result.account = user.getAccount();
         delete result.account.id;
       }
 

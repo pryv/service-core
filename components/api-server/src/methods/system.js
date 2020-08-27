@@ -77,8 +77,7 @@ module.exports = function (
   async function retrieveUser(context, params, result, next) {
     try {
       const userRepository = new UserRepository(storageLayer.events);
-      const userObj: User = await userRepository.getAccountByUsername(params.username, true);
-      context.user = userObj.getAccount();
+      context.user = await userRepository.getAccountByUsername(params.username, true);
 
       if (! context.user?.id) {
         return next(errors.unknownResource('user', params.username));

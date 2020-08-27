@@ -95,8 +95,7 @@ class MethodContext {
     try {
       const userRepository = new UserRepository(storage.events);
       // get user details
-      const userObj = await userRepository.getAccountByUsername(this.username, true);
-      this.user = userObj.getAccount();
+      this.user = await userRepository.getAccountByUsername(this.username, true);
       if (!this.user?.id)
         throw errors.unknownResource('user', this.username);
     } catch (err) {

@@ -235,8 +235,7 @@ class Registration {
         context.skip = true;
 
         //append context with the same values that would be saved by createUser function
-        const userObj: User = await this.userRepository.getById(existingUser.userId, true);
-        context.user = userObj.getAccount();
+        context.user = await this.userRepository.getById(existingUser.userId, true);
 
         // set result as current username
         result.username = context.user.username;

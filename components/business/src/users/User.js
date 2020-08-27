@@ -14,32 +14,40 @@ const config: Config = getConfig();
 //const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
 class User {
-  userId: string;
-  events: [];
+  id: string;
+  userId: string; // to remove
+  events: Array<{}>;
   account: Object;
   //serializer: ?SystemStreamsSerializer;
-  accountStreamsSettings: [];
+  accountStreamsSettings: Array<{}>;
+  accountFields: Array<string> = [];
 
-  constructor (userId, events: [] ) {
+  constructor (userId: string, events: Array<{}> = [] ) {
     //this.serializer = new SystemStreamsSerializer();
     this.events = events;
     this.userId = userId;
     this.accountStreamsSettings = config.get('systemStreams:account');
-    this.formAccountDataFromListOfEvents();
+    formAccountDataFromListOfEvents(this);
   }
 
-  /**
-   * Convert system->account events to the account object
-   */
-  formAccountDataFromListOfEvents () {
-    let user = {};
-    this.account = formEventsTree(this.accountStreamsSettings, this.events, user);
-    this.account.id = this.userId;
-  }
+  
 
   getAccount () {
-    return this.account;
+    return _.pick(this, this.accountFields);
   }
+}
+
+/**
+ * Convert system->account events to the account object
+ */
+function formAccountDataFromListOfEvents (user: User) {
+  const account = formEventsTree(user.accountStreamsSettings, user.events, {});
+  Object.keys(account).forEach(p => {
+    
+    user.accountFields.push(p);
+    user[p] = account[p];
+  });
+  user.id = user.userId;
 }
 
 /**

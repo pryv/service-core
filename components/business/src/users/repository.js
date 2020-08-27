@@ -50,14 +50,12 @@ class Repository {
 
       const usersCount = usersNames.length;
       let user;
-      let userObj;
       for (var i = 0; i < usersCount; i++) {
-        userObj = await this.getById({ id: usersNames[i].userId }, true);
+        user = await this.getById({ id: usersNames[i].userId }, true);
         // for the crazy unknown reason in the tests invitation token, appId and referer
         // values are not validated, so lets remove them until find out how often this is the
         // case
         //TODO IEVA - somehow deal that not in the repo
-        let user = userObj.getAccount();
         delete user.referer;
         delete user.appId;
         delete user.invitationToken;
@@ -122,10 +120,10 @@ class Repository {
       };
       
       //const dbItems = await bluebird.fromCallback(cb => this.storage.find({ id: userId }, query, null, cb));
-      const userProfileEvents = await bluebird.fromCallback(cb =>
+      const userAccountEvents = await bluebird.fromCallback(cb =>
         this.storage.find({ id: userId }, query, null, cb));
       // convert events to the account info structure
-      return new User(userId, userProfileEvents);
+      return new User(userId, userAccountEvents);
     } catch (error) {
       throw error;
     }
@@ -149,10 +147,7 @@ class Repository {
 
       if (userIdEvent && userIdEvent.userId) {
         return this.getById(userIdEvent.userId);
-        /*return {
-          id: userIdEvent.userId,
-          username: username
-        };*/
+        
       } else {
         return null;
       }
