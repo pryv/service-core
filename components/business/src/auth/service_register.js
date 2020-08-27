@@ -46,7 +46,6 @@ class ServiceRegister {
           core: core
         });
     } catch (err) {
-      console.log(err.response.body,'err.response.bodyy');
       if(err.status == 400 && err?.response?.body?.error){
 
         console.log(err.response.body.error.id, ErrorIds.InvalidInvitationToken,'error validateUser');

@@ -961,34 +961,29 @@ module.exports = function (
     if (!files) { return; }
 
     var attachments = eventInfo.attachments ? eventInfo.attachments.slice() : [];
+    let i;
+    let fileInfo;
+    const filesKeys = Object.keys(files);
+    for (i = 0; i < filesKeys.length; i++) {
+      //saveFile
+      fileInfo = files[filesKeys[i]];
+      const fileId = await bluebird.fromCallback(cb =>
+        userEventFilesStorage.saveAttachedFile(fileInfo.path, context.user, eventInfo.id, cb));
 
-    try {
-      let i;
-      let fileInfo;
-      const filesKeys = Object.keys(files);
-      for (i = 0; i < filesKeys.length; i++) {
-        //saveFile
-        fileInfo = files[filesKeys[i]];
-        const fileId = await bluebird.fromCallback(cb =>
-          userEventFilesStorage.saveAttachedFile(fileInfo.path, context.user, eventInfo.id, cb));
-
-        attachments.push({
-          id: fileId,
-          fileName: fileInfo.originalname,
-          type: fileInfo.mimetype,
-          size: fileInfo.size
-        });
-        // approximately update account storage size
-        context.user.storageUsed.attachedFiles += fileInfo.size;
-        
-        await userRepository.updateOne(
-          context.user.id,
-          { attachedFiles: context.user.storageUsed.attachedFiles });
-      }
-      return attachments;
-    } catch (err) {
-      throw err;
+      attachments.push({
+        id: fileId,
+        fileName: fileInfo.originalname,
+        type: fileInfo.mimetype,
+        size: fileInfo.size
+      });
+      // approximately update account storage size
+      context.user.storageUsed.attachedFiles += fileInfo.size;
+      
+      await userRepository.updateOne(
+        context.user.id,
+        { attachedFiles: context.user.storageUsed.attachedFiles });
     }
+    return attachments;
   }
 
   // DELETION

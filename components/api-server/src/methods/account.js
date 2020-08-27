@@ -219,13 +219,9 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
   async function notifyRegisterAboutUserDataChanges (username, fieldsForUpdate) {
     // initialize service-register connection
     const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
-    try {
-      // send information update to service regsiter
-      await serviceRegisterConn.updateUserInServiceRegister(username, fieldsForUpdate, {});
-      // !!!!!! Now only language is updated and no validation errors should be thrown
-    } catch (err) {
-      throw err;
-    }
+    // send information update to service regsiter
+    await serviceRegisterConn.updateUserInServiceRegister(username, fieldsForUpdate, {});
+    // !!!!!! Now only language is updated and no validation errors should be thrown
   }
 
   async function updateAccount(context, params, result, next) {

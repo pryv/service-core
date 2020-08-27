@@ -94,7 +94,7 @@ class MongoDB {
   async findUser (username: string): Promise<?UserAttributes> {
     const userRepository = new UserRepository(this.storageLayer.events);
     
-    const userObj: User = await userRepository.getAccountByUsername(username, true, true);
+    const userObj: User = await userRepository.getAccountByUsername(username, true);
     let user = null;
     if (userObj != null) {
       user = userObj.getAccount();
