@@ -48,16 +48,17 @@ class Repository {
     );
 
     const usersCount = usersNames.length;
-    let userObj;
+    let user;
     for (var i = 0; i < usersCount; i++) {
-      userObj = await this.getById(usersNames[i].userId, true);
+      user = await this.getById(usersNames[i].userId, true);
       // for the crazy unknown reason in the tests invitation token, appId and referer
       // values are not validated, so lets remove them until find out how often this is the
       // case
-      delete userObj.referer;
-      delete userObj.appId;
-      delete userObj.invitationToken;
-      users.push(userObj);
+      //TODO IEVA - somehow deal that not in the repo
+      delete user.referer;
+      delete user.appId;
+      delete user.invitationToken;
+      users.push(user);
     }
     return users;
   }

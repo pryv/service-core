@@ -15,9 +15,10 @@ const config: Config = getConfig();
 
 class User {
   id: string;
+  username: string;
   userId: string; // to remove
   events: Array<{}>;
-  account: Object;
+  apiEndpoint: ?string;
   //serializer: ?SystemStreamsSerializer;
   accountStreamsSettings: Array<{}>;
   accountFields: Array<string> = [];
@@ -36,6 +37,12 @@ class User {
     return _.pick(this, this.accountFields);
   }
 
+  getApiEndpoint() {
+    if (this.apiEndpoint != null) return this.apiEndpoint;
+    const apiFormat = config.get('service:api');
+    this.apiEndpoint = apiFormat.replace('{username}', this.username);
+    return this.apiEndpoint;
+  }
   getAccountWithId () {
     return _.pick(this, _.concat(this.accountFields, ['id']));
   }

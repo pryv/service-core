@@ -18,6 +18,7 @@ const { getConfig } = require('components/api-server/config/Config');
 const Application = require('../src/application');
 const ErrorIds = require('components/errors/src/ErrorIds');
 const ErrorMessages = require('components/errors/src/ErrorMessages');
+const User = require('components/business/src/users/User');
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('./test-helpers');
 
@@ -33,7 +34,12 @@ function defaults() {
   };
 }
 
-describe('[8RRX] registration: cluster', function() {
+function buildUser(userData) {
+  const user = new User({ account: userData });
+  return user;
+}
+
+describe('registration: cluster', function() {
   let app;
   let request;
   let res;
@@ -108,7 +114,7 @@ describe('[8RRX] registration: cluster', function() {
   }
 
   describe('POST /users (create user)', function() {
-    describe.skip('when a user with the same username only already exists in core but not in register', () => {
+    describe('when a user with the same username only already exists in core but not in register', () => {
       before(async () => {
         userData = defaults();
         serviceRegisterRequests = [];
@@ -134,14 +140,15 @@ describe('[8RRX] registration: cluster', function() {
         userData.email = charlatan.Internet.email();
         res = await request.post(methodPath).send(userData);
       });
-      it('should respond with status 201', () => {
+      it('[QV8Z] should respond with status 201', () => {
         assert.equal(res.status, 201);
       });
-      it('should respond with the username and apiEndpoint (TODO)', () => {
+      it('[TCOM] should respond with the username and apiEndpoint (TODO)', () => {
         const body = res.body;
         assert.equal(body.username, userData.username);
+        //assert.equal(body.apiEndpoint, buildUser(userData).getApiEndpoint());
       });
-      it('should send the right data to register', () => {
+      it('[7QB6] should send the right data to register', () => {
         const validationSent = serviceRegisterRequests[0];
         assert.deepEqual(validationSent, serviceRegisterRequests[2]);
         assert.deepEqual(validationSent, buildValidationRequest(userData));
