@@ -829,7 +829,6 @@ describe("[AGT3] Events of default-streams", function () {
         const streamId = 'email';
         before(async function () {
           await createUser();
-          //await nock.cleanAll();
           const settings = _.cloneDeep(helpers.dependencies.settings);
           scope = nock(settings.services.register.url)
           scope.put('/users',

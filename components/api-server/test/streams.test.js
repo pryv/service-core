@@ -27,7 +27,7 @@ const _ = require('lodash');
 const chai = require('chai');
 const assert = chai.assert; 
 
-describe('streams', function () {
+describe('[JI3F] streams', function () {
 
   var user = Object.assign({}, testData.users[0]),
       initialRootStreamId = testData.streams[0].id,

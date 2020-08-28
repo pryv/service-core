@@ -43,6 +43,9 @@ class User {
     this.apiEndpoint = apiFormat.replace('{username}', this.username);
     return this.apiEndpoint;
   }
+  getAccountWithId () {
+    return _.pick(this, _.concat(this.accountFields, ['id']));
+  }
 }
 
 /**

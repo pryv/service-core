@@ -10,11 +10,9 @@
  * Extension of database.js dedicated to user management
  */
 const _ = require('lodash');
-const async = require('async');
 const cuid = require('cuid');
-const bluebird = require('bluebird');
 const errors = require('components/errors').factory;
-const { ErrorIds, ErrorMessages, errorHandling } = require('components/errors');
+const { errorHandling } = require('components/errors');
 const commonFns = require('components/api-server/src/methods/helpers/commonFunctions');
 const mailing = require('components/api-server/src/methods/helpers/mailing');
 const ServiceRegister = require('./service_register');
@@ -26,9 +24,6 @@ const User = require('components/business/src/users/User');
 
 import type { MethodContext } from 'components/model';
 import type { ApiCallback } from 'components/api-server/src/API';
-
-const { getConfig, Config } = require('components/api-server/config/Config');
-const config: Config = getConfig();
 
 /**
  * Create (register) a new user
@@ -60,13 +55,30 @@ class Registration {
   }
 
   /**
+   * Do minimal manipulation with data like username convertion to lowercase
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  async prepareUserData (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    if (params.username && typeof params.username === 'string') {
+      params.username = params.username.toLowerCase();
+    }
+    if (params.email && typeof params.email === 'string') {
+      params.email = params.email.toLowerCase();
+    }
+    next();
+  }
+
+  /**
    * Append validation settings to validation schema and save new object to the context
    * @param {*} context
    * @param {*} params
    * @param {*} result
    * @param {*} next
    */
-  loadCustomValidationSettings(
+  loadCustomValidationSettings (
     context: MethodContext,
     params: mixed,
     result: Result,
@@ -114,21 +126,19 @@ class Registration {
       next
     );
   }
-  
-  /**
-   * Do minimal manipulation with data like username convertion to lowercase
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
-   */
-  async prepareUserData (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    if (params.username && typeof params.username === 'string') {
-      params.username = params.username.toLowerCase();
+
+  async prepareUserDataForSaving (
+    context: MethodContext,
+    params: mixed,
+    result: Result,
+    next: ApiCallback
+  ) {
+    // change parameter name
+    if (params.languageCode) {
+      params.language = params.languageCode;
     }
-    if (params.email && typeof params.email === 'string') {
-      params.email = params.email.toLowerCase();
-    }
+    delete params.languageCode;
+
     next();
   }
 
@@ -164,21 +174,6 @@ class Registration {
     } catch (error) {
       return next(error);
     }
-    next();
-  }
-
-  async prepareUserDataForSaving(
-    context: MethodContext,
-    params: mixed,
-    result: Result,
-    next: ApiCallback
-  ) {
-    // change parameter name
-    if (params.languageCode) {
-      params.language = params.languageCode;
-    }
-    delete params.languageCode;
-
     next();
   }
 
@@ -228,13 +223,88 @@ class Registration {
   }
 
   /**
+   * DEPRECATED
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  createPoolUser (context, params, result, next) {
+    const uniqueId = cuid();
+    params.username = this.POOL_USERNAME_PREFIX + uniqueId;
+    params.passwordHash = 'changeMe';
+    params.language = 'en';
+    params.email = this.POOL_USERNAME_PREFIX + uniqueId + '@email';
+    next();
+  }
+
+  /**
+   * Save user to the database
+   * Pool user is not consumed anymore
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  async createUser(
+    context: MethodContext,
+    params: mixed,
+    result,
+    next: ApiCallback
+  ) {
+    if (context.skip === true) {
+      return next();
+    }
+
+    // if it is testing user, skip registration process
+    if (params.username === 'recla') {
+      result.id = 'dummy-test-user';
+      context.user = _.defaults({ id: result.id }, params);
+      return next();
+    }
+
+    try {
+      context.user = {
+        username: params.username
+      };
+      let user = {};
+      if (context.calledMethodId === 'system.createPoolUser') {
+        user = await this.userRepository.insertOne(
+          params
+        );
+      } else {
+        user = await this.userRepository.insertOne(
+          params,
+          this.storageLayer.sessions,
+          this.storageLayer.accesses,
+        );
+      }
+
+      context.user = { ...context.user, ...user };
+      context.user.host = { name: this.hostname };
+
+      // form the result for system call or full registration call
+      if (context.calledMethodId === 'system.createUser') {
+        result.id = context.user.id;
+      } else {
+        result.username = context.user.username;
+        result.token = context.user.token;
+      }
+      next();
+    } catch (err) {
+      return next(Registration.handleUniquenessErrors(err, null, params));
+    }
+  }
+
+
+  /**
    * Save user in service-register
    * @param {*} context
    * @param {*} params
    * @param {*} result
    * @param {*} next
    */
-  async createUserInServiceRegister(
+  async createUserInServiceRegister (
     context: MethodContext,
     params: mixed,
     result: Result,
@@ -272,51 +342,6 @@ class Registration {
       return next(errors.unexpectedError(error));
     }
     next();
-  }
-
-  /**
-   * Save user to the database
-   * Pool user is not consumed anymore
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
-   */
-  async createUser(
-    context: MethodContext,
-    params: mixed,
-    result,
-    next: ApiCallback
-  ) {
-    if (context.skip === true) {
-      return next();
-    }
-
-    // if it is testing user, skip registration process
-    if (params.username === 'recla') {
-      result.id = 'dummy-test-user';
-      context.user = _.defaults({ id: result.id }, params);
-      return next();
-    }
-
-    try {
-      context.user = {
-        username: params.username
-      };
-      const user = await this.userRepository.insertOne(params);
-      context.user = { ...context.user, ...user };
-      context.user.host = { name: this.hostname };
-
-      // form the result for system call or full registration call
-      if (context.calledMethodId === 'system.createUser') {
-        result.id = context.user.id;
-      } else {
-        result.username = context.user.username;
-      }
-      next();
-    } catch (err) {
-      return next(Registration.handleUniquenessErrors(err, null, params));
-    }
   }
 
   /**
@@ -371,22 +396,6 @@ class Registration {
   }
 
   /**
-   * DEPRECATED
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
-   */
-  createPoolUser(context, params, result, next) {
-    const uniqueId = cuid();
-    params.username = this.POOL_USERNAME_PREFIX + uniqueId;
-    params.passwordHash = 'changeMe';
-    params.language = 'en';
-    params.email = this.POOL_USERNAME_PREFIX + uniqueId + '@email';
-    next();
-  }
-
-  /**
    * Form errors for api response
    * @param {*} err
    * @param {*} params
@@ -395,7 +404,12 @@ class Registration {
     // Duplicate errors
     let uniquenessErrors = {};
     if (typeof err.isDuplicateIndex === 'function') {
-      uniquenessErrors[err.duplicateIndex()] = params[err.duplicateIndex()];
+      let fieldName = err.duplicateIndex();
+      // uniqueness constrain for username in acccess
+      if (fieldName == 'deviceName') {
+        fieldName = 'username';
+      }
+      uniquenessErrors[fieldName] = params[fieldName];     
     }
 
     if (Object.keys(uniquenessErrors).length > 0) {

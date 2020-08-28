@@ -106,11 +106,10 @@ class Repository {
       userAccountStreamsIds = systemStreamsSerializer.getReadableAccountStreams();
     }
     // form the query
-    //TODO IEVA -query
     let query = {
-      '$and': [
-        { 'streamIds': { '$in': Object.keys(userAccountStreamsIds) } },
-        { 'streamIds': { '$eq': SystemStreamsSerializer.options.STREAM_ID_ACTIVE } }
+      $and: [
+        { streamIds: { $in: Object.keys(userAccountStreamsIds) } },
+        { streamIds: { $eq: SystemStreamsSerializer.options.STREAM_ID_ACTIVE } }
       ]
     };
     
@@ -122,7 +121,7 @@ class Repository {
   }
 
   /**
-   * Get user id from username
+   * Get account info from username
    */
   async getAccountByUsername (username: string, getAll: boolean): Promise<?User> {
     // TODO IEVA validate for deleted users 
@@ -131,7 +130,7 @@ class Repository {
         this.storage.getCollectionInfoWithoutUserId(),
         this.storage.applyQueryToDB({
           $and: [
-            { streamIds: { '$in': ['username'] } },
+            { streamIds: { $in: ['username'] } },
             { content: { $eq: username } }]
         }),
         null, cb));
@@ -144,8 +143,8 @@ class Repository {
   }
 
   /**
-   * Get user id from username
-   * @param object ({key: value}) fields 
+   * Check if fields are unique
+   * @param ({key: value}) fields
    */
   async checkUserFieldsUniqueness (fields: object): integer {
     let query = { $or: [] }
@@ -160,11 +159,96 @@ class Repository {
   }
 
   /**
+   * Form account event
+   * @param {*} user 
+   * @param {*} userParams 
+   * @param {*} userAccountStreamsIds 
+   * @param {*} session 
+   */
+  createEventObject (streamId, parameter, userAccountStreamsIds, accessId) {
+
+    // get type for the event from the config
+    let eventType = 'string';
+    if (userAccountStreamsIds[streamId].type) {
+      eventType = userAccountStreamsIds[streamId].type;
+    }
+
+    // create the event
+    let creationObject = {
+      // add active stream id by default
+      streamIds: [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE],
+      type: eventType,
+      content: parameter,
+      created: timestamp.now(),
+      modified: timestamp.now(),
+      time: timestamp.now(),
+      createdBy: accessId,
+      modifiedBy: accessId,
+      attachements: [],
+      tags: []
+    }
+
+    creationObject = converters.createIdIfMissing(creationObject);
+
+    // if fields has to be unique , add stream id and the field that enforces uniqueness
+    if (userAccountStreamsIds[streamId].isUnique === true) {
+      creationObject.streamIds.push(SystemStreamsSerializer.options.STREAM_ID_UNIQUE);
+      // repeated field for uniqness
+      creationObject[streamId + '__unique'] = parameter;
+    }
+    return creationObject;
+  }
+
+  /**
+   * 
+   * @param string username 
+   * @param string appId
+   * TODO IEVA add type sessionsStorage
+   */
+  async createSessionForUser (
+    username: string,
+    appId: string,
+    sessionsStorage,
+    session): string {
+    let sessionData = {
+      username: username,
+      appId: appId
+    }
+    const sessionId = await bluebird.fromCallback((cb) =>
+      sessionsStorage.generate(sessionData, cb, { session }));
+    return sessionId;
+  }
+
+  async createPersonalAccessForUser (
+    userId: string,
+    token: string,
+    appId: string,
+    accessStorage,
+    session) {
+    let accessData = {
+      token: token,
+      userId: userId,
+      name: appId,
+      type: 'personal',
+      created: timestamp.now(),
+      createdBy: 'system',//TODO IEVA -put inito registration REGISTRATION_ACCESS_ID Should be a constant, but there is no business class for accesses or system
+      modified: timestamp.now(),
+      modifiedBy: 'system',//Should be a constant, but there is no business class for accesses or system
+    };
+
+    const access = await bluebird.fromCallback((cb) =>
+      accessStorage.insertOne({ id: userId }, accessData, cb, { session }));
+
+    return access;
+  }
+
+  
+  /**
    * Create user
    * @param userParams - parameters to be saved
    * @return object with created user information in flat format
    */
-  async insertOne (params: object): Promise<object> {
+  async insertOne (params: object, sessionsStorage, accessStorage): Promise<object> {
     let userParams = Object.assign({}, params);
     let user = {};
 
@@ -192,32 +276,18 @@ class Repository {
 
     // create userId so that userId could be passed
     userParams = converters.createIdIfMissing(userParams);
-
-    // form username event - it is separate because we set the _id 
-    let updateObject = {
-      streamIds: ['username', SystemStreamsSerializer.options.STREAM_ID_UNIQUE, SystemStreamsSerializer.options.STREAM_ID_ACTIVE],
-      type: userAccountStreamsIds.username.type,
-      content: userParams.username,
-      username__unique: userParams.username, // repeated field for uniqueness
-      id: userParams.id,
-      created: timestamp.now(),
-      modified: timestamp.now(),
-      createdBy: '',
-      modifiedBy: '',
-      time: timestamp.now(),
-      attachements: [],
-      tags: []
-    };
-    user.id = updateObject.id;
+    user.id = userParams.id;
 
     await session.withTransaction(async () => {
-      // insert username event
-      const username = await bluebird.fromCallback((cb) =>
-        this.storage.insertOne(user, updateObject, cb, { session }));
-      user.username = username.content;
-
-      // delete username so it won't be saved the second time
-      delete userAccountStreamsIds['username'];
+      // if sessionStorage is not provided, session will be not created
+      let accessId = 'system';//TODO IEVA constant
+      if (sessionsStorage && accessStorage && params.appId) {
+        const token = await this.createSessionForUser(params.username, params.appId, sessionsStorage, session);
+        const access = await this.createPersonalAccessForUser(
+          user.id, token, userParams.appId, accessStorage, session);
+        accessId = access?.id;
+        user.token = access.token;
+      }
 
       // create all user account events
       let creationObjects = [];
@@ -233,34 +303,9 @@ class Repository {
           // set parameter name and value for the result
           user[streamId] = parameter;
 
-          // get type for the event from the config
-          let eventType = 'string';
-          if (userAccountStreamsIds[streamId].type) {
-            eventType = userAccountStreamsIds[streamId].type;
-          }
+          let creationObject = this.createEventObject(
+            streamId, parameter, userAccountStreamsIds, accessId);
 
-          // create the event
-          let creationObject = {
-            // add active stream id by default
-            streamIds: [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE],
-            type: eventType,
-            content: parameter,
-            created: timestamp.now(),
-            modified: timestamp.now(),
-            time: timestamp.now(),
-            createdBy: user.id,
-            modifiedBy: user.id,
-            attachements: [],
-            tags: []
-          }
-          creationObject = converters.createIdIfMissing(creationObject);
-
-          // if fields has to be unique , add stream id and the field that enforces uniqueness
-          if (userAccountStreamsIds[streamId].isUnique === true) {
-            creationObject.streamIds.push(SystemStreamsSerializer.options.STREAM_ID_UNIQUE);
-            // repeated field for uniqness
-            creationObject[streamId + '__unique'] = parameter; 
-          }
           creationObjects.push(creationObject);
         }
       });

@@ -435,10 +435,16 @@ class Database {
   /**
    * Inserts an array of items (each item must have a valid id already).
    */
-  insertMany(collectionInfo: CollectionInfo, items: Array<Object>, callback: DatabaseCallback) {
+  insertMany (collectionInfo: CollectionInfo, items: Array<Object>, callback: DatabaseCallback, options: Object) {
+    const defaultOptions = { w: 1, j: true };
+    if (typeof options !== 'object') {
+      options = defaultOptions;
+    } else {
+      options = { ...options, ...defaultOptions };
+    }
     this.addUserIdIfneed(collectionInfo, items);
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.insertMany(items, { w: 1, j: true }, (err, res) => {
+      collection.insertMany(items, options, (err, res) => {
         if (err != null) {
           Database.handleDuplicateError(err);
         }
@@ -641,9 +647,16 @@ class Database {
         // We assume WiredTiger here (and not MMapV1).
         const matching = err.errmsg.match(/index:(.+) dup key:/);
         if (Array.isArray(matching) && matching.length >= 2) {
-          const matchingKeys = matching[1].split('__unique')[0].trim();
-          const separatedKeys = matchingKeys.split('_');
-          return separatedKeys[separatedKeys.length -1 ];
+          const matchingKeys = matching[1].split('__unique');
+          const matchingKey = matchingKeys[0].trim();
+          const separatedKeys = matchingKey.split('_');
+
+          // there are some cases for other unique fields to fail
+          if (matchingKeys.length == 1 && separatedKeys.length > 1) {
+            return separatedKeys[separatedKeys.length - 2];
+          } else {
+            return separatedKeys[separatedKeys.length - 1];
+          }
         }
       }
     }

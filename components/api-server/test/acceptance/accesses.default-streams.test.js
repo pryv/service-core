@@ -83,6 +83,7 @@ describe("[B5FF] Account with default-streams", function () {
 
   before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
+
     const settings = await Settings.load();
 
     app = new Application(settings);
@@ -250,8 +251,8 @@ describe("[B5FF] Account with default-streams", function () {
         it('[A4UP] User can access visible events in storageUsed with this access', async () => {
           res = await request.get(eventsBasePath).set('authorization', accessInDb.token);
           assert.equal(res.body.events.length, 2);
-          assert.equal(res.body.events[0].streamId, 'attachedFiles');
-          assert.equal(res.body.events[1].streamId, 'dbDocuments');
+          assert.isTrue(['attachedFiles', 'dbDocuments'].includes(res.body.events[0].streamId));
+          assert.isTrue(['attachedFiles', 'dbDocuments'].includes(res.body.events[1].streamId));
         });
       });
     });

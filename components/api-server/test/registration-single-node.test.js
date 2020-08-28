@@ -12,6 +12,9 @@ const Settings = require('../src/settings');
 const Application = require('../src/application');
 const { getConfig } = require('components/api-server/config/Config');
 const Repository = require('components/business/src/users/repository');
+const { databaseFixture } = require('components/test-helpers');
+const { produceMongoConnection } = require('./test-helpers');
+const Notifications = require('components/api-server/src/Notifications');
 
 let app;
 let registerBody;
@@ -37,6 +40,26 @@ describe('registration: single-node', () => {
         app.settings.get('server').obj(),
       );
 
+      // get events for a small test of valid token
+      // Initialize notifications dependency
+      let axonMsgs = [];
+      const axonSocket = {
+        emit: (...args) => axonMsgs.push(args),
+      };
+      const notifications = new Notifications(axonSocket);
+      require("components/api-server/src/methods/events")(
+        app.api,
+        app.storageLayer.events,
+        app.storageLayer.eventFiles,
+        app.settings.get('auth').obj(),
+        app.settings.get('service.eventTypes').str(),
+        notifications,
+        app.logging,
+        app.settings.get('audit').obj(),
+        app.settings.get('updates').obj(),
+        app.settings.get('openSource').obj(),
+        app.settings.get('services').obj());
+      
       request = supertest(app.expressApp);
       
       registerBody = {
@@ -58,6 +81,14 @@ describe('registration: single-node', () => {
       it('[VDA8] should respond with a username and apiEndpoint (TODO) in the request body', function() {
         assert.equal(res.body.username, registerBody.username);
         //assert.equal(res.body.apiEndpoint, registerBody);
+      });
+      it('[LPLP] Valid access token exists in the response', async function () {
+        assert.exists(res.body.token);
+        // check that I can get events with this token
+        res = await request.get(`/${res.body.username}/events`)
+          .set('authorization', res.body.token);
+        assert.equal(res.status, 200);
+        assert.isTrue(res.body.events.length > 0);
       });
       it('[M5XB] should store all the fields', function() {});
     });
@@ -146,7 +177,9 @@ describe('registration: single-node', () => {
     });
     describe('Property values uniqueness', function() {
       describe('username property', function() {
-        before(async function() {
+        before(async function () {
+          let mongoFixtures = databaseFixture(await produceMongoConnection());
+          await mongoFixtures.context.cleanEverything();
           await app.database.deleteMany({ name: 'events' });
 
           res = await request.post('/users').send(registerBody);

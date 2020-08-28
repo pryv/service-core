@@ -32,12 +32,14 @@ class Context {
     return new UserContext(this, user);
   }
 
-  cleanEverything (): Promise<mixed> {
+  async cleanEverything (): Promise<mixed> {
     const collectionNames = ['events', 'accesses', 'sessions', 'streams', 'followedSlices', 'webhooks', 'versions']
     const collections = collectionNames.map(collectionName => {
       return bluebird.fromCallback(cb => this.databaseConn.deleteMany({ name: collectionName }, {}, cb))
     });
-    return Promise.all(collections);
+    // await Promise.all(collections);
+    // console.log(await bluebird.fromCallback(cb =>
+    //   this.databaseConn.find({ name: 'accesses' }, {},null, cb)));
   }
 }
 
