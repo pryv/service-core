@@ -194,36 +194,23 @@ class Registration {
     next: ApiCallback
   ) {
     try {
-
-      // assert that unique fields are free to take
-      // so if we get conflicting ones here, we can simply delete them
-
-      // TODO IEVA -verify this logic with Ilia, because there
-      // could be additional unique fields
       const existingUser = await this.userRepository.checkUserFieldsUniqueness(params);
-      console.log('got user', existingUser);
-      // if any of unique fields were already saved, it means that there were an error
-      // saving in service register (above there is a check that email does not exist in
-      // service register)
+      // if any of unique fields were already saved, it means that there was an error
+      // saving in service register (before this step there is a check that unique fields 
+      // don't exist in service register)
       if (existingUser?.content) {
+        // DELETE user
+        // assert that unique fields are free to take
+        // so if we get conflicting ones here, we can simply delete them
+        await this.userRepository.deleteOne(existingUser.userId);
 
-        // TODO delete user data
-        // skip all steps exept registrattion in service-register and welcome email
-        context.skip = true;
-
-        //append context with the same values that would be saved by createUser function
-        context.user = await this.userRepository.getById(existingUser.userId, true);
-
-        // set result as current username
-        result.username = context.user.username;
         this.logger.error(
           `User with id ${
-            existingUser.id
+          existingUser.userId
           } tried to register and application is skipping the user creation on service-core db`
         );
       }
     } catch (error) {
-      console.log(error, 'error');
       return next(errors.unexpectedError(error));
     }
     next();
@@ -259,10 +246,6 @@ class Registration {
     result,
     next: ApiCallback
   ) {
-    if (context.skip === true) {
-      return next();
-    }
-
     // if it is testing user, skip registration process
     if (params.username === 'recla') {
       result.id = 'dummy-test-user';
