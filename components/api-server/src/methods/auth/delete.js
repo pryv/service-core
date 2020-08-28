@@ -25,12 +25,15 @@ import type { ApiCallback } from '../API';
  * @param sessionsStorage
  * @param authSettings
  */
-module.exports = function (api, logging, storageLayer) {
+module.exports = function (api, logging, storageLayer, settings) {
 
-  const deletion: Deletion = new Deletion(logging, storageLayer);
+  const deletion: Deletion = new Deletion(logging, storageLayer, settings);
 
   api.register('auth.delete',
     deletion.validateUserExists.bind(deletion),
+    deletion.validateUserFilepaths.bind(deletion),
+    deletion.deleteUserFiles.bind(deletion),
+    deletion.deleteHFData.bind(deletion),
     deletion.deleteUser.bind(deletion)
   );
 };
