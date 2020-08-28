@@ -200,6 +200,8 @@ class Registration {
       // don't exist in service register)
       if (existingUser?.content) {
         // DELETE user
+        // assert that unique fields are free to take
+        // so if we get conflicting ones here, we can simply delete them
         await this.userRepository.deleteOne(existingUser.userId);
 
         this.logger.error(
@@ -310,7 +312,7 @@ class Registration {
         user: {
           id: context.user.id
         },
-        host: context.user.host
+        host: { name: this.hostname },
       };
       Object.keys(userStreamsIds).forEach(streamId => {
         if (context.user[streamId] != null) userData.user[streamId] = context.user[streamId];
