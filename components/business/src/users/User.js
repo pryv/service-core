@@ -33,7 +33,7 @@ class User {
   accountStreamsSettings: Array<{}>;
   accountFields: Array<string> = [];
 
-  constructor(userId: string, events: Array<{}> = [], systemStreamsSerializer) {
+  constructor(userId: string, events: Array<{}>, systemStreamsSerializer) {
     //this.serializer = new SystemStreamsSerializer();
     this.events = events;
     this.userId = userId;
