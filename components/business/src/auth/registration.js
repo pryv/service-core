@@ -194,29 +194,21 @@ class Registration {
     next: ApiCallback
   ) {
     try {
-      // TODO IEVA -verify this logic with Ilia, because there
-      // could be additional unique fields
       const existingUser = await this.userRepository.checkUserFieldsUniqueness(params);
-      // if any of unique fields were already saved, it means that there were an error
-      // saving in service register (above there is a check that email does not exist in
-      // service register)
+      // if any of unique fields were already saved, it means that there was an error
+      // saving in service register (before this step there is a check that unique fields 
+      // don't exist in service register)
       if (existingUser?.content) {
-        // skip all steps exept registrattion in service-register and welcome email
-        context.skip = true;
+        // DELETE user
+        await this.userRepository.deleteOne(existingUser.userId);
 
-        //append context with the same values that would be saved by createUser function
-        context.user = await this.userRepository.getById(existingUser.userId, true);
-
-        // set result as current username
-        result.username = context.user.username;
         this.logger.error(
           `User with id ${
-            existingUser.id
+          existingUser.userId
           } tried to register and application is skipping the user creation on service-core db`
         );
       }
     } catch (error) {
-      console.log(error, 'error');
       return next(errors.unexpectedError(error));
     }
     next();
@@ -252,10 +244,6 @@ class Registration {
     result,
     next: ApiCallback
   ) {
-    if (context.skip === true) {
-      return next();
-    }
-
     // if it is testing user, skip registration process
     if (params.username === 'recla') {
       result.id = 'dummy-test-user';
