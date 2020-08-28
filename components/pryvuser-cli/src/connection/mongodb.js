@@ -84,7 +84,7 @@ class MongoDB {
 
     // Drop the user itself.
     const userRepository = new UserRepository(storage.events);
-    // TODO IEVA - implementation is not finished await userRepository.delete(user.id);
+    await userRepository.deleteOne(user.id);
 
     await bluebird.fromCallback(
       cb => storage.sessions.remove( 

@@ -307,13 +307,11 @@ class Repository {
    * Deletes a user by id
    * TODO IEVA - not functioning yet so commented
    */
-  async deleteMany (userId: string): Promise<void> {
-    /*
+  async deleteOne (userId: string): Promise<void> {
     let systemStreamsSerializer = new SystemStreamsSerializer();
     const userAccountStreamsIds = Object.keys(systemStreamsSerializer.getAllAccountStreams());
     await bluebird.fromCallback(cb => this.storage.database.deleteMany(
       this.storage.getCollectionInfo({ id: userId }), { streamIds: { $in: userAccountStreamsIds}}, cb));
-  */
   }
 
   /**

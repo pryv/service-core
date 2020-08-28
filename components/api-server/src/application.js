@@ -101,6 +101,7 @@ class Application {
     require('./routes/account')(this.expressApp, this);
     require('./routes/auth/login')(this.expressApp, this);
     require('./routes/auth/register')(this.expressApp, this);
+    require('./routes/auth/delete')(this.expressApp, this);
     require('./routes/events')(this.expressApp, this);
     require('./routes/followed-slices')(this.expressApp, this);
     require('./routes/profile')(this.expressApp, this);
