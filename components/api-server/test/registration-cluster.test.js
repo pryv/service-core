@@ -18,6 +18,8 @@ const { getConfig } = require('components/api-server/config/Config');
 const Application = require('../src/application');
 const ErrorIds = require('components/errors/src/ErrorIds');
 const ErrorMessages = require('components/errors/src/ErrorMessages');
+const { databaseFixture } = require('components/test-helpers');
+const { produceMongoConnection } = require('./test-helpers');
 
 function defaults() {
   return {
@@ -31,7 +33,7 @@ function defaults() {
   };
 }
 
-describe('registration: cluster', function() {
+describe('[8RRX] registration: cluster', function() {
   let app;
   let request;
   let res;
@@ -41,8 +43,9 @@ describe('registration: cluster', function() {
   let userData;
   let serviceRegisterRequests = [];
   let hostname;
+  let mongoFixtures;
 
-  before(async function() {
+  before(async function () {
     settings = await Settings.load();
     config = getConfig();
     config.set('singleNode:isActive', false);
@@ -62,6 +65,10 @@ describe('registration: cluster', function() {
     );
 
     request = supertest(app.expressApp);
+  });
+  after(async function () {
+    mongoFixtures = databaseFixture(await produceMongoConnection());
+    await mongoFixtures.context.cleanEverything();
   });
 
   const methodPath = '/users';
@@ -127,15 +134,14 @@ describe('registration: cluster', function() {
         userData.email = charlatan.Internet.email();
         res = await request.post(methodPath).send(userData);
       });
-      it('[GRAW] should respond with status 201', () => {
+      it('should respond with status 201', () => {
         assert.equal(res.status, 201);
       });
-      it('[AY44] should respond with the username and apiEndpoint (TODO)', () => {
+      it('should respond with the username and apiEndpoint (TODO)', () => {
         const body = res.body;
         assert.equal(body.username, userData.username);
-        
       });
-      it('[MIOA] should send the right data to register', () => {
+      it('should send the right data to register', () => {
         const validationSent = serviceRegisterRequests[0];
         assert.deepEqual(validationSent, serviceRegisterRequests[2]);
         assert.deepEqual(validationSent, buildValidationRequest(userData));
@@ -328,7 +334,7 @@ describe('registration: cluster', function() {
     });
 
     describe('when invitationTokens are undefined', () => {
-      describe('and a random string is provided as "invitationToken"', () => {
+      describe('and a random string is provided as "invitationToken"', async () => {
         before(async () => {
           userData = defaults();
           userData.invitationToken = charlatan.Lorem.characters(25);
