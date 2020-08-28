@@ -41,6 +41,7 @@ function load(config: Config): Config {
     }),
     _.extend({}, defaultValuesForFields, {
       isIndexed: true,
+      default: '',
       isRequiredInValidation: true,
       isIndexed: true,
       type: 'identifier/string',

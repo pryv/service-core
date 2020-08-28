@@ -86,6 +86,44 @@ function flattenRecursiveWithoutParents (originalArray, parentId, resultArray) {
   });
 }
 
+/**
+ * Takes object in structure like this:
+ * {
+ *  username: myusername,
+ *  storageUsed: {
+ *    dbDocuments: 1,
+ *    attachedFiles: 3
+ *  }
+ * }
+ * 
+ * and converts it to:
+ *  username: myusername,
+ *  dbDocuments: 1,
+ *  attachedFiles: 3
+ * }
+ * @param {*} object 
+ */
+exports.flattenSimpleObject = function (object) {
+  if (!_.isObject(object)) {
+    throw new Error('Invalid argument: expected an object');
+  }
+
+  var result = [];
+  flattenRecursiveSimpleObject(object, result);
+  return result;
+};
+
+function flattenRecursiveSimpleObject (originalObject, resultArray: []): void {
+  Object.keys(originalObject).forEach(function (key) {
+    var value = _.clone(originalObject[key]);
+    if (typeof value == 'object') {
+      flattenRecursiveSimpleObject(value, resultArray);
+    } else {
+      resultArray[key] = value;
+    }
+  });
+}
+
 exports.flattenTree = function (array) {
   if (! _.isArray(array)) {
     throw new Error('Invalid argument: expected an array');
