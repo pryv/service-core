@@ -116,6 +116,7 @@ describe('SystemStreams config', () => {
           isRequiredInValidation: true,
           type: 'identifier/string',
           name: 'appId',
+          default: '',
           id: 'appId'
         },
         {

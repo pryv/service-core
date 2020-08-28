@@ -159,10 +159,9 @@ class Database {
 
       this.addUserIdToIndexIfNeeded(collectionInfo);
 
-
       // Ensure that proper indexing is initialized
       await ensureIndexes.call(this, collection, collectionInfo.indexes);
-
+      
       this.collectionConnectionsCache[collectionInfo.name] = collection;
       // returning the collection.
       return callback(null, collection);
@@ -176,7 +175,6 @@ class Database {
     async function ensureIndexes(collection: Collection, indexes) {
       const initializedCollections = this.initializedCollections; 
       const collectionName: string = collection.collectionName;
-      
       if (indexes == null) return; 
       if (initializedCollections[collectionName]) return; 
       
@@ -184,7 +182,6 @@ class Database {
         const options = lodash.merge({}, item.options, {
           background: true
         });
-        
         await collection.createIndex(item.index, options);
       }
 

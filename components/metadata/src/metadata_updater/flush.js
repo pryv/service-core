@@ -61,7 +61,7 @@ class Flush implements Operation {
     // The alternative would be load/modify/store here. That would be racy too, 
     // possibly destroying duration in the process. 
     // 
-    // The chosen option at least leaves duration correct.
+    // The chosen option at least leafs duration correct.
 
     const query = {
       id: request.eventId,

@@ -14,6 +14,7 @@ const User = require('./User');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 let encryption = require('components/utils').encryption;
 let converters = require('components/storage/src/converters');
+const treeUtils = require('components/utils/src/treeUtils');
 
 /**
  * Repository of the users
@@ -116,7 +117,11 @@ class Repository {
     //const dbItems = await bluebird.fromCallback(cb => this.storage.find({ id: userId }, query, null, cb));
     const userAccountEvents = await bluebird.fromCallback(cb =>
       this.storage.find({ id: userId }, query, null, cb));
+    
     // convert events to the account info structure
+    if (userAccountEvents.length == 0) {
+      return null;
+    }
     return new User(userId, userAccountEvents);
   }
 
@@ -242,14 +247,15 @@ class Repository {
     return access;
   }
 
-  
+
   /**
    * Create user
    * @param userParams - parameters to be saved
    * @return object with created user information in flat format
    */
   async insertOne (params: object, sessionsStorage, accessStorage): Promise<object> {
-    let userParams = Object.assign({}, params);
+    // flatten parameters for the simplicity
+    let userParams = treeUtils.flattenSimpleObject(params);
     let user = {};
 
     // first explicitly create a collection, because it would fail in the transation
@@ -266,7 +272,7 @@ class Repository {
     };
 
     // get streams ids from the config
-    let userAccountStreamsIds = (new SystemStreamsSerializer()).getAllAccountStreamsLeaves();
+    let userAccountStreamsIds = (new SystemStreamsSerializer()).getAllAccountStreamsLeafs();
 
     // change password into hash (also allow for tests to pass passwordHash directly)
     if (userParams.password && !userParams.passwordHash) {
@@ -365,14 +371,12 @@ class Repository {
   async _getUserPasswordHash (userId: string): Promise<void> {
     let userPass;
     userPass = await bluebird.fromCallback(cb =>
-      this.storage.database.findOne(
-        this.storage.getCollectionInfo({ id: userId }),
-        this.storage.applyQueryToDB({
+      this.storage.findOne({ id: userId },
+        {
           $and: [
             { streamIds: 'passwordHash' }
           ]
-        }),
-        this.storage.applyOptionsToDB(null), cb));
+        }, null, cb));
     return (userPass?.content) ? userPass.content : null;
   }
 

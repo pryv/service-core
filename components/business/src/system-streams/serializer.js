@@ -70,9 +70,9 @@ class SystemStreamsSerializer {
     return getStreamsNames(this.accountStreamsSettings, allAccountStreams);
   }
   /**
-   * The same as getAllAccountStreams () but returnes only streams leaves (not parents)
+   * The same as getAllAccountStreams () but returnes only streams leafs (not parents)
    */
-  getAllAccountStreamsLeaves () {
+  getAllAccountStreamsLeafs () {
     const flatStreamsList = treeUtils.flattenTreeWithoutParents(this.accountStreamsSettings);
     let flatStreamsListObj = {};
     let i;
