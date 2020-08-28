@@ -6,16 +6,7 @@
  */
 
 // @flow
-
-const commonFns = require('./../helpers/commonFunctions');
-const errors = require('components/errors').factory;
-const methodsSchema = require('components/api-server/src/schema/authMethods');
-const ServiceRegister = require('components/business/src/auth/service_register');
 const Deletion = require('components/business/src/auth/deletion');
-
-import type { MethodContext } from 'components/model';
-import type Result from '../Result';
-import type { ApiCallback } from '../API';
 
 /**
  * Auth API methods implementations.
@@ -25,11 +16,16 @@ import type { ApiCallback } from '../API';
  * @param sessionsStorage
  * @param authSettings
  */
-module.exports = function (api, logging, storageLayer, settings) {
-
+module.exports = function(
+  api: any,
+  logging: any,
+  storageLayer: any,
+  settings: any
+) {
   const deletion: Deletion = new Deletion(logging, storageLayer, settings);
 
-  api.register('auth.delete',
+  api.register(
+    'auth.delete',
     deletion.validateUserExists.bind(deletion),
     deletion.validateUserFilepaths.bind(deletion),
     deletion.deleteUserFiles.bind(deletion),

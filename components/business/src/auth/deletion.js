@@ -7,14 +7,12 @@
 // @flow
 
 const bluebird = require('bluebird');
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const UserRepository = require('components/business/src/users/repository');
-const errors = require('components/errors').factory;
 const rimraf = require('rimraf');
-const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const business = require('components/business');
+const UserRepository = require('components/business/src/users/repository');
+const errors = require('components/errors').factory;
 
 import type { MethodContext } from 'components/model';
 import type { ApiCallback } from 'components/api-server/src/API';
@@ -23,9 +21,7 @@ class Deletion {
   logger: any;
   storageLayer: any;
   settings: any;
-  defaultStreamsSerializer: SystemStreamsSerializer = new SystemStreamsSerializer();
   userRepository: UserRepository;
-  accountStreamsSettings: any = this.defaultStreamsSerializer.getFlatAccountStreamSettings();
 
   constructor(logging: any, storageLayer: any, settings: any) {
     this.logger = logging.getLogger('business/deletion');
@@ -53,50 +49,42 @@ class Deletion {
     result: Result,
     next: ApiCallback
   ) {
-    const paths = [this.settings.get('eventFiles.attachmentsDirPath').str(), this.settings.get('eventFiles.previewsDirPath').str()]; 
+    const paths = [
+      this.settings.get('eventFiles.attachmentsDirPath').str(),
+      this.settings.get('eventFiles.previewsDirPath').str(),
+    ];
 
-    const missingBaseDirectory = firstThrow(paths, path => fs.statSync(path));
-    if (missingBaseDirectory != null) {
-      return next(errors.unexpectedError(new Error(`Base directory '${missingBaseDirectory}' doesn't seem to exist.`)));
+    const notExistingDir = dirsExist(paths);
+    if (notExistingDir) {
+      const error = new Error(`Base directory '${notExistingDir}' does not exist.`);
+      this.logger.error(error);
+      return next(
+        errors.unexpectedError(error)
+      );
+    }
+
+    const user = await this.userRepository.getById(params.id);
+    if (!user && !user.userId) {
+      return next(errors.unknownResource('user', params.id));
     }
 
     // NOTE User specific paths are constructed by appending the user _id_ to the
     // `paths` constant above. I know this because I read EventFiles#getXPath(...)
     // in components/storage/src/user/EventFiles.js.
 
-    // NOTE Since user specific paths are created lazily, we should not expect 
-    //  them to be there. But _if_ they are, they need be accessible. 
+    // NOTE Since user specific paths are created lazily, we should not expect
+    //  them to be there. But _if_ they are, they need be accessible.
 
-    const user = await this.userRepository.getById(params.id);
-    if (!user || !user.userId) {
-      return next(errors.unknownResource('user', params.id));
-    }
-
-    // Let's check if we can change into and write into the user's paths: 
-    const inaccessibleDirectory = firstThrow(
-      paths.map(p => path.join(p, user.userId)),
-      userPath => {
-        let stat; 
-        try {
-          stat = fs.statSync(userPath); // throws if userPath doesn't exist
-        }
-        catch (err) {
-          // We accept that the user specific directory may be missing from the
-          // disk, see above. 
-          if (err.code === 'ENOENT') 
-            return; 
-          else
-            throw err; 
-        }
-
-        if (!stat.isDirectory())
-          throw new Error(`Path '${userPath}' exists, but is not a directory.`);
-
-        fs.accessSync(userPath, fs.constants.W_OK + fs.constants.X_OK);
-      });
-
-    if (inaccessibleDirectory != null) {
-      return next(errors.unexpectedError(new Error(`Directory '${inaccessibleDirectory}' is inaccessible or missing.`)));
+    // Let's check if we can change into and write into the user's paths:
+    const inaccessibleDirectory = isDirsAccessible(
+      paths.map((p) => path.join(p, user.userId))
+    );
+    if (inaccessibleDirectory) {
+      const error = new Error(
+        `Directory '${inaccessibleDirectory}' is inaccessible or missing.`
+      );
+      this.logger.error(error);
+      return next(errors.unexpectedError(error));
     }
     next();
   }
@@ -108,13 +96,14 @@ class Deletion {
     next: ApiCallback
   ) {
     const influx = new business.series.InfluxConnection(
-      {host: 'localhost'}, this.logger); 
+      { host: 'localhost' },
+      this.logger
+    );
 
-    await influx.dropDatabase(
-      `user.${params.id}`);
+    await influx.dropDatabase(`user.${params.id}`);
 
     next();
-  } 
+  }
 
   async deleteUserFiles(
     context: MethodContext,
@@ -122,20 +111,24 @@ class Deletion {
     result: Result,
     next: ApiCallback
   ) {
-    const paths = [this.settings.get('eventFiles.attachmentsDirPath').str(), this.settings.get('eventFiles.previewsDirPath').str()]; 
+    const paths = [
+      this.settings.get('eventFiles.attachmentsDirPath').str(),
+      this.settings.get('eventFiles.previewsDirPath').str(),
+    ];
 
     const user = await this.userRepository.getById(params.id);
-    if (!user || !user.userId) {
+    if (!user && !user.userId) {
       return next(errors.unknownResource('user', params.id));
     }
 
-    const userPaths =  paths.map(p => path.join(p, user.userId));
+    const userPaths = paths.map((p) => path.join(p, user.userId));
     const opts = {
-      disableGlob: true, 
+      disableGlob: true,
     };
 
-    await bluebird.map(userPaths, 
-      path => bluebird.fromCallback(cb => rimraf(path, opts, cb)));
+    await bluebird.map(userPaths, (path) =>
+      bluebird.fromCallback((cb) => rimraf(path, opts, cb))
+    );
 
     next();
   }
@@ -190,16 +183,39 @@ class Deletion {
   }
 }
 
-function firstThrow<T>(collection: Array<T>, fun: (T) => mixed): ?T {
-  for (const el of collection) {
-    try {
-      fun(el);
-    }
-    catch (err) {
-      return el; 
+function dirsExist(paths: Array<string>) {
+  let notExistingDir = '';
+  for (let path of paths) {
+    if (!fs.existsSync(path)) {
+      notExistingDir = path;
+      break;
     }
   }
-  return null; 
+  return notExistingDir;
+}
+
+function isDirsAccessible(paths: Array<string>) {
+  let notAccessibleDir = '';
+  for (let path of paths) {
+    let stat;
+    try {
+      stat = fs.statSync(path);
+
+      if (!stat.isDirectory()) {
+        throw new Error();
+      }
+
+      fs.accessSync(path, fs.constants.W_OK + fs.constants.X_OK);
+    } catch (err) {
+      if (err.code === 'ENOENT') {
+        continue;
+      } else {
+        notAccessibleDir = path;
+        return;
+      }
+    }
+  }
+  return notAccessibleDir;
 }
 
 module.exports = Deletion;

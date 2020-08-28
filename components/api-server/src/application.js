@@ -92,7 +92,8 @@ class Application {
       require('../../www')(this.expressApp, this);
     }
 
-    // system, root and register MUST come first
+    // system, root, register and delete MUST come first
+    require('./routes/auth/delete')(this.expressApp, this);
     require('./routes/auth/register')(this.expressApp, this);
     require('./routes/system')(this.expressApp, this);
     require('./routes/root')(this.expressApp, this);
@@ -100,8 +101,6 @@ class Application {
     require('./routes/accesses')(this.expressApp, this);
     require('./routes/account')(this.expressApp, this);
     require('./routes/auth/login')(this.expressApp, this);
-    require('./routes/auth/register')(this.expressApp, this);
-    require('./routes/auth/delete')(this.expressApp, this);
     require('./routes/events')(this.expressApp, this);
     require('./routes/followed-slices')(this.expressApp, this);
     require('./routes/profile')(this.expressApp, this);
@@ -186,7 +185,7 @@ function createAirbrakeNotifierIfNeeded() {
     projectKey: settings.key,
     environment: 'production',
   });
-  return airbrakeNotifier
+  return airbrakeNotifier;
 }
 
 function getAirbrakeSettings(): ?AirbrakeSettings {

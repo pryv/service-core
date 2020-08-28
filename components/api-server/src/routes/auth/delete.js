@@ -18,7 +18,7 @@ module.exports = function(expressApp: express$Application, app: Application) {
   const api: API = app.api;
   const context = {};
 
-  expressApp.delete('/users', function(
+  expressApp.delete('/users/:id', function(
     req: express$Request,
     res: express$Response,
     next: express$NextFunction
@@ -26,7 +26,7 @@ module.exports = function(expressApp: express$Application, app: Application) {
     api.call(
       'auth.delete',
       context,
-      req.body,
+      req.params,
       methodCallback(res, next, 200)
     );
   });
