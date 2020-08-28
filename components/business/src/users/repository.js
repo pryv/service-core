@@ -279,7 +279,7 @@ class Repository {
 
     await session.withTransaction(async () => {
       // if sessionStorage is not provided, session will be not created
-      let accessId = '';
+      let accessId = 'system';//TODO IEVA constant
       if (sessionsStorage && accessStorage && params.appId) {
         const token = await this.createSessionForUser(params.username, params.appId, sessionsStorage, session);
         const access = await this.createPersonalAccessForUser(

@@ -33,7 +33,7 @@ function defaults() {
   };
 }
 
-describe('registration: cluster', function() {
+describe('[8RRX] registration: cluster', function() {
   let app;
   let request;
   let res;
@@ -152,10 +152,6 @@ describe('registration: cluster', function() {
     });
     describe('when the same user already exists in core but not in register', () => {
       before(async () => {
-        // clean the database
-        mongoFixtures = databaseFixture(await produceMongoConnection());
-        await mongoFixtures.context.cleanEverything();
-        
         userData = defaults();
         serviceRegisterRequests = [];
 
@@ -340,8 +336,6 @@ describe('registration: cluster', function() {
     describe('when invitationTokens are undefined', () => {
       describe('and a random string is provided as "invitationToken"', async () => {
         before(async () => {
-          mongoFixtures = databaseFixture(await produceMongoConnection());
-          await mongoFixtures.context.cleanEverything();
           userData = defaults();
           userData.invitationToken = charlatan.Lorem.characters(25);
           serviceRegisterRequests = [];
@@ -375,8 +369,6 @@ describe('registration: cluster', function() {
       });
       describe('and "invitationToken" is missing', () => {
         before(async () => {
-          mongoFixtures = databaseFixture(await produceMongoConnection());
-          await mongoFixtures.context.cleanEverything();
           userData = defaults();
           delete userData.invitationToken;
           serviceRegisterRequests = [];
@@ -414,8 +406,6 @@ describe('registration: cluster', function() {
     describe('when invitationTokens are defined', () => {
       describe('when a valid one is provided', () => {
         before(async () => {
-          mongoFixtures = databaseFixture(await produceMongoConnection());
-          await mongoFixtures.context.cleanEverything();
           userData = defaults();
           serviceRegisterRequests = [];
 

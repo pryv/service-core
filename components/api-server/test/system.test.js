@@ -193,9 +193,7 @@ describe('[373T] system (ex-register)', function () {
 
     describe('when it just replies OK', function() {
       before(server.ensureStarted.bind(server, helpers.dependencies.settings));
-      before(async function () {
-        await mongoFixtures.context.cleanEverything();
-      });
+
       it('[9K71] must run the process but not save anything for test username "recla"', 
         async function () {
           var originalCount,

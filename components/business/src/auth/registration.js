@@ -343,7 +343,7 @@ class Registration {
     }
     next();
   }
-  
+
   /**
    *
    * @param {*} context

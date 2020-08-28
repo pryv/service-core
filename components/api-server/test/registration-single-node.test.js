@@ -71,10 +71,6 @@ describe('registration: single-node', () => {
         phoneNumber: charlatan.Number.number(3),
       };
     });
-    after(async function () {
-      let mongoFixtures = databaseFixture(await produceMongoConnection());
-      await mongoFixtures.context.cleanEverything();
-    });
     describe('when given valid input', function() {
       before(async function() {
         res = await request.post('/users').send(registerBody);
