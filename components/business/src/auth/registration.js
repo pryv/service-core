@@ -55,13 +55,30 @@ class Registration {
   }
 
   /**
+   * Do minimal manipulation with data like username convertion to lowercase
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  async prepareUserData (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
+    if (params.username && typeof params.username === 'string') {
+      params.username = params.username.toLowerCase();
+    }
+    if (params.email && typeof params.email === 'string') {
+      params.email = params.email.toLowerCase();
+    }
+    next();
+  }
+
+  /**
    * Append validation settings to validation schema and save new object to the context
    * @param {*} context
    * @param {*} params
    * @param {*} result
    * @param {*} next
    */
-  loadCustomValidationSettings(
+  loadCustomValidationSettings (
     context: MethodContext,
     params: mixed,
     result: Result,
@@ -109,21 +126,19 @@ class Registration {
       next
     );
   }
-  
-  /**
-   * Do minimal manipulation with data like username convertion to lowercase
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
-   */
-  async prepareUserData (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    if (params.username && typeof params.username === 'string') {
-      params.username = params.username.toLowerCase();
+
+  async prepareUserDataForSaving (
+    context: MethodContext,
+    params: mixed,
+    result: Result,
+    next: ApiCallback
+  ) {
+    // change parameter name
+    if (params.languageCode) {
+      params.language = params.languageCode;
     }
-    if (params.email && typeof params.email === 'string') {
-      params.email = params.email.toLowerCase();
-    }
+    delete params.languageCode;
+
     next();
   }
 
@@ -159,21 +174,6 @@ class Registration {
     } catch (error) {
       return next(error);
     }
-    next();
-  }
-
-  async prepareUserDataForSaving(
-    context: MethodContext,
-    params: mixed,
-    result: Result,
-    next: ApiCallback
-  ) {
-    // change parameter name
-    if (params.languageCode) {
-      params.language = params.languageCode;
-    }
-    delete params.languageCode;
-
     next();
   }
 
@@ -223,49 +223,18 @@ class Registration {
   }
 
   /**
-   * Save user in service-register
-   * @param {*} context
-   * @param {*} params
-   * @param {*} result
-   * @param {*} next
+   * DEPRECATED
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
    */
-  async createUserInServiceRegister(
-    context: MethodContext,
-    params: mixed,
-    result: Result,
-    next: ApiCallback
-  ) {
-    try {
-      const defaultStreamsSerializer = this.defaultStreamsSerializer;
-      // get streams ids from the config that should be retrieved
-      const userStreamsIds = defaultStreamsSerializer.getIndexedAccountStreams();
-      const uniqueStreamsIds = defaultStreamsSerializer.getUniqueAccountStreamsIds();
-
-      // form data that should be sent to service-register
-      // some default values and indexed/uinique fields of the system
-      const userData = {
-        user: {
-          id: context.user.id
-        },
-        host: context.user.host
-      };
-      Object.keys(userStreamsIds).forEach(streamId => {
-        if (context.user[streamId] != null) userData.user[streamId] = context.user[streamId];
-      });
-      userData.unique = [];
-      uniqueStreamsIds.forEach(streamId => {
-        userData.unique.push(streamId);
-      });
-
-      const response = await this.serviceRegisterConn.createUser(userData);
-      // take only server name
-      if (response.server) {
-        result.server = response.server;
-        return next();
-      }
-    } catch (error) {
-      return next(errors.unexpectedError(error));
-    }
+  createPoolUser (context, params, result, next) {
+    const uniqueId = cuid();
+    params.username = this.POOL_USERNAME_PREFIX + uniqueId;
+    params.passwordHash = 'changeMe';
+    params.language = 'en';
+    params.email = this.POOL_USERNAME_PREFIX + uniqueId + '@email';
     next();
   }
 
@@ -327,6 +296,54 @@ class Registration {
     }
   }
 
+
+  /**
+   * Save user in service-register
+   * @param {*} context
+   * @param {*} params
+   * @param {*} result
+   * @param {*} next
+   */
+  async createUserInServiceRegister (
+    context: MethodContext,
+    params: mixed,
+    result: Result,
+    next: ApiCallback
+  ) {
+    try {
+      const defaultStreamsSerializer = this.defaultStreamsSerializer;
+      // get streams ids from the config that should be retrieved
+      const userStreamsIds = defaultStreamsSerializer.getIndexedAccountStreams();
+      const uniqueStreamsIds = defaultStreamsSerializer.getUniqueAccountStreamsIds();
+
+      // form data that should be sent to service-register
+      // some default values and indexed/uinique fields of the system
+      const userData = {
+        user: {
+          id: context.user.id
+        },
+        host: context.user.host
+      };
+      Object.keys(userStreamsIds).forEach(streamId => {
+        if (context.user[streamId] != null) userData.user[streamId] = context.user[streamId];
+      });
+      userData.unique = [];
+      uniqueStreamsIds.forEach(streamId => {
+        userData.unique.push(streamId);
+      });
+
+      const response = await this.serviceRegisterConn.createUser(userData);
+      // take only server name
+      if (response.server) {
+        result.server = response.server;
+        return next();
+      }
+    } catch (error) {
+      return next(errors.unexpectedError(error));
+    }
+    next();
+  }
+  
   /**
    *
    * @param {*} context
@@ -376,22 +393,6 @@ class Registration {
         next();
       }
     );
-  }
-
-  /**
-   * DEPRECATED
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
-   */
-  createPoolUser(context, params, result, next) {
-    const uniqueId = cuid();
-    params.username = this.POOL_USERNAME_PREFIX + uniqueId;
-    params.passwordHash = 'changeMe';
-    params.language = 'en';
-    params.email = this.POOL_USERNAME_PREFIX + uniqueId + '@email';
-    next();
   }
 
   /**

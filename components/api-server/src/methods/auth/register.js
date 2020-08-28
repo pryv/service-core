@@ -36,7 +36,6 @@ module.exports = function (api, logging, storageLayer, servicesSettings, serverS
     registration.validateUserInServiceRegister.bind(registration),
 
     //user registration methods
-    registration.prepareUserDataForSaving.bind(registration),
     registration.validateThatUserDoesNotExistInLocalDb.bind(registration),
     registration.createUser.bind(registration),
     registration.createUserInServiceRegister.bind(registration),
