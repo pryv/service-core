@@ -115,7 +115,11 @@ class Repository {
     //const dbItems = await bluebird.fromCallback(cb => this.storage.find({ id: userId }, query, null, cb));
     const userAccountEvents = await bluebird.fromCallback(cb =>
       this.storage.find({ id: userId }, query, null, cb));
+    
     // convert events to the account info structure
+    if (userAccountEvents.length == 0) {
+      return null;
+    }
     return new User(userId, userAccountEvents);
   }
 

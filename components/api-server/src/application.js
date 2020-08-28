@@ -100,7 +100,6 @@ class Application {
     require('./routes/accesses')(this.expressApp, this);
     require('./routes/account')(this.expressApp, this);
     require('./routes/auth/login')(this.expressApp, this);
-    require('./routes/auth/register')(this.expressApp, this);
     require('./routes/events')(this.expressApp, this);
     require('./routes/followed-slices')(this.expressApp, this);
     require('./routes/profile')(this.expressApp, this);
