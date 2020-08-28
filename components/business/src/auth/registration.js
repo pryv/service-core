@@ -194,13 +194,20 @@ class Registration {
     next: ApiCallback
   ) {
     try {
+
+      // assert that unique fields are free to take
+      // so if we get conflicting ones here, we can simply delete them
+
       // TODO IEVA -verify this logic with Ilia, because there
       // could be additional unique fields
       const existingUser = await this.userRepository.checkUserFieldsUniqueness(params);
+      console.log('got user', existingUser);
       // if any of unique fields were already saved, it means that there were an error
       // saving in service register (above there is a check that email does not exist in
       // service register)
       if (existingUser?.content) {
+
+        // TODO delete user data
         // skip all steps exept registrattion in service-register and welcome email
         context.skip = true;
 
@@ -322,7 +329,7 @@ class Registration {
         user: {
           id: context.user.id
         },
-        host: context.user.host
+        host: { name: this.hostname },
       };
       Object.keys(userStreamsIds).forEach(streamId => {
         if (context.user[streamId] != null) userData.user[streamId] = context.user[streamId];

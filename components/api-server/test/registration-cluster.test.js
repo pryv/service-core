@@ -19,6 +19,7 @@ const Application = require('../src/application');
 const ErrorIds = require('components/errors/src/ErrorIds');
 const ErrorMessages = require('components/errors/src/ErrorMessages');
 const User = require('components/business/src/users/User');
+const UsersRepository = require('components/business/src/users/repository');
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('./test-helpers');
 
@@ -50,6 +51,7 @@ describe('registration: cluster', function() {
   let serviceRegisterRequests = [];
   let hostname;
   let mongoFixtures;
+  let userRepository;
 
   before(async function () {
     settings = await Settings.load();
@@ -71,6 +73,8 @@ describe('registration: cluster', function() {
     );
 
     request = supertest(app.expressApp);
+
+    userRepository = new UsersRepository(app.storageLayer.events);
   });
   after(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
@@ -114,7 +118,8 @@ describe('registration: cluster', function() {
   }
 
   describe('POST /users (create user)', function() {
-    describe('when a user with the same username only already exists in core but not in register', () => {
+    describe('when a user with the same username (not email) already exists in core but not in register', () => {
+      let oldEmail, firstUser, secondUser;
       before(async () => {
         userData = defaults();
         serviceRegisterRequests = [];
@@ -135,10 +140,12 @@ describe('registration: cluster', function() {
           .reply(200, {
             username: 'anyusername'
           });
-
         await request.post(methodPath).send(userData);
+        firstUser = await userRepository.getAccountByUsername(userData.username, true);
+        oldEmail = userData.email;
         userData.email = charlatan.Internet.email();
         res = await request.post(methodPath).send(userData);
+        secondUser = await userRepository.getAccountByUsername(userData.username, true);
       });
       it('[QV8Z] should respond with status 201', () => {
         assert.equal(res.status, 201);
@@ -149,15 +156,32 @@ describe('registration: cluster', function() {
         //assert.equal(body.apiEndpoint, buildUser(userData).getApiEndpoint());
       });
       it('[7QB6] should send the right data to register', () => {
-        const validationSent = serviceRegisterRequests[0];
-        assert.deepEqual(validationSent, serviceRegisterRequests[2]);
-        assert.deepEqual(validationSent, buildValidationRequest(userData));
-        let registrationSent = serviceRegisterRequests[1];
-        registrationSent = stripRegistrationRequest(registrationSent);
-        assert.deepEqual(registrationSent, buildRegistrationRequest(userData));
+        const firstValidationSent = serviceRegisterRequests[0];
+        const firstValidationRequest = _.merge(buildValidationRequest(userData), { uniqueFields: { email: oldEmail } });
+        assert.deepEqual(firstValidationSent, firstValidationRequest, 'first validation request is invalid');
+
+        let firstRegistrationSent = serviceRegisterRequests[1];
+        firstRegistrationSent = stripRegistrationRequest(firstRegistrationSent);
+        const firstRegistrationRequest = _.merge(buildRegistrationRequest(userData), { user: { email: oldEmail } });
+        assert.deepEqual(firstRegistrationSent, firstRegistrationRequest, ' first registration request is invalid');
+
+        const secondValidationSent = serviceRegisterRequests[2];
+        const secondValidationRequest = buildValidationRequest(userData);
+        assert.deepEqual(secondValidationSent, secondValidationRequest, 'second validation request is invalid');
+
+        let secondRegistrationSent = serviceRegisterRequests[3];
+        secondRegistrationSent = stripRegistrationRequest(secondRegistrationSent);
+        const secondRegistrationRequest = buildRegistrationRequest(userData);
+        assert.deepEqual(secondRegistrationSent, secondRegistrationRequest, ' second registration request is invalid');
+      });
+      it('should replace first user events in the storage', () => {
+        const firstEmail = firstUser.events.filter(e => e.type === 'email/string')[0].content;
+        const secondEmail = secondUser.events.filter(e => e.type === 'email/string')[0].content;
+        assert.equal(firstEmail, oldEmail);
+        assert.equal(secondEmail, userData.email);
       });
     });
-    describe('when the same user already exists in core but not in register', () => {
+    describe('when a user with the same username/email already exists in core but not in register', () => {
       before(async () => {
         userData = defaults();
         serviceRegisterRequests = [];
