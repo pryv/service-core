@@ -20,27 +20,43 @@ const config: Config = getConfig();
 //const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
 class User {
-  userId: string; // to remove
+  userId: ?string; // to remove
 
-  id: string;
-  username: string;
-  email: string;
-  language: string;
+  id: ?string;
+  username: ?string;
+  email: ?string;
+  language: ?string;
 
-  events: Array<{}>;
+  events: ?Array<{}>;
   apiEndpoint: ?string;
   systemStreamsSerializer: ?SystemStreamsSerializer;
-  accountStreamsSettings: Array<{}>;
-  accountFields: Array<string> = [];
+  accountStreamsSettings: ?Array<{}>;
+  accountFields: ?Array<string> = [];
 
-  constructor(userId: string, events: Array<{}>, systemStreamsSerializer) {
+  constructor(params: {
+    systemStreamsSerializer: {},
+    events?: Array<{}>, 
+    userId?: string, 
+    id?: string,
+    username?: string,
+    email?: string,
+    language?: string,
+    appId?: string,
+    invitationToken?: string,
+    passwordHash?: string,
+    referer?: string,
+    dbDocuments?: number,
+    attachedFiles: number,
+  }) {
     //this.serializer = new SystemStreamsSerializer();
-    this.events = events;
-    this.userId = userId;
-    this.systemStreamsSerializer = systemStreamsSerializer;
+    this.events = params.events;
+    this.userId = params.userId;
+    this.systemStreamsSerializer = params.systemStreamsSerializer;
     this.accountStreamsSettings = config.get('systemStreams:account');
-    formAccountDataFromListOfEvents(this);
     this.createIdIfMissing();
+    buildAccountFields(this);
+    loadAccountData(this);
+    if (this.events != null) formAccountDataFromListOfEvents(this);
   }
 
   createIdIfMissing() {
@@ -71,18 +87,31 @@ class User {
   }
 }
 
+function buildAccountFields(user: User): void {
+  const userAccountStreams = user.systemStreamsSerializer.getAllAccountStreamsLeafs();
+  userAccountStreams.forEach(stream => {
+    user.accountFields.push(stream.id);
+  });
+}
+
+function loadAccountData(user: User, params): void {
+  this.accountFields.forEach(field => {
+    if (params[field] != null) user[field] = params[field];
+  });
+}
+
 function buildEventsFromAccount(user: User): Array<{}> {
-  const userAccountStreamsIds = user.systemStreamsSerializer.getAllAccountStreamsLeafs();
+  const userAccountStreams = user.systemStreamsSerializer.getAllAccountStreamsLeafs();
   // convert to events
   const account = user.getAccount();
 
   const events = [];
-  Object.keys(userAccountStreamsIds).forEach(streamId => {
+  Object.keys(userAccountStreams).forEach(streamId => {
     if (
       account[streamId] ||
-      typeof userAccountStreamsIds[streamId].default != null
+      typeof userAccountStreams[streamId].default != null
     ) {
-      let parameter = userAccountStreamsIds[streamId].default;
+      let parameter = userAccountStreams[streamId].default;
 
       // set default value if undefined
       if (typeof account[streamId] !== 'undefined') {
@@ -93,7 +122,7 @@ function buildEventsFromAccount(user: User): Array<{}> {
         user,
         streamId,
         parameter,
-        userAccountStreamsIds
+        userAccountStreams
       );
 
       events.push(event);
@@ -104,13 +133,13 @@ function buildEventsFromAccount(user: User): Array<{}> {
   return events;
 }
 
-function createEvent(user, streamId, accountParameter, userAccountStreamsIds) {
+function createEvent(user, streamId, accountParameter, userAccountStreams) {
   const defaultAccessId = 'system';
 
   // get type for the event from the config
   let eventType = 'string';
-  if (userAccountStreamsIds[streamId].type) {
-    eventType = userAccountStreamsIds[streamId].type;
+  if (userAccountStreams[streamId].type) {
+    eventType = userAccountStreams[streamId].type;
   }
 
   // create the event
@@ -130,7 +159,7 @@ function createEvent(user, streamId, accountParameter, userAccountStreamsIds) {
   };
 
   // if fields has to be unique , add stream id and the field that enforces uniqueness
-  if (userAccountStreamsIds[streamId].isUnique === true) {
+  if (userAccountStreams[streamId].isUnique === true) {
     event.streamIds.push(
       SystemStreamsSerializer.options.STREAM_ID_UNIQUE
     );
@@ -145,10 +174,6 @@ function createEvent(user, streamId, accountParameter, userAccountStreamsIds) {
  */
 function formAccountDataFromListOfEvents(user: User) {
   const account = formEventsTree(user.accountStreamsSettings, user.events, {});
-  Object.keys(account).forEach(p => {
-    user.accountFields.push(p);
-    user[p] = account[p];
-  });
   user.id = user.userId;
 }
 
@@ -159,7 +184,7 @@ function formAccountDataFromListOfEvents(user: User) {
  * @param array events
  * @param object user
  */
-function formEventsTree(streams: object, events: array, user: object): object {
+function formEventsTree(streams: {}, events: Array<{}>, user: {}): {} {
   let streamIndex;
   for (streamIndex = 0; streamIndex < streams.length; streamIndex++) {
     const streamName = streams[streamIndex].id;
@@ -175,8 +200,7 @@ function formEventsTree(streams: object, events: array, user: object): object {
     }
 
     // get value for the stream element
-    let i;
-    for (i = 0; i < events.length; i++) {
+    for (let i = 0; i < events.length; i++) {
       if (events[i].streamIds.includes(streamName)) {
         user[streamName] = events[i].content;
         break;
