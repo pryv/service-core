@@ -369,7 +369,7 @@ exports.removeDeletionsAndHistory = function (items) {
 
 exports.removeAccountStreamsEvents = function (items) {
   // get streams ids from the config that should be retrieved
-  const expectedAccountStreams = (new SystemStreamsSerializer()).getAllAccountStreams();
+  const expectedAccountStreams = SystemStreamsSerializer.getAllAccountStreams();
   return items.filter(function (e) { return !(e.streamIds.some(streamId => Object.keys(expectedAccountStreams).indexOf(streamId) >= 0)); });
 };
 
@@ -422,7 +422,7 @@ exports.removeTrackingProperties = function (items) {
  */
 exports.validateAccountEvents = function (actualAccountEvents) {
   // get streams ids from the config that should be retrieved
-  let expectedAccountStreams = (new SystemStreamsSerializer()).getReadableAccountStreamsForTests();
+  let expectedAccountStreams = SystemStreamsSerializer.getReadableAccountStreamsForTests();
 
   // iterate through expected account events and check that they exists in actual
   // account events (skip nested streams parents)

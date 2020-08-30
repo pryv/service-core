@@ -217,9 +217,8 @@ module.exports = function produceAccessesApiMethods(
   function applyAccountStreamsValidation (context, params, result, next) {
     if (params.permissions == null) return next();
 
-    const systemStreamsSerializerObj = new SystemStreamsSerializer();
-    const notVisibleAccountStreamsIds = systemStreamsSerializerObj.getAccountStreamsIdsForbiddenForReading();
-    const visibleAccountStreamsIds = Object.keys(systemStreamsSerializerObj.getReadableAccountStreams());
+    const notVisibleAccountStreamsIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
+    const visibleAccountStreamsIds = Object.keys(SystemStreamsSerializer.getReadableAccountStreams());
 
     // don't allow user to give access to not visible stream
     let i;

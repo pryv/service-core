@@ -9,6 +9,8 @@
 const _ = require('lodash');
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
+const bluebird = require('bluebird');
+const encryption = require('components/utils').encryption;
 
 const treeUtils = require('components/utils/src/treeUtils');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
@@ -17,10 +19,8 @@ const getConfig: () => Config = require('components/api-server/config/Config')
   .getConfig;
 import type { Config } from 'components/api-server/config/Config';
 const config: Config = getConfig();
-//const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
 class User {
-  userId: ?string; // to remove
 
   id: ?string;
   username: ?string;
@@ -29,57 +29,53 @@ class User {
 
   events: ?Array<{}>;
   apiEndpoint: ?string;
-  systemStreamsSerializer: ?SystemStreamsSerializer;
   accountStreamsSettings: ?Array<{}>;
   accountFields: ?Array<string> = [];
 
-  constructor(params: {
+  constructor (params: {
     systemStreamsSerializer: {},
-    events?: Array<{}>, 
-    userId?: string, 
+    events?: Array<{}>,
     id?: string,
     username?: string,
     email?: string,
     language?: string,
     appId?: string,
     invitationToken?: string,
+    password?: string,
     passwordHash?: string,
     referer?: string,
     dbDocuments?: number,
     attachedFiles: number,
   }) {
-    //this.serializer = new SystemStreamsSerializer();
     this.events = params.events;
-    this.userId = params.userId;
-    this.systemStreamsSerializer = params.systemStreamsSerializer;
     this.accountStreamsSettings = config.get('systemStreams:account');
-    this.createIdIfMissing();
     buildAccountFields(this);
-    loadAccountData(this);
+    loadAccountData(this, params);
+
     if (this.events != null) formAccountDataFromListOfEvents(this);
+    this.createIdIfMissing();
   }
 
-  createIdIfMissing() {
-    if (this.userId == null) this.userId = cuid();
+  createIdIfMissing () {
     if (this.id == null) this.id = cuid();
   }
 
-  getEvents(): Array<{}> {
+  async getEvents (): Array<{}> {
     if (this.events != null) return this.events;
 
-    buildEventsFromAccount(this);
+    await buildEventsFromAccount(this);
     return this.events;
   }
 
-  getAccount() {
+  getAccount () {
     return _.pick(this, this.accountFields);
   }
 
-  getAccountWithId() {
+  getAccountWithId () {
     return _.pick(this, _.concat(this.accountFields, ['id']));
   }
 
-  getApiEndpoint() {
+  getApiEndpoint () {
     if (this.apiEndpoint != null) return this.apiEndpoint;
     const apiFormat = config.get('service:api');
     this.apiEndpoint = apiFormat.replace('{username}', this.username);
@@ -87,29 +83,47 @@ class User {
   }
 }
 
-function buildAccountFields(user: User): void {
-  const userAccountStreams = user.systemStreamsSerializer.getAllAccountStreamsLeafs();
-  userAccountStreams.forEach(stream => {
-    user.accountFields.push(stream.id);
+function buildAccountFields (user: User): void {
+  const userAccountStreams = SystemStreamsSerializer.getAllAccountStreams();
+  
+  Object.keys(userAccountStreams).forEach(streamId => {
+    user.accountFields.push(streamId);
   });
 }
 
-function loadAccountData(user: User, params): void {
-  this.accountFields.forEach(field => {
+async function loadAccountData (user: User, params): void {
+  user.accountFields.forEach(field => {
     if (params[field] != null) user[field] = params[field];
   });
+  // temporarily add password because the encryption need to be loded asyncronously
+  // and it could not be done in the contructor
+  if (params.password && !params.passwordHash) {
+    user.password = params.password;
+  }
+  if (params.id) {
+    user.id = params.id;
+  }
 }
 
-function buildEventsFromAccount(user: User): Array<{}> {
-  const userAccountStreams = user.systemStreamsSerializer.getAllAccountStreamsLeafs();
+async function buildEventsFromAccount (user: User): Array<{}> {
+  const userAccountStreams = SystemStreamsSerializer.getAllAccountStreamsLeafs();
   // convert to events
-  const account = user.getAccount();
+  let account = user.getAccount();
+
+  // change password into hash (also allow for tests to pass passwordHash directly)
+  if (user.password && !user.passwordHash) {
+    account.passwordHash = await bluebird.fromCallback((cb) => encryption.hash(user.password, cb));
+  }
+  delete user.password;
+
+  // flatten account information
+  account = treeUtils.flattenSimpleObject(account);
 
   const events = [];
   Object.keys(userAccountStreams).forEach(streamId => {
     if (
       account[streamId] ||
-      typeof userAccountStreams[streamId].default != null
+      typeof userAccountStreams[streamId].default != 'undefined'
     ) {
       let parameter = userAccountStreams[streamId].default;
 
@@ -128,12 +142,11 @@ function buildEventsFromAccount(user: User): Array<{}> {
       events.push(event);
     }
   });
-
   // flatten them
-  return events;
+  user.events = events;
 }
 
-function createEvent(user, streamId, accountParameter, userAccountStreams) {
+function createEvent (user, streamId, accountParameter, userAccountStreams) {
   const defaultAccessId = 'system';
 
   // get type for the event from the config
@@ -172,9 +185,11 @@ function createEvent(user, streamId, accountParameter, userAccountStreams) {
 /**
  * Convert system->account events to the account object
  */
-function formAccountDataFromListOfEvents(user: User) {
+function formAccountDataFromListOfEvents (user: User) {
   const account = formEventsTree(user.accountStreamsSettings, user.events, {});
-  user.id = user.userId;
+  Object.keys(account).forEach(param => {
+    user[param] = account[param];
+  });
 }
 
 /**
@@ -184,8 +199,9 @@ function formAccountDataFromListOfEvents(user: User) {
  * @param array events
  * @param object user
  */
-function formEventsTree(streams: {}, events: Array<{}>, user: {}): {} {
+function formEventsTree (streams: {}, events: Array<{}>, user: {}): {} {
   let streamIndex;
+
   for (streamIndex = 0; streamIndex < streams.length; streamIndex++) {
     const streamName = streams[streamIndex].id;
 

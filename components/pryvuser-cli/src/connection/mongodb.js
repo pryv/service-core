@@ -46,7 +46,6 @@ class MongoDB {
 
   async preflight(username: string): Promise<void> {
     const user = await this.findUser(username);
-
     if (user == null)
       throw new Error(`No such user ('${username}')`);
     
@@ -84,7 +83,7 @@ class MongoDB {
 
     // Drop the user itself.
     const userRepository = new UserRepository(storage.events);
-    // TODO IEVA - implementation is not finished await userRepository.delete(user.id);
+    await userRepository.deleteOne(user.id);
 
     await bluebird.fromCallback(
       cb => storage.sessions.remove( 

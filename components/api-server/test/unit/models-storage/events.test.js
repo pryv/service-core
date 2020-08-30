@@ -13,6 +13,7 @@ const eventsStorage = helpers.dependencies.storage.user.events;
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('components/api-server/test/test-helpers');
 const UserRepository = require('components/business/src/users/repository');
+const User = require('components/business/src/users/User');
 
 describe('Events storage', () => {
   let server;
@@ -39,7 +40,7 @@ describe('Events storage', () => {
   describe('createUser()', () => {
     before(async () => {
       userId = charlatan.App.name();
-      username = charlatan.App.name();
+      username = charlatan.App.name(5);
       customRegistrationUniqueField = charlatan.App.name();
       email = charlatan.Internet.email();
       try {
@@ -61,12 +62,13 @@ describe('Events storage', () => {
       try {
         const userRepository = new UserRepository(eventsStorage);
         const id = charlatan.App.name();
-        await userRepository.insertOne({
+        const userObj: User = new User({
           id: id,
           username: username,
           password: charlatan.App.name(),
           email: charlatan.Internet.email(),
         });
+        await userRepository.insertOne(userObj);
 
         assert.isTrue(false);
       } catch (err) {
@@ -85,10 +87,11 @@ describe('Events storage', () => {
     it('[6CFE] must throw a duplicate error when email field is not unique', async () => {
       try {
         const userRepository = new UserRepository(eventsStorage);
-        await userRepository.insertOne({
+        const userObj: User = new User({
           id: charlatan.App.name(),
           email: email
         });
+        await userRepository.insertOne(userObj);
         console.log('Test failed because error was not thrown');
         assert.isTrue(false);
       } catch (err) {
@@ -103,7 +106,7 @@ describe('Events storage', () => {
         assert.isTrue(isDuplicateIndex('email__unique'));
       }
     });
-/*
+/* TODO IEVA
     it('[79CF] must throw a duplicate error when custom user field from the settings is not unique', async () => {
       try {
         await eventsStorage.createUser({

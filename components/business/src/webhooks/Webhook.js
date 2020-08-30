@@ -240,6 +240,7 @@ class Webhook implements MessageSink {
     if (this.repository == null) {
       throw new Error('repository not set for Webhook object.');
     }
+    
     await this.repository.insertOne(this.user, this);
   }
 

@@ -53,6 +53,11 @@ describe('registration: cluster', function() {
   let mongoFixtures;
   let userRepository;
 
+  // clean the database before starting all tests for registration
+  before(async function () {
+    mongoFixtures = databaseFixture(await produceMongoConnection());
+    await mongoFixtures.context.cleanEverything();
+  });
   before(async function () {
     settings = await Settings.load();
     config = getConfig();
@@ -156,23 +161,6 @@ describe('registration: cluster', function() {
         //assert.equal(body.apiEndpoint, buildUser(userData).getApiEndpoint());
       });
       it('[7QB6] should send the right data to register', () => {
-
-        /*
-        const validationSent = serviceRegisterRequests[0];
-        // Validate with Ilia, but seems not right test caseassert.deepEqual(validationSent, serviceRegisterRequests[2]);
-        // in a first request it is email1 and then email2
-        assert.deepEqual(validationSent, buildValidationRequest(userData));
-        // shouldnt it be id 3 ?
-        let registrationSent = serviceRegisterRequests[1];
-        registrationSent = stripRegistrationRequest(registrationSent);
-        assert.deepEqual(registrationSent, buildRegistrationRequest(userData));
-        
-
-        // suggested cases
-        let registrationSent = serviceRegisterRequests[3];
-        registrationSent = stripRegistrationRequest(registrationSent);
-        assert.deepEqual(registrationSent, buildRegistrationRequest(userData));
-*/
         const firstValidationSent = serviceRegisterRequests[0];
         const firstValidationRequest = _.merge(buildValidationRequest(userData), { uniqueFields: { email: oldEmail } });
         assert.deepEqual(firstValidationSent, firstValidationRequest, 'first validation request is invalid');
@@ -196,7 +184,6 @@ describe('registration: cluster', function() {
         const secondEmail = secondUser.events.filter(e => e.type === 'email/string')[0].content;
         assert.equal(firstEmail, oldEmail);
         assert.equal(secondEmail, userData.email);
->>>>>>> system-stream/register-single-node-cleanup
       });
     });
     describe('when a user with the same username/email already exists in core but not in register', () => {

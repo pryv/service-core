@@ -24,12 +24,11 @@ module.exports = Events;
  * @constructor
  */
 function Events (database) {
-  let systemStreamsSerializer = new SystemStreamsSerializer();
   // TODO - maybe I should retrieve all and not only account streams here?
   // So that unicity, indexing would be broader functionality?
   // get streams ids of account streams from the config
-  this.systemStreamsFlatList = systemStreamsSerializer.getAllAccountStreams();
-  this.uniqueStreamIdsList = systemStreamsSerializer.getUniqueAccountStreamsIds();
+  this.systemStreamsFlatList = SystemStreamsSerializer.getAllAccountStreams();
+  this.uniqueStreamIdsList = SystemStreamsSerializer.getUniqueAccountStreamsIds();
 
   Events.super_.call(this, database);
 
@@ -311,25 +310,5 @@ Events.prototype.delete = function (user, query, deletionMode, callback) {
     this.applyQueryToDB(query),
     update,
     callback
-  );
-};
-
-/**
- * Override base method to set deleted:null
- * 
- * @param {*} user 
- * @param {*} item 
- * @param {*} callback 
- */
-Events.prototype.insertOne = function (user, item, callback) {
-  this.database.insertOne(
-    this.getCollectionInfo(user),
-    this.applyItemToDB(this.applyItemDefaults(item)),
-    function (err) {
-      if (err) {
-        return callback(err);
-      }
-      callback(null, item);
-    }
   );
 };

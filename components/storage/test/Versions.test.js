@@ -504,13 +504,14 @@ describe('Versions', function () {
     const newIndexes = testData.getStructure('1.6.0').indexes;
     const defaultUser = { id: 'u_0' };
     const eventsStorage = storage.user.events;
+
     const eventsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'events' }, cb));
     const usersCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'users' }, cb));
 
     // get streams ids from the config that should be retrieved
-    const userAccountStreams = (new SystemStreamsSerializer()).getAllAccountStreamsLeafs();
+    const userAccountStreams = SystemStreamsSerializer.getAllAccountStreamsLeafs(); 
     const userAccountStreamIds = Object.keys(userAccountStreams); 
-
+    
     // get backup of users
     const usersCursor = await bluebird.fromCallback(cb => usersCollection.find({}, cb ));
     const users = await usersCursor.toArray();

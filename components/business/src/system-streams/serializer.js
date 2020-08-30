@@ -17,6 +17,8 @@ const editableAccountStreams = 'editable-default-streams';
 const indexedStreams = 'indexed-default-streams';
 const uniqueStreams = 'unique-default-streams';
 
+const accountStreamsConfigPath = 'systemStreams:account';
+
 /**
  * Class that converts system->account events to the
  * Account information that matches the previous 
@@ -33,23 +35,22 @@ class SystemStreamsSerializer {
     }
     // for some reason I cannot ddelete custom streams in the config level, so lets remove it here
     delete this.systemStreamsSettings.custom;
-    this.accountStreamsSettings = this.systemStreamsSettings.account;
   }
 
   /**
    * Get the names of all readable streams that belongs to the system->account stream
    * and could be returned to the user
    */
-  getReadableAccountStreams () {
-    return getStreamsNames(this.accountStreamsSettings, readable);
+  static getReadableAccountStreams () {
+    return getStreamsNames(config.get(accountStreamsConfigPath), readable);
   }
 
   /**
    * The same as getReadableAccountStreams (), just skips storageUsed stream because it is 
    * a perrent and no events are created by default for it dirrectly
    */
-  getReadableAccountStreamsForTests () {
-    let streams = getStreamsNames(this.accountStreamsSettings, readable);
+  static getReadableAccountStreamsForTests () {
+    let streams = getStreamsNames(config.get(accountStreamsConfigPath), readable);
     delete streams.storageUsed;
     return streams;
   }
@@ -57,8 +58,8 @@ class SystemStreamsSerializer {
   /**
    * Get only those streams that user is allowed to edit 
    */
-  getEditableAccountStreams () {
-    return getStreamsNames(this.accountStreamsSettings, editableAccountStreams);
+  static getEditableAccountStreams () {
+    return getStreamsNames(config.get(accountStreamsConfigPath), editableAccountStreams);
   }
 
   /**
@@ -66,14 +67,14 @@ class SystemStreamsSerializer {
    * should be used only for internal usage because contains fields that 
    * should not be returned to the user
    */
-  getAllAccountStreams () {
-    return getStreamsNames(this.accountStreamsSettings, allAccountStreams);
+  static getAllAccountStreams () {
+    return getStreamsNames(config.get(accountStreamsConfigPath), allAccountStreams);
   }
   /**
    * The same as getAllAccountStreams () but returnes only streams leafs (not parents)
    */
-  getAllAccountStreamsLeafs () {
-    const flatStreamsList = treeUtils.flattenTreeWithoutParents(this.accountStreamsSettings);
+  static getAllAccountStreamsLeafs () {
+    const flatStreamsList = treeUtils.flattenTreeWithoutParents(config.get(accountStreamsConfigPath));
     let flatStreamsListObj = {};
     let i;
     for (i = 0; i < flatStreamsList.length; i++) {
@@ -85,24 +86,24 @@ class SystemStreamsSerializer {
 /**
  * Get streamIds of fields that should be indexed
  */
-  getIndexedAccountStreams () {
-    return getStreamsNames(this.accountStreamsSettings, indexedStreams);
+  static getIndexedAccountStreams () {
+    return getStreamsNames(config.get(accountStreamsConfigPath), indexedStreams);
   }
 
 /**
  * Get streamIds of fields that should be unique
  */
-  getUniqueAccountStreamsIds () {
-    return Object.keys(getStreamsNames(this.accountStreamsSettings, uniqueStreams));
+  static getUniqueAccountStreamsIds () {
+    return Object.keys(getStreamsNames(config.get(accountStreamsConfigPath), uniqueStreams));
   }
 
   /**
    * Get steams that are NOT allowed to edit - this function will be used to 
    * exclude from queries
    */
-  getAccountStreamsIdsForbiddenForEditing () {
-    let allStreams = this.getAllAccountStreams();
-    let editableStreams = this.getEditableAccountStreams();
+  static getAccountStreamsIdsForbiddenForEditing () {
+    let allStreams = SystemStreamsSerializer.getAllAccountStreams();
+    let editableStreams = SystemStreamsSerializer.getEditableAccountStreams();
 
     const notEditableStreamsIds = _.difference(_.keys(allStreams), _.keys(editableStreams));
     return notEditableStreamsIds;
@@ -112,9 +113,9 @@ class SystemStreamsSerializer {
    * Get steams that are NOT allowed to view for the user
    * this function will be used to exclude streamIds from queries
    */
-  getAccountStreamsIdsForbiddenForReading () {
-    let allStreams = this.getAllAccountStreams();
-    let readableStreams = this.getReadableAccountStreams();
+  static getAccountStreamsIdsForbiddenForReading () {
+    let allStreams = SystemStreamsSerializer.getAllAccountStreams();
+    let readableStreams = SystemStreamsSerializer.getReadableAccountStreams();
     const notReadableStreamsIds = _.difference(_.keys(allStreams), _.keys(readableStreams));
     return notReadableStreamsIds;
   }
@@ -142,9 +143,9 @@ class SystemStreamsSerializer {
   /**
    * Form flattened account stream settings and converted from an array to object
    */
-  getFlatAccountStreamSettings () {
+  static getFlatAccountStreamSettings () {
     let accountSettings = {};
-    const flatStreamsList = treeUtils.flattenTree(this.accountStreamsSettings);
+    const flatStreamsList = treeUtils.flattenTree(config.get(accountStreamsConfigPath));
     
     // convert list to object
     let i;

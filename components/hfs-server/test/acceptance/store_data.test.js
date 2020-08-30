@@ -49,6 +49,18 @@ type ErrorDocument = {
   id: string, 
   message: string, 
 }
+// this should be definitely done in the config and not in the test
+async function spawnContextServer (spawnContext) {
+  return spawnContext.spawn({
+    openSource: {
+      isActive: false
+    },
+    mongodb: {
+      host: "localhost",
+      name: "pryv-node-test"
+    }
+  }); 
+}
 
 describe('Storing data in a HF series', function() {
 
@@ -63,10 +75,7 @@ describe('Storing data in a HF series', function() {
     let server; 
     before(async () => {
       debug('spawning');
-      server = await spawnContext.spawn({
-        openSource: {
-          isActive: false
-        }}); 
+      server = await spawnContextServer(spawnContext);
     });
     after(() => {
       server.stop(); 
@@ -243,16 +252,8 @@ describe('Storing data in a HF series', function() {
     // Spawns a server.
     before(async () => {
       debug('spawning');
-      hfServer = await spawnContext.spawn();
-      apiServer = await apiServerContext.spawn({
-        openSource: {
-          isActive: false
-        },
-        reporting: {
-          licenseName: 'pryv.io-test-license',
-          templateVersion: '1.0.0',
-        }
-      });
+      hfServer = await spawnContextServer(spawnContext);
+      apiServer = await spawnContextServer(apiServerContext);
       
     });
     after(() => {
@@ -269,8 +270,6 @@ describe('Storing data in a HF series', function() {
       userId = cuid();
       parentStreamId = cuid();
       accessToken = cuid();
-
-      
 
       debug('build fixture');
       return pryv.user(userId, {}, function (user) {
@@ -290,14 +289,12 @@ describe('Storing data in a HF series', function() {
     // true if the whole operation is successful. 
     // 
     async function tryStore(attrs: Object, header: Header, data: Rows): Promise<TryOpResult> {
-      const userQuery = { id: userId };
       const effectiveAttrs = lodash.merge(
         { streamIds: [parentStreamId], time: Date.now() / 1000 },
         attrs
       );
       const userRepository = new UserRepository(storageLayer.events);
-      const userObj: User = await userRepository.getById(userId);
-      const user = userObj.getAccount();
+      const user: User = await userRepository.getById(userId);
       assert.isNotNull(user);
 
       const event = await bluebird.fromCallback(
@@ -405,7 +402,6 @@ describe('Storing data in a HF series', function() {
       // move event to tomorrow 
       const newEventTime = (Date.now() / 1000) + 60 * 60 * 24;
 
-      
       const response = await apiServer.request()
         .delete('/' + result.user.username + '/events/' + result.event.id)
         .set('authorization', accessToken);
@@ -521,7 +517,7 @@ describe('Storing data in a HF series', function() {
       describe('with auth success', function () {
         before(async () => {
           debug('spawning');
-          server = await spawnContext.spawn(); 
+          server = await spawnContextServer(spawnContext);
         });
         after(() => {
           server.stop(); 
@@ -702,7 +698,7 @@ describe('Storing data in a HF series', function() {
           afterEach(async () => {
             // Since we modified the test server, spawn a new one that is clean. 
             server.stop(); 
-            server = await spawnContext.spawn(); 
+            server = await spawnContextServer(spawnContext);
             
             rpcServer.close();
           });
@@ -725,7 +721,7 @@ describe('Storing data in a HF series', function() {
       describe('with auth failure', function () {
         before(async () => {
           debug('spawning');
-          server = await spawnContext.spawn(); 
+          server = await spawnContextServer(spawnContext);
         });
         after(() => {
           server.stop(); 
@@ -754,14 +750,14 @@ describe('Storing data in a HF series', function() {
       // Spawns a server.
       before(async () => {
         debug('spawning');
-        server = await spawnContext.spawn(); 
+        server = await spawnContextServer(spawnContext);
       });
       after(() => {
         server.stop(); 
       });
       
       after(function () {
-        pryv.clean(); 
+        pryv.clean();
       });
       
       let userId, parentStreamId, accessToken; 
@@ -917,14 +913,14 @@ describe('Storing data in a HF series', function() {
       // Spawns a server.
       before(async () => {
         debug('spawning');
-        server = await spawnContext.spawn(); 
+        server = await spawnContextServer(spawnContext);
       });
       after(() => {
         server.stop(); 
       });
 
       after(function () {
-        pryv.clean(); 
+        pryv.clean();
       });
 
       // Database fixture: `eventId` will contain the event that has a type 
@@ -1056,14 +1052,14 @@ describe('Storing data in a HF series', function() {
       // Spawns a server.
       before(async () => {
         debug('spawning');
-        server = await spawnContext.spawn(); 
+        server = await spawnContextServer(spawnContext);
       });
       after(() => {
         server.stop(); 
       });
 
       after(function () {
-        pryv.clean(); 
+        pryv.clean();
       });
 
       // Database fixture: `eventId` will contain the event that has a type 
@@ -1139,14 +1135,14 @@ describe('Storing data in a HF series', function() {
     describe('using a "create-only" permissions', () => {
 
       before(async () => {
-        server = await spawnContext.spawn(); 
+        server = await spawnContextServer(spawnContext);
       });
       after(() => {
         server.stop(); 
       });
       
       after(function () {
-        pryv.clean(); 
+        pryv.clean();
       });
       
       let userId, streamId, createOnlyToken, event; 

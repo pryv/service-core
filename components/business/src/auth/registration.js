@@ -31,11 +31,10 @@ import type { ApiCallback } from 'components/api-server/src/API';
 class Registration {
   logger: any;
   storageLayer: any; // used for initUser
-  defaultStreamsSerializer: SystemStreamsSerializer = new SystemStreamsSerializer();
   serviceRegisterConn: ServiceRegister; // service-register connection
   userRepository: UserRepository; 
   hostname: string; // hostname that will be saved in service-register as a 'core' where user is registered
-  accountStreamsSettings: any = this.defaultStreamsSerializer.getFlatAccountStreamSettings();
+  accountStreamsSettings: any = SystemStreamsSerializer.getFlatAccountStreamSettings();
   servicesSettings: any; // settigns to get the email to send user welcome email
 
   constructor(logging, storageLayer, servicesSettings, serverSettings) {
@@ -68,6 +67,9 @@ class Registration {
     if (params.email && typeof params.email === 'string') {
       params.email = params.email.toLowerCase();
     }
+    //TODO IEVA, ask Ilia, because now validation is applied on params
+    // if I want to skip params editing, I have to change that method
+    context.user = new User(params);
     next();
   }
 
@@ -127,21 +129,6 @@ class Registration {
     );
   }
 
-  async prepareUserDataForSaving (
-    context: MethodContext,
-    params: mixed,
-    result: Result,
-    next: ApiCallback
-  ) {
-    // change parameter name
-    if (params.languageCode) {
-      params.language = params.languageCode;
-    }
-    delete params.languageCode;
-
-    next();
-  }
-
   /**
    * Validation and reservation in service-register
    * @param {*} context
@@ -160,14 +147,14 @@ class Registration {
       for (const [key, value] of Object.entries(this.accountStreamsSettings)) {
         // if key is set as required - add required validation
         if (value.isUnique && value.isUnique === true) {
-          uniqueFields[key] = params[key];
+          uniqueFields[key] = context.user[key];
         }
       }
 
       // do the validation and reservation in service-register
       await this.serviceRegisterConn.validateUser(
-        params.username,
-        params.invitationToken,
+        context.user.username,
+        context.user.invitationToken,
         uniqueFields,
         this.hostname
       );
@@ -194,7 +181,7 @@ class Registration {
     next: ApiCallback
   ) {
     try {
-      const existingUser = await this.userRepository.checkUserFieldsUniqueness(params);
+      const existingUser = await this.userRepository.checkUserFieldsUniqueness(context.user.getAccount());
       // if any of unique fields were already saved, it means that there was an error
       // saving in service register (before this step there is a check that unique fields 
       // don't exist in service register)
@@ -229,6 +216,7 @@ class Registration {
     params.passwordHash = 'changeMe';
     params.language = 'en';
     params.email = this.POOL_USERNAME_PREFIX + uniqueId + '@email';
+    context.user = new User(params);
     next();
   }
 
@@ -247,30 +235,23 @@ class Registration {
     next: ApiCallback
   ) {
     // if it is testing user, skip registration process
-    if (params.username === 'recla') {
+    if (context.user.username === 'recla') {
       result.id = 'dummy-test-user';
-      context.user = _.defaults({ id: result.id }, params);
+      context.user.id = result.id;
       return next();
     }
 
     try {
-      context.user = {
-        username: params.username
-      };
-      let user = {};
       if (context.calledMethodId === 'system.createPoolUser') {
-        user = await this.userRepository.insertOne(
-          params
-        );
+        context.user = await this.userRepository.insertOne( context.user );
       } else {
-        user = await this.userRepository.insertOne(
-          params,
+        context.user = await this.userRepository.insertOne(
+          context.user,
           this.storageLayer.sessions,
           this.storageLayer.accesses,
         );
       }
 
-      context.user = { ...context.user, ...user };
       context.user.host = { name: this.hostname };
 
       // form the result for system call or full registration call
@@ -278,7 +259,9 @@ class Registration {
         result.id = context.user.id;
       } else {
         result.username = context.user.username;
-        result.token = context.user.token;
+        if (context.user.token != null) {
+          result.token = context.user.token;
+        }
       }
       next();
     } catch (err) {
@@ -301,10 +284,9 @@ class Registration {
     next: ApiCallback
   ) {
     try {
-      const defaultStreamsSerializer = this.defaultStreamsSerializer;
       // get streams ids from the config that should be retrieved
-      const userStreamsIds = defaultStreamsSerializer.getIndexedAccountStreams();
-      const uniqueStreamsIds = defaultStreamsSerializer.getUniqueAccountStreamsIds();
+      const userStreamsIds = SystemStreamsSerializer.getIndexedAccountStreams();
+      const uniqueStreamsIds = SystemStreamsSerializer.getUniqueAccountStreamsIds();
 
       // form data that should be sent to service-register
       // some default values and indexed/uinique fields of the system

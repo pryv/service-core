@@ -20,6 +20,7 @@ const storage = require('components/storage');
 const Webhook = require("components/business").webhooks.Webhook;
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 const UserRepository = require('components/business/src/users/repository');
+const User = require('components/business/src/users/User');
 
 class Context {
   databaseConn: storage.Database; 
@@ -277,7 +278,8 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
     const db = this.db;
     const attributes = this.attrs;
     const userRepository = new UserRepository(db.events);
-    await userRepository.insertOne(attributes);
+    let userObj: User = new User(attributes);
+    await userRepository.insertOne(userObj);
     return this.attrs;
   }
 
@@ -296,9 +298,8 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
     // this.attrs.
     //const removeUser = bluebird.fromCallback((cb) => 
     //  db.users.removeOne(user, {username: username}, cb));
-    let systemStreamsSerializer = new SystemStreamsSerializer();
     // get streams ids from the config that should be deleted
-    const accountStreams = systemStreamsSerializer.getAllAccountStreams();
+    const accountStreams = SystemStreamsSerializer.getAllAccountStreams();
     const removeUser = bluebird.fromCallback((cb) => {
       db.events.removeMany(this.context.user, {
         $and:[
@@ -546,7 +547,7 @@ class Sessions {
   }
 }
 
-function databaseFixture(database: storage.Database) {
+function databaseFixture (database: storage.Database) {
   const context = new Context(database);
 
   return new Fixture(context);

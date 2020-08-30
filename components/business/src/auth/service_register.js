@@ -47,8 +47,6 @@ class ServiceRegister {
         });
     } catch (err) {
       if(err.status == 400 && err?.response?.body?.error){
-
-        console.log(err.response.body.error.id, ErrorIds.InvalidInvitationToken,'error validateUser');
         if (err.response.body.error != null) {
           if (err.response.body.error.id === ErrorIds.InvalidInvitationToken) {
             throw errors.invalidOperation(ErrorMessages.InvalidInvitationToken);

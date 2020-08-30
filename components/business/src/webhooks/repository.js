@@ -33,7 +33,6 @@ class Repository {
     let users;
     const usersRepository = new UsersRepository(this.userEventsStorage);
     users = await usersRepository.getAllUsernames();
-
     const allWebhooks = new Map();
     
     await bluebird.all(users.map(retrieveWebhooks, this));
@@ -141,7 +140,7 @@ class Repository {
 }
 module.exports = Repository;
 
-function initWebhook(user: {}, repository: Repository, webhook: {}): Webhook {
+function initWebhook (user: {}, repository: Repository, webhook: {}): Webhook {
   return new Webhook(_.merge({
     webhooksRepository: repository,
     user: user,

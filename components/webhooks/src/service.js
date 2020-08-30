@@ -54,6 +54,7 @@ class WebhooksService implements MessageSink {
     this.logger = params.logger;
     this.repository = new WebhooksRepository(params.storage.webhooks, params.storage.events);
     this.settings = params.settings;
+    
     this.NATS_CONNECTION_URI = this.settings.get('nats:uri');
   }
 

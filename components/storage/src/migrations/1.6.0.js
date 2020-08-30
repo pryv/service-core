@@ -10,6 +10,7 @@ const bluebird = require('bluebird');
 
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 const UserRepository = require('components/business/src/users/repository');
+const User = require('components/business/src/users/User');
 
 /**
  * v1.6.0: Account in events
@@ -23,7 +24,7 @@ module.exports = async function (context, callback) {
 
   const UserEventsStorage = new (require('../user/Events'))(context.database);
   // get streams ids from the config that should be retrieved
-  const userAccountStreams = (new SystemStreamsSerializer()).getAllAccountStreams();
+  const userAccountStreams = SystemStreamsSerializer.getAllAccountStreams();
   const userAccountStreamIds = Object.keys(userAccountStreams);
 
   const eventsCollection = await bluebird.fromCallback(cb => context.database.getCollection({ name: 'events' }, cb));
@@ -47,14 +48,14 @@ module.exports = async function (context, callback) {
     let shouldContinue: boolean;
     let insertedUser;
     let user;
-
     while (await cursor.hasNext()) {
       user = await cursor.next();
       try {
         if (!user.id && user._id) {
           user.id = user._id;
         }
-        insertedUser = await userRepository.insertOne(user);
+        const userObj: User = new User(user);
+        insertedUser = await userRepository.insertOne(userObj);
       } catch (err) {
         shouldContinue = isExpectedUniquenessError(err);
         if (shouldContinue == false) {

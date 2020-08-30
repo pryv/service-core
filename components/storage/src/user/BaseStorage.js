@@ -217,7 +217,8 @@ BaseStorage.prototype.aggregate = function(
   );
 };
 
-//TODO IEVA - maybe add session here?
+//TODO IEVA - maybe add session here - now it is in the concerning classes 
+// accesses and events (and sessions)
 BaseStorage.prototype.insertOne = function (user, item, callback) {
   this.database.insertOne(
     this.getCollectionInfo(user),

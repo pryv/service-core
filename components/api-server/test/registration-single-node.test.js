@@ -163,9 +163,9 @@ describe('registration: single-node', () => {
         )
       );
       describe(
-        'when given an invalid languageCode parameter',
+        'when given an invalid language parameter',
         testInvalidParameterValidation(
-          'languageCode', 
+          'language', 
           {
             minLength: 1,
             maxLength: 5,

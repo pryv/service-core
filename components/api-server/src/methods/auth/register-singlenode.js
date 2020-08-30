@@ -27,7 +27,6 @@ module.exports = function (api, logging, storageLayer, servicesSettings, serverS
     // data validation methods
     registration.prepareUserData,
     registration.loadCustomValidationSettings.bind(registration),
-    registration.prepareUserDataForSaving,
     // user registration methods
     registration.createUser.bind(registration),
     registration.sendWelcomeMail.bind(registration),

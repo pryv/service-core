@@ -13,18 +13,16 @@ const timestamp = require('unix-timestamp');
 const User = require('./User');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 let encryption = require('components/utils').encryption;
-let converters = require('components/storage/src/converters');
+const errors = require('components/errors').factory;
 
 /**
  * Repository of the users
  */
 class Repository {
   storage;
-  systemStreamsSerializer: SystemStreamsSerializer;
 
   constructor (storage) {
     this.storage = storage;
-    this.systemStreamsSerializer = new SystemStreamsSerializer();
   }
 
  /**
@@ -86,7 +84,7 @@ class Repository {
     );
 
     for (var i = 0; i < usersNames.length; i++) {
-      users.push(new User(usersNames[i].userId, [usersNames[i]]));
+      users.push(new User({ id: usersNames[i].userId, events: [usersNames[i]]}));
     }
     return users;
   }
@@ -100,9 +98,9 @@ class Repository {
     // get streams ids from the config that should be retrieved
     let userAccountStreamsIds;
     if (getAll) {
-      userAccountStreamsIds = this.systemStreamsSerializer.getAllAccountStreams();
+      userAccountStreamsIds = SystemStreamsSerializer.getAllAccountStreams();
     } else {
-      userAccountStreamsIds = this.systemStreamsSerializer.getReadableAccountStreams();
+      userAccountStreamsIds = SystemStreamsSerializer.getReadableAccountStreams();
     }
     // form the query
     let query = {
@@ -120,7 +118,7 @@ class Repository {
     if (userAccountEvents.length == 0) {
       return null;
     }
-    return new User(userId, userAccountEvents);
+    return new User({ id: userId, events: userAccountEvents });
   }
 
   /**
@@ -137,7 +135,6 @@ class Repository {
             { content: { $eq: username } }]
         }),
         null, cb));
-
     if (userIdEvent && userIdEvent.userId) {
       return this.getById(userIdEvent.userId, getAll);
     } else {
@@ -163,15 +160,16 @@ class Repository {
 
   /**
    * 
-   * @param string username 
-   * @param string appId
-   * TODO IEVA add type sessionsStorage
+   * @param string username
+   * @param string appId 
+   * @param {*} sessionsStorage 
+   * @param object session 
    */
   async createSessionForUser (
     username: string,
     appId: string,
-    sessionsStorage,
-    session): string {
+    sessionsStorage:any,
+    session: any): string {
     let sessionData = {
       username: username,
       appId: appId
@@ -217,7 +215,6 @@ class Repository {
 
     // Start a transaction session
     const session = await this.storage.database.startSession();
-
     const transactionOptions = {
       readPreference: 'primary',
       readConcern: { level: 'local' },
@@ -226,20 +223,21 @@ class Repository {
     await session.withTransaction(async () => {
       // if sessionStorage is not provided, session will be not created
       let accessId = 'system';//TODO IEVA constant
-      if (sessionsStorage && accessStorage && params.appId) {
-        const token = await this.createSessionForUser(params.username, params.appId, sessionsStorage, session);
+      if (sessionsStorage && accessStorage && user.appId) {
+        const token = await this.createSessionForUser(user.username, user.appId, sessionsStorage, session);
         const access = await this.createPersonalAccessForUser(
           user.id, token, user.appId, accessStorage, session);
         accessId = access?.id;
         user.token = access.token;
       }
       user.accessId = accessId;
-
+      
       // create all user account events
+      const events = await user.getEvents();
       await bluebird.fromCallback((cb) =>
-        this.storage.insertMany({id: user.id}, user.getEvents(), cb, { session }));
+        this.storage.insertMany({ id: user.id }, events, cb, { session }));
     }, transactionOptions);
-    return user.getAccount();
+    return user;
   }
 
   /**
@@ -249,7 +247,7 @@ class Repository {
    */
   async updateOne (userId: string, update: {}): Promise<void> {
     // get streams ids from the config that should be retrieved
-    let userAccountStreamsIds = Object.keys(this.systemStreamsSerializer.getAllAccountStreams());
+    let userAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
 
     // change password into hash if it exists
     if (update.password && !update.passwordHash) {
@@ -276,7 +274,7 @@ class Repository {
    * Deletes a user by id
    */
   async deleteOne (userId: string): Promise<void> {
-    const userAccountStreamsIds = Object.keys(this.systemStreamsSerializer.getAllAccountStreams());
+    const userAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
     await bluebird.fromCallback(cb => this.storage.database.deleteMany(
       this.storage.getCollectionInfo({ id: userId }), { streamIds: { $in: userAccountStreamsIds}}, cb));
   }
@@ -303,9 +301,8 @@ class Repository {
    */
   async checkUserPassword (userId: string, password: string): boolean {
     const currentPass = await this._getUserPasswordHash(userId);
-    
     if (currentPass == null)
-      throw errors.unknownResource('user', context.user.username);
+      throw errors.unknownResource('user');
 
     const isValid: boolean = await bluebird.fromCallback(cb =>
       encryption.compare(password, currentPass, cb));

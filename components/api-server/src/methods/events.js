@@ -159,7 +159,7 @@ module.exports = function (
    */
   function removeNotReadableAccountStreamsFromQuery (query) {
     // get streams ids from the config that should be retrieved
-    const userAccountStreams = (new SystemStreamsSerializer()).getAccountStreamsIdsForbiddenForReading();
+    const userAccountStreams = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
     query.streamIds = { ...query.streamIds, ...{ $nin: userAccountStreams } };
 
     return query;
@@ -452,16 +452,15 @@ module.exports = function (
    * @param boolean creation - if true - active streamId will be added by default
    */
   async function handleAccountStreams (username:string, context: object, creation: Boolean) {
-    const systemStreamsSerializerObj = new SystemStreamsSerializer();
     // get editable account streams
-    const editableAccountStreams = systemStreamsSerializerObj.getEditableAccountStreams();
+    const editableAccountStreams = SystemStreamsSerializer.getEditableAccountStreams();
 
     /**
      * Deny event editing if event has non editable core stream
      * @param string streamId 
      */
     function checkIfStreamIdIsNotEditable (streamId: string): boolean {
-      const nonEditableAccountStreamsIds = systemStreamsSerializerObj.getAccountStreamsIdsForbiddenForEditing();
+      const nonEditableAccountStreamsIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForEditing();
       return nonEditableAccountStreamsIds.includes(streamId);
     }
 
@@ -1222,8 +1221,8 @@ module.exports = function (
  */
   function handleAccountStreamsDeletion (event): Boolean {
     let allowedToDelete = true;
-    let forbidenUserAccountStreams = (new SystemStreamsSerializer()).getAccountStreamsIdsForbiddenForEditing();
-    const editableAccountStreams = Object.keys((new SystemStreamsSerializer()).getEditableAccountStreams());
+    let forbidenUserAccountStreams = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForEditing();
+    const editableAccountStreams = Object.keys(SystemStreamsSerializer.getEditableAccountStreams());
     if (event?.streamIds) {
       if (_.intersection(event.streamIds, forbidenUserAccountStreams).length > 0) {
         allowedToDelete = false;
