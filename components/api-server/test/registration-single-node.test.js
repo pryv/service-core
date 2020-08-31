@@ -8,10 +8,12 @@ const assert = require('chai').assert;
 const { describe, before, it, after } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
+const bluebird = require('bluebird');
 const Settings = require('../src/settings');
 const Application = require('../src/application');
 const { getConfig } = require('components/api-server/config/Config');
-const Repository = require('components/business/src/users/repository');
+const UsersRepository = require('components/business/src/users/repository');
+const User = require('components/business/src/users/User');
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('./test-helpers');
 const Notifications = require('components/api-server/src/Notifications');
@@ -78,17 +80,25 @@ describe('registration: single-node', () => {
       it('[KB3T] should respond with status 201', function() {
         assert.equal(res.status, 201);
       });
-      it('[VDA8] should respond with a username and apiEndpoint (TODO) in the request body', function() {
+      it('[VDA8] should respond with a username and apiEndpoint in the request body', async () => {
         assert.equal(res.body.username, registerBody.username);
-        //assert.equal(res.body.apiEndpoint, registerBody);
+        const usersRepository = new UsersRepository(app.storageLayer.events);
+        const user = await usersRepository.getAccountByUsername(registerBody.username, true);
+        const personalAccess = await bluebird.fromCallback(
+          (cb) => app.storageLayer.accesses.findOne({ id: user.id }, {}, null, cb));
+        let initUser = new User(registerBody);
+        initUser.token = personalAccess.token;
+        assert.equal(res.body.apiEndpoint, initUser.getApiEndpoint());
       });
       it('[LPLP] Valid access token exists in the response', async function () {
-        assert.exists(res.body.token);
+        assert.exists(res.body.apiEndpoint);
+        const token = res.body.apiEndpoint.split('//')[1].split('@')[0];
+
         // check that I can get events with this token
-        res = await request.get(`/${res.body.username}/events`)
-          .set('authorization', res.body.token);
-        assert.equal(res.status, 200);
-        assert.isTrue(res.body.events.length > 0);
+        res2 = await request.get(`/${res.body.username}/events`)
+          .set('authorization', token);
+        assert.equal(res2.status, 200);
+        assert.isTrue(res2.body.events.length > 0);
       });
       it('[M5XB] should store all the fields', function() {});
     });
@@ -163,9 +173,9 @@ describe('registration: single-node', () => {
         )
       );
       describe(
-        'when given an invalid languageCode parameter',
+        'when given an invalid language parameter',
         testInvalidParameterValidation(
-          'languageCode', 
+          'language', 
           {
             minLength: 1,
             maxLength: 5,
@@ -198,7 +208,7 @@ describe('registration: single-node', () => {
           assert.deepEqual(error.error.data, { username: registerBody.username });
         });
         it('[9L3R] should not store the user in the database twice', async function() {
-          const usersRepository = new Repository(app.storageLayer.events);
+          const usersRepository = new UsersRepository(app.storageLayer.events);
           const users = await usersRepository.getAll();
           assert.equal(users.length, 1);
           assert.equal(users[0].username, registerBody.username);

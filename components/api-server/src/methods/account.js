@@ -78,7 +78,10 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
       }
       next();
     } catch (err) {
-      // handles unknownResource and unexpected errors
+      if (err.id === ErrorIds.UnknownResource) {
+        return next(errors.unknownResource('user', context.user.username));
+      }
+      // handles unexpected errors
       return next(err);
     }
   }
@@ -228,7 +231,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     try {
       // form tasks to update the events
       const fieldsToUpdate = Object.keys(params.update);
-      const uniqueAccountStreamIds = (new SystemStreamsSerializer).getUniqueAccountStreamsIds();
+      const uniqueAccountStreamIds = SystemStreamsSerializer.getUniqueAccountStreamsIds();
       let i;
       for (i = 0; i < fieldsToUpdate.length; i++){
         let updateData = { content: params.update[fieldsToUpdate[i]]};

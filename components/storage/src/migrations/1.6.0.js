@@ -5,10 +5,12 @@
  * Proprietary and confidential
  */
 const bluebird = require('bluebird');
-const cuid = require('cuid');
+// const cuid = require('cuid');
+// const timestamp = require('unix-timestamp');
+
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const converters = require('../converters');
-const timestamp = require('unix-timestamp');
+const UserRepository = require('components/business/src/users/repository');
+const User = require('components/business/src/users/User');
 
 /**
  * v1.6.0: Account in events
@@ -19,28 +21,48 @@ const timestamp = require('unix-timestamp');
  */
 module.exports = async function (context, callback) {
   console.log('V1.5.22 => v1.6.0 Migration started');
-  
+
+  const UserEventsStorage = new (require('../user/Events'))(context.database);
   // get streams ids from the config that should be retrieved
-  const userAccountStreams = (new SystemStreamsSerializer()).getAllAccountStreams();
+  const userAccountStreams = SystemStreamsSerializer.getAllAccountStreams();
   const userAccountStreamIds = Object.keys(userAccountStreams);
 
   const eventsCollection = await bluebird.fromCallback(cb => context.database.getCollection({ name: 'events' }, cb));
 
-  let accountsMigrated = 0;
+  //let accountsMigrated = 0;
 
-  await migrateAccounts(userAccountStreams, userAccountStreamIds, eventsCollection);
-  await createIndex(userAccountStreams, userAccountStreamIds, eventsCollection);
+  await migrateAccounts(userAccountStreams, userAccountStreamIds, UserEventsStorage);
+  await createIndex(userAccountStreams, userAccountStreamIds, UserEventsStorage);
+  //await createDBAddIndexes(UserEventsStorage);
   console.log('V1.5.22 => v1.6.0 Migration finished');
   callback();
 
-  async function migrateAccounts(userAccountStreams, userAccountStreamIds, eventsCollection) {
+  async function migrateAccounts (userAccountStreams, userAccountStreamIds, UserEventsStorage) {
     
     const usersCollection = await bluebird.fromCallback(cb => context.database.getCollection({ name: 'users' }, cb));
 
     const cursor = await usersCollection.find({});
-    let requests = [];
+    let userRepository = new UserRepository(UserEventsStorage);
+
+    //let requests = [];
+    let shouldContinue: boolean;
+    let insertedUser;
+    let user;
     while (await cursor.hasNext()) {
-      const user = await cursor.next();
+      user = await cursor.next();
+      try {
+        if (!user.id && user._id) {
+          user.id = user._id;
+        }
+        const userObj: User = new User(user);
+        insertedUser = await userRepository.insertOne(userObj);
+      } catch (err) {
+        shouldContinue = isExpectedUniquenessError(err);
+        if (shouldContinue == false) {
+          throw new Error(err);
+        }
+      }
+      /*
       const eventsCreations = migrateAccount(user, userAccountStreams, userAccountStreamIds);
       accountsMigrated++;
       requests = requests.concat(eventsCreations);
@@ -48,14 +70,25 @@ module.exports = async function (context, callback) {
         //Execute per 1000 operations and re-init
         const res = await eventsCollection.insertMany(requests);
         requests = [];
+      }*/
+    }
+
+    // if (requests.length > 0) {
+    //   const res = await eventsCollection.insertMany(requests);
+    // }
+  }
+  function isExpectedUniquenessError (err): boolean {
+    if (typeof err.isDuplicateIndex === 'function') {
+      let fieldName = err.duplicateIndex();
+      if (['username', 'email'].includes(fieldName)) {
+        // one of the expected fields, so the migration could be continued
+        return true;
       }
     }
-
-    if (requests.length > 0) {
-      const res = await eventsCollection.insertMany(requests);
-    }
+    return false;
   }
 
+/*
   function migrateAccount(userParams, userAccountStreams, userAccountStreamIds) {
 
     // flatten storageUsed
@@ -105,14 +138,24 @@ module.exports = async function (context, callback) {
   function buildUniqueMongoField(streamId) {
     return streamId + '_unique';
   }
-
-  async function createIndex(userAccountStreams, userAccountStreamIds, eventsCollection) {
+*/
+  async function createIndex (userAccountStreams, userAccountStreamIds, UserEventsStorage) {
     console.log('Building new indexes');
+    
     for (let i=0; i<userAccountStreamIds.length; i++) {
       const streamId = userAccountStreamIds[i];
       const streamData = userAccountStreams[streamId];
       if (streamData.isUnique) {
-        await bluebird.fromCallback(cb => eventsCollection.createIndex({ [streamId + '_unique']: 1 }, {background: true}, cb));      
+        await bluebird.fromCallback(cb => UserEventsStorage.database.db.collection('events')
+          .createIndex({ [streamId + '__unique']: 1 },
+            {
+              unique: true,
+              partialFilterExpression: {
+                [streamId + '__unique']: { '$exists': true },
+                streamIds: 'unique'
+              },
+              background: true
+            }, cb));
       }
     }
   }

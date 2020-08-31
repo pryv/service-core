@@ -141,7 +141,7 @@ describe('UserRepository', () => {
   let username;
   before(() => {
     userId = cuid(); 
-    username = charlatan.App.name();
+    username = charlatan.App.name(5);
     return pryv.user(username, { id: userId });
   });
 

@@ -6,11 +6,11 @@
  */
 var commonFns = require('components/api-server/src/methods/helpers/commonFunctions'),
     utils = require('components/utils'),
-    encryption = utils.encryption,
     errors = require('components/errors').factory,
     methodsSchema = require('components/api-server/src/schema/authMethods'), 
     _ = require('lodash');
 const UserRepository = require('components/business/src/users/repository');
+const ErrorIds = require('components/errors/src/ErrorIds');
 /**
  * Auth API methods implementations.
  *
@@ -50,7 +50,10 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
       }
       next();
     } catch (err) {
-      // handles unknownResource and unexpected errors
+      if (err.id === ErrorIds.UnknownResource) {
+        return next(errors.unknownResource('user', context.user.username));
+      }
+      // handles unexpected errors
       return next(err);
     }
   }

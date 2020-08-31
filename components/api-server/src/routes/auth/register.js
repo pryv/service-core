@@ -18,10 +18,10 @@ const { Config, getConfig } = require('components/api-server/config/Config');
  */
 module.exports = function (expressApp: express$Application, app: Application) {
 
-  const config: Config = getConfig();
   const api: API = app.api;
+  const config: Config = getConfig();
   const isSingleNode = config.get('singleNode:isActive');
-
+  
   // POST /users: create a new user
   expressApp.post('/users', function (req: express$Request, res: express$Response, next: express$NextFunction) {
     if (isSingleNode) {

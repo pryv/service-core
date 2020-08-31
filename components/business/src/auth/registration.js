@@ -31,11 +31,10 @@ import type { ApiCallback } from 'components/api-server/src/API';
 class Registration {
   logger: any;
   storageLayer: any; // used for initUser
-  defaultStreamsSerializer: SystemStreamsSerializer = new SystemStreamsSerializer();
   serviceRegisterConn: ServiceRegister; // service-register connection
   userRepository: UserRepository; 
   hostname: string; // hostname that will be saved in service-register as a 'core' where user is registered
-  accountStreamsSettings: any = this.defaultStreamsSerializer.getFlatAccountStreamSettings();
+  accountStreamsSettings: any = SystemStreamsSerializer.getFlatAccountStreamSettings();
   servicesSettings: any; // settigns to get the email to send user welcome email
 
   constructor(logging, storageLayer, servicesSettings, serverSettings) {
@@ -68,6 +67,9 @@ class Registration {
     if (params.email && typeof params.email === 'string') {
       params.email = params.email.toLowerCase();
     }
+    //TODO IEVA, ask Ilia, because now validation is applied on params
+    // if I want to skip params editing, I have to change that method
+    context.user = new User(params);
     next();
   }
 
@@ -127,21 +129,6 @@ class Registration {
     );
   }
 
-  async prepareUserDataForSaving (
-    context: MethodContext,
-    params: mixed,
-    result: Result,
-    next: ApiCallback
-  ) {
-    // change parameter name
-    if (params.languageCode) {
-      params.language = params.languageCode;
-    }
-    delete params.languageCode;
-
-    next();
-  }
-
   /**
    * Validation and reservation in service-register
    * @param {*} context
@@ -160,14 +147,14 @@ class Registration {
       for (const [key, value] of Object.entries(this.accountStreamsSettings)) {
         // if key is set as required - add required validation
         if (value.isUnique && value.isUnique === true) {
-          uniqueFields[key] = params[key];
+          uniqueFields[key] = context.user[key];
         }
       }
 
       // do the validation and reservation in service-register
       await this.serviceRegisterConn.validateUser(
-        params.username,
-        params.invitationToken,
+        context.user.username,
+        context.user.invitationToken,
         uniqueFields,
         this.hostname
       );
@@ -187,36 +174,39 @@ class Registration {
    * @param {*} result
    * @param {*} next
    */
-  async validateThatUserDoesNotExistInLocalDb(
+  async deletePartiallySavedUserIfAny(
     context: MethodContext,
     params: mixed,
     result: Result,
     next: ApiCallback
   ) {
     try {
-      // TODO IEVA -verify this logic with Ilia, because there
-      // could be additional unique fields
-      const existingUser = await this.userRepository.checkUserFieldsUniqueness(params);
-      // if any of unique fields were already saved, it means that there were an error
-      // saving in service register (above there is a check that email does not exist in
-      // service register)
-      if (existingUser?.content) {
-        // skip all steps exept registrattion in service-register and welcome email
-        context.skip = true;
+      // assert that we have obtained a lock on register, so any conflicting fields here 
+      // would be failed registration attempts that partially saved user data.
+      const existingUsers = await this.userRepository.findConflictingUniqueFields(context.user.getUniqueFields());
 
-        //append context with the same values that would be saved by createUser function
-        context.user = await this.userRepository.getById(existingUser.userId, true);
+      // if any of unique fields were already saved, it means that there was an error
+      // saving in service register (before this step there is a check that unique fields 
+      // don't exist in service register)
 
-        // set result as current username
-        result.username = context.user.username;
-        this.logger.error(
-          `User with id ${
-            existingUser.id
-          } tried to register and application is skipping the user creation on service-core db`
-        );
+      if (existingUsers.length > 0) {
+        // DELETE users with conflicting unique properties
+        let userIds = existingUsers.map(conflictingEvent => conflictingEvent.userId);
+        const distinctUserIds = new Set(userIds);
+
+        for (let userId of distinctUserIds){
+          // assert that unique fields are free to take
+          // so if we get conflicting ones here, we can simply delete them
+          await this.userRepository.deleteOne(userId);
+
+          this.logger.error(
+            `User with id ${
+            userId
+            } was deleted because it was not found on service-register but uniqueness conflicted on service-core`
+          );
+        }
       }
     } catch (error) {
-      console.log(error, 'error');
       return next(errors.unexpectedError(error));
     }
     next();
@@ -235,6 +225,7 @@ class Registration {
     params.passwordHash = 'changeMe';
     params.language = 'en';
     params.email = this.POOL_USERNAME_PREFIX + uniqueId + '@email';
+    context.user = new User(params);
     next();
   }
 
@@ -252,35 +243,24 @@ class Registration {
     result,
     next: ApiCallback
   ) {
-    if (context.skip === true) {
-      return next();
-    }
-
     // if it is testing user, skip registration process
-    if (params.username === 'recla') {
+    if (context.user.username === 'recla') {
       result.id = 'dummy-test-user';
-      context.user = _.defaults({ id: result.id }, params);
+      context.user.id = result.id;
       return next();
     }
 
     try {
-      context.user = {
-        username: params.username
-      };
-      let user = {};
       if (context.calledMethodId === 'system.createPoolUser') {
-        user = await this.userRepository.insertOne(
-          params
-        );
+        context.user = await this.userRepository.insertOne( context.user );
       } else {
-        user = await this.userRepository.insertOne(
-          params,
+        context.user = await this.userRepository.insertOne(
+          context.user,
           this.storageLayer.sessions,
           this.storageLayer.accesses,
         );
       }
 
-      context.user = { ...context.user, ...user };
       context.user.host = { name: this.hostname };
 
       // form the result for system call or full registration call
@@ -288,7 +268,7 @@ class Registration {
         result.id = context.user.id;
       } else {
         result.username = context.user.username;
-        result.token = context.user.token;
+        result.apiEndpoint = context.user.getApiEndpoint();
       }
       next();
     } catch (err) {
@@ -311,10 +291,9 @@ class Registration {
     next: ApiCallback
   ) {
     try {
-      const defaultStreamsSerializer = this.defaultStreamsSerializer;
       // get streams ids from the config that should be retrieved
-      const userStreamsIds = defaultStreamsSerializer.getIndexedAccountStreams();
-      const uniqueStreamsIds = defaultStreamsSerializer.getUniqueAccountStreamsIds();
+      const userStreamsIds = SystemStreamsSerializer.getIndexedAccountStreams();
+      const uniqueStreamsIds = SystemStreamsSerializer.getUniqueAccountStreamsIds();
 
       // form data that should be sent to service-register
       // some default values and indexed/uinique fields of the system
@@ -322,7 +301,7 @@ class Registration {
         user: {
           id: context.user.id
         },
-        host: context.user.host
+        host: { name: this.hostname },
       };
       Object.keys(userStreamsIds).forEach(streamId => {
         if (context.user[streamId] != null) userData.user[streamId] = context.user[streamId];

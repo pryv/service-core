@@ -27,7 +27,6 @@ module.exports = function (api, logging, storageLayer, servicesSettings, serverS
     // data validation methods
     registration.prepareUserData,
     registration.loadCustomValidationSettings.bind(registration),
-    registration.prepareUserDataForSaving,
     // user registration methods
     registration.createUser.bind(registration),
     registration.sendWelcomeMail.bind(registration),
@@ -50,9 +49,9 @@ module.exports = function (api, logging, storageLayer, servicesSettings, serverS
     result.reserved = false;
     try {
       const userRepository = new UserRepository(storageLayer.events);
-      const existingUser = await userRepository.checkUserFieldsUniqueness({ username: params.username});
+      const existingUsers = await userRepository.findConflictingUniqueFields({ username: params.username});
 
-      if (existingUser?.content) {
+      if (existingUsers.length > 0) {
         result.reserved = true;
         return next(errors.itemAlreadyExists('username', { username: params.username }));
       }

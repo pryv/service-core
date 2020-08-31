@@ -57,8 +57,8 @@ describe('webhooks', function() {
       webhooks: {
         minIntervalMs: 10,
       },
-      "openSource": {
-        "isActive": false
+      openSource: {
+        isActive: false
       }
     });
   });

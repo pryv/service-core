@@ -35,7 +35,6 @@ module.exports = function (
   systemAPI.register('system.createUser',
     registration.prepareUserData,
     commonFns.getParamsValidation(methodsSchema.createUser.params),
-    registration.prepareUserDataForSaving,
     registration.createUser.bind(registration),
     registration.sendWelcomeMail.bind(registration),
     );

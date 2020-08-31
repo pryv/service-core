@@ -23,7 +23,7 @@
     }
   }, 
   "reporting": {
-    "licenseName": "ieva-dev-license",
+    "licenseName": "pryv.io-dev-license",
     "templateVersion": "1.0.0"
   },
   "tcpMessaging": {

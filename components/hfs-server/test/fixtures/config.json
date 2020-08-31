@@ -13,7 +13,8 @@
     }
   }, 
   "mongodb": {
-    "host": "localhost"
+    "host": "localhost",
+    "name": "pryv-node-test"
   }, 
   "influxdb": {
     "host": "localhost"

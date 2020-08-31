@@ -369,14 +369,15 @@ function setup(configDefault) {
   var instance = convict(config.schema);
   var filePath = instance.get('config') ||
                  configDefault ||
-                 'config/' + instance.get('env') + '.json';
-
+    '../api-server/config/' + instance.get('env') + '.json';
+  
   loadFile(filePath);
 
   var overridesFilePath = instance.get('configOverrides');
   if (overridesFilePath) {
     loadFile(overridesFilePath);
-  } 
+  }
+
   if (!instance.get('env') === 'test') {
     instance.validate();
   }

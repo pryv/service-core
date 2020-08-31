@@ -54,7 +54,7 @@ module.exports = {
         minLength: 1,
         maxLength: 99,
       }),
-      languageCode: helpers.language,
+      language: helpers.language,
     }, {
       required: ['password'],
       messages: {
@@ -134,7 +134,7 @@ module.exports = {
             code: ErrorIds.Invalidreferer
           }
         },
-        languageCode: {
+        language: {
           MAX_LENGTH: {
             message: ErrorMessages[ErrorIds.InvalidLanguage],
             code: ErrorIds.InvalidLanguage

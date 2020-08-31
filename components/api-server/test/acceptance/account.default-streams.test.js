@@ -149,7 +149,6 @@ describe("[841C] Account with default-streams", function () {
         assert.equal(res.status, 200);
       });
       it('[JUHR] Should return account information in the structure that is defined in default streams and only active events are returned', async () => {
-        //const systemStreamsSerializer = new SystemStreamsSerializer();
         const usernameAccountEvent = allVisibleAccountEvents.filter(event => event.streamIds.includes('username'))[0];
         const emailAccountEvent = allVisibleAccountEvents.filter(event => event.streamIds.includes('email'))[0];
         const languageAccountEvent = allVisibleAccountEvents.filter(event => event.streamIds.includes('language'))[0];

@@ -20,6 +20,7 @@ const rimraf = require('rimraf');
 const _ = require('lodash');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 const UserRepository = require('components/business/src/users/repository');
+const User = require('components/business/src/users/User');
 const charlatan = require('charlatan');
 
 // users
@@ -33,9 +34,11 @@ exports.resetUsers = async () => {
   const userRepository = new UserRepository(storage.user.events);
   
   let i;
+  let userObj: User;
   for (i = 0; i < users.length; i++){
     let user = Object.assign({}, users[i]);
-    await userRepository.insertOne(user);
+    userObj = new User(user);
+    await userRepository.insertOne(userObj);
   }
 };
 //TODO IEVA - do I still need this?
@@ -46,11 +49,13 @@ exports.resetUsersWithAdditionalProperties = async () => {
   const userRepository = new UserRepository(storage.user.events);
 
   let i;
+  let userObj: User;
   for (i = 0; i < users.length; i++) {
     let user = Object.assign({}, users[i]);
     user.insurancenumber = charlatan.Number.number(3);
     user.phoneNumber = charlatan.Number.number(3);
-    await userRepository.insertOne(user);
+    userObj = new User(user);
+    await userRepository.insertOne(userObj);
   }
 };
 
@@ -100,8 +105,7 @@ const events = exports.events = require('./data/events');
 exports.resetEvents = function (done, user) {
   // deleteData(storage.user.events, user || defaultUser, events, done);
   user = user || defaultUser;
-  const systemStreamsSerializerObj = new SystemStreamsSerializer();
-  const allAccountStreamIds = Object.keys(systemStreamsSerializerObj.getAllAccountStreams());
+  const allAccountStreamIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
 
   async.series([
     storage.user.events.removeMany.bind(storage.user.events, 
@@ -246,10 +250,11 @@ exports.restoreFromDump = function (versionNum, mongoFolder, callback) {
   if (! fs.existsSync(sourceDBFolder) || ! fs.existsSync(sourceFilesArchive)) {
     throw new Error('Missing source dump or part of it at ' + sourceFolder);
   }
-
+  //TODO IEVA - ask Ilia advice
   async.series([
     clearAllData,
     childProcess.exec.bind(null, mongorestore +
+      ' --nsFrom "pryv-node.*" --nsTo "pryv-node-test.*" '+
         (settings.database.authUser ?
             ' -u ' + settings.database.authUser + ' -p ' + settings.database.authPassword : '') +
         ' --host ' + settings.database.host + ':' + settings.database.port +
