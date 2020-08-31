@@ -56,6 +56,13 @@ factory.invalidCredentials = function (message?: string) {
     });
 };
 
+factory.invalidAuthorizationKey = function (message: string, status: ?number) {
+  return new APIError(ErrorIds.InvalidAuthorizationKey, message || 'Provided authorization token is invalid', {
+    httpStatus: status || 401,
+    dontNotifyAirbrake: true
+  });
+};
+
 factory.invalidEventType = function (type: string) {
   return new APIError(
     ErrorIds.InvalidEventType, 

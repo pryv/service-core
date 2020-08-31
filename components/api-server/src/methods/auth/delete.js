@@ -26,6 +26,7 @@ module.exports = function(
 
   api.register(
     'auth.delete',
+    deletion.checkIfAuthorized.bind(deletion),
     deletion.validateUserExists.bind(deletion),
     deletion.validateUserFilepaths.bind(deletion),
     deletion.deleteUserFiles.bind(deletion),

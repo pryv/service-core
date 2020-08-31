@@ -23,6 +23,9 @@ module.exports = function(expressApp: express$Application, app: Application) {
     res: express$Response,
     next: express$NextFunction
   ) {
+    context.username = req.params.username;
+    context.authorizationKey = req.headers.authorization;
+
     api.call(
       'auth.delete',
       context,

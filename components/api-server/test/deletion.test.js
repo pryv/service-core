@@ -27,6 +27,7 @@ const {
 const bluebird = require('bluebird');
 
 let app;
+let authKey;
 let username1;
 let username2;
 let request;
@@ -71,6 +72,8 @@ describe('DELETE /users/:username', () => {
 
         username1 = charlatan.Internet.userName();
         username2 = charlatan.Internet.userName();
+
+        authKey = settings.get('auth.adminAccessKey').str();
       });
       after(async function() {
         await mongoFixtures.context.cleanEverything();
@@ -82,7 +85,7 @@ describe('DELETE /users/:username', () => {
         before(async function() {
           await initiateUserWithData(username1);
           await initiateUserWithData(username2);
-          res = await request.delete(`/users/${username1}`);
+          res = await request.delete(`/users/${username1}`).set('Authorization', authKey);
         });
         it('should respond with 200', function() {
           assert.equal(res.status, 200);
@@ -158,7 +161,7 @@ describe('DELETE /users/:username', () => {
       });
       describe('when given not existing username', function() {
         before(async function() {
-          res = await request.delete(`/users/${username1}`);
+          res = await request.delete(`/users/${username1}`).set('Authorization', authKey);
         });
         it('should respond with 404', function() {
           assert.equal(res.status, 404);

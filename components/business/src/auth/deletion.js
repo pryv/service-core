@@ -30,6 +30,18 @@ class Deletion {
     this.userRepository = new UserRepository(this.storageLayer.events);
   }
 
+  checkIfAuthorized(
+    context: MethodContext,
+    params: mixed,
+    result: Result,
+    next: ApiCallback
+  ) {
+    if(this.settings.get('auth.adminAccessKey').str() !== context.authorizationKey) {
+      return next(errors.invalidAuthorizationKey());
+    }
+    next();
+  }
+
   async validateUserExists(
     context: MethodContext,
     params: mixed,
