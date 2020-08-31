@@ -174,14 +174,18 @@ class Registration {
    * @param {*} result
    * @param {*} next
    */
-  async validateThatUserDoesNotExistInLocalDb(
+  async deletePartiallySavedUserIfAny(
     context: MethodContext,
     params: mixed,
     result: Result,
     next: ApiCallback
   ) {
     try {
-      const existingUser = await this.userRepository.checkUserFieldsUniqueness(context.user.getAccount());
+      // assert that we have obtained a lock on register, so any conflicting fields here 
+      // would be failed registration attempts that partially saved user data.
+      const existingUser = await this.userRepository.findConflictingUniqueFields(context.user.getAccount());
+
+      
       // if any of unique fields were already saved, it means that there was an error
       // saving in service register (before this step there is a check that unique fields 
       // don't exist in service register)

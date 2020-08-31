@@ -49,7 +49,7 @@ module.exports = function (api, logging, storageLayer, servicesSettings, serverS
     result.reserved = false;
     try {
       const userRepository = new UserRepository(storageLayer.events);
-      const existingUser = await userRepository.checkUserFieldsUniqueness({ username: params.username});
+      const existingUser = await userRepository.findConflictingUniqueFields({ username: params.username});
 
       if (existingUser?.content) {
         result.reserved = true;
