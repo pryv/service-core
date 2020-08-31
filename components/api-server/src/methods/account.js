@@ -78,7 +78,10 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
       }
       next();
     } catch (err) {
-      // handles unknownResource and unexpected errors
+      if (err.id === ErrorIds.UnknownResource) {
+        return next(errors.unknownResource('user', context.user.username));
+      }
+      // handles unexpected errors
       return next(err);
     }
   }
