@@ -151,11 +151,12 @@ class Repository {
     Object.keys(fields).forEach(key => {
       query['$or'].push({ [`${key}__unique`]: fields[key] });
     });
-    const existingUser = await bluebird.fromCallback(
-      (cb) => this.storage.database.findOne(
+
+    const existingUsers = await bluebird.fromCallback(
+      (cb) => this.storage.database.find(
         this.storage.getCollectionInfoWithoutUserId(),
-        query, null, cb));
-    return existingUser;
+        query, {}, cb));
+    return existingUsers;
   }
 
   /**

@@ -31,6 +31,7 @@ class User {
   apiEndpoint: ?string;
   accountStreamsSettings: ?Array<{}>;
   accountFields: ?Array<string> = [];
+  uniqueAccountFields: ?Array<string> = [];
 
   constructor (params: {
     systemStreamsSerializer: {},
@@ -75,6 +76,10 @@ class User {
     return _.pick(this, _.concat(this.accountFields, ['id']));
   }
 
+  getUniqueFields () {
+    return _.pick(this, this.uniqueAccountFields);
+  }
+
   getApiEndpoint () {
     if (this.apiEndpoint != null) return this.apiEndpoint;
     const apiFormat = config.get('service:api');
@@ -88,6 +93,9 @@ function buildAccountFields (user: User): void {
   
   Object.keys(userAccountStreams).forEach(streamId => {
     user.accountFields.push(streamId);
+    if (userAccountStreams[streamId].isUnique == true) {
+      user.uniqueAccountFields.push(streamId);
+    }
   });
 }
 

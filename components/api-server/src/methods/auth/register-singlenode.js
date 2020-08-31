@@ -49,9 +49,9 @@ module.exports = function (api, logging, storageLayer, servicesSettings, serverS
     result.reserved = false;
     try {
       const userRepository = new UserRepository(storageLayer.events);
-      const existingUser = await userRepository.checkUserFieldsUniqueness({ username: params.username});
+      const existingUsers = await userRepository.checkUserFieldsUniqueness({ username: params.username});
 
-      if (existingUser?.content) {
+      if (existingUsers.length > 0) {
         result.reserved = true;
         return next(errors.itemAlreadyExists('username', { username: params.username }));
       }

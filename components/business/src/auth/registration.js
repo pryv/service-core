@@ -181,21 +181,27 @@ class Registration {
     next: ApiCallback
   ) {
     try {
-      const existingUser = await this.userRepository.checkUserFieldsUniqueness(context.user.getAccount());
+      const existingUsers = await this.userRepository.checkUserFieldsUniqueness(context.user.getUniqueFields());
       // if any of unique fields were already saved, it means that there was an error
       // saving in service register (before this step there is a check that unique fields 
       // don't exist in service register)
-      if (existingUser?.content) {
-        // DELETE user
-        // assert that unique fields are free to take
-        // so if we get conflicting ones here, we can simply delete them
-        await this.userRepository.deleteOne(existingUser.userId);
+      console.log(existingUsers, 'existingUserssssss', existingUsers.length);
+      if (existingUsers.length > 0) {
+        // DELETE users with conflicting unique properties
+        let userIds = existingUsers.map(conflictingEvent => conflictingEvent.userId);
+        const distinctUserIds = new Set(userIds);
 
-        this.logger.error(
-          `User with id ${
-          existingUser.userId
-          } tried to register and application is skipping the user creation on service-core db`
-        );
+        for (let userId of distinctUserIds){
+          // assert that unique fields are free to take
+          // so if we get conflicting ones here, we can simply delete them
+          await this.userRepository.deleteOne(userId);
+
+          this.logger.error(
+            `User with id ${
+            userId
+            } was deleted because it was not found on service-register but uniqueness conflicted on service-core`
+          );
+        }
       }
     } catch (error) {
       return next(errors.unexpectedError(error));
