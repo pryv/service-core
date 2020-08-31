@@ -10,7 +10,7 @@ const bluebird = require('bluebird');
 const rimraf = require('rimraf');
 const fs = require('fs');
 const path = require('path');
-const business = require('components/business');
+const InfluxConnection = require('components/business/src/series/influx_connection');
 const UserRepository = require('components/business/src/users/repository');
 const errors = require('components/errors').factory;
 
@@ -114,8 +114,11 @@ class Deletion {
     result: Result,
     next: ApiCallback
   ) {
-    const influx = new business.series.InfluxConnection(
-      { host: 'localhost' },
+    const host = this.settings.get('influxdb.host').str(); 
+    const port = this.settings.get('influxdb.port').num();
+
+    const influx = new InfluxConnection(
+      {host: host, port: port},
       this.logger
     );
 

@@ -43,6 +43,10 @@
     "isActive": true,
     "publicUrl": "http://localhost/"
   },
+  "influxdb": {
+    "host": "127.0.0.1", 
+    "port": 8086
+  },
   "systemStreams": {
     "custom": {
       "account": [
