@@ -74,62 +74,6 @@ class Registration {
   }
 
   /**
-   * Append validation settings to validation schema and save new object to the context
-   * @param {*} context
-   * @param {*} params
-   * @param {*} result
-   * @param {*} next
-   */
-  loadCustomValidationSettings (
-    context: MethodContext,
-    params: mixed,
-    result: Result,
-    next: ApiCallback
-  ) {
-    let validationSchema = Object.assign({}, methodsSchema.register.params);
-
-    // iterate account stream settings and APPEND validation with relevant properties
-    // etc additional required fields or regex validation
-    for (const [field, value] of Object.entries(this.accountStreamsSettings)) {
-      // if field is set as required - add required validation
-      if (
-        value.isRequiredInValidation &&
-        value.isRequiredInValidation == true &&
-        !methodsSchema.register.params.required.includes(field)
-      ) {
-        validationSchema.required.push(field);
-        //TODO IEVA - the error message of required property by z-schema is still a hell
-      }
-
-      // if field has type valiadtion - add regex type rule
-      // etc : '^(series:)?[a-z0-9-]+/[a-z0-9-]+$'
-      if (
-        value.regexValidation &&
-        !methodsSchema.register.params.properties.hasOwnProperty(field)
-      ) {
-        validationSchema.properties[field] = string({
-          pattern: value.regexValidation
-        });
-
-        // if there is an error message and code specified, set those too
-        if (
-          value.regexError &&
-          !methodsSchema.register.params.messages.hasOwnProperty(field)
-        ) {
-          validationSchema.messages[field] = { PATTERN: value.regexError };
-        }
-      }
-    }
-
-    commonFns.getParamsValidation(validationSchema)(
-      context,
-      params,
-      result,
-      next
-    );
-  }
-
-  /**
    * Validation and reservation in service-register
    * @param {*} context
    * @param {*} params
