@@ -155,7 +155,7 @@ describe('registration: cluster', function() {
       it('[QV8Z] should respond with status 201', () => {
         assert.equal(res.status, 201);
       });
-      it('[TCOM] should respond with the username and apiEndpoint (TODO)', async () => {
+      it('[TCOM] should respond with the username and apiEndpoint', async () => {
         const body = res.body;
         assert.equal(body.username, userData.username);
         const usersRepository = new UsersRepository(app.storageLayer.events);
@@ -186,7 +186,7 @@ describe('registration: cluster', function() {
         const secondRegistrationRequest = buildRegistrationRequest(userData);
         assert.deepEqual(secondRegistrationSent, secondRegistrationRequest, ' second registration request is invalid');
       });
-      it('should replace first user events in the storage', () => {
+      it('[A2EM] should replace first user events in the storage', () => {
         const firstEmail = firstUser.events.filter(e => e.type === 'email/string')[0].content;
         const secondEmail = secondUser.events.filter(e => e.type === 'email/string')[0].content;
         assert.equal(firstEmail, oldEmail);
@@ -531,6 +531,55 @@ describe('registration: cluster', function() {
         });
       });
     });
+
+    describe('when custom account streams validation exists', () => {
+      describe('[F69W] when email is set as required and it is not set in the request', () => {
+        before(async () => {
+          userData = defaults();
+          // remove email from the request
+          delete userData.email;
+          res = await request.post(methodPath).send(userData);
+        });
+        it('[UMWB] should respond with status 400', () => {
+          assert.equal(res.status, 400);
+        });
+        it('[8RDA] should respond with the correct error', () => {
+          const error = res.body.error;
+          assert.equal(error.id, ErrorIds.InvalidParametersFormat);
+          assert.deepEqual(error.data, [
+            {
+              code: ErrorIds.EmailRequired,
+              message: ErrorMessages[ErrorIds.EmailRequired],
+              path: '#/',
+              param: 'email'
+            }
+          ]);
+        });
+      });
+      describe('[JD3A] when field does not match custom validation settings', () => {
+        before(async () => {
+          userData = userData = defaults();
+          userData.insurancenumber = 'abc';
+          res = await request.post(methodPath).send(userData);
+        });
+        it('[8W22] should respond with status 400', () => {
+          assert.equal(res.status, 400);
+        });
+        it('[GBKD] should respond with the correct error', () => {
+          const error = res.body.error;
+          assert.equal(error.id, ErrorIds.InvalidParametersFormat);
+          assert.deepEqual(error.data, [
+            {
+              code: 'cool-error',
+              message: 'Cool error',
+              path: '#/insurancenumber',
+              param: 'insurancenumber'
+            }
+          ]);
+        });
+      });
+    });
+
   });
   describe('GET /:username/check', function() {
     function path(username) {
