@@ -84,6 +84,11 @@ class User {
     if (this.apiEndpoint != null) return this.apiEndpoint;
     const apiFormat = config.get('service:api');
     this.apiEndpoint = apiFormat.replace('{username}', this.username);
+    if (this.token) {
+      let endpointElements = this.apiEndpoint.split('//');
+      endpointElements[1] = `${this.token}@${endpointElements[1]}`;
+      this.apiEndpoint = endpointElements.join('//');
+    }
     return this.apiEndpoint;
   }
 }

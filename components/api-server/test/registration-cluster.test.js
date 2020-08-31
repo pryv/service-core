@@ -36,7 +36,7 @@ function defaults() {
 }
 
 function buildUser(userData) {
-  const user = new User({ account: userData });
+  const user = new User(userData);
   return user;
 }
 
@@ -155,10 +155,17 @@ describe('registration: cluster', function() {
       it('[QV8Z] should respond with status 201', () => {
         assert.equal(res.status, 201);
       });
-      it('[TCOM] should respond with the username and apiEndpoint (TODO)', () => {
+      it('[TCOM] should respond with the username and apiEndpoint (TODO)', async () => {
         const body = res.body;
         assert.equal(body.username, userData.username);
-        //assert.equal(body.apiEndpoint, buildUser(userData).getApiEndpoint());
+        const usersRepository = new UsersRepository(app.storageLayer.events);
+        const user = await usersRepository.getAccountByUsername(userData.username, true);
+        const personalAccess = await bluebird.fromCallback(
+          (cb) => app.storageLayer.accesses.findOne({ id: user.id }, {}, null, cb));
+
+        let initUser = new User(userData);
+        initUser.token = personalAccess.token;
+        assert.equal(body.apiEndpoint, initUser.getApiEndpoint());
       });
       it('[7QB6] should send the right data to register', () => {
         const firstValidationSent = serviceRegisterRequests[0];

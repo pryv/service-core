@@ -185,7 +185,7 @@ class Registration {
       // if any of unique fields were already saved, it means that there was an error
       // saving in service register (before this step there is a check that unique fields 
       // don't exist in service register)
-      console.log(existingUsers, 'existingUserssssss', existingUsers.length);
+
       if (existingUsers.length > 0) {
         // DELETE users with conflicting unique properties
         let userIds = existingUsers.map(conflictingEvent => conflictingEvent.userId);
@@ -265,9 +265,7 @@ class Registration {
         result.id = context.user.id;
       } else {
         result.username = context.user.username;
-        if (context.user.token != null) {
-          result.token = context.user.token;
-        }
+        result.apiEndpoint = context.user.getApiEndpoint();
       }
       next();
     } catch (err) {
