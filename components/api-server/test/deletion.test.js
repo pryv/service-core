@@ -36,7 +36,7 @@ let usersRepository;
 let influx;
 let influxRepository;
 
-describe('DELETE /users/:username', () => {
+describe.only('DELETE /users/:username', () => {
   const settingsToTest = [[true, false], [false, false], [true, true]];
   for (let settingToTest of settingsToTest) {
     describe(`singleNode:isActive = ${settingToTest[0]}, openSource:isActive = ${settingToTest[1]}`, function() {
@@ -170,8 +170,6 @@ describe('DELETE /users/:username', () => {
 
 async function initiateUserWithData(username: string) {
   const user = await mongoFixtures.user(username);
-
-  await usersRepository.insertOne(user);
 
   const stream = await user.stream({ id: charlatan.Lorem.word() });
   await stream.event({

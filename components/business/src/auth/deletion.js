@@ -37,7 +37,7 @@ class Deletion {
     next: ApiCallback
   ) {
     const user = await this.userRepository.getById(params.username);
-    if (!user || !user.userId) {
+    if (!user || !user.id) {
       return next(errors.unknownResource('user', params.username));
     }
     context.user = user;
@@ -73,7 +73,7 @@ class Deletion {
 
     // Let's check if we can change into and write into the user's paths:
     const inaccessibleDirectory = findNotAccessibleDir(
-      paths.map((p) => path.join(p, context.user.userId))
+      paths.map((p) => path.join(p, context.user.id))
     );
     if (inaccessibleDirectory) {
       const error = new Error(
@@ -96,7 +96,7 @@ class Deletion {
       this.settings.get('eventFiles.previewsDirPath').str(),
     ];
 
-    const userPaths = paths.map((p) => path.join(p, context.user.userId));
+    const userPaths = paths.map((p) => path.join(p, context.user.id));
     const opts = {
       disableGlob: true,
     };
@@ -153,6 +153,8 @@ class Deletion {
             () => {}
           )
         );
+
+      await this.userRepository.deleteOne(context.user.id);
 
       await Promise.all(drops);
 
