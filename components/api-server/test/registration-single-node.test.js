@@ -28,6 +28,7 @@ describe('registration: single-node', () => {
     before(async function() {
       const settings = await Settings.load();
       const config = getConfig();
+      await config.init();
       config.set('singleNode:isActive', true);
       config.set('openSource:isActive', false);
       config.set('systemStreams:custom', null);

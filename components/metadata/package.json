@@ -6,6 +6,6 @@
   "author": "Pryv S.A. <support@pryv.com> (http://pryv.com)",
   "main": "src/index.js",
   "scripts": {
-    "test": "../../node_modules/.bin/mocha -R dot 'test/**/*.test.js'"
+    "test": "NODE_ENV=test ../../node_modules/.bin/mocha -R dot 'test/**/*.test.js' --exit"
   }
 }

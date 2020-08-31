@@ -12,6 +12,7 @@
 /* global describe, it */
 const { should } = require('../../test-helpers');
 
+const { getConfig } = require('components/api-server/config/Config');
 const influx = require('influx');
 
 const series = require('../../../src/index.js').series; 
@@ -22,6 +23,11 @@ const userStorage = require('components/test-helpers').dependencies.storage.user
 describe('Manage InfluxDB data (business.series.*)', function () {
   const connection = new influx.InfluxDB({
     host: 'localhost'});
+
+  before(async () => {
+    const config = getConfig();
+    await config.init();
+  });
   
   // TODO beforeEach delete the measurement
   

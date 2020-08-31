@@ -20,6 +20,8 @@ const awaiting = require('awaiting');
 const UserRepository = require('components/business/src/users/repository');
 const User = require('components/business/src/users/User');
 
+const { getConfig } = require('components/api-server/config/Config');
+
 const { 
   spawnContext, produceMongoConnection, 
   produceInfluxConnection, produceStorageLayer } = require('./test-helpers');
@@ -66,6 +68,8 @@ describe('Storing data in a HF series', function() {
 
   let database, pryv;
   before(async function () {
+    const config = getConfig();
+    await config.init();
     database = await produceMongoConnection();
     pryv = databaseFixture(database);
   });

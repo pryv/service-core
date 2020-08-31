@@ -12,7 +12,7 @@ const components = require('./components');
 let config = null;
 
 function getConfig(): Config {
-  if (config == null) { // throw new Error('initialize the config before using it!');
+  if (config == null) {
     config = new Config();
   }
   return config;
@@ -23,13 +23,15 @@ export type { Config };
 
 class Config {
 
-  store;
-  logger;
-  isReady: boolean;
-  notifier;
+  store: {};
+
+  isInitialized: boolean = false;
+  isInitializing: boolean = false;
+
+  logger: {};
+  notifier: {};
 
   constructor() {
-    this.isReady = false;
     // TODO set logger
 
     const store = new nconf.Provider();
@@ -50,26 +52,35 @@ class Config {
       configFile = 'config/development.json';
     }
     store.file({ file: configFile });
-    loadComponents(store);
     this.store = store;
+    loadComponents(this.store);
   }
 
   async init() {
+    if (this.isInitializing) {console.log('KABOOM'); return new Error('config.init() called twice.')};
+    this.isInitializing = true;
     await loadAsyncComponents(this.store);
-    this.isReady = true;
+    this.isInitialized = true;
+    this.isInitializing = false;
   }
 
   get(key: string): any {
+    if (! this.isInitialized && ! isTest()) return new Error('calling config.get() before it is initialized.');
     return this.store.get(key);
   }
 
   set(key: string, value: string): void {
+    if (! this.isInitialized && ! isTest()) return new Error('calling config.set() before it is initialized.');
     this.store.set(key, value);
   }
 
   getLogger(prefix: string): any {
     return this.logger;
   }
+}
+
+function isTest(): boolean {
+  return process.env.NODE_ENV === 'test'
 }
 
 function loadComponents(store: any): any {
@@ -86,5 +97,3 @@ async function loadAsyncComponents(store: any): any {
   }
   return store;
 }
-
-

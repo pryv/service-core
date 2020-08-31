@@ -17,7 +17,7 @@ const { Database,  } = require('components/storage');
 const NullLogger = require('components/utils/src/logging').NullLogger;
 const storage = require('components/storage');
 
-
+const { getConfig } = require('components/api-server/config/Config');
 
 import type { MongoDbSettings } from '../../../src/configuration';
 const MongoDB = require('../../../src/connection/mongodb');
@@ -29,6 +29,10 @@ const { databaseFixture } = require('components/test-helpers');
 
 
 describe('Connection/MongoDB', () => {
+
+  before(async () => {
+    const config = getConfig();
+  });
 
     const settings: MongoDbSettings = {
     host: 'localhost',

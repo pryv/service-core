@@ -61,6 +61,7 @@ describe('registration: cluster', function() {
   before(async function () {
     settings = await Settings.load();
     config = getConfig();
+    await config.init();
     config.set('singleNode:isActive', false);
     config.set('openSource:isActive', false);
     hostname = config.get('server:hostname');
