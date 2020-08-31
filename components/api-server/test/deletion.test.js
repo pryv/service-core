@@ -81,6 +81,10 @@ describe('DELETE /users/:username', () => {
           app.storageLayer.eventFiles.removeAll(cb)
         );
       });
+      it('should respond with 401 given invalid authorization key', async function() {
+        res = await request.delete(`/users/${username1}`).set('Authorization', 'somekey');
+        assert.equal(res.status, 401);
+      });
       describe('when given existing username', function() {
         before(async function() {
           await initiateUserWithData(username1);

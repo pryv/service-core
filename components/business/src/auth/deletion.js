@@ -36,7 +36,7 @@ class Deletion {
     result: Result,
     next: ApiCallback
   ) {
-    if(this.settings.get('auth.adminAccessKey').str() !== context.authorizationKey) {
+    if(this.settings.get('auth.adminAccessKey').str() !== context.authorizationHeader) {
       return next(errors.invalidAuthorizationKey());
     }
     next();
