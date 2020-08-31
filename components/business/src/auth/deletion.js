@@ -36,10 +36,11 @@ class Deletion {
     result: Result,
     next: ApiCallback
   ) {
-    const user = await this.userRepository.getById(params.id);
-    if (user === null) {
-      return next(errors.unknownResource('user', params.id));
+    const user = await this.userRepository.getById(params.username);
+    if (!user || !user.userId) {
+      return next(errors.unknownResource('user', params.username));
     }
+    context.user = user;
     next();
   }
 
@@ -63,11 +64,6 @@ class Deletion {
       );
     }
 
-    const user = await this.userRepository.getById(params.id);
-    if (!user && !user.userId) {
-      return next(errors.unknownResource('user', params.id));
-    }
-
     // NOTE User specific paths are constructed by appending the user _id_ to the
     // `paths` constant above. I know this because I read EventFiles#getXPath(...)
     // in components/storage/src/user/EventFiles.js.
@@ -76,8 +72,8 @@ class Deletion {
     //  them to be there. But _if_ they are, they need be accessible.
 
     // Let's check if we can change into and write into the user's paths:
-    const inaccessibleDirectory = isDirsAccessible(
-      paths.map((p) => path.join(p, user.userId))
+    const inaccessibleDirectory = notAccessibleDir(
+      paths.map((p) => path.join(p, context.user.userId))
     );
     if (inaccessibleDirectory) {
       const error = new Error(
@@ -86,22 +82,6 @@ class Deletion {
       this.logger.error(error);
       return next(errors.unexpectedError(error));
     }
-    next();
-  }
-
-  async deleteHFData(
-    context: MethodContext,
-    params: mixed,
-    result: Result,
-    next: ApiCallback
-  ) {
-    const influx = new business.series.InfluxConnection(
-      { host: 'localhost' },
-      this.logger
-    );
-
-    await influx.dropDatabase(`user.${params.id}`);
-
     next();
   }
 
@@ -116,12 +96,7 @@ class Deletion {
       this.settings.get('eventFiles.previewsDirPath').str(),
     ];
 
-    const user = await this.userRepository.getById(params.id);
-    if (!user && !user.userId) {
-      return next(errors.unknownResource('user', params.id));
-    }
-
-    const userPaths = paths.map((p) => path.join(p, user.userId));
+    const userPaths = paths.map((p) => path.join(p, context.user.userId));
     const opts = {
       disableGlob: true,
     };
@@ -133,6 +108,22 @@ class Deletion {
     next();
   }
 
+  async deleteHFData(
+    context: MethodContext,
+    params: mixed,
+    result: Result,
+    next: ApiCallback
+  ) {
+    const influx = new business.series.InfluxConnection(
+      { host: 'localhost' },
+      this.logger
+    );
+
+    await influx.dropDatabase(`user.${params.username}`);
+
+    next();
+  }
+
   async deleteUser(
     context: MethodContext,
     params: mixed,
@@ -140,11 +131,6 @@ class Deletion {
     next: ApiCallback
   ) {
     try {
-      const user = await this.userRepository.getById(params.id);
-      if (user == null) {
-        return next(errors.unknownResource('user', params.id));
-      }
-
       const dbCollections = [
         this.storageLayer.accesses,
         this.storageLayer.events,
@@ -156,7 +142,7 @@ class Deletion {
 
       const drops = dbCollections
         .map((coll) =>
-          bluebird.fromCallback((cb) => coll.dropCollection(user, cb))
+          bluebird.fromCallback((cb) => coll.dropCollection(context.user, cb))
         )
         .map((promise) =>
           promise.catch(
@@ -167,11 +153,9 @@ class Deletion {
 
       await Promise.all(drops);
 
-      await this.userRepository.deleteOne(user.userId);
-
       await bluebird.fromCallback((cb) =>
         this.storageLayer.sessions.remove(
-          { data: { username: user.username } },
+          { data: { username: context.user.username } },
           cb
         )
       );
@@ -194,7 +178,7 @@ function dirsExist(paths: Array<string>) {
   return notExistingDir;
 }
 
-function isDirsAccessible(paths: Array<string>) {
+function notAccessibleDir(paths: Array<string>): string {
   let notAccessibleDir = '';
   for (let path of paths) {
     let stat;
@@ -211,7 +195,7 @@ function isDirsAccessible(paths: Array<string>) {
         continue;
       } else {
         notAccessibleDir = path;
-        return;
+        break;
       }
     }
   }

@@ -18,7 +18,7 @@ module.exports = function(expressApp: express$Application, app: Application) {
   const api: API = app.api;
   const context = {};
 
-  expressApp.delete('/users/:id', function(
+  expressApp.delete('/users/:username', function(
     req: express$Request,
     res: express$Response,
     next: express$NextFunction

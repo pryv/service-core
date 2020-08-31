@@ -24,8 +24,8 @@ const {
 const bluebird = require('bluebird');
 
 let app;
-let userId;
-let otherUserId;
+let username1;
+let username2;
 let request;
 let res;
 let mongoFixtures;
@@ -56,25 +56,25 @@ describe.only('DELETE /users', () => {
     await bluebird.fromCallback((cb) =>
       app.storageLayer.eventFiles.removeAll(cb));
 
-    userId = charlatan.Internet.userName();
-    otherUserId = charlatan.Internet.userName();
+    username1 = charlatan.Internet.userName();
+    username2 = charlatan.Internet.userName();
   });
   after(async function() {
     await mongoFixtures.context.cleanEverything();
     await bluebird.fromCallback((cb) =>
       app.storageLayer.eventFiles.removeAll(cb));
   });
-  describe('when given existing user id', function() {
+  describe('when given existing username', function() {
     before(async function() {
-      await initiateUserWithData(userId);
-      await initiateUserWithData(otherUserId);
-      res = await request.delete(`/users/${userId}`);
+      await initiateUserWithData(username1);
+      await initiateUserWithData(username2);
+      res = await request.delete(`/users/${username1}`);
     });
     it('should respond with 200', function() {
       assert.equal(res.status, 200);
     });
     it('should delete user entries from impacted collections', async function() {
-      const user = await usersRepository.getById(userId);
+      const user = await usersRepository.getById(username1);
       assert.notExists(user);
 
       const dbCollections = [
@@ -86,27 +86,27 @@ describe.only('DELETE /users', () => {
         app.storageLayer.webhooks,
       ];
 
-      const collectionsEmptyChecks = dbCollections.map(async function(coll) {
+      const collectionsNotEmptyChecks = dbCollections.map(async function(coll) {
         const collectionEntriesForUser = await bluebird.fromCallback((cb) =>
-          coll.find({ id: userId }, {}, {}, cb)
+          coll.find({ id: username1 }, {}, {}, cb)
         );
         assert.empty(collectionEntriesForUser);
       });
 
-      await Promise.all(collectionsEmptyChecks);
+      await Promise.all(collectionsNotEmptyChecks);
 
       const sessions = await bluebird.fromCallback((cb) =>
-        app.storageLayer.sessions.getMatching({ username: userId }, cb)
+        app.storageLayer.sessions.getMatching({ username: username1 }, cb)
       );
       assert(sessions === null || sessions === []);
     });
     it('should delete user event files', async function() {
       const totalFilesSize = await bluebird.fromCallback((cb) =>
-        app.storageLayer.eventFiles.getTotalSize({id: userId}, cb));
+        app.storageLayer.eventFiles.getTotalSize({id: username1}, cb));
       assert.equal(totalFilesSize, 0);
     });
     it('should not delete entries of other users', async function() {
-      const user = await usersRepository.getById(otherUserId);
+      const user = await usersRepository.getById(username2);
       assert.exists(user);
 
       const dbCollections = [
@@ -118,7 +118,7 @@ describe.only('DELETE /users', () => {
 
       const collectionsEmptyChecks = dbCollections.map(async function(coll) {
         const collectionEntriesForUser = await bluebird.fromCallback((cb) =>
-          coll.find({ id: otherUserId }, {}, {}, cb)
+          coll.find({ id: username2 }, {}, {}, cb)
         );
         assert.notEmpty(collectionEntriesForUser);
       });
@@ -126,19 +126,19 @@ describe.only('DELETE /users', () => {
       await Promise.all(collectionsEmptyChecks);
 
       const sessions = await bluebird.fromCallback((cb) =>
-        app.storageLayer.sessions.getMatching({ username: otherUserId }, cb)
+        app.storageLayer.sessions.getMatching({ username: username2 }, cb)
       );
       assert(sessions !== null || sessions !== []);
     });
     it('should not delete other user event files', async function() {
       const totalFilesSize = await bluebird.fromCallback((cb) =>
-        app.storageLayer.eventFiles.getTotalSize({id: otherUserId}, cb));
+        app.storageLayer.eventFiles.getTotalSize({id: username2}, cb));
       assert.notEqual(totalFilesSize, 0);
     });
   });
-  describe('when given not existing user id', function() {
+  describe('when given not existing username', function() {
     before(async function() {
-      res = await request.delete(`/users/${userId}`);
+      res = await request.delete(`/users/${username1}`);
     });
     it('should respond with 404', function() {
       assert.equal(res.status, 404);
@@ -146,8 +146,8 @@ describe.only('DELETE /users', () => {
   });
 });
 
-async function initiateUserWithData(id: string) {
-  const user = await mongoFixtures.user(id);
+async function initiateUserWithData(username: string) {
+  const user = await mongoFixtures.user(username);
 
   await usersRepository.insertOne(user);
 
@@ -166,7 +166,7 @@ async function initiateUserWithData(id: string) {
   await bluebird.fromCallback((cb) =>
     app.storageLayer.eventFiles.saveAttachedFile(
       path.resolve(filePath),
-      { id: id },
+      { id: username },
       charlatan.Lorem.word(),
       charlatan.Lorem.word(),
       cb
