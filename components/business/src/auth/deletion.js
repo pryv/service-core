@@ -55,7 +55,7 @@ class Deletion {
       this.settings.get('eventFiles.previewsDirPath').str(),
     ];
 
-    const notExistingDir = dirsExist(paths);
+    const notExistingDir = findNotExistingDir(paths);
     if (notExistingDir) {
       const error = new Error(`Base directory '${notExistingDir}' does not exist.`);
       this.logger.error(error);
@@ -72,7 +72,7 @@ class Deletion {
     //  them to be there. But _if_ they are, they need be accessible.
 
     // Let's check if we can change into and write into the user's paths:
-    const inaccessibleDirectory = notAccessibleDir(
+    const inaccessibleDirectory = findNotAccessibleDir(
       paths.map((p) => path.join(p, context.user.userId))
     );
     if (inaccessibleDirectory) {
@@ -167,7 +167,7 @@ class Deletion {
   }
 }
 
-function dirsExist(paths: Array<string>) {
+function findNotExistingDir(paths: Array<string>): string {
   let notExistingDir = '';
   for (let path of paths) {
     if (!fs.existsSync(path)) {
@@ -178,7 +178,7 @@ function dirsExist(paths: Array<string>) {
   return notExistingDir;
 }
 
-function notAccessibleDir(paths: Array<string>): string {
+function findNotAccessibleDir(paths: Array<string>): string {
   let notAccessibleDir = '';
   for (let path of paths) {
     let stat;
