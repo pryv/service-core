@@ -146,7 +146,7 @@ class Repository {
    * Check if fields are unique
    * @param ({key: value}) fields
    */
-  async checkUserFieldsUniqueness (fields: object): integer {
+  async findConflictingUniqueFields (fields: object): integer {
     let query = { $or: [] }
     Object.keys(fields).forEach(key => {
       query['$or'].push({ [`${key}__unique`]: fields[key] });
