@@ -36,7 +36,7 @@ let usersRepository;
 let influx;
 let influxRepository;
 
-describe.only('DELETE /users/:username', () => {
+describe('DELETE /users/:username', () => {
   const settingsToTest = [[true, false], [false, false], [true, true]];
   for (let settingToTest of settingsToTest) {
     describe(`singleNode:isActive = ${settingToTest[0]}, openSource:isActive = ${settingToTest[1]}`, function() {

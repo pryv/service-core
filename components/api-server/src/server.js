@@ -125,6 +125,11 @@ class Server {
       application.settings.get('services').obj(), 
       application.settings.get('server').obj());
 
+    require('./methods/auth/delete')(application.api, 
+      application.logging, 
+      application.storageLayer, 
+      application.settings);
+
     require('./methods/accesses')(
       application.api, l('methods/accesses'), 
       this.notificationBus, 
