@@ -20,7 +20,7 @@ const FILE_PROTOCOL: string = 'file://';
 const FILE_PROTOCOL_LENGTH: number = FILE_PROTOCOL.length;
 const SERVICE_INFO_PATH: string = '/service/info';
 
-async function asyncLoad(config: Config): Config {
+async function load(config: Config): Config {
   const serviceInfoUrl: string = config.get('serviceInfoUrl');
 
   if (process.env.NODE_ENV !== 'test')
@@ -54,7 +54,7 @@ async function asyncLoad(config: Config): Config {
   }
   
 }
-module.exports.asyncLoad = asyncLoad;
+module.exports.load = load;
 
 function buildServiceInfo(config: {}): {} {
   let serviceInfo: {} = {};

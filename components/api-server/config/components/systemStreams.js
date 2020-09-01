@@ -10,7 +10,7 @@
 const _ = require('lodash');
 const treeUtils = require('components/utils/src/treeUtils');
 
-const defaultValuesForFields = {
+const DEFAULT_VALUES_FOR_FIELDS = {
   isIndexed: false, // if true will be sent to service-register to be able to query across the platform
   isUnique: false, // if true will be sent to service-register and enforced uniqness on mongodb
   isShown: false, // if true, will be shown for the users
@@ -18,10 +18,10 @@ const defaultValuesForFields = {
   isRequiredInValidation: false // if true, the field will be required in the validation
 };
 
-function load(config: Config): Config {
+async function load(config: Config): Config {
   // default system streams that sould be not changed
   config.set('systemStreams:account', [
-    _.extend({}, defaultValuesForFields, {
+    _.extend({}, DEFAULT_VALUES_FOR_FIELDS, {
       isIndexed: true,
       isUnique: true,
       isShown: true,
@@ -30,7 +30,7 @@ function load(config: Config): Config {
       id: 'username',
       isRequiredInValidation: true
     }),
-    _.extend({}, defaultValuesForFields, {
+    _.extend({}, DEFAULT_VALUES_FOR_FIELDS, {
       isIndexed: true,
       isShown: true,
       isEditable: true,
@@ -39,7 +39,7 @@ function load(config: Config): Config {
       name: 'Language',
       id: 'language'
     }),
-    _.extend({}, defaultValuesForFields, {
+    _.extend({}, DEFAULT_VALUES_FOR_FIELDS, {
       isIndexed: true,
       default: '',
       isRequiredInValidation: true,
@@ -48,19 +48,19 @@ function load(config: Config): Config {
       name: 'appId',
       id: 'appId'
     }),
-    _.extend({}, defaultValuesForFields, {
+    _.extend({}, DEFAULT_VALUES_FOR_FIELDS, {
       isIndexed: true,
       default: 'no-token',
       type: 'token/string',
       name: 'Invitation Token',
       id: 'invitationToken'
     }),
-    _.extend({}, defaultValuesForFields, {
+    _.extend({}, DEFAULT_VALUES_FOR_FIELDS, {
       type: 'password-hash/string',
       name: 'Password Hash',
       id: 'passwordHash'
     }),
-    _.extend({}, defaultValuesForFields, {
+    _.extend({}, DEFAULT_VALUES_FOR_FIELDS, {
       isIndexed: true,
       default: null,
       type: 'identifier/string',
@@ -73,14 +73,14 @@ function load(config: Config): Config {
       name: 'Storage used',
       type: 'data-quantity/b',
       children: [
-        _.extend({}, defaultValuesForFields, {
+        _.extend({}, DEFAULT_VALUES_FOR_FIELDS, {
           isShown: true,
           default: 0,
           type: 'data-quantity/b',
           name: 'Db Documents',
           id: 'dbDocuments'
         }),
-        _.extend({}, defaultValuesForFields, {
+        _.extend({}, DEFAULT_VALUES_FOR_FIELDS, {
           isShown: true,
           default: 0,
           type: 'data-quantity/b',
@@ -91,7 +91,7 @@ function load(config: Config): Config {
     }
   ]);
   config.set('systemStreams:helpers', [
-    _.extend({}, defaultValuesForFields, {
+    _.extend({}, DEFAULT_VALUES_FOR_FIELDS, {
       isIndexed: false,
       isUnique: false,
       isShown: true,
@@ -126,7 +126,7 @@ function load(config: Config): Config {
    * 2. systemStreams:custom
    */
   function readAdditionalFieldsConfig(config) {
-    const customStreams = config.get('systemStreams:custom');
+    const customStreams = config.get('custom:systemStreams');
     if (customStreams != null) {
       appendSystemStreamsConfigWithAdditionalFields(config, customStreams);
     }
@@ -143,11 +143,10 @@ function load(config: Config): Config {
   function extendSystemStreamsWithDefaultValues (
     additionalFields: object
   ): object{
-    let i;
-    for (i = 0; i < additionalFields.length; i++) {
-      additionalFields[i] = _.extend({}, defaultValuesForFields, additionalFields[i]);
+    for (let i = 0; i < additionalFields.length; i++) {
+      additionalFields[i] = _.extend({}, DEFAULT_VALUES_FOR_FIELDS, additionalFields[i]);
       // if stream has children recursivelly call the same function
-      if (typeof additionalFields[i].children !== 'undefined') {
+      if (additionalFields[i].children != null) {
         additionalFields[i].children = extendSystemStreamsWithDefaultValues(additionalFields[i].children)
       }
     };
@@ -169,34 +168,30 @@ function load(config: Config): Config {
     config: Config,
     additionalFields
   ): Config {
-    let defaultConfig = config.get('systemStreams');
-    let i;
+    const defaultConfig = config.get('systemStreams');
 
     // extend systemStreams with default values
-    let newConfigKeys = Object.keys(additionalFields);
-    for (i = 0; i < newConfigKeys.length; i++) {
+    const newConfigKeys = Object.keys(additionalFields);
+    for (let i = 0; i < newConfigKeys.length; i++) {
       additionalFields[newConfigKeys[i]] = extendSystemStreamsWithDefaultValues(additionalFields[newConfigKeys[i]]);
     }
 
     // first merge config with already existing keys (like account, helpers)
-    let configKeys = Object.keys(defaultConfig);
-    for (i = 0; i < configKeys.length; i++){
+    const configKeys = Object.keys(defaultConfig);
+    for (let i = 0; i < configKeys.length; i++){
       defaultConfig[configKeys[i]] = _.values(_.mergeWith(
         _.keyBy(defaultConfig[configKeys[i]], 'id'),
         _.keyBy(additionalFields[configKeys[i]], 'id'), denyDefaultStreamsOverride
       ));
     }
     // second append new config
-    for (i = 0; i < newConfigKeys.length; i++) {
+    for (let i = 0; i < newConfigKeys.length; i++) {
       if (configKeys.includes(newConfigKeys[i])) continue;
       defaultConfig[newConfigKeys[i]] = additionalFields[newConfigKeys[i]];
     }
 
-    // delete custom config
-    delete defaultConfig.custom;
-
     // validate that each config stream has a type
-    let allConfigKeys = Object.keys(defaultConfig);
+    const allConfigKeys = Object.keys(defaultConfig);
     allConfigKeys.forEach(configKey => {
       const flatStreamsList = treeUtils.flattenTree(defaultConfig[configKey]);
       // check if each stream has a type

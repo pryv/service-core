@@ -50,8 +50,8 @@
     "isActive": true,
     "publicUrl": "http://localhost/"
   },
-  "systemStreams": {
-    "custom": {
+  "custom": {
+    "systemStreams": {
       "account": [
         {
           "id": "insurancenumber",

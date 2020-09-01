@@ -14,20 +14,20 @@ const { describe, before, it } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 
+const { getConfig } = require('components/api-server/config/Config');
 const ErrorIds = require('components/errors').ErrorIds;
 const ErrorMessages = require('components/errors/src/ErrorMessages');
 const Settings = require('components/api-server/src/settings');
 const Application = require('components/api-server/src/application');
 const Notifications = require('components/api-server/src/Notifications');
 const accessLogic = require('components/model/src/accessLogic');
-const helpers = require('components/api-server/test/helpers');
-const validation = helpers.validation;
 
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
 
 
 describe("[B5FF] Account with default-streams", function () {
+  let config;
   let app;
   let request;
   let res;
@@ -38,7 +38,7 @@ describe("[B5FF] Account with default-streams", function () {
   let access;
   let user;
   let accessInDb;
-  
+  let validation;
 
   async function createUser () {
     user = await mongoFixtures.user(charlatan.Lorem.characters(7), {
@@ -82,6 +82,9 @@ describe("[B5FF] Account with default-streams", function () {
   }
 
   before(async function () {
+    const helpers = require('components/api-server/test/helpers');
+    config = getConfig();
+    validation = helpers.validation;
     mongoFixtures = databaseFixture(await produceMongoConnection());
 
     const settings = await Settings.load();
@@ -196,9 +199,7 @@ describe("[B5FF] Account with default-streams", function () {
           assert.deepEqual(accessInDb.permissions, [{ streamId: streamId, level: permissionLevel }]);
         });
         it('[TI1X] User can create visible stream event with this access', async () => {
-          const settings = _.cloneDeep(helpers.dependencies.settings);
-
-          scope = nock(settings.services.register.url)
+          scope = nock(config.get('services:register:url'))
           scope.put('/users',
             (body) => {
               serviceRegisterRequest = body;

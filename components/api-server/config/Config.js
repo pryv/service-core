@@ -51,15 +51,15 @@ class Config {
     } else {
       configFile = 'config/development.json';
     }
+    
     store.file({ file: configFile });
     this.store = store;
-    loadComponents(this.store);
   }
 
   async init() {
-    if (this.isInitializing) {console.log('KABOOM'); return new Error('config.init() called twice.')};
+    if (this.isInitializing && ! isTest()) return new Error('config.init() called twice.');
     this.isInitializing = true;
-    await loadAsyncComponents(this.store);
+    await loadComponents(this.store);
     this.isInitialized = true;
     this.isInitializing = false;
   }
@@ -83,17 +83,11 @@ function isTest(): boolean {
   return process.env.NODE_ENV === 'test'
 }
 
-function loadComponents(store: any): any {
-  Object.values(components).forEach(c => {
-    if (c.load != null) c.load(store);
-  });
-  return store;
-}
-
-async function loadAsyncComponents(store: any): any {
+async function loadComponents(store: any): any {
   const comps = Object.values(components);
+  const keys = Object.keys(components);
   for(let i=0; i<comps.length; i++) {
-    if (comps[i].asyncLoad != null) await comps[i].asyncLoad(store);
+    await comps[i].load(store);
   }
   return store;
 }

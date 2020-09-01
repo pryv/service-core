@@ -149,6 +149,9 @@ module.exports = function produceAccessesApiMethods(
 
   // CREATION
 
+  const notVisibleAccountStreamsIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
+  const visibleAccountStreamsIds = Object.keys(SystemStreamsSerializer.getReadableAccountStreams());
+
   api.register('accesses.create',
     checkNoSharedAccess,
     applyDefaultsForCreation,
@@ -217,12 +220,8 @@ module.exports = function produceAccessesApiMethods(
   function applyAccountStreamsValidation (context, params, result, next) {
     if (params.permissions == null) return next();
 
-    const notVisibleAccountStreamsIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
-    const visibleAccountStreamsIds = Object.keys(SystemStreamsSerializer.getReadableAccountStreams());
-
     // don't allow user to give access to not visible stream
-    let i;
-    for (i = 0; i < params.permissions.length; i++) {
+    for (let i = 0; i < params.permissions.length; i++) {
       if (notVisibleAccountStreamsIds.includes(params.permissions[i].streamId)) {
         return next(errors.DeniedStreamAccess(params.permissions[i].streamId));
       }
@@ -230,8 +229,7 @@ module.exports = function produceAccessesApiMethods(
 
     // don't allow user to give anything higher than contribute or read access
     //to visible stream
-    let n;
-    for (n = 0; n < params.permissions.length; n++) {
+    for (let n = 0; n < params.permissions.length; n++) {
       if (visibleAccountStreamsIds.includes(params.permissions[n].streamId) &&
         params.permissions[n]?.level && !context.access.canCreateAccessForAccountStream(params.permissions[n].level)) {
         return next(errors.TooHighAccessForAccountStreams(params.permissions[n].streamId));
