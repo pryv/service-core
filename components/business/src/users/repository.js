@@ -277,7 +277,8 @@ class Repository {
   async deleteOne (userId: string): Promise<void> {
     const userAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
     await bluebird.fromCallback(cb => this.storage.database.deleteMany(
-      this.storage.getCollectionInfo({ id: userId }), { streamIds: { $in: userAccountStreamsIds}}, cb));
+      this.storage.getCollectionInfo({ id: userId }),
+      { streamIds: { $in: userAccountStreamsIds } }, cb));
   }
 
   /**

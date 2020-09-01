@@ -56,6 +56,7 @@ class Server {
   // Start the server. 
   //
   async start() {
+    this.logger = this.application.logFactory('api-server');
 
     const defaultParam: ?string = this.findDefaultParam();
     if (defaultParam != null) {
@@ -64,7 +65,6 @@ class Server {
     }
     
     await this.application.initiate();
-    this.logger = this.application.logFactory('api-server');
 
     // start TCP pub messaging
     await this.setupNotificationBus();
@@ -124,6 +124,11 @@ class Server {
       application.storageLayer, 
       application.settings.get('services').obj(), 
       application.settings.get('server').obj());
+
+    require('./methods/auth/delete')(application.api, 
+      application.logging, 
+      application.storageLayer, 
+      application.settings);
 
     require('./methods/accesses')(
       application.api, l('methods/accesses'), 

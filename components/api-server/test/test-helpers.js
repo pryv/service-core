@@ -28,6 +28,7 @@ after(async () => {
 const { Database } = require('components/storage');
 const Settings = require('components/api-server/src/settings');
 const NullLogger = require('components/utils/src/logging').NullLogger;
+const InfluxConnection = require('components/business/src/series/influx_connection');
 
 // Produces and returns a connection to MongoDB. 
 async function produceMongoConnection(): Promise<Database> {
@@ -39,7 +40,17 @@ async function produceMongoConnection(): Promise<Database> {
   return database; 
 }
 
+function produceInfluxConnection(settings: any) {
+  const host = settings.get('influxdb.host').str(); 
+  const port = settings.get('influxdb.port').num();
+  return new InfluxConnection(
+    {host: host, port: port},
+    new NullLogger()
+  );
+}
+
 module.exports = {
   context,                // the spawn context for manipulating child instances
   produceMongoConnection, // for using fixtures
+  produceInfluxConnection
 };
