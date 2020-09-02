@@ -234,8 +234,8 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
         id: name,
         username: name,
         storageUsed: 0,
-        insurancenumber: Charlatan.Number.number(4),
-        phoneNumber: Charlatan.Number.number(4)
+        insurancenumber: Charlatan.Number.number(5),
+        phoneNumber: Charlatan.Number.number(5)
       }, attrs));
   }
   
@@ -330,7 +330,7 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
   fakeAttributes() {
     return {
       email: Charlatan.Internet.email(), 
-      password: Charlatan.Internet.password(), 
+      password: Charlatan.Lorem.characters(10), 
       language: 'fr',
     };
   }
@@ -370,7 +370,7 @@ class FixtureStream extends FixtureTreeNode implements ChildResource {
   fakeAttributes() {
     return {
       id: `c${Charlatan.Number.number(15)}`,
-      name: Charlatan.App.name(), 
+      name: Charlatan.Lorem.characters(10), 
       parentId: this.parentId, 
     };
   }

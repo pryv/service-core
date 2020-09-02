@@ -121,7 +121,6 @@ describe('[373T] system (ex-register)', function () {
         originalCount = originalUsers.length;
         // create user
         const res = await bluebird.fromCallback(cb => post(newUserData, cb));
-
         validation.check(res, {
           status: 201,
           schema: methodsSchema.createUser.result
@@ -290,20 +289,25 @@ describe('[373T] system (ex-register)', function () {
             });
           }
         });
-      it('[NPJE] must return a correct 400 error if a user with the same email address already exists', function (done) {
+      it('[NPJE] must return a correct 400 error if a user with the same email address already exists', async () => {
+        const existingUser = await mongoFixtures.user(charlatan.Lorem.characters(10));
         const data = {
-          username: charlatan.App.name(6).trim(),
+          username: charlatan.Lorem.characters(10),
           passwordHash: '$-1s-b4d-f0r-U',
-          email: 'zero@test.com',
+          email: existingUser.attrs.email,
           language: 'fr'
         };
-        post(data, function (err, res) {
-          validation.checkError(res, {
-            status: 400,
-            id: ErrorIds.ItemAlreadyExists,
-            data: {email: data.email}
-          }, done);
-        });
+
+        try{
+          await bluebird.fromCallback(
+            (cb) => post(data, cb));
+          console.log('test passed even it should not');
+          assert.isTrue(false);
+        } catch (err) {
+          assert.equal(err.response.status, 400)
+          assert.equal(err.response.body.error.id, ErrorIds.ItemAlreadyExists);
+          assert.deepEqual(err.response.body.error.data, { email: data.email });
+        }
       });
     
       it('[Y5JB] must return a correct 404 error when authentication is invalid', function (done) {

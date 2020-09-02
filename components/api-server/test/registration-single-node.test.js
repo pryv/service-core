@@ -18,20 +18,27 @@ const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('./test-helpers');
 const Notifications = require('components/api-server/src/Notifications');
 
+
 let app;
 let registerBody;
 let request;
 let res;
 
-describe('registration: single-node', () => {
+describe('[BMM2] registration: single-node', () => {
+  let config;
+  before(async function () {
+    config = getConfig();
+    await config.init();
+    config.set('singleNode:isActive', true);
+    config.set('openSource:isActive', false);
+    config.set('custom:systemStreams', null);
+  });
+  after(async function () {
+    await config.resetConfig();
+  });
   describe('POST /users', () => {
     before(async function() {
       const settings = await Settings.load();
-      const config = getConfig();
-      await config.init();
-      config.set('singleNode:isActive', true);
-      config.set('openSource:isActive', false);
-      config.set('custom:systemStreams', null);
       app = new Application(settings);
       await app.initiate();
 

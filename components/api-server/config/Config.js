@@ -31,7 +31,13 @@ class Config {
   logger: {};
   notifier: {};
 
+  configFile: string;
+
   constructor() {
+    this.initializeConfig();
+  }
+
+  initializeConfig () {
     // TODO set logger
 
     const store = new nconf.Provider();
@@ -43,16 +49,15 @@ class Config {
     store.use('memory').argv().env();
 
     // 3. Values in `config.json`
-    let configFile;
     if (store.get('config')) {
-      configFile = store.get('config')
+      this.configFile = store.get('config')
     } else if (store.get('NODE_ENV')) {
-      configFile = 'config/' + store.get('NODE_ENV') + '.json';
+      this.configFile = 'config/' + store.get('NODE_ENV') + '.json';
     } else {
-      configFile = 'config/development.json';
+      this.configFile = 'config/development.json';
     }
-    
-    store.file({ file: configFile });
+
+    store.file({ file: this.configFile });
 
     // remove this when config is loaded in all tests before other components that use it. See commits:
     // - f7cc95f70aae87ebb0776f94256c14eeec54baa3
@@ -62,12 +67,20 @@ class Config {
     this.store = store;
   }
 
-  async init() {
+  async init () {
     if (this.isInitializing && ! isTest()) return new Error('config.init() called twice.');
     this.isInitializing = true;
     await loadComponents(this.store);
     this.isInitialized = true;
     this.isInitializing = false;
+  }
+
+  /**
+   * For tests it is usuaful to reset initial config after the 
+   * test was finished
+   */
+  async resetConfig () {
+    this.initializeConfig();
   }
 
   get(key: string): any {
@@ -80,6 +93,7 @@ class Config {
     this.store.set(key, value);
   }
 
+  // TODO IEVA - prefix is not used
   getLogger(prefix: string): any {
     return this.logger;
   }
@@ -89,10 +103,9 @@ function isTest(): boolean {
   return process.env.NODE_ENV === 'test'
 }
 
-async function loadComponents(store: any): any {
+async function loadComponents (store: any): any {
   const comps = Object.values(components);
-  const keys = Object.keys(components);
-  for(let i=0; i<comps.length; i++) {
+  for(let i=0; i < comps.length; i++) {
     await comps[i].load(store);
   }
   return store;
