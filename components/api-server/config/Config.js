@@ -53,6 +53,12 @@ class Config {
     }
     
     store.file({ file: configFile });
+
+    // remove this when config is loaded in all tests before other components that use it. See commits:
+    // - f7cc95f70aae87ebb0776f94256c14eeec54baa3
+    // - a0e31f8f8dd4b9756635d80923143e256ccd0077
+    components.systemStreams.load(store).then();
+
     this.store = store;
   }
 
