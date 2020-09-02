@@ -292,7 +292,7 @@ describe('[373T] system (ex-register)', function () {
         });
       it('[NPJE] must return a correct 400 error if a user with the same email address already exists', function (done) {
         const data = {
-          username: charlatan.App.name(5),
+          username: charlatan.App.name(6).trim(),
           passwordHash: '$-1s-b4d-f0r-U',
           email: 'zero@test.com',
           language: 'fr'

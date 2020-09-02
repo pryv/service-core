@@ -39,8 +39,8 @@ describe('Events storage', () => {
 
   describe('createUser()', () => {
     before(async () => {
-      userId = charlatan.App.name();
-      username = charlatan.App.name(5);
+      userId = charlatan.App.name(5).trim();
+      username = charlatan.App.name(5).trim();
       customRegistrationUniqueField = charlatan.App.name();
       email = charlatan.Internet.email();
       try {
@@ -61,11 +61,11 @@ describe('Events storage', () => {
     it('[7C22] must throw a duplicate error when username field is not unique', async () => {
       try {
         const userRepository = new UserRepository(eventsStorage);
-        const id = charlatan.App.name();
+        const id = charlatan.App.name(5).trim();
         const userObj: User = new User({
           id: id,
           username: username,
-          password: charlatan.App.name(),
+          password: charlatan.App.name(6).trim(),
           email: charlatan.Internet.email(),
         });
         await userRepository.insertOne(userObj);
@@ -88,7 +88,7 @@ describe('Events storage', () => {
       try {
         const userRepository = new UserRepository(eventsStorage);
         const userObj: User = new User({
-          id: charlatan.App.name(),
+          id: charlatan.App.name(5).trim(),
           email: email
         });
         await userRepository.insertOne(userObj);
