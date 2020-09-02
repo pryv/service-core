@@ -27,7 +27,7 @@ async function load(config: Config): Config {
       isShown: true,
       type: 'identifier/string',
       name: 'Username',
-      id: 'username',
+      id: '.username',
       isRequiredInValidation: true
     }),
     _.extend({}, DEFAULT_VALUES_FOR_FIELDS, {
@@ -37,7 +37,7 @@ async function load(config: Config): Config {
       default: 'en',
       type: 'language/iso-639-1',
       name: 'Language',
-      id: 'language'
+      id: '.language'
     }),
     _.extend({}, DEFAULT_VALUES_FOR_FIELDS, {
       isIndexed: true,
@@ -46,29 +46,29 @@ async function load(config: Config): Config {
       isIndexed: true,
       type: 'identifier/string',
       name: 'appId',
-      id: 'appId'
+      id: '.appId'
     }),
     _.extend({}, DEFAULT_VALUES_FOR_FIELDS, {
       isIndexed: true,
       default: 'no-token',
       type: 'token/string',
       name: 'Invitation Token',
-      id: 'invitationToken'
+      id: '.invitationToken'
     }),
     _.extend({}, DEFAULT_VALUES_FOR_FIELDS, {
       type: 'password-hash/string',
       name: 'Password Hash',
-      id: 'passwordHash'
+      id: '.passwordHash'
     }),
     _.extend({}, DEFAULT_VALUES_FOR_FIELDS, {
       isIndexed: true,
       default: null,
       type: 'identifier/string',
       name: 'Referer',
-      id: 'referer'
+      id: '.referer'
     }),
     {
-      id: 'storageUsed',
+      id: '.storageUsed',
       isShown: true,
       name: 'Storage used',
       type: 'data-quantity/b',
@@ -78,14 +78,14 @@ async function load(config: Config): Config {
           default: 0,
           type: 'data-quantity/b',
           name: 'Db Documents',
-          id: 'dbDocuments'
+          id: '.dbDocuments'
         }),
         _.extend({}, DEFAULT_VALUES_FOR_FIELDS, {
           isShown: true,
           default: 0,
           type: 'data-quantity/b',
           name: 'Attached files',
-          id: 'attachedFiles'
+          id: '.attachedFiles'
         })
       ]
     }
@@ -97,7 +97,7 @@ async function load(config: Config): Config {
       isShown: true,
       type: 'identifier/string',
       name: 'Active',
-      id: 'active',
+      id: '.active',
     })
   ]);
 
@@ -201,7 +201,16 @@ async function load(config: Config): Config {
         }
       });
     });
-    
+
+    // make sure each config id starts with '.' - dot sign
+    for(let configKey of allConfigKeys) {
+      for(let systemStream of defaultConfig[configKey]) {
+        if(!systemStream.id.startsWith('.')) {
+          systemStream.id = '.' + systemStream.id;
+        }
+      }
+    }
+
     config.set('systemStreams', defaultConfig);
     // clear the settings seems to not work as expected
     return config;
