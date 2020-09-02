@@ -15,6 +15,8 @@ const ErrorIds = {
   Forbidden: 'forbidden',
   InvalidAccessToken: 'invalid-access-token',
   InvalidCredentials: 'invalid-credentials',
+  InvalidAuthorizationKey: 'invalid-authorization-key',
+
   /**
    * Used for High-Frequency Series, allowing only known, simple types.
    */
