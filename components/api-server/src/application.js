@@ -111,7 +111,6 @@ class Application {
   }
   
   produceLogSubsystem() {
-    const settings = this.settings;
     const logSystemSettings = this.settings.get('logs').obj();
     this.logging = utils.logging(logSystemSettings); 
     

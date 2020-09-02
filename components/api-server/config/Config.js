@@ -80,7 +80,11 @@ class Config {
    * test was finished
    */
   async resetConfig () {
-    this.initializeConfig();
+    if (isTest()){
+      this.initializeConfig();
+    } else {
+      console.log('To reset the config is only allowed in tests');
+    }
   }
 
   get(key: string): any {

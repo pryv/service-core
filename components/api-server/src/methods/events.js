@@ -29,7 +29,6 @@ const SystemStreamsSerializer = require('components/business/src/system-streams/
 const assert = require('assert');
 
 const { ProjectVersion } = require('components/middleware/src/project_version');
-const { allowedNodeEnvironmentFlags } = require('process');
 
 const {TypeRepository, isSeriesType} = require('components/business').types;
 
@@ -381,15 +380,10 @@ module.exports = function (
       try {
         accountStreamsInfo = await handleAccountStreams(context.user.username, context, true);
         context.content = accountStreamsInfo.context;
-
-        // if (accountStreamsInfo.validationErrors.length > 0) {
-        //   return next(commonFns.apiErrorToValidationErrorsList(accountStreamsInfo.validationErrors));
-        // }
       } catch (err) {
         return next(err);
       }
     }
-
 
     userEventsStorage.insertOne(
       context.user, context.content, function (err, newEvent) {
@@ -399,7 +393,7 @@ module.exports = function (
             return next(errors.itemAlreadyExists('event', {id: params.id}, err));
           }
           // Expecting a duplicate error for unique fields
-          if (typeof err.isDuplicateIndex === 'function') { // why such check? why not err.isDuplicate
+          if (err.isDuplicate) {
             return next(commonFns.apiErrorToValidationErrorsList(
               [errors.existingField(err.duplicateIndex())]));
           }

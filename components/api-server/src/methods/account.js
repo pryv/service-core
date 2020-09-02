@@ -44,7 +44,6 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
       try {
         const user: User = await userRepository.getById(context.user.id);
         result.account = user.getAccount();
-        delete result.account.id;
         next();
       } catch (err) {
         return next(errors.unexpectedError(err));
@@ -229,7 +228,8 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
 
   async function updateAccount(context, params, result, next) {
     try {
-      // form tasks to update the events
+      // form tasks to update the events - account will deprecated so it does not take care for
+      // nested fields
       const fieldsToUpdate = Object.keys(params.update);
       const uniqueAccountStreamIds = SystemStreamsSerializer.getUniqueAccountStreamsIds();
       let i;
@@ -249,7 +249,6 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
       if (!fieldsToUpdate.includes('passwordHash')) {
         const user: User = await userRepository.getById(context.user.id);
         result.account = user.getAccount();
-        delete result.account.id;
       }
 
       notifications.accountChanged(context.user);
