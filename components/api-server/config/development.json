@@ -36,8 +36,8 @@
     "isActive": true,
     "publicUrl": "http://localhost:3000/"
   },
-  "systemStreams": {
-    "custom": {
+  "custom": {
+    "systemStreams": {
       "account": [
         {
           "isIndexed": true,

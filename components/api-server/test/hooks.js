@@ -6,11 +6,8 @@
  */
 const { getConfig } = require('components/api-server/config/Config');
 
-console.log('salu depuis le hook')
-
 exports.mochaHooks = {
   async beforeAll () {
-    console.log('hook beforeAll');
     const config = getConfig();
     await config.init();
   },

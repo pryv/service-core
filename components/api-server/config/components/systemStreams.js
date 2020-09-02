@@ -123,7 +123,7 @@ async function load(config: Config): Config {
   /**
    * If any, load custom system streams from:
    * 1. env variable
-   * 2. systemStreams:custom
+   * 2. custom:systemStreams
    */
   function readAdditionalFieldsConfig(config) {
     const customStreams = config.get('custom:systemStreams');
@@ -204,7 +204,6 @@ async function load(config: Config): Config {
     
     config.set('systemStreams', defaultConfig);
     // clear the settings seems to not work as expected
-    config.set('systemStreams:custom', null);
     return config;
   }
 }

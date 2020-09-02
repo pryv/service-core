@@ -25,7 +25,6 @@ const accessLogic = require('components/model/src/accessLogic');
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
 
-
 describe("[B5FF] Account with default-streams", function () {
   let config;
   let app;

@@ -8,15 +8,10 @@
 
 /*global describe, before, beforeEach, it */
 
-require('./test-helpers'); 
-const helpers = require('./helpers');
+
 const ErrorIds = require('components/errors').ErrorIds;
-const server = helpers.dependencies.instanceManager;
 const async = require('async');
-const validation = helpers.validation;
 const methodsSchema = require('../src/schema/accessesMethods');
-const storage = helpers.dependencies.storage.user.accesses;
-const testData = helpers.data;
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 const should = require('should');
@@ -25,109 +20,123 @@ import type Request from './helpers';
 
 describe('accesses (app)', function () {
 
-  const additionalTestAccesses = [
-    {
-      id: 'app_A',
-      token: 'app_A_token',
-      name: 'App access A',
-      type: 'app',
-      permissions: [
-        {
-          streamId: testData.streams[0].id,
-          level: 'manage'
-        },
-        {
-          streamId: testData.streams[1].id,
-          level: 'contribute'
-        },
-        {
-          tag: 'super',
-          level: 'contribute'
-        }
-      ],
-      created: timestamp.now(),
-      createdBy: 'test',
-      modified: timestamp.now(),
-      modifiedBy: 'test'
-    },
-    {
-      id: 'app_B',
-      token: 'app_B_token',
-      name: 'App access B (subset of A)',
-      type: 'app',
-      permissions: [
-        {
-          streamId: testData.streams[0].id,
-          level: 'read'
-        },
-        {
-          tag: 'super',
-          level: 'read'
-        }
-      ],
-      created: timestamp.now(),
-      createdBy: 'test',
-      modified: timestamp.now(),
-      modifiedBy: 'test'
-    },
-    {
-      id: 'shared_A',
-      token: 'shared_A_token',
-      name: 'Shared access A (subset of app access A)',
-      type: 'shared',
-      permissions: [
-        {
-          streamId: testData.streams[0].children[0].id,
-          level: 'read'
-        },
-        {
-          tag: 'super',
-          level: 'read'
-        }
-      ],
-      created: timestamp.now(),
-      createdBy: 'app_A',
-      modified: timestamp.now(),
-      modifiedBy: 'app_A'
-    },
-    {
-      id: 'root_A',
-      token: 'root_A_token',
-      name: 'Root token',
-      type: 'app',
-      permissions: [
-        {
-          streamId: '*',
-          level: 'manage'
-        }
-      ],
-      created: timestamp.now(),
-      createdBy: 'test',
-      modified: timestamp.now(),
-      modifiedBy: 'test'
-    },
-    {
-      id: 'shared_B',
-      token: 'shared_B_token',
-      name: 'Shared access B (with permission on unexisting stream)',
-      type: 'shared',
-      permissions: [
-        {
-          streamId: 'idonotexist',
-          level: 'read'
-        }
-      ],
-      created: timestamp.now(),
-      createdBy: 'test',
-      modified: timestamp.now(),
-      modifiedBy: 'test'
-    }
-  ];
-  let user = Object.assign({}, testData.users[0]);
-
-  const access = additionalTestAccesses[0];
-  const basePath = '/' + user.username + '/accesses';
+  let helpers, server, validation, storage, testData;
+  let additionalTestAccesses, user, access, basePath, accessesNotifCount;
   let request: ?Request = null; // must be set after server instance started
+  before(() => {
+    require('./test-helpers'); 
+    helpers = require('./helpers');
+    server = helpers.dependencies.instanceManager;
+    validation = helpers.validation;
+    storage = helpers.dependencies.storage.user.accesses;
+    testData = helpers.data;
+
+    additionalTestAccesses = [
+      {
+        id: 'app_A',
+        token: 'app_A_token',
+        name: 'App access A',
+        type: 'app',
+        permissions: [
+          {
+            streamId: testData.streams[0].id,
+            level: 'manage'
+          },
+          {
+            streamId: testData.streams[1].id,
+            level: 'contribute'
+          },
+          {
+            tag: 'super',
+            level: 'contribute'
+          }
+        ],
+        created: timestamp.now(),
+        createdBy: 'test',
+        modified: timestamp.now(),
+        modifiedBy: 'test'
+      },
+      {
+        id: 'app_B',
+        token: 'app_B_token',
+        name: 'App access B (subset of A)',
+        type: 'app',
+        permissions: [
+          {
+            streamId: testData.streams[0].id,
+            level: 'read'
+          },
+          {
+            tag: 'super',
+            level: 'read'
+          }
+        ],
+        created: timestamp.now(),
+        createdBy: 'test',
+        modified: timestamp.now(),
+        modifiedBy: 'test'
+      },
+      {
+        id: 'shared_A',
+        token: 'shared_A_token',
+        name: 'Shared access A (subset of app access A)',
+        type: 'shared',
+        permissions: [
+          {
+            streamId: testData.streams[0].children[0].id,
+            level: 'read'
+          },
+          {
+            tag: 'super',
+            level: 'read'
+          }
+        ],
+        created: timestamp.now(),
+        createdBy: 'app_A',
+        modified: timestamp.now(),
+        modifiedBy: 'app_A'
+      },
+      {
+        id: 'root_A',
+        token: 'root_A_token',
+        name: 'Root token',
+        type: 'app',
+        permissions: [
+          {
+            streamId: '*',
+            level: 'manage'
+          }
+        ],
+        created: timestamp.now(),
+        createdBy: 'test',
+        modified: timestamp.now(),
+        modifiedBy: 'test'
+      },
+      {
+        id: 'shared_B',
+        token: 'shared_B_token',
+        name: 'Shared access B (with permission on unexisting stream)',
+        type: 'shared',
+        permissions: [
+          {
+            streamId: 'idonotexist',
+            level: 'read'
+          }
+        ],
+        created: timestamp.now(),
+        createdBy: 'test',
+        modified: timestamp.now(),
+        modifiedBy: 'test'
+      }
+    ];
+    user = Object.assign({}, testData.users[0]);
+  
+    access = additionalTestAccesses[0];
+    basePath = '/' + user.username + '/accesses';
+    
+    // to verify data change notifications
+    server.on('accesses-changed', function () { accessesNotifCount++; });
+  });
 
   function path(id) {
     return basePath + '/' + id;
@@ -136,10 +145,6 @@ describe('accesses (app)', function () {
     if (request) return request; 
     throw new Error('request is still not defined.');
   }
-  
-  // to verify data change notifications
-  let accessesNotifCount;
-  server.on('accesses-changed', function () { accessesNotifCount++; });
 
   before(function (done) {
     async.series([

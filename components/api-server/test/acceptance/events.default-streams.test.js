@@ -13,20 +13,20 @@ const assert = require('chai').assert;
 const { describe, before, it } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
+
+const { getConfig } = require('components/api-server/config/Config');
 const ErrorIds = require('components/errors').ErrorIds;
 const ErrorMessages = require('components/errors/src/ErrorMessages');
 const Settings = require('components/api-server/src/settings');
 const Application = require('components/api-server/src/application');
 const Notifications = require('components/api-server/src/Notifications');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
-const helpers = require('components/api-server/test/helpers');
-const validation = helpers.validation;
-
 
 describe("[AGT3] Events of default-streams", function () {
+  let config;
+  let validation;
   let app;
   let request;
   let res;
@@ -93,6 +93,9 @@ describe("[AGT3] Events of default-streams", function () {
 
 
   before(async function () {
+    config = getConfig();
+    const helpers = require('components/api-server/test/helpers');
+    validation = helpers.validation;
     mongoFixtures = databaseFixture(await produceMongoConnection());
     const settings = await Settings.load();
 
@@ -285,9 +288,8 @@ describe("[AGT3] Events of default-streams", function () {
               type: 'string/pryv'
             };
 
-            const settings = _.cloneDeep(helpers.dependencies.settings);
             nock.cleanAll();
-            scope = nock(settings.services.register.url)
+            scope = nock(config.get('services:register:url'))
             scope.put('/users',
               (body) => {
               serviceRegisterRequest = body;
@@ -344,9 +346,8 @@ describe("[AGT3] Events of default-streams", function () {
               type: 'string/pryv'
             };
 
-            const settings = _.cloneDeep(helpers.dependencies.settings);
             nock.cleanAll();
-            nock(settings.services.register.url).put('/users')
+            nock(config.get('services:register:url')).put('/users')
               .reply(400, {
                 error: {
                   id: ErrorIds.ItemAlreadyExists,
@@ -380,9 +381,8 @@ describe("[AGT3] Events of default-streams", function () {
               type: 'string/pryv'
             };
 
-            const settings = _.cloneDeep(helpers.dependencies.settings);
             nock.cleanAll();
-            nock(settings.services.register.url).put('/users',
+            nock(config.get('services:register:url')).put('/users',
               (body) => {
                 serviceRegisterRequest = body;
                 return true;
@@ -416,9 +416,8 @@ describe("[AGT3] Events of default-streams", function () {
                 type: 'string/pryv'
               };
 
-              const settings = _.cloneDeep(helpers.dependencies.settings);
               nock.cleanAll();
-              scope = nock(settings.services.register.url)
+              scope = nock(config.get('services:register:url'))
               scope.put('/users',
                 (body) => {
                   serviceRegisterRequest = body;
@@ -485,9 +484,8 @@ describe("[AGT3] Events of default-streams", function () {
           clientData: 'This is a consent'
         });
 
-        const settings = _.cloneDeep(helpers.dependencies.settings);
         nock.cleanAll();
-        scope = nock(settings.services.register.url)
+        scope = nock(config.get('services:register:url'))
         scope.put('/users',
           (body) => {
             serviceRegisterRequest = body;
@@ -628,9 +626,8 @@ describe("[AGT3] Events of default-streams", function () {
           before(async function () {
             await createUser();
             let streamId = 'email';
-            const settings = _.cloneDeep(helpers.dependencies.settings);
             nock.cleanAll();
-            scope = nock(settings.services.register.url)
+            scope = nock(config.get('services:register:url'))
             scope.put('/users',
               (body) => {
                 serviceRegisterRequest = body;
@@ -659,9 +656,8 @@ describe("[AGT3] Events of default-streams", function () {
           before(async function () {
             await createUser();
             let streamId = 'language';
-            const settings = _.cloneDeep(helpers.dependencies.settings);
             nock.cleanAll();
-            scope = nock(settings.services.register.url)
+            scope = nock(config.get('services:register:url'))
             scope.put('/users',
               (body) => {
                 serviceRegisterRequest = body;
@@ -746,9 +742,8 @@ describe("[AGT3] Events of default-streams", function () {
               content: charlatan.Lorem.characters(7),
               type: 'string/pryv'
             };
-            const settings = _.cloneDeep(helpers.dependencies.settings);
             nock.cleanAll();
-            scope = nock(settings.services.register.url)
+            scope = nock(config.get('services:register:url'))
             scope.put('/users',
               (body) => {
                 serviceRegisterRequest = body;
@@ -800,9 +795,8 @@ describe("[AGT3] Events of default-streams", function () {
               content: user1.attrs.email,
               type: 'string/pryv'
             };
-            const settings = _.cloneDeep(helpers.dependencies.settings);
             nock.cleanAll();
-            scope = nock(settings.services.register.url)
+            scope = nock(config.get('services:register:url'))
             scope.put('/users',
               (body) => {
                 serviceRegisterRequest = body;
@@ -829,8 +823,7 @@ describe("[AGT3] Events of default-streams", function () {
         const streamId = 'email';
         before(async function () {
           await createUser();
-          const settings = _.cloneDeep(helpers.dependencies.settings);
-          scope = nock(settings.services.register.url)
+          scope = nock(config.get('services:register:url'));
           scope.put('/users',
             (body) => {
               serviceRegisterRequest = body;
@@ -870,8 +863,7 @@ describe("[AGT3] Events of default-streams", function () {
           before(async function () {
             await createUser();
             nock.cleanAll();
-            const settings = _.cloneDeep(helpers.dependencies.settings);
-            scope = nock(settings.services.register.url)
+            scope = nock(config.get('services:register:url'));
             scope.put('/users',
               (body) => {
                 serviceRegisterRequest = body;
@@ -904,8 +896,7 @@ describe("[AGT3] Events of default-streams", function () {
           before(async function () {
             await createUser();
             nock.cleanAll();
-            const settings = _.cloneDeep(helpers.dependencies.settings);
-            scope = nock(settings.services.register.url)
+            scope = nock(config.get('services:register:url'));
             scope.put('/users',
               (body) => {
                 serviceRegisterRequest = body;
@@ -946,9 +937,8 @@ describe("[AGT3] Events of default-streams", function () {
           let streamId = 'email';
           let initialEvent;
           before(async function () {
-            const settings = _.cloneDeep(helpers.dependencies.settings);
             nock.cleanAll();
-            scope = nock(settings.services.register.url)
+            scope = nock(config.get('services:register:url'));
             scope.put('/users',
               (body) => {
                 serviceRegisterRequest = body;
@@ -987,9 +977,8 @@ describe("[AGT3] Events of default-streams", function () {
           let streamId = 'language';
           let initialEvent;
           before(async function () {
-            const settings = _.cloneDeep(helpers.dependencies.settings);
             nock.cleanAll();
-            scope = nock(settings.services.register.url)
+            scope = nock(config.get('services:register:url'));
             scope.put('/users',
               (body) => {
                 serviceRegisterRequest = body;
@@ -1035,9 +1024,8 @@ describe("[AGT3] Events of default-streams", function () {
       let streamId = 'username';
       let initialEvent;
       before(async function () {
-        const settings = _.cloneDeep(helpers.dependencies.settings);
         nock.cleanAll();
-        scope = nock(settings.services.register.url)
+        scope = nock(config.get('services:register:url'));
         scope.put('/users',
           (body) => {
             serviceRegisterRequest = body;

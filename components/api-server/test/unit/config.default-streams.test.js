@@ -19,7 +19,7 @@ describe('SystemStreams config', () => {
       
       store = new nconf.Provider();
       store.use('memory');
-      store.set('systemStreams:custom',
+      store.set('custom:systemStreams',
         {
           account: [
             {

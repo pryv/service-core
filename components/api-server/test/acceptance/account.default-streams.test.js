@@ -21,10 +21,9 @@ const SystemStreamsSerializer = require('components/business/src/system-streams/
 
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
-const helpers = require('components/api-server/test/helpers');
-
 
 describe("[841C] Account with default-streams", function () {
+  let helpers;
   let app;
   let request;
   let res;
@@ -77,6 +76,7 @@ describe("[841C] Account with default-streams", function () {
   }
 
   before(async function () {
+    helpers = require('components/api-server/test/helpers');
     mongoFixtures = databaseFixture(await produceMongoConnection());
     const settings = await Settings.load();
 

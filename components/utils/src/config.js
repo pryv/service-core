@@ -317,14 +317,6 @@ config.schema = {
       }
     }
   },
-  // Default main system streams and custom ones - the structure is predefined in
-  // api-server/config/components
-  systemStreams: {
-    custom:
-    {
-      account: []
-    }
-  }
 };
 
 /**

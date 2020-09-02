@@ -31,7 +31,7 @@ describe('registration: single-node', () => {
       await config.init();
       config.set('singleNode:isActive', true);
       config.set('openSource:isActive', false);
-      config.set('systemStreams:custom', null);
+      config.set('custom:systemStreams', null);
       app = new Application(settings);
       await app.initiate();
 

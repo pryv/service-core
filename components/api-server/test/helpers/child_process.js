@@ -8,6 +8,7 @@
 
 const debug = require('debug')('api-server.child_process');
 
+const { getConfig } = require('components/api-server/config/Config');
 const Server = require('../../src/server');
 const Settings = require('../../src/settings');
 const Application = require('../../src/application');
@@ -89,6 +90,8 @@ class ApplicationLauncher {
   async launch(injectSettings: Object) {
     try {
       debug('launch', injectSettings);
+      const config = getConfig();
+      await config.init();
       const settings = await Settings.load(); 
     
       const masked = new ConfigMask(injectSettings, settings);

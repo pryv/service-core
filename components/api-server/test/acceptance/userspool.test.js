@@ -7,22 +7,25 @@
 // @flow
 
 /* global describe, it, before, after */
-const { databaseFixture } = require('components/test-helpers');
-const { produceMongoConnection, context } = require('../test-helpers');
 
 const bluebird = require('bluebird');
 const chai = require('chai');
 const assert = chai.assert;
-const helpers = require('../helpers');
 
-const storage = require('components/test-helpers').dependencies.storage.user.events;
-const database = require('components/test-helpers').dependencies.storage.database;
+const { getConfig } = require('components/api-server/config/Config');
 
 describe('[55JP] users pool', () => {
-  const adminKey = helpers.dependencies.settings.auth.adminAccessKey;
+  let produceMongoConnection, context, storage, database;
+  let adminKey;
   let server;
   let mongoFixtures;
   before(async () => {
+    config = getConfig();
+    adminKey = config.get('auth:adminAccessKey');
+    ({ produceMongoConnection, context, databaseFixture } = require('components/test-helpers'));
+    ({ produceMongoConnection, context } = require('../test-helpers'));
+    storage = require('components/test-helpers').dependencies.storage.user.events;
+    database = require('components/test-helpers').dependencies.storage.database;
     server = await context.spawn();
   });
   after(() => {
