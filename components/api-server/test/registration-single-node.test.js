@@ -85,7 +85,7 @@ describe('[BMM2] registration: single-node', () => {
       before(async function() {
         res = await request.post('/users').send(registerBody);
       });
-      it('[KB3T] should respond with status 201', function() {
+      it.only('[KB3T] should respond with status 201', function() {
         assert.equal(res.status, 201);
       });
       it('[VDA8] should respond with a username and apiEndpoint in the request body', async () => {

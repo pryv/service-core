@@ -64,6 +64,12 @@ class Registration {
     if (params.username && typeof params.username === 'string') {
       params.username = params.username.toLowerCase();
     }
+    if(params.username) {
+      params['.username'] = params.username;
+    }
+    if(params.appId) {
+      params['.appId'] = params.appId;
+    }
     if (params.email && typeof params.email === 'string') {
       params.email = params.email.toLowerCase();
     }
