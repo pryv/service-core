@@ -67,6 +67,10 @@ class Registration {
     if (params.email && typeof params.email === 'string') {
       params.email = params.email.toLowerCase();
     }
+    // if referer is empty, remove the field, otherwise, z-schema will validate type
+    if (params.referer == null) {
+      delete params.referer;
+    }
     //TODO IEVA, ask Ilia, because now validation is applied on params
     // if I want to skip params editing, I have to change that method
     context.user = new User(params);
