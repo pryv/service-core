@@ -9,6 +9,10 @@
 'use strict';
 const _ = require('lodash');
 const treeUtils = require('components/utils/src/treeUtils');
+const validation = require('components/api-server/src/schema/validation');
+const string = require('components/api-server/src/methods/helpers/string');
+const slugify = require('slug');
+const systemStreamSchema = require('./systemStreamSchema');
 
 const DEFAULT_VALUES_FOR_FIELDS = {
   isIndexed: false, // if true will be sent to service-register to be able to query across the platform
@@ -19,7 +23,7 @@ const DEFAULT_VALUES_FOR_FIELDS = {
 };
 
 async function load(config: Config): Config {
-  // default system streams that sould be not changed
+  // default system streams that should be not changed
   config.set('systemStreams:account', [
     _.extend({}, DEFAULT_VALUES_FOR_FIELDS, {
       isIndexed: true,
@@ -159,6 +163,14 @@ async function load(config: Config): Config {
     }
     return _.merge(srcValue, objValue);
   }
+
+  function validateSystemStreamWithSchema(systemStream) {
+    validation.validate(systemStream, systemStreamSchema, function (err) {
+      if (err) {
+        throw err;
+      }
+    });
+  }
   /**
    * Iterate through additional fields, add default values and
    * set to the main system streams config
@@ -190,17 +202,22 @@ async function load(config: Config): Config {
       defaultConfig[newConfigKeys[i]] = additionalFields[newConfigKeys[i]];
     }
 
-    // validate that each config stream has a type
+    // validate that each config stream is valid according to schmema, its id is not reserved and that it has a type
     const allConfigKeys = Object.keys(defaultConfig);
-    allConfigKeys.forEach(configKey => {
+    for(let configKey of allConfigKeys) {
       const flatStreamsList = treeUtils.flattenTree(defaultConfig[configKey]);
       // check if each stream has a type
-      flatStreamsList.forEach(stream => {
+      for(let stream of flatStreamsList) {
+        validateSystemStreamWithSchema(stream);
+        if (string.isReservedId(stream.id) ||
+          string.isReservedId(stream.id = slugify(stream.id))) {
+          throw new Error('The specified id "' + stream.id + '" is not allowed.');
+        }
         if (!stream.type) {
           throw new Error(`SystemStreams streams must have a type. Please fix the config systemStreams.custom ${stream.id} so that all custom streams would include type. It will be used while creating the events.`);
         }
-      });
-    });
+      }
+    }
 
     // make sure each config id starts with '.' - dot sign
     for(let configKey of allConfigKeys) {

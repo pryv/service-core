@@ -4,6 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+// @flow
 const _ = require('lodash');
 const treeUtils = require('components/utils').treeUtils;
 
@@ -78,7 +79,7 @@ class SystemStreamsSerializer {
     let flatStreamsListObj = {};
     let i;
     for (i = 0; i < flatStreamsList.length; i++) {
-      flatStreamsListObj[flatStreamsList[i].id] = flatStreamsList[i]
+      flatStreamsListObj[flatStreamsList[i].id] = flatStreamsList[i];
     }
     return flatStreamsListObj;
   }
@@ -135,7 +136,7 @@ class SystemStreamsSerializer {
         id: streamKeys[i],
         parentId: null,
         children: formSystemStreamsFromSettings(this.systemStreamsSettings[streamKeys[i]], [], streamKeys[i])
-      })
+      });
     }
     return virtualStreams;
   }
@@ -162,7 +163,7 @@ class SystemStreamsSerializer {
  * @param array systemStreams 
  * @param string parentName 
  */
-function formSystemStreamsFromSettings (settings, systemStreams, parentName: string):array {
+function formSystemStreamsFromSettings (settings, systemStreams, parentName: string): [] {
   let streamIndex;
   
   for (streamIndex = 0; streamIndex < settings.length; streamIndex++) {
