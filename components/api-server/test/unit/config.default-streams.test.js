@@ -8,9 +8,8 @@
 const chai = require('chai');
 const nconf = require('nconf');
 const assert = chai.assert;
-const charlatan = require('charlatan');
 const systemStreamsConfig = require('components/api-server/config/components/systemStreams');
-//const { initConfig } = require('components/api-server/config/Config');
+const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
 describe('SystemStreams config', () => {
   let store;
@@ -29,10 +28,12 @@ describe('SystemStreams config', () => {
             {
               id: 'username',
               isEditable: false,
-              isShown: false
+              isShown: false,
+              type: 'string/pryv'
             },
             {
               id: 'field-withchildern',
+              name: 'field-withchildern',
               type: 'smth/string',
               children: [
                 {
@@ -67,7 +68,7 @@ describe('SystemStreams config', () => {
       const newConfig = store.get('systemStreams:account');
       let found = false;
       newConfig.forEach(stream => {
-        if (stream.id == 'username') {
+        if (stream.id == SystemStreamsSerializer.options.STREAM_ID_USERNAME) {
           assert.deepEqual(stream, {
             isIndexed: true,
             isUnique: true,
@@ -76,7 +77,7 @@ describe('SystemStreams config', () => {
             isRequiredInValidation: true,
             type: 'identifier/string',
             name: 'Username',
-            id: 'username'
+            id: SystemStreamsSerializer.options.STREAM_ID_USERNAME
           });
           found = true;
         }
@@ -85,7 +86,6 @@ describe('SystemStreams config', () => {
     });
     it('[5T5S] Account config is merged correctly and New values are extended with default streams values', async () => {
       const newConfig = store.get('systemStreams:account');
-
       assert.deepEqual(newConfig, [
         {
           isIndexed: true,
@@ -95,7 +95,7 @@ describe('SystemStreams config', () => {
           isRequiredInValidation: true,
           type: 'identifier/string',
           name: 'Username',
-          id: 'username'
+          id: '.username'
         },
         {
           isIndexed: true,
@@ -106,7 +106,7 @@ describe('SystemStreams config', () => {
           default: 'en',
           type: 'language/iso-639-1',
           name: 'Language',
-          id: 'language'
+          id: '.language'
         },
         {
           isIndexed: true,
@@ -117,7 +117,7 @@ describe('SystemStreams config', () => {
           type: 'identifier/string',
           name: 'appId',
           default: '',
-          id: 'appId'
+          id: '.appId'
         },
         {
           isIndexed: true,
@@ -128,7 +128,7 @@ describe('SystemStreams config', () => {
           default: 'no-token',
           type: 'token/string',
           name: 'Invitation Token',
-          id: 'invitationToken'
+          id: '.invitationToken'
         },
         {
           isIndexed: false,
@@ -138,7 +138,7 @@ describe('SystemStreams config', () => {
           isRequiredInValidation: false,
           type: 'password-hash/string',
           name: 'Password Hash',
-          id: 'passwordHash'
+          id: '.passwordHash'
         },
         {
           isIndexed: true,
@@ -149,10 +149,10 @@ describe('SystemStreams config', () => {
           default: null,
           type: 'identifier/string',
           name: 'Referer',
-          id: 'referer'
+          id: '.referer'
         },
         {
-          id: 'storageUsed',
+          id: '.storageUsed',
           isShown: true,
           name: 'Storage used',
           type: 'data-quantity/b',
@@ -166,7 +166,7 @@ describe('SystemStreams config', () => {
               default: 0,
               type: 'data-quantity/b',
               name: 'Db Documents',
-              id: 'dbDocuments'
+              id: '.dbDocuments'
             },
             {
               isIndexed: false,
@@ -177,7 +177,7 @@ describe('SystemStreams config', () => {
               default: 0,
               type: 'data-quantity/b',
               name: 'Attached files',
-              id: 'attachedFiles'
+              id: '.attachedFiles'
             }
           ]
         },
@@ -187,7 +187,8 @@ describe('SystemStreams config', () => {
           isShown: false,
           isEditable: false,
           isRequiredInValidation: false,
-          id: 'field1',
+          id: '.field1',
+          name: 'field1',
           type: 'string/pryv'
         },
         {
@@ -196,7 +197,8 @@ describe('SystemStreams config', () => {
           isShown: false,
           isEditable: false,
           isRequiredInValidation: false,
-          id: 'field-withchildern',
+          id: '.field-withchildern',
+          name: 'field-withchildern',
           type: 'smth/string',
           children: [
             {
@@ -205,7 +207,8 @@ describe('SystemStreams config', () => {
               isShown: true,
               isEditable: false,
               isRequiredInValidation: false,
-              id: 'child-one',
+              id: '.child-one',
+              name: 'child-one',
               type: 'string/pryv'
             },
             {
@@ -214,7 +217,8 @@ describe('SystemStreams config', () => {
               isShown: true,
               isEditable: false,
               isRequiredInValidation: false,
-              id: 'child-two',
+              id: '.child-two',
+              name: 'child-two',
               type: 'string/pryv'
             }
           ]
@@ -230,7 +234,8 @@ describe('SystemStreams config', () => {
           isShown: false,
           isEditable: false,
           isRequiredInValidation: false,
-          id: 'field1',
+          id: '.field1',
+          name: 'field1',
           type: 'string/pryv'
         },
         {
@@ -239,17 +244,11 @@ describe('SystemStreams config', () => {
           isShown: true,
           isEditable: false,
           isRequiredInValidation: false,
-          id: 'field2',
+          id: '.field2',
+          name: 'field2',
           type: 'string/pryv'
         }
       ]);
     });
-    /* Commented out, because nconf.clear() does not work as expected
-    it('[5SHT] Custom streams are removed from config', async () => {
-      const newConfig = store.get('systemStreams');
-      assert.deepEqual(Object.keys(newConfig), [
-        'account', 'helpers','myNewStream'
-      ]);
-    });*/
   });
 });

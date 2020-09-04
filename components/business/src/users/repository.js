@@ -35,7 +35,7 @@ class Repository {
     let users = [];
     // get list of user ids and usernames
     let query = {
-      streamIds: { $in: ['username'] },
+      streamIds: { $in: [SystemStreamsSerializer.options.STREAM_ID_USERNAME] },
       deleted: null,
       headId: null
     }
@@ -72,7 +72,7 @@ class Repository {
     let users = [];
     // get list of user ids and usernames
     let query = {
-      streamIds: { $in: ['username'] },
+      streamIds: { $in: [SystemStreamsSerializer.options.STREAM_ID_USERNAME] },
       deleted: null,
       headId: null
     }
@@ -125,16 +125,16 @@ class Repository {
    * Get account info from username
    */
   async getAccountByUsername (username: string, getAll: boolean): Promise<?User> {
-    // TODO IEVA validate for deleted users 
     const userIdEvent = await bluebird.fromCallback(cb =>
       this.storage.database.findOne(
         this.storage.getCollectionInfoWithoutUserId(),
         this.storage.applyQueryToDB({
           $and: [
-            { streamIds: { $in: ['username'] } },
+            { streamIds: { $in: [SystemStreamsSerializer.options.STREAM_ID_USERNAME] } },
             { content: { $eq: username } }]
         }),
         null, cb));
+    
     if (userIdEvent && userIdEvent.userId) {
       return this.getById(userIdEvent.userId, getAll);
     } else {
@@ -246,10 +246,11 @@ class Repository {
    * @param {*} userId 
    * @param {*} update 
    */
-  async updateOne (userId: string, update: {}): Promise<void> {
+  async updateOne (userId: string, update: {}, updateOnlyActive: boolean): Promise<void> {
     // get streams ids from the config that should be retrieved
     let userAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
 
+    const uniqueAccountStreamIds = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutDot();
     // change password into hash if it exists
     if (update.password && !update.passwordHash) {
       update.passwordHash = await bluebird.fromCallback((cb) => encryption.hash(update.password, cb));
@@ -257,15 +258,25 @@ class Repository {
     delete update.password;
 
     // update all account streams and do not allow additional properties
-    let i;
-    let streamId;
-    for (i = 0; i < userAccountStreamsIds.length; i++){
-      streamId = userAccountStreamsIds[i];
-      if (update[streamId]) {
+    for (let i = 0; i < userAccountStreamsIds.length; i++){
+      let streamId = userAccountStreamsIds[i];
+      let streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(streamId);
+      if (update[streamIdWithoutDot]) {
+        let updateData = { content: update[streamIdWithoutDot] };
+        if (uniqueAccountStreamIds.includes(streamIdWithoutDot)) {
+          updateData[`${streamIdWithoutDot}__unique`] = update[streamIdWithoutDot];
+        }
+
+        let updateQuery;
+        if (updateOnlyActive) {
+          updateQuery = { streamIds: { $all: [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE] } };
+        } else {
+          updateQuery = { streamIds: { $in: [streamId] } };
+        }
         await bluebird.fromCallback(cb => this.storage.updateOne(
-          { id: userId, streamIds: SystemStreamsSerializer.options.STREAM_ID_ACTIVE },
-          { streamIds: { $in: [streamId] } },
-          { content: update[streamId] }, cb));
+          { id: userId },
+          updateQuery,
+          updateData, cb));
       }
     }
     return true;
@@ -290,7 +301,7 @@ class Repository {
       this.storage.findOne({ id: userId },
         {
           $and: [
-            { streamIds: 'passwordHash' }
+            { streamIds: SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH }
           ]
         }, null, cb));
     return (userPass?.content) ? userPass.content : null;
@@ -310,6 +321,17 @@ class Repository {
       encryption.compare(password, currentPass, cb));
 
     return isValid;
+  }
+
+  /**
+   * Checks if passwword is valid for the given userId
+   * @param string userId 
+   * @param string password
+   */
+  async count (): number {
+    return await bluebird.fromCallback(cb => {
+      this.storage.count({}, { streamIds: SystemStreamsSerializer.options.STREAM_ID_USERNAME }, cb);
+    });
   }
 }
 module.exports = Repository;

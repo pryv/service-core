@@ -5,14 +5,15 @@
  * Proprietary and confidential
  */
 var errors = require('components/errors').factory,
-    commonFns = require('./helpers/commonFunctions'),
-    mailing = require('./helpers/mailing'),
-    encryption = require('components/utils').encryption,
-    methodsSchema = require('../schema/accountMethods'),
-    request = require('superagent'),
-  bluebird = require('bluebird');
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer'),
-  Registration = require('components/business/src/auth/registration'),
+  commonFns = require('./helpers/commonFunctions'),
+  mailing = require('./helpers/mailing'),
+  encryption = require('components/utils').encryption,
+  methodsSchema = require('../schema/accountMethods'),
+  request = require('superagent');
+
+const { getConfig } = require('components/api-server/config/Config');
+
+const Registration = require('components/business/src/auth/registration'),
   ErrorMessages = require('components/errors/src/ErrorMessages'),
   ErrorIds = require('components/errors').ErrorIds,
   ServiceRegister = require('components/business/src/auth/service_register'),
@@ -68,7 +69,6 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     updateAccount);
 
   async function verifyOldPassword (context, params, result, next) {
-    const userRepository = new UserRepository(userEventsStorage);
     try{
       const isValid = await userRepository.checkUserPassword(context.user.id, params.oldPassword);
       if (!isValid) {
@@ -168,7 +168,11 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     });
   }
 
-  async function notifyEmailChangeToRegister(context, params, result, next) {
+  async function notifyEmailChangeToRegister (context, params, result, next) {
+    // no need to update service register if it is single node setup
+    if (getConfig().get('singleNode:isActive') === true) {
+      return next();
+    }
     const currentEmail = context.user.email;
     const newEmail = params.update.email;
 
@@ -182,7 +186,6 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
       .set('Authorization', registerSettings.key)
       .send({ email: newEmail })
       .end(async (err, res) => {
-
         if (err != null || (res && ! res.ok)) {
           let errMsg = 'Failed to update email on register. ';
           // for some reason register returns error message within res.body
@@ -228,25 +231,9 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
 
   async function updateAccount(context, params, result, next) {
     try {
-      // form tasks to update the events - account will deprecated so it does not take care for
-      // nested fields
-      const fieldsToUpdate = Object.keys(params.update);
-      const uniqueAccountStreamIds = SystemStreamsSerializer.getUniqueAccountStreamsIds();
-      let i;
-      for (i = 0; i < fieldsToUpdate.length; i++){
-        let updateData = { content: params.update[fieldsToUpdate[i]]};
-        if (uniqueAccountStreamIds.includes(fieldsToUpdate[i])) {
-          updateData[`${fieldsToUpdate[i]}__unique`] = params.update[fieldsToUpdate[i]];
-        }
-
-        await bluebird.fromCallback(cb => userEventsStorage.updateOne(
-          { id: context.user.id },
-          { streamIds: { $all: [fieldsToUpdate[i], SystemStreamsSerializer.options.STREAM_ID_ACTIVE] } },
-          updateData, cb));
-      }
-
+      await userRepository.updateOne(context.user.id, params.update, true);
       // retrieve and form user info
-      if (!fieldsToUpdate.includes('passwordHash')) {
+      if (!Object.keys(params.update).includes('passwordHash')) {
         const user: User = await userRepository.getById(context.user.id);
         result.account = user.getAccount();
       }

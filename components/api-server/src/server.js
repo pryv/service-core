@@ -21,6 +21,7 @@ const expressAppInit = require('./expressApp');
 
 const child_process = require('child_process');
 const url = require('url');
+const UsersRepository = require('components/business/src/users/repository');
 
 import type { Logger } from 'components/utils';
 import type { ConfigAccess } from './settings';
@@ -325,13 +326,11 @@ class Server {
   }
 
   async getUserCount(): Promise<Number> {
-    const eventsStorage = this.application.storageLayer.events;
     let numUsers;
     try{
-      numUsers = await bluebird.fromCallback(cb => {
-        eventsStorage.count({}, {streamIds: 'username' }, cb);
-      });
-    } catch(error){
+      let usersRepository = new UsersRepository(this.application.storageLayer.events);
+      numUsers = await usersRepository.count();
+    } catch (error) {
       this.logger.error(error);
       throw error;
     }

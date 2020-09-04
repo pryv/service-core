@@ -374,7 +374,7 @@ exports.removeAccountStreamsEvents = function (items) {
 };
 
 exports.separateAccountStreamsAndOtherEvents = function (items) {
-  const readableAccountStreams = ['username', 'email', 'language', 'attachedFiles', 'dbDocuments', 'insurancenumber', 'phoneNumber', 'passwordHash', 'invitationToken', 'appId', 'referer'];
+  const readableAccountStreams = ['.username', '.email', '.language', '.attachedFiles', '.dbDocuments', '.insurancenumber', '.phoneNumber', '.passwordHash', '.invitationToken', '.appId', '.referer'];
   const normalEvents = items.filter(function (e) {
     return (!e.streamIds) || !(e.streamIds.some(streamId => readableAccountStreams.indexOf(streamId) >= 0));
   });
@@ -387,9 +387,9 @@ exports.separateAccountStreamsAndOtherEvents = function (items) {
 exports.removeAccountStreams = function (streams) {
   var i = streams.length
   while (i--) {
-    if (streams[i].id && streams[i].id === 'account') {
+    if (streams[i].id && streams[i].id === '.account') {
       streams.splice(i, 1);
-    } else if (streams[i].id && streams[i].id === 'helpers') {
+    } else if (streams[i].id && streams[i].id === '.helpers') {
       streams.splice(i, 1);
     }
   }
@@ -439,7 +439,7 @@ exports.validateAccountEvents = function (actualAccountEvents) {
         foundEvent = true;
         // validate that event is indexed/unique if needed
         if (expectedAccountStreams[expectedSreamIds[n]].isUnique === true) {
-          actualAccountEvents[i].streamIds.includes('unique').should.eql(true);
+          actualAccountEvents[i].streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_UNIQUE).should.eql(true);
         }
         // validate type
         actualAccountEvents[i].type.should.eql(expectedAccountStreams[expectedSreamIds[n]].type);

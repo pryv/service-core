@@ -36,7 +36,7 @@ class ServiceRegister {
     // log fact about the event
     this.logger.info(`POST ${url} for username: ${username}`);
     try {
-      const res = await superagent
+      await superagent
         .post(url)
         .set('Authorization', this.config.key)
         .send({ 
@@ -84,7 +84,6 @@ class ServiceRegister {
     const url = this._formUrl('/users');
     // log fact about the event
     this.logger.info(`POST ${url} for username:${user.username}`);
-
     try {
       const res = await superagent
         .post(url)

@@ -194,14 +194,15 @@ function loadCustomValidationSettings (validationSchema) {
   // iterate account stream settings and APPEND validation with relevant properties
   // etc additional required fields or regex validation
   const accountStreamsSettings = SystemStreamsSerializer.getFlatAccountStreamSettings()
-  for (const [field, value] of Object.entries(accountStreamsSettings)) {
-    // if field is set as required - add required validation
+  for (const [streamIdWithDot, value] of Object.entries(accountStreamsSettings)) {
+    // if streamIdWithDot is set as required - add required validation
+    let streamId = SystemStreamsSerializer.removeDotFromStreamId(streamIdWithDot);
     if (
       value.isRequiredInValidation &&
       value.isRequiredInValidation == true &&
-      !validationSchema.required.includes(field)
+      !validationSchema.required.includes(streamIdWithDot)
     ) {
-      validationSchema.required.push(field);
+      validationSchema.required.push(streamId);
       //the error message of required property by z-schema is still a hell
     }
 
@@ -209,18 +210,18 @@ function loadCustomValidationSettings (validationSchema) {
     // etc : '^(series:)?[a-z0-9-]+/[a-z0-9-]+$'
     if (
       value.regexValidation &&
-      !validationSchema.properties.hasOwnProperty(field)
+      !validationSchema.properties.hasOwnProperty(streamId)
     ) {
-      validationSchema.properties[field] = string({
+      validationSchema.properties[streamId] = string({
         pattern: value.regexValidation
       });
 
       // if there is an error message and code specified, set those too
       if (
         value.regexError &&
-        !validationSchema.messages.hasOwnProperty(field)
+        !validationSchema.messages.hasOwnProperty(streamId)
       ) {
-        validationSchema.messages[field] = { PATTERN: value.regexError };
+        validationSchema.messages[streamId] = { PATTERN: value.regexError };
       }
     }
   }

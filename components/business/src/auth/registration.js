@@ -13,11 +13,8 @@ const _ = require('lodash');
 const cuid = require('cuid');
 const errors = require('components/errors').factory;
 const { errorHandling } = require('components/errors');
-const commonFns = require('components/api-server/src/methods/helpers/commonFunctions');
 const mailing = require('components/api-server/src/methods/helpers/mailing');
 const ServiceRegister = require('./service_register');
-const methodsSchema = require('components/api-server/src/schema/authMethods');
-var string = require('components/api-server/src/schema/helpers').string;
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 const UserRepository = require('components/business/src/users/repository');
 const User = require('components/business/src/users/User');
@@ -64,12 +61,6 @@ class Registration {
     if (params.username && typeof params.username === 'string') {
       params.username = params.username.toLowerCase();
     }
-    if(params.username) {
-      params['.username'] = params.username;
-    }
-    if(params.appId) {
-      params['.appId'] = params.appId;
-    }
     if (params.email && typeof params.email === 'string') {
       params.email = params.email.toLowerCase();
     }
@@ -98,10 +89,11 @@ class Registration {
   ) {
     try {
       let uniqueFields = {};
-      for (const [key, value] of Object.entries(this.accountStreamsSettings)) {
+      for (const [streamIdWithDot, streamSetings] of Object.entries(this.accountStreamsSettings)) {
         // if key is set as required - add required validation
-        if (value.isUnique && value.isUnique === true) {
-          uniqueFields[key] = context.user[key];
+        if (streamSetings.isUnique && streamSetings.isUnique === true) {
+          let streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(streamIdWithDot)
+          uniqueFields[streamIdWithoutDot] = context.user[streamIdWithoutDot];
         }
       }
 
@@ -246,8 +238,8 @@ class Registration {
   ) {
     try {
       // get streams ids from the config that should be retrieved
-      const userStreamsIds = SystemStreamsSerializer.getIndexedAccountStreams();
-      const uniqueStreamsIds = SystemStreamsSerializer.getUniqueAccountStreamsIds();
+      const userStreamsIds = SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutDot();
+      const uniqueStreamsIds = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutDot();
 
       // form data that should be sent to service-register
       // some default values and indexed/uinique fields of the system
@@ -257,7 +249,7 @@ class Registration {
         },
         host: { name: this.hostname },
       };
-      Object.keys(userStreamsIds).forEach(streamId => {
+      userStreamsIds.forEach(streamId => {
         if (context.user[streamId] != null) userData.user[streamId] = context.user[streamId];
       });
       userData.unique = [];

@@ -13,6 +13,7 @@ const chai = require('chai');
 const assert = chai.assert;
 
 const { getConfig } = require('components/api-server/config/Config');
+const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
 describe('[55JP] users pool', () => {
   let produceMongoConnection, context, storage, database;
@@ -65,7 +66,7 @@ describe('[55JP] users pool', () => {
             storage.getCollectionInfoWithoutUserId(),
             storage.applyQueryToDB({
               $and: [
-                { streamIds: { $in: ["username"] } },
+                { streamIds: { $in: [SystemStreamsSerializer.options.STREAM_ID_USERNAME] } },
                 { content: { $regex: new RegExp('^' + 'pool@') } }
               ]
             }),

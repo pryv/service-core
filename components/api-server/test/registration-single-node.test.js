@@ -85,7 +85,7 @@ describe('[BMM2] registration: single-node', () => {
       before(async function() {
         res = await request.post('/users').send(registerBody);
       });
-      it.only('[KB3T] should respond with status 201', function() {
+      it('[KB3T] should respond with status 201', function() {
         assert.equal(res.status, 201);
       });
       it('[VDA8] should respond with a username and apiEndpoint in the request body', async () => {
@@ -173,11 +173,11 @@ describe('[BMM2] registration: single-node', () => {
         testInvalidParameterValidation(
           'referer', 
           {
-            minLength: 1,
             maxLength: 99,
             type: 'string',
+            allowNull: true
           },
-          ['MYTP','DUQN','VTN5','C4PK','AFUH','J1DW','V51E','5BNJ'],
+          ['DUQN','VTN5','C4PK','AFUH','J1DW','V51E','5BNJ'],
         )
       );
       describe(
@@ -310,16 +310,18 @@ describe('[BMM2] registration: single-node', () => {
             );
           }
         }
-        describe(
-          'that is null',
-          verifyInvalidInputResponse(
-            {
-              [parameterName]: null
-            },
-            parameterName,
-            [ testTags.pop(), testTags.pop() ]
-          )
-        );
+        if (!constraints.allowNull) {
+          describe(
+            'that is null',
+            verifyInvalidInputResponse(
+              {
+                [parameterName]: null
+              },
+              parameterName,
+              [testTags.pop(), testTags.pop()]
+            )
+          );
+        }
       };
     }
   });

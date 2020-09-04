@@ -149,11 +149,14 @@ async function load(config: Config): Config {
   ): object{
     for (let i = 0; i < additionalFields.length; i++) {
       additionalFields[i] = _.extend({}, DEFAULT_VALUES_FOR_FIELDS, additionalFields[i]);
+      if (!additionalFields[i].name) {
+        additionalFields[i].name = additionalFields[i].id;
+      }
       // if stream has children recursivelly call the same function
       if (additionalFields[i].children != null) {
         additionalFields[i].children = extendSystemStreamsWithDefaultValues(additionalFields[i].children)
       }
-    };
+    }
     return additionalFields;
   }
 
@@ -171,6 +174,23 @@ async function load(config: Config): Config {
       }
     });
   }
+
+  /**
+   * Return config list where each id is with prepended dot
+   * @param {*} streamIdWithoutDot 
+   */
+  function ensureDotForStreamIds (defaultConfig: array): array {
+    for (let systemStream of defaultConfig) {
+      if (!systemStream.id.startsWith('.')) {
+        systemStream.id = '.' + systemStream.id;
+      }
+      if (typeof systemStream.children == 'object') {
+        systemStream.children = ensureDotForStreamIds(systemStream.children);
+      }
+    }
+    return defaultConfig;
+  }
+
   /**
    * Iterate through additional fields, add default values and
    * set to the main system streams config
@@ -180,7 +200,7 @@ async function load(config: Config): Config {
     config: Config,
     additionalFields
   ): Config {
-    const defaultConfig = config.get('systemStreams');
+    let defaultConfig = config.get('systemStreams');
 
     // extend systemStreams with default values
     const newConfigKeys = Object.keys(additionalFields);
@@ -188,6 +208,11 @@ async function load(config: Config): Config {
       additionalFields[newConfigKeys[i]] = extendSystemStreamsWithDefaultValues(additionalFields[newConfigKeys[i]]);
     }
 
+    // make sure each config id starts with '.' - dot sign
+    for (const [configKey, config] of Object.entries(additionalFields)) {
+      additionalFields[configKey] = ensureDotForStreamIds(config);
+    }
+    
     // first merge config with already existing keys (like account, helpers)
     const configKeys = Object.keys(defaultConfig);
     for (let i = 0; i < configKeys.length; i++){
@@ -207,7 +232,7 @@ async function load(config: Config): Config {
     for(let configKey of allConfigKeys) {
       const flatStreamsList = treeUtils.flattenTree(defaultConfig[configKey]);
       // check if each stream has a type
-      for(let stream of flatStreamsList) {
+      for (let stream of flatStreamsList) {
         validateSystemStreamWithSchema(stream);
         if (string.isReservedId(stream.id) ||
           string.isReservedId(stream.id = slugify(stream.id))) {
@@ -215,15 +240,6 @@ async function load(config: Config): Config {
         }
         if (!stream.type) {
           throw new Error(`SystemStreams streams must have a type. Please fix the config systemStreams.custom ${stream.id} so that all custom streams would include type. It will be used while creating the events.`);
-        }
-      }
-    }
-
-    // make sure each config id starts with '.' - dot sign
-    for(let configKey of allConfigKeys) {
-      for(let systemStream of defaultConfig[configKey]) {
-        if(!systemStream.id.startsWith('.')) {
-          systemStream.id = '.' + systemStream.id;
         }
       }
     }

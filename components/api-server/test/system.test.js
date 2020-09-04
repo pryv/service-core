@@ -28,7 +28,7 @@ const validation = helpers.validation;
 const encryption = require('components/utils').encryption;
 const storage = helpers.dependencies.storage.user.events;
 const testData = helpers.data;
-const Repository = require('components/business/src/users/repository');
+const UsersRepository = require('components/business/src/users/repository');
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('./test-helpers');
 const charlatan = require('charlatan');
@@ -115,7 +115,7 @@ describe('[373T] system (ex-register)', function () {
         });
         await (new Promise(server.ensureStarted.bind(server, settings)));
 
-        const usersRepository = new Repository(storage);
+        const usersRepository = new UsersRepository(storage);
         const originalUsers = await usersRepository.getAll();
 
         originalCount = originalUsers.length;
@@ -213,7 +213,7 @@ describe('[373T] system (ex-register)', function () {
 
           await (new Promise(server.ensureStarted.bind(server, settings)));
 
-          const usersRepository = new Repository(storage);
+          const usersRepository = new UsersRepository(storage);
           originalUsers = await usersRepository.getAll();
           originalCount = originalUsers.length;
 
@@ -279,7 +279,7 @@ describe('[373T] system (ex-register)', function () {
             language: 'fr'
           };
           try{
-            const res = await bluebird.fromCallback(cb => post(data, cb));
+            await bluebird.fromCallback(cb => post(data, cb));
             false.should.be.equal(true);
           } catch (err) {
             validation.checkError(err.response, {

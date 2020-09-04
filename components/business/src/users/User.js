@@ -31,10 +31,10 @@ class User {
   apiEndpoint: ?string;
   accountStreamsSettings: ?Array<{}>;
   accountFields: ?Array<string> = [];
+  accountFieldsWithDot: ?Array<string> = [];
   uniqueAccountFields: ?Array<string> = [];
 
   constructor (params: {
-    systemStreamsSerializer: {},
     events?: Array<{}>,
     id?: string,
     username?: string,
@@ -97,10 +97,12 @@ function buildAccountFields (user: User): void {
   const userAccountStreams = SystemStreamsSerializer.getAllAccountStreams();
   
   Object.keys(userAccountStreams).forEach(streamId => {
-    user.accountFields.push(streamId);
+    user.accountFieldsWithDot.push(streamId);
+    let streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(streamId);
     if (userAccountStreams[streamId].isUnique == true) {
-      user.uniqueAccountFields.push(streamId);
+      user.uniqueAccountFields.push(streamIdWithoutDot);
     }
+    user.accountFields.push(streamIdWithoutDot);
   });
 }
 
@@ -134,22 +136,24 @@ async function buildEventsFromAccount (user: User): Array<{}> {
 
   const events = [];
   Object.keys(userAccountStreams).forEach(streamId => {
+    let streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(streamId);
     if (
-      account[streamId] ||
+      account[streamIdWithoutDot] ||
       typeof userAccountStreams[streamId].default != 'undefined'
     ) {
       let parameter = userAccountStreams[streamId].default;
 
       // set default value if undefined
-      if (typeof account[streamId] !== 'undefined') {
-        parameter = account[streamId];
+      if (typeof account[streamIdWithoutDot] !== 'undefined') {
+        parameter = account[streamIdWithoutDot];
       }
 
+      let accessId = (user.accessId) ? user.accessId : 'system';
       const event = createEvent(
-        user,
         streamId,
         parameter,
-        userAccountStreams
+        userAccountStreams,
+        accessId
       );
 
       events.push(event);
@@ -159,9 +163,12 @@ async function buildEventsFromAccount (user: User): Array<{}> {
   user.events = events;
 }
 
-function createEvent (user, streamId, accountParameter, userAccountStreams) {
-  const defaultAccessId = 'system';
-
+function createEvent (
+  streamId: string,
+  accountParameter: string,
+  userAccountStreams: array,
+  accessId: string
+) {
   // get type for the event from the config
   let eventType = 'string';
   if (userAccountStreams[streamId].type) {
@@ -178,8 +185,8 @@ function createEvent (user, streamId, accountParameter, userAccountStreams) {
     created: timestamp.now(),
     modified: timestamp.now(),
     time: timestamp.now(),
-    createdBy: defaultAccessId,
-    modifiedBy: defaultAccessId,
+    createdBy: accessId,
+    modifiedBy: accessId,
     attachements: [],
     tags: []
   };
@@ -190,7 +197,8 @@ function createEvent (user, streamId, accountParameter, userAccountStreams) {
       SystemStreamsSerializer.options.STREAM_ID_UNIQUE
     );
     // repeated field for uniqness
-    event[streamId + '__unique'] = accountParameter;
+    //TODO IEVA - what to do here
+    event[SystemStreamsSerializer.removeDotFromStreamId(streamId) + '__unique'] = accountParameter;
   }
   return event;
 }
@@ -216,22 +224,23 @@ function formEventsTree (streams: {}, events: Array<{}>, user: {}): {} {
   let streamIndex;
 
   for (streamIndex = 0; streamIndex < streams.length; streamIndex++) {
-    const streamName = streams[streamIndex].id;
+    const streamIdWithDot = streams[streamIndex].id;
+    const streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(streamIdWithDot);
 
     // if stream has children recursivelly call the same function
     if (typeof streams[streamIndex].children !== 'undefined') {
-      user[streamName] = {};
-      user[streamName] = formEventsTree(
+      user[streamIdWithoutDot] = {};
+      user[streamIdWithoutDot] = formEventsTree(
         streams[streamIndex].children,
         events,
-        user[streamName]
+        user[streamIdWithoutDot]
       );
     }
 
     // get value for the stream element
     for (let i = 0; i < events.length; i++) {
-      if (events[i].streamIds.includes(streamName)) {
-        user[streamName] = events[i].content;
+      if (events[i].streamIds.includes(streamIdWithDot)) {
+        user[streamIdWithoutDot] = events[i].content;
         break;
       }
     }

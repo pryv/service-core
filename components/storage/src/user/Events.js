@@ -28,7 +28,7 @@ function Events (database) {
   // So that unicity, indexing would be broader functionality?
   // get streams ids of account streams from the config
   this.systemStreamsFlatList = SystemStreamsSerializer.getAllAccountStreams();
-  this.uniqueStreamIdsList = SystemStreamsSerializer.getUniqueAccountStreamsIds();
+  this.uniqueStreamIdsList = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutDot();
 
   Events.super_.call(this, database);
 
@@ -117,15 +117,16 @@ function getDbIndexes (systemStreamsFlatList) {
 
   // for each event group that has to be unique add a rule
   if (systemStreamsFlatList) {
-    Object.keys(systemStreamsFlatList).forEach(streamId => {
-      if (systemStreamsFlatList[streamId].isUnique === true) {
+    Object.keys(systemStreamsFlatList).forEach(streamIdWithDot => {
+      let streamId = SystemStreamsSerializer.removeDotFromStreamId(streamIdWithDot);
+      if (systemStreamsFlatList[streamIdWithDot].isUnique === true) {
         indexes.push({
           index: { [`${streamId}__unique`]: 1 },
           options: {
             unique: true,
             partialFilterExpression: {
               [`${streamId}__unique`]: { $exists: true },
-              streamIds: 'unique'
+              streamIds: SystemStreamsSerializer.options.STREAM_ID_UNIQUE
             }
           }
         });

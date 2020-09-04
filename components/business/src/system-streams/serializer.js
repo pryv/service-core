@@ -52,7 +52,7 @@ class SystemStreamsSerializer {
    */
   static getReadableAccountStreamsForTests () {
     let streams = getStreamsNames(config.get(accountStreamsConfigPath), readable);
-    delete streams.storageUsed;
+    delete streams[SystemStreamsSerializer.addDotFromStreamId('storageUsed')];
     return streams;
   }
 
@@ -87,15 +87,17 @@ class SystemStreamsSerializer {
 /**
  * Get streamIds of fields that should be indexed
  */
-  static getIndexedAccountStreams () {
-    return getStreamsNames(config.get(accountStreamsConfigPath), indexedStreams);
+  static getIndexedAccountStreamsIdsWithoutDot () {
+    let indexedStreamIds = Object.keys(getStreamsNames(config.get(accountStreamsConfigPath), indexedStreams));
+    return indexedStreamIds.map(streamId => { return SystemStreamsSerializer.removeDotFromStreamId(streamId) });
   }
 
 /**
  * Get streamIds of fields that should be unique
  */
-  static getUniqueAccountStreamsIds () {
-    return Object.keys(getStreamsNames(config.get(accountStreamsConfigPath), uniqueStreams));
+  static getUniqueAccountStreamsIdsWithoutDot () {
+    let uniqueStreamIds = Object.keys(getStreamsNames(config.get(accountStreamsConfigPath), uniqueStreams));
+    return uniqueStreamIds.map(streamId => { return SystemStreamsSerializer.removeDotFromStreamId(streamId) });
   }
 
   /**
@@ -122,6 +124,28 @@ class SystemStreamsSerializer {
   }
 
   /**
+   * Modification that is done for each systemStreamId
+   * @param string streamIdWithDot
+   */
+  static removeDotFromStreamId(streamIdWithDot: string): string {
+    if (streamIdWithDot.startsWith('.')) {
+      streamIdWithDot = streamIdWithDot.substr(1, streamIdWithDot.length);
+    }
+    return streamIdWithDot;
+  }
+
+ /**
+  * Reverse modification that is done for each systemStreamId
+  * @param string streamIdWithDot
+  */
+  static addDotFromStreamId (streamIdWithoutDot: string): string {
+    if (! streamIdWithoutDot.startsWith('.')) {
+      streamIdWithoutDot = '.' + streamIdWithoutDot;
+    }
+    return streamIdWithoutDot;
+  }
+  
+  /**
    * Form streams from systemStreams settings
    * parent is formed just providing hte name, id, parentId null and children
    */
@@ -133,9 +157,9 @@ class SystemStreamsSerializer {
     for (i = 0; i < streamKeys.length; i++){
       virtualStreams.push({
         name: streamKeys[i],
-        id: streamKeys[i],
+        id: SystemStreamsSerializer.addDotFromStreamId(streamKeys[i]),
         parentId: null,
-        children: formSystemStreamsFromSettings(this.systemStreamsSettings[streamKeys[i]], [], streamKeys[i])
+        children: formSystemStreamsFromSettings(this.systemStreamsSettings[streamKeys[i]], [], SystemStreamsSerializer.addDotFromStreamId(streamKeys[i]))
       });
     }
     return virtualStreams;
@@ -170,7 +194,7 @@ function formSystemStreamsFromSettings (settings, systemStreams, parentName: str
     // if stream has children recursivelly call the same function
     if (typeof settings[streamIndex].children !== "undefined") {
       systemStreams.push({
-        name: settings[streamIndex].name ? settings[streamIndex].name : settings[streamIndex].id,
+        name: settings[streamIndex].name,
         id: settings[streamIndex].id,
         parentId: parentName,
         children: []
@@ -242,7 +266,9 @@ function getStreamsNames(streams, whatToReturn) {
 }
 
 SystemStreamsSerializer.options = {
-  STREAM_ID_ACTIVE: 'active',
-  STREAM_ID_UNIQUE: 'unique'
+  STREAM_ID_ACTIVE: '.active',
+  STREAM_ID_UNIQUE: '.unique',
+  STREAM_ID_USERNAME: '.username',
+  STREAM_ID_PASSWORDHASH: '.passwordHash',
 }
 module.exports = SystemStreamsSerializer;

@@ -13,6 +13,7 @@ const _ = require('lodash');
 const bluebird = require('bluebird');
 const UserRepository = require('components/business/src/users/repository');
 const User = require('components/business/src/users/User');
+const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
 /**
  * @param systemAPI
@@ -55,7 +56,7 @@ module.exports = function (
       const numUsers = await bluebird.fromCallback(cb => 
         storageLayer.events.count({}, {
           $and: [
-            { streamIds: 'username' },
+            { streamIds: SystemStreamsSerializer.options.STREAM_ID_USERNAME },
             { content: { $regex: POOL_REGEX } }
           ]
         }, cb));

@@ -82,70 +82,70 @@ describe("Virtual streams", function () {
       assert.deepEqual(res.body.streams, [
         {
           name: 'account',
-          id: 'account',
+          id: '.account',
           parentId: null,
           children: [
             {
               name: 'Username',
-              id: 'username',
-              parentId: 'account',
+              id: '.username',
+              parentId: '.account',
               children: []
             },
             {
               name: 'Language',
-              id: 'language',
-              parentId: 'account',
+              id: '.language',
+              parentId: '.account',
               children: []
             },
             {
               name: 'Storage used',
-              id: 'storageUsed',
-              parentId: 'account',
+              id: '.storageUsed',
+              parentId: '.account',
               children: [
                 {
                   name: 'Db Documents',
-                  id: 'dbDocuments',
-                  parentId: 'storageUsed',
+                  id: '.dbDocuments',
+                  parentId: '.storageUsed',
                   children: []
                 },
                 {
                   name: 'Attached files',
-                  id: 'attachedFiles',
-                  parentId: 'storageUsed',
+                  id: '.attachedFiles',
+                  parentId: '.storageUsed',
                   children: []
                 }
               ]
             },
             {
               name: 'Storage used',
-              id: 'storageUsed',
-              parentId: 'account',
+              id: '.storageUsed',
+              parentId: '.account',
               children: []
             },
             {
               name: 'insurancenumber',
-              id: 'insurancenumber',
-              parentId: 'account',
+              id: '.insurancenumber',
+              parentId: '.account',
               children: []
             },
             {
               name: 'phoneNumber',
-              id: 'phoneNumber',
-              parentId: 'account',
+              id: '.phoneNumber',
+              parentId: '.account',
               children: []
             },
-            { name: 'Email', id: 'email', parentId: 'account', children: [] },
+            { name: 'Email', id: '.email', parentId: '.account', children: [] },
           ]
         },
         {
-          id: "helpers",
+          id: ".helpers",
           name: "helpers",
           parentId: null,
           children: [
             {
-              id: "active",
+              id: ".active",
               name: "Active",
-              parentId: "helpers",
+              parentId: ".helpers",
               children: []
             }
           ] 
@@ -161,7 +161,7 @@ describe("Virtual streams", function () {
         res = await request.post(basePath)
           .send({
             name: charlatan.Lorem.characters(7),
-            parentId: 'language',
+            parentId: '.language',
           })
           .set('authorization', access.token);
       });

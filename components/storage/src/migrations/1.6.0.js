@@ -152,7 +152,7 @@ module.exports = async function (context, callback) {
               unique: true,
               partialFilterExpression: {
                 [streamId + '__unique']: { '$exists': true },
-                streamIds: 'unique'
+                streamIds: SystemStreamsSerializer.options.STREAM_ID_UNIQUE
               },
               background: true
             }, cb));

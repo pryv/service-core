@@ -22,10 +22,9 @@ var cuid = require('cuid'),
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer'),
   ServiceRegister = require('components/business/src/auth/service_register'),
   Registration = require('components/business/src/auth/registration'),
-  ErrorMessages = require('components/errors/src/ErrorMessages'),
-  ErrorIds = require('components/errors').ErrorIds,
   UserRepository = require('components/business/src/users/repository');
 
+const { getConfig } = require('components/api-server/config/Config');
 const assert = require('assert');
 
 const { ProjectVersion } = require('components/middleware/src/project_version');
@@ -408,9 +407,7 @@ module.exports = function (
           handleEventsWithActiveStreamId(context.user, newEvent.streamId, newEvent.id);
         }
         // remove redundant field for the result that enforces uniqness
-        if (newEvent[newEvent.streamId + '__unique']){
-          delete newEvent[newEvent.streamId + '__unique'];
-        }
+        newEvent = removeUniqueFields(newEvent)
         result.event = newEvent;
         next();
       });
@@ -423,10 +420,10 @@ module.exports = function (
    * @param string fieldName 
    */
   function enforceEventUniqueness (contextContent: object, fieldName: string) {
-    if (!contextContent.streamIds.includes('unique')) {
-      contextContent.streamIds.push('unique');
+    if (!contextContent.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_UNIQUE)) {
+      contextContent.streamIds.push(SystemStreamsSerializer.options.STREAM_ID_UNIQUE);
     }
-    contextContent[`${fieldName}__unique`] = contextContent.content;
+    contextContent[`${SystemStreamsSerializer.removeDotFromStreamId(fieldName)}__unique`] = contextContent.content;
     return contextContent;
   }
 
@@ -464,11 +461,12 @@ module.exports = function (
      * @param {*} contextContent 
      * @param {*} creation 
      */
-    async function sendDataToServiceRegister (fieldName, contextContent, creation) {
+    async function sendDataToServiceRegister (streamId, contextContent, creation) {
       let fieldsForUpdate = {};
-      fieldsForUpdate[fieldName] = [{
+      let streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(streamId);
+      fieldsForUpdate[streamIdWithoutDot] = [{
         value: contextContent.content,
-        isUnique: editableAccountStreams[fieldName].isUnique,
+        isUnique: editableAccountStreams[streamId].isUnique,
         isActive: contextContent.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE) ||
           oldContentStreamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE),
         creation: creation
@@ -511,7 +509,9 @@ module.exports = function (
           contextContent = enforceEventUniqueness(contextContent, fieldName);
         }
         // send update to service-register
-        await sendDataToServiceRegister(fieldName, contextContent, creation);
+        if (getConfig().get('singleNode:isActive') !== true) {
+          await sendDataToServiceRegister(fieldName, contextContent, creation);
+        }
       }
     } else if (checkIfStreamIdIsNotEditable(fieldName)) {
       // if user tries to add new streamId from non editable streamsIds
@@ -740,7 +740,9 @@ module.exports = function (
       setFileReadToken(context.access, result.event);
 
     } catch (err) {
-      return next(Registration.handleUniquenessErrors(err, null, { [context.content.streamIds[0]]: context.content.content}));
+      return next(Registration.handleUniquenessErrors(err, null, {
+        [SystemStreamsSerializer.removeDotFromStreamId(context.content.streamIds[0])]: context.content.content
+      }));
     };
     next();
   }
@@ -1017,19 +1019,17 @@ module.exports = function (
       .find(function (item) { return item.includes('__unique') });
 
     if (typeof existingUniqueProperty === 'string' && existingUniqueProperty.length > 0) {
-      try {
-        updatedEvent = await bluebird.fromCallback(cb =>
-          userEventsStorage.updateOne(user, { _id: id },
-            { [existingUniqueProperty]: cuid() }, cb));
+      updatedEvent = await bluebird.fromCallback(cb =>
+        userEventsStorage.updateOne(user, { _id: id },
+          { [existingUniqueProperty]: cuid() }, cb));
 
+      if (getConfig().get('singleNode:isActive') !== true) {
         // initialize service-register connection
         const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
       
         // send information update to service regsiter
         await serviceRegisterConn.updateUserInServiceRegister(
           user.username, {}, { [existingUniqueProperty.split('__unique')[0]]: event[existingUniqueProperty]});
-      } catch (err) {
-        throw err;
       }
     }
     return updatedEvent;
@@ -1042,7 +1042,7 @@ module.exports = function (
     context.updateTrackingProperties(updatedData);
     try {
       let updatedEvent = await handleUniqueFields(context.user, context.event, params.id);
-      
+
       updatedEvent = await bluebird.fromCallback(cb =>
         userEventsStorage.updateOne(context.user, { _id: params.id }, updatedData, cb));
 
