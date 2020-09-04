@@ -71,6 +71,16 @@ class SystemStreamsSerializer {
   static getAllAccountStreams () {
     return getStreamsNames(config.get(accountStreamsConfigPath), allAccountStreams);
   }
+
+  static getAllAccountStreamsIdsForAccess () {
+    let allAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
+    allAccountStreamsIds.push(SystemStreamsSerializer.addDotFromStreamId('account'));
+    allAccountStreamsIds.push(SystemStreamsSerializer.options.STREAM_ID_ACTIVE);
+    allAccountStreamsIds.push(SystemStreamsSerializer.options.STREAM_ID_UNIQUE);
+    allAccountStreamsIds.push(SystemStreamsSerializer.options.STREAM_ID_HELPERS);
+    return allAccountStreamsIds;
+  }
+
   /**
    * The same as getAllAccountStreams () but returnes only streams leafs (not parents)
    */
@@ -270,5 +280,6 @@ SystemStreamsSerializer.options = {
   STREAM_ID_UNIQUE: '.unique',
   STREAM_ID_USERNAME: '.username',
   STREAM_ID_PASSWORDHASH: '.passwordHash',
+  STREAM_ID_HELPERS: '.helpers',
 }
 module.exports = SystemStreamsSerializer;

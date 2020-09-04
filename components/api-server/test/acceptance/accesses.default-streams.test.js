@@ -45,7 +45,6 @@ describe("[B5FF] Account with default-streams", function () {
       insurancenumber: charlatan.Number.number(4),
       phoneNumber: charlatan.Lorem.characters(3)
     });
-
     basePath = '/' + user.attrs.username + '/accesses';
     eventsBasePath = '/' + user.attrs.username + '/events';
     access = await user.access({
@@ -54,7 +53,6 @@ describe("[B5FF] Account with default-streams", function () {
     });
     access = access.attrs;
     await user.session(access.token);
-
     return user;
   }
 

@@ -44,16 +44,11 @@ describe("[AGT3] Events of default-streams", function () {
     });
     basePath = '/' + user.attrs.username + '/events';
     access = await user.access({
-      type: 'app',
-      permissions: [
-        {
-          streamId: '*',
-          level: 'manage',
-        }
-      ],
+      type: 'personal',
       token: cuid(),
     });
     access = access.attrs;
+    await user.session(access.token);
     return user;
   }
 
@@ -179,6 +174,29 @@ describe("[AGT3] Events of default-streams", function () {
         assert.equal(Object.keys(separatedEvents.events).length, 0);
       });
     });
+    describe('[YY0U] When getting visible core-stream events with manage rights for all streams (star)', async () => {
+      let sharedAccess;
+      before(async function () {
+        await createUser();
+        sharedAccess = await user.access({
+          token: cuid(),
+          type: 'shared',
+          permissions: [{
+            streamId: '*',
+            level: 'manage'
+          }],
+          clientData: 'This is a consent'
+        });
+        res = await request.get(basePath).set('authorization', sharedAccess.attrs.token);
+      });
+
+      it('[ZOHF] Should return 200', async () => {
+        assert.equal(res.status, 200);
+      });
+      it('[MRAF] Events list should be empty', async () => {
+        assert.equal(res.body.events.length, 0);
+      });
+    });
   });
 
   describe('GET /events/<id>', async () => {
@@ -186,6 +204,27 @@ describe("[AGT3] Events of default-streams", function () {
       return await bluebird.fromCallback(
         (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
     }
+    describe('[88BJ] When user retrieves the event from “visible” unique account stream', async () => {
+      let defaultEvent;
+      const streamId = 'username';
+      const streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+      before(async function () {
+        await createUser();
+        defaultEvent = await findDefaultCoreEvent(streamIdWithDot);
+        res = await request.get(path.join(basePath, defaultEvent.id)).set('authorization', access.token);
+      });
+      it('[9IEX] Should return 200', async () => {
+        assert.equal(res.status, 200);
+      });
+      it('[IYE6] Should return the event', async () => {
+        assert.equal(res.body.event.id, defaultEvent.id);
+        assert.equal(res.body.event.streamId, streamIdWithDot);
+      });
+
+      it('[4Q5L] Additional field that was saved to enforce the uniqueness is not returned', async () => {
+        assert.equal(res.body.event.hasOwnProperty(`${streamId}__unique`), false);
+      });
+    });
     describe('[C826] When user retrieves the event from “not visible” account stream', async () => {
       before(async function () {
         await createUser();
@@ -200,25 +239,30 @@ describe("[AGT3] Events of default-streams", function () {
         assert.equal(res.body.error.id, ErrorIds.UnknownResource);
       });
     });
-    describe('[88BJ] When user retrieves the event from “visible” unique account stream', async () => {
+    describe('[LKLP] When getting visible core-stream event with manage rights for all streams (star)', async () => {
       let defaultEvent;
       const streamId = 'username';
       const streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
       before(async function () {
         await createUser();
+        sharedAccess = await user.access({
+          token: cuid(),
+          type: 'shared',
+          permissions: [{
+            streamId: '*',
+            level: 'manage'
+          }],
+          clientData: 'This is a consent'
+        });
         defaultEvent = await findDefaultCoreEvent(streamIdWithDot);
-        res = await request.get(path.join(basePath, defaultEvent.id)).set('authorization', access.token);
+        res = await request.get(path.join(basePath, defaultEvent.id))
+          .set('authorization', sharedAccess.attrs.token);
       });
-      it('[9IEX] Should return 200', async () => { 
-        assert.equal(res.status, 200);
+      it('[EC9K] Should return 403', async () => {
+        assert.equal(res.status, 403);
       });
-      it('[IYE6] Should return the event', async () => {
-        assert.equal(res.body.event.id, defaultEvent.id);
-        assert.equal(res.body.event.streamId, streamIdWithDot);
-      });
-
-      it('[4Q5L] Additional field that was saved to enforce the uniqueness is not returned', async () => {
-        assert.equal(res.body.event.hasOwnProperty(`${streamId}__unique`), false);
+      it('[9DC5] Should return correct error id', async () => {
+        assert.equal(res.body.error.id, ErrorIds.Forbidden);
       });
     });
   });
@@ -472,7 +516,6 @@ describe("[AGT3] Events of default-streams", function () {
       });
     });
 
-
     describe('[TY63] When creating indexed stream with contribute access token', async () => {
       let sharedAccess;
       let initialEvent;
@@ -531,6 +574,40 @@ describe("[AGT3] Events of default-streams", function () {
           },
           fieldsToDelete: {}
         });
+      });
+    });
+
+    describe('[22H2] When creating account event with manage access token for all streams (star)', async () => {
+      let sharedAccess;
+      const streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId('email');
+      before(async function () {
+        await createUser();
+        sharedAccess = await user.access({
+          token: cuid(),
+          type: 'shared',
+          permissions: [{
+            streamId: '*',
+            level: 'manage'
+          }],
+          clientData: 'This is a consent'
+        });
+
+        eventData = {
+          streamIds: [streamIdWithDot],
+          content: charlatan.Lorem.characters(7),
+          type: 'string/pryv'
+        };
+
+        res = await request.post(basePath)
+          .send(eventData)
+          .set('authorization', sharedAccess.attrs.token);
+      });
+
+      it('[YX07] Should return 403', async () => {
+        assert.equal(res.status, 403);
+      });
+      it('[YYU1] Should return correct error id', async () => {
+        assert.equal(res.body.error.id, ErrorIds.Forbidden);
       });
     });
   });
@@ -947,6 +1024,38 @@ describe("[AGT3] Events of default-streams", function () {
           });
         });
       });
+
+      describe('[B0V0] When updating editable core-stream event with manage rights for all streams (star)', async () => {
+        before(async function () {
+          await createUser();
+          sharedAccess = await user.access({
+            token: cuid(),
+            type: 'shared',
+            permissions: [{
+              streamId: '*',
+              level: 'manage'
+            }],
+            clientData: 'This is a consent'
+          });
+          eventData = {
+            content: charlatan.Lorem.characters(7),
+            type: 'string/pryv'
+          };
+          const initialEvent = await bluebird.fromCallback(
+            (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: SystemStreamsSerializer.addDotFromStreamId('phoneNumber') }, null, cb));
+
+          res = await request.put(path.join(basePath, initialEvent.id))
+            .send(eventData)
+            .set('authorization', sharedAccess.attrs.token);
+        });
+        it('[H1XL] Should return 403', async () => {
+          assert.equal(res.status, 403);
+        });
+        it('[7QA3] Should return correct error', async () => {
+          assert.equal(res.body.error.id, ErrorIds.Forbidden);
+        });
+      });
+
     });
   });
 
@@ -994,6 +1103,45 @@ describe("[AGT3] Events of default-streams", function () {
             });
           });
         });
+
+        describe('[ZUIK] When deleting editable core-stream event with manage rights for all streams (star)', async () => {
+          let streamId = 'email';
+          let streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+          let initialEvent;
+          before(async function () {
+            nock.cleanAll();
+            scope = nock(config.get('services:register:url'));
+            scope.put('/users',
+              (body) => {
+                serviceRegisterRequest = body;
+                return true;
+              }).times(2).reply(200, { errors: [] });
+            await createUser();
+            initialEvent = await bluebird.fromCallback(
+              (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamIdWithDot }, null, cb));
+
+            await createAdditionalEvent(streamIdWithDot);
+            sharedAccess = await user.access({
+              token: cuid(),
+              type: 'shared',
+              permissions: [{
+                streamId: '*',
+                level: 'manage'
+              }],
+              clientData: 'This is a consent'
+            });
+
+            res = await request.delete(path.join(basePath, initialEvent.id))
+              .set('authorization', sharedAccess.attrs.token);
+          });
+          it('[43B1] Should return a 403', async () => {
+            assert.equal(res.status, 403);
+          });
+          it('[3E12] Should return correct error id', async () => {
+            assert.equal(res.body.error.id, ErrorIds.Forbidden);
+          });
+        });
+
         describe('[C84A] Event belongs to the indexed stream', async () => { 
           let streamId = SystemStreamsSerializer.addDotFromStreamId('language');
           let initialEvent;

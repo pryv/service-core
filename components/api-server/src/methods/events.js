@@ -93,7 +93,7 @@ module.exports = function (
       state: 'default',
       modifiedSince: null,
       includeDeletions: false
-    });
+    }); 
     if (params.fromTime == null && params.toTime != null) {
       params.fromTime = timestamp.add(params.toTime, -24 * 60 * 60);
     }
@@ -128,6 +128,7 @@ module.exports = function (
         ? _.intersection(params.streams, nonTrashedStreamIds) 
         : nonTrashedStreamIds;
     }
+
     if (! context.access.canReadAllStreams()) {
       var accessibleStreamIds = [];
 
@@ -136,10 +137,23 @@ module.exports = function (
           accessibleStreamIds.push(streamId);
         }
       });
-     
       params.streams = params.streams 
         ? _.intersection(params.streams, accessibleStreamIds) 
         : accessibleStreamIds;
+    } else if (params.streams && !context.access.isPersonal()) {
+      // allow account stream events access only with personal token or specific access
+      let allAccountStreamIds = SystemStreamsSerializer.getAllAccountStreamsIdsForAccess();
+      let notAccessibleStreamIds = allAccountStreamIds;
+
+      Object.keys(context.access.streamPermissionsMap).map((streamId) => {
+        if (allAccountStreamIds.includes(streamId) &&
+          context.access.canReadAccountStream(streamId)) {
+          notAccessibleStreamIds.splice(notAccessibleStreamIds.indexOf(streamId), 1);
+        }
+      });
+      params.streams = params.streams.filter(function (streamId) {
+        return notAccessibleStreamIds.indexOf(streamId) < 0;
+      });
     }
 
     if (! context.access.canReadAllTags()) {
@@ -258,7 +272,6 @@ module.exports = function (
 
   function findEvent (context, params, result, next) {
     const query = removeNotReadableAccountStreamsFromQuery({ id: params.id });
-
     userEventsStorage.findOne(context.user, query, null, function (err, event) {
       if (err) {
         return next(errors.unexpectedError(err));

@@ -796,10 +796,6 @@ describe('events.streamIds', function () {
             const events = separatedEvents.events;
             assert.equal(events.length, 3);
             
-            // validate account streams events
-            const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
-            validation.validateAccountEvents(actualAccountStreamsEvents);
-            
             let foundAandA_A = false;
             let foundA_AandA_A_A = false;
             let foundA_AandB = false;

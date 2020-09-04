@@ -10,6 +10,7 @@
 
 var treeUtils = require('components/utils').treeUtils,
     _ = require('lodash');
+const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
 /**
  * Lists permission levels ordered by ascending level to help with permission assessment.
@@ -139,6 +140,15 @@ const accessLogic = module.exports = {
 
   canCreateAccessForAccountStream: function (permissionLevel) {
     return isHigherOrEqualLevel(this.PERMISSION_LEVEL_CONTRIBUTE, permissionLevel);
+  },
+
+  canReadAccountStream: function (streamId) {
+    if (streamId === '*') {
+      return false;
+    }
+    const level = this.getAccountStreamPermissionLevel(streamId);
+    if (level === 'create-only') return false;
+    return level && isHigherOrEqualLevel(level, 'read');
   },
 
   canReadStream: function (streamId) {
@@ -289,11 +299,32 @@ const accessLogic = module.exports = {
     if (this.isPersonal()) {
       return 'manage';
     } else {
-      var permission = this.streamPermissionsMap[streamId] || this.streamPermissionsMap['*'];
+      // do not allow star permissions for account streams
+      let allAccountStreamIds = SystemStreamsSerializer.getAllAccountStreamsIdsForAccess();
+      let permission;
+      if (allAccountStreamIds.includes(streamId)) {
+        permission = this.streamPermissionsMap[streamId];
+      } else {
+        permission = this.streamPermissionsMap[streamId] || this.streamPermissionsMap['*'];
+      }
       return permission ? permission.level : null;
     }
   },
 
+  /**
+   * Identical to getStreamPermissionLevel, just * permissions are not
+   * allowed
+   * @param {*} streamId 
+   */
+  getAccountStreamPermissionLevel: function (streamId) {
+    if (this.isPersonal()) {
+      return 'manage';
+    } else {
+      var permission = this.streamPermissionsMap[streamId];
+      return permission ? permission.level : null;
+    }
+  },
+  
   /**
    * @returns {String} `null` if no matching permission exists.
    */

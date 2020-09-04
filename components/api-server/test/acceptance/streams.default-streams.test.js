@@ -18,7 +18,7 @@ const Notifications = require('components/api-server/src/Notifications');
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
 
-describe("Virtual streams", function () {
+describe("System streams", function () {
   let app;
   let request;
   let res;
@@ -34,16 +34,11 @@ describe("Virtual streams", function () {
     });
     basePath = '/' + user.attrs.username + '/streams';
     access = await user.access({
-      type: 'app',
-      permissions: [
-        {
-          streamId: '*',
-          level: 'manage',
-        }
-      ],
+      type: 'personal',
       token: cuid(),
     });
     access = access.attrs;
+    await user.session(access.token);
     return user;
   }
 

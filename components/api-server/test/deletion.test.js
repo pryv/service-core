@@ -81,7 +81,7 @@ describe('DELETE /users/:username', () => {
           app.storageLayer.eventFiles.removeAll(cb)
         );
       });
-      it('should respond with 401 given invalid authorization key', async function() {
+      it('[S1D3] should respond with 401 given invalid authorization key', async function() {
         res = await request.delete(`/users/${username1}`).set('Authorization', 'somekey');
         assert.equal(res.status, 401);
       });
@@ -91,10 +91,10 @@ describe('DELETE /users/:username', () => {
           await initiateUserWithData(username2);
           res = await request.delete(`/users/${username1}`).set('Authorization', authKey);
         });
-        it('should respond with 200', function() {
+        it('[QU00] should respond with 200', function() {
           assert.equal(res.status, 200);
         });
-        it('should delete user entries from impacted collections', async function() {
+        it('[PYT5] should delete user entries from impacted collections', async function() {
           const user = await usersRepository.getById(username1);
           assert.notExists(user);
 
@@ -123,13 +123,13 @@ describe('DELETE /users/:username', () => {
           );
           assert(sessions === null || sessions === []);
         });
-        it('should delete user event files', async function() {
+        it('[FB1V] should delete user event files', async function() {
           const totalFilesSize = await bluebird.fromCallback((cb) =>
             app.storageLayer.eventFiles.getTotalSize({ id: username1 }, cb)
           );
           assert.equal(totalFilesSize, 0);
         });
-        it('should not delete entries of other users', async function() {
+        it('[W4I7] should not delete entries of other users', async function() {
           const user = await usersRepository.getById(username2);
           assert.exists(user);
 
@@ -156,7 +156,7 @@ describe('DELETE /users/:username', () => {
           );
           assert(sessions !== null || sessions !== []);
         });
-        it('should not delete other user event files', async function() {
+        it('[BJ4Z] should not delete other user event files', async function() {
           const totalFilesSize = await bluebird.fromCallback((cb) =>
             app.storageLayer.eventFiles.getTotalSize({ id: username2 }, cb)
           );
@@ -167,7 +167,7 @@ describe('DELETE /users/:username', () => {
         before(async function() {
           res = await request.delete(`/users/${username1}`).set('Authorization', authKey);
         });
-        it('should respond with 404', function() {
+        it('[7V8S] should respond with 404', function() {
           assert.equal(res.status, 404);
         });
       });
