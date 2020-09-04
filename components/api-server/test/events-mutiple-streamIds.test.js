@@ -790,16 +790,12 @@ describe('events.streamIds', function () {
             const res = await server.request()
               .get(basePathEvent)
               .set('Authorization', manageAccessToken);
-
-            // lets separate core events from all other events and validate them separatelly
-            const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
-            const events = separatedEvents.events;
-            assert.equal(events.length, 3);
+            assert.equal(res.body.events.length, 3);
             
             let foundAandA_A = false;
             let foundA_AandA_A_A = false;
             let foundA_AandB = false;
-            events.forEach(e => {
+            res.body.events.forEach(e => {
               if (e.id === eventIdAandA_A) {
                 foundAandA_A = true;
                 assert.deepEqual(e.streamIds, [streamAId]);

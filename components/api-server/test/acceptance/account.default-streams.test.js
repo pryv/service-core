@@ -53,26 +53,26 @@ describe("[841C] Account with default-streams", function () {
   }
 
   async function getActiveEvent (streamId) {
-    let streamIdWith = SystemStreamsSerializer.addDotFromStreamId(streamId);
+    let streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
     return await bluebird.fromCallback(
       (cb) => user.db.events.findOne({ id: user.attrs.id },
         {
           streamIds: {
             $all: [
               SystemStreamsSerializer.options.STREAM_ID_ACTIVE,
-              streamIdWith
+              streamIdWithDot
             ]
           }
         }, null, cb));
   }
 
   async function getNotActiveEvent (streamId) {
-    let streamIdWith = SystemStreamsSerializer.addDotFromStreamId(streamId);
+    let streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
     return await bluebird.fromCallback(
       (cb) => user.db.events.findOne({ id: user.attrs.id },
         {
           $and: [
-            { streamIds: streamIdWith },
+            { streamIds: streamIdWithDot },
             { streamIds: { $ne: SystemStreamsSerializer.options.STREAM_ID_ACTIVE } }
           ]
         }, null, cb));
@@ -82,9 +82,9 @@ describe("[841C] Account with default-streams", function () {
    * @param string streamId 
    */
   async function createAdditionalEvent (streamId) {
-    let streamIdWith = SystemStreamsSerializer.addDotFromStreamId(streamId);
+    let streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
     eventDataForadditionalEvent = {
-      streamIds: [streamIdWith],
+      streamIds: [streamIdWithDot],
       content: charlatan.Lorem.characters(7),
       type: 'string/pryv'
     };

@@ -197,6 +197,58 @@ describe("[AGT3] Events of default-streams", function () {
         assert.equal(res.body.events.length, 0);
       });
     });
+    describe('[KKPL] When getting all events with manage rights for all streams (star)', async () => {
+      let sharedAccess;
+      before(async function () {
+        await createUser();
+        sharedAccess = await user.access({
+          token: cuid(),
+          type: 'shared',
+          permissions: [{
+            streamId: '*',
+            level: 'manage'
+          }],
+          clientData: 'This is a consent'
+        });
+        res = await request.get(basePath).set('authorization', sharedAccess.attrs.token);
+      });
+
+      it('Should return 200', async () => {
+        assert.equal(res.status, 200);
+      });
+      it('Events list should be empty', async () => {
+        assert.equal(res.body.events.length, 0);
+      });
+    });
+    describe('[BC6S] When getting all events with manage rights for all streams (star) and visible stream access', async () => {
+      let sharedAccess;
+      let streamIdWithDot = '.email';
+      before(async function () {
+        await createUser();
+        sharedAccess = await user.access({
+          token: cuid(),
+          type: 'shared',
+          permissions: [{
+            streamId: '*',
+            level: 'manage'
+          },
+          {
+            streamId: streamIdWithDot,
+            level: 'manage'
+          }],
+          clientData: 'This is a consent'
+        });
+        res = await request.get(basePath).set('authorization', sharedAccess.attrs.token);
+      });
+
+      it('Should return 200', async () => {
+        assert.equal(res.status, 200);
+      });
+      it('Events list should contain visible account stream event', async () => {
+        assert.equal(res.body.events.length, 1);
+        assert.isTrue(res.body.events[0].streamIds.includes(streamIdWithDot));
+      });
+    });
   });
 
   describe('GET /events/<id>', async () => {
@@ -239,7 +291,7 @@ describe("[AGT3] Events of default-streams", function () {
         assert.equal(res.body.error.id, ErrorIds.UnknownResource);
       });
     });
-    describe('[LKLP] When getting visible core-stream event with manage rights for all streams (star)', async () => {
+    describe('[LKLP] When getting all events with manage rights for all streams (star) and visible stream access', async () => {
       let defaultEvent;
       const streamId = 'username';
       const streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
@@ -251,18 +303,24 @@ describe("[AGT3] Events of default-streams", function () {
           permissions: [{
             streamId: '*',
             level: 'manage'
+          },
+          {
+            streamId: streamIdWithDot,
+            level: 'manage'
           }],
           clientData: 'This is a consent'
         });
+        
         defaultEvent = await findDefaultCoreEvent(streamIdWithDot);
         res = await request.get(path.join(basePath, defaultEvent.id))
           .set('authorization', sharedAccess.attrs.token);
       });
-      it('[EC9K] Should return 403', async () => {
-        assert.equal(res.status, 403);
+      it('Should return 200', async () => {
+        assert.equal(res.status, 200);
       });
-      it('[9DC5] Should return correct error id', async () => {
-        assert.equal(res.body.error.id, ErrorIds.Forbidden);
+      it('Should return the event', async () => {
+        assert.exists(res.body.event);
+        assert.isTrue(res.body.event.streamIds.includes(streamIdWithDot));
       });
     });
   });
