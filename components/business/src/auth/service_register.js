@@ -83,7 +83,7 @@ class ServiceRegister {
   async createUser(user): Promise<void> {
     const url = this._formUrl('/users');
     // log fact about the event
-    this.logger.info(`POST ${url} for username:${user.username}`);
+    this.logger.info(`POST ${url} for username:${user.user.username}`);
     try {
       const res = await superagent
         .post(url)
