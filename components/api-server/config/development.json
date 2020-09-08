@@ -1,7 +1,4 @@
 {
-  "server": {
-    "hostname": "test.DOMAIN"
-  },
   "logs": {
     "prefix": "api::",
     "console": {

@@ -47,7 +47,6 @@ describe('[BMM2] registration: single-node', () => {
         app.logging,
         app.storageLayer,
         app.settings.get('services').obj(),
-        app.settings.get('server').obj(),
       );
 
       // get events for a small test of valid token

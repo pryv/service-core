@@ -1,7 +1,4 @@
 {
-  "server": {
-    "hostname": "test.DOMAIN"
-  },
   "env": "production",
   "http": {
     "ip": "127.0.0.1",

@@ -24,10 +24,11 @@ module.exports = function (expressApp: express$Application, app: Application) {
   
   // POST /users: create a new user
   expressApp.post('/users', function (req: express$Request, res: express$Response, next: express$NextFunction) {
+    let context = { host: req.headers.host };
     if (isSingleNode) {
-      api.call('auth.register.singlenode', {}, req.body, methodCallback(res, next, 201));
+      api.call('auth.register.singlenode', context, req.body, methodCallback(res, next, 201));
     } else {
-      api.call('auth.register', {}, req.body, methodCallback(res, next, 201));
+      api.call('auth.register', context, req.body, methodCallback(res, next, 201));
     }
   });
 

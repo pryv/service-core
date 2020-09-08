@@ -103,8 +103,7 @@ class Server {
       application.settings.get('services').obj(), 
       application.api, 
       application.logging, 
-      application.storageLayer, 
-      application.settings.get('server').obj());
+      application.storageLayer);
     
     require('./methods/utility')(application.api, application.logging, application.storageLayer);
 
@@ -117,14 +116,12 @@ class Server {
     require('./methods/auth/register')(application.api, 
       application.logging, 
       application.storageLayer, 
-      application.settings.get('services').obj(), 
-      application.settings.get('server').obj());
+      application.settings.get('services').obj());
 
     require('./methods/auth/register-singlenode')(application.api, 
       application.logging, 
       application.storageLayer, 
-      application.settings.get('services').obj(), 
-      application.settings.get('server').obj());
+      application.settings.get('services').obj());
 
     require('./methods/auth/delete')(application.api, 
       application.logging, 

@@ -49,7 +49,7 @@ describe('registration: cluster', function() {
   let regUrl;
   let userData;
   let serviceRegisterRequests = [];
-  let hostname;
+  let hostname = 'localhost:3000';
   let mongoFixtures;
   let userRepository;
 
@@ -64,7 +64,6 @@ describe('registration: cluster', function() {
     await config.init();
     config.set('singleNode:isActive', false);
     config.set('openSource:isActive', false);
-    hostname = config.get('server:hostname');
     regUrl = settings.get('services.register.url').str();
 
     app = new Application(settings);
@@ -74,8 +73,7 @@ describe('registration: cluster', function() {
       app.api,
       app.logging,
       app.storageLayer,
-      app.settings.get('services').obj(),
-      app.settings.get('server').obj()
+      app.settings.get('services').obj()
     );
 
     request = supertest(app.expressApp);

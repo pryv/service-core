@@ -26,11 +26,11 @@ const SystemStreamsSerializer = require('components/business/src/system-streams/
  */
 module.exports = function (
   systemAPI, userAccessesStorage, servicesSettings, api,
-  logging, storageLayer, serverSettings
+  logging, storageLayer
 ) {
 
   const POOL_REGEX = new RegExp('^' + 'pool@');
-  const registration = new Registration(logging, storageLayer, servicesSettings, serverSettings);
+  const registration = new Registration(logging, storageLayer, servicesSettings);
 
   // ---------------------------------------------------------------- createUser
   systemAPI.register('system.createUser',

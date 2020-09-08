@@ -23,9 +23,9 @@ import type { ApiCallback } from '../API';
  * @param sessionsStorage
  * @param authSettings
  */
-module.exports = function (api, logging, storageLayer, servicesSettings, serverSettings) {
+module.exports = function (api, logging, storageLayer, servicesSettings) {
   // REGISTER
-  const registration: Registration = new Registration(logging, storageLayer, servicesSettings, serverSettings);
+  const registration: Registration = new Registration(logging, storageLayer, servicesSettings);
   const serviceRegisterConn: ServiceRegister = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
 
   api.register('auth.register',

@@ -30,11 +30,10 @@ class Registration {
   storageLayer: any; // used for initUser
   serviceRegisterConn: ServiceRegister; // service-register connection
   userRepository: UserRepository; 
-  hostname: string; // hostname that will be saved in service-register as a 'core' where user is registered
   accountStreamsSettings: any = SystemStreamsSerializer.getFlatAccountStreamSettings();
   servicesSettings: any; // settigns to get the email to send user welcome email
 
-  constructor(logging, storageLayer, servicesSettings, serverSettings) {
+  constructor(logging, storageLayer, servicesSettings) {
     this.logger = logging.getLogger('business/registration');
     this.storageLayer = storageLayer;
     this.servicesSettings = servicesSettings;
@@ -44,7 +43,6 @@ class Registration {
       logging.getLogger('service-register')
     );
     this.userRepository = new UserRepository(this.storageLayer.events);
-    this.hostname = serverSettings.hostname;
     this.POOL_USERNAME_PREFIX = 'pool@';
     this.TEMP_USERNAME_PREFIX = 'temp@';
     this.POOL_REGEX = new RegExp('^' + this.POOL_USERNAME_PREFIX);
@@ -102,7 +100,7 @@ class Registration {
         context.user.username,
         context.user.invitationToken,
         uniqueFields,
-        this.hostname
+        context.host
       );
     } catch (error) {
       return next(error);
@@ -207,8 +205,6 @@ class Registration {
         );
       }
 
-      context.user.host = { name: this.hostname };
-
       // form the result for system call or full registration call
       if (context.calledMethodId === 'system.createUser') {
         result.id = context.user.id;
@@ -247,7 +243,7 @@ class Registration {
         user: {
           id: context.user.id
         },
-        host: { name: this.hostname },
+        host: { name: context.host },
       };
       userStreamsIds.forEach(streamId => {
         if (context.user[streamId] != null) userData.user[streamId] = context.user[streamId];

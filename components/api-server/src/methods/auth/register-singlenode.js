@@ -19,9 +19,9 @@ const errors = require('components/errors').factory;
  * @param sessionsStorage
  * @param authSettings
  */
-module.exports = function (api, logging, storageLayer, servicesSettings, serverSettings) {
+module.exports = function (api, logging, storageLayer, servicesSettings) {
   // REGISTER
-  const registration = new Registration(logging, storageLayer, servicesSettings, serverSettings);
+  const registration = new Registration(logging, storageLayer, servicesSettings);
 
   api.register('auth.register.singlenode',
     // data validation methods
