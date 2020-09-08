@@ -10,8 +10,6 @@
 
 const path = require('path');
 const fs = require('fs');
-const bluebird = require('bluebird');
-const child_process = require('child_process');
 
 const API_VERSION_FILENAME = '.api-version';
 const DEFAULT_VERSION = 'unset';
