@@ -60,11 +60,11 @@ module.exports = function (api, logging, storageLayer, servicesSettings) {
       const response = await serviceRegisterConn.checkUsername(params.username);
 
       if (response.reserved === true) {
-        return next(errors.itemAlreadyExists('username', { username: params.username }));
+        return next(errors.itemAlreadyExists('user', { username: params.username }));
       }
 
       if (response.reserved != null) {
-        result.reserved = response.reserved;
+        result.reserved = false;
       }
       
     } catch (error) {

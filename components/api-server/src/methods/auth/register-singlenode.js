@@ -52,9 +52,9 @@ module.exports = function (api, logging, storageLayer, servicesSettings) {
       const existingUsers = await userRepository.findConflictingUniqueFields({ username: params.username});
 
       if (existingUsers.length > 0) {
-        result.reserved = true;
-        return next(errors.itemAlreadyExists('username', { username: params.username }));
+        return next(errors.itemAlreadyExists('user', { username: params.username }));
       }
+      result.reserved = false;
     } catch (error) {
       return next(errors.unexpectedError(error));
     }
