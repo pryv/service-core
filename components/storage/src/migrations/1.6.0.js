@@ -25,6 +25,7 @@ module.exports = async function (context, callback) {
   const userAccountStreamIds = Object.keys(userAccountStreams);
 
   await migrateAccounts(UserEventsStorage);
+  console.log('Accounts were migrated, now creating the indexes');
   await createIndex(userAccountStreams, userAccountStreamIds, UserEventsStorage);
   console.log('V1.5.22 => v1.6.0 Migration finished');
   callback();
@@ -40,8 +41,13 @@ module.exports = async function (context, callback) {
     let shouldContinue: boolean;
     let insertedUser;
     let user;
+    let i = 0;
     while (await cursor.hasNext()) {
       user = await cursor.next();
+      if (i % 200 === 0) {
+        console.log(`Migrating ${i} user`);
+      }
+      i += 1;
       try {
         if (!user.id && user._id) {
           user.id = user._id;
@@ -51,6 +57,7 @@ module.exports = async function (context, callback) {
       } catch (err) {
         shouldContinue = isExpectedUniquenessError(err);
         if (shouldContinue == false) {
+          console.log(err,'err');
           throw new Error(err);
         }
       }
@@ -73,14 +80,14 @@ module.exports = async function (context, callback) {
     for (let i=0; i<userAccountStreamIds.length; i++) {
       const streamId = userAccountStreamIds[i];
       const streamData = userAccountStreams[streamId];
-      const streamIdWIthoutDot = SystemStreamsSerializer.removeDotFromStreamId(streamId);
+      const streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(streamId);
       if (streamData.isUnique) {
         await bluebird.fromCallback(cb => UserEventsStorage.database.db.collection('events')
-          .createIndex({ [streamIdWIthoutDot + '__unique']: 1 },
+          .createIndex({ [streamIdWithoutDot + '__unique']: 1 },
             {
               unique: true,
               partialFilterExpression: {
-                [streamIdWIthoutDot + '__unique']: { '$exists': true },
+                [streamIdWithoutDot + '__unique']: { '$exists': true },
                 streamIds: SystemStreamsSerializer.options.STREAM_ID_UNIQUE
               },
               background: true

@@ -11,6 +11,8 @@ let logger;
 (async () => {
   // Load settings asynchronously because we have to fetch
   // some values from register via an http-get request.
+  process.env.CONNECT_TIMOUT_MS = 1000000;
+  process.env.SOCKET_TIMOUT_MS = 1000000;
   const settings = await Settings.load(); 
   const config = getConfig();
   await config.init();

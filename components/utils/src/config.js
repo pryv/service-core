@@ -179,6 +179,14 @@ config.schema = {
     name: {
       format: String,
       default: 'pryv-node'
+    },
+    connectTimeoutMS: {
+      default: 60000,
+      env: 'CONNECT_TIMOUT_MS'
+    },
+    socketTimeoutMS: {
+      default: 60000,
+      env: 'SOCKET_TIMOUT_MS'
     }
   },
   eventFiles: {
