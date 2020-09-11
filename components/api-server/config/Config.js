@@ -97,7 +97,6 @@ class Config {
     this.store.set(key, value);
   }
 
-  // TODO IEVA - prefix is not used
   getLogger(prefix: string): any {
     return this.logger;
   }

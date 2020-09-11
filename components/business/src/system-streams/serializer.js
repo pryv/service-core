@@ -232,11 +232,15 @@ function formSystemStreamsFromSettings (settings, systemStreams, parentName: str
  *  getReadableAccountStreams(), getAllAccountStreams (), getEditableAccountStreams;
  * if they are equal to false or true
  */
-function getStreamsNames(streams, whatToReturn) {
+function getStreamsNames (streams, whatToReturn) {
+  let flatStreamsListObj = {};
+  
+  if (Array.isArray(streams) === false) {
+    return flatStreamsListObj;
+  }
   const flatStreamsList = treeUtils.flattenTree(streams);
 
   // convert list to objects
-  let flatStreamsListObj = {};
   let i;
   for (i = 0; i < flatStreamsList.length; i++){
     // if the stream value is equal to false, it should be not visible 
