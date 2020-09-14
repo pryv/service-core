@@ -149,7 +149,13 @@ class Repository {
   async findConflictingUniqueFields (fields: object): integer {
     let query = { $or: [] }
     Object.keys(fields).forEach(key => {
-      query['$or'].push({ [`${key}__unique`]: fields[key] });
+      query['$or'].push({
+        $and:
+          [
+            { streamIds: SystemStreamsSerializer.addDotFromStreamId(key) },
+            { [`${key}__unique`]: fields[key] }
+          ]
+      });
     });
 
     const existingUsers = await bluebird.fromCallback(
