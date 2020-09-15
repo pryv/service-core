@@ -123,7 +123,7 @@ describe('registration: cluster', function() {
 
   describe('POST /users (create user)', function() {
     describe('when a user with the same username (not email) already exists in core but not in register', () => {
-      let oldEmail, firstUser, secondUser, firstValidationRequest;
+      let oldEmail, firstUser, secondUser, firstValidationRequest, firstRegistrationRequest;
       before(async () => {
         userData = defaults();
         serviceRegisterRequests = [];
@@ -146,6 +146,7 @@ describe('registration: cluster', function() {
           });
         res = await request.post(methodPath).send(userData);
         firstValidationRequest = _.merge(buildValidationRequest(userData), { uniqueFields: { email: userData.email } });
+        firstRegistrationRequest = buildRegistrationRequest(userData);
         firstUser = await userRepository.getAccountByUsername(userData.username, true);
         oldEmail = userData.email;
         userData.email = charlatan.Internet.email();
@@ -173,7 +174,6 @@ describe('registration: cluster', function() {
 
         let firstRegistrationSent = serviceRegisterRequests[1];
         firstRegistrationSent = stripRegistrationRequest(firstRegistrationSent);
-        const firstRegistrationRequest = _.merge(buildRegistrationRequest(userData), { user: { email: oldEmail } });
         assert.deepEqual(firstRegistrationSent, firstRegistrationRequest, ' first registration request is invalid');
 
         const secondValidationSent = serviceRegisterRequests[2];
@@ -194,6 +194,7 @@ describe('registration: cluster', function() {
     });
     describe('when a user with the same username/email already exists in core but not in register', () => {
       let firstValidationRequest;
+      let firstRegistrationRequest;
       before(async () => {
         userData = defaults();
         serviceRegisterRequests = [];
@@ -217,6 +218,7 @@ describe('registration: cluster', function() {
 
         res = await request.post(methodPath).send(userData);
         firstValidationRequest = buildValidationRequest(userData)
+        firstRegistrationRequest = buildRegistrationRequest(userData);
         res = await request.post(methodPath).send(userData);
       });
       it('[GRAW] should respond with status 201', () => {
@@ -227,15 +229,22 @@ describe('registration: cluster', function() {
         assert.equal(body.username, userData.username);
       });
       it('[ZHYX] should send the right data to register', () => {
-        const validationSent1 = serviceRegisterRequests[0];
+        // validate validation request - first and third requests
+        // should be validation and they shuold be equal
+        //(remove core because validation and registration was done 
+        // by different processes - port is different)
         let validationSent2 = Object.assign({}, serviceRegisterRequests[0]);
         delete validationSent2.core;
         delete serviceRegisterRequests[2].core;
         assert.deepEqual(validationSent2, serviceRegisterRequests[2]);
-        assert.deepEqual(validationSent1, firstValidationRequest);
+
+        // alsl validation request should be valid
+        assert.deepEqual(serviceRegisterRequests[0], firstValidationRequest);
+
+        // also first registration request should be valid
         let registrationSent = serviceRegisterRequests[1];
         registrationSent = stripRegistrationRequest(registrationSent);
-        assert.deepEqual(registrationSent, buildRegistrationRequest(userData));
+        assert.deepEqual(registrationSent, firstRegistrationRequest);
       });
     });
     describe('when the username exists in register', () => {

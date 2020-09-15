@@ -92,7 +92,6 @@ describe('DELETE /users/:username', () => {
           res = await request.delete(`/users/${username1}`).set('Authorization', authKey);
         });
         it('[QU00] should respond with 200', function () {
-          console.log(res.body,'res bodyyyyyyyyyyyy');
           assert.equal(res.status, 200);
         });
         it('[PYT5] should delete user entries from impacted collections', async function() {
