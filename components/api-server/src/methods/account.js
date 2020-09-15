@@ -34,7 +34,10 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
   var registerSettings = servicesSettings.register,
     emailSettings = servicesSettings.email,
     requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);
-    userRepository = new UserRepository(userEventsStorage);
+
+  // initialize service-register connection
+  const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
+  const userRepository = new UserRepository(userEventsStorage);
 
   // RETRIEVAL
 
@@ -222,8 +225,6 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
    * methods will deprecate so the logic is simplified
    */
   async function notifyRegisterAboutUserDataChanges (username, fieldsForUpdate) {
-    // initialize service-register connection
-    const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
     // send information update to service regsiter
     await serviceRegisterConn.updateUserInServiceRegister(username, fieldsForUpdate, {});
     // !!!!!! Now only language is updated and no validation errors should be thrown
