@@ -9,10 +9,16 @@
 const express = require('express');
 const middleware = require('components/middleware');
 const bodyParser = require('body-parser');
+const { getConfig } = require('components/api-server/config/Config');
 
 type AppAndEndWare = {
   expressApp: express$Application, 
   routesDefined: () => mixed, 
+}
+
+const loadConfig = async function () {
+  const config = getConfig();
+  await config.init();
 }
 
 /**
@@ -23,6 +29,9 @@ module.exports = function expressApp(
   errorsMiddleware: express$Middleware,
   requestTraceMiddleware: express$Middleware
 ): AppAndEndWare {
+  // load new config before starting the application
+  loadConfig();
+
   const app = express();
 
   /** Called once routes are defined on app, allows finalizing middleware stack
