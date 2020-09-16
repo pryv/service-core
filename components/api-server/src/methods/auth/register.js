@@ -29,8 +29,7 @@ module.exports = function (api, logging, storageLayer, servicesSettings) {
   const serviceRegisterConn: ServiceRegister = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
 
   api.register('auth.register',
-    // data validation methods
-    registration.prepareUserData,           
+    // data validation methods        
     commonFns.getParamsValidation(methodsSchema.register.params),
     registration.validateUserInServiceRegister.bind(registration),
 

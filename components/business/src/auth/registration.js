@@ -46,30 +46,6 @@ class Registration {
   }
 
   /**
-   * Do minimal manipulation with data like username conversion to lowercase
-   * @param {*} context 
-   * @param {*} params 
-   * @param {*} result 
-   * @param {*} next 
-   */
-  async prepareUserData (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    if (params.username && typeof params.username === 'string') {
-      params.username = params.username.toLowerCase();
-    }
-    if (params.email && typeof params.email === 'string') {
-      params.email = params.email.toLowerCase();
-    }
-    // if referer is empty, remove the field, otherwise, z-schema will validate type
-    if (params.referer == null) {
-      delete params.referer;
-    }
-    //TODO IEVA, ask Ilia, because now validation is applied on params
-    // if I want to skip params editing, I have to change that method
-    context.user = new User(params);
-    next();
-  }
-
-  /**
    * Validation and reservation in service-register
    * @param {*} context
    * @param {*} params
