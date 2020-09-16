@@ -213,10 +213,10 @@ describe("[AGT3] Events of default-streams", function () {
         res = await request.get(basePath).set('authorization', sharedAccess.attrs.token);
       });
 
-      it('Should return 200', async () => {
+      it('[RA5L] Should return 200', async () => {
         assert.equal(res.status, 200);
       });
-      it('Events list should be empty', async () => {
+      it('[D48N] Events list should be empty', async () => {
         assert.equal(res.body.events.length, 0);
       });
     });
@@ -241,10 +241,10 @@ describe("[AGT3] Events of default-streams", function () {
         res = await request.get(basePath).set('authorization', sharedAccess.attrs.token);
       });
 
-      it('Should return 200', async () => {
+      it('[RUI7] Should return 200', async () => {
         assert.equal(res.status, 200);
       });
-      it('Events list should contain visible account stream event', async () => {
+      it('[ZZRR] Events list should contain visible account stream event', async () => {
         assert.equal(res.body.events.length, 1);
         assert.isTrue(res.body.events[0].streamIds.includes(streamIdWithDot));
       });
@@ -315,10 +315,10 @@ describe("[AGT3] Events of default-streams", function () {
         res = await request.get(path.join(basePath, defaultEvent.id))
           .set('authorization', sharedAccess.attrs.token);
       });
-      it('Should return 200', async () => {
+      it('[YPZX] Should return 200', async () => {
         assert.equal(res.status, 200);
       });
-      it('Should return the event', async () => {
+      it('[1NRM] Should return the event', async () => {
         assert.exists(res.body.event);
         assert.isTrue(res.body.event.streamIds.includes(streamIdWithDot));
       });
