@@ -278,11 +278,8 @@ class Registration {
     const emailSettings = this.servicesSettings.email;
 
     // Skip this step if welcome mail is deactivated
-    const isMailActivated = emailSettings.enabled;
-    if (
-      isMailActivated === false ||
-      (isMailActivated != null && isMailActivated.welcome === false)
-    ) {
+    const emailActivation = emailSettings.enabled;
+    if (emailActivation?.welcome === false) {
       return next();
     }
 
