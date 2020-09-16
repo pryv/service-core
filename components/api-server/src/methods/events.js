@@ -19,12 +19,13 @@ var cuid = require('cuid'),
   _ = require('lodash'),
   SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
 
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer'),
-  ServiceRegister = require('components/business/src/auth/service_register'),
-  Registration = require('components/business/src/auth/registration'),
-  UserRepository = require('components/business/src/users/repository');
+const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
+const ServiceRegister = require('components/business/src/auth/service_register');
+const Registration = require('components/business/src/auth/registration');
+const UserRepository = require('components/business/src/users/repository');
 
 const { getConfig } = require('components/api-server/config/Config');
+
 const assert = require('assert');
 
 const { ProjectVersion } = require('components/middleware/src/project_version');
@@ -55,6 +56,8 @@ module.exports = function (
 ) {
 
   const userRepository = new UserRepository(userEventsStorage);
+
+  const config = getConfig();
 
   // Initialise the project version as soon as we can. 
   const pv = new ProjectVersion();
@@ -140,20 +143,23 @@ module.exports = function (
       params.streams = params.streams 
         ? _.intersection(params.streams, accessibleStreamIds) 
         : accessibleStreamIds;
-    } else if (params.streams && !context.access.isPersonal()) {
+    } else if (params.streams && !context.access.isPersonal()) { // case streamPermission has *
       // allow account stream events access only with personal token or specific access
-      let allAccountStreamIds = SystemStreamsSerializer.getAllAccountStreamsIdsForAccess();
-      let notAccessibleStreamIds = allAccountStreamIds;
+      let allAccountStreamIds = SystemStreamsSerializer.getAllAccountStreamsIdsForAccess(); // using global object
+      const notAccessibleStreamIds = _.cloneDeep(allAccountStreamIds);
 
       Object.keys(context.access.streamPermissionsMap).map((streamId) => {
-        if (allAccountStreamIds.includes(streamId) &&
+        if (hasPermissionForAccountStream(streamId) &&
           context.access.canReadAccountStream(streamId)) {
           notAccessibleStreamIds.splice(notAccessibleStreamIds.indexOf(streamId), 1);
         }
       });
       params.streams = params.streams.filter(function (streamId) {
-        return notAccessibleStreamIds.indexOf(streamId) < 0;
+        return ! notAccessibleStreamIds.includes(streamId);
       });
+      function hasPermissionForAccountStream(streamId) {
+        return allAccountStreamIds.includes(streamId);
+      }
     }
 
     if (! context.access.canReadAllTags()) {
@@ -446,9 +452,9 @@ module.exports = function (
    * 2) indexed
    * 3) active
    * Additional actions like
-   * a) adding property to enforce uniqness
-   * b) sending data update to service-regsiter
-   * c) saving streamId 'active' has to be handles in the different way that
+   * a) adding property to enforce uniqueness
+   * b) sending data update to service-register
+   * c) saving streamId 'active' has to be handled in a different way than
    * for all other events
    *
    * @param string username 
@@ -522,7 +528,7 @@ module.exports = function (
           contextContent = enforceEventUniqueness(contextContent, fieldName);
         }
         // send update to service-register
-        if (getConfig().get('singleNode:isActive') !== true) {
+        if (config.get('singleNode:isActive') !== true) {
           await sendDataToServiceRegister(fieldName, contextContent, creation);
         }
       }
@@ -1036,7 +1042,7 @@ module.exports = function (
         userEventsStorage.updateOne(user, { _id: id },
           { [existingUniqueProperty]: cuid() }, cb));
 
-      if (getConfig().get('singleNode:isActive') !== true) {
+      if (config.get('singleNode:isActive') !== true) {
         // initialize service-register connection
         const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
       
