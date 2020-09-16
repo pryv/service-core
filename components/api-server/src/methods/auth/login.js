@@ -4,11 +4,11 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var commonFns = require('components/api-server/src/methods/helpers/commonFunctions'),
-    utils = require('components/utils'),
-    errors = require('components/errors').factory,
-    methodsSchema = require('components/api-server/src/schema/authMethods'), 
-    _ = require('lodash');
+const commonFns = require('components/api-server/src/methods/helpers/commonFunctions');
+const utils = require('components/utils');
+const errors = require('components/errors').factory;
+const methodsSchema = require('components/api-server/src/schema/authMethods');
+const _ = require('lodash');
 const UserRepository = require('components/business/src/users/repository');
 const ErrorIds = require('components/errors/src/ErrorIds');
 /**
@@ -20,7 +20,6 @@ const ErrorIds = require('components/errors/src/ErrorIds');
  * @param authSettings
  */
 module.exports = function (api, userAccessesStorage, sessionsStorage, userEventsStorage, authSettings) {
-  // LOGIN
 
   api.register('auth.login',
     commonFns.getParamsValidation(methodsSchema.login.params),

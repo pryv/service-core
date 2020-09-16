@@ -31,10 +31,10 @@ const Registration = require('components/business/src/auth/registration'),
 module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
   authSettings, servicesSettings, notifications, logging) {
 
-  var registerSettings = servicesSettings.register,
-    emailSettings = servicesSettings.email,
-    requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);
-    userRepository = new UserRepository(userEventsStorage);
+  const registerSettings = servicesSettings.register;
+  const emailSettings = servicesSettings.email;
+  const requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);
+  const userRepository = new UserRepository(userEventsStorage);
 
   // RETRIEVAL
 

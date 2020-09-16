@@ -146,7 +146,7 @@ class Repository {
    * Check if fields are unique
    * @param ({key: value}) fields
    */
-  async findConflictingUniqueFields (fields: object): integer {
+  async findConflictingUniqueFields (fields: {}): number {
     let query = { $or: [] }
     Object.keys(fields).forEach(key => {
       query['$or'].push({
@@ -252,7 +252,7 @@ class Repository {
    * @param {*} userId 
    * @param {*} update 
    */
-  async updateOne (userId: string, update: {}, updateOnlyActive: boolean): Promise<void> {
+  async updateOne (userId: string, update: {}, updateActiveOnly: boolean = false): Promise<void> {
     // get streams ids from the config that should be retrieved
     let userAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
 
@@ -274,7 +274,7 @@ class Repository {
         }
 
         let updateQuery;
-        if (updateOnlyActive) {
+        if (updateActiveOnly) {
           updateQuery = { streamIds: { $all: [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE] } };
         } else {
           updateQuery = { streamIds: { $in: [streamId] } };

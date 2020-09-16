@@ -6,9 +6,6 @@
  */
 // @flow
 
-/**
- * Extension of database.js dedicated to user management
- */
 const _ = require('lodash');
 const cuid = require('cuid');
 const errors = require('components/errors').factory;
@@ -27,8 +24,8 @@ import type { ApiCallback } from 'components/api-server/src/API';
  */
 class Registration {
   logger: any;
-  storageLayer: any; // used for initUser
-  serviceRegisterConn: ServiceRegister; // service-register connection
+  storageLayer: any;
+  serviceRegisterConn: ServiceRegister;
   userRepository: UserRepository; 
   accountStreamsSettings: any = SystemStreamsSerializer.getFlatAccountStreamSettings();
   servicesSettings: any; // settigns to get the email to send user welcome email
@@ -49,7 +46,7 @@ class Registration {
   }
 
   /**
-   * Do minimal manipulation with data like username convertion to lowercase
+   * Do minimal manipulation with data like username conversion to lowercase
    * @param {*} context 
    * @param {*} params 
    * @param {*} result 
@@ -87,9 +84,9 @@ class Registration {
   ) {
     try {
       let uniqueFields = {};
-      for (const [streamIdWithDot, streamSetings] of Object.entries(this.accountStreamsSettings)) {
+      for (const [streamIdWithDot, streamSettings] of Object.entries(this.accountStreamsSettings)) {
         // if key is set as required - add required validation
-        if (streamSetings.isUnique && streamSetings.isUnique === true) {
+        if (streamSettings.isUnique && streamSettings.isUnique === true) {
           let streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(streamIdWithDot)
           uniqueFields[streamIdWithoutDot] = context.user[streamIdWithoutDot];
         }
