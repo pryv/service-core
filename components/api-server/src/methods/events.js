@@ -481,8 +481,8 @@ module.exports = function (
      * @param {*} creation 
      */
     async function sendDataToServiceRegister (streamId, contextContent, creation) {
-      let fieldsForUpdate = {};
-      let streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(streamId);
+      const fieldsForUpdate = {};
+      const streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(streamId);
       fieldsForUpdate[streamIdWithoutDot] = [{
         value: contextContent.content,
         isUnique: editableAccountStreams[streamId].isUnique,
@@ -528,7 +528,7 @@ module.exports = function (
           contextContent = enforceEventUniqueness(contextContent, fieldName);
         }
         // send update to service-register
-        if (config.get('singleNode:isActive') !== true) {
+        if (! config.get('singleNode:isActive')) {
           await sendDataToServiceRegister(fieldName, contextContent, creation);
         }
       }
@@ -540,7 +540,8 @@ module.exports = function (
       // if user tries to add several streamIds from account streams
       throw errors.DeniedMultipleAccountStreams(fieldName);
 
-    } else if (!creation && matchingAccountStreams.length > 0 &&
+    } else if (!creation && matchingAccountStreams.length > 0 && // moving a "simple" event into account streams or moving it out
+    // in general, account events should not have modifications of their account streamIds
       _.intersection(matchingAccountStreams, oldContentStreamIds).length === 0) {
       // if user tries to change streamId of systemStreams event
       throw errors.DeniedMultipleAccountStreams(fieldName);
