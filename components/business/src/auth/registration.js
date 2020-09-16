@@ -272,7 +272,7 @@ class Registration {
   sendWelcomeMail(
     context: MethodContext,
     params: mixed,
-    result,
+    result: Result,
     next: ApiCallback
   ) {
     const emailSettings = this.servicesSettings.email;
@@ -311,16 +311,16 @@ class Registration {
   }
 
   /**
-   * Form errors for api response
+   * Build errors for api response
    * @param {*} err
    * @param {*} params
    */
   static handleUniquenessErrors (err, message, params) {
     // Duplicate errors
-    let uniquenessErrors = {};
+    const uniquenessErrors = {};
     if (typeof err.isDuplicateIndex === 'function') {
       let fieldName = err.duplicateIndex();
-      // uniqueness constrain for username in acccess
+      // uniqueness constraint for username in acccess
       if (fieldName == 'deviceName') {
         fieldName = 'username';
       }
