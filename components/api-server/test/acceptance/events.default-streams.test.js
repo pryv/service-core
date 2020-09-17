@@ -491,11 +491,12 @@ describe("Events of system streams", () => {
           describe('[6B8D] When creating an event that is already taken only on core', async () => {
             let serviceRegisterRequest;
             let streamId = SystemStreamsSerializer.addDotFromStreamId('email');
+            let email = charlatan.Lorem.characters(7);
             before(async function () {
               await createUser();
               eventData = {
                 streamIds: [streamId],
-                content: charlatan.Lorem.characters(7),
+                content: email,
                 type: 'string/pryv'
               };
   
@@ -518,9 +519,8 @@ describe("Events of system streams", () => {
               assert.equal(res.status, 400);
             });
             it('[121E] should return the correct error', async () => {
-              assert.equal(res.body.error.data.length, 1);
-              assert.equal(res.body.error.data[0].code, ErrorIds['Existing_email']);
-              assert.equal(res.body.error.data[0].message, ErrorMessages[ErrorIds['Existing_email']]);
+              assert.equal(res.body.error.id, ErrorIds.ItemAlreadyExists);
+              assert.deepEqual(res.body.error.data, { email: email });
             });
           });
           
@@ -544,9 +544,9 @@ describe("Events of system streams", () => {
           assert.equal(res.status, 400);
         });
         it('[90E6] should return the correct error', async () => {
-          assert.equal(res.body.error.id, ErrorIds.DeniedEventModification);
+          assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
           assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.options.STREAM_ID_USERNAME});
-          assert.equal(res.body.error.message, ErrorMessages[ErrorIds.DeniedEventModification]);
+          assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenNoneditableAccountStreamsEdit]);
         });
       });
     });
@@ -741,9 +741,9 @@ describe("Events of system streams", () => {
               it('[9004] should return 400', async () => {
                 assert.equal(res.status, 400);
               });
-              it('[E3AE] should return the correct error', async () => {
-                assert.equal(res.body.error.id, ErrorIds.DeniedMultipleAccountStreams);
-                assert.equal(res.body.error.message, ErrorMessages[ErrorIds.DeniedMultipleAccountStreams]);
+              it('[E3KE] should return the correct error', async () => {
+                assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
+                assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenMultipleAccountStreams]);
                 assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.addDotFromStreamId('email')});
               });
             });
@@ -767,9 +767,8 @@ describe("Events of system streams", () => {
                 assert.equal(res.status, 400);
               });
               it('[E3AE] should return the correct error', async () => {
-                assert.equal(res.body.error.id, ErrorIds.DeniedMultipleAccountStreams);
-                assert.equal(res.body.error.message, ErrorMessages[ErrorIds.DeniedMultipleAccountStreams]);
-                assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.addDotFromStreamId('email')});
+                assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
+                assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenToChangeAccountStreamId]);
               });
             });
           });
@@ -1063,8 +1062,8 @@ describe("Events of system streams", () => {
           assert.equal(res.status, 400);
         });
         it('[BB5F] should return the correct error', async () => {
-          assert.equal(res.body.error.id, ErrorIds.DeniedEventModification);
-          assert.equal(res.body.error.message, ErrorMessages[ErrorIds.DeniedEventModification]);
+          assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
+          assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenNoneditableAccountStreamsEdit]);
           assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.options.STREAM_ID_USERNAME});
         });
       });

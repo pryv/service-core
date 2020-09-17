@@ -90,6 +90,7 @@ const ErrorIds = {
   UnexpectedErrorWhileSavingAccount: 'unexpected-error-while-saving-account',
   UnexpectedErrorWhileCreatingUser: 'unexpected-error-while-creating-user',
   ForbiddenNoneditableAccountStreamsEdit: 'forbidden-noneditable-account-streams-edit',
+  ForbiddenToChangeAccountStreamId: 'forbidden-change-account-streams-id',
 };
 Object.freeze(ErrorIds);
 

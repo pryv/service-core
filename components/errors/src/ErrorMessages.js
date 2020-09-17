@@ -42,7 +42,8 @@ const ErrorMessages = {
   [ErrorIds.UnexpectedErrorWhileSavingTheEvent]: 'Unexpected error while saving the event, please try again in a minute.',
   [ErrorIds.UnexpectedErrorWhileSavingAccount]: 'Unexpected error while saving account information, please try again in a minute.',
   [ErrorIds.UnexpectedErrorWhileCreatingUser]: 'Unexpected error while creating a user.',
-  [ErrorIds.ForbiddenNoneditableAccountStreamsEdit]: 'It is forbidden to edit noneditable account stream event.',
+  [ErrorIds.ForbiddenNoneditableAccountStreamsEdit]: 'It is forbidden to create or edit noneditable account stream event.',
+  [ErrorIds.ForbiddenToChangeAccountStreamId]: 'It is forbidden to change account stream id.',
 };
 Object.freeze(ErrorMessages);
 

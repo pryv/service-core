@@ -397,7 +397,7 @@ module.exports = function (
     let matchingAccountStreams = [];
     const allAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
     if (doesEventBelongToTheAccountStream()) {
-      context = addAccountStreamsMetaDataToTheContext(context, allAccountStreamsIds);
+      context.accountStreamId = matchingAccountStreams[0];
       checkIfStreamIdIsNotEditable(context.accountStreamId);
       checkIfUserTriesToAddMultipleAccountStreamIds(matchingAccountStreams);
     }
@@ -972,7 +972,10 @@ module.exports = function (
     const nonEditableAccountStreamsIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForEditing();
     if (nonEditableAccountStreamsIds.includes(streamId)) {
       // if user tries to add new streamId from non editable streamsIds
-      throw errors.invalidOperation(ErrorMessages[ErrorIds.ForbiddenNoneditableAccountStreamsEdit]);
+      throw errors.invalidOperation(
+        ErrorMessages[ErrorIds.ForbiddenNoneditableAccountStreamsEdit],
+        { streamId: streamId }
+      );
     }
   }
 
@@ -983,18 +986,10 @@ module.exports = function (
   function checkIfUserTriesToAddMultipleAccountStreamIds (matchingAccountStreams): boolean {
     if (matchingAccountStreams.length > 1) {
       throw errors.invalidOperation(
-        ErrorMessages[ErrorIds.ForbiddenNoneditableAccountStreamsEdit]);
+        ErrorMessages[ErrorIds.ForbiddenMultipleAccountStreams],
+        { streamId: matchingAccountStreams[0]}
+      );
     }
-  }
-
-  /**
-   * if it is account event, append additional data to the context
-   */
-  function addAccountStreamsMetaDataToTheContext (context, allAccountStreamIds) {
-    //const editableAccountStreams = Object.keys(SystemStreamsSerializer.getEditableAccountStreams());
-    matchingAccountStreams = _.intersection(context.content.streamIds, allAccountStreamIds);
-    context.accountStreamId = matchingAccountStreams[0];
-    return context; //TODO IEVA, maybe I can simpler?
   }
 
   /**
@@ -1011,24 +1006,31 @@ module.exports = function (
    * @param {*} next 
    */
   function validateAccountStreamsEventEdition (context, params, result, next) { 
-    let matchingAccountStreams = [];
     const allAccountStreamIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
-    if (doesEventBelongToTheAccountStream()) {
-      context = addAccountStreamsMetaDataToTheContext(context, allAccountStreamIds);
-      checkIfStreamIdIsNotEditable(context.accountStreamId);
-      checkIfUserTriesToAddMultipleAccountStreamIds(matchingAccountStreams)
-      checkIfUserTriesToChangeAccountStreamId(context.oldContentStreamIds);
+    if (!doesEventBelongToTheAccountStream()) {
+      return next();
     }
+
+    const matchingAccountStreams = _.intersection(
+      context.content.streamIds,
+      allAccountStreamIds
+    );
+
+    context.accountStreamId = matchingAccountStreams[0];
+    checkIfStreamIdIsNotEditable(context.accountStreamId);
+    checkIfUserTriesToAddMultipleAccountStreamIds(matchingAccountStreams)
+    checkIfUserTriesToChangeAccountStreamId(context.oldContentStreamIds);
+    
     next();
 
     function doesEventBelongToTheAccountStream () {
       context.oldContentStreamIds = (context?.oldContent?.streamIds) ? context.oldContent.streamIds : [];
       // check if event belongs to account stream ids
-      matchingAccountStreams = _.intersection(
+      oldMatchingAccountStreams = _.intersection(
         context.oldContentStreamIds,
         allAccountStreamIds
       );
-      context.doesEventBelongToAccountStream = matchingAccountStreams.length > 0;
+      context.doesEventBelongToAccountStream = oldMatchingAccountStreams.length > 0;
       return context.doesEventBelongToAccountStream;
     }
 
@@ -1040,7 +1042,7 @@ module.exports = function (
       if (matchingAccountStreams.length > 0 &&
         _.intersection(matchingAccountStreams, oldContentStreamIds).length === 0) {
         throw errors.invalidOperation(
-          ErrorMessages[ErrorIds.ForbiddenNoneditableAccountStreamsEdit]);
+          ErrorMessages[ErrorIds.ForbiddenToChangeAccountStreamId]);
       }
     }
   }
@@ -1409,10 +1411,13 @@ module.exports = function (
     let fieldsForUpdate = {};
     let streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(context.accountStreamId);
 
+    // for isActive "context.removeActiveEvents" is not enought because it would be set 
     fieldsForUpdate[streamIdWithoutDot] = [{
       value: context.content.content,
       isUnique: editableAccountStreams[context.accountStreamId].isUnique,
-      isActive: context.removeActiveEvents,
+      isActive: (
+        context.content.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE) ||
+        context.oldContentStreamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE)),
       creation: creation
     }];
 
