@@ -23,7 +23,8 @@ const SystemStreamsSerializer = require('components/business/src/system-streams/
 const ServiceRegister = require('components/business/src/auth/service_register');
 const Registration = require('components/business/src/auth/registration');
 const UserRepository = require('components/business/src/users/repository');
-
+const ErrorIds = require('components/errors/src/ErrorIds');
+const ErrorMessages = require('components/errors/src/ErrorMessages');
 const { getConfig } = require('components/api-server/config/Config');
 
 const assert = require('assert');
@@ -760,9 +761,10 @@ module.exports = function (
       setFileReadToken(context.access, result.event);
 
     } catch (err) {
-      return next(Registration.handleUniquenessErrors(err, null, {
-        [SystemStreamsSerializer.removeDotFromStreamId(context.content.streamIds[0])]: context.content.content
-      }));
+      return next(Registration.handleUniquenessErrors(
+        err,
+        ErrorMessages[ErrorIds.UnexpectedErrorWhileSavingTheEvent],
+        {[SystemStreamsSerializer.removeDotFromStreamId(context.content.streamIds[0])]: context.content.content }));
     };
     next();
   }

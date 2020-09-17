@@ -242,7 +242,11 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
       notifications.accountChanged(context.user);
       next();
     } catch (err) {
-      return next(Registration.handleUniquenessErrors(err, ErrorMessages[ErrorIds.UnexpectedErrorWhileSavingTheEvent], params.update));
+      return next(Registration.handleUniquenessErrors(
+        err,
+        ErrorMessages[ErrorIds.UnexpectedErrorWhileSavingAccount],
+        params.update
+      ));
     }
   }
 };

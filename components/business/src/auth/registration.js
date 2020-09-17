@@ -308,7 +308,7 @@ class Registration {
   static handleUniquenessErrors (err, message, params) {
     // Duplicate errors
     const uniquenessErrors = {};
-    if (typeof err.isDuplicateIndex === 'function') {
+    if (err.isDuplicate) {
       let fieldName = err.duplicateIndex();
       // uniqueness constraint for username in acccess
       if (fieldName == 'deviceName') {

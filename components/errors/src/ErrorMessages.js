@@ -40,6 +40,7 @@ const ErrorMessages = {
   [ErrorIds.InvalidPassword]: 'Password should have from 5 to 23 characters',
   [ErrorIds.DeniedMultipleAccountStreams]: 'It is not allowed to save the event with multiple account streams',
   [ErrorIds.UnexpectedErrorWhileSavingTheEvent]: 'Unexpected error while saving the event, please try again in a minute.',
+  [ErrorIds.UnexpectedErrorWhileSavingAccount]: 'Unexpected error while saving account information, please try again in a minute.',
   [ErrorIds.UnexpectedErrorWhileCreatingUser]: 'Unexpected error while creating a user.',
 };
 Object.freeze(ErrorMessages);
