@@ -131,7 +131,7 @@ describe("Events of system streams", () => {
         await createUser();
         res = await request.get(basePath).set('authorization', access.token);
       });
-      // TODO
+      // TODO IEVA
       it('[KS6K] should return visible system events')
       it('[36F7] should not return non visible system events', async () => {
         // lets separate core events from all other events and validate them separatelly
@@ -175,25 +175,7 @@ describe("Events of system streams", () => {
         assert.equal(Object.keys(separatedEvents.events).length, 0);
       });
     });
-    describe('When using a shared access with a read-level permission on all streams (star)', () => {
-      let sharedAccess;
-      before(async function () {
-        await createUser();
-        sharedAccess = await user.access({
-          token: cuid(),
-          type: 'shared',
-          permissions: [{
-            streamId: '*',
-            level: 'read'
-          }],
-        });
-        res = await request.get(basePath).set('authorization', sharedAccess.attrs.token);
-      });
-
-      it('[RM74] should not return any system events', async () => {
-        assert.equal(res.body.events.length, 0);
-      });
-    });
+    
     describe('When using a shared access with a read-level permission on all streams (star) and a visible system stream', () => {
       let sharedAccess;
       const streamIdWithDot = '.email';
@@ -218,6 +200,26 @@ describe("Events of system streams", () => {
       it('[GF3A] should return only the account event for which a permission was explicitely provided', async () => {
         assert.equal(res.body.events.length, 1);
         assert.isTrue(res.body.events[0].streamIds.includes(streamIdWithDot));
+      });
+    });
+
+    describe('When using a shared access with a read-level permission on all streams (star)', () => {
+      let sharedAccess;
+      before(async function () {
+        await createUser();
+        sharedAccess = await user.access({
+          token: cuid(),
+          type: 'shared',
+          permissions: [{
+            streamId: '*',
+            level: 'read'
+          }],
+        });
+        res = await request.get(basePath).set('authorization', sharedAccess.attrs.token);
+      });
+
+      it('[RM74] should not return any system events', async () => {
+        assert.equal(res.body.events.length, 0);
       });
     });
   });
@@ -1067,7 +1069,7 @@ describe("Events of system streams", () => {
         });
       });
     });
-    // TODO
+    // TODO IEVA
     describe('when using a shared access with a contribute-level access on a system stream', () => {
       before(async function () {
       });
@@ -1202,7 +1204,7 @@ describe("Events of system streams", () => {
           });
         });
       });
-      describe('[CDD1] to delete a non editable system event', () => {
+      describe('to delete a non editable system event', () => {
         let streamId = SystemStreamsSerializer.addDotFromStreamId('username');
         let initialEvent;
         before(async function () {
@@ -1231,7 +1233,7 @@ describe("Events of system streams", () => {
       });
     });
 
-    // TODO
+    // TODO IEVA
     describe('when using a shared access with a contribute-level access on a system stream', () => {
       before(async function () {
       });
