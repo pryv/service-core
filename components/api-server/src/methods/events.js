@@ -61,7 +61,7 @@ module.exports = function (
 
   // initialize service-register connection
   let serviceRegisterConn = {};
-  if (config.get('singleNode:isActive') !== true) {
+  if (!config.get('singleNode:isActive')) {
     serviceRegisterConn = new ServiceRegister(
       config.get('services:register'),
       logging.getLogger('service-register')
@@ -1167,7 +1167,7 @@ module.exports = function (
         userEventsStorage.updateOne(user, { _id: id },
           { [existingUniqueProperty]: cuid() }, cb));
 
-      if (config.get('singleNode:isActive') !== true) {
+      if (!config.get('singleNode:isActive')) {
         // send information update to service regsiter
         await serviceRegisterConn.updateUserInServiceRegister(
           user.username, {}, { [existingUniqueProperty.split('__unique')[0]]: event[existingUniqueProperty]});
@@ -1403,7 +1403,7 @@ module.exports = function (
    */
   async function sendDataToServiceRegister (context, creation, editableAccountStreams) {
     // send update to service-register
-    if (config.get('singleNode:isActive') === true) {
+    if (config.get('singleNode:isActive')) {
       return;
     }
     let fieldsForUpdate = {};
