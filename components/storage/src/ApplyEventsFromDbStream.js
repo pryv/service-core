@@ -21,6 +21,7 @@ function ApplyEventsFromDbStream() {
 ApplyEventsFromDbStream.prototype._transform = function (event, encoding, callback) {
   // remove event values used for enforcing uniqness in database level
   // (the fields are formed "streamId + __unique")
+  // TODO IEVA - what this comment does here
   try {
     event = this.trans(event);
     // from storage/src/user/Events.js

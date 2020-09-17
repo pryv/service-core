@@ -360,12 +360,22 @@ describe("[841C] Account with default-streams", function () {
         // email is already skipped
         assert.deepEqual(serviceRegisterRequest, {
           user: {
-            language: {
-              value: newLanguage,
-              isUnique: false,
-              isActive: true,
-              creation: false
-            },
+            email: [
+              {
+                creation: false,
+                isActive: true,
+                isUnique: true,
+                value: newEmail
+              }
+            ],
+            language: [
+              {
+                value: newLanguage,
+                isUnique: false,
+                isActive: true,
+                creation: false
+              }
+            ],
             username: user.attrs.username,
           },
           fieldsToDelete: {}

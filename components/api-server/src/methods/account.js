@@ -59,9 +59,16 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
   api.register('account.update',
     commonFns.requirePersonalAccess,
     commonFns.getParamsValidation(methodsSchema.update.params),
-    notifyEmailChangeToRegister,
-    updateAccount);
+    validateThatAllFieldsAreEditable,
+    notifyServiceRegister,
+    updateAccount,
+    buildResultData,
+  );
 
+  function validateThatAllFieldsAreEditable (context, params, result, next) {
+    // TODO IEVA
+    next();
+  }
   // CHANGE PASSWORD
 
   api.register('account.changePassword',
@@ -171,76 +178,31 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     });
   }
 
-  async function notifyEmailChangeToRegister (context, params, result, next) {
+  async function notifyServiceRegister (context, params, result, next) {
     // no need to update service register if it is single node setup
     if (getConfig().get('singleNode:isActive') === true) {
       return next();
     }
-    const currentEmail = context.user.email;
-    const newEmail = params.update.email;
-
-    if (newEmail == null || newEmail === currentEmail) {
-      return next();
+    try {
+      const serviceRegisterRequest = await context.user.getUpdateRequestToServiceRegister(
+        params.update,
+        true
+      );
+      await serviceRegisterConn.updateUserInServiceRegister(
+        context.user.username,
+        serviceRegisterRequest,
+        {});
+    } catch (err) {
+      next(error);
     }
-    // email was changed, must notify registration server
-    const regChangeEmailURL = registerSettings.url + '/users/' + context.user.username +
-        '/change-email';
-    request.post(regChangeEmailURL)
-      .set('Authorization', registerSettings.key)
-      .send({ email: newEmail })
-      .end(async (err, res) => {
-        if (err != null || (res && ! res.ok)) {
-          let errMsg = 'Failed to update email on register. ';
-          // for some reason register returns error message within res.body
-          if (res != null && res.body != null && res.body.message != null) {
-            errMsg += res.body.message;
-          } else if (err != null && err.message != null) {
-            errMsg += err.message;
-          }
-          return next(errors.invalidOperation(errMsg, { email: newEmail }, err));
-        }
-        // update language in service-register
-        if (params.update.hasOwnProperty('language')) {
-          try {
-            await notifyRegisterAboutUserDataChanges(context.user.username,
-              {
-                language: {
-                  value: params.update.language,
-                  creation: false,
-                  isUnique: false,
-                  isActive: true
-                }
-              });
-          } catch (error) {
-            next(error);
-          }
-        }
-        next();
-      });
-  }
-
-  /**
-   * This function should be called only for the indexed or unique fields.
-   * Curently there is only language that should be updated, and account
-   * methods will deprecate so the logic is simplified
-   */
-  async function notifyRegisterAboutUserDataChanges (username, fieldsForUpdate) {
-    // send information update to service regsiter
-    await serviceRegisterConn.updateUserInServiceRegister(username, fieldsForUpdate, {});
-    // !!!!!! Now only language is updated and no validation errors should be thrown
+    next();
   }
 
   async function updateAccount(context, params, result, next) {
     try {
-      await userRepository.updateOne(context.user.id, params.update, true);
-      // retrieve and build user info
-      if (!Object.keys(params.update).includes('passwordHash')) {
-        const user: User = await userRepository.getById(context.user.id);
-        result.account = user.getAccount();
-      }
-
+      //const updateEventList = context.user.getEventsForUpdate(params.update);
+      await userRepository.updateOne(context.user.id, params.update);
       notifications.accountChanged(context.user);
-      next();
     } catch (err) {
       return next(Registration.handleUniquenessErrors(
         err,
@@ -248,5 +210,19 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
         params.update
       ));
     }
+    next();
+  }
+
+  /**
+   * Build response body for the account update
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  async function buildResultData (context, params, result, next) {
+    const user: User = await userRepository.getById(context.user.id);
+    result.account = user.getAccount();
+    next();
   }
 };

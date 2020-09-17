@@ -494,7 +494,9 @@ module.exports = function (
 
       // initialize service-register connection
       //todo IEVA verify config.get('services:register')
-      const serviceRegisterConn = new ServiceRegister(config.get('services:register'), logging.getLogger('service-register'));
+      const serviceRegisterConn = new ServiceRegister(
+        config.get('services:register'),
+        logging.getLogger('service-register'));
 
       // send information update to service regsiter
       await serviceRegisterConn.updateUserInServiceRegister(

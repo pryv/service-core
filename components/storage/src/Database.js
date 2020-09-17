@@ -459,10 +459,18 @@ class Database {
    * @param {Object} update
    * @param {Function} callback
    */
-  updateOne(collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback) {
+  updateOne (collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback, options: Object) {
+    // default value for options 
+    const defaultOptions = { w: 1, j: true };
+    if (typeof options !== 'object') {
+      options = defaultOptions;
+    } else {
+      options = { ...options, ...defaultOptions };
+    }
+
     this.addUserIdIfneed(collectionInfo, query);
     this.getCollectionSafe(collectionInfo, callback, collection => {
-      collection.updateOne(query, update, {w: 1, j: true}, (err, res) => {
+      collection.updateOne(query, update, options, (err, res) => {
         if (err != null) {
           Database.handleDuplicateError(err);
         }

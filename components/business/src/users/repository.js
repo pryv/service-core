@@ -68,6 +68,16 @@ class Repository {
   }
 
   /**
+   * Get object with transaction options
+   */
+  getTransactionOptions () {
+    return {
+      readPreference: 'primary',
+        readConcern: { level: 'local' },
+      writeConcern: { w: 'majority' }
+    }
+  }
+  /**
    * Get All usernames
    * Does the same as this.getAll(), just retrieves - only username and id
    * Used for the webhooks
@@ -229,11 +239,6 @@ class Repository {
 
     // Start a transaction session
     const session = await this.storage.database.startSession();
-    const transactionOptions = {
-      readPreference: 'primary',
-      readConcern: { level: 'local' },
-      writeConcern: { w: 'majority' }
-    };
     await session.withTransaction(async () => {
       // if sessionStorage is not provided, session will be not created
       let accessId = 'system';//TODO IEVA constant
@@ -250,53 +255,55 @@ class Repository {
       const events = await user.getEvents();
       await bluebird.fromCallback((cb) =>
         this.storage.insertMany({ id: user.id }, events, cb, { session }));
-    }, transactionOptions);
+    }, this.getTransactionOptions());
     return user;
   }
 
   /**
-   * Update user fields that are allowed for edition in default->account streams
+   * Update all account streams events
+   * validation of editable non editable should be done before
+   * in default->account streams
    * @param {*} userId 
    * @param {*} update 
    */
-  async updateOne (userId: string, update: {}, updateActiveOnly: boolean = false): Promise<void> {
-    // get streams ids from the config that should be retrieved
-    let userAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
-
+  async updateOne (userId: string, update: {}): Promise<void> {
     const uniqueAccountStreamIds = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutDot();
+
     // change password into hash if it exists
     if (update.password && !update.passwordHash) {
       update.passwordHash = await bluebird.fromCallback((cb) => encryption.hash(update.password, cb));
     }
     delete update.password;
 
-    // update all account streams and do not allow additional properties
-    for (let i = 0; i < userAccountStreamsIds.length; i++){
-      let streamId = userAccountStreamsIds[i];
-      let streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(streamId);
-      if (update[streamIdWithoutDot]) {
+    // Start a transaction session
+    const session = await this.storage.database.startSession();
+    const streamIdsForUpdate = Object.keys(update);
+    await session.withTransaction(async () => {
+      // update all account streams and don't allow additional properties
+      for (let i = 0; i < streamIdsForUpdate.length; i++){
+        let streamIdWithoutDot = streamIdsForUpdate[i];
+        let streamId = SystemStreamsSerializer.addDotFromStreamId(streamIdWithoutDot);
+
+        // if needed append field that enforces unicity
         let updateData = { content: update[streamIdWithoutDot] };
         if (uniqueAccountStreamIds.includes(streamIdWithoutDot)) {
           updateData[`${streamIdWithoutDot}__unique`] = update[streamIdWithoutDot];
         }
 
-        let updateQuery;
-        if (updateActiveOnly) {
-          updateQuery = { streamIds: { $all: [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE] } };
-        } else {
-          updateQuery = { streamIds: { $in: [streamId] } };
-        }
         await bluebird.fromCallback(cb => this.storage.updateOne(
           { id: userId },
-          updateQuery,
-          updateData, cb));
+          { streamIds: { $all: [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE] } },
+          updateData,
+          cb,
+          { session }
+        ));
       }
-    }
-    return true;
+    }, this.getTransactionOptions());
   }
 
   /**
    * Deletes a user by id
+   * @param string userId 
    */
   async deleteOne (userId: string): Promise<void> {
     const userAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
@@ -307,6 +314,7 @@ class Repository {
 
   /**
    * Get user password hash
+   * @param string userId 
    */
   async _getUserPasswordHash (userId: string): Promise<void> {
     let userPass;
