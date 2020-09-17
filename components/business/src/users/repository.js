@@ -20,9 +20,13 @@ const errors = require('components/errors').factory;
  */
 class Repository {
   storage;
+  sessionsStorage;
+  accessStorage;
 
-  constructor (storage) {
-    this.storage = storage;
+  constructor (eventsStorage, sessionsStorage, accessStorage) {
+    this.storage = eventsStorage;
+    this.sessionsStorage = sessionsStorage;
+    this.accessStorage = accessStorage;
   }
 
  /**
@@ -169,20 +173,18 @@ class Repository {
    * 
    * @param string username
    * @param string appId 
-   * @param {*} sessionsStorage 
    * @param object session 
    */
   async createSessionForUser (
     username: string,
     appId: string,
-    sessionsStorage:any,
     session: any): string {
     let sessionData = {
       username: username,
       appId: appId
     }
     const sessionId = await bluebird.fromCallback((cb) =>
-      sessionsStorage.generate(sessionData, cb, { session }));
+      this.sessionsStorage.generate(sessionData, cb, { session }));
     return sessionId;
   }
 
@@ -190,7 +192,6 @@ class Repository {
     userId: string,
     token: string,
     appId: string,
-    accessStorage,
     session) {
     let accessData = {
       token: token,
@@ -204,18 +205,24 @@ class Repository {
     };
 
     const access = await bluebird.fromCallback((cb) =>
-      accessStorage.insertOne({ id: userId }, accessData, cb, { session }));
+      this.accessStorage.insertOne({ id: userId }, accessData, cb, { session }));
 
     return access;
   }
 
+  validateAllStorageObjectsInitialized () {
+    if (!this.accessStorage || !this.sessionsStorage) {
+      throw new Error('Please initialize the user repository with all dependencies.');
+    }
+    return true;
+  }
 
   /**
    * Create user
    * @param userParams - parameters to be saved
    * @return object with created user information in flat format
    */
-  async insertOne (user: User, sessionsStorage, accessStorage): Promise<object> {
+  async insertOne (user: User, shouldCreateSession: Boolean): Promise<object> {
     // first explicitly create a collection, because it would fail in the transation
     const collectionInfo = this.storage.getCollectionInfoWithoutUserId();
     await this.storage.database.createCollection(collectionInfo.name);
@@ -230,10 +237,10 @@ class Repository {
     await session.withTransaction(async () => {
       // if sessionStorage is not provided, session will be not created
       let accessId = 'system';//TODO IEVA constant
-      if (sessionsStorage && accessStorage && user.appId) {
-        const token = await this.createSessionForUser(user.username, user.appId, sessionsStorage, session);
+      if (shouldCreateSession && this.validateAllStorageObjectsInitialized() && user.appId) {
+        const token = await this.createSessionForUser(user.username, user.appId, session);
         const access = await this.createPersonalAccessForUser(
-          user.id, token, user.appId, accessStorage, session);
+          user.id, token, user.appId, session);
         accessId = access?.id;
         user.token = access.token;
       }

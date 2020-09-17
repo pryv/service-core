@@ -42,7 +42,11 @@ class Registration {
       servicesSettings.register,
       logging.getLogger('service-register')
     );
-    this.userRepository = new UserRepository(this.storageLayer.events);
+    this.userRepository = new UserRepository(
+      this.storageLayer.events,
+      this.storageLayer.sessions,
+      this.storageLayer.accesses
+    );
   }
 
   /**
@@ -181,11 +185,7 @@ class Registration {
       if (context.calledMethodId === 'system.createPoolUser') {
         context.user = await this.userRepository.insertOne( context.user );
       } else {
-        context.user = await this.userRepository.insertOne(
-          context.user,
-          this.storageLayer.sessions,
-          this.storageLayer.accesses,
-        );
+        context.user = await this.userRepository.insertOne( context.user, true );
       }
     } catch (err) {
       return next(Registration.handleUniquenessErrors(
@@ -214,7 +214,6 @@ class Registration {
     try {
       // get streams ids from the config that should be retrieved
       const userStreamsIds = SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutDot();
-
 
       // build data that should be sent to service-register
       // some default values and indexed/uinique fields of the system
