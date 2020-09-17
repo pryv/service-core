@@ -24,7 +24,7 @@ const SystemStreamsSerializer = require('components/business/src/system-streams/
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
 
-describe("[AGT3] Events of default-streams", function () {
+describe("Events of system streams", () => {
   let config;
   let validation;
   let app;
@@ -125,13 +125,15 @@ describe("[AGT3] Events of default-streams", function () {
     await config.resetConfig();
   });
 
-  describe('GET /events', async () => {
-    describe('[C326] When user provide app token he can get default-streams events', async () => {
+  describe('GET /events', () => {
+    describe('When using a personal access', () => {
       before(async function () {
         await createUser();
         res = await request.get(basePath).set('authorization', access.token);
       });
-      it('[36F7] User should not be able to see “not visible” core steams', async () => {
+      // TODO
+      it('[KS6K] should return visible system events')
+      it('[36F7] should not return non visible system events', async () => {
         // lets separate core events from all other events and validate them separatelly
         const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
 
@@ -140,14 +142,14 @@ describe("[AGT3] Events of default-streams", function () {
         assert.equal(separatedEvents.accountStreamsEvents.length, 7);
       });
       
-      it('[C32B] Unique events does not return additional field that enforces the uniqueness', async () => {
+      it('[C32B] should not return events internal properties that enforce db uniqueness', async () => {
         Object.keys(res.body.events).forEach(i => {
           assert.equal(res.body.events[i].hasOwnProperty(`${
             SystemStreamsSerializer.removeDotFromStreamId(res.body.events[i].streamIds[0])}__unique`), false);
         });
       });
     });
-    describe('[1EB4] When user provide access token he can get default-streams events', async () => {
+    describe('When using a shared access with a read-level permission on the .account stream', () => {
       let sharedAccess;
       let separatedEvents;
       before(async function () {
@@ -157,24 +159,23 @@ describe("[AGT3] Events of default-streams", function () {
           type: 'shared',
           permissions: [{
             streamId: SystemStreamsSerializer.addDotFromStreamId('account'),
-            level: 'manage'
+            level: 'read'
           }],
-          clientData: 'This is a consent'
         });
         res = await request.get(basePath).set('authorization', sharedAccess.attrs.token);
         // lets separate core events from all other events and validate them separatelly
         separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
       });
       
-      it('[DRFH] User should be able to see "visible” core steams', async () => {
+      it('[DRFH] should return visible system events', async () => {
         // events contains only visible streamIds
         assert.equal(Object.keys(separatedEvents.accountStreamsEvents).length, 7);
       });
-      it('[XVWH] User should not be able to see “not visible” core steams', async () => {
+      it('[AE8W] should not return non visible system events', async () => {
         assert.equal(Object.keys(separatedEvents.events).length, 0);
       });
     });
-    describe('[YY0U] When getting visible core-stream events with manage rights for all streams (star)', async () => {
+    describe('When using a shared access with a read-level permission on all streams (star)', () => {
       let sharedAccess;
       before(async function () {
         await createUser();
@@ -183,22 +184,19 @@ describe("[AGT3] Events of default-streams", function () {
           type: 'shared',
           permissions: [{
             streamId: '*',
-            level: 'manage'
+            level: 'read'
           }],
-          clientData: 'This is a consent'
         });
         res = await request.get(basePath).set('authorization', sharedAccess.attrs.token);
       });
 
-      it('[ZOHF] Should return 200', async () => {
-        assert.equal(res.status, 200);
-      });
-      it('[MRAF] Events list should be empty', async () => {
+      it('[RM74] should not return any system events', async () => {
         assert.equal(res.body.events.length, 0);
       });
     });
-    describe('[KKPL] When getting all events with manage rights for all streams (star)', async () => {
+    describe('When using a shared access with a read-level permission on all streams (star) and a visible system stream', () => {
       let sharedAccess;
+      const streamIdWithDot = '.email';
       before(async function () {
         await createUser();
         sharedAccess = await user.access({
@@ -206,45 +204,18 @@ describe("[AGT3] Events of default-streams", function () {
           type: 'shared',
           permissions: [{
             streamId: '*',
-            level: 'manage'
-          }],
-          clientData: 'This is a consent'
-        });
-        res = await request.get(basePath).set('authorization', sharedAccess.attrs.token);
-      });
-
-      it('[RA5L] Should return 200', async () => {
-        assert.equal(res.status, 200);
-      });
-      it('[D48N] Events list should be empty', async () => {
-        assert.equal(res.body.events.length, 0);
-      });
-    });
-    describe('[BC6S] When getting all events with manage rights for all streams (star) and visible stream access', async () => {
-      let sharedAccess;
-      let streamIdWithDot = '.email';
-      before(async function () {
-        await createUser();
-        sharedAccess = await user.access({
-          token: cuid(),
-          type: 'shared',
-          permissions: [{
-            streamId: '*',
-            level: 'manage'
+            level: 'read'
           },
           {
             streamId: streamIdWithDot,
-            level: 'manage'
+            level: 'read'
           }],
           clientData: 'This is a consent'
         });
         res = await request.get(basePath).set('authorization', sharedAccess.attrs.token);
       });
 
-      it('[RUI7] Should return 200', async () => {
-        assert.equal(res.status, 200);
-      });
-      it('[ZZRR] Events list should contain visible account stream event', async () => {
+      it('[GF3A] should return only the account event for which a permission was explicitely provided', async () => {
         assert.equal(res.body.events.length, 1);
         assert.isTrue(res.body.events[0].streamIds.includes(streamIdWithDot));
       });
@@ -256,57 +227,60 @@ describe("[AGT3] Events of default-streams", function () {
       return await bluebird.fromCallback(
         (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
     }
-    describe('[88BJ] When user retrieves the event from “visible” unique account stream', async () => {
+    describe('When using a personal access', () => {
+      describe('to retrieve a visible system event', () => {
+        let defaultEvent;
+        const streamId = 'username';
+        const streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+        before(async function () {
+          await createUser();
+          defaultEvent = await findDefaultCoreEvent(streamIdWithDot);
+          res = await request.get(path.join(basePath, defaultEvent.id)).set('authorization', access.token);
+        });
+        it('[9IEX] should return 200', async () => {
+          assert.equal(res.status, 200);
+        });
+        it('[IYE6] should return the event', async () => {
+          assert.equal(res.body.event.id, defaultEvent.id);
+          assert.equal(res.body.event.streamId, streamIdWithDot);
+        });
+  
+        it('[4Q5L] should not return the event\'s internal properties that enforce db uniqueness', async () => {
+          assert.equal(res.body.event.hasOwnProperty(`${streamId}__unique`), false);
+        });
+      });
+      describe('to retrieve a non visible system event', () => {
+        before(async function () {
+          await createUser();
+          const defaultEvent = await findDefaultCoreEvent(SystemStreamsSerializer.addDotFromStreamId('passwordHash'));
+          res = await request.get(path.join(basePath, defaultEvent.id)).set('authorization', access.token);
+        });
+        it('[Y2OA] should return 404', async () => {
+          assert.equal(res.status, 404);
+        });
+  
+        it('[DHZE] should return the right error message', async () => {
+          assert.equal(res.body.error.id, ErrorIds.UnknownResource);
+        });
+      });
+    });
+    
+    describe('When using a shared access with a read-level permission on all streams (star) and a visible system stream', () => {
       let defaultEvent;
       const streamId = 'username';
       const streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
-      before(async function () {
-        await createUser();
-        defaultEvent = await findDefaultCoreEvent(streamIdWithDot);
-        res = await request.get(path.join(basePath, defaultEvent.id)).set('authorization', access.token);
-      });
-      it('[9IEX] Should return 200', async () => {
-        assert.equal(res.status, 200);
-      });
-      it('[IYE6] Should return the event', async () => {
-        assert.equal(res.body.event.id, defaultEvent.id);
-        assert.equal(res.body.event.streamId, streamIdWithDot);
-      });
-
-      it('[4Q5L] Additional field that was saved to enforce the uniqueness is not returned', async () => {
-        assert.equal(res.body.event.hasOwnProperty(`${streamId}__unique`), false);
-      });
-    });
-    describe('[C826] When user retrieves the event from “not visible” account stream', async () => {
-      before(async function () {
-        await createUser();
-        const defaultEvent = await findDefaultCoreEvent(SystemStreamsSerializer.addDotFromStreamId('passwordHash'));
-        res = await request.get(path.join(basePath, defaultEvent.id)).set('authorization', access.token);
-      });
-      it('[Y2OA] Should return 404', async () => {
-        assert.equal(res.status, 404);
-      });
-
-      it('[DHZE] Should return the right error message', async () => {
-        assert.equal(res.body.error.id, ErrorIds.UnknownResource);
-      });
-    });
-    describe('[LKLP] When getting all events with manage rights for all streams (star) and visible stream access', async () => {
-      let defaultEvent;
-      const streamId = 'username';
-      const streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
-      before(async function () {
+      before(async () => {
         await createUser();
         sharedAccess = await user.access({
           token: cuid(),
           type: 'shared',
           permissions: [{
             streamId: '*',
-            level: 'manage'
+            level: 'read'
           },
           {
             streamId: streamIdWithDot,
-            level: 'manage'
+            level: 'read'
           }],
           clientData: 'This is a consent'
         });
@@ -315,10 +289,10 @@ describe("[AGT3] Events of default-streams", function () {
         res = await request.get(path.join(basePath, defaultEvent.id))
           .set('authorization', sharedAccess.attrs.token);
       });
-      it('[YPZX] Should return 200', async () => {
+      it('[YPZX] should return 200', async () => {
         assert.equal(res.status, 200);
       });
-      it('[1NRM] Should return the event', async () => {
+      it('[1NRM] should return the event', async () => {
         assert.exists(res.body.event);
         assert.isTrue(res.body.event.streamIds.includes(streamIdWithDot));
       });
@@ -327,195 +301,43 @@ describe("[AGT3] Events of default-streams", function () {
 
   describe('POST /events', async () => {
     let eventData;
-    describe('[ED75] When creating an even with non editable account stream id', async () => {
-      before(async function () {
-        await createUser();
-        eventData = {
-          streamIds: [SystemStreamsSerializer.options.STREAM_ID_USERNAME],
-          content: charlatan.Lorem.characters(7),
-          type: 'string/pryv'
-        };
-
-        res = await request.post(basePath)
-          .send(eventData)
-          .set('authorization', access.token);
-      });
-      it('[6CE0] Should return a 400 error', async () => {
-        assert.equal(res.status, 400);
-      });
-      it('[90E6] Should return the correct error', async () => {
-        assert.equal(res.body.error.id, ErrorIds.DeniedEventModification);
-        assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.options.STREAM_ID_USERNAME});
-        assert.equal(res.body.error.message, ErrorMessages[ErrorIds.DeniedEventModification]);
-      });
-    });
-
-    describe('When creating an even with editable account stream id', async () => {
-      describe('[7CD9] When saving not indexed and not unique event', async () => {
-        before(async function () {
-          await createUser();
-          eventData = {
-            streamIds: [SystemStreamsSerializer.addDotFromStreamId('phoneNumber')],
-            content: charlatan.Lorem.characters(7),
-            type: 'string/pryv'
-          };
-
-          res = await request.post(basePath)
-            .send(eventData)
-            .set('authorization', access.token);
-        });
-        it('[F308] Should return 201', async () => {
-          assert.equal(res.status, 201);
-        });
-        it('[9C2D] Should return the created event', async () => {
-          assert.equal(res.body.event.content, eventData.content);
-          assert.equal(res.body.event.type, eventData.type);
-          assert.deepEqual(res.body.event.streamIds, [SystemStreamsSerializer.addDotFromStreamId('phoneNumber'), SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
-        });
-        it('[A9DC] New event gets streamId ‘active’ and ‘active’ stream property is removed from all other events from the same stream ', async () => {
-          assert.equal(res.body.event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE), true);
-          const allEvents = await bluebird.fromCallback(
-            (cb) => user.db.events.find({ id: user.attrs.id }, { streamIds: SystemStreamsSerializer.addDotFromStreamId('phoneNumber')}, null, cb));
-          assert.equal(allEvents.length, 2);
-          // check the order
-          assert.deepEqual(allEvents[0].id, res.body.event.id);
-          // verify streamIds
-          assert.deepEqual(allEvents[0].streamIds, [SystemStreamsSerializer.addDotFromStreamId('phoneNumber'), SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
-          assert.deepEqual(allEvents[1].streamIds, [SystemStreamsSerializer.addDotFromStreamId('phoneNumber')]);
-        });
-      });
-      describe('[4EB9] When event belongs to the unique account stream', async () => {
-        describe('[2FA2] When creating an event that is valid', async () => {
-          let allEventsInDb;
-          let streamId = SystemStreamsSerializer.addDotFromStreamId('email');
+    describe('When using a personal access', () => {
+      
+      describe('to create an editable system event', async () => {
+        describe('which is non indexed and non unique', async () => {
           before(async function () {
             await createUser();
             eventData = {
-              streamIds: [streamId],
+              streamIds: [SystemStreamsSerializer.addDotFromStreamId('phoneNumber')],
               content: charlatan.Lorem.characters(7),
               type: 'string/pryv'
             };
-
-            nock.cleanAll();
-            scope = nock(config.get('services:register:url'))
-            scope.put('/users',
-              (body) => {
-              serviceRegisterRequest = body;
-              return true;
-            }).reply(200, { errors: [] });
-
+  
             res = await request.post(basePath)
               .send(eventData)
               .set('authorization', access.token);
           });
-          it('[7A76] Should return 201', async () => {
+          it('[F308] should return 201', async () => {
             assert.equal(res.status, 201);
           });
-          it('[5831] Should return the created event', async () => {
+          it('[9C2D] should return the created event', async () => {
             assert.equal(res.body.event.content, eventData.content);
             assert.equal(res.body.event.type, eventData.type);
-            assert.equal(res.body.event.hasOwnProperty('email__unique'), false);           
+            assert.deepEqual(res.body.event.streamIds, [SystemStreamsSerializer.addDotFromStreamId('phoneNumber'), SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
           });
-          it('[78FE] Unique streamId and event properties enforcing uniqueness are appended', async () => {
-            allEventsInDb = await bluebird.fromCallback(
-              (cb) => user.db.events.find({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
-            assert.equal(allEventsInDb.length, 2);  
-            assert.equal(allEventsInDb[0].hasOwnProperty('email__unique'), true);  
-            assert.equal(allEventsInDb[1].hasOwnProperty('email__unique'), true);  
-          });
-          it('[DA23] New event gets streamId ‘active’ and ‘active’ stream property is removed from all other events from the same stream ', async () => {
-            assert.deepEqual(res.body.event.streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
-            assert.deepEqual(allEventsInDb[0].streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
-            assert.deepEqual(allEventsInDb[1].streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
-          });
-          it('[D316] New event data is sent to service-register', async () => {
-            assert.equal(scope.isDone(), true);
-            
-            assert.deepEqual(serviceRegisterRequest, {
-              user: {
-                email: [{
-                  value: eventData.content,
-                  isUnique: true,
-                  isActive: true,
-                  creation: true
-                }],
-                username: user.attrs.username,
-              },
-              fieldsToDelete: {}
-            });
+          it('[A9DC] should add the ‘active’ streamId to the new event which should be removed from other events of the same stream', async () => {
+            assert.equal(res.body.event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE), true);
+            const allEvents = await bluebird.fromCallback(
+              (cb) => user.db.events.find({ id: user.attrs.id }, { streamIds: SystemStreamsSerializer.addDotFromStreamId('phoneNumber')}, null, cb));
+            assert.equal(allEvents.length, 2);
+            // check the order
+            assert.deepEqual(allEvents[0].id, res.body.event.id);
+            // verify streamIds
+            assert.deepEqual(allEvents[0].streamIds, [SystemStreamsSerializer.addDotFromStreamId('phoneNumber'), SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
+            assert.deepEqual(allEvents[1].streamIds, [SystemStreamsSerializer.addDotFromStreamId('phoneNumber')]);
           });
         });
-        describe('[7464] When creating an event that is already taken in service-register', async () => {
-          before(async function () {
-            await createUser();
-            eventData = {
-              streamIds: [SystemStreamsSerializer.addDotFromStreamId('email')],
-              content: charlatan.Lorem.characters(7),
-              type: 'string/pryv'
-            };
-
-            nock.cleanAll();
-            nock(config.get('services:register:url')).put('/users')
-              .reply(400, {
-                error: {
-                  id: ErrorIds.ItemAlreadyExists,
-                  data: {
-                    email: eventData.content
-                  }
-                }
-              });
-
-            res = await request.post(basePath)
-              .send(eventData)
-              .set('authorization', access.token);
-          });
-          
-          it('[89BC] Should return a 400 error', async () => {
-            assert.equal(res.status, 400);
-          });
-          it('[89BC] Should return the correct error', async () => {
-            assert.equal(res.body.error.id, ErrorIds.ItemAlreadyExists);
-            assert.deepEqual(res.body.error.data, { email: eventData.content});
-          });
-        });
-        describe('[6B8D] When creating an event that is already taken only on core', async () => {
-          let serviceRegisterRequest;
-          let streamId = SystemStreamsSerializer.addDotFromStreamId('email');
-          before(async function () {
-            await createUser();
-            eventData = {
-              streamIds: [streamId],
-              content: charlatan.Lorem.characters(7),
-              type: 'string/pryv'
-            };
-
-            nock.cleanAll();
-            nock(config.get('services:register:url')).put('/users',
-              (body) => {
-                serviceRegisterRequest = body;
-                return true;
-              }).times(2).reply(200, { errors: [] });
-
-              await request.post(basePath)
-                .send(eventData)
-                .set('authorization', access.token);
-              res = await request.post(basePath)
-                .send(eventData)
-                .set('authorization', access.token);
-          });
-
-          it('[2021] Should return a 400 error', async () => {
-            assert.equal(res.status, 400);
-          });
-          it('[121E] Should return the correct error', async () => {
-            assert.equal(res.body.error.data.length, 1);
-            assert.equal(res.body.error.data[0].code, ErrorIds['Existing_email']);
-            assert.equal(res.body.error.data[0].message, ErrorMessages[ErrorIds['Existing_email']]);
-          });
-        });
-        describe('When event belongs to the indexed account stream', async () => {
-          describe('[6070] When creating an event that is valid', async () => {
-
+        describe('which is indexed', async () => {
             before(async function () {
               await createUser();
               eventData = {
@@ -537,15 +359,15 @@ describe("[AGT3] Events of default-streams", function () {
                 .set('authorization', access.token);
             });
 
-            it('[8C80] Should return 201', async () => {
+            it('[8C80] should return 201', async () => {
               assert.equal(res.status, 201);
             });
-            it('[67F7] Should return the created event', async () => {
+            it('[67F7] should return the created event', async () => {
               assert.equal(res.body.event.content, eventData.content);
               assert.equal(res.body.event.type, eventData.type);
               assert.deepEqual(res.body.event.streamIds, [SystemStreamsSerializer.addDotFromStreamId('language'), SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
             });
-            it('[467D] New event gets streamId ‘active’ and ‘active’ stream property is removed from all other events from the same stream', async () => {
+            it('[467D] should add the ‘active’ streamId to the new event which should be removed from other events of the same stream', async () => {
               const allEvents = await bluebird.fromCallback(
                 (cb) => user.db.events.find({ id: user.attrs.id }, { streamIds: '.language' }, null, cb));
               assert.equal(allEvents[0].streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE), true);
@@ -553,7 +375,7 @@ describe("[AGT3] Events of default-streams", function () {
               assert.equal(allEvents[1].streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE), false);
               assert.equal(allEvents[1].streamIds.includes(SystemStreamsSerializer.addDotFromStreamId('language')), true);
             });
-            it('[199D] New event data is sent to service-register', async () => {
+            it('[199D] should notify register with the new data', async () => {
               assert.equal(scope.isDone(), true);
 
               assert.deepEqual(serviceRegisterRequest, {
@@ -569,12 +391,165 @@ describe("[AGT3] Events of default-streams", function () {
                 fieldsToDelete: {}
               });
             });
+        });
+        describe('which is indexed and unique', async () => {
+          describe('whose content is unique', async () => {
+            let allEventsInDb;
+            let streamId = SystemStreamsSerializer.addDotFromStreamId('email');
+            before(async function () {
+              await createUser();
+              eventData = {
+                streamIds: [streamId],
+                content: charlatan.Lorem.characters(7),
+                type: 'string/pryv'
+              };
+  
+              nock.cleanAll();
+              scope = nock(config.get('services:register:url'))
+              scope.put('/users',
+                (body) => {
+                serviceRegisterRequest = body;
+                return true;
+              }).reply(200, { errors: [] });
+  
+              res = await request.post(basePath)
+                .send(eventData)
+                .set('authorization', access.token);
+            });
+            it('[SQZ2] should return 201', async () => {
+              assert.equal(res.status, 201);
+            });
+            it('[YS79] should return the created event', async () => {
+              assert.equal(res.body.event.content, eventData.content);
+              assert.equal(res.body.event.type, eventData.type);
+              assert.equal(res.body.event.hasOwnProperty('email__unique'), false);           
+            });
+            it('[15H6] should add properties enforcing uniqueness in the storage', async () => {
+              allEventsInDb = await bluebird.fromCallback(
+                (cb) => user.db.events.find({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
+              assert.equal(allEventsInDb.length, 2);  
+              assert.equal(allEventsInDb[0].hasOwnProperty('email__unique'), true);  
+              assert.equal(allEventsInDb[1].hasOwnProperty('email__unique'), true);  
+            });
+            it('[DA23] should add the ‘active’ streamId to the new event which should be removed from other events of the same stream', async () => {
+              assert.deepEqual(res.body.event.streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
+              assert.deepEqual(allEventsInDb[0].streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
+              assert.deepEqual(allEventsInDb[1].streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
+            });
+            it('[D316] should notify register with the new data', async () => {
+              assert.equal(scope.isDone(), true);
+              
+              assert.deepEqual(serviceRegisterRequest, {
+                user: {
+                  email: [{
+                    value: eventData.content,
+                    isUnique: true,
+                    isActive: true,
+                    creation: true
+                  }],
+                  username: user.attrs.username,
+                },
+                fieldsToDelete: {}
+              });
+            });
           });
+          describe('whose content is already taken in register', async () => {
+            before(async function () {
+              await createUser();
+              eventData = {
+                streamIds: [SystemStreamsSerializer.addDotFromStreamId('email')],
+                content: charlatan.Lorem.characters(7),
+                type: 'string/pryv'
+              };
+  
+              nock.cleanAll();
+              nock(config.get('services:register:url')).put('/users')
+                .reply(400, {
+                  error: {
+                    id: ErrorIds.ItemAlreadyExists,
+                    data: {
+                      email: eventData.content
+                    }
+                  }
+                });
+  
+              res = await request.post(basePath)
+                .send(eventData)
+                .set('authorization', access.token);
+            });
+            
+            it('[89BC] should return 400', async () => {
+              assert.equal(res.status, 400);
+            });
+            it('[89BC] should return the correct error', async () => {
+              assert.equal(res.body.error.id, ErrorIds.ItemAlreadyExists);
+              assert.deepEqual(res.body.error.data, { email: eventData.content});
+            });
+          });
+          describe('[6B8D] When creating an event that is already taken only on core', async () => {
+            let serviceRegisterRequest;
+            let streamId = SystemStreamsSerializer.addDotFromStreamId('email');
+            before(async function () {
+              await createUser();
+              eventData = {
+                streamIds: [streamId],
+                content: charlatan.Lorem.characters(7),
+                type: 'string/pryv'
+              };
+  
+              nock.cleanAll();
+              nock(config.get('services:register:url')).put('/users',
+                (body) => {
+                  serviceRegisterRequest = body;
+                  return true;
+                }).times(2).reply(200, { errors: [] });
+  
+                await request.post(basePath)
+                  .send(eventData)
+                  .set('authorization', access.token);
+                res = await request.post(basePath)
+                  .send(eventData)
+                  .set('authorization', access.token);
+            });
+  
+            it('[2021] should return a 400 error', async () => {
+              assert.equal(res.status, 400);
+            });
+            it('[121E] should return the correct error', async () => {
+              assert.equal(res.body.error.data.length, 1);
+              assert.equal(res.body.error.data[0].code, ErrorIds['Existing_email']);
+              assert.equal(res.body.error.data[0].message, ErrorMessages[ErrorIds['Existing_email']]);
+            });
+          });
+          
+        });
+      });
+
+      describe('to create an non editable system event', async () => {
+        before(async () => {
+          await createUser();
+          eventData = {
+            streamIds: [SystemStreamsSerializer.options.STREAM_ID_USERNAME],
+            content: charlatan.Lorem.characters(7),
+            type: 'string/pryv'
+          };
+  
+          res = await request.post(basePath)
+            .send(eventData)
+            .set('authorization', access.token);
+        });
+        it('[6CE0] should return a 400 error', async () => {
+          assert.equal(res.status, 400);
+        });
+        it('[90E6] should return the correct error', async () => {
+          assert.equal(res.body.error.id, ErrorIds.DeniedEventModification);
+          assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.options.STREAM_ID_USERNAME});
+          assert.equal(res.body.error.message, ErrorMessages[ErrorIds.DeniedEventModification]);
         });
       });
     });
 
-    describe('[TY63] When creating indexed stream with contribute access token', async () => {
+    describe('when using a shared access with a contribute-level permission on a system stream', () => {
       let sharedAccess;
       let initialEvent;
       let user2;
@@ -611,14 +586,14 @@ describe("[AGT3] Events of default-streams", function () {
           .set('authorization', sharedAccess.attrs.token);
       });
 
-      it('[X49R] Should return 201', async () => {
+      it('[X49R] should return 201', async () => {
         assert.equal(res.status, 201);
       });
-      it('[764A] Should return the updated event', async () => {
+      it('[764A] should return the created event', async () => {
         assert.equal(res.body.event.createdBy, sharedAccess.attrs.id);
         assert.deepEqual(res.body.event.streamIds, [streamIdWithDot, SystemStreamsSerializer.options.STREAM_ID_ACTIVE, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
       });
-      it('[765A] Should send a request to service-register to update the indexed field', async () => {
+      it('[765A] should notify register with the new data', async () => {
         assert.equal(scope.isDone(), true);
         assert.deepEqual(serviceRegisterRequest, {
           user: {
@@ -635,7 +610,7 @@ describe("[AGT3] Events of default-streams", function () {
       });
     });
 
-    describe('[22H2] When creating account event with manage access token for all streams (star)', async () => {
+    describe('when using a shared access with a manage-level permission on all streams (star)', () => {
       let sharedAccess;
       const streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId('email');
       before(async function () {
@@ -647,7 +622,6 @@ describe("[AGT3] Events of default-streams", function () {
             streamId: '*',
             level: 'manage'
           }],
-          clientData: 'This is a consent'
         });
 
         eventData = {
@@ -661,58 +635,415 @@ describe("[AGT3] Events of default-streams", function () {
           .set('authorization', sharedAccess.attrs.token);
       });
 
-      it('[YX07] Should return 403', async () => {
+      it('[YX07] should return 403', async () => {
         assert.equal(res.status, 403);
       });
-      it('[YYU1] Should return correct error id', async () => {
+      it('[YYU1] should return correct error id', async () => {
         assert.equal(res.body.error.id, ErrorIds.Forbidden);
       });
     });
   });
 
-  describe('PUT /events/<id>', async () => {
-    describe('[D1FD] When updating non editable streams', async () => {
-      before(async function () {
-        await createUser();
-        eventData = {
-          content: charlatan.Lorem.characters(7),
-          type: 'string/pryv'
-        };
-        const initialEvent = await bluebird.fromCallback(
-          (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: SystemStreamsSerializer.options.STREAM_ID_USERNAME }, null, cb));
+  describe('PUT /events/<id>', () => {
 
-        res = await request.put(path.join(basePath, initialEvent.id))
-          .send(eventData)
-          .set('authorization', access.token);
+    describe('when using a personal access', () => {
+      
+      describe('to update an editable system event', () => {
+        let scope;
+        let serviceRegisterRequest;
+        async function editEvent (streamId) {
+          eventData = {
+            streamIds: [streamId],
+            content: charlatan.Lorem.characters(7),
+            type: 'string/pryv'
+          };
+          const initialEvent = await bluebird.fromCallback(
+            (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
+  
+          res = await request.put(path.join(basePath, initialEvent.id))
+            .send(eventData)
+            .set('authorization', access.token);
+          return res;
+        }
+  
+        describe('which is non indexed and non unique', () => {
+          before(async function () {
+            await createUser();
+            eventData = {
+              content: charlatan.Lorem.characters(7),
+              type: 'string/pryv'
+            };
+            const initialEvent = await bluebird.fromCallback(
+              (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: SystemStreamsSerializer.addDotFromStreamId('phoneNumber') }, null, cb));
+  
+            res = await request.put(path.join(basePath, initialEvent.id))
+              .send(eventData)
+              .set('authorization', access.token);
+          });
+          it('[2FA2] should return 200', async () => {
+            assert.equal(res.status, 200);
+          });
+          it('[763A] should return the updated event', async () => {
+            assert.equal(res.body.event.content, eventData.content);
+            assert.equal(res.body.event.type, eventData.type);
+            assert.deepEqual(res.body.event.streamIds, [
+              SystemStreamsSerializer.addDotFromStreamId('phoneNumber'),
+              SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
+          });
+
+          describe('by adding the “active” streamId', () => {
+            let streamId = SystemStreamsSerializer.addDotFromStreamId('phoneNumber');
+            before(async function () {
+              await createUser();
+              res = await createAdditionalEventAndupdateMainOne(streamId);
+            });
+            it('[562A] should return 200', async () => {
+              assert.equal(res.status, 200);
+            });
+            it('[5622] should return the updated event', async () => {
+               assert.equal(res.body.event.content, eventData.content);
+               assert.equal(res.body.event.type, eventData.type);
+              assert.deepEqual(res.body.event.streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
+            });
+            it('[CF70] should remove the "active" streamId for events of the same stream', async () => {
+              const allEvents = await bluebird.fromCallback(
+                (cb) => user.db.events.find({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
+              assert.equal(allEvents.length, 2);
+              // check the order
+              assert.deepEqual(allEvents[1].id, res.body.event.id);
+              // verify streamIds
+              assert.deepEqual(allEvents[0].streamIds, [streamId]);
+              assert.deepEqual(allEvents[1].streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
+            });
+          });
+          describe('by changing its steamIds', () => {
+            describe('when editing with 2 streamIds at the time', () => {
+              before(async function () {
+                await createUser();
+                eventData = {
+                  streamIds: [
+                    SystemStreamsSerializer.addDotFromStreamId('email'),
+                    SystemStreamsSerializer.addDotFromStreamId('phoneNumber')
+                  ],
+                  content: charlatan.Lorem.characters(7),
+                  type: 'string/pryv'
+                };
+                const initialEvent = await bluebird.fromCallback(
+                  (cb) => user.db.events.findOne({ id: user.attrs.id },
+                    { streamIds: SystemStreamsSerializer.addDotFromStreamId('phoneNumber') }, null, cb));
+  
+                res = await request.put(path.join(basePath, initialEvent.id))
+                  .send(eventData)
+                  .set('authorization', access.token);
+              });
+              it('[9004] should return 400', async () => {
+                assert.equal(res.status, 400);
+              });
+              it('[E3AE] should return the correct error', async () => {
+                assert.equal(res.body.error.id, ErrorIds.DeniedMultipleAccountStreams);
+                assert.equal(res.body.error.message, ErrorMessages[ErrorIds.DeniedMultipleAccountStreams]);
+                assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.addDotFromStreamId('email')});
+              });
+            });
+            describe('when substituting a system stream with another one', () => {
+              before(async function () {
+                await createUser();
+                eventData = {
+                  streamIds: [SystemStreamsSerializer.addDotFromStreamId('email')],
+                  content: charlatan.Lorem.characters(7),
+                  type: 'string/pryv'
+                };
+                const initialEvent = await bluebird.fromCallback(
+                  (cb) => user.db.events.findOne({ id: user.attrs.id },
+                    { streamIds: SystemStreamsSerializer.addDotFromStreamId('phoneNumber') }, null, cb));
+  
+                res = await request.put(path.join(basePath, initialEvent.id))
+                  .send(eventData)
+                  .set('authorization', access.token);
+              });
+              it('[9004] should return 400', async () => {
+                assert.equal(res.status, 400);
+              });
+              it('[E3AE] should return the correct error', async () => {
+                assert.equal(res.body.error.id, ErrorIds.DeniedMultipleAccountStreams);
+                assert.equal(res.body.error.message, ErrorMessages[ErrorIds.DeniedMultipleAccountStreams]);
+                assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.addDotFromStreamId('email')});
+              });
+            });
+          });
+        });
+
+        describe('which is indexed', () => {
+            describe('as register is working', async () => {
+              const streamId = 'language';
+              let streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+              before(async function () {
+                await createUser();
+                nock.cleanAll();
+                scope = nock(config.get('services:register:url'));
+                scope.put('/users',
+                  (body) => {
+                    serviceRegisterRequest = body;
+                    return true;
+                  }).reply(200, { errors: [] });
+                await editEvent(streamIdWithDot);
+              });
+              it('[0RUK] should return 200', async () => {
+                assert.equal(res.status, 200);
+              });
+              it('[E43M] should notify register with the updated data', async () => {
+                assert.equal(scope.isDone(), true);
+                
+                assert.deepEqual(serviceRegisterRequest, {
+                  user: {
+                    [streamId]: [{
+                      value: eventData.content,
+                      isUnique: false,
+                      isActive: true,
+                      creation: false
+                    }],
+                    username: user.attrs.username,
+                  },
+                  fieldsToDelete: {}
+                });
+              });
+              describe('by adding the “active” streamId', () => {
+                before(async function () {
+                  await createUser();
+                  let streamId = SystemStreamsSerializer.addDotFromStreamId('language');
+                  nock.cleanAll();
+                  scope = nock(config.get('services:register:url'))
+                  scope.put('/users',
+                    (body) => {
+                      serviceRegisterRequest = body;
+                      return true;
+                    }).times(2).reply(200, { errors: [] });
+                  res = await createAdditionalEventAndupdateMainOne(streamId);
+                });
+                it('[0D18] should notify register with the updated data', async () => {
+                  assert.equal(scope.isDone(), true);
+                  assert.deepEqual(serviceRegisterRequest, {
+                    user: {
+                      language: [{
+                        value: eventData.content,
+                        isUnique: false,
+                        isActive: true,
+                        creation: false
+                      }],
+                      username: user.attrs.username,
+                    },
+                    fieldsToDelete: {}
+                  });
+                });
+              });
+            });
+            describe('as register is out', async () => {
+              const streamId = 'language';
+              const streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+              before(async function () {
+                await createUser();
+                nock.cleanAll();
+                scope = nock(config.get('services:register:url'));
+                scope.put('/users',
+                  (body) => {
+                    serviceRegisterRequest = body;
+                    return true;
+                  }).replyWithError({
+                    message: 'something awful happened',
+                    code: '500',
+                  });
+                await editEvent(streamIdWithDot);
+              });
+              it('[AA92] should return 500', async () => {
+                assert.equal(res.status, 500);
+              });
+              it('[645C] should notify register with the updated data', async () => {
+                assert.equal(scope.isDone(), true);
+                assert.deepEqual(serviceRegisterRequest, {
+                  user: {
+                    [streamId]: [{
+                      value: eventData.content,
+                      isUnique: false,
+                      isActive: true,
+                      creation: false
+                    }],
+                    username: user.attrs.username,
+                  },
+                  fieldsToDelete: {}
+                });
+              });
+            });
+        });
+
+        describe('which is unique', () => {
+          describe('by updating a unique field that is valid', () => {
+            const streamId = 'email';
+            const streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+            before(async function () {
+              await createUser();
+              scope = nock(config.get('services:register:url'));
+              scope.put('/users',
+                (body) => {
+                  serviceRegisterRequest = body;
+                  return true;
+                }).reply(200, { errors: [] });
+              await editEvent(streamIdWithDot);
+            });
+            it('[4BB1] should return 200', async () => {
+              assert.equal(res.status, 200);
+            });
+            it('[GWHU] should send a request to service-register to update the unique field', async () => {
+              assert.equal(scope.isDone(), true);
+              assert.deepEqual(serviceRegisterRequest, {
+                user: {
+                  email: [{
+                    value: eventData.content,
+                    isUnique: true,
+                    isActive: true,
+                    creation: false
+                  }],
+                  username: user.attrs.username,
+                },
+                fieldsToDelete: {}
+              });
+            });
+            it('[C457] should save an additional field to enforce uniqueness in mongodb', async () => {
+              const updatedEvent = await bluebird.fromCallback(
+                (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamIdWithDot }, null, cb));
+              assert.equal(updatedEvent.content, eventData.content);
+              assert.equal(updatedEvent.type, eventData.type);
+              assert.equal(updatedEvent.hasOwnProperty(`${streamId}__unique`), true);  
+            });
+            describe('by adding the “active” streamId', () => {
+              before(async () => {
+                await createUser();
+                let streamId = SystemStreamsSerializer.addDotFromStreamId('email');
+                nock.cleanAll();
+                scope = nock(config.get('services:register:url'))
+                scope.put('/users',
+                  (body) => {
+                    serviceRegisterRequest = body;
+                    return true;
+                  }).times(2).reply(200, { errors: [] });
+                res = await createAdditionalEventAndupdateMainOne(streamId);
+              });
+    
+              it('[HJWE] should return 200', () => {
+                assert.equal(res.status, 200);
+              });
+              it('[6AAT] should notify register with the updated data', () => {
+                assert.equal(scope.isDone(), true);
+                assert.deepEqual(serviceRegisterRequest, {
+                  user: {
+                    email: [{
+                      value: eventData.content,
+                      isUnique: true,
+                      isActive: true,
+                      creation: false
+                    }],
+                    username: user.attrs.username,
+                  },
+                  fieldsToDelete: {}
+                });
+              });
+            });
+          });
+          describe('by updating a unique field that is already taken', () => {
+            describe('with a field that is not unique in register', () => {
+              let streamIdWithDot;
+              before(async function () {
+                const streamId = 'email';
+                streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+    
+                await createUser();
+                eventData = {
+                  streamIds: [streamIdWithDot],
+                  content: charlatan.Lorem.characters(7),
+                  type: 'string/pryv'
+                };
+                nock.cleanAll();
+                scope = nock(config.get('services:register:url'))
+                scope.put('/users',
+                  (body) => {
+                    serviceRegisterRequest = body;
+                    return true;
+                  }).reply(400, {
+                    error: {
+                      id: ErrorIds.ItemAlreadyExists,
+                      data: {
+                        [streamId]: eventData.content
+                      }
+                    }
+                  });
+                const initialEvent = await bluebird.fromCallback(
+                  (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamIdWithDot }, null, cb));
+    
+                res = await request.put(path.join(basePath, initialEvent.id))
+                  .send(eventData)
+                  .set('authorization', access.token);
+              });
+              it('[F8A8] should return 400', async () => {
+                assert.equal(res.status, 400);
+                assert.equal(res.body.error.id, ErrorIds.ItemAlreadyExists);
+                assert.deepEqual(res.body.error.data, { email: eventData.content});
+              });
+              it('[5A04] should notify register with the updated data', async () => {
+                assert.equal(scope.isDone(), true);
+    
+                assert.deepEqual(serviceRegisterRequest, {
+                  user: {
+                    email: [{
+                      value: eventData.content,
+                      isUnique: true,
+                      isActive: true,
+                      creation: false
+                    }],
+                    username: user.attrs.username,
+                  },
+                  fieldsToDelete: {}
+                });
+              });
+              
+            });
+            describe('with a field that is not unique in mongodb', () => {
+              before(async function () {
+                const streamId = SystemStreamsSerializer.addDotFromStreamId('email');
+                const user1 = await createUser();
+                const user2 = await createUser();
+                eventData = {
+                  streamIds: [streamId],
+                  content: user1.attrs.email,
+                  type: 'string/pryv'
+                };
+                nock.cleanAll();
+                scope = nock(config.get('services:register:url'))
+                scope.put('/users',
+                  (body) => {
+                    serviceRegisterRequest = body;
+                    return true;
+                  }).reply(200, { errors: [] });
+                const initialEvent = await bluebird.fromCallback(
+                  (cb) => user2.db.events.findOne({ id: user2.attrs.id }, { streamIds: streamId }, null, cb));
+    
+                res = await request.put(path.join(basePath, initialEvent.id))
+                  .send(eventData)
+                  .set('authorization', access.token);
+              });
+              it('[5782] should return 400', async () => {
+                assert.equal(res.status, 400);
+              });
+              it('[B285] should return the correct error', async () => {
+                const error = res.body.error;
+                assert.equal(error.id, ErrorIds.ItemAlreadyExists);
+                assert.equal(error.data.email, eventData.content);
+              });
+            });
+          });
+        });
+  
       });
-      it('[034D] Should return a 400 error', async () => {
-        assert.equal(res.status, 400);
-      });
-      it('[BB5F] Should return the correct error', async () => {
-        assert.equal(res.body.error.id, ErrorIds.DeniedEventModification);
-        assert.equal(res.body.error.message, ErrorMessages[ErrorIds.DeniedEventModification]);
-        assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.options.STREAM_ID_USERNAME});
-      });
-    });
 
-    describe('When updating editable streams', async () => {
-
-      async function editEvent (streamId) {
-        eventData = {
-          streamIds: [streamId],
-          content: charlatan.Lorem.characters(7),
-          type: 'string/pryv'
-        };
-        const initialEvent = await bluebird.fromCallback(
-          (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
-
-        res = await request.put(path.join(basePath, initialEvent.id))
-          .send(eventData)
-          .set('authorization', access.token);
-        return res;
-      }
-
-      describe('[RT59] Editing not indexed, not unique event with valid data', async () => {
+      describe('to update a non editable system event', () => {
         before(async function () {
           await createUser();
           eventData = {
@@ -720,370 +1051,33 @@ describe("[AGT3] Events of default-streams", function () {
             type: 'string/pryv'
           };
           const initialEvent = await bluebird.fromCallback(
-            (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: SystemStreamsSerializer.addDotFromStreamId('phoneNumber') }, null, cb));
-
+            (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: SystemStreamsSerializer.options.STREAM_ID_USERNAME }, null, cb));
+  
           res = await request.put(path.join(basePath, initialEvent.id))
             .send(eventData)
             .set('authorization', access.token);
         });
-        it('[2FA2] Should return 200', async () => {
-          assert.equal(res.status, 200);
+        it('[034D] should return 400', async () => {
+          assert.equal(res.status, 400);
         });
-        it('[763A] Should return the updated event', async () => {
-          assert.equal(res.body.event.content, eventData.content);
-          assert.equal(res.body.event.type, eventData.type);
-          assert.deepEqual(res.body.event.streamIds, [
-            SystemStreamsSerializer.addDotFromStreamId('phoneNumber'),
-            SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
+        it('[BB5F] should return the correct error', async () => {
+          assert.equal(res.body.error.id, ErrorIds.DeniedEventModification);
+          assert.equal(res.body.error.message, ErrorMessages[ErrorIds.DeniedEventModification]);
+          assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.options.STREAM_ID_USERNAME});
         });
       });
-
-      describe('When updating streams streamId', async () => {
-        let scope;
-        let serviceRegisterRequest;
-        describe('[BAE1] When adding the “active” streamId for not indexed, not unique event', async () => {
-          let streamId = SystemStreamsSerializer.addDotFromStreamId('phoneNumber');
-          before(async function () {
-            await createUser();
-            res = await createAdditionalEventAndupdateMainOne(streamId);
-          });
-          it('[562A] Should return a 200', async () => {
-            assert.equal(res.status, 200);
-          });
-          it('[5622] Should return the updated event', async () => {
-             assert.equal(res.body.event.content, eventData.content);
-             assert.equal(res.body.event.type, eventData.type);
-            assert.deepEqual(res.body.event.streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
-          });
-          it('[CF70] events of the same streams should be stripped from “active” streamId.', async () => {
-            const allEvents = await bluebird.fromCallback(
-              (cb) => user.db.events.find({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
-            assert.equal(allEvents.length, 2);
-            // check the order
-            assert.deepEqual(allEvents[1].id, res.body.event.id);
-            // verify streamIds
-            assert.deepEqual(allEvents[0].streamIds, [streamId]);
-            assert.deepEqual(allEvents[1].streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
-          });
-        });
-        describe('[6AAD] When adding the “active” streamId for a unique stream', async () => {
-          before(async function () {
-            await createUser();
-            let streamId = SystemStreamsSerializer.addDotFromStreamId('email');
-            nock.cleanAll();
-            scope = nock(config.get('services:register:url'))
-            scope.put('/users',
-              (body) => {
-                serviceRegisterRequest = body;
-                return true;
-              }).times(2).reply(200, { errors: [] });
-            res = await createAdditionalEventAndupdateMainOne(streamId);
-          });
-
-          it('[6AAT] Should send a request to service-register to update its user main information', async () => {
-            assert.equal(scope.isDone(), true);
-            assert.deepEqual(serviceRegisterRequest, {
-              user: {
-                email: [{
-                  value: eventData.content,
-                  isUnique: true,
-                  isActive: true,
-                  creation: false
-                }],
-                username: user.attrs.username,
-              },
-              fieldsToDelete: {}
-            });
-          });
-        });
-        describe('[CE66] When adding the “active” streamId for a indexed stream', async () => {
-          before(async function () {
-            await createUser();
-            let streamId = SystemStreamsSerializer.addDotFromStreamId('language');
-            nock.cleanAll();
-            scope = nock(config.get('services:register:url'))
-            scope.put('/users',
-              (body) => {
-                serviceRegisterRequest = body;
-                return true;
-              }).times(2).reply(200, { errors: [] });
-            res = await createAdditionalEventAndupdateMainOne(streamId);
-          });
-          it('[0D18] Should send a request to service-register to update its user main information', async () => {
-            assert.equal(scope.isDone(), true);
-            assert.deepEqual(serviceRegisterRequest, {
-              user: {
-                language: [{
-                  value: eventData.content,
-                  isUnique: false,
-                  isActive: true,
-                  creation: false
-                }],
-                username: user.attrs.username,
-              },
-              fieldsToDelete: {}
-            });
-          });
-        });
-        describe('When trying to add second core steamId to the event that has a account stream Id', async () => {
-          describe('[EEE9] When editing with 2 streamIds at the time', async () => {
-            before(async function () {
-              await createUser();
-              eventData = {
-                streamIds: [
-                  SystemStreamsSerializer.addDotFromStreamId('email'),
-                  SystemStreamsSerializer.addDotFromStreamId('phoneNumber')
-                ],
-                content: charlatan.Lorem.characters(7),
-                type: 'string/pryv'
-              };
-              const initialEvent = await bluebird.fromCallback(
-                (cb) => user.db.events.findOne({ id: user.attrs.id },
-                  { streamIds: SystemStreamsSerializer.addDotFromStreamId('phoneNumber') }, null, cb));
-
-              res = await request.put(path.join(basePath, initialEvent.id))
-                .send(eventData)
-                .set('authorization', access.token);
-            });
-            it('[9004] Should return a 400 error', async () => {
-              assert.equal(res.status, 400);
-            });
-            it('[E3AE] Should return the correct error', async () => {
-              assert.equal(res.body.error.id, ErrorIds.DeniedMultipleAccountStreams);
-              assert.equal(res.body.error.message, ErrorMessages[ErrorIds.DeniedMultipleAccountStreams]);
-              assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.addDotFromStreamId('email')});
-            });
-          });
-          describe('[EEV9] When changing account stream with another core steram', async () => {
-            before(async function () {
-              await createUser();
-              eventData = {
-                streamIds: [SystemStreamsSerializer.addDotFromStreamId('email')],
-                content: charlatan.Lorem.characters(7),
-                type: 'string/pryv'
-              };
-              const initialEvent = await bluebird.fromCallback(
-                (cb) => user.db.events.findOne({ id: user.attrs.id },
-                  { streamIds: SystemStreamsSerializer.addDotFromStreamId('phoneNumber') }, null, cb));
-
-              res = await request.put(path.join(basePath, initialEvent.id))
-                .send(eventData)
-                .set('authorization', access.token);
-            });
-            it('[9004] Should return a 400 error', async () => {
-              assert.equal(res.status, 400);
-            });
-            it('[E3AE] Should return the correct error', async () => {
-              assert.equal(res.body.error.id, ErrorIds.DeniedMultipleAccountStreams);
-              assert.equal(res.body.error.message, ErrorMessages[ErrorIds.DeniedMultipleAccountStreams]);
-              assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.addDotFromStreamId('email')});
-            });
-          });
-        });
+    });
+    // TODO
+    describe('when using a shared access with a contribute-level access on a system stream', () => {
+      before(async function () {
       });
-      describe('When updating an unique field that is already taken', async () => {
-        describe('[1127] When the field is not unique in service register', async () => {
-          let streamIdWithDot;
-          before(async function () {
-            const streamId = 'email';
-            streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
-
-            await createUser();
-            eventData = {
-              streamIds: [streamIdWithDot],
-              content: charlatan.Lorem.characters(7),
-              type: 'string/pryv'
-            };
-            nock.cleanAll();
-            scope = nock(config.get('services:register:url'))
-            scope.put('/users',
-              (body) => {
-                serviceRegisterRequest = body;
-                return true;
-              }).reply(400, {
-                error: {
-                  id: ErrorIds.ItemAlreadyExists,
-                  data: {
-                    [streamId]: eventData.content
-                  }
-                }
-              });
-            const initialEvent = await bluebird.fromCallback(
-              (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamIdWithDot }, null, cb));
-
-            res = await request.put(path.join(basePath, initialEvent.id))
-              .send(eventData)
-              .set('authorization', access.token);
-          });
-          it('[5A04] Should send a request to service-register to update the unique field', async () => {
-            assert.equal(scope.isDone(), true);
-
-            assert.deepEqual(serviceRegisterRequest, {
-              user: {
-                email: [{
-                  value: eventData.content,
-                  isUnique: true,
-                  isActive: true,
-                  creation: false
-                }],
-                username: user.attrs.username,
-              },
-              fieldsToDelete: {}
-            });
-          });
-          it('[F8A8] Should return a 400 as it is already taken in service-register', async () => {
-            assert.equal(res.status, 400);
-            assert.equal(res.body.error.id, ErrorIds.ItemAlreadyExists);
-            assert.deepEqual(res.body.error.data, { email: eventData.content});
-          });
-        });
-        describe('[0FDB] When the field is not unique in mongodb', async () => {
-          before(async function () {
-            const streamId = SystemStreamsSerializer.addDotFromStreamId('email');
-            const user1 = await createUser();
-            const user2 = await createUser();
-            eventData = {
-              streamIds: [streamId],
-              content: user1.attrs.email,
-              type: 'string/pryv'
-            };
-            nock.cleanAll();
-            scope = nock(config.get('services:register:url'))
-            scope.put('/users',
-              (body) => {
-                serviceRegisterRequest = body;
-                return true;
-              }).reply(200, { errors: [] });
-            const initialEvent = await bluebird.fromCallback(
-              (cb) => user2.db.events.findOne({ id: user2.attrs.id }, { streamIds: streamId }, null, cb));
-
-            res = await request.put(path.join(basePath, initialEvent.id))
-              .send(eventData)
-              .set('authorization', access.token);
-          });
-          it('[5782] Should return a 400 error', async () => {
-            assert.equal(res.status, 400);
-          });
-          it('[B285] Should return the correct error', async () => {
-            const error = res.body.error;
-            assert.equal(error.id, ErrorIds.ItemAlreadyExists);
-            assert.equal(error.data.email, eventData.content);
-          });
-        });
+      it('[W8PQ] should return 200', async () => {
       });
-      describe('[290B] When updating a unique field that is valid', async () => {
-        const streamId = 'email';
-        const streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
-        before(async function () {
-          await createUser();
-          scope = nock(config.get('services:register:url'));
-          scope.put('/users',
-            (body) => {
-              serviceRegisterRequest = body;
-              return true;
-            }).reply(200, { errors: [] });
-          await editEvent(streamIdWithDot);
-        });
-        it('[GWHU] Should send a request to service-register to update the unique field', async () => {
-          assert.equal(scope.isDone(), true);
-          assert.deepEqual(serviceRegisterRequest, {
-            user: {
-              email: [{
-                value: eventData.content,
-                isUnique: true,
-                isActive: true,
-                creation: false
-              }],
-              username: user.attrs.username,
-            },
-            fieldsToDelete: {}
-          });
-        });
-        it('[4BB1] Should return a 200', async () => {
-          assert.equal(res.status, 200);
-        });
-        it('[C457] Should save an additional field to enforce uniqueness in mongodb', async () => {
-          const updatedEvent = await bluebird.fromCallback(
-            (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamIdWithDot }, null, cb));
-          assert.equal(updatedEvent.content, eventData.content);
-          assert.equal(updatedEvent.type, eventData.type);
-          assert.equal(updatedEvent.hasOwnProperty(`${streamId}__unique`), true);  
-        });
+      it('[TFOI] should return the updated event', async () => {
       });
-      describe('When updating an indexed field that is valid', async () => {
-        describe('[ED88] When service-register working as expected', async () => {
-          const streamId = 'language';
-          let streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
-          before(async function () {
-            await createUser();
-            nock.cleanAll();
-            scope = nock(config.get('services:register:url'));
-            scope.put('/users',
-              (body) => {
-                serviceRegisterRequest = body;
-                return true;
-              }).reply(200, { errors: [] });
-            await editEvent(streamIdWithDot);
-          });
-          it('[XHIA] Should send a request to service-register to update the indexed field', async () => {
-            assert.equal(scope.isDone(), true);
-            
-            assert.deepEqual(serviceRegisterRequest, {
-              user: {
-                [streamId]: [{
-                  value: eventData.content,
-                  isUnique: false,
-                  isActive: true,
-                  creation: false
-                }],
-                username: user.attrs.username,
-              },
-              fieldsToDelete: {}
-            });
-          });
-          it('[RR2E] Should return a 200', async () => {
-            assert.equal(res.status, 200);
-          });
-        });
-        describe('[B23F] When service-register is out', async () => {
-          const streamId = 'language';
-          const streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
-          before(async function () {
-            await createUser();
-            nock.cleanAll();
-            scope = nock(config.get('services:register:url'));
-            scope.put('/users',
-              (body) => {
-                serviceRegisterRequest = body;
-                return true;
-              }).replyWithError({
-                message: 'something awful happened',
-                code: '500',
-              });
-            await editEvent(streamIdWithDot);
-          });
-          it('[645C] Should send a request to service-register to update the indexed field', async () => {
-            assert.equal(scope.isDone(), true);
-            assert.deepEqual(serviceRegisterRequest, {
-              user: {
-                [streamId]: [{
-                  value: eventData.content,
-                  isUnique: false,
-                  isActive: true,
-                  creation: false
-                }],
-                username: user.attrs.username,
-              },
-              fieldsToDelete: {}
-            });
-          });
-          it('[AA92] Should return a 500', async () => {
-            assert.equal(res.status, 500);
-          });
-        });
-      });
-
-      describe('[B0V0] When updating editable core-stream event with manage rights for all streams (star)', async () => {
+    });
+    describe('when using a shared access with a manage-level permission on all streams (star)', () => {
+      describe('to update an editable system event', () => {
         before(async function () {
           await createUser();
           sharedAccess = await user.access({
@@ -1101,154 +1095,155 @@ describe("[AGT3] Events of default-streams", function () {
           };
           const initialEvent = await bluebird.fromCallback(
             (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: SystemStreamsSerializer.addDotFromStreamId('phoneNumber') }, null, cb));
-
+  
           res = await request.put(path.join(basePath, initialEvent.id))
             .send(eventData)
             .set('authorization', sharedAccess.attrs.token);
         });
-        it('[H1XL] Should return 403', async () => {
+        it('[H1XL] should return 403', async () => {
           assert.equal(res.status, 403);
         });
-        it('[7QA3] Should return correct error', async () => {
+        it('[7QA3] should return the correct error', async () => {
           assert.equal(res.body.error.id, ErrorIds.Forbidden);
         });
       });
-
     });
   });
 
-  describe('DELETE /events/<id>', async () => {
-    describe('[E7EB] When deleting editable default streams event', async () => {
-      describe('[04CB] Event has no ‘active’ streamId', async () => {
-        describe('[D94D] Event belongs to the unique stream', async () => { 
-          let streamId = 'email';
-          let streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
-          let initialEvent;
-          before(async function () {
-            nock.cleanAll();
-            scope = nock(config.get('services:register:url'));
-            scope.put('/users',
-              (body) => {
-                serviceRegisterRequest = body;
-                return true;
-              }).times(2).reply(200, { errors: [] });
-            await createUser();
-            initialEvent = await bluebird.fromCallback(
-              (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamIdWithDot }, null, cb));
-
-            await createAdditionalEvent(streamIdWithDot);
-
-            res = await request.delete(path.join(basePath, initialEvent.id))
-              .set('authorization', access.token);
+  describe('DELETE /events/<id>', () => {
+    describe('When using a personal access', () => {
+      describe('to delete an editable streams event', () => {
+        describe('that has no ‘active’ streamId', () => {
+          describe('which is unique', () => { 
+            let streamId = 'email';
+            let streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+            let initialEvent;
+            before(async function () {
+              nock.cleanAll();
+              scope = nock(config.get('services:register:url'));
+              scope.put('/users',
+                (body) => {
+                  serviceRegisterRequest = body;
+                  return true;
+                }).times(2).reply(200, { errors: [] });
+              await createUser();
+              initialEvent = await bluebird.fromCallback(
+                (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamIdWithDot }, null, cb));
+  
+              await createAdditionalEvent(streamIdWithDot);
+  
+              res = await request.delete(path.join(basePath, initialEvent.id))
+                .set('authorization', access.token);
+            });
+            it('[43B1] should return 200', async () => { 
+              assert.equal(res.status, 200);
+            });
+            it('[3E12] should return the trashed event', async () => {
+              assert.equal(res.body.event.id, initialEvent.id);
+              assert.equal(res.body.event.trashed, true);
+             });
+            it('[FJK3] should not return the event\'s internal properties that enforce db uniqueness', async () => { 
+              assert.notEqual(res.body.event[`${streamId}__unique`], initialEvent[`${streamId}__unique`]);
+            });
+            it('[F328] should notify register with the deleted data', async () => { 
+              assert.equal(scope.isDone(), true);
+              assert.deepEqual(serviceRegisterRequest, {
+                user: {
+                  username: user.attrs.username,
+                },
+                fieldsToDelete: { [streamId]: initialEvent.content}
+              });
+            });
           });
-          it('[43B1] Should return a 200', async () => { 
-            assert.equal(res.status, 200);
-          });
-          it('[3E12] Should return a deleted event', async () => {
-            assert.equal(res.body.event.id, initialEvent.id);
-            assert.equal(res.body.event.trashed, true);
-           });
-          it('[FJK3] Event should not have property that enforces uniqueness anymore', async () => { 
-            assert.notEqual(res.body.event[`${streamId}__unique`], initialEvent[`${streamId}__unique`]);
-          });
-          it('[F328] Deleted event data is sent to service-register', async () => { 
-            assert.equal(scope.isDone(), true);
-            assert.deepEqual(serviceRegisterRequest, {
-              user: {
-                username: user.attrs.username,
-              },
-              fieldsToDelete: { [streamId]: initialEvent.content}
+          describe('which is indexed', () => { 
+            let streamId = SystemStreamsSerializer.addDotFromStreamId('language');
+            let initialEvent;
+            before(async function () {
+              nock.cleanAll();
+              scope = nock(config.get('services:register:url'));
+              scope.put('/users',
+                (body) => {
+                  serviceRegisterRequest = body;
+                  return true;
+                }).times(1).reply(200, { errors: [] });
+              await createUser();
+              initialEvent = await bluebird.fromCallback(
+                (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
+  
+              await createAdditionalEvent(streamId);
+  
+              res = await request.delete(path.join(basePath, initialEvent.id))
+                .set('authorization', access.token);
+            });
+            it('[1B70] should return 200', async () => { 
+              assert.equal(res.status, 200);
+            });
+            it('[CBB9] should return the trashed event', async () => { 
+              assert.equal(res.body.event.id, initialEvent.id);
+              assert.equal(res.body.event.trashed, true);
             });
           });
         });
-
-        describe('[ZUIK] When deleting editable core-stream event with manage rights for all streams (star)', async () => {
-          let streamId = 'email';
-          let streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
-          let initialEvent;
-          before(async function () {
-            nock.cleanAll();
-            scope = nock(config.get('services:register:url'));
-            scope.put('/users',
-              (body) => {
-                serviceRegisterRequest = body;
-                return true;
-              }).times(2).reply(200, { errors: [] });
-            await createUser();
-            initialEvent = await bluebird.fromCallback(
-              (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamIdWithDot }, null, cb));
-
-            await createAdditionalEvent(streamIdWithDot);
-            sharedAccess = await user.access({
-              token: cuid(),
-              type: 'shared',
-              permissions: [{
-                streamId: '*',
-                level: 'manage'
-              }],
-              clientData: 'This is a consent'
-            });
-
-            res = await request.delete(path.join(basePath, initialEvent.id))
-              .set('authorization', sharedAccess.attrs.token);
-          });
-          it('[43B1] Should return a 403', async () => {
-            assert.equal(res.status, 403);
-          });
-          it('[3E12] Should return correct error id', async () => {
-            assert.equal(res.body.error.id, ErrorIds.Forbidden);
-          });
-        });
-
-        describe('[C84A] Event belongs to the indexed stream', async () => { 
+        describe('that has the ‘active’ streamId', () => {
           let streamId = SystemStreamsSerializer.addDotFromStreamId('language');
           let initialEvent;
           before(async function () {
-            nock.cleanAll();
-            scope = nock(config.get('services:register:url'));
-            scope.put('/users',
-              (body) => {
-                serviceRegisterRequest = body;
-                return true;
-              }).times(1).reply(200, { errors: [] });
             await createUser();
             initialEvent = await bluebird.fromCallback(
               (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
-
-            await createAdditionalEvent(streamId);
-
             res = await request.delete(path.join(basePath, initialEvent.id))
               .set('authorization', access.token);
           });
-          it('[1B70] Should return a 200', async () => { 
-            assert.equal(res.status, 200);
+          it('[10EC] should return 400', async () => { 
+            assert.equal(res.status, 400);
           });
-          it('[CBB9] Should return a deleted event', async () => { 
-            assert.equal(res.body.event.id, initialEvent.id);
-            assert.equal(res.body.event.trashed, true);
+          it('[D4CA] should return the correct error', async () => { 
+            assert.equal(res.body.error.id, ErrorIds.DeniedEventModification);
           });
         });
       });
-      describe('[B7A2] Event has ‘active’ streamId', async () => {
-        let streamId = SystemStreamsSerializer.addDotFromStreamId('language');
+      describe('[CDD1] to delete a non editable system event', () => {
+        let streamId = SystemStreamsSerializer.addDotFromStreamId('username');
         let initialEvent;
         before(async function () {
+          nock.cleanAll();
+          scope = nock(config.get('services:register:url'));
+          scope.put('/users',
+            (body) => {
+              serviceRegisterRequest = body;
+              return true;
+            }).times(2).reply(200, { errors: [] });
           await createUser();
           initialEvent = await bluebird.fromCallback(
             (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
+  
+          await createAdditionalEvent(streamId);
+  
           res = await request.delete(path.join(basePath, initialEvent.id))
             .set('authorization', access.token);
         });
-        it('[10EC] Should return a 400', async () => { 
+        it('[8EDB] should return a 400', async () => { 
           assert.equal(res.status, 400);
         });
-        it('[D4CA] Should return the correct error', async () => { 
+        it('[A727] should return the correct error', async () => {
           assert.equal(res.body.error.id, ErrorIds.DeniedEventModification);
         });
       });
     });
-    describe('[CDD1] When deleting not editable default streams event', async () => {
-      let streamId = SystemStreamsSerializer.addDotFromStreamId('username');
+
+    // TODO
+    describe('when using a shared access with a contribute-level access on a system stream', () => {
+      before(async function () {
+      });
+      it('[I1I1] should return 200', async () => {
+      });
+      it('[UFLT] should return the updated event', async () => {
+      });
+    });
+
+    describe('when using a shared access with a manage-level permission on all streams (star)', () => {
+      let streamId = 'email';
+      let streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
       let initialEvent;
       before(async function () {
         nock.cleanAll();
@@ -1260,19 +1255,29 @@ describe("[AGT3] Events of default-streams", function () {
           }).times(2).reply(200, { errors: [] });
         await createUser();
         initialEvent = await bluebird.fromCallback(
-          (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
+          (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamIdWithDot }, null, cb));
 
-        await createAdditionalEvent(streamId);
+        await createAdditionalEvent(streamIdWithDot);
+        sharedAccess = await user.access({
+          token: cuid(),
+          type: 'shared',
+          permissions: [{
+            streamId: '*',
+            level: 'manage'
+          }],
+          clientData: 'This is a consent'
+        });
 
         res = await request.delete(path.join(basePath, initialEvent.id))
-          .set('authorization', access.token);
+          .set('authorization', sharedAccess.attrs.token);
       });
-      it('[8EDB] Should return a 400', async () => { 
-        assert.equal(res.status, 400);
+      it('[43B1] should return 403', async () => {
+        assert.equal(res.status, 403);
       });
-      it('[A727] Should return the correct error', async () => {
-        assert.equal(res.body.error.id, ErrorIds.DeniedEventModification);
+      it('[3E12] should return the correct error', async () => {
+        assert.equal(res.body.error.id, ErrorIds.Forbidden);
       });
     });
+    
   });
 });
