@@ -22,8 +22,7 @@ module.exports = {
         'id': {
           type: 'string'
         }
-      },
-      required: [ 'id' ]
+      }
     }
   },
   getUserInfo: {

@@ -156,7 +156,7 @@ class SystemStreamsSerializer {
   }
   
   /**
-   * Form streams from systemStreams settings
+   * Build streams from systemStreams settings
    * parent is formed just providing hte name, id, parentId null and children
    */
   getVirtualStreamsList () {
@@ -176,7 +176,7 @@ class SystemStreamsSerializer {
   }
 
   /**
-   * Form flattened account stream settings and converted from an array to object
+   * Build flattened account stream settings and converted from an array to object
    */
   static getFlatAccountStreamSettings () {
     let accountSettings = {};

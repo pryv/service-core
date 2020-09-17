@@ -28,11 +28,11 @@ let registrationSchema = {
       maxLength: 99,
     }),
     invitationToken: string(),
-    referer: {
+    referer: helpers.string({
       nullable: true,
       minLength: 1,
       maxLength: 99,
-    },
+    }),
     language: helpers.language,
   }, {
     required: ['password'],

@@ -31,12 +31,14 @@ module.exports = function (api, logging, storageLayer, servicesSettings) {
   api.register('auth.register',
     // data validation methods        
     commonFns.getParamsValidation(methodsSchema.register.params),
+    registration.prepareUserData,
     registration.validateUserInServiceRegister.bind(registration),
 
     //user registration methods
     registration.deletePartiallySavedUserIfAny.bind(registration),
     registration.createUser.bind(registration),
     registration.createUserInServiceRegister.bind(registration),
+    registration.buildResponse.bind(registration),
     registration.sendWelcomeMail.bind(registration),
   );
   

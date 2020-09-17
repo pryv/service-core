@@ -93,7 +93,6 @@ describe('[373T] system (ex-register)', function () {
         let mailSent = false;
         
         let originalCount;
-        let createdUserId;
             
         // setup mail server mock
         helpers.instanceTestSetup.set(settings, {
@@ -125,7 +124,6 @@ describe('[373T] system (ex-register)', function () {
           status: 201,
           schema: methodsSchema.createUser.result
         });
-        createdUserId = res.body.id;
         mailSent.should.eql(true);
 
         // getUpdatedUsers
@@ -133,12 +131,11 @@ describe('[373T] system (ex-register)', function () {
         users.length.should.eql(originalCount + 1, 'users');
 
         var expected = _.cloneDeep(newUserData);
-        expected.id = createdUserId;
         expected.storageUsed = { dbDocuments: 0, attachedFiles: 0 };
         var actual = _.find(users, function (user) {
-          return user.id === createdUserId;
+          return user.username === newUserData.username;
         });
-        let actualAccount = actual.getAccountWithId();
+        let actualAccount = actual.getAccount();
         validation.checkStoredItem(actualAccount, 'user');
         actualAccount.should.eql(expected);
       });

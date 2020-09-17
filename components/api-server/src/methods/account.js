@@ -233,7 +233,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
   async function updateAccount(context, params, result, next) {
     try {
       await userRepository.updateOne(context.user.id, params.update, true);
-      // retrieve and form user info
+      // retrieve and build user info
       if (!Object.keys(params.update).includes('passwordHash')) {
         const user: User = await userRepository.getById(context.user.id);
         result.account = user.getAccount();

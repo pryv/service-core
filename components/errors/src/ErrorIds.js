@@ -87,6 +87,7 @@ const ErrorIds = {
   EmailRequired: 'email-required',
   PasswordRequired: 'password-required',
   UnexpectedErrorWhileSavingTheEvent: 'unexpected-error-while-saving-the-event',
+  UnexpectedErrorWhileCreatingUser: 'unexpected-error-while-creating-user',
 };
 Object.freeze(ErrorIds);
 

@@ -27,7 +27,9 @@ module.exports = function (api, logging, storageLayer, servicesSettings) {
     // data validation methods
     commonFns.getParamsValidation(methodsSchema.register.params),
     // user registration methods
+    registration.prepareUserData,
     registration.createUser.bind(registration),
+    registration.buildResponse.bind(registration),
     registration.sendWelcomeMail.bind(registration),
   );
 

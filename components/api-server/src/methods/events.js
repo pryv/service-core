@@ -52,7 +52,7 @@ const typeRepo = new TypeRepository();
 module.exports = function (
   api, userEventsStorage, userEventFilesStorage,
   authSettings, eventTypesUrl, notifications, logging,
-  auditSettings, updatesSettings, openSourceSettings, servicesSettings
+  auditSettings, updatesSettings, openSourceSettings
 ) {
 
   const userRepository = new UserRepository(userEventsStorage);
@@ -475,7 +475,7 @@ module.exports = function (
     }
 
     /**
-     * Form request and send data to service-register about unique or indexed fields update
+     * Build request and send data to service-register about unique or indexed fields update
      * @param {*} fieldName 
      * @param {*} contextContent 
      * @param {*} creation 
@@ -492,7 +492,8 @@ module.exports = function (
       }];
 
       // initialize service-register connection
-      const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
+      //todo IEVA verify config.get('services:register')
+      const serviceRegisterConn = new ServiceRegister(config.get('services:register'), logging.getLogger('service-register'));
 
       // send information update to service regsiter
       await serviceRegisterConn.updateUserInServiceRegister(
@@ -1044,7 +1045,7 @@ module.exports = function (
 
       if (config.get('singleNode:isActive') !== true) {
         // initialize service-register connection
-        const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
+        const serviceRegisterConn = new ServiceRegister(config.get('services:register'), logging.getLogger('service-register'));
       
         // send information update to service regsiter
         await serviceRegisterConn.updateUserInServiceRegister(

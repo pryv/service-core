@@ -35,12 +35,14 @@ module.exports = function (
   // ---------------------------------------------------------------- createUser
   systemAPI.register('system.createUser',
     commonFns.getParamsValidation(methodsSchema.createUser.params),
+    registration.prepareUserData,
     registration.createUser.bind(registration),
     registration.sendWelcomeMail.bind(registration),
     );
 
   // ------------------------------------------------------------ createPoolUser
   systemAPI.register('system.createPoolUser',
+    registration.prepareUserData,
     registration.createPoolUser.bind(registration),
     registration.createUser.bind(registration),
   );
