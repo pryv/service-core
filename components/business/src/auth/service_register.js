@@ -118,7 +118,6 @@ class ServiceRegister {
       const res = await superagent.put(url)
         .send(request)
         .set('Authorization', this.config.key);
-
       return res.body;
     } catch (err) {
       if (err.status == 400 && err.response.body.error != null) {

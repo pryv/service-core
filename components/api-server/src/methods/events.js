@@ -57,9 +57,17 @@ module.exports = function (
 ) {
 
   const userRepository = new UserRepository(userEventsStorage);
-
   const config = getConfig();
 
+  // initialize service-register connection
+  let serviceRegisterConn = {};
+  if (config.get('singleNode:isActive') !== true) {
+    serviceRegisterConn = new ServiceRegister(
+      config.get('services:register'),
+      logging.getLogger('service-register')
+    );
+  }
+  
   // Initialise the project version as soon as we can. 
   const pv = new ProjectVersion();
   let version = pv.version();
@@ -346,8 +354,11 @@ module.exports = function (
     normalizeStreamIdAndStreamIds,
     applyPrerequisitesForCreation,
     validateEventContentAndCoerce,
+    validateAccountStreamsEventCreation,
     verifycanContributeToContext,
+    appendAccountStreamsEventDataForCreation,
     createEvent,
+    removeActiveStreamIdFromRelatedEvents,
     createAttachments,
     notify);
 
@@ -370,6 +381,42 @@ module.exports = function (
     next();
   }
 
+  /**
+   * Check if event belongs to account stream,
+   * if yes, validate and prepend context with the properties that will be
+   * used later like:
+   * a) doesEventBelongToAccountStream: boolean
+   * c) accountStreamId - string - account streamId
+   * 
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  function validateAccountStreamsEventCreation (context, params, result, next) {
+    let matchingAccountStreams = [];
+    const allAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
+    if (doesEventBelongToTheAccountStream()) {
+      context = addAccountStreamsMetaDataToTheContext(context, allAccountStreamsIds);
+      checkIfStreamIdIsNotEditable(context.accountStreamId);
+      checkIfUserTriesToAddMultipleAccountStreamIds(matchingAccountStreams);
+    }
+    next();
+
+    function doesEventBelongToTheAccountStream () {
+      context.oldContentStreamIds = [];
+      
+      // check if event belongs to account stream ids
+      matchingAccountStreams = _.intersection(
+        context.content.streamIds,
+        allAccountStreamsIds
+      );
+      context.doesEventBelongToAccountStream = matchingAccountStreams.length > 0;
+      return context.doesEventBelongToAccountStream;
+    }
+  }
+
+
   function verifycanContributeToContext (context, params, result, next) {
     for (let i = 0; i < context.content.streamIds.length; i++) { // refuse if any context is not accessible
       if (! context.canContributeToContext(context.content.streamIds[i], context.content.tags)) {
@@ -377,74 +424,6 @@ module.exports = function (
       }
     }
     next();
-  }
-
-  async function createEvent(
-    context, params, result, next) 
-  {
-    let accountStreamsInfo = { removeActiveEvents: false };
-    if (isSeriesType(context.content.type)) {
-      if (openSourceSettings.isActive) {
-        return next(errors.unavailableMethod());
-      }
-      try {
-        context.content.content = createSeriesEventContent(context);
-      }
-      catch (err) { return next(err); }
-        
-      // As long as there is no data, event duration is considered to be 0.
-      context.content.duration = 0; 
-    } else {
-      // if event belongs to the account streams, apply additional actions
-      try {
-        accountStreamsInfo = await handleAccountStreams(context.user.username, context, true);
-        context.content = accountStreamsInfo.context;
-      } catch (err) {
-        return next(err);
-      }
-    }
-
-    userEventsStorage.insertOne(
-      context.user, context.content, function (err, newEvent) {
-        if (err != null) {
-          // Expecting a duplicate error
-          if (err.isDuplicateIndex('id')) {
-            return next(errors.itemAlreadyExists('event', {id: params.id}, err));
-          }
-          // Expecting a duplicate error for unique fields
-          if (err.isDuplicate) {
-            return next(commonFns.apiErrorToValidationErrorsList(
-              [errors.existingField(err.duplicateIndex())]));
-          }
-          // Any other error
-          return next(errors.unexpectedError(err));
-        }
-
-        // To remove when streamId not necessary
-        newEvent.streamId = newEvent.streamIds[0];
-
-        if (accountStreamsInfo.removeActiveEvents) {
-          handleEventsWithActiveStreamId(context.user, newEvent.streamId, newEvent.id);
-        }
-        // remove redundant field for the result that enforces uniqness
-        newEvent = removeUniqueFields(newEvent)
-        result.event = newEvent;
-        next();
-      });
-  }
-
-  /**
-   * Append properties like streamId and additional field to event
-   * that helps to enforce uniqness
-   * @param object contextContent 
-   * @param string fieldName 
-   */
-  function enforceEventUniqueness (contextContent: object, fieldName: string) {
-    if (!contextContent.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_UNIQUE)) {
-      contextContent.streamIds.push(SystemStreamsSerializer.options.STREAM_ID_UNIQUE);
-    }
-    contextContent[`${SystemStreamsSerializer.removeDotFromStreamId(fieldName)}__unique`] = contextContent.content;
-    return contextContent;
   }
 
   /**
@@ -462,99 +441,100 @@ module.exports = function (
    * @param object contextContent 
    * @param boolean creation - if true - active streamId will be added by default
    */
-  async function handleAccountStreams (username:string, context: object, creation: Boolean) {
-    // get editable account streams
-    const editableAccountStreams = SystemStreamsSerializer.getEditableAccountStreams();
-
-    /**
-     * Deny event editing if event has non editable core stream
-     * @param string streamId 
-     */
-    function checkIfStreamIdIsNotEditable (streamId: string): boolean {
-      const nonEditableAccountStreamsIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForEditing();
-      return nonEditableAccountStreamsIds.includes(streamId);
-    }
-
-    /**
-     * Build request and send data to service-register about unique or indexed fields update
-     * @param {*} fieldName 
-     * @param {*} contextContent 
-     * @param {*} creation 
-     */
-    async function sendDataToServiceRegister (streamId, contextContent, creation) {
-      let fieldsForUpdate = {};
-      let streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(streamId);
-      fieldsForUpdate[streamIdWithoutDot] = [{
-        value: contextContent.content,
-        isUnique: editableAccountStreams[streamId].isUnique,
-        isActive: contextContent.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE) ||
-          oldContentStreamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE),
-        creation: creation
-      }];
-
-      // initialize service-register connection
-      //todo IEVA verify config.get('services:register')
-      const serviceRegisterConn = new ServiceRegister(
-        config.get('services:register'),
-        logging.getLogger('service-register'));
-
-      // send information update to service regsiter
-      await serviceRegisterConn.updateUserInServiceRegister(
-        username, fieldsForUpdate, {});
-    }
- 
-    let removeActiveEvents = false;
-    let contextContent = context.content;
-    let oldContentStreamIds = (context?.oldContent?.streamIds) ? context.oldContent.streamIds: [];
-    const fieldName = (typeof contextContent.streamIds === 'object')? contextContent.streamIds[0]: '';
-
+  async function appendAccountStreamsEventDataForCreation (context, params, result, next) {
     // check if event belongs to account stream ids
-    const matchingAccountStreams = _.intersection(contextContent.streamIds, Object.keys(editableAccountStreams));
-    if (matchingAccountStreams.length === 1 &&
-      (creation || _.intersection(matchingAccountStreams, oldContentStreamIds).length >= 1)) {
-      // check that account stream id was not changed
-
-      // append active stream id if it is a new event 
-      if (creation) {
-        contextContent.streamIds.push(SystemStreamsSerializer.options.STREAM_ID_ACTIVE);
-        // after event will be saved, active property will be removed from the other events
-        removeActiveEvents = true;
-      } else if (!oldContentStreamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE)
-        && contextContent.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE)) {
-        // after event will be saved, active property will be removed from the other events
-        removeActiveEvents = true;
-      }
-
-      if (editableAccountStreams[fieldName].isUnique || editableAccountStreams[fieldName].isIndexed) {
-        
-        // if stream is unique append properties that enforce uniqueness
-        if (editableAccountStreams[fieldName].isUnique) {
-          contextContent = enforceEventUniqueness(contextContent, fieldName);
-        }
-        // send update to service-register
-        if (config.get('singleNode:isActive') !== true) {
-          await sendDataToServiceRegister(fieldName, contextContent, creation);
-        }
-      }
-    } else if (checkIfStreamIdIsNotEditable(fieldName)) {
-      // if user tries to add new streamId from non editable streamsIds
-      throw errors.DeniedEventModification(fieldName);
-
-    } else if (matchingAccountStreams.length > 1) {
-      // if user tries to add several streamIds from account streams
-      throw errors.DeniedMultipleAccountStreams(fieldName);
-
-    } else if (!creation && matchingAccountStreams.length > 0 &&
-      _.intersection(matchingAccountStreams, oldContentStreamIds).length === 0) {
-      // if user tries to change streamId of systemStreams event
-      throw errors.DeniedMultipleAccountStreams(fieldName);
-
+    if (!context.doesEventBelongToAccountStream) {
+      return next();
     }
-    
-    return {
-      context: contextContent,
-      removeActiveEvents: removeActiveEvents
-    };
+
+    try{
+      // when new account event is created, all other should be marked as nonactive
+      context.content.streamIds.push(SystemStreamsSerializer.options.STREAM_ID_ACTIVE);
+      context.removeActiveEvents = true;
+      
+      // get editable account streams
+      const editableAccountStreams = SystemStreamsSerializer.getEditableAccountStreams();
+      if (
+        editableAccountStreams[context.accountStreamId].isUnique ||
+        editableAccountStreams[context.accountStreamId].isIndexed
+      ) {
+        // if stream is unique append properties that enforce uniqueness
+        context.content = enforceEventUniquenessIfNeeded(
+          context.content,
+          context.accountStreamId,
+          editableAccountStreams[context.accountStreamId]
+        );
+
+        await sendDataToServiceRegister(context, true, editableAccountStreams);
+      }
+    } catch (err) {
+      return next(err);
+    }
+    next();
+  }
+
+  async function createEvent(
+    context, params, result, next) 
+  {
+    if (isSeriesType(context.content.type)) {
+      if (openSourceSettings.isActive) {
+        return next(errors.unavailableMethod());
+      }
+      try {
+        context.content.content = createSeriesEventContent(context);
+      }
+      catch (err) { return next(err); }
+        
+      // As long as there is no data, event duration is considered to be 0.
+      context.content.duration = 0; 
+    }
+    userEventsStorage.insertOne(
+      context.user, context.content, function (err, newEvent) {
+        if (err != null) {
+          // Expecting a duplicate error
+          if (err.isDuplicateIndex('id')) {
+            return next(errors.itemAlreadyExists('event', {id: params.id}, err));
+          }
+          // Expecting a duplicate error for unique fields
+          if (err.isDuplicate) {
+            return next(Registration.handleUniquenessErrors(
+              err,
+              ErrorMessages[ErrorIds.UnexpectedErrorWhileSavingTheEvent],
+              { [SystemStreamsSerializer.removeDotFromStreamId(context.accountStreamId)]: context.content.content }));
+          }
+          // Any other error
+          return next(errors.unexpectedError(err));
+        }
+
+        // To remove when streamId not necessary
+        newEvent.streamId = newEvent.streamIds[0];
+
+        // remove redundant field for the result that enforces uniqness
+        newEvent = removeUniqueFields(newEvent)
+        result.event = newEvent;
+        next();
+      });
+  }
+
+  /**
+   * Append properties like streamId and additional field to event
+   * that helps to enforce uniqness
+   * @param object contextContent 
+   * @param string fieldName 
+   */
+  function enforceEventUniquenessIfNeeded (
+    contextContent: object,
+    fieldName: string,
+    accountStreamSettings: object
+  ) {
+    if (! accountStreamSettings.isUnique) {
+      return contextContent;
+    }
+    if (!contextContent.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_UNIQUE)) {
+      contextContent.streamIds.push(SystemStreamsSerializer.options.STREAM_ID_UNIQUE);
+    }
+    contextContent[`${SystemStreamsSerializer.removeDotFromStreamId(fieldName)}__unique`] = contextContent.content;
+    return contextContent;
   }
 
   /**
@@ -605,9 +585,12 @@ module.exports = function (
     normalizeStreamIdAndStreamIds,
     applyPrerequisitesForUpdate,
     validateEventContentAndCoerce,
+    validateAccountStreamsEventEdition,
     generateLogIfNeeded,
     updateAttachments,
+    appendAccountStreamsEventDataForUpdate,
     updateEvent,
+    removeActiveStreamIdFromRelatedEvents,
     notify);
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
@@ -730,16 +713,60 @@ module.exports = function (
     }
   }
 
-  async function updateEvent (context, params, result, next) {
-    let accountStreamsInfo = {};
-    try {
-      // if events belongs to system streams additional actions may be needed
-      accountStreamsInfo = await handleAccountStreams(context.user.username, context, false);
-      context.content = accountStreamsInfo.context;
+
+  /**
+   * Do additional actions if event belongs to the account stream and is
+   * 1) unique
+   * 2) indexed
+   * 3) active
+   * Additional actions like
+   * a) adding property to enforce uniqueness
+   * b) sending data update to service-register
+   * c) saving streamId 'active' has to be handled in a different way than
+   * for all other events
+   *
+   * @param string username 
+   * @param object contextContent 
+   * @param boolean creation - if true - active streamId will be added by default
+   */
+  async function appendAccountStreamsEventDataForUpdate (context, params, result, next) {
+    // check if event belongs to account stream ids
+    if (!context.doesEventBelongToAccountStream) {
+      return next();
+    }
+    try{
+     context.removeActiveEvents = false;
+
+      // get editable account streams
+      const editableAccountStreams = SystemStreamsSerializer.getEditableAccountStreams();
+      // if .active stream id was added to the event
+      if (
+        !context.oldContentStreamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE)
+        && context.content.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE)
+      ) {
+        // after event will be saved, active property will be removed from the other events
+        context.removeActiveEvents = true;
+      }
+
+      if (
+        editableAccountStreams[context.accountStreamId].isUnique ||
+        editableAccountStreams[context.accountStreamId].isIndexed
+      ) {
+        // if stream is unique append properties that enforce uniqueness
+        context.content = enforceEventUniquenessIfNeeded(
+          context.content,
+          context.accountStreamId,
+          editableAccountStreams[context.accountStreamId]
+        );
+        await sendDataToServiceRegister(context, false, editableAccountStreams);
+      }
     } catch (err) {
       return next(err);
     }
+    next();
+  }
 
+  async function updateEvent (context, params, result, next) {
     try {
       let updatedEvent = await bluebird.fromCallback(cb =>
         userEventsStorage.updateOne(context.user, { _id: context.content.id }, context.content, cb));
@@ -753,10 +780,7 @@ module.exports = function (
       // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];
 
-      // if it is needed update events from the same account stream
-      if (accountStreamsInfo.removeActiveEvents) {
-        handleEventsWithActiveStreamId(context.user, updatedEvent.streamId, updatedEvent.id);
-      }
+      
 
       updatedEvent = removeUniqueFields(updatedEvent);
       result.event = updatedEvent;
@@ -771,22 +795,36 @@ module.exports = function (
     next();
   }
 
-
-  /**
-   * for account streams - 'active' streamId defines the 'main' event from the stream
-   * if there are many events (like many emails), only one should be main/active
-   * @param {*} user 
-   * @param {*} streamId 
-   * @param {*} eventIdToExclude 
-   */
-  async function handleEventsWithActiveStreamId (user, streamId, eventIdToExclude) {
+ /**
+  * For account streams - 'active' streamId defines the 'main' event
+  * from of the stream. If there are many events (like many emails), 
+  * only one should be main/active
+  * 
+  * @param {*} user
+  * @param {*} streamId
+  * @param {*} eventIdToExclude
+  */
+  async function removeActiveStreamIdFromRelatedEvents (context, params, result, next) {
+    // if it is needed update events from the same account stream
+    if (!context.removeActiveEvents) {
+      return next();
+    }
     await bluebird.fromCallback(cb =>
-      userEventsStorage.updateMany(user,
+      userEventsStorage.updateMany(context.user,
         {
-          id: { $ne: eventIdToExclude },
-          streamIds: { $all: [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE] }
+          id: { $ne: result.event.id },
+          streamIds: {
+            $all: [
+              // if we use active stream id not only for account streams
+              // this should be made more general
+              context.accountStreamId, 
+              SystemStreamsSerializer.options.STREAM_ID_ACTIVE
+            ]
+          }
         },
-        { $pull: { streamIds: SystemStreamsSerializer.options.STREAM_ID_ACTIVE } }, cb));
+        { $pull: { streamIds: SystemStreamsSerializer.options.STREAM_ID_ACTIVE } }, cb)
+    );
+    next();
   }
 
   function notify(context, params, result, next) {
@@ -894,7 +932,6 @@ module.exports = function (
       if (isCreateSeriesAndHasContent() || isUpdateSeriesAndHasContent()) {
         return next(errors.invalidParametersFormat('The event content\'s format is invalid.', 'Events of type High-frequency have a read-only content'));
       }
-
       return next();
     }
     
@@ -909,7 +946,6 @@ module.exports = function (
       .then((newContent) => {
         // Store the coerced value. 
         context.content.content = newContent; 
-        
         next();
       })
       .catch(
@@ -920,8 +956,92 @@ module.exports = function (
     function isCreateSeriesAndHasContent() {
       return params.content != null;
     }
+
     function isUpdateSeriesAndHasContent() {
       return params.update != null && params.update.content != null;
+    }
+
+  }
+
+
+  /**
+   * Forbid event editing if event has non editable core stream
+   * @param string streamId
+   */
+  function checkIfStreamIdIsNotEditable (streamId: string): boolean {
+    const nonEditableAccountStreamsIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForEditing();
+    if (nonEditableAccountStreamsIds.includes(streamId)) {
+      // if user tries to add new streamId from non editable streamsIds
+      throw errors.invalidOperation(ErrorMessages[ErrorIds.ForbiddenNoneditableAccountStreamsEdit]);
+    }
+  }
+
+  /**
+   * Forbid event editing if user tries to add multiple account streams
+   * to the same event
+   */
+  function checkIfUserTriesToAddMultipleAccountStreamIds (matchingAccountStreams): boolean {
+    if (matchingAccountStreams.length > 1) {
+      throw errors.invalidOperation(
+        ErrorMessages[ErrorIds.ForbiddenNoneditableAccountStreamsEdit]);
+    }
+  }
+
+  /**
+   * if it is account event, append additional data to the context
+   */
+  function addAccountStreamsMetaDataToTheContext (context, allAccountStreamIds) {
+    //const editableAccountStreams = Object.keys(SystemStreamsSerializer.getEditableAccountStreams());
+    matchingAccountStreams = _.intersection(context.content.streamIds, allAccountStreamIds);
+    context.accountStreamId = matchingAccountStreams[0];
+    return context; //TODO IEVA, maybe I can simpler?
+  }
+
+  /**
+   * Check if event belongs to account stream,
+   * if yes, validate and prepend context with the properties that will be
+   * used later like:
+   * a) doesEventBelongToAccountStream: boolean
+   * b) oldContentStreamIds: array<string>
+   * c) accountStreamId - string - account streamId
+   * 
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  function validateAccountStreamsEventEdition (context, params, result, next) { 
+    let matchingAccountStreams = [];
+    const allAccountStreamIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
+    if (doesEventBelongToTheAccountStream()) {
+      context = addAccountStreamsMetaDataToTheContext(context, allAccountStreamIds);
+      checkIfStreamIdIsNotEditable(context.accountStreamId);
+      checkIfUserTriesToAddMultipleAccountStreamIds(matchingAccountStreams)
+      checkIfUserTriesToChangeAccountStreamId(context.oldContentStreamIds);
+    }
+    next();
+
+    function doesEventBelongToTheAccountStream () {
+      context.oldContentStreamIds = (context?.oldContent?.streamIds) ? context.oldContent.streamIds : [];
+      // check if event belongs to account stream ids
+      matchingAccountStreams = _.intersection(
+        context.oldContentStreamIds,
+        allAccountStreamIds
+      );
+      context.doesEventBelongToAccountStream = matchingAccountStreams.length > 0;
+      return context.doesEventBelongToAccountStream;
+    }
+
+    /**
+     * Forbid event editing if user tries to change the account srtreamId
+     * @param {*} oldContentStreamIds 
+     */
+    function checkIfUserTriesToChangeAccountStreamId (oldContentStreamIds): boolean {
+      if (matchingAccountStreams.length > 0 &&
+        _.intersection(matchingAccountStreams, oldContentStreamIds).length === 0) {
+        throw errors.invalidOperation(
+          ErrorMessages[ErrorIds.ForbiddenNoneditableAccountStreamsEdit]);
+      }
     }
   }
 
@@ -1048,9 +1168,6 @@ module.exports = function (
           { [existingUniqueProperty]: cuid() }, cb));
 
       if (config.get('singleNode:isActive') !== true) {
-        // initialize service-register connection
-        const serviceRegisterConn = new ServiceRegister(config.get('services:register'), logging.getLogger('service-register'));
-      
         // send information update to service regsiter
         await serviceRegisterConn.updateUserInServiceRegister(
           user.username, {}, { [existingUniqueProperty.split('__unique')[0]]: event[existingUniqueProperty]});
@@ -1278,4 +1395,32 @@ module.exports = function (
     });
   }
 
+  /**
+   * Build request and send data to service-register about unique or indexed fields update
+   * @param {*} fieldName 
+   * @param {*} contextContent 
+   * @param {*} creation 
+   */
+  async function sendDataToServiceRegister (context, creation, editableAccountStreams) {
+    // send update to service-register
+    if (config.get('singleNode:isActive') === true) {
+      return;
+    }
+    let fieldsForUpdate = {};
+    let streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(context.accountStreamId);
+
+    fieldsForUpdate[streamIdWithoutDot] = [{
+      value: context.content.content,
+      isUnique: editableAccountStreams[context.accountStreamId].isUnique,
+      isActive: context.removeActiveEvents,
+      creation: creation
+    }];
+
+    // send information update to service regsiter
+    await serviceRegisterConn.updateUserInServiceRegister(
+      context.user.username,
+      fieldsForUpdate,
+      {}
+    );
+  }
 };

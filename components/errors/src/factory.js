@@ -357,19 +357,6 @@ factory.TooHighAccessForAccountStreams = (streamId): APIError => {
 };
 
 /**
- * Denied to save multiple account streams for the same event
- */
-factory.DeniedMultipleAccountStreams = (streamId): APIError => {
-  return new APIError(
-    ErrorIds.DeniedMultipleAccountStreams, ErrorMessages[ErrorIds.DeniedMultipleAccountStreams],
-    {
-      httpStatus: 400,
-      data: { streamId: streamId },
-      dontNotifyAirbrake: true,
-    }
-  )
-};
-/**
  * Get the right article for the noun
  * @param {*} noun 
  */
