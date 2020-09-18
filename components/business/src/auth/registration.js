@@ -81,7 +81,6 @@ class Registration {
           uniqueFields[streamIdWithoutDot] = context.user[streamIdWithoutDot];
         }
       }
-
       
       // do the validation and reservation in service-register
       await this.serviceRegisterConn.validateUser(
@@ -112,7 +111,7 @@ class Registration {
     try {
       // assert that we have obtained a lock on register, so any conflicting fields here 
       // would be failed registration attempts that partially saved user data.
-      const existingUsers = await this.userRepository.findConflictingUniqueFields(context.user.getUniqueFields());
+      const existingUsers = await this.userRepository.findExistingUniqueFields(context.user.getUniqueFields());
 
       // if any of unique fields were already saved, it means that there was an error
       // saving in service register (before this step there is a check that unique fields 

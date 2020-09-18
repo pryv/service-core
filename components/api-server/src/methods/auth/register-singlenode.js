@@ -50,7 +50,7 @@ module.exports = function (api, logging, storageLayer, servicesSettings) {
   async function checkUsername(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     result.reserved = false;
     try {
-      const existingUsers = await userRepository.findConflictingUniqueFields({ username: params.username});
+      const existingUsers = await userRepository.findExistingUniqueFields({ username: params.username});
 
       if (existingUsers.length > 0) {
         return next(errors.itemAlreadyExists('user', { username: params.username }));

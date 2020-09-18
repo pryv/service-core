@@ -62,9 +62,7 @@ module.exports = function (api, logging, storageLayer, servicesSettings) {
 
       if (response.reserved === true) {
         return next(errors.itemAlreadyExists('user', { username: params.username }));
-      }
-
-      if (response.reserved != null) {
+      }else if (response.reserved != null) {
         result.reserved = false;
       }
       

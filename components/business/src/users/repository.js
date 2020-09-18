@@ -160,7 +160,7 @@ class Repository {
    * Check if fields are unique
    * @param ({key: value}) fields
    */
-  async findConflictingUniqueFields (fields: {}): number {
+  async findExistingUniqueFields (fields: {}): number {
     let query = { $or: [] }
     Object.keys(fields).forEach(key => {
       query['$or'].push({

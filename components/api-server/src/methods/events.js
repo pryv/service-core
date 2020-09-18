@@ -666,6 +666,7 @@ module.exports = function (
       if (err) {
         return next(errors.unexpectedError(err));
       }
+      delete context.oldContent;
       next();
     });
   }
@@ -759,7 +760,7 @@ module.exports = function (
       return next(Registration.handleUniquenessErrors(
         err,
         ErrorMessages[ErrorIds.UnexpectedErrorWhileSavingTheEvent],
-        {[SystemStreamsSerializer.removeDotFromStreamId(context.content.streamIds[0])]: context.content.content }));
+        { [SystemStreamsSerializer.removeDotFromStreamId(context.accountStreamId)]: context.content.content }));
     };
     next();
   }
@@ -768,10 +769,6 @@ module.exports = function (
   * For account streams - 'active' streamId defines the 'main' event
   * from of the stream. If there are many events (like many emails), 
   * only one should be main/active
-  * 
-  * @param {*} user
-  * @param {*} streamId
-  * @param {*} eventIdToExclude
   */
   async function handleEventsWithActiveStreamId (context, params, result, next) {
     // if it is needed update events from the same account stream
@@ -931,7 +928,6 @@ module.exports = function (
     }
 
   }
-
 
   /**
    * Forbid event editing if event has non editable core stream
