@@ -128,7 +128,7 @@ let registrationSchema = {
   }),
   result: object({
     username: string(),
-    server: string()
+    apiEndpoint: string()
   }, {
     required: ['username'],
     additionalProperties: true
@@ -199,8 +199,7 @@ function loadCustomValidationSettings (validationSchema) {
     // if streamIdWithDot is set as required - add required validation
     let streamId = SystemStreamsSerializer.removeDotFromStreamId(streamIdWithDot);
     if (
-      value.isRequiredInValidation &&
-      value.isRequiredInValidation == true &&
+      value?.isRequiredInValidation == true &&
       !validationSchema.required.includes(streamIdWithDot)
     ) {
       validationSchema.required.push(streamId);

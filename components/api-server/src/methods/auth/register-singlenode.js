@@ -22,6 +22,7 @@ const errors = require('components/errors').factory;
 module.exports = function (api, logging, storageLayer, servicesSettings) {
   // REGISTER
   const registration = new Registration(logging, storageLayer, servicesSettings);
+  const userRepository = new UserRepository(storageLayer.events);
 
   api.register('auth.register.singlenode',
     // data validation methods
@@ -49,7 +50,6 @@ module.exports = function (api, logging, storageLayer, servicesSettings) {
   async function checkUsername(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     result.reserved = false;
     try {
-      const userRepository = new UserRepository(storageLayer.events);
       const existingUsers = await userRepository.findConflictingUniqueFields({ username: params.username});
 
       if (existingUsers.length > 0) {

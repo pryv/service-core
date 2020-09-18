@@ -33,7 +33,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   notifications, logging, auditSettings, updatesSettings) {
 
   const logger = logging.getLogger('methods/streams');
-
+  const systemStreamsSerializer = new SystemStreamsSerializer();
   // RETRIEVAL
 
   api.register('streams.get',
@@ -57,7 +57,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
       if (err) { return next(errors.unexpectedError(err)); }
 
-      const virtualStreams = (new SystemStreamsSerializer()).getVirtualStreamsList();
+      const virtualStreams = systemStreamsSerializer.getVirtualStreamsList();
       streams = streams.concat(virtualStreams);
 
       if (params.parentId) {
