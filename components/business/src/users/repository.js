@@ -335,12 +335,11 @@ class Repository {
    */
   async checkUserPassword (userId: string, password: string): boolean {
     const currentPass = await this._getUserPasswordHash(userId);
-    if (currentPass == null)
-      throw errors.unknownResource('user');
-
-    const isValid: boolean = await bluebird.fromCallback(cb =>
-      encryption.compare(password, currentPass, cb));
-
+    let isValid: boolean = false;
+    if (currentPass != null) {
+      isValid = await bluebird.fromCallback(cb =>
+        encryption.compare(password, currentPass, cb));
+    }
     return isValid;
   }
 
