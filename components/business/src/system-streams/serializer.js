@@ -156,6 +156,22 @@ class SystemStreamsSerializer {
   }
   
   /**
+   * Get all ids of all system streams
+   */
+  getAllSystemStreamsIds () {
+    let systemStreams = [];
+    let i;
+    const streamKeys = Object.keys(this.systemStreamsSettings);
+
+    for (i = 0; i < streamKeys.length; i++) {
+      systemStreams.push(SystemStreamsSerializer.addDotFromStreamId(streamKeys[i]));
+      _.merge(systemStreams,
+      Object.keys(getStreamsNames(this.systemStreamsSettings[streamKeys[i]])))
+    }
+    return systemStreams;
+  }
+
+  /**
    * Build streams from systemStreams settings
    * parent is formed just providing hte name, id, parentId null and children
    */
@@ -285,5 +301,6 @@ SystemStreamsSerializer.options = {
   STREAM_ID_USERNAME: '.username',
   STREAM_ID_PASSWORDHASH: '.passwordHash',
   STREAM_ID_HELPERS: '.helpers',
+  STREAM_ID_ACCOUNT: '.account',
 }
 module.exports = SystemStreamsSerializer;
