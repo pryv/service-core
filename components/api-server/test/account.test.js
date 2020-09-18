@@ -22,12 +22,11 @@ const storageSize = helpers.dependencies.storage.size;
 const testData = helpers.data;
 const _ = require('lodash');
 const bluebird = require('bluebird');
-const { resolveCname } = require('dns');
 const UserRepository = require('components/business/src/users/repository');
 
 describe('account', function () {
   const user = Object.assign({}, testData.users[0]);
-
+  const userRepository = new UserRepository(storage);
   let basePath = '/' + user.username + '/account';
   let request = null; // must be set after server instance started
 
@@ -143,9 +142,9 @@ describe('account', function () {
           },
           async function verifyData () {           
             try {
-              request.get(basePath).end(function (res) {
-                const updatedUser = res.body.account;
-                validation.checkStoredItem(updatedUser, 'user');
+              request.get(basePath).end(async function (res) {
+                const retrievedUser = await userRepository.getAccountByUsername(res.body.account.username);
+                validation.checkStoredItem(retrievedUser.getAccountWithId(), 'user');
               });
             } catch (err) {
               console.log(err,'err');
@@ -164,7 +163,7 @@ describe('account', function () {
     it('[NZE2] must be forbidden to non-personal accesses', function (done) {
       request
         .put(basePath, testData.accesses[4].token)
-        .send({language: 'zh'}).end(function (res) {
+        .send({ language: 'zh' }).end(function (res) {
         validation.checkErrorForbidden(res, done);
       });
     });
@@ -221,7 +220,6 @@ describe('account', function () {
       assert.approximately(storageUsed.attachedFiles, initialStorageUsed.attachedFiles +
         newAtt.size, filesystemBlockSize);
       const updatedStorageUsed = storageUsed;
-      const userRepository = new UserRepository(storage);
       const retrievedUser = await userRepository.getById(user.id);
       assert.deepEqual(retrievedUser.storageUsed, updatedStorageUsed);
     });
@@ -266,7 +264,6 @@ describe('account', function () {
     it('[0QVH] must be approximately updated (diff) when adding an attached file', function (done) {
       var initialStorageUsed,
         newAtt = testData.attachments.image;
-      const userRepository = new UserRepository(storage);
       async.series([
         async function checkInitial () {
           const retrievedUser = await userRepository.getById(user.id);

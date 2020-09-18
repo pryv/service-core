@@ -171,7 +171,6 @@ exports.checkErrorInvalidAccess = function (res, done) {
  */
 exports.checkErrorForbidden = function (res, done) {
   expect(res.statusCode).to.equal(403);
-
   checkJSON(res, schemas.errorResult);
   res.body.error.id.should.eql(ErrorIds.Forbidden);
 

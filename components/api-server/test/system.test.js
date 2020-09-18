@@ -135,9 +135,8 @@ describe('[373T] system (ex-register)', function () {
         var actual = _.find(users, function (user) {
           return user.username === newUserData.username;
         });
-        let actualAccount = actual.getAccount();
-        validation.checkStoredItem(actualAccount, 'user');
-        actualAccount.should.eql(expected);
+        validation.checkStoredItem(actual.getAccountWithId(), 'user');
+        actual.getAccount().should.eql(expected);
       });
     });
     
