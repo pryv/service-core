@@ -22,7 +22,7 @@ const { getConfig } = require('components/api-server/config/Config');
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
 
-describe("[841C] Account with default-streams", function () {
+describe("Account with default-streams", function () {
   let helpers;
   let app;
   let request;
@@ -136,15 +136,15 @@ describe("[841C] Account with default-streams", function () {
     await config.resetConfig();
   });
 
-  describe('GET /account', async () => {
-    describe('[12CF] When user has multiple events per stream and additional streams events', async () => {
+  describe('GET /account', () => {
+    describe('When user has multiple events per stream and additional streams events', () => {
       let allVisibleAccountEvents;
       let scope;
       before(async function () {
         await createUser();
         // create additional events for all editable streams
         const settings = _.cloneDeep(helpers.dependencies.settings);
-        scope = nock(settings.services.register.url)
+        scope = nock(settings.services.register.url);
         scope.put('/users',
           (body) => {
             serviceRegisterRequest = body;
@@ -168,10 +168,10 @@ describe("[841C] Account with default-streams", function () {
         // get account info
         res = await request.get(basePath).set('authorization', access.token);
       });
-      it('[XRKX] Should return 200', async () => {
+      it('[XRKX] should return 200', async () => {
         assert.equal(res.status, 200);
       });
-      it('[JUHR] Should return account information in the structure that is defined in default streams and only active events are returned', async () => {
+      it('[JUHR] should return account information in the structure that is defined in default streams and only active events are returned', async () => {
         const usernameAccountEvent = allVisibleAccountEvents.filter(event => event.streamIds.includes(
           SystemStreamsSerializer.addDotFromStreamId('username')))[0];
         const emailAccountEvent = allVisibleAccountEvents.filter(event =>
@@ -195,14 +195,14 @@ describe("[841C] Account with default-streams", function () {
         assert.equal(res.body.account.insurancenumber, insurancenumberAccountEvent.content);
         assert.equal(res.body.account.phoneNumber, phoneNumberAccountEvent.content);
       });
-      it('[R5S0] Only visible default stream events are returned', async () => {
+      it('[R5S0] should return only visible default stream events', async () => {
         assert.equal(Object.keys(res.body.account).length, 6);
       });
     });
   });
 
-  describe('POST /change-password', async () => {
-    describe('[TIB0] When valid data is provided', async () => {
+  describe('POST /change-password', () => {
+    describe('When valid data is provided', () => {
       let passwordBefore;
       let passwordAfter;
       before(async function () {
@@ -218,17 +218,17 @@ describe("[841C] Account with default-streams", function () {
           .set('authorization', access.token);
         passwordAfter = await getActiveEvent('passwordHash');
       });
-      it('[X9VQ] Should return 200', async () => {
+      it('[X9VQ] should return 200', async () => {
         assert.equal(res.status, 200);
       });
-      it('[PWAA] Event with password hash should be updated', async () => {
+      it('[PWAA] should update event with password hash', async () => {
         assert.notEqual(passwordBefore.content, passwordAfter.content);
       });
     });
   });
 
-  describe('PUT /account', async () => {
-    describe('[11B0] When user tries to modify the username', async () => {
+  describe('PUT /account', () => {
+    describe('When user tries to modify the username', () => {
       before(async function () {
         await createUser();
         // modify account info
@@ -236,16 +236,16 @@ describe("[841C] Account with default-streams", function () {
           .send({username: charlatan.Lorem.characters(7)})
           .set('authorization', access.token);
       });
-      it('[P69J] Should return 400', async () => {
+      it('[P69J] should return 400', async () => {
         assert.equal(res.status, 400);
       });
-      it('[DBM6] Should return the correct error', async () => {
+      it('[DBM6] should return the correct error', async () => {
         // currently stupid z-schema error is thrown, so let like this because the method will be deprecated
         assert.equal(res.body.error.data.length, 1);
         assert.equal(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
       });
     });
-    describe('[B8A9] When user tries to modify not editable fields', async () => {
+    describe('When user tries to modify not editable fields', () => {
       before(async function () {
         await createUser();
         // modify account info
@@ -253,17 +253,17 @@ describe("[841C] Account with default-streams", function () {
           .send({ attachedFiles: 2 })
           .set('authorization', access.token);
       });
-      it('[90N3] Should return 400', async () => {
+      it('[90N3] should return 400', async () => {
         assert.equal(res.status, 400);
       });
-      it('[QHZ4] Should return the correct error', async () => {
+      it('[QHZ4] should return the correct error', async () => {
         // currently stupid z-schema error is thrown, so let like this because the method will be deprecated
         assert.equal(res.body.error.data.length, 1);
         assert.equal(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
       });
     });
-    describe('[FD2E] When updating an unique field that is already taken', async () => {
-      describe('[7CEE] When the field is not unique in mongodb', async () => {
+    describe('When updating a unique field that is already taken', () => {
+      describe('and the field is not unique in mongodb', () => {
         let scope;
         let user2;
         before(async function () {
@@ -279,16 +279,16 @@ describe("[841C] Account with default-streams", function () {
             .send({ email: user2.attrs.email })
             .set('authorization', access.token);
         });
-        it('[K3X9] Should return a 400 error', async () => {
+        it('[K3X9] should return a 400 error', async () => {
           assert.equal(res.status, 400);
         });
-        it('[8TRP] Should return the correct error', async () => {
+        it('[8TRP] should return the correct error', async () => {
           assert.equal(res.body.error.id, ErrorIds.ItemAlreadyExists);
           assert.deepEqual(res.body.error.data, { email: user2.attrs.email});
         });
       });
     });
-    describe('[3CCF] When user tries to edit edit email or language when not active fields exists', async () => {
+    describe('When user tries to edit edit email or language when not active fields exists', () => {
       let newEmail = charlatan.Lorem.characters(7);
       let newLanguage = charlatan.Lorem.characters(2);
       let activeEmailBefore;
@@ -335,10 +335,10 @@ describe("[841C] Account with default-streams", function () {
         activeLanguageAfter = await getActiveEvent('language');
         notActiveLanguageAfter = await getNotActiveEvent('language');
       });
-      it('[JJ81] Should return 200', async () => {
+      it('[JJ81] should return 200', async () => {
         assert.equal(res.status, 200);
       });
-      it('[K9IC] Should returned updated account data', async () => {
+      it('[K9IC] should returned updated account data', async () => {
         assert.deepEqual(res.body.account, {
             username: user.attrs.username,
             email: newEmail,
@@ -348,7 +348,7 @@ describe("[841C] Account with default-streams", function () {
             phoneNumber: user.attrs.phoneNumber
         });
       });
-      it('[JQHX] Only active events are updated in the database', async () => {
+      it('[JQHX] should update only active events in the database', async () => {
         assert.deepEqual(notActiveEmailBefore, notActiveEmailAfter);
         assert.deepEqual(notActiveLanguageBefore, notActiveLanguageAfter);
         assert.notEqual(activeEmailBefore.content, activeEmailAfter.content);
@@ -356,7 +356,7 @@ describe("[841C] Account with default-streams", function () {
         assert.equal(activeEmailAfter.content, newEmail);
         assert.equal(activeLanguageAfter.content, newLanguage);
       });
-      it('[Y6MC] Should send a request to service-register to update its user main information and unique fields', async () => {
+      it('[Y6MC] should send a request to service-register to update its user main information and unique fields', async () => {
         // email is already skipped
         assert.deepEqual(serviceRegisterRequest, {
           user: {
@@ -371,6 +371,6 @@ describe("[841C] Account with default-streams", function () {
           fieldsToDelete: {}
         });
       });
-    })
+    });
   });
 });

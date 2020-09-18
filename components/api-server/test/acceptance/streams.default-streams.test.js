@@ -70,7 +70,7 @@ describe("System streams", function () {
     request = supertest(app.expressApp);
   });
 
-  describe('GET /streams', async () => {
+  describe('GET /streams', () => {
     it('[9CGO] Should return all streams - including default ones', async () => {
       await createUser();
       res = await request.get(basePath).set('authorization', access.token);
@@ -149,8 +149,8 @@ describe("System streams", function () {
     });
   });
 
-  describe('POST /streams', async () => {
-    describe('When creating a child to default streams', async () => {
+  describe('POST /streams', () => {
+    describe('When creating a child to default streams', () => {
       before(async function () {
         await createUser();
         res = await request.post(basePath)
@@ -160,18 +160,18 @@ describe("System streams", function () {
           })
           .set('authorization', access.token);
       });
-      it('[GRI4] Should return status 400', async () => {
+      it('[GRI4] should return status 400', async () => {
         assert.equal(res.status, 400);
       });
-      it('[XP07] Should return the correct error', async () => {
+      it('[XP07] should return the correct error', async () => {
         assert.equal(res.body.error.id, ErrorIds.UnknownReferencedResource);
       });
     });
   });
 
-  describe('PUT /streams/<id>', async () => {
+  describe('PUT /streams/<id>', () => {
     let streamData;
-    describe('When updating a default stream', async () => {
+    describe('When updating a default stream', () => {
       before(async function () {
         await createUser();
         streamData = {
@@ -181,26 +181,26 @@ describe("System streams", function () {
           .send(streamData)
           .set('authorization', access.token);
       });
-      it('[SLIR] Should return status 404', async () => {
+      it('[SLIR] should return status 404', async () => {
         assert.equal(res.status, 404);
       });
-      it('[V6HC] Should return the correct error', async () => {
+      it('[V6HC] should return the correct error', async () => {
         assert.equal(res.body.error.id, ErrorIds.UnknownResource);
       });
     });
   });
 
-  describe('DELETE /streams/<id>', async () => {
-    describe('When deleting a default stream', async () => {
+  describe('DELETE /streams/<id>', () => {
+    describe('When deleting a default stream', () => {
       before(async function () {
         await createUser();
         res = await request.delete(path.join(basePath, 'language'))
           .set('authorization', access.token);
       });
-      it('[1R35] Should return status 404', async () => { 
+      it('[1R35] should return status 404', async () => { 
         assert.equal(res.status, 404);
       });
-      it('[4939] Should return the correct error', async () => {
+      it('[4939] should return the correct error', async () => {
         assert.equal(res.body.error.id, ErrorIds.UnknownResource);
       });
     });
