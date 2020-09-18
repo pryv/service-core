@@ -150,7 +150,7 @@ function buildAccountFields (user: User): void {
   });
 }
 
-async function loadAccountData (user: User, params): void {
+function loadAccountData (user: User, params): void {
   user.accountFields.forEach(field => {
     if (params[field] != null) user[field] = params[field];
   });
