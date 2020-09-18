@@ -63,21 +63,6 @@ class Settings implements ConfigAccess {
       ourConfig.set('auth.passwordResetPageURL', publicUrl + wwwPath + '/access/reset-password.html');
     }
 
-    // load additional config from components
-    if (ourConfig.get('dnsLess.isActive')) {
-      let publicUrl = ourConfig.get('dnsLess.publicUrl');
-      if (publicUrl.slice(-1) === '/') publicUrl = publicUrl.slice(0, -1);
-      ourConfig.set('auth.passwordResetPageURL', publicUrl + wwwPath + '/access/reset-password.html');
-    }
-
-    const additionalComponentsConfigs = ['systemStreams'];
-    let i;
-    let configName;
-    for (i = 0; i < additionalComponentsConfigs.length; i++){
-      configName = additionalComponentsConfigs[i];
-      ourConfig.set(additionalComponentsConfigs[i], require('components/api-server/config/components/' + configName))
-    }
-
     settingsSingleton.maybePrint();
     return settingsSingleton;
   }

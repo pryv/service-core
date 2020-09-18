@@ -108,7 +108,8 @@ exports.idInOrClause = function (query) {
   return query;
 }
 
-function removeFieldsEnforceUniqueness (dbItem) {
+
+exports.removeFieldsEnforceUniqueness = function (dbItem) {
   if (dbItem == null) { return dbItem; }
 
   dbItem = Object.keys(dbItem)
@@ -119,12 +120,4 @@ function removeFieldsEnforceUniqueness (dbItem) {
     }, {});
 
   return dbItem;
-}
-
-exports.removeFieldsEnforceUniquenessForStream = function () {
-  return function (dbItem) {
-    return removeFieldsEnforceUniqueness(dbItem);
-  };
-}
-
-exports.removeFieldsEnforceUniqueness = removeFieldsEnforceUniqueness;
+};
