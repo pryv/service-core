@@ -40,7 +40,11 @@ function Events (database) {
       converters.stateUpdate,
       converters.getKeyValueSetUpdateFn('clientData')
     ],
-    itemFromDB: [clearEndTime, converters.deletionFromDB],
+    itemFromDB: [
+      clearEndTime,
+      converters.deletionFromDB,
+      converters.removeFieldsEnforceUniqueness
+    ],
   });
 
   this.defaultOptions = {
@@ -169,7 +173,10 @@ Events.prototype.findStreamed = function (user, query, options, callback) {
       if (err) {
         return callback(err);
       }
-      callback(null, dbStreamedItems.pipe(new ApplyEventsFromDbStream()));
+      callback(null,
+        dbStreamedItems
+          .pipe(new ApplyEventsFromDbStream())
+      );
     }.bind(this)
   );
 };

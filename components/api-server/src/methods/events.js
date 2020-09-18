@@ -238,10 +238,9 @@ module.exports = function (
       limit: params.limit
     };
 
-    userEventsStorage.findStreamed(context.user, query, options, function (err, eventsStream) {
-      if (err) {
-        return next(errors.unexpectedError(err));
-      }
+    try {
+      let eventsStream = await bluebird.fromCallback(cb =>
+        userEventsStorage.findStreamed(context.user, query, options, cb));
 
       result.addStream('events', eventsStream
         .pipe(new SetFileReadTokenStream(
@@ -251,9 +250,10 @@ module.exports = function (
           }
         ))
       );
-      
       next();
-    });
+    } catch (err) {
+      return next(errors.unexpectedError(err));
+    }
   }
 
   function includeDeletionsIfRequested(context, params, result, next) {
@@ -308,17 +308,7 @@ module.exports = function (
       setFileReadToken(context.access, event);
 
       // To remove when streamId not necessary
-      event.streamId = event.streamIds[0];
-
-      // remove event values used for enforcing uniqness in database level
-      // (the fields are formed "streamId + __unique")
-      event = Object.keys(event)
-        .filter(key => ! /__unique/.test(key))
-        .reduce((obj, key) => {
-          obj[key] = event[key];
-          return obj;
-        }, {});
-      
+      event.streamId = event.streamIds[0];     
       result.event = event;
       return next();
     });
@@ -358,7 +348,7 @@ module.exports = function (
     verifycanContributeToContext,
     appendAccountStreamsEventDataForCreation,
     createEvent,
-    removeActiveStreamIdFromRelatedEvents,
+    handleEventsWithActiveStreamId,
     createAttachments,
     notify);
 
@@ -508,9 +498,6 @@ module.exports = function (
 
         // To remove when streamId not necessary
         newEvent.streamId = newEvent.streamIds[0];
-
-        // remove redundant field for the result that enforces uniqness
-        newEvent = removeUniqueFields(newEvent)
         result.event = newEvent;
         next();
       });
@@ -590,7 +577,7 @@ module.exports = function (
     updateAttachments,
     appendAccountStreamsEventDataForUpdate,
     updateEvent,
-    removeActiveStreamIdFromRelatedEvents,
+    handleEventsWithActiveStreamId,
     notify);
 
   function applyPrerequisitesForUpdate(context, params, result, next) {
@@ -667,19 +654,6 @@ module.exports = function (
 
   }
 
-  /**
-   * Remove event properties that enforces uniqueness
-   * @param object event 
-   */
-  function removeUniqueFields (event) {
-    Object.keys(event).forEach(key => {
-      if (key.match('__unique')) {
-        delete event[key];
-      }
-    });
-    return event;
-  }
-
   function generateLogIfNeeded(context, params, result, next) {
     if (!auditSettings.forceKeepHistory) {
       return next();
@@ -687,7 +661,6 @@ module.exports = function (
 
     context.oldContent = _.extend(context.oldContent, {headId: context.content.id});
     delete context.oldContent.id;
-    context.oldContent = removeUniqueFields(context.oldContent);
 
     userEventsStorage.insertOne(context.user, context.oldContent, function (err) {
       if (err) {
@@ -779,10 +752,6 @@ module.exports = function (
 
       // To remove when streamId not necessary
       updatedEvent.streamId = updatedEvent.streamIds[0];
-
-      
-
-      updatedEvent = removeUniqueFields(updatedEvent);
       result.event = updatedEvent;
       setFileReadToken(context.access, result.event);
 
@@ -804,7 +773,7 @@ module.exports = function (
   * @param {*} streamId
   * @param {*} eventIdToExclude
   */
-  async function removeActiveStreamIdFromRelatedEvents (context, params, result, next) {
+  async function handleEventsWithActiveStreamId (context, params, result, next) {
     // if it is needed update events from the same account stream
     if (!context.removeActiveEvents) {
       return next();
@@ -1007,7 +976,8 @@ module.exports = function (
    */
   function validateAccountStreamsEventEdition (context, params, result, next) { 
     const allAccountStreamIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
-    if (!doesEventBelongToTheAccountStream()) {
+    context.eventBelongsToAccountStream = doesEventBelongToTheAccountStream();
+    if (!context.eventBelongsToAccountStream) {
       return next();
     }
 
@@ -1153,29 +1123,28 @@ module.exports = function (
    * 1) deal with properties that enforces uniqueness
    * 2) send to service-register if needed
    * 
-   * !!! this function checks for the unique value and not a stream id
    * @param object user {id: '', username: ''}
    * @param object event
-   * @param string id 
+   * @param string id - eventId
+   * @param string accountStreamId - accountStreamId
    */
-  async function handleUniqueFields (user, event, id) {
+  async function deleteUniqueFields (user, event, id, accountStreamId) {
     let updatedEvent;
-    // if needed remove field that enforces uniqueness
-    const existingUniqueProperty = Object.keys(event)
-      .find(function (item) { return item.includes('__unique') });
-
-    if (typeof existingUniqueProperty === 'string' && existingUniqueProperty.length > 0) {
+    const editableAccountStreams = SystemStreamsSerializer.getEditableAccountStreams();
+    const streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(accountStreamId);
+    if (editableAccountStreams[accountStreamId].isUnique) {
+      // replace unique property with random string when event is marked as trashed
       updatedEvent = await bluebird.fromCallback(cb =>
         userEventsStorage.updateOne(user, { _id: id },
-          { [existingUniqueProperty]: cuid() }, cb));
+          { [`${streamIdWithoutDot}__unique`]: cuid() }, cb));
 
       if (!config.get('singleNode:isActive')) {
         // send information update to service regsiter
         await serviceRegisterConn.updateUserInServiceRegister(
-          user.username, {}, { [existingUniqueProperty.split('__unique')[0]]: event[existingUniqueProperty]});
+          user.username, {}, { [streamIdWithoutDot]: event.content});
       }
     }
-    return updatedEvent;
+    return event;
   }
   
   async function flagAsTrashed(context, params, result, next) {
@@ -1183,9 +1152,16 @@ module.exports = function (
       trashed: true
     };
     context.updateTrackingProperties(updatedData);
+    let updatedEvent;
     try {
-      let updatedEvent = await handleUniqueFields(context.user, context.event, params.id);
-
+      if(context.eventBelongsToAccountStream){
+        updatedEvent = await deleteUniqueFields(
+          context.user,
+          context.event,
+          params.id,
+          context.accountStreamId,
+        );
+      }
       updatedEvent = await bluebird.fromCallback(cb =>
         userEventsStorage.updateOne(context.user, { _id: params.id }, updatedData, cb));
 
@@ -1345,28 +1321,40 @@ module.exports = function (
       if (! canDeleteEvent) return callback(errors.forbidden());
 
       // check if event belongs to account streams and if it is allowed to delete it
-      const allowedToDelete = handleAccountStreamsDeletion(event);
-      if (!allowedToDelete) return callback(errors.DeniedEventModification('streamId'));
-
+      const eventsAccountStreams = eventHasAccountStreams(event);
+      context.eventBelongsToAccountStream = eventsAccountStreams.length > 0
+      if (context.eventBelongsToAccountStream) {
+        context.accountStreamId = eventsAccountStreams[0];
+        if (!isAccountEventDeletable(event)) return callback(errors.invalidOperation(
+          ErrorMessages[ErrorIds.ForbiddenAccountStreamsEventDeletion]));
+      }
       callback(null, event);
     });
   }
 
   /**
- * Remove events that belongs to the account streams and should not be allowed for editing
- * @param query - mongo query object 
+   * Check if event belongs to any account stream
+   * @param {*} event 
+   */
+  function eventHasAccountStreams (event): string {
+    let allStreamIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
+    return _.intersection(event.streamIds, allStreamIds);
+  }
+
+/**
+ * Check if event should not be allowed for editing
+ * a) is not editable
+ * b) is active
  */
-  function handleAccountStreamsDeletion (event): Boolean {
+  function isAccountEventDeletable (event): Boolean {
     let allowedToDelete = true;
-    let forbidenUserAccountStreams = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForEditing();
-    const editableAccountStreams = Object.keys(SystemStreamsSerializer.getEditableAccountStreams());
-    if (event?.streamIds) {
-      if (_.intersection(event.streamIds, forbidenUserAccountStreams).length > 0) {
+    const editableAccountStreamsIds = Object.keys(SystemStreamsSerializer.getEditableAccountStreams());
+    const eventBelongsToEditableStream = _.intersection(event.streamIds, editableAccountStreamsIds).length > 0;
+    if (
+      !eventBelongsToEditableStream ||
+      (eventBelongsToEditableStream && event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE))
+    ) {
         allowedToDelete = false;
-      } else if (_.intersection(event.streamIds, editableAccountStreams).length > 0
-        && event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE)) {
-        allowedToDelete = false;
-      }
     }
     return allowedToDelete;
   }

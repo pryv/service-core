@@ -107,3 +107,24 @@ exports.idInOrClause = function (query) {
   query['$or'] = convertedOrClause;
   return query;
 }
+
+function removeFieldsEnforceUniqueness (dbItem) {
+  if (dbItem == null) { return dbItem; }
+
+  dbItem = Object.keys(dbItem)
+    .filter(key => ! /__unique/.test(key))
+    .reduce((obj, key) => {
+      obj[key] = dbItem[key];
+      return obj;
+    }, {});
+
+  return dbItem;
+}
+
+exports.removeFieldsEnforceUniquenessForStream = function () {
+  return function (dbItem) {
+    return removeFieldsEnforceUniqueness(dbItem);
+  };
+}
+
+exports.removeFieldsEnforceUniqueness = removeFieldsEnforceUniqueness;

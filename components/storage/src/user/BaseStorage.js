@@ -217,8 +217,6 @@ BaseStorage.prototype.aggregate = function(
   );
 };
 
-//TODO IEVA - maybe add session here - now it is in the concerning classes 
-// accesses and events (and sessions)
 BaseStorage.prototype.insertOne = function (user, item, callback) {
   this.database.insertOne(
     this.getCollectionInfo(user),
@@ -227,8 +225,8 @@ BaseStorage.prototype.insertOne = function (user, item, callback) {
       if (err) {
         return callback(err);
       }
-      callback(null, item);
-    }
+      callback(null, this.applyItemFromDB(item));
+    }.bind(this)
   );
 };
 
@@ -538,7 +536,6 @@ BaseStorage.prototype.applyItemFromDB = function(dbItem) {
  * @api private
  */
 BaseStorage.prototype.applyItemsFromDB = function(dbItems) {
-
   return applyConvertersFromDB(
     dbItems.map(this.applyItemFromDB.bind(this)),
     this.converters.itemsFromDB

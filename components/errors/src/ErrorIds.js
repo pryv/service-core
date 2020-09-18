@@ -92,6 +92,7 @@ const ErrorIds = {
   ForbiddenNoneditableAccountStreamsEdit: 'forbidden-noneditable-account-streams-edit',
   ForbiddenToChangeAccountStreamId: 'forbidden-change-account-streams-id',
   ForbiddenAccountStreamsActions: 'forbidden-account-streams-actions',
+  ForbiddenAccountStreamsEventDeletion: 'forbidden-account-streams-daletion',
 };
 Object.freeze(ErrorIds);
 

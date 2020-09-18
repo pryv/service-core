@@ -20,8 +20,6 @@ const ErrorIds = require('components/errors').ErrorIds;
 import type { MethodContext } from 'components/model';
 import type { ApiCallback } from 'components/api-server/src/API';
 
-POOL_USERNAME_PREFIX = 'pool@';
-
 /**
  * Create (register) a new user
  */
@@ -151,6 +149,7 @@ class Registration {
    * @param {*} next 
    */
   createPoolUser (context, params, result, next) {
+    const POOL_USERNAME_PREFIX = 'pool@';
     const uniqueId = cuid();
     params.username = POOL_USERNAME_PREFIX + uniqueId;
     params.passwordHash = 'changeMe';

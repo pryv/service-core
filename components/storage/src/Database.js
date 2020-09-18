@@ -424,7 +424,7 @@ class Database {
         if (err != null) {
           Database.handleDuplicateError(err);
         }
-        callback(err,res);
+        callback(err, res);
       });
     });
   }

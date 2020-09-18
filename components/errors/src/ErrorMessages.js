@@ -44,7 +44,8 @@ const ErrorMessages = {
   [ErrorIds.UnexpectedErrorWhileCreatingUser]: 'Unexpected error while creating a user.',
   [ErrorIds.ForbiddenNoneditableAccountStreamsEdit]: 'It is forbidden to create or edit noneditable account stream event.',
   [ErrorIds.ForbiddenToChangeAccountStreamId]: 'It is forbidden to change account stream id.',
-  [ErrorIds.ForbiddenAccountStreamsActions]: 'It is forbidden to do any modification to .account streams.',
+  [ErrorIds.ForbiddenAccountStreamsActions]: 'It is forbidden to do any modification to account streams.',
+  [ErrorIds.ForbiddenAccountStreamsEventDeletion]: 'It is forbidden to delete noneditable or active account stream events.',
 };
 Object.freeze(ErrorMessages);
 
