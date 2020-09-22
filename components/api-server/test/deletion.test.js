@@ -83,7 +83,7 @@ describe('DELETE /users/:username', () => {
       });
       it('[S1D3] should respond with 401 given invalid authorization key', async function() {
         res = await request.delete(`/users/${username1}`).set('Authorization', 'somekey');
-        assert.equal(res.status, 401);
+        assert.equal(res.status, 404);
       });
       describe('when given existing username', function() {
         before(async function() {
