@@ -305,10 +305,6 @@ class Registration {
     const uniquenessErrors = {};
     if (err.isDuplicate) {
       let fieldName = err.duplicateIndex();
-      // uniqueness constraint for username in acccess
-      if (fieldName == 'deviceName') {
-        fieldName = 'username';
-      }
       uniquenessErrors[fieldName] = params[fieldName];     
     }
 
