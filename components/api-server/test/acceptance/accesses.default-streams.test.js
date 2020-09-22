@@ -120,7 +120,7 @@ describe("[B5FF] Account with default-streams", function () {
 
   describe('POST /accesses', async () => {
     describe('[F454] When user tries to create access for not visible account stream', async () => {
-      const streamId = SystemStreamsSerializer.addDotFromStreamId('passwordHash');
+      const streamId = SystemStreamsSerializer.addDotToStreamId('passwordHash');
       before(async function () {
         await createUserAndAccess('read', streamId);
       });
@@ -137,7 +137,7 @@ describe("[B5FF] Account with default-streams", function () {
     });
     describe('[5459] When user tries to create access for visible account stream', async () => {
       describe('[F1DE] When user tries to create access with permission level manage', async () => {
-        const streamId = SystemStreamsSerializer.addDotFromStreamId('email');
+        const streamId = SystemStreamsSerializer.addDotToStreamId('email');
         before(async function () {
           await createUserAndAccess(accessLogic.PERMISSION_LEVEL_MANAGE, streamId);
         });
@@ -153,7 +153,7 @@ describe("[B5FF] Account with default-streams", function () {
         });
       });
       describe('[4B0C] When user tries to create access with permission level read', async () => {
-        const streamId = SystemStreamsSerializer.addDotFromStreamId('email');
+        const streamId = SystemStreamsSerializer.addDotToStreamId('email');
         const permissionLevel = accessLogic.PERMISSION_LEVEL_READ;
         before(async function () {
           await createUserAndAccess(permissionLevel, streamId);
@@ -171,7 +171,7 @@ describe("[B5FF] Account with default-streams", function () {
         });
       });
       describe('[0972] When user tries to create access with permission level create-only', async () => {
-        const streamId = SystemStreamsSerializer.addDotFromStreamId('email');
+        const streamId = SystemStreamsSerializer.addDotToStreamId('email');
         const permissionLevel = accessLogic.PERMISSION_LEVEL_CREATE_ONLY;
         before(async function () {
           await createUserAndAccess(permissionLevel, streamId);
@@ -184,7 +184,7 @@ describe("[B5FF] Account with default-streams", function () {
         });
       });
       describe('[84B0] When user tries to create access with permission level contribute', async () => {
-        const streamId = SystemStreamsSerializer.addDotFromStreamId('email');
+        const streamId = SystemStreamsSerializer.addDotToStreamId('email');
         const permissionLevel = accessLogic.PERMISSION_LEVEL_CONTRIBUTE;
         before(async function () {
           await createUserAndAccess(permissionLevel, streamId);
@@ -217,7 +217,7 @@ describe("[B5FF] Account with default-streams", function () {
         });
       });
       describe('[5ECB] When user tries to create access for “account” stream', async () => {
-        const streamId = SystemStreamsSerializer.addDotFromStreamId('account');
+        const streamId = SystemStreamsSerializer.addDotToStreamId('account');
         const permissionLevel = accessLogic.PERMISSION_LEVEL_READ;
         before(async function () {
           await createUserAndAccess(permissionLevel, streamId);
@@ -235,7 +235,7 @@ describe("[B5FF] Account with default-streams", function () {
         });
       });
       describe('[274A] When user tries to create access for “storageUsed” stream', async () => {
-        const streamId = SystemStreamsSerializer.addDotFromStreamId('storageUsed');
+        const streamId = SystemStreamsSerializer.addDotToStreamId('storageUsed');
         const permissionLevel = accessLogic.PERMISSION_LEVEL_READ;
         before(async function () {
           await createUserAndAccess(permissionLevel, streamId);
@@ -250,12 +250,12 @@ describe("[B5FF] Account with default-streams", function () {
           res = await request.get(eventsBasePath).set('authorization', accountAccessData.token);
           assert.equal(res.body.events.length, 2);
           assert.isTrue([
-            SystemStreamsSerializer.addDotFromStreamId('attachedFiles'),
-            SystemStreamsSerializer.addDotFromStreamId('dbDocuments')
+            SystemStreamsSerializer.addDotToStreamId('attachedFiles'),
+            SystemStreamsSerializer.addDotToStreamId('dbDocuments')
           ].includes(res.body.events[0].streamId));
           assert.isTrue([
-            SystemStreamsSerializer.addDotFromStreamId('attachedFiles'),
-            SystemStreamsSerializer.addDotFromStreamId('dbDocuments')
+            SystemStreamsSerializer.addDotToStreamId('attachedFiles'),
+            SystemStreamsSerializer.addDotToStreamId('dbDocuments')
           ].includes(res.body.events[1].streamId));
         });
       });
@@ -264,7 +264,7 @@ describe("[B5FF] Account with default-streams", function () {
 
   describe('DELETE /accesses', async () => {
     describe('[F13A] When user tries to delete account stream access', async () => {
-      const streamId = SystemStreamsSerializer.addDotFromStreamId('storageUsed');
+      const streamId = SystemStreamsSerializer.addDotToStreamId('storageUsed');
       const permissionLevel = accessLogic.PERMISSION_LEVEL_READ;
       before(async function () {
         await createUserAndAccess(permissionLevel, streamId);

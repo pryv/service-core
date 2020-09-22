@@ -77,7 +77,7 @@ class SystemStreamsSerializer {
   static getReadableAccountStreamsForTests () {
     if (!SystemStreamsSerializer.readableAccountStreamsForTests) {
       let streams = getStreamsNames(config.get(accountStreamsConfigPath), readable);
-      delete streams[SystemStreamsSerializer.addDotFromStreamId('storageUsed')];
+      delete streams[SystemStreamsSerializer.addDotToStreamId('storageUsed')];
       SystemStreamsSerializer.readableAccountStreamsForTests = streams;
     }
     return SystemStreamsSerializer.readableAccountStreamsForTests;
@@ -214,7 +214,7 @@ class SystemStreamsSerializer {
   * Reverse modification that is done for each systemStreamId
   * @param string streamIdWithDot
   */
-  static addDotFromStreamId (streamIdWithoutDot: string): string {
+  static addDotToStreamId (streamIdWithoutDot: string): string {
     if (! streamIdWithoutDot.startsWith('.')) {
       streamIdWithoutDot = '.' + streamIdWithoutDot;
     }
@@ -245,7 +245,7 @@ class SystemStreamsSerializer {
       const streamKeys = Object.keys(this.systemStreamsSettings);
 
       for (i = 0; i < streamKeys.length; i++) {
-        systemStreams.push(SystemStreamsSerializer.addDotFromStreamId(streamKeys[i]));
+        systemStreams.push(SystemStreamsSerializer.addDotToStreamId(streamKeys[i]));
         _.merge(systemStreams,
           Object.keys(getStreamsNames(this.systemStreamsSettings[streamKeys[i]])))
       }
@@ -267,12 +267,12 @@ class SystemStreamsSerializer {
       for (i = 0; i < streamKeys.length; i++) {
         virtualStreams.push({
           name: streamKeys[i],
-          id: SystemStreamsSerializer.addDotFromStreamId(streamKeys[i]),
+          id: SystemStreamsSerializer.addDotToStreamId(streamKeys[i]),
           parentId: null,
           children: formSystemStreamsFromSettings(
             this.systemStreamsSettings[streamKeys[i]],
             [],
-            SystemStreamsSerializer.addDotFromStreamId(streamKeys[i])
+            SystemStreamsSerializer.addDotToStreamId(streamKeys[i])
           )
         });
       }

@@ -166,7 +166,7 @@ class Repository {
       query['$or'].push({
         $and:
           [
-            { streamIds: SystemStreamsSerializer.addDotFromStreamId(key) },
+            { streamIds: SystemStreamsSerializer.addDotToStreamId(key) },
             { [`${key}__unique`]: fields[key] }
           ]
       });
@@ -282,7 +282,7 @@ class Repository {
       // update all account streams and don't allow additional properties
       for (let i = 0; i < streamIdsForUpdate.length; i++){
         let streamIdWithoutDot = streamIdsForUpdate[i];
-        let streamId = SystemStreamsSerializer.addDotFromStreamId(streamIdWithoutDot);
+        let streamId = SystemStreamsSerializer.addDotToStreamId(streamIdWithoutDot);
 
         // if needed append field that enforces unicity
         let updateData = { content: update[streamIdWithoutDot] };

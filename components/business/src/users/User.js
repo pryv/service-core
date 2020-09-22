@@ -117,7 +117,7 @@ class User {
     updateKeys.forEach(streamIdWithoutDot => {
       // check if field value was changed
       if (updateData[streamIdWithoutDot] !== this[streamIdWithoutDot]){
-        let streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamIdWithoutDot);
+        let streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamIdWithoutDot);
         updateRequest[streamIdWithoutDot] = [{
           value: updateData[streamIdWithoutDot],
           isUnique: editableAccountStreams[streamIdWithDot].isUnique,

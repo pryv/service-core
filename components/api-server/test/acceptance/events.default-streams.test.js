@@ -158,7 +158,7 @@ describe("Events of system streams", () => {
           token: cuid(),
           type: 'shared',
           permissions: [{
-            streamId: SystemStreamsSerializer.addDotFromStreamId('account'),
+            streamId: SystemStreamsSerializer.addDotToStreamId('account'),
             level: 'read'
           }],
         });
@@ -233,7 +233,7 @@ describe("Events of system streams", () => {
       describe('to retrieve a visible system event', () => {
         let defaultEvent;
         const streamId = 'username';
-        const streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+        const streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamId);
         before(async function () {
           await createUser();
           defaultEvent = await findDefaultCoreEvent(streamIdWithDot);
@@ -254,7 +254,7 @@ describe("Events of system streams", () => {
       describe('to retrieve a non visible system event', () => {
         before(async function () {
           await createUser();
-          const defaultEvent = await findDefaultCoreEvent(SystemStreamsSerializer.addDotFromStreamId('passwordHash'));
+          const defaultEvent = await findDefaultCoreEvent(SystemStreamsSerializer.addDotToStreamId('passwordHash'));
           res = await request.get(path.join(basePath, defaultEvent.id)).set('authorization', access.token);
         });
         it('[Y2OA] should return 404', async () => {
@@ -270,7 +270,7 @@ describe("Events of system streams", () => {
     describe('When using a shared access with a read-level permission on all streams (star) and a visible system stream', () => {
       let defaultEvent;
       const streamId = 'username';
-      const streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+      const streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamId);
       before(async () => {
         await createUser();
         sharedAccess = await user.access({
@@ -310,7 +310,7 @@ describe("Events of system streams", () => {
           before(async function () {
             await createUser();
             eventData = {
-              streamIds: [SystemStreamsSerializer.addDotFromStreamId('phoneNumber')],
+              streamIds: [SystemStreamsSerializer.addDotToStreamId('phoneNumber')],
               content: charlatan.Lorem.characters(7),
               type: 'string/pryv'
             };
@@ -325,25 +325,25 @@ describe("Events of system streams", () => {
           it('[9C2D] should return the created event', async () => {
             assert.equal(res.body.event.content, eventData.content);
             assert.equal(res.body.event.type, eventData.type);
-            assert.deepEqual(res.body.event.streamIds, [SystemStreamsSerializer.addDotFromStreamId('phoneNumber'), SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
+            assert.deepEqual(res.body.event.streamIds, [SystemStreamsSerializer.addDotToStreamId('phoneNumber'), SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
           });
           it('[A9DC] should add the ‘active’ streamId to the new event which should be removed from other events of the same stream', async () => {
             assert.equal(res.body.event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE), true);
             const allEvents = await bluebird.fromCallback(
-              (cb) => user.db.events.find({ id: user.attrs.id }, { streamIds: SystemStreamsSerializer.addDotFromStreamId('phoneNumber')}, null, cb));
+              (cb) => user.db.events.find({ id: user.attrs.id }, { streamIds: SystemStreamsSerializer.addDotToStreamId('phoneNumber')}, null, cb));
             assert.equal(allEvents.length, 2);
             // check the order
             assert.deepEqual(allEvents[0].id, res.body.event.id);
             // verify streamIds
-            assert.deepEqual(allEvents[0].streamIds, [SystemStreamsSerializer.addDotFromStreamId('phoneNumber'), SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
-            assert.deepEqual(allEvents[1].streamIds, [SystemStreamsSerializer.addDotFromStreamId('phoneNumber')]);
+            assert.deepEqual(allEvents[0].streamIds, [SystemStreamsSerializer.addDotToStreamId('phoneNumber'), SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
+            assert.deepEqual(allEvents[1].streamIds, [SystemStreamsSerializer.addDotToStreamId('phoneNumber')]);
           });
         });
         describe('which is indexed', async () => {
             before(async function () {
               await createUser();
               eventData = {
-                streamIds: [SystemStreamsSerializer.addDotFromStreamId('language')],
+                streamIds: [SystemStreamsSerializer.addDotToStreamId('language')],
                 content: charlatan.Lorem.characters(7),
                 type: 'string/pryv'
               };
@@ -367,15 +367,15 @@ describe("Events of system streams", () => {
             it('[67F7] should return the created event', async () => {
               assert.equal(res.body.event.content, eventData.content);
               assert.equal(res.body.event.type, eventData.type);
-              assert.deepEqual(res.body.event.streamIds, [SystemStreamsSerializer.addDotFromStreamId('language'), SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
+              assert.deepEqual(res.body.event.streamIds, [SystemStreamsSerializer.addDotToStreamId('language'), SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
             });
             it('[467D] should add the ‘active’ streamId to the new event which should be removed from other events of the same stream', async () => {
               const allEvents = await bluebird.fromCallback(
                 (cb) => user.db.events.find({ id: user.attrs.id }, { streamIds: '.language' }, null, cb));
               assert.equal(allEvents[0].streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE), true);
-              assert.equal(allEvents[0].streamIds.includes(SystemStreamsSerializer.addDotFromStreamId('language')), true);
+              assert.equal(allEvents[0].streamIds.includes(SystemStreamsSerializer.addDotToStreamId('language')), true);
               assert.equal(allEvents[1].streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE), false);
-              assert.equal(allEvents[1].streamIds.includes(SystemStreamsSerializer.addDotFromStreamId('language')), true);
+              assert.equal(allEvents[1].streamIds.includes(SystemStreamsSerializer.addDotToStreamId('language')), true);
             });
             it('[199D] should notify register with the new data', async () => {
               assert.equal(scope.isDone(), true);
@@ -397,7 +397,7 @@ describe("Events of system streams", () => {
         describe('which is indexed and unique', async () => {
           describe('whose content is unique', async () => {
             let allEventsInDb;
-            let streamId = SystemStreamsSerializer.addDotFromStreamId('email');
+            let streamId = SystemStreamsSerializer.addDotToStreamId('email');
             before(async function () {
               await createUser();
               eventData = {
@@ -465,7 +465,7 @@ describe("Events of system streams", () => {
             before(async function () {
               await createUser();
               eventData = {
-                streamIds: [SystemStreamsSerializer.addDotFromStreamId('email')],
+                streamIds: [SystemStreamsSerializer.addDotToStreamId('email')],
                 content: charlatan.Lorem.characters(7),
                 type: 'string/pryv'
               };
@@ -495,8 +495,9 @@ describe("Events of system streams", () => {
             });
           });
           describe('[6B8D] When creating an event that is already taken only on core', async () => {
+            // simulating single-node behaviour for non-unique event error
             let serviceRegisterRequest;
-            let streamId = SystemStreamsSerializer.addDotFromStreamId('email');
+            let streamId = SystemStreamsSerializer.addDotToStreamId('email');
             let email = charlatan.Lorem.characters(7);
             before(async function () {
               await createUser();
@@ -562,7 +563,7 @@ describe("Events of system streams", () => {
       let initialEvent;
       let user2;
       const streamId = 'email';
-      const streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+      const streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamId);
       before(async function () {
         user2 = await createUser();
         sharedAccess = await user.access({
@@ -620,7 +621,7 @@ describe("Events of system streams", () => {
 
     describe('when using a shared access with a manage-level permission on all streams (star)', () => {
       let sharedAccess;
-      const streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId('email');
+      const streamIdWithDot = SystemStreamsSerializer.addDotToStreamId('email');
       before(async function () {
         await createUser();
         sharedAccess = await user.access({
@@ -682,7 +683,7 @@ describe("Events of system streams", () => {
               type: 'string/pryv'
             };
             const initialEvent = await bluebird.fromCallback(
-              (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: SystemStreamsSerializer.addDotFromStreamId('phoneNumber') }, null, cb));
+              (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: SystemStreamsSerializer.addDotToStreamId('phoneNumber') }, null, cb));
   
             res = await request.put(path.join(basePath, initialEvent.id))
               .send(eventData)
@@ -695,12 +696,12 @@ describe("Events of system streams", () => {
             assert.equal(res.body.event.content, eventData.content);
             assert.equal(res.body.event.type, eventData.type);
             assert.deepEqual(res.body.event.streamIds, [
-              SystemStreamsSerializer.addDotFromStreamId('phoneNumber'),
+              SystemStreamsSerializer.addDotToStreamId('phoneNumber'),
               SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
           });
 
           describe('by adding the “active” streamId', () => {
-            let streamId = SystemStreamsSerializer.addDotFromStreamId('phoneNumber');
+            let streamId = SystemStreamsSerializer.addDotToStreamId('phoneNumber');
             before(async function () {
               await createUser();
               res = await createAdditionalEventAndupdateMainOne(streamId);
@@ -730,15 +731,15 @@ describe("Events of system streams", () => {
                 await createUser();
                 eventData = {
                   streamIds: [
-                    SystemStreamsSerializer.addDotFromStreamId('email'),
-                    SystemStreamsSerializer.addDotFromStreamId('phoneNumber')
+                    SystemStreamsSerializer.addDotToStreamId('email'),
+                    SystemStreamsSerializer.addDotToStreamId('phoneNumber')
                   ],
                   content: charlatan.Lorem.characters(7),
                   type: 'string/pryv'
                 };
                 const initialEvent = await bluebird.fromCallback(
                   (cb) => user.db.events.findOne({ id: user.attrs.id },
-                    { streamIds: SystemStreamsSerializer.addDotFromStreamId('phoneNumber') }, null, cb));
+                    { streamIds: SystemStreamsSerializer.addDotToStreamId('phoneNumber') }, null, cb));
   
                 res = await request.put(path.join(basePath, initialEvent.id))
                   .send(eventData)
@@ -750,20 +751,20 @@ describe("Events of system streams", () => {
               it('[E3KE] should return the correct error', async () => {
                 assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
                 assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenMultipleAccountStreams]);
-                assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.addDotFromStreamId('email')});
+                assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.addDotToStreamId('email')});
               });
             });
             describe('when substituting a system stream with another one', () => {
               before(async function () {
                 await createUser();
                 eventData = {
-                  streamIds: [SystemStreamsSerializer.addDotFromStreamId('email')],
+                  streamIds: [SystemStreamsSerializer.addDotToStreamId('email')],
                   content: charlatan.Lorem.characters(7),
                   type: 'string/pryv'
                 };
                 const initialEvent = await bluebird.fromCallback(
                   (cb) => user.db.events.findOne({ id: user.attrs.id },
-                    { streamIds: SystemStreamsSerializer.addDotFromStreamId('phoneNumber') }, null, cb));
+                    { streamIds: SystemStreamsSerializer.addDotToStreamId('phoneNumber') }, null, cb));
   
                 res = await request.put(path.join(basePath, initialEvent.id))
                   .send(eventData)
@@ -783,7 +784,7 @@ describe("Events of system streams", () => {
         describe('which is indexed', () => {
             describe('as register is working', async () => {
               const streamId = 'language';
-              let streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+              let streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamId);
               before(async function () {
                 await createUser();
                 nock.cleanAll();
@@ -817,7 +818,7 @@ describe("Events of system streams", () => {
               describe('by adding the “active” streamId', () => {
                 before(async function () {
                   await createUser();
-                  let streamId = SystemStreamsSerializer.addDotFromStreamId('language');
+                  let streamId = SystemStreamsSerializer.addDotToStreamId('language');
                   nock.cleanAll();
                   scope = nock(config.get('services:register:url'))
                   scope.put('/users',
@@ -846,7 +847,7 @@ describe("Events of system streams", () => {
             });
             describe('as register is out', async () => {
               const streamId = 'language';
-              const streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+              const streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamId);
               before(async function () {
                 await createUser();
                 nock.cleanAll();
@@ -885,7 +886,7 @@ describe("Events of system streams", () => {
         describe('which is unique', () => {
           describe('by updating a unique field that is valid', () => {
             const streamId = 'email';
-            const streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+            const streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamId);
             before(async function () {
               await createUser();
               scope = nock(config.get('services:register:url'));
@@ -928,7 +929,7 @@ describe("Events of system streams", () => {
             describe('by adding the “active” streamId', () => {
               before(async () => {
                 await createUser();
-                let streamId = SystemStreamsSerializer.addDotFromStreamId('email');
+                let streamId = SystemStreamsSerializer.addDotToStreamId('email');
                 nock.cleanAll();
                 scope = nock(config.get('services:register:url'))
                 scope.put('/users',
@@ -964,7 +965,7 @@ describe("Events of system streams", () => {
               let streamIdWithDot;
               before(async function () {
                 const streamId = 'email';
-                streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+                streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamId);
     
                 await createUser();
                 eventData = {
@@ -1018,7 +1019,7 @@ describe("Events of system streams", () => {
             });
             describe('with a field that is not unique in mongodb', () => {
               before(async function () {
-                const streamId = SystemStreamsSerializer.addDotFromStreamId('email');
+                const streamId = SystemStreamsSerializer.addDotToStreamId('email');
                 const user1 = await createUser();
                 const user2 = await createUser();
                 eventData = {
@@ -1105,7 +1106,7 @@ describe("Events of system streams", () => {
             type: 'string/pryv'
           };
           const initialEvent = await bluebird.fromCallback(
-            (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: SystemStreamsSerializer.addDotFromStreamId('phoneNumber') }, null, cb));
+            (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: SystemStreamsSerializer.addDotToStreamId('phoneNumber') }, null, cb));
   
           res = await request.put(path.join(basePath, initialEvent.id))
             .send(eventData)
@@ -1127,7 +1128,7 @@ describe("Events of system streams", () => {
         describe('that has no ‘active’ streamId', () => {
           describe('which is unique', () => { 
             let streamId = 'email';
-            let streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+            let streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamId);
             let initialEvent;
             before(async function () {
               nock.cleanAll();
@@ -1169,7 +1170,7 @@ describe("Events of system streams", () => {
             });
           });
           describe('which is indexed', () => { 
-            let streamId = SystemStreamsSerializer.addDotFromStreamId('language');
+            let streamId = SystemStreamsSerializer.addDotToStreamId('language');
             let initialEvent;
             before(async function () {
               nock.cleanAll();
@@ -1198,7 +1199,7 @@ describe("Events of system streams", () => {
           });
         });
         describe('that has the ‘active’ streamId', () => {
-          let streamId = SystemStreamsSerializer.addDotFromStreamId('language');
+          let streamId = SystemStreamsSerializer.addDotToStreamId('language');
           let initialEvent;
           before(async function () {
             await createUser();
@@ -1217,7 +1218,7 @@ describe("Events of system streams", () => {
         });
       });
       describe('to delete a non editable system event', () => {
-        let streamId = SystemStreamsSerializer.addDotFromStreamId('username');
+        let streamId = SystemStreamsSerializer.addDotToStreamId('username');
         let initialEvent;
         before(async function () {
           nock.cleanAll();
@@ -1258,7 +1259,7 @@ describe("Events of system streams", () => {
 
     describe('when using a shared access with a manage-level permission on all streams (star)', () => {
       let streamId = 'email';
-      let streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+      let streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamId);
       let initialEvent;
       before(async function () {
         nock.cleanAll();

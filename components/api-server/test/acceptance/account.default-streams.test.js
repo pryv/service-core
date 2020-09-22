@@ -53,7 +53,7 @@ describe("[841C] Account with default-streams", function () {
   }
 
   async function getActiveEvent (streamId) {
-    let streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+    let streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamId);
     return await bluebird.fromCallback(
       (cb) => user.db.events.findOne({ id: user.attrs.id },
         {
@@ -67,7 +67,7 @@ describe("[841C] Account with default-streams", function () {
   }
 
   async function getNotActiveEvent (streamId) {
-    let streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+    let streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamId);
     return await bluebird.fromCallback(
       (cb) => user.db.events.findOne({ id: user.attrs.id },
         {
@@ -82,7 +82,7 @@ describe("[841C] Account with default-streams", function () {
    * @param string streamId 
    */
   async function createAdditionalEvent (streamId) {
-    let streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+    let streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamId);
     eventDataForadditionalEvent = {
       streamIds: [streamIdWithDot],
       content: charlatan.Lorem.characters(7),
@@ -173,19 +173,19 @@ describe("[841C] Account with default-streams", function () {
       });
       it('[JUHR] Should return account information in the structure that is defined in default streams and only active events are returned', async () => {
         const usernameAccountEvent = allVisibleAccountEvents.filter(event => event.streamIds.includes(
-          SystemStreamsSerializer.addDotFromStreamId('username')))[0];
+          SystemStreamsSerializer.addDotToStreamId('username')))[0];
         const emailAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addDotFromStreamId('email')))[0];
+          event.streamIds.includes(SystemStreamsSerializer.addDotToStreamId('email')))[0];
         const languageAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addDotFromStreamId('language')))[0];
+          event.streamIds.includes(SystemStreamsSerializer.addDotToStreamId('language')))[0];
         const dbDocumentsAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addDotFromStreamId('dbDocuments')))[0];
+          event.streamIds.includes(SystemStreamsSerializer.addDotToStreamId('dbDocuments')))[0];
         const attachedFilesAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addDotFromStreamId('attachedFiles')))[0];
+          event.streamIds.includes(SystemStreamsSerializer.addDotToStreamId('attachedFiles')))[0];
         const insurancenumberAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addDotFromStreamId('insurancenumber')))[0];
+          event.streamIds.includes(SystemStreamsSerializer.addDotToStreamId('insurancenumber')))[0];
         const phoneNumberAccountEvent = allVisibleAccountEvents.filter(event =>
-          event.streamIds.includes(SystemStreamsSerializer.addDotFromStreamId('phoneNumber')))[0];
+          event.streamIds.includes(SystemStreamsSerializer.addDotToStreamId('phoneNumber')))[0];
 
         assert.equal(res.body.account.username, usernameAccountEvent.content);
         assert.equal(res.body.account.email, emailAccountEvent.content);

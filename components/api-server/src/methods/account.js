@@ -74,7 +74,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
   function validateThatAllFieldsAreEditable (context, params, result, next) {
     const nonEditableAccountStreamsIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForEditing();
     Object.keys(params.update).forEach(streamId => {
-      const streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+      const streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamId);
       if (nonEditableAccountStreamsIds.includes(streamIdWithDot)) {
         // if user tries to add new streamId from non editable streamsIds
         return next(errors.invalidOperation(
