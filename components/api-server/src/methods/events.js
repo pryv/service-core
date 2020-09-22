@@ -1116,32 +1116,24 @@ module.exports = function (
     }, notify);
 
   /**
-   * If event belongs to the account stream - 
-   * 1) deal with properties that enforces uniqueness
-   * 2) send to service-register if needed
+   * If event belongs to the account stream 
+   * send update to service-register if needed
    * 
    * @param object user {id: '', username: ''}
    * @param object event
-   * @param string id - eventId
    * @param string accountStreamId - accountStreamId
    */
-  async function deleteUniqueFields (user, event, id, accountStreamId) {
-    let updatedEvent;
+  async function deleteUniqueFields (user, event, accountStreamId) {
+    if (config.get('singleNode:isActive')) {
+      return;
+    }
     const editableAccountStreams = SystemStreamsSerializer.getEditableAccountStreams();
     const streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(accountStreamId);
     if (editableAccountStreams[accountStreamId].isUnique) {
-      // replace unique property with random string when event is marked as trashed
-      updatedEvent = await bluebird.fromCallback(cb =>
-        userEventsStorage.updateOne(user, { _id: id },
-          { [`${streamIdWithoutDot}__unique`]: cuid() }, cb));
-
-      if (!config.get('singleNode:isActive')) {
-        // send information update to service regsiter
-        await serviceRegisterConn.updateUserInServiceRegister(
-          user.username, {}, { [streamIdWithoutDot]: event.content});
-      }
+      // send information update to service regsiter
+      await serviceRegisterConn.updateUserInServiceRegister(
+        user.username, {}, { [streamIdWithoutDot]: event.content});
     }
-    return event;
   }
   
   async function flagAsTrashed(context, params, result, next) {
@@ -1149,17 +1141,15 @@ module.exports = function (
       trashed: true
     };
     context.updateTrackingProperties(updatedData);
-    let updatedEvent;
     try {
       if(context.eventBelongsToAccountStream){
-        updatedEvent = await deleteUniqueFields(
+        await deleteUniqueFields(
           context.user,
           context.event,
-          params.id,
           context.accountStreamId,
         );
       }
-      updatedEvent = await bluebird.fromCallback(cb =>
+      let updatedEvent = await bluebird.fromCallback(cb =>
         userEventsStorage.updateOne(context.user, { _id: params.id }, updatedData, cb));
 
       // if update was not done and no errors were catched
