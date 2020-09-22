@@ -386,9 +386,9 @@ exports.separateAccountStreamsAndOtherEvents = function (items) {
 exports.removeAccountStreams = function (streams) {
   var i = streams.length
   while (i--) {
-    if (streams[i].id && streams[i].id === '.account') {
+    if (streams[i]?.id === SystemStreamsSerializer.options.STREAM_ID_ACCOUNT) {
       streams.splice(i, 1);
-    } else if (streams[i].id && streams[i].id === '.helpers') {
+    } else if (streams[i].id && streams[i].id === SystemStreamsSerializer.options.STREAM_ID_HELPERS) {
       streams.splice(i, 1);
     }
   }

@@ -20,7 +20,7 @@ cp ./build_tag ./.api-version
 
 host='pryvsa-docker-release.bintray.io'
 
-# Builds core hfs webhooks preview images
+# Builds these images: core hfs webhooks preview 
 for service in core hfs webhooks preview
 do
     echo "---------------------------- building $service --------------------------------"
@@ -30,7 +30,7 @@ do
     docker push $host/pryv/$service:$version
 done
 
-echo "---------------------------- building cli --------------------------------"
-docker build -f $SCRIPT_FOLDER/cli/Dockerfile -t $host/pryv/cli:$version .
-docker push $host/pryv/cli:$version
+# echo "---------------------------- building cli --------------------------------"
+# docker build -f $SCRIPT_FOLDER/cli/Dockerfile -t $host/pryv/cli:$version .
+# docker push $host/pryv/cli:$version
 
