@@ -49,7 +49,6 @@ describe('registration: cluster', function() {
   let regUrl;
   let userData;
   let serviceRegisterRequests = [];
-  let hostname = 'localhost:3000';
   let mongoFixtures;
   let userRepository;
 
@@ -159,7 +158,6 @@ describe('registration: cluster', function() {
       it('[TCOM] should respond with the username and apiEndpoint', async () => {
         const body = res.body;
         assert.equal(body.username, userData.username);
-        const usersRepository = new UsersRepository(app.storageLayer.events);
         const user = await usersRepository.getAccountByUsername(userData.username, true);
         const personalAccess = await bluebird.fromCallback(
           (cb) => app.storageLayer.accesses.findOne({ id: user.id }, {}, null, cb));

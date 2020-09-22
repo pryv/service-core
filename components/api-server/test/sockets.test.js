@@ -61,11 +61,10 @@ describe('Socket.IO', function () {
   }
 
   // Disconnects all connections in cleanupConnections; then empties it. 
-  afterEach(async () => {
+  afterEach(() => {
     for (const conn of cleanupConnections) {
       conn.disconnect(); 
     }
-    
     cleanupConnections = []; 
   });
 
