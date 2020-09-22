@@ -35,11 +35,6 @@ function defaults() {
   };
 }
 
-function buildUser(userData) {
-  const user = new User(userData);
-  return user;
-}
-
 describe('registration: cluster', function() {
   let app;
   let request;
@@ -158,6 +153,7 @@ describe('registration: cluster', function() {
       it('[TCOM] should respond with the username and apiEndpoint', async () => {
         const body = res.body;
         assert.equal(body.username, userData.username);
+        const usersRepository = new UsersRepository(app.storageLayer.events);
         const user = await usersRepository.getAccountByUsername(userData.username, true);
         const personalAccess = await bluebird.fromCallback(
           (cb) => app.storageLayer.accesses.findOne({ id: user.id }, {}, null, cb));

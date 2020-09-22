@@ -179,23 +179,6 @@ function _addCustomMessage(error, schema){
   return error;  
 }
 
-/**
- * Convert list of API errors to invalidParametersFormat error format
- * 
- * @param array errors 
- */
-exports.apiErrorToValidationErrorsList = (errorsList: Array<Array<APIError>>) => {
-  const errList = errorsList.map(err => {
-    return {
-      'code': err.id,
-      'message': err.message,
-      'param': err.data.param,
-      'path': '#/' + err.data.param,
-    }
-  });
-  return errors.invalidParametersFormat("The parameters' format is invalid.", errList);
-}
-
 exports.catchForbiddenUpdate = function catchForbiddenUpdate(paramsSchema, ignoreProtectedFieldUpdates, logger) {
   return function validateParams (context, params, result, next) {
     const allowed = paramsSchema.alterableProperties;

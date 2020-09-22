@@ -373,7 +373,7 @@ exports.removeAccountStreamsEvents = function (items) {
 };
 
 exports.separateAccountStreamsAndOtherEvents = function (items) {
-  const readableAccountStreams = ['.username', '.email', '.language', '.attachedFiles', '.dbDocuments', '.insurancenumber', '.phoneNumber', '.passwordHash', '.invitationToken', '.appId', '.referer'];
+  const readableAccountStreams = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
   const normalEvents = items.filter(function (e) {
     return (!e.streamIds) || !(e.streamIds.some(streamId => readableAccountStreams.indexOf(streamId) >= 0));
   });
