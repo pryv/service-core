@@ -46,6 +46,7 @@ const ErrorMessages = {
   [ErrorIds.ForbiddenToChangeAccountStreamId]: 'It is forbidden to change account stream id.',
   [ErrorIds.ForbiddenAccountStreamsActions]: 'It is forbidden to do any modification to account streams.',
   [ErrorIds.ForbiddenAccountStreamsEventDeletion]: 'It is forbidden to delete noneditable or active account stream events.',
+  [ErrorIds.ForbiddenToEditNoneditableAccountFields]: 'It is forbidden to edit noneditable acccount fields.',
 };
 Object.freeze(ErrorMessages);
 

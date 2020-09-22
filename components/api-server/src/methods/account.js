@@ -8,8 +8,7 @@ var errors = require('components/errors').factory,
   commonFns = require('./helpers/commonFunctions'),
   mailing = require('./helpers/mailing'),
   encryption = require('components/utils').encryption,
-  methodsSchema = require('../schema/accountMethods'),
-  request = require('superagent');
+  methodsSchema = require('../schema/accountMethods');
 
 const { getConfig } = require('components/api-server/config/Config');
 
@@ -18,8 +17,8 @@ const Registration = require('components/business/src/auth/registration'),
   ErrorIds = require('components/errors').ErrorIds,
   ServiceRegister = require('components/business/src/auth/service_register'),
   UserRepository = require('components/business/src/users/repository');
-  User = require('components/business/src/users/User');
-
+  User = require('components/business/src/users/User'),
+  SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
   /**
  * @param api
  * @param usersStorage
@@ -31,8 +30,7 @@ const Registration = require('components/business/src/auth/registration'),
 module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
   authSettings, servicesSettings, notifications, logging) {
 
-  var registerSettings = servicesSettings.register,
-    emailSettings = servicesSettings.email,
+  var emailSettings = servicesSettings.email,
     requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);
 
   // initialize service-register connection
@@ -65,8 +63,26 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     buildResultData,
   );
 
+  /**
+   * Validate if given parameters are allowed for the edit
+   * 
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
   function validateThatAllFieldsAreEditable (context, params, result, next) {
-    // TODO IEVA
+    const nonEditableAccountStreamsIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForEditing();
+    Object.keys(params.update).forEach(streamId => {
+      const streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+      if (nonEditableAccountStreamsIds.includes(streamIdWithDot)) {
+        // if user tries to add new streamId from non editable streamsIds
+        return next(errors.invalidOperation(
+          ErrorMessages[ErrorIds.ForbiddenToEditNoneditableAccountFields],
+          { field: streamId }
+        ));
+      }
+    })
     next();
   }
   // CHANGE PASSWORD
