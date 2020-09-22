@@ -621,6 +621,7 @@ describe('account', function () {
 
   async function resetUsers() {
     accountNotifCount = 0;
+    await testData.resetUsers();
   }
 
   function cleanUpDetails(accountDetails) {

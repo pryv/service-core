@@ -1317,7 +1317,7 @@ module.exports = function (
       if (! canDeleteEvent) return callback(errors.forbidden());
 
       // check if event belongs to account streams and if it is allowed to delete it
-      const eventsAccountStreams = eventHasAccountStreams(event);
+      const eventsAccountStreams = findAccountStreams(event);
       context.eventBelongsToAccountStream = eventsAccountStreams.length > 0
       if (context.eventBelongsToAccountStream) {
         context.accountStreamId = eventsAccountStreams[0];
@@ -1332,7 +1332,7 @@ module.exports = function (
    * Check if event belongs to any account stream
    * @param {*} event 
    */
-  function eventHasAccountStreams (event): string {
+  function findAccountStreams (event): string {
     let allStreamIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
     return _.intersection(event.streamIds, allStreamIds);
   }

@@ -207,7 +207,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
         {}
       );
     } catch (err) {
-      next(error);
+      return next(err);
     }
     next();
   }

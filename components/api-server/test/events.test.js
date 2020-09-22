@@ -108,11 +108,12 @@ describe('events', function () {
               stepDone();
             });
           },
-          () => {
+          function separateAccountEventAndAllOtherEvents(stepDone) {
             // lets separate core events from all other events and validate them separatelly
             const separatedEvents = validation.separateAccountStreamsAndOtherEvents(response.body.events);
             response.body.events = separatedEvents.events;
             accountStreamsEvents = separatedEvents.accountStreamsEvents;
+            stepDone();
           },
           function checkResponse (stepDone) {
             validation.check(response, {

@@ -29,8 +29,12 @@ const defaultUser = users[0];
 
 exports.resetUsers = async () => {
   await bluebird.fromCallback(cb => storage.user.events.database.deleteMany(
-    { name: 'events' }, {}, cb));
-
+    { name: 'events' },
+    {
+      streamIds: {
+        $in: Object.keys(SystemStreamsSerializer.getAllAccountStreams())
+      }
+    }, cb));
   const userRepository = new UserRepository(storage.user.events);
   
   let i;

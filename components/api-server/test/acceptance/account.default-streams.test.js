@@ -262,7 +262,7 @@ describe("[841C] Account with default-streams", function () {
         assert.equal(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
       });
     });
-    describe('[FD2E] When updating an unique field that is already taken', async () => {
+    describe('When updating an unique field that is already taken', async () => {
       describe('[7CEE] When the field is not unique in mongodb', async () => {
         let scope;
         let user2;
@@ -270,8 +270,9 @@ describe("[841C] Account with default-streams", function () {
           user2 = await createUser();
           await createUser();
           const settings = _.cloneDeep(helpers.dependencies.settings);
+          nock.cleanAll();
           scope = nock(settings.services.register.url)
-          scope.post(`/users/${user.attrs.id}/change-email`)
+          scope.put(`/users`)
             .reply(200, {});
 
           // modify account info
