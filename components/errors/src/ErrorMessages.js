@@ -31,7 +31,6 @@ const ErrorMessages = {
   [ErrorIds.InvalidInvitationToken]: 'Invalid invitation token',
   [ErrorIds.DuplicatedUserRegistration]: 'Duplicated user registration. User already started registration process in another server.',
   [ErrorIds.MissingRequiredField]: 'Missing required field',
-  [ErrorIds.NonValidForOpenSource]: 'Not valid method for open pryv',
   [ErrorIds.DeniedStreamAccess]: 'It is forbidden to access this stream.',
   [ErrorIds.TooHighAccessForAccountStreams]: 'Only read and contribute acceesses are allowed for the account sterams',
   [ErrorIds.EmailRequired]: 'Email is required',

@@ -299,15 +299,6 @@ factory.DuplicatedUserRegistration = (): APIError => {
     }
   )};
 
-factory.NonValidForOpenSource = (): APIError => {
-  return new APIError(
-    ErrorIds.NonValidForOpenSource, ErrorMessages[ErrorIds.NonValidForOpenSource],
-    {
-      httpStatus: 404,
-      dontNotifyAirbrake: true,
-    }
-  )};
-
 /**
  * Denied event modification perhaps of belonging to the account streams
  */
