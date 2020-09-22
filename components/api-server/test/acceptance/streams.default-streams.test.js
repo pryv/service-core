@@ -72,7 +72,7 @@ describe("System streams", function () {
 
   describe('GET /streams', () => {
     describe('When using a personal access', () => {
-      it('[9CGO] Should return all streams - including default ones', async () => {
+      it('[9CGO] Should return all streams - including system ones', async () => {
         await createUser();
         res = await request.get(basePath).set('authorization', access.token);
         assert.deepEqual(res.body.streams, [
@@ -153,7 +153,7 @@ describe("System streams", function () {
 
   describe('POST /streams', () => {
     describe('When using a personal access', () => {
-      describe('and when creating a child to default streams', () => {
+      describe('to create a child to a system stream', () => {
         before(async function () {
           await createUser();
           res = await request.post(basePath)
@@ -167,6 +167,7 @@ describe("System streams", function () {
           assert.equal(res.status, 400);
         });
         it('[XP07] should return the correct error', async () => {
+          // TODO IEVA - change error to invalidOperation
           assert.equal(res.body.error.id, ErrorIds.UnknownReferencedResource);
         });
       });
@@ -176,7 +177,7 @@ describe("System streams", function () {
   describe('PUT /streams/<id>', () => {
     describe('When using a personal access', () => {
       let streamData;
-      describe('and when updating a default stream', () => {
+      describe('to update a system stream', () => {
         before(async function () {
           await createUser();
           streamData = {
@@ -187,9 +188,11 @@ describe("System streams", function () {
             .set('authorization', access.token);
         });
         it('[SLIR] should return status 404', async () => {
+          // TODO IEVA - change to 400
           assert.equal(res.status, 404);
         });
         it('[V6HC] should return the correct error', async () => {
+          // TODO IEVA - change error to invalidOperation
           assert.equal(res.body.error.id, ErrorIds.UnknownResource);
         });
       });
@@ -198,16 +201,18 @@ describe("System streams", function () {
 
   describe('DELETE /streams/<id>', () => {
     describe('When using a personal access', () => {
-      describe('When deleting a default stream', () => {
+      describe('to delete a system stream', () => {
         before(async function () {
           await createUser();
           res = await request.delete(path.join(basePath, 'language'))
             .set('authorization', access.token);
         });
         it('[1R35] should return status 404', async () => { 
+          // TODO IEVA - change to 400
           assert.equal(res.status, 404);
         });
         it('[4939] should return the correct error', async () => {
+          // TODO IEVA - change error to invalidOperation
           assert.equal(res.body.error.id, ErrorIds.UnknownResource);
         });
       });

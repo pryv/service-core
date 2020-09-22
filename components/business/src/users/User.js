@@ -21,7 +21,7 @@ import type { Config } from 'components/api-server/config/Config';
 const config: Config = getConfig();
 
 class User {
-
+  // User properties that exists by default (email could not exist with specific config)
   id: ?string;
   username: ?string;
   email: ?string;
@@ -61,6 +61,9 @@ class User {
     if (this.id == null) this.id = cuid();
   }
 
+  /**
+   * Get list of events from account data
+   */
   async getEvents (): Array<{}> {
     if (this.events != null) return this.events;
 
@@ -72,14 +75,23 @@ class User {
     return _.pick(this, this.accountFields);
   }
 
+  /**
+   * Get account with id property added to it
+   */
   getAccountWithId () {
     return _.pick(this, _.concat(this.accountFields, ['id']));
   }
 
+  /**
+   * Get account unique fields
+   */
   getUniqueFields () {
     return _.pick(this, this.uniqueAccountFields);
   }
 
+  /**
+   * Builds apiEndpoint with the token if it exists
+   */
   getApiEndpoint () {
     if (this.apiEndpoint != null) return this.apiEndpoint;
     const apiFormat = config.get('service:api');
@@ -90,6 +102,38 @@ class User {
       this.apiEndpoint = endpointElements.join('//');
     }
     return this.apiEndpoint;
+  }
+
+  /**
+   * Build request to service register for data update
+   * @param {*} updateData 
+   */
+  getUpdateRequestToServiceRegister (updateData, isActive) {
+    const updateRequest = {};
+    const updateKeys = Object.keys(updateData);
+    const editableAccountStreams = SystemStreamsSerializer.getEditableAccountStreams();
+    
+    // iterate over updateData and check which fields should be updated
+    updateKeys.forEach(streamIdWithoutDot => {
+      // check if field value was changed
+      if (updateData[streamIdWithoutDot] !== this[streamIdWithoutDot]){
+        let streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamIdWithoutDot);
+        updateRequest[streamIdWithoutDot] = [{
+          value: updateData[streamIdWithoutDot],
+          isUnique: editableAccountStreams[streamIdWithDot].isUnique,
+          isActive: isActive,
+          creation: false
+        }];
+      }
+    });
+    return updateRequest;
+  }
+  /**
+   * 1) Build events for the given updateData
+   * @param {*} updateData
+   */
+  getEventsForUpdate (updateData) {
+    
   }
 }
 
@@ -106,7 +150,7 @@ function buildAccountFields (user: User): void {
   });
 }
 
-async function loadAccountData (user: User, params): void {
+function loadAccountData (user: User, params): void {
   user.accountFields.forEach(field => {
     if (params[field] != null) user[field] = params[field];
   });
@@ -197,7 +241,6 @@ function createEvent (
       SystemStreamsSerializer.options.STREAM_ID_UNIQUE
     );
     // repeated field for uniqness
-    //TODO IEVA - what to do here
     event[SystemStreamsSerializer.removeDotFromStreamId(streamId) + '__unique'] = accountParameter;
   }
   return event;
@@ -205,6 +248,7 @@ function createEvent (
 
 /**
  * Convert system->account events to the account object
+ * @param User user
  */
 function formAccountDataFromListOfEvents (user: User) {
   const account = formEventsTree(user.accountStreamsSettings, user.events, {});

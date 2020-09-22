@@ -64,7 +64,7 @@ module.exports = async function (context, callback) {
     }
   }
   function isExpectedUniquenessError (err): boolean {
-    if (typeof err.isDuplicateIndex === 'function') {
+    if (err.isDuplicate) {
       let fieldName = err.duplicateIndex();
       if (['username', 'email'].includes(fieldName)) {
         // one of the expected fields, so the migration could be continued

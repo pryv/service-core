@@ -108,11 +108,12 @@ describe('events', function () {
               stepDone();
             });
           },
-          async () => {
+          function separateAccountEventAndAllOtherEvents(stepDone) {
             // lets separate core events from all other events and validate them separatelly
             const separatedEvents = validation.separateAccountStreamsAndOtherEvents(response.body.events);
             response.body.events = separatedEvents.events;
             accountStreamsEvents = separatedEvents.accountStreamsEvents;
+            stepDone();
           },
           function checkResponse (stepDone) {
             validation.check(response, {
@@ -359,7 +360,7 @@ describe('events', function () {
     });
 
     it('[6H0Z] must return all events (trashed or not) when requested', function (done) {
-      request.get(basePath).query({ state: 'all', limit: 1000 }).end(async function (res) {
+      request.get(basePath).query({ state: 'all', limit: 1000 }).end(function (res) {
         // lets separate core events from all other events and validate them separatelly
         const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
         res.body.events = separatedEvents.events;

@@ -15,6 +15,7 @@ const ServiceRegister = require('./service_register');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 const UserRepository = require('components/business/src/users/repository');
 const User = require('components/business/src/users/User');
+const ErrorIds = require('components/errors').ErrorIds;
 
 import type { MethodContext } from 'components/model';
 import type { ApiCallback } from 'components/api-server/src/API';
@@ -39,10 +40,11 @@ class Registration {
       servicesSettings.register,
       logging.getLogger('service-register')
     );
-    this.userRepository = new UserRepository(this.storageLayer.events);
-    this.POOL_USERNAME_PREFIX = 'pool@';
-    this.TEMP_USERNAME_PREFIX = 'temp@';
-    this.POOL_REGEX = new RegExp('^' + this.POOL_USERNAME_PREFIX);
+    this.userRepository = new UserRepository(
+      this.storageLayer.events,
+      this.storageLayer.sessions,
+      this.storageLayer.accesses
+    );
   }
 
   /**
@@ -52,19 +54,7 @@ class Registration {
    * @param {*} result 
    * @param {*} next 
    */
-  async prepareUserData (context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    if (params.username && typeof params.username === 'string') {
-      params.username = params.username.toLowerCase();
-    }
-    if (params.email && typeof params.email === 'string') {
-      params.email = params.email.toLowerCase();
-    }
-    // if referer is empty, remove the field, otherwise, z-schema will validate type
-    if (params.referer == null) {
-      delete params.referer;
-    }
-    //TODO IEVA, ask Ilia, because now validation is applied on params
-    // if I want to skip params editing, I have to change that method
+   async prepareUserData(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     context.user = new User(params);
     next();
   }
@@ -86,12 +76,12 @@ class Registration {
       let uniqueFields = {};
       for (const [streamIdWithDot, streamSettings] of Object.entries(this.accountStreamsSettings)) {
         // if key is set as required - add required validation
-        if (streamSettings.isUnique && streamSettings.isUnique === true) {
+        if (streamSettings?.isUnique === true) {
           let streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(streamIdWithDot)
           uniqueFields[streamIdWithoutDot] = context.user[streamIdWithoutDot];
         }
       }
-
+      
       // do the validation and reservation in service-register
       await this.serviceRegisterConn.validateUser(
         context.user.username,
@@ -107,9 +97,6 @@ class Registration {
 
   /**
    * Check in service-register if email already exists
-   *
-   * !!! Not solved scenario if main user info was saved in service-register, but
-   * additional unique fields were not TODO IEVA
    * @param {*} context
    * @param {*} params
    * @param {*} result
@@ -124,7 +111,7 @@ class Registration {
     try {
       // assert that we have obtained a lock on register, so any conflicting fields here 
       // would be failed registration attempts that partially saved user data.
-      const existingUsers = await this.userRepository.findConflictingUniqueFields(context.user.getUniqueFields());
+      const existingUsers = await this.userRepository.findExistingUniqueFields(context.user.getUniqueFields());
 
       // if any of unique fields were already saved, it means that there was an error
       // saving in service register (before this step there is a check that unique fields 
@@ -161,11 +148,12 @@ class Registration {
    * @param {*} next 
    */
   createPoolUser (context, params, result, next) {
+    const POOL_USERNAME_PREFIX = 'pool@';
     const uniqueId = cuid();
-    params.username = this.POOL_USERNAME_PREFIX + uniqueId;
+    params.username = POOL_USERNAME_PREFIX + uniqueId;
     params.passwordHash = 'changeMe';
     params.language = 'en';
-    params.email = this.POOL_USERNAME_PREFIX + uniqueId + '@email';
+    params.email = POOL_USERNAME_PREFIX + uniqueId + '@email';
     context.user = new User(params);
     next();
   }
@@ -195,24 +183,16 @@ class Registration {
       if (context.calledMethodId === 'system.createPoolUser') {
         context.user = await this.userRepository.insertOne( context.user );
       } else {
-        context.user = await this.userRepository.insertOne(
-          context.user,
-          this.storageLayer.sessions,
-          this.storageLayer.accesses,
-        );
+        context.user = await this.userRepository.insertOne( context.user, true );
       }
-
-      // form the result for system call or full registration call
-      if (context.calledMethodId === 'system.createUser') {
-        result.id = context.user.id;
-      } else {
-        result.username = context.user.username;
-        result.apiEndpoint = context.user.getApiEndpoint();
-      }
-      next();
     } catch (err) {
-      return next(Registration.handleUniquenessErrors(err, null, params));
+      return next(Registration.handleUniquenessErrors(
+        err,
+        ErrorIds.UnexpectedErrorWhileCreatingUser,
+        params
+      ));
     }
+    next();
   }
 
 
@@ -232,36 +212,44 @@ class Registration {
     try {
       // get streams ids from the config that should be retrieved
       const userStreamsIds = SystemStreamsSerializer.getIndexedAccountStreamsIdsWithoutDot();
-      const uniqueStreamsIds = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutDot();
 
-      // form data that should be sent to service-register
+      // build data that should be sent to service-register
       // some default values and indexed/uinique fields of the system
       const userData = {
         user: {
           id: context.user.id
         },
         host: { name: context.host },
+        unique: SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutDot()
       };
       userStreamsIds.forEach(streamId => {
         if (context.user[streamId] != null) userData.user[streamId] = context.user[streamId];
       });
-      userData.unique = [];
-      uniqueStreamsIds.forEach(streamId => {
-        userData.unique.push(streamId);
-      });
 
-      const response = await this.serviceRegisterConn.createUser(userData);
-      // take only server name
-      if (response.server) {
-        result.server = response.server;
-        return next();
-      }
+      await this.serviceRegisterConn.createUser(userData);
     } catch (error) {
       return next(errors.unexpectedError(error));
     }
     next();
   }
-
+  
+  /**
+   * Build response for user registration
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  async buildResponse (
+    context: MethodContext,
+    params: mixed,
+    result: Result,
+    next: ApiCallback
+  ) {
+    result.username = context.user.username;
+    result.apiEndpoint = context.user.getApiEndpoint();
+    next();
+  }
   /**
    *
    * @param {*} context
@@ -318,7 +306,7 @@ class Registration {
   static handleUniquenessErrors (err, message, params) {
     // Duplicate errors
     const uniquenessErrors = {};
-    if (typeof err.isDuplicateIndex === 'function') {
+    if (err.isDuplicate) {
       let fieldName = err.duplicateIndex();
       // uniqueness constraint for username in acccess
       if (fieldName == 'deviceName') {
@@ -331,9 +319,6 @@ class Registration {
       return errors.itemAlreadyExists('user', uniquenessErrors);
     }
     // Any other error
-    if (!message) {
-      message = 'Unexpected error while saving user.';
-    }
     return errors.unexpectedError(err, message);
   }
 }

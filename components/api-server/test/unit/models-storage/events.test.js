@@ -106,26 +106,5 @@ describe('Events storage', () => {
         assert.isTrue(isDuplicateIndex('email__unique'));
       }
     });
-/* TODO IEVA
-    it('[79CF] must throw a duplicate error when custom user field from the settings is not unique', async () => {
-      try {
-        await eventsStorage.createUser({
-          id: charlatan.App.name(),
-          username: username
-        });
-        console.log('Test failed because error was not thrown');
-        assert.isTrue(false);
-      } catch (err) {
-        assert.isNotNull(err);
-        // FLOW: we ensure that err contains the isDuplicate boolean with assert
-        const isDuplicate = err.isDuplicate;
-        assert.isBoolean(isDuplicate);
-        assert.isTrue(isDuplicate);
-        // FLOW: we ensure that err contains the isDuplicateIndex function with assert
-        const isDuplicateIndex = err.isDuplicateIndex;
-        assert.isFunction(isDuplicateIndex);
-        assert.isTrue(isDuplicateIndex('content'));
-      }
-    });*/
   });
 });

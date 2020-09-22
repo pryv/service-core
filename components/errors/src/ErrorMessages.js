@@ -38,8 +38,15 @@ const ErrorMessages = {
   [ErrorIds.EmailRequired]: 'Email is required',
   [ErrorIds.PasswordRequired]: 'Password is required',
   [ErrorIds.InvalidPassword]: 'Password should have from 5 to 23 characters',
-  [ErrorIds.DeniedMultipleAccountStreams]: 'Event cannot be part of multiple account streams.',
+  [ErrorIds.ForbiddenMultipleAccountStreams]: 'Event cannot be part of multiple account streams.',
   [ErrorIds.UnexpectedErrorWhileSavingTheEvent]: 'Unexpected error while saving the event, please try again in a minute.',
+  [ErrorIds.UnexpectedErrorWhileSavingAccount]: 'Unexpected error while saving account information, please try again in a minute.',
+  [ErrorIds.UnexpectedErrorWhileCreatingUser]: 'Unexpected error while creating a user.',
+  [ErrorIds.ForbiddenNoneditableAccountStreamsEdit]: 'It is forbidden to create or edit noneditable account stream event.',
+  [ErrorIds.ForbiddenToChangeAccountStreamId]: 'It is forbidden to change account stream id.',
+  [ErrorIds.ForbiddenAccountStreamsActions]: 'It is forbidden to do any modification to account streams.',
+  [ErrorIds.ForbiddenAccountStreamsEventDeletion]: 'It is forbidden to delete noneditable or active account stream events.',
+  [ErrorIds.ForbiddenToEditNoneditableAccountFields]: 'It is forbidden to edit noneditable acccount fields.',
 };
 Object.freeze(ErrorMessages);
 

@@ -83,10 +83,17 @@ const ErrorIds = {
   DeniedEventModification: 'denied-event-modification',
   DeniedStreamAccess: 'denied-stream-access',
   TooHighAccessForAccountStreams: 'too-high-access-for-account-stream',
-  DeniedMultipleAccountStreams: 'denied-multiple-default-streams-events',
+  ForbiddenMultipleAccountStreams: 'forbidden-multiple-account-streams-events',
   EmailRequired: 'email-required',
   PasswordRequired: 'password-required',
   UnexpectedErrorWhileSavingTheEvent: 'unexpected-error-while-saving-the-event',
+  UnexpectedErrorWhileSavingAccount: 'unexpected-error-while-saving-account',
+  UnexpectedErrorWhileCreatingUser: 'unexpected-error-while-creating-user',
+  ForbiddenNoneditableAccountStreamsEdit: 'forbidden-noneditable-account-streams-edit',
+  ForbiddenToChangeAccountStreamId: 'forbidden-change-account-streams-id',
+  ForbiddenAccountStreamsActions: 'forbidden-account-streams-actions',
+  ForbiddenAccountStreamsEventDeletion: 'forbidden-account-streams-deletion',
+  ForbiddenToEditNoneditableAccountFields: 'forbidden-to-edit-noneditable-account-fields',
 };
 Object.freeze(ErrorIds);
 

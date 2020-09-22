@@ -35,11 +35,6 @@ function defaults() {
   };
 }
 
-function buildUser(userData) {
-  const user = new User(userData);
-  return user;
-}
-
 describe('registration: cluster', function() {
   let app;
   let request;
@@ -49,7 +44,6 @@ describe('registration: cluster', function() {
   let regUrl;
   let userData;
   let serviceRegisterRequests = [];
-  let hostname = 'localhost:3000';
   let mongoFixtures;
   let userRepository;
 
@@ -64,7 +58,7 @@ describe('registration: cluster', function() {
     await config.init();
     config.set('singleNode:isActive', false);
     config.set('openSource:isActive', false);
-    regUrl = settings.get('services.register.url').str();
+    regUrl = config.get('services:register:url');
 
     app = new Application(settings);
     await app.initiate();
@@ -547,7 +541,7 @@ describe('registration: cluster', function() {
     });
 
     describe('when custom account streams validation exists', () => {
-      describe('[F69W] when email is set as required and it is not set in the request', () => {
+      describe('when email is set as required and it is not set in the request', () => {
         before(async () => {
           userData = defaults();
           // remove email from the request
@@ -570,7 +564,7 @@ describe('registration: cluster', function() {
           ]);
         });
       });
-      describe('[JD3A] when field does not match custom validation settings', () => {
+      describe('when field does not match custom validation settings', () => {
         before(async () => {
           userData = userData = defaults();
           userData.insurancenumber = 'abc';

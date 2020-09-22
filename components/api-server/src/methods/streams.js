@@ -16,6 +16,8 @@ var errors = require('components/errors').factory,
   treeUtils = utils.treeUtils,
   _ = require('lodash');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
+const ErrorMessages = require('../../../errors/src/ErrorMessages');
+const ErrorIds = require('../../../errors/src/ErrorIds');
 
 /**
  * Event streams API methods implementation.
@@ -33,7 +35,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   notifications, logging, auditSettings, updatesSettings) {
 
   const logger = logging.getLogger('methods/streams');
-
+  const systemStreamsSerializer = new SystemStreamsSerializer();
   // RETRIEVAL
 
   api.register('streams.get',
@@ -57,7 +59,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
       if (err) { return next(errors.unexpectedError(err)); }
 
-      const virtualStreams = (new SystemStreamsSerializer()).getVirtualStreamsList();
+      const virtualStreams = systemStreamsSerializer.getVirtualStreamsList();
       streams = streams.concat(virtualStreams);
 
       if (params.parentId) {
@@ -112,7 +114,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   // CREATION
 
   api.register('streams.create',
-    removeAccountStreamsFromContext,
+    forbidSystemStreamsActions,
     commonFns.getParamsValidation(methodsSchema.create.params),
     applyDefaultsForCreation,
     applyPrerequisitesForCreation,
@@ -179,7 +181,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   // UPDATE
 
   api.register('streams.update',
-    removeAccountStreamsFromContext,
+    forbidSystemStreamsActions,
     commonFns.getParamsValidation(methodsSchema.update.params),
     commonFns.catchForbiddenUpdate(streamSchema('update'), updatesSettings.ignoreProtectedFields, logger),
     applyPrerequisitesForUpdate,
@@ -195,12 +197,12 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
    * @param {*} result 
    * @param {*} next 
    */
-  function removeAccountStreamsFromContext (context, params, result, next) {
-    var i = context.streams.length
-    while (i--) {
-      if (context.streams[i].id && context.streams[i].id === 'account') {
-        context.streams.splice(i, 1);
-      }
+  function forbidSystemStreamsActions (context, params, result, next) {
+    let accountStreamIds = context.systemStreamsSerializer.getAllSystemStreamsIds();
+    if (accountStreamIds.includes(params?.id)) {
+      return next(errors.invalidOperation(
+        ErrorMessages[ErrorIds.ForbiddenAccountStreamsActions])
+      );
     }
     next();
   }
@@ -260,7 +262,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   // DELETION
 
   api.register('streams.delete',
-    removeAccountStreamsFromContext,
+    forbidSystemStreamsActions,
     commonFns.getParamsValidation(methodsSchema.del.params),
     verifyStreamExistenceAndPermissions,
     deleteStream);

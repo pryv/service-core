@@ -49,9 +49,6 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
       }
       next();
     } catch (err) {
-      if (err.id === ErrorIds.UnknownResource) {
-        return next(errors.unknownResource('user', context.user.username));
-      }
       // handles unexpected errors
       return next(err);
     }

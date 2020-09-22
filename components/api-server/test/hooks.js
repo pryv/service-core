@@ -17,7 +17,7 @@ exports.mochaHooks = {
     // create preview directories that would notmally be created in normal setup
     const attachmentsDirPath = settings.get('eventFiles.attachmentsDirPath').str();
     const previewsDirPath = settings.get('eventFiles.previewsDirPath').str();
-    console.log(attachmentsDirPath,'attachmentsDirPath');
+
     if (!fs.existsSync(attachmentsDirPath)) {
       fs.mkdirSync(attachmentsDirPath, { recursive: true });
     }

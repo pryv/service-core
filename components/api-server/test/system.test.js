@@ -35,7 +35,7 @@ const charlatan = require('charlatan');
 
 require('date-utils');
 
-describe('[373T] system (ex-register)', function () {
+describe('system (ex-register)', function () {
   let mongoFixtures;
   
   this.timeout(5000);
@@ -62,7 +62,7 @@ describe('[373T] system (ex-register)', function () {
   // keep test code simple, test order is important. The first test configures
   // the mock service in order to test email sending, the second one
   // reconfigures it so that it just replies OK for subsequent tests.   
-  describe('[0JKK] POST /create-user', function () {
+  describe('POST /create-user', function () {
 
     function path() {
       return basePath() + '/create-user';
@@ -82,7 +82,7 @@ describe('[373T] system (ex-register)', function () {
       language: 'fr'
     };
 
-    describe('[080B] when email sending really works', function () {
+    describe('when email sending really works', function () {
       before(async function () {
         await mongoFixtures.context.cleanEverything();
       });
@@ -93,7 +93,6 @@ describe('[373T] system (ex-register)', function () {
         let mailSent = false;
         
         let originalCount;
-        let createdUserId;
             
         // setup mail server mock
         helpers.instanceTestSetup.set(settings, {
@@ -125,7 +124,6 @@ describe('[373T] system (ex-register)', function () {
           status: 201,
           schema: methodsSchema.createUser.result
         });
-        createdUserId = res.body.id;
         mailSent.should.eql(true);
 
         // getUpdatedUsers
@@ -133,14 +131,12 @@ describe('[373T] system (ex-register)', function () {
         users.length.should.eql(originalCount + 1, 'users');
 
         var expected = _.cloneDeep(newUserData);
-        expected.id = createdUserId;
         expected.storageUsed = { dbDocuments: 0, attachedFiles: 0 };
         var actual = _.find(users, function (user) {
-          return user.id === createdUserId;
+          return user.username === newUserData.username;
         });
-        let actualAccount = actual.getAccountWithId();
-        validation.checkStoredItem(actualAccount, 'user');
-        actualAccount.should.eql(expected);
+        validation.checkStoredItem(actual.getAccountWithId(), 'user');
+        actual.getAccount().should.eql(expected);
       });
     });
     

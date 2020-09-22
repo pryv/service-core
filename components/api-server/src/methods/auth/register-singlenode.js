@@ -22,13 +22,15 @@ const errors = require('components/errors').factory;
 module.exports = function (api, logging, storageLayer, servicesSettings) {
   // REGISTER
   const registration = new Registration(logging, storageLayer, servicesSettings);
+  const userRepository = new UserRepository(storageLayer.events);
 
   api.register('auth.register.singlenode',
     // data validation methods
-    registration.prepareUserData,
     commonFns.getParamsValidation(methodsSchema.register.params),
     // user registration methods
+    registration.prepareUserData,
     registration.createUser.bind(registration),
+    registration.buildResponse.bind(registration),
     registration.sendWelcomeMail.bind(registration),
   );
 
@@ -48,8 +50,7 @@ module.exports = function (api, logging, storageLayer, servicesSettings) {
   async function checkUsername(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     result.reserved = false;
     try {
-      const userRepository = new UserRepository(storageLayer.events);
-      const existingUsers = await userRepository.findConflictingUniqueFields({ username: params.username});
+      const existingUsers = await userRepository.findExistingUniqueFields({ username: params.username});
 
       if (existingUsers.length > 0) {
         return next(errors.itemAlreadyExists('user', { username: params.username }));

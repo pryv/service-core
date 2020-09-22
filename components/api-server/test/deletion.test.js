@@ -73,7 +73,7 @@ describe('DELETE /users/:username', () => {
         username1 = charlatan.Internet.userName();
         username2 = charlatan.Internet.userName();
 
-        authKey = settings.get('auth.adminAccessKey').str();
+        authKey = config.get('auth:adminAccessKey');
       });
       after(async function() {
         await mongoFixtures.context.cleanEverything();
@@ -163,8 +163,8 @@ describe('DELETE /users/:username', () => {
         before(async function() {
           res = await request.delete(`/users/${username1}`).set('Authorization', 'somekey');
         });
-        it(`[${randomTestCode()}] should respond with 401`, function() {
-          assert.equal(res.status, 401);
+        it(`[${randomTestCode()}] should respond with 404`, function() {
+          assert.equal(res.status, 404);
         });
       });
       describe('when given not existing username', function() {

@@ -145,13 +145,13 @@ function _addCustomMessage(error, schema){
   const pathElements = error.path.split("/");
   let paramId = pathElements[pathElements.length -1];
 
-  // when field is pissing paramId will be empty
+  // when field is missing paramId will be empty
   if(paramId === '' && error.params.length >= 1){
     paramId = error.params[0]
   }
 
-  // if there are cunstom messages set, replace default z-schema message
-  if(schema?.messages && schema.messages[paramId]){
+  // if there are custom messages set, replace default z-schema message
+  if (schema?.messages?.[paramId] != null) {
     // if there is a message, set it
     if(schema.messages[paramId][error.code]?.message){
       error.message = schema.messages[paramId][error.code].message;
@@ -177,23 +177,6 @@ function _addCustomMessage(error, schema){
   }
   // if there are no custom messages, just return default z-schema message
   return error;  
-}
-
-/**
- * Convert list of API errors to invalidParametersFormat error format
- * 
- * @param array errors 
- */
-exports.apiErrorToValidationErrorsList = (errorsList: Array<Array<APIError>>) => {
-  const errList = errorsList.map(err => {
-    return {
-      'code': err.id,
-      'message': err.message,
-      'param': err.data.param,
-      'path': '#/' + err.data.param,
-    }
-  });
-  return errors.invalidParametersFormat("The parameters' format is invalid.", errList);
 }
 
 exports.catchForbiddenUpdate = function catchForbiddenUpdate(paramsSchema, ignoreProtectedFieldUpdates, logger) {

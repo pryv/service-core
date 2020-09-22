@@ -48,6 +48,7 @@ class MethodContext {
   streamList: ?Array<Stream>;
   // during an event.create action for multiple streams event, some streamIds might not exists. They will be listed here
   streamIdsNotFoundList: ?Array<string>;
+  systemStreamsSerializer: object;
 
   calledMethodId: ?string;
 
@@ -69,6 +70,7 @@ class MethodContext {
     this.callerId = null;
 
     this.calledMethodId = null;
+    this.systemStreamsSerializer = new SystemStreamsSerializer();
 
     if (auth != null) this.parseAuth(auth);
   }
@@ -256,7 +258,7 @@ class MethodContext {
       cb => storage.streams.find(user, {}, null, cb));
 
     // get streams ids from the config that should be retrieved
-    const userAccountStreams = (new SystemStreamsSerializer()).getVirtualStreamsList();
+    const userAccountStreams = this.systemStreamsSerializer.getVirtualStreamsList();
     this.streams = streams.concat(userAccountStreams);
   }
 

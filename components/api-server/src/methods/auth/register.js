@@ -29,15 +29,16 @@ module.exports = function (api, logging, storageLayer, servicesSettings) {
   const serviceRegisterConn: ServiceRegister = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
 
   api.register('auth.register',
-    // data validation methods
-    registration.prepareUserData,           
+    // data validation methods        
     commonFns.getParamsValidation(methodsSchema.register.params),
+    registration.prepareUserData,
     registration.validateUserInServiceRegister.bind(registration),
 
     //user registration methods
     registration.deletePartiallySavedUserIfAny.bind(registration),
     registration.createUser.bind(registration),
     registration.createUserInServiceRegister.bind(registration),
+    registration.buildResponse.bind(registration),
     registration.sendWelcomeMail.bind(registration),
   );
   
@@ -61,9 +62,7 @@ module.exports = function (api, logging, storageLayer, servicesSettings) {
 
       if (response.reserved === true) {
         return next(errors.itemAlreadyExists('user', { username: params.username }));
-      }
-
-      if (response.reserved != null) {
+      }else if (response.reserved != null) {
         result.reserved = false;
       }
       

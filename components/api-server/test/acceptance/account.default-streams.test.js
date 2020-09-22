@@ -22,7 +22,7 @@ const { getConfig } = require('components/api-server/config/Config');
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
 
-describe("Account with default-streams", function () {
+describe('Account with system streams', function () {
   let helpers;
   let app;
   let request;
@@ -137,102 +137,97 @@ describe("Account with default-streams", function () {
   });
 
   describe('GET /account', () => {
-    describe('When using a personal access', () => {
-      describe('and when user has multiple events per stream and additional streams events', () => {
-        let allVisibleAccountEvents;
-        let scope;
-        before(async function () {
-          await createUser();
-          // create additional events for all editable streams
-          const settings = _.cloneDeep(helpers.dependencies.settings);
-          scope = nock(settings.services.register.url);
-          scope.put('/users',
-            (body) => {
-              serviceRegisterRequest = body;
-              return true;
-            }).times(4).reply(200, { errors: [] });
-          const editableStreamsIds = ['.email', '.language', '.phoneNumber', '.insurancenumber'];
-          const visibleStreamsIds = ['.username', '.email', '.language', '.phoneNumber', '.insurancenumber', '.dbDocuments', '.attachedFiles'];
-  
-          let i;
-          for (i = 0; i < editableStreamsIds.length; i++){
-            await createAdditionalEvent(editableStreamsIds[i]);
-          }
-  
-          allVisibleAccountEvents = await bluebird.fromCallback(
-            (cb) => user.db.events.find({ id: user.attrs.id },
-              {
-                $and: [
-                  { streamIds: { $in: visibleStreamsIds } },
-                  { streamIds: SystemStreamsSerializer.options.STREAM_ID_ACTIVE }]
-              }, null, cb));
-          // get account info
-          res = await request.get(basePath).set('authorization', access.token);
-        });
-        it('[XRKX] should return 200', async () => {
-          assert.equal(res.status, 200);
-        });
-        it('[JUHR] should return account information in the structure that is defined in default streams and only active events are returned', async () => {
-          const usernameAccountEvent = allVisibleAccountEvents.filter(event => event.streamIds.includes(
-            SystemStreamsSerializer.addDotFromStreamId('username')))[0];
-          const emailAccountEvent = allVisibleAccountEvents.filter(event =>
-            event.streamIds.includes(SystemStreamsSerializer.addDotFromStreamId('email')))[0];
-          const languageAccountEvent = allVisibleAccountEvents.filter(event =>
-            event.streamIds.includes(SystemStreamsSerializer.addDotFromStreamId('language')))[0];
-          const dbDocumentsAccountEvent = allVisibleAccountEvents.filter(event =>
-            event.streamIds.includes(SystemStreamsSerializer.addDotFromStreamId('dbDocuments')))[0];
-          const attachedFilesAccountEvent = allVisibleAccountEvents.filter(event =>
-            event.streamIds.includes(SystemStreamsSerializer.addDotFromStreamId('attachedFiles')))[0];
-          const insurancenumberAccountEvent = allVisibleAccountEvents.filter(event =>
-            event.streamIds.includes(SystemStreamsSerializer.addDotFromStreamId('insurancenumber')))[0];
-          const phoneNumberAccountEvent = allVisibleAccountEvents.filter(event =>
-            event.streamIds.includes(SystemStreamsSerializer.addDotFromStreamId('phoneNumber')))[0];
-  
-          assert.equal(res.body.account.username, usernameAccountEvent.content);
-          assert.equal(res.body.account.email, emailAccountEvent.content);
-          assert.equal(res.body.account.language, languageAccountEvent.content);
-          assert.equal(res.body.account.storageUsed.dbDocuments, dbDocumentsAccountEvent.content);
-          assert.equal(res.body.account.storageUsed.attachedFiles, attachedFilesAccountEvent.content);
-          assert.equal(res.body.account.insurancenumber, insurancenumberAccountEvent.content);
-          assert.equal(res.body.account.phoneNumber, phoneNumberAccountEvent.content);
-        });
-        it('[R5S0] should return only visible default stream events', async () => {
-          assert.equal(Object.keys(res.body.account).length, 6);
-        });
+    describe('and when user has multiple events per stream and additional streams events', () => {
+      let allVisibleAccountEvents;
+      let scope;
+      before(async function () {
+        await createUser();
+        // create additional events for all editable streams
+        const settings = _.cloneDeep(helpers.dependencies.settings);
+        scope = nock(settings.services.register.url);
+        scope.put('/users',
+          (body) => {
+            serviceRegisterRequest = body;
+            return true;
+          }).times(4).reply(200, { errors: [] });
+        const editableStreamsIds = ['.email', '.language', '.phoneNumber', '.insurancenumber'];
+        const visibleStreamsIds = ['.username', '.email', '.language', '.phoneNumber', '.insurancenumber', '.dbDocuments', '.attachedFiles'];
+
+        let i;
+        for (i = 0; i < editableStreamsIds.length; i++){
+          await createAdditionalEvent(editableStreamsIds[i]);
+        }
+
+        allVisibleAccountEvents = await bluebird.fromCallback(
+          (cb) => user.db.events.find({ id: user.attrs.id },
+            {
+              $and: [
+                { streamIds: { $in: visibleStreamsIds } },
+                { streamIds: SystemStreamsSerializer.options.STREAM_ID_ACTIVE }]
+            }, null, cb));
+        // get account info
+        res = await request.get(basePath).set('authorization', access.token);
+      });
+      it('[XRKX] should return 200', async () => {
+        assert.equal(res.status, 200);
+      });
+      it('[JUHR] should return account information in the structure that is defined in system streams and only active values', async () => {
+        const usernameAccountEvent = allVisibleAccountEvents.filter(event => event.streamIds.includes(
+          SystemStreamsSerializer.addDotFromStreamId('username')))[0];
+        const emailAccountEvent = allVisibleAccountEvents.filter(event =>
+          event.streamIds.includes(SystemStreamsSerializer.addDotFromStreamId('email')))[0];
+        const languageAccountEvent = allVisibleAccountEvents.filter(event =>
+          event.streamIds.includes(SystemStreamsSerializer.addDotFromStreamId('language')))[0];
+        const dbDocumentsAccountEvent = allVisibleAccountEvents.filter(event =>
+          event.streamIds.includes(SystemStreamsSerializer.addDotFromStreamId('dbDocuments')))[0];
+        const attachedFilesAccountEvent = allVisibleAccountEvents.filter(event =>
+          event.streamIds.includes(SystemStreamsSerializer.addDotFromStreamId('attachedFiles')))[0];
+        const insurancenumberAccountEvent = allVisibleAccountEvents.filter(event =>
+          event.streamIds.includes(SystemStreamsSerializer.addDotFromStreamId('insurancenumber')))[0];
+        const phoneNumberAccountEvent = allVisibleAccountEvents.filter(event =>
+          event.streamIds.includes(SystemStreamsSerializer.addDotFromStreamId('phoneNumber')))[0];
+
+        assert.equal(res.body.account.username, usernameAccountEvent.content);
+        assert.equal(res.body.account.email, emailAccountEvent.content);
+        assert.equal(res.body.account.language, languageAccountEvent.content);
+        assert.equal(res.body.account.storageUsed.dbDocuments, dbDocumentsAccountEvent.content);
+        assert.equal(res.body.account.storageUsed.attachedFiles, attachedFilesAccountEvent.content);
+        assert.equal(res.body.account.insurancenumber, insurancenumberAccountEvent.content);
+        assert.equal(res.body.account.phoneNumber, phoneNumberAccountEvent.content);
+      });
+      it('[R5S0] should return only visible default stream events', async () => {
+        assert.equal(Object.keys(res.body.account).length, 6);
       });
     });
   });
 
   describe('POST /change-password', () => {
-    describe('When using a personal access', () => {
-      describe('and when valid data is provided', () => {
-        let passwordBefore;
-        let passwordAfter;
-        before(async function () {
-          await createUser();
-          basePath += '/change-password'
-          // modify account info
-          passwordBefore = await getActiveEvent('passwordHash');
-          res = await request.post(basePath)
-            .send({
-              newPassword: charlatan.Lorem.characters(7),
-              oldPassword: user.attrs.password,
-            })
-            .set('authorization', access.token);
-          passwordAfter = await getActiveEvent('passwordHash');
-        });
-        it('[X9VQ] should return 200', async () => {
-          assert.equal(res.status, 200);
-        });
-        it('[PWAA] should update event with password hash', async () => {
-          assert.notEqual(passwordBefore.content, passwordAfter.content);
-        });
+    describe('and when valid data is provided', () => {
+      let passwordBefore;
+      let passwordAfter;
+      before(async function () {
+        await createUser();
+        basePath += '/change-password'
+        // modify account info
+        passwordBefore = await getActiveEvent('passwordHash');
+        res = await request.post(basePath)
+          .send({
+            newPassword: charlatan.Lorem.characters(7),
+            oldPassword: user.attrs.password,
+          })
+          .set('authorization', access.token);
+        passwordAfter = await getActiveEvent('passwordHash');
+      });
+      it('[X9VQ] should return 200', async () => {
+        assert.equal(res.status, 200);
+      });
+      it('[PWAA] should update event with password hash', async () => {
+        assert.notEqual(passwordBefore.content, passwordAfter.content);
       });
     });
   });
 
   describe('PUT /account', () => {
-    describe('When using a personal access', () => {
       describe('and when user tries to modify the username', () => {
         before(async function () {
           await createUser();
@@ -246,11 +241,12 @@ describe("Account with default-streams", function () {
         });
         it('[DBM6] should return the correct error', async () => {
           // currently stupid z-schema error is thrown, so let like this because the method will be deprecated
+          // TODO IEVA BY ILIA - change error to invalidOperation
           assert.equal(res.body.error.data.length, 1);
           assert.equal(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
         });
       });
-      describe('and when user tries to modify not editable fields', () => {
+      describe('and when user tries to modify non editable fields', () => {
         before(async function () {
           await createUser();
           // modify account info
@@ -262,12 +258,13 @@ describe("Account with default-streams", function () {
           assert.equal(res.status, 400);
         });
         it('[QHZ4] should return the correct error', async () => {
+          // TODO IEVA BY ILIA - change error to invalidOperation
           // currently stupid z-schema error is thrown, so let like this because the method will be deprecated
           assert.equal(res.body.error.data.length, 1);
           assert.equal(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
         });
       });
-      describe('and when updating a unique field that is already taken', () => {
+      describe('and when updating a unique field that are already taken', () => {
         describe('and the field is not unique in mongodb', () => {
           let scope;
           let user2;
@@ -293,7 +290,8 @@ describe("Account with default-streams", function () {
           });
         });
       });
-      describe('and when user tries to edit edit email or language when not active fields exists', () => {
+
+      describe('and when user tries to edit email or language when non-active fields exists', () => {
         let newEmail = charlatan.Lorem.characters(7);
         let newLanguage = charlatan.Lorem.characters(2);
         let activeEmailBefore;
@@ -305,12 +303,14 @@ describe("Account with default-streams", function () {
         let notActiveEmailAfter;
         let activeLanguageAfter;
         let notActiveLanguageAfter;
+
         let scope;
         before(async function () {
           await createUser();
           const settings = _.cloneDeep(helpers.dependencies.settings);
+          nock.cleanAll();
           scope = nock(settings.services.register.url)
-          scope.post(`/users/${user.attrs.id}/change-email`)
+          scope.put(`/users`)
             .reply(200, {});
           scope.put('/users',
             (body) => {
@@ -361,22 +361,32 @@ describe("Account with default-streams", function () {
           assert.equal(activeEmailAfter.content, newEmail);
           assert.equal(activeLanguageAfter.content, newLanguage);
         });
-        it('[Y6MC] should send a request to service-register to update its user main information and unique fields', async () => {
+        it('[Y6MC] Should send a request to service-register to update its user main information and unique fields', async () => {
           // email is already skipped
           assert.deepEqual(serviceRegisterRequest, {
             user: {
-              language: {
-                value: newLanguage,
-                isUnique: false,
-                isActive: true,
-                creation: false
-              },
+              email: [
+                {
+                  creation: false,
+                  isActive: true,
+                  isUnique: true,
+                  value: newEmail
+                }
+              ],
+              language: [
+                {
+                  value: newLanguage,
+                  isUnique: false,
+                  isActive: true,
+                  creation: false
+                }
+              ],
               username: user.attrs.username,
             },
             fieldsToDelete: {}
           });
         });
       });
-    });
+      
   });
 });

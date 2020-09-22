@@ -56,13 +56,6 @@ factory.invalidCredentials = function (message?: string) {
     });
 };
 
-factory.invalidAuthorizationKey = function (message: string, status: ?number) {
-  return new APIError(ErrorIds.InvalidAuthorizationKey, message || 'Provided authorization token is invalid', {
-    httpStatus: status || 401,
-    dontNotifyAirbrake: true
-  });
-};
-
 factory.invalidEventType = function (type: string) {
   return new APIError(
     ErrorIds.InvalidEventType, 
@@ -356,19 +349,6 @@ factory.TooHighAccessForAccountStreams = (streamId): APIError => {
   )
 };
 
-/**
- * Denied to save multiple account streams for the same event
- */
-factory.DeniedMultipleAccountStreams = (streamId): APIError => {
-  return new APIError(
-    ErrorIds.DeniedMultipleAccountStreams, ErrorMessages[ErrorIds.DeniedMultipleAccountStreams],
-    {
-      httpStatus: 400,
-      data: { streamId: streamId },
-      dontNotifyAirbrake: true,
-    }
-  )
-};
 /**
  * Get the right article for the noun
  * @param {*} noun 

@@ -29,14 +29,6 @@ function SetFileReadTokenStream(params) {
 inherits(SetFileReadTokenStream, Transform);
 
 SetFileReadTokenStream.prototype._transform = function (event, encoding, callback) {
-  // remove event values used for enforcing uniqness in database level
-  // (the fields are formed "streamId + __unique")
-  event = Object.keys(event)
-    .filter(key => ! /__unique/.test(key))
-    .reduce((obj, key) => {
-      obj[key] = event[key];
-      return obj;
-    }, {});
   
   // To remove when streamId not necessary
   event.streamId = event.streamIds[0];

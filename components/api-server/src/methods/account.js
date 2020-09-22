@@ -8,8 +8,7 @@ var errors = require('components/errors').factory,
   commonFns = require('./helpers/commonFunctions'),
   mailing = require('./helpers/mailing'),
   encryption = require('components/utils').encryption,
-  methodsSchema = require('../schema/accountMethods'),
-  request = require('superagent');
+  methodsSchema = require('../schema/accountMethods');
 
 const { getConfig } = require('components/api-server/config/Config');
 
@@ -18,8 +17,8 @@ const Registration = require('components/business/src/auth/registration'),
   ErrorIds = require('components/errors').ErrorIds,
   ServiceRegister = require('components/business/src/auth/service_register'),
   UserRepository = require('components/business/src/users/repository');
-  User = require('components/business/src/users/User');
-
+  User = require('components/business/src/users/User'),
+  SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
   /**
  * @param api
  * @param usersStorage
@@ -31,9 +30,11 @@ const Registration = require('components/business/src/auth/registration'),
 module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
   authSettings, servicesSettings, notifications, logging) {
 
-  const registerSettings = servicesSettings.register;
-  const emailSettings = servicesSettings.email;
-  const requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);
+  var emailSettings = servicesSettings.email,
+    requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);
+
+  // initialize service-register connection
+  const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
   const userRepository = new UserRepository(userEventsStorage);
 
   // RETRIEVAL
@@ -56,9 +57,34 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
   api.register('account.update',
     commonFns.requirePersonalAccess,
     commonFns.getParamsValidation(methodsSchema.update.params),
-    notifyEmailChangeToRegister,
-    updateAccount);
+    validateThatAllFieldsAreEditable,
+    notifyServiceRegister,
+    updateAccount,
+    buildResultData,
+  );
 
+  /**
+   * Validate if given parameters are allowed for the edit
+   * 
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  function validateThatAllFieldsAreEditable (context, params, result, next) {
+    const nonEditableAccountStreamsIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForEditing();
+    Object.keys(params.update).forEach(streamId => {
+      const streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+      if (nonEditableAccountStreamsIds.includes(streamIdWithDot)) {
+        // if user tries to add new streamId from non editable streamsIds
+        return next(errors.invalidOperation(
+          ErrorMessages[ErrorIds.ForbiddenToEditNoneditableAccountFields],
+          { field: streamId }
+        ));
+      }
+    })
+    next();
+  }
   // CHANGE PASSWORD
 
   api.register('account.changePassword',
@@ -77,9 +103,6 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
       }
       next();
     } catch (err) {
-      if (err.id === ErrorIds.UnknownResource) {
-        return next(errors.unknownResource('user', context.user.username));
-      }
       // handles unexpected errors
       return next(err);
     }
@@ -168,80 +191,52 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     });
   }
 
-  async function notifyEmailChangeToRegister (context, params, result, next) {
+  async function notifyServiceRegister (context, params, result, next) {
     // no need to update service register if it is single node setup
     if (getConfig().get('singleNode:isActive') === true) {
       return next();
     }
-    const currentEmail = context.user.email;
-    const newEmail = params.update.email;
-
-    if (newEmail == null || newEmail === currentEmail) {
-      return next();
+    try {
+      const serviceRegisterRequest = await context.user.getUpdateRequestToServiceRegister(
+        params.update,
+        true
+      );
+      await serviceRegisterConn.updateUserInServiceRegister(
+        context.user.username,
+        serviceRegisterRequest,
+        {}
+      );
+    } catch (err) {
+      return next(err);
     }
-    // email was changed, must notify registration server
-    const regChangeEmailURL = registerSettings.url + '/users/' + context.user.username +
-        '/change-email';
-    request.post(regChangeEmailURL)
-      .set('Authorization', registerSettings.key)
-      .send({ email: newEmail })
-      .end(async (err, res) => {
-        if (err != null || (res && ! res.ok)) {
-          let errMsg = 'Failed to update email on register. ';
-          // for some reason register returns error message within res.body
-          if (res != null && res.body != null && res.body.message != null) {
-            errMsg += res.body.message;
-          } else if (err != null && err.message != null) {
-            errMsg += err.message;
-          }
-          return next(errors.invalidOperation(errMsg, { email: newEmail }, err));
-        }
-        // update language in service-register
-        if (params.update.hasOwnProperty('language')) {
-          try {
-            await notifyRegisterAboutUserDataChanges(context.user.username,
-              {
-                language: {
-                  value: params.update.language,
-                  creation: false,
-                  isUnique: false,
-                  isActive: true
-                }
-              });
-          } catch (error) {
-            next(error);
-          }
-        }
-        next();
-      });
-  }
-
-  /**
-   * This function should be called only for the indexed or unique fields.
-   * Curently there is only language that should be updated, and account
-   * methods will deprecate so the logic is simplified
-   */
-  async function notifyRegisterAboutUserDataChanges (username, fieldsForUpdate) {
-    // initialize service-register connection
-    const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
-    // send information update to service regsiter
-    await serviceRegisterConn.updateUserInServiceRegister(username, fieldsForUpdate, {});
-    // !!!!!! Now only language is updated and no validation errors should be thrown
+    next();
   }
 
   async function updateAccount(context, params, result, next) {
     try {
-      await userRepository.updateOne(context.user.id, params.update, true);
-      // retrieve and form user info
-      if (!Object.keys(params.update).includes('passwordHash')) {
-        const user: User = await userRepository.getById(context.user.id);
-        result.account = user.getAccount();
-      }
-
+      //const updateEventList = context.user.getEventsForUpdate(params.update);
+      await userRepository.updateOne(context.user.id, params.update);
       notifications.accountChanged(context.user);
-      next();
     } catch (err) {
-      return next(Registration.handleUniquenessErrors(err, ErrorMessages[ErrorIds.UnexpectedErrorWhileSavingTheEvent], params.update));
+      return next(Registration.handleUniquenessErrors(
+        err,
+        ErrorMessages[ErrorIds.UnexpectedErrorWhileSavingAccount],
+        params.update
+      ));
     }
+    next();
+  }
+
+  /**
+   * Build response body for the account update
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  async function buildResultData (context, params, result, next) {
+    const user: User = await userRepository.getById(context.user.id);
+    result.account = user.getAccount();
+    next();
   }
 };

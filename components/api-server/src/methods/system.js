@@ -31,17 +31,19 @@ module.exports = function (
 
   const POOL_REGEX = new RegExp('^' + 'pool@');
   const registration = new Registration(logging, storageLayer, servicesSettings);
+  const userRepository = new UserRepository(storageLayer.events);
 
   // ---------------------------------------------------------------- createUser
   systemAPI.register('system.createUser',
-    registration.prepareUserData,
     commonFns.getParamsValidation(methodsSchema.createUser.params),
+    registration.prepareUserData,
     registration.createUser.bind(registration),
     registration.sendWelcomeMail.bind(registration),
     );
 
   // ------------------------------------------------------------ createPoolUser
   systemAPI.register('system.createPoolUser',
+    registration.prepareUserData,
     registration.createPoolUser.bind(registration),
     registration.createUser.bind(registration),
   );
@@ -51,7 +53,6 @@ module.exports = function (
     countPoolUsers);
 
   async function countPoolUsers(context, params, result, next) {
-    //TODO Why temp user was overrden by pool user?
     try {
       const numUsers = await bluebird.fromCallback(cb => 
         storageLayer.events.count({}, {
@@ -76,10 +77,9 @@ module.exports = function (
 
   async function retrieveUser(context, params, result, next) {
     try {
-      const userRepository = new UserRepository(storageLayer.events);
       context.user = await userRepository.getAccountByUsername(params.username, true);
 
-      if (! context.user?.id) {
+      if (context.user == null) {
         return next(errors.unknownResource('user', params.username));
       }
       next();

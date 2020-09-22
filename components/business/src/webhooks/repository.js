@@ -20,10 +20,12 @@ const UsersRepository = require('components/business/src/users/repository');
 class Repository {
   storage: WebhooksStorage;
   userEventsStorage: UserEventsStorage;
+  usersRepository: UsersRepository;
 
   constructor (webhooksStorage: WebhooksStorage, userEventsStorage: UserEventsStorage) {
     this.storage = webhooksStorage;
     this.userEventsStorage = userEventsStorage;
+    this.usersRepository = new UsersRepository(this.userEventsStorage);
   }
 
   /**
@@ -31,8 +33,8 @@ class Repository {
    */
   async getAll(): Promise<Map<string, Array<Webhook>>> {
     let users;
-    const usersRepository = new UsersRepository(this.userEventsStorage);
-    users = await usersRepository.getAllUsernames();
+    
+    users = await this.usersRepository.getAllUsernames();
     const allWebhooks = new Map();
     
     await bluebird.all(users.map(retrieveWebhooks, this));

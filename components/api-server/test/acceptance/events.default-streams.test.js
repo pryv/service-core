@@ -428,15 +428,21 @@ describe("Events of system streams", () => {
             });
             it('[15H6] should add properties enforcing uniqueness in the storage', async () => {
               allEventsInDb = await bluebird.fromCallback(
-                (cb) => user.db.events.find({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
+                (cb) => user.db.events.database.find(
+                  { name: 'events' },
+                  { userId: user.attrs.id, streamIds: streamId },
+                  {}, cb)
+              );
               assert.equal(allEventsInDb.length, 2);  
               assert.equal(allEventsInDb[0].hasOwnProperty('email__unique'), true);  
               assert.equal(allEventsInDb[1].hasOwnProperty('email__unique'), true);  
             });
             it('[DA23] should add the ‘active’ streamId to the new event which should be removed from other events of the same stream', async () => {
               assert.deepEqual(res.body.event.streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
-              assert.deepEqual(allEventsInDb[0].streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
-              assert.deepEqual(allEventsInDb[1].streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
+              assert.deepEqual(allEventsInDb[0].streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
+              // check that second event is our new event and that it contains active streamId
+              assert.deepEqual(allEventsInDb[1]._id, res.body.event.id);
+              assert.deepEqual(allEventsInDb[1].streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
             });
             it('[D316] should notify register with the new data', async () => {
               assert.equal(scope.isDone(), true);
@@ -491,11 +497,12 @@ describe("Events of system streams", () => {
           describe('[6B8D] When creating an event that is already taken only on core', async () => {
             let serviceRegisterRequest;
             let streamId = SystemStreamsSerializer.addDotFromStreamId('email');
+            let email = charlatan.Lorem.characters(7);
             before(async function () {
               await createUser();
               eventData = {
                 streamIds: [streamId],
-                content: charlatan.Lorem.characters(7),
+                content: email,
                 type: 'string/pryv'
               };
   
@@ -518,9 +525,8 @@ describe("Events of system streams", () => {
               assert.equal(res.status, 400);
             });
             it('[121E] should return the correct error', async () => {
-              assert.equal(res.body.error.data.length, 1);
-              assert.equal(res.body.error.data[0].code, ErrorIds['Existing_email']);
-              assert.equal(res.body.error.data[0].message, ErrorMessages[ErrorIds['Existing_email']]);
+              assert.equal(res.body.error.id, ErrorIds.ItemAlreadyExists);
+              assert.deepEqual(res.body.error.data, { email: email });
             });
           });
           
@@ -544,9 +550,9 @@ describe("Events of system streams", () => {
           assert.equal(res.status, 400);
         });
         it('[90E6] should return the correct error', async () => {
-          assert.equal(res.body.error.id, ErrorIds.DeniedEventModification);
+          assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
           assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.options.STREAM_ID_USERNAME});
-          assert.equal(res.body.error.message, ErrorMessages[ErrorIds.DeniedEventModification]);
+          assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenNoneditableAccountStreamsEdit]);
         });
       });
     });
@@ -741,9 +747,9 @@ describe("Events of system streams", () => {
               it('[9004] should return 400', async () => {
                 assert.equal(res.status, 400);
               });
-              it('[E3AE] should return the correct error', async () => {
-                assert.equal(res.body.error.id, ErrorIds.DeniedMultipleAccountStreams);
-                assert.equal(res.body.error.message, ErrorMessages[ErrorIds.DeniedMultipleAccountStreams]);
+              it('[E3KE] should return the correct error', async () => {
+                assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
+                assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenMultipleAccountStreams]);
                 assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.addDotFromStreamId('email')});
               });
             });
@@ -767,9 +773,8 @@ describe("Events of system streams", () => {
                 assert.equal(res.status, 400);
               });
               it('[E3AE] should return the correct error', async () => {
-                assert.equal(res.body.error.id, ErrorIds.DeniedMultipleAccountStreams);
-                assert.equal(res.body.error.message, ErrorMessages[ErrorIds.DeniedMultipleAccountStreams]);
-                assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.addDotFromStreamId('email')});
+                assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
+                assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenToChangeAccountStreamId]);
               });
             });
           });
@@ -910,8 +915,12 @@ describe("Events of system streams", () => {
               });
             });
             it('[C457] should save an additional field to enforce uniqueness in mongodb', async () => {
-              const updatedEvent = await bluebird.fromCallback(
-                (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamIdWithDot }, null, cb));
+              updatedEvent = await bluebird.fromCallback(
+                (cb) => user.db.events.database.findOne(
+                  { name: 'events' },
+                  { userId: user.attrs.id, streamIds: streamIdWithDot },
+                  {}, cb)
+              );
               assert.equal(updatedEvent.content, eventData.content);
               assert.equal(updatedEvent.type, eventData.type);
               assert.equal(updatedEvent.hasOwnProperty(`${streamId}__unique`), true);  
@@ -1063,8 +1072,8 @@ describe("Events of system streams", () => {
           assert.equal(res.status, 400);
         });
         it('[BB5F] should return the correct error', async () => {
-          assert.equal(res.body.error.id, ErrorIds.DeniedEventModification);
-          assert.equal(res.body.error.message, ErrorMessages[ErrorIds.DeniedEventModification]);
+          assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
+          assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenNoneditableAccountStreamsEdit]);
           assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.options.STREAM_ID_USERNAME});
         });
       });
@@ -1130,18 +1139,20 @@ describe("Events of system streams", () => {
                 }).times(2).reply(200, { errors: [] });
               await createUser();
               initialEvent = await bluebird.fromCallback(
-                (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamIdWithDot }, null, cb));
-  
+                (cb) => user.db.events.database.findOne(
+                  { name: 'events' },
+                  { userId: user.attrs.id, streamIds: streamIdWithDot },
+                  {}, cb));
               await createAdditionalEvent(streamIdWithDot);
   
-              res = await request.delete(path.join(basePath, initialEvent.id))
+              res = await request.delete(path.join(basePath, initialEvent._id))
                 .set('authorization', access.token);
             });
             it('[43B1] should return 200', async () => { 
               assert.equal(res.status, 200);
             });
             it('[3E12] should return the trashed event', async () => {
-              assert.equal(res.body.event.id, initialEvent.id);
+              assert.equal(res.body.event.id, initialEvent._id);
               assert.equal(res.body.event.trashed, true);
              });
             it('[FJK3] should not return the event\'s internal properties that enforce db uniqueness', async () => { 
@@ -1200,7 +1211,8 @@ describe("Events of system streams", () => {
             assert.equal(res.status, 400);
           });
           it('[D4CA] should return the correct error', async () => { 
-            assert.equal(res.body.error.id, ErrorIds.DeniedEventModification);
+            assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
+            assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenAccountStreamsEventDeletion]);
           });
         });
       });
@@ -1228,7 +1240,8 @@ describe("Events of system streams", () => {
           assert.equal(res.status, 400);
         });
         it('[A727] should return the correct error', async () => {
-          assert.equal(res.body.error.id, ErrorIds.DeniedEventModification);
+          assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
+          assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenAccountStreamsEventDeletion]);
         });
       });
     });
