@@ -991,7 +991,7 @@ module.exports = function (
     next();
 
     function doesEventBelongToTheAccountStream () {
-      context.oldContentStreamIds = (context?.oldContent?.streamIds) ? context.oldContent.streamIds : [];
+      context.oldContentStreamIds = (context.oldContent != null) ? context.oldContent.streamIds : [];
       // check if event belongs to account stream ids
       oldMatchingAccountStreams = _.intersection(
         context.oldContentStreamIds,
@@ -1399,6 +1399,7 @@ module.exports = function (
     let streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(context.accountStreamId);
 
     // for isActive "context.removeActiveEvents" is not enought because it would be set 
+    // to false if old event was active and is still active (no change)
     fieldsForUpdate[streamIdWithoutDot] = [{
       value: context.content.content,
       isUnique: editableAccountStreams[context.accountStreamId].isUnique,

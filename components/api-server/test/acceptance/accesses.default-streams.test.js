@@ -32,6 +32,7 @@ describe("[B5FF] Account with default-streams", function () {
   let request;
   let res;
   let accountAccess;
+  let accountAccessData;
   let mongoFixtures;
   let basePath;
   let eventsBasePath;
@@ -69,9 +70,7 @@ describe("[B5FF] Account with default-streams", function () {
         ]
       })
       .set('authorization', access.token);
-    if (accountAccess.body?.access?.id) {
-      accessInDb = await getAccessInDb(accountAccess.body.access.id);
-    }
+    accountAccessData = accountAccess.body.access;
   }
 
   async function getAccessInDb (id) {
@@ -163,10 +162,10 @@ describe("[B5FF] Account with default-streams", function () {
           assert.equal(accountAccess.status, 201);
         });
         it('[BUYP] Access should be created in the database', async () => {
-          assert.deepEqual(accessInDb.permissions, [{ streamId: streamId, level: permissionLevel }]);
+          assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
         });
         it('[S3IQ] User can read visible stream event with this access', async () => {
-          res = await request.get(eventsBasePath).set('authorization', accessInDb.token);
+          res = await request.get(eventsBasePath).set('authorization', accountAccessData.token);
           assert.equal(res.body.events.length, 1);
           assert.equal(res.body.events[0].streamId, streamId);
         });
@@ -181,7 +180,7 @@ describe("[B5FF] Account with default-streams", function () {
           assert.equal(accountAccess.status, 201);
         });
         it('[APYN] Access should be created in the database', async () => {
-          assert.deepEqual(accessInDb.permissions, [{ streamId: streamId, level: permissionLevel }]);
+          assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
         });
       });
       describe('[84B0] When user tries to create access with permission level contribute', async () => {
@@ -194,7 +193,7 @@ describe("[B5FF] Account with default-streams", function () {
           assert.equal(accountAccess.status, 201);
         });
         it('[Q8R8] Access should be created in the database', async () => {
-          assert.deepEqual(accessInDb.permissions, [{ streamId: streamId, level: permissionLevel }]);
+          assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
         });
         it('[TI1X] User can create visible stream event with this access', async () => {
           scope = nock(config.get('services:register:url'))
@@ -210,7 +209,7 @@ describe("[B5FF] Account with default-streams", function () {
               content: charlatan.Lorem.characters(7),
               type: 'string/pryv'
             })
-            .set('authorization', accessInDb.token);
+            .set('authorization', accountAccessData.token);
 
           assert.equal(newEvent.status, 201);
           assert.equal(newEvent.body.hasOwnProperty('event'), true);
@@ -227,10 +226,10 @@ describe("[B5FF] Account with default-streams", function () {
           assert.equal(accountAccess.status, 201);
         });
         it('[65I4] Access should be created in the database', async () => {
-          assert.deepEqual(accessInDb.permissions, [{ streamId: streamId, level: permissionLevel }]);
+          assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
         });
         it('[L99L] User can access visible events in storageUsed with this access', async () => {
-          res = await request.get(eventsBasePath).set('authorization', accessInDb.token);
+          res = await request.get(eventsBasePath).set('authorization', accountAccessData.token);
           assert.equal(res.body.events.length, 7);
           validation.validateAccountEvents(res.body.events);
         });
@@ -245,10 +244,10 @@ describe("[B5FF] Account with default-streams", function () {
           assert.equal(accountAccess.status, 201);
         });
         it('[U3UM] Access should be created in the database', async () => {
-          assert.deepEqual(accessInDb.permissions, [{ streamId: streamId, level: permissionLevel }]);
+          assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
         });
         it('[A4UP] User can access visible events in storageUsed with this access', async () => {
-          res = await request.get(eventsBasePath).set('authorization', accessInDb.token);
+          res = await request.get(eventsBasePath).set('authorization', accountAccessData.token);
           assert.equal(res.body.events.length, 2);
           assert.isTrue([
             SystemStreamsSerializer.addDotFromStreamId('attachedFiles'),
