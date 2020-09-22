@@ -35,14 +35,14 @@ exports.resetUsers = async () => {
         $in: Object.keys(SystemStreamsSerializer.getAllAccountStreams())
       }
     }, cb));
-  const userRepository = new UserRepository(storage.user.events);
+  const usersRepository = new UserRepository(storage.user.events);
   
   let i;
   let userObj: User;
   for (i = 0; i < users.length; i++){
     let user = Object.assign({}, users[i]);
     userObj = new User(user);
-    await userRepository.insertOne(userObj);
+    await usersRepository.insertOne(userObj);
   }
 };
 //TODO IEVA - do I still need this?
@@ -50,7 +50,7 @@ exports.resetUsersWithAdditionalProperties = async () => {
   await bluebird.fromCallback(cb => storage.user.events.database.deleteMany(
     { name: 'events' }, {}, cb));
   
-  const userRepository = new UserRepository(storage.user.events);
+  const usersRepository = new UserRepository(storage.user.events);
 
   let i;
   let userObj: User;
@@ -59,7 +59,7 @@ exports.resetUsersWithAdditionalProperties = async () => {
     user.insurancenumber = charlatan.Number.number(3);
     user.phoneNumber = charlatan.Number.number(3);
     userObj = new User(user);
-    await userRepository.insertOne(userObj);
+    await usersRepository.insertOne(userObj);
   }
 };
 

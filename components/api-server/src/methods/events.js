@@ -56,7 +56,7 @@ module.exports = function (
   auditSettings, updatesSettings, openSourceSettings
 ) {
 
-  const userRepository = new UserRepository(userEventsStorage);
+  const usersRepository = new UserRepository(userEventsStorage);
   const config = getConfig();
 
   // initialize service-register connection
@@ -1087,7 +1087,7 @@ module.exports = function (
       // approximately update account storage size
       context.user.storageUsed.attachedFiles += fileInfo.size;
       
-      await userRepository.updateOne(
+      await usersRepository.updateOne(
         context.user.id,
         { attachedFiles: context.user.storageUsed.attachedFiles });
     }
@@ -1222,7 +1222,7 @@ module.exports = function (
           return;
         }
         context.user.storageUsed.attachedFiles -= getTotalAttachmentsSize(context.event);
-        await userRepository.updateOne(context.user.id, context.user.storageUsed);
+        await usersRepository.updateOne(context.user.id, context.user.storageUsed);
       }
     ], next);
   }
@@ -1278,7 +1278,7 @@ module.exports = function (
 
         // approximately update account storage size
         context.user.storageUsed.attachedFiles -= deletedAtt.size;
-        await userRepository.updateOne(context.user.id, context.user.storageUsed);
+        await usersRepository.updateOne(context.user.id, context.user.storageUsed);
         notifications.eventsChanged(context.user);
         next();
       } catch (err) {

@@ -97,7 +97,7 @@ describe('Access permissions', function () {
           limit: 100, // i.e. all
           state: 'all'
         }; 
-        request.get(basePath, token(2)).query(params).end(async function (res) {
+        request.get(basePath, token(2)).query(params).end(function (res) {
           validation.checkFilesReadToken(res.body.events, testData.accesses[2],
             filesReadTokenSecret);
           validation.sanitizeEvents(res.body.events);

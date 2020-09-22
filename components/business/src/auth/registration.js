@@ -27,7 +27,7 @@ class Registration {
   logger: any;
   storageLayer: any;
   serviceRegisterConn: ServiceRegister;
-  userRepository: UserRepository; 
+  usersRepository: UserRepository; 
   accountStreamsSettings: any = SystemStreamsSerializer.getFlatAccountStreamSettings();
   servicesSettings: any; // settigns to get the email to send user welcome email
 
@@ -40,7 +40,7 @@ class Registration {
       servicesSettings.register,
       logging.getLogger('service-register')
     );
-    this.userRepository = new UserRepository(
+    this.usersRepository = new UserRepository(
       this.storageLayer.events,
       this.storageLayer.sessions,
       this.storageLayer.accesses
@@ -111,7 +111,7 @@ class Registration {
     try {
       // assert that we have obtained a lock on register, so any conflicting fields here 
       // would be failed registration attempts that partially saved user data.
-      const existingUsers = await this.userRepository.findExistingUniqueFields(context.user.getUniqueFields());
+      const existingUsers = await this.usersRepository.findExistingUniqueFields(context.user.getUniqueFields());
 
       // if any of unique fields were already saved, it means that there was an error
       // saving in service register (before this step there is a check that unique fields 
@@ -125,7 +125,7 @@ class Registration {
         for (let userId of distinctUserIds){
           // assert that unique fields are free to take
           // so if we get conflicting ones here, we can simply delete them
-          await this.userRepository.deleteOne(userId);
+          await this.usersRepository.deleteOne(userId);
 
           this.logger.error(
             `User with id ${
@@ -181,7 +181,7 @@ class Registration {
 
     try {
       const createUserWithSession = (context.calledMethodId === 'system.createPoolUser') ? false : true;
-      context.user = await this.userRepository.insertOne(context.user, createUserWithSession);
+      context.user = await this.usersRepository.insertOne(context.user, createUserWithSession);
     } catch (err) {
       return next(Registration.handleUniquenessErrors(
         err,

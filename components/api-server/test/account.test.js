@@ -26,7 +26,7 @@ const UserRepository = require('components/business/src/users/repository');
 
 describe('account', function () {
   const user = Object.assign({}, testData.users[0]);
-  const userRepository = new UserRepository(storage);
+  const usersRepository = new UserRepository(storage);
   let basePath = '/' + user.username + '/account';
   let request = null; // must be set after server instance started
 
@@ -143,7 +143,7 @@ describe('account', function () {
           async function verifyData () {           
             try {
               request.get(basePath).end(async function (res) {
-                const retrievedUser = await userRepository.getAccountByUsername(res.body.account.username);
+                const retrievedUser = await usersRepository.getAccountByUsername(res.body.account.username);
                 validation.checkStoredItem(retrievedUser.getAccountWithId(), 'user');
               });
             } catch (err) {
@@ -220,7 +220,7 @@ describe('account', function () {
       assert.approximately(storageUsed.attachedFiles, initialStorageUsed.attachedFiles +
         newAtt.size, filesystemBlockSize);
       const updatedStorageUsed = storageUsed;
-      const retrievedUser = await userRepository.getById(user.id);
+      const retrievedUser = await usersRepository.getById(user.id);
       assert.deepEqual(retrievedUser.storageUsed, updatedStorageUsed);
     });
 
@@ -266,7 +266,7 @@ describe('account', function () {
         newAtt = testData.attachments.image;
       async.series([
         async function checkInitial () {
-          const retrievedUser = await userRepository.getById(user.id);
+          const retrievedUser = await usersRepository.getById(user.id);
           initialStorageUsed = retrievedUser.storageUsed;
         },
         function addAttachment(stepDone) {
@@ -278,7 +278,7 @@ describe('account', function () {
               });
         },
         async function checkUpdated () {
-          const retrievedUser = await userRepository.getById(user.id);
+          const retrievedUser = await usersRepository.getById(user.id);
           initialStorageUsed = retrievedUser.storageUsed;
           retrievedUser.storageUsed.dbDocuments.should.eql(initialStorageUsed.dbDocuments);
           retrievedUser.storageUsed.attachedFiles.should.be.approximately(

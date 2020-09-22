@@ -94,9 +94,9 @@ class MethodContext {
   // Load the user identified by `this.username`, storing it in `this.user`.
   async retrieveUser(storage: StorageLayer) {
     try {
-      const userRepository = new UserRepository(storage.events);
+      const usersRepository = new UserRepository(storage.events);
       // get user details
-      this.user = await userRepository.getAccountByUsername(this.username, true);
+      this.user = await usersRepository.getAccountByUsername(this.username, true);
       if (!this.user?.id)
         throw errors.unknownResource('user', this.username);
     } catch (err) {

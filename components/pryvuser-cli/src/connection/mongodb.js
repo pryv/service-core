@@ -82,8 +82,8 @@ class MongoDB {
     await Promise.all(drops);
 
     // Drop the user itself.
-    const userRepository = new UserRepository(storage.events);
-    await userRepository.deleteOne(user.id);
+    const usersRepository = new UserRepository(storage.events);
+    await usersRepository.deleteOne(user.id);
 
     await bluebird.fromCallback(
       cb => storage.sessions.remove( 
@@ -91,9 +91,9 @@ class MongoDB {
   }
 
   async findUser (username: string): Promise<?UserAttributes> {
-    const userRepository = new UserRepository(this.storageLayer.events);
+    const usersRepository = new UserRepository(this.storageLayer.events);
     
-    const user: User = await userRepository.getAccountByUsername(username, true);
+    const user: User = await usersRepository.getAccountByUsername(username, true);
     return user;
   }
 

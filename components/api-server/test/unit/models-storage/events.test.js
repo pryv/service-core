@@ -60,7 +60,7 @@ describe('Events storage', () => {
 
     it('[7C22] must throw a duplicate error when username field is not unique', async () => {
       try {
-        const userRepository = new UserRepository(eventsStorage);
+        const usersRepository = new UserRepository(eventsStorage);
         const id = charlatan.Lorem.characters(10);
         const userObj: User = new User({
           id: id,
@@ -68,7 +68,7 @@ describe('Events storage', () => {
           password: charlatan.Lorem.characters(10),
           email: charlatan.Internet.email(),
         });
-        await userRepository.insertOne(userObj);
+        await usersRepository.insertOne(userObj);
 
         assert.isTrue(false);
       } catch (err) {
@@ -86,12 +86,12 @@ describe('Events storage', () => {
 
     it('[6CFE] must throw a duplicate error when email field is not unique', async () => {
       try {
-        const userRepository = new UserRepository(eventsStorage);
+        const usersRepository = new UserRepository(eventsStorage);
         const userObj: User = new User({
           id: charlatan.Lorem.characters(10),
           email: email
         });
-        await userRepository.insertOne(userObj);
+        await usersRepository.insertOne(userObj);
         console.log('Test failed because error was not thrown');
         assert.isTrue(false);
       } catch (err) {

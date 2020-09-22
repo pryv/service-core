@@ -277,9 +277,9 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
   async createUser (): Object<mixed> {
     const db = this.db;
     const attributes = this.attrs;
-    const userRepository = new UserRepository(db.events);
+    const usersRepository = new UserRepository(db.events);
     let userObj: User = new User(attributes);
-    await userRepository.insertOne(userObj);
+    await usersRepository.insertOne(userObj);
     return this.attrs;
   }
 

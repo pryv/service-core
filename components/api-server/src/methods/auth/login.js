@@ -40,9 +40,9 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
   }
 
   async function checkPassword (context, params, result, next) {
-    const userRepository = new UserRepository(userEventsStorage);
+    const usersRepository = new UserRepository(userEventsStorage);
     try {
-      const isValid = await userRepository.checkUserPassword(context.user.id, params.password);
+      const isValid = await usersRepository.checkUserPassword(context.user.id, params.password);
       if (!isValid) {
         //TODO IEVA -different error than while changing the password
         return next(errors.invalidCredentials());

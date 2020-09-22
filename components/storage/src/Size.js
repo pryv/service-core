@@ -39,8 +39,8 @@ class Size {
       dbDocuments: await computeCategory(this.dbDocumentsItems),
       attachedFiles: await computeCategory(this.attachedFilesItems),
     }
-    const userRepository = new UserRepository(this.userEventsStorage);
-    await userRepository.updateOne(user.id, storageUsed);
+    const usersRepository = new UserRepository(this.userEventsStorage);
+    await usersRepository.updateOne(user.id, storageUsed);
 
     return storageUsed;
 

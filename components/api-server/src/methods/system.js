@@ -31,7 +31,7 @@ module.exports = function (
 
   const POOL_REGEX = new RegExp('^' + 'pool@');
   const registration = new Registration(logging, storageLayer, servicesSettings);
-  const userRepository = new UserRepository(storageLayer.events);
+  const usersRepository = new UserRepository(storageLayer.events);
 
   // ---------------------------------------------------------------- createUser
   systemAPI.register('system.createUser',
@@ -77,7 +77,7 @@ module.exports = function (
 
   async function retrieveUser(context, params, result, next) {
     try {
-      context.user = await userRepository.getAccountByUsername(params.username, true);
+      context.user = await usersRepository.getAccountByUsername(params.username, true);
 
       if (context.user == null) {
         return next(errors.unknownResource('user', params.username));
