@@ -12,6 +12,8 @@ const generateId = require('cuid');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 
+const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
+
 exports.createIdIfMissing = function (item) {
   item.id = item.id || generateId();
   return item;
