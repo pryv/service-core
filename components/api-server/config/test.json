@@ -13,7 +13,10 @@
   "serviceInfoUrl": "file://test/service-info.json",
   "services": {
     "email": {
-      "enabled": false,
+      "enabled": {
+        "welcome": false,
+        "resetPassword": false
+      },
       "method": "mandrill",
       "url": "https://mandrillapp.local/api/1.0/messages/send-template.json"
     },
