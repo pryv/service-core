@@ -1,3 +1,10 @@
 {
-  "serviceInfoUrl": "file://test/service-info.json"
+  "serviceInfoUrl": "file://test/service-info.json",
+  "openSource": {
+    "isActive": false
+  },
+  "mongodb": {
+    "host": "localhost",
+    "name": "pryv-node-test"
+  }
 }

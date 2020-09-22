@@ -16,11 +16,6 @@ type AppAndEndWare = {
   routesDefined: () => mixed, 
 }
 
-const loadConfig = async function () {
-  const config = getConfig();
-  await config.init();
-}
-
 /**
  * The Express app definition.
  */
@@ -30,8 +25,10 @@ module.exports = function expressApp(
   requestTraceMiddleware: express$Middleware
 ): AppAndEndWare {
   // load new config before starting the application
-  loadConfig();
-
+  (async () => {
+    const config = getConfig();
+    await config.init();
+  })();
   const app = express();
 
   /** Called once routes are defined on app, allows finalizing middleware stack
