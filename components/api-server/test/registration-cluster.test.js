@@ -58,7 +58,7 @@ describe('registration: cluster', function() {
     await config.init();
     config.set('singleNode:isActive', false);
     config.set('openSource:isActive', false);
-    regUrl = settings.get('services.register.url').str();
+    regUrl = config.get('services:register:url');
 
     app = new Application(settings);
     await app.initiate();
