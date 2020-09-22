@@ -541,7 +541,7 @@ describe('registration: cluster', function() {
     });
 
     describe('when custom account streams validation exists', () => {
-      describe('[F69W] when email is set as required and it is not set in the request', () => {
+      describe('when email is set as required and it is not set in the request', () => {
         before(async () => {
           userData = defaults();
           // remove email from the request
@@ -564,7 +564,7 @@ describe('registration: cluster', function() {
           ]);
         });
       });
-      describe('[JD3A] when field does not match custom validation settings', () => {
+      describe('when field does not match custom validation settings', () => {
         before(async () => {
           userData = userData = defaults();
           userData.insurancenumber = 'abc';

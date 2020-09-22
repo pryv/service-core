@@ -27,7 +27,7 @@ const _ = require('lodash');
 const chai = require('chai');
 const assert = chai.assert; 
 
-describe('[JI3F] streams', function () {
+describe('streams', function () {
 
   var user = Object.assign({}, testData.users[0]),
       initialRootStreamId = testData.streams[0].id,
@@ -827,7 +827,7 @@ describe('[JI3F] streams', function () {
         function verifyLinkedEvents(stepDone) {
           eventsStorage.findAll(user, null, async function (err, events) {
 
-            // lets separate core events from all other events and validate them separatelly
+            // lets separate system events from all other events and validate them separately
             const separatedEvents = validation.separateAccountStreamsAndOtherEvents(events);
             events = separatedEvents.events;
             events.length.should.eql(testData.events.length, 'events');
