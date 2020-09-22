@@ -748,7 +748,8 @@ module.exports = function (
       // if update was not done and no errors were catched
       //, perhaps user is trying to edit account streams
       if (!updatedEvent) {
-        return next(errors.DeniedEventModification());
+        return next(errors.invalidOperation(
+          ErrorMessages[ErrorIds.ForbiddenNoneditableAccountStreamsEdit]));
       }
 
       // To remove when streamId not necessary
@@ -1164,7 +1165,8 @@ module.exports = function (
       // if update was not done and no errors were catched
       //, perhaps user is trying to edit account streams
       if (!updatedEvent) {
-        return next(errors.DeniedEventModification());
+        return next(errors.invalidOperation(
+          ErrorMessages[ErrorIds.ForbiddenNoneditableAccountStreamsEventsDeletion]));
       }
 
       // To remove when streamId not necessary
@@ -1262,7 +1264,8 @@ module.exports = function (
         // if update was not done and no errors were catched
         //, perhaps user is trying to edit account streams
         if (!alreadyUpdatedEvent) {
-          return next(errors.DeniedEventModification());
+          return next(errors.invalidOperation(
+            ErrorMessages[ErrorIds.ForbiddenNoneditableAccountStreamsEventsDeletion]));
         }
 
         // To remove when streamId not necessary

@@ -180,11 +180,8 @@ class Registration {
     }
 
     try {
-      if (context.calledMethodId === 'system.createPoolUser') {
-        context.user = await this.userRepository.insertOne( context.user );
-      } else {
-        context.user = await this.userRepository.insertOne( context.user, true );
-      }
+      const createUserWithSession = (context.calledMethodId === 'system.createPoolUser') ? false : true;
+      context.user = await this.userRepository.insertOne(context.user, createUserWithSession);
     } catch (err) {
       return next(Registration.handleUniquenessErrors(
         err,
