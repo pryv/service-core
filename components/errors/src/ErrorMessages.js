@@ -36,16 +36,16 @@ const ErrorMessages = {
   [ErrorIds.EmailRequired]: 'Email is required',
   [ErrorIds.PasswordRequired]: 'Password is required',
   [ErrorIds.InvalidPassword]: 'Password should have from 5 to 23 characters',
-  [ErrorIds.ForbiddenMultipleAccountStreams]: 'Event cannot be part of multiple account streams.',
+  [ErrorIds.ForbiddenMultipleAccountStreams]: 'Event cannot be part of multiple system streams.',
   [ErrorIds.UnexpectedErrorWhileSavingTheEvent]: 'Unexpected error while saving the event, please try again in a minute.',
   [ErrorIds.UnexpectedErrorWhileSavingAccount]: 'Unexpected error while saving account information, please try again in a minute.',
   [ErrorIds.UnexpectedErrorWhileCreatingUser]: 'Unexpected error while creating a user.',
-  [ErrorIds.ForbiddenNoneditableAccountStreamsEdit]: 'Forbidden event modification, you are trying to edit an account event or trying to delete active event.',
-  [ErrorIds.ForbiddenNoneditableAccountStreamsEventsDeletion]: 'It is forbidden to delete noneditable or active account stream event.',
-  [ErrorIds.ForbiddenToChangeAccountStreamId]: 'It is forbidden to change account stream id.',
-  [ErrorIds.ForbiddenAccountStreamsActions]: 'It is forbidden to do any modification to account streams.',
-  [ErrorIds.ForbiddenAccountStreamsEventDeletion]: 'It is forbidden to delete noneditable or active account stream events.',
-  [ErrorIds.ForbiddenToEditNoneditableAccountFields]: 'It is forbidden to edit noneditable acccount fields.',
+  [ErrorIds.ForbiddenNoneditableAccountStreamsEdit]: 'Forbidden event modification, you are trying to edit a system event or trying to delete active system event.',
+  [ErrorIds.ForbiddenNoneditableAccountStreamsEventsDeletion]: 'It is forbidden to delete non-editable or active system events.',
+  [ErrorIds.ForbiddenToChangeAccountStreamId]: 'It is forbidden to change system stream id.',
+  [ErrorIds.ForbiddenAccountStreamsActions]: 'It is forbidden to modify system streams.',
+  [ErrorIds.ForbiddenAccountStreamsEventDeletion]: 'It is forbidden to delete non-editable or active system events.',
+  [ErrorIds.ForbiddenToEditNoneditableAccountFields]: 'It is forbidden to edit non-editable acccount fields.',
 };
 Object.freeze(ErrorMessages);
 
