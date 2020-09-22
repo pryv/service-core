@@ -112,12 +112,9 @@ exports.idInOrClause = function (query) {
 exports.removeFieldsEnforceUniqueness = function (dbItem) {
   if (dbItem == null) { return dbItem; }
 
-  dbItem = Object.keys(dbItem)
-    .filter(key => ! /__unique/.test(key))
-    .reduce((obj, key) => {
-      obj[key] = dbItem[key];
-      return obj;
-    }, {});
+  Object.keys(dbItem).forEach(key => {
+    if (key.endsWith('__unique') delete dbItem.key;
+  });
 
   return dbItem;
 };
