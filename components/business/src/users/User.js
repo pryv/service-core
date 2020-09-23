@@ -14,6 +14,7 @@ const encryption = require('components/utils').encryption;
 
 const treeUtils = require('components/utils/src/treeUtils');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
+const UsersRepository = require('components/business/src/users/repository');
 
 const getConfig: () => Config = require('components/api-server/config/Config')
   .getConfig;
@@ -117,7 +118,7 @@ class User {
     updateKeys.forEach(streamIdWithoutDot => {
       // check if field value was changed
       if (updateData[streamIdWithoutDot] !== this[streamIdWithoutDot]){
-        let streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamIdWithoutDot);
+        let streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamIdWithoutDot);
         updateRequest[streamIdWithoutDot] = [{
           value: updateData[streamIdWithoutDot],
           isUnique: editableAccountStreams[streamIdWithDot].isUnique,
@@ -130,10 +131,35 @@ class User {
   }
   /**
    * 1) Build events for the given updateData
-   * @param {*} updateData
+   * @param {*} update
    */
-  getEventsForUpdate (updateData) {
-    
+  async getEventsDataForUpdate (update) {
+    const uniqueAccountStreamIds = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutDot();
+
+    // change password into hash if it exists
+    if (update.password && !update.passwordHash) {
+      update.passwordHash = await bluebird.fromCallback((cb) => encryption.hash(update.password, cb));
+    }
+    delete update.password;
+
+    // Start a transaction session
+    const streamIdsForUpdate = Object.keys(update);
+    let events = [];
+
+    // update all account streams and don't allow additional properties
+    for (let i = 0; i < streamIdsForUpdate.length; i++) {
+      let streamIdWithoutDot = streamIdsForUpdate[i];
+      // if needed append field that enforces uniqueness
+      let updateData = { content: update[streamIdWithoutDot] };
+      if (uniqueAccountStreamIds.includes(streamIdWithoutDot)) {
+        updateData[`${streamIdWithoutDot}__unique`] = update[streamIdWithoutDot];
+      }
+      events.push({
+        updateData: updateData,
+        streamId: SystemStreamsSerializer.addDotToStreamId(streamIdWithoutDot)
+      });
+    }
+    return events;
   }
 }
 
@@ -166,6 +192,7 @@ function loadAccountData (user: User, params): void {
 
 async function buildEventsFromAccount (user: User): Array<{}> {
   const userAccountStreams = SystemStreamsSerializer.getAllAccountStreamsLeafs();
+  
   // convert to events
   let account = user.getAccount();
 
@@ -192,7 +219,7 @@ async function buildEventsFromAccount (user: User): Array<{}> {
         parameter = account[streamIdWithoutDot];
       }
 
-      let accessId = (user.accessId) ? user.accessId : 'system';
+      let accessId = (user.accessId) ? user.accessId : UsersRepository.options.SYSTEM_USER_ACCESS_ID;
       const event = createEvent(
         streamId,
         parameter,

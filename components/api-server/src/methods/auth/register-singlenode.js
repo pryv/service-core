@@ -8,7 +8,7 @@ const _ = require('lodash');
 const Registration = require('components/business/src/auth/registration');
 const commonFns = require('./../helpers/commonFunctions');
 const methodsSchema = require('components/api-server/src/schema/authMethods');
-const UserRepository = require('components/business/src/users/repository');
+const UsersRepository = require('components/business/src/users/repository');
 const errors = require('components/errors').factory;
 
 /**
@@ -22,7 +22,7 @@ const errors = require('components/errors').factory;
 module.exports = function (api, logging, storageLayer, servicesSettings) {
   // REGISTER
   const registration = new Registration(logging, storageLayer, servicesSettings);
-  const userRepository = new UserRepository(storageLayer.events);
+  const usersRepository = new UsersRepository(storageLayer.events);
 
   api.register('auth.register.singlenode',
     // data validation methods
@@ -50,7 +50,7 @@ module.exports = function (api, logging, storageLayer, servicesSettings) {
   async function checkUsername(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
     result.reserved = false;
     try {
-      const existingUsers = await userRepository.findExistingUniqueFields({ username: params.username});
+      const existingUsers = await usersRepository.findExistingUniqueFields({ username: params.username});
 
       if (existingUsers.length > 0) {
         return next(errors.itemAlreadyExists('user', { username: params.username }));

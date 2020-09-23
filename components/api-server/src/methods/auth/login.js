@@ -9,7 +9,7 @@ const utils = require('components/utils');
 const errors = require('components/errors').factory;
 const methodsSchema = require('components/api-server/src/schema/authMethods');
 const _ = require('lodash');
-const UserRepository = require('components/business/src/users/repository');
+const UsersRepository = require('components/business/src/users/repository');
 const ErrorIds = require('components/errors/src/ErrorIds');
 /**
  * Auth API methods implementations.
@@ -40,9 +40,9 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
   }
 
   async function checkPassword (context, params, result, next) {
-    const userRepository = new UserRepository(userEventsStorage);
+    const usersRepository = new UsersRepository(userEventsStorage);
     try {
-      const isValid = await userRepository.checkUserPassword(context.user.id, params.password);
+      const isValid = await usersRepository.checkUserPassword(context.user.id, params.password);
       if (!isValid) {
         //TODO IEVA -different error than while changing the password
         return next(errors.invalidCredentials());
@@ -115,12 +115,12 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
     
     function createAccess(access, context, callback) {
       _.extend(access, context.accessQuery);
-      context.initTrackingProperties(access, 'system');
+      context.initTrackingProperties(access, UsersRepository.options.SYSTEM_USER_ACCESS_ID);
       userAccessesStorage.insertOne(context.user, access, callback);
     }
     
     function updatePersonalAccess(access, context, callback) {
-      context.updateTrackingProperties(access, 'system');
+      context.updateTrackingProperties(access, UsersRepository.options.SYSTEM_USER_ACCESS_ID);
       userAccessesStorage.updateOne(context.user, context.accessQuery, access, callback);
     }
   }

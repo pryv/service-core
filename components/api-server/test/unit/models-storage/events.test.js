@@ -12,7 +12,7 @@ const helpers = require('components/api-server/test/helpers');
 const eventsStorage = helpers.dependencies.storage.user.events;
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('components/api-server/test/test-helpers');
-const UserRepository = require('components/business/src/users/repository');
+const UsersRepository = require('components/business/src/users/repository');
 const User = require('components/business/src/users/User');
 
 describe('Events storage', () => {
@@ -60,7 +60,7 @@ describe('Events storage', () => {
 
     it('[7C22] must throw a duplicate error when username field is not unique', async () => {
       try {
-        const userRepository = new UserRepository(eventsStorage);
+        const usersRepository = new UsersRepository(eventsStorage);
         const id = charlatan.Lorem.characters(10);
         const userObj: User = new User({
           id: id,
@@ -68,7 +68,7 @@ describe('Events storage', () => {
           password: charlatan.Lorem.characters(10),
           email: charlatan.Internet.email(),
         });
-        await userRepository.insertOne(userObj);
+        await usersRepository.insertOne(userObj);
 
         assert.isTrue(false);
       } catch (err) {
@@ -86,12 +86,12 @@ describe('Events storage', () => {
 
     it('[6CFE] must throw a duplicate error when email field is not unique', async () => {
       try {
-        const userRepository = new UserRepository(eventsStorage);
+        const usersRepository = new UsersRepository(eventsStorage);
         const userObj: User = new User({
           id: charlatan.Lorem.characters(10),
           email: email
         });
-        await userRepository.insertOne(userObj);
+        await usersRepository.insertOne(userObj);
         console.log('Test failed because error was not thrown');
         assert.isTrue(false);
       } catch (err) {

@@ -6,7 +6,7 @@
  */
 const bluebird = require('bluebird');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const UserRepository = require('components/business/src/users/repository');
+const UsersRepository = require('components/business/src/users/repository');
 const User = require('components/business/src/users/User');
 
 /**
@@ -35,7 +35,7 @@ module.exports = async function (context, callback) {
     const usersCollection = await bluebird.fromCallback(cb => context.database.getCollection({ name: 'users' }, cb));
 
     const cursor = await usersCollection.find({});
-    let userRepository = new UserRepository(UserEventsStorage);
+    let usersRepository = new UsersRepository(UserEventsStorage);
 
     //let requests = [];
     let shouldContinue: boolean;
@@ -53,7 +53,7 @@ module.exports = async function (context, callback) {
           user.id = user._id;
         }
         const userObj: User = new User(user);
-        insertedUser = await userRepository.insertOne(userObj);
+        insertedUser = await usersRepository.insertOne(userObj);
       } catch (err) {
         shouldContinue = isExpectedUniquenessError(err);
         if (shouldContinue == false) {

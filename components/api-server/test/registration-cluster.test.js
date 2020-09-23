@@ -45,7 +45,7 @@ describe('registration: cluster', function() {
   let userData;
   let serviceRegisterRequests = [];
   let mongoFixtures;
-  let userRepository;
+  let usersRepository;
 
   // clean the database before starting all tests for registration
   before(async function () {
@@ -72,7 +72,7 @@ describe('registration: cluster', function() {
 
     request = supertest(app.expressApp);
 
-    userRepository = new UsersRepository(app.storageLayer.events);
+    usersRepository = new UsersRepository(app.storageLayer.events);
   });
   after(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
@@ -141,11 +141,11 @@ describe('registration: cluster', function() {
         res = await request.post(methodPath).send(userData);
         firstValidationRequest = _.merge(buildValidationRequest(userData), { uniqueFields: { email: userData.email } });
         firstRegistrationRequest = buildRegistrationRequest(userData);
-        firstUser = await userRepository.getAccountByUsername(userData.username, true);
+        firstUser = await usersRepository.getAccountByUsername(userData.username, true);
         oldEmail = userData.email;
         userData.email = charlatan.Internet.email();
         res = await request.post(methodPath).send(userData);
-        secondUser = await userRepository.getAccountByUsername(userData.username, true);
+        secondUser = await usersRepository.getAccountByUsername(userData.username, true);
       });
       it('[QV8Z] should respond with status 201', () => {
         assert.equal(res.status, 201);

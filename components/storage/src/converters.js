@@ -12,6 +12,8 @@ const generateId = require('cuid');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 
+const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
+
 exports.createIdIfMissing = function (item) {
   item.id = item.id || generateId();
   return item;
@@ -117,4 +119,21 @@ exports.removeFieldsEnforceUniqueness = function (dbItem) {
   });
 
   return dbItem;
+};
+
+/**
+ * If the event is marked as a trashed, remove fields that enforces uniqueness
+ * so that trashed events would not conflict with new events
+ * @param {} update 
+ */
+exports.removeUniqueFieldIfNeeded = function (update) {
+  if (update == null) { return update; }
+
+  if (update.$set?.trashed === true) {
+    const uniqueStreamIdsList = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutDot()
+    uniqueStreamIdsList.forEach(uniqueKeys => {
+      update['$unset'][`${uniqueKeys}__unique`] = 1;
+    });
+  }
+  return update;
 };

@@ -22,7 +22,7 @@ var cuid = require('cuid'),
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 const ServiceRegister = require('components/business/src/auth/service_register');
 const Registration = require('components/business/src/auth/registration');
-const UserRepository = require('components/business/src/users/repository');
+const UsersRepository = require('components/business/src/users/repository');
 const ErrorIds = require('components/errors/src/ErrorIds');
 const ErrorMessages = require('components/errors/src/ErrorMessages');
 const { getConfig } = require('components/api-server/config/Config');
@@ -56,7 +56,7 @@ module.exports = function (
   auditSettings, updatesSettings, openSourceSettings
 ) {
 
-  const userRepository = new UserRepository(userEventsStorage);
+  const usersRepository = new UsersRepository(userEventsStorage);
   const config = getConfig();
 
   // initialize service-register connection
@@ -344,6 +344,7 @@ module.exports = function (
     normalizeStreamIdAndStreamIds,
     applyPrerequisitesForCreation,
     validateEventContentAndCoerce,
+    doesEventBelongToTheAccountStream,
     validateAccountStreamsEventCreation,
     verifycanContributeToContext,
     appendAccountStreamsEventDataForCreation,
@@ -372,11 +373,35 @@ module.exports = function (
   }
 
   /**
-   * Check if event belongs to account stream,
-   * if yes, validate and prepend context with the properties that will be
-   * used later like:
-   * a) doesEventBelongToAccountStream: boolean
-   * c) accountStreamId - string - account streamId
+   * Check if previous event(or "new event" for events creation) belongs to the account
+   * streams
+   * 
+   * @param {*} context 
+   * @param {*} params 
+   * @param {*} result 
+   * @param {*} next 
+   */
+  function doesEventBelongToTheAccountStream (context, params, result, next) {
+    const allAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
+    // check streamIds intersection with old event streamIds 
+    // for new event it should be current context
+    context.oldContentStreamIds = (context.oldContent != null) ? context.oldContent.streamIds : context.content.streamIds;
+    
+    // check if event belongs to account stream ids
+    matchingAccountStreams = _.intersection(
+      context.oldContentStreamIds,
+      allAccountStreamsIds
+    );
+    context.doesEventBelongToAccountStream = matchingAccountStreams.length > 0;
+    context.eventAccountStreams = matchingAccountStreams;
+    if (context.eventAccountStreams.length > 0) {
+      context.accountStreamId = matchingAccountStreams[0];
+    }
+    next();
+  }
+
+  /**
+   * Validate account stream events
    * 
    * @param {*} context 
    * @param {*} params 
@@ -385,25 +410,11 @@ module.exports = function (
    */
   function validateAccountStreamsEventCreation (context, params, result, next) {
     let matchingAccountStreams = [];
-    const allAccountStreamsIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
-    if (doesEventBelongToTheAccountStream()) {
-      context.accountStreamId = matchingAccountStreams[0];
+    if (context.doesEventBelongToAccountStream) {
       checkIfStreamIdIsNotEditable(context.accountStreamId);
       checkIfUserTriesToAddMultipleAccountStreamIds(matchingAccountStreams);
     }
     next();
-
-    function doesEventBelongToTheAccountStream () {
-      context.oldContentStreamIds = [];
-      
-      // check if event belongs to account stream ids
-      matchingAccountStreams = _.intersection(
-        context.content.streamIds,
-        allAccountStreamsIds
-      );
-      context.doesEventBelongToAccountStream = matchingAccountStreams.length > 0;
-      return context.doesEventBelongToAccountStream;
-    }
   }
 
 
@@ -572,6 +583,7 @@ module.exports = function (
     normalizeStreamIdAndStreamIds,
     applyPrerequisitesForUpdate,
     validateEventContentAndCoerce,
+    doesEventBelongToTheAccountStream,
     validateAccountStreamsEventEdition,
     generateLogIfNeeded,
     updateAttachments,
@@ -748,7 +760,8 @@ module.exports = function (
       // if update was not done and no errors were catched
       //, perhaps user is trying to edit account streams
       if (!updatedEvent) {
-        return next(errors.DeniedEventModification());
+        return next(errors.invalidOperation(
+          ErrorMessages[ErrorIds.ForbiddenNoneditableAccountStreamsEdit]));
       }
 
       // To remove when streamId not necessary
@@ -971,17 +984,20 @@ module.exports = function (
    * @param {*} next 
    */
   function validateAccountStreamsEventEdition (context, params, result, next) { 
-    const allAccountStreamIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
-    context.eventBelongsToAccountStream = doesEventBelongToTheAccountStream();
-    if (!context.eventBelongsToAccountStream) {
+    if (!context.doesEventBelongToAccountStream) {
       return next();
     }
 
+    // previously we have validated with old config streamIds, now with new streamIds
+    const allAccountStreamIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
     const matchingAccountStreams = _.intersection(
       context.content.streamIds,
       allAccountStreamIds
     );
 
+    checkIfUserTriesToRemoveAccountStreamId(matchingAccountStreams);
+    // sequence is important, because checkIfUserTriesToRemoveAccountStreamId checks that 
+    // matchingAccountStreams is not empty
     context.accountStreamId = matchingAccountStreams[0];
     checkIfStreamIdIsNotEditable(context.accountStreamId);
     checkIfUserTriesToAddMultipleAccountStreamIds(matchingAccountStreams)
@@ -989,17 +1005,12 @@ module.exports = function (
     
     next();
 
-    function doesEventBelongToTheAccountStream () {
-      context.oldContentStreamIds = (context?.oldContent?.streamIds) ? context.oldContent.streamIds : [];
-      // check if event belongs to account stream ids
-      oldMatchingAccountStreams = _.intersection(
-        context.oldContentStreamIds,
-        allAccountStreamIds
-      );
-      context.doesEventBelongToAccountStream = oldMatchingAccountStreams.length > 0;
-      return context.doesEventBelongToAccountStream;
+    function checkIfUserTriesToRemoveAccountStreamId (matchingAccountStreams) {
+      if (matchingAccountStreams.length == 0) {
+        throw errors.invalidOperation(
+          ErrorMessages[ErrorIds.ForbiddenToChangeAccountStreamId]);
+      }
     }
-
     /**
      * Forbid event editing if user tries to change the account srtreamId
      * @param {*} oldContentStreamIds 
@@ -1086,8 +1097,8 @@ module.exports = function (
       // approximately update account storage size
       context.user.storageUsed.attachedFiles += fileInfo.size;
       
-      await userRepository.updateOne(
-        context.user.id,
+      await usersRepository.updateOne(
+        context.user,
         { attachedFiles: context.user.storageUsed.attachedFiles });
     }
     return attachments;
@@ -1097,50 +1108,38 @@ module.exports = function (
 
   api.register('events.delete',
     commonFns.getParamsValidation(methodsSchema.del.params),
+    checkEventForDelete,
+    doesEventBelongToTheAccountStream,
+    validateAccountStreamsEventDeletion,
     function (context, params, result, next) {
-      checkEventForDelete(context, params.id, function (err, event) {
-        if (err) {
-          return next(err);
-        }
-
-        context.event = event;
-        if (!event.trashed) {
-          // move to trash
-          flagAsTrashed(context, params, result, next);
-        } else {
-          // actually delete
-          deleteWithData(context, params, result, next);
-        }
-      });
+      if (!context.oldContent.trashed) {
+        // move to trash
+        flagAsTrashed(context, params, result, next);
+      } else {
+        // actually delete
+        deleteWithData(context, params, result, next);
+      }
     }, notify);
 
   /**
-   * If event belongs to the account stream - 
-   * 1) deal with properties that enforces uniqueness
-   * 2) send to service-register if needed
+   * If event belongs to the account stream 
+   * send update to service-register if needed
    * 
    * @param object user {id: '', username: ''}
    * @param object event
-   * @param string id - eventId
    * @param string accountStreamId - accountStreamId
    */
-  async function deleteUniqueFields (user, event, id, accountStreamId) {
-    let updatedEvent;
+  async function sendUpdateToServiceRegister (user, event, accountStreamId) {
+    if (config.get('singleNode:isActive')) {
+      return;
+    }
     const editableAccountStreams = SystemStreamsSerializer.getEditableAccountStreams();
     const streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(accountStreamId);
     if (editableAccountStreams[accountStreamId].isUnique) {
-      // replace unique property with random string when event is marked as trashed
-      updatedEvent = await bluebird.fromCallback(cb =>
-        userEventsStorage.updateOne(user, { _id: id },
-          { [`${streamIdWithoutDot}__unique`]: cuid() }, cb));
-
-      if (!config.get('singleNode:isActive')) {
-        // send information update to service regsiter
-        await serviceRegisterConn.updateUserInServiceRegister(
-          user.username, {}, { [streamIdWithoutDot]: event.content});
-      }
+      // send information update to service regsiter
+      await serviceRegisterConn.updateUserInServiceRegister(
+        user.username, {}, { [streamIdWithoutDot]: event.content});
     }
-    return event;
   }
   
   async function flagAsTrashed(context, params, result, next) {
@@ -1148,23 +1147,22 @@ module.exports = function (
       trashed: true
     };
     context.updateTrackingProperties(updatedData);
-    let updatedEvent;
     try {
-      if(context.eventBelongsToAccountStream){
-        updatedEvent = await deleteUniqueFields(
+      if (context.doesEventBelongToAccountStream){
+        await sendUpdateToServiceRegister(
           context.user,
-          context.event,
-          params.id,
+          context.oldContent,
           context.accountStreamId,
         );
       }
-      updatedEvent = await bluebird.fromCallback(cb =>
+      let updatedEvent = await bluebird.fromCallback(cb =>
         userEventsStorage.updateOne(context.user, { _id: params.id }, updatedData, cb));
 
       // if update was not done and no errors were catched
       //, perhaps user is trying to edit account streams
       if (!updatedEvent) {
-        return next(errors.DeniedEventModification());
+        return next(errors.invalidOperation(
+          ErrorMessages[ErrorIds.ForbiddenNoneditableAccountStreamsEventsDeletion]));
       }
 
       // To remove when streamId not necessary
@@ -1220,7 +1218,7 @@ module.exports = function (
           return;
         }
         context.user.storageUsed.attachedFiles -= getTotalAttachmentsSize(context.event);
-        await userRepository.updateOne(context.user.id, context.user.storageUsed);
+        await usersRepository.updateOne(context.user, context.user.storageUsed);
       }
     ], next);
   }
@@ -1236,24 +1234,19 @@ module.exports = function (
 
   api.register('events.deleteAttachment',
     commonFns.getParamsValidation(methodsSchema.deleteAttachment.params),
+    checkEventForDelete,
     async function (context, params, result, next) {
-      var updatedEvent,
-        deletedAtt;
-      
       try {
-        updatedEvent = await bluebird.fromCallback(cb =>
-          checkEventForDelete(context, params.id, cb));
-
-        var attIndex = getAttachmentIndex(updatedEvent.attachments, params.fileId);
+        var attIndex = getAttachmentIndex(context.event.attachments, params.fileId);
         if (attIndex === -1) {
           return next(errors.unknownResource(
             'attachment', params.fileId
           ));
         }
-        deletedAtt = updatedEvent.attachments[attIndex];
-        updatedEvent.attachments.splice(attIndex, 1);
+        let deletedAtt = context.event.attachments[attIndex];
+        context.event.attachments.splice(attIndex, 1);
 
-        var updatedData = { attachments: updatedEvent.attachments };
+        var updatedData = { attachments: context.event.attachments };
         context.updateTrackingProperties(updatedData);
 
         let alreadyUpdatedEvent = await bluebird.fromCallback(cb =>
@@ -1262,7 +1255,8 @@ module.exports = function (
         // if update was not done and no errors were catched
         //, perhaps user is trying to edit account streams
         if (!alreadyUpdatedEvent) {
-          return next(errors.DeniedEventModification());
+          return next(errors.invalidOperation(
+            ErrorMessages[ErrorIds.ForbiddenNoneditableAccountStreamsEventsDeletion]));
         }
 
         // To remove when streamId not necessary
@@ -1275,7 +1269,7 @@ module.exports = function (
 
         // approximately update account storage size
         context.user.storageUsed.attachedFiles -= deletedAtt.size;
-        await userRepository.updateOne(context.user.id, context.user.storageUsed);
+        await usersRepository.updateOne(context.user, context.user.storageUsed);
         notifications.eventsChanged(context.user);
         next();
       } catch (err) {
@@ -1295,13 +1289,14 @@ module.exports = function (
       requestedType;
   }
 
-  async function checkEventForDelete (context, eventId, callback) {
+  function checkEventForDelete (context, params, result, next) {
+    const eventId = params.id;
     userEventsStorage.findOne(context.user, { id: eventId }, null, function (err, event) {
       if (err) {
-        return callback(errors.unexpectedError(err));
+        return next(errors.unexpectedError(err));
       }
       if (! event) {
-        return callback(errors.unknownResource(
+        return next(errors.unknownResource(
           'event', eventId
         ));
       }
@@ -1314,45 +1309,40 @@ module.exports = function (
           break;
         }
       }
-      if (! canDeleteEvent) return callback(errors.forbidden());
+      if (!canDeleteEvent) return next(errors.forbidden());
+      // save event from the database as an oldContent
+      context.oldContent = event;
 
-      // check if event belongs to account streams and if it is allowed to delete it
-      const eventsAccountStreams = findAccountStreams(event);
-      context.eventBelongsToAccountStream = eventsAccountStreams.length > 0
-      if (context.eventBelongsToAccountStream) {
-        context.accountStreamId = eventsAccountStreams[0];
-        if (!isAccountEventDeletable(event)) return callback(errors.invalidOperation(
-          ErrorMessages[ErrorIds.ForbiddenAccountStreamsEventDeletion]));
-      }
-      callback(null, event);
+      // create an event object that could be modified
+      context.event = Object.assign({}, event);
+      next();
     });
   }
 
   /**
-   * Check if event belongs to any account stream
-   * @param {*} event 
+   * Check if event should not be allowed for deletion
+   * a) is not editable
+   * b) is active
    */
-  function findAccountStreams (event): string {
-    let allStreamIds = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
-    return _.intersection(event.streamIds, allStreamIds);
-  }
+  function validateAccountStreamsEventDeletion (context, params, result, next) {
+    if (!context.doesEventBelongToAccountStream) {
+      return next(); 
+    }
 
-/**
- * Check if event should not be allowed for editing
- * a) is not editable
- * b) is active
- */
-  function isAccountEventDeletable (event): Boolean {
-    let allowedToDelete = true;
     const editableAccountStreamsIds = Object.keys(SystemStreamsSerializer.getEditableAccountStreams());
-    const eventBelongsToEditableStream = _.intersection(event.streamIds, editableAccountStreamsIds).length > 0;
+    const eventBelongsToEditableStream = _.intersection(
+      context.oldContent.streamIds,
+      editableAccountStreamsIds
+    ).length > 0;
+
     if (
       !eventBelongsToEditableStream ||
-      (eventBelongsToEditableStream && event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE))
+      context.oldContent.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE)
     ) {
-        allowedToDelete = false;
+      return next(errors.invalidOperation(
+        ErrorMessages[ErrorIds.ForbiddenAccountStreamsEventDeletion]));
     }
-    return allowedToDelete;
+    next();
   }
 
   /**
@@ -1396,6 +1386,7 @@ module.exports = function (
     let streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(context.accountStreamId);
 
     // for isActive "context.removeActiveEvents" is not enought because it would be set 
+    // to false if old event was active and is still active (no change)
     fieldsForUpdate[streamIdWithoutDot] = [{
       value: context.content.content,
       isUnique: editableAccountStreams[context.accountStreamId].isUnique,

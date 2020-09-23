@@ -23,6 +23,7 @@ const url = require('url');
 const _ = require('lodash');
 const fs = require('fs');
 const os = require('os');
+const UsersRepository = require('components/business/src/users/repository');
 
 describe('auth', function() {
   this.timeout(5000);
@@ -86,7 +87,7 @@ describe('auth', function() {
               { name: authData.appId },
               null,
               function(err, access) {
-                access.modifiedBy.should.eql('system');
+                access.modifiedBy.should.eql(UsersRepository.options.SYSTEM_USER_ACCESS_ID);
                 stepDone();
               }
             );

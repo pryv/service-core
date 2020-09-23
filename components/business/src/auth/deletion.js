@@ -11,7 +11,7 @@ const rimraf = require('rimraf');
 const fs = require('fs');
 const path = require('path');
 const InfluxConnection = require('components/business/src/series/influx_connection');
-const UserRepository = require('components/business/src/users/repository');
+const UsersRepository = require('components/business/src/users/repository');
 const errors = require('components/errors').factory;
 
 import type { MethodContext } from 'components/model';
@@ -21,13 +21,13 @@ class Deletion {
   logger: any;
   storageLayer: any;
   settings: any;
-  userRepository: UserRepository;
+  usersRepository: UsersRepository;
 
   constructor(logging: any, storageLayer: any, settings: any) {
     this.logger = logging.getLogger('business/deletion');
     this.storageLayer = storageLayer;
     this.settings = settings;
-    this.userRepository = new UserRepository(this.storageLayer.events);
+    this.usersRepository = new UsersRepository(this.storageLayer.events);
   }
 
   checkIfAuthorized(
@@ -48,7 +48,7 @@ class Deletion {
     result: Result,
     next: ApiCallback
   ) {
-    const user = await this.userRepository.getAccountByUsername(params.username);
+    const user = await this.usersRepository.getAccountByUsername(params.username);
     if (!user || !user.id) {
       return next(errors.unknownResource('user', params.username));
     }
@@ -166,7 +166,7 @@ class Deletion {
           )
         );
 
-      await this.userRepository.deleteOne(context.user.id);
+      await this.usersRepository.deleteOne(context.user.id);
 
       await Promise.all(drops);
 

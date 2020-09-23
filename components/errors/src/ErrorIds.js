@@ -76,11 +76,6 @@ const ErrorIds = {
   /**
    * Throw this error for methods that are valid only for pryv.io
    */
-  NonValidForOpenSource: 'not-valid-for-open-pryv',
-  /**
-   * Denied event modification perhaps of belonging to the account streams
-   */
-  DeniedEventModification: 'denied-event-modification',
   DeniedStreamAccess: 'denied-stream-access',
   TooHighAccessForAccountStreams: 'too-high-access-for-account-stream',
   ForbiddenMultipleAccountStreams: 'forbidden-multiple-account-streams-events',
@@ -90,6 +85,7 @@ const ErrorIds = {
   UnexpectedErrorWhileSavingAccount: 'unexpected-error-while-saving-account',
   UnexpectedErrorWhileCreatingUser: 'unexpected-error-while-creating-user',
   ForbiddenNoneditableAccountStreamsEdit: 'forbidden-noneditable-account-streams-edit',
+  ForbiddenNoneditableAccountStreamsEventsDeletion: 'forbidden-noneditable-account-streams-events-deletion',
   ForbiddenToChangeAccountStreamId: 'forbidden-change-account-streams-id',
   ForbiddenAccountStreamsActions: 'forbidden-account-streams-actions',
   ForbiddenAccountStreamsEventDeletion: 'forbidden-account-streams-deletion',

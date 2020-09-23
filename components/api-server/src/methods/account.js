@@ -16,7 +16,7 @@ const Registration = require('components/business/src/auth/registration'),
   ErrorMessages = require('components/errors/src/ErrorMessages'),
   ErrorIds = require('components/errors').ErrorIds,
   ServiceRegister = require('components/business/src/auth/service_register'),
-  UserRepository = require('components/business/src/users/repository');
+  UsersRepository = require('components/business/src/users/repository');
   User = require('components/business/src/users/User'),
   SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
   /**
@@ -35,7 +35,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
 
   // initialize service-register connection
   const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
-  const userRepository = new UserRepository(userEventsStorage);
+  const usersRepository = new UsersRepository(userEventsStorage);
 
   // RETRIEVAL
 
@@ -44,7 +44,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     commonFns.getParamsValidation(methodsSchema.get.params),
     async function (context, params, result, next) {
       try {
-        const user: User = await userRepository.getById(context.user.id);
+        const user: User = await usersRepository.getById(context.user.id);
         result.account = user.getAccount();
         next();
       } catch (err) {
@@ -74,7 +74,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
   function validateThatAllFieldsAreEditable (context, params, result, next) {
     const nonEditableAccountStreamsIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForEditing();
     Object.keys(params.update).forEach(streamId => {
-      const streamIdWithDot = SystemStreamsSerializer.addDotFromStreamId(streamId);
+      const streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamId);
       if (nonEditableAccountStreamsIds.includes(streamIdWithDot)) {
         // if user tries to add new streamId from non editable streamsIds
         return next(errors.invalidOperation(
@@ -96,7 +96,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
 
   async function verifyOldPassword (context, params, result, next) {
     try{
-      const isValid = await userRepository.checkUserPassword(context.user.id, params.oldPassword);
+      const isValid = await usersRepository.checkUserPassword(context.user.id, params.oldPassword);
       if (!isValid) {
         return next(errors.invalidOperation(
           'The given password does not match.'));
@@ -214,8 +214,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
 
   async function updateAccount(context, params, result, next) {
     try {
-      //const updateEventList = context.user.getEventsForUpdate(params.update);
-      await userRepository.updateOne(context.user.id, params.update);
+      await usersRepository.updateOne(context.user, params.update);
       notifications.accountChanged(context.user);
     } catch (err) {
       return next(Registration.handleUniquenessErrors(
@@ -235,7 +234,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
    * @param {*} next 
    */
   async function buildResultData (context, params, result, next) {
-    const user: User = await userRepository.getById(context.user.id);
+    const user: User = await usersRepository.getById(context.user.id);
     result.account = user.getAccount();
     next();
   }
