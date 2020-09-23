@@ -76,7 +76,6 @@ const ErrorIds = {
   /**
    * Throw this error for methods that are valid only for pryv.io
    */
-  NonValidForOpenSource: 'not-valid-for-open-pryv',
   DeniedStreamAccess: 'denied-stream-access',
   TooHighAccessForAccountStreams: 'too-high-access-for-account-stream',
   ForbiddenMultipleAccountStreams: 'forbidden-multiple-account-streams-events',
