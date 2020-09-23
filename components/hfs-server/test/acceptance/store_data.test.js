@@ -52,15 +52,6 @@ type ErrorDocument = {
   id: string, 
   message: string, 
 }
-// this should be definitely done in the config and not in the test
-async function spawnContextServerWithOptions (spawnContext, config) {
-  return spawnContext.spawn(
-    {
-      openSource: config.get('openSource'),
-      mongodb: config.get('mongodb')
-    }
-  ); 
-}
 
 describe('Storing data in a HF series', function() {
 
@@ -79,7 +70,7 @@ describe('Storing data in a HF series', function() {
     let server; 
     before(async () => {
       debug('spawning');
-      server = await spawnContextServerWithOptions(spawnContext, config);
+      server = await spawnContext.spawn(config.get());
     });
     after(() => {
       server.stop(); 
@@ -256,8 +247,8 @@ describe('Storing data in a HF series', function() {
     // Spawns a server.
     before(async () => {
       debug('spawning');
-      hfServer = await spawnContextServerWithOptions(spawnContext, config);
-      apiServer = await spawnContextServerWithOptions(apiServerContext, config);
+      hfServer = await spawnContext.spawn(config.get()); 
+      apiServer = await apiServerContext.spawn(config.get());
       
     });
     after(() => {
@@ -521,7 +512,7 @@ describe('Storing data in a HF series', function() {
       describe('with auth success', function () {
         before(async () => {
           debug('spawning');
-          server = await spawnContextServerWithOptions(spawnContext, config);
+          server = await spawnContext.spawn(config.get());
         });
         after(() => {
           server.stop(); 
@@ -702,7 +693,7 @@ describe('Storing data in a HF series', function() {
           afterEach(async () => {
             // Since we modified the test server, spawn a new one that is clean. 
             server.stop(); 
-            server = await spawnContextServerWithOptions(spawnContext, config);
+            server = await spawnContext.spawn(config.get());
             
             rpcServer.close();
           });
@@ -725,7 +716,7 @@ describe('Storing data in a HF series', function() {
       describe('with auth failure', function () {
         before(async () => {
           debug('spawning');
-          server = await spawnContextServerWithOptions(spawnContext, config);
+          server = await spawnContext.spawn(config.get());
         });
         after(() => {
           server.stop(); 
@@ -754,7 +745,7 @@ describe('Storing data in a HF series', function() {
       // Spawns a server.
       before(async () => {
         debug('spawning');
-        server = await spawnContextServerWithOptions(spawnContext, config);
+        server = await spawnContext.spawn(config.get());
       });
       after(() => {
         server.stop(); 
@@ -917,7 +908,7 @@ describe('Storing data in a HF series', function() {
       // Spawns a server.
       before(async () => {
         debug('spawning');
-        server = await spawnContextServerWithOptions(spawnContext, config);
+        server = await spawnContext.spawn(config.get());
       });
       after(() => {
         server.stop(); 
@@ -1056,7 +1047,7 @@ describe('Storing data in a HF series', function() {
       // Spawns a server.
       before(async () => {
         debug('spawning');
-        server = await spawnContextServerWithOptions(spawnContext, config);
+        server = await spawnContext.spawn(config.get());
       });
       after(() => {
         server.stop(); 
@@ -1139,7 +1130,7 @@ describe('Storing data in a HF series', function() {
     describe('using a "create-only" permissions', () => {
 
       before(async () => {
-        server = await spawnContextServerWithOptions(spawnContext, config);
+        server = await spawnContext.spawn(config.get());
       });
       after(() => {
         server.stop(); 
