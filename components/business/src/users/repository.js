@@ -305,28 +305,12 @@ class Repository {
   }
 
   /**
-   * Get user password hash
-   * @param string userId 
-   */
-  async _getUserPasswordHash (userId: string): Promise<void> {
-    let userPass;
-    userPass = await bluebird.fromCallback(cb =>
-      this.storage.findOne({ id: userId },
-        {
-          $and: [
-            { streamIds: SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH }
-          ]
-        }, null, cb));
-    return (userPass?.content) ? userPass.content : null;
-  }
-
-  /**
    * Checks if passwword is valid for the given userId
    * @param string userId 
    * @param string password
    */
   async checkUserPassword (userId: string, password: string): boolean {
-    const currentPass = await this._getUserPasswordHash(userId);
+    const currentPass = await getUserPasswordHash(userId, this.storage);
     let isValid: boolean = false;
     if (currentPass != null) {
       isValid = await bluebird.fromCallback(cb =>
@@ -346,6 +330,23 @@ class Repository {
     });
   }
 }
+
+/**
+ * Get user password hash
+ * @param string userId 
+ */
+async function getUserPasswordHash(userId: string, storage: any): Promise < void> {
+  let userPass;
+  userPass = await bluebird.fromCallback(cb =>
+    storage.findOne({ id: userId },
+      {
+        $and: [
+          { streamIds: SystemStreamsSerializer.options.STREAM_ID_PASSWORDHASH }
+        ]
+      }, null, cb));
+  return (userPass?.content) ?userPass.content : null;
+}
+
 Repository.options = {
   SYSTEM_USER_ACCESS_ID: 'system',
   ACCESS_TYPE_PERSONAL: 'personal',

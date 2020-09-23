@@ -137,7 +137,7 @@ class User {
     const uniqueAccountStreamIds = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutDot();
 
     // change password into hash if it exists
-    if (update.password && !update.passwordHash) {
+    if (update.password) {
       update.passwordHash = await bluebird.fromCallback((cb) => encryption.hash(update.password, cb));
     }
     delete update.password;
