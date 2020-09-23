@@ -640,7 +640,9 @@ class Database {
       return false;
     };
     /**
-     * Forks only enforced uniqness for events where fields are saved as fieldname__unique: value
+     * getDuplicateSystemStreamId()
+     * Returns the unique system streamId for the event that triggered the error (dot-less)
+     * Works only for system streams uniqueness constraints
      */
     err.duplicateIndex = () => {
       if (err != null && err.errmsg != null && err.isDuplicate) {

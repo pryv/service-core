@@ -416,8 +416,10 @@ exports.removeTrackingProperties = function (items) {
 };
 
 /**
- * Validate that account events consist of values matching the configuration
- * and has properties that are usual for the events
+ * Checks that:
+ * - all account events are present
+ * - they have "unique" streamId when needed
+ * - they have correct type
  */
 exports.validateAccountEvents = function (actualAccountEvents) {
   // get streams ids from the config that should be retrieved
