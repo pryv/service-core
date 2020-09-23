@@ -640,11 +640,10 @@ class Database {
       return false;
     };
     /**
-     * getDuplicateSystemStreamId()
      * Returns the unique system streamId for the event that triggered the error (dot-less)
      * Works only for system streams uniqueness constraints
      */
-    err.duplicateIndex = () => {
+    err.getDuplicateSystemStreamId = (): string => {
       if (err != null && err.errmsg != null && err.isDuplicate) {
         // This check depends on the MongoDB storage engine
         // We assume WiredTiger here (and not MMapV1).
@@ -662,6 +661,7 @@ class Database {
           }
         }
       }
+      return '';
     }
   }
 
@@ -686,7 +686,7 @@ type MongoDBError = {
   lastErrorObject?: MongoDBError,
   isDuplicate?: boolean,
   isDuplicateIndex?: (key: string) => boolean,
-  duplicateIndex?: () => string,
+  getDuplicateSystemStreamId?: () => string,
 }
 
 type DatabaseCallback = (err?: Error | null, result?: mixed) => mixed;

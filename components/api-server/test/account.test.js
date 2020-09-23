@@ -140,13 +140,8 @@ describe('account', function () {
             });
           },
           async function verifyData () {           
-            try {
-              const retrievedUser = await usersRepository.getAccountByUsername(user.username);
-                validation.checkStoredItem(retrievedUser.getAccountWithId(), 'user');
-            } catch (err) {
-              console.log(err,'err');
-              false.should.be.true();
-            }
+            const retrievedUser = await usersRepository.getAccountByUsername(user.username);
+              validation.checkStoredItem(retrievedUser.getAccountWithId(), 'user');
           }
         ], done);
       });

@@ -276,7 +276,7 @@ describe('system (ex-register)', function () {
           };
           try{
             await bluebird.fromCallback(cb => post(data, cb));
-            false.should.be.equal(true);
+            throw new Error('The response should not be successful');
           } catch (err) {
             validation.checkError(err.response, {
               status: 400,

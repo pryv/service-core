@@ -304,7 +304,7 @@ class Registration {
     // Duplicate errors
     const uniquenessErrors = {};
     if (err.isDuplicate) {
-      let fieldName = err.duplicateIndex();
+      let fieldName = err.getDuplicateSystemStreamId();
       uniquenessErrors[fieldName] = params[fieldName];     
     }
 

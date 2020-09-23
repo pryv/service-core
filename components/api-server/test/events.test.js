@@ -433,7 +433,6 @@ describe('events', function () {
           res.body.events = separatedEvents.events;
           const actualAccountStreamsEvents = separatedEvents.accountStreamsEvents;
           validation.validateAccountEvents(actualAccountStreamsEvents);
-          
           await bluebird.fromCallback(
             (cb) => validation.check(res, {
             status: 200,
@@ -447,8 +446,7 @@ describe('events', function () {
             }, cb));
           done();
         } catch (error) {
-          console.log(error, 'error');
-          false.should.eql(true)
+          done(error);
         }
       });
     });
