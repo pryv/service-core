@@ -43,7 +43,11 @@ class Size {
       attachedFiles: await computeCategory(this.attachedFilesItems),
     }
     let userObject = new User(user);
-    await this.usersRepository.updateOne(userObject, storageUsed);
+    await this.usersRepository.updateOne(
+      userObject,
+      storageUsed,
+      UsersRepository.options.SYSTEM_USER_ACCESS_ID
+    );
 
     return storageUsed;
 

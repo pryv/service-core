@@ -133,7 +133,7 @@ class User {
    * 1) Build events for the given updateData
    * @param {*} update
    */
-  async getEventsDataForUpdate (update) {
+  async getEventsDataForUpdate (update, accessId) {
     const uniqueAccountStreamIds = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutDot();
 
     // change password into hash if it exists
@@ -150,7 +150,11 @@ class User {
     for (let i = 0; i < streamIdsForUpdate.length; i++) {
       let streamIdWithoutDot = streamIdsForUpdate[i];
       // if needed append field that enforces uniqueness
-      let updateData = { content: update[streamIdWithoutDot] };
+      let updateData = {
+        content: update[streamIdWithoutDot],
+        modified: timestamp.now(),
+        modifiedBy: accessId
+      };
       if (uniqueAccountStreamIds.includes(streamIdWithoutDot)) {
         updateData[`${streamIdWithoutDot}__unique`] = update[streamIdWithoutDot];
       }

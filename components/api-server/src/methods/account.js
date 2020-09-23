@@ -7,7 +7,6 @@
 var errors = require('components/errors').factory,
   commonFns = require('./helpers/commonFunctions'),
   mailing = require('./helpers/mailing'),
-  encryption = require('components/utils').encryption,
   methodsSchema = require('../schema/accountMethods');
 
 const { getConfig } = require('components/api-server/config/Config');
@@ -91,8 +90,9 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     commonFns.requirePersonalAccess,
     commonFns.getParamsValidation(methodsSchema.changePassword.params),
     verifyOldPassword,
-    encryptNewPassword,
-    updateAccount);
+    addNewPasswordParameter,
+    updateAccount
+  );
 
   async function verifyOldPassword (context, params, result, next) {
     try{
@@ -158,8 +158,9 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     commonFns.getParamsValidation(methodsSchema.resetPassword.params),
     requireTrustedAppFn,
     checkResetToken,
-    encryptNewPassword,
-    updateAccount);
+    addNewPasswordParameter,
+    updateAccount
+  );
 
   function checkResetToken(context, params, result, next) {
     const username = context.user.username;
@@ -180,15 +181,10 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     );
   }
 
-  function encryptNewPassword(context, params, result, next) {
+  function addNewPasswordParameter (context, params, result, next) {
     if (! params.newPassword) { return next(); }
-
-    encryption.hash(params.newPassword, function (err, hash) {
-      if (err) { return next(errors.unexpectedError(err)); }
-
-      params.update = { passwordHash: hash };
-      next();
-    });
+    params.update = { password: params.newPassword };
+    next();
   }
 
   async function notifyServiceRegister (context, params, result, next) {
@@ -214,7 +210,12 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
 
   async function updateAccount(context, params, result, next) {
     try {
-      await usersRepository.updateOne(context.user, params.update);
+      const accessId = (context.access?.id) ? context.access.id : UsersRepository.options.RESET_PASSWORD_USER_ACCESS_ID
+      await usersRepository.updateOne(
+        context.user,
+        params.update,
+        accessId,
+      );
       notifications.accountChanged(context.user);
     } catch (err) {
       return next(Registration.handleUniquenessErrors(

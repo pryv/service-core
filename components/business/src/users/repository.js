@@ -267,9 +267,10 @@ class Repository {
    * in default->account streams
    * @param User user
    * @param {} update 
+   * @param string accessId
    */
-  async updateOne (user: User, update: {}): Promise<void> {
-    const eventForUpdate = await user.getEventsDataForUpdate(update);
+  async updateOne (user: User, update: {}, accessId: string): Promise<void> {
+    const eventForUpdate = await user.getEventsDataForUpdate(update, accessId);
     // Start a transaction session
     const session = await this.storage.database.startSession();
     await session.withTransaction(async () => {
@@ -349,6 +350,7 @@ async function getUserPasswordHash(userId: string, storage: any): Promise < void
 
 Repository.options = {
   SYSTEM_USER_ACCESS_ID: 'system',
+  RESET_PASSWORD_USER_ACCESS_ID: 'reset-password',
   ACCESS_TYPE_PERSONAL: 'personal',
 }
 module.exports = Repository;
