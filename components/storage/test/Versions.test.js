@@ -504,7 +504,6 @@ describe('Versions', function () {
     const newIndexes = testData.getStructure('1.6.0').indexes;
     const defaultUser = { id: 'u_0' };
     const eventsStorage = storage.user.events;
-
     const eventsCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'events' }, cb));
     const usersCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'users' }, cb));
 
@@ -540,7 +539,7 @@ describe('Versions', function () {
         if (! isNewField(streamId) && ! isStorageUsed(streamId)) {
           assert.equal(event.content, u[streamId]);
         }
-        if (isStorageUsed(streamId) && (u.storageUsed != null && u.storageUsed[streamId] != null)) {
+        if (isStorageUsed(streamId) && u.storageUsed?.[streamId]) {
           assert.equal(event.content, u.storageUsed[streamId]);
         }
         assert.equal(event.type, systemStream.type);
@@ -551,10 +550,13 @@ describe('Versions', function () {
         }
 
         function isNewField(streamId) {
-          return streamId === 'invitationToken' || streamId === 'appId' || streamId === 'referer';
+          return streamId === SystemStreamsSerializer.addDotToStreamId('invitationToken')
+            || streamId === SystemStreamsSerializer.addDotToStreamId('appId')
+            || streamId === SystemStreamsSerializer.addDotToStreamId('referer');
         }
         function isStorageUsed(streamId) {
-          return streamId === 'dbDocuments' || streamId === 'attachedFiles';
+          return streamId === SystemStreamsSerializer.addDotToStreamId('dbDocuments')
+            || streamId === SystemStreamsSerializer.addDotToStreamId('attachedFiles');
         }
         function getEventByStreamId(events, streamId) {
           const e = events.filter(e => e.streamIds.indexOf(streamId) >= 0);
