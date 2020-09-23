@@ -70,6 +70,7 @@ describe('Storing data in a HF series', function() {
     let server; 
     before(async () => {
       debug('spawning');
+      // without config.get() spawnContext does not take the right config
       server = await spawnContext.spawn(config.get());
     });
     after(() => {

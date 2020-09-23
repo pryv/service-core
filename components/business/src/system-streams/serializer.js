@@ -45,7 +45,7 @@ class SystemStreamsSerializer {
 
   // not static
   allSystemStreamsIds: Array<String>;
-  virtualStreamsList: Array<object>;
+  systemStreamsList: Array<object>;
   
   constructor () {
     this.systemStreamsSettings = config.get('systemStreams');
@@ -260,13 +260,13 @@ class SystemStreamsSerializer {
    * parent is formed just providing hte name, id, parentId null and children
    */
   getSystemStreamsList () {
-    if (!SystemStreamsSerializer.virtualStreamsList) {
-      let virtualStreams = [];
+    if (!SystemStreamsSerializer.systemStreamsList) {
+      let systemStreams = [];
       let i;
       const streamKeys = Object.keys(this.systemStreamsSettings);
 
       for (i = 0; i < streamKeys.length; i++) {
-        virtualStreams.push({
+        systemStreams.push({
           name: streamKeys[i],
           id: SystemStreamsSerializer.addDotToStreamId(streamKeys[i]),
           parentId: null,
@@ -277,9 +277,9 @@ class SystemStreamsSerializer {
           )
         });
       }
-      SystemStreamsSerializer.virtualStreamsList = virtualStreams;
+      SystemStreamsSerializer.systemStreamsList = systemStreams;
     }
-    return SystemStreamsSerializer.virtualStreamsList;
+    return SystemStreamsSerializer.systemStreamsList;
   }
 }
 
