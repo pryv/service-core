@@ -23,6 +23,7 @@ module.exports = async function (context, callback) {
   // get streams ids from the config that should be retrieved
   const userAccountStreams = SystemStreamsSerializer.getAllAccountStreams();
   const userAccountStreamIds = Object.keys(userAccountStreams);
+  let usersRepository = new UsersRepository(UserEventsStorage);
 
   await migrateAccounts(UserEventsStorage);
   console.log('Accounts were migrated, now creating the indexes');
@@ -30,12 +31,10 @@ module.exports = async function (context, callback) {
   console.log('V1.5.22 => v1.6.0 Migration finished');
   callback();
 
-  async function migrateAccounts (UserEventsStorage) {
-    
-    const usersCollection = await bluebird.fromCallback(cb => context.database.getCollection({ name: 'users' }, cb));
-
+  async function migrateAccounts () {
+    const usersCollection = await bluebird.fromCallback(cb =>
+      context.database.getCollection({ name: 'users' }, cb));
     const cursor = await usersCollection.find({});
-    let usersRepository = new UsersRepository(UserEventsStorage);
 
     //let requests = [];
     let shouldContinue: boolean;

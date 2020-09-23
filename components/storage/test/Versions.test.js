@@ -508,7 +508,7 @@ describe('Versions', function () {
     const usersCollection = await bluebird.fromCallback(cb => database.getCollection({ name: 'users' }, cb));
 
     // get streams ids from the config that should be retrieved
-    const userAccountStreams = SystemStreamsSerializer.getAllAccountStreamsLeafs(); 
+    const userAccountStreams = SystemStreamsSerializer.getAllAccountStreamsLeaves(); 
     const userAccountStreamIds = Object.keys(userAccountStreams); 
     
     // get backup of users

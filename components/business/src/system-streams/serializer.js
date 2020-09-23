@@ -36,7 +36,7 @@ class SystemStreamsSerializer {
   editableAccountStreams: Array<object>;
   allAccountStreams: Array<object>;
   allAccountStreamsIdsForAccess: Array<String>;
-  allAccountStreamsLeafs: Array<object>;
+  allAccountStreamsLeaves: Array<object>;
   indexedAccountStreamsIdsWithoutDot: Array<String>;
   uniqueAccountStreamsIdsWithoutDot: Array<String>;
   accountStreamsIdsForbiddenForEditing: Array<String>;
@@ -52,8 +52,6 @@ class SystemStreamsSerializer {
     if (this.systemStreamsSettings == null) {
       throw Error("Not valid system streams settings.");
     }
-    // for some reason I cannot ddelete custom streams in the config level, so lets remove it here
-    delete this.systemStreamsSettings.custom;
   }
 
   /**
@@ -122,19 +120,19 @@ class SystemStreamsSerializer {
   }
 
   /**
-   * The same as getAllAccountStreams () but returnes only streams leafs (not parents)
+   * The same as getAllAccountStreams () but returnes only streams leaves (not parents)
    */
-  static getAllAccountStreamsLeafs () {
-    if (!SystemStreamsSerializer.allAccountStreamsLeafs) {
+  static getAllAccountStreamsLeaves () {
+    if (!SystemStreamsSerializer.allAccountStreamsLeaves) {
       const flatStreamsList = treeUtils.flattenTreeWithoutParents(config.get(accountStreamsConfigPath));
       let flatStreamsListObj = {};
       let i;
       for (i = 0; i < flatStreamsList.length; i++) {
         flatStreamsListObj[flatStreamsList[i].id] = flatStreamsList[i];
       }
-      SystemStreamsSerializer.allAccountStreamsLeafs = flatStreamsListObj;
+      SystemStreamsSerializer.allAccountStreamsLeaves = flatStreamsListObj;
     }
-    return SystemStreamsSerializer.allAccountStreamsLeafs;
+    return SystemStreamsSerializer.allAccountStreamsLeaves;
   }
 
 /**

@@ -197,7 +197,7 @@ function loadAccountData (user: User, params): void {
 }
 
 async function buildEventsFromAccount (user: User): Array<{}> {
-  const userAccountStreams = SystemStreamsSerializer.getAllAccountStreamsLeafs();
+  const userAccountStreams = SystemStreamsSerializer.getAllAccountStreamsLeaves();
   
   // convert to events
   let account = user.getAccount();

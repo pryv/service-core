@@ -213,12 +213,17 @@ class MetadataLoader {
     
     // Retrieve Access (including accessLogic)
     const customAuthStep = null;
-    const methodContext = new MethodContext(userName, accessToken, customAuthStep);
+    const methodContext = new MethodContext(
+      userName,
+      accessToken,
+      customAuthStep,
+      storage.events,
+    );
     
     return bluebird.fromCallback((returnValueCallback) => {
       async.series(
         [
-          (next) => toCallback(methodContext.retrieveUser(storage), next),
+          (next) => toCallback(methodContext.retrieveUser(), next),
           (next) => toCallback(methodContext.retrieveExpandedAccess(storage), next), 
           function loadEvent(done) { // result is used in success handler!
             const user = methodContext.user; 

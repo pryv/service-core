@@ -51,10 +51,13 @@ class MethodContext {
   systemStreamsSerializer: object;
 
   calledMethodId: ?string;
+  usersRepository: UsersRepository;
 
   constructor(
-    username: string, auth: ?string,
-    customAuthStepFn: ?CustomAuthFunction
+    username: string,
+    auth: ?string,
+    customAuthStepFn: ?CustomAuthFunction,
+    eventsStorage: ?StorageLayer,
   ) {
     this.username = username;
 
@@ -71,7 +74,7 @@ class MethodContext {
 
     this.calledMethodId = null;
     this.systemStreamsSerializer = new SystemStreamsSerializer();
-
+    this.usersRepository = new UsersRepository(eventsStorage);
     if (auth != null) this.parseAuth(auth);
   }
 
@@ -92,11 +95,10 @@ class MethodContext {
   }
 
   // Load the user identified by `this.username`, storing it in `this.user`.
-  async retrieveUser(storage: StorageLayer) {
+  async retrieveUser() {
     try {
-      const usersRepository = new UsersRepository(storage.events);
       // get user details
-      this.user = await usersRepository.getAccountByUsername(this.username, true);
+      this.user = await this.usersRepository.getAccountByUsername(this.username, true);
       if (!this.user?.id)
         throw errors.unknownResource('user', this.username);
     } catch (err) {
