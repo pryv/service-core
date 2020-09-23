@@ -29,14 +29,14 @@ class Flush implements Operation {
   db: storage.StorageLayer;
   
   // User lookup (name -> id)
-  users: UserRepository;
+  users: UsersRepository;
   
   constructor(update: PendingUpdate, db: storage.StorageLayer, logger: Logger) {
     this.update = update; 
     this.db = db;
     this.logger = logger; 
     
-    this.users = new UserRepository(db);     
+    this.users = new UsersRepository(db);     
   }
   
   // Flushes the information in `this.update` to disk (MongoDB).
@@ -88,7 +88,7 @@ const USER_LOOKUP_CACHE_SIZE = 1000;
 // Repository to help with looking up users by name. This class will hide a 
 // cache to speed up these lookups and load MongoDB less. 
 // 
-class UserRepository {
+class UsersRepository {
   db: storage.StorageLayer;
   cache: LRUCache<string, User>;
   
@@ -138,5 +138,5 @@ type User = {
 
 module.exports = {
   Flush, 
-  UserRepository,
+  UsersRepository,
 };

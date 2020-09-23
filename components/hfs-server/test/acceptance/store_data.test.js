@@ -18,7 +18,7 @@ const debug = require('debug')('store_data.test');
 const bluebird = require('bluebird');
 const lodash = require('lodash');
 const awaiting = require('awaiting');
-const UserRepository = require('components/business/src/users/repository');
+const UsersRepository = require('components/business/src/users/repository');
 const User = require('components/business/src/users/User');
 
 const { getConfig } = require('components/api-server/config/Config');
@@ -297,7 +297,7 @@ describe('Storing data in a HF series', function() {
         { streamIds: [parentStreamId], time: Date.now() / 1000 },
         attrs
       );
-      const usersRepository = new UserRepository(storageLayer.events);
+      const usersRepository = new UsersRepository(storageLayer.events);
       const user: User = await usersRepository.getById(userId);
       assert.isNotNull(user);
 
@@ -793,7 +793,7 @@ describe('Storing data in a HF series', function() {
           attrs
         );
 
-        const usersRepository = new UserRepository(storageLayer.events);
+        const usersRepository = new UsersRepository(storageLayer.events);
         const user: User = await usersRepository.getById(userId);
 
         assert.isNotNull(user);

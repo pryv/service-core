@@ -19,7 +19,7 @@ const storage = require('components/storage');
 
 const Webhook = require("components/business").webhooks.Webhook;
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const UserRepository = require('components/business/src/users/repository');
+const UsersRepository = require('components/business/src/users/repository');
 const User = require('components/business/src/users/User');
 
 class Context {
@@ -277,7 +277,7 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
   async createUser (): Object<mixed> {
     const db = this.db;
     const attributes = this.attrs;
-    const usersRepository = new UserRepository(db.events);
+    const usersRepository = new UsersRepository(db.events);
     let userObj: User = new User(attributes);
     await usersRepository.insertOne(userObj);
     return this.attrs;

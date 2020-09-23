@@ -22,7 +22,7 @@ var cuid = require('cuid'),
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 const ServiceRegister = require('components/business/src/auth/service_register');
 const Registration = require('components/business/src/auth/registration');
-const UserRepository = require('components/business/src/users/repository');
+const UsersRepository = require('components/business/src/users/repository');
 const ErrorIds = require('components/errors/src/ErrorIds');
 const ErrorMessages = require('components/errors/src/ErrorMessages');
 const { getConfig } = require('components/api-server/config/Config');
@@ -56,7 +56,7 @@ module.exports = function (
   auditSettings, updatesSettings, openSourceSettings
 ) {
 
-  const usersRepository = new UserRepository(userEventsStorage);
+  const usersRepository = new UsersRepository(userEventsStorage);
   const config = getConfig();
 
   // initialize service-register connection

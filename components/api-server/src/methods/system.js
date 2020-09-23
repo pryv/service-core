@@ -11,7 +11,7 @@ const methodsSchema = require('../schema/systemMethods');
 const string = require('./helpers/string');
 const _ = require('lodash');
 const bluebird = require('bluebird');
-const UserRepository = require('components/business/src/users/repository');
+const UsersRepository = require('components/business/src/users/repository');
 const User = require('components/business/src/users/User');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
@@ -31,7 +31,7 @@ module.exports = function (
 
   const POOL_REGEX = new RegExp('^' + 'pool@');
   const registration = new Registration(logging, storageLayer, servicesSettings);
-  const usersRepository = new UserRepository(storageLayer.events);
+  const usersRepository = new UsersRepository(storageLayer.events);
 
   // ---------------------------------------------------------------- createUser
   systemAPI.register('system.createUser',

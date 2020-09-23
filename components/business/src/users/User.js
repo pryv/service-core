@@ -14,6 +14,7 @@ const encryption = require('components/utils').encryption;
 
 const treeUtils = require('components/utils/src/treeUtils');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
+const UsersRepository = require('components/business/src/users/repository');
 
 const getConfig: () => Config = require('components/api-server/config/Config')
   .getConfig;
@@ -218,7 +219,7 @@ async function buildEventsFromAccount (user: User): Array<{}> {
         parameter = account[streamIdWithoutDot];
       }
 
-      let accessId = (user.accessId) ? user.accessId : 'system';
+      let accessId = (user.accessId) ? user.accessId : UsersRepository.options.SYSTEM_USER_ACCESS_ID;
       const event = createEvent(
         streamId,
         parameter,

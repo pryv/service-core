@@ -8,7 +8,7 @@ const _ = require('lodash');
 const Registration = require('components/business/src/auth/registration');
 const commonFns = require('./../helpers/commonFunctions');
 const methodsSchema = require('components/api-server/src/schema/authMethods');
-const UserRepository = require('components/business/src/users/repository');
+const UsersRepository = require('components/business/src/users/repository');
 const errors = require('components/errors').factory;
 
 /**
@@ -22,7 +22,7 @@ const errors = require('components/errors').factory;
 module.exports = function (api, logging, storageLayer, servicesSettings) {
   // REGISTER
   const registration = new Registration(logging, storageLayer, servicesSettings);
-  const usersRepository = new UserRepository(storageLayer.events);
+  const usersRepository = new UsersRepository(storageLayer.events);
 
   api.register('auth.register.singlenode',
     // data validation methods

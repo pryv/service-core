@@ -19,7 +19,7 @@ const path = require('path');
 const rimraf = require('rimraf');
 const _ = require('lodash');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const UserRepository = require('components/business/src/users/repository');
+const UsersRepository = require('components/business/src/users/repository');
 const User = require('components/business/src/users/User');
 const charlatan = require('charlatan');
 
@@ -35,7 +35,7 @@ exports.resetUsers = async () => {
         $in: Object.keys(SystemStreamsSerializer.getAllAccountStreams())
       }
     }, cb));
-  const usersRepository = new UserRepository(storage.user.events);
+  const usersRepository = new UsersRepository(storage.user.events);
   
   let i;
   let userObj: User;
@@ -50,7 +50,7 @@ exports.resetUsersWithAdditionalProperties = async () => {
   await bluebird.fromCallback(cb => storage.user.events.database.deleteMany(
     { name: 'events' }, {}, cb));
   
-  const usersRepository = new UserRepository(storage.user.events);
+  const usersRepository = new UsersRepository(storage.user.events);
 
   let i;
   let userObj: User;

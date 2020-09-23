@@ -22,7 +22,7 @@ const { NullLogger } = require('components/utils/src/logging');
 
 const { PendingUpdate } = 
   require('../../../src/metadata_updater/pending_updates');
-const { Flush, UserRepository } = require('../../../src/metadata_updater/flush');
+const { Flush, UsersRepository } = require('../../../src/metadata_updater/flush');
 
 describe('Flush', () => {
   const connection = produceMongoConnection();
@@ -126,7 +126,7 @@ describe('Flush', () => {
   });
 });
 
-describe('UserRepository', () => {
+describe('UsersRepository', () => {
   const connection = produceMongoConnection();
   const db = produceStorageLayer(connection);
 
@@ -145,9 +145,9 @@ describe('UserRepository', () => {
     return pryv.user(username, { id: userId });
   });
 
-  let repository: UserRepository;
+  let repository: UsersRepository;
   beforeEach(() => {
-    repository = new UserRepository(db);
+    repository = new UsersRepository(db);
   });
   
   describe('#resolve(name)', () => {

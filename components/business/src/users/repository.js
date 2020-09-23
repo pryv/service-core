@@ -180,7 +180,8 @@ class Repository {
   }
 
   /**
-   * 
+   * Creates a session for registered user that is needed 
+   * to get personal access
    * @param string username
    * @param string appId 
    * @param object session 
@@ -203,15 +204,16 @@ class Repository {
     token: string,
     appId: string,
     session) {
+
     let accessData = {
       token: token,
       userId: userId,
       name: appId,
-      type: 'personal',
+      type: Repository.options.ACCESS_TYPE_PERSONAL,
       created: timestamp.now(),
-      createdBy: 'system',//TODO IEVA -put inito registration REGISTRATION_ACCESS_ID Should be a constant, but there is no business class for accesses or system
+      createdBy: Repository.options.SYSTEM_USER_ACCESS_ID,
       modified: timestamp.now(),
-      modifiedBy: 'system',//Should be a constant, but there is no business class for accesses or system
+      modifiedBy: Repository.options.SYSTEM_USER_ACCESS_ID,
     };
 
     const access = await bluebird.fromCallback((cb) =>
@@ -241,7 +243,7 @@ class Repository {
     const session = await this.storage.database.startSession();
     await session.withTransaction(async () => {
       // if sessionStorage is not provided, session will be not created
-      let accessId = 'system';//TODO IEVA constant
+      let accessId = Repository.options.SYSTEM_USER_ACCESS_ID;
       if (shouldCreateSession && this.validateAllStorageObjectsInitialized() && user.appId) {
         const token = await this.createSessionForUser(user.username, user.appId, session);
         const access = await this.createPersonalAccessForUser(
@@ -343,5 +345,9 @@ class Repository {
       this.storage.count({}, { streamIds: SystemStreamsSerializer.options.STREAM_ID_USERNAME }, cb);
     });
   }
+}
+Repository.options = {
+  SYSTEM_USER_ACCESS_ID: 'system',
+  ACCESS_TYPE_PERSONAL: 'personal',
 }
 module.exports = Repository;

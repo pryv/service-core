@@ -11,7 +11,7 @@ const rimraf = require('rimraf');
 const fs = require('fs');
 const path = require('path');
 const InfluxConnection = require('components/business/src/series/influx_connection');
-const UserRepository = require('components/business/src/users/repository');
+const UsersRepository = require('components/business/src/users/repository');
 const errors = require('components/errors').factory;
 
 import type { MethodContext } from 'components/model';
@@ -21,13 +21,13 @@ class Deletion {
   logger: any;
   storageLayer: any;
   settings: any;
-  usersRepository: UserRepository;
+  usersRepository: UsersRepository;
 
   constructor(logging: any, storageLayer: any, settings: any) {
     this.logger = logging.getLogger('business/deletion');
     this.storageLayer = storageLayer;
     this.settings = settings;
-    this.usersRepository = new UserRepository(this.storageLayer.events);
+    this.usersRepository = new UsersRepository(this.storageLayer.events);
   }
 
   checkIfAuthorized(

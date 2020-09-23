@@ -13,7 +13,7 @@ const { errorHandling } = require('components/errors');
 const mailing = require('components/api-server/src/methods/helpers/mailing');
 const ServiceRegister = require('./service_register');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const UserRepository = require('components/business/src/users/repository');
+const UsersRepository = require('components/business/src/users/repository');
 const User = require('components/business/src/users/User');
 const ErrorIds = require('components/errors').ErrorIds;
 
@@ -27,7 +27,7 @@ class Registration {
   logger: any;
   storageLayer: any;
   serviceRegisterConn: ServiceRegister;
-  usersRepository: UserRepository; 
+  usersRepository: UsersRepository; 
   accountStreamsSettings: any = SystemStreamsSerializer.getFlatAccountStreamSettings();
   servicesSettings: any; // settigns to get the email to send user welcome email
 
@@ -40,7 +40,7 @@ class Registration {
       servicesSettings.register,
       logging.getLogger('service-register')
     );
-    this.usersRepository = new UserRepository(
+    this.usersRepository = new UsersRepository(
       this.storageLayer.events,
       this.storageLayer.sessions,
       this.storageLayer.accesses

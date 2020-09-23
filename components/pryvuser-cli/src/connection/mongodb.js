@@ -14,7 +14,7 @@ import type { MongoDbSettings } from '../configuration';
 
 const { Database, StorageLayer } = require('components/storage');
 const NullLogger = require('components/utils/src/logging').NullLogger;
-const UserRepository = require('components/business/src/users/repository');
+const UsersRepository = require('components/business/src/users/repository');
 const User = require('components/business/src/users/User');
 
 class MongoDB {
@@ -82,7 +82,7 @@ class MongoDB {
     await Promise.all(drops);
 
     // Drop the user itself.
-    const usersRepository = new UserRepository(storage.events);
+    const usersRepository = new UsersRepository(storage.events);
     await usersRepository.deleteOne(user.id);
 
     await bluebird.fromCallback(
@@ -91,7 +91,7 @@ class MongoDB {
   }
 
   async findUser (username: string): Promise<?UserAttributes> {
-    const usersRepository = new UserRepository(this.storageLayer.events);
+    const usersRepository = new UsersRepository(this.storageLayer.events);
     
     const user: User = await usersRepository.getAccountByUsername(username, true);
     return user;

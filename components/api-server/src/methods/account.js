@@ -16,7 +16,7 @@ const Registration = require('components/business/src/auth/registration'),
   ErrorMessages = require('components/errors/src/ErrorMessages'),
   ErrorIds = require('components/errors').ErrorIds,
   ServiceRegister = require('components/business/src/auth/service_register'),
-  UserRepository = require('components/business/src/users/repository');
+  UsersRepository = require('components/business/src/users/repository');
   User = require('components/business/src/users/User'),
   SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
   /**
@@ -35,7 +35,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
 
   // initialize service-register connection
   const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
-  const usersRepository = new UserRepository(userEventsStorage);
+  const usersRepository = new UsersRepository(userEventsStorage);
 
   // RETRIEVAL
 
