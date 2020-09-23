@@ -210,7 +210,6 @@ async function buildEventsFromAccount (user: User): Array<{}> {
 
   // flatten account information
   account = treeUtils.flattenSimpleObject(account);
-
   const events = [];
   Object.keys(userAccountStreams).forEach(streamId => {
     let streamIdWithoutDot = SystemStreamsSerializer.removeDotFromStreamId(streamId);

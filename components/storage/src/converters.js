@@ -139,6 +139,7 @@ exports.addOrRemoveUniqueFieldIfNeeded = function (update) {
   }
   return update;
 };
+
 function addUniqueFieldIfNeeded(eventToDb) {
   if (eventToDb == null || eventToDb.deleted) { return eventToDb; }
   if (eventToDb?.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_UNIQUE)) {

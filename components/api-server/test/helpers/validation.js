@@ -388,7 +388,7 @@ exports.removeAccountStreams = function (streams) {
   while (i--) {
     if (streams[i]?.id === SystemStreamsSerializer.options.STREAM_ID_ACCOUNT) {
       streams.splice(i, 1);
-    } else if (streams[i].id && streams[i].id === SystemStreamsSerializer.options.STREAM_ID_HELPERS) {
+    } else if (streams[i]?.id === SystemStreamsSerializer.options.STREAM_ID_HELPERS) {
       streams.splice(i, 1);
     }
   }
@@ -424,13 +424,9 @@ exports.validateAccountEvents = function (actualAccountEvents) {
   let expectedAccountStreams = SystemStreamsSerializer.getReadableAccountStreamsForTests();
 
   // iterate through expected account events and check that they exists in actual
-  // account events (skip nested streams parents)
+  // account events
   const expectedSreamIds = Object.keys(expectedAccountStreams);
   for (n in expectedSreamIds) {
-    // skip parent streams like storageUsed
-    if (!expectedAccountStreams[expectedSreamIds[n]]?.isShown) {
-      continue;
-    }
     let foundEvent = false;
     let i;
     for (i in actualAccountEvents) {

@@ -127,7 +127,7 @@ describe('account', function () {
               delete expected.id;
               delete expected.password;
               delete expected.storageUsed;
-
+              
               validation.check(res, {
                 status: 200,
                 schema: methodsSchema.update.result,
@@ -141,10 +141,8 @@ describe('account', function () {
           },
           async function verifyData () {           
             try {
-              request.get(basePath).end(async function (res) {
-                const retrievedUser = await usersRepository.getAccountByUsername(res.body.account.username);
+              const retrievedUser = await usersRepository.getAccountByUsername(user.username);
                 validation.checkStoredItem(retrievedUser.getAccountWithId(), 'user');
-              });
             } catch (err) {
               console.log(err,'err');
               false.should.be.true();
