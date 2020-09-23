@@ -37,15 +37,18 @@ let usersRepository;
 let influx;
 let influxRepository;
 
-describe('DELETE /users/:username', () => {
+describe.only('DELETE /users/:username', () => {
   const settingsToTest = [[true, false], [false, false], [true, true]];
-  for (let settingToTest of settingsToTest) {
-    describe(`singleNode:isActive = ${settingToTest[0]}, openSource:isActive = ${settingToTest[1]}`, function() {
+  const testIDs = [['CM4Q', 'BQXA', '4Y76', '710F', 'GUPH', 'JNVS', 'C58U'],
+    ['U21Z', 'K4J1', 'TIKT', 'WMMV', '9ZTM', 'T3UK', 'O73J'],
+    ['TPP2', '581Z', 'Z2FH', '4IH8', '33T6', 'SQ8P', '1F2Y']];
+  for (let i = 0; i < settingsToTest.length; i++) {
+    describe(`singleNode:isActive = ${settingsToTest[i][0]}, openSource:isActive = ${settingsToTest[i][1]}`, function() {
       before(async function() {
         const settings = await Settings.load();
         const config = getConfig();
-        config.set('singleNode:isActive', settingToTest[0]);
-        config.set('openSource:isActive', settingToTest[1]);
+        config.set('singleNode:isActive', settingsToTest[i][0]);
+        config.set('openSource:isActive', settingsToTest[i][1]);
         app = new Application(settings);
         await app.initiate();
 
@@ -87,10 +90,10 @@ describe('DELETE /users/:username', () => {
           await initiateUserWithData(username2);
           res = await request.delete(`/users/${username1}`).set('Authorization', authKey);
         });
-        it(`[${randomTestCode()}] should respond with 200`, function () {
+        it(`[${testIDs[i][0]}] should respond with 200`, function () {
           assert.equal(res.status, 200);
         });
-        it(`[${randomTestCode()}] should delete user entries from impacted collections`, async function() {
+        it(`[${testIDs[i][1]}] should delete user entries from impacted collections`, async function() {
           const user = await usersRepository.getById(username1);
           assert.notExists(user);
 
@@ -119,13 +122,11 @@ describe('DELETE /users/:username', () => {
           );
           assert(sessions === null || sessions === []);
         });
-        it(`[${randomTestCode()}] should delete user event files`, async function() {
-          const totalFilesSize = await bluebird.fromCallback((cb) =>
-            app.storageLayer.eventFiles.getTotalSize({ id: username1 }, cb)
-          );
-          assert.equal(totalFilesSize, 0);
+        it(`[${testIDs[i][2]}] should delete user event files`, async function() {
+          const userFileExists = fs.existsSync(path.resolve(`test-file-${username1}`));
+          assert.isFalse(userFileExists);
         });
-        it(`[${randomTestCode()}] should not delete entries of other users`, async function() {
+        it(`[${testIDs[i][3]}] should not delete entries of other users`, async function() {
           const user = await usersRepository.getById(username2);
           assert.exists(user);
 
@@ -152,7 +153,7 @@ describe('DELETE /users/:username', () => {
           );
           assert(sessions !== null || sessions !== []);
         });
-        it(`[${randomTestCode()}] should not delete other user event files`, async function() {
+        it(`[${testIDs[i][4]}] should not delete other user event files`, async function() {
           const totalFilesSize = await bluebird.fromCallback((cb) =>
             app.storageLayer.eventFiles.getTotalSize({ id: username2 }, cb)
           );
@@ -163,7 +164,7 @@ describe('DELETE /users/:username', () => {
         before(async function() {
           res = await request.delete(`/users/${username1}`).set('Authorization', 'somekey');
         });
-        it(`[${randomTestCode()}] should respond with 404`, function() {
+        it(`[${testIDs[i][5]}] should respond with 404`, function() {
           assert.equal(res.status, 404);
         });
       });
@@ -171,22 +172,13 @@ describe('DELETE /users/:username', () => {
         before(async function() {
           res = await request.delete(`/users/${username1}`).set('Authorization', authKey);
         });
-        it(`[${randomTestCode()}] should respond with 404`, function() {
+        it(`[${testIDs[i][6]}] should respond with 404`, function() {
           assert.equal(res.status, 404);
         });
       });
     });
   }
 });
-
-function randomTestCode() {
-  var result           = '';
-  var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  for ( var i = 0; i < 4; i++ ) {
-    result += characters.charAt(Math.floor(Math.random() * characters.length));
-  }
-  return result;
-}
 
 async function initiateUserWithData(username: string) {
   const user = await mongoFixtures.user(username);
@@ -201,7 +193,7 @@ async function initiateUserWithData(username: string) {
   user.session(charlatan.Lorem.word());
   user.webhook({ id: charlatan.Lorem.word() }, charlatan.Lorem.word());
 
-  const filePath = 'test-file';
+  const filePath = `test-file-${username}`;
   fs.writeFileSync(filePath, 'Just some text');
   await bluebird.fromCallback((cb) =>
     app.storageLayer.eventFiles.saveAttachedFile(
