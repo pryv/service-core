@@ -236,7 +236,9 @@ module.exports = function produceAccessesApiMethods(
     for (let n = 0; n < params.permissions.length; n++) {
       if (visibleAccountStreamsIds.includes(params.permissions[n].streamId) &&
         params.permissions[n]?.level && !context.access.canCreateAccessForAccountStream(params.permissions[n].level)) {
-        return next(errors.TooHighAccessForAccountStreams(params.permissions[n].streamId));
+        return next(errors.invalidOperation(
+          ErrorMessages[ErrorIds.TooHighAccessForAccountStreams],
+          { param: params.permissions[n].streamId }));
       }
     }
 

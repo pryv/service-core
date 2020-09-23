@@ -86,6 +86,7 @@ const ErrorIds = {
   ForbiddenAccountStreamsActions: 'forbidden-account-streams-actions',
   ForbiddenAccountStreamsEventDeletion: 'forbidden-account-streams-deletion',
   ForbiddenToEditNoneditableAccountFields: 'forbidden-to-edit-noneditable-account-fields',
+  MissingRequiredField: 'missing-required-field',
 };
 Object.freeze(ErrorIds);
 

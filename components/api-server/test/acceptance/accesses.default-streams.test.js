@@ -240,7 +240,7 @@ describe("Accesses with account streams", function () {
           it('[YPHX] should return the correct error', async () => {
             // TODO IEVA - change error to invalidOperation
             assert.deepEqual(accountAccess.body.error, {
-              id: ErrorIds.TooHighAccessForAccountStreams,
+              id: ErrorIds.InvalidOperation,
               message: ErrorMessages[ErrorIds.TooHighAccessForAccountStreams],
               data: { param: streamId }
             });
