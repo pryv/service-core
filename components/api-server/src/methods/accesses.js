@@ -15,6 +15,7 @@ const bluebird = require('bluebird');
 const APIError = require('components/errors').APIError;
 const errors = require('components/errors').factory;
 const ErrorIds = require('components/errors').ErrorIds;
+const ErrorMessages = require('components/errors').ErrorMessages;
 
 const treeUtils = require('components/utils').treeUtils;
 
@@ -223,7 +224,10 @@ module.exports = function produceAccessesApiMethods(
     // don't allow user to give access to not visible stream
     for (let i = 0; i < params.permissions.length; i++) {
       if (notVisibleAccountStreamsIds.includes(params.permissions[i].streamId)) {
-        return next(errors.DeniedStreamAccess(params.permissions[i].streamId));
+        return next(errors.invalidOperation(
+          ErrorMessages[ErrorIds.DeniedStreamAccess],
+          { param: params.permissions[i].streamId }
+        ));
       }
     }
 

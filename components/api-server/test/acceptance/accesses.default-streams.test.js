@@ -258,7 +258,7 @@ describe("Accesses with account streams", function () {
         it('[Q2KZ] should return the correct error', async () => {
           // TODO IEVA - change error to invalidOperation
           assert.deepEqual(accountAccess.body.error, {
-            id: ErrorIds.DeniedStreamAccess,
+            id: ErrorIds.InvalidOperation,
             message: ErrorMessages[ErrorIds.DeniedStreamAccess],
             data: { param: streamId }
           });
