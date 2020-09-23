@@ -285,21 +285,6 @@ factory.InvalidInvitationToken = (): APIError => {
 };
 
 /**
- * Check in service-register if key (for example: email, username)
- * is already reserved for registration (avoiding double click in the 
- * frontend during the registration)
- **/
-factory.DuplicatedUserRegistration = (): APIError => {
-  return new APIError(
-    ErrorIds.DuplicatedUserRegistration, ErrorMessages[ErrorIds.DuplicatedUserRegistration],
-    {
-      httpStatus: 400,
-      data: {param: 'username'},
-      dontNotifyAirbrake: true,
-    }
-  )};
-
-/**
  * Denied event modification perhaps of belonging to the account streams
  */
 factory.DeniedStreamAccess = (streamId): APIError => {

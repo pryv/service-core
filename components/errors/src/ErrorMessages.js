@@ -29,7 +29,6 @@ const ErrorMessages = {
   [ErrorIds.InvalidAppId]: 'Invalid app Id',
   [ErrorIds.Invalidreferer]: 'Invalid referer',
   [ErrorIds.InvalidInvitationToken]: 'Invalid invitation token',
-  [ErrorIds.DuplicatedUserRegistration]: 'Duplicated user registration. User already started registration process in another server.',
   [ErrorIds.MissingRequiredField]: 'Missing required field',
   [ErrorIds.DeniedStreamAccess]: 'It is forbidden to access this stream.',
   [ErrorIds.TooHighAccessForAccountStreams]: 'Only read and contribute acceesses are allowed for the account sterams',

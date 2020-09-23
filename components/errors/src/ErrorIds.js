@@ -71,7 +71,6 @@ const ErrorIds = {
   InvalidAppId: 'appid-invalid',
   InvalidPassword: 'password-invalid',
   Invalidreferer: 'referer-invalid',
-  DuplicatedUserRegistration: 'duplicated-user-registration',
 
   /**
    * Throw this error for methods that are valid only for pryv.io
