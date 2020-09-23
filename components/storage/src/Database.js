@@ -412,10 +412,10 @@ class Database {
   insertOne (collectionInfo: CollectionInfo, item: Object, callback: DatabaseCallback, options: Object) {
     // default value for options 
     const defaultOptions = { w: 1, j: true };
-    if (typeof options !== 'object') {
+    if (typeof options == null) {
       options = defaultOptions;
     } else {
-      options = { ...options, ...defaultOptions };
+      options = { ...defaultOptions, ...options };
     }
 
     this.addUserIdIfneed(collectionInfo, item);
@@ -434,10 +434,10 @@ class Database {
    */
   insertMany (collectionInfo: CollectionInfo, items: Array<Object>, callback: DatabaseCallback, options: Object) {
     const defaultOptions = { w: 1, j: true };
-    if (typeof options !== 'object') {
+    if (typeof options == null) {
       options = defaultOptions;
     } else {
-      options = { ...options, ...defaultOptions };
+      options = { ...defaultOptions, ...options };
     }
     this.addUserIdIfneed(collectionInfo, items);
     this.getCollectionSafe(collectionInfo, callback, collection => {
@@ -462,10 +462,10 @@ class Database {
   updateOne (collectionInfo: CollectionInfo, query: Object, update: Object, callback: DatabaseCallback, options: Object) {
     // default value for options 
     const defaultOptions = { w: 1, j: true };
-    if (typeof options !== 'object') {
+    if (typeof options == null) {
       options = defaultOptions;
     } else {
-      options = { ...options, ...defaultOptions };
+      options = { ...defaultOptions, ...options };
     }
 
     this.addUserIdIfneed(collectionInfo, query);

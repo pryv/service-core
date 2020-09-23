@@ -350,7 +350,6 @@ async function getUserPasswordHash(userId: string, storage: any): Promise < void
 
 Repository.options = {
   SYSTEM_USER_ACCESS_ID: 'system',
-  RESET_PASSWORD_USER_ACCESS_ID: 'reset-password',
   ACCESS_TYPE_PERSONAL: 'personal',
 }
 module.exports = Repository;

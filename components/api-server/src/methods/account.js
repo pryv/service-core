@@ -210,7 +210,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
 
   async function updateAccount(context, params, result, next) {
     try {
-      const accessId = (context.access?.id) ? context.access.id : UsersRepository.options.RESET_PASSWORD_USER_ACCESS_ID
+      const accessId = (context.access?.id) ? context.access.id : UsersRepository.options.SYSTEM_USER_ACCESS_ID
       await usersRepository.updateOne(
         context.user,
         params.update,
