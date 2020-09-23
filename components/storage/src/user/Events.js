@@ -34,13 +34,18 @@ function Events (database) {
 
   _.extend(this.converters, {
     itemDefaults: [converters.createIdIfMissing],
-    itemToDB: [endTimeToDB, converters.deletionToDB, converters.stateToDB],
+    itemToDB: [
+      endTimeToDB,
+      converters.deletionToDB,
+      converters.stateToDB,
+      converters.addUniqueFieldIfNeeded
+    ],
     updateToDB: [
       endTimeUpdate,
       converters.stateUpdate,
       converters.getKeyValueSetUpdateFn('clientData'),
       // only because __unique field is useful only for db, it is added to the convertors
-      converters.removeUniqueFieldIfNeeded
+      converters.addOrRemoveUniqueFieldIfNeeded
     ],
     itemFromDB: [
       clearEndTime,

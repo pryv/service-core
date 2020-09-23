@@ -273,7 +273,7 @@ describe('Account with system streams', function () {
             await createUser();
             const settings = _.cloneDeep(helpers.dependencies.settings);
             scope = nock(settings.services.register.url)
-            scope.post(`/users/${user.attrs.id}/change-email`)
+            scope.put(`/users`)
               .reply(200, {});
   
             // modify account info

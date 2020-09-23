@@ -462,7 +462,6 @@ module.exports = function (
         // if stream is unique append properties that enforce uniqueness
         context.content = enforceEventUniquenessIfNeeded(
           context.content,
-          context.accountStreamId,
           editableAccountStreams[context.accountStreamId]
         );
 
@@ -515,14 +514,12 @@ module.exports = function (
   }
 
   /**
-   * Append properties like streamId and additional field to event
-   * that helps to enforce uniqness
+   * If event should be unique, add .unique streamId
    * @param object contextContent 
    * @param string fieldName 
    */
   function enforceEventUniquenessIfNeeded (
     contextContent: object,
-    fieldName: string,
     accountStreamSettings: object
   ) {
     if (! accountStreamSettings.isUnique) {
@@ -531,7 +528,6 @@ module.exports = function (
     if (!contextContent.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_UNIQUE)) {
       contextContent.streamIds.push(SystemStreamsSerializer.options.STREAM_ID_UNIQUE);
     }
-    contextContent[`${SystemStreamsSerializer.removeDotFromStreamId(fieldName)}__unique`] = contextContent.content;
     return contextContent;
   }
 
@@ -741,7 +737,6 @@ module.exports = function (
         // if stream is unique append properties that enforce uniqueness
         context.content = enforceEventUniquenessIfNeeded(
           context.content,
-          context.accountStreamId,
           editableAccountStreams[context.accountStreamId]
         );
         await sendDataToServiceRegister(context, false, editableAccountStreams);

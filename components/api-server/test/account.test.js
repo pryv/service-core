@@ -97,9 +97,8 @@ describe('account', function () {
         helpers.instanceTestSetup.set(settings, {
           context: _.defaults({username: user.username}, settings.services.register),
           execute: function () {
-            const path = '/users/' + this.context.username + '/change-email';
             const scope = require('nock')(this.context.url);
-            scope.post(path)
+            scope.put('/users')
               .matchHeader('Authorization', this.context.key)
               .reply(200, function (uri, requestBody) {
                 this.context.messagingSocket.emit('reg-server-called', JSON.parse(requestBody));

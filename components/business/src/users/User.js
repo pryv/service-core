@@ -155,6 +155,8 @@ class User {
         modified: timestamp.now(),
         modifiedBy: accessId
       };
+      // __unique property is assigned here because update object that is passwed to convertors
+      // does not have streamIds info that is needed
       if (uniqueAccountStreamIds.includes(streamIdWithoutDot)) {
         updateData[`${streamIdWithoutDot}__unique`] = update[streamIdWithoutDot];
       }
@@ -271,8 +273,6 @@ function createEvent (
     event.streamIds.push(
       SystemStreamsSerializer.options.STREAM_ID_UNIQUE
     );
-    // repeated field for uniqness
-    event[SystemStreamsSerializer.removeDotFromStreamId(streamId) + '__unique'] = accountParameter;
   }
   return event;
 }

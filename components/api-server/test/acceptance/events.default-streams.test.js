@@ -1035,7 +1035,10 @@ describe("Events of system streams", () => {
                     return true;
                   }).reply(200, { errors: [] });
                 const initialEvent = await bluebird.fromCallback(
-                  (cb) => user2.db.events.findOne({ id: user2.attrs.id }, { streamIds: streamId }, null, cb));
+                  (cb) => user2.db.events.findOne(
+                    { id: user2.attrs.id },
+                    { streamIds: streamId }, null, cb)
+                );
     
                 res = await request.put(path.join(basePath, initialEvent.id))
                   .send(eventData)

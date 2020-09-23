@@ -126,14 +126,32 @@ exports.removeFieldsEnforceUniqueness = function (dbItem) {
  * so that trashed events would not conflict with new events
  * @param {} update 
  */
-exports.removeUniqueFieldIfNeeded = function (update) {
+exports.addOrRemoveUniqueFieldIfNeeded = function (update) {
   if (update == null) { return update; }
-
+  // deletion scenario
   if (update.$set?.trashed === true) {
     const uniqueStreamIdsList = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutDot()
     uniqueStreamIdsList.forEach(uniqueKeys => {
       update['$unset'][`${uniqueKeys}__unique`] = 1;
     });
+  } else if (update.$set?.streamIds) { // simple update scenario
+    update.$set = addUniqueFieldIfNeeded(update.$set);
   }
   return update;
 };
+function addUniqueFieldIfNeeded(eventToDb) {
+  if (eventToDb == null || eventToDb.deleted) { return eventToDb; }
+  if (eventToDb?.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_UNIQUE)) {
+    const allAccountStreams = Object.keys(SystemStreamsSerializer.getAllAccountStreams());
+    const matchingAccountStreams = _.intersection(
+      eventToDb.streamIds,
+      allAccountStreams
+    );
+    if (matchingAccountStreams.length > 0) {
+      const fieldName = SystemStreamsSerializer.removeDotFromStreamId(matchingAccountStreams[0]);
+      eventToDb[`${fieldName}__unique`] = eventToDb.content;
+    }
+  }
+  return eventToDb;
+};
+exports.addUniqueFieldIfNeeded = addUniqueFieldIfNeeded;
