@@ -37,7 +37,7 @@ let usersRepository;
 let influx;
 let influxRepository;
 
-describe.only('DELETE /users/:username', () => {
+describe('DELETE /users/:username', () => {
   const settingsToTest = [[true, false], [false, false], [true, true]];
   const testIDs = [['CM4Q', 'BQXA', '4Y76', '710F', 'GUPH', 'JNVS', 'C58U'],
     ['U21Z', 'K4J1', 'TIKT', 'WMMV', '9ZTM', 'T3UK', 'O73J'],
