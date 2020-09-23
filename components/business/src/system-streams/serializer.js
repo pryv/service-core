@@ -256,7 +256,7 @@ class SystemStreamsSerializer {
    * Build streams from systemStreams settings
    * parent is formed just providing hte name, id, parentId null and children
    */
-  getVirtualStreamsList () {
+  getSystemStreamsList () {
     if (!SystemStreamsSerializer.virtualStreamsList) {
       let virtualStreams = [];
       let i;
@@ -267,7 +267,7 @@ class SystemStreamsSerializer {
           name: streamKeys[i],
           id: SystemStreamsSerializer.addDotToStreamId(streamKeys[i]),
           parentId: null,
-          children: formSystemStreamsFromSettings(
+          children: buildSystemStreamsFromSettings(
             this.systemStreamsSettings[streamKeys[i]],
             [],
             SystemStreamsSerializer.addDotToStreamId(streamKeys[i])
@@ -286,7 +286,7 @@ class SystemStreamsSerializer {
  * @param array systemStreams 
  * @param string parentName 
  */
-function formSystemStreamsFromSettings (settings, systemStreams, parentName: string): [] {
+function buildSystemStreamsFromSettings (settings, systemStreams, parentName: string): [] {
   let streamIndex;
   
   for (streamIndex = 0; streamIndex < settings.length; streamIndex++) {
@@ -298,7 +298,7 @@ function formSystemStreamsFromSettings (settings, systemStreams, parentName: str
         parentId: parentName,
         children: []
       });
-      systemStreams[systemStreams.length - 1].children = formSystemStreamsFromSettings(settings[streamIndex].children, systemStreams[systemStreams.length - 1].children, settings[streamIndex].id)
+      systemStreams[systemStreams.length - 1].children = buildSystemStreamsFromSettings(settings[streamIndex].children, systemStreams[systemStreams.length - 1].children, settings[streamIndex].id)
     }
 
     // if the stream is not visible, dont add it to the tree

@@ -750,7 +750,7 @@ describe("Events of system streams", () => {
               });
               it('[E3KE] should return the correct error', async () => {
                 assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
-                assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenMultipleAccountStreams]);
+                assert.equal(res.body.error.message, ErrorMessages[ErrorIds.ForbiddenMultipleSystemStreams]);
                 assert.deepEqual(res.body.error.data, { streamId: SystemStreamsSerializer.addDotToStreamId('email')});
               });
             });

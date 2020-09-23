@@ -54,7 +54,7 @@ class User {
     buildAccountFields(this);
     loadAccountData(this, params);
 
-    if (this.events != null) formAccountDataFromListOfEvents(this);
+    if (this.events != null) buildAccountDataFromListOfEvents(this);
     this.createIdIfMissing();
   }
 
@@ -66,9 +66,7 @@ class User {
    * Get list of events from account data
    */
   async getEvents (): Array<{}> {
-    if (this.events != null) return this.events;
-
-    await buildEventsFromAccount(this);
+    if (this.events == null) await buildEventsFromAccount(this);
     return this.events;
   }
 
@@ -80,7 +78,8 @@ class User {
    * Get account with id property added to it
    */
   getAccountWithId () {
-    return _.pick(this, _.concat(this.accountFields, ['id']));
+    return _.pick(this, this.accountFields.concat('id'))
+    // TODO IEVA return _.pick(this, _.concat(this.accountFields, ['id']));
   }
 
   /**
@@ -280,8 +279,8 @@ function createEvent (
  * Convert system->account events to the account object
  * @param User user
  */
-function formAccountDataFromListOfEvents (user: User) {
-  const account = formEventsTree(user.accountStreamsSettings, user.events, {});
+function buildAccountDataFromListOfEvents (user: User) {
+  const account = buildEventsTree(user.accountStreamsSettings, user.events, {});
   Object.keys(account).forEach(param => {
     user[param] = account[param];
   });
@@ -294,7 +293,7 @@ function formAccountDataFromListOfEvents (user: User) {
  * @param array events
  * @param object user
  */
-function formEventsTree (streams: {}, events: Array<{}>, user: {}): {} {
+function buildEventsTree (streams: {}, events: Array<{}>, user: {}): {} {
   let streamIndex;
 
   for (streamIndex = 0; streamIndex < streams.length; streamIndex++) {
@@ -304,7 +303,7 @@ function formEventsTree (streams: {}, events: Array<{}>, user: {}): {} {
     // if stream has children recursivelly call the same function
     if (typeof streams[streamIndex].children !== 'undefined') {
       user[streamIdWithoutDot] = {};
-      user[streamIdWithoutDot] = formEventsTree(
+      user[streamIdWithoutDot] = buildEventsTree(
         streams[streamIndex].children,
         events,
         user[streamIdWithoutDot]

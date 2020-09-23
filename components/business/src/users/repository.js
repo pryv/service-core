@@ -123,8 +123,7 @@ class Repository {
         { streamIds: { $eq: SystemStreamsSerializer.options.STREAM_ID_ACTIVE } }
       ]
     };
-    
-    //const dbItems = await bluebird.fromCallback(cb => this.storage.find({ id: userId }, query, null, cb));
+
     const userAccountEvents = await bluebird.fromCallback(cb =>
       this.storage.find({ id: userId }, query, null, cb));
     
@@ -190,7 +189,7 @@ class Repository {
     username: string,
     appId: string,
     session: any): string {
-    let sessionData = {
+    const sessionData = {
       username: username,
       appId: appId
     }

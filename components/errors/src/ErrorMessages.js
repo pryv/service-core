@@ -35,7 +35,7 @@ const ErrorMessages = {
   [ErrorIds.EmailRequired]: 'Email is required',
   [ErrorIds.PasswordRequired]: 'Password is required',
   [ErrorIds.InvalidPassword]: 'Password should have from 5 to 23 characters',
-  [ErrorIds.ForbiddenMultipleAccountStreams]: 'Event cannot be part of multiple system streams.',
+  [ErrorIds.ForbiddenMultipleSystemStreams]: 'Event cannot be part of multiple system streams.',
   [ErrorIds.ForbiddenNoneditableAccountStreamsEdit]: 'Forbidden event modification, you are trying to edit a system event or trying to delete active system event.',
   [ErrorIds.ForbiddenNoneditableAccountStreamsEventsDeletion]: 'It is forbidden to delete non-editable or active system events.',
   [ErrorIds.ForbiddenToChangeAccountStreamId]: 'It is forbidden to change system stream id.',

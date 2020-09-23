@@ -260,7 +260,7 @@ class MethodContext {
       cb => storage.streams.find(user, {}, null, cb));
 
     // get streams ids from the config that should be retrieved
-    const userAccountStreams = this.systemStreamsSerializer.getVirtualStreamsList();
+    const userAccountStreams = this.systemStreamsSerializer.getSystemStreamsList();
     this.streams = streams.concat(userAccountStreams);
   }
 

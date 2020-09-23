@@ -59,7 +59,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
       if (err) { return next(errors.unexpectedError(err)); }
 
-      const virtualStreams = systemStreamsSerializer.getVirtualStreamsList();
+      const virtualStreams = systemStreamsSerializer.getSystemStreamsList();
       streams = streams.concat(virtualStreams);
 
       if (params.parentId) {
