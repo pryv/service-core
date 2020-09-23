@@ -78,8 +78,7 @@ class User {
    * Get account with id property added to it
    */
   getAccountWithId () {
-    return _.pick(this, this.accountFields.concat('id'))
-    // TODO IEVA return _.pick(this, _.concat(this.accountFields, ['id']));
+    return _.pick(this, this.accountFields.concat('id'));
   }
 
   /**

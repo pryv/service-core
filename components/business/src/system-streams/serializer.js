@@ -222,15 +222,18 @@ class SystemStreamsSerializer {
    * Build flattened account stream settings and converted from an array to object
    */
   static getFlatAccountStreamSettings () {
-    let accountSettings = {};
-    const flatStreamsList = treeUtils.flattenTree(config.get(accountStreamsConfigPath));
+    if (!SystemStreamsSerializer.flatAccountStreamSettings) {
+      let accountSettings = {};
+      const flatStreamsList = treeUtils.flattenTree(config.get(accountStreamsConfigPath));
 
-    // convert list to object
-    let i;
-    for (i = 0; i < flatStreamsList.length; i++) {
-      accountSettings[flatStreamsList[i].id] = flatStreamsList[i];
-    }
-    return accountSettings;
+      // convert list to object
+      let i;
+      for (i = 0; i < flatStreamsList.length; i++) {
+        accountSettings[flatStreamsList[i].id] = flatStreamsList[i];
+      }
+      SystemStreamsSerializer.flatAccountStreamSettings = accountSettings;
+    } 
+    return SystemStreamsSerializer.flatAccountStreamSettings;
   }
 
   /**
