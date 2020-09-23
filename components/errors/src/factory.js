@@ -176,7 +176,7 @@ factory.unexpectedError = function (sourceError: mixed, message?: string) {
       innerError: error,
     };
     
-    const text = `Unexpected error: ${msg}`;
+    const text = `${ErrorMessages[ErrorIds.UnexpectedError]}: ${msg}`;
 
     return new APIError(ErrorIds.UnexpectedError, text, opts);  
   }

@@ -500,7 +500,7 @@ module.exports = function (
           if (err.isDuplicate) {
             return next(Registration.handleUniquenessErrors(
               err,
-              ErrorMessages[ErrorIds.UnexpectedErrorWhileSavingTheEvent],
+              ErrorMessages[ErrorIds.UnexpectedError],
               { [SystemStreamsSerializer.removeDotFromStreamId(context.accountStreamId)]: context.content.content }));
           }
           // Any other error
@@ -772,7 +772,7 @@ module.exports = function (
     } catch (err) {
       return next(Registration.handleUniquenessErrors(
         err,
-        ErrorMessages[ErrorIds.UnexpectedErrorWhileSavingTheEvent],
+        ErrorMessages[ErrorIds.UnexpectedError],
         { [SystemStreamsSerializer.removeDotFromStreamId(context.accountStreamId)]: context.content.content }));
     };
     next();

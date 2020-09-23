@@ -219,7 +219,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     } catch (err) {
       return next(Registration.handleUniquenessErrors(
         err,
-        ErrorMessages[ErrorIds.UnexpectedErrorWhileSavingAccount],
+        ErrorMessages[ErrorIds.UnexpectedError],
         params.update
       ));
     }

@@ -20,7 +20,8 @@ const ErrorIds = require('components/errors/src/ErrorIds');
  * @param authSettings
  */
 module.exports = function (api, userAccessesStorage, sessionsStorage, userEventsStorage, authSettings) {
-
+  const usersRepository = new UsersRepository(userEventsStorage);
+  
   api.register('auth.login',
     commonFns.getParamsValidation(methodsSchema.login.params),
     commonFns.getTrustedAppCheck(authSettings),
@@ -40,7 +41,6 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
   }
 
   async function checkPassword (context, params, result, next) {
-    const usersRepository = new UsersRepository(userEventsStorage);
     try {
       const isValid = await usersRepository.checkUserPassword(context.user.id, params.password);
       if (!isValid) {

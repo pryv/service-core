@@ -185,7 +185,7 @@ class Registration {
     } catch (err) {
       return next(Registration.handleUniquenessErrors(
         err,
-        ErrorIds.UnexpectedErrorWhileCreatingUser,
+        ErrorIds.UnexpectedError,
         params
       ));
     }
