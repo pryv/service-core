@@ -15,15 +15,7 @@ const { produceMongoConnection, context } = require('components/api-server/test/
 const UsersRepository = require('components/business/src/users/repository');
 const User = require('components/business/src/users/User');
 
-describe('Events storage', () => {
-  let server;
-  before(async () => {
-    server = await context.spawn();
-  });
-  after(() => {
-    server.stop();
-  });
-
+describe('Users repository', () => {
   let mongoFixtures;
   before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());

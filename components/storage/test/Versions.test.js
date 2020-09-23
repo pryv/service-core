@@ -565,27 +565,8 @@ describe('Versions', function () {
       }); 
     }
 
-    let eventIndexes = newIndexes.events;
-    eventIndexes = eventIndexes.concat(buildSystemStreamsIndexes(userAccountStreams, userAccountStreamIds));
     const migratedIndexes = await bluebird.fromCallback(cb => eventsStorage.listIndexes(defaultUser, {}, cb));
     compareIndexes(newIndexes.events, migratedIndexes);
-
-    function buildSystemStreamsIndexes(userAccountStreams, userAccountStreamIds) {
-      const indexes = [];
-      userAccountStreamIds.forEach(streamId => {
-        const streamData = userAccountStreams[streamId]
-        if (streamData.isUnique) {
-          indexes.push({
-            v: 2,
-            key: {[streamId]: 1},
-            name: streamId + '_unique_1',
-            ns: 'pryv-node.events',
-            background: true
-          });
-        }
-      });
-      return indexes;
-    }
   })
 
   function compareIndexes(expected, actual) {

@@ -116,7 +116,6 @@ class Repository {
     } else {
       userAccountStreamsIds = SystemStreamsSerializer.getReadableAccountStreams();
     }
-    // form the query
     let query = {
       $and: [
         { streamIds: { $in: Object.keys(userAccountStreamsIds) } },
@@ -188,13 +187,13 @@ class Repository {
   async createSessionForUser (
     username: string,
     appId: string,
-    session: any): string {
+    transactionSession: any): string {
     const sessionData = {
       username: username,
       appId: appId
     }
     const sessionId = await bluebird.fromCallback((cb) =>
-      this.sessionsStorage.generate(sessionData, cb, { session }));
+      this.sessionsStorage.generate(sessionData, cb, { transactionSession }));
     return sessionId;
   }
 
@@ -202,7 +201,7 @@ class Repository {
     userId: string,
     token: string,
     appId: string,
-    session) {
+    transactionSession) {
 
     let accessData = {
       token: token,
@@ -216,7 +215,7 @@ class Repository {
     };
 
     const access = await bluebird.fromCallback((cb) =>
-      this.accessStorage.insertOne({ id: userId }, accessData, cb, { session }));
+      this.accessStorage.insertOne({ id: userId }, accessData, cb, { transactionSession }));
 
     return access;
   }
@@ -240,14 +239,14 @@ class Repository {
       cb => this.storage.database.getCollection(collectionInfo, cb));
 
     // Start a transaction session
-    const session = await this.storage.database.startSession();
-    await session.withTransaction(async () => {
+    const transactionSession = await this.storage.database.startSession();
+    await transactionSession.withTransaction(async () => {
       // if sessionStorage is not provided, session will be not created
       let accessId = Repository.options.SYSTEM_USER_ACCESS_ID;
       if (shouldCreateSession && this.validateAllStorageObjectsInitialized() && user.appId) {
-        const token = await this.createSessionForUser(user.username, user.appId, session);
+        const token = await this.createSessionForUser(user.username, user.appId, transactionSession);
         const access = await this.createPersonalAccessForUser(
-          user.id, token, user.appId, session);
+          user.id, token, user.appId, transactionSession);
         accessId = access?.id;
         user.token = access.token;
       }
@@ -256,7 +255,7 @@ class Repository {
       // create all user account events
       const events = await user.getEvents();
       await bluebird.fromCallback((cb) =>
-        this.storage.insertMany({ id: user.id }, events, cb, { session }));
+        this.storage.insertMany({ id: user.id }, events, cb, { transactionSession }));
     }, this.getTransactionOptions());
     return user;
   }
@@ -272,8 +271,8 @@ class Repository {
   async updateOne (user: User, update: {}, accessId: string): Promise<void> {
     const eventForUpdate = await user.getEventsDataForUpdate(update, accessId);
     // Start a transaction session
-    const session = await this.storage.database.startSession();
-    await session.withTransaction(async () => {
+    const transactionSession = await this.storage.database.startSession();
+    await transactionSession.withTransaction(async () => {
       // update all account streams and don't allow additional properties
       for (let i = 0; i < eventForUpdate.length; i++) {
         await bluebird.fromCallback(cb => this.storage.updateOne(
@@ -288,7 +287,7 @@ class Repository {
           },
           eventForUpdate[i].updateData,
           cb,
-          { session }
+          { transactionSession }
         ));
       }
     }, this.getTransactionOptions());

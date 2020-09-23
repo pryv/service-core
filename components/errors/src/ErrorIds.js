@@ -76,7 +76,7 @@ const ErrorIds = {
    */
   DeniedStreamAccess: 'denied-stream-access',
   TooHighAccessForAccountStreams: 'too-high-access-for-account-stream',
-  ForbiddenMultipleSystemStreams: 'forbidden-multiple-system-streams-events',
+  ForbiddenMultipleAccountStreams: 'forbidden-multiple-account-streams-events',
   EmailRequired: 'email-required',
   PasswordRequired: 'password-required',
   ForbiddenNoneditableAccountStreamsEdit: 'forbidden-noneditable-account-streams-edit',

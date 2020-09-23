@@ -959,7 +959,7 @@ module.exports = function (
   function checkIfUserTriesToAddMultipleAccountStreamIds (matchingAccountStreams): boolean {
     if (matchingAccountStreams.length > 1) {
       throw errors.invalidOperation(
-        ErrorMessages[ErrorIds.ForbiddenMultipleSystemStreams],
+        ErrorMessages[ErrorIds.ForbiddenMultipleAccountStreams],
         { streamId: matchingAccountStreams[0]}
       );
     }

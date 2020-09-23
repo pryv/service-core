@@ -48,9 +48,7 @@ module.exports = async function (context, callback) {
       }
       i += 1;
       try {
-        if (!user.id && user._id) {
-          user.id = user._id;
-        }
+        user.id = user._id;
         const userObj: User = new User(user);
         insertedUser = await usersRepository.insertOne(userObj);
       } catch (err) {
