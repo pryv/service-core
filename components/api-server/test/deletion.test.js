@@ -73,7 +73,7 @@ describe('DELETE /users/:username', () => {
         username1 = charlatan.Internet.userName();
         username2 = charlatan.Internet.userName();
 
-        authKey = settings.get('auth.adminAccessKey').str();
+        authKey = config.get('auth:adminAccessKey');
       });
       after(async function() {
         await mongoFixtures.context.cleanEverything();
@@ -81,20 +81,16 @@ describe('DELETE /users/:username', () => {
           app.storageLayer.eventFiles.removeAll(cb)
         );
       });
-      it('[S1D3] should respond with 404 given invalid authorization key', async function() {
-        res = await request.delete(`/users/${username1}`).set('Authorization', 'somekey');
-        assert.equal(res.status, 404);
-      });
       describe('when given existing username', function() {
         before(async function() {
           await initiateUserWithData(username1);
           await initiateUserWithData(username2);
           res = await request.delete(`/users/${username1}`).set('Authorization', authKey);
         });
-        it('[QU00] should respond with 200', function () {
+        it(`[${randomTestCode()}] should respond with 200`, function () {
           assert.equal(res.status, 200);
         });
-        it('[PYT5] should delete user entries from impacted collections', async function() {
+        it(`[${randomTestCode()}] should delete user entries from impacted collections`, async function() {
           const user = await usersRepository.getById(username1);
           assert.notExists(user);
 
@@ -123,13 +119,13 @@ describe('DELETE /users/:username', () => {
           );
           assert(sessions === null || sessions === []);
         });
-        it('[FB1V] should delete user event files', async function() {
+        it(`[${randomTestCode()}] should delete user event files`, async function() {
           const totalFilesSize = await bluebird.fromCallback((cb) =>
             app.storageLayer.eventFiles.getTotalSize({ id: username1 }, cb)
           );
           assert.equal(totalFilesSize, 0);
         });
-        it('[W4I7] should not delete entries of other users', async function() {
+        it(`[${randomTestCode()}] should not delete entries of other users`, async function() {
           const user = await usersRepository.getById(username2);
           assert.exists(user);
 
@@ -156,24 +152,41 @@ describe('DELETE /users/:username', () => {
           );
           assert(sessions !== null || sessions !== []);
         });
-        it('[BJ4Z] should not delete other user event files', async function() {
+        it(`[${randomTestCode()}] should not delete other user event files`, async function() {
           const totalFilesSize = await bluebird.fromCallback((cb) =>
             app.storageLayer.eventFiles.getTotalSize({ id: username2 }, cb)
           );
           assert.notEqual(totalFilesSize, 0);
         });
       });
+      describe('when given invalid authorization key', function() {
+        before(async function() {
+          res = await request.delete(`/users/${username1}`).set('Authorization', 'somekey');
+        });
+        it(`[${randomTestCode()}] should respond with 404`, function() {
+          assert.equal(res.status, 404);
+        });
+      });
       describe('when given not existing username', function() {
         before(async function() {
           res = await request.delete(`/users/${username1}`).set('Authorization', authKey);
         });
-        it('[7V8S] should respond with 404', function() {
+        it(`[${randomTestCode()}] should respond with 404`, function() {
           assert.equal(res.status, 404);
         });
       });
     });
   }
 });
+
+function randomTestCode() {
+  var result           = '';
+  var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  for ( var i = 0; i < 4; i++ ) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+}
 
 async function initiateUserWithData(username: string) {
   const user = await mongoFixtures.user(username);

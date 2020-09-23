@@ -22,7 +22,7 @@ const { getConfig } = require('components/api-server/config/Config');
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
 
-describe("[841C] Account with default-streams", function () {
+describe('Account with system streams', function () {
   let helpers;
   let app;
   let request;
@@ -136,15 +136,15 @@ describe("[841C] Account with default-streams", function () {
     await config.resetConfig();
   });
 
-  describe('GET /account', async () => {
-    describe('[12CF] When user has multiple events per stream and additional streams events', async () => {
+  describe('GET /account', () => {
+    describe('and when user has multiple events per stream and additional streams events', () => {
       let allVisibleAccountEvents;
       let scope;
       before(async function () {
         await createUser();
         // create additional events for all editable streams
         const settings = _.cloneDeep(helpers.dependencies.settings);
-        scope = nock(settings.services.register.url)
+        scope = nock(settings.services.register.url);
         scope.put('/users',
           (body) => {
             serviceRegisterRequest = body;
@@ -168,10 +168,10 @@ describe("[841C] Account with default-streams", function () {
         // get account info
         res = await request.get(basePath).set('authorization', access.token);
       });
-      it('[XRKX] Should return 200', async () => {
+      it('[XRKX] should return 200', async () => {
         assert.equal(res.status, 200);
       });
-      it('[JUHR] Should return account information in the structure that is defined in default streams and only active events are returned', async () => {
+      it('[JUHR] should return account information in the structure that is defined in system streams and only active values', async () => {
         const usernameAccountEvent = allVisibleAccountEvents.filter(event => event.streamIds.includes(
           SystemStreamsSerializer.addDotToStreamId('username')))[0];
         const emailAccountEvent = allVisibleAccountEvents.filter(event =>
@@ -195,14 +195,14 @@ describe("[841C] Account with default-streams", function () {
         assert.equal(res.body.account.insurancenumber, insurancenumberAccountEvent.content);
         assert.equal(res.body.account.phoneNumber, phoneNumberAccountEvent.content);
       });
-      it('[R5S0] Only visible default stream events are returned', async () => {
+      it('[R5S0] should return only visible default stream events', async () => {
         assert.equal(Object.keys(res.body.account).length, 6);
       });
     });
   });
 
-  describe('POST /change-password', async () => {
-    describe('[TIB0] When valid data is provided', async () => {
+  describe('POST /change-password', () => {
+    describe('and when valid data is provided', () => {
       let passwordBefore;
       let passwordAfter;
       before(async function () {
@@ -218,170 +218,175 @@ describe("[841C] Account with default-streams", function () {
           .set('authorization', access.token);
         passwordAfter = await getActiveEvent('passwordHash');
       });
-      it('[X9VQ] Should return 200', async () => {
+      it('[X9VQ] should return 200', async () => {
         assert.equal(res.status, 200);
       });
-      it('[PWAA] Event with password hash should be updated', async () => {
+      it('[PWAA] should update event with password hash', async () => {
         assert.notEqual(passwordBefore.content, passwordAfter.content);
       });
     });
   });
 
-  describe('PUT /account', async () => {
-    describe('[11B0] When user tries to modify the username', async () => {
-      before(async function () {
-        await createUser();
-        // modify account info
-        res = await request.put(basePath)
-          .send({username: charlatan.Lorem.characters(7)})
-          .set('authorization', access.token);
-      });
-      it('[P69J] Should return 400', async () => {
-        assert.equal(res.status, 400);
-      });
-      it('[DBM6] Should return the correct error', async () => {
-        // currently stupid z-schema error is thrown, so let like this because the method will be deprecated
-        assert.equal(res.body.error.data.length, 1);
-        assert.equal(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
-      });
-    });
-    describe('[B8A9] When user tries to modify not editable fields', async () => {
-      before(async function () {
-        await createUser();
-        // modify account info
-        res = await request.put(basePath)
-          .send({ attachedFiles: 2 })
-          .set('authorization', access.token);
-      });
-      it('[90N3] Should return 400', async () => {
-        assert.equal(res.status, 400);
-      });
-      it('[QHZ4] Should return the correct error', async () => {
-        // currently stupid z-schema error is thrown, so let like this because the method will be deprecated
-        assert.equal(res.body.error.data.length, 1);
-        assert.equal(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
-      });
-    });
-    describe('When updating an unique field that is already taken', async () => {
-      describe('[7CEE] When the field is not unique in mongodb', async () => {
-        let scope;
-        let user2;
+  describe('PUT /account', () => {
+      describe('and when user tries to modify the username', () => {
         before(async function () {
-          user2 = await createUser();
+          await createUser();
+          // modify account info
+          res = await request.put(basePath)
+            .send({username: charlatan.Lorem.characters(7)})
+            .set('authorization', access.token);
+        });
+        it('[P69J] should return 400', async () => {
+          assert.equal(res.status, 400);
+        });
+        it('[DBM6] should return the correct error', async () => {
+          // currently stupid z-schema error is thrown, so let like this because the method will be deprecated
+          // TODO IEVA BY ILIA - change error to invalidOperation
+          assert.equal(res.body.error.data.length, 1);
+          assert.equal(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
+        });
+      });
+      describe('and when user tries to modify non editable fields', () => {
+        before(async function () {
+          await createUser();
+          // modify account info
+          res = await request.put(basePath)
+            .send({ attachedFiles: 2 })
+            .set('authorization', access.token);
+        });
+        it('[90N3] should return 400', async () => {
+          assert.equal(res.status, 400);
+        });
+        it('[QHZ4] should return the correct error', async () => {
+          // TODO IEVA BY ILIA - change error to invalidOperation
+          // currently stupid z-schema error is thrown, so let like this because the method will be deprecated
+          assert.equal(res.body.error.data.length, 1);
+          assert.equal(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
+        });
+      });
+      describe('and when updating a unique field that are already taken', () => {
+        describe('and the field is not unique in mongodb', () => {
+          let scope;
+          let user2;
+          before(async function () {
+            user2 = await createUser();
+            await createUser();
+            const settings = _.cloneDeep(helpers.dependencies.settings);
+            scope = nock(settings.services.register.url)
+            scope.post(`/users/${user.attrs.id}/change-email`)
+              .reply(200, {});
+  
+            // modify account info
+            res = await request.put(basePath)
+              .send({ email: user2.attrs.email })
+              .set('authorization', access.token);
+          });
+          it('[K3X9] should return a 400 error', async () => {
+            assert.equal(res.status, 400);
+          });
+          it('[8TRP] should return the correct error', async () => {
+            assert.equal(res.body.error.id, ErrorIds.ItemAlreadyExists);
+            assert.deepEqual(res.body.error.data, { email: user2.attrs.email});
+          });
+        });
+      });
+
+      describe('and when user tries to edit email or language when non-active fields exists', () => {
+        let newEmail = charlatan.Lorem.characters(7);
+        let newLanguage = charlatan.Lorem.characters(2);
+        let activeEmailBefore;
+        let notActiveEmailBefore;
+        let activeLanguageBefore;
+        let notActiveLanguageBefore;
+  
+        let activeEmailAfter;
+        let notActiveEmailAfter;
+        let activeLanguageAfter;
+        let notActiveLanguageAfter;
+
+        let scope;
+        before(async function () {
           await createUser();
           const settings = _.cloneDeep(helpers.dependencies.settings);
           nock.cleanAll();
           scope = nock(settings.services.register.url)
           scope.put(`/users`)
             .reply(200, {});
-
+          scope.put('/users',
+            (body) => {
+              serviceRegisterRequest = body;
+              return true;
+            }).times(3).reply(200, {});
+          
+          // create additional events
+          await createAdditionalEvent('email');
+          await createAdditionalEvent('language');
+  
+          activeEmailBefore = await getActiveEvent('email');
+          notActiveEmailBefore = await getNotActiveEvent('email');
+          activeLanguageBefore = await getActiveEvent('language');
+          notActiveLanguageBefore = await getNotActiveEvent('language');
+  
           // modify account info
           res = await request.put(basePath)
-            .send({ email: user2.attrs.email })
+            .send({
+              email: newEmail,
+              language: newLanguage,
+            })
             .set('authorization', access.token);
+          
+          activeEmailAfter = await getActiveEvent('email');
+          notActiveEmailAfter = await getNotActiveEvent('email');
+          activeLanguageAfter = await getActiveEvent('language');
+          notActiveLanguageAfter = await getNotActiveEvent('language');
         });
-        it('[K3X9] Should return a 400 error', async () => {
-          assert.equal(res.status, 400);
+        it('[JJ81] should return 200', async () => {
+          assert.equal(res.status, 200);
         });
-        it('[8TRP] Should return the correct error', async () => {
-          assert.equal(res.body.error.id, ErrorIds.ItemAlreadyExists);
-          assert.deepEqual(res.body.error.data, { email: user2.attrs.email});
+        it('[K9IC] should returned updated account data', async () => {
+          assert.deepEqual(res.body.account, {
+              username: user.attrs.username,
+              email: newEmail,
+              language: newLanguage,
+              storageUsed: { dbDocuments: 0, attachedFiles: 0 },
+              insurancenumber: user.attrs.insurancenumber,
+              phoneNumber: user.attrs.phoneNumber
+          });
         });
-      });
-    });
-    describe('[3CCF] When user tries to edit edit email or language when not active fields exists', async () => {
-      let newEmail = charlatan.Lorem.characters(7);
-      let newLanguage = charlatan.Lorem.characters(2);
-      let activeEmailBefore;
-      let notActiveEmailBefore;
-      let activeLanguageBefore;
-      let notActiveLanguageBefore;
-
-      let activeEmailAfter;
-      let notActiveEmailAfter;
-      let activeLanguageAfter;
-      let notActiveLanguageAfter;
-      let scope;
-      before(async function () {
-        await createUser();
-        const settings = _.cloneDeep(helpers.dependencies.settings);
-        scope = nock(settings.services.register.url)
-        scope.post(`/users/${user.attrs.id}/change-email`)
-          .reply(200, {});
-        scope.put('/users',
-          (body) => {
-            serviceRegisterRequest = body;
-            return true;
-          }).times(3).reply(200, {});
-        
-        // create additional events
-        await createAdditionalEvent('email');
-        await createAdditionalEvent('language');
-
-        activeEmailBefore = await getActiveEvent('email');
-        notActiveEmailBefore = await getNotActiveEvent('email');
-        activeLanguageBefore = await getActiveEvent('language');
-        notActiveLanguageBefore = await getNotActiveEvent('language');
-
-        // modify account info
-        res = await request.put(basePath)
-          .send({
-            email: newEmail,
-            language: newLanguage,
-          })
-          .set('authorization', access.token);
-        
-        activeEmailAfter = await getActiveEvent('email');
-        notActiveEmailAfter = await getNotActiveEvent('email');
-        activeLanguageAfter = await getActiveEvent('language');
-        notActiveLanguageAfter = await getNotActiveEvent('language');
-      });
-      it('[JJ81] Should return 200', async () => {
-        assert.equal(res.status, 200);
-      });
-      it('[K9IC] Should returned updated account data', async () => {
-        assert.deepEqual(res.body.account, {
-            username: user.attrs.username,
-            email: newEmail,
-            language: newLanguage,
-            storageUsed: { dbDocuments: 0, attachedFiles: 0 },
-            insurancenumber: user.attrs.insurancenumber,
-            phoneNumber: user.attrs.phoneNumber
+        it('[JQHX] should update only active events in the database', async () => {
+          assert.deepEqual(notActiveEmailBefore, notActiveEmailAfter);
+          assert.deepEqual(notActiveLanguageBefore, notActiveLanguageAfter);
+          assert.notEqual(activeEmailBefore.content, activeEmailAfter.content);
+          assert.notEqual(activeLanguageBefore.content, activeLanguageAfter.content);
+          assert.equal(activeEmailAfter.content, newEmail);
+          assert.equal(activeLanguageAfter.content, newLanguage);
+        });
+        it('[Y6MC] Should send a request to service-register to update its user main information and unique fields', async () => {
+          // email is already skipped
+          assert.deepEqual(serviceRegisterRequest, {
+            user: {
+              email: [
+                {
+                  creation: false,
+                  isActive: true,
+                  isUnique: true,
+                  value: newEmail
+                }
+              ],
+              language: [
+                {
+                  value: newLanguage,
+                  isUnique: false,
+                  isActive: true,
+                  creation: false
+                }
+              ],
+              username: user.attrs.username,
+            },
+            fieldsToDelete: {}
+          });
         });
       });
-      it('[JQHX] Only active events are updated in the database', async () => {
-        assert.deepEqual(notActiveEmailBefore, notActiveEmailAfter);
-        assert.deepEqual(notActiveLanguageBefore, notActiveLanguageAfter);
-        assert.notEqual(activeEmailBefore.content, activeEmailAfter.content);
-        assert.notEqual(activeLanguageBefore.content, activeLanguageAfter.content);
-        assert.equal(activeEmailAfter.content, newEmail);
-        assert.equal(activeLanguageAfter.content, newLanguage);
-      });
-      it('[Y6MC] Should send a request to service-register to update its user main information and unique fields', async () => {
-        // email is already skipped
-        assert.deepEqual(serviceRegisterRequest, {
-          user: {
-            email: [
-              {
-                creation: false,
-                isActive: true,
-                isUnique: true,
-                value: newEmail
-              }
-            ],
-            language: [
-              {
-                value: newLanguage,
-                isUnique: false,
-                isActive: true,
-                creation: false
-              }
-            ],
-            username: user.attrs.username,
-          },
-          fieldsToDelete: {}
-        });
-      });
-    })
+      
   });
 });

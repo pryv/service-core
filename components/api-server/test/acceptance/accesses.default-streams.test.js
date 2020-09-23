@@ -26,7 +26,7 @@ const SystemStreamsSerializer = require('components/business/src/system-streams/
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
 
-describe("[B5FF] Account with default-streams", function () {
+describe("Accesses with account streams", function () {
   let config;
   let app;
   let request;
@@ -38,7 +38,6 @@ describe("[B5FF] Account with default-streams", function () {
   let eventsBasePath;
   let access;
   let user;
-  let accessInDb;
   let validation;
 
   async function createUser () {
@@ -118,167 +117,174 @@ describe("[B5FF] Account with default-streams", function () {
     request = supertest(app.expressApp);
   });
 
-  describe('POST /accesses', async () => {
-    describe('[F454] When user tries to create access for not visible account stream', async () => {
-      const streamId = SystemStreamsSerializer.addDotToStreamId('passwordHash');
-      before(async function () {
-        await createUserAndAccess('read', streamId);
-      });
-      it('[ATGU] Should return 400', async () => {
-        assert.equal(accountAccess.status, 400);
-      });
-      it('[Q2KZ] Should return the correct error', async () => {
-        assert.deepEqual(accountAccess.body.error, {
-          id: ErrorIds.DeniedStreamAccess,
-          message: ErrorMessages[ErrorIds.DeniedStreamAccess],
-          data: { param: streamId }
+  describe('POST /accesses', () => {
+    describe('When using a personal access', () => {
+      describe('to create an access for visible account streams', () => {
+        describe('with a read-level permission', async () => {
+          const streamId = SystemStreamsSerializer.addDotToStreamId('email');
+          const permissionLevel = accessLogic.PERMISSION_LEVEL_READ;
+          before(async function () {
+            await createUserAndAccess(permissionLevel, streamId);
+          });
+          it('[UE9G] should return 201', async () => {
+            assert.equal(accountAccess.status, 201);
+          });
+          it('[BUYP] should create access in the database', async () => {
+            assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
+          });
+          it('[S3IQ] should enable user to read visible stream event with this access', async () => {
+            res = await request.get(eventsBasePath).set('authorization', accountAccessData.token);
+            assert.equal(res.body.events.length, 1);
+            assert.equal(res.body.events[0].streamId, streamId);
+          });
+
+          describe('for the “account” stream', async () => {
+            const streamId = SystemStreamsSerializer.addDotToStreamId('account');
+            const permissionLevel = accessLogic.PERMISSION_LEVEL_READ;
+            before(async function () {
+              await createUserAndAccess(permissionLevel, streamId);
+            });
+            it('[XEAK] should return 201', async () => {
+              assert.equal(accountAccess.status, 201);
+            });
+            it('[65I4] should create access in the database', async () => {
+              assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
+            });
+            it('[L99L] should allow to access visible events in storageUsed', async () => {
+              res = await request.get(eventsBasePath).set('authorization', accountAccessData.token);
+              assert.equal(res.body.events.length, 7);
+              validation.validateAccountEvents(res.body.events);
+            });
+          });
+          describe('for the “storageUsed” stream', async () => {
+            const streamId = SystemStreamsSerializer.addDotToStreamId('storageUsed');
+            const permissionLevel = accessLogic.PERMISSION_LEVEL_READ;
+            before(async function () {
+              await createUserAndAccess(permissionLevel, streamId);
+            });
+            it('[EPEP] should return 201', async () => {
+              assert.equal(accountAccess.status, 201);
+            });
+            it('[U3UM] should create access in the database', async () => {
+              assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
+            });
+            it('[A4UP] should allow to access visible events in storageUsed', async () => {
+              res = await request.get(eventsBasePath).set('authorization', accountAccessData.token);
+              assert.equal(res.body.events.length, 2);
+              assert.isTrue([
+                SystemStreamsSerializer.addDotToStreamId('attachedFiles'),
+                SystemStreamsSerializer.addDotToStreamId('dbDocuments')
+              ].includes(res.body.events[0].streamId));
+              assert.isTrue([
+                SystemStreamsSerializer.addDotToStreamId('attachedFiles'),
+                SystemStreamsSerializer.addDotToStreamId('dbDocuments')
+              ].includes(res.body.events[1].streamId));
+            });
+          });
         });
-      });
-    });
-    describe('[5459] When user tries to create access for visible account stream', async () => {
-      describe('[F1DE] When user tries to create access with permission level manage', async () => {
-        const streamId = SystemStreamsSerializer.addDotToStreamId('email');
-        before(async function () {
-          await createUserAndAccess(accessLogic.PERMISSION_LEVEL_MANAGE, streamId);
+        describe('with a create-only-level permission', async () => {
+          const streamId = SystemStreamsSerializer.addDotToStreamId('email');
+          const permissionLevel = accessLogic.PERMISSION_LEVEL_CREATE_ONLY;
+          before(async function () {
+            await createUserAndAccess(permissionLevel, streamId);
+          });
+          it('[IWMQ] should return 201', async () => {
+            assert.equal(accountAccess.status, 201);
+          });
+          it('[APYN] should create access in the database', async () => {
+            assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
+          });
         });
-        it('[93HO] Should return 400', async () => {
-          assert.equal(accountAccess.status, 400);
+        describe('with a contribute-level permission', async () => {
+          const streamId = SystemStreamsSerializer.addDotToStreamId('email');
+          const permissionLevel = accessLogic.PERMISSION_LEVEL_CONTRIBUTE;
+          before(async function () {
+            await createUserAndAccess(permissionLevel, streamId);
+          });
+          it('[R0M1] should return 201', async () => {
+            assert.equal(accountAccess.status, 201);
+          });
+          it('[Q8R8] should create access in the database', async () => {
+            assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
+          });
+          it('[TI1X] should allow to create visible stream events', async () => {
+            scope = nock(config.get('services:register:url'));
+            scope.put('/users',
+              (body) => {
+                serviceRegisterRequest = body;
+                return true;
+              }).reply(200, { errors: [] });
+  
+            const newEvent = await request.post(eventsBasePath)
+              .send({
+                streamIds: [streamId],
+                content: charlatan.Lorem.characters(7),
+                type: 'string/pryv'
+              })
+              .set('authorization', accountAccessData.token);
+  
+            assert.equal(newEvent.status, 201);
+            assert.equal(newEvent.body.hasOwnProperty('event'), true);
+            assert.equal(newEvent.body.event.streamId, streamId);
+          });
         });
-        it('[YPHX] Should return the correct error', async () => {
-          assert.deepEqual(accountAccess.body.error, {
-            id: ErrorIds.TooHighAccessForAccountStreams,
-            message: ErrorMessages[ErrorIds.TooHighAccessForAccountStreams],
-            data: { param: streamId }
+
+        describe('with a manage-level permission', async () => {
+          const streamId = SystemStreamsSerializer.addDotToStreamId('email');
+          before(async function () {
+            await createUserAndAccess(accessLogic.PERMISSION_LEVEL_MANAGE, streamId);
+          });
+          it('[93HO] should return 400', async () => {
+            assert.equal(accountAccess.status, 400);
+          });
+          it('[YPHX] should return the correct error', async () => {
+            // TODO IEVA - change error to invalidOperation
+            assert.deepEqual(accountAccess.body.error, {
+              id: ErrorIds.TooHighAccessForAccountStreams,
+              message: ErrorMessages[ErrorIds.TooHighAccessForAccountStreams],
+              data: { param: streamId }
+            });
           });
         });
       });
-      describe('[4B0C] When user tries to create access with permission level read', async () => {
-        const streamId = SystemStreamsSerializer.addDotToStreamId('email');
-        const permissionLevel = accessLogic.PERMISSION_LEVEL_READ;
+      describe('to create an access for not visible account streams', async () => {
+        const streamId = SystemStreamsSerializer.addDotToStreamId('passwordHash');
         before(async function () {
-          await createUserAndAccess(permissionLevel, streamId);
+          await createUserAndAccess('read', streamId);
         });
-        it('[UE9G] Should return 201', async () => {
-          assert.equal(accountAccess.status, 201);
+        it('[ATGU] should return 400', async () => {
+          assert.equal(accountAccess.status, 400);
         });
-        it('[BUYP] Access should be created in the database', async () => {
-          assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
-        });
-        it('[S3IQ] User can read visible stream event with this access', async () => {
-          res = await request.get(eventsBasePath).set('authorization', accountAccessData.token);
-          assert.equal(res.body.events.length, 1);
-          assert.equal(res.body.events[0].streamId, streamId);
-        });
-      });
-      describe('[0972] When user tries to create access with permission level create-only', async () => {
-        const streamId = SystemStreamsSerializer.addDotToStreamId('email');
-        const permissionLevel = accessLogic.PERMISSION_LEVEL_CREATE_ONLY;
-        before(async function () {
-          await createUserAndAccess(permissionLevel, streamId);
-        });
-        it('[IWMQ] Should return 201', async () => {
-          assert.equal(accountAccess.status, 201);
-        });
-        it('[APYN] Access should be created in the database', async () => {
-          assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
-        });
-      });
-      describe('[84B0] When user tries to create access with permission level contribute', async () => {
-        const streamId = SystemStreamsSerializer.addDotToStreamId('email');
-        const permissionLevel = accessLogic.PERMISSION_LEVEL_CONTRIBUTE;
-        before(async function () {
-          await createUserAndAccess(permissionLevel, streamId);
-        });
-        it('[R0M1] Should return 201', async () => {
-          assert.equal(accountAccess.status, 201);
-        });
-        it('[Q8R8] Access should be created in the database', async () => {
-          assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
-        });
-        it('[TI1X] User can create visible stream event with this access', async () => {
-          scope = nock(config.get('services:register:url'))
-          scope.put('/users',
-            (body) => {
-              serviceRegisterRequest = body;
-              return true;
-            }).reply(200, { errors: [] });
-
-          const newEvent = await request.post(eventsBasePath)
-            .send({
-              streamIds: [streamId],
-              content: charlatan.Lorem.characters(7),
-              type: 'string/pryv'
-            })
-            .set('authorization', accountAccessData.token);
-
-          assert.equal(newEvent.status, 201);
-          assert.equal(newEvent.body.hasOwnProperty('event'), true);
-          assert.equal(newEvent.body.event.streamId, streamId);
-        });
-      });
-      describe('[5ECB] When user tries to create access for “account” stream', async () => {
-        const streamId = SystemStreamsSerializer.addDotToStreamId('account');
-        const permissionLevel = accessLogic.PERMISSION_LEVEL_READ;
-        before(async function () {
-          await createUserAndAccess(permissionLevel, streamId);
-        });
-        it('[XEAK] Should return 201', async () => {
-          assert.equal(accountAccess.status, 201);
-        });
-        it('[65I4] Access should be created in the database', async () => {
-          assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
-        });
-        it('[L99L] User can access visible events in storageUsed with this access', async () => {
-          res = await request.get(eventsBasePath).set('authorization', accountAccessData.token);
-          assert.equal(res.body.events.length, 7);
-          validation.validateAccountEvents(res.body.events);
-        });
-      });
-      describe('[274A] When user tries to create access for “storageUsed” stream', async () => {
-        const streamId = SystemStreamsSerializer.addDotToStreamId('storageUsed');
-        const permissionLevel = accessLogic.PERMISSION_LEVEL_READ;
-        before(async function () {
-          await createUserAndAccess(permissionLevel, streamId);
-        });
-        it('[EPEP] Should return 201', async () => {
-          assert.equal(accountAccess.status, 201);
-        });
-        it('[U3UM] Access should be created in the database', async () => {
-          assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
-        });
-        it('[A4UP] User can access visible events in storageUsed with this access', async () => {
-          res = await request.get(eventsBasePath).set('authorization', accountAccessData.token);
-          assert.equal(res.body.events.length, 2);
-          assert.isTrue([
-            SystemStreamsSerializer.addDotToStreamId('attachedFiles'),
-            SystemStreamsSerializer.addDotToStreamId('dbDocuments')
-          ].includes(res.body.events[0].streamId));
-          assert.isTrue([
-            SystemStreamsSerializer.addDotToStreamId('attachedFiles'),
-            SystemStreamsSerializer.addDotToStreamId('dbDocuments')
-          ].includes(res.body.events[1].streamId));
+        it('[Q2KZ] should return the correct error', async () => {
+          // TODO IEVA - change error to invalidOperation
+          assert.deepEqual(accountAccess.body.error, {
+            id: ErrorIds.DeniedStreamAccess,
+            message: ErrorMessages[ErrorIds.DeniedStreamAccess],
+            data: { param: streamId }
+          });
         });
       });
     });
   });
 
   describe('DELETE /accesses', async () => {
-    describe('[F13A] When user tries to delete account stream access', async () => {
-      const streamId = SystemStreamsSerializer.addDotToStreamId('storageUsed');
-      const permissionLevel = accessLogic.PERMISSION_LEVEL_READ;
-      before(async function () {
-        await createUserAndAccess(permissionLevel, streamId);
-        res = await request.delete(path.join(basePath, accountAccess.body.access.id))
-          .set('authorization', access.token);
-      });
-      it('[Z40J] Should return 200', async () => {
-        assert.equal(res.status, 200);
-      });
-      it('[MP9T] Access should be deleted from the database', async () => {
-        const deletedAccess = await getAccessInDb(accountAccess.body.access.id);
-        assert.equal(deletedAccess, null);
+    describe('When using a personal access', () => {
+      describe('to delete an account stream access', async () => {
+        const streamId = SystemStreamsSerializer.addDotToStreamId('storageUsed');
+        const permissionLevel = accessLogic.PERMISSION_LEVEL_READ;
+        before(async function () {
+          await createUserAndAccess(permissionLevel, streamId);
+          res = await request.delete(path.join(basePath, accountAccess.body.access.id))
+            .set('authorization', access.token);
+        });
+        it('[Z40J] should return 200', async () => {
+          assert.equal(res.status, 200);
+        });
+        it('[MP9T] should delete the access in the database', async () => {
+          const deletedAccess = await getAccessInDb(accountAccess.body.access.id);
+          assert.equal(deletedAccess, null);
+        });
       });
     });
   });
-
 });
