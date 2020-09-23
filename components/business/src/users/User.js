@@ -130,10 +130,35 @@ class User {
   }
   /**
    * 1) Build events for the given updateData
-   * @param {*} updateData
+   * @param {*} update
    */
-  getEventsForUpdate (updateData) {
-    
+  async getEventsDataForUpdate (update) {
+    const uniqueAccountStreamIds = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutDot();
+
+    // change password into hash if it exists
+    if (update.password && !update.passwordHash) {
+      update.passwordHash = await bluebird.fromCallback((cb) => encryption.hash(update.password, cb));
+    }
+    delete update.password;
+
+    // Start a transaction session
+    const streamIdsForUpdate = Object.keys(update);
+    let events = [];
+
+    // update all account streams and don't allow additional properties
+    for (let i = 0; i < streamIdsForUpdate.length; i++) {
+      let streamIdWithoutDot = streamIdsForUpdate[i];
+      // if needed append field that enforces uniqueness
+      let updateData = { content: update[streamIdWithoutDot] };
+      if (uniqueAccountStreamIds.includes(streamIdWithoutDot)) {
+        updateData[`${streamIdWithoutDot}__unique`] = update[streamIdWithoutDot];
+      }
+      events.push({
+        updateData: updateData,
+        streamId: SystemStreamsSerializer.addDotToStreamId(streamIdWithoutDot)
+      });
+    }
+    return events;
   }
 }
 
@@ -166,6 +191,7 @@ function loadAccountData (user: User, params): void {
 
 async function buildEventsFromAccount (user: User): Array<{}> {
   const userAccountStreams = SystemStreamsSerializer.getAllAccountStreamsLeafs();
+  
   // convert to events
   let account = user.getAccount();
 

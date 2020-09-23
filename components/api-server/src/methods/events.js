@@ -1098,7 +1098,7 @@ module.exports = function (
       context.user.storageUsed.attachedFiles += fileInfo.size;
       
       await usersRepository.updateOne(
-        context.user.id,
+        context.user,
         { attachedFiles: context.user.storageUsed.attachedFiles });
     }
     return attachments;
@@ -1218,7 +1218,7 @@ module.exports = function (
           return;
         }
         context.user.storageUsed.attachedFiles -= getTotalAttachmentsSize(context.event);
-        await usersRepository.updateOne(context.user.id, context.user.storageUsed);
+        await usersRepository.updateOne(context.user, context.user.storageUsed);
       }
     ], next);
   }
@@ -1269,7 +1269,7 @@ module.exports = function (
 
         // approximately update account storage size
         context.user.storageUsed.attachedFiles -= deletedAtt.size;
-        await usersRepository.updateOne(context.user.id, context.user.storageUsed);
+        await usersRepository.updateOne(context.user, context.user.storageUsed);
         notifications.eventsChanged(context.user);
         next();
       } catch (err) {

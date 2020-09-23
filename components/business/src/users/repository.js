@@ -263,37 +263,27 @@ class Repository {
    * Update all account streams events
    * validation of editable non editable should be done before
    * in default->account streams
-   * @param {*} userId 
-   * @param {*} update 
+   * @param User user
+   * @param {} update 
    */
-  async updateOne (userId: string, update: {}): Promise<void> {
-    const uniqueAccountStreamIds = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutDot();
-
-    // change password into hash if it exists
-    if (update.password && !update.passwordHash) {
-      update.passwordHash = await bluebird.fromCallback((cb) => encryption.hash(update.password, cb));
-    }
-    delete update.password;
-
+  async updateOne (user: User, update: {}): Promise<void> {
+    const eventForUpdate = await user.getEventsDataForUpdate(update);
     // Start a transaction session
     const session = await this.storage.database.startSession();
-    const streamIdsForUpdate = Object.keys(update);
     await session.withTransaction(async () => {
       // update all account streams and don't allow additional properties
-      for (let i = 0; i < streamIdsForUpdate.length; i++){
-        let streamIdWithoutDot = streamIdsForUpdate[i];
-        let streamId = SystemStreamsSerializer.addDotToStreamId(streamIdWithoutDot);
-
-        // if needed append field that enforces unicity
-        let updateData = { content: update[streamIdWithoutDot] };
-        if (uniqueAccountStreamIds.includes(streamIdWithoutDot)) {
-          updateData[`${streamIdWithoutDot}__unique`] = update[streamIdWithoutDot];
-        }
-
+      for (let i = 0; i < eventForUpdate.length; i++) {
         await bluebird.fromCallback(cb => this.storage.updateOne(
-          { id: userId },
-          { streamIds: { $all: [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE] } },
-          updateData,
+          { id: user.id },
+          {
+            streamIds: {
+              $all: [
+                eventForUpdate[i].streamId,
+                SystemStreamsSerializer.options.STREAM_ID_ACTIVE
+              ]
+            }
+          },
+          eventForUpdate[i].updateData,
           cb,
           { session }
         ));

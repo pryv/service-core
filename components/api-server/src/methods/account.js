@@ -214,8 +214,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
 
   async function updateAccount(context, params, result, next) {
     try {
-      //const updateEventList = context.user.getEventsForUpdate(params.update);
-      await usersRepository.updateOne(context.user.id, params.update);
+      await usersRepository.updateOne(context.user, params.update);
       notifications.accountChanged(context.user);
     } catch (err) {
       return next(Registration.handleUniquenessErrors(

@@ -7,12 +7,14 @@
 const bluebird = require('bluebird');
 
 const UserRepository = require('components/business/src/users/repository');
+const User = require('components/business/src/users/User');
 
 class Size {
 
   userEventsStorage;
   dbDocumentsItems;
   attachedFilesItems;
+  usersRepository: UserRepository;
 
   /**
  * Computes storage size used by user accounts.
@@ -27,6 +29,7 @@ class Size {
     this.userEventsStorage = userEventsStorage;
     this.dbDocumentsItems = dbDocumentsItems;
     this.attachedFilesItems = attachedFilesItems;
+    this.usersRepository = new UserRepository(this.userEventsStorage);
 }
 
   /**
@@ -39,8 +42,8 @@ class Size {
       dbDocuments: await computeCategory(this.dbDocumentsItems),
       attachedFiles: await computeCategory(this.attachedFilesItems),
     }
-    const usersRepository = new UserRepository(this.userEventsStorage);
-    await usersRepository.updateOne(user.id, storageUsed);
+    let userObject = new User(user);
+    await this.usersRepository.updateOne(userObject, storageUsed);
 
     return storageUsed;
 
