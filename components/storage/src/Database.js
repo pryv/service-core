@@ -62,8 +62,8 @@ class Database {
     this.options = {
       j: true, // Requests acknowledgement that the write operation has been written to the journal.
       w: 1,   // Requests acknowledgement that the write operation has propagated.
-      connectTimeoutMS: (settings.connectTimeoutMS) ? settings.connectTimeoutMS : s60, 
-      socketTimeoutMS: (settings.socketTimeoutMS) ? settings.socketTimeoutMS : s60, 
+      connectTimeoutMS: settings.connectTimeoutMS, 
+      socketTimeoutMS: settings.socketTimeoutMS, 
       useNewUrlParser: true,
       appname: 'pryv.io core',
       useUnifiedTopology: true,
@@ -675,22 +675,8 @@ class Database {
   }
 
   async startSession () {
-    
-    // Make sure we have a connection
-    await bluebird.fromCallback(
-      cb => this.ensureConnect(cb)); 
     const session = this.client.startSession();
     return session;
-  }
-
-  /**
-   * Creat a collection manually (needed when using the transactions)
-   * @param string collectionName 
-   */
-  async createCollection (collectionName) {
-    // Make sure we have a connection
-    await bluebird.fromCallback(cb => this.ensureConnect(cb));
-    await bluebird.fromCallback(cb => this.db.createCollection(collectionName, {}, cb));
   }
 }
 

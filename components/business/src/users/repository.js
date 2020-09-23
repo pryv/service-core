@@ -237,7 +237,8 @@ class Repository {
   async insertOne (user: User, shouldCreateSession: Boolean): Promise<object> {
     // first explicitly create a collection, because it would fail in the transation
     const collectionInfo = this.storage.getCollectionInfoWithoutUserId();
-    await this.storage.database.createCollection(collectionInfo.name);
+    await bluebird.fromCallback(
+      cb => this.storage.database.getCollection(collectionInfo, cb));
 
     // Start a transaction session
     const session = await this.storage.database.startSession();
