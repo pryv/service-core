@@ -22,17 +22,13 @@ class ServiceRegister {
     this.logger = logger;
   }
 
-  _formUrl(path: string): string {
-    return new urllib.URL(path, this.config.url);
-  }
-
   async validateUser (
     username: String,
     invitationToken: String,
     uniqueFields: Object,
     core: String,
   ): Promise<void> {
-    const url = this._formUrl('/users/validate');
+    const url = buildUrl('/users/validate', this.config.url);
     // log fact about the event
     this.logger.info(`POST ${url} for username: ${username}`);
     try {
@@ -64,7 +60,7 @@ class ServiceRegister {
   }
 
   async checkUsername(username: string): Promise<any> {
-    const url = this._formUrl(`/${username}/check_username`);
+    const url = buildUrl(`/${username}/check_username`, this.config.url);
     // log fact about the event
     this.logger.info(`GET ${url} for username: ${username}`);
     try {
@@ -81,7 +77,7 @@ class ServiceRegister {
   }
 
   async createUser(user): Promise<void> {
-    const url = this._formUrl('/users');
+    const url = buildUrl('/users', this.config.url);
     // log fact about the event
     this.logger.info(`POST ${url} for username:${user.user.username}`);
     try {
@@ -104,7 +100,7 @@ class ServiceRegister {
     username: string,
     user: object,
     fieldsToDelete: object): Promise<void> {
-    const url = this._formUrl('/users');
+    const url = buildUrl('/users', this.config.url);
     // log fact about the event
     this.logger.info(`PUT ${url} for username:${username}`);
     user.username = username;
@@ -133,6 +129,10 @@ class ServiceRegister {
       throw errors.unexpectedError(new Error(err.message || 'Unexpected error.'));
     }
   }
+}
+
+function buildUrl(path: string, url): string {
+  return new urllib.URL(path, url);
 }
 
 module.exports = ServiceRegister;

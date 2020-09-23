@@ -99,8 +99,7 @@ class MethodContext {
     try {
       // get user details
       this.user = await this.usersRepository.getAccountByUsername(this.username, true);
-      if (!this.user?.id)
-        throw errors.unknownResource('user', this.username);
+      if (!this.user) throw errors.unknownResource('user', this.username);
     } catch (err) {
       throw errors.unknownResource('user', this.username);
     }
