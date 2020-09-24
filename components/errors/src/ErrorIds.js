@@ -48,10 +48,6 @@ const ErrorIds = {
    */
   unavailableMethod: 'unavailable-method',
 
-  // those last two are not in use yet but already documented (see API reference for details)
-  UserAccountRelocated: 'user-account-relocated',// TODO IEVA - seems to be not used
-  UserInterventionRequired: 'user-intervention-required',// TODO IEVA - seems to be not used
-
   /**
    * Invitation token validation in the service-register
    */
