@@ -384,14 +384,14 @@ describe("Events of system streams", () => {
               assert.equal(scope.isDone(), true);
 
               assert.deepEqual(serviceRegisterRequest, {
+                username: user.attrs.username,
                 user: {
                   language: [{
                     value: eventData.content,
                     isUnique: false,
                     isActive: true,
                     creation: true
-                  }],
-                  username: user.attrs.username,
+                  }]
                 },
                 fieldsToDelete: {}
               });
@@ -451,6 +451,7 @@ describe("Events of system streams", () => {
               assert.equal(scope.isDone(), true);
               
               assert.deepEqual(serviceRegisterRequest, {
+                username: user.attrs.username,
                 user: {
                   email: [{
                     value: eventData.content,
@@ -458,7 +459,6 @@ describe("Events of system streams", () => {
                     isActive: true,
                     creation: true
                   }],
-                  username: user.attrs.username,
                 },
                 fieldsToDelete: {}
               });
@@ -607,6 +607,7 @@ describe("Events of system streams", () => {
       it('[765A] should notify register with the new data', () => {
         assert.equal(scope.isDone(), true);
         assert.deepEqual(serviceRegisterRequest, {
+          username: user.attrs.username,
           user: {
             [streamId]: [{
               value: res.body.event.content,
@@ -614,7 +615,6 @@ describe("Events of system streams", () => {
               isActive: true,
               creation: true
             }],
-            username: user.attrs.username,
           },
           fieldsToDelete: {}
         });
@@ -805,6 +805,7 @@ describe("Events of system streams", () => {
                 assert.equal(scope.isDone(), true);
                 
                 assert.deepEqual(serviceRegisterRequest, {
+                  username: user.attrs.username,
                   user: {
                     [streamId]: [{
                       value: eventData.content,
@@ -812,7 +813,6 @@ describe("Events of system streams", () => {
                       isActive: true,
                       creation: false
                     }],
-                    username: user.attrs.username,
                   },
                   fieldsToDelete: {}
                 });
@@ -833,6 +833,7 @@ describe("Events of system streams", () => {
                 it('[0D18] should notify register with the updated data', () => {
                   assert.equal(scope.isDone(), true);
                   assert.deepEqual(serviceRegisterRequest, {
+                    username: user.attrs.username,
                     user: {
                       language: [{
                         value: eventData.content,
@@ -840,7 +841,6 @@ describe("Events of system streams", () => {
                         isActive: true,
                         creation: false
                       }],
-                      username: user.attrs.username,
                     },
                     fieldsToDelete: {}
                   });
@@ -870,6 +870,7 @@ describe("Events of system streams", () => {
               it('[645C] should notify register with the updated data', () => {
                 assert.equal(scope.isDone(), true);
                 assert.deepEqual(serviceRegisterRequest, {
+                  username: user.attrs.username,
                   user: {
                     [streamId]: [{
                       value: eventData.content,
@@ -877,7 +878,6 @@ describe("Events of system streams", () => {
                       isActive: true,
                       creation: false
                     }],
-                    username: user.attrs.username,
                   },
                   fieldsToDelete: {}
                 });
@@ -905,6 +905,7 @@ describe("Events of system streams", () => {
             it('[GWHU] should send a request to service-register to update the unique field', () => {
               assert.equal(scope.isDone(), true);
               assert.deepEqual(serviceRegisterRequest, {
+                username: user.attrs.username,
                 user: {
                   email: [{
                     value: eventData.content,
@@ -912,7 +913,6 @@ describe("Events of system streams", () => {
                     isActive: true,
                     creation: false
                   }],
-                  username: user.attrs.username,
                 },
                 fieldsToDelete: {}
               });
@@ -948,14 +948,14 @@ describe("Events of system streams", () => {
               it('[6AAT] should notify register with the updated data', () => {
                 assert.equal(scope.isDone(), true);
                 assert.deepEqual(serviceRegisterRequest, {
+                  username: user.attrs.username,
                   user: {
                     email: [{
                       value: eventData.content,
                       isUnique: true,
                       isActive: true,
                       creation: false
-                    }],
-                    username: user.attrs.username,
+                    }]
                   },
                   fieldsToDelete: {}
                 });
@@ -1005,6 +1005,7 @@ describe("Events of system streams", () => {
                 assert.equal(scope.isDone(), true);
     
                 assert.deepEqual(serviceRegisterRequest, {
+                  username: user.attrs.username,
                   user: {
                     email: [{
                       value: eventData.content,
@@ -1012,7 +1013,6 @@ describe("Events of system streams", () => {
                       isActive: true,
                       creation: false
                     }],
-                    username: user.attrs.username,
                   },
                   fieldsToDelete: {}
                 });
@@ -1190,9 +1190,8 @@ describe("Events of system streams", () => {
             it('[F328] should notify register with the deleted data', () => { 
               assert.equal(scope.isDone(), true);
               assert.deepEqual(serviceRegisterRequest, {
-                user: {
-                  username: user.attrs.username,
-                },
+                username: user.attrs.username,
+                user: {},
                 fieldsToDelete: { [streamId]: initialEvent.content}
               });
             });

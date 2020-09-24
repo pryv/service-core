@@ -103,9 +103,9 @@ class ServiceRegister {
     const url = buildUrl('/users', this.config.url);
     // log fact about the event
     this.logger.info(`PUT ${url} for username:${username}`);
-    user.username = username;
 
     const request = {
+      username: username,
       user: user,
       fieldsToDelete: fieldsToDelete,
     }
@@ -120,13 +120,18 @@ class ServiceRegister {
         if (err.response.body.error.id === ErrorIds.ItemAlreadyExists) {
           throw errors.itemAlreadyExists('user', err.response.body.error.data);
         } else {
+          console.log(err.response.body);
           this.logger.error(err.response.body.error);
           throw errors.unexpectedError(err.response.body.error);
         }
+      } if (err.status == 400 && err.response.body?.user === null) {
+        // do not throw any error if no data was updated (double click for updating the event)
+        this.logger.error('No data was updated');
+      }else{
+        // do not log validation errors
+        this.logger.error(err);
+        throw errors.unexpectedError(new Error(err.message || 'Unexpected error.'));
       }
-      // do not log validation errors
-      this.logger.error(err);
-      throw errors.unexpectedError(new Error(err.message || 'Unexpected error.'));
     }
   }
 }

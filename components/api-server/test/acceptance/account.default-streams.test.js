@@ -362,6 +362,7 @@ describe('Account with system streams', function () {
         it('[Y6MC] Should send a request to service-register to update its user main information and unique fields', async () => {
           // email is already skipped
           assert.deepEqual(serviceRegisterRequest, {
+            username: user.attrs.username,
             user: {
               email: [
                 {
@@ -379,7 +380,6 @@ describe('Account with system streams', function () {
                   creation: false
                 }
               ],
-              username: user.attrs.username,
             },
             fieldsToDelete: {}
           });
