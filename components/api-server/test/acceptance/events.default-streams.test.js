@@ -131,19 +131,18 @@ describe("Events of system streams", () => {
         await createUser();
         res = await request.get(basePath).set('authorization', access.token);
       });
-      // TODO IEVA
-      it('[KS6K] should return visible system events', () => {
-
-      });
-      it('[36F7] should not return non visible system events', () => {
-        // lets separate core events from all other events and validate them separatelly
+      it('[KS6K] should return visible system events only', () => {
         const separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
-
-        // events contains only visible streamIds
-        assert.equal(separatedEvents.events.length, 0);
-        assert.equal(separatedEvents.accountStreamsEvents.length, 7);
+        const accountStreams = Object.keys(SystemStreamsSerializer.getReadableAccountStreamsForTests());
+        assert.equal(separatedEvents.accountStreamsEvents.length, accountStreams.length);
+        accountStreams.forEach(streamIdWithDot => {
+          let found = false;
+          separatedEvents.accountStreamsEvents.forEach(event => {
+            if (event.streamId === streamIdWithDot) found = true;
+          });
+          assert.isTrue(found);
+        });
       });
-      
       it('[C32B] should not return events internal properties that enforce db uniqueness', () => {
         Object.keys(res.body.events).forEach(i => {
           assert.equal(res.body.events[i].hasOwnProperty(`${
@@ -169,12 +168,16 @@ describe("Events of system streams", () => {
         separatedEvents = validation.separateAccountStreamsAndOtherEvents(res.body.events);
       });
       
-      it('[DRFH] should return visible system events', () => {
-        // events contains only visible streamIds
-        assert.equal(Object.keys(separatedEvents.accountStreamsEvents).length, 7);
-      });
-      it('[AE8W] should not return non visible system events', () => {
-        assert.equal(Object.keys(separatedEvents.events).length, 0);
+      it('[DRFH] should return visible system events only', () => {
+        const accountStreams = Object.keys(SystemStreamsSerializer.getReadableAccountStreamsForTests());
+        assert.equal(separatedEvents.accountStreamsEvents.length, accountStreams.length);
+        accountStreams.forEach(streamIdWithDot => {
+          let found = false;
+          separatedEvents.accountStreamsEvents.forEach(event => {
+            if (event.streamId === streamIdWithDot) found = true;
+          });
+          assert.isTrue(found);
+        });
       });
     });
     
@@ -193,8 +196,7 @@ describe("Events of system streams", () => {
           {
             streamId: streamIdWithDot,
             level: 'read'
-          }],
-          clientData: 'This is a consent'
+          }]
         });
         res = await request.get(basePath).set('authorization', sharedAccess.attrs.token);
       });
@@ -285,8 +287,7 @@ describe("Events of system streams", () => {
           {
             streamId: streamIdWithDot,
             level: 'read'
-          }],
-          clientData: 'This is a consent'
+          }]
         });
         
         defaultEvent = await findDefaultCoreEvent(streamIdWithDot);
@@ -536,7 +537,7 @@ describe("Events of system streams", () => {
         });
       });
 
-      describe('to create an non editable system event', () => {
+      describe('to create a non editable system event', () => {
         before(async () => {
           await createUser();
           eventData = {
@@ -574,8 +575,7 @@ describe("Events of system streams", () => {
           permissions: [{
             streamId: streamIdWithDot,
             level: 'contribute'
-          }],
-          clientData: 'This is a consent'
+          }]
         });
 
         nock.cleanAll();
@@ -1084,13 +1084,37 @@ describe("Events of system streams", () => {
         });
       });
     });
-    // TODO IEVA
     describe('when using a shared access with a contribute-level access on a system stream', () => {
-      before(async function () {
-      });
-      it('[W8PQ] should return 200', () => {
-      });
-      it('[TFOI] should return the updated event', () => {
+      describe('to update an editable system event', () => {
+        before(async function () {
+          await createUser();
+          sharedAccess = await user.access({
+            token: cuid(),
+            type: 'shared',
+            permissions: [{
+              streamId: SystemStreamsSerializer.addDotToStreamId('phoneNumber'),
+              level: 'contribute'
+            }]
+          });
+          eventData = {
+            content: charlatan.Internet.email(),
+          };
+          const initialEvent = await bluebird.fromCallback(
+            (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: SystemStreamsSerializer.addDotToStreamId('phoneNumber') }, null, cb));
+
+          res = await request.put(path.join(basePath, initialEvent.id))
+            .send(eventData)
+            .set('authorization', access.token);
+        });
+        it('[W8PQ] should return 200', () => {
+          assert.equal(res.status, 200);
+        });
+        it('[TFOI] should return the updated event', () => {
+          assert.equal(res.body.event.content, eventData.content);
+          assert.deepEqual(res.body.event.streamIds, [
+            SystemStreamsSerializer.addDotToStreamId('phoneNumber'),
+            SystemStreamsSerializer.options.STREAM_ID_ACTIVE]);
+        });
       });
     });
     describe('when using a shared access with a manage-level permission on all streams (star)', () => {
@@ -1103,8 +1127,7 @@ describe("Events of system streams", () => {
             permissions: [{
               streamId: '*',
               level: 'manage'
-            }],
-            clientData: 'This is a consent'
+            }]
           });
           eventData = {
             content: charlatan.Lorem.characters(7),
@@ -1252,13 +1275,32 @@ describe("Events of system streams", () => {
       });
     });
 
-    // TODO IEVA
     describe('when using a shared access with a contribute-level access on a system stream', () => {
+      let streamId = SystemStreamsSerializer.addDotToStreamId('language');
+      let initialEvent;
       before(async function () {
+        nock.cleanAll();
+        scope = nock(config.get('services:register:url'));
+        scope.put('/users',
+          (body) => {
+            serviceRegisterRequest = body;
+            return true;
+          }).times(1).reply(200, { errors: [] });
+        await createUser();
+        initialEvent = await bluebird.fromCallback(
+          (cb) => user.db.events.findOne({ id: user.attrs.id }, { streamIds: streamId }, null, cb));
+
+        await createAdditionalEvent(streamId);
+
+        res = await request.delete(path.join(basePath, initialEvent.id))
+          .set('authorization', access.token);
       });
       it('[I1I1] should return 200', () => {
+        assert.equal(res.status, 200);
       });
       it('[UFLT] should return the updated event', () => {
+        assert.equal(res.body.event.id, initialEvent.id);
+        assert.equal(res.body.event.trashed, true);
       });
     });
 
@@ -1285,8 +1327,7 @@ describe("Events of system streams", () => {
           permissions: [{
             streamId: '*',
             level: 'manage'
-          }],
-          clientData: 'This is a consent'
+          }]
         });
 
         res = await request.delete(path.join(basePath, initialEvent.id))
