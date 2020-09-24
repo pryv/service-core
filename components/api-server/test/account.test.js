@@ -127,7 +127,7 @@ describe('account', function () {
               delete expected.id;
               delete expected.password;
               delete expected.storageUsed;
-              
+
               validation.check(res, {
                 status: 200,
                 schema: methodsSchema.update.result,

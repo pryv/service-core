@@ -92,7 +92,7 @@ Sessions.prototype.getMatching = function (data, callback) {
  * @param {Object} data
  * @param {Function} callback Args: err, id
  */
-Sessions.prototype.generate = function (data, callback, options) {
+Sessions.prototype.generate = function (data, options, callback) {
   var session = {
     _id: generateId(),
     data: typeof data === 'object' ? data : {},

@@ -43,8 +43,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     commonFns.getParamsValidation(methodsSchema.get.params),
     async function (context, params, result, next) {
       try {
-        const user: User = await usersRepository.getById(context.user.id);
-        result.account = user.getAccount();
+        result.account = context.user.getAccount();
         next();
       } catch (err) {
         return next(errors.unexpectedError(err));
@@ -235,8 +234,10 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
    * @param {*} next 
    */
   async function buildResultData (context, params, result, next) {
-    const user: User = await usersRepository.getById(context.user.id);
-    result.account = user.getAccount();
+    Object.keys(params.update).forEach(key => {
+      context.user[key] = params.update[key];
+    });
+    result.account = context.user.getAccount();
     next();
   }
 };

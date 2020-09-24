@@ -27,13 +27,16 @@ class User {
   username: ?string;
   email: ?string;
   language: ?string;
+  password: ?string;
+  accessId: ?string;
 
   events: ?Array<{}>;
   apiEndpoint: ?string;
-  accountStreamsSettings: ?Array<{}>;
-  accountFields: ?Array<string> = [];
-  accountFieldsWithDot: ?Array<string> = [];
-  uniqueAccountFields: ?Array<string> = [];
+  accountStreamsSettings: Array<{}>;
+  accountFields: Array<string> = [];
+  readableAccountFields: Array<string> = [];
+  accountFieldsWithDot: Array<string> = [];
+  uniqueAccountFields: Array<string> = [];
 
   constructor (params: {
     events?: Array<{}>,
@@ -71,9 +74,9 @@ class User {
   }
 
   getAccount () {
-    return _.pick(this, this.accountFields);
+    return _.pick(this, this.readableAccountFields);
   }
-
+  
   /**
    * Get account with id property added to it
    */
@@ -107,7 +110,7 @@ class User {
    * Build request to service register for data update
    * @param {*} updateData 
    */
-  getUpdateRequestToServiceRegister (updateData, isActive) {
+  getUpdateRequestToServiceRegister (updateData: {}, isActive: boolean) {
     const updateRequest = {};
     const updateKeys = Object.keys(updateData);
     const editableAccountStreams = SystemStreamsSerializer.getEditableAccountStreams();
@@ -131,7 +134,7 @@ class User {
    * 1) Build events for the given updateData
    * @param {*} update
    */
-  async getEventsDataForUpdate (update, accessId) {
+  async getEventsDataForUpdate (update: {}, accessId: string) {
     const uniqueAccountStreamIds = SystemStreamsSerializer.getUniqueAccountStreamsIdsWithoutDot();
 
     // change password into hash if it exists
@@ -176,6 +179,9 @@ function buildAccountFields (user: User): void {
     if (userAccountStreams[streamId].isUnique == true) {
       user.uniqueAccountFields.push(streamIdWithoutDot);
     }
+    if (userAccountStreams[streamId].isShown == true) {
+      user.readableAccountFields.push(streamIdWithoutDot);
+    }    
     user.accountFields.push(streamIdWithoutDot);
   });
 }
@@ -292,7 +298,7 @@ function buildAccountDataFromListOfEvents (user: User) {
  * @param array events
  * @param object user
  */
-function buildEventsTree (streams: {}, events: Array<{}>, user: {}): {} {
+function buildEventsTree (streams: Array<{}>, events: Array<{}>, user: {}): {} {
   let streamIndex;
 
   for (streamIndex = 0; streamIndex < streams.length; streamIndex++) {

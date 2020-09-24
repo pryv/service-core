@@ -136,6 +136,8 @@ describe('system (ex-register)', function () {
           return user.username === newUserData.username;
         });
         validation.checkStoredItem(actual.getAccountWithId(), 'user');
+        // password hash is not retrieved with getAll
+        delete expected.passwordHash;
         actual.getAccount().should.eql(expected);
       });
     });

@@ -193,7 +193,7 @@ class Repository {
       appId: appId
     }
     const sessionId = await bluebird.fromCallback((cb) =>
-      this.sessionsStorage.generate(sessionData, cb, { transactionSession }));
+      this.sessionsStorage.generate(sessionData, { transactionSession }, cb));
     return sessionId;
   }
 

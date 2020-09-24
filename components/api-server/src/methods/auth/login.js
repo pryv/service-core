@@ -65,7 +65,7 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
         result.token = sessionId;
         next();
       } else {
-        sessionsStorage.generate(context.sessionData, function (err, sessionId) {
+        sessionsStorage.generate(context.sessionData, null, function (err, sessionId) {
           if (err) { return next(errors.unexpectedError(err)); }
           result.token = sessionId;
           next();
