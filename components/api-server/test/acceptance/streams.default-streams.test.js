@@ -167,8 +167,7 @@ describe("System streams", function () {
           assert.equal(res.status, 400);
         });
         it('[XP07] should return the correct error', async () => {
-          // TODO IEVA - change error to invalidOperation
-          assert.equal(res.body.error.id, ErrorIds.UnknownReferencedResource);
+          assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
         });
       });
     });
@@ -187,13 +186,11 @@ describe("System streams", function () {
             .send(streamData)
             .set('authorization', access.token);
         });
-        it('[SLIR] should return status 404', async () => {
-          // TODO IEVA - change to 400
-          assert.equal(res.status, 404);
+        it('[SLIR] should return status 400', async () => {
+          assert.equal(res.status, 400);
         });
         it('[V6HC] should return the correct error', async () => {
-          // TODO IEVA - change error to invalidOperation
-          assert.equal(res.body.error.id, ErrorIds.UnknownResource);
+          assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
         });
       });
     });
@@ -207,13 +204,11 @@ describe("System streams", function () {
           res = await request.delete(path.join(basePath, 'language'))
             .set('authorization', access.token);
         });
-        it('[1R35] should return status 404', async () => { 
-          // TODO IEVA - change to 400
-          assert.equal(res.status, 404);
+        it('[1R35] should return status 400', async () => { 
+          assert.equal(res.status, 400);
         });
         it('[4939] should return the correct error', async () => {
-          // TODO IEVA - change error to invalidOperation
-          assert.equal(res.body.error.id, ErrorIds.UnknownResource);
+          assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
         });
       });
     });

@@ -241,7 +241,6 @@ describe('Account with system streams', function () {
         });
         it('[DBM6] should return the correct error', async () => {
           // currently stupid z-schema error is thrown, so let like this because the method will be deprecated
-          // TODO IEVA BY ILIA - change error to invalidOperation
           assert.equal(res.body.error.data.length, 1);
           assert.equal(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');
         });
@@ -258,7 +257,6 @@ describe('Account with system streams', function () {
           assert.equal(res.status, 400);
         });
         it('[QHZ4] should return the correct error', async () => {
-          // TODO IEVA BY ILIA - change error to invalidOperation
           // currently stupid z-schema error is thrown, so let like this because the method will be deprecated
           assert.equal(res.body.error.data.length, 1);
           assert.equal(res.body.error.data[0].code, 'OBJECT_ADDITIONAL_PROPERTIES');

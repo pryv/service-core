@@ -188,9 +188,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
     updateStream);
 
   /**
-   * Remove account streams, maybe later all virtual streams from the context
-   * so that it would be not allowed to make update/delete actions with
-   * these streams 
+   * Forbid to create or modify system streams, or add children to them
    * 
    * @param {*} context 
    * @param {*} params 
@@ -198,12 +196,22 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
    * @param {*} next 
    */
   function forbidSystemStreamsActions (context, params, result, next) {
-    let accountStreamIds = context.systemStreamsSerializer.getAllSystemStreamsIds();
-    if (accountStreamIds.includes(params?.id)) {
-      return next(errors.invalidOperation(
-        ErrorMessages[ErrorIds.ForbiddenAccountStreamsActions])
-      );
+    let accountStreamIds = systemStreamsSerializer.getAllSystemStreamsIds();
+    if (params.id != null) {
+      if (accountStreamIds.includes(SystemStreamsSerializer.addDotToStreamId(params.id))) {
+        return next(errors.invalidOperation(
+          ErrorMessages[ErrorIds.ForbiddenAccountStreamsActions])
+        );
+      }
     }
+    if (params.parentId != null) {
+      if (accountStreamIds.includes(SystemStreamsSerializer.addDotToStreamId(params.parentId))) {
+        return next(errors.invalidOperation(
+          ErrorMessages[ErrorIds.ForbiddenAccountStreamsActions])
+        );
+      }
+    }
+    
     next();
   }
 
