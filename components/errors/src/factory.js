@@ -134,6 +134,12 @@ factory.missingHeader = function (headerName: string, status: ?number): APIError
   );
 };
 
+/**
+ * Strange, but seems to be used only in tests
+ * @param {*} message 
+ * @param {*} data 
+ * @param {*} innerError 
+ */
 factory.periodsOverlap = function (message: string, data: Object, innerError: Error) {
   return new APIError(ErrorIds.PeriodsOverlap, message, {
     httpStatus: 400,
@@ -238,38 +244,6 @@ factory.unavailableMethod = function (message: ?string): APIError {
       dontNotifyAirbrake: true,
     }
   );
-};
-
-/**
- * Check in service-register if username is reserved
- * The name is used in the service-core and service-register
- **/
-factory.ReservedUsername = (): APIError => {
-  const opts: APIErrorOptions = {
-    httpStatus: 400,
-    data: {param: 'username'},
-  };
-  return new APIError(ErrorIds.ReservedUsername, ErrorMessages[ErrorIds.ReservedUsername], opts);
-};
-
-/**
- * Check in service-register for uniqueness across the platform
- **/
-factory.existingField = function (fieldName: string) {
-  let message = functionGetRightArticle(fieldName) + fieldName + ' with the same value already exists';
-  let errorCode = fieldName + '-exists';
-  const errorId = `Existing_${fieldName}`;
-  if (ErrorIds[errorId]) {
-    errorCode = ErrorIds[errorId];
-    if (ErrorMessages[ErrorIds[errorId]]) {
-      message = ErrorMessages[ErrorIds[errorId]];
-    }
-  }
-  return new APIError(errorCode, message, {
-    httpStatus: 400,
-    data: { param: fieldName },
-    dontNotifyAirbrake: true
-  });
 };
 
 /**
