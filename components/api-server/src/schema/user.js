@@ -20,9 +20,12 @@ module.exports = function (action) {
     type: 'object',
     additionalProperties: false,
     properties: {
-      'username': helpers.username,
-      'email': helpers.email,
-      'language': helpers.language,
+      username: helpers.username,
+      email: helpers.email,
+      language: helpers.language,
+      appId: helpers.string(),
+      referer: helpers.string({ nullable: true }), 
+      invitationToken: helpers.string({ nullable: true }), 
       storageUsed: helpers.object({
         dbDocuments: helpers.number(),
         attachedFiles: helpers.number()
