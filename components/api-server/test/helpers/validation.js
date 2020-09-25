@@ -438,8 +438,7 @@ exports.validateAccountEvents = function (actualAccountEvents) {
           assert.isTrue(event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_UNIQUE), `.unique streamId not found in ${event} for ${streamId}`);
         }
         // validate type
-        assert.isEqual(event.type, expectedAccountStreams[streamId].type, `type mismatch between ${event} and ${expectedAccountStreams[streamId]}`);
-        break;
+        assert.equal(event.type, expectedAccountStreams[streamId].type, `type mismatch between ${event} and ${expectedAccountStreams[streamId]}`);
       }
     });
     assert.isTrue(foundEvent, `account event ${streamId} not found.`);
