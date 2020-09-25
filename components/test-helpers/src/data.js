@@ -294,8 +294,10 @@ function getDumpFilesArchive(dumpFolder) {
 }
 
 function buildCustomAccountProperties() {
-  const customProperties = {};
   const accountStreams = config.get('custom:systemStreams:account');
+  if (accountStreams == null) return {};
+  
+  const customProperties = {};
   accountStreams.forEach(stream => {
     customProperties[SystemStreamsSerializer.removeDotFromStreamId(stream.id)] = charlatan.Number.number(3);
   });
