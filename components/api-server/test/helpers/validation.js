@@ -439,6 +439,7 @@ exports.validateAccountEvents = function (actualAccountEvents) {
         }
         // validate type
         assert.equal(event.type, expectedAccountStreams[streamId].type, `type mismatch between ${event} and ${expectedAccountStreams[streamId]}`);
+        return;
       }
     });
     assert.isTrue(foundEvent, `account event ${streamId} not found.`);
