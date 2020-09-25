@@ -302,10 +302,8 @@ function buildSystemStreamsFromSettings (settings, systemStreams, parentName: st
         children: []
       });
       systemStreams[systemStreams.length - 1].children = buildSystemStreamsFromSettings(settings[streamIndex].children, systemStreams[systemStreams.length - 1].children, settings[streamIndex].id)
-    }
-
-    // if the stream is not visible, dont add it to the tree
-    if (settings[streamIndex].isShown) {
+    } else if (settings[streamIndex].isShown) {
+      // if the stream is not visible, dont add it to the tree
       systemStreams.push({
         name: settings[streamIndex].name ? settings[streamIndex].name : settings[streamIndex].id ,
         id: settings[streamIndex].id,

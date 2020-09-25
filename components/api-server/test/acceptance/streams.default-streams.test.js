@@ -113,12 +113,6 @@ describe("System streams", function () {
                 ]
               },
               {
-                name: 'Storage used',
-                id: '.storageUsed',
-                parentId: '.account',
-                children: []
-              },
-              {
                 name: 'insurancenumber',
                 id: '.insurancenumber',
                 parentId: '.account',
