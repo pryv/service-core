@@ -14,6 +14,7 @@ const utils = require('components/utils');
 const ExtensionLoader = utils.extension.ExtensionLoader;
 
 const { ProjectVersion } = require('components/middleware/src/project_version');
+const { getConfig } = require('components/api-server/config/Config');
 
 import type { Extension } from 'components/utils';
 
@@ -34,6 +35,8 @@ async function start() {
    * Runs the server.
    * Launch with `node server [options]`.
    */
+  const newConfig = getConfig();
+  await newConfig.init();
 
   // load config settings
   var config = require('./config');

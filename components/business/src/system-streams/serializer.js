@@ -292,28 +292,20 @@ class SystemStreamsSerializer {
 function buildSystemStreamsFromSettings (settings, systemStreams, parentName: string): [] {
   let streamIndex;
   
-  for (streamIndex = 0; streamIndex < settings.length; streamIndex++) {
-    // if stream has children recursivelly call the same function
-    if (typeof settings[streamIndex].children !== "undefined") {
+  settings.forEach(stream => {
+    if (stream.isShown) {
       systemStreams.push({
-        name: settings[streamIndex].name,
-        id: settings[streamIndex].id,
+        name: stream.name ? stream.name : stream.id ,
+        id: stream.id,
         parentId: parentName,
         children: []
       });
-      systemStreams[systemStreams.length - 1].children = buildSystemStreamsFromSettings(settings[streamIndex].children, systemStreams[systemStreams.length - 1].children, settings[streamIndex].id)
+      if (stream.children != null) {
+        systemStreams[systemStreams.length - 1].children = buildSystemStreamsFromSettings(stream.children, systemStreams[systemStreams.length - 1].children, stream.id)
+      }
     }
-
-    // if the stream is not visible, dont add it to the tree
-    if (settings[streamIndex].isShown) {
-      systemStreams.push({
-        name: settings[streamIndex].name ? settings[streamIndex].name : settings[streamIndex].id ,
-        id: settings[streamIndex].id,
-        parentId: parentName,
-        children: []
-      });
-    }
-  };
+  });
+  
   return systemStreams;
 }
 

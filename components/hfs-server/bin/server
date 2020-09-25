@@ -12,7 +12,7 @@ const { getConfig } = require('components/api-server/config/Config');
 (async () => {
   const config = getConfig();
   await config.init();
+  const app = new Application();
+  app.run()
+    .catch(err => console.error(err)); // eslint-disable-line no-console
 })();
-const app = new Application(); 
-app.run()
-  .catch(err => console.error(err)); // eslint-disable-line no-console
