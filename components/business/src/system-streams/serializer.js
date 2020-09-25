@@ -69,8 +69,8 @@ class SystemStreamsSerializer {
   }
 
   /**
-   * The same as getReadableAccountStreams (), just skips storageUsed stream because it is 
-   * a perrent and no events are created by default for it dirrectly
+   * The same as getReadableAccountStreams (), just skips storageUsed because it is 
+   * a parent and no events are created by default for it directly.
    */
   static getReadableAccountStreamsForTests () {
     if (!SystemStreamsSerializer.readableAccountStreamsForTests) {
