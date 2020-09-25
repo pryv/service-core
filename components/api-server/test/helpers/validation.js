@@ -428,22 +428,21 @@ exports.validateAccountEvents = function (actualAccountEvents) {
   // iterate through expected account events and check that they exists in actual
   // account events
   const expectedSreamIds = Object.keys(expectedAccountStreams);
-  for (n in expectedSreamIds) {
+  expectedSreamIds.forEach(streamId => {
     let foundEvent = false;
-    let i;
-    for (i in actualAccountEvents) {
-      if (actualAccountEvents[i].streamIds.includes(expectedSreamIds[n])) {
+    actualAccountEvents.forEach(event => {
+      if (event.streamIds.includes(streamId)) {
         foundEvent = true;
         // validate that event is indexed/unique if needed
-        if (expectedAccountStreams[expectedSreamIds[n]].isUnique === true) {
-          actualAccountEvents[i].streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_UNIQUE).should.eql(true);
+        if (expectedAccountStreams[streamId].isUnique === true) {
+          assert.isTrue(event.streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_UNIQUE), `.unique streamId not found in ${event} for ${streamId}`);
         }
         // validate type
-        actualAccountEvents[i].type.should.eql(expectedAccountStreams[expectedSreamIds[n]].type);
+        assert.isEqual(event.type, expectedAccountStreams[streamId].type, `type mismatch between ${event} and ${expectedAccountStreams[streamId]}`);
         break;
       }
-    }
-    foundEvent.should.eql(true);
-  }
+    });
+    assert.isTrue(foundEvent, `account event ${streamId} not found.`);
+  });
   return;
 }
