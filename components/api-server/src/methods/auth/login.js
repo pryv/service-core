@@ -44,7 +44,6 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
     try {
       const isValid = await usersRepository.checkUserPassword(context.user.id, params.password);
       if (!isValid) {
-        //TODO IEVA -different error than while changing the password
         return next(errors.invalidCredentials());
       }
       next();
