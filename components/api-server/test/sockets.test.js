@@ -94,7 +94,7 @@ describe('Socket.IO', function () {
     var request = null,
         otherRequest = null;
     async.series([
-      testData.resetUsersWithAdditionalProperties,
+      testData.resetUsers,
       testData.resetAccesses,
       function (stepDone) {
         // have some accesses ready for another account to check notifications

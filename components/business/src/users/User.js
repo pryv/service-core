@@ -73,8 +73,23 @@ class User {
     return this.events;
   }
 
-  getAccount () {
+  /**
+   * 
+   */
+  getAccount (): {} {
     return _.pick(this, this.readableAccountFields);
+  }
+
+  /**
+   * Get fields provided by account methods
+   */
+  getLegacyAccount (): {} {
+    return _.pick(this, [
+      'username',
+      'email',
+      'language',
+      'storageUsed',
+    ]);
   }
   
   /**

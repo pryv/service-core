@@ -43,7 +43,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     commonFns.getParamsValidation(methodsSchema.get.params),
     async function (context, params, result, next) {
       try {
-        result.account = context.user.getAccount();
+        result.account = context.user.getLegacyAccount();
         next();
       } catch (err) {
         return next(errors.unexpectedError(err));
@@ -237,7 +237,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     Object.keys(params.update).forEach(key => {
       context.user[key] = params.update[key];
     });
-    result.account = context.user.getAccount();
+    result.account = context.user.getLegacyAccount();
     next();
   }
 };

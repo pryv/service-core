@@ -49,6 +49,8 @@ module.exports = function (action) {
     break;
     case Action.STORE:
     schema.required = ['id', 'username', 'email', 'language', 'storageUsed' ];
+    // TODO ILIA - load custom streams correctly here as is done in schema/authMethods
+    schema.additionalProperties = true;
     break;
   case Action.CREATE:
     schema.required = [ 'username', 'passwordHash', 'email', 'language' ];

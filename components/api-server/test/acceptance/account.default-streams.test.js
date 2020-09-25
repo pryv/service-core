@@ -192,11 +192,9 @@ describe('Account with system streams', function () {
         assert.equal(res.body.account.language, languageAccountEvent.content);
         assert.equal(res.body.account.storageUsed.dbDocuments, dbDocumentsAccountEvent.content);
         assert.equal(res.body.account.storageUsed.attachedFiles, attachedFilesAccountEvent.content);
-        assert.equal(res.body.account.insurancenumber, insurancenumberAccountEvent.content);
-        assert.equal(res.body.account.phoneNumber, phoneNumberAccountEvent.content);
       });
       it('[R5S0] should return only visible default stream events', async () => {
-        assert.equal(Object.keys(res.body.account).length, 6);
+        assert.equal(Object.keys(res.body.account).length, 4);
       });
     });
   });
@@ -347,8 +345,6 @@ describe('Account with system streams', function () {
               email: newEmail,
               language: newLanguage,
               storageUsed: { dbDocuments: 0, attachedFiles: 0 },
-              insurancenumber: user.attrs.insurancenumber,
-              phoneNumber: user.attrs.phoneNumber
           });
         });
         it('[JQHX] should update only active events in the database', async () => {

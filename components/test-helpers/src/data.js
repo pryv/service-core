@@ -22,10 +22,14 @@ const SystemStreamsSerializer = require('components/business/src/system-streams/
 const UsersRepository = require('components/business/src/users/repository');
 const User = require('components/business/src/users/User');
 const charlatan = require('charlatan');
+const { getConfig } = require('components/api-server/config/Config');
 
 // users
 const users = exports.users = require('./data/users');
 const defaultUser = users[0];
+const config = getConfig();
+
+const customAccountProperties = buildCustomAccountProperties();
 
 exports.resetUsers = async () => {
   await bluebird.fromCallback(cb => storage.user.events.database.deleteMany(
@@ -41,23 +45,7 @@ exports.resetUsers = async () => {
   let userObj: User;
   for (i = 0; i < users.length; i++){
     let user = Object.assign({}, users[i]);
-    userObj = new User(user);
-    await usersRepository.insertOne(userObj);
-  }
-};
-//TODO IEVA - do I still need this?
-exports.resetUsersWithAdditionalProperties = async () => {
-  await bluebird.fromCallback(cb => storage.user.events.database.deleteMany(
-    { name: 'events' }, {}, cb));
-  
-  const usersRepository = new UsersRepository(storage.user.events);
-
-  let i;
-  let userObj: User;
-  for (i = 0; i < users.length; i++) {
-    let user = Object.assign({}, users[i]);
-    user.insurancenumber = charlatan.Number.number(3);
-    user.phoneNumber = charlatan.Number.number(3);
+    user = _.merge(customAccountProperties, user);
     userObj = new User(user);
     await usersRepository.insertOne(userObj);
   }
@@ -254,7 +242,7 @@ exports.restoreFromDump = function (versionNum, mongoFolder, callback) {
   if (! fs.existsSync(sourceDBFolder) || ! fs.existsSync(sourceFilesArchive)) {
     throw new Error('Missing source dump or part of it at ' + sourceFolder);
   }
-  //TODO IEVA - ask Ilia advice
+
   async.series([
     clearAllData,
     childProcess.exec.bind(null, mongorestore +
@@ -303,4 +291,13 @@ function getDumpDBSubfolder(dumpFolder) {
 
 function getDumpFilesArchive(dumpFolder) {
   return path.resolve(dumpFolder, 'event-files.tar.gz');
+}
+
+function buildCustomAccountProperties() {
+  const customProperties = {};
+  const accountStreams = config.get('custom:systemStreams:account');
+  accountStreams.forEach(stream => {
+    customProperties[SystemStreamsSerializer.removeDotFromStreamId(stream.id)] = charlatan.Number.number(3);
+  });
+  return customProperties;
 }

@@ -51,7 +51,7 @@ describe('events', function () {
 
   before(function (done) {
     async.series([
-      testData.resetUsersWithAdditionalProperties,
+      testData.resetUsers,
       testData.resetAccesses,
       testData.resetStreams,
       server.ensureStarted.bind(server, helpers.dependencies.settings),

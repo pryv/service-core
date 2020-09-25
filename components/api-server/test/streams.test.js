@@ -48,7 +48,7 @@ describe('streams', function () {
 
   before(function (done) {
     async.series([
-      testData.resetUsersWithAdditionalProperties,
+      testData.resetUsers,
       testData.resetAccesses,
       server.ensureStarted.bind(server, helpers.dependencies.settings),
       function (stepDone) {
