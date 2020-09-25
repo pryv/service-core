@@ -50,7 +50,7 @@ class Flush implements Operation {
     logger.debug(`Flushing update to ${request.userId}/${request.eventId}, author ${request.author}`);
     // update.userId contains the user _name_. To be able to update, we must 
     // first load the user and resolve his id. 
-    //TODO IEVA
+
     const users = this.users; 
     const user = await users.resolve(request.userId);
     
@@ -75,7 +75,7 @@ class Flush implements Operation {
       modified: request.timestamp,
      
     };
-    //TODO IEVA - how to deal with this user repository and object?
+
     await bluebird.fromCallback(
             cb => db.events.updateOne(user, query, updatedData, cb));
       
@@ -91,6 +91,7 @@ const USER_LOOKUP_CACHE_SIZE = 1000;
 class UsersRepository {
   db: storage.StorageLayer;
   cache: LRUCache<string, User>;
+  businessRepository: UserRepo;
   
   constructor(db: storage.StorageLayer) {
     this.db = db;
@@ -98,6 +99,7 @@ class UsersRepository {
     this.cache = LRU({
       max: USER_LOOKUP_CACHE_SIZE
     });
+    this.businessRepository = new UserRepo(this.db.events);
   }
   
   async resolve(name: string): Promise<User> {
@@ -126,8 +128,7 @@ class UsersRepository {
    * @param string name 
    */
   async resolveFromDB (name: string): Promise<User> {
-    const usersRepository = new UserRepo(this.db.events); 
-    const user = await usersRepository.getAccountByUsername(name, true);
+    const user = await this.businessRepository.getAccountByUsername(name, true);
     return user;
   }
 }
