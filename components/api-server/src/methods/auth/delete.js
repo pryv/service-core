@@ -25,9 +25,9 @@ module.exports = function(
 ) {
   const deletion: Deletion = new Deletion(logging, storageLayer, settings);
   
-  const host = this.settings.get('influxdb.host').str();
-  const port = this.settings.get('influxdb.port').num();
-
+  const host = settings.get('influxdb.host').str();
+  const port = settings.get('influxdb.port').num();
+  
   const influx = new InfluxConnection(
     { host: host, port: port },
     deletion.logger
@@ -43,7 +43,7 @@ module.exports = function(
     deletion.deleteUser.bind(deletion)
   );
 
-  async deleteHFData(
+  async function deleteHFData (
     context: MethodContext,
     params: mixed,
     result: Result,
