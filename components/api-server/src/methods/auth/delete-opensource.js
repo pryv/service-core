@@ -7,7 +7,6 @@
 
 // @flow
 const Deletion = require('components/business/src/auth/deletion');
-const InfluxConnection = require('components/business/src/series/influx_connection');
 
 /**
  * Auth API methods implementations.
@@ -24,33 +23,13 @@ module.exports = function(
   settings: any
 ) {
   const deletion: Deletion = new Deletion(logging, storageLayer, settings);
-  
-  const host = this.settings.get('influxdb.host').str();
-  const port = this.settings.get('influxdb.port').num();
-
-  const influx = new InfluxConnection(
-    { host: host, port: port },
-    deletion.logger
-  );
 
   api.register(
-    'auth.delete',
+    'auth.delete.opensource',
     deletion.checkIfAuthorized.bind(deletion),
     deletion.validateUserExists.bind(deletion),
     deletion.validateUserFilepaths.bind(deletion),
     deletion.deleteUserFiles.bind(deletion),
-    deleteHFData,
     deletion.deleteUser.bind(deletion)
   );
-
-  async deleteHFData(
-    context: MethodContext,
-    params: mixed,
-    result: Result,
-    next: ApiCallback
-  ) {
-    await influx.dropDatabase(`user.${params.username}`);
-
-    next();
-  }
 };
