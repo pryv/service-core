@@ -48,7 +48,7 @@
     "convict": "^3.0.0",
     "cookie-parser": "^1.4.3",
     "cron": "^1.2.1",
-    "cross-fetch": "^3.0.4",
+    "cross-fetch": "^3.0.6",
     "errors": "file:components/errors",
     "express": "^4",
     "flow-bin": "^0.113.0",
@@ -89,7 +89,7 @@
     "unicode": "^12.1.0",
     "unix-timestamp": "^0.2.0",
     "utils": "file:components/utils",
-    "yargs": "^11.0.0"
+    "yargs": "^16.0.3"
   },
   "devDependencies": {
     "@babel/cli": "^7.8.4",
