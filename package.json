@@ -64,7 +64,7 @@
     "middleware": "file:components/middleware",
     "mkdirp": "1.0.4",
     "model": "file:components/model",
-    "mongodb": "3.x",
+    "mongodb": "^3.6.2",
     "morgan": "^1.8.1",
     "msgpack5": "^3.6.0",
     "multer": "^1.3.0",
