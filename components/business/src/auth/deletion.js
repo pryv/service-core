@@ -10,7 +10,6 @@ const bluebird = require('bluebird');
 const rimraf = require('rimraf');
 const fs = require('fs');
 const path = require('path');
-const InfluxConnection = require('components/business/src/series/influx_connection');
 const UsersRepository = require('components/business/src/users/repository');
 const errors = require('components/errors').factory;
 
@@ -120,22 +119,22 @@ class Deletion {
     next();
   }
 
-  async deleteHFData(
+  async deleteHFData (
     context: MethodContext,
     params: mixed,
     result: Result,
     next: ApiCallback
   ) {
-    const host = this.settings.get('influxdb.host').str(); 
+    // dynamic loading , because series functionality does not exist in opensource
+    const InfluxConnection = require('components/business/src/series/influx_connection');
+    const host = this.settings.get('influxdb.host').str();
     const port = this.settings.get('influxdb.port').num();
 
     const influx = new InfluxConnection(
-      {host: host, port: port},
+      { host: host, port: port },
       this.logger
     );
-
     await influx.dropDatabase(`user.${params.username}`);
-
     next();
   }
 

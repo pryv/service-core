@@ -8,6 +8,7 @@
 
 const nconf = require('nconf');
 const components = require('./components');
+const defaultConfig = require('./defaultConfig').defaultConfig;
 
 let config = null;
 
@@ -65,6 +66,7 @@ class Config {
     components.systemStreams.load(store).then();
 
     this.store = store;
+    this.setDefaults();
   }
 
   async init () {
@@ -99,6 +101,10 @@ class Config {
 
   getLogger(prefix: string): any {
     return this.logger;
+  }
+  
+  setDefaults (): void {
+    this.store.defaults(defaultConfig);
   }
 }
 

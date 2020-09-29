@@ -9,6 +9,7 @@
 const methodCallback = require('../methodCallback');
 const API = require('../../API');
 import type Application from '../../application';
+const { Config, getConfig } = require('components/api-server/config/Config');
 
 /**
  * Routes for users
@@ -17,6 +18,7 @@ import type Application from '../../application';
 module.exports = function(expressApp: express$Application, app: Application) {
   const api: API = app.api;
   const context = {};
+  const config: Config = getConfig();
 
   expressApp.delete('/users/:username', function(
     req: express$Request,
@@ -25,12 +27,22 @@ module.exports = function(expressApp: express$Application, app: Application) {
   ) {
     context.username = req.params.username;
     context.authorizationHeader = req.headers.authorization;
+    const isOpensource = config.get('openSource:isActive');
 
-    api.call(
-      'auth.delete',
-      context,
-      req.params,
-      methodCallback(res, next, 200)
-    );
+    if (isOpensource) {
+      api.call(
+        'auth.delete.opensource',
+        context,
+        req.params,
+        methodCallback(res, next, 200)
+      );
+    }else{
+      api.call(
+        'auth.delete',
+        context,
+        req.params,
+        methodCallback(res, next, 200)
+      );
+    }
   });
 };

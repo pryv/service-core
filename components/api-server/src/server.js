@@ -123,10 +123,17 @@ class Server {
       application.storageLayer, 
       application.settings.get('services').obj());
 
-    require('./methods/auth/delete')(application.api, 
-      application.logging, 
-      application.storageLayer, 
-      application.settings);
+    if (this.isOpenSource) {
+      require('./methods/auth/delete-opensource')(application.api,
+        application.logging,
+        application.storageLayer,
+        application.settings);
+    } else {
+      require('./methods/auth/delete')(application.api,
+        application.logging,
+        application.storageLayer,
+        application.settings);
+    }
 
     require('./methods/accesses')(
       application.api, l('methods/accesses'), 
