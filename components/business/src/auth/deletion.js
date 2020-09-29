@@ -119,6 +119,25 @@ class Deletion {
     next();
   }
 
+  async deleteHFData (
+    context: MethodContext,
+    params: mixed,
+    result: Result,
+    next: ApiCallback
+  ) {
+    // dynamic loading , because series functionality does not exist in opensource
+    const InfluxConnection = require('components/business/src/series/influx_connection');
+    const host = this.settings.get('influxdb.host').str();
+    const port = this.settings.get('influxdb.port').num();
+
+    const influx = new InfluxConnection(
+      { host: host, port: port },
+      this.logger
+    );
+    await influx.dropDatabase(`user.${params.username}`);
+    next();
+  }
+
   async deleteUser(
     context: MethodContext,
     params: mixed,
