@@ -153,9 +153,13 @@ describe('SystemStreams config', () => {
         },
         {
           id: '.storageUsed',
-          isShown: true,
           name: 'Storage used',
           type: 'data-quantity/b',
+          isRequiredInValidation: false,
+          isIndexed: false,
+          isUnique: false,
+          isShown: true,
+          isEditable: false,
           children: [
             {
               isIndexed: false,

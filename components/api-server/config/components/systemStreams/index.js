@@ -8,13 +8,19 @@
 
 'use strict';
 const _ = require('lodash');
+const fs = require('fs');
+const path = require('path');
 const { Config } = require('components/api-server/config/Config');
 const treeUtils = require('components/utils/src/treeUtils');
 const validation = require('components/api-server/src/schema/validation');
 const string = require('components/api-server/src/methods/helpers/string');
 const slugify = require('slug');
 const systemStreamSchema = require('./systemStreamSchema');
-let additionalDefaultAccountStreams = require('./additionalDefaultAccountStreams.json');
+
+let additionalDefaultAccountStreams;
+if (fs.existsSync(path.join(path.dirname(__filename), 'additionalDefaultAccountStreams.json'))) {
+  additionalDefaultAccountStreams = require('./additionalDefaultAccountStreams.json');
+}
 
 const DEFAULT_VALUES_FOR_FIELDS = {
   isIndexed: false, // if true will be sent to service-register to be able to query across the platform
@@ -76,7 +82,7 @@ async function load(config: Config): Config {
       id: '.storageUsed',
       isShown: true,
       name: 'Storage used',
-      type: 'data-quantity/b',
+      type: 'data-quantity/b',      
       children: [
         {
           isShown: true,
@@ -95,12 +101,12 @@ async function load(config: Config): Config {
       ]
     }
   ];
+  
   if (additionalDefaultAccountStreams) {
     defaultAccountStreams = defaultAccountStreams.concat(additionalDefaultAccountStreams);
   }
-  
-  defaultAccountStreams = extendSystemStreamsWithDefaultValues(defaultAccountStreams);
 
+  defaultAccountStreams = extendSystemStreamsWithDefaultValues(defaultAccountStreams);
   config.set('systemStreams:account', defaultAccountStreams);
   config.set('systemStreams:helpers', [
     _.extend({}, DEFAULT_VALUES_FOR_FIELDS, {
