@@ -5,6 +5,6 @@
  * Proprietary and confidential
  */
 module.exports = {
-  systemStreams: require('./systemStreams'),
+  systemStreams: require('./systemStreams/index'),
   serviceInfo: require('./serviceInfo'),
 };
