@@ -32,7 +32,7 @@ config.schema = {
       doc: 'Used when webhooks and HFS are not available to cut off unavailble dependencies that would make the service crash.'
     }
   },  
-  dnsLess: {
+  singleNode: {
     isActive: {
       format: Boolean,
       default: false,
