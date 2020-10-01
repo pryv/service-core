@@ -48,7 +48,7 @@
     "isActive": false
   },
   "singleNode": {
-    "isActive": true,
+    "isActive": false,
     "publicUrl": "http://localhost/"
   },
   "influxdb": {
