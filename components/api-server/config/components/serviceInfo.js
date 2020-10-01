@@ -22,19 +22,18 @@ const SERVICE_INFO_PATH: string = '/service/info';
 
 async function load (config: Config): Config {
   const serviceInfoUrl: string = config.get('serviceInfoUrl');
+  let isSingleNode: boolean = config.get('singleNode:isActive');
 
   if (process.env.NODE_ENV !== 'test')
     console.info('Fetching serviceInfo from: ' + serviceInfoUrl);
 
-  if (serviceInfoUrl == null) {
+  if (serviceInfoUrl == null && !isSingleNode) {
     console.error(
       'Parameter "serviceInfoUrl" is undefined, set it in the configuration to allow core to provide service info'
     );
     process.exit(2);
     return null;
   }
-
-  let isSingleNode: boolean = config.get('singleNode:isActive');
 
   try {
     let serviceInfo: ?{};
