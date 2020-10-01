@@ -39,7 +39,8 @@ let influxRepository;
 
 describe('DELETE /users/:username', () => {
   const settingsToTest = [[true, false], [false, false], [true, true]];
-  const testIDs = [['CM4Q', 'BQXA', '4Y76', '710F', 'GUPH', 'JNVS', 'C58U'],
+  const testIDs = [
+    ['CM4Q', 'BQXA', '4Y76', '710F', 'GUPH', 'JNVS', 'C58U'],
     ['U21Z', 'K4J1', 'TIKT', 'WMMV', '9ZTM', 'T3UK', 'O73J'],
     ['TPP2', '581Z', 'Z2FH', '4IH8', '33T6', 'SQ8P', '1F2Y']];
   for (let i = 0; i < settingsToTest.length; i++) {
@@ -53,6 +54,13 @@ describe('DELETE /users/:username', () => {
         await app.initiate();
 
         require('../src/methods/auth/delete')(
+          app.api,
+          app.logging,
+          app.storageLayer,
+          app.settings
+        );
+
+        require('../src/methods/auth/delete-opensource')(
           app.api,
           app.logging,
           app.storageLayer,
