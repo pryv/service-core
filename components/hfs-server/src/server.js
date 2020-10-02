@@ -154,7 +154,7 @@ class Server {
     }
     app.use(middleware.subdomainToPath([]));
     app.use(middleware.requestTrace(express, logging(logSettings)));
-    app.use(bodyParser.json());
+    app.use(bodyParser.json({ limit: '10mb' }));
     app.use(middleware.override);
     app.use(middleware.commonHeaders(version));
     app.all('/*', getAuth);

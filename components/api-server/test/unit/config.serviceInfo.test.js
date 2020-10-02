@@ -31,8 +31,8 @@ describe('config: serviceInfo', () => {
       });
       it('[KEH6] should build serviceInfo', () => {
         const serviceInfo = config.get('service');
-        let dnsLessPublicUrl = config.get('singleNode:publicUrl');
-        if (dnsLessPublicUrl.slice(-1) === '/') dnsLessPublicUrl = dnsLessPublicUrl.slice(0, -1);
+        let singleNodePublicUrl = config.get('singleNode:publicUrl');
+        if (singleNodePublicUrl.slice(-1) === '/') singleNodePublicUrl = singleNodePublicUrl.slice(0, -1);
 
         const REG_PATH = '/reg';
         const WWW_PATH = '/www';
@@ -40,11 +40,11 @@ describe('config: serviceInfo', () => {
         const serial = parseInt(serviceInfo.serial.slice(1));        
 
         assert.approximately(serial, Date.now() / 1000, 5);
-        assert.equal(serviceInfo.api, dnsLessPublicUrl + '/{username}/');
-        assert.equal(serviceInfo.register, dnsLessPublicUrl + REG_PATH + '/');
-        assert.equal(serviceInfo.access, dnsLessPublicUrl + REG_PATH + '/access/');
+        assert.equal(serviceInfo.api, singleNodePublicUrl + '/{username}/');
+        assert.equal(serviceInfo.register, singleNodePublicUrl + REG_PATH + '/');
+        assert.equal(serviceInfo.access, singleNodePublicUrl + REG_PATH + '/access/');
         assert.deepEqual(serviceInfo.assets, {
-          definitions: dnsLessPublicUrl + WWW_PATH + '/assets/index.json',
+          definitions: singleNodePublicUrl + WWW_PATH + '/assets/index.json',
         });
       });
     });

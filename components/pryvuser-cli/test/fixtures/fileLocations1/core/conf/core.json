@@ -56,5 +56,8 @@
       "active": false,
       "key": "OVERRIDE ME"
     }
+  },
+  "singleNode": {
+    "isActive": false
   }
 }

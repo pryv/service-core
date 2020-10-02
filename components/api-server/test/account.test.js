@@ -81,7 +81,6 @@ describe('account', function () {
   });
 
   describe('PUT /', function () {
-
     beforeEach(async () => { await resetUsers() });
 
     it('[0PPV] must modify account details with the sent data, notifying register if e-mail changed',
@@ -103,17 +102,32 @@ describe('account', function () {
               .reply(200, function (uri, requestBody) {
                 this.context.messagingSocket.emit('reg-server-called', JSON.parse(requestBody));
               }.bind(this));
-            scope.put('/users',
-              (body) => {
-                serviceRegisterRequest = body;
-                return true;
-              }).reply(200, { errors: [] });
           }
         });
         
         // fetch service call data from server process
         server.on('reg-server-called', function (sentData) {
-          sentData.should.eql({email: updatedData.email});
+          sentData.should.eql({
+            fieldsToDelete: {},
+            user: {
+              email: [
+                {
+                  creation: false,
+                  isActive: true,
+                  isUnique: true,
+                  value: updatedData.email
+                }],
+              language: [
+                {
+                  creation: false,
+                  isActive: true,
+                  isUnique: false,
+                  value: updatedData.language,
+                }
+              ]
+            },
+            username: user.username
+          });
           regServerCalled = true;
         });
         async.series([
@@ -122,7 +136,6 @@ describe('account', function () {
             request.put(basePath).send(updatedData).end(function (res) {
               //jshint -W030
               regServerCalled.should.be.ok;
-
               let expected = _.defaults(updatedData, user);
               delete expected.id;
               delete expected.password;
