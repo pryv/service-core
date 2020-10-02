@@ -35,7 +35,7 @@ config.schema = {
   singleNode: {
     isActive: {
       format: Boolean,
-      default: false,
+      default: true,
       doc: 'Activates routes /reg and /www. Builds service information on publicUrl.\n' + 
       'This requires to have built-in register and app-web-auth3.',
     },

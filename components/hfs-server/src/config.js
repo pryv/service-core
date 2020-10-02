@@ -115,7 +115,12 @@ function produce() {
     // as the hfs-config does not extend the utils/config. This leads to a crash
     singleNode: {
       isActive: {
-        format: Boolean, default: false,
+        format: Boolean, 
+        default: true,
+      },
+      publicUrl: {
+        format: String,
+        default: 'http://localhost:3000/',
       }
     }
   });
