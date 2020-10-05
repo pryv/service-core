@@ -28,7 +28,7 @@ module.exports = function (api: API, logger: Logger, settings: ConfigAccess) {
     if (! this.serviceInfo) {
       this.serviceInfo = config.get('service');
     }
-    result = _.cloneDeep(result, this.serviceInfo);
+    result = _.merge(result, this.serviceInfo);
     return next();
   }
 };
