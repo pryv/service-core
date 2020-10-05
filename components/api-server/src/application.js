@@ -89,11 +89,11 @@ class Application {
   initiateRoutes() {
     const isOpenSource = this.settings.get('openSource.isActive').bool();
     if (isOpenSource) {
-      require('../../www')(this.expressApp, this);
+      require('componenets/www')(this.expressApp, this);
+      require('./routes/register')(this.expressApp, this);
     }
 
-    // system, root, register and delete MUST come first
-    require('./routes/service')(this.expressApp, this);
+    // system, root, register and delete MUST come firs
     require('./routes/auth/delete')(this.expressApp, this);
     require('./routes/auth/register')(this.expressApp, this);
     require('./routes/system')(this.expressApp, this);
@@ -105,6 +105,7 @@ class Application {
     require('./routes/events')(this.expressApp, this);
     require('./routes/followed-slices')(this.expressApp, this);
     require('./routes/profile')(this.expressApp, this);
+    require('./routes/service')(this.expressApp, this);
     require('./routes/streams')(this.expressApp, this);
 
     if(!isOpenSource) require('./routes/webhooks')(this.expressApp, this);
