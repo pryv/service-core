@@ -24,15 +24,11 @@ module.exports = function (api: API, logger: Logger, settings: ConfigAccess) {
     getServiceInfo
   );
 
-  api.register('service.info.singlenode',
-    getServiceInfo
-  );
-
   async function getServiceInfo(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {  
     if (! this.serviceInfo) {
       this.serviceInfo = config.get('service');
     }
-    result = this.serviceInfo;
+    result = _.cloneDeep(result, this.serviceInfo);
     return next();
   }
 };

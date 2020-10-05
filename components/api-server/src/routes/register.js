@@ -15,6 +15,6 @@ module.exports = function(expressApp: express$Application, app: Application) {
 
   // singleNode compatible route
   expressApp.get('/reg/service/info', function (req: express$Request, res, next) {
-    api.call('service.info.singlenode', req.context, req.query, methodCallback(res, next, 200));
+    api.call('service.info', req.context, req.query, methodCallback(res, next, 200));
   });
 }
