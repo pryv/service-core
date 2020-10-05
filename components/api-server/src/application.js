@@ -89,7 +89,7 @@ class Application {
   initiateRoutes() {
     const isOpenSource = this.settings.get('openSource.isActive').bool();
     if (isOpenSource) {
-      require('componenets/www')(this.expressApp, this);
+      require('components/www')(this.expressApp, this);
       require('./routes/register')(this.expressApp, this);
     }
 
