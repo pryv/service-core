@@ -56,7 +56,6 @@ describe('Service', () => {
     it('[FR4K] must return all service info', async () => {
       let path = '/' + username + '/service/info';
       const res = await server.request().get(path);
-      
       validation.check(res, {
         status: 200,
         schema: methodsSchema.get.result,

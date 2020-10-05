@@ -1,3 +1,21 @@
+## 1.6
+
+### 1.6.1
+
+Fixes for singleNode/openSource:
+
+- /reg/service/info
+- dependencies
+- boost POST payload to 10MB for HF server
+
+### 1.6.0
+
+system streams:
+
+- customizable (& extendable) unique and indexed account properties
+- access to account properties through the events API with its access management
+- user account deletion through administration API
+
 ## 1.5
 
 ### 1.5.23-4
