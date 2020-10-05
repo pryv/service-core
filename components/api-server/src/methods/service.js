@@ -22,12 +22,15 @@ module.exports = function (api: API, logger: Logger, settings: ConfigAccess) {
     getServiceInfo
   );
 
+  api.register('service.info.singlenode',
+    getServiceInfo
+  );
+
   async function getServiceInfo(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {  
     if (! this.serviceInfo) {
       this.serviceInfo = await settings.get('service').obj();
-    }   
+    }
     result = _.merge(result, this.serviceInfo);
     return next();
-
   }
 };

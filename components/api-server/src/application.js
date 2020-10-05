@@ -93,6 +93,7 @@ class Application {
     }
 
     // system, root, register and delete MUST come first
+    require('./routes/service')(this.expressApp, this);
     require('./routes/auth/delete')(this.expressApp, this);
     require('./routes/auth/register')(this.expressApp, this);
     require('./routes/system')(this.expressApp, this);
@@ -104,7 +105,6 @@ class Application {
     require('./routes/events')(this.expressApp, this);
     require('./routes/followed-slices')(this.expressApp, this);
     require('./routes/profile')(this.expressApp, this);
-    require('./routes/service')(this.expressApp, this);
     require('./routes/streams')(this.expressApp, this);
 
     if(!isOpenSource) require('./routes/webhooks')(this.expressApp, this);
