@@ -530,7 +530,7 @@ describe('Versions', function () {
      
       console.log('migrated', u);
       const events = await eventsCursor.toArray();
-      console.log('events', events.map(e => e.streamIds))
+      // console.log('events', events.map(e => e.streamIds))
       userAccountStreamIds.forEach(streamId => {
         console.log('processing', streamId);
         const systemStream = userAccountStreams[streamId];
