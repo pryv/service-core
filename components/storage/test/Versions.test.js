@@ -546,10 +546,13 @@ describe('Versions', function () {
             assert.equal(event.content, u.language);
             break;
           case '.appId':
-            //assert.equal(event.content, u.appId);
+            assert.equal(event.content, null);
             break;
-          case 'invitationToken':
-            //assert.equal(event.content, u.invitationToken);
+          case '.invitationToken':
+            assert.equal(event.content, null);
+            break;
+          case '.referer':
+            assert.equal(event.content, null);
             break;
           case '.passwordHash':
             assert.equal(event.content, u.passwordHash);
@@ -564,14 +567,6 @@ describe('Versions', function () {
             assert.equal(event.content, u.email);
             break;
         }
-        /*
-        // those are not yet on core, storage used is undefined in some seeded users
-        if (! isNewField(streamId) && ! isStorageUsed(streamId)) {
-          assert.equal(event.content, u[streamId]);
-        }
-        if (isStorageUsed(streamId) && u.storageUsed?.[streamId]) {
-          assert.equal(event.content, u.storageUsed[streamId]);
-        }*/
         assert.equal(event.type, systemStream.type);
 
         if (systemStream.isUnique) {
@@ -579,15 +574,6 @@ describe('Versions', function () {
           assert.equal(event[SystemStreamsSerializer.removeDotFromStreamId(streamId) + '__unique'], event.content);
         }
 
-        function isNewField(streamId) {
-          return streamId === SystemStreamsSerializer.addDotToStreamId('invitationToken')
-            || streamId === SystemStreamsSerializer.addDotToStreamId('appId')
-            || streamId === SystemStreamsSerializer.addDotToStreamId('referer');
-        }
-        function isStorageUsed(streamId) {
-          return streamId === SystemStreamsSerializer.addDotToStreamId('dbDocuments')
-            || streamId === SystemStreamsSerializer.addDotToStreamId('attachedFiles');
-        }
         function getEventByStreamId(events, streamId) {
           const e = events.filter(e => e.streamIds.indexOf(streamId) >= 0);
           return e[0];
