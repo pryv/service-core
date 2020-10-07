@@ -286,11 +286,11 @@ describe('Account with system streams', function () {
           .set('Origin', 'http://test.pryv.local')
           .set('authorization', access.token);
       });
-      it('should return 400', async () => {
-        assert.equal(res.status, 400);
+      it('[551W] should return 500', async () => {
+        assert.equal(res.status, 500);
       });
-      it('should return the correct error', async () => {
-        assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
+      it('[I5M6] should return the correct error', async () => {
+        assert.equal(res.body.error.id, ErrorIds.UnexpectedError);
       });
     });
   });
