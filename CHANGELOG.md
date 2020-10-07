@@ -1,5 +1,10 @@
 ## 1.6
 
+### 1.6.2
+
+- Fix migration that was skipping passwordHash leading to users not being able to login
+- add errors if this cases arises
+
 ### 1.6.1
 
 Fixes for singleNode/openSource:
