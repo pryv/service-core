@@ -510,16 +510,15 @@ describe('Versions', function () {
     // get streams ids from the config that should be retrieved
     const userAccountStreams = SystemStreamsSerializer.getAllAccountStreamsLeaves(); 
     const userAccountStreamIds = Object.keys(userAccountStreams); 
-    
-    // get backup of users
-    const usersCursor = await bluebird.fromCallback(cb => usersCollection.find({}, cb ));
-    const users = await usersCursor.toArray();
 
     // perform migration
     await bluebird.fromCallback(cb => testData.restoreFromDump('1.5.22', mongoFolder, cb));
 
-    await bluebird.fromCallback(cb => versions.migrateIfNeeded(cb));
+    // get backup of users
+    const usersCursor = await bluebird.fromCallback(cb => usersCollection.find({}, cb));
+    const users = await usersCursor.toArray();
 
+    await bluebird.fromCallback(cb => versions.migrateIfNeeded(cb));
     // verify that user accounts were migrated to events
     for(let i=0; i<users.length; i++) {
       const u = users[i];
