@@ -528,22 +528,18 @@ describe('Versions', function () {
           userId: { $eq: u._id }, // we've accessed users through the raw collection
         }, cb));
      
-      console.log('migrated', u);
       const events = await eventsCursor.toArray();
-      // console.log('events', events.map(e => e.streamIds))
       userAccountStreamIds.forEach(streamId => {
-        console.log('processing', streamId);
         const systemStream = userAccountStreams[streamId];
         const event = getEventByStreamId(events, streamId);
-        assert.exists(event);
+        assert.exists(event, 'missing ' + streamId + ' event');
 
-        // console.log('migrating', streamId, 'for', event);
         switch(event.streamId) {
           case '.username':
-            assert.equal(event.content, u.username);
+            assert.equal(event.content, u.username, 'wrong username');
             break;
           case '.language':
-            assert.equal(event.content, u.language);
+            assert.equal(event.content, u.language, 'wrong language');
             break;
           case '.appId':
             assert.equal(event.content, null);
@@ -555,16 +551,16 @@ describe('Versions', function () {
             assert.equal(event.content, null);
             break;
           case '.passwordHash':
-            assert.equal(event.content, u.passwordHash);
+            assert.equal(event.content, u.passwordHash, 'wrong password');
             break;
           case '.dbDocuments':
-            assert.equal(event.content, u.storageUsed.dbDocuments);
+            assert.equal(event.content, u.storageUsed.dbDocuments, 'wrong db documents');
             break;
           case '.attachedFiles':
-            assert.equal(event.content, u.storageUsed.attachedFiles);
+            assert.equal(event.content, u.storageUsed.attachedFiles, 'wrong attached files');
             break;
           case '.email':
-            assert.equal(event.content, u.email);
+            assert.equal(event.content, u.email, 'wrong email');
             break;
         }
         assert.equal(event.type, systemStream.type);
