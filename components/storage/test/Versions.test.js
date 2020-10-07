@@ -529,24 +529,55 @@ describe('Versions', function () {
           userId: { $eq: u._id }, // we've accessed users through the raw collection
         }, cb));
      
+      console.log('migrated', u);
       const events = await eventsCursor.toArray();
+      console.log('events', events.map(e => e.streamIds))
       userAccountStreamIds.forEach(streamId => {
+        console.log('processing', streamId);
         const systemStream = userAccountStreams[streamId];
         const event = getEventByStreamId(events, streamId);
         assert.exists(event);
 
+        console.log('migratin', streamId, 'for', event);
+        switch(event.streamId) {
+          case '.username':
+            assert.equal(event.content, u.username);
+            break;
+          case '.language':
+            assert.equal(event.content, u.language);
+            break;
+          case '.appId':
+            //assert.equal(event.content, u.appId);
+            break;
+          case 'invitationToken':
+            //assert.equal(event.content, u.invitationToken);
+            break;
+          case '.passwordHash':
+            assert.equal(event.content, u.passwordHash);
+            break;
+          case '.dbDocuments':
+            assert.equal(event.content, u.storageUsed.dbDocuments);
+            break;
+          case '.attachedFiles':
+            assert.equal(event.content, u.storageUsed.attachedFiles);
+            break;
+          case '.email':
+            assert.equal(event.content, u.email);
+            break;
+        }
+        /*
         // those are not yet on core, storage used is undefined in some seeded users
         if (! isNewField(streamId) && ! isStorageUsed(streamId)) {
           assert.equal(event.content, u[streamId]);
         }
         if (isStorageUsed(streamId) && u.storageUsed?.[streamId]) {
           assert.equal(event.content, u.storageUsed[streamId]);
-        }
+        }*/
         assert.equal(event.type, systemStream.type);
 
         if (systemStream.isUnique) {
-          assert.exists(event[streamId + '__unique']);
-          assert.equal(event[streamId + '__unique'], event.content);
+          assert.exists(event[SystemStreamsSerializer.removeDotFromStreamId(streamId) + '__unique']);
+          assert.equal(event[SystemStreamsSerializer.removeDotFromStreamId(streamId) + '__unique'], event.content);
         }
 
         function isNewField(streamId) {
