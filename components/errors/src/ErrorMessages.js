@@ -37,6 +37,7 @@ const ErrorMessages = {
   [ErrorIds.ForbiddenAccountStreamsEventDeletion]: 'It is forbidden to delete non-editable or active system events.',
   [ErrorIds.ForbiddenToEditNoneditableAccountFields]: 'It is forbidden to edit non-editable acccount fields.',
   [ErrorIds.UnexpectedError]: 'Unexpected error',
+  [ErrorIds.UserDoesNotExist]: 'User does not exist',
 };
 Object.freeze(ErrorMessages);
 

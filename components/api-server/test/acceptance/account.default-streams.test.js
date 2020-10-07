@@ -21,6 +21,8 @@ const { getConfig } = require('components/api-server/config/Config');
 
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
+const helpers = require('components/api-server/test/helpers');
+const pwdResetReqsStorage = helpers.dependencies.storage.passwordResetRequests;
 
 describe('Account with system streams', function () {
   let helpers;
@@ -221,6 +223,74 @@ describe('Account with system streams', function () {
       });
       it('[PWAA] should update event with password hash', async () => {
         assert.notEqual(passwordBefore.content, passwordAfter.content);
+      });
+    });
+    describe('when the password in the database does not exist', () => {
+      before(async function () {
+        await createUser();
+        basePath += '/change-password'
+        // remove passwordHash event from the database
+        await bluebird.fromCallback(
+          (cb) => user.db.events.removeOne({ id: user.attrs.id },
+            {
+              streamIds: SystemStreamsSerializer.addDotToStreamId('passwordHash')
+            }, cb));
+        
+        // make sure the event was deleted
+        let password = await getActiveEvent('passwordHash');
+        assert.isNull(password);
+
+        res = await request.post(basePath)
+          .send({
+            newPassword: charlatan.Lorem.characters(7),
+            oldPassword: 'any-password',
+          })
+          .set('authorization', access.token);
+      });
+      it('[8S2S] should return 400', async () => {
+        assert.equal(res.status, 400);
+      });
+      it('[WG4L] should return the correct error', async () => {
+        assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
+      });
+    });
+  });
+
+  describe('POST /reset-password', () => {
+    describe('when the password in the database does not exist', () => {
+      async function generateResetToken (username) {
+        // generate a reset token for user1
+        return await bluebird.fromCallback(
+          (cb) => pwdResetReqsStorage.generate(username,cb));
+      }
+      before(async function () {
+        await createUser();
+        basePath += '/reset-password'
+        // remove passwordHash event from the database
+        await bluebird.fromCallback(
+          (cb) => user.db.events.removeOne({ id: user.attrs.id },
+            {
+              streamIds: SystemStreamsSerializer.addDotToStreamId('passwordHash')
+            }, cb));
+
+        // make sure the event was deleted
+        let password = await getActiveEvent('passwordHash');
+        assert.isNull(password);
+
+        res = await request.post(basePath)
+          .send({
+            newPassword: charlatan.Lorem.characters(7),
+            resetToken: await generateResetToken(user.attrs.username),
+            appId: 'pryv-test'
+          })
+          .set('Origin', 'http://test.pryv.local')
+          .set('authorization', access.token);
+      });
+      it('should return 400', async () => {
+        assert.equal(res.status, 400);
+      });
+      it('should return the correct error', async () => {
+        assert.equal(res.body.error.id, ErrorIds.InvalidOperation);
       });
     });
   });

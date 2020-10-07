@@ -537,7 +537,7 @@ describe('Versions', function () {
         const event = getEventByStreamId(events, streamId);
         assert.exists(event);
 
-        console.log('migratin', streamId, 'for', event);
+        // console.log('migrating', streamId, 'for', event);
         switch(event.streamId) {
           case '.username':
             assert.equal(event.content, u.username);
