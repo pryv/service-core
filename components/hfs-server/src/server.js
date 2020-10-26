@@ -72,11 +72,7 @@ class Server {
     this.baseUrl = `http://${ip}:${port}/`;
     
     this.logger.info('constructed.');
-
-    
   }
-
-
 
 
   /**
