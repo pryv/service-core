@@ -1,4 +1,4 @@
-FROM pryv/intermediate-webhooks:latest
+FROM pryvio/intermediate-webhooks:latest
 
 # Only clean up after ourselves.
 RUN apt-get remove -y autoconf automake 

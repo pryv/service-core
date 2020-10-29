@@ -1,4 +1,4 @@
-FROM pryv/intermediate-hfs:latest
+FROM pryvio/intermediate-hfs:latest
 
 # Copy config files to config dir
 RUN cp /app/bin/build/hfs/config/metadata.hjson /app/conf/

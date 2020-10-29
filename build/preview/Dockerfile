@@ -1,4 +1,4 @@
-FROM pryv/intermediate-preview:latest
+FROM pryvio/intermediate-preview:latest
 
 # install graphicsmagick that is specific for preview image
 RUN apt-get update && apt-get install -y graphicsmagick

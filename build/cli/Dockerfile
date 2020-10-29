@@ -1,4 +1,4 @@
-FROM pryv/base:1.3.40
+FROM pryvio/base:1.3.40
 MAINTAINER "Tech@Pryv" <tech@pryv.com>
 
 ADD . /app/bin
