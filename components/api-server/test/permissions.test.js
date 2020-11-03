@@ -459,6 +459,21 @@ describe('Access permissions', function () {
         });
       });
 
+      it('[H58Z] must allow access whith "callerid" headers', function (done) {
+        var successAuth = token(sharedAccessIndex);
+        const myRequest = helpers.unpatchedRequest(server.url);
+        myRequest.execute('post', basePath, successAuth)
+          .set('callerid', 'Georges (unparsed)')
+          .send(newEventData).end(function (err, res) {
+          res.statusCode.should.eql(201);
+          var event = res.body.event,
+              expectedAuthor = testData.accesses[sharedAccessIndex].id + ' Georges (parsed)';
+          event.createdBy.should.eql(expectedAuthor);
+          event.modifiedBy.should.eql(expectedAuthor);
+          done();
+        });
+      });
+
       it('[ISE4] must fail properly (i.e. not granting access) when the custom function crashes', function (done) {
         var crashAuth = token(sharedAccessIndex) + ' Please Crash';
         request.post(basePath, crashAuth).send(newEventData).end(function (res) {
