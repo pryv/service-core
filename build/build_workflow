@@ -33,4 +33,3 @@ done
 # echo "---------------------------- building cli --------------------------------"
 # docker build -f $SCRIPT_FOLDER/cli/Dockerfile -t $host/pryvio/cli:$version .
 # docker push $host/pryvio/cli:$version
-
