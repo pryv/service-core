@@ -19,7 +19,7 @@ var helpers = require('./helpers'),
     testData = helpers.data;
 require('date-utils');
 
-describe('Auditing', function () {
+describe('Versioning', function () {
 
   var user = Object.assign({}, testData.users[0]),
       request = null;
