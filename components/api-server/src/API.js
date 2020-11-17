@@ -12,6 +12,11 @@ const errors = require('components/errors').factory;
 const Result = require('./Result');
 const _ = require('lodash');
 
+const { Config, getConfig } = require('components/api-server/config/Config');
+
+const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
+const NATS_AUDIT_LOGS_CREATE = require('components/utils').messaging.NATS_AUDIT_LOGS_CREATE;
+
 // When storing full events.get request instead of streaming it, the maximum
 // array size before returning an error.
 const RESULT_TO_OBJECT_MAX_ARRAY_SIZE = 100000;
@@ -40,10 +45,21 @@ class API {
   map: Map<string, Array<ApiFunction>>;
   
   filters: Array<Filter>;
+
+  config: Config;
+
+  natsPublisher: ?{} = null;
   
-  constructor() {
+  constructor(settings) {
     this.map = new Map(); 
-    this.filters = []; 
+    this.filters = [];
+
+    this.config = getConfig();
+
+    if ( ! this.config.get('openSource:isActive') ) {
+      const NatsPublisher = require('./socket-io/nats_publisher');
+      this.natsPublisher = new NatsPublisher(NATS_CONNECTION_URI);
+    }
   }
   
   // -------------------------------------------------------------- registration
@@ -174,6 +190,8 @@ class API {
       context.calledMethodId = id; 
       
     const result = new Result({arrayLimit: RESULT_TO_OBJECT_MAX_ARRAY_SIZE});
+
+    const that = this;
     async.forEachSeries(methodList, function (currentFn, next) {
       try {
         currentFn(context, params, result, next);
@@ -182,11 +200,24 @@ class API {
       }
     }, function (err) {
       if (err != null) {
-        return callback(err instanceof APIError ? 
+        const err = err instanceof APIError ? 
           err : 
-          errors.unexpectedError(err));
+          errors.unexpectedError(err);
+
+        if (that.natsPublisher) that.natsPublisher.deliver(NATS_AUDIT_LOGS_CREATE, err);
+
+        return callback(err);
       }
       
+      
+      if (that.natsPublisher) that.natsPublisher.deliver(NATS_AUDIT_LOGS_CREATE, {
+        time: Date.now() / 1000,
+        forwardedFor: 'blop',
+        action: id,
+        query: params,
+        accessId: context.access.id,
+        status: 200
+      });
       callback(null, result);
     });
   }

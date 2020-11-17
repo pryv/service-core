@@ -15,15 +15,20 @@ const assert = require('chai').assert;
 const { describe, before, it } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
+const awaiting = require('awaiting');
 
 const { getConfig } = require('components/api-server/config/Config');
 const Settings = require('components/api-server/src/settings');
 const Application = require('components/api-server/src/application');
 const Notifications = require('components/api-server/src/Notifications');
 const NatsConsumer = require('components/api-server/test/support/NatsConsumer');
+//const MSG_RECEIVED = require('components/api-server/test/support/NatsConsumer');
 
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
+
+const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
+const NATS_AUDIT_LOGS_CREATE = require('components/utils').messaging.NATS_AUDIT_LOGS_CREATE;
 
 describe('audit logs', () => {
 
@@ -89,11 +94,12 @@ describe('audit logs', () => {
       });
     });
 
-    before(() => {
+    before(async () => {
       natsConsumer = new NatsConsumer({
-        channel: config.get('auditLogs:natsChannel'),
-        uri: require('components/utils').messaging.NATS_CONNECTION_URI;
+        channel: NATS_AUDIT_LOGS_CREATE,
+        uri: NATS_CONNECTION_URI,
       });
+      await natsConsumer.init();
     });
   
     describe('when given not existing username', function() {
@@ -101,6 +107,9 @@ describe('audit logs', () => {
       before(async function() {
         res = await request.get(`/${user.attrs.username}/events?${queryParams}`)
           .set('Authorization', access.token);
+
+        // needed if time to receive msg takes more than HTTP response
+        //await awaiting.event(natsConsumer, 'msg_received')
       });
       it(`should respond with 200`, function() {
         assert.equal(res.status, 200);

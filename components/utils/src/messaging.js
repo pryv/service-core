@@ -19,6 +19,8 @@ exports.NATS_WEBHOOKS_DELETE = 'wh.deletes';
 exports.NATS_UPDATE_EVENT = 'events.update';
 exports.NATS_DELETE_EVENT = 'events.delete';
 
+exports.NATS_AUDIT_LOGS_CREATE = 'audit.create';
+
 /**
  * @param {{host: String, port: Number, pubConnectInsteadOfBind: Boolean}} settings
  * @param {Function({Error}, {Object})} callback Called passing the `EventEmitter` for TCP messages
