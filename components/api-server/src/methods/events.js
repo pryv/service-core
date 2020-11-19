@@ -16,6 +16,7 @@ var cuid = require('cuid'),
   querying = require('./helpers/querying'),
   timestamp = require('unix-timestamp'),
   treeUtils = utils.treeUtils,
+  queryStreamFiltering = require('./helpers/queryStreamFiltering'),
   _ = require('lodash'),
   SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
 
@@ -116,58 +117,53 @@ module.exports = function (
       // limit to 20 items by default
       params.limit = 20;
     }
+    
+    // Get all accessible stream
+    const accessibleStreamIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, true, isAccessibleStream), 'id');
 
-    if (params.streams != null) {
-      var expandedStreamIds = treeUtils.expandIds(context.streams, params.streams);
-      var unknownIds = _.difference(params.streams, expandedStreamIds);
+    function isAccessibleStream(stream) { 
+      if (params.state === 'default' && stream.trashed) return false;
+      if (context.access.isPersonal()) return true;
+      return context.access.canReadStream(stream.id);
+    }
+   
+    if(params.streams === null) {
+      params.streams = { IN: accessibleStreamIds};
+    } else {
+      const usedStreams = [];
+      const expandedStreams = [];
+      /**
+       * Check if a stream is visible and keep it
+       * Return false if not visible
+       * @param {*} streamId 
+       */
+      const registerStream = function(streamId) {
+        if (accessibleStreamIds.includes(streamId)) {
+          usedStreams.push(streamId);
+          return true;
+        }
+        return false;
+      }
 
+      const expand = function(streamId) {
+        expandedStreams.push(streamId);
+        const expanded = treeUtils.expandIds(context.streams, [streamId]);
+        return expanded.filter(registerStream); // only return visble streams 
+      }
+      
+      try {
+        params.streams = queryStreamFiltering.removeSugarAndCheck(params.streams, expand, registerStream);
+      } catch (e) {
+        return next(errors.invalidRequestStructure(e.message, params.streams));
+      }
+
+      const unknownIds = _.difference(expandedStreams, usedStreams);
+      
       if (unknownIds.length > 0) {
         return next(errors.unknownReferencedResource(
           'stream' + (unknownIds.length > 1 ? 's' : ''),
           'streams', 
           unknownIds));
-      }
-
-      params.streams = expandedStreamIds;
-    }
-    if (params.state === 'default') {
-      // exclude events in trashed streams
-      var nonTrashedStreamIds = treeUtils.collectPluck(
-        treeUtils.filterTree(
-          context.streams, false, (s) => { return ! s.trashed; }), 
-        'id');
-      params.streams = params.streams 
-        ? _.intersection(params.streams, nonTrashedStreamIds) 
-        : nonTrashedStreamIds;
-    }
-
-    if (! context.access.canReadAllStreams()) {
-      var accessibleStreamIds = [];
-
-      Object.keys(context.access.streamPermissionsMap).map((streamId) => {
-        if (context.access.canReadStream(streamId)) {
-          accessibleStreamIds.push(streamId);
-        }
-      });
-      params.streams = params.streams 
-        ? _.intersection(params.streams, accessibleStreamIds) 
-        : accessibleStreamIds;
-    } else if (params.streams && !context.access.isPersonal()) { // case streamPermission has *
-      // allow account stream events access only with personal token or specific access
-      let allAccountStreamIds = SystemStreamsSerializer.getAllAccountStreamsIdsForAccess(); // using global object
-      const notAccessibleStreamIds = _.cloneDeep(allAccountStreamIds);
-
-      Object.keys(context.access.streamPermissionsMap).map((streamId) => {
-        if (hasPermissionForAccountStream(streamId) &&
-          context.access.canReadAccountStream(streamId)) {
-          notAccessibleStreamIds.splice(notAccessibleStreamIds.indexOf(streamId), 1);
-        }
-      });
-      params.streams = params.streams.filter(function (streamId) {
-        return ! notAccessibleStreamIds.includes(streamId);
-      });
-      function hasPermissionForAccountStream(streamId) {
-        return allAccountStreamIds.includes(streamId);
       }
     }
 
@@ -192,15 +188,23 @@ module.exports = function (
     return query;
   }
 
+
+
   async function findAccessibleEvents(context, params, result, next) {
     // build query
     var query = querying.noDeletions(querying.applyState({}, params.state));
 
+  
     if (params.streams) {
-      query.streamIds = {$in: params.streams};
-    }
+      const streamsQuery = queryStreamFiltering.toMongoDBQuery(params.streams);
+    
+      if (streamsQuery.$or) query.$or = streamsQuery.$or;
+      if (streamsQuery.streamIds) query.streamIds = streamsQuery.streamIds;
+      if (streamsQuery.$and) query.$and = streamsQuery.$and;
+    } 
+    // remove all Account streamIds by defaults
     query = removeNotReadableAccountStreamsFromQuery(query);
-
+    
     if (params.tags && params.tags.length > 0) {
       query.tags = {$in: params.tags};
     }
@@ -213,7 +217,7 @@ module.exports = function (
       query.duration = {'$type' : 10}; // matches when duration exists and is null
     }
     if (params.fromTime != null) {
-      query.$or = [
+      const timeQuery = [
         { // Event started before fromTime, but finished inside from->to.
           time: {$lt: params.fromTime},
           endTime: {$gte: params.fromTime}
@@ -222,6 +226,16 @@ module.exports = function (
           time: { $gte: params.fromTime, $lte: params.toTime }
         },
       ];
+
+      if (query.$or) { // mongo support only one $or .. so we nest them into a $and
+        if (! query.$and) query.$and = [];
+        query.$and.push({$or: query.$or});
+        query.$and.push({$or: timeQuery});
+        delete query.$or; // clean; 
+      } else {
+        query.$or = timeQuery;
+      }
+
     }
     if (params.toTime != null) {
       _.defaults(query, {time: {}});

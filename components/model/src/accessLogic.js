@@ -152,6 +152,9 @@ const accessLogic = module.exports = {
   },
 
   canReadStream: function (streamId) {
+    if (SystemStreamsSerializer.isAccountStreamId(streamId)) {
+      return this.canReadAccountStream(streamId);
+    }
     const level = this.getStreamPermissionLevel(streamId);
     if (level === 'create-only') return false;
     return level && isHigherOrEqualLevel(level, 'read');
@@ -300,9 +303,8 @@ const accessLogic = module.exports = {
       return 'manage';
     } else {
       // do not allow star permissions for account streams
-      let allAccountStreamIds = SystemStreamsSerializer.getAllAccountStreamsIdsForAccess();
       let permission;
-      if (allAccountStreamIds.includes(streamId)) {
+      if (SystemStreamsSerializer.isAccountStreamId(streamId)) {
         permission = this.streamPermissionsMap[streamId];
       } else {
         permission = this.streamPermissionsMap[streamId] || this.streamPermissionsMap['*'];
