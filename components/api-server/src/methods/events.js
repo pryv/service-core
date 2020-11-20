@@ -117,6 +117,38 @@ module.exports = function (
       // limit to 20 items by default
       params.limit = 20;
     }
+
+    // Streams query can also be sent as a JSON string or string of Array
+    if (params.streams) {
+      try {
+        if (typeof params.streams === 'string') {
+          // !! some HTTP client are removing the [] from queries when there is only one item
+          if (!['[', '{'].includes(params.streams.substr(0, 1))) { // we detect if it's json by looking at first char
+            // Note: since RFC 7159 JSON can also starts with ", true, false or number - this does not apply in this case.
+            params.streams = [params.streams];
+          } else { // probably JSON
+            try {
+              params.streams = JSON.parse(params.streams);
+            } catch (e) {
+             throw('Error while parsinh JSON ' + e);
+            }
+          }
+        } else if (!Array.isArray(params.streams)) {
+          throw('Expected an Array');
+        } else {
+          // check it's only arrays. 
+          for (let i = 0; i < params.streams.length; i++) {
+            if (typeof params.streams[i] !== 'string') {
+              throw('Array contains not only strings.');
+            }
+          }
+        }
+      } catch (e) {
+        return next(errors.invalidRequestStructure(
+          'Invalid streams parameter. It should be an array of streamIds or Stringified JSON: ' + e, params.streams));
+      }
+
+    }
     
     // Get all accessible stream
     const accessibleStreamIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, true, isAccessibleStream), 'id');
@@ -127,7 +159,7 @@ module.exports = function (
       return context.access.canReadStream(stream.id);
     }
    
-    if(params.streams === null) {
+    if(params.streams === null && accessibleStreamIds.length > 0) {
       params.streams = { IN: accessibleStreamIds};
     } else {
       const usedStreams = [];
@@ -151,10 +183,12 @@ module.exports = function (
         return expanded.filter(registerStream); // only return visble streams 
       }
       
-      try {
-        params.streams = queryStreamFiltering.removeSugarAndCheck(params.streams, expand, registerStream);
-      } catch (e) {
-        return next(errors.invalidRequestStructure(e, params.streams));
+      if (params.streams) {
+        try {
+          params.streams = queryStreamFiltering.removeSugarAndCheck(params.streams, expand, registerStream);
+        } catch (e) {
+          return next(errors.invalidRequestStructure(e, params.streams));
+        }
       }
 
       const unknownIds = _.difference(expandedStreams, usedStreams);
@@ -205,7 +239,9 @@ module.exports = function (
         if (streamsQuery.streamIds) query.streamIds = streamsQuery.streamIds;
         if (streamsQuery.$and) query.$and = streamsQuery.$and;
       }
-    } 
+    } else {
+      query.streamIds = {$in: []}; // all streams
+    }
     
     // remove all Account streamIds by defaults
     query = removeNotReadableAccountStreamsFromQuery(query);
@@ -256,7 +292,6 @@ module.exports = function (
       skip: params.skip,
       limit: params.limit
     };
-
     try {
       let eventsStream = await bluebird.fromCallback(cb =>
         userEventsStorage.findStreamed(context.user, query, options, cb));

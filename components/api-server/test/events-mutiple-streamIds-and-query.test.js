@@ -150,11 +150,29 @@ describe('events.get querying streams', function () {
         const optimized = queryStreamFiltering.toMongoDBQuery(clean);
         assert.deepEqual(optimized, {"$and":[{ streamIds: { '$in': [ 'A', 'B', 'C' ] } },{ streamIds: { '$nin': [ 'D', 'E', 'F' ] } }]});
       });
+
+
+      it('[ZU7S] handle complex nested queries', async function () {
+        const clean = queryStreamFiltering.removeSugarAndCheck(['B',{AND: ['D', {NOTEQUAL: 'E'}]}], fakeExpand, fakeRegisterStream);
+        const optimized = queryStreamFiltering.toMongoDBQuery(clean);
+        const expected = {
+          '$or': [
+            {
+              '$and': [
+                { streamIds: { '$in': [ 'D', 'E', 'F' ] } },
+                { streamIds: { '$ne': 'E' } }
+              ]
+            },
+            { streamIds: 'B' }
+          ]
+        };
+        assert.deepEqual(optimized, expected);
+      });
     });
 
   });
 
-  describe('AND streamIds', function () {
+  describe('query on streamIds', function () {
     let server;
     before(async () => {
       server = await context.spawn();
@@ -172,14 +190,16 @@ describe('events.get querying streams', function () {
     let user,
         username,
         tokenRead,
-        basePathEvent;
+        basePathEvent,
+        basePath;
 
     before(async function () {
       username = cuid();
       
   
       tokenRead = cuid();
-      basePathEvent = `/${username}/events/`;
+      basePath = `/${username}`;
+      basePathEvent = `${basePath}/events/`;
 
       user = await mongoFixtures.user(username, {});
       
@@ -214,12 +234,31 @@ describe('events.get querying streams', function () {
       await mongoFixtures.clean();
     });
 
+    it('[TXXD] convert simple string to array (because of some creppy HTTP client)', async function () {
+      const res = await server.request()
+        .get(basePathEvent)
+        .set('Authorization', tokenRead)
+        .query({streams: 'A'});
+      assert.exists(res.body.events)
+      const events = res.body.events;
+      assert.equal(events.length, 6);
+    });
+
+    it('[TUGD] must accept array of string', async function () {
+      const res = await server.request()
+        .get(basePathEvent)
+        .set('Authorization', tokenRead)
+        .query({streams: ['A','D']});
+      assert.exists(res.body.events)
+      const events = res.body.events;
+      assert.equal(events.length, 9);
+    });
 
     it('[MAGD] must return events in A AND E', async function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
-        .query({streams: [{AND: ['A', 'E']}]});
+        .query({streams: JSON.stringify([{AND: ['A', 'E']}])});
       assert.exists(res.body.events)
       const events = res.body.events;
       assert.equal(events.length, 1);
@@ -230,7 +269,7 @@ describe('events.get querying streams', function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
-        .query({streams: [{AND: ['A', {NOT: 'B'}]}]});
+        .query({streams: JSON.stringify([{AND: ['A', {NOT: 'B'}]}])});
       assert.exists(res.body.events)
       const events = res.body.events;
       assert.equal(events.length, 4);
@@ -244,7 +283,7 @@ describe('events.get querying streams', function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
-        .query({streams: [{AND: ['A', {NOT: 'D'}]}]});
+        .query({streams: JSON.stringify([{AND: ['A', {NOT: 'D'}]}])});
       assert.exists(res.body.events)
       const events = res.body.events;
       assert.equal(events.length, 3);
@@ -259,7 +298,7 @@ describe('events.get querying streams', function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
-        .query({streams: [{AND: ['A', {NOTEQUAL: 'D'}]}]});
+        .query({streams: JSON.stringify([{AND: ['A', {NOTEQUAL: 'D'}]}])});
       assert.exists(res.body.events)
       const events = res.body.events;
       assert.equal(events.length, 5);
@@ -268,6 +307,26 @@ describe('events.get querying streams', function () {
         assert.equal(events[i].id, EVENTS[resEvents[i]].id);
       }
     });
+
+    it('[O8SD] must return all events in B + events in D NOT in (EQUAL E)', async function () {
+      //['B',{AND: ['D', {NOTEQUAL: 'E'}]}]
+      const res = await server.request()
+        .get(basePathEvent)
+        .set('Authorization', tokenRead)
+        .query({streams: JSON.stringify(
+            [{IN: ['B']}, {AND: ['D', {NOTEQUAL: 'E'}]}]
+            )});
+      assert.exists(res.body.events)
+      const events = res.body.events;
+      
+      assert.equal(events.length, 5);
+      const resEvents = ['a', 'b', 'fc', 'c', 'be'];
+      for (let i; i < resEvents; i++) {
+        assert.equal(events[i].id, EVENTS[resEvents[i]].id);
+      }
+    });
+
+    
 
   });
 });

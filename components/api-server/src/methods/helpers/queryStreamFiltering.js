@@ -20,7 +20,7 @@ const _ = require('lodash');
 /**
  * To allow retro-compatibility with stream querying
  * Replace globing [] by {OR: []}
- * Replace all strings "A" by {IN: ['A',...childs]}
+ * Replace all strings 'A' by {IN: ['A',...childs]}
  * @param {*} streamQuery 
  */
 exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, registerStream) {
@@ -61,31 +61,31 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
                 switch (command) {
                     case 'EQUAL': // can only be a string A terminaison
                     case 'NOTEQUAL':
-                        if (typeof command !== 'string') throw ("Error in query, [" + command + "] can only be used with streamIds: " + streamQuery);
+                        if (typeof command !== 'string') throw ('Error in query, [' + command + '] can only be used with streamIds: ' + JSON.stringify(streamQuery));
                         if (!registerStream(value)) return null;
                         return getCommand(command, value);
-                    case 'NOT': // "not in" .. can only be a string to be expanded
-                        if (typeof command !== 'string') throw ("Error in query, [" + command + "] can only be used with streamIds: " + streamQuery);
+                    case 'NOT': // 'not in' .. can only be a string to be expanded
+                        if (typeof command !== 'string') throw ('Error in query, [' +  command + '] can only be used with streamIds: ' + JSON.stringify(streamQuery));
                         return expandToNot(value);
                     case 'EXPAND':
-                        if (typeof command !== 'string') throw ("Error in query, [" + command + "] can only be used with streamIds: " + streamQuery);
+                        if (typeof command !== 'string') throw ('Error in query, [' +  command + '] can only be used with streamIds: ' + JSON.stringify(streamQuery));
                         return expandToIn(streamQuery);
                     case 'IN':
-                        if (!Array.isArray(value)) throw ("Error in query, [" + command + "] can only be used with arrays: " + streamQuery);
+                        if (!Array.isArray(value)) throw ('Error in query, [' + command + '] can only be used with arrays: ' + JSON.stringify(streamQuery));
                         value.map((v) => { 
                             if (typeof v !== 'string') 
-                                throw ("Error in query, [" + command + "] can only contains streamIds: " + value);
+                                throw ('Error in query, [' + command + '] can only contains streamIds: ' + value);
                         });
                         return {IN: value};
                     case 'AND':
                     case 'OR':
-                        if (!Array.isArray(value)) throw ("Error in query, [" + command + "] can only be used with arrays: " + streamQuery);
+                        if (!Array.isArray(value)) throw ('Error in query, [' + command + '] can only be used with arrays: ' +  JSON.stringify(streamQuery));
                         return getCommand(command, value.map(inspect));
                     default:
-                        throw ("Unkown selector [" + command + "] in query: " + streamQuery);
+                        throw ('Unkown selector [' + command + '] in query: ' + JSON.stringify(streamQuery));
                 };
             default:
-                throw ("Unkown item in query: " + item);
+                throw ('Unkown item [' + item +' ]in query: ' + JSON.stringify(streamQuery));
         }
     }
 }
@@ -99,7 +99,7 @@ function mrProper(command, value) {
     switch (command) {
         // if (OR [IN a.., IN b.., EQUAL c] => IN unique([a.., b.., c]) )
         case 'OR': // value is an Array
-            // concat all "IN" and "EQUAL" under an "IN".
+            // concat all 'IN' and 'EQUAL' under an 'IN'.
             const IN = [];
             const NOT = []; // same for NOT and NOTEQUAL
             const OR = []; 
@@ -178,7 +178,7 @@ exports.toMongoDBQuery = function toMongoDBQuery(streamQuery, doNotOptimizeQuery
             case 'OR':
                 return { $or: value.map(inspect) }
             default:
-                throw ("Unkown command [" + command + "] in: " + JSON.stringify(item));
+                throw ('Unkown command [' + command + '] in: ' + JSON.stringify(item));
         }
     }
 }
@@ -223,7 +223,7 @@ function pushIfNotNull(array, value) {
  */
 function commandToArray(command) {
     const keys = Object.keys(command);
-    if (keys.length < 1) throw ("Found an empty object in query");
-    if (keys.length > 1) throw ("Found an object with more than one command in query: " + JSON.stringify(command));
+    if (keys.length < 1) throw ('Found an empty object in query');
+    if (keys.length > 1) throw ('Found an object with more than one command in query: ' + JSON.stringify(command));
     return [keys[0], command[keys[0]]];
 }
