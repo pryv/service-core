@@ -154,7 +154,7 @@ module.exports = function (
       try {
         params.streams = queryStreamFiltering.removeSugarAndCheck(params.streams, expand, registerStream);
       } catch (e) {
-        return next(errors.invalidRequestStructure(e.message, params.streams));
+        return next(errors.invalidRequestStructure(e, params.streams));
       }
 
       const unknownIds = _.difference(expandedStreams, usedStreams);

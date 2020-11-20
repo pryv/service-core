@@ -8,6 +8,13 @@
 
 require('./test-helpers');
 
+const util = require("util");
+function logItem() {
+  for(let i = 0; i < arguments.length; i++) {
+    console.log(util.inspect(arguments[i], {depth: 12, colors: true}));
+  }
+}
+
 const ErrorIds = require('components/errors').ErrorIds;
 const url = require('url');
 const _ = require('lodash');
@@ -130,7 +137,7 @@ describe('events.get querying streams', function () {
         assert.deepEqual(optimized, {"$and":[{"streamIds":{"$in":["A","B","C"]}},{"streamIds":"E"}]});
       });
 
-      it('[ZOBZ] convert to MongoDB including expansion with and and EQUAL', async function () {
+      it('[UZBZ] convert to MongoDB including expansion with AND and EQUAL', async function () {
         const clean = queryStreamFiltering.removeSugarAndCheck([{ AND: [['A','B'], {EQUAL: 'D'}]}], fakeExpand, fakeRegisterStream);
         const mongo = queryStreamFiltering.toMongoDBQuery(clean, true);
         const optimized = queryStreamFiltering.toMongoDBQuery(clean);
@@ -138,6 +145,11 @@ describe('events.get querying streams', function () {
         assert.deepEqual(optimized, {"$and":[{"streamIds":{"$in":["A","B","C"]}},{"streamIds":"D"}]});
       });
 
+      it('[H75A] convert to MongoDB including expansion with AND and NOT', async function () {
+        const clean = queryStreamFiltering.removeSugarAndCheck([{AND: ['A', {NOT: 'D'}]}], fakeExpand, fakeRegisterStream);
+        const optimized = queryStreamFiltering.toMongoDBQuery(clean);
+        assert.deepEqual(optimized, {"$and":[{ streamIds: { '$in': [ 'A', 'B', 'C' ] } },{ streamIds: { '$nin': [ 'D', 'E', 'F' ] } }]});
+      });
     });
 
   });
@@ -207,9 +219,55 @@ describe('events.get querying streams', function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
-        .query({streams: ['A', 'B']});
+        .query({streams: [{AND: ['A', 'E']}]});
+      assert.exists(res.body.events)
+      const events = res.body.events;
+      assert.equal(events.length, 1);
+      assert.equal(events[0].id, EVENTS['be'].id);
     });
 
+    it('[J8HW] must return events in A AND NOT B', async function () {
+      const res = await server.request()
+        .get(basePathEvent)
+        .set('Authorization', tokenRead)
+        .query({streams: [{AND: ['A', {NOT: 'B'}]}]});
+      assert.exists(res.body.events)
+      const events = res.body.events;
+      assert.equal(events.length, 4);
+      const resEvents = ['a', 'fc', 'c', 'ad'];
+      for (let i; i < resEvents; i++) {
+        assert.equal(events[i].id, EVENTS[resEvents[i]].id);
+      }
+    });
+
+    it('[SH5F] must return events in A AND NOT in D', async function () {
+      const res = await server.request()
+        .get(basePathEvent)
+        .set('Authorization', tokenRead)
+        .query({streams: [{AND: ['A', {NOT: 'D'}]}]});
+      assert.exists(res.body.events)
+      const events = res.body.events;
+      assert.equal(events.length, 3);
+      const resEvents = ['c', 'a', 'b'];
+      for (let i; i < resEvents; i++) {
+        assert.equal(events[i].id, EVENTS[resEvents[i]].id);
+      }
+    });
+
+
+    it('[S7ZF] must return events in A AND NOT in (EQUAL D)', async function () {
+      const res = await server.request()
+        .get(basePathEvent)
+        .set('Authorization', tokenRead)
+        .query({streams: [{AND: ['A', {NOTEQUAL: 'D'}]}]});
+      assert.exists(res.body.events)
+      const events = res.body.events;
+      assert.equal(events.length, 5);
+      const resEvents = ['a', 'b', 'fc', 'c', 'be'];
+      for (let i; i < resEvents; i++) {
+        assert.equal(events[i].id, EVENTS[resEvents[i]].id);
+      }
+    });
 
   });
 });

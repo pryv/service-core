@@ -33,6 +33,12 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
         return { IN: expand(item) };
     }
 
+    function expandToNot(item) {
+        const expanded = expand(item);
+        if (expanded.length === 0) return null;
+        return { NOT: expand(item) };
+    }
+
     function inspect(streamQuery) {
         switch (typeof streamQuery) {
             case 'string': // A single streamId will be expanded
@@ -55,10 +61,12 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
                 switch (command) {
                     case 'EQUAL': // can only be a string A terminaison
                     case 'NOTEQUAL':
-                    case 'NOT':
                         if (typeof command !== 'string') throw ("Error in query, [" + command + "] can only be used with streamIds: " + streamQuery);
                         if (!registerStream(value)) return null;
                         return getCommand(command, value);
+                    case 'NOT': // "not in" .. can only be a string to be expanded
+                        if (typeof command !== 'string') throw ("Error in query, [" + command + "] can only be used with streamIds: " + streamQuery);
+                        return expandToNot(value);
                     case 'EXPAND':
                         if (typeof command !== 'string') throw ("Error in query, [" + command + "] can only be used with streamIds: " + streamQuery);
                         return expandToIn(streamQuery);
