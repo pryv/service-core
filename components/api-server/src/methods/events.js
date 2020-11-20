@@ -119,7 +119,7 @@ module.exports = function (
     }
 
     // Streams query can also be sent as a JSON string or string of Array
-    if (params.streams) {
+    if (params.streams && ! context.batchCall) { // batchCall can use plain JSON objects
       try {
         if (typeof params.streams === 'string') {
           // !! some HTTP client are removing the [] from queries when there is only one item
@@ -130,7 +130,7 @@ module.exports = function (
             try {
               params.streams = JSON.parse(params.streams);
             } catch (e) {
-             throw('Error while parsinh JSON ' + e);
+             throw('Error while parsing JSON ' + e);
             }
           }
         } else if (!Array.isArray(params.streams)) {

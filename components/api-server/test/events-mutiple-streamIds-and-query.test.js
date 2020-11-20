@@ -326,7 +326,29 @@ describe('events.get querying streams', function () {
       }
     });
 
-    
+    it('[75S7] should allow object in batch call', async function () {
+      //['B',{AND: ['D', {NOTEQUAL: 'E'}]}]
+      const res = await server.request()
+        .post(basePath)
+        .set('Authorization', tokenRead)
+        .send([
+          { 
+            method: 'events.get',
+            params: {
+              streams: [{IN: ['B']}, {AND: ['D', {NOTEQUAL: 'E'}]}]
+            }
+          }
+        ]);
+      assert.exists(res.body.results);
+      assert.exists(res.body.results[0].events);
+      const events = res.body.results[0].events;
+      
+      assert.equal(events.length, 5);
+      const resEvents = ['a', 'b', 'fc', 'c', 'be'];
+      for (let i; i < resEvents; i++) {
+        assert.equal(events[i].id, EVENTS[resEvents[i]].id);
+      }
+    });
 
   });
 });
