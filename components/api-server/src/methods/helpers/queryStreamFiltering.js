@@ -25,16 +25,11 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
 
     return inspect(streamQuery);
 
-    function expandToIn(item) {
+    // utility that expand get the childrens for a command.
+    function expandTo(command, item) {
         const expanded = expand(item);
         if (expanded.length === 0) return null;
-        return { IN: expand(item) };
-    }
-
-    function expandToNot(item) {
-        const expanded = expand(item);
-        if (expanded.length === 0) return null;
-        return { NOT: expand(item) };
+        return getCommand(command, expanded);
     }
 
     function inspect(streamQuery) {
@@ -52,7 +47,7 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
 
         switch (typeof streamQuery) {
             case 'string': // A single streamId will be expanded to {'IN': '.., .., ...'}
-                return expandToIn(streamQuery);
+                return expandTo('IN', streamQuery);
 
             case 'object':
                 // This should be converter to a {OR: ..., ..., ...}
@@ -62,7 +57,7 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
                     if (filteredStreamQuery.length == 0) return null; // if empty array return null; 
                     // if OR as just one item we ignore it and directy return it's content
                     if (filteredStreamQuery.length == 1) { return inspect(filteredStreamQuery[0]); } 
-                    
+
                     const orCandidate = filteredStreamQuery.map(inspect);
                     if (orCandidate === null || orCandidate.length === 0) return null;
                     return { OR: orCandidate };
@@ -76,12 +71,12 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
                         throwErrorIfNot(command, 'string', value);
                         if (!registerStream(value)) return null;
                         return getCommand(command, value);
-                    case 'NOT': // 'not in' .. can only be a string to be expanded (maybe find another slector)
+                    case 'NOTEXPAND': // 'not in' .. can only be a string to be expanded (maybe find another slector)
                         throwErrorIfNot(command, 'string', value); 
-                        return expandToNot(value);
-                    case 'EXPAND': // it's the counterpart of "NOT" to be converted in "IN": [.., .., ..]
+                        return expandTo('NOTIN', value);
+                    case 'EXPAND': // it's the counterpart of "NOTEXPAND" to be converted in "IN": [.., .., ..]
                         throwErrorIfNot(command, 'string', value); 
-                        return expandToIn(streamQuery);
+                        return expandTo('IN', value);
                     case 'IN': 
                         throwErrorIfNot(command, 'array', value);
                         value.map((v) => { 
@@ -89,6 +84,13 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
                                 throw ('Error in query, [' + command + '] can only contains streamIds: ' + value);
                         });
                         return {IN: value};
+                    case 'NOTIN': 
+                        throwErrorIfNot(command, 'array', value);
+                        value.map((v) => { 
+                            if (typeof v !== 'string') 
+                                throw ('Error in query, [' + command + '] can only contains streamIds: ' + value);
+                        });
+                        return {NOTIN: value};
                     case 'AND':
                     case 'OR':
                         throwErrorIfNot(command, 'array', value);
@@ -114,7 +116,7 @@ function mrProper(command, value) {
         case 'OR': // value is an Array
             // concat all 'IN' and 'EQUAL' under an 'IN'.
             const IN = [];
-            const NOT = []; // do the same for NOT and NOTEQUAL
+            const NOTIN = []; // do the same for NOT and NOTEQUAL
             const OR = []; // or is the main older at the end
             value.map((item) => {
                 const [key, v] = commandToArray(item);
@@ -123,9 +125,9 @@ function mrProper(command, value) {
                     case 'EQUAL':    
                         pushIfNotExists(IN, v); 
                         break;
-                    case 'NOT':
+                    case 'NOTIN':
                     case 'NOTEQUAL':
-                        pushIfNotExists(NOT, v);
+                        pushIfNotExists(NOTIN, v);
                         break;
                     default:
                         pushIfNotNull(OR, mrProper(key, v));
@@ -133,7 +135,7 @@ function mrProper(command, value) {
             });
             
             pushIfNotNull(OR, mrProper('IN', IN));
-            pushIfNotNull(OR, mrProper('NOT', NOT));
+            pushIfNotNull(OR, mrProper('NOTIN', NOTIN));
             
             if (OR.length === 1) return OR[0]; // only one command we can skip the OR
             if (OR.length === 0) return null; // empty no need to keep it
@@ -151,10 +153,10 @@ function mrProper(command, value) {
             if (value.length === 1) return {EQUAL: value[0]}; // then it's an equal
             if (value.length === 0) return null;
             return {'IN': value}; // all clean
-        case 'NOT':
+        case 'NOTIN':
             if (value.length === 1) return {NOTEQUAL: value[0]}; // then it's a not equal
             if (value.length === 0) return null;
-            return {'NOT': value}; // all clean
+            return {'NOTIN': value}; // all clean
         default:
             return getCommand(command, value);
     }
@@ -180,7 +182,7 @@ exports.toMongoDBQuery = function toMongoDBQuery(streamQuery, doNotOptimizeQuery
                 return {streamIds: { $ne: value }};
             case 'IN':
                 return {streamIds: {$in: value }};
-            case 'NOT':
+            case 'NOTIN':
                 return {streamIds: { $nin: value }};
             case 'AND':
                 return { $and: value.map(inspect) }
