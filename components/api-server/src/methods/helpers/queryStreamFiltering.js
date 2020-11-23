@@ -7,6 +7,33 @@
 
 /**
  * Utilities for events.get stream queries.
+ *
+
+ ## Sugar
+
+- a simple array `streamIds: ['A','B']` 
+  will be converted in `streamIds:{OR: [{EXPAND: "A"}, {EXPAND: "B"}]}`
+
+##Selectors
+
+- On single streamId
+  - `{EQUAL: "streamid"}` One the event's streamIds must be equal to `streamId`
+  - `{NOTEQUAL: "streamid"}` None of the event's streamIds must be equal to `streamId`
+  - `{EXPAND: "streamid"}` One the event's streamIds must be equal to `streamId` or one of it's childrens
+    - This is converted to `{IN: ["streamId", "child1", "child2"]}` or
+      `{EQUAL: "streamId"}` if streamId has no child.
+  - `{NOTEXPAND: "streamid"}` None of the event's streamIds must be equal to `streamId` or one of it's childrens. 
+    - This is converted to `{NOTIN: ["streamId", "child1", "child2"]}` or
+      `{NOTEQUAL: "streamId"}` if streamId has no child.
+- On multiple streamIds
+  - `{IN: ["streamId1", "streamId2", ... ]}` One the event's streamIds must be equal to `streamId1` or `streamId2`, ...
+  - `{NOTIN: ["streamId1", "streamId2", ... ]}` None of the event's streamIds must be equal to `streamId1` or `streamId2`, ...
+
+##Aggregators
+
+- `{OR: [selector1, selector2, ...]}` Any of the selector should be satisfied
+- `{ALL: [selector1, selector2, ...]}` All of the selector must be satisfied
+
  */
 const _ = require('lodash');
 
@@ -34,17 +61,6 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
 
     function inspect(streamQuery) {
 
-        // utility to throw error if the value associated with the command is not of expectedType
-        function throwErrorIfNot(command, expectedType, value) {
-            let check = false;
-            if (expectedType === 'array') {
-                check = Array.isArray(value);
-            } else { // 'string', 'object' ....
-                check = (typeof value === expectedType);
-            }
-            if (! check) throw ('Error in query, [' + command + '] can only be used with ' + expectedType + 's: ' + JSON.stringify(streamQuery));
-        }
-
         switch (typeof streamQuery) {
             case 'string': // A single streamId will be expanded to {'IN': '.., .., ...'}
                 return expandTo('IN', streamQuery);
@@ -66,31 +82,28 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
                 // This an object and should be a command
                 const [command, value] = commandToArray(streamQuery);
                 switch (command) {
-                    case 'EQUAL': // can only be a string A terminaison
+                    // check if value if a streamId
+                    case 'EQUAL': 
                     case 'NOTEQUAL':
                         throwErrorIfNot(command, 'string', value);
-                        if (!registerStream(value)) return null;
-                        return getCommand(command, value);
-                    case 'NOTEXPAND': // 'not in' .. can only be a string to be expanded (maybe find another slector)
-                        throwErrorIfNot(command, 'string', value); 
-                        return expandTo('NOTIN', value);
-                    case 'EXPAND': // it's the counterpart of "NOTEXPAND" to be converted in "IN": [.., .., ..]
+                        if (! registerStream(value)) return null;
+                        return streamQuery; // all ok can be kept as-this
+                    // check if value if a streamId & expand to the corresponding command
+                    case 'EXPAND': 
                         throwErrorIfNot(command, 'string', value); 
                         return expandTo('IN', value);
+                    case 'NOTEXPAND': 
+                        throwErrorIfNot(command, 'string', value); 
+                        return expandTo('NOTIN', value);
                     case 'IN': 
-                        throwErrorIfNot(command, 'array', value);
-                        value.map((v) => { 
-                            if (typeof v !== 'string') 
-                                throw ('Error in query, [' + command + '] can only contains streamIds: ' + value);
-                        });
-                        return {IN: value};
                     case 'NOTIN': 
                         throwErrorIfNot(command, 'array', value);
                         value.map((v) => { 
                             if (typeof v !== 'string') 
                                 throw ('Error in query, [' + command + '] can only contains streamIds: ' + value);
+                            registerStream(v);
                         });
-                        return {NOTIN: value};
+                        return streamQuery; // all ok can be kept as-this
                     case 'AND':
                     case 'OR':
                         throwErrorIfNot(command, 'array', value);
@@ -101,6 +114,17 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
             default:
                 throw ('Unkown item [' + JSON.stringify(streamQuery) +' ] in query: ');
         }
+    }
+
+    // utility to throw error if the value associated with the command is not of expectedType
+    function throwErrorIfNot(command, expectedType, value) {
+        let check = false;
+        if (expectedType === 'array') {
+            check = Array.isArray(value);
+        } else { // 'string', 'object' ....
+            check = (typeof value === expectedType);
+        }
+        if (! check) throw ('Error in query, [' + command + '] can only be used with ' + expectedType + 's: ' + JSON.stringify(streamQuery));
     }
 }
 
