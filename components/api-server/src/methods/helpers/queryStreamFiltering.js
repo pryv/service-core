@@ -4,24 +4,22 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const _ = require('lodash');
 
-/**
- * @license
- * Copyright (C) 2020 Pryv S.A. https://pryv.com - All Rights Reserved
- * Unauthorized copying of this file, via any medium is strictly prohibited
- * Proprietary and confidential
- */
 /**
  * Utilities for events.get stream queries.
  */
+const _ = require('lodash');
 
 
 /**
  * To allow retro-compatibility with stream querying
  * Replace globing [] by {OR: []}
  * Replace all strings 'A' by {IN: ['A',...childs]}
- * @param {*} streamQuery 
+ * @param {Object} streamQuery 
+ * @param {Function} expand should return the streamId in argument and it's children (or null if does not exist).
+ * @param {Function} registerStream should return true if stream exists.
+ * @returns {Object} The streamQuery with sugar removed
+ * @throws Error messages when structure is not valid.
  */
 exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, registerStream) {
 
@@ -40,38 +38,52 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
     }
 
     function inspect(streamQuery) {
+
+        // utility to throw error if the value associated with the command is not of expectedType
+        function throwErrorIfNot(command, expectedType, value) {
+            let check = false;
+            if (expectedType === 'array') {
+                check = Array.isArray(value);
+            } else { // 'string', 'object' ....
+                check = (typeof value === expectedType);
+            }
+            if (! check) throw ('Error in query, [' + command + '] can only be used with ' + expectedType + 's: ' + JSON.stringify(streamQuery));
+        }
+
         switch (typeof streamQuery) {
-            case 'string': // A single streamId will be expanded
+            case 'string': // A single streamId will be expanded to {'IN': '.., .., ...'}
                 return expandToIn(streamQuery);
 
             case 'object':
-                // Array are handled first
+                // This should be converter to a {OR: ..., ..., ...}
                 if (Array.isArray(streamQuery)) {
-                    // remove all 'null' elements from array
-                    const filterdStreamQuery = streamQuery.filter((x) => { return x !== null });
-                    if (filterdStreamQuery.length == 0) return null;
-                    if (filterdStreamQuery.length == 1) { return inspect(filterdStreamQuery[0]); }
-                    const orCandidate = filterdStreamQuery.map(inspect);
+                    // remove all 'null' elements from array (null can comme from 'expand')
+                    const filteredStreamQuery = streamQuery.filter((x) => { return x !== null });
+                    if (filteredStreamQuery.length == 0) return null; // if empty array return null; 
+                    // if OR as just one item we ignore it and directy return it's content
+                    if (filteredStreamQuery.length == 1) { return inspect(filteredStreamQuery[0]); } 
+                    
+                    const orCandidate = filteredStreamQuery.map(inspect);
                     if (orCandidate === null || orCandidate.length === 0) return null;
                     return { OR: orCandidate };
                 }
 
-                // This should be a command
+                // This an object and should be a command
                 const [command, value] = commandToArray(streamQuery);
                 switch (command) {
                     case 'EQUAL': // can only be a string A terminaison
                     case 'NOTEQUAL':
-                        if (typeof command !== 'string') throw ('Error in query, [' + command + '] can only be used with streamIds: ' + JSON.stringify(streamQuery));
+                        throwErrorIfNot(command, 'string', value);
                         if (!registerStream(value)) return null;
                         return getCommand(command, value);
-                    case 'NOT': // 'not in' .. can only be a string to be expanded
-                        if (typeof command !== 'string') throw ('Error in query, [' +  command + '] can only be used with streamIds: ' + JSON.stringify(streamQuery));
+                    case 'NOT': // 'not in' .. can only be a string to be expanded (maybe find another slector)
+                        throwErrorIfNot(command, 'string', value); 
                         return expandToNot(value);
-                    case 'EXPAND':
-                        if (typeof command !== 'string') throw ('Error in query, [' +  command + '] can only be used with streamIds: ' + JSON.stringify(streamQuery));
+                    case 'EXPAND': // it's the counterpart of "NOT" to be converted in "IN": [.., .., ..]
+                        throwErrorIfNot(command, 'string', value); 
                         return expandToIn(streamQuery);
-                    case 'IN':
-                        if (!Array.isArray(value)) throw ('Error in query, [' + command + '] can only be used with arrays: ' + JSON.stringify(streamQuery));
+                    case 'IN': 
+                        throwErrorIfNot(command, 'array', value);
                         value.map((v) => { 
                             if (typeof v !== 'string') 
                                 throw ('Error in query, [' + command + '] can only contains streamIds: ' + value);
@@ -79,20 +91,21 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
                         return {IN: value};
                     case 'AND':
                     case 'OR':
-                        if (!Array.isArray(value)) throw ('Error in query, [' + command + '] can only be used with arrays: ' +  JSON.stringify(streamQuery));
+                        throwErrorIfNot(command, 'array', value);
                         return getCommand(command, value.map(inspect));
                     default:
                         throw ('Unkown selector [' + command + '] in query: ' + JSON.stringify(streamQuery));
                 };
             default:
-                throw ('Unkown item [' + item +' ]in query: ' + JSON.stringify(streamQuery));
+                throw ('Unkown item [' + JSON.stringify(streamQuery) +' ] in query: ');
         }
     }
 }
 
 
 /**
- * Optimize query
+ * Simplify a streamQuery by detecting some patterns and replacing them by a simpler version
+ * TODO: In case of very deep complex or stupid structure ex. {AND: [{AND: [{IN: 'A'}]}]} mrProper should do several loops
  * @param {*} streamQuery 
  */
 function mrProper(command, value) {
@@ -101,8 +114,8 @@ function mrProper(command, value) {
         case 'OR': // value is an Array
             // concat all 'IN' and 'EQUAL' under an 'IN'.
             const IN = [];
-            const NOT = []; // same for NOT and NOTEQUAL
-            const OR = []; 
+            const NOT = []; // do the same for NOT and NOTEQUAL
+            const OR = []; // or is the main older at the end
             value.map((item) => {
                 const [key, v] = commandToArray(item);
                 switch (key) {
@@ -122,29 +135,25 @@ function mrProper(command, value) {
             pushIfNotNull(OR, mrProper('IN', IN));
             pushIfNotNull(OR, mrProper('NOT', NOT));
             
-            if (OR.length === 1) { // only one command we can skip the OR
-                return OR[0];
-            }
-            if (OR.length === 0) null;
-            return {'OR': OR};
+            if (OR.length === 1) return OR[0]; // only one command we can skip the OR
+            if (OR.length === 0) return null; // empty no need to keep it
+            return {'OR': OR}; // all clean
         case 'AND':
             const AND = [];
-            value.map((item) => {
+            value.map((item) => { // clean all items 
                 const [key, v] = commandToArray(item);
                 pushIfNotNull(AND, mrProper(key, v));
             });
-            if (AND.length === 1) { // only one command we can skip the OR
-                return AND[0];
-            }
-            if (AND.length === 0) null;
-            return {'AND': AND};
+            if (AND.length === 1) return AND[0]; // there is only one command we can skip the AND
+            if (AND.length === 0) return null;
+            return {'AND': AND}; // all clean
         case 'IN':
-            if (value.length === 0) return null;
             if (value.length === 1) return {EQUAL: value[0]}; // then it's an equal
+            if (value.length === 0) return null;
             return {'IN': value}; // all clean
         case 'NOT':
-            if (value.length === 0) return null;
             if (value.length === 1) return {NOTEQUAL: value[0]}; // then it's a not equal
+            if (value.length === 0) return null;
             return {'NOT': value}; // all clean
         default:
             return getCommand(command, value);
@@ -183,8 +192,7 @@ exports.toMongoDBQuery = function toMongoDBQuery(streamQuery, doNotOptimizeQuery
     }
 }
 
-
-//--- helpers --//
+//------------------------ helpers ----------------------------------//
 
 /** 
  * utility to create objects {command: value} 
@@ -195,9 +203,8 @@ function getCommand(command, value) {
     return res;
 }
 
-
 /**
- * Helper that add a string or array to an array if not present
+ * Helper that adds a string or array to an array if not present
  * @param {} array 
  * @param {string|array} value 
  */
@@ -218,7 +225,7 @@ function pushIfNotNull(array, value) {
 }
 
 /**
- * Destructure commands {KEY: VALUE} => [KEY, VALUE] 
+ * Decompose commands {KEY: VALUE} => [KEY, VALUE] 
  * @param {object} command of the form {KEY: VALUE}
  */
 function commandToArray(command) {

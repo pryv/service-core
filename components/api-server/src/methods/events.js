@@ -136,7 +136,7 @@ module.exports = function (
         } else if (!Array.isArray(params.streams)) {
           throw('Expected an Array');
         } else {
-          // check it's only arrays. 
+          // check it's only an arrays of strings. 
           for (let i = 0; i < params.streams.length; i++) {
             if (typeof params.streams[i] !== 'string') {
               throw('Array contains not only strings.');
