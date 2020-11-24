@@ -19,8 +19,7 @@ const ErrorIds = require('components/errors').ErrorIds;
 const url = require('url');
 const _ = require('lodash');
 const cuid = require('cuid');
-const chai = require('chai');
-const assert = chai.assert;
+const { expect , assert} = require('chai');
 const charlatan = require('charlatan');
 
 const helpers = require('./helpers');
@@ -34,7 +33,6 @@ const { produceMongoConnection, context } = require('./test-helpers');
 const queryStreamFiltering = require('../src/methods/helpers/queryStreamFiltering');
 
 require('date-utils');
-
 
 /**
  * Structures
@@ -92,7 +90,6 @@ function getExpandedStreams(streamId) {
 
 describe('events.get querying streams', function () {
 
-
   describe('Internal query helpers', function () {
     const fakeExpand = function(stream) {
       return getExpandedStreams(stream);
@@ -116,40 +113,111 @@ describe('events.get querying streams', function () {
       });
 
       it('[O9ZD] must convert "A", "B" and "C" in {EXPAND: "B"}', async function () {
-        const res = queryStreamFiltering.removeSugarAndCheck([{ AND: [['A','B'], 'C']}], fakeExpand, fakeRegisterStream);
+        const res = queryStreamFiltering.removeSugarAndCheck({ AND: [['A','B'], 'C']}, fakeExpand, fakeRegisterStream);
         assert.deepEqual(res, {"AND":[{"OR":[{"IN":["A","B","C"]},{"IN":["B"]}]},{"IN":["C"]}]});
       });
 
       it('[7ZGT] must convert {EXPAND: "A"} in {IN: ["A", "B", "C"]}', async function () {
-        const res = queryStreamFiltering.removeSugarAndCheck([{EXPAND: 'A'}], fakeExpand, fakeRegisterStream);
+        const res = queryStreamFiltering.removeSugarAndCheck({EXPAND: 'A'}, fakeExpand, fakeRegisterStream);
         assert.deepEqual(res, {IN: ["A", "B", "C"]});
       });
 
       it('[7GRU] must convert {NOTEXPAND: "A"} in {NOTIN: ["A", "B", "C"]}', async function () {
-        const res = queryStreamFiltering.removeSugarAndCheck([{NOTEXPAND: 'A'}], fakeExpand, fakeRegisterStream);
+        const res = queryStreamFiltering.removeSugarAndCheck({NOTEXPAND: 'A'}, fakeExpand, fakeRegisterStream);
         assert.deepEqual(res, {NOTIN: ["A", "B", "C"]});
       });
 
 
       it('[67IU] must convert {NOT: ["A"]} in {OR: {NOTIN: ["A", "B", "C"]}}', async function () {
-        const res = queryStreamFiltering.removeSugarAndCheck([{NOT: ['A']}], fakeExpand, fakeRegisterStream);
+        const res = queryStreamFiltering.removeSugarAndCheck({NOT: ['A']}, fakeExpand, fakeRegisterStream);
         assert.deepEqual(res, {OR: [{NOTIN: ["A", "B", "C"]}]});
       });
 
 
       it('[86UT] must not convert {IN: ["A"]}', async function () {
-        const res = queryStreamFiltering.removeSugarAndCheck([{IN: ['A']}], fakeExpand, fakeRegisterStream);
+        const res = queryStreamFiltering.removeSugarAndCheck({IN: ['A']}, fakeExpand, fakeRegisterStream);
         assert.deepEqual(res, {IN: ["A"]});
       });
+
+      it('[TRES] must convert {AND: [["A", ["B"]]]} in {AND [IN, {OR [IN IN]}]}', async function () {
+        const res = queryStreamFiltering.removeSugarAndCheck({AND: ["D", ["B", "C"]]}, fakeExpand, fakeRegisterStream);
+        assert.deepEqual(res, {"AND":[{"IN":["D","E","F"]},{"OR":[{"IN":["B"]},{"IN":["C"]}]}]});
+      });
+
+      
     });
 
     describe('exception and errors', function() {
   
       it('[0UZT] handles not existent stream {OR: ["Z"]}', async function () {
-        const query = queryStreamFiltering.removeSugarAndCheck([{OR: ['Z']}], fakeExpand, fakeRegisterStream);
+        const query = queryStreamFiltering.removeSugarAndCheck({OR: ['Z']}, fakeExpand, fakeRegisterStream);
         assert.deepEqual(query, null);
         const mongo = queryStreamFiltering.toMongoDBQuery(query);
-        //assert.mongo(query, {OR: []});
+        assert.deepEqual(mongo, null);
+      });
+
+      it('[U5TS] handles not existent stream in array ["U", "Z", "T"]', async function () {
+        const query = queryStreamFiltering.removeSugarAndCheck(['A','Z','B'], fakeExpand, fakeRegisterStream);
+        assert.deepEqual(query, {"OR":[{"IN":["A","B","C"]},{"IN":["B"]}]});
+      });
+
+      it('[UZGS] handles not existent stream in array to be expanded {OR: ["A", "Z", "B"]}', async function () {
+        const query = queryStreamFiltering.removeSugarAndCheck({OR: ['A','Z','B']}, fakeExpand, fakeRegisterStream);
+        assert.deepEqual(query, {"OR":[{"IN":["A","B","C"]},{"IN":["B"]}]});
+        const mongo = queryStreamFiltering.toMongoDBQuery(query);
+        assert.deepEqual(mongo, {"streamIds":{"$in":["A","B","C"]}});
+      });
+
+      it('[NY8Z] handles not existent stream in array or equality {IN: ["A", "Z", "B"]}', async function () {
+        const query = queryStreamFiltering.removeSugarAndCheck({IN: ['A','Z','B']}, fakeExpand, fakeRegisterStream);
+        assert.deepEqual(query, {"IN":["A","B"]});
+        const mongo = queryStreamFiltering.toMongoDBQuery(query);
+        assert.deepEqual(mongo, {"streamIds":{"$in":["A","B"]}});
+      });
+
+      it('[UZTS] Throw on malformed expressions', async function () {
+        const malformed = {
+          'can only contains streamIds': [
+            // only array strings (streamIds)
+            {IN: ['A','B',{OR: 'Z'}]},
+            {NOTIN: ['A','B',{OR: 'Z'}]},
+            {NOTIN: ['A','B',{OR: 'Z'}]},
+            {NOT: ['A','B',{OR: 'Z'}]}
+          ],
+          'can only be used with string': [
+            // only array strings (streamIds)
+            {EQUAL: ['A']},
+            {NOTEQUAL: ['A']},
+            {EXPAND: ['A']},
+            {NOTEXPAND: ['A']}
+          ],
+          'can only be used with arrays': [
+            // only array strings (streamIds)
+            {OR: 'A'},
+            {AND: 'A'}
+          ],
+          'Unkown selector': [
+            {ZZ: 'A'}
+          ],
+          'Unkown item': [
+            true,
+            1
+          ]
+        };
+
+        Object.keys(malformed).map((key) => {
+          const malformeds = malformed[key];
+          malformeds.map((streamQuery) => {
+            let hasThrown = false;
+            try {
+              const query = queryStreamFiltering.removeSugarAndCheck(streamQuery, fakeExpand, fakeRegisterStream);
+            } catch (e) {
+              hasThrown = true;
+              expect(e).to.have.string(key);
+            };
+            if (! hasThrown) throw('removeSugarAndCheck was expected to throw [' + key + '] with query: <<' + JSON.stringify(streamQuery) + '>>');
+          });
+        });
       });
 
     });
@@ -215,7 +283,14 @@ describe('events.get querying streams', function () {
       });
     });
 
+    it('[TRE3] must convert {AND: [["A", ["B"]]]} in {AND [IN, {OR [IN IN]}]}', async function () {
+      const clean = queryStreamFiltering.removeSugarAndCheck({AND: ["D", ["B", "C"]]}, fakeExpand, fakeRegisterStream);
+      const optimized = queryStreamFiltering.toMongoDBQuery(clean);
+      assert.deepEqual(optimized, {"$and":[{"streamIds":{"$in":["D","E","F"]}},{"streamIds":{"$in":["B","C"]}}]});
+    });
+
   });
+
 
   describe('query on streamIds', function () {
     let server;
@@ -231,7 +306,6 @@ describe('events.get querying streams', function () {
       mongoFixtures = databaseFixture(await produceMongoConnection());
     });
 
-
     let user,
         username,
         tokenRead,
@@ -240,8 +314,6 @@ describe('events.get querying streams', function () {
 
     before(async function () {
       username = cuid();
-      
-  
       tokenRead = cuid();
       basePath = `/${username}`;
       basePathEvent = `${basePath}/events/`;
@@ -338,7 +410,6 @@ describe('events.get querying streams', function () {
       }
     });
 
-
     it('[S7ZF] must return events in A AND NOT-EQUAL D)', async function () {
       const res = await server.request()
         .get(basePathEvent)
@@ -393,6 +464,36 @@ describe('events.get querying streams', function () {
       for (let i; i < resEvents; i++) {
         assert.equal(events[i].id, EVENTS[resEvents[i]].id);
       }
+    });
+
+    describe ('edge cases', () => { 
+      it('[RG6T] Throw error on non existing stream', async function () {
+        const res = await server.request()
+          .get(basePathEvent)
+          .set('Authorization', tokenRead)
+          .query({streams: JSON.stringify({AND: [['A', 'Z'], 'B']})});
+        assert.exists(res.body.error);
+        assert.equal(res.body.error.id, 'unknown-referenced-resource');
+      });
+
+      it('[B9SX] Throw error on invalid item', async function () {
+        const res = await server.request()
+          .get(basePathEvent)
+          .set('Authorization', tokenRead)
+          .query({streams: JSON.stringify({AND: [['A', 'Z'], true]})});
+        assert.exists(res.body.error);
+        assert.equal(res.body.error.id, 'invalid-request-structure');
+      });
+
+      it('[LS4V] Throw error on invalid item', async function () {
+        const res = await server.request()
+          .get(basePathEvent)
+          .set('Authorization', tokenRead)
+          .query({streams: JSON.stringify({AND: [['A', [null]]]})});
+        assert.exists(res.body.error);
+        assert.equal(res.body.error.id, 'invalid-request-structure');
+      });
+
     });
 
   });

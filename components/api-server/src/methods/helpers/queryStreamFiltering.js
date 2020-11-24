@@ -87,8 +87,6 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
         return getCommand(command, filtered);
     }
 
-
-
     function inspect(streamQuery) {
         switch (typeof streamQuery) {
             case 'string': // A single streamId will be expanded to {'IN': '.., .., ...'}
@@ -138,7 +136,8 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
                     case 'AND':
                     case 'OR':
                         throwErrorIfNot(command, 'array', value);
-                        const candidate = value.map(inspect);
+                        const inspected = value.map(inspect);
+                        const candidate = inspected.filter((x) => { return x !== null });
                         if (candidate === null || candidate.length === 0) return null;
                         if (candidate.length === 1) return candidate[0];
                         return getCommand(command, candidate);
