@@ -122,13 +122,11 @@ If you want to run tests for a specific component, you can run them against the 
 
 If you want to run tests directly against the source files in `components/`, you will need to start with a command like this: 
 
-    $ ../../node_modules/.bin/mocha \
-      --compilers js:babel-register \
-      test/**/*.test.js
+    $ NODE_ENV=test ../../node_modules/.bin/mocha --timeout 10000 'test/**/*test.js' --exit --grep="whatever"
 
 This is something that should probably be a shell alias in your environment. I use 
 
-    $ alias pm="../../node_modules/.bin/mocha --compilers js:babel-register test/**/*.test.js"
+    $ alias pm="NODE_ENV=test ../../node_modules/.bin/mocha --timeout 10000 'test/**/*test.js' --exit"
 
 ### Debug in VsCode
 
