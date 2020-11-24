@@ -60,6 +60,7 @@
 - `{AND: [selector1, selector2, ...]}` All of the selector must be satisfied
 
  */
+const { isArray } = require('lodash');
 const _ = require('lodash');
 
 
@@ -79,29 +80,24 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
 
     // utility that expand get the childrens for a command.
     function expandTo(command, item) {
+         // expand and removes eventual null objects from expand() 
         const expanded = expand(item);
-        if (expanded.length === 0) return null;
-        return getCommand(command, expanded);
+        const filtered = expanded.filter((x) => { return x !== null });
+        if (filtered.length === 0) return null;
+        return getCommand(command, filtered);
     }
 
-    function inspect(streamQuery) {
 
+
+    function inspect(streamQuery) {
         switch (typeof streamQuery) {
             case 'string': // A single streamId will be expanded to {'IN': '.., .., ...'}
                 return expandTo('IN', streamQuery);
 
             case 'object':
                 // This should be converter to a {OR: ..., ..., ...}
-                if (Array.isArray(streamQuery)) {
-                    // remove all 'null' elements from array (null can comme from 'expand')
-                    const filteredStreamQuery = streamQuery.filter((x) => { return x !== null });
-                    if (filteredStreamQuery.length == 0) return null; // if empty array return null; 
-                    // if OR as just one item we ignore it and directy return it's content
-                    if (filteredStreamQuery.length == 1) { return inspect(filteredStreamQuery[0]); } 
-
-                    const orCandidate = filteredStreamQuery.map(inspect);
-                    if (orCandidate === null || orCandidate.length === 0) return null;
-                    return { OR: orCandidate };
+                if (Array.isArray(streamQuery)) { // already optimize here as its simple
+                    return inspect({ OR: streamQuery});
                 }
 
                 // This an object and should be a command
@@ -133,16 +129,19 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
                     case 'IN': 
                     case 'NOTIN': 
                         throwErrorIfNot(command, 'array', value);
-                        value.map((v) => { 
+                        const result = value.filter((v) => { 
                             if (typeof v !== 'string') 
                                 throw ('Error in query, [' + command + '] can only contains streamIds: ' + value);
-                            registerStream(v);
+                            return registerStream(v);
                         });
-                        return streamQuery; // all ok can be kept as-this
+                        return getCommand(command, result); // all ok can be kept as-this
                     case 'AND':
                     case 'OR':
                         throwErrorIfNot(command, 'array', value);
-                        return getCommand(command, value.map(inspect));
+                        const candidate = value.map(inspect);
+                        if (candidate === null || candidate.length === 0) return null;
+                        if (candidate.length === 1) return candidate[0];
+                        return getCommand(command, candidate);
                     default:
                         throw ('Unkown selector [' + command + '] in query: ' + JSON.stringify(streamQuery));
                 };
@@ -227,6 +226,7 @@ function mrProper(command, value) {
  * @param {boolean} optimizeQuery 
  */
 exports.toMongoDBQuery = function toMongoDBQuery(streamQuery, doNotOptimizeQuery) {
+    if (! streamQuery) return null;
     if (! doNotOptimizeQuery) {
         const [command, value] =  commandToArray(streamQuery);
         streamQuery = mrProper(command, value);

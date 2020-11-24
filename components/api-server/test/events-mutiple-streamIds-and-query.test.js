@@ -74,9 +74,12 @@ Object.keys(STREAMS).map((streamId) => { 
   }
 });
 
-/** helper to expand streams */
+/** 
+ * helper to expand streams 
+ * mimics treeUtils.expandIds()
+ * */
 function getExpandedStreams(streamId) {
-  if (! STREAMS[streamId]) return null;
+  if (! STREAMS[streamId]) return [];
   const res = [streamId];
   if (STREAMS[streamId].childrens) {
     STREAMS[streamId].childrens.map((childId) => {
@@ -137,6 +140,16 @@ describe('events.get querying streams', function () {
       it('[86UT] must not convert {IN: ["A"]}', async function () {
         const res = queryStreamFiltering.removeSugarAndCheck([{IN: ['A']}], fakeExpand, fakeRegisterStream);
         assert.deepEqual(res, {IN: ["A"]});
+      });
+    });
+
+    describe('exception and errors', function() {
+  
+      it('[0UZT] handles not existent stream {OR: ["Z"]}', async function () {
+        const query = queryStreamFiltering.removeSugarAndCheck([{OR: ['Z']}], fakeExpand, fakeRegisterStream);
+        assert.deepEqual(query, null);
+        const mongo = queryStreamFiltering.toMongoDBQuery(query);
+        //assert.mongo(query, {OR: []});
       });
 
     });
