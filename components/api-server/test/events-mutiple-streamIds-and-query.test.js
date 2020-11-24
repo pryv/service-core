@@ -76,6 +76,7 @@ Object.keys(STREAMS).map((streamId) => { 
 
 /** helper to expand streams */
 function getExpandedStreams(streamId) {
+  if (! STREAMS[streamId]) return null;
   const res = [streamId];
   if (STREAMS[streamId].childrens) {
     STREAMS[streamId].childrens.map((childId) => {
@@ -94,7 +95,8 @@ describe('events.get querying streams', function () {
       return getExpandedStreams(stream);
     }
 
-    const fakeRegisterStream = function(stream) {
+    const fakeRegisterStream = function(streamId) {
+      if (! STREAMS[streamId]) return false;
       return true;
     }
 
@@ -120,11 +122,22 @@ describe('events.get querying streams', function () {
         assert.deepEqual(res, {IN: ["A", "B", "C"]});
       });
 
-      it('[7GRU] must convert {NOTEXPAND: "A"} in {IN: ["A", "B", "C"]}', async function () {
+      it('[7GRU] must convert {NOTEXPAND: "A"} in {NOTIN: ["A", "B", "C"]}', async function () {
         const res = queryStreamFiltering.removeSugarAndCheck([{NOTEXPAND: 'A'}], fakeExpand, fakeRegisterStream);
         assert.deepEqual(res, {NOTIN: ["A", "B", "C"]});
       });
 
+
+      it('[67IU] must convert {NOT: ["A"]} in {OR: {NOTIN: ["A", "B", "C"]}}', async function () {
+        const res = queryStreamFiltering.removeSugarAndCheck([{NOT: ['A']}], fakeExpand, fakeRegisterStream);
+        assert.deepEqual(res, {OR: [{NOTIN: ["A", "B", "C"]}]});
+      });
+
+
+      it('[86UT] must not convert {IN: ["A"]}', async function () {
+        const res = queryStreamFiltering.removeSugarAndCheck([{IN: ['A']}], fakeExpand, fakeRegisterStream);
+        assert.deepEqual(res, {IN: ["A"]});
+      });
 
     });
 
@@ -146,6 +159,14 @@ describe('events.get querying streams', function () {
         
         assert.deepEqual(mongo, {"$and":[{"$or":[{"streamIds":{"$in":["A","B","C"]}},{"streamIds":{"$in":["B"]}}]},{"streamIds":{"$in":["E"]}}]});
         assert.deepEqual(optimized, {"$and":[{"streamIds":{"$in":["A","B","C"]}},{"streamIds":"E"}]});
+      });
+
+      it('[GZ8S] must convert {NOT: ["A"]} in {OR: {NOTIN: ["A", "B", "C"]}}', async function () {
+        const clean = queryStreamFiltering.removeSugarAndCheck([{NOT: ['A']}], fakeExpand, fakeRegisterStream);
+        const mongo = queryStreamFiltering.toMongoDBQuery(clean, true);
+        const optimized = queryStreamFiltering.toMongoDBQuery(clean);
+        assert.deepEqual(mongo, { '$or': [ { streamIds: { '$nin': [ 'A', 'B', 'C' ] } }] });
+        assert.deepEqual(optimized, { streamIds: { '$nin': [ 'A', 'B', 'C' ] } });
       });
 
       it('[UZBZ] convert to MongoDB including expansion with AND and EQUAL', async function () {

@@ -9,12 +9,37 @@
  * Utilities for events.get stream queries.
  *
 
- ## Sugar
+### Discussion
 
-- a simple array `streamIds: ['A','B']` 
-  will be converted in `streamIds:{OR: [{EXPAND: "A"}, {EXPAND: "B"}]}`
+- `EXPAND` and `NOTEXPAND` could be fully removed from the implementation 
+    as they are not directly exposed.
+  -  `{EXPAND: "A"}` produces the same result than `['A']`
+  - `{NOTEXPAND: "A"}` produces the same result than `{NOT: ['A']}`
 
-##Selectors
+- To force strict equality to a stream Id without including its 
+    children the internals uses  `EQUAL`, `NOTEQUAL`, `IN` and `NOTIN` 
+  - The implementation could be simplified by using only `IN` and `NOTIN`  
+     as they will be converted at last stage to `EQUAL` and `NOTEQUAL` if 
+     they contains only one item.
+  - If these notions should be exposed to the API we might consider exposing 
+     only  `IN` and `NOTIN`. To avoid confusion we might consider to choose 
+     other terms to explicitely quote that **childs will not be considered**
+
+### Exposed API side 
+
+- `['A','B']` => Matches the streams of any of their children
+- `{NOT: ['A','B']}` => Does not match any of the streams or any of their children
+- `{OR: [selector1, selector2, ...]}` Any of the selector should be satisfied
+- `{AND: [selector1, selector2, ...]}` All of the selector must be satisfied
+
+### Sugar and conversion
+
+- `['A','B']` => `{OR: [{EXPAND: "A"}, {EXPAND: "B"}]}`  
+- `{NOT: ['A','B']}` => `{OR: [{NOTEXPAND: "A"}, {NOTEXPAND: "B"}]}`
+- `{EXPAND: ["A"]}` => `{IN: ['A', 'childA1', 'childA2']}`
+- `{NOTEXPAND: ["A"]}` =>  `{NOTIN: ['A', 'childA1', 'childA2']}`
+
+###  Internal Syntax
 
 - On single streamId
   - `{EQUAL: "streamid"}` One the event's streamIds must be equal to `streamId`
@@ -29,10 +54,10 @@
   - `{IN: ["streamId1", "streamId2", ... ]}` One the event's streamIds must be equal to `streamId1` or `streamId2`, ...
   - `{NOTIN: ["streamId1", "streamId2", ... ]}` None of the event's streamIds must be equal to `streamId1` or `streamId2`, ...
 
-##Aggregators
+##### Aggregators
 
 - `{OR: [selector1, selector2, ...]}` Any of the selector should be satisfied
-- `{ALL: [selector1, selector2, ...]}` All of the selector must be satisfied
+- `{AND: [selector1, selector2, ...]}` All of the selector must be satisfied
 
  */
 const _ = require('lodash');
@@ -82,19 +107,29 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
                 // This an object and should be a command
                 const [command, value] = commandToArray(streamQuery);
                 switch (command) {
-                    // check if value if a streamId
+                    // check if value if a streamId and keep
                     case 'EQUAL': 
                     case 'NOTEQUAL':
                         throwErrorIfNot(command, 'string', value);
                         if (! registerStream(value)) return null;
                         return streamQuery; // all ok can be kept as-this
                     // check if value if a streamId & expand to the corresponding command
-                    case 'EXPAND': 
+                    case 'EXPAND': // To be transformed to 'IN'
                         throwErrorIfNot(command, 'string', value); 
                         return expandTo('IN', value);
-                    case 'NOTEXPAND': 
+                    case 'NOTEXPAND': // To be transformed to 'NOTIN'
                         throwErrorIfNot(command, 'string', value); 
                         return expandTo('NOTIN', value);
+                    case 'NOT': // To be transformed to 'NOTIN'
+                        throwErrorIfNot(command, 'array', value);
+                        const OR = [];
+                        value.map((v) => { 
+                            if (typeof v !== 'string') 
+                                throw ('Error in query, [' + command + '] can only contains streamIds: ' + value);
+                            const res = expandTo('NOTIN', v);
+                            if (res && res.NOTIN.length > 0) OR.push(res);
+                        });
+                        return {OR: OR};
                     case 'IN': 
                     case 'NOTIN': 
                         throwErrorIfNot(command, 'array', value);
