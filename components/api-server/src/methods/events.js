@@ -119,7 +119,7 @@ module.exports = function (
     }
 
     // Streams query can also be sent as a JSON string or string of Array
-    if (params.streams && ! context.batchCall) { // batchCall can use plain JSON objects
+    if (params.streams && ! context.acceptStreamQueryInJSON) { // batchCall and socket.io can use plain JSON objects
       try {
         if (typeof params.streams === 'string') {
           // !! some HTTP client are removing the [] from queries when there is only one item

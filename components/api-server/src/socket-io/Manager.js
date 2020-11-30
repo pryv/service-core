@@ -350,6 +350,9 @@ class Connection {
 
     // FLOW MethodContext will need to be rewritten as a class...
     const userName = methodContext.username;   
+
+    // Accept streamQueries in JSON format for socket.io
+    methodContext.acceptStreamQueryInJSON = true;
     
     const answer = bluebird.fromCallback(
       (cb) => api.call(apiMethod, methodContext, params, cb));
