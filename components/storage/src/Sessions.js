@@ -57,7 +57,9 @@ Sessions.prototype.get = function (id, callback) {
     if (! session.expires || new Date() < session.expires) {
       callback(null, session.data);
     } else {
-      this.destroy(id, callback);
+      this.destroy(id, function (err, res) { 
+        callback(err, null);
+      });
     }
   }.bind(this));
 };
@@ -81,7 +83,9 @@ Sessions.prototype.getMatching = function (data, callback) {
     if (! session.expires || new Date() < session.expires) {
       callback(null, session._id);
     } else {
-      this.destroy(session._id, callback);
+      this.destroy(session._id, (err, res) => {
+        callback(err, null);
+      });
     }
   }.bind(this));
 };
@@ -113,6 +117,17 @@ Sessions.prototype.generate = function (data, options, callback) {
  */
 Sessions.prototype.touch = function (id, callback) {
   var update = {$set: {expires: this.getNewExpirationDate()}};
+  this.database.updateOne(collectionInfo, {_id: id}, update, callback);
+};
+
+/**
+ * Used for tests Make A session expires noe
+ *
+ * @param {String} id
+ * @param {Function} callback
+ */
+Sessions.prototype.expireNow = function (id, callback) {
+  var update = {$set: {expires: new Date()}};
   this.database.updateOne(collectionInfo, {_id: id}, update, callback);
 };
 

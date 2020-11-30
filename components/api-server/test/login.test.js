@@ -27,8 +27,13 @@ const UsersRepository = require('components/business/src/users/repository');
 
 describe('auth', function() {
   this.timeout(5000);
+
+  function apiPath(username) {
+    return url.resolve(server.url, username );
+  }
+
   function basePath(username) {
-    return url.resolve(server.url, username + '/auth');
+    return apiPath(username) + '/auth';
   }
 
   before(function(done) {
@@ -41,7 +46,7 @@ describe('auth', function() {
     );
   });
 
-  after(function(done) {
+  afterEach(function(done) {
     helpers.dependencies.storage.sessions.clearAll(done);
   });
 
@@ -91,6 +96,51 @@ describe('auth', function() {
                 stepDone();
               }
             );
+          },
+        ],
+        done
+      );
+    });
+
+    it('[68SH] must return expired', function(done) {
+      let personalToken = 'bogus';
+      async.series(
+        [
+          function login(stepDone) { // login
+            request
+              .post(path(authData.username))
+              .set('Origin', trustedOrigin)
+              .send(authData)
+              .end(function (err, res) {
+                assert.strictEqual(res.statusCode, 200);
+
+                should.exist(res.body.token);
+                personalToken = res.body.token;
+                checkNoUnwantedCookie(res);
+                should.exist(res.body.preferredLanguage);
+
+                assert.strictEqual(res.body.preferredLanguage, user.language);
+
+                stepDone();
+              });
+          }, // make sure sessions expired 
+          function expireSession(stepDone) {
+            helpers.dependencies.storage.sessions.expireNow(personalToken,
+              function(err, session) {
+                stepDone(err);
+              }
+            );
+          },
+          function canBeusedToretreiveAccesses(stepDone) {
+            request
+              .get(apiPath(authData.username) + '/accesses')
+              .set('Origin', trustedOrigin)
+              .set('Authorization', personalToken)
+              .end(function (err, res) {
+                assert.strictEqual(res.statusCode, 403);
+                assert.strictEqual(res.body.error.message, 'Access session has expired.');
+                stepDone();
+              });
           },
         ],
         done
