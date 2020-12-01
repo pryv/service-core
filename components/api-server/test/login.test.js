@@ -27,8 +27,13 @@ const UsersRepository = require('components/business/src/users/repository');
 
 describe('auth', function() {
   this.timeout(5000);
+
+  function apiPath(username) {
+    return url.resolve(server.url, username );
+  }
+
   function basePath(username) {
-    return url.resolve(server.url, username + '/auth');
+    return apiPath(username) + '/auth';
   }
 
   before(function(done) {
@@ -41,7 +46,7 @@ describe('auth', function() {
     );
   });
 
-  after(function(done) {
+  afterEach(function(done) {
     helpers.dependencies.storage.sessions.clearAll(done);
   });
 
@@ -91,6 +96,43 @@ describe('auth', function() {
                 stepDone();
               }
             );
+          },
+        ],
+        done
+      );
+    });
+
+    it('[68SH] must return expired', function(done) {
+      let personalToken;
+      async.series(
+        [
+          function login(stepDone) {
+            request
+              .post(path(authData.username))
+              .set('Origin', trustedOrigin)
+              .send(authData)
+              .end(function (err, res) {
+                personalToken = res.body.token;
+                stepDone();
+              });
+          },
+          function expireSession(stepDone) {
+            helpers.dependencies.storage.sessions.expireNow(personalToken,
+              function(err, session) {
+                stepDone(err);
+              }
+            );
+          },
+          function shouldReturnSessionHasExpired(stepDone) {
+            request
+              .get(apiPath(authData.username) + '/access-info')
+              .set('Origin', trustedOrigin)
+              .set('Authorization', personalToken)
+              .end(function (err, res) {
+                assert.strictEqual(res.statusCode, 403);
+                assert.strictEqual(res.body.error.message, 'Access session has expired.');
+                stepDone();
+              });
           },
         ],
         done
@@ -519,111 +561,12 @@ describe('auth', function() {
         });
     });
 
-    it('[TIDW] GET /who-am-i must return a 404 as it has been deprecated', function (done) {
+    it('[TIDW] GET /who-am-i must return a 410 as it has been removed', function (done) {
       persistentReq2.get(basePath(authData.username) + '/who-am-i')
         .end(function (err, res) {
-          assert.strictEqual(res.statusCode, 404);
+          assert.strictEqual(res.statusCode, 410);
           done();
         });
-    });
-
-    describe('when deprecated.auth.ssoIsWhoamiActivated is set', function() {
-
-      before(function (done) {
-        const settings = _.cloneDeep(helpers.dependencies.settings);
-        settings.deprecated.auth.ssoIsWhoamiActivated = true;
-        server.ensureStarted(settings, done);
-      });
-
-      after(function (done) {
-        server.ensureStarted(helpers.dependencies.settings, done);
-      });
-
-      it('[6KLF] must set the SSO cookie on /login with the access token', function (done) {
-        persistentReq
-          .post(basePath(authData.username) + '/login')
-          .set('Origin', trustedOrigin)
-          .send(authData)
-          .end(function (err, res) {
-            assert.strictEqual(res.statusCode, 200);
-
-            var setCookie = res.headers['set-cookie'];
-            should.exist(setCookie);
-            setCookie.length.should.eql(1);
-            // cookie properties
-            var cookieProps = setCookie[0].split('; ');
-            cookieProps.should.containEql('HttpOnly');
-            /** test removed as long as superagent complies to not sending back "Unsecure" cookies **/
-            // cookieProps.should.containEql('Secure');
-
-            // sso properties
-            var parsed = cookie.parse(setCookie[0]);
-            assert.property(parsed, 'sso');
-            var jsonMatch = /\{.+\}/.exec(parsed.sso);
-            should.exist(jsonMatch);
-
-            const token = res.body.token;
-            if (typeof token !== 'string') throw new Error('AF: not a string');
-
-            ssoInfo = {
-              username: authData.username,
-              token: token,
-            };
-            JSON.parse(jsonMatch).should.eql(ssoInfo);
-            cookieOptions = {
-              Domain: parsed.Domain,
-              Path: parsed.Path,
-            };
-
-            done();
-          });
-      });
-
-      it('[QT6T] must answer /who-am-i with username and session details if session open', function (done) {
-        persistentReq
-          .get(basePath(authData.username) + '/who-am-i')
-          .end(function (err, res) {
-            validation.check(
-              res,
-              {
-                status: 200,
-                body: ssoInfo,
-              },
-              done
-            );
-          });
-      });
-
-      it('[UNPB] must clear the SSO cookie on /logout', function (done) {
-        persistentReq
-          .post(basePath(authData.username) + '/logout')
-          .send({})
-          .set('authorization', ssoInfo.token)
-          .end(function (err, res) {
-            assert.strictEqual(res.statusCode, 200);
-
-            var setCookie = res.headers['set-cookie'];
-            should.exist(setCookie);
-            setCookie.length.should.eql(1);
-            var parsed = cookie.parse(setCookie[0]);
-            assert.propertyVal(parsed, 'sso', '');
-            assert.property(parsed, 'Expires');
-            assert.strictEqual(parsed.Domain, cookieOptions.Domain);
-            assert.strictEqual(parsed.Path, cookieOptions.Path);
-            done();
-          });
-      });
-
-      it('[5G0E] must respond /who-am-i with an "unauthorized" error if no cookie is sent', function (done) {
-        persistentReq
-          .get(basePath(authData.username) + '/who-am-i')
-          .end(function (err, res) {
-            assert.strictEqual(res.statusCode, 401);
-            should.not.exist(res.body.username);
-            should.not.exist(res.body.token);
-            done();
-          });
-      });
     });
     
   });
