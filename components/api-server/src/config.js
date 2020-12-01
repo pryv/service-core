@@ -157,7 +157,7 @@ _.merge(config.schema, {
       default: true
     }
   },
-  singleNode: {
+  dnsLess: {
     isActive: {
       format: Boolean,
       default: true

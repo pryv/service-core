@@ -57,7 +57,7 @@
       "key": "OVERRIDE ME"
     }
   },
-  "singleNode": {
+  "dnsLess": {
     "isActive": false
   }
 }

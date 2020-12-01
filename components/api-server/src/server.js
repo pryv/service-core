@@ -37,7 +37,7 @@ class Server {
   application: Application;
   settings: ConfigAccess;
   isOpenSource: boolean;
-  isSingleNode: Boolean;
+  isDnsLess: Boolean;
   logger: Logger; 
   
   // Axon based internal notification and messaging bus. 
@@ -51,7 +51,7 @@ class Server {
     const settings = application.settings; 
     this.settings = settings;
     this.isOpenSource = settings.get('openSource.isActive').bool();
-    this.isSingleNode = settings.get('singleNode.isActive').bool();
+    this.isDnsLess = settings.get('dnsLess.isActive').bool();
   }
     
   // Start the server. 
@@ -118,7 +118,7 @@ class Server {
       application.storageLayer, 
       application.settings.get('services').obj());
 
-    require('./methods/auth/register-singlenode')(application.api, 
+    require('./methods/auth/register-dnsless')(application.api, 
       application.logging, 
       application.storageLayer, 
       application.settings.get('services').obj());

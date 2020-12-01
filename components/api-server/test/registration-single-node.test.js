@@ -29,7 +29,7 @@ describe('[BMM2] registration: single-node', () => {
   before(async function () {
     config = getConfig();
     await config.init();
-    config.set('singleNode:isActive', true);
+    config.set('dnsLess:isActive', true);
     config.set('openSource:isActive', false);
     config.set('custom:systemStreams', null);
   });
@@ -42,7 +42,7 @@ describe('[BMM2] registration: single-node', () => {
       app = new Application(settings);
       await app.initiate();
 
-      require('../src/methods/auth/register-singlenode')(
+      require('../src/methods/auth/register-dnsless')(
         app.api,
         app.logging,
         app.storageLayer,

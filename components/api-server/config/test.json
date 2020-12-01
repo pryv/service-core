@@ -47,7 +47,7 @@
   "openSource": {
     "isActive": false
   },
-  "singleNode": {
+  "dnsLess": {
     "isActive": false,
     "publicUrl": "http://localhost/"
   },
