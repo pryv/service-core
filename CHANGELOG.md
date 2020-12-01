@@ -1,5 +1,11 @@
 ## 1.6
 
+### 1.6.7
+
+Fixes:
+
+- usernames starting with "system" are available
+
 ### 1.6.3
 
 Custom Auth function now has access to all headers.
