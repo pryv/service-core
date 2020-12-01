@@ -103,27 +103,19 @@ describe('auth', function() {
     });
 
     it('[68SH] must return expired', function(done) {
-      let personalToken = 'bogus';
+      let personalToken;
       async.series(
         [
-          function login(stepDone) { // login
+          function login(stepDone) {
             request
               .post(path(authData.username))
               .set('Origin', trustedOrigin)
               .send(authData)
               .end(function (err, res) {
-                assert.strictEqual(res.statusCode, 200);
-
-                should.exist(res.body.token);
                 personalToken = res.body.token;
-                checkNoUnwantedCookie(res);
-                should.exist(res.body.preferredLanguage);
-
-                assert.strictEqual(res.body.preferredLanguage, user.language);
-
                 stepDone();
               });
-          }, // make sure sessions expired 
+          },
           function expireSession(stepDone) {
             helpers.dependencies.storage.sessions.expireNow(personalToken,
               function(err, session) {
@@ -131,9 +123,9 @@ describe('auth', function() {
               }
             );
           },
-          function canBeusedToretreiveAccesses(stepDone) {
+          function shouldReturnSessionHasExpired(stepDone) {
             request
-              .get(apiPath(authData.username) + '/accesses')
+              .get(apiPath(authData.username) + '/access-info')
               .set('Origin', trustedOrigin)
               .set('Authorization', personalToken)
               .end(function (err, res) {
