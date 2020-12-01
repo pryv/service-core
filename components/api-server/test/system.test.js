@@ -30,10 +30,41 @@ const storage = helpers.dependencies.storage.user.events;
 const testData = helpers.data;
 const UsersRepository = require('components/business/src/users/repository');
 const { databaseFixture } = require('components/test-helpers');
-const { produceMongoConnection } = require('./test-helpers');
+const { produceMongoConnection, context } = require('./test-helpers');
 const charlatan = require('charlatan');
 
 require('date-utils');
+
+
+describe('system route', function () {
+  let mongoFixtures,
+      user,
+      username, 
+      server;
+
+  before(async function() {
+    mongoFixtures = databaseFixture(await produceMongoConnection());
+    username = 'system-test';
+    server = await context.spawn();
+  });
+  after(() => {
+    mongoFixtures.clean();
+    server.stop();
+  });
+
+  before(async () => {
+    user = await mongoFixtures.user(username, {});
+  });
+
+
+  it('[9UV5] Should accept users', async () => { 
+    const res = await server.request().get('/' + username + '/events')
+        .set('authorization', 'dummy');
+        should.exist(res.body.error);
+        res.body.error.id.should.eql('invalid-access-token');
+  });
+
+});
 
 describe('system (ex-register)', function () {
   let mongoFixtures;
