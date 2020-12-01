@@ -243,13 +243,6 @@ class Server {
         'This means updates to protected fields will be ignored and operations will succeed. ' +
         'We recommend turning this off, but please be aware of the implications for your code.');
     }
-
-
-    if (settings.get('deprecated.auth.ssoIsWhoamiActivated').bool()) {
-      logger.warn('Server configuration has "ssoIsWhoamiActivated" set to true: ' + 
-        'This means that the API method "GET /auth/who-am-i" is activated. ' + 
-        'We recommend turning this off as this method might be removed in the next major release.');
-    }
     
     // TEST: execute test setup instructions if any
     const instanceTestSetup = settings.get('instanceTestSetup'); 

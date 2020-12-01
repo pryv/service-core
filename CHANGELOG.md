@@ -5,6 +5,11 @@
 Fixes:
 
 - usernames starting with "system" are available
+- personal token expiration now fixed
+
+Removals:
+
+- Deprecated "GET /who-am-i" API method removed
 
 ### 1.6.3
 
