@@ -38,9 +38,8 @@ require('date-utils');
 
 describe('system route', function () {
   let mongoFixtures,
-      user,
-      username, 
-      server;
+    username, 
+    server;
 
   before(async function() {
     mongoFixtures = databaseFixture(await produceMongoConnection());
@@ -53,15 +52,14 @@ describe('system route', function () {
   });
 
   before(async () => {
-    user = await mongoFixtures.user(username, {});
+    await mongoFixtures.user(username, {});
   });
 
-
-  it('[9UV5] Should accept users', async () => { 
+  it('[JT1A] should parse correctly usernames starting with "system"', async () => { 
     const res = await server.request().get('/' + username + '/events')
-        .set('authorization', 'dummy');
-        should.exist(res.body.error);
-        res.body.error.id.should.eql('invalid-access-token');
+      .set('authorization', 'dummy');
+    should.exist(res.body.error);
+    res.body.error.id.should.eql('invalid-access-token');
   });
 
 });
