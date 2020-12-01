@@ -58,6 +58,7 @@ Sessions.prototype.get = function (id, callback) {
       callback(null, session.data);
     } else {
       this.destroy(id, function (err, res) { 
+        // the this.destroy() callback returns the op result, we must replace it with null
         callback(err, null);
       });
     }
@@ -84,6 +85,7 @@ Sessions.prototype.getMatching = function (data, callback) {
       callback(null, session._id);
     } else {
       this.destroy(session._id, (err, res) => {
+        // the this.destroy() callback returns the op result, we must replace it with null
         callback(err, null);
       });
     }
@@ -121,7 +123,9 @@ Sessions.prototype.touch = function (id, callback) {
 };
 
 /**
- * Used for tests Make A session expires noe
+ * Used for tests ony. 
+ * Updates 'expires' to now, so that the session will be destroyed the next time Sessions.get()
+ * or Sessions.getMatching() is called.
  *
  * @param {String} id
  * @param {Function} callback
