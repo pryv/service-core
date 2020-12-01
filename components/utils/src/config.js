@@ -380,7 +380,13 @@ function setup(configDefault) {
     if (! fs.existsSync(fPath)) {
       console.error('Could not load config file ' + toString.path(fPath) + ''); // eslint-disable-line no-console
     } else {
-      instance.loadFile(fPath);
+      const data = JSON.parse(fs.readFileSync(fPath, 'utf-8'));
+      if (data.singleNode) { 
+        data.dnsLess = data.singleNode;
+        console.log("Warning (config) [singleNode] config parameter has been depracted and replaced by [dnsLess]");
+        delete data.singleNode;
+      }
+      instance.load(data);
     }
   }
 }
