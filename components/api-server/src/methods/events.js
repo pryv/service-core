@@ -121,28 +121,7 @@ module.exports = function (
     // Streams query can also be sent as a JSON string or string of Array
     if (params.streams && ! context.acceptStreamQueryInJSON) { // batchCall and socket.io can use plain JSON objects
       try {
-        if (typeof params.streams === 'string') {
-          // !! some HTTP client are removing the [] from queries when there is only one item
-          if (!['[', '{'].includes(params.streams.substr(0, 1))) { // we detect if it's json by looking at first char
-            // Note: since RFC 7159 JSON can also starts with ", true, false or number - this does not apply in this case.
-            params.streams = [params.streams];
-          } else { // probably JSON
-            try {
-              params.streams = JSON.parse(params.streams);
-            } catch (e) {
-             throw('Error while parsing JSON ' + e);
-            }
-          }
-        } else if (!Array.isArray(params.streams)) {
-          throw('Expected an Array');
-        } else {
-          // check it's only an arrays of strings. 
-          for (let i = 0; i < params.streams.length; i++) {
-            if (typeof params.streams[i] !== 'string') {
-              throw('Array contains not only strings.');
-            }
-          }
-        }
+        params.streams = checkStreamsParamAndConvertToObject(params.streams);
       } catch (e) {
         return next(errors.invalidRequestStructure(
           'Invalid streams parameter. It should be an array of streamIds or Stringified JSON: ' + e, params.streams));
@@ -1463,3 +1442,30 @@ module.exports = function (
     );
   }
 };
+
+
+function checkStreamsParamAndConvertToObject(streamsParam) {
+  if (typeof streamsParam === 'string') {
+    // !! some HTTP client are removing the [] from queries when there is only one item
+    if (!['[', '{'].includes(streamsParam.substr(0, 1))) { // we detect if it's json by looking at first char
+      // Note: since RFC 7159 JSON can also starts with ", true, false or number - this does not apply in this case.
+      streamsParam = [streamsParam];
+    } else { // probably JSON
+      try {
+        streamsParam = JSON.parse(streamsParam);
+      } catch (e) {
+      throw('Error while parsing JSON ' + e);
+      }
+    }
+  } else if (!Array.isArray(streamsParam)) {
+    throw('Expected an Array');
+  } else {
+    // check it's only an arrays of strings. 
+    for (let i = 0; i < streamsParam.length; i++) {
+      if (typeof streamsParam[i] !== 'string') {
+        throw('Array contains not only strings.');
+      }
+    }
+  }
+  return streamsParam
+}
