@@ -237,10 +237,10 @@ describe('[BMM2] registration: single-node', () => {
           );
           res = await request.post('/users').send(invalidRegisterBody);
         });
-        it("[" + testTags[0] + '] should respond with status 400', function() {
+        it(`[${testTags[0]}] should respond with status 400`, function() {
           assert.equal(res.status, 400);
         });
-        it("[" + testTags[1] + '] should respond with the correct error message', function() {
+        it(`[${testTags[1]}] should respond with the correct error message`, function() {
           assert.exists(res.error);
           assert.exists(res.error.text);
           const error = JSON.parse(res.error.text);

@@ -155,7 +155,7 @@ describe('permissions selfRevoke', function () {
 
     for (let i = 0; i < accessKeys.length; i++) {
       const access = accessDefs[accessKeys[i]];
-      it("[" + access.testCode + '] ' + accessKeys[i], async function () {
+      it(`[${ access.testCode}] ` + accessKeys[i], async function () {
         const res = await server.request().delete(basePathAccess + access.id).set('Authorization', access.token);
 
         if (access.selfRevoke) {
