@@ -137,11 +137,12 @@ module.exports = function (
     
     // Accessible streams are the on that authorized && correspond to the "state" param request
     let accessibleStreamsIds = [];
+    
     if (params.state === 'all' || params.state === 'trashed') { // all streams
       accessibleStreamsIds = authorizedStreamsIds;
     } else { // Get all streams compatible with state request - Stops when a stream is not matching to exclude childrens
       const notTrashedStreamIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, false, isRequestedStateStreams), 'id');
-      function isRequestedStateStreams(stream) { 
+      function isRequestedStateStreams(stream) {   
         return ! stream.trashed;
       }
       accessibleStreamsIds = _.intersection(authorizedStreamsIds, notTrashedStreamIds);
@@ -198,15 +199,18 @@ module.exports = function (
    * Remove events that belongs to the account streams and should not be displayed
    * @param query -mongo query object  
    */
-  function removeNotReadableAccountStreamsFromQuery (query) {
+  function removeNotReadableAccountStreamsFromQuery (mongoQuery) {
     // get streams ids from the config that should be retrieved
     const userAccountStreams = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
-    if (typeof query.streamIds === 'string') { // happends when simple equal selector streamId: 'sss';
-      query.streamIds = {$in: [query.streamIds]};
+    if (typeof mongoQuery.streamIds === 'string') { // happends when simple equal selector streamId: 'sss';
+      mongoQuery.streamIds = {$in: [mongoQuery.streamIds]};
     }
-    query.streamIds = { ...query.streamIds, ...{ $nin: userAccountStreams } };
-
-    return query;
+    if (mongoQuery.streamIds && mongoQuery.streamIds.$nin) {
+      mongoQuery.streamIds.$nin.push(...userAccountStreams);
+    } else {
+      mongoQuery.streamIds = { ...mongoQuery.streamIds, ...{ $nin: userAccountStreams } };
+    }
+    return mongoQuery;
   }
 
 
@@ -217,19 +221,18 @@ module.exports = function (
     if (params.streams) {
       const streamsQuery = queryStreamFiltering.toMongoDBQuery(params.streams);
       if (streamsQuery === null) {
-        query.streamIds = {$in: []}; // all streams
-      } else {
+        query.streamIds = {$in: []}; // no streams
+      } else { // inject possible components of streamQuery to query
         if (streamsQuery.$or) query.$or = streamsQuery.$or;
         if (streamsQuery.streamIds) query.streamIds = streamsQuery.streamIds;
         if (streamsQuery.$and) query.$and = streamsQuery.$and;
       }
     } else {
-      query.streamIds = {$in: []}; // all streams
+      query.streamIds = {$in: []}; // no streams
     }
-    
+   
     // remove all Account streamIds by defaults
     query = removeNotReadableAccountStreamsFromQuery(query);
-
     if (params.tags && params.tags.length > 0) {
       query.tags = {$in: params.tags};
     }
