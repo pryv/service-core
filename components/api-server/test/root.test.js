@@ -178,7 +178,7 @@ describe('root', function() {
       validation.checkMeta(res.body);
     });
 
-    it("[P06Y] should properly translate the Host header's username (i.e. subdomain)", async function() {
+    it('[P06Y] should properly translate the Host header\'s username (i.e. subdomain)', async function() {
       const res = await server.request()
         .get('/events')
         .set('Host', username + '.pryv.local');
