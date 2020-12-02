@@ -79,9 +79,9 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
     return inspect(streamQuery);
 
     // utility that expand get the childrens for a command.
-    function expandTo(command, item) {
+    function expandTo(command, item, isInclusive) {
          // expand and removes eventual null objects from expand() 
-        const expanded = expand(item);
+        const expanded = expand(item, isInclusive);
         const filtered = expanded.filter((x) => { return x !== null });
         if (filtered.length === 0) return null;
         return getCommand(command, filtered);
@@ -90,7 +90,7 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
     function inspect(streamQuery) {
         switch (typeof streamQuery) {
             case 'string': // A single streamId will be expanded to {'IN': '.., .., ...'}
-                return expandTo('IN', streamQuery);
+                return expandTo('IN', streamQuery, true);
 
             case 'object':
                 // This should be converter to a {OR: ..., ..., ...}
@@ -100,37 +100,40 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
 
                 // This an object and should be a command
                 const [command, value] = commandToArray(streamQuery);
+                let isInclusive = false;
                 switch (command) {
                     // check if value if a streamId and keep
-                    case 'EQUAL': 
+                    case 'EQUAL':
+                        isInclusive = true;
                     case 'NOTEQUAL':
                         throwErrorIfNot(command, 'string', value);
-                        if (! registerStream(value)) return null;
+                        if (! registerStream(value, isInclusive)) return null;
                         return streamQuery; // all ok can be kept as-this
                     // check if value if a streamId & expand to the corresponding command
                     case 'EXPAND': // To be transformed to 'IN'
                         throwErrorIfNot(command, 'string', value); 
-                        return expandTo('IN', value);
+                        return expandTo('IN', value, true);
                     case 'NOTEXPAND': // To be transformed to 'NOTIN'
                         throwErrorIfNot(command, 'string', value); 
-                        return expandTo('NOTIN', value);
+                        return expandTo('NOTIN', value, false);
                     case 'NOT': // To be transformed to 'NOTIN'
                         throwErrorIfNot(command, 'array', value);
                         const OR = [];
                         value.map((v) => { 
                             if (typeof v !== 'string') 
                                 throw ('Error in query, [' + command + '] can only contains streamIds: ' + value);
-                            const res = expandTo('NOTIN', v);
+                            const res = expandTo('NOTIN', v, false);
                             if (res && res.NOTIN.length > 0) OR.push(res);
                         });
                         return {OR: OR};
                     case 'IN': 
+                        isInclusive = true;
                     case 'NOTIN': 
                         throwErrorIfNot(command, 'array', value);
                         const result = value.filter((v) => { 
                             if (typeof v !== 'string') 
                                 throw ('Error in query, [' + command + '] can only contains streamIds: ' + value);
-                            return registerStream(v);
+                            return registerStream(v, isInclusive);
                         });
                         return getCommand(command, result); // all ok can be kept as-this
                     case 'AND':
