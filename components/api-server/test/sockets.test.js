@@ -258,7 +258,7 @@ describe('Socket.IO', function () {
 
     it('[TO6Z] must accept streamQuery in JSON', function (done) {
       ioCons.con = connect(namespace, {auth: token});
-      ioCons.con.emit('events.get', {streams: [{IN: ['s_3']}, {AND: ['s_8', {NOTEQUAL: 's_7'}]}]}, function (err, res) {
+      ioCons.con.emit('events.get', {streams: [{IN: ['s_0_1']}, {AND: ['s_8', {NOTEQUAL: 's_7'}]}]}, function (err, res) {
         should(err).be.null(); 
         should(res.events).not.be.null(); 
         done();

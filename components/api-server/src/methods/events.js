@@ -126,57 +126,62 @@ module.exports = function (
         return next(errors.invalidRequestStructure(
           'Invalid streams parameter. It should be an array of streamIds or Stringified JSON: ' + e, params.streams));
       }
-
     }
     
-    // Get all accessible stream
-    const accessibleStreamIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, true, isAccessibleStream), 'id');
-
-    function isAccessibleStream(stream) { 
-      if (params.state === 'default' && stream.trashed) return false;
+    // Get all authorized streams (the ones that could be acessed) - Pass by all the tree including childrens
+    const authorizedStreamsIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, true, isAuthorizedStream), 'id');
+    function isAuthorizedStream(stream) {
       if (context.access.isPersonal()) return true;
       return context.access.canReadStream(stream.id);
     }
-   
-    if(params.streams === null && accessibleStreamIds.length > 0) {
-      params.streams = { IN: accessibleStreamIds};
+    
+    // Accessible streams are the on that authorized && correspond to the "state" param request
+    let accessibleStreamsIds = [];
+    if (params.state === 'all' || params.state === 'trashed') { // all streams
+      accessibleStreamsIds = authorizedStreamsIds;
+    } else { // Get all streams compatible with state request - Stops when a stream is not matching to exclude childrens
+      const notTrashedStreamIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, false, isRequestedStateStreams), 'id');
+      function isRequestedStateStreams(stream) { 
+        return ! stream.trashed;
+      }
+      accessibleStreamsIds = _.intersection(authorizedStreamsIds, notTrashedStreamIds);
+    }
+
+    if(params.streams === null) { // all streams
+      if (accessibleStreamsIds.length > 0) params.streams = { IN: accessibleStreamsIds};
     } else {
-      const usedStreams = [];
-      const expandedStreams = [];
+      // will keep a list of streams that apperar in the request but are not authorized or unkown
+      const unkownStreams = [];
       /**
-       * Check if a stream is visible and keep it
+       * Check if a stream is visible
        * Return false if not visible
        * @param {*} streamId 
        */
       const registerStream = function(streamId) {
-        if (accessibleStreamIds.includes(streamId)) {
-          usedStreams.push(streamId);
-          return true;
+        if (! authorizedStreamsIds.includes(streamId)) {
+          unkownStreams.push(streamId); // keep track of non authorized streams requests
+          return false;
         }
-        return false;
+        return accessibleStreamsIds.includes(streamId);
       }
 
       const expand = function(streamId) {
-        expandedStreams.push(streamId);
+        if (! registerStream(streamId)) return []; // check if this stream if visible and authorized before expanding
         const expanded = treeUtils.expandIds(context.streams, [streamId]);
         return expanded.filter(registerStream); // only return visble streams 
       }
       
-      if (params.streams) {
-        try {
-          params.streams = queryStreamFiltering.removeSugarAndCheck(params.streams, expand, registerStream);
-        } catch (e) {
-          return next(errors.invalidRequestStructure(e, params.streams));
-        }
+      try {
+        params.streams = queryStreamFiltering.removeSugarAndCheck(params.streams, expand, registerStream);
+      } catch (e) {
+        return next(errors.invalidRequestStructure('Initial filtering: ' + e, params.streams));
       }
 
-      const unknownIds = _.difference(expandedStreams, usedStreams);
-      
-      if (unknownIds.length > 0) {
+      if (unkownStreams.length > 0) {
         return next(errors.unknownReferencedResource(
-          'stream' + (unknownIds.length > 1 ? 's' : ''),
+          'stream' + (unkownStreams.length > 1 ? 's' : ''),
           'streams', 
-          unknownIds));
+          unkownStreams));
       }
     }
 

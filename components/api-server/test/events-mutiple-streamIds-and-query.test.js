@@ -476,6 +476,15 @@ describe('events.get querying streams', function () {
         assert.equal(res.body.error.id, 'unknown-referenced-resource');
       });
 
+      it('[1BHO] Throw error on non existing stream', async function () {
+        const res = await server.request()
+          .get(basePathEvent)
+          .set('Authorization', tokenRead)
+          .query({streams: JSON.stringify({AND: [['A', {IN: ['Z']}], 'B']})});
+        assert.exists(res.body.error);
+        assert.equal(res.body.error.id, 'unknown-referenced-resource');
+      });
+
       it('[B9SX] Throw error on invalid item', async function () {
         const res = await server.request()
           .get(basePathEvent)
