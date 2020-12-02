@@ -492,7 +492,7 @@ describe("Events of system streams", () => {
             it('[89BC] should return 400', () => {
               assert.equal(res.status, 400);
             });
-            it('[89BC] should return the correct error', () => {
+            it('[V31D] should return the correct error', () => {
               assert.equal(res.body.error.id, ErrorIds.ItemAlreadyExists);
               assert.deepEqual(res.body.error.data, { email: eventData.content});
             });
@@ -747,7 +747,7 @@ describe("Events of system streams", () => {
                   .send(eventData)
                   .set('authorization', access.token);
               });
-              it('[9004] should return 400', () => {
+              it('[8BFK] should return 400', () => {
                 assert.equal(res.status, 400);
               });
               it('[E3KE] should return the correct error', () => {
@@ -1332,10 +1332,10 @@ describe("Events of system streams", () => {
         res = await request.delete(path.join(basePath, initialEvent.id))
           .set('authorization', sharedAccess.attrs.token);
       });
-      it('[43B1] should return 403', () => {
+      it('[AT1E] should return 403', () => {
         assert.equal(res.status, 403);
       });
-      it('[3E12] should return the correct error', () => {
+      it('[FV8W] should return the correct error', () => {
         assert.equal(res.body.error.id, ErrorIds.Forbidden);
       });
     });

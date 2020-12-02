@@ -332,10 +332,10 @@ describe('registration: cluster', function() {
   
         res = await request.post(methodPath).send(userData);
       });
-      it('[I0HG] should respond with status 400', () => {
+      it('[LUC6] should respond with status 400', () => {
         assert.equal(res.status, 400);
       });
-      it('[QFVZ] should respond with the correct error', () => {
+      it('[XIN8] should respond with the correct error', () => {
         const error = res.body.error;
         assert.equal(error.id, ErrorIds.ItemAlreadyExists);
         assert.equal(error.data.email, userData.email);

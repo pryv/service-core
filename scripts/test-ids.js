@@ -5,6 +5,7 @@ const componentsPath = path.resolve(__dirname, '../components');
 
 let testsCount = 0;
 let taggedTests = 0;
+let tags = {};
 
 readDir(componentsPath);
 
@@ -39,7 +40,13 @@ function addIdToTests(file) {
     const trimmed = line.trim();
     if (isTestName(trimmed)) {
       if (isUntagged(trimmed)) {
-        const tagged = sSplice(line, genTag());
+        let tag = null;
+        while (tag === null) {
+          tag = genTag();
+          if (tags[tag]) tag = null;
+        } 
+        registerTag(tag);
+        const tagged = sSplice(line, tag);
         lines[i] = tagged;
         isTagged = true;
         taggedTests++;
@@ -65,8 +72,29 @@ function isTestName(line) {
   return line.startsWith('it(');
 }
 
+function ignoreLine(line) {
+  return ! line.startsWith('it(\'');
+}
+
+function registerTag(tag) {
+  if (tags[tag]) { 
+    throw('[' + tag + '] Is used multiple time');
+  }
+  tags[tag] = true;
+}
+
 function isUntagged(line) {
-  return !line.startsWith('it(\'[') && !line.startsWith('it("[') && !line.startsWith('it(`[');
+  if (ignoreLine(line)) {
+    console.log("Ignored test line: " + line); 
+    return false;
+  }
+  const test = line.match(/^it\('\[([A-Z0-9]{4})\](.*)/);
+  if (! test) { 
+    console.log('Tagging => ' + line);
+    return true;
+  }
+  registerTag(test[1]);
+  return false;
 }
 
 function genTag() {
