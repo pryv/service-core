@@ -29,7 +29,3 @@ do
     docker build -f $SCRIPT_FOLDER/$service/Dockerfile -t $host/pryvio/$service:$version .
     docker push $host/pryvio/$service:$version
 done
-
-# echo "---------------------------- building cli --------------------------------"
-# docker build -f $SCRIPT_FOLDER/cli/Dockerfile -t $host/pryvio/cli:$version .
-# docker push $host/pryvio/cli:$version
