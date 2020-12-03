@@ -69,7 +69,7 @@ const _ = require('lodash');
  * Replace globing [] by {OR: []}
  * Replace all strings 'A' by {IN: ['A',...childs]}
  * @param {Object} streamQuery 
- * @param {Function} expand should return the streamId in argument and it's children (or null if does not exist).
+ * @param {Function} expand should return the streamId in argument and its children (or null if does not exist).
  * @param {Function} registerStream should return true if stream exists.
  * @returns {Object} The streamQuery with sugar removed
  * @throws Error messages when structure is not valid.
@@ -78,7 +78,7 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
 
     return inspect(streamQuery);
 
-    // utility that expand get the childrens for a command.
+    // utility that expand get the children for a command.
     function expandTo(command, item, isInclusive) {
          // expand and removes eventual null objects from expand() 
         const expanded = expand(item, isInclusive);

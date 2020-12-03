@@ -15,17 +15,11 @@ function logItem() {
   }
 }
 
-const ErrorIds = require('components/errors').ErrorIds;
-const url = require('url');
-const _ = require('lodash');
 const cuid = require('cuid');
 const { expect , assert} = require('chai');
-const charlatan = require('charlatan');
 
 const helpers = require('./helpers');
 const validation = helpers.validation;
-
-const {fixturePath, fixtureFile} = require('./unit/test-helper');
 
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
