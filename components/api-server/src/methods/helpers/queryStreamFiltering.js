@@ -28,13 +28,13 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
 
     return inspect(streamQuery);
 
-    // utility that expand get the childrens for a command.
-    function expandTo(command, item, isInclusive) {
+    // utility that expand get the childrens for a operator.
+    function expandTo(operator, item, isInclusive) {
          // expand and removes eventual null objects from expand() 
         const expanded = expand(item, isInclusive);
         const filtered = expanded.filter((x) => { return x !== null });
         if (filtered.length === 0) return null;
-        return getCommand(command, filtered);
+        return {[operator]: filtered};
     }
 
     function inspect(streamQuery) {
@@ -48,30 +48,30 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
                     return inspect({ OR: streamQuery});
                 }
 
-                // This an object and should be a command
-                const [command, value] = commandToArray(streamQuery);
+                // This an object and should be a operator
+                const [operator, value] = operatorToArray(streamQuery);
                 let isInclusive = false;
-                switch (command) {
+                switch (operator) {
                     // check if value if a streamId and keep
                     case 'EQUAL':
                         isInclusive = true;
                     case 'NOTEQUAL':
-                        throwErrorIfNot(command, 'string', value);
+                        throwErrorIfNot(operator, 'string', value);
                         if (! registerStream(value, isInclusive)) return null;
                         return streamQuery; // all ok can be kept as-this
-                    // check if value if a streamId & expand to the corresponding command
+                    // check if value if a streamId & expand to the corresponding operator
                     case 'EXPAND': // To be transformed to 'IN'
-                        throwErrorIfNot(command, 'string', value); 
+                        throwErrorIfNot(operator, 'string', value); 
                         return expandTo('IN', value, true);
                     case 'NOTEXPAND': // To be transformed to 'NOTIN'
-                        throwErrorIfNot(command, 'string', value); 
+                        throwErrorIfNot(operator, 'string', value); 
                         return expandTo('NOTIN', value, false);
                     case 'NOT': // To be transformed to 'NOTIN'
-                        throwErrorIfNot(command, 'array', value);
+                        throwErrorIfNot(operator, 'array', value);
                         const OR = [];
                         value.map((v) => { 
                             if (typeof v !== 'string') 
-                                throw ('Error in query, [' + command + '] can only contains streamIds: ' + value);
+                                throw ('Error in query, [' + operator + '] can only contains streamIds: ' + value);
                             const res = expandTo('NOTIN', v, false);
                             if (res && res.NOTIN.length > 0) OR.push(res);
                         });
@@ -79,38 +79,38 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
                     case 'IN': 
                         isInclusive = true;
                     case 'NOTIN': 
-                        throwErrorIfNot(command, 'array', value);
+                        throwErrorIfNot(operator, 'array', value);
                         const result = value.filter((v) => { 
                             if (typeof v !== 'string') 
-                                throw ('Error in query, [' + command + '] can only contains streamIds: ' + value);
+                                throw ('Error in query, [' + operator + '] can only contains streamIds: ' + value);
                             return registerStream(v, isInclusive);
                         });
-                        return getCommand(command, result); // all ok can be kept as-this
+                        return {[operator]: result}; // all ok can be kept as-this
                     case 'AND':
                     case 'OR':
-                        throwErrorIfNot(command, 'array', value);
+                        throwErrorIfNot(operator, 'array', value);
                         const inspected = value.map(inspect);
                         const candidate = inspected.filter((x) => { return x !== null });
                         if (candidate === null || candidate.length === 0) return null;
                         if (candidate.length === 1) return candidate[0];
-                        return getCommand(command, candidate);
+                        return  {[operator]: candidate};
                     default:
-                        throw ('Unkown selector [' + command + '] in query: ' + JSON.stringify(streamQuery));
+                        throw ('Unkown selector [' + operator + '] in query: ' + JSON.stringify(streamQuery));
                 };
             default:
                 throw ('Unkown item [' + JSON.stringify(streamQuery) +' ] in query: ');
         }
     }
 
-    // utility to throw error if the value associated with the command is not of expectedType
-    function throwErrorIfNot(command, expectedType, value) {
+    // utility to throw error if the value associated with the operator is not of expectedType
+    function throwErrorIfNot(operator, expectedType, value) {
         let check = false;
         if (expectedType === 'array') {
             check = Array.isArray(value);
         } else { // 'string', 'object' ....
             check = (typeof value === expectedType);
         }
-        if (! check) throw ('Error in query, [' + command + '] can only be used with ' + expectedType + 's: ' + JSON.stringify(streamQuery));
+        if (! check) throw ('Error in query, [' + operator + '] can only be used with ' + expectedType + 's: ' + JSON.stringify(streamQuery));
     }
 }
 
@@ -120,8 +120,8 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
  * TODO: In case of very deep complex or stupid structure ex. {AND: [{AND: [{IN: 'A'}]}]} mrProper should do several loops
  * @param {*} streamQuery 
  */
-function mrProper(command, value) {
-    switch (command) {
+function mrProper(operator, value) {
+    switch (operator) {
         // if (OR [IN a.., IN b.., EQUAL c] => IN unique([a.., b.., c]) )
         case 'OR': // value is an Array
             // concat all 'IN' and 'EQUAL' under an 'IN'.
@@ -129,7 +129,7 @@ function mrProper(command, value) {
             const NOTIN = []; // do the same for NOT and NOTEQUAL
             const OR = []; // or is the main older at the end
             value.map((item) => {
-                const [key, v] = commandToArray(item);
+                const [key, v] = operatorToArray(item);
                 switch (key) {
                     case 'IN':
                     case 'EQUAL':    
@@ -147,16 +147,16 @@ function mrProper(command, value) {
             pushIfNotNull(OR, mrProper('IN', IN));
             pushIfNotNull(OR, mrProper('NOTIN', NOTIN));
             
-            if (OR.length === 1) return OR[0]; // only one command we can skip the OR
+            if (OR.length === 1) return OR[0]; // only one operator we can skip the OR
             if (OR.length === 0) return null; // empty no need to keep it
             return {'OR': OR}; // all clean
         case 'AND':
             const AND = [];
             value.map((item) => { // clean all items 
-                const [key, v] = commandToArray(item);
+                const [key, v] = operatorToArray(item);
                 pushIfNotNull(AND, mrProper(key, v));
             });
-            if (AND.length === 1) return AND[0]; // there is only one command we can skip the AND
+            if (AND.length === 1) return AND[0]; // there is only one operator we can skip the AND
             if (AND.length === 0) return null;
             return {'AND': AND}; // all clean
         case 'IN':
@@ -168,7 +168,7 @@ function mrProper(command, value) {
             if (value.length === 0) return null;
             return {'NOTIN': value}; // all clean
         default:
-            return getCommand(command, value);
+            return  {[operator]: value};
     }
 }
 
@@ -180,13 +180,13 @@ function mrProper(command, value) {
 exports.toMongoDBQuery = function toMongoDBQuery(streamQuery, doNotOptimizeQuery) {
     if (! streamQuery) return null;
     if (! doNotOptimizeQuery) {
-        const [command, value] =  commandToArray(streamQuery);
-        streamQuery = mrProper(command, value);
+        const [operator, value] =  operatorToArray(streamQuery);
+        streamQuery = mrProper(operator, value);
     }
     return inspect(streamQuery);
     function inspect(item) {
-        const [command, value] = commandToArray(item);
-        switch (command) {
+        const [operator, value] = operatorToArray(item);
+        switch (operator) {
             case 'EQUAL':
                 return {streamIds: value };
             case 'NOTEQUAL':
@@ -200,21 +200,13 @@ exports.toMongoDBQuery = function toMongoDBQuery(streamQuery, doNotOptimizeQuery
             case 'OR':
                 return { $or: value.map(inspect) }
             default:
-                throw ('Unkown command [' + command + '] in: ' + JSON.stringify(item));
+                throw ('Unkown operator [' + operator + '] in: ' + JSON.stringify(item));
         }
     }
 }
 
 //------------------------ helpers ----------------------------------//
 
-/** 
- * utility to create objects {command: value} 
- * */
-function getCommand(command, value) {
-    const res = {};
-    res[command] = value;
-    return res;
-}
 
 /**
  * Helper that adds a string or array to an array if not present
@@ -238,12 +230,12 @@ function pushIfNotNull(array, value) {
 }
 
 /**
- * Decompose commands {KEY: VALUE} => [KEY, VALUE] 
- * @param {object} command of the form {KEY: VALUE}
+ * Decompose operators {KEY: VALUE} => [KEY, VALUE] 
+ * @param {object} operator of the form {KEY: VALUE}
  */
-function commandToArray(command) {
-    const keys = Object.keys(command);
+function operatorToArray(operator) {
+    const keys = Object.keys(operator);
     if (keys.length < 1) throw ('Found an empty object in query');
-    if (keys.length > 1) throw ('Found an object with more than one command in query: ' + JSON.stringify(command));
-    return [keys[0], command[keys[0]]];
+    if (keys.length > 1) throw ('Found an object with more than one operator in query: ' + JSON.stringify(operator));
+    return [keys[0], operator[keys[0]]];
 }
