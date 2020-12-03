@@ -7,9 +7,14 @@ Fixes:
 - usernames starting with "system" are available
 - personal token expiration now fixed
 
+Changes:
+
+- In configuration, rename "singleNode" to "dnsLess", adding retro-compatibility for "singleNode" with warning message
+
 Removals:
 
 - Deprecated "GET /who-am-i" API method removed
+- Remove pryvuser-cli code (the image was not built since July)
 
 ### 1.6.3
 
