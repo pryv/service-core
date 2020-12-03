@@ -326,9 +326,8 @@ describe('permissions create-only level', () => {
           .get(basePath)
           .set('Authorization', createOnlyToken)
           .query(query);
-
-        assert.equal(res.status, 400);
-        assert.equal(res.body.error.id, 'unknown-referenced-resource');
+        assert.equal(res.status, 403);
+        assert.equal(res.body.error.id, 'forbidden');
       });
 
       it('[V4KJ] should return events when fetching "create-only" streams that are children of "read" streams', async function() {
