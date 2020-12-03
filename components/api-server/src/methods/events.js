@@ -190,6 +190,13 @@ module.exports = function (
       }
 
       if (unkownStreams.length > 0) {
+        // check if one is create-only and send forbidden
+        for (let i = 0; i < unkownStreams.length; i++) {
+          if (context.access.isCreateOnlyStream(unkownStreams[i])) {
+            return next(errors.forbidden('stream [' + unkownStreams[i] + '] has create-only permission and cannot be read'));
+          }
+        }
+
         return next(errors.unknownReferencedResource(
           'stream' + (unkownStreams.length > 1 ? 's' : ''),
           'streams', 

@@ -176,6 +176,11 @@ const accessLogic = module.exports = {
     return this.canContributeToStream(streamId);
   },
 
+  isCreateOnlyStream: function (streamId) {
+    const level = this.getStreamPermissionLevel(streamId);
+    return (level === 'create-only');
+  },
+
   canManageStream: function (streamId) {
     const level = this.getStreamPermissionLevel(streamId || undefined);
     if (level === 'create-only') return false;
