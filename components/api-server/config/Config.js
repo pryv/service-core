@@ -60,6 +60,7 @@ class Config {
     store.file({ file: this.configFile});
 
     /**
+     * This can be removed once "singleNode" has been removed of all configs
      * This is a duplicate of /components/utils/src/config.js duplicate code 
      * They should be updated simulatenously
      */

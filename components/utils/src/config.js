@@ -371,6 +371,13 @@ function setup(configDefault) {
       console.error('Could not load config file ' + toString.path(fPath) + ''); // eslint-disable-line no-console
     } else {
       const data = JSON.parse(fs.readFileSync(fPath, 'utf-8'));
+      /**
+       * This can be removed once "singleNode" has been removed of all configs
+       * This is a duplicate of /components/utils/src/config.js duplicate code 
+       * They should be updated simulatenously
+       * 
+       * replaceable by "instance.loadFile(fPath);"
+      */
       if (data.singleNode) { 
         data.dnsLess = data.singleNode;
         console.log("Warning (config) [singleNode] config parameter has been depracted and replaced by [dnsLess]");
