@@ -14,7 +14,7 @@ const ErrorIds = require('components/errors').ErrorIds;
 const url = require('url');
 const _ = require('lodash');
 const cuid = require('cuid');
-const { expect , assert} = require('chai');
+const { assert} = require('chai');
 const charlatan = require('charlatan');
 
 const helpers = require('./helpers');
@@ -208,7 +208,7 @@ describe('events.get querying streams', function () {
               const query = queryStreamFiltering.removeSugarAndCheck(streamQuery, fakeExpand, fakeRegisterStream);
             } catch (e) {
               hasThrown = true;
-              expect(e).to.have.string(key);
+              assert.include(e,key);
             };
             if (! hasThrown) throw('removeSugarAndCheck was expected to throw [' + key + '] with query: <<' + JSON.stringify(streamQuery) + '>>');
           });
