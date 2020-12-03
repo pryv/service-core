@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 exports.defaultConfig = {
-  singleNode: {
+  dnsLess: {
     isActive: true,
     publicUrl: "http://localhost:3000/"
   }

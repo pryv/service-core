@@ -100,7 +100,7 @@ describe('Account with system streams', function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
     const settings = await Settings.load();
     config = getConfig();
-    config.set('singleNode:isActive', false);
+    config.set('dnsLess:isActive', false);
     app = new Application(settings);
     await app.initiate();
 

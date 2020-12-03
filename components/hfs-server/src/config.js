@@ -113,7 +113,7 @@ function produce() {
     // HACK: as this loads serviceInfo from the components/utils config, 
     // where we test for this value, which is not present
     // as the hfs-config does not extend the utils/config. This leads to a crash
-    singleNode: {
+    dnsLess: {
       isActive: {
         format: Boolean, 
         default: true,

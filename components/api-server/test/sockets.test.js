@@ -133,7 +133,7 @@ describe('Socket.IO', function () {
       done(err || new Error('Connection failed.')); 
     });
   });
-  it('[VGKX] must connect with twice user name in the path (SingleNode)', function (done) {
+  it('[VGKX] must connect with twice user name in the path (DnsLess)', function (done) {
     var dashUser = testData.users[4],
       dashRequest = null;
 

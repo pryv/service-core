@@ -88,7 +88,7 @@ describe("Events of system streams", () => {
 
   before(async function () {
     config = getConfig();
-    config.set('singleNode:isActive', false);
+    config.set('dnsLess:isActive', false);
     const helpers = require('components/api-server/test/helpers');
     validation = helpers.validation;
     mongoFixtures = databaseFixture(await produceMongoConnection());
@@ -492,13 +492,13 @@ describe("Events of system streams", () => {
             it('[89BC] should return 400', () => {
               assert.equal(res.status, 400);
             });
-            it('[V31D] should return the correct error', () => {
+            it('[10BC] should return the correct error', () => {
               assert.equal(res.body.error.id, ErrorIds.ItemAlreadyExists);
               assert.deepEqual(res.body.error.data, { email: eventData.content});
             });
           });
           describe('[6B8D] When creating an event that is already taken only on core', () => {
-            // simulating single-node behaviour for non-unique event error
+            // simulating dnsLess behaviour for non-unique event error
             let serviceRegisterRequest;
             let streamId = SystemStreamsSerializer.addDotToStreamId('email');
             let email = charlatan.Lorem.characters(7);

@@ -22,7 +22,7 @@ Custom Auth function now has access to all headers.
 
 ### 1.6.1
 
-Fixes for singleNode/openSource:
+Fixes for dnsLess/openSource:
 
 - /reg/service/info
 - dependencies

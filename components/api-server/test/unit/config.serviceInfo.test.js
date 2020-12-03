@@ -21,9 +21,9 @@ describe('config: serviceInfo', () => {
   });
 
   describe('init()', () => {
-    describe('when singleNode is active', () => {
+    describe('when dnsLess is active', () => {
       before(() => {
-        config.set('singleNode:isActive', true);
+        config.set('dnsLess:isActive', true);
       });
 
       it('[O4I1] should work', async () => {
@@ -31,8 +31,8 @@ describe('config: serviceInfo', () => {
       });
       it('[KEH6] should build serviceInfo', () => {
         const serviceInfo = config.get('service');
-        let singleNodePublicUrl = config.get('singleNode:publicUrl');
-        if (singleNodePublicUrl.slice(-1) === '/') singleNodePublicUrl = singleNodePublicUrl.slice(0, -1);
+        let dnsLessPublicUrl = config.get('dnsLess:publicUrl');
+        if (dnsLessPublicUrl.slice(-1) === '/') dnsLessPublicUrl = dnsLessPublicUrl.slice(0, -1);
 
         const REG_PATH = '/reg';
         const WWW_PATH = '/www';
@@ -40,18 +40,18 @@ describe('config: serviceInfo', () => {
         const serial = parseInt(serviceInfo.serial.slice(1));        
 
         assert.approximately(serial, Date.now() / 1000, 5);
-        assert.equal(serviceInfo.api, singleNodePublicUrl + '/{username}/');
-        assert.equal(serviceInfo.register, singleNodePublicUrl + REG_PATH + '/');
-        assert.equal(serviceInfo.access, singleNodePublicUrl + REG_PATH + '/access/');
+        assert.equal(serviceInfo.api, dnsLessPublicUrl + '/{username}/');
+        assert.equal(serviceInfo.register, dnsLessPublicUrl + REG_PATH + '/');
+        assert.equal(serviceInfo.access, dnsLessPublicUrl + REG_PATH + '/access/');
         assert.deepEqual(serviceInfo.assets, {
-          definitions: singleNodePublicUrl + WWW_PATH + '/assets/index.json',
+          definitions: dnsLessPublicUrl + WWW_PATH + '/assets/index.json',
         });
       });
     });
 
-    describe('when singleNode is disabled', () => {
+    describe('when dnsLess is disabled', () => {
       before(() => {
-        config.set('singleNode:isActive', false);
+        config.set('dnsLess:isActive', false);
       });
 
       describe('when "serviceInfoUrl" points to a file', () => {

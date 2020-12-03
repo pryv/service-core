@@ -61,7 +61,7 @@ module.exports = function (
 
   // initialize service-register connection
   let serviceRegisterConn = {};
-  if (!config.get('singleNode:isActive')) {
+  if (!config.get('dnsLess:isActive')) {
     serviceRegisterConn = new ServiceRegister(
       config.get('services:register'),
       logging.getLogger('service-register')
@@ -1127,7 +1127,7 @@ module.exports = function (
    * @param string accountStreamId - accountStreamId
    */
   async function sendUpdateToServiceRegister (user, event, accountStreamId) {
-    if (config.get('singleNode:isActive')) {
+    if (config.get('dnsLess:isActive')) {
       return;
     }
     const editableAccountStreams = SystemStreamsSerializer.getEditableAccountStreams();
@@ -1384,7 +1384,7 @@ module.exports = function (
    */
   async function sendDataToServiceRegister (context, creation, editableAccountStreams) {
     // send update to service-register
-    if (config.get('singleNode:isActive')) {
+    if (config.get('dnsLess:isActive')) {
       return;
     }
     let fieldsForUpdate = {};

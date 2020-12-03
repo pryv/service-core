@@ -44,11 +44,11 @@ describe('DELETE /users/:username', () => {
     ['U21Z', 'K4J1', 'TIKT', 'WMMV', '9ZTM', 'T3UK', 'O73J'],
     ['TPP2', '581Z', 'Z2FH', '4IH8', '33T6', 'SQ8P', '1F2Y']];
   for (let i = 0; i < settingsToTest.length; i++) {
-    describe(`singleNode:isActive = ${settingsToTest[i][0]}, openSource:isActive = ${settingsToTest[i][1]}`, function() {
+    describe(`dnsLess:isActive = ${settingsToTest[i][0]}, openSource:isActive = ${settingsToTest[i][1]}`, function() {
       before(async function() {
         const settings = await Settings.load();
         const config = getConfig();
-        config.set('singleNode:isActive', settingsToTest[i][0]);
+        config.set('dnsLess:isActive', settingsToTest[i][0]);
         config.set('openSource:isActive', settingsToTest[i][1]);
         app = new Application(settings);
         await app.initiate();
