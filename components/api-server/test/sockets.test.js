@@ -256,7 +256,7 @@ describe('Socket.IO', function () {
       });
     });
 
-    it('[TO6Z] must accept streamQuery as Object', function (done) {
+    it('[TO6Z] must accept streamQuery as Javascript Object', function (done) {
       ioCons.con = connect(namespace, {auth: token});
       ioCons.con.emit('events.get', {streams: [{IN: ['s_0_1']}, {AND: ['s_8', {NOTEQUAL: 's_7'}]}]}, function (err, res) {
         should(err).be.null(); 

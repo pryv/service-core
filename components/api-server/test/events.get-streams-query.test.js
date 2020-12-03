@@ -9,11 +9,6 @@
 require('./test-helpers');
 
 const util = require("util");
-function logItem() {
-  for(let i = 0; i < arguments.length; i++) {
-    console.log(util.inspect(arguments[i], {depth: 12, colors: true}));
-  }
-}
 
 const ErrorIds = require('components/errors').ErrorIds;
 const url = require('url');
@@ -31,8 +26,6 @@ const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
 const queryStreamFiltering = require('../src/methods/helpers/queryStreamFiltering');
-
-require('date-utils');
 
 /**
  * Structures
@@ -95,18 +88,18 @@ function getExpandedStreams(streamId) {
 describe('events.get querying streams', function () {
 
   describe('Internal query helpers', function () {
-    const fakeExpand = function(stream, isInclusive) {
+    function fakeExpand(stream /*, isInclusive*/) {
       return getExpandedStreams(stream);
     }
 
-    const fakeRegisterStream = function(streamId, isInclusive) {
+    function fakeRegisterStream(streamId /*, isInclusive*/) {
       if (! STREAMS[streamId]) return false;
       return true;
     }
 
     describe('removeSugarAndCheck', function() {
 
-      it('[D2B5] must pack initial [] in {OR: []}', async function () {
+      it('[D2B5] must convert initial [] in {OR: []}', async function () {
         const res = queryStreamFiltering.removeSugarAndCheck(['A','B'], fakeExpand, fakeRegisterStream);
         assert.deepEqual(res, {"OR":[{"IN":["A","B","C"]},{"IN":["B"]}]});
       });
