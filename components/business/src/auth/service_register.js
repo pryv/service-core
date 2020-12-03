@@ -9,15 +9,14 @@
 const urllib = require('url');
 const superagent = require('superagent');
 import type { Logger } from 'components/utils/src/logging';
-import type { RegistrySettings } from 'components/pryvuser-cli/src/configuration';
 const ErrorIds = require('components/errors').ErrorIds,
   errors = require('components/errors').factory,
   ErrorMessages = require('components/errors/src/ErrorMessages');
 class ServiceRegister {
-  config: RegistrySettings; 
+  config: {}; 
   logger: Logger;
 
-  constructor(config: RegistrySettings, logger: Logger) {
+  constructor(config: {}, logger: Logger) {
     this.config = config; 
     this.logger = logger;
   }
