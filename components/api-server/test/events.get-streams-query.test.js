@@ -9,14 +9,9 @@
 require('./test-helpers');
 
 const util = require("util");
-function logItem() {
-  for(let i = 0; i < arguments.length; i++) {
-    console.log(util.inspect(arguments[i], {depth: 12, colors: true}));
-  }
-}
 
 const cuid = require('cuid');
-const { expect , assert} = require('chai');
+const { assert} = require('chai');
 
 const helpers = require('./helpers');
 const validation = helpers.validation;
@@ -25,8 +20,6 @@ const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
 const queryStreamFiltering = require('../src/methods/helpers/queryStreamFiltering');
-
-require('date-utils');
 
 /**
  * Structures
@@ -89,18 +82,18 @@ function getExpandedStreams(streamId) {
 describe('events.get querying streams', function () {
 
   describe('Internal query helpers', function () {
-    const fakeExpand = function(stream, isInclusive) {
+    function fakeExpand(stream /*, isInclusive*/) {
       return getExpandedStreams(stream);
     }
 
-    const fakeRegisterStream = function(streamId, isInclusive) {
+    function fakeRegisterStream(streamId /*, isInclusive*/) {
       if (! STREAMS[streamId]) return false;
       return true;
     }
 
     describe('removeSugarAndCheck', function() {
 
-      it('[D2B5] must pack initial [] in {OR: []}', async function () {
+      it('[D2B5] must convert initial [] in {OR: []}', async function () {
         const res = queryStreamFiltering.removeSugarAndCheck(['A','B'], fakeExpand, fakeRegisterStream);
         assert.deepEqual(res, {"OR":[{"IN":["A","B","C"]},{"IN":["B"]}]});
       });
@@ -209,7 +202,7 @@ describe('events.get querying streams', function () {
               const query = queryStreamFiltering.removeSugarAndCheck(streamQuery, fakeExpand, fakeRegisterStream);
             } catch (e) {
               hasThrown = true;
-              expect(e).to.have.string(key);
+              assert.include(e,key);
             };
             if (! hasThrown) throw('removeSugarAndCheck was expected to throw [' + key + '] with query: <<' + JSON.stringify(streamQuery) + '>>');
           });
