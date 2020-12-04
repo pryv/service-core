@@ -121,10 +121,10 @@ module.exports = function (
     // Streams query can also be sent as a JSON string or string of Array
     if (params.streams && ! context.acceptStreamQueryInJSON) { // batchCall and socket.io can use plain JSON objects
       try {
-        params.streams = checkStreamsParamAndConvertToObject(params.streams);
+        params.streams = checkHttpGetStreamsParamAndConvertToObject(params.streams);
       } catch (e) {
         return next(errors.invalidRequestStructure(
-          'Invalid streams parameter. It should be an array of streamIds or Stringified JSON: ' + e, params.streams));
+          'Invalid "streams" parameter. It should be an array of streamIds or JSON logical query' + e, params.streams));
       }
     }
     
@@ -161,7 +161,10 @@ module.exports = function (
        * Check if a stream is visible
        * Return false if not visible
        * @param {*} streamId 
-       * @param {boolean} isInclusive set to True is this is an "inclusive" selector (IN; EQUAL)
+       * @param {boolean} isInclusive set to True is this is an "inclusive" selector (IN; EQUAL) - 
+       * If a query does not include any "inclusive" scope, it means that it's only a "negative" scoping, 
+       * then we should add the accessible streams as initial scope. To avoid exposing not visible streams content.
+       * Example: {NOT ['A']} would be be translated to {AND: [{IN: [..all visible streams..], {NOTIN: 'A'} ]}
        */
       const registerStream = function(streamId, isInclusive) {
         if (! authorizedStreamsIds.includes(streamId)) {
@@ -1470,7 +1473,7 @@ module.exports = function (
 };
 
 
-function checkStreamsParamAndConvertToObject(streamsParam) {
+function checkHttpGetStreamsParamAndConvertToObject(streamsParam) {
   if (typeof streamsParam === 'string') {
     // !! some HTTP client are removing the [] from queries when there is only one item
     if (!['[', '{'].includes(streamsParam.substr(0, 1))) { // we detect if it's json by looking at first char
@@ -1480,17 +1483,22 @@ function checkStreamsParamAndConvertToObject(streamsParam) {
       try {
         streamsParam = JSON.parse(streamsParam);
       } catch (e) {
-      throw('Error while parsing JSON ' + e);
+        throw('Error while parsing JSON ' + e);
       }
     }
-  } else if (!Array.isArray(streamsParam)) {
+    return streamsParam;
+  } 
+  
+  if (!Array.isArray(streamsParam)) {
     throw('Expected an Array');
-  } else {
+  } 
+
+  // check it's only an arrays of strings. 
     // check it's only an arrays of strings. 
-    for (let i = 0; i < streamsParam.length; i++) {
-      if (typeof streamsParam[i] !== 'string') {
-        throw('Array contains not only strings.');
-      }
+  // check it's only an arrays of strings. 
+  for (let i = 0; i < streamsParam.length; i++) {
+    if (typeof streamsParam[i] !== 'string') {
+      throw('Array contains not only strings.');
     }
   }
   return streamsParam

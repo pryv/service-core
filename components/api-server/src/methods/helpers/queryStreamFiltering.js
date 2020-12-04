@@ -28,9 +28,10 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
 
   return inspect(streamQuery);
 
-  // utility that expand get the children for a command.
+  // utility that expand get the children for an operator.
   function expandTo(operator, item, isInclusive) {
     // expand and removes eventual null objects from expand() 
+    // "expand"  will also call registerStream() on the parents and the childs
     const expanded = expand(item, isInclusive);
     const filtered = expanded.filter((x) => { return x !== null });
     if (filtered.length === 0) return null;
@@ -48,7 +49,7 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
           return inspect({ OR: streamQuery });
         }
 
-        // This an object and should be a operator
+        // This an object and should be an operator
         const [operator, value] = operatorToArray(streamQuery);
         let isInclusive = false;
         switch (operator) {
@@ -177,9 +178,9 @@ function mrProper(operator, value) {
  * @param {} streamQuery 
  * @param {boolean} optimizeQuery 
  */
-exports.toMongoDBQuery = function toMongoDBQuery(streamQuery, doNotOptimizeQuery) {
+exports.toMongoDBQuery = function toMongoDBQuery(streamQuery, optimizeQuery = true) {
   if (!streamQuery) return null;
-  if (!doNotOptimizeQuery) {
+  if (optimizeQuery) {
     const [operator, value] = operatorToArray(streamQuery);
     streamQuery = mrProper(operator, value);
   }
