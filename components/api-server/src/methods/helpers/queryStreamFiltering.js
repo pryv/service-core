@@ -11,7 +11,6 @@
  * Documentation and specifications can be found on 
  * https://github.com/pryv/docs-pryv/blob/master/pryv.io/events.get-filtering/README.md
  */
-const _ = require('lodash');
 
 
 /**
