@@ -20,6 +20,7 @@ const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
 const queryStreamFiltering = require('../src/methods/helpers/queryStreamFiltering');
+const event = require('../src/schema/event');
 
 /**
  * Structures
@@ -53,6 +54,7 @@ const EVENTS = {
   f: {streamIds: ['F']},
   t: {streamIds: ['T']},
 }
+const EVENT4ID = {};
 
 // add childrens to STREAMS
 Object.keys(STREAMS).map((streamId) => { 
@@ -337,6 +339,7 @@ describe('events.get querying streams', function () {
         event.type = 'note/txt',
         event.content = key,
         event.id = cuid(),
+        EVENT4ID[event.id] = key;
         await user.event(event);
       };
      
@@ -474,11 +477,12 @@ describe('events.get querying streams', function () {
         .query({streams: JSON.stringify({AND: ['A', {NOTEXPAND: 'D'}]})});
       assert.exists(res.body.events)
       const events = res.body.events;
-      assert.equal(events.length, 3);
-      const resEvents = ['c', 'a', 'b'];
-      for (let i; i < resEvents; i++) {
-        assert.equal(events[i].id, EVENTS[resEvents[i]].id);
-      }
+      const expectedEvents = ['b', 'a', 'c'];
+      assert.equal(events.length, expectedEvents.length);
+      const resIds = events.map((e) => { 
+        assert.exists(EVENT4ID[e.id]);
+        assert.include(expectedEvents, EVENT4ID[e.id]);
+      });
     });
 
     it('[55HB] must return events in A AND NOT-EQUAL D)', async function () {
@@ -488,11 +492,12 @@ describe('events.get querying streams', function () {
         .query({streams: JSON.stringify({AND: ['A', {NOTEQUAL: 'D'}]})});
       assert.exists(res.body.events)
       const events = res.body.events;
-      assert.equal(events.length, 5);
-      const resEvents = ['a', 'b', 'fc', 'c', 'be'];
-      for (let i; i < resEvents; i++) {
-        assert.equal(events[i].id, EVENTS[resEvents[i]].id);
-      }
+      const expectedEvents = ['a', 'b', 'fc', 'c', 'be'];
+      assert.equal(events.length, expectedEvents.length);
+      const resIds = events.map((e) => { 
+        assert.exists(EVENT4ID[e.id]);
+        assert.include(expectedEvents, EVENT4ID[e.id]);
+      });
     });
 
     it('[O4DJ] must return all events in B || (D && !E)', async function () {
@@ -501,7 +506,7 @@ describe('events.get querying streams', function () {
         .set('Authorization', tokenRead)
         .query({streams: JSON.stringify(
             {OR: [
-              {IN: ['B']}, 
+              'B', 
               {AND: ['D', {NOT: ['E']}]}
             ]}
             )});
@@ -561,15 +566,6 @@ describe('events.get querying streams', function () {
           .get(basePathEvent)
           .set('Authorization', tokenRead)
           .query({streams: JSON.stringify({AND: ['A', 'Z', 'B']})});
-        assert.exists(res.body.error);
-        assert.equal(res.body.error.id, 'unknown-referenced-resource');
-      });
-
-      it('[0FB7] Throw error on non existing stream', async function () {
-        const res = await server.request()
-          .get(basePathEvent)
-          .set('Authorization', tokenRead)
-          .query({streams: JSON.stringify({AND: [['A', {IN: ['Z']}], 'B']})});
         assert.exists(res.body.error);
         assert.equal(res.body.error.id, 'unknown-referenced-resource');
       });
