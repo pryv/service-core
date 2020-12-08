@@ -125,7 +125,8 @@ describe('events.get querying streams', function () {
         assert.deepEqual(res, {NOTIN: ["A", "B", "C"]});
       });
 
-      it('[N3Q6] must convert {NOT: ["A"]} to {OR: {NOTIN: ["A", "B", "C"]}}', async function () {
+
+      it('[N3Q6] must convert {NOT: ["A"]} to {OR: [{NOTIN: ["A", "B", "C"]}]}', async function () {
         const res = validateQuery({NOT: ['A']});
         assert.deepEqual(res, {OR: [{NOTIN: ["A", "B", "C"]}]});
       });
