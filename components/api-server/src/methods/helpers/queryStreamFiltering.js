@@ -71,7 +71,7 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
             const OR = [];
             value.map((v) => {
               if (typeof v !== 'string')
-                throw ('Error in query, [' + operator + '] can only contains streamIds: ' + value);
+                throw ('Error in query, [' + operator + '] operator must only contain arrays of strings: ' + value);
               const res = expandTo('NOTIN', v, false);
               if (res && res.NOTIN.length > 0) OR.push(res);
             });
@@ -82,7 +82,7 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
             throwErrorIfNot(operator, 'array', value);
             const result = value.filter((v) => {
               if (typeof v !== 'string')
-                throw ('Error in query, [' + operator + '] can only contains streamIds: ' + value);
+                throw ('Error in query, [' + operator + '] operator must only contain arrays of strings: ' + value);
               return registerStream(v, isInclusive);
             });
             return { [operator]: result }; // all ok can be kept as-this
@@ -95,14 +95,14 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
             if (candidate.length === 1) return candidate[0];
             return { [operator]: candidate };
           default:
-            throw ('Unkown selector [' + operator + '] in query: ' + JSON.stringify(streamQuery));
+            throw ('Unkown operator [' + operator + '] in query: ' + JSON.stringify(streamQuery));
         };
       default:
-        throw ('Unkown item [' + JSON.stringify(streamQuery) + ' ] in query: ');
+        throw ('Unkown expression [' + JSON.stringify(streamQuery) + ' ] in query: ');
     }
   }
 
-  // utility to throw error if the value associated with the operator is not of expectedType
+  // utility to throw an error if the value associated with the operator is not of expectedType
   function throwErrorIfNot(operator, expectedType, value) {
     let check = false;
     if (expectedType === 'array') {
@@ -110,7 +110,7 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
     } else { // 'string', 'object' ....
       check = (typeof value === expectedType);
     }
-    if (!check) throw ('Error in query, [' + operator + '] can only be used with ' + expectedType + 's: ' + JSON.stringify(streamQuery));
+    if (!check) throw ('Error in query, [' + operator + '] operator must only be used with ' + expectedType + 's: ' + JSON.stringify(streamQuery));
   }
 }
 
