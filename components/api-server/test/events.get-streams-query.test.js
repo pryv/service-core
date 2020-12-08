@@ -162,21 +162,21 @@ describe('events.get querying streams', function () {
 
       it('[IOLA] must throw on malformed expressions', async function () {
         const malformed = {
-          'operators must only contain arrays of strings': [
+          'operator must only contain arrays of strings': [
             // only array strings (streamIds)
             {IN: ['A','B',{OR: 'Z'}]},
             {NOTIN: ['A','B',{OR: 'Z'}]},
             {NOTIN: ['A','B',{OR: 'Z'}]},
             {NOT: ['A','B',{OR: 'Z'}]}
           ],
-          'operators must only be used with strings': [
+          'operator must only be used with strings': [
             // only array strings (streamIds)
             {EQUAL: ['A']},
             {NOTEQUAL: ['A']},
             {EXPAND: ['A']},
             {NOTEXPAND: ['A']}
           ],
-          'operators must only be used with arrays': [
+          'operator must only be used with arrays': [
             // only array strings (streamIds)
             {OR: 'A'},
             {AND: 'A'}
@@ -184,25 +184,24 @@ describe('events.get querying streams', function () {
           'Unkown operator': [
             {ZZ: 'A'}
           ],
-          'Unkown item': [
+          'Unkown expression': [
             true,
             1
           ]
         };
 
-        Object.keys(malformed).map((key) => {
-          const malformeds = malformed[key];
-          malformeds.map((streamQuery) => {
+        for (const [error, streamsQueries] of Object.entries(malformed)) {
+          streamsQueries.map((streamsQuery) => {
             let hasThrown = false;
             try {
-              const query = queryStreamFiltering.removeSugarAndCheck(streamQuery, customExpand, isAccessible);
+              const query = queryStreamFiltering.removeSugarAndCheck(streamsQuery, customExpand, isAccessible);
             } catch (e) {
               hasThrown = true;
-              assert.include(e,key);
+              assert.include(e,error);
             };
-            if (! hasThrown) throw('removeSugarAndCheck was expected to throw [' + key + '] with query: <<' + JSON.stringify(streamQuery) + '>>');
+            if (! hasThrown) throw('removeSugarAndCheck was expected to throw [' + error + '] with query: <<' + JSON.stringify(streamsQuery) + '>>');
           });
-        });
+        };
       });
 
     });
