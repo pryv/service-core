@@ -19,20 +19,52 @@
  * Replace all strings 'A' by {IN: ['A',...childs]}
  * @param {Object} streamQuery 
  * @param {Function} expand should return the streamId in argument and its children (or null if does not exist).
- * @param {Function} registerStream should return true if stream exists.
- * @returns {Object} The streamQuery with sugar removed
+ * @param {Function} isAuthorizedStream should return true if stream is authorized.
+ * @param {Function} isAccessible should return true if stream is accessible.
  * @throws Error messages when structure is not valid.
  */
-exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, registerStream) {
+function validateStreamQuery(streamQuery, expand, isAuthorizedStream, isAccessibleStream) {
+  let isOnlyExclusive = true;
+  const nonAuthorizedStreams = [];
 
-  return inspect(streamQuery);
+  return { 
+      streamQuery: inspect(streamQuery),
+      isOnlyExclusive: isOnlyExclusive,
+      nonAuthorizedStreams: nonAuthorizedStreams
+  };
+
+  
+  /**
+   * uses isAuthorizedStream() and isAccessibleStream() to check if it can be used in query
+   * @param {string} streamId 
+   * @param {boolean} isInclusive - set to True is this is an "inclusive" selector (IN; EQUAL) - 
+   * If a query does not include any "inclusive" scope, it means that it's only a "negative" scoping, 
+   * then we should add the accessible streams as initial scope. To avoid exposing not visible streams content.
+   * Example: {NOT ['A']} would be be translated to {AND: [{IN: [..all visible streams..], {NOTIN: 'A'} ]}
+   * @returns {boolean} - true is streamId Can be used in the query
+   */
+  function registerStream(streamId, isInclusive) {
+    const isAuthorized = isAuthorizedStream(streamId);
+    if (! isAuthorized) { 
+      nonAuthorizedStreams.push(streamId);
+      return false;
+    }
+    const isAccessible = isAccessibleStream(streamId);
+    if (! isAccessible) return false;
+    if (isInclusive) isOnlyExclusive = false;
+    return true;
+  }
 
   // utility that expand get the children for an operator.
-  function expandTo(operator, item, isInclusive) {
+  function expandTo(operator, streamId, isInclusive) {
+    if (! registerStream(streamId, isInclusive)) return null; // check if this stream if visible and authorized before expanding
     // expand and removes eventual null objects from expand() 
     // "expand"  will also call registerStream() on the parents and the childs
-    const expanded = expand(item, isInclusive);
-    const filtered = expanded.filter((x) => { return x !== null });
+    const expanded = expand(streamId);
+    const filtered = expanded.filter((child) => { // expand can send "null" values
+      if (child === null) return false;
+      return registerStream(child, isInclusive)
+    }); 
     if (filtered.length === 0) return null;
     return { [operator]: filtered };
   }
@@ -114,6 +146,7 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
   }
 }
 
+exports.validateStreamQuery = validateStreamQuery;
 
 /**
  * Simplify a streamQuery by detecting some patterns and replacing them by a simpler version

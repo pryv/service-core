@@ -151,40 +151,41 @@ module.exports = function (
     if(params.streams === null) { // all streams
       if (accessibleStreamsIds.length > 0) params.streams = { IN: accessibleStreamsIds};
     } else {
-      // will keep a list of streams that apperar in the request but are not authorized or unkown
-      const unkownStreams = [];
-      // containsInclusion will be set to true if there is at least one "IN" or "EQUAL"
-      // if not, we need to set and initial set on which streams to apply the exclusion
-      let containsInclusion = false; 
+     
+      /**
+       * Function to be passed to queryStreamFiltering.validateQuery
+       * Check if a streamId is Authorized.
+       */
+      function isAuthorized(streamId) {
+        return authorizedStreamsIds.includes(streamId);
+      }
 
       /**
-       * Check if a stream is visible
-       * Return false if not visible
-       * @param {*} streamId 
-       * @param {boolean} isInclusive set to True is this is an "inclusive" selector (IN; EQUAL) - 
-       * If a query does not include any "inclusive" scope, it means that it's only a "negative" scoping, 
-       * then we should add the accessible streams as initial scope. To avoid exposing not visible streams content.
-       * Example: {NOT ['A']} would be be translated to {AND: [{IN: [..all visible streams..], {NOTIN: 'A'} ]}
+       * Function to be passed to streamQueryFiltering.validateQuery
+       * Check if a streamId is Visible (This is called only on previously 'authorized' streams)
        */
-      const registerStream = function(streamId, isInclusive) {
-        if (! authorizedStreamsIds.includes(streamId)) {
-          unkownStreams.push(streamId); // keep track of non authorized streams requests
-          return false;
-        }
-        const isAccessible = accessibleStreamsIds.includes(streamId);
-        if (isAccessible && isInclusive) containsInclusion = true;
-        return isAccessible;
-      }
-
-      const expand = function(streamId, isInclusive) {
-        if (! registerStream(streamId, isInclusive)) return []; // check if this stream if visible and authorized before expanding
-        const expanded = treeUtils.expandIds(context.streams, [streamId]);
-        return expanded.filter((childId) => { return registerStream(childId, isInclusive)}); // only return visble streams
+      function isAccessible(streamId) {
+        return accessibleStreamsIds.includes(streamId);
       }
       
+      /**
+       * Function to be passed to streamQueryFiltering.validateQuery
+       * Expand a streamId to [streamId, child1, ...]
+       * @param {*} streamId 
+       * @param {*} isInclusive 
+       */
+      const expand = function(streamId) {
+        return treeUtils.expandIds(context.streams, [streamId]);
+       }
+      
+      let unkownStreams = [];
       try {
-        params.streams = queryStreamFiltering.removeSugarAndCheck(params.streams, expand, registerStream);
-        if (params.streams && ! containsInclusion) { // it means we have only "Negative selectors"
+        const {streamQuery, nonAuthorizedStreams, isOnlyExclusive} = 
+          queryStreamFiltering.validateStreamQuery(params.streams, expand, isAuthorized, isAccessible);
+         
+        unkownStreams = nonAuthorizedStreams;
+        params.streams =  streamQuery;
+        if (params.streams && isOnlyExclusive) { // it means we have only "Negative selectors"
           // we add the scope of accessible events as initial scope
           params.streams = {AND: [{IN: accessibleStreamsIds}, params.streams]};
         }
