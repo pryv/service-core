@@ -8,7 +8,7 @@
 
 require('./test-helpers');
 
-const util = require("util");
+const util = require('util');
 
 const cuid = require('cuid');
 const { assert} = require('chai');
@@ -63,25 +63,25 @@ Object.keys(STREAMS).map((streamId) => { 
   }
 });
 
+/**
+ * Mimics treeUtils.expandIds()
+ * Different because we store STREAMS in a different format here
+ */
+function customExpand(streamId /*, isInclusive*/) {
+  if (! STREAMS[streamId]) return [];
+  const res = [streamId];
+  if (STREAMS[streamId].childrens) {
+    STREAMS[streamId].childrens.map((childId) => {
+      const expanded =  customExpand(childId);
+      res.push(...expanded);
+    });
+  }
+  return res;
+}
+
 describe('events.get querying streams', function () {
 
   describe('Internal query helpers', function () {
-
-    /**
-     * Mimics treeUtils.expandIds()
-     * Different because we store STREAMS in different format here
-     */
-    function customExpand(streamId /*, isInclusive*/) {
-      if (! STREAMS[streamId]) return [];
-      const res = [streamId];
-      if (STREAMS[streamId].childrens) {
-        STREAMS[streamId].childrens.map((childId) => {
-          const expanded =  customExpand(childId);
-          res.push(...expanded);
-        });
-      }
-      return res;
-    }
 
     function isAccessible(streamId /*, isInclusive*/) {
       if (! STREAMS[streamId]) return false;
@@ -206,9 +206,9 @@ describe('events.get querying streams', function () {
 
     });
 
-    describe('toMongoQuery', function() {
+    describe('toMongoQuery()', function() {
 
-      it('[KKIH] convert to MongoDB including expansion', async function () {
+      it('[KKIH] must convert to MongoDB including expansion', async function () {
         const clean = queryStreamFiltering.removeSugarAndCheck(['A','B'], customExpand, isAccessible);
         const mongo = queryStreamFiltering.toMongoDBQuery(clean, false);
         const optimized = queryStreamFiltering.toMongoDBQuery(clean);
@@ -216,8 +216,7 @@ describe('events.get querying streams', function () {
         assert.deepEqual(optimized, {"streamIds":{"$in":["A","B","C"]}});
       });
 
-      it('[4QMR] convert to MongoDB including expansion with and', async function () {
-        
+      it('[4QMR] must convert to MongoDB including expansion with "AND"', async function () {
         const clean = queryStreamFiltering.removeSugarAndCheck({ AND: [['A','B'], 'E']}, customExpand, isAccessible);
         const mongo = queryStreamFiltering.toMongoDBQuery(clean, false);
         const optimized = queryStreamFiltering.toMongoDBQuery(clean);
@@ -226,7 +225,7 @@ describe('events.get querying streams', function () {
         assert.deepEqual(optimized, {"$and":[{"streamIds":{"$in":["A","B","C"]}},{"streamIds":"E"}]});
       });
 
-      it('[V822] must convert {NOT: ["A"]} in {OR: {NOTIN: ["A", "B", "C"]}}', async function () {
+      it('[V822] must convert {NOT: ["A"]} to {OR: {NOTIN: ["A", "B", "C"]}}', async function () {
         const clean = queryStreamFiltering.removeSugarAndCheck({NOT: ['A']}, customExpand, isAccessible);
         const mongo = queryStreamFiltering.toMongoDBQuery(clean, false);
         const optimized = queryStreamFiltering.toMongoDBQuery(clean);
@@ -234,7 +233,7 @@ describe('events.get querying streams', function () {
         assert.deepEqual(optimized, { streamIds: { '$nin': [ 'A', 'B', 'C' ] } });
       });
 
-      it('[AHRK] convert to MongoDB including expansion with AND and EQUAL', async function () {
+      it('[AHRK] must convert to MongoDB including expansion with "AND" and "EQUAL"', async function () {
         const clean = queryStreamFiltering.removeSugarAndCheck({ AND: [['A','B'], {EQUAL: 'D'}]}, customExpand, isAccessible);
         const mongo = queryStreamFiltering.toMongoDBQuery(clean, false);
         const optimized = queryStreamFiltering.toMongoDBQuery(clean);
@@ -242,14 +241,14 @@ describe('events.get querying streams', function () {
         assert.deepEqual(optimized, {"$and":[{"streamIds":{"$in":["A","B","C"]}},{"streamIds":"D"}]});
       });
 
-      it('[P5M8] convert to MongoDB including expansion with AND and NOTEXPAND', async function () {
+      it('[P5M8] must convert to MongoDB including expansion with "AND" and "NOTEXPAND"', async function () {
         const clean = queryStreamFiltering.removeSugarAndCheck({AND: ['A', {NOTEXPAND: 'D'}]}, customExpand, isAccessible);
         const optimized = queryStreamFiltering.toMongoDBQuery(clean);
         assert.deepEqual(optimized, {"$and":[{ streamIds: { '$in': [ 'A', 'B', 'C' ] } },{ streamIds: { '$nin': [ 'D', 'E', 'F' ] } }]});
       });
 
 
-      it('[1ZJU] handle complex nested queries', async function () {
+      it('[1ZJU] must handle complex nested queries', async function () {
         const clean = queryStreamFiltering.removeSugarAndCheck(['B',{AND: ['D', {NOTEQUAL: 'E'}]}], customExpand, isAccessible);
         const optimized = queryStreamFiltering.toMongoDBQuery(clean);
         const expected = {
@@ -265,18 +264,17 @@ describe('events.get querying streams', function () {
         };
         assert.deepEqual(optimized, expected);
       });
-    });
 
-    it('[E4QF] must convert {AND: [["A", ["B"]]]} in {AND [IN, {OR [IN IN]}]}', async function () {
-      const clean = queryStreamFiltering.removeSugarAndCheck({AND: ["D", ["B", "C"]]}, customExpand, isAccessible);
-      const optimized = queryStreamFiltering.toMongoDBQuery(clean);
-      assert.deepEqual(optimized, {"$and":[{"streamIds":{"$in":["D","E","F"]}},{"streamIds":{"$in":["B","C"]}}]});
+      it('[E4QF] must convert {AND: [["A", ["B"]]]} to {AND [IN, {OR [IN IN]}]}', async function () {
+        const clean = queryStreamFiltering.removeSugarAndCheck({AND: ["D", ["B", "C"]]}, customExpand, isAccessible);
+        const optimized = queryStreamFiltering.toMongoDBQuery(clean);
+        assert.deepEqual(optimized, {"$and":[{"streamIds":{"$in":["D","E","F"]}},{"streamIds":{"$in":["B","C"]}}]});
+      });
     });
 
   });
 
-
-  describe('query on streamIds', function () {
+  describe('GET /events with streams queries', function () {
     let server;
     before(async () => {
       server = await context.spawn();
@@ -304,12 +302,12 @@ describe('events.get querying streams', function () {
 
       user = await mongoFixtures.user(username, {});
       
-      for (const key of Object.keys(STREAMS)) {
+      for (const [streamId, streamData] of Object.entries(STREAMS)) {
         const stream = {
-          id: key,
-          name: 'stream ' + key,
-          parentId: STREAMS[key].parentId,
-          trashed: STREAMS[key].trashed
+          id: streamId,
+          name: 'stream ' + streamId,
+          parentId: streamData.parentId,
+          trashed: streamData.trashed
         }
         await user.stream(stream);
       };
@@ -324,11 +322,11 @@ describe('events.get querying streams', function () {
           }
         ]
       });
-      for (const key of Object.keys(EVENTS)) {
-        EVENTS[key].type = 'note/txt',
-        EVENTS[key].content = key,
-        EVENTS[key].id = cuid(),
-        await user.event(EVENTS[key]);
+      for (const [key, event] of Object.entries(EVENTS)) {
+        event.type = 'note/txt',
+        event.content = key,
+        event.id = cuid(),
+        await user.event(event);
       };
      
     });
@@ -336,7 +334,7 @@ describe('events.get querying streams', function () {
       await mongoFixtures.clean();
     });
 
-    it('[NKH8] convert simple string to array (because of some creepy HTTP client)', async function () {
+    it('[NKH8] must accept simple string converting it to array (because of some creepy HTTP client)', async function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
@@ -344,6 +342,13 @@ describe('events.get querying streams', function () {
       assert.exists(res.body.events)
       const events = res.body.events;
       assert.equal(events.length, 6);
+      events.forEach(e => {
+        let isFound = false;
+        customExpand('A').forEach(streamId => {
+          if (e.streamIds.includes(streamId)) isFound = true;
+        });
+        assert.isTrue(isFound);
+      });
     });
 
     it('[BW6Z] must accept array of string', async function () {
@@ -354,9 +359,17 @@ describe('events.get querying streams', function () {
       assert.exists(res.body.events)
       const events = res.body.events;
       assert.equal(events.length, 9);
+      events.forEach(e => {
+        let isFound = false;
+        const streamIds = customExpand('A').concat(customExpand('D'));
+        streamIds.forEach(streamId => {
+          if (e.streamIds.includes(streamId)) isFound = true;
+        });
+        assert.isTrue(isFound);
+      });
     });
 
-    it('[HFA2] must accept NOT "D" without including items in Trashed streams', async function () {
+    it('[HFA2] must accept {"NOT": ["D"]} without including items in trashed streams', async function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
@@ -364,9 +377,23 @@ describe('events.get querying streams', function () {
       assert.exists(res.body.events)
       const events = res.body.events;
       assert.equal(events.length, 3);
+      events.forEach(e => {
+        let isFound = false;
+        const streamIds = customExpand('A');
+        streamIds.forEach(streamId => {
+          if (e.streamIds.includes(streamId)) isFound = true;
+        });
+        assert.isTrue(isFound);
+        isFound = false;
+        const badStreamIds = customExpand('D').concat('T');
+        badStreamIds.forEach(streamId => {
+          if (e.streamIds.includes(streamId)) isFound = true;
+        });
+        assert.isFalse(isFound);
+      });
     });
 
-    it('[MMB0] must accept NOT "B" & "E" without including items in Trashed streams', async function () {
+    it('[MMB0] must accept !B && !E without including items in Trashed streams', async function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
@@ -374,6 +401,20 @@ describe('events.get querying streams', function () {
       assert.exists(res.body.events)
       const events = res.body.events;
       assert.equal(events.length, 6);
+      events.forEach(e => {
+        let isFound = false;
+        const streamIds = ['A', 'C', 'D', 'F']
+        streamIds.forEach(streamId => {
+          if (e.streamIds.includes(streamId)) isFound = true;
+        });
+        assert.isTrue(isFound);
+        isFound = false;
+        const badStreamIds = ['B', 'E', 'T'];
+        badStreamIds.forEach(streamId => {
+          if (e.streamIds.includes(streamId)) isFound = true;
+        });
+        assert.isFalse(isFound);
+      });
     });
 
     it('[VUER] must return events in A AND E', async function () {
@@ -384,7 +425,16 @@ describe('events.get querying streams', function () {
       assert.exists(res.body.events)
       const events = res.body.events;
       assert.equal(events.length, 1);
-      assert.equal(events[0].id, EVENTS['be'].id);
+      events.forEach(e => {
+        let isFoundA = false;
+        let isFoundE = false;
+        const streamIds = customExpand('A');
+        streamIds.forEach(streamId => {
+          if (e.streamIds.includes(streamId)) isFoundA = true;
+        });
+        assert.isTrue(isFoundA);
+        assert.isTrue(e.streamIds.includes('E'));
+      });
     });
 
     it('[CBP2] must return events in A AND NOT B', async function () {
@@ -395,10 +445,15 @@ describe('events.get querying streams', function () {
       assert.exists(res.body.events)
       const events = res.body.events;
       assert.equal(events.length, 4);
-      const resEvents = ['a', 'fc', 'c', 'ad'];
-      for (let i; i < resEvents; i++) {
-        assert.equal(events[i].id, EVENTS[resEvents[i]].id);
-      }
+      events.forEach(e => {
+        let isFound = false;
+        const streamIds = ['A', 'C']
+        streamIds.forEach(streamId => {
+          if (e.streamIds.includes(streamId)) isFound = true;
+        });
+        assert.isTrue(isFound);
+        assert.isFalse(e.streamIds.includes('B'));
+      });
     });
 
     it('[I19H] must return events in A AND NOTEXPAND in D', async function () {
@@ -429,21 +484,32 @@ describe('events.get querying streams', function () {
       }
     });
 
-    it('[O4DJ] must return all events in B + events in D NOT E)', async function () {
+    it('[O4DJ] must return all events in B || (D && !E)', async function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
         .query({streams: JSON.stringify(
-            [{IN: ['B']}, {AND: ['D', {NOT: ['E']}]}]
+            {OR: [
+              {IN: ['B']}, 
+              {AND: ['D', {NOT: ['E']}]}
+            ]}
             )});
       assert.exists(res.body.events)
       const events = res.body.events;
           
       assert.equal(events.length, 6);
-      const resEvents = ['a', 'b', 'fc', 'c', 'be', 'f'];
-      for (let i; i < resEvents; i++) {
-        assert.equal(events[i].id, EVENTS[resEvents[i]].id);
-      }
+      
+      events.forEach(e => {
+        if (e.streamIds.includes('B')) return;
+
+        let isFound = false;
+        const streamIds = ['D', 'F']
+        streamIds.forEach(streamId => {
+          if (e.streamIds.includes(streamId)) isFound = true;
+        });
+        assert.isTrue(isFound);
+        assert.isFalse(e.streamIds.includes('E'));
+      });
     });
 
     it('[UJSB] should allow object in batch call', async function () {
@@ -455,7 +521,7 @@ describe('events.get querying streams', function () {
           { 
             method: 'events.get',
             params: {
-              streams: {OR: [{IN: ['B']}, {AND: ['D', {NOT: ['E']}]}]}
+              streams: {OR: [['B'], {AND: ['D', {NOT: ['E']}]}]}
             }
           }
         ]);
@@ -464,18 +530,26 @@ describe('events.get querying streams', function () {
       const events = res.body.results[0].events;
       
       assert.equal(events.length, 6);
-      const resEvents = ['a', 'b', 'fc', 'c', 'be', 'f'];
-      for (let i; i < resEvents; i++) {
-        assert.equal(events[i].id, EVENTS[resEvents[i]].id);
-      }
+
+      events.forEach(e => {
+        if (e.streamIds.includes('B')) return;
+
+        let isFound = false;
+        const streamIds = ['D', 'F']
+        streamIds.forEach(streamId => {
+          if (e.streamIds.includes(streamId)) isFound = true;
+        });
+        assert.isTrue(isFound);
+        assert.isFalse(e.streamIds.includes('E'));
+      });
     });
 
     describe ('edge cases', () => { 
-      it('[X8B1] Throw error on non existing stream', async function () {
+      it('[X8B1] must return an error on non-existing stream', async function () {
         const res = await server.request()
           .get(basePathEvent)
           .set('Authorization', tokenRead)
-          .query({streams: JSON.stringify({AND: [['A', 'Z'], 'B']})});
+          .query({streams: JSON.stringify({AND: ['A', 'Z', 'B']})});
         assert.exists(res.body.error);
         assert.equal(res.body.error.id, 'unknown-referenced-resource');
       });
@@ -489,7 +563,7 @@ describe('events.get querying streams', function () {
         assert.equal(res.body.error.id, 'unknown-referenced-resource');
       });
 
-      it('[30NV] Throw error on invalid item', async function () {
+      it('[30NV] must return error when provided a boolean instead of an expression', async function () {
         const res = await server.request()
           .get(basePathEvent)
           .set('Authorization', tokenRead)
@@ -498,7 +572,7 @@ describe('events.get querying streams', function () {
         assert.equal(res.body.error.id, 'invalid-request-structure');
       });
 
-      it('[YOJ9] Throw error on invalid item', async function () {
+      it('[YOJ9] must return error when provided a null instead of an expression', async function () {
         const res = await server.request()
           .get(basePathEvent)
           .set('Authorization', tokenRead)
@@ -507,11 +581,11 @@ describe('events.get querying streams', function () {
         assert.equal(res.body.error.id, 'invalid-request-structure');
       });
 
-      it('[3X9I] handle correctly when no streams are not visible', async function () {
+      it('[3X9I] must return an empty list when provided a trashed streamId', async function () {
         const res = await server.request()
           .get(basePathEvent)
           .set('Authorization', tokenRead)
-          .query({streams: 'T'});
+          .query({streams: ['T']});
         assert.equal(res.body.events.length, 0);
       });
 
