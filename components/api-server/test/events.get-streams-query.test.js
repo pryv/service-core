@@ -63,129 +63,125 @@ Object.keys(STREAMS).map((streamId) => { 
   }
 });
 
-/** 
- * helper to expand streams 
- * mimics treeUtils.expandIds()
- * */
-function getExpandedStreams(streamId) {
-  if (! STREAMS[streamId]) return [];
-  const res = [streamId];
-  if (STREAMS[streamId].childrens) {
-    STREAMS[streamId].childrens.map((childId) => {
-      const expanded =  getExpandedStreams(childId);
-      res.push(...expanded);
-    });
-  }
-  return res;
-}
-
 describe('events.get querying streams', function () {
 
   describe('Internal query helpers', function () {
-    function fakeExpand(stream /*, isInclusive*/) {
-      return getExpandedStreams(stream);
+
+    /**
+     * Mimics treeUtils.expandIds()
+     * Different because we store STREAMS in different format here
+     */
+    function customExpand(streamId /*, isInclusive*/) {
+      if (! STREAMS[streamId]) return [];
+      const res = [streamId];
+      if (STREAMS[streamId].childrens) {
+        STREAMS[streamId].childrens.map((childId) => {
+          const expanded =  customExpand(childId);
+          res.push(...expanded);
+        });
+      }
+      return res;
     }
 
-    function fakeRegisterStream(streamId /*, isInclusive*/) {
+    function isAccessible(streamId /*, isInclusive*/) {
       if (! STREAMS[streamId]) return false;
       return true;
     }
 
-    describe('removeSugarAndCheck', function() {
+    describe('removeSugarAndCheck()', function() {
 
-      it('[D2B5] must convert initial [] in {OR: []}', async function () {
-        const res = queryStreamFiltering.removeSugarAndCheck(['A','B'], fakeExpand, fakeRegisterStream);
+      it('[D2B5] must convert root array [] to {OR: [IN, IN]}', async function () {
+        const res = queryStreamFiltering.removeSugarAndCheck(['A','B'], customExpand, isAccessible);
         assert.deepEqual(res, {"OR":[{"IN":["A","B","C"]},{"IN":["B"]}]});
       });
 
-      it('[JZWE] must convert "B" in {EXPAND: "B"} (alongside a random selector)', async function () {
-        const res = queryStreamFiltering.removeSugarAndCheck([{ EQUAL: 'A' },'B'], fakeExpand, fakeRegisterStream);
+      it('[JZWE] must convert "B" to {EXPAND: "B"} (alongside another expression)', async function () {
+        const res = queryStreamFiltering.removeSugarAndCheck([{ EQUAL: 'A' },'B'], customExpand, isAccessible);
         assert.deepEqual(res, {"OR":[{"EQUAL":"A"},{"IN":["B"]}]});
       });
 
       it('[8VV4] must convert "A", "B" and "C" in {EXPAND: "B"} (alongside a random selector)', async function () {
-        const res = queryStreamFiltering.removeSugarAndCheck({ AND: [['A','B'], 'C']}, fakeExpand, fakeRegisterStream);
+        const res = queryStreamFiltering.removeSugarAndCheck({ AND: [['A','B'], 'C']}, customExpand, isAccessible);
         assert.deepEqual(res, {"AND":[{"OR":[{"IN":["A","B","C"]},{"IN":["B"]}]},{"IN":["C"]}]});
       });
 
-      it('[2W2K] must convert {EXPAND: "A"} in {IN: ["A", "B", "C"]}', async function () {
-        const res = queryStreamFiltering.removeSugarAndCheck({EXPAND: 'A'}, fakeExpand, fakeRegisterStream);
+      it('[2W2K] must convert {EXPAND: "A"} to {IN: ["A", "B", "C"]}', async function () {
+        const res = queryStreamFiltering.removeSugarAndCheck({EXPAND: 'A'}, customExpand, isAccessible);
         assert.deepEqual(res, {IN: ["A", "B", "C"]});
       });
 
-      it('[2EF9] must convert {NOTEXPAND: "A"} in {NOTIN: ["A", "B", "C"]}', async function () {
-        const res = queryStreamFiltering.removeSugarAndCheck({NOTEXPAND: 'A'}, fakeExpand, fakeRegisterStream);
+      it('[2EF9] must convert {NOTEXPAND: "A"} to {NOTIN: ["A", "B", "C"]}', async function () {
+        const res = queryStreamFiltering.removeSugarAndCheck({NOTEXPAND: 'A'}, customExpand, isAccessible);
         assert.deepEqual(res, {NOTIN: ["A", "B", "C"]});
       });
 
-      it('[N3Q6] must convert {NOT: ["A"]} in {OR: {NOTIN: ["A", "B", "C"]}}', async function () {
-        const res = queryStreamFiltering.removeSugarAndCheck({NOT: ['A']}, fakeExpand, fakeRegisterStream);
+      it('[N3Q6] must convert {NOT: ["A"]} to {OR: {NOTIN: ["A", "B", "C"]}}', async function () {
+        const res = queryStreamFiltering.removeSugarAndCheck({NOT: ['A']}, customExpand, isAccessible);
         assert.deepEqual(res, {OR: [{NOTIN: ["A", "B", "C"]}]});
       });
 
       it('[BSWA] must not convert {IN: ["A"]}', async function () {
-        const res = queryStreamFiltering.removeSugarAndCheck({IN: ['A']}, fakeExpand, fakeRegisterStream);
+        const res = queryStreamFiltering.removeSugarAndCheck({IN: ['A']}, customExpand, isAccessible);
         assert.deepEqual(res, {IN: ["A"]});
       });
 
-      it('[M7AC] must convert {AND: [["A", ["B"]]]} in {AND [IN, {OR [IN IN]}]}', async function () {
-        const res = queryStreamFiltering.removeSugarAndCheck({AND: ["D", ["B", "C"]]}, fakeExpand, fakeRegisterStream);
+      it('[M7AC] must convert {AND: [["A", ["B"]]]} to {AND [IN, {OR [IN IN]}]}', async function () {
+        const res = queryStreamFiltering.removeSugarAndCheck({AND: ["D", ["B", "C"]]}, customExpand, isAccessible);
         assert.deepEqual(res, {"AND":[{"IN":["D","E","F"]},{"OR":[{"IN":["B"]},{"IN":["C"]}]}]});
       });
 
-      
     });
 
     describe('exception and errors', function() {
   
       it('[9907] handles not existent stream {OR: ["Z"]}', async function () {
-        const query = queryStreamFiltering.removeSugarAndCheck({OR: ['Z']}, fakeExpand, fakeRegisterStream);
+        const query = queryStreamFiltering.removeSugarAndCheck({OR: ['Z']}, customExpand, isAccessible);
         assert.deepEqual(query, null);
         const mongo = queryStreamFiltering.toMongoDBQuery(query);
         assert.deepEqual(mongo, null);
       });
 
       it('[J9E2] handles not existent stream in array ["U", "Z", "T"]', async function () {
-        const query = queryStreamFiltering.removeSugarAndCheck(['A','Z','B'], fakeExpand, fakeRegisterStream);
+        const query = queryStreamFiltering.removeSugarAndCheck(['A','Z','B'], customExpand, isAccessible);
         assert.deepEqual(query, {"OR":[{"IN":["A","B","C"]},{"IN":["B"]}]});
       });
 
       it('[K9H2] handles not existent stream in array to be expanded {OR: ["A", "Z", "B"]}', async function () {
-        const query = queryStreamFiltering.removeSugarAndCheck({OR: ['A','Z','B']}, fakeExpand, fakeRegisterStream);
+        const query = queryStreamFiltering.removeSugarAndCheck({OR: ['A','Z','B']}, customExpand, isAccessible);
         assert.deepEqual(query, {"OR":[{"IN":["A","B","C"]},{"IN":["B"]}]});
         const mongo = queryStreamFiltering.toMongoDBQuery(query);
         assert.deepEqual(mongo, {"streamIds":{"$in":["A","B","C"]}});
       });
 
       it('[B8HC] handles not existent stream in array or equality {IN: ["A", "Z", "B"]}', async function () {
-        const query = queryStreamFiltering.removeSugarAndCheck({IN: ['A','Z','B']}, fakeExpand, fakeRegisterStream);
+        const query = queryStreamFiltering.removeSugarAndCheck({IN: ['A','Z','B']}, customExpand, isAccessible);
         assert.deepEqual(query, {"IN":["A","B"]});
         const mongo = queryStreamFiltering.toMongoDBQuery(query);
         assert.deepEqual(mongo, {"streamIds":{"$in":["A","B"]}});
       });
 
-      it('[IOLA] Throw on malformed expressions', async function () {
+      it('[IOLA] must throw on malformed expressions', async function () {
         const malformed = {
-          'can only contains streamIds': [
+          'operators must only contain arrays of strings': [
             // only array strings (streamIds)
             {IN: ['A','B',{OR: 'Z'}]},
             {NOTIN: ['A','B',{OR: 'Z'}]},
             {NOTIN: ['A','B',{OR: 'Z'}]},
             {NOT: ['A','B',{OR: 'Z'}]}
           ],
-          'can only be used with string': [
+          'operators must only be used with strings': [
             // only array strings (streamIds)
             {EQUAL: ['A']},
             {NOTEQUAL: ['A']},
             {EXPAND: ['A']},
             {NOTEXPAND: ['A']}
           ],
-          'can only be used with arrays': [
+          'operators must only be used with arrays': [
             // only array strings (streamIds)
             {OR: 'A'},
             {AND: 'A'}
           ],
-          'Unkown selector': [
+          'Unkown operator': [
             {ZZ: 'A'}
           ],
           'Unkown item': [
@@ -199,7 +195,7 @@ describe('events.get querying streams', function () {
           malformeds.map((streamQuery) => {
             let hasThrown = false;
             try {
-              const query = queryStreamFiltering.removeSugarAndCheck(streamQuery, fakeExpand, fakeRegisterStream);
+              const query = queryStreamFiltering.removeSugarAndCheck(streamQuery, customExpand, isAccessible);
             } catch (e) {
               hasThrown = true;
               assert.include(e,key);
@@ -214,7 +210,7 @@ describe('events.get querying streams', function () {
     describe('toMongoQuery', function() {
 
       it('[KKIH] convert to MongoDB including expansion', async function () {
-        const clean = queryStreamFiltering.removeSugarAndCheck(['A','B'], fakeExpand, fakeRegisterStream);
+        const clean = queryStreamFiltering.removeSugarAndCheck(['A','B'], customExpand, isAccessible);
         const mongo = queryStreamFiltering.toMongoDBQuery(clean, false);
         const optimized = queryStreamFiltering.toMongoDBQuery(clean);
         assert.deepEqual(mongo, {"$or":[{"streamIds":{"$in":["A","B","C"]}},{"streamIds":{"$in":["B"]}}]});
@@ -223,7 +219,7 @@ describe('events.get querying streams', function () {
 
       it('[4QMR] convert to MongoDB including expansion with and', async function () {
         
-        const clean = queryStreamFiltering.removeSugarAndCheck({ AND: [['A','B'], 'E']}, fakeExpand, fakeRegisterStream);
+        const clean = queryStreamFiltering.removeSugarAndCheck({ AND: [['A','B'], 'E']}, customExpand, isAccessible);
         const mongo = queryStreamFiltering.toMongoDBQuery(clean, false);
         const optimized = queryStreamFiltering.toMongoDBQuery(clean);
         
@@ -232,7 +228,7 @@ describe('events.get querying streams', function () {
       });
 
       it('[V822] must convert {NOT: ["A"]} in {OR: {NOTIN: ["A", "B", "C"]}}', async function () {
-        const clean = queryStreamFiltering.removeSugarAndCheck({NOT: ['A']}, fakeExpand, fakeRegisterStream);
+        const clean = queryStreamFiltering.removeSugarAndCheck({NOT: ['A']}, customExpand, isAccessible);
         const mongo = queryStreamFiltering.toMongoDBQuery(clean, false);
         const optimized = queryStreamFiltering.toMongoDBQuery(clean);
         assert.deepEqual(mongo, { '$or': [ { streamIds: { '$nin': [ 'A', 'B', 'C' ] } }] });
@@ -240,7 +236,7 @@ describe('events.get querying streams', function () {
       });
 
       it('[AHRK] convert to MongoDB including expansion with AND and EQUAL', async function () {
-        const clean = queryStreamFiltering.removeSugarAndCheck({ AND: [['A','B'], {EQUAL: 'D'}]}, fakeExpand, fakeRegisterStream);
+        const clean = queryStreamFiltering.removeSugarAndCheck({ AND: [['A','B'], {EQUAL: 'D'}]}, customExpand, isAccessible);
         const mongo = queryStreamFiltering.toMongoDBQuery(clean, false);
         const optimized = queryStreamFiltering.toMongoDBQuery(clean);
         assert.deepEqual(mongo, {"$and":[{"$or":[{"streamIds":{"$in":["A","B","C"]}},{"streamIds":{"$in":["B"]}}]},{"streamIds":"D"}]});
@@ -248,14 +244,14 @@ describe('events.get querying streams', function () {
       });
 
       it('[P5M8] convert to MongoDB including expansion with AND and NOTEXPAND', async function () {
-        const clean = queryStreamFiltering.removeSugarAndCheck({AND: ['A', {NOTEXPAND: 'D'}]}, fakeExpand, fakeRegisterStream);
+        const clean = queryStreamFiltering.removeSugarAndCheck({AND: ['A', {NOTEXPAND: 'D'}]}, customExpand, isAccessible);
         const optimized = queryStreamFiltering.toMongoDBQuery(clean);
         assert.deepEqual(optimized, {"$and":[{ streamIds: { '$in': [ 'A', 'B', 'C' ] } },{ streamIds: { '$nin': [ 'D', 'E', 'F' ] } }]});
       });
 
 
       it('[1ZJU] handle complex nested queries', async function () {
-        const clean = queryStreamFiltering.removeSugarAndCheck(['B',{AND: ['D', {NOTEQUAL: 'E'}]}], fakeExpand, fakeRegisterStream);
+        const clean = queryStreamFiltering.removeSugarAndCheck(['B',{AND: ['D', {NOTEQUAL: 'E'}]}], customExpand, isAccessible);
         const optimized = queryStreamFiltering.toMongoDBQuery(clean);
         const expected = {
           '$or': [
@@ -273,7 +269,7 @@ describe('events.get querying streams', function () {
     });
 
     it('[E4QF] must convert {AND: [["A", ["B"]]]} in {AND [IN, {OR [IN IN]}]}', async function () {
-      const clean = queryStreamFiltering.removeSugarAndCheck({AND: ["D", ["B", "C"]]}, fakeExpand, fakeRegisterStream);
+      const clean = queryStreamFiltering.removeSugarAndCheck({AND: ["D", ["B", "C"]]}, customExpand, isAccessible);
       const optimized = queryStreamFiltering.toMongoDBQuery(clean);
       assert.deepEqual(optimized, {"$and":[{"streamIds":{"$in":["D","E","F"]}},{"streamIds":{"$in":["B","C"]}}]});
     });

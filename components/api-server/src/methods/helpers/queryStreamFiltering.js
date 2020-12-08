@@ -102,7 +102,7 @@ exports.removeSugarAndCheck = function removeSugarAndCheck(streamQuery, expand, 
     }
   }
 
-  // utility to throw error if the value associated with the operator is not of expectedType
+  // utility to throw an error if the value associated with the operator is not of expectedType
   function throwErrorIfNot(operator, expectedType, value) {
     let check = false;
     if (expectedType === 'array') {
