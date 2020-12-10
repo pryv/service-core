@@ -352,7 +352,7 @@ class Connection {
     const userName = methodContext.username;   
 
     // Accept streamQueries in JSON format for socket.io
-    methodContext.acceptStreamQueryInJSON = true;
+    methodContext.acceptStreamsQueryNonStringified = true;
     
     const answer = bluebird.fromCallback(
       (cb) => api.call(apiMethod, methodContext, params, cb));
