@@ -106,35 +106,23 @@ module.exports = function (
           'Invalid "streams" parameter. It should be an array of streamIds or JSON logical query' + e, params.streams));
       }
     }
+
+    // Transform object or string to Array
+    if (! Array.isArray(params.streams)) {
+      params.streams = [params.streams];
+    }
+
     next();
 
     function parseStreamsQueryParam(streamsParam) {
       if (typeof streamsParam === 'string') {
-        
         if (['[', '{'].includes(streamsParam.substr(0, 1))) { // we detect if it's JSON by looking at first char
           // Note: since RFC 7159 JSON can also starts with ", true, false or number - this does not apply in this case.
           try {
             streamsParam = JSON.parse(streamsParam);
           } catch (e) {
-            throw('Error while parsing JSON ' + e);
+            throw ('Error while parsing JSON ' + e);
           }
-        } else {
-          // some HTTP clients are removing the [] from queries when there is only one item
-          streamsParam = [streamsParam];
-        }
-        return streamsParam;
-      } 
-      
-
-      // TODO why is this needed?
-      if (!Array.isArray(streamsParam)) {
-        throw('Expected an Array');
-      } 
-    
-      // check it's only an arrays of strings. 
-      for (let i = 0; i < streamsParam.length; i++) {
-        if (typeof streamsParam[i] !== 'string') {
-          throw('Array contains not only strings.');
         }
       }
       return streamsParam
@@ -187,7 +175,7 @@ module.exports = function (
     }
 
     if(params.streams === null) { // all streams
-      if (accessibleStreamsIds.length > 0) params.streams = { IN: accessibleStreamsIds};
+      if (accessibleStreamsIds.length > 0) params.streams = [{ any: accessibleStreamsIds}];
     } else {
      
       
@@ -261,7 +249,6 @@ module.exports = function (
     var query = querying.noDeletions(querying.applyState({}, params.state));
     if (params.streams) {
       const streamsQuery = queryStreamFiltering.toMongoDBQuery(params.streams);
-      utils.debug.log('ZZZZZ', streamsQuery);
      
       if (streamsQuery === null) {
         query.streamIds = {$in: []}; // no streams

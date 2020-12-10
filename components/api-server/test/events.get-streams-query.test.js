@@ -94,8 +94,8 @@ describe('events.get querying streams', function () {
   describe('Internal query helpers', function () {
 
     function validateQuery(query) {
+      if (! Array.isArray(query)) query = [query];
       const { streamQuery } = queryStreamFiltering.validateStreamQuery(query, customExpand, ALL_AUTHORIZED_STREAMS, ALL_ACCESSIBLE_STREAMS);
-      console.log(require('util').inspect(streamQuery, { depth: 5 }));
       return streamQuery;
     }
 
@@ -160,10 +160,9 @@ describe('events.get querying streams', function () {
       });
 
 
-      it.skip('[L89B] must return null if query is empty', async function () {
-        const res = validateQuery({ any: 'T', not: ['A'] });
-
-       // assert.deepEqual(res, [{ any: ALL_ACCESSIBLE_STREAMS, and: [ { not: [ 'A', 'B', 'C' ] } ] }]);
+      it('[L89B] must return null if query is empty', async function () {
+        const res = validateQuery({ any: ['T'], not: ['A'] });
+        assert.deepEqual(res, null);
       });
     });
 
@@ -282,18 +281,17 @@ describe('events.get querying streams', function () {
       });
 
       it('[1ZJU] must handle array of queries', async function () {
-        const clean = validateQuery(['B',{all: ['D'] , not: ['E']}]);
+        const clean = validateQuery([{any: ['B']},{all: ['D'] , not: ['E']}]);
         const mongo = queryStreamFiltering.toMongoDBQuery(clean);
-        
         const expected = {
           '$or': [
+            { streamIds: { '$eq': 'B' } },
             {
               '$and': [
                 { streamIds: { '$in': [ 'D', 'E', 'F' ] } },
                 { streamIds: { '$ne': 'E' } }
               ]
-            },
-            { streamIds: { '$eq': 'B' } }
+            }
           ]
         };
         assert.deepEqual(mongo, expected);
@@ -403,7 +401,6 @@ describe('events.get querying streams', function () {
         .get(basePathEvent)
         .set('Authorization', tokenRead)
         .query({ streams: JSON.stringify({ any: '*', not: ['D'] }) });
-      console.log(res.body);
       const events = res.body.events;
       assert.equal(events.length, 3);
       events.forEach(e => {
@@ -451,7 +448,6 @@ describe('events.get querying streams', function () {
         .get(basePathEvent)
         .set('Authorization', tokenRead)
         .query({ streams: JSON.stringify({ all: ['A', 'E'] }) });
-      console.log(res.body);
       assert.exists(res.body.events)
       const events = res.body.events;
       assert.equal(events.length, 1);
@@ -523,7 +519,7 @@ describe('events.get querying streams', function () {
         .get(basePathEvent)
         .set('Authorization', tokenRead)
         .query({
-          streams: JSON.stringify(['B', { any: ['D'], not: ['E']}])
+          streams: JSON.stringify([{any: ['B']}, { any: ['D'], not: ['E']}])
         });
       assert.exists(res.body.events)
       const events = res.body.events;
@@ -577,7 +573,6 @@ describe('events.get querying streams', function () {
           .get(basePathEvent)
           .set('Authorization', tokenRead)
           .query({ streams: JSON.stringify({ any:  ['A', 'Z', true] }) });
-          console.log(res.body);
         assert.exists(res.body.error);
         assert.equal(res.body.error.id, 'invalid-request-structure');
       });

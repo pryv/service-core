@@ -12,7 +12,6 @@
  * https://github.com/pryv/docs-pryv/blob/master/pryv.io/events.get-filtering/README.md
  */
 
-const { prop } = require('ramda');
 const util = require('util');
 /** for nice error message with clear query content */
 function objectToString(object) {
@@ -27,10 +26,7 @@ function objectToString(object) {
 
 
 /**
- * To allow retro-compatibility with stream querying
- * Replace globing [] by {OR: []}
- * Replace all strings 'A' by {IN: ['A',...childs]}
- * @param {Object} streamQuery 
+ * @param {Array} - streamQuery 
  * @param {Function} expand should return the streamId in argument and its children (or null if does not exist).
  * @param {Array} allAuthorizedStreams - the list of authorized streams
  * @param {Array} allAccessibleStreams - the list of "visible" streams (i.e not trashed when state = default)
@@ -38,30 +34,27 @@ function objectToString(object) {
  * @throws Error messages when structure is not valid.
  */
 function validateStreamQuery(streamQuery, expand, allAuthorizedStreams, allAccessibleStreams) {
-  console.log('XXXXX', streamQuery);
- 
-  if (! Array.isArray(streamQuery)) streamQuery = [streamQuery];
+  
+  const arrayOfQueries = coerceToStreamQuery(streamQuery);
 
+  // registerStream will collect all nonAuthorized streams here during block inspection
   const nonAuthorizedStreams = [];
 
-  // first extract all '<streamId>' for retrocompatibility and pack them into a single {any: ... }
-  const streamIds = [];
-  const filteredQuery = streamQuery.filter((item) => {
-    if (typeof item === 'string') {
-      streamIds.push(item); // pack all 'streamIds together'   
-      return false;
-    } 
-    return true;
-  });
-  if (streamIds.length > 0) filteredQuery.push({any: streamIds});
-
   // inspect each block and remove enventuall null
-  const resultQuery = filteredQuery.map(inspectBlock);
+  const arrayOfQueriesResult = arrayOfQueries.map(inspectBlock).filter((block) => { 
+    return block !== null; // some block can be translated to "null" if no inclusion are found
+  });
 
-  console.log('YYYY', nonAuthorizedStreams, resultQuery);
+  if (arrayOfQueriesResult.length === 0) {
+    return {
+      nonAuthorizedStreams: nonAuthorizedStreams,
+      streamQuery: null // means no scope
+    }
+  }
+
   return {
     nonAuthorizedStreams: nonAuthorizedStreams,
-    streamQuery: resultQuery
+    streamQuery: arrayOfQueriesResult
   }
   
   /**
@@ -69,6 +62,7 @@ function validateStreamQuery(streamQuery, expand, allAuthorizedStreams, allAcces
    * @param {*} block 
    */
   function inspectBlock(block) {
+    let containsAtLeastOneInclusion = false; 
     if (! block.any && ! block.all) {
       throw ('Error in query [' + objectToString(streamQuery) + '] item: [' + objectToString(block) +'] must contain at least one of "any" or "all" property');
     }
@@ -78,9 +72,10 @@ function validateStreamQuery(streamQuery, expand, allAuthorizedStreams, allAcces
         throw ('Error in query [' + objectToString(streamQuery) + '] unkown property: [' + property +'] in [' + objectToString(block) + ']');
     
       if (! Array.isArray(block[property])) {
-        if (property === 'any' && block[property] === '*') {
+        if (property === 'any' && block[property] === '*' && allAccessibleStreams.length > 0) {
           res.any = allAccessibleStreams;
-          continue;
+          containsAtLeastOneInclusion = true;
+          continue; // stop here and go to next property
         } else {
           throw ('Error in query [' + objectToString(streamQuery) + '] value of : [' + property +'] should be an array. Found: ' + objectToString(block[property]) );
         }
@@ -94,6 +89,7 @@ function validateStreamQuery(streamQuery, expand, allAuthorizedStreams, allAcces
       if (property === 'any') {
         const expandedSet = expandSet(block[property]);
         if (expandedSet.length > 0) {
+          containsAtLeastOneInclusion = true;
           res[property] = expandedSet;
         }
       } else { 
@@ -103,22 +99,23 @@ function validateStreamQuery(streamQuery, expand, allAuthorizedStreams, allAcces
         for (let streamId of block[property]) {
           const expandedSet = expandSet([streamId]);
           if (expandedSet.length > 0) {
-            const key = (property === 'all') ? 'any' : 'not';
-            res.and.push({[key]: expandedSet})
+            if (property === 'all') {
+              containsAtLeastOneInclusion = true;
+              res.and.push({any: expandedSet});
+            } else { // not
+              res.and.push({not: expandedSet});
+            }
+            
           }
         }
       }
     }
-    return res;
+    return (containsAtLeastOneInclusion) ? res : null;
   }
 
   /**
-   * uses isAuthorizedStream() and isAccessibleStream() to check if it can be used in query
+   * uses allAuthorizedStreams and allAccessibleStreams to check if it can be used in query
    * @param {string} streamId 
-   * @param {boolean} isInclusive - set to True is this is an "inclusive" selector (IN; EQUAL) - 
-   * If a query does not include any "inclusive" scope, it means that it's only a "negative" scoping, 
-   * then we should add the accessible streams as initial scope. To avoid exposing not visible streams content.
-   * Example: {NOT ['A']} would be be translated to {AND: [{IN: [..all visible streams..], {NOTIN: 'A'} ]}
    * @returns {boolean} - true is streamId Can be used in the query
    */
   function registerStream(streamId) {
@@ -214,35 +211,24 @@ exports.toMongoDBQuery = function toMongoDBQuery(streamQuery, optimizeQuery = tr
 
 //------------------------ helpers ----------------------------------//
 
-
 /**
- * Helper that adds a string or array to an array if not present
- * @param {} array 
- * @param {string|array} value 
+ * 
+ * @param {streamQuery} array - of streamIds or streamQuery
  */
-function pushIfNotExists(array, value) {
-  if (typeof value === 'string') value = [value];
-  for (let i = 0; i < value.length; i++) {
-    if (array.indexOf(value[i]) === -1) array.push(value[i]);
-  }
-}
-
-/**
- * Helper that and an item to an array if not present
- * @param {} array 
- * @param {*} value 
- */
-function pushIfNotNull(array, value) {
-  if (value !== null) array.push(value);
-}
-
-/**
- * Decompose operators {KEY: VALUE} => [KEY, VALUE] 
- * @param {object} operator of the form {KEY: VALUE}
- */
-function operatorToArray(operator) {
-  const keys = Object.keys(operator);
-  if (keys.length < 1) throw ('Found an empty object in query');
-  if (keys.length > 1) throw ('Found an object with more than one operator in query: ' + JSON.stringify(operator));
-  return [keys[0], operator[keys[0]]];
+function coerceToStreamQuery(streamQuery) {
+   // first extract all '<streamId>' for retrocompatibility and pack them into a single {any: ... }
+   const streamIds = [];
+   const filteredQuery = streamQuery.filter((item) => {
+     if (typeof item === 'string') {
+       streamIds.push(item); // pack all 'streamIds together'   {any: .., .., ..}
+       return false;
+     } 
+     return true;
+   });
+   if (streamIds.length > 0 && filteredQuery.length > 0) {
+     throw('Error in query, streamQuery and streamIds cannot be mixed');
+   }
+   if (streamIds.length > 0) filteredQuery.push({any: streamIds});
+ 
+   return filteredQuery;
 }
