@@ -21,16 +21,15 @@ const util = require('util');
  * @property {Array} nonAuthorizedStreams - The list of stream that have been unAuthorized 
  */
 
-
 /**
- * 
+ * For retrocompatibility with streamQuery ['A', 'B'] transform it to {any: ['A', 'B']}
+ * @param {Array} arrayOfQueries 
+ * @throws - Error if mixed strings and objects are found in query
  */
-
-function validateAndCoerceStreamQuery(arrayOfQueries) {
- 
-
+function transformArrayOfStringStreamQuery(arrayOfQueries) {
    // first extract all '<streamId>' for retrocompatibility and pack them into a single {any: ... }
    const streamIds = [];
+   
    const filteredArrayOfQueries = arrayOfQueries.filter((item) => {
      if (typeof item === 'string') {
        streamIds.push(item); // pack all 'streamIds together'   {any: .., .., ..}
@@ -38,15 +37,30 @@ function validateAndCoerceStreamQuery(arrayOfQueries) {
      } 
      return true;
    });
+   
    if (streamIds.length > 0 && filteredArrayOfQueries.length > 0) {
      throw('Error in query, streamQuery and streamIds cannot be mixed');
    }
+   
    if (streamIds.length > 0) filteredArrayOfQueries.push({any: streamIds});
- 
-  // validateQUery
-  filteredArrayOfQueries.forEach((streamQuery) => { checkStreamQuerySchema(filteredArrayOfQueries, streamQuery); });
-  return filteredArrayOfQueries;
+
+   return filteredArrayOfQueries;
 }
+module.exports.transformArrayOfStringStreamQuery = transformArrayOfStringStreamQuery;
+
+/**
+ * @param {Array} arrayOfQueries 
+ * @throws - Error if query does not respect the schema
+ */
+function streamQueryParamValidation(arrayOfQueries) {
+  // validateQUery
+  arrayOfQueries.forEach((streamQuery) => { 
+    checkStreamQuerySchema(arrayOfQueries, streamQuery); 
+  });
+  return arrayOfQueries;
+}
+exports.streamQueryParamValidation = streamQueryParamValidation;
+
 
  /**
  * throw an error if block is not of the form {any: all: not: } with at least one of any or all 
@@ -79,7 +93,6 @@ function checkStreamQuerySchema(requestQuery, streamQuery) {
 }
 
 
-exports.validateAndCoerceStreamQuery = validateAndCoerceStreamQuery;
 
 
 /**
@@ -90,17 +103,13 @@ exports.validateAndCoerceStreamQuery = validateAndCoerceStreamQuery;
  * @returns {StreamQueryValidation} 
  * @throws Error messages when structure is not valid.
  */
-function validateStreamQuery(requestQuery, expand, allAuthorizedStreams, allAccessibleStreams) {
+function validateStreamQuery(arrayOfQueries, expand, allAuthorizedStreams, allAccessibleStreams) {
   
-  const arrayOfQueries = validateAndCoerceStreamQuery(requestQuery);
-
   // registerStream will collect all nonAuthorized streams here during block inspection
   const nonAuthorizedStreams = [];
 
- 
-
   // inspect each block and remove enventuall null
-  const arrayOfQueriesResult = arrayOfQueries.map(expandAndTransformBlock).filter((block) => { 
+  const arrayOfQueriesResult = arrayOfQueries.map(expandAndTransformStreamQuery).filter((block) => { 
     return block !== null; // some block can be translated to "null" if no inclusion are found
   });
 
@@ -121,7 +130,7 @@ function validateStreamQuery(requestQuery, expand, allAuthorizedStreams, allAcce
    * }
    * @param {Object} streamQuery 
    */
-  function expandAndTransformBlock(streamQuery) {
+  function expandAndTransformStreamQuery(streamQuery) {
     let containsAtLeastOneInclusion = false; 
 
     const res = { };

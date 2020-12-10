@@ -88,13 +88,15 @@ module.exports = function (
   // RETRIEVAL
 
   api.register('events.get',
-    parseStreamsQueryIfneeded,
+    coerceStreamParams,
     commonFns.getParamsValidation(methodsSchema.get.params),
+    transformArrayOfStringStreamQuery,
+    streamQueryParamValidation,
     applyDefaultsForRetrieval,
     findAccessibleEvents,
     includeDeletionsIfRequested);
 
-  function parseStreamsQueryIfneeded (context, params, result, next) {
+  function coerceStreamParams (context, params, result, next) {
     if (params.streams == null) return next();
 
     // Streams query can also be sent as a JSON string or string of Array
@@ -127,6 +129,26 @@ module.exports = function (
       }
       return streamsParam
     }
+  }
+
+  function transformArrayOfStringStreamQuery (context, params, result, next) {
+    if (params.streams === null) return next();
+    try {
+      params.streams = queryStreamFiltering.transformArrayOfStringStreamQuery(params.streams);
+    } catch (e) {
+      return next(errors.invalidRequestStructure('Initial filtering: ' + e, params.streams));
+    }
+    next();
+  }
+
+  function streamQueryParamValidation (context, params, result, next) {
+    if (params.streams === null) return next();
+    try {
+      params.streams = queryStreamFiltering.streamQueryParamValidation(params.streams);
+    } catch (e) {
+      return next(errors.invalidRequestStructure('Initial filtering: ' + e, params.streams));
+    }
+    next();
   }
 
   async function applyDefaultsForRetrieval (context, params, result, next) {

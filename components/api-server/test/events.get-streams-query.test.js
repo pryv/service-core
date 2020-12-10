@@ -95,6 +95,8 @@ describe('events.get querying streams', function () {
 
     function validateQuery(query) {
       if (! Array.isArray(query)) query = [query];
+      query = queryStreamFiltering.transformArrayOfStringStreamQuery(query);
+      query = queryStreamFiltering.streamQueryParamValidation(query);
       const { streamQuery } = queryStreamFiltering.validateStreamQuery(query, customExpand, ALL_AUTHORIZED_STREAMS, ALL_ACCESSIBLE_STREAMS);
       return streamQuery;
     }
