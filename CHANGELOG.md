@@ -6,10 +6,11 @@ Fixes:
 
 - usernames starting with "system" are available
 - personal token expiration now fixed
+- Users create call on core username error message now specifies that letters must be lowercase
 
 Changes:
 
-- In configuration, rename "singleNode" to "dnsLess", adding retro-compatibility for "singleNode" with warning message
+- In configuration, rename "singleNode" to "dnsLess", keeping retro-compatibility for "singleNode" with warning message
 
 Removals:
 
