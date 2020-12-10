@@ -88,10 +88,58 @@ module.exports = function (
   // RETRIEVAL
 
   api.register('events.get',
+    parseStreamsQueryIfneeded,
     commonFns.getParamsValidation(methodsSchema.get.params),
     applyDefaultsForRetrieval,
     findAccessibleEvents,
     includeDeletionsIfRequested);
+
+  function parseStreamsQueryIfneeded (context, params, result, next) {
+    if (params.streams == null) return next();
+
+    // Streams query can also be sent as a JSON string or string of Array
+    if (! context.acceptStreamsQueryNonStringified) { // batchCall and socket.io can use plain JSON objects
+      try {
+        params.streams = parseStreamsQueryParam(params.streams);
+      } catch (e) {
+        return next(errors.invalidRequestStructure(
+          'Invalid "streams" parameter. It should be an array of streamIds or JSON logical query' + e, params.streams));
+      }
+    }
+    next();
+
+    function parseStreamsQueryParam(streamsParam) {
+      if (typeof streamsParam === 'string') {
+        
+        if (['[', '{'].includes(streamsParam.substr(0, 1))) { // we detect if it's JSON by looking at first char
+          // Note: since RFC 7159 JSON can also starts with ", true, false or number - this does not apply in this case.
+          try {
+            streamsParam = JSON.parse(streamsParam);
+          } catch (e) {
+            throw('Error while parsing JSON ' + e);
+          }
+        } else {
+          // some HTTP clients are removing the [] from queries when there is only one item
+          streamsParam = [streamsParam];
+        }
+        return streamsParam;
+      } 
+      
+
+      // TODO why is this needed?
+      if (!Array.isArray(streamsParam)) {
+        throw('Expected an Array');
+      } 
+    
+      // check it's only an arrays of strings. 
+      for (let i = 0; i < streamsParam.length; i++) {
+        if (typeof streamsParam[i] !== 'string') {
+          throw('Array contains not only strings.');
+        }
+      }
+      return streamsParam
+    }
+  }
 
   async function applyDefaultsForRetrieval (context, params, result, next) {
     _.defaults(params, {
@@ -116,16 +164,6 @@ module.exports = function (
     if (params.fromTime == null && params.toTime == null && params.limit == null) {
       // limit to 20 items by default
       params.limit = 20;
-    }
-
-    // Streams query can also be sent as a JSON string or string of Array
-    if (params.streams && ! context.acceptStreamQueryInJSON) { // batchCall and socket.io can use plain JSON objects
-      try {
-        params.streams = checkHttpGetStreamsParamAndConvertToObject(params.streams);
-      } catch (e) {
-        return next(errors.invalidRequestStructure(
-          'Invalid "streams" parameter. It should be an array of streamIds or JSON logical query' + e, params.streams));
-      }
     }
     
     // Get all authorized streams (the ones that could be acessed) - Pass by all the tree including childrens
@@ -1474,33 +1512,3 @@ module.exports = function (
 };
 
 
-function checkHttpGetStreamsParamAndConvertToObject(streamsParam) {
-  if (typeof streamsParam === 'string') {
-    // !! some HTTP client are removing the [] from queries when there is only one item
-    if (!['[', '{'].includes(streamsParam.substr(0, 1))) { // we detect if it's json by looking at first char
-      // Note: since RFC 7159 JSON can also starts with ", true, false or number - this does not apply in this case.
-      streamsParam = [streamsParam];
-    } else { // probably JSON
-      try {
-        streamsParam = JSON.parse(streamsParam);
-      } catch (e) {
-        throw('Error while parsing JSON ' + e);
-      }
-    }
-    return streamsParam;
-  } 
-  
-  if (!Array.isArray(streamsParam)) {
-    throw('Expected an Array');
-  } 
-
-  // check it's only an arrays of strings. 
-    // check it's only an arrays of strings. 
-  // check it's only an arrays of strings. 
-  for (let i = 0; i < streamsParam.length; i++) {
-    if (typeof streamsParam[i] !== 'string') {
-      throw('Array contains not only strings.');
-    }
-  }
-  return streamsParam
-}
