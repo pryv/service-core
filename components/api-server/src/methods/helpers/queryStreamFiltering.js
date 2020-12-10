@@ -87,8 +87,8 @@ function validateStreamQuery(streamQuery, expand, allAuthorizedStreams, allAcces
       }
 
       for (item of block[property]) {
-        if (! typeof item === 'string')
-          throw ('Error in query [' + objectToString(streamQuery) + '] all items of ' + objectToString(block[property]) +' should be streamIds' );
+        if (typeof item !== 'string')
+          throw ('Error in query [' + objectToString(streamQuery) + '] all items of ' + objectToString(block[property]) +' should be streamIds. Found: ' + objectToString(item) );
       }
 
       if (property === 'any') {

@@ -159,6 +159,12 @@ describe('events.get querying streams', function () {
         assert.deepEqual(res, [{ any: ALL_ACCESSIBLE_STREAMS, and: [ { not: [ 'A', 'B', 'C' ] } ] }]);
       });
 
+
+      it.skip('[L89B] must return null if query is empty', async function () {
+        const res = validateQuery({ any: 'T', not: ['A'] });
+
+       // assert.deepEqual(res, [{ any: ALL_ACCESSIBLE_STREAMS, and: [ { not: [ 'A', 'B', 'C' ] } ] }]);
+      });
     });
 
     describe.skip('exception and errors', function () {
@@ -392,7 +398,7 @@ describe('events.get querying streams', function () {
       });
     });
 
-    it('[HFA2] must accept {"NOT": ["D"]} without including items in trashed streams', async function () {
+    it('[HFA2] must accept {"not": ["D"]} without including items in trashed streams', async function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
@@ -571,6 +577,7 @@ describe('events.get querying streams', function () {
           .get(basePathEvent)
           .set('Authorization', tokenRead)
           .query({ streams: JSON.stringify({ any:  ['A', 'Z', true] }) });
+          console.log(res.body);
         assert.exists(res.body.error);
         assert.equal(res.body.error.id, 'invalid-request-structure');
       });
