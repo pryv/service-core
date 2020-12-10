@@ -101,9 +101,8 @@ function checkStreamQuerySchema(requestQuery, streamQuery) {
  * @param {Array} allAuthorizedStreams - the list of authorized streams
  * @param {Array} allAccessibleStreams - the list of "visible" streams (i.e not trashed when state = default)
  * @returns {StreamQueryValidation} 
- * @throws Error messages when structure is not valid.
  */
-function validateStreamQuery(arrayOfQueries, expand, allAuthorizedStreams, allAccessibleStreams) {
+function checkPermissionAnyApplyToScope(arrayOfQueries, expand, allAuthorizedStreams, allAccessibleStreams) {
   
   // registerStream will collect all nonAuthorized streams here during block inspection
   const nonAuthorizedStreams = [];
@@ -221,7 +220,7 @@ function validateStreamQuery(arrayOfQueries, expand, allAuthorizedStreams, allAc
   }
 }
 
-exports.validateStreamQuery = validateStreamQuery;
+exports.checkPermissionAnyApplyToScope = checkPermissionAnyApplyToScope;
 
 
 

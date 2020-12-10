@@ -97,8 +97,10 @@ module.exports = function (
     includeDeletionsIfRequested);
 
   function coerceStreamParams (context, params, result, next) {
-    if (params.streams == null) return next();
-
+    if (! params.streams)  {
+      params.streams = null;
+      return next();
+    }
     // Streams query can also be sent as a JSON string or string of Array
     if (! context.acceptStreamsQueryNonStringified) { // batchCall and socket.io can use plain JSON objects
       try {
@@ -211,29 +213,26 @@ module.exports = function (
         return treeUtils.expandIds(context.streams, [streamId]);
        }
       
-      let unkownStreams = [];
-      try {
-        const {streamQuery, nonAuthorizedStreams} = 
-          queryStreamFiltering.validateStreamQuery(params.streams, expand, authorizedStreamsIds, accessibleStreamsIds);
-         
-        unkownStreams = nonAuthorizedStreams;
-        params.streams =  streamQuery;
-      } catch (e) {
-        return next(errors.invalidRequestStructure('Initial filtering: ' + e, params.streams));
-      }
+     
+      const {streamQuery, nonAuthorizedStreams} = 
+        queryStreamFiltering.checkPermissionAnyApplyToScope(params.streams, expand, authorizedStreamsIds, accessibleStreamsIds);
+        
+      unkownStreams = nonAuthorizedStreams;
+      params.streams =  streamQuery;
+    
 
       if (unkownStreams.length > 0) {
         // check if one is create-only and send forbidden
-        for (let i = 0; i < unkownStreams.length; i++) {
-          if (context.access.isCreateOnlyStream(unkownStreams[i])) {
-            return next(errors.forbidden('stream [' + unkownStreams[i] + '] has create-only permission and cannot be read'));
+        for (let i = 0; i < nonAuthorizedStreams.length; i++) {
+          if (context.access.isCreateOnlyStream(nonAuthorizedStreams[i])) {
+            return next(errors.forbidden('stream [' + nonAuthorizedStreams[i] + '] has create-only permission and cannot be read'));
           }
         }
 
         return next(errors.unknownReferencedResource(
-          'stream' + (unkownStreams.length > 1 ? 's' : ''),
+          'stream' + (nonAuthorizedStreams.length > 1 ? 's' : ''),
           'streams', 
-          unkownStreams));
+          nonAuthorizedStreams));
       }
     }
 

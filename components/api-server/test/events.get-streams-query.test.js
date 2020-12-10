@@ -97,11 +97,11 @@ describe('events.get querying streams', function () {
       if (! Array.isArray(query)) query = [query];
       query = queryStreamFiltering.transformArrayOfStringStreamQuery(query);
       query = queryStreamFiltering.streamQueryParamValidation(query);
-      const { streamQuery } = queryStreamFiltering.validateStreamQuery(query, customExpand, ALL_AUTHORIZED_STREAMS, ALL_ACCESSIBLE_STREAMS);
+      const { streamQuery } = queryStreamFiltering.checkPermissionAnyApplyToScope(query, customExpand, ALL_AUTHORIZED_STREAMS, ALL_ACCESSIBLE_STREAMS);
       return streamQuery;
     }
 
-    describe('validateStreamQuery', function () {
+    describe('checkPermissionAnyApplyToScope', function () {
 
       it('[D2B5] must convert initial [] in {any: []}', async function () {
         const res = validateQuery(['A', 'B']);
@@ -212,7 +212,7 @@ describe('events.get querying streams', function () {
               hasThrown = true;
               assert.include(e, error);
             };
-            if (!hasThrown) throw ('validateStreamQuery was expected to throw [' + error + '] with query: <<' + JSON.stringify(streamsQuery) + '>>');
+            if (!hasThrown) throw ('checkPermissionAnyApplyToScope was expected to throw [' + error + '] with query: <<' + JSON.stringify(streamsQuery) + '>>');
           });
         };
       });
