@@ -166,61 +166,43 @@ describe('events.get querying streams', function () {
       });
     });
 
-    describe.skip('exception and errors', function () {
+    describe('exception and errors', function () {
 
-      it('[9907] handles not existent stream {OR: ["Z"]}', async function () {
-        const query = validateQuery({ OR: ['Z'] });
+      it('[9907] handles not existent stream {any: ["Z"]}', async function () {
+        const query = validateQuery({ any: ['Z'] });
         assert.deepEqual(query, null);
         const mongo = queryStreamFiltering.toMongoDBQuery(query);
         assert.deepEqual(mongo, null);
       });
 
       it('[J9E2] handles not existent stream in array ["U", "Z", "T"]', async function () {
-        const query = validateQuery(['A', 'Z', 'B']);
-        assert.deepEqual(query, { "OR": [{ "IN": ["A", "B", "C"] }, { "IN": ["B"] }] });
+        const query = validateQuery(['A', 'Z', 'B']);        
+        assert.deepEqual(query, [ { any: [ 'A', 'B', 'C' ] } ]);
       });
 
-      it('[K9H2] handles not existent stream in array to be expanded {OR: ["A", "Z", "B"]}', async function () {
-        const query = validateQuery({ OR: ['A', 'Z', 'B'] });
-        assert.deepEqual(query, { "OR": [{ "IN": ["A", "B", "C"] }, { "IN": ["B"] }] });
-        const mongo = queryStreamFiltering.toMongoDBQuery(query);
-        assert.deepEqual(mongo, { "streamIds": { "$in": ["A", "B", "C"] } });
-      });
-
-      it('[B8HC] handles not existent stream in array or equality {IN: ["A", "Z", "B"]}', async function () {
-        const query = validateQuery({ IN: ['A', 'Z', 'B'] });
-        assert.deepEqual(query, { "IN": ["A", "B"] });
-        const mongo = queryStreamFiltering.toMongoDBQuery(query);
-        assert.deepEqual(mongo, { "streamIds": { "$in": ["A", "B"] } });
-      });
 
       it('[IOLA] must throw on malformed expressions', async function () {
         const malformed = {
-          'operator must only contain arrays of strings': [
+          'streamQuery and streamIds cannot be mixed': [
+            ['A', { any: ['A', 'B'] }],
+          ],
+          'must contain at least one of "any" or "all"': [
+            { not: ['A', 'B'] },
+          ],
+          'unkown property': [
+            { all: ['A', 'B'], zz: ['A'] },
+          ],
+          'should be an array': [
             // only array strings (streamIds)
-            { IN: ['A', 'B', { OR: 'Z' }] },
-            { NOTIN: ['A', 'B', { OR: 'Z' }] },
-            { NOTIN: ['A', 'B', { OR: 'Z' }] },
-            { NOT: ['A', 'B', { OR: 'Z' }] }
+            { any: {all: 'B'} },
+            { all: true },
+            { any: '*', not: 'B' },
           ],
-          'operator must only be used with strings': [
+          'should be streamIds': [
             // only array strings (streamIds)
-            { EQUAL: ['A'] },
-            { NOTEQUAL: ['A'] },
-            { EXPAND: ['A'] },
-            { NOTEXPAND: ['A'] }
-          ],
-          'operator must only be used with arrays': [
-            // only array strings (streamIds)
-            { OR: 'A' },
-            { AND: 'A' }
-          ],
-          'Unkown operator': [
-            { ZZ: 'A' }
-          ],
-          'Unkown expression': [
-            true,
-            1
+            { any: ['A', 'B', { all: 'Z' }] },
+            { all: ['A', 'B', true] },
+            { any: '*', not: ['A', 'B', ['A']] },
           ]
         };
 
@@ -233,7 +215,7 @@ describe('events.get querying streams', function () {
               hasThrown = true;
               assert.include(e, error);
             };
-            if (!hasThrown) throw ('validateStreammQuery was expected to throw [' + error + '] with query: <<' + JSON.stringify(streamsQuery) + '>>');
+            if (!hasThrown) throw ('validateStreamQuery was expected to throw [' + error + '] with query: <<' + JSON.stringify(streamsQuery) + '>>');
           });
         };
       });
@@ -586,7 +568,7 @@ describe('events.get querying streams', function () {
         assert.equal(res.body.error.id, 'invalid-request-structure');
       });
 
-      it.skip('[3X9I] must return an empty list when provided a trashed streamId', async function () {
+      it('[3X9I] must return an empty list when provided a trashed streamId', async function () {
         const res = await server.request()
           .get(basePathEvent)
           .set('Authorization', tokenRead)
