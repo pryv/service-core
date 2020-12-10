@@ -175,11 +175,6 @@ describe('events.get querying streams', function () {
         assert.deepEqual(mongo, null);
       });
 
-      it('[J9E2] handles not existent stream in array ["U", "Z", "T"]', async function () {
-        const query = validateQuery(['A', 'Z', 'B']);        
-        assert.deepEqual(query, [ { any: [ 'A', 'B', 'C' ] } ]);
-      });
-
 
       it('[IOLA] must throw on malformed expressions', async function () {
         const malformed = {

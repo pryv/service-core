@@ -107,7 +107,7 @@ module.exports = function (
       }
     }
 
-    // Transform object or string to Array
+     // Transform object or string to Array
     if (! Array.isArray(params.streams)) {
       params.streams = [params.streams];
     }

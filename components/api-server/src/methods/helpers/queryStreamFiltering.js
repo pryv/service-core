@@ -13,16 +13,73 @@
  */
 
 const util = require('util');
-/** for nice error message with clear query content */
-function objectToString(object) {
-  return util.inspect(object, {depth: 5})
-}
+
 
 /**
  * @typedef {Object} StreamQueryValidation
  * @property {Object} streamQuery - The query validated and expanded 
  * @property {Array} nonAuthorizedStreams - The list of stream that have been unAuthorized 
  */
+
+
+/**
+ * 
+ */
+
+function validateAndCoerceStreamQuery(arrayOfQueries) {
+ 
+
+   // first extract all '<streamId>' for retrocompatibility and pack them into a single {any: ... }
+   const streamIds = [];
+   const filteredArrayOfQueries = arrayOfQueries.filter((item) => {
+     if (typeof item === 'string') {
+       streamIds.push(item); // pack all 'streamIds together'   {any: .., .., ..}
+       return false;
+     } 
+     return true;
+   });
+   if (streamIds.length > 0 && filteredArrayOfQueries.length > 0) {
+     throw('Error in query, streamQuery and streamIds cannot be mixed');
+   }
+   if (streamIds.length > 0) filteredArrayOfQueries.push({any: streamIds});
+ 
+  // validateQUery
+  filteredArrayOfQueries.forEach((streamQuery) => { checkStreamQuerySchema(filteredArrayOfQueries, streamQuery); });
+  return filteredArrayOfQueries;
+}
+
+ /**
+ * throw an error if block is not of the form {any: all: not: } with at least one of any or all 
+ * @param {*} streamQuery 
+ */
+function checkStreamQuerySchema(requestQuery, streamQuery) {
+  
+  if (! streamQuery.any && ! streamQuery.all) {
+    throw ('Error in query [' + objectToString(requestQuery) + '] item: [' + objectToString(streamQuery) +'] must contain at least one of "any" or "all" property');
+  }
+  const res = {};
+  for (let property of Object.keys(streamQuery)) {
+    if (! ['all', 'any', 'not'].includes(property))
+      throw ('Error in query [' + objectToString(requestQuery) + '] unkown property: [' + property +'] in [' + objectToString(streamQuery) + ']');
+  
+    if (! Array.isArray(streamQuery[property])) {
+      if (property === 'any' && streamQuery[property] === '*') {
+        continue; // stop here and go to next property
+      } else {
+        throw ('Error in query [' + objectToString(requestQuery) + '] value of : [' + property +'] should be an array. Found: ' + objectToString(streamQuery[property]) );
+      }
+    }
+
+    for (item of streamQuery[property]) {
+      if (typeof item !== 'string')
+        throw ('Error in query [' + objectToString(requestQuery) + '] all items of ' + objectToString(streamQuery[property]) +' should be streamIds. Found: ' + objectToString(item) );
+    }
+  }
+
+}
+
+
+exports.validateAndCoerceStreamQuery = validateAndCoerceStreamQuery;
 
 
 /**
@@ -33,15 +90,17 @@ function objectToString(object) {
  * @returns {StreamQueryValidation} 
  * @throws Error messages when structure is not valid.
  */
-function validateStreamQuery(streamQuery, expand, allAuthorizedStreams, allAccessibleStreams) {
+function validateStreamQuery(requestQuery, expand, allAuthorizedStreams, allAccessibleStreams) {
   
-  const arrayOfQueries = coerceToStreamQuery(streamQuery);
+  const arrayOfQueries = validateAndCoerceStreamQuery(requestQuery);
 
   // registerStream will collect all nonAuthorized streams here during block inspection
   const nonAuthorizedStreams = [];
 
+ 
+
   // inspect each block and remove enventuall null
-  const arrayOfQueriesResult = arrayOfQueries.map(inspectBlock).filter((block) => { 
+  const arrayOfQueriesResult = arrayOfQueries.map(expandAndTransformBlock).filter((block) => { 
     return block !== null; // some block can be translated to "null" if no inclusion are found
   });
 
@@ -56,62 +115,54 @@ function validateStreamQuery(streamQuery, expand, allAuthorizedStreams, allAcces
     nonAuthorizedStreams: nonAuthorizedStreams,
     streamQuery: arrayOfQueriesResult
   }
-  
+
   /**
-   * throw an error if block is not of the form {any: all: not: } with at least one of any or all 
-   * @param {*} block 
+   * { any: '*', and: [any: .. , any: ... , or: ...]
+   * }
+   * @param {Object} streamQuery 
    */
-  function inspectBlock(block) {
+  function expandAndTransformBlock(streamQuery) {
     let containsAtLeastOneInclusion = false; 
-    if (! block.any && ! block.all) {
-      throw ('Error in query [' + objectToString(streamQuery) + '] item: [' + objectToString(block) +'] must contain at least one of "any" or "all" property');
-    }
-    const res = {};
-    for (let property of Object.keys(block)) {
-      if (! ['all', 'any', 'not'].includes(property))
-        throw ('Error in query [' + objectToString(streamQuery) + '] unkown property: [' + property +'] in [' + objectToString(block) + ']');
-    
-      if (! Array.isArray(block[property])) {
-        if (property === 'any' && block[property] === '*' && allAccessibleStreams.length > 0) {
-          res.any = allAccessibleStreams;
-          containsAtLeastOneInclusion = true;
-          continue; // stop here and go to next property
-        } else {
-          throw ('Error in query [' + objectToString(streamQuery) + '] value of : [' + property +'] should be an array. Found: ' + objectToString(block[property]) );
-        }
-      }
 
-      for (item of block[property]) {
-        if (typeof item !== 'string')
-          throw ('Error in query [' + objectToString(streamQuery) + '] all items of ' + objectToString(block[property]) +' should be streamIds. Found: ' + objectToString(item) );
-      }
+    const res = { };
 
-      if (property === 'any') {
-        const expandedSet = expandSet(block[property]);
+    // any
+    if (streamQuery.any) {
+      if (streamQuery.any === '*' && allAccessibleStreams.length > 0) {
+        res.any = allAccessibleStreams;
+        containsAtLeastOneInclusion = true;
+      } else {
+        const expandedSet = expandSet(streamQuery.any);
         if (expandedSet.length > 0) {
           containsAtLeastOneInclusion = true;
-          res[property] = expandedSet;
+          res.any = expandedSet;
         }
-      } else { 
-        // 'all' must be converted in {and: [{any: [], any: []}]}
-        // 'not' must be converted in {and: [{not: [], not: []}]}
-        if (! res.and) res.and = [];
-        for (let streamId of block[property]) {
+      }
+    }
+
+
+    // all & not share the same logic
+    for (const property of ['all', 'not']) {
+      if (streamQuery[property]) {
+        for (let streamId of streamQuery[property]) {
           const expandedSet = expandSet([streamId]);
           if (expandedSet.length > 0) {
+            if (! res.and) res.and = [];
+            let key = 'not';
             if (property === 'all') {
               containsAtLeastOneInclusion = true;
-              res.and.push({any: expandedSet});
-            } else { // not
-              res.and.push({not: expandedSet});
-            }
-            
+              key = 'any';
+            } 
+            res.and.push({[key]: expandedSet});
           }
         }
       }
     }
+   
     return (containsAtLeastOneInclusion) ? res : null;
   }
+  
+ 
 
   /**
    * uses allAuthorizedStreams and allAccessibleStreams to check if it can be used in query
@@ -164,6 +215,7 @@ function validateStreamQuery(streamQuery, expand, allAuthorizedStreams, allAcces
 exports.validateStreamQuery = validateStreamQuery;
 
 
+
 /**
  * Transform queries for mongoDB - to be run on 
  * @param {Object} streamQuery 
@@ -211,24 +263,7 @@ exports.toMongoDBQuery = function toMongoDBQuery(streamQuery, optimizeQuery = tr
 
 //------------------------ helpers ----------------------------------//
 
-/**
- * 
- * @param {streamQuery} array - of streamIds or streamQuery
- */
-function coerceToStreamQuery(streamQuery) {
-   // first extract all '<streamId>' for retrocompatibility and pack them into a single {any: ... }
-   const streamIds = [];
-   const filteredQuery = streamQuery.filter((item) => {
-     if (typeof item === 'string') {
-       streamIds.push(item); // pack all 'streamIds together'   {any: .., .., ..}
-       return false;
-     } 
-     return true;
-   });
-   if (streamIds.length > 0 && filteredQuery.length > 0) {
-     throw('Error in query, streamQuery and streamIds cannot be mixed');
-   }
-   if (streamIds.length > 0) filteredQuery.push({any: streamIds});
- 
-   return filteredQuery;
+/** for nice error message with clear query content */
+function objectToString(object) {
+  return util.inspect(object, {depth: 5})
 }
