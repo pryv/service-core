@@ -12,6 +12,19 @@
  * https://github.com/pryv/docs-pryv/blob/master/pryv.io/events.get-filtering/README.md
  */
 
+const { prop } = require('ramda');
+const util = require('util');
+/** for nice error message with clear query content */
+function objectToString(object) {
+  return util.inspect(object, {depth: 5})
+}
+
+/**
+ * @typedef {Object} StreamQueryValidation
+ * @property {Object} streamQuery - The query validated and expanded 
+ * @property {Array} nonAuthorizedStreams - The list of stream that have been unAuthorized 
+ */
+
 
 /**
  * To allow retro-compatibility with stream querying
@@ -19,21 +32,86 @@
  * Replace all strings 'A' by {IN: ['A',...childs]}
  * @param {Object} streamQuery 
  * @param {Function} expand should return the streamId in argument and its children (or null if does not exist).
- * @param {Function} isAuthorizedStream should return true if stream is authorized.
- * @param {Function} isAccessible should return true if stream is accessible.
+ * @param {Array} allAuthorizedStreams - the list of authorized streams
+ * @param {Array} allAccessibleStreams - the list of "visible" streams (i.e not trashed when state = default)
+ * @returns {StreamQueryValidation} 
  * @throws Error messages when structure is not valid.
  */
-function validateStreamQuery(streamQuery, expand, isAuthorizedStream, isAccessibleStream) {
-  let isOnlyExclusive = true;
+function validateStreamQuery(streamQuery, expand, allAuthorizedStreams, allAccessibleStreams) {
+  console.log('XXXXX', streamQuery);
+ 
+  if (! Array.isArray(streamQuery)) streamQuery = [streamQuery];
+
   const nonAuthorizedStreams = [];
 
-  return { 
-      streamQuery: inspect(streamQuery),
-      isOnlyExclusive: isOnlyExclusive,
-      nonAuthorizedStreams: nonAuthorizedStreams
-  };
+  // first extract all '<streamId>' for retrocompatibility and pack them into a single {any: ... }
+  const streamIds = [];
+  const filteredQuery = streamQuery.filter((item) => {
+    if (typeof item === 'string') {
+      streamIds.push(item); // pack all 'streamIds together'   
+      return false;
+    } 
+    return true;
+  });
+  if (streamIds.length > 0) filteredQuery.push({any: streamIds});
 
+  // inspect each block and remove enventuall null
+  const resultQuery = filteredQuery.map(inspectBlock);
+
+  console.log('YYYY', nonAuthorizedStreams, resultQuery);
+  return {
+    nonAuthorizedStreams: nonAuthorizedStreams,
+    streamQuery: resultQuery
+  }
   
+  /**
+   * throw an error if block is not of the form {any: all: not: } with at least one of any or all 
+   * @param {*} block 
+   */
+  function inspectBlock(block) {
+    if (! block.any && ! block.all) {
+      throw ('Error in query [' + objectToString(streamQuery) + '] item: [' + objectToString(block) +'] must contain at least one of "any" or "all" property');
+    }
+    const res = {};
+    for (let property of Object.keys(block)) {
+      if (! ['all', 'any', 'not'].includes(property))
+        throw ('Error in query [' + objectToString(streamQuery) + '] unkown property: [' + property +'] in [' + objectToString(block) + ']');
+    
+      if (! Array.isArray(block[property])) {
+        if (property === 'any' && block[property] === '*') {
+          res.any = allAccessibleStreams;
+          continue;
+        } else {
+          throw ('Error in query [' + objectToString(streamQuery) + '] value of : [' + property +'] should be an array. Found: ' + objectToString(block[property]) );
+        }
+      }
+
+      for (item of block[property]) {
+        if (! typeof item === 'string')
+          throw ('Error in query [' + objectToString(streamQuery) + '] all items of ' + objectToString(block[property]) +' should be streamIds' );
+      }
+
+      if (property === 'any') {
+        const expandedSet = expandSet(block[property]);
+        if (expandedSet.length > 0) {
+          res[property] = expandedSet;
+        }
+      } else { 
+        // 'all' must be converted in {and: [{any: [], any: []}]}
+        // 'not' must be converted in {and: [{not: [], not: []}]}
+        if (! res.and) res.and = [];
+        for (let streamId of block[property]) {
+          const expandedSet = expandSet([streamId]);
+          if (expandedSet.length > 0) {
+            const key = (property === 'all') ? 'any' : 'not';
+            res.and.push({[key]: expandedSet})
+          }
+        }
+      }
+    }
+    return res;
+  }
+
   /**
    * uses isAuthorizedStream() and isAccessibleStream() to check if it can be used in query
    * @param {string} streamId 
@@ -43,199 +121,95 @@ function validateStreamQuery(streamQuery, expand, isAuthorizedStream, isAccessib
    * Example: {NOT ['A']} would be be translated to {AND: [{IN: [..all visible streams..], {NOTIN: 'A'} ]}
    * @returns {boolean} - true is streamId Can be used in the query
    */
-  function registerStream(streamId, isInclusive) {
-    const isAuthorized = isAuthorizedStream(streamId);
+  function registerStream(streamId) {
+    const isAuthorized = allAuthorizedStreams.includes(streamId);
     if (! isAuthorized) { 
       nonAuthorizedStreams.push(streamId);
       return false;
     }
-    const isAccessible = isAccessibleStream(streamId);
+    const isAccessible = allAccessibleStreams.includes(streamId);
     if (! isAccessible) return false;
-    if (isInclusive) isOnlyExclusive = false;
     return true;
   }
 
-  // utility that expand get the children for an operator.
-  function expandTo(operator, streamId, isInclusive) {
-    if (! registerStream(streamId, isInclusive)) return null; // check if this stream if visible and authorized before expanding
-    // expand and removes eventual null objects from expand() 
-    // "expand"  will also call registerStream() on the parents and the childs
-    const expanded = expand(streamId);
-    const filtered = expanded.filter((child) => { // expand can send "null" values
-      if (child === null) return false;
-      return registerStream(child, isInclusive)
-    }); 
-    if (filtered.length === 0) return null;
-    return { [operator]: filtered };
-  }
 
-  function inspect(streamQuery) {
-    switch (typeof streamQuery) {
-      case 'string': // A single streamId will be expanded to {'IN': '.., .., ...'}
-        return expandTo('IN', streamQuery, true);
+  /**
+   * @param {Array} streamIds - an array of streamids
+   */
+  function expandSet(streamIds) {
+    const result = [];
 
-      case 'object':
-        // This should be converter to a {OR: ..., ..., ...}
-        if (Array.isArray(streamQuery)) { // already optimize here as its simple
-          return inspect({ OR: streamQuery });
-        }
-
-        // This an object and should be an operator
-        const [operator, value] = operatorToArray(streamQuery);
-        let isInclusive = false;
-        switch (operator) {
-          // check if value if a streamId and keep
-          case 'EQUAL':
-            isInclusive = true;
-          case 'NOTEQUAL':
-            throwErrorIfNot(operator, 'string', value);
-            if (!registerStream(value, isInclusive)) return null;
-            return streamQuery; // all ok can be kept as-this
-          // check if value if a streamId & expand to the corresponding operator
-          case 'EXPAND': // To be transformed to 'IN'
-            throwErrorIfNot(operator, 'string', value);
-            return expandTo('IN', value, true);
-          case 'NOTEXPAND': // To be transformed to 'NOTIN'
-            throwErrorIfNot(operator, 'string', value);
-            return expandTo('NOTIN', value, false);
-          case 'NOT': // To be transformed to 'NOTIN'
-            throwErrorIfNot(operator, 'array', value);
-            const OR = [];
-            value.map((v) => {
-              if (typeof v !== 'string')
-                throw ('Error in query, [' + operator + '] operator must only contain arrays of strings: ' + value);
-              const res = expandTo('NOTIN', v, false);
-              if (res && res.NOTIN.length > 0) OR.push(res);
-            });
-            return { OR: OR };
-          case 'IN':
-            isInclusive = true;
-          case 'NOTIN':
-            throwErrorIfNot(operator, 'array', value);
-            const result = value.filter((v) => {
-              if (typeof v !== 'string')
-                throw ('Error in query, [' + operator + '] operator must only contain arrays of strings: ' + value);
-              return registerStream(v, isInclusive);
-            });
-            return { [operator]: result }; // all ok can be kept as-this
-          case 'AND':
-          case 'OR':
-            throwErrorIfNot(operator, 'array', value);
-            const inspected = value.map(inspect);
-            const candidate = inspected.filter((x) => { return x !== null });
-            if (candidate === null || candidate.length === 0) return null;
-            if (candidate.length === 1) return candidate[0];
-            return { [operator]: candidate };
-          default:
-            throw ('Unkown operator [' + operator + '] in query: ' + JSON.stringify(streamQuery));
-        };
-      default:
-        throw ('Unkown expression [' + JSON.stringify(streamQuery) + ' ] in query: ');
+    function addToResult(streamId) {
+      const ok = registerStream(streamId);
+      if (ok && ! result.includes(streamId)) {
+        result.push(streamId);
+      }
+      return ok;
     }
-  }
 
-  // utility to throw an error if the value associated with the operator is not of expectedType
-  function throwErrorIfNot(operator, expectedType, value) {
-    let check = false;
-    if (expectedType === 'array') {
-      check = Array.isArray(value);
-    } else { // 'string', 'object' ....
-      check = (typeof value === expectedType);
+    for (let streamId of streamIds) {
+      if (streamId.startsWith('#')) { 
+        addToResult(streamId.substr(1));
+      } else {
+        if (registerStream(streamId)) { 
+          for (let expandedStream of expand(streamId)) { // expand can send "null" values
+            if (expandedStream !== null) {
+              addToResult(expandedStream)
+            }
+          }
+        } 
+      }
     }
-    if (!check) throw ('Error in query, [' + operator + '] operator must only be used with ' + expectedType + 's: ' + JSON.stringify(streamQuery));
+    return result;
   }
 }
 
 exports.validateStreamQuery = validateStreamQuery;
 
-/**
- * Simplify a streamQuery by detecting some patterns and replacing them by a simpler version
- * TODO: In case of very deep complex or stupid structure ex. {AND: [{AND: [{IN: 'A'}]}]} mrProper should do several loops
- * @param {*} streamQuery 
- */
-function mrProper(operator, value) {
-  switch (operator) {
-    // if (OR [IN a.., IN b.., EQUAL c] => IN unique([a.., b.., c]) )
-    case 'OR': // value is an Array
-      // concat all 'IN' and 'EQUAL' under an 'IN'.
-      const IN = [];
-      const NOTIN = []; // do the same for NOT and NOTEQUAL
-      const OR = []; // or is the main older at the end
-      value.map((item) => {
-        const [key, v] = operatorToArray(item);
-        switch (key) {
-          case 'IN':
-          case 'EQUAL':
-            pushIfNotExists(IN, v);
-            break;
-          case 'NOTIN':
-          case 'NOTEQUAL':
-            pushIfNotExists(NOTIN, v);
-            break;
-          default:
-            pushIfNotNull(OR, mrProper(key, v));
-        }
-      });
-
-      pushIfNotNull(OR, mrProper('IN', IN));
-      pushIfNotNull(OR, mrProper('NOTIN', NOTIN));
-
-      if (OR.length === 1) return OR[0]; // only one operator we can skip the OR
-      if (OR.length === 0) return null; // empty no need to keep it
-      return { 'OR': OR }; // all clean
-    case 'AND':
-      const AND = [];
-      value.map((item) => { // clean all items 
-        const [key, v] = operatorToArray(item);
-        pushIfNotNull(AND, mrProper(key, v));
-      });
-      if (AND.length === 1) return AND[0]; // there is only one operator we can skip the AND
-      if (AND.length === 0) return null;
-      return { 'AND': AND }; // all clean
-    case 'IN':
-      if (value.length === 1) return { EQUAL: value[0] }; // then it's an equal
-      if (value.length === 0) return null;
-      return { 'IN': value }; // all clean
-    case 'NOTIN':
-      if (value.length === 1) return { NOTEQUAL: value[0] }; // then it's a not equal
-      if (value.length === 0) return null;
-      return { 'NOTIN': value }; // all clean
-    default:
-      return { [operator]: value };
-  }
-}
 
 /**
  * Transform queries for mongoDB - to be run on 
- * @param {} streamQuery 
- * @param {boolean} optimizeQuery 
+ * @param {Object} streamQuery 
+ * @returns {Object} - the necessary components to query streams. Either with a {streamIds: ..} or { $or: ....}
  */
 exports.toMongoDBQuery = function toMongoDBQuery(streamQuery, optimizeQuery = true) {
   if (!streamQuery) return null;
-  if (optimizeQuery) {
-    const [operator, value] = operatorToArray(streamQuery);
-    streamQuery = mrProper(operator, value);
+  
+  if (streamQuery.length === 1) {
+    return processBlock(streamQuery[0]);
+  } else { // pack in $or
+    return {$or: streamQuery.map(processBlock)};
   }
-  return inspect(streamQuery);
-  function inspect(item) {
-    const [operator, value] = operatorToArray(item);
-    switch (operator) {
-      case 'EQUAL':
-        return { streamIds: value };
-      case 'NOTEQUAL':
-        return { streamIds: { $ne: value } };
-      case 'IN':
-        return { streamIds: { $in: value } };
-      case 'NOTIN':
-        return { streamIds: { $nin: value } };
-      case 'AND':
-        return { $and: value.map(inspect) }
-      case 'OR':
-        return { $or: value.map(inspect) }
-      default:
-        throw ('Unkown operator [' + operator + '] in: ' + JSON.stringify(item));
+
+  
+  function processBlock(block) {
+    const res = { };
+    if (block.any && block.any.length > 0) { 
+      if ( block.any.length === 1) {
+        res.streamIds = { $eq: block.any[0]};
+      } else {
+        res.streamIds = { $in: block.any};
+      }
     }
+    // only reached from a "and" block
+    if (block.not && block.not.length > 0) {
+      if (res.streamIds) res.streamIds = {};
+      if ( block.not.length === 1) {
+        res.streamIds = { $ne: block.not[0] };
+      } else {
+        res.streamIds = { $nin : block.not};
+      }
+    }
+    if (block.and) {
+      res.$and = [];
+      for (let andItem of block.and) {
+        res.$and.push(processBlock(andItem));
+      }
+    }
+    return res;
   }
+
+
 }
 
 //------------------------ helpers ----------------------------------//

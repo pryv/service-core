@@ -152,21 +152,6 @@ module.exports = function (
       if (accessibleStreamsIds.length > 0) params.streams = { IN: accessibleStreamsIds};
     } else {
      
-      /**
-       * Function to be passed to queryStreamFiltering.validateQuery
-       * Check if a streamId is Authorized.
-       */
-      function isAuthorized(streamId) {
-        return authorizedStreamsIds.includes(streamId);
-      }
-
-      /**
-       * Function to be passed to streamQueryFiltering.validateQuery
-       * Check if a streamId is Visible (This is called only on previously 'authorized' streams)
-       */
-      function isAccessible(streamId) {
-        return accessibleStreamsIds.includes(streamId);
-      }
       
       /**
        * Function to be passed to streamQueryFiltering.validateQuery
@@ -180,15 +165,11 @@ module.exports = function (
       
       let unkownStreams = [];
       try {
-        const {streamQuery, nonAuthorizedStreams, isOnlyExclusive} = 
-          queryStreamFiltering.validateStreamQuery(params.streams, expand, isAuthorized, isAccessible);
+        const {streamQuery, nonAuthorizedStreams} = 
+          queryStreamFiltering.validateStreamQuery(params.streams, expand, authorizedStreamsIds, accessibleStreamsIds);
          
         unkownStreams = nonAuthorizedStreams;
         params.streams =  streamQuery;
-        if (params.streams && isOnlyExclusive) { // it means we have only "Negative selectors"
-          // we add the scope of accessible events as initial scope
-          params.streams = {AND: [{IN: accessibleStreamsIds}, params.streams]};
-        }
       } catch (e) {
         return next(errors.invalidRequestStructure('Initial filtering: ' + e, params.streams));
       }
@@ -242,6 +223,8 @@ module.exports = function (
     var query = querying.noDeletions(querying.applyState({}, params.state));
     if (params.streams) {
       const streamsQuery = queryStreamFiltering.toMongoDBQuery(params.streams);
+      utils.debug.log('ZZZZZ', streamsQuery);
+     
       if (streamsQuery === null) {
         query.streamIds = {$in: []}; // no streams
       } else { // inject possible components of streamQuery to query
