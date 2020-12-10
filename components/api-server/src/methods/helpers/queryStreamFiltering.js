@@ -226,16 +226,16 @@ exports.checkPermissionAnyApplyToScope = checkPermissionAnyApplyToScope;
 
 /**
  * Transform queries for mongoDB - to be run on 
- * @param {Object} streamQuery 
+ * @param {Array} streamQueriesArray - array of streamQuery 
  * @returns {Object} - the necessary components to query streams. Either with a {streamIds: ..} or { $or: ....}
  */
-exports.toMongoDBQuery = function toMongoDBQuery(streamQuery, optimizeQuery = true) {
-  if (!streamQuery) return null;
+exports.toMongoDBQuery = function toMongoDBQuery(streamQueriesArray) {
+  if (!streamQueriesArray) return null;
   
-  if (streamQuery.length === 1) {
-    return processBlock(streamQuery[0]);
+  if (streamQueriesArray.length === 1) {
+    return processBlock(streamQueriesArray[0]);
   } else { // pack in $or
-    return {$or: streamQuery.map(processBlock)};
+    return {$or: streamQueriesArray.map(processBlock)};
   }
 
   

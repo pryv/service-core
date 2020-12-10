@@ -93,6 +93,7 @@ module.exports = function (
     transformArrayOfStringStreamQuery,
     streamQueryParamValidation,
     applyDefaultsForRetrieval,
+    checkStreamsPermissionAnyApplyToScope,
     findAccessibleEvents,
     includeDeletionsIfRequested);
 
@@ -178,48 +179,60 @@ module.exports = function (
       params.limit = 20;
     }
     
+  
+
+    if (! context.access.canReadAllTags()) {
+      var accessibleTags = Object.keys(context.access.tagPermissionsMap);
+      params.tags = params.tags 
+        ? _.intersection(params.tags, accessibleTags) 
+        : accessibleTags;
+    }
+    next();
+  }
+
+  function checkStreamsPermissionAnyApplyToScope(context, params, result, next) {
     // Get all authorized streams (the ones that could be acessed) - Pass by all the tree including childrens
     const authorizedStreamsIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, true, isAuthorizedStream), 'id');
     function isAuthorizedStream(stream) {
       if (context.access.isPersonal()) return true;
       return context.access.canReadStream(stream.id);
     }
-    
+
     // Accessible streams are the on that authorized && correspond to the "state" param request
     let accessibleStreamsIds = [];
-    
-    if (params.state === 'all' || params.state === 'trashed') { // all streams
+
+    if (params.state === 'all' || params.state === 'trashed') { // all streams
       accessibleStreamsIds = authorizedStreamsIds;
     } else { // Get all streams compatible with state request - Stops when a stream is not matching to exclude childrens
       const notTrashedStreamIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, false, isRequestedStateStreams), 'id');
-      function isRequestedStateStreams(stream) {   
-        return ! stream.trashed;
+      function isRequestedStateStreams(stream) {
+        return !stream.trashed;
       }
       accessibleStreamsIds = _.intersection(authorizedStreamsIds, notTrashedStreamIds);
     }
 
-    if(params.streams === null) { // all streams
-      if (accessibleStreamsIds.length > 0) params.streams = [{ any: accessibleStreamsIds}];
+    if (params.streams === null) { // all streams
+      if (accessibleStreamsIds.length > 0) params.streams = [{ any: accessibleStreamsIds }];
     } else {
-     
-      
+
+
       /**
        * Function to be passed to streamQueryFiltering.validateQuery
        * Expand a streamId to [streamId, child1, ...]
        * @param {*} streamId 
        * @param {*} isInclusive 
        */
-      const expand = function(streamId) {
+      const expand = function (streamId) {
         return treeUtils.expandIds(context.streams, [streamId]);
-       }
-      
-     
-      const {streamQuery, nonAuthorizedStreams} = 
+      }
+
+
+      const { streamQuery, nonAuthorizedStreams } =
         queryStreamFiltering.checkPermissionAnyApplyToScope(params.streams, expand, authorizedStreamsIds, accessibleStreamsIds);
-        
+
       unkownStreams = nonAuthorizedStreams;
-      params.streams =  streamQuery;
-    
+      params.streams = streamQuery;
+
 
       if (unkownStreams.length > 0) {
         // check if one is create-only and send forbidden
@@ -231,16 +244,9 @@ module.exports = function (
 
         return next(errors.unknownReferencedResource(
           'stream' + (nonAuthorizedStreams.length > 1 ? 's' : ''),
-          'streams', 
+          'streams',
           nonAuthorizedStreams));
       }
-    }
-
-    if (! context.access.canReadAllTags()) {
-      var accessibleTags = Object.keys(context.access.tagPermissionsMap);
-      params.tags = params.tags 
-        ? _.intersection(params.tags, accessibleTags) 
-        : accessibleTags;
     }
     next();
   }
