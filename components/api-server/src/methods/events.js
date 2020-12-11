@@ -91,7 +91,7 @@ module.exports = function (
     coerceStreamsParam,
     commonFns.getParamsValidation(methodsSchema.get.params),
     transformArrayOfStringsToStreamsQuery,
-    streamQueryParamValidation,
+    validateStreamsQuery,
     applyDefaultsForRetrieval,
     checkStreamsPermissionsAndApplyToScope,
     findAccessibleEvents,
@@ -144,10 +144,10 @@ module.exports = function (
     next();
   }
 
-  function streamQueryParamValidation (context, params, result, next) {
+  function validateStreamsQuery (context, params, result, next) {
     if (params.streams === null) return next();
     try {
-      params.streams = queryStreamFiltering.streamQueryParamValidation(params.streams);
+      queryStreamFiltering.validateStreamsQuery(params.streams);
     } catch (e) {
       return next(errors.invalidRequestStructure('Initial filtering: ' + e, params.streams));
     }

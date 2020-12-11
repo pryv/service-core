@@ -96,7 +96,7 @@ describe('events.get querying streams', function () {
     function validateQuery(query) {
       if (! Array.isArray(query)) query = [query];
       query = queryStreamFiltering.transformArrayOfStringsToStreamsQuery(query);
-      query = queryStreamFiltering.streamQueryParamValidation(query);
+      queryStreamFiltering.validateStreamsQuery(query);
       const { streamQuery } = queryStreamFiltering.checkPermissionsAndApplyToScope(query, customExpand, ALL_AUTHORIZED_STREAMS, ALL_ACCESSIBLE_STREAMS);
       return streamQuery;
     }
@@ -190,13 +190,13 @@ describe('events.get querying streams', function () {
           'unkown property': [
             { all: ['A', 'B'], zz: ['A'] },
           ],
-          'should be an array': [
+          'must be an array': [
             // only array strings (streamIds)
             { any: {all: 'B'} },
             { all: true },
             { any: '*', not: 'B' },
           ],
-          'should be streamIds': [
+          'must be streamIds': [
             // only array strings (streamIds)
             { any: ['A', 'B', { all: 'Z' }] },
             { all: ['A', 'B', true] },

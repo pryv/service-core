@@ -44,48 +44,42 @@ module.exports.transformArrayOfStringsToStreamsQuery = transformArrayOfStringsTo
  * @param {Array} arrayOfQueries 
  * @throws - Error if query does not respect the schema
  */
-function streamQueryParamValidation(arrayOfQueries) {
+function validateStreamsQuery(arrayOfQueries) {
   // validateQUery
   arrayOfQueries.forEach((streamQuery) => { 
-    checkStreamQuerySchema(arrayOfQueries, streamQuery); 
+    validateStreamsQuerySchema(arrayOfQueries, streamQuery); 
   });
-  return arrayOfQueries;
-}
-exports.streamQueryParamValidation = streamQueryParamValidation;
 
+  /**
+   * throw an error if block is not of the form {any: all: not: } with at least one of any or all 
+   * @param {*} streamQuery 
+   */
+  function validateStreamsQuerySchema(arrayOfQueries, streamQuery) {
+    
+    if (! streamQuery.any && ! streamQuery.all) {
+      throw ('Error in "streams" parameter \'' + objectToString(arrayOfQueries) + '\' streams query: \'' + objectToString(streamQuery) +'\' must contain at least one of "any" or "all" property');
+    }
+    const res = {};
+    for (const [property, arrayOfStreamIds] of Object.entries(streamQuery)) {
+      if (! ['all', 'any', 'not'].includes(property))
+        throw ('Error in "streams" parameter \'' + objectToString(arrayOfQueries) + '\' unkown property: \'' + property +'\' in streams query \'' + objectToString(streamQuery) + '\'');
+    
+      if (! Array.isArray(arrayOfStreamIds)) {
+        if (property === 'any' && arrayOfStreamIds === '*') {
+          continue; // stop here and go to next property
+        } else {
+          throw ('Error in "streams" parameter \'' + objectToString(arrayOfQueries) + '\' value of : \'' + property +'\' must be an array. Found: \'' + objectToString(arrayOfStreamIds) + '\'' );
+        }
+      }
 
- /**
- * throw an error if block is not of the form {any: all: not: } with at least one of any or all 
- * @param {*} streamQuery 
- */
-function checkStreamQuerySchema(requestQuery, streamQuery) {
-  
-  if (! streamQuery.any && ! streamQuery.all) {
-    throw ('Error in query [' + objectToString(requestQuery) + '] item: [' + objectToString(streamQuery) +'] must contain at least one of "any" or "all" property');
-  }
-  const res = {};
-  for (let property of Object.keys(streamQuery)) {
-    if (! ['all', 'any', 'not'].includes(property))
-      throw ('Error in query [' + objectToString(requestQuery) + '] unkown property: [' + property +'] in [' + objectToString(streamQuery) + ']');
-  
-    if (! Array.isArray(streamQuery[property])) {
-      if (property === 'any' && streamQuery[property] === '*') {
-        continue; // stop here and go to next property
-      } else {
-        throw ('Error in query [' + objectToString(requestQuery) + '] value of : [' + property +'] should be an array. Found: ' + objectToString(streamQuery[property]) );
+      for (item of arrayOfStreamIds) {
+        if (typeof item !== 'string')
+          throw ('Error in "streams" parameter[' + objectToString(arrayOfQueries) + '] all items of ' + objectToString(arrayOfStreamIds) +' must be streamIds. Found: ' + objectToString(item) );
       }
     }
-
-    for (item of streamQuery[property]) {
-      if (typeof item !== 'string')
-        throw ('Error in query [' + objectToString(requestQuery) + '] all items of ' + objectToString(streamQuery[property]) +' should be streamIds. Found: ' + objectToString(item) );
-    }
   }
-
 }
-
-
-
+exports.validateStreamsQuery = validateStreamsQuery;
 
 /**
  * @param {Array} - streamQuery 
