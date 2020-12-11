@@ -21,9 +21,21 @@ const util = require('util');
  * @property {Array} nonAuthorizedStreams - The list of stream that have been unAuthorized 
  */
 
+ /**
+ * @typedef {Object} StreamQuery
+ * @property {Array.<StreamId>|'*'} any - Any of the streamIds should match or "*" for all accessible streams
+ * @property {Array.<StreamId>} all - All of the streamIds should match
+ * @property {Array.<StreamId>} not - All of the streamIds should match
+ */
+
+ /**
+  * A streamId
+  * @typedef {string} StreamId
+  */
+
 /**
  * For retrocompatibility with older streams parameter ['A', 'B'] transform it to streams query [{any: ['A', 'B']}]
- * @param {Array} arrayOfQueries 
+ * @param {Array.<StreamQuery>} arrayOfQueries 
  * @throws - Error if mixed strings and other are found in array
  */
 function transformArrayOfStringsToStreamsQuery(arrayOfQueries) {
@@ -41,7 +53,7 @@ function transformArrayOfStringsToStreamsQuery(arrayOfQueries) {
 module.exports.transformArrayOfStringsToStreamsQuery = transformArrayOfStringsToStreamsQuery;
 
 /**
- * @param {Array} arrayOfQueries 
+ * @param {Array.<StreamQuery>} arrayOfQueries 
  * @throws - Error if query does not respect the schema
  */
 function validateStreamsQuery(arrayOfQueries) {
@@ -49,53 +61,53 @@ function validateStreamsQuery(arrayOfQueries) {
   arrayOfQueries.forEach((streamQuery) => { 
     validateStreamsQuerySchema(arrayOfQueries, streamQuery); 
   });
-
-  /**
-   * throw an error if block is not of the form {any: all: not: } with at least one of any or all 
-   * @param {*} streamQuery 
-   */
-  function validateStreamsQuerySchema(arrayOfQueries, streamQuery) {
-    
-    if (! streamQuery.any && ! streamQuery.all) {
-      throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" streams query: "' + objectToString(streamQuery) +'" must contain at least one of "any" or "all" property');
+}
+/**
+ * throw an error if streamQuery is not of the form {any: all: not: } with at least one of any or all 
+ * @param {Array.<StreamQuery>} arrayOfQueries - the full request for error message
+ * @param {StreamQuery} streamQuery 
+ */
+function validateStreamsQuerySchema(arrayOfQueries, streamQuery) {
+  
+  if (! streamQuery.any && ! streamQuery.all) {
+    throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" streams query: "' + objectToString(streamQuery) +'" must contain at least one of "any" or "all" property');
+  }
+  const res = {};
+  for (const [property, arrayOfStreamIds] of Object.entries(streamQuery)) {
+    if (! ['all', 'any', 'not'].includes(property))
+      throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" unkown property: "' + property +'" in streams query "' + objectToString(streamQuery) + '"');
+  
+    if (! Array.isArray(arrayOfStreamIds)) {
+      if (property === 'any' && arrayOfStreamIds === '*') {
+        continue; // stop here and go to next property
+      } else {
+        throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" value of : "' + property +'" must be an array. Found: "' + objectToString(arrayOfStreamIds) + '"' );
+      }
     }
-    const res = {};
-    for (const [property, arrayOfStreamIds] of Object.entries(streamQuery)) {
-      if (! ['all', 'any', 'not'].includes(property))
-        throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" unkown property: "' + property +'" in streams query "' + objectToString(streamQuery) + '"');
-    
-      if (! Array.isArray(arrayOfStreamIds)) {
-        if (property === 'any' && arrayOfStreamIds === '*') {
-          continue; // stop here and go to next property
-        } else {
-          throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" value of : "' + property +'" must be an array. Found: "' + objectToString(arrayOfStreamIds) + '"' );
-        }
-      }
 
-      for (item of arrayOfStreamIds) {
-        if (typeof item !== 'string')
-          throw ('Error in "streams" parameter[' + objectToString(arrayOfQueries) + '] all items of ' + objectToString(arrayOfStreamIds) +' must be streamIds. Found: ' + objectToString(item) );
-      }
+    for (item of arrayOfStreamIds) {
+      if (typeof item !== 'string')
+        throw ('Error in "streams" parameter[' + objectToString(arrayOfQueries) + '] all items of ' + objectToString(arrayOfStreamIds) +' must be streamIds. Found: ' + objectToString(item) );
     }
   }
 }
 exports.validateStreamsQuery = validateStreamsQuery;
 
 /**
- * @param {Array} - streamQuery 
+ * @param {Array.<StreamQuery>} - array of streamQUeries 
  * @param {Function} expand should return the streamId in argument and its children (or null if does not exist).
- * @param {Array} allAuthorizedStreams - the list of authorized streams
- * @param {Array} allAccessibleStreams - the list of "visible" streams (i.e not trashed when state = default)
+ * @param {Array.<StreamId>} allAuthorizedStreams - the list of authorized streams
+ * @param {Array.<StreamId>} allAccessibleStreams - the list of "visible" streams (i.e not trashed when state = default)
  * @returns {StreamQueryValidation} 
  */
 function checkPermissionsAndApplyToScope(arrayOfQueries, expand, allAuthorizedStreams, allAccessibleStreams) {
   
-  // registerStream will collect all nonAuthorized streams here during block inspection
+  // registerStream will collect all nonAuthorized streams here during streamQuery inspection
   const nonAuthorizedStreams = [];
 
-  // inspect each block and remove enventuall null
-  const arrayOfQueriesResult = arrayOfQueries.map(expandAndTransformStreamQuery).filter((block) => { 
-    return block !== null; // some block can be translated to "null" if no inclusion are found
+  // inspect each streamQuery and remove enventuall null
+  const arrayOfQueriesResult = arrayOfQueries.map(expandAndTransformStreamQuery).filter((streamQuery) => { 
+    return streamQuery !== null; // some streamQuery can be translated to "null" if no inclusion are found
   });
 
   if (arrayOfQueriesResult.length === 0) {
@@ -212,17 +224,17 @@ exports.checkPermissionsAndApplyToScope = checkPermissionsAndApplyToScope;
 
 /**
  * Transform queries for mongoDB - to be run on 
- * @param {Array} streamQueriesArray - array of streamQuery 
- * @returns {Object} - the necessary components to query streams. Either with a {streamIds: ..} or { $or: ....}
+ * @param {Array.<StreamQuery>} streamQueriesArray - array of streamQuery 
+ * @returns {Array.<StreamId>} - the necessary components to query streams. Either with a {streamIds: ..} or { $or: ....}
  */
 exports.toMongoDBQuery = function toMongoDBQuery(streamQueriesArray, forbiddenStreamsIds) {
   let mongoQuery = null; // no streams
   
   if (streamQueriesArray !== null) {
     if (streamQueriesArray.length === 1) {
-      mongoQuery = processBlock(streamQueriesArray[0]);
+      mongoQuery = streamQueryToMongoDBQuery(streamQueriesArray[0]);
     } else { // pack in $or
-      mongoQuery =  {$or: streamQueriesArray.map(processBlock)};
+      mongoQuery =  {$or: streamQueriesArray.map(streamQueryToMongoDBQuery)};
     }
   }
 
@@ -238,35 +250,35 @@ exports.toMongoDBQuery = function toMongoDBQuery(streamQueriesArray, forbiddenSt
   }
 
   return mongoQuery;
-  
-  function processBlock(block) {
-    const res = { };
-    if (block.any && block.any.length > 0) { 
-      if ( block.any.length === 1) {
-        res.streamIds = { $eq: block.any[0]};
-      } else {
-        res.streamIds = { $in: block.any};
-      }
+}
+/**
+ * @param {StreamQuery} streamQuery 
+ */
+function streamQueryToMongoDBQuery(streamQuery) {
+  const res = { };
+  if (streamQuery.any && streamQuery.any.length > 0) { 
+    if ( streamQuery.any.length === 1) {
+      res.streamIds = { $eq: streamQuery.any[0]};
+    } else {
+      res.streamIds = { $in: streamQuery.any};
     }
-    // only reached from a "and" block
-    if (block.not && block.not.length > 0) {
-      if (res.streamIds) res.streamIds = {};
-      if ( block.not.length === 1) {
-        res.streamIds = { $ne: block.not[0] };
-      } else {
-        res.streamIds = { $nin : block.not};
-      }
-    }
-    if (block.and) {
-      res.$and = [];
-      for (let andItem of block.and) {
-        res.$and.push(processBlock(andItem));
-      }
-    }
-    return res;
   }
-
-
+  // only reached from a "and" property
+  if (streamQuery.not && streamQuery.not.length > 0) {
+    if (res.streamIds) res.streamIds = {};
+    if ( streamQuery.not.length === 1) {
+      res.streamIds = { $ne: streamQuery.not[0] };
+    } else {
+      res.streamIds = { $nin : streamQuery.not};
+    }
+  }
+  if (streamQuery.and) {
+    res.$and = [];
+    for (let andItem of streamQuery.and) {
+      res.$and.push(streamQueryToMongoDBQuery(andItem));
+    }
+  }
+  return res;
 }
 
 //------------------------ helpers ----------------------------------//
