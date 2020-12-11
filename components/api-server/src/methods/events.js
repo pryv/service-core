@@ -220,8 +220,7 @@ module.exports = function (
     /**
      * Function to be passed to streamQueryFiltering.validateQuery
      * Expand a streamId to [streamId, child1, ...]
-     * @param {*} streamId 
-     * @param {*} isInclusive 
+     * @param {Streamid} streamId 
      */
     function expand (streamId) {
       return treeUtils.expandIds(context.streams, [streamId]);
