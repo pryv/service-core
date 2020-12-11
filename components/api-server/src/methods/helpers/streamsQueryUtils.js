@@ -11,9 +11,7 @@
  * Documentation and specifications can be found on 
  * https://github.com/pryv/docs-pryv/blob/master/pryv.io/events.get-filtering/README.md
  */
-
 const util = require('util');
-
 
 /**
  * @typedef {Object} StreamQueryScoped
@@ -21,14 +19,14 @@ const util = require('util');
  * @property {Array} nonAuthorizedStreams - The list of stream that have been unAuthorized 
  */
 
- /**
+/**
  * @typedef {Object} StreamQuery
  * @property {Array.<StreamId>|'*'} any - Any of the streamIds should match or "*" for all accessible streams
  * @property {Array.<StreamId>} all - All of the streamIds should match
  * @property {Array.<StreamId>} not - All of the streamIds should match
  */
 
- /**
+/**
   * A streamId
   * @typedef {string} StreamId
   */
@@ -57,7 +55,6 @@ module.exports.transformArrayOfStringsToStreamsQuery = transformArrayOfStringsTo
  * @throws - Error if query does not respect the schema
  */
 function validateStreamsQuery(arrayOfQueries) {
-  // validateQUery
   arrayOfQueries.forEach((streamQuery) => { 
     validateStreamsQuerySchema(arrayOfQueries, streamQuery); 
   });
@@ -164,7 +161,7 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expand, allAuthorizedSt
         }
       }
     }
-   
+  
     return (containsAtLeastOneInclusion) ? res : null;
   }
 
@@ -214,10 +211,7 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expand, allAuthorizedSt
     }
   }
 }
-
 exports.checkPermissionsAndApplyToScope = checkPermissionsAndApplyToScope;
-
-
 
 /**
  * Transform queries for mongoDB - to be run on 
