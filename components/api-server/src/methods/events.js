@@ -198,7 +198,7 @@ module.exports = function (
       return context.access.canReadStream(stream.id);
     }
 
-    // Accessible streams are the on that authorized && correspond to the "state" param request
+    // Accessible streams are the on that authorized && correspond to the "state" param request - ie: if state=default, trashed streams are omitted
     let accessibleStreamsIds = [];
 
     if (params.state === 'all' || params.state === 'trashed') { // all streams
@@ -213,38 +213,39 @@ module.exports = function (
 
     if (params.streams === null) { // all streams
       if (accessibleStreamsIds.length > 0) params.streams = [{ any: accessibleStreamsIds }];
-    } else {
 
-
-      /**
-       * Function to be passed to streamQueryFiltering.validateQuery
-       * Expand a streamId to [streamId, child1, ...]
-       * @param {*} streamId 
-       * @param {*} isInclusive 
-       */
-      const expand = function (streamId) {
-        return treeUtils.expandIds(context.streams, [streamId]);
-      }
-
-      const { streamQuery, nonAuthorizedStreams } =
-        queryStreamFiltering.checkPermissionsAndApplyToScope(params.streams, expand, authorizedStreamsIds, accessibleStreamsIds);
-
-      params.streams = streamQuery;
-
-      if (nonAuthorizedStreams.length > 0) {
-        // check if one is create-only and send forbidden
-        for (let i = 0; i < nonAuthorizedStreams.length; i++) {
-          if (context.access.isCreateOnlyStream(nonAuthorizedStreams[i])) {
-            return next(errors.forbidden('stream [' + nonAuthorizedStreams[i] + '] has create-only permission and cannot be read'));
-          }
-        }
-
-        return next(errors.unknownReferencedResource(
-          'stream' + (nonAuthorizedStreams.length > 1 ? 's' : ''),
-          'streams',
-          nonAuthorizedStreams));
-      }
+      return next();
     }
+
+    /**
+     * Function to be passed to streamQueryFiltering.validateQuery
+     * Expand a streamId to [streamId, child1, ...]
+     * @param {*} streamId 
+     * @param {*} isInclusive 
+     */
+    const expand = function (streamId) {
+      return treeUtils.expandIds(context.streams, [streamId]);
+    }
+
+    const { streamQuery, nonAuthorizedStreams } =
+      queryStreamFiltering.checkPermissionsAndApplyToScope(params.streams, expand, authorizedStreamsIds, accessibleStreamsIds);
+
+    params.streams = streamQuery;
+
+    if (nonAuthorizedStreams.length > 0) {
+      // check if one is create-only and send forbidden
+      for (let i = 0; i < nonAuthorizedStreams.length; i++) {
+        if (context.access.isCreateOnlyStream(nonAuthorizedStreams[i])) {
+          return next(errors.forbidden('stream [' + nonAuthorizedStreams[i] + '] has create-only permission and cannot be read'));
+        }
+      }
+
+      return next(errors.unknownReferencedResource(
+        'stream' + (nonAuthorizedStreams.length > 1 ? 's' : ''),
+        'streams',
+        nonAuthorizedStreams));
+    }
+
     next();
   }
 
