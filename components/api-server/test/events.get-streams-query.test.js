@@ -522,6 +522,24 @@ describe('events.get streams query', function () {
       assert.equal(events.length, 4);
     });
 
+    it('[ENFE] must accept a stringified object in a batch call', async function () {
+      const res = await server.request()
+        .post(basePath)
+        .set('Authorization', tokenRead)
+        .send([
+          {
+            method: 'events.get',
+            params: {
+              streams: JSON.stringify({ any: ['D'], not: ['E']})
+            }
+          }
+        ]);
+      assert.exists(res.body.results);
+      assert.exists(res.body.results[0].events);
+      const events = res.body.results[0].events;
+      assert.equal(events.length, 4);
+    });
+
     describe('edge cases', () => {
       it('[X8B1] must return an error on non-existing stream', async function () {
         const res = await server.request()
