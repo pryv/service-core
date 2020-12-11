@@ -231,7 +231,7 @@ module.exports = function (
 
       params.streams = streamQuery;
 
-      if (unkownStreams.length > 0) {
+      if (nonAuthorizedStreams.length > 0) {
         // check if one is create-only and send forbidden
         for (let i = 0; i < nonAuthorizedStreams.length; i++) {
           if (context.access.isCreateOnlyStream(nonAuthorizedStreams[i])) {
@@ -255,9 +255,6 @@ module.exports = function (
   function removeNotReadableAccountStreamsFromQuery (mongoQuery) {
     // get streams ids from the config that should be retrieved
     const userAccountStreams = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
-    if (typeof mongoQuery.streamIds === 'string') { // happends when simple equal selector streamId: 'sss';
-      mongoQuery.streamIds = {$in: [mongoQuery.streamIds]};
-    }
     if (mongoQuery.streamIds && mongoQuery.streamIds.$nin) {
       mongoQuery.streamIds.$nin.push(...userAccountStreams);
     } else {
@@ -288,7 +285,7 @@ module.exports = function (
     // remove all Account streamIds by defaults
     query = removeNotReadableAccountStreamsFromQuery(query);
 
-    
+
     if (params.tags && params.tags.length > 0) {
       query.tags = {$in: params.tags};
     }
