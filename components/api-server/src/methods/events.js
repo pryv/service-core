@@ -93,7 +93,7 @@ module.exports = function (
     transformArrayOfStringStreamQuery,
     streamQueryParamValidation,
     applyDefaultsForRetrieval,
-    checkStreamsPermissionAnyApplyToScope,
+    checkStreamsPermissionsAndApplyToScope,
     findAccessibleEvents,
     includeDeletionsIfRequested);
 
@@ -190,7 +190,7 @@ module.exports = function (
     next();
   }
 
-  function checkStreamsPermissionAnyApplyToScope(context, params, result, next) {
+  function checkStreamsPermissionsAndApplyToScope(context, params, result, next) {
     // Get all authorized streams (the ones that could be acessed) - Pass by all the tree including childrens
     const authorizedStreamsIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, true, isAuthorizedStream), 'id');
     function isAuthorizedStream(stream) {
@@ -226,13 +226,10 @@ module.exports = function (
         return treeUtils.expandIds(context.streams, [streamId]);
       }
 
-
       const { streamQuery, nonAuthorizedStreams } =
-        queryStreamFiltering.checkPermissionAnyApplyToScope(params.streams, expand, authorizedStreamsIds, accessibleStreamsIds);
+        queryStreamFiltering.checkPermissionsAndApplyToScope(params.streams, expand, authorizedStreamsIds, accessibleStreamsIds);
 
-      unkownStreams = nonAuthorizedStreams;
       params.streams = streamQuery;
-
 
       if (unkownStreams.length > 0) {
         // check if one is create-only and send forbidden
@@ -290,6 +287,8 @@ module.exports = function (
    
     // remove all Account streamIds by defaults
     query = removeNotReadableAccountStreamsFromQuery(query);
+
+    
     if (params.tags && params.tags.length > 0) {
       query.tags = {$in: params.tags};
     }
