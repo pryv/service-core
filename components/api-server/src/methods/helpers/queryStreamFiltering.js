@@ -57,18 +57,18 @@ function validateStreamsQuery(arrayOfQueries) {
   function validateStreamsQuerySchema(arrayOfQueries, streamQuery) {
     
     if (! streamQuery.any && ! streamQuery.all) {
-      throw ('Error in "streams" parameter \'' + objectToString(arrayOfQueries) + '\' streams query: \'' + objectToString(streamQuery) +'\' must contain at least one of "any" or "all" property');
+      throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" streams query: "' + objectToString(streamQuery) +'" must contain at least one of "any" or "all" property');
     }
     const res = {};
     for (const [property, arrayOfStreamIds] of Object.entries(streamQuery)) {
       if (! ['all', 'any', 'not'].includes(property))
-        throw ('Error in "streams" parameter \'' + objectToString(arrayOfQueries) + '\' unkown property: \'' + property +'\' in streams query \'' + objectToString(streamQuery) + '\'');
+        throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" unkown property: "' + property +'" in streams query "' + objectToString(streamQuery) + '"');
     
       if (! Array.isArray(arrayOfStreamIds)) {
         if (property === 'any' && arrayOfStreamIds === '*') {
           continue; // stop here and go to next property
         } else {
-          throw ('Error in "streams" parameter \'' + objectToString(arrayOfQueries) + '\' value of : \'' + property +'\' must be an array. Found: \'' + objectToString(arrayOfStreamIds) + '\'' );
+          throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" value of : "' + property +'" must be an array. Found: "' + objectToString(arrayOfStreamIds) + '"' );
         }
       }
 
