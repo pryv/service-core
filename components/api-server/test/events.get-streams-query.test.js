@@ -167,7 +167,6 @@ describe('events.get streams query', function () {
         assert.deepEqual(mongo, { streamIds: { '$in': [] } });
       });
 
-
       it('[IOLA] must throw on malformed expressions', async function () {
         const malformed = {
           'streams queries and streamIds cannot be mixed': [
@@ -327,7 +326,7 @@ describe('events.get streams query', function () {
       await mongoFixtures.clean();
     });
 
-    it('[NKH8] must accept simple string converting it to array (because of some creepy HTTP client)', async function () {
+    it('[NKH8] must accept a simple string', async function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
@@ -344,7 +343,7 @@ describe('events.get streams query', function () {
       });
     });
 
-    it('[BW6Z] must accept array of string', async function () {
+    it('[BW6Z] must accept array of strings', async function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
@@ -362,7 +361,7 @@ describe('events.get streams query', function () {
       });
     });
 
-    it('[HFA2] must accept {"not": ["D"]} without including items in trashed streams', async function () {
+    it('[HFA2] must accept * (star) with a not without including items in trashed streams', async function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
@@ -385,7 +384,7 @@ describe('events.get streams query', function () {
       });
     });
 
-    it('[MMB0] must accept !B && !E without including items in Trashed streams', async function () {
+    it('[MMB0] must accept * (star) with !B && !E without including items in trashed streams', async function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
@@ -409,7 +408,7 @@ describe('events.get streams query', function () {
       });
     });
 
-    it('[VUER] must return events in A AND E', async function () {
+    it('[VUER] must return events in A && E', async function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
@@ -429,7 +428,7 @@ describe('events.get streams query', function () {
       });
     });
 
-    it('[CBP2] must return events in A AND NOT B', async function () {
+    it('[CBP2] must return events in A && !B', async function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
@@ -449,7 +448,7 @@ describe('events.get streams query', function () {
       });
     });
 
-    it('[I19H] must return events in A AND NOT in D', async function () {
+    it('[I19H] must return events in A && !D', async function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
@@ -465,7 +464,7 @@ describe('events.get streams query', function () {
       });
     });
 
-    it('[55HB] must return events in A AND NOT-EQUAL D)', async function () {
+    it('[55HB] must return events in A && NOT-EQUAL D)', async function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
@@ -505,8 +504,7 @@ describe('events.get streams query', function () {
       });
     });
 
-    it('[UJSB] should allow object in batch call', async function () {
-      //['B',{AND: ['D', {NOTEQUAL: 'E'}]}]
+    it('[UJSB] must accept an object in a batch call (instead of a stringified one)', async function () {
       const res = await server.request()
         .post(basePath)
         .set('Authorization', tokenRead)

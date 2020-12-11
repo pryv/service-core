@@ -143,7 +143,6 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expand, allAuthorizedSt
       }
     }
 
-
     // all & not share the same logic
     for (const property of ['all', 'not']) {
       if (streamQuery[property]) {
