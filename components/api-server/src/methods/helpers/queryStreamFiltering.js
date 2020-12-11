@@ -243,7 +243,12 @@ exports.toMongoDBQuery = function toMongoDBQuery(streamQueriesArray, forbiddenSt
   if (mongoQuery === null)  mongoQuery = {streamIds: {$in: []}}; // no streams
 
   if (forbiddenStreamsIds && forbiddenStreamsIds.length > 0) {
-
+    mongoQuery.streamIds = mongoQuery.streamIds || {};
+    if (mongoQuery.streamIds.$nin) {
+      mongoQuery.streamIds.$nin.push(...forbiddenStreamsIds);
+    } else {
+      mongoQuery.streamIds.$nin = forbiddenStreamsIds;
+    }
   }
 
   return mongoQuery;

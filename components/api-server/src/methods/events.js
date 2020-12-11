@@ -248,38 +248,18 @@ module.exports = function (
     next();
   }
 
-  /**
-   * Remove events that belongs to the account streams and should not be displayed
-   * @param query -mongo query object  
-   */
-  function removeNotReadableAccountStreamsFromQuery (mongoQuery) {
-    // get streams ids from the config that should be retrieved
-    const userAccountStreams = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
-    if (mongoQuery.streamIds && mongoQuery.streamIds.$nin) {
-      mongoQuery.streamIds.$nin.push(...userAccountStreams);
-    } else {
-      mongoQuery.streamIds = { ...mongoQuery.streamIds, ...{ $nin: userAccountStreams } };
-    }
-    return mongoQuery;
-  }
-
-
-
   async function findAccessibleEvents(context, params, result, next) {
     // build query
     var query = querying.noDeletions(querying.applyState({}, params.state));
   
-    const streamsQuery = queryStreamFiltering.toMongoDBQuery(params.streams);
+    const forbiddenStreamIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
+    const streamsQuery = queryStreamFiltering.toMongoDBQuery(params.streams, forbiddenStreamIds);
      
     if (streamsQuery.$or) query.$or = streamsQuery.$or;
     if (streamsQuery.streamIds) query.streamIds = streamsQuery.streamIds;
     if (streamsQuery.$and) query.$and = streamsQuery.$and;
    
-   
-    // remove all Account streamIds by defaults
-    query = removeNotReadableAccountStreamsFromQuery(query);
-
-
+  
     if (params.tags && params.tags.length > 0) {
       query.tags = {$in: params.tags};
     }
@@ -374,7 +354,13 @@ module.exports = function (
   );
 
   function findEvent (context, params, result, next) {
-    const query = removeNotReadableAccountStreamsFromQuery({ id: params.id });
+    const query = { 
+      streamIds: {
+        // forbid account stream ids
+        $nin: SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading()
+      },
+      id: params.id 
+    };
     userEventsStorage.findOne(context.user, query, null, function (err, event) {
       if (err) {
         return next(errors.unexpectedError(err));
