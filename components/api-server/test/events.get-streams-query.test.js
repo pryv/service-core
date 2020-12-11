@@ -87,9 +87,7 @@ function customExpand(streamId) {
   return res;
 }
 
-
-
-describe('events.get querying streams', function () {
+describe('events.get streams query', function () {
 
   describe('Internal query helpers', function () {
 
