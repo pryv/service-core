@@ -223,7 +223,7 @@ module.exports = function (
      * @param {*} streamId 
      * @param {*} isInclusive 
      */
-    const expand = function (streamId) {
+    function expand (streamId) {
       return treeUtils.expandIds(context.streams, [streamId]);
     }
 

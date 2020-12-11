@@ -105,7 +105,7 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expand, allAuthorizedSt
   // registerStream will collect all nonAuthorized streams here during streamQuery inspection
   const nonAuthorizedStreams = [];
 
-  // inspect each streamQuery and remove enventuall null
+  // inspect each streamQuery and remove enventual null
   const arrayOfQueriesResult = arrayOfQueries.map(expandAndTransformStreamQuery).filter((streamQuery) => { 
     return streamQuery !== null; // some streamQuery can be translated to "null" if no inclusion are found
   });
@@ -167,39 +167,12 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expand, allAuthorizedSt
    
     return (containsAtLeastOneInclusion) ? res : null;
   }
-  
- 
-
-  /**
-   * uses allAuthorizedStreams and allAccessibleStreams to check if it can be used in query
-   * @param {string} streamId 
-   * @returns {boolean} - true is streamId Can be used in the query
-   */
-  function registerStream(streamId) {
-    const isAuthorized = allAuthorizedStreams.includes(streamId);
-    if (! isAuthorized) { 
-      nonAuthorizedStreams.push(streamId);
-      return false;
-    }
-    const isAccessible = allAccessibleStreams.includes(streamId);
-    if (! isAccessible) return false;
-    return true;
-  }
-
 
   /**
    * @param {Array} streamIds - an array of streamids
    */
   function expandSet(streamIds) {
     const result = [];
-
-    function addToResult(streamId) {
-      const ok = registerStream(streamId);
-      if (ok && ! result.includes(streamId)) {
-        result.push(streamId);
-      }
-      return ok;
-    }
 
     for (let streamId of streamIds) {
       if (streamId.startsWith('#')) { 
@@ -215,6 +188,30 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expand, allAuthorizedSt
       }
     }
     return result;
+
+    function addToResult(streamId) {
+      const ok = registerStream(streamId);
+      if (ok && ! result.includes(streamId)) {
+        result.push(streamId);
+      }
+      return ok;
+    }
+
+    /**
+     * uses allAuthorizedStreams and allAccessibleStreams to check if it can be used in query
+     * @param {string} streamId 
+     * @returns {boolean} - true is streamId Can be used in the query
+     */
+    function registerStream(streamId) {
+      const isAuthorized = allAuthorizedStreams.includes(streamId);
+      if (! isAuthorized) { 
+        nonAuthorizedStreams.push(streamId);
+        return false;
+      }
+      const isAccessible = allAccessibleStreams.includes(streamId);
+      if (! isAccessible) return false;
+      return true;
+    }
   }
 }
 
