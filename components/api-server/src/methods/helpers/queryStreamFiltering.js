@@ -229,15 +229,24 @@ exports.checkPermissionsAndApplyToScope = checkPermissionsAndApplyToScope;
  * @param {Array} streamQueriesArray - array of streamQuery 
  * @returns {Object} - the necessary components to query streams. Either with a {streamIds: ..} or { $or: ....}
  */
-exports.toMongoDBQuery = function toMongoDBQuery(streamQueriesArray) {
-  if (!streamQueriesArray) return null;
+exports.toMongoDBQuery = function toMongoDBQuery(streamQueriesArray, forbiddenStreamsIds) {
+  let mongoQuery = null; // no streams
   
-  if (streamQueriesArray.length === 1) {
-    return processBlock(streamQueriesArray[0]);
-  } else { // pack in $or
-    return {$or: streamQueriesArray.map(processBlock)};
+  if (streamQueriesArray !== null) {
+    if (streamQueriesArray.length === 1) {
+      mongoQuery = processBlock(streamQueriesArray[0]);
+    } else { // pack in $or
+      mongoQuery =  {$or: streamQueriesArray.map(processBlock)};
+    }
   }
 
+  if (mongoQuery === null)  mongoQuery = {streamIds: {$in: []}}; // no streams
+
+  if (forbiddenStreamsIds && forbiddenStreamsIds.length > 0) {
+
+  }
+
+  return mongoQuery;
   
   function processBlock(block) {
     const res = { };

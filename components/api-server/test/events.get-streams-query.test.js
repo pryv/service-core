@@ -174,7 +174,8 @@ describe('events.get querying streams', function () {
         const query = validateQuery({ any: ['Z'] });
         assert.deepEqual(query, null);
         const mongo = queryStreamFiltering.toMongoDBQuery(query);
-        assert.deepEqual(mongo, null);
+        // empty call
+        assert.deepEqual(mongo, { streamIds: { '$in': [] } });
       });
 
 

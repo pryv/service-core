@@ -268,19 +268,13 @@ module.exports = function (
   async function findAccessibleEvents(context, params, result, next) {
     // build query
     var query = querying.noDeletions(querying.applyState({}, params.state));
-    if (params.streams) {
-      const streamsQuery = queryStreamFiltering.toMongoDBQuery(params.streams);
+  
+    const streamsQuery = queryStreamFiltering.toMongoDBQuery(params.streams);
      
-      if (streamsQuery === null) {
-        query.streamIds = {$in: []}; // no streams
-      } else { // inject possible components of streamQuery to query
-        if (streamsQuery.$or) query.$or = streamsQuery.$or;
-        if (streamsQuery.streamIds) query.streamIds = streamsQuery.streamIds;
-        if (streamsQuery.$and) query.$and = streamsQuery.$and;
-      }
-    } else {
-      query.streamIds = {$in: []}; // no streams
-    }
+    if (streamsQuery.$or) query.$or = streamsQuery.$or;
+    if (streamsQuery.streamIds) query.streamIds = streamsQuery.streamIds;
+    if (streamsQuery.$and) query.$and = streamsQuery.$and;
+   
    
     // remove all Account streamIds by defaults
     query = removeNotReadableAccountStreamsFromQuery(query);
