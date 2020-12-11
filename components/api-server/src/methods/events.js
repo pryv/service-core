@@ -251,22 +251,22 @@ module.exports = function (
 
   async function findAccessibleEvents(context, params, result, next) {
     // build query
-    var query = querying.noDeletions(querying.applyState({}, params.state));
+    const query = querying.noDeletions(querying.applyState({}, params.state));
   
     const forbiddenStreamIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
     const streamsQuery = queryStreamFiltering.toMongoDBQuery(params.streams, forbiddenStreamIds);
-     
+    
     if (streamsQuery.$or) query.$or = streamsQuery.$or;
     if (streamsQuery.streamIds) query.streamIds = streamsQuery.streamIds;
     if (streamsQuery.$and) query.$and = streamsQuery.$and;
-   
+  
   
     if (params.tags && params.tags.length > 0) {
       query.tags = {$in: params.tags};
     }
     if (params.types && params.types.length > 0) {
       // unofficially accept wildcard for sub-type parts
-      var types = params.types.map(getTypeQueryValue);
+      const types = params.types.map(getTypeQueryValue);
       query.type = {$in: types};
     }
     if (params.running) {
@@ -301,7 +301,7 @@ module.exports = function (
       query.modified = {$gt: params.modifiedSince};
     }
 
-    var options = {
+    const options = {
       projection: params.returnOnlyIds ? {id: 1} : {},
       sort: { time: params.sortAscending ? 1 : -1 },
       skip: params.skip,
@@ -331,7 +331,7 @@ module.exports = function (
       return next();
     }
 
-    var options = {
+    const options = {
       sort: {deleted: params.sortAscending ? 1 : -1},
       skip: params.skip,
       limit: params.limit
