@@ -16,8 +16,8 @@ const util = require('util');
 
 
 /**
- * @typedef {Object} StreamQueryValidation
- * @property {Object} streamQuery - The query validated and expanded 
+ * @typedef {Object} StreamQueryScoped
+ * @property {Array.<StreamQuery>} streamQuery - An array of streamQueries 
  * @property {Array} nonAuthorizedStreams - The list of stream that have been unAuthorized 
  */
 
@@ -98,7 +98,7 @@ exports.validateStreamsQuery = validateStreamsQuery;
  * @param {Function} expand should return the streamId in argument and its children (or null if does not exist).
  * @param {Array.<StreamId>} allAuthorizedStreams - the list of authorized streams
  * @param {Array.<StreamId>} allAccessibleStreams - the list of "visible" streams (i.e not trashed when state = default)
- * @returns {StreamQueryValidation} 
+ * @returns {StreamQuery} 
  */
 function checkPermissionsAndApplyToScope(arrayOfQueries, expand, allAuthorizedStreams, allAccessibleStreams) {
   
@@ -222,7 +222,8 @@ exports.checkPermissionsAndApplyToScope = checkPermissionsAndApplyToScope;
 /**
  * Transform queries for mongoDB - to be run on 
  * @param {Array.<StreamQuery>} streamQueriesArray - array of streamQuery 
- * @returns {Array.<StreamId>} - the necessary components to query streams. Either with a {streamIds: ..} or { $or: ....}
+ * @param {Array.<StreamId>} forbiddenStreamsIds - an array of streamIds not accessible
+ * @returns {MongoQuey} - the necessary components to query streams. Either with a {streamIds: ..} or { $or: ....}
  */
 exports.toMongoDBQuery = function toMongoDBQuery(streamQueriesArray, forbiddenStreamsIds) {
   let mongoQuery = null; // no streams
@@ -249,6 +250,7 @@ exports.toMongoDBQuery = function toMongoDBQuery(streamQueriesArray, forbiddenSt
   return mongoQuery;
 }
 /**
+ * Convert a streamQuery to a query usable by MongoDB 
  * @param {StreamQuery} streamQuery 
  */
 function streamQueryToMongoDBQuery(streamQuery) {

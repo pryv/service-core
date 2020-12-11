@@ -6,21 +6,12 @@
  */
 /*global describe, before, beforeEach, after, afterEach, it */
 
-require('./test-helpers');
-
-const util = require('util');
-
 const cuid = require('cuid');
 const { assert } = require('chai');
-
-const helpers = require('./helpers');
-const validation = helpers.validation;
-
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
 const queryStreamUtils = require('../src/methods/helpers/queryStreamUtils');
-const event = require('../src/schema/event');
 
 /**
  * Structures
@@ -225,22 +216,19 @@ describe('events.get querying streams', function () {
 
       it('[KKIH] must convert to MongoDB including expansion', async function () {
         const clean = validateQuery(['A','B']);
-        const mongo = queryStreamUtils.toMongoDBQuery(clean);
-       
+        const mongo = queryStreamUtils.toMongoDBQuery(clean);      
         assert.deepEqual(mongo, { streamIds: { '$in': [ 'A', 'B', 'C' ] } });
       });
 
       it('[4QMR] must convert to MongoDB including with "ALL"', async function () {
         const clean = validateQuery({any: ['A', 'B'], all: ['E']});
-        const mongo = queryStreamUtils.toMongoDBQuery(clean);
-        
+        const mongo = queryStreamUtils.toMongoDBQuery(clean);  
         assert.deepEqual(mongo, { streamIds: { '$in': [ 'A', 'B', 'C' ]}, '$and': [ { streamIds: { '$eq': 'E' } } ] });
       });
 
       it('[NG7F] must convert to MongoDB including expansion with "NOT"', async function () {
         const clean = validateQuery({any: ['A', 'B'], not: ['E']});
         const mongo = queryStreamUtils.toMongoDBQuery(clean);
-        
         assert.deepEqual(mongo, { 
           streamIds: { '$in': [ 'A', 'B', 'C' ]}, 
           '$and': [ { streamIds: { '$ne': 'E' } } ] });
