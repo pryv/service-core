@@ -95,7 +95,7 @@ describe('events.get querying streams', function () {
 
     function validateQuery(query) {
       if (! Array.isArray(query)) query = [query];
-      query = queryStreamFiltering.transformArrayOfStringStreamQuery(query);
+      query = queryStreamFiltering.transformArrayOfStringsToStreamsQuery(query);
       query = queryStreamFiltering.streamQueryParamValidation(query);
       const { streamQuery } = queryStreamFiltering.checkPermissionsAndApplyToScope(query, customExpand, ALL_AUTHORIZED_STREAMS, ALL_ACCESSIBLE_STREAMS);
       return streamQuery;
@@ -181,7 +181,7 @@ describe('events.get querying streams', function () {
 
       it('[IOLA] must throw on malformed expressions', async function () {
         const malformed = {
-          'streamQuery and streamIds cannot be mixed': [
+          'streams queries and streamIds cannot be mixed': [
             ['A', { any: ['A', 'B'] }],
           ],
           'must contain at least one of "any" or "all"': [

@@ -22,31 +22,23 @@ const util = require('util');
  */
 
 /**
- * For retrocompatibility with streamQuery ['A', 'B'] transform it to {any: ['A', 'B']}
+ * For retrocompatibility with older streams parameter ['A', 'B'] transform it to streams query [{any: ['A', 'B']}]
  * @param {Array} arrayOfQueries 
- * @throws - Error if mixed strings and objects are found in query
+ * @throws - Error if mixed strings and other are found in array
  */
-function transformArrayOfStringStreamQuery(arrayOfQueries) {
-   // first extract all '<streamId>' for retrocompatibility and pack them into a single {any: ... }
-   const streamIds = [];
-   
-   const filteredArrayOfQueries = arrayOfQueries.filter((item) => {
-     if (typeof item === 'string') {
-       streamIds.push(item); // pack all 'streamIds together'   {any: .., .., ..}
-       return false;
-     } 
-     return true;
-   });
-   
-   if (streamIds.length > 0 && filteredArrayOfQueries.length > 0) {
-     throw('Error in query, streamQuery and streamIds cannot be mixed');
-   }
-   
-   if (streamIds.length > 0) filteredArrayOfQueries.push({any: streamIds});
+function transformArrayOfStringsToStreamsQuery(arrayOfQueries) {
 
-   return filteredArrayOfQueries;
+  const streamIds = arrayOfQueries.filter(item => typeof item === 'string');
+
+  if (streamIds.length === 0) return arrayOfQueries;
+
+  if (streamIds.length != arrayOfQueries.length) {
+    throw('Error in "streams" parameter: streams queries and streamIds cannot be mixed');
+  }
+
+  return [{any: streamIds}];
 }
-module.exports.transformArrayOfStringStreamQuery = transformArrayOfStringStreamQuery;
+module.exports.transformArrayOfStringsToStreamsQuery = transformArrayOfStringsToStreamsQuery;
 
 /**
  * @param {Array} arrayOfQueries 
