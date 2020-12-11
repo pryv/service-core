@@ -16,7 +16,7 @@ var cuid = require('cuid'),
   querying = require('./helpers/querying'),
   timestamp = require('unix-timestamp'),
   treeUtils = utils.treeUtils,
-  queryStreamFiltering = require('./helpers/queryStreamFiltering'),
+  queryStreamUtils = require('./helpers/queryStreamUtils'),
   _ = require('lodash'),
   SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
 
@@ -137,7 +137,7 @@ module.exports = function (
   function transformArrayOfStringsToStreamsQuery (context, params, result, next) {
     if (params.streams === null) return next();
     try {
-      params.streams = queryStreamFiltering.transformArrayOfStringsToStreamsQuery(params.streams);
+      params.streams = queryStreamUtils.transformArrayOfStringsToStreamsQuery(params.streams);
     } catch (e) {
       return next(errors.invalidRequestStructure(e, params.streams));
     }
@@ -147,7 +147,7 @@ module.exports = function (
   function validateStreamsQuery (context, params, result, next) {
     if (params.streams === null) return next();
     try {
-      queryStreamFiltering.validateStreamsQuery(params.streams);
+      queryStreamUtils.validateStreamsQuery(params.streams);
     } catch (e) {
       return next(errors.invalidRequestStructure('Initial filtering: ' + e, params.streams));
     }
@@ -228,7 +228,7 @@ module.exports = function (
     }
 
     const { streamQuery, nonAuthorizedStreams } =
-      queryStreamFiltering.checkPermissionsAndApplyToScope(params.streams, expand, authorizedStreamsIds, accessibleStreamsIds);
+      queryStreamUtils.checkPermissionsAndApplyToScope(params.streams, expand, authorizedStreamsIds, accessibleStreamsIds);
 
     params.streams = streamQuery;
 
@@ -254,7 +254,7 @@ module.exports = function (
     const query = querying.noDeletions(querying.applyState({}, params.state));
   
     const forbiddenStreamIds = SystemStreamsSerializer.getAccountStreamsIdsForbiddenForReading();
-    const streamsQuery = queryStreamFiltering.toMongoDBQuery(params.streams, forbiddenStreamIds);
+    const streamsQuery = queryStreamUtils.toMongoDBQuery(params.streams, forbiddenStreamIds);
     
     if (streamsQuery.$or) query.$or = streamsQuery.$or;
     if (streamsQuery.streamIds) query.streamIds = streamsQuery.streamIds;

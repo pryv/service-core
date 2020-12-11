@@ -19,7 +19,7 @@ const validation = helpers.validation;
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
-const queryStreamFiltering = require('../src/methods/helpers/queryStreamFiltering');
+const queryStreamUtils = require('../src/methods/helpers/queryStreamUtils');
 const event = require('../src/schema/event');
 
 /**
@@ -93,9 +93,9 @@ describe('events.get streams query', function () {
 
     function validateQuery(query) {
       if (! Array.isArray(query)) query = [query];
-      query = queryStreamFiltering.transformArrayOfStringsToStreamsQuery(query);
-      queryStreamFiltering.validateStreamsQuery(query);
-      const { streamQuery } = queryStreamFiltering.checkPermissionsAndApplyToScope(query, customExpand, ALL_AUTHORIZED_STREAMS, ALL_ACCESSIBLE_STREAMS);
+      query = queryStreamUtils.transformArrayOfStringsToStreamsQuery(query);
+      queryStreamUtils.validateStreamsQuery(query);
+      const { streamQuery } = queryStreamUtils.checkPermissionsAndApplyToScope(query, customExpand, ALL_AUTHORIZED_STREAMS, ALL_ACCESSIBLE_STREAMS);
       return streamQuery;
     }
 
@@ -171,7 +171,7 @@ describe('events.get streams query', function () {
       it('[9907] handles not existent stream {any: ["Z"]}', async function () {
         const query = validateQuery({ any: ['Z'] });
         assert.deepEqual(query, null);
-        const mongo = queryStreamFiltering.toMongoDBQuery(query);
+        const mongo = queryStreamUtils.toMongoDBQuery(query);
         // empty call
         assert.deepEqual(mongo, { streamIds: { '$in': [] } });
       });
@@ -223,21 +223,21 @@ describe('events.get streams query', function () {
 
       it('[KKIH] must convert to MongoDB including expansion', async function () {
         const clean = validateQuery(['A','B']);
-        const mongo = queryStreamFiltering.toMongoDBQuery(clean);
+        const mongo = queryStreamUtils.toMongoDBQuery(clean);
        
         assert.deepEqual(mongo, { streamIds: { '$in': [ 'A', 'B', 'C' ] } });
       });
 
       it('[4QMR] must convert to MongoDB including with "ALL"', async function () {
         const clean = validateQuery({any: ['A', 'B'], all: ['E']});
-        const mongo = queryStreamFiltering.toMongoDBQuery(clean);
+        const mongo = queryStreamUtils.toMongoDBQuery(clean);
         
         assert.deepEqual(mongo, { streamIds: { '$in': [ 'A', 'B', 'C' ]}, '$and': [ { streamIds: { '$eq': 'E' } } ] });
       });
 
       it('[NG7F] must convert to MongoDB including expansion with "NOT"', async function () {
         const clean = validateQuery({any: ['A', 'B'], not: ['E']});
-        const mongo = queryStreamFiltering.toMongoDBQuery(clean);
+        const mongo = queryStreamUtils.toMongoDBQuery(clean);
         
         assert.deepEqual(mongo, { 
           streamIds: { '$in': [ 'A', 'B', 'C' ]}, 
@@ -246,7 +246,7 @@ describe('events.get streams query', function () {
 
       it('[HC6X] must convert to MongoDB including expansion with "ALL" and "NOT"', async function () {
         const clean = validateQuery({any: ['A', 'E'], all: ['D', 'C'], not: ['D', 'F']});
-        const mongo = queryStreamFiltering.toMongoDBQuery(clean);
+        const mongo = queryStreamUtils.toMongoDBQuery(clean);
         assert.deepEqual(mongo, {
           streamIds: { '$in': [ 'A', 'B', 'C', 'E' ] },
           '$and': [
@@ -260,7 +260,7 @@ describe('events.get streams query', function () {
 
       it('[1ZJU] must handle array of queries', async function () {
         const clean = validateQuery([{any: ['B']},{all: ['D'] , not: ['E']}]);
-        const mongo = queryStreamFiltering.toMongoDBQuery(clean);
+        const mongo = queryStreamUtils.toMongoDBQuery(clean);
         const expected = {
           '$or': [
             { streamIds: { '$eq': 'B' } },
