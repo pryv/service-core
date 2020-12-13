@@ -2,6 +2,10 @@
 
 ### 1.6.7
 
+New Features:
+
+- Stream queries for events.get
+
 Fixes:
 
 - usernames starting with "system" are available

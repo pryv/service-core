@@ -316,7 +316,7 @@ describe('permissions create-only level', () => {
     }
 
     describe('GET /', function() {
-      it('[CKF3] should return an empty list when fetching "create-only" streams', async function() {
+      it('[CKF3] should return an error list when fetching explicitly "create-only" streams', async function() {
         const query = {
           streams: [createOnlyStreamId]
         };
@@ -326,8 +326,8 @@ describe('permissions create-only level', () => {
           .get(basePath)
           .set('Authorization', createOnlyToken)
           .query(query);
-        assert.equal(res.status, 200);
-        assert.equal(res.body.events.length, 0);
+        assert.equal(res.status, 403);
+        assert.equal(res.body.error.id, 'forbidden');
       });
 
       it('[V4KJ] should return events when fetching "create-only" streams that are children of "read" streams', async function() {
@@ -449,7 +449,7 @@ describe('permissions create-only level', () => {
         fileId = res.body.event.fileId;
       });
       
-      // cleaning up explicitely as we are not using fixtures
+      // cleaning up explicitly as we are not using fixtures
       after(async function () {
         await server.request()
           .delete(reqPath(eventId))

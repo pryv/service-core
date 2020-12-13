@@ -255,6 +255,15 @@ describe('Socket.IO', function () {
         done();
       });
     });
+
+    it('[TO6Z] must accept streamQuery as Javascript Object', function (done) {
+      ioCons.con = connect(namespace, {auth: token});
+      ioCons.con.emit('events.get', {streams: {any: ['s_0_1'], all: ['s_8']}}, function (err, res) {
+        should(err).be.null(); 
+        should(res.events).not.be.null(); 
+        done();
+      });
+    });
     
     it('[NGUZ] must not crash when callers omit the callback', function (done) {
       ioCons.con = connect(namespace, {auth: token});
@@ -264,6 +273,9 @@ describe('Socket.IO', function () {
         done();
       });
     });
+
+
+   
     
     it('[ACA3] must fail if the called target does not exist', function (done) {
       ioCons.con = connect(namespace, {auth: token});
