@@ -103,7 +103,8 @@ module.exports = function (
       return next();
     }
     // Streams query can also be sent as a JSON string or string of Array
-    if (! context.acceptStreamsQueryNonStringified) { // batchCall and socket.io can use plain JSON objects
+    if (! context.acceptStreamsQueryNonStringified ||
+       (context.acceptStreamsQueryNonStringified && typeof params.streams === 'string')) { // batchCall and socket.io can use plain JSON objects
       try {
         params.streams = parseStreamsQueryParam(params.streams);
       } catch (e) {
