@@ -393,9 +393,9 @@ describe('webhooks', () => {
           response = res;
         });
 
-        it('[60OQ] should return a status 400 with a collision error error', () => {
+        it('[60OQ] should return a status 409 with a collision error error', () => {
           validation.checkError(response, {
-            status: 400,
+            status: 409,
             id: ErrorIds.ItemAlreadyExists
           });
         });

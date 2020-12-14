@@ -251,7 +251,7 @@ describe('registration: cluster', function() {
             serviceRegisterRequests.push(body);
             return true;
           })
-          .reply(400, {
+          .reply(409, {
             error: {
               id: ErrorIds.ItemAlreadyExists,
               data: { username: 'wactiv' }
@@ -260,8 +260,8 @@ describe('registration: cluster', function() {
   
         res = await request.post(methodPath).send(userData);
       });
-      it('[NUC9] should respond with status 400', () => {
-        assert.equal(res.status, 400);  
+      it('[NUC9] should respond with status 409', () => {
+        assert.equal(res.status, 409);  
       });
       it('[X1IA] should respond with the correct error', () => {
         const error = res.body.error;
@@ -284,7 +284,7 @@ describe('registration: cluster', function() {
             serviceRegisterRequests.push(body);
             return true;
           })
-          .reply(400, {
+          .reply(409, {
             error: {
               id: ErrorIds.ItemAlreadyExists,
               data: { email: 'wactiv@pryv.io' }
@@ -293,8 +293,8 @@ describe('registration: cluster', function() {
   
         res = await request.post(methodPath).send(userData);
       });
-      it('[SJXN] should respond with status 400', () => {
-        assert.equal(res.status, 400);
+      it('[SJXN] should respond with status 409', () => {
+        assert.equal(res.status, 409);
       });
       it('[U0ZN] should respond with the correct error', () => {
         const error = res.body.error;
@@ -320,7 +320,7 @@ describe('registration: cluster', function() {
             serviceRegisterRequests.push(body);
             return true;
           })
-          .reply(400, {
+          .reply(409, {
             error: {
               id: ErrorIds.ItemAlreadyExists,
               data: {
@@ -332,8 +332,8 @@ describe('registration: cluster', function() {
   
         res = await request.post(methodPath).send(userData);
       });
-      it('[LUC6] should respond with status 400', () => {
-        assert.equal(res.status, 400);
+      it('[LUC6] should respond with status 409', () => {
+        assert.equal(res.status, 409);
       });
       it('[XIN8] should respond with the correct error', () => {
         const error = res.body.error;
@@ -358,7 +358,7 @@ describe('registration: cluster', function() {
             serviceRegisterRequests.push(body);
             return true;
           })
-          .reply(400, {
+          .reply(409, {
             error: {
               id: ErrorIds.ItemAlreadyExists,
               data: {
@@ -369,8 +369,8 @@ describe('registration: cluster', function() {
   
         res = await request.post(methodPath).send(userData);
       });
-      it('[I0HG] should respond with status 400', () => {
-        assert.equal(res.status, 400);
+      it('[I0HG] should respond with status 409', () => {
+        assert.equal(res.status, 409);
       });
       it('[QFVZ] should respond with the correct error', () => {
         const error = res.body.error;
@@ -623,14 +623,14 @@ describe('registration: cluster', function() {
           serviceRegisterRequests.push(body);
           return true;
         })
-        .reply(400, {
+        .reply(409, {
           reserved: true
         });
 
       const res = await request.get(path(userData.username))
 
       const body = res.body;
-      assert.equal(res.status, 400);
+      assert.equal(res.status, 409);
       assert.equal(body.error.id, ErrorIds.ItemAlreadyExists);
       assert.deepEqual(body.error.data, { username: userData.username });
     });

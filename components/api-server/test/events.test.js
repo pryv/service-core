@@ -774,7 +774,7 @@ describe('events', function () {
       };
       request.post(basePath).send(data).end(function (res) {
         validation.checkError(res, {
-          status: 400,
+          status: 409,
           id: ErrorIds.ItemAlreadyExists,
           data: {id: data.id}
         }, done);
@@ -789,7 +789,7 @@ describe('events', function () {
       };
       request.post(basePath).send(data).end(function (res) {
         validation.checkError(res, {
-          status: 400,
+          status: 409,
           id: ErrorIds.ItemAlreadyExists,
           data: {id: data.id}
         }, done);

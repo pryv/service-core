@@ -475,7 +475,7 @@ describe("Events of system streams", () => {
   
               nock.cleanAll();
               nock(config.get('services:register:url')).put('/users')
-                .reply(400, {
+                .reply(409, {
                   error: {
                     id: ErrorIds.ItemAlreadyExists,
                     data: {
@@ -489,8 +489,8 @@ describe("Events of system streams", () => {
                 .set('authorization', access.token);
             });
             
-            it('[89BC] should return 400', () => {
-              assert.equal(res.status, 400);
+            it('[89BC] should return 409', () => {
+              assert.equal(res.status, 409);
             });
             it('[10BC] should return the correct error', () => {
               assert.equal(res.body.error.id, ErrorIds.ItemAlreadyExists);
@@ -525,8 +525,8 @@ describe("Events of system streams", () => {
                   .set('authorization', access.token);
             });
   
-            it('[2021] should return a 400 error', () => {
-              assert.equal(res.status, 400);
+            it('[2021] should return a 408 error', () => {
+              assert.equal(res.status, 409);
             });
             it('[121E] should return the correct error', () => {
               assert.equal(res.body.error.id, ErrorIds.ItemAlreadyExists);
@@ -981,7 +981,7 @@ describe("Events of system streams", () => {
                   (body) => {
                     serviceRegisterRequest = body;
                     return true;
-                  }).reply(400, {
+                  }).reply(409, {
                     error: {
                       id: ErrorIds.ItemAlreadyExists,
                       data: {
@@ -996,8 +996,8 @@ describe("Events of system streams", () => {
                   .send(eventData)
                   .set('authorization', access.token);
               });
-              it('[F8A8] should return 400', () => {
-                assert.equal(res.status, 400);
+              it('[F8A8] should return 409', () => {
+                assert.equal(res.status, 409);
                 assert.equal(res.body.error.id, ErrorIds.ItemAlreadyExists);
                 assert.deepEqual(res.body.error.data, { email: eventData.content});
               });
@@ -1046,8 +1046,8 @@ describe("Events of system streams", () => {
                   .send(eventData)
                   .set('authorization', access.token);
               });
-              it('[5782] should return 400', () => {
-                assert.equal(res.status, 400);
+              it('[5782] should return 409', () => {
+                assert.equal(res.status, 409);
               });
               it('[B285] should return the correct error', () => {
                 const error = res.body.error;

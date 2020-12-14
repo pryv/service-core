@@ -222,7 +222,7 @@ describe('streams', function () {
       var data = { id: testData.streams[0].id, name: 'Duplicate' };
       request.post(basePath).send(data).end(function (res) {
         validation.checkError(res, {
-          status: 400,
+          status: 409,
           id: ErrorIds.ItemAlreadyExists,
           data: {id: data.id}
         }, done);
@@ -266,7 +266,7 @@ describe('streams', function () {
       var data = {name: testData.streams[0].name};
       request.post(basePath).send(data).end(function (res) {
         validation.checkError(res, {
-          status: 400,
+          status: 409,
           id: ErrorIds.ItemAlreadyExists,
           data: {name: data.name}
         }, done);
@@ -505,7 +505,7 @@ describe('streams', function () {
       var update = {name: testData.streams[0].name};
       request.put(path(testData.streams[1].id)).send(update).end(function (res) {
         validation.checkError(res, {
-          status: 400,
+          status: 409,
           id: ErrorIds.ItemAlreadyExists,
           data: {name: update.name}
         }, done);

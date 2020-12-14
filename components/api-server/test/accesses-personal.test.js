@@ -312,7 +312,7 @@ describe('accesses (personal)', function () {
       };
       req().post(basePath).send(data).end(function (res) {
         validation.checkError(res, {
-          status: 400,
+          status: 409,
           id: ErrorIds.ItemAlreadyExists,
           data: {name: testData.streams[0].name}
         }, done);
@@ -386,7 +386,7 @@ describe('accesses (personal)', function () {
       };
       req().post(basePath).send(data).end(function (res) {
         validation.checkError(res, {
-          status: 400,
+          status: 409,
           id: ErrorIds.ItemAlreadyExists
         }, done);
       });
@@ -400,7 +400,7 @@ describe('accesses (personal)', function () {
         };
         req().post(basePath).send(data).end(function (res) {
           validation.checkError(res, {
-            status: 400,
+            status: 409,
             id: ErrorIds.ItemAlreadyExists,
             data: { type: 'shared', name: testData.accesses[2].name }
           }, done);
@@ -418,7 +418,7 @@ describe('accesses (personal)', function () {
       };
       req().post(basePath).send(data).end(function (res) {
         validation.checkError(res, {
-          status: 400,
+          status: 409,
           id: ErrorIds.ItemAlreadyExists,
           data: { type: existing.type, name: existing.name, deviceName: existing.deviceName }
         }, done);

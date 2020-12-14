@@ -137,7 +137,7 @@ describe('followed slices', function () {
       };
       request.post(basePath).send(data).end(function (res) {
         validation.checkError(res, {
-          status: 400,
+          status: 409,
           id: ErrorIds.ItemAlreadyExists,
           data: { url: data.url, accessToken: data.accessToken }
         }, done);
@@ -153,7 +153,7 @@ describe('followed slices', function () {
       };
       request.post(basePath).send(data).end(function (res) {
         validation.checkError(res, {
-          status: 400,
+          status: 409,
           id: ErrorIds.ItemAlreadyExists,
           data: {name: data.name}
         }, done);
@@ -208,7 +208,7 @@ describe('followed slices', function () {
       var update = {name: testData.followedSlices[0].name};
       request.put(path(testData.followedSlices[1].id)).send(update).end(function (res) {
         validation.checkError(res, {
-          status: 400,
+          status: 409,
           id: ErrorIds.ItemAlreadyExists,
           data: {name: update.name}
         }, done);

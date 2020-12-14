@@ -203,8 +203,8 @@ describe('[BMM2] registration: single-node', () => {
           assert.equal(res.status, 201);
           res = await request.post('/users').send(registerBody);
         });
-        it('[LZ1K] should respond with status 400', function() {
-          assert.equal(res.status, 400);
+        it('[LZ1K] should respond with status 409', function() {
+          assert.equal(res.status, 409);
         });
         it('[M2HD] should respond with the correct error message', function() {
           assert.exists(res.error);

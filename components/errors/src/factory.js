@@ -117,7 +117,7 @@ factory.itemAlreadyExists = function (
     ' already exists';
 
   return new APIError(ErrorIds.ItemAlreadyExists, message, {
-    httpStatus: 400,
+    httpStatus: 409,
     innerError: innerError || null,
     data: conflictingKeys,
     dontNotifyAirbrake: true

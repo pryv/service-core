@@ -41,7 +41,7 @@ class ServiceRegister {
           core: core
         });
     } catch (err) {
-      if(err.status == 400 && err?.response?.body?.error){
+      if(((err.status == 409) || (err.status == 400)) && err?.response?.body?.error){
         if (err.response.body.error != null) {
           if (err.response.body.error.id === ErrorIds.InvalidInvitationToken) {
             throw errors.invalidOperation(ErrorMessages.InvalidInvitationToken);
@@ -115,7 +115,7 @@ class ServiceRegister {
         .set('Authorization', this.config.key);
       return res.body;
     } catch (err) {
-      if (err.status == 400 && err.response.body.error != null) {
+      if (((err.status == 400) || (err.status == 409)) && err.response.body.error != null) {
         if (err.response.body.error.id === ErrorIds.ItemAlreadyExists) {
           throw errors.itemAlreadyExists('user', err.response.body.error.data);
         } else {

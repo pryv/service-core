@@ -347,8 +347,8 @@ describe('Account with system streams', function () {
               .send({ email: user2.attrs.email })
               .set('authorization', access.token);
           });
-          it('[K3X9] should return a 400 error', async () => {
-            assert.equal(res.status, 400);
+          it('[K3X9] should return a 409 error', async () => {
+            assert.equal(res.status, 409);
           });
           it('[8TRP] should return the correct error', async () => {
             assert.equal(res.body.error.id, ErrorIds.ItemAlreadyExists);

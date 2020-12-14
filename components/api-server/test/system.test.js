@@ -310,7 +310,7 @@ describe('system (ex-register)', function () {
             throw new Error('The response should not be successful');
           } catch (err) {
             validation.checkError(err.response, {
-              status: 400,
+              status: 409,
               id: ErrorIds.ItemAlreadyExists,
               data: {username: data.username}
             });
@@ -331,7 +331,7 @@ describe('system (ex-register)', function () {
           console.log('test passed even it should not');
           assert.isTrue(false);
         } catch (err) {
-          assert.equal(err.response.status, 400)
+          assert.equal(err.response.status, 409)
           assert.equal(err.response.body.error.id, ErrorIds.ItemAlreadyExists);
           assert.deepEqual(err.response.body.error.data, { email: data.email });
         }
