@@ -69,7 +69,7 @@
     "msgpack5": "^3.6.0",
     "multer": "^1.3.0",
     "nats": "^0.7",
-    "nconf": "^0.10.0",
+    "nconf": "^0.11.0",
     "previews-server": "file:components/previews-server",
     "protobufjs": "^6.8.6",
     "pryv": "^2.0.2",
@@ -129,7 +129,8 @@
   },
   "resolutions": {
     "**/bl": "^2.2.1",
-    "**/node-fetch": "^2.6.1"
+    "**/node-fetch": "^2.6.1",
+    "**/ini": "^1.3.6"
   },
   "engines": {
     "node": "12.x",
