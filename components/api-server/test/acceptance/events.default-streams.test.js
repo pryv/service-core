@@ -525,7 +525,7 @@ describe("Events of system streams", () => {
                   .set('authorization', access.token);
             });
   
-            it('[2021] should return a 408 error', () => {
+            it('[2021] should return a 409 error', () => {
               assert.equal(res.status, 409);
             });
             it('[121E] should return the correct error', () => {
