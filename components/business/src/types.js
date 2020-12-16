@@ -25,6 +25,8 @@ const ComplexType = require('./types/complex_type');
 
 const SERIES_PREFIX = 'series:';
 
+console.log('XXXXX');
+
 // Returns true if the name given refers to a series type. Currently this means
 // that the name starts with SERIES_PREFIX. 
 // 
@@ -90,7 +92,9 @@ class TypeRepository {
   // (#tryUpdate). 
   // 
   isKnown(name: string): boolean {
+    console.log('isKnown > ' + name);
     if (isSeriesType(name)) {
+      console.log('isSeriesType > ' + name);
       const leafTypeName = name.slice(SERIES_PREFIX.length);
       return this.isKnown(leafTypeName);
     }
@@ -143,6 +147,8 @@ class TypeRepository {
   // internet. 
   // 
   tryUpdate(sourceURL: string, apiVersion: string): Promise<void> {
+    sourceURL = 'https://heartkinetics.github.io/okcardio-data-types/flat.json';
+    console.log('XXXXXX2' + sourceURL);
     function unavailableError(err) {
       throw new Error(
         'Could not update event types from ' + sourceURL +
@@ -153,6 +159,7 @@ class TypeRepository {
         'Invalid event types schema returned from ' + sourceURL +
         '\nErrors: ' + err.errors);
     }
+  
 
     const USER_AGENT_PREFIX: string = 'Pryv.io/';
 
@@ -165,11 +172,18 @@ class TypeRepository {
         const schema = res.body;
 
         return bluebird.try(() => {
-          if (!validator.validateSchema(schema))
+          if (!validator.validateSchema(schema)) {
+            console.log('XXXXX BLIP');
             return invalidError(validator.lastReport);
 
+         }
+         console.log('XXXXX BLIP > ', ('imu-6d/mg-mdps' in schema.types));
+         console.log('XXXXX BLOP > ', ('imu-6d/mg-mdps' in defaultTypes.types));
           // Overwrite defaultTypes with the merged list of type schemata. 
+
           defaultTypes = lodash.merge(defaultTypes, schema);
+          console.log('XXXXX BLUP > ', ('imu-6d/mg-mdps' in defaultTypes.types));
+
         });
       });
   }

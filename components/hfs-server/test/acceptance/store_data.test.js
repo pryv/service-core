@@ -100,7 +100,7 @@ describe('Storing data in a HF series', function() {
       await user.stream({id: parentStreamId});
       await user.event({
         id: eventId, 
-        type: 'series:mass/kg',
+        type: 'series:imu-6d/mg-mdps',
         time: nowEvent,
         streamIds: [parentStreamId, secondStreamId],
       });
@@ -141,7 +141,17 @@ describe('Storing data in a HF series', function() {
       const storageLayer = produceStorageLayer(database);
 
       const nowPlus1Sec = nowEvent + 1;
-      const response = await storeData({ timestamp: nowPlus1Sec, value: 80.3 }, accessToken);
+
+
+      const postData = {"format":"flatJSON","fields":["deltaTime","linear-x", "linear-y", "linear-z", "angular-x", "angular-y", "angular-z"], "points":[[0,1,2,3,4,5,6],[1,1,2,3,4,5,6]]};
+      const request = server.request();
+      const response = await request
+        .post(`/${userId}/events/${eventId}/series`)
+        .set('authorization', accessToken)
+        .send(postData);
+
+      console.log(response.body);
+
 
       // Check if the data is really there
       const userName = userId; // identical with id here, but will be user name in general. 
@@ -163,9 +173,10 @@ describe('Storing data in a HF series', function() {
     });
     
     it('[GZIZ] should store data correctly', async () => {
-      const response = await storeData({deltaTime: 1, value: 80.3}, accessToken);
+      const response = await storeData({deltaTime: 1, value: [1,2,3,4,5,6]}, accessToken);
 
       const body = response.body; 
+      console.log(body);
       if (body == null || body.status == null) throw new Error(); 
       assert.strictEqual(body.status, 'ok'); 
 
