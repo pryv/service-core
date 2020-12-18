@@ -72,7 +72,7 @@ describe('Storing data in a HF series', function() {
       debug('spawning');
       // without config.get() spawnContext does not take the right config
       server = await spawnContext.spawn(config.get());
-      
+
     });
     after(() => {
       server.stop(); 
@@ -101,6 +101,7 @@ describe('Storing data in a HF series', function() {
       await user.stream({id: parentStreamId});
       await user.event({
         id: eventId, 
+        type: 'series:mass/kg',
         time: nowEvent,
         streamIds: [parentStreamId, secondStreamId],
       });

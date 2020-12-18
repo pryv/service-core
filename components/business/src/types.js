@@ -26,7 +26,6 @@ const ComplexType = require('./types/complex_type');
 
 const SERIES_PREFIX = 'series:';
 
-
 // Returns true if the name given refers to a series type. Currently this means
 // that the name starts with SERIES_PREFIX. 
 // 
@@ -203,11 +202,12 @@ class TypeRepository {
         const schema = res.body;
 
         return bluebird.try(() => {
-          if (!validator.validateSchema(schema)) {
+          if (!validator.validateSchema(schema)) 
             return invalidError(validator.lastReport);
-         }
-         defaultTypes = lodash.merge(defaultTypes, schema);
-          success();
+         
+            // Overwrite defaultTypes with the merged list of type schemata.
+            defaultTypes = lodash.merge(defaultTypes, schema);
+            success();
         });
       });
   }
