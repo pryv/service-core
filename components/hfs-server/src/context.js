@@ -54,13 +54,13 @@ class Context {
     this.tracer = tracer;
     this.settings = settings;
 
-    this.configureTypeRepository(typeRepoUpdateUrl); 
+    this.configureTypeRepository(typeRepoUpdateUrl, logFactory('hfs.eventypes')); 
     this.configureMetadataCache(this.series, mongoConn, logFactory('model'));
   }
   
-  configureTypeRepository(url: string) {
-    const typeRepo = new business.types.TypeRepository(); 
-    typeRepo.tryUpdate(url); // async
+  configureTypeRepository(url: string, logger: Logger) {
+    const typeRepo = new business.types.TypeRepository(logger); 
+    typeRepo.tryUpdate(url, 'hfs'); // async
     
     this.typeRepository = typeRepo;
   }

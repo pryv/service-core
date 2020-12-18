@@ -29,7 +29,7 @@ describe('business.types.TypeRepository', function () {
       // NOTE This test uses an internet URL. If internet is down, it will 
       // not work. Much like Pryv in general, also because of this function. 
        
-      return repository.tryUpdate(sourceURL);
+      return repository.tryUpdate(sourceURL, 'test');
     });
     it('[6VL6] should fail gracefully', function () {
       return repository.tryUpdate('bahbahblacksheep')

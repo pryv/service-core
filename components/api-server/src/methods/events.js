@@ -45,7 +45,7 @@ const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId
 
 // Type repository that will contain information about what is allowed/known
 // for events. 
-const typeRepo = new TypeRepository(); 
+let typeRepo;
 
 /**
  * Events API methods implementations.
@@ -59,6 +59,8 @@ module.exports = function (
 
   const usersRepository = new UsersRepository(userEventsStorage);
   const config = getConfig();
+
+  typeRepo = new TypeRepository(logging.getLogger('api.eventstypes')); 
 
   // initialize service-register connection
   let serviceRegisterConn = {};

@@ -166,7 +166,6 @@ class Parser {
       throw error('"points" field must be a list of data points.');
     
     // assert: fields, points are both arrays
-    console.log('XXXXX validateColumns' + fields);
     if (! type.validateColumns(fields))
       throw error('"fields" field must contain valid field names for the series type.');
       

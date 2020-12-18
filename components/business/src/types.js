@@ -16,7 +16,8 @@ const superagent = require('superagent');
 const bluebird = require('bluebird');
 const ZSchemaValidator = require('z-schema');
 
-let defaultTypes = require('./types/event-types.default.json');
+let defaultTypes = require('./types/event-types.default.json');;
+let typesLoaded = false;
 
 const errors = require('./types/errors');
 const InfluxRowType = require('./types/influx_row_type');
@@ -25,7 +26,6 @@ const ComplexType = require('./types/complex_type');
 
 const SERIES_PREFIX = 'series:';
 
-console.log('XXXXX');
 
 // Returns true if the name given refers to a series type. Currently this means
 // that the name starts with SERIES_PREFIX. 
@@ -87,14 +87,36 @@ class TypeValidator {
 //    const seriesType = repo.lookup('series:mass/kg');
 // 
 class TypeRepository {
+  logger;
+
+  constructor(logger: Logger) {
+    this.logger = logger;
+    if (! logger) {
+      this.logger = { 
+        info: function () { 
+          console.log('type logger not initalized INFO: ', ...arguments)
+        },
+        error: function () { 
+          console.error('type logger not initalized ERROR: ', ...arguments)
+        },
+        error: function () { 
+          console.log('type logger not initalized DEBUG: ', ...arguments)
+        }
+      }
+    }
+    this.logger.info('Init');
+  }
+
   // Returns true if the type given by `name` is known by Pryv. To be known, 
   // it needs to be part of our standard types list that we load on startup
   // (#tryUpdate). 
   // 
   isKnown(name: string): boolean {
-    console.log('isKnown > ' + name);
+    if (! typesLoaded) {
+      this.logger.error('Default types not yet loaded');
+    }
+    
     if (isSeriesType(name)) {
-      console.log('isSeriesType > ' + name);
       const leafTypeName = name.slice(SERIES_PREFIX.length);
       return this.isKnown(leafTypeName);
     }
@@ -107,6 +129,9 @@ class TypeRepository {
   // `event-types.default.json`. 
   // 
   lookupLeafType(name: string): EventType {
+    if (! typesLoaded) {
+      this.logger.error('lookupLeafType types not yet loaded');
+    }
     if (!this.isKnown(name)) throw new errors.TypeDoesNotExistError(
       `Type '${name}' does not exist in this Pryv instance.`);
 
@@ -147,17 +172,23 @@ class TypeRepository {
   // internet. 
   // 
   tryUpdate(sourceURL: string, apiVersion: string): Promise<void> {
-    sourceURL = 'https://heartkinetics.github.io/okcardio-data-types/flat.json';
-    console.log('XXXXXX2' + sourceURL);
+    let myLogger = this.logger;
     function unavailableError(err) {
+      myLogger.error('Failed to update types ' + sourceURL + ' ' + err.message);
       throw new Error(
         'Could not update event types from ' + sourceURL +
         '\nError: ' + err.message);
     }
     function invalidError(err) {
+      myLogger.error('Invalid event types schema returned from ' + sourceURL + ' ' + err.errors);
       throw new Error(
         'Invalid event types schema returned from ' + sourceURL +
         '\nErrors: ' + err.errors);
+    }
+    
+    function success() {
+      myLogger.info('Sucessfully loaded ' + sourceURL );
+      typesLoaded = true;
     }
   
 
@@ -173,17 +204,10 @@ class TypeRepository {
 
         return bluebird.try(() => {
           if (!validator.validateSchema(schema)) {
-            console.log('XXXXX BLIP');
             return invalidError(validator.lastReport);
-
          }
-         console.log('XXXXX BLIP > ', ('imu-6d/mg-mdps' in schema.types));
-         console.log('XXXXX BLOP > ', ('imu-6d/mg-mdps' in defaultTypes.types));
-          // Overwrite defaultTypes with the merged list of type schemata. 
-
-          defaultTypes = lodash.merge(defaultTypes, schema);
-          console.log('XXXXX BLUP > ', ('imu-6d/mg-mdps' in defaultTypes.types));
-
+         defaultTypes = lodash.merge(defaultTypes, schema);
+          success();
         });
       });
   }
