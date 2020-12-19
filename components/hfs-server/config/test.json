@@ -3,6 +3,12 @@
   "openSource": {
     "isActive": false
   },
+  "logs": {
+    "console": {
+      "active": false,
+      "level": "debug"
+    }
+  },
   "mongodb": {
     "host": "localhost",
     "name": "pryv-node-test"

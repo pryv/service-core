@@ -16,7 +16,10 @@ const superagent = require('superagent');
 const bluebird = require('bluebird');
 const ZSchemaValidator = require('z-schema');
 
-let defaultTypes = require('./types/event-types.default.json');;
+const defaultTypesFile = process.env.EVENT_TYPES || './types/event-types.default.json';
+let defaultTypes = require(defaultTypesFile);
+
+
 let typesLoaded = false;
 
 const errors = require('./types/errors');
@@ -103,7 +106,7 @@ class TypeRepository {
         }
       }
     }
-    this.logger.info('Init');
+    this.logger.info('Initialized Types with default: ' + defaultTypesFile);
   }
 
   // Returns true if the type given by `name` is known by Pryv. To be known, 
