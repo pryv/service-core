@@ -25,11 +25,8 @@ const CORE_ROLE = 'api-server';
 const customSettings = {
   domain: 'test.pryv.com',
   reporting: {
-    url: 'http://localhost:' + REPORT_HTTP_SERVER_PORT,
-    optOut: false,
     licenseName: 'pryv.io-test-license',
-    templateVersion: '1.0.0',
-    hostname: hostname(),
+    templateVersion: '1.0.0'
   }
 };
 const monitoringUsername = cuid();
@@ -80,9 +77,9 @@ describe('service-reporting', () => {
       assert.equal(lastReport.licenseName, reportingSettings.licenseName, 'missing or wrong licenseName');
       assert.equal(lastReport.role, CORE_ROLE, 'missing or wrong role');
       assert.equal(lastReport.templateVersion, reportingSettings.templateVersion, 'missing or wrong templatVersion');
-      assert.equal(lastReport.domain, reportingSettings.domain, 'missing or wrong domain');
-      assert.equal(lastReport.hostname, reportingSettings.hostname, 'missing or wrong hostname');
+      assert.equal(lastReport.hostname, hostname(), 'missing or wrong hostname');
       assert.isAbove(lastReport.clientData.userCount, 0, 'missing or wrong numUsers');
+      assert.exists(lastReport.clientData.serviceInfoUrl, 'missing serviceInfourl');
     });
   });
 
@@ -98,25 +95,6 @@ describe('service-reporting', () => {
     afterEach(async () => {
       server.stop();
       reportHttpServer.close();
-    });
-
-    it('[UR7L] server must start and not send a report when opting-out reporting', async () => {
-      await new Promise(async function (resolve) {
-        await awaiting.event(reportHttpServer, 'report_received');
-        resolve();
-      }).timeout(1000)
-        .then(() => {
-          throw new Error('Should not have received a report');
-        })
-        .catch(async (error) => {
-          if (error instanceof Promise.TimeoutError) {
-            // Everything is ok, the promise should have timeouted
-            // since the report has not been sent.
-            await assertServerStarted();
-          } else {
-            assert.fail(error.message);
-          }
-        });
     });
   });
 

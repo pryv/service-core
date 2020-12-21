@@ -119,32 +119,10 @@ config.schema = {
       default: 'OVERRIDE ME',
       doc: 'Pryv.io licence'
     },
-    role: {
-      format: String,
-      default: 'OVERRIDE ME',
-      doc: 'Role of the component. i.e : core, reg-master, reg-slave, ...'
-    },
     templateVersion: {
       format: String,
       default: '1.0.0',
       doc: 'Version number of the Pryv.io configuration, containing each role version'
-    },
-    hostname: {
-      format: String,
-      default: 'OVERRIDE ME',
-      doc: 'Hostname of the machine.'
-    },
-    url : {
-      format: String,
-      default: 'https://reporting.pryv.com/reports',
-      doc: 'Url to send the report. Should never be overriden except in the test-suite.'
-    },
-    optOut: {
-      format: String,
-      default: 'false',
-      env: 'reporting_optOut',
-      doc: 'Set to \'true\' to disable daily reporting to pryv.com' +
-      'This parameter is meant to be set as an environment variable in the \'run-pryv\' script.',
     },
   },
   http: {
