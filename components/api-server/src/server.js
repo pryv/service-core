@@ -6,8 +6,6 @@
  */
 // @flow
 
-const express = require('express');
-
 const http = require('http');
 const bluebird = require('bluebird');
 const EventEmitter = require('events');
@@ -16,8 +14,6 @@ const utils = require('components/utils');
 
 const Notifications = require('./Notifications');
 const Application = require('./application');
-
-const expressAppInit = require('./expressApp');
 
 const child_process = require('child_process');
 const url = require('url');

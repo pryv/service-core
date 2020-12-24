@@ -2,10 +2,15 @@
 
 // Binary for launching the api-server process. 
 
+const boiler = require('boiler').init({
+  appName: 'api-server',
+  baseConfigDir: './newconfig'
+});
+
 const Server = require('../src/server');
 const Application = require('../src/application');
 const Settings = require('../src/settings');
-const { getConfig } = require('components/api-server/config/Config');
+
 const loadCommonMeta = require('../src/methods/helpers/setCommonMeta').loadSettings;
 let logger, airbrake;
 const { Notifier } = require('@airbrake/node');
