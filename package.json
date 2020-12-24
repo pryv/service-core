@@ -43,6 +43,7 @@
     "bcrypt": "^5.0.0",
     "bluebird": "^3.5.0",
     "body-parser": "^1.17.1",
+    "boiler": "file:components/boiler",
     "business": "file:components/business",
     "cls-hooked": "^4.2.2",
     "convict": "^3.0.0",

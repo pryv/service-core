@@ -1,0 +1,16 @@
+---
+logger:
+  console:
+    active: true
+    level: debug
+    format:
+      color: true
+      time: false
+      aligned: true
+
+  file:
+    active: true
+    filename: test-application.log
+
+foo:
+  bar: 'Hello Test'
