@@ -19,7 +19,7 @@ var helpers = require('./helpers'),
     testData = helpers.data;
 require('date-utils');
 
-describe('Auditing', function () {
+describe('Versioning', function () {
 
   var user = Object.assign({}, testData.users[0]),
       request = null;
@@ -253,7 +253,7 @@ describe('Auditing', function () {
         });
     });
 
-    describe('getOne', function () {
+    describe('events.getOne', function () {
 
       it('[YRI7] must not return an event\'s history when calling getOne with includeHistory flag off',
         function (done) {
@@ -509,127 +509,6 @@ describe('Auditing', function () {
         ], done);
       });
 
-      it.skip('[Y4CH] must generate history of the running event that was stopped because of the start call ' +
-        'on another event',
-        function (done) {
-          var data = {
-            time: timestamp.now(''),
-            type: 'activity/pryv',
-            duration: null,
-            streamId: singleActivityStream.id,
-            tags: ['houba']
-          };
-          data.streamIds = [data.streamId];
-          var createdId;
-
-          async.series([
-            function startEvent(stepDone) {
-              request.post('/' + user.username + '/events/start').send(data).end(function (res) {
-                validation.check(res, {
-                  status: 201,
-                  schema: eventsMethodsSchema.create.result
-                });
-                createdId = res.body.event.id;
-                res.body.stoppedId.should.eql(runningEventOnSingleActivityStream.id);
-                stepDone();
-              });
-            },
-            function fetchHistoryOfStoppedEvent(stepDone) {
-              request.get(pathToEvent(runningEventOnSingleActivityStream.id))
-                .query({includeHistory: true}).end(function (res) {
-                  validation.check(res, {
-                    status: 200,
-                    schema: eventsMethodsSchema.getOne.result
-                  });
-                  (res.body.event.id).should.eql(runningEventOnSingleActivityStream.id);
-                  var history = res.body.history;
-                  history.length.should.eql(1);
-                  var previousVersion = history[0];
-                  previousVersion.headId.should.eql(runningEventOnSingleActivityStream.id);
-                  stepDone();
-                });
-            }
-          ], done);
-        });
-
-
-      it.skip('[M90Z] must not generate history when no event was stopped in the procedure of the start call ' +
-        'on another event',
-        function (done) {
-          var data = {
-            time: timestamp.now(''),
-            type: 'activity/pryv',
-            duration: null,
-            streamId: normalStream.id,
-            tags: ['houba']
-          };
-          data.streamIds = [data.streamId]; 
-          var createdId;
-
-          async.series([
-            function startEvent(stepDone) {
-              request.post('/' + user.username + '/events/start').send(data).end(function (res) {
-                validation.check(res, {
-                  status: 201,
-                  schema: eventsMethodsSchema.create.result
-                });
-                createdId = res.body.event.id;
-                should.not.exist(res.body.stoppedId);
-                stepDone();
-              });
-            },
-            function fetchHistoryOfEventThat(stepDone) {
-              request.get(pathToEvent(runningEventOnNormalStream.id))
-                .query({includeHistory: true}).end(function (res) {
-                  validation.check(res, {
-                    status: 200,
-                    schema: eventsMethodsSchema.getOne.result
-                  });
-                  (res.body.event.id).should.eql(runningEventOnNormalStream.id);
-                  var history = res.body.history;
-                  history.length.should.eql(0);
-                  stepDone();
-                });
-            }
-          ], done);
-        });
-
-      it.skip('[519W] must generate history when calling stop on a running event', function (done) {
-        var data = {
-          streamId: normalStream.id,
-          id: runningEventOnNormalStream.id,
-          type: runningEventOnNormalStream.type
-        };
-        async.series([
-          function stopEvent(stepDone) {
-            request.post('/' + user.username + '/events/stop').send(data)
-              .end(function (res) {
-                validation.check(res, {
-                  status: 200,
-                  schema: eventsMethodsSchema.stop.result
-                });
-                res.body.stoppedId.should.eql(testData.events[23].id);
-                stepDone();
-              });
-          },
-          function checkThatStoppedEventHasNoHistory(stepDone) {
-            request.get(pathToEvent(runningEventOnNormalStream.id))
-              .query({includeHistory: true}).end(function (res) {
-                validation.check(res, {
-                  status: 200,
-                  schema: eventsMethodsSchema.getOne.result
-                });
-                (res.body.event.id).should.eql(runningEventOnNormalStream.id);
-                var history = res.body.history;
-                (history.length).should.eql(1);
-                var previousVersion = history[0];
-                previousVersion.headId.should.eql(runningEventOnNormalStream.id);
-                stepDone();
-              });
-          }
-        ], done);
-      });
-
     });
 
   });
@@ -835,25 +714,6 @@ describe('Auditing', function () {
               checked.should.eql(true);
               stepDone();
             });
-        }
-      ], done);
-    });
-  });
-
-  describe.skip('Nightly task', function () {
-
-    before(testData.resetEvents);
-
-    it('[QT0Z] must delete history data from the storage', function (done) {
-      async.series([
-        function fetchHistoryEventsFromStorage(stepDone) {
-          stepDone();
-        },
-        function RunNightlyScript(stepDone) {
-          stepDone();
-        },
-        function verifyEventsEraseFromStorage(stepDone) {
-          stepDone();
         }
       ], done);
     });
