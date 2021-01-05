@@ -509,6 +509,40 @@ describe('Versioning', function () {
         ], done);
       });
 
+      it('[NZQB] must generate history when trashing an event', function (done) {
+        async.series([
+          function trashEvent(stepDone) {
+            request.del(pathToEvent(eventWithNoHistory.id)).end(function (res) {
+              validation.check(res, {
+                status: 200,
+                schema: eventsMethodsSchema.update.result
+              });
+              stepDone();
+            });
+          },
+          function verifyThatHistoryIsIncluded(stepDone) {
+            request.get(pathToEvent(eventWithNoHistory.id))
+              .query({includeHistory: true}).end(
+              function (res) {
+                validation.check(res, {
+                  status: 200,
+                  schema: eventsMethodsSchema.getOne.result
+                });
+                should.exist(res.body);
+                should.exist(res.body.history);
+                (res.body.history.length).should.eql(1);
+                const previousVersion = res.body.history[0];
+                delete previousVersion.streamId;
+                (previousVersion.headId).should.eql(eventWithNoHistory.id);
+                (_.omit(previousVersion, ['id', 'headId', 'modified', 'modifiedBy', 'trashed']))
+                  .should.eql(_.omit(eventWithNoHistory,
+                    ['id', 'headId', 'modified', 'modifiedBy']));
+                stepDone();
+              });
+          }
+        ], done);
+      });
+
     });
 
   });
