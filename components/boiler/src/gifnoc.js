@@ -148,6 +148,7 @@ class Config {
    * @param {string} key 
    */
   get(key) {
+    this.logger.debug('get: ' +)
     return this.store.get(key);
   }
 

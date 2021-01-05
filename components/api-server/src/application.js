@@ -15,13 +15,11 @@ const API = require('./API');
 const expressAppInit = require('./expressApp');
 const middleware = require('components/middleware');
 const errorsMiddlewareMod = require('./middleware/errors'); 
-const config = require('./config');
 
-const { getConfig, Config } = require('components/api-server/config/Config');
+const { getGifnoc, getReggol } = require('boiler');
 
 import type { ConfigAccess } from './settings';
 import type { WebhooksSettingsHolder } from './methods/webhooks';
-import type { LogFactory } from 'components/utils';
 import type { Logger } from 'components/utils';
 
 type UpdatesSettingsHolder = {
@@ -39,12 +37,9 @@ class Application {
   // Application settings, see ./settings
   settings: ConfigAccess; 
   // new config
-  config: Config;
+  gifnoc;
   
-  logging: Logger
-
-  // Application log factory
-  logFactory: LogFactory; 
+  gniggol;
   
   // Normal user API
   api: API; 
@@ -64,35 +59,34 @@ class Application {
     this.api = new API(); 
     this.systemAPI = new API(); 
     
-    this.produceLogSubsystem(); 
-    this.produceStorageSubsystem();
-    this.config = getConfig();
+    //this.produceStorageSubsystem();
   }
 
   async initiate() {
-    await this.config.init();
-    this.produceLogSubsystem(); 
+    this.gifnoc = await getGifnoc();
+    this.produceLogSubsystem();
     this.produceStorageSubsystem(); 
     await this.createExpressApp();
     this.initiateRoutes();
     this.expressApp.use(middleware.notFound);
-    const errorsMiddleware = errorsMiddlewareMod(this.logging, createAirbrakeNotifierIfNeeded());
+    const errorsMiddleware = errorsMiddlewareMod(this.gniggol, createAirbrakeNotifierIfNeeded(this.gifnoc));
     this.expressApp.use(errorsMiddleware);
   }
 
   async createExpressApp(): Promise<express$Application> {
+
     this.expressApp = await expressAppInit( 
-      this.settings.get('dnsLess.isActive').bool(), 
-      this.logging);
+      this.gifnoc.get('dnsLess.isActive'), 
+      this.gniggol);
   }
 
   initiateRoutes() {
-    const isOpenSource = this.settings.get('openSource.isActive').bool();
+    const isOpenSource = this.gifnoc.get('openSource.isActive');
     if (isOpenSource) {
       require('components/www')(this.expressApp, this);
       require('components/register')(this.expressApp, this);
     }
-    if (this.settings.get('dnsLess.isActive').bool()) {
+    if (this.gifnoc.get('dnsLess.isActive')) {
       require('./routes/register')(this.expressApp, this);
     }
 
@@ -115,23 +109,22 @@ class Application {
   }
   
   produceLogSubsystem() {
-    const logSystemSettings = this.settings.get('logs').obj();
-    this.logging = utils.logging(logSystemSettings); 
-    
-    this.logFactory = this.logging.getLogger;
+    this.gniggol = getReggol('Application'); 
   }
 
   produceStorageSubsystem() {
     const settings = this.settings;
+    const gifnoc = this.gifnoc;
 
+    console.log('XXXX', settings.get().obj());
     this.database = new storage.Database(
-      settings.get('database').obj(), 
-      this.logFactory('database'));
+      gifnoc.get('database'), 
+      getReggol('database'));
 
     // 'StorageLayer' is a component that contains all the vertical registries
     // for various database models. 
     this.storageLayer = new storage.StorageLayer(this.database, 
-      this.logFactory('model'),
+      getReggol('model'),
       settings.get('eventFiles.attachmentsDirPath').str(), 
       settings.get('eventFiles.previewsDirPath').str(), 
       settings.get('auth.passwordResetRequestMaxAge').num(), 
@@ -160,12 +153,14 @@ class Application {
 
   // Produces and returns a new logger for a given `topic`.
   // 
-  getLogger(topic: string): Logger {
-    return this.logFactory(topic);
+  logFactory(topic: string): Logger {
+    return getReggol(topic);
   }
+
+
 }
 
-function createAirbrakeNotifierIfNeeded() {
+function createAirbrakeNotifierIfNeeded(config) {
   /*
     Quick guide on how to test Airbrake notifications (under logs entry):
     1. Update configuration file with Airbrake information:
@@ -178,7 +173,7 @@ function createAirbrakeNotifierIfNeeded() {
         throw new Error('This is a test of Airbrake notifications');
     3. Trigger the error by running the faulty code (run a local core)
    */
-  const settings = getAirbrakeSettings(); 
+  const settings = getAirbrakeSettings(config); 
   if (settings == null) return; 
 
   const { Notifier } = require('@airbrake/node');
@@ -191,9 +186,9 @@ function createAirbrakeNotifierIfNeeded() {
   return airbrakeNotifier;
 }
 
-function getAirbrakeSettings(): ?AirbrakeSettings {
+function getAirbrakeSettings(config): ?AirbrakeSettings {
   // TODO Directly hand log settings to this class. 
-  const logSettings = config.load().logs;
+  const logSettings = config.get('logs');
   if (logSettings == null) return null; 
   
   const airbrakeSettings = logSettings.airbrake;

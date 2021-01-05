@@ -12,6 +12,8 @@ const APIError = errors.APIError;
 const errorHandling = errors.errorHandling;
 const commonMeta = require('../methods/helpers/setCommonMeta');
 
+const { getReggol } = require('boiler');
+
 (async () => {
   await commonMeta.loadSettings();
 })();
@@ -19,7 +21,7 @@ const commonMeta = require('../methods/helpers/setCommonMeta');
 /** Error route handling.
  */
 function produceHandleErrorMiddleware(logging: any, airbrakeNotifier: any) {
-  const logger = logging.getLogger('routes');
+  const logger = getReggol('routes');
   const notifier = airbrakeNotifier?.airbrakeNotifier;
 
   // NOTE next is not used, since the request is terminated on all errors. 

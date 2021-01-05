@@ -25,7 +25,6 @@ const { Notifier } = require('@airbrake/node');
   // some values from register via an http-get request.
   const settings = await Settings.load();
   const config = await boiler.getGifnoc();
-  console.log(config.get('service'));
   //await config.init();
   loadCommonMeta({}); // load settings to common meta
   
