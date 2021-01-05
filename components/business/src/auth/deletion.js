@@ -16,6 +16,8 @@ const errors = require('components/errors').factory;
 import type { MethodContext } from 'components/model';
 import type { ApiCallback } from 'components/api-server/src/API';
 
+const { getReggol } = require('boiler');
+
 class Deletion {
   logger: any;
   storageLayer: any;
@@ -23,7 +25,7 @@ class Deletion {
   usersRepository: UsersRepository;
 
   constructor(logging: any, storageLayer: any, settings: any) {
-    this.logger = logging.getLogger('business/deletion');
+    this.logger = getReggol('business:deletion');
     this.storageLayer = storageLayer;
     this.settings = settings;
     this.usersRepository = new UsersRepository(this.storageLayer.events);

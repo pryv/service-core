@@ -34,6 +34,7 @@ const { ProjectVersion } = require('components/middleware/src/project_version');
 
 const {TypeRepository, isSeriesType} = require('components/business').types;
 
+const { getReggol } = require('boiler');
 
 const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
 const NATS_UPDATE_EVENT = require('components/utils').messaging
@@ -63,10 +64,7 @@ module.exports = function (
   // initialize service-register connection
   let serviceRegisterConn = {};
   if (!config.get('dnsLess:isActive')) {
-    serviceRegisterConn = new ServiceRegister(
-      config.get('services:register'),
-      logging.getLogger('service-register')
-    );
+    serviceRegisterConn = new ServiceRegister(config.get('services:register'));
   }
   
   // Initialise the project version as soon as we can. 
@@ -75,9 +73,9 @@ module.exports = function (
   
   // Update types and log error
   typeRepo.tryUpdate(eventTypesUrl, version)
-    .catch((err) => logging.getLogger('typeRepo').warn(err));
+    .catch((err) => getReggol('typeRepo').warn(err));
     
-  const logger = logging.getLogger('methods/events');
+  const logger = getReggol('methods:events');
   
   let natsPublisher;
   if (!openSourceSettings.isActive) {

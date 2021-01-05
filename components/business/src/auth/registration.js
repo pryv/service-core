@@ -17,6 +17,8 @@ const UsersRepository = require('components/business/src/users/repository');
 const User = require('components/business/src/users/User');
 const ErrorIds = require('components/errors').ErrorIds;
 
+const { getReggol } = require('boiler');
+
 import type { MethodContext } from 'components/model';
 import type { ApiCallback } from 'components/api-server/src/API';
 
@@ -32,14 +34,12 @@ class Registration {
   servicesSettings: any; // settigns to get the email to send user welcome email
 
   constructor(logging, storageLayer, servicesSettings) {
-    this.logger = logging.getLogger('business/registration');
+    this.logger = getReggol('business:registration');
     this.storageLayer = storageLayer;
     this.servicesSettings = servicesSettings;
 
     this.serviceRegisterConn = new ServiceRegister(
-      servicesSettings.register,
-      logging.getLogger('service-register')
-    );
+      servicesSettings.register);
     this.usersRepository = new UsersRepository(
       this.storageLayer.events,
       this.storageLayer.sessions,

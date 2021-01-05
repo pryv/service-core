@@ -64,6 +64,10 @@ class Application {
 
   async initiate() {
     this.gifnoc = await getGifnoc();
+    // load system streams
+    const systemStreamsSchema = require('../config/components/systemStreams');
+    systemStreamsSchema.load(this.gifnoc);
+
     this.produceLogSubsystem();
     this.produceStorageSubsystem(); 
     await this.createExpressApp();
@@ -116,7 +120,8 @@ class Application {
     const settings = this.settings;
     const gifnoc = this.gifnoc;
 
-    console.log('XXXX', settings.get().obj());
+    console.log('XXXX Settings', settings.get().obj());
+    console.log('YYYY Gifnoc', gifnoc.get());
     this.database = new storage.Database(
       gifnoc.get('database'), 
       getReggol('database'));

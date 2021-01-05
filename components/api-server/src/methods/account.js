@@ -33,7 +33,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);
 
   // initialize service-register connection
-  const serviceRegisterConn = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
+  const serviceRegisterConn = new ServiceRegister(servicesSettings.register);
   const usersRepository = new UsersRepository(userEventsStorage);
 
   // RETRIEVAL

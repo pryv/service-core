@@ -22,6 +22,7 @@ const UsersRepository = require('components/business/src/users/repository');
 import type { Logger } from 'components/utils';
 import type { ConfigAccess } from './settings';
 
+const { getReggol } = require('boiler');
 
 // Server class for api-server process. To use this, you 
 // would 
@@ -92,7 +93,7 @@ class Server {
   // 
   registerApiMethods() {
     const application = this.application;
-    const l = (topic) => application.getLogger(topic);
+    const l = (topic) => getReggol(topic);
     
     require('./methods/system')(application.systemAPI,
       application.storageLayer.accesses, 

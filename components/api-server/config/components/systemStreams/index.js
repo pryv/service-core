@@ -121,20 +121,6 @@ async function load(config: Config): Config {
 
   const CUSTOM_SYSTEM_STREAMS_FIELDS: string = 'CUSTOM_SYSTEM_STREAMS_FIELDS';
 
-  /**
-   * Or if it is a simple config, just pass json by env variable
-   */
-  config.env({
-    [CUSTOM_SYSTEM_STREAMS_FIELDS]: {
-      alias: 'ADDITIONAL_SYSTEM_STREAMS_FIELDS',
-      describe:
-        'json that contains additional system streams fields information.',
-      demand: false,
-      parseValues: true,
-      lowerCase: true
-    }
-  });
-
   readAdditionalFieldsConfig(config); 
   return config;
 
