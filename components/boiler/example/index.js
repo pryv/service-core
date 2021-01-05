@@ -23,6 +23,10 @@ const {gifnoc, getReggol, getGifnoc} = require('../src').init({
     scope: 'pryv.me-def',
     key: 'definitions',
     fromKey: 'service:assets:definitions'
+  }, {
+    scope: 'ondisk-scope',
+    key: 'ondisk',
+    url: 'file://' + path.resolve(__dirname, './remotes/ondisk.json')
   }]
 }, function() {
   console.log('Ready');
@@ -45,4 +49,5 @@ subLogger.debug('hello sub');
   indexLogger.info('pryv.li serial', gifnoc.get('serial'));
   indexLogger.info('pryv.me name', gifnoc.get('service:name'));
   indexLogger.info('Favicon', gifnoc.get('definitions:favicon:default:url'));
+  indexLogger.info('OnDisk', gifnoc.get('ondisk'));
 })();

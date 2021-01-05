@@ -4,7 +4,12 @@
 
 const boiler = require('boiler').init({
   appName: 'api-server',
-  baseConfigDir: './newconfig'
+  baseConfigDir: './newconfig',
+  extraConfigRemotes: [{
+    scope: 'serviceInfo',
+    key: 'service',
+    fromKey: 'serviceInfoUrl'
+  }]
 });
 
 const Server = require('../src/server');
@@ -19,8 +24,9 @@ const { Notifier } = require('@airbrake/node');
   // Load settings asynchronously because we have to fetch
   // some values from register via an http-get request.
   const settings = await Settings.load();
-  const config = getConfig();
-  await config.init();
+  const config = await boiler.getGifnoc();
+  console.log(config.get('service'));
+  //await config.init();
   loadCommonMeta({}); // load settings to common meta
   
 

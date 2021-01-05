@@ -113,8 +113,13 @@ class Config {
     const logger = this.logger;
 
     async function loadUrl(scope, key, url) {
-      const res = await superagent.get(url);
-      const conf = key ? {[key]: res.body} : res.body;
+      let res = null;
+      if (isFileUrl(url)) {
+        res = loadFromFile(url);
+      } else {
+        res = await loadFromUrl(url);
+      }
+      const conf = key ? {[key]: res} : res;
       store.add(scope, { type: 'literal', store: conf });
       logger.debug('Loaded URL: ' + url + (key ? ' under [' + key + ']' : ''));
     }
@@ -159,3 +164,43 @@ class Config {
 const config = new Config();
 
 module.exports = config;
+
+// --- remote and local json ressource loader ---- //
+
+const FILE_PROTOCOL = 'file://';
+const FILE_PROTOCOL_LENGTH = FILE_PROTOCOL.length;
+
+async function loadFromUrl(serviceInfoUrl ) {
+  const res = await superagent.get(serviceInfoUrl);
+  return res.body;
+}
+
+function loadFromFile(fileUrl ) {
+  const filePath = stripFileProtocol(fileUrl);
+
+  if (isRelativePath(filePath)) {
+    const serviceCorePath = path.resolve(__dirname, '../../../../');
+    fileUrl = path.resolve(serviceCorePath, filePath);
+    fileUrl = 'file://' + fileUrl;
+  } else {
+    // absolute path, do nothing.
+  }
+  const serviceInfo = JSON.parse(
+    fs.readFileSync(stripFileProtocol(fileUrl), 'utf8')
+  );
+  return serviceInfo;
+}
+
+
+function isFileUrl(serviceInfoUrl) {
+  return serviceInfoUrl.startsWith(FILE_PROTOCOL);
+}
+
+function isRelativePath(filePath) {
+  return !path.isAbsolute(filePath);
+}
+
+function stripFileProtocol(filePath) {
+  return filePath.substring(FILE_PROTOCOL_LENGTH);
+}
+
