@@ -162,6 +162,23 @@ class Config {
   }
 
   /**
+   * Retreive Boolean value, return value if boolean or translate 'true' string to 'true' or false if null or unedefined
+   * @param {string} key 
+   */
+  getBool(key) {
+    const value = this.store.get(key);
+    if (typeof value === 'undefined') { 
+      this.logger.debug('getBoolean: [' + key +'] is undefined');
+      return false;
+    }
+    if (typeof value === 'string') {
+      return value.toLowerCase() === 'true';
+    }
+    return value;
+  }
+
+
+  /**
    * Set value
    * @param {string} key 
    * @param {Object} value
