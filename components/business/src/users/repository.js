@@ -247,6 +247,7 @@ class Repository {
       
       // create all user account events
       const events = await user.getEvents();
+    
       await bluebird.fromCallback((cb) =>
         this.storage.insertMany({ id: user.id }, events, cb, { transactionSession }));
     }, this.getTransactionOptions());

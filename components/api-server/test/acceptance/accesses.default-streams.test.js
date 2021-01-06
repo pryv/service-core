@@ -14,7 +14,6 @@ const { describe, before, it } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 
-const { getConfig } = require('components/api-server/config/Config');
 const ErrorIds = require('components/errors').ErrorIds;
 const ErrorMessages = require('components/errors/src/ErrorMessages');
 const Settings = require('components/api-server/src/settings');
@@ -26,8 +25,10 @@ const SystemStreamsSerializer = require('components/business/src/system-streams/
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
 
+const { getGifnoc } = require('boiler');
+
 describe("Accesses with account streams", function () {
-  let config;
+  let gifnoc;
   let app;
   let request;
   let res;
@@ -69,6 +70,7 @@ describe("Accesses with account streams", function () {
         ]
       })
       .set('authorization', access.token);
+      console.log('XXXXXX2', accountAccess.body);
     accountAccessData = accountAccess.body.access;
   }
 
@@ -79,7 +81,7 @@ describe("Accesses with account streams", function () {
 
   before(async function () {
     const helpers = require('components/api-server/test/helpers');
-    config = getConfig();
+    gifnoc = await getGifnoc();
     validation = helpers.validation;
     mongoFixtures = databaseFixture(await produceMongoConnection());
 
@@ -97,7 +99,6 @@ describe("Accesses with account streams", function () {
     notifications.serverReady();
     require("components/api-server/src/methods/accesses")(
       app.api,
-      app.getLogger('methods/accesses'),
       notifications,
       app.getUpdatesSettings,
       app.storageLayer);
@@ -208,7 +209,7 @@ describe("Accesses with account streams", function () {
             assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
           });
           it('[TI1X] should allow to create visible stream events', async () => {
-            scope = nock(config.get('services:register:url'));
+            scope = nock(gifnoc.get('services:register:url'));
             scope.put('/users',
               (body) => {
                 serviceRegisterRequest = body;

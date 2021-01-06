@@ -21,7 +21,7 @@ const { getReggol } = require('boiler');
 /** Error route handling.
  */
 function produceHandleErrorMiddleware(logging: any, airbrakeNotifier: any) {
-  const logger = getReggol('routes');
+  const logger = logging.getReggol('error-middleware');
   const notifier = airbrakeNotifier?.airbrakeNotifier;
 
   // NOTE next is not used, since the request is terminated on all errors. 

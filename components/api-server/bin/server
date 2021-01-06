@@ -2,15 +2,7 @@
 
 // Binary for launching the api-server process. 
 
-const boiler = require('boiler').init({
-  appName: 'api-server',
-  baseConfigDir: './newconfig',
-  extraConfigRemotes: [{
-    scope: 'serviceInfo',
-    key: 'service',
-    fromKey: 'serviceInfoUrl'
-  }]
-});
+
 
 const Server = require('../src/server');
 const Application = require('../src/application');
@@ -20,11 +12,13 @@ const loadCommonMeta = require('../src/methods/helpers/setCommonMeta').loadSetti
 let logger, airbrake;
 const { Notifier } = require('@airbrake/node');
 
+const { getGifnoc } = require('boiler');
+
 (async () => {
   // Load settings asynchronously because we have to fetch
   // some values from register via an http-get request.
   const settings = await Settings.load();
-  const config = await boiler.getGifnoc();
+  const config = await getGifnoc();
   //await config.init();
   loadCommonMeta({}); // load settings to common meta
   
@@ -69,7 +63,7 @@ const { Notifier } = require('@airbrake/node');
   const server = new Server(app); 
   await server.start();
 })()
-  .then(() => console.log('Startup sequence complete, Server is running.'))
+  .then(() => console.log('Startup sequence complete, Server is running. mode: [' + process.env.NODE_ENV + ']'))
   .catch(e => {
     if (logger) logger.error(e);
     console.dir(e);

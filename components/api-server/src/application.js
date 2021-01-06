@@ -9,6 +9,20 @@
 // A central registry for singletons and configuration-type instances; pass this
 // to your code to give it access to app setup. 
 
+const boiler = require('boiler').init({
+  appName: 'api-server',
+  baseConfigDir: './newconfig',
+  extraAsync: [{
+    scope: 'serviceInfo',
+    key: 'service',
+    urlFromKey: 'serviceInfoUrl'
+  },
+  {
+    plugin: require('../config/components/systemStreams')
+  }
+  ]
+});
+
 const utils = require('components/utils');
 const storage = require('components/storage');
 const API = require('./API');
@@ -17,6 +31,8 @@ const middleware = require('components/middleware');
 const errorsMiddlewareMod = require('./middleware/errors'); 
 
 const { getGifnoc, getReggol } = require('boiler');
+const reggol = getReggol('application');
+reggol.debug('Loading app');
 
 import type { ConfigAccess } from './settings';
 import type { WebhooksSettingsHolder } from './methods/webhooks';
@@ -54,27 +70,30 @@ class Application {
   expressApp: express$Application;
 
   constructor(settings: ConfigAccess) {
+    reggol.debug('creation');
     this.settings = settings;
     
     this.api = new API(); 
     this.systemAPI = new API(); 
-    
+  
+    reggol.debug('created');
     //this.produceStorageSubsystem();
   }
 
   async initiate() {
-    this.gifnoc = await getGifnoc();
-    // load system streams
-    const systemStreamsSchema = require('../config/components/systemStreams');
-    systemStreamsSchema.load(this.gifnoc);
-
     this.produceLogSubsystem();
+    reggol.debug('Init started');
+
+    this.gifnoc = await getGifnoc();
+        
     this.produceStorageSubsystem(); 
     await this.createExpressApp();
     this.initiateRoutes();
     this.expressApp.use(middleware.notFound);
     const errorsMiddleware = errorsMiddlewareMod(this.gniggol, createAirbrakeNotifierIfNeeded(this.gifnoc));
     this.expressApp.use(errorsMiddleware);
+    reggol.debug('Init done');
+
   }
 
   async createExpressApp(): Promise<express$Application> {

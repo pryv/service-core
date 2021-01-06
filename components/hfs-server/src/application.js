@@ -58,7 +58,7 @@ async function createContext(
     {host: host, port: port}, logFactory('influx')); 
   
   const mongo = new storage.Database(
-    settings.get('mongodb').obj(), logFactory('database'));
+    settings.get('database').obj(), logFactory('database'));
     
   const tracer = produceTracer(settings, logFactory('jaeger'));
   const typeRepoUpdateUrl = settings.get('service.eventTypes').str();

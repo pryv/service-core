@@ -56,8 +56,8 @@ class Application {
 
     // Connect to MongoDB
     const storageLayer = produceStorageLayer(
-      settings.get('mongodb'),
-      this.getLogger('mongodb')
+      settings.get('database'),
+      this.getLogger('database')
     );
 
     // Construct the service

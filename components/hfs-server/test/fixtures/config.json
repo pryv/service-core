@@ -12,7 +12,7 @@
       "active": false
     }
   }, 
-  "mongodb": {
+  "database": {
     "host": "localhost",
     "name": "pryv-node-test"
   }, 

@@ -133,6 +133,7 @@ class SystemStreamsSerializer {
    */
   static getAllAccountStreamsLeaves () {
     if (!SystemStreamsSerializer.allAccountStreamsLeaves) {
+      
       const flatStreamsList = treeUtils.flattenTreeWithoutParents(gifnoc.get(accountStreamsConfigPath));
       let flatStreamsListObj = {};
       let i;

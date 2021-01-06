@@ -31,7 +31,7 @@ exports.produceInfluxConnection = produceInfluxConnection;
 async function produceMongoConnection(): storage.Database {
   const settings = await toplevelHelpers.loadSettings();
   const database = new storage.Database(
-    settings.get('mongodb').obj(), 
+    settings.get('database').obj(), 
     new NullLogger()); 
   
   return database; 

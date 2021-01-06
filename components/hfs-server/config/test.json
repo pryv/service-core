@@ -3,7 +3,7 @@
   "openSource": {
     "isActive": false
   },
-  "mongodb": {
+  "database": {
     "host": "localhost",
     "name": "pryv-node-test"
   }

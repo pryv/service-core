@@ -54,7 +54,7 @@ class Settings implements ConfigAccess {
         file: { active: false },
       }, 
       
-      mongodb: {
+      database: {
         host: '127.0.0.1', // production will need to override this.
         port: 27017,
         name: 'pryv-node',
@@ -123,7 +123,7 @@ class Settings implements ConfigAccess {
   // Compatibility layer for setting up mongodb connections.
   // 
   getMongodbSettings(): Object {
-    return l_map('mongodb', [
+    return l_map('database', [
       l_str('host'), 
       l_num('port'), 
       l_str('name'),

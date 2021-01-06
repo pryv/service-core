@@ -23,6 +23,8 @@ const UsersRepository = require('components/business/src/users/repository');
 const User = require('components/business/src/users/User');
 const charlatan = require('charlatan');
 const { getConfig } = require('components/api-server/config/Config');
+const { getGifnoc, getReggol } = require('boiler');
+const reggol = getReggol('test-helpers:data');
 
 // users
 const users = exports.users = require('./data/users');
@@ -32,6 +34,8 @@ const config = getConfig();
 const customAccountProperties = buildCustomAccountProperties();
 
 exports.resetUsers = async () => {
+  reggol.debug('resetUsers');
+  await getGifnoc(); // lock up to the time config is ready
   await bluebird.fromCallback(cb => storage.user.events.database.deleteMany(
     { name: 'events' },
     {

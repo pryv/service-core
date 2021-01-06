@@ -24,10 +24,6 @@ reporting:
   licenseName: pryv.io-test-license
   templateVersion: 1.0.0
 database:
-  host: localhost
-  port: 27017
-  name: pryv-node-test
-mongodb:
   host: 127.0.0.1
   port: 27017
   name: pryv-node-test

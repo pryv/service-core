@@ -7,6 +7,6 @@ database:
   authPassword: ''
   host: 'localhost'
   port: 27017
-  name: 'pryv-node'
+  name: 'pryv-node-test' # Change this !!!! or make sure defaults does not override anything
   connectTimeoutMS: 60000
   socketTimeoutMS: 60000

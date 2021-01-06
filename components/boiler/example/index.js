@@ -8,11 +8,15 @@ const path = require('path');
 const {gifnoc, getReggol, getGifnoc} = require('../src').init({
   appName: 'sample',
   baseConfigDir: path.resolve(__dirname, './configs'),
-  extraConfigFiles: [{
+  extraSync: [{
     scope: 'extra1',
     file: path.resolve(__dirname, './configs/extra-config.yaml')
-  }],
-  extraConfigRemotes: [{
+  },
+  {
+    plugin: require('./plugins/plugin-sync')
+  }
+  ],
+  extraAsync: [{
     scope: 'pryv.li',
     url: 'https://reg.pryv.li/service/info'
   },{
@@ -22,11 +26,14 @@ const {gifnoc, getReggol, getGifnoc} = require('../src').init({
   },{
     scope: 'pryv.me-def',
     key: 'definitions',
-    fromKey: 'service:assets:definitions'
+    urlFromKey: 'service:assets:definitions'
   }, {
     scope: 'ondisk-scope',
     key: 'ondisk',
     url: 'file://' + path.resolve(__dirname, './remotes/ondisk.json')
+  },
+  {
+    plugin: require('./plugins/plugin-async')
   }]
 }, function() {
   console.log('Ready');
@@ -44,10 +51,13 @@ indexLogger.info('Bob', gifnoc.get('foo'));
 const subLogger = indexLogger.getReggol('sub');
 subLogger.debug('hello sub');
 
+indexLogger.info('plugin sync', gifnoc.get('plugin-sync'));
+
 (async () => { 
   await getGifnoc();
-  indexLogger.info('pryv.li serial', gifnoc.get('serial'));
-  indexLogger.info('pryv.me name', gifnoc.get('service:name'));
-  indexLogger.info('Favicon', gifnoc.get('definitions:favicon:default:url'));
-  indexLogger.info('OnDisk', gifnoc.get('ondisk'));
+  indexLogger.info('pryv.li serial: ' + gifnoc.get('serial'));
+  indexLogger.info('pryv.me name: ' + gifnoc.get('service:name'));
+  indexLogger.info('Favicon: ' + gifnoc.get('definitions:favicon:default:url'));
+  indexLogger.info('OnDisk: ' + gifnoc.get('ondisk'));
+  indexLogger.info('Plugin async: ' + gifnoc.get('plugin-async'));
 })();

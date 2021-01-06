@@ -202,7 +202,6 @@ class Fixture {
   // the user is really created. 
   // 
   user(name: string, attrs: {}={}, cb?: (FixtureUser) => mixed): Promise<FixtureUser> {
-    
     return bluebird.try(() => {
       const u = new FixtureUser(
         this.context.forUser(name),

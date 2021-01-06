@@ -25,6 +25,8 @@ const accessSchema = require('../schema/access');
 const string = require('./helpers/string');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
+const { getReggol } = require('boiler');
+
 import type { StorageLayer } from 'components/storage';
 import type { Logger } from 'components/utils';
 import type { MethodContext } from 'components/model';
@@ -51,11 +53,11 @@ type UpdatesSettingsHolder = {
 
 module.exports = function produceAccessesApiMethods(
   api: API, 
-  logger: Logger, 
   notifications: Notifications, 
   updatesSettings: UpdatesSettingsHolder, 
   storageLayer: StorageLayer) 
 {
+  const reggol = getReggol('methods:accesses');
   const dbFindOptions = { projection: 
     { calls: 0, deleted: 0 } };
 
@@ -285,7 +287,7 @@ module.exports = function produceAccessesApiMethods(
             // Duplicate errors
             if (err.isDuplicateIndex('id')) {
               // Stream already exists, log & proceed
-              logger.info('accesses.create: stream "' + newStream.id + '" already exists: ' +
+              reggol.info('accesses.create: stream "' + newStream.id + '" already exists: ' +
                   err.message);
             }
             else if (err.isDuplicateIndex('name')) {

@@ -122,7 +122,7 @@ async function load(config: Config): Config {
   const CUSTOM_SYSTEM_STREAMS_FIELDS: string = 'CUSTOM_SYSTEM_STREAMS_FIELDS';
 
   readAdditionalFieldsConfig(config); 
-  return config;
+  return 'System Streams';
 
   /**
    * If any, load custom system streams from:

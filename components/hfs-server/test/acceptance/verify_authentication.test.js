@@ -27,7 +27,7 @@ describe('Metadata Loader', function () {
   before(async function () {
     settings = await loadSettings();
     database = new storage.Database(
-      settings.get('mongodb').obj(), 
+      settings.get('database').obj(), 
       new NullLogger()); 
     pryv = databaseFixture(database);
   });

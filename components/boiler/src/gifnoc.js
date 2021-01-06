@@ -48,10 +48,8 @@ class Config {
    * Init Config with Files should be called just once when starting an APP
    * @param {Object} options
    * @param {string} [options.baseConfigDir] - (optional) directory to use to look for configs
-   * @param {Array<ConfigFile>} [options.extraConfigFiles] - (optional) and array of extra files to load
-   * @param {Object} gniggol 
+   * @param {Array<ConfigFile|ConfigPlugin>} [options.extraSync] - (optional) and array of extra files or plugins to load (synchronously)
    * @param {Object} gniggol
-   * @param {Function} initLoggerWithConfig - Init Logger when options are loaded
    * @returns {Config} this
    */
   initSync(options, gniggol) {
@@ -91,10 +89,17 @@ class Config {
     loadFile('default', defaultsFile);
     loadFile('custom', configFile);
 
-    // load extra config files
-    if (options.extraConfigFiles) {
-      options.extraConfigFiles.forEach((extra) => { 
-        loadFile(extra.scope, extra.file);
+    console.log(options)
+    // load extra config files & plugins
+    if (options.extraSync) {
+      options.extraSync.forEach((extra) => { 
+        if (extra.file) {
+          loadFile(extra.scope, extra.file);
+        }
+        if (extra.plugin) {
+          const name = extra.plugin.load(store);
+          logger.debug('Loaded plugin: ' + name);
+        }
       });
     }
 
@@ -125,13 +130,17 @@ class Config {
     }
 
     // load remote config files
-    if (options.extraConfigRemotes) {
-      for (let extra of options.extraConfigRemotes) { 
+    if (options.extraAsync) {
+      for (let extra of options.extraAsync) { 
         if (extra.url) {
           await loadUrl(extra.scope, extra.key, extra.url);
-        } else if (extra.fromKey) {
-          const url = store.get(extra.fromKey);
+        } else if (extra.urlFromKey) {
+          const url = store.get(extra.urlFromKey);
           await loadUrl(extra.scope, extra.key, url);
+        }
+        if (extra.plugin) {
+          const name = await extra.plugin.load(store);
+          logger.debug('Loaded plugin: ' + name);
         }
       }
     }
@@ -148,8 +157,9 @@ class Config {
    * @param {string} key 
    */
   get(key) {
-    this.logger.debug('get: ' +)
-    return this.store.get(key);
+    const value = this.store.get(key);
+    this.logger.debug('get: [' + key +'] => ' + value);
+    return value;
   }
 
   /**

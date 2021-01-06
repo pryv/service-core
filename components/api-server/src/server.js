@@ -133,7 +133,7 @@ class Server {
     }
 
     require('./methods/accesses')(
-      application.api, l('methods/accesses'), 
+      application.api, 
       this.notificationBus, 
       application.getUpdatesSettings(), 
       application.storageLayer);
