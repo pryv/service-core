@@ -17,7 +17,7 @@ const superagent = require('superagent');
  * Default values for Logger
  */
 const defaults = {
-  logger: {
+  logs: {
     console: {
       active: true,
       level: 'info',
@@ -29,7 +29,7 @@ const defaults = {
     },
     file: {
       active: true,
-      filename: 'application.log'
+      path: 'application.log'
     }
   }
 };
@@ -158,7 +158,7 @@ class Config {
    */
   get(key) {
     const value = this.store.get(key);
-    this.logger.debug('get: [' + key +'] => ' + value);
+    if (typeof value === 'undefined') this.logger.debug('get: [' + key +'] is undefined');
     return value;
   }
 

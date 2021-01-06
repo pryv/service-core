@@ -36,9 +36,21 @@ function generateFormat(options) {
       timestamp, level, message, ...args
     } = info;
     
-    const items = info[Symbol.for('splat')] || {};
- 
-    const line = `[${level}]: ${message} ${Object.keys(items).length ? util.inspect(items, {depth: 10, colors: true}) : ''}`;
+    let items = info[Symbol.for('splat')] || {};
+    
+    let itemStr = '';
+    if (items.length > 0) {
+      if (items.length === 1) {
+        if (items[0].context) { 
+          items = items[0].context;
+        } 
+      }
+      itemStr = util.inspect(items, {depth: 10, colors: true});
+    }
+
+
+
+    const line = `[${level}]: ${message} ${itemStr}`;
 
     if (options.time) {
       const ts = timestamp.slice(0, 19).replace('T', ' ');
@@ -56,11 +68,10 @@ function generateFormat(options) {
 /**
  * Helper to pass log instructions to winston
  */
-function globalLog() { 
+function globalLog(level, text, context) { 
   if (winstonInstance) {
-    const key = arguments[0];
-    const args = [...arguments].slice(1);
-    winstonInstance[key](...args);
+    winstonInstance[level](text, context);
+    winstonInstance[level]('A', {B: 'B'});
   } else {
     console.log('Logger not initialized: ', ...arguments);
   }
@@ -77,7 +88,7 @@ async function initLoggerWithConfig(config) { 
   }
   // console
   winstonInstance = winston.createLogger({ });
-  const logConsole = config.get('logger:console');
+  const logConsole = config.get('logs:console');
   if (logConsole.active) {
     rootLogger.debug('Console active with level: ', logConsole.level);
     const format = generateFormat(logConsole.format)
@@ -86,10 +97,17 @@ async function initLoggerWithConfig(config) { 
   }
 
   // file
-  const logFile = config.get('logger:file');
+  const logFile = config.get('logs:file');
   if (logFile.active) {
-    rootLogger.debug('File active: ' + logFile.filename);
-    const files = new winston.transports.File({ filename: logFile.filename});
+    rootLogger.debug('File active: ' + logFile.path);
+    const files = new winston.transports.File({ 
+      filename: logFile.path,
+      level: logFile.level,
+      maxsize: logFile.maxFileBytes,
+      maxFiles: logFile.maxNbFiles,
+      timestamp: true,
+      json: false
+    });
     winstonInstance.add(files);
   }
   rootLogger.debug('Logger Initialized');
@@ -142,8 +160,20 @@ class Logger {
   }
 
   log() {
-    arguments[1] = '[' + this._name() + ']: ' + arguments[1];
-    globalLog(...arguments);
+    const level = arguments[0];
+    const text = '[' + this._name() + ']: ' + hideSensitiveValues(arguments[1]);
+    const context = [];
+    let meta = null;
+    // Security measure: We do not want any sensitive value to appear in logs
+    for (let i = 2; i < arguments.length; i++) {
+      context.push(inspectAndHide(arguments[i]));
+    }
+    if (context.length === 1) {
+      meta = {context:  context[0]};
+    } else if (context.length > 1) {
+      meta = {context:  context};
+    }
+    globalLog(level, text, meta);
   }
 
   info () { this.log('info', ...arguments); }
@@ -178,3 +208,49 @@ module.exports = {
   initLoggerWithConfig: initLoggerWithConfig
 }
 
+// ----------------- Hide sensite data -------------------- //
+
+function inspectAndHide(o) {
+  return _inspectAndHide(JSON.parse(JSON.stringify(o))); // clone and remove circular
+}
+
+function _inspectAndHide(o) {
+  if (typeof o === 'string') {
+    return hideSensitiveValues(o);
+  }
+  if (typeof o === 'object') {
+    if (Array.isArray(o)) {
+      const res = [];
+      for (let item of o) {
+        res.push(inspectAndHide(item));
+      }
+      return res;
+    }
+
+
+    const res = {};
+    for (let key of Object.keys(o)) {
+      if (['password', 'passwordHash'].includes(key)) {
+        res[key] = '(hidden password)';
+      } else {
+        res[key] = inspectAndHide(o[key]);
+      }
+    }
+    return res;
+  }
+  return o;
+}
+
+
+// Hides sensitive values (auth tokens and passwords) in log messages
+function hideSensitiveValues (msg) {
+  const tokenRegexp = /auth\=c([a-z0-9-]*)/g;
+  const passwordRegexp = /"(password|passwordHash)"[:=]"([^"]*)"/g;
+  const mask = '(hidden)';
+
+  msg = msg
+    .replace(tokenRegexp, 'auth='+mask)
+    .replace(passwordRegexp, '$1='+mask);
+  
+  return msg;
+}

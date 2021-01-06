@@ -53,11 +53,13 @@ subLogger.debug('hello sub');
 
 indexLogger.info('plugin sync', gifnoc.get('plugin-sync'));
 
+indexLogger.info('hide stuff auth=c08r0xs95xlb1xgssmp6tr7c0000gp', {password: 'toto'});
+
 (async () => { 
   await getGifnoc();
-  indexLogger.info('pryv.li serial: ' + gifnoc.get('serial'));
-  indexLogger.info('pryv.me name: ' + gifnoc.get('service:name'));
-  indexLogger.info('Favicon: ' + gifnoc.get('definitions:favicon:default:url'));
-  indexLogger.info('OnDisk: ' + gifnoc.get('ondisk'));
-  indexLogger.info('Plugin async: ' + gifnoc.get('plugin-async'));
+  indexLogger.info('pryv.li serial: ', gifnoc.get('serial'));
+  indexLogger.info('pryv.me name: ', gifnoc.get('service:name'));
+  indexLogger.info('Favicon: ', gifnoc.get('definitions:favicon:default:url'));
+  indexLogger.info('OnDisk: ', gifnoc.get('ondisk'));
+  indexLogger.info('Plugin async: ', gifnoc.get('plugin-async'));
 })();
