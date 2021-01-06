@@ -410,7 +410,7 @@ describe('auth', function() {
                   return stepDone(err);
                 }
                 should(data.indexOf(wrongPasswordData.password)).be.equal(-1);
-                should(data.indexOf('password=(hidden)')).be.aboveOrEqual(0);
+                should(data.indexOf('"password":"(hidden password)"')).be.aboveOrEqual(0);
                 stepDone();
               });
             },

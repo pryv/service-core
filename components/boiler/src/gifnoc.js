@@ -89,7 +89,6 @@ class Config {
     loadFile('default', defaultsFile);
     loadFile('custom', configFile);
 
-    console.log(options)
     // load extra config files & plugins
     if (options.extraSync) {
       options.extraSync.forEach((extra) => { 

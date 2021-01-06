@@ -138,9 +138,12 @@ class Application {
   produceStorageSubsystem() {
     const settings = this.settings;
     const gifnoc = this.gifnoc;
-
-    console.log('XXXX Settings', settings.get().obj());
-    console.log('YYYY Gifnoc', gifnoc.get());
+    try {
+      // console.log('XXXX Settings', settings.get('logs').obj());
+    } catch (e) {
+      //console.log('XXXX Error getting settings', e);
+    }
+    //console.log('XXXX Gifnoc', gifnoc.get('logs'));
     this.database = new storage.Database(
       gifnoc.get('database'), 
       getReggol('database'));

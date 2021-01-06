@@ -70,7 +70,6 @@ describe("Accesses with account streams", function () {
         ]
       })
       .set('authorization', access.token);
-      console.log('XXXXXX2', accountAccess.body);
     accountAccessData = accountAccess.body.access;
   }
 

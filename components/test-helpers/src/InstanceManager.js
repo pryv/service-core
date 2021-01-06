@@ -118,7 +118,6 @@ function InstanceManager(settings) {
     // write config to temp path
     fs.writeFileSync(tempConfigPath, JSON.stringify(serverSettings));
     var args = ['--config=' + tempConfigPath];
-
     args.unshift(settings.serverFilePath);
 
     // setup debug if needed (assumes current process debug port is 5858 i.e. default)
@@ -141,7 +140,7 @@ function InstanceManager(settings) {
     logger.debug('Starting server instance... ');
     var options = {
       // Uncomment here if you want to see server output
-     stdio: 'inherit',
+     // stdio: 'inherit',
       env: process.env
     };
     serverProcess = spawn(process.argv[0], args, options);

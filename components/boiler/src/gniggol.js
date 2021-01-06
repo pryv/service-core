@@ -40,7 +40,7 @@ function generateFormat(options) {
     
     let itemStr = '';
     if (items.length > 0) {
-      if (items.length === 1) {
+      if (items.length === 1 && items[0]) {
         if (items[0].context) { 
           items = items[0].context;
         } 
@@ -71,7 +71,6 @@ function generateFormat(options) {
 function globalLog(level, text, context) { 
   if (winstonInstance) {
     winstonInstance[level](text, context);
-    winstonInstance[level]('A', {B: 'B'});
   } else {
     console.log('Logger not initialized: ', ...arguments);
   }
@@ -218,7 +217,7 @@ function _inspectAndHide(o) {
   if (typeof o === 'string') {
     return hideSensitiveValues(o);
   }
-  if (typeof o === 'object') {
+  if (o !== null && typeof o === 'object') {
     if (Array.isArray(o)) {
       const res = [];
       for (let item of o) {
