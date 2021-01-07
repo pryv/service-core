@@ -15,14 +15,10 @@ const utils = require('components/utils');
 const Notifications = require('./Notifications');
 const Application = require('./application');
 
-const child_process = require('child_process');
-const url = require('url');
 const UsersRepository = require('components/business/src/users/repository');
 
-import type { Logger } from 'components/utils';
-import type { ConfigAccess } from './settings';
+const { getReggol, getGifnoc } = require('boiler');
 
-const { getReggol } = require('boiler');
 
 // Server class for api-server process. To use this, you 
 // would 
@@ -32,23 +28,18 @@ const { getReggol } = require('boiler');
 // 
 class Server {
   application: Application;
-  settings: ConfigAccess;
   isOpenSource: boolean;
   isDnsLess: Boolean;
-  logger: Logger; 
+  logger; 
+  gifnoc;
   
   // Axon based internal notification and messaging bus. 
   notificationBus: Notifications;
     
-  // Load settings and setup base configuration. 
+  // Load gifnoc and setup base configuration. 
   //
   constructor(application: Application) {
     this.application = application;
-    
-    const settings = application.settings; 
-    this.settings = settings;
-    this.isOpenSource = settings.get('openSource.isActive').bool();
-    this.isDnsLess = settings.get('dnsLess.isActive').bool();
   }
     
   // Start the server. 
@@ -56,17 +47,23 @@ class Server {
   async start() {
     this.logger = getReggol('server');
     this.logger.debug('start initiated');
-    const defaultParam: ?string = this.findDefaultParam();
+    await this.application.initiate();
+    
+    const gifnoc = await getGifnoc(); 
+    this.gifnoc = gifnoc;
+   
+    this.isOpenSource = gifnoc.get('openSource:isActive');
+    this.isDnsLess = gifnoc.get('dnsLess:isActive');
+    const defaultParam = this.findDefaultParam();
     if (defaultParam != null) {
       this.logger.error(`Config parameter "${defaultParam}" has a default value, please change it`);
       process.exit(1);
     }
+   
     
-    await this.application.initiate();
-
     // start TCP pub messaging
     await this.setupNotificationBus();
-
+    
     // register API methods
     this.registerApiMethods();
 
@@ -86,7 +83,7 @@ class Server {
 
   findDefaultParam(): ?string {
     const DEFAULT_VALUES: Array<string> = ['REPLACE_ME'];
-    if (DEFAULT_VALUES.includes(this.settings.get('auth.adminAccessKey').str())) return 'auth.adminAccessKey';
+    if (DEFAULT_VALUES.includes(this.gifnoc.get('auth:adminAccessKey')))  return 'auth:adminAccessKey';
     return null;
   }
   
@@ -95,10 +92,11 @@ class Server {
   registerApiMethods() {
     const application = this.application;
     const l = (topic) => getReggol(topic);
+    const gifnoc = this.gifnoc;
     
     require('./methods/system')(application.systemAPI,
       application.storageLayer.accesses, 
-      application.settings.get('services').obj(), 
+      gifnoc.get('services'), 
       application.api, 
       application.logging, 
       application.storageLayer);
@@ -109,28 +107,28 @@ class Server {
       application.storageLayer.accesses, 
       application.storageLayer.sessions, 
       application.storageLayer.events, 
-      application.settings.get('auth').obj());
+      gifnoc.get('auth'));
     
     require('./methods/auth/register')(application.api, 
       application.logging, 
       application.storageLayer, 
-      application.settings.get('services').obj());
+      gifnoc.get('services'));
 
     require('./methods/auth/register-dnsless')(application.api, 
       application.logging, 
       application.storageLayer, 
-      application.settings.get('services').obj());
+      application.gifnoc.get('services'));
 
     if (this.isOpenSource) {
       require('./methods/auth/delete-opensource')(application.api,
         application.logging,
         application.storageLayer,
-        application.settings);
+        gifnoc);
     } else {
       require('./methods/auth/delete')(application.api,
         application.logging,
         application.storageLayer,
-        application.settings);
+        gifnoc);
     }
 
     require('./methods/accesses')(
@@ -160,8 +158,8 @@ class Server {
     require('./methods/account')(application.api, 
       application.storageLayer.events, 
       application.storageLayer.passwordResetRequests, 
-      application.settings.get('auth').obj(), 
-      application.settings.get('services').obj(), 
+      gifnoc.get('auth'), 
+      gifnoc.get('services'), 
       this.notificationBus,
       application.logging
     );
@@ -176,20 +174,20 @@ class Server {
       application.storageLayer.eventFiles, 
       this.notificationBus, 
       application.logging, 
-      application.settings.get('audit').obj(), 
-      application.settings.get('updates').obj());
+      gifnoc.get('audit'), 
+      gifnoc.get('updates'));
 
     require('./methods/events')(application.api, 
       application.storageLayer.events, 
       application.storageLayer.eventFiles, 
-      application.settings.get('auth').obj(), 
-      application.settings.get('service.eventTypes').str(), 
+      gifnoc.get('auth'), 
+      gifnoc.get('service:eventTypes'), 
       this.notificationBus, 
       application.logging,
-      application.settings.get('audit').obj(),
-      application.settings.get('updates').obj(), 
-      application.settings.get('openSource').obj(), 
-      application.settings.get('services').obj());
+      gifnoc.get('audit'),
+      gifnoc.get('updates'), 
+      gifnoc.get('openSource'), 
+      gifnoc.get('services'));
 
     this.logger.debug('api method registered');
   }
@@ -199,8 +197,8 @@ class Server {
     const notificationBus = this.notificationBus;
     const api = application.api; 
     const storageLayer = application.storageLayer;
-    const settings = this.settings; 
-    const customAuthStepFn = settings.getCustomAuthFunction();
+    const gifnoc = this.gifnoc; 
+    const customAuthStepFn = this.application.settings.getCustomAuthFunction();
     const isOpenSource = this.isOpenSource;
         
     const socketIOsetup = require('./socket-io');
@@ -215,16 +213,16 @@ class Server {
   // Open http port and listen to incoming connections. 
   //
   async startListen(server: net$Server) {
-    const settings = this.settings; 
+    const gifnoc = this.gifnoc; 
     const logger = this.logger; 
     
-    const port = settings.get('http.port').num();
-    const hostname = settings.get('http.ip').str(); 
+    const port = gifnoc.get('http:port');
+    const hostname = gifnoc.get('http:ip'); 
     
     
     // All listen() methods can take a backlog parameter to specify the maximum
     // length of the queue of pending connections. The actual length will be
-    // determined by the OS through sysctl settings such as tcp_max_syn_backlog
+    // determined by the OS through sysctl gifnoc such as tcp_max_syn_backlog
     // and somaxconn on Linux. The default value of this parameter is 511 (not
     // 512).
     const backlog = 511;
@@ -243,21 +241,21 @@ class Server {
     logger.info(`Core Server (API module) listening on ${serverUrl}`);
     
     // Warning if ignoring forbidden updates
-    if (settings.get('updates.ignoreProtectedFields').bool()) {
+    if (gifnoc.get('updates:ignoreProtectedFields')) {
       logger.warn('Server configuration has "ignoreProtectedFieldUpdates" set to true: ' +
         'This means updates to protected fields will be ignored and operations will succeed. ' +
         'We recommend turning this off, but please be aware of the implications for your code.');
     }
     
     // TEST: execute test setup instructions if any
-    const instanceTestSetup = settings.get('instanceTestSetup'); 
-    if (process.env.NODE_ENV === 'test' && instanceTestSetup.exists()) {
+    const instanceTestSetup = gifnoc.get('instanceTestSetup'); 
+    if (process.env.NODE_ENV === 'test' && instanceTestSetup !== null) {
       logger.debug('specific test setup ');
       try {
         const axonSocket = this.notificationBus.axonSocket;
         
         require('components/test-helpers')
-          .instanceTestSetup.execute(instanceTestSetup.str(), axonSocket);
+          .instanceTestSetup.execute(instanceTestSetup, axonSocket);
       } catch (err) {
         logger.warn('Error executing instance test setup instructions: ' + err.message);
       }
@@ -278,14 +276,14 @@ class Server {
   // 
   async openNotificationBus(): EventEmitter {
     const logger = this.logger; 
-    const settings = this.settings; 
+    const gifnoc = this.gifnoc; 
 
-    const enabled = settings.get('tcpMessaging.enabled').bool();
+    const enabled = gifnoc.get('tcpMessaging:enabled');
     if (! enabled) return new EventEmitter(); 
     
-    const tcpMessaging = settings.get('tcpMessaging').obj();
-    const host = settings.get('tcpMessaging.host').str();
-    const port = settings.get('tcpMessaging.port').num();
+    const tcpMessaging = gifnoc.get('tcpMessaging');
+    const host = gifnoc.get('tcpMessaging:host');
+    const port = gifnoc.get('tcpMessaging:port');
     
     try {
       const socket = await bluebird.fromCallback(
@@ -317,7 +315,7 @@ class Server {
       };
     }
 
-    const reportingSettings = this.settings.get('reporting').value;
+    const reportingSettings = this.gifnoc.get('reporting');
     const templateVersion = reportingSettings.templateVersion;
     const reportingUrl = reportingSettings?.url;
     const optOut = reportingSettings?.optOut;

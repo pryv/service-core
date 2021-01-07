@@ -2,8 +2,6 @@
 
 // Binary for launching the api-server process. 
 
-
-
 const Server = require('../src/server');
 const Application = require('../src/application');
 
@@ -39,7 +37,7 @@ const reggol = getReggol('serverRoot');
   });
 
   // Catch uncaught Exceptions
-  process.on('uncaughtException', async (error) => {
+  process.on('uncaughtExceptions', async (error) => {
     if (reggol) reggol.error(error);
     console.dir(error);
     if (airbrake != null && typeof airbrake.notify === 'function') {
@@ -47,6 +45,7 @@ const reggol = getReggol('serverRoot');
     }
     process.exit(1);
   });
+
 
   process.on('exit', () => {
     console.log('Server stopped.');

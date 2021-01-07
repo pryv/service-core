@@ -243,13 +243,14 @@ function _inspectAndHide(o) {
 
 // Hides sensitive values (auth tokens and passwords) in log messages
 function hideSensitiveValues (msg) {
+  if (typeof msg !== 'string') return msg;
   const tokenRegexp = /auth\=c([a-z0-9-]*)/g;
   const passwordRegexp = /"(password|passwordHash)"[:=]"([^"]*)"/g;
   const mask = '(hidden)';
 
-  msg = msg
+  const res = msg
     .replace(tokenRegexp, 'auth='+mask)
     .replace(passwordRegexp, '$1='+mask);
   
-  return msg;
+  return res;
 }
