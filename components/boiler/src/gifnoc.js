@@ -57,12 +57,21 @@ class Config {
     const store = new nconf.Provider();
 
     const baseConfigDir = options.baseConfigDir || 'config';
-    logger.debug('Init with baseConfigDir: ' + baseConfigDir)
+    logger.debug('Init with baseConfigDir: ' + baseConfigDir);
+
+
+    store.use('memory');
+
+    // put a 'test' store up in the list that could be overwitten afterward and override other options
+    // override 'test' store with store.add('test', {type: 'literal', store: {....}});
+    store.use('test', { type: 'literal', store: {} });
+
     // get config from arguments and env variables
     // memory must come first for config.set() to work without loading config files
     // 1. `process.env`
     // 2. `process.argv`
-    store.use('memory').argv().env();
+    
+    store.argv({parseValues: true}).env({parseValues: true});
     
     // 3. Values in `config.json`
     let configFile;
@@ -86,8 +95,8 @@ class Config {
 
     // load default and custom config from configs/default-config.json
     const defaultsFile = path.join(baseConfigDir, 'default-config.yaml');
-    loadFile('default', defaultsFile);
     loadFile('custom', configFile);
+    
 
     // load extra config files & plugins
     if (options.extraSync) {
@@ -103,6 +112,7 @@ class Config {
     }
 
     // add defaults value
+    loadFile('default', defaultsFile);
     store.defaults(defaults);
     this.store = store;
     this.logger = logger;
@@ -162,23 +172,6 @@ class Config {
   }
 
   /**
-   * Retreive Boolean value, return value if boolean or translate 'true' string to 'true' or false if null or unedefined
-   * @param {string} key 
-   */
-  getBool(key) {
-    const value = this.store.get(key);
-    if (typeof value === 'undefined') { 
-      this.logger.debug('getBoolean: [' + key +'] is undefined');
-      return false;
-    }
-    if (typeof value === 'string') {
-      return value.toLowerCase() === 'true';
-    }
-    return value;
-  }
-
-
-  /**
    * Set value
    * @param {string} key 
    * @param {Object} value
@@ -186,6 +179,16 @@ class Config {
   set(key, value) {
     this.store.set(key, value);
   }
+
+  /**
+   * Inject Test Config and override any other option
+   * @param {Object} configObject;
+   */
+  injectTestConfig(configObject) {
+    this.logger.debug('Inject test config: ', configObject);
+    this.store.add('test', {type: 'literal', store: configObject});
+  }
+
 }
 
 const config = new Config();

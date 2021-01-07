@@ -30,6 +30,8 @@ const expressAppInit = require('./expressApp');
 const middleware = require('components/middleware');
 const errorsMiddlewareMod = require('./middleware/errors'); 
 
+const Settings = require('../src/settings');
+
 const { getGifnoc, getReggol } = require('boiler');
 const reggol = getReggol('application');
 reggol.debug('Loading app');
@@ -51,11 +53,18 @@ type AirbrakeSettings = {
 // 
 class Application {
   // Application settings, see ./settings
-  settings: ConfigAccess; 
+  oldSettings: ConfigAccess; 
+
+  // Transition step
+  seetings;
+
   // new config
   gifnoc;
-  
   gniggol;
+
+
+  initalized;
+
   
   // Normal user API
   api: API; 
@@ -69,22 +78,47 @@ class Application {
   
   expressApp: express$Application;
 
-  constructor(settings: ConfigAccess) {
+  constructor() {
+    this.initalized = false;
     reggol.debug('creation');
-    this.settings = settings;
+
+    const app = this;
+    this.settings = {
+      get: function(key) {
+        const value = app.gifnoc.get(key.replace('.', ':'));
+        const res = { value: value };
+        for (let m of ['obj', 'str', 'num', 'bool']) { 
+          res[m] = function() { return value }
+        }
+        res.exists = function() {
+          return  (typeof value !== 'undefined');
+        }
+        return res;
+      },
+      getCustomAuthFunction: function() {
+        return app.oldSettings.getCustomAuthFunction();
+      }
+    }
     
     this.api = new API(); 
     this.systemAPI = new API(); 
   
     reggol.debug('created');
-    //this.produceStorageSubsystem();
   }
 
   async initiate() {
+    if (this.initalized) {
+      reggol.debug('App was already initialized, skipping');
+      return this;
+    }
     this.produceLogSubsystem();
     reggol.debug('Init started');
 
     this.gifnoc = await getGifnoc();
+
+    this.oldSettings = await Settings.load();
+
+
         
     this.produceStorageSubsystem(); 
     await this.createExpressApp();
@@ -93,23 +127,23 @@ class Application {
     const errorsMiddleware = errorsMiddlewareMod(this.gniggol, createAirbrakeNotifierIfNeeded(this.gifnoc));
     this.expressApp.use(errorsMiddleware);
     reggol.debug('Init done');
-
+    this.initalized = true;
   }
 
   async createExpressApp(): Promise<express$Application> {
 
     this.expressApp = await expressAppInit( 
-      this.gifnoc.get('dnsLess.isActive'), 
+      this.gifnoc.get('dnsLess:isActive'), 
       this.gniggol);
   }
 
   initiateRoutes() {
-    const isOpenSource = this.gifnoc.get('openSource.isActive');
+    const isOpenSource = this.gifnoc.get('openSource:isActive');
     if (isOpenSource) {
       require('components/www')(this.expressApp, this);
       require('components/register')(this.expressApp, this);
     }
-    if (this.gifnoc.get('dnsLess.isActive')) {
+    if (this.gifnoc.get('dnsLess:isActive')) {
       require('./routes/register')(this.expressApp, this);
     }
 
@@ -136,14 +170,14 @@ class Application {
   }
 
   produceStorageSubsystem() {
-    const settings = this.settings;
+    const oldSettings = this.oldSettings;
     const gifnoc = this.gifnoc;
     try {
-      // console.log('XXXX Settings', settings.get('logs').obj());
+      // console.log('XXXX Settings', oldSettings.get().obj());
     } catch (e) {
       //console.log('XXXX Error getting settings', e);
     }
-    //console.log('XXXX Gifnoc', gifnoc.get('logs'));
+    // console.log('XXXX Gifnoc', gifnoc.get());
     this.database = new storage.Database(
       gifnoc.get('database'), 
       getReggol('database'));
@@ -152,10 +186,10 @@ class Application {
     // for various database models. 
     this.storageLayer = new storage.StorageLayer(this.database, 
       getReggol('model'),
-      settings.get('eventFiles.attachmentsDirPath').str(), 
-      settings.get('eventFiles.previewsDirPath').str(), 
-      settings.get('auth.passwordResetRequestMaxAge').num(), 
-      settings.get('auth.sessionMaxAge').num()
+      gifnoc.get('eventFiles:attachmentsDirPath'), 
+      gifnoc.get('eventFiles:previewsDirPath'), 
+      gifnoc.get('auth:passwordResetRequestMaxAge'), 
+      gifnoc.get('auth:sessionMaxAge')
     );
   }
   

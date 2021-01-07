@@ -38,8 +38,7 @@ describe('[BMM2] registration: single-node', () => {
   });
   describe('POST /users', () => {
     before(async function() {
-      const settings = await Settings.load();
-      app = new Application(settings);
+      app = new Application();
       await app.initiate();
 
       require('../src/methods/auth/register-dnsless')(

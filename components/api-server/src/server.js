@@ -54,8 +54,8 @@ class Server {
   // Start the server. 
   //
   async start() {
-    this.logger = this.application.logFactory('api-server');
-
+    this.logger = getReggol('server');
+    this.logger.debug('start initiated');
     const defaultParam: ?string = this.findDefaultParam();
     if (defaultParam != null) {
       this.logger.error(`Config parameter "${defaultParam}" has a default value, please change it`);
@@ -81,6 +81,7 @@ class Server {
 
     this.logger.info('Server ready.');
     this.notificationBus.serverReady();
+    this.logger.debug('start completed');
   }
 
   findDefaultParam(): ?string {
@@ -189,6 +190,8 @@ class Server {
       application.settings.get('updates').obj(), 
       application.settings.get('openSource').obj(), 
       application.settings.get('services').obj());
+
+    this.logger.debug('api method registered');
   }
   
   setupSocketIO(server: net$Server) {
@@ -206,6 +209,7 @@ class Server {
       notificationBus, api, 
       storageLayer, customAuthStepFn,
       isOpenSource);
+    this.logger.debug('socket io setup done');
   }
   
   // Open http port and listen to incoming connections. 
@@ -217,6 +221,7 @@ class Server {
     const port = settings.get('http.port').num();
     const hostname = settings.get('http.ip').str(); 
     
+    
     // All listen() methods can take a backlog parameter to specify the maximum
     // length of the queue of pending connections. The actual length will be
     // determined by the OS through sysctl settings such as tcp_max_syn_backlog
@@ -227,11 +232,14 @@ class Server {
     // Start listening on the HTTP port. 
     await bluebird.fromCallback(
       (cb) => server.listen(port, hostname, backlog, cb));
+    
+    
       
     const address = server.address();
     const protocol = 'http';
     
     const serverUrl = protocol + '://' + address.address + ':' + address.port;
+    logger.debug('listening on ' + serverUrl);
     logger.info(`Core Server (API module) listening on ${serverUrl}`);
     
     // Warning if ignoring forbidden updates
@@ -244,6 +252,7 @@ class Server {
     // TEST: execute test setup instructions if any
     const instanceTestSetup = settings.get('instanceTestSetup'); 
     if (process.env.NODE_ENV === 'test' && instanceTestSetup.exists()) {
+      logger.debug('specific test setup ');
       try {
         const axonSocket = this.notificationBus.axonSocket;
         
@@ -282,6 +291,7 @@ class Server {
       const socket = await bluebird.fromCallback(
         (cb) => utils.messaging.openPubSocket(tcpMessaging, cb));
         
+      logger.debug(`AXON TCP pub socket ready on ${host}:${port}`);
       logger.info(`TCP pub socket ready on ${host}:${port}`);
       return socket; 
     }

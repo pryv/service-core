@@ -40,6 +40,4 @@ custom:
       type: myCustomStream/string
       name: myCustomStream
       id: myCustomStream
-influxdb:
-  host: 127.0.0.1
-  port: 8086
+

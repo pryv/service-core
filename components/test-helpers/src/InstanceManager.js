@@ -13,6 +13,8 @@ var async = require('async'),
     temp = require('temp'),
     util = require('util');
 
+const { getReggol } = require('boiler');
+
 module.exports = InstanceManager;
 
 /**
@@ -36,13 +38,13 @@ function InstanceManager(settings) {
       serverProcess = null,
       serverReady = false,
       messagingSocket = axon.socket('sub-emitter'),
-      logger = settings.logging.getLogger('instance-manager');
+      reggol = getReggol('instance-manager');
 
 
   // setup TCP messaging subscription
 
   messagingSocket.bind(+settings.tcpMessaging.port, settings.tcpMessaging.host, function () {
-    logger.debug('TCP sub socket ready on ' + settings.tcpMessaging.host + ':' +
+    reggol.debug('TCP sub socket ready on ' + settings.tcpMessaging.host + ':' +
         settings.tcpMessaging.port);
   });
 
@@ -62,6 +64,7 @@ function InstanceManager(settings) {
    * @param {Function} callback
    */
   this.ensureStarted = function (settings, callback) {
+    reggol.debug('ensure started', settings);
     if (deepEqual(settings, serverSettings)) {
       if (isRunning()) {
         // nothing to do
@@ -116,7 +119,7 @@ function InstanceManager(settings) {
     }
 
     // write config to temp path
-    fs.writeFileSync(tempConfigPath, JSON.stringify(serverSettings));
+    fs.writeFileSync(tempConfigPath, JSON.stringify(serverSettings, null, 2));
     var args = ['--config=' + tempConfigPath];
     args.unshift(settings.serverFilePath);
 
@@ -137,17 +140,17 @@ function InstanceManager(settings) {
 
     // start proc
 
-    logger.debug('Starting server instance... ');
+    reggol.debug('Starting server instance... with config ' + tempConfigPath);
     var options = {
       // Uncomment here if you want to see server output
-     // stdio: 'inherit',
+      // stdio: 'inherit',
       env: process.env
     };
     serverProcess = spawn(process.argv[0], args, options);
     var serverExited = false,
         exitCode = null;
     serverProcess.on('exit', function (code/*, signal*/) {
-      logger.debug('Server instance exited with code ' + code);
+      reggol.debug('Server instance exited with code ' + code);
       serverExited = true;
       exitCode = code;
     });
@@ -173,9 +176,9 @@ function InstanceManager(settings) {
    */
   this.stop = function () {
     if (! isRunning()) { return; }
-    logger.debug('Killing server instance... ');
+    reggol.debug('Killing server instance... ');
     if (! serverProcess.kill()) {
-      logger.warn('Failed to kill the server instance (it may have exited already).');
+      reggol.warn('Failed to kill the server instance (it may have exited already).');
     }
     serverProcess = null;
     serverReady = false;

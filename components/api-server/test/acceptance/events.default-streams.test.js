@@ -92,9 +92,8 @@ describe("Events of system streams", () => {
     const helpers = require('components/api-server/test/helpers');
     validation = helpers.validation;
     mongoFixtures = databaseFixture(await produceMongoConnection());
-    const settings = await Settings.load();
-
-    app = new Application(settings);
+  
+    app = new Application();
     await app.initiate();
 
     // Initialize notifications dependency

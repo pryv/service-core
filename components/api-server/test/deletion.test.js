@@ -17,7 +17,7 @@ const Settings = require('../src/settings');
 const Application = require('../src/application');
 const InfluxRepository = require('components/business/src/series/repository');
 const DataMatrix = require('components/business/src/series/data_matrix');
-const { getConfig } = require('components/api-server/config/Config');
+const { getGifnoc } = require('boiler');
 const UsersRepository = require('components/business/src/users/repository');
 const { databaseFixture } = require('components/test-helpers');
 const {
@@ -37,20 +37,26 @@ let usersRepository;
 let influx;
 let influxRepository;
 
-describe('DELETE /users/:username', () => {
+describe('DELETE /users/:username', async () => {
   const settingsToTest = [[true, false], [false, false], [true, true]];
   const testIDs = [
     ['CM4Q', 'BQXA', '4Y76', '710F', 'GUPH', 'JNVS', 'C58U'],
     ['U21Z', 'K4J1', 'TIKT', 'WMMV', '9ZTM', 'T3UK', 'O73J'],
     ['TPP2', '581Z', 'Z2FH', '4IH8', '33T6', 'SQ8P', '1F2Y']];
   for (let i = 0; i < settingsToTest.length; i++) {
+    const gifnoc = await getGifnoc();
+
+    // skip tests that are not in scope
+    if (gifnoc.get('openSource:isActive') !== settingsToTest[i][1]) continue;
+
     describe(`dnsLess:isActive = ${settingsToTest[i][0]}, openSource:isActive = ${settingsToTest[i][1]}`, function() {
       before(async function() {
-        const settings = await Settings.load();
-        const config = getConfig();
-        config.set('dnsLess:isActive', settingsToTest[i][0]);
-        config.set('openSource:isActive', settingsToTest[i][1]);
-        app = new Application(settings);
+        
+        gifnoc.injectTestConfig({
+          dnsLess: {isActive: settingsToTest[i][0]}
+        });
+        
+        app = new Application();
         await app.initiate();
 
         require('../src/methods/auth/delete')(
@@ -72,7 +78,7 @@ describe('DELETE /users/:username', () => {
         mongoFixtures = databaseFixture(await produceMongoConnection());
         await mongoFixtures.context.cleanEverything();
 
-        influx = produceInfluxConnection(settings);
+        influx = produceInfluxConnection(app.settings);
         influxRepository = new InfluxRepository(influx);
 
         usersRepository = new UsersRepository(app.storageLayer.events);
@@ -84,7 +90,7 @@ describe('DELETE /users/:username', () => {
         username1 = charlatan.Internet.userName();
         username2 = charlatan.Internet.userName();
 
-        authKey = config.get('auth:adminAccessKey');
+        authKey = gifnoc.get('auth:adminAccessKey');
       });
       after(async function() {
         await mongoFixtures.context.cleanEverything();

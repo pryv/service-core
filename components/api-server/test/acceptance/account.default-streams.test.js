@@ -98,10 +98,9 @@ describe('Account with system streams', function () {
   before(async function () {
     helpers = require('components/api-server/test/helpers');
     mongoFixtures = databaseFixture(await produceMongoConnection());
-    const settings = await Settings.load();
     config = getConfig();
     config.set('dnsLess:isActive', false);
-    app = new Application(settings);
+    app = new Application();
     await app.initiate();
 
     // Initialize notifications dependency

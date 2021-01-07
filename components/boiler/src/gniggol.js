@@ -88,7 +88,7 @@ async function initLoggerWithConfig(config) { 
   // console
   winstonInstance = winston.createLogger({ });
   const logConsole = config.get('logs:console');
-  if (config.getBool('logs:console:active')) {
+  if (config.get('logs:console:active')) {
     rootLogger.debug('Console active with level: ', logConsole.level);
     const format = generateFormat(logConsole.format)
     const myconsole = new winston.transports.Console({ format: format , level: logConsole.level});
@@ -97,7 +97,7 @@ async function initLoggerWithConfig(config) { 
 
   // file
   const logFile = config.get('logs:file');
-  if (config.getBool('logs:file:active')) {
+  if (config.get('logs:file:active')) {
     rootLogger.debug('File active: ' + logFile.path);
     const files = new winston.transports.File({ 
       filename: logFile.path,

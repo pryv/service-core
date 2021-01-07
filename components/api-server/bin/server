@@ -6,28 +6,25 @@
 
 const Server = require('../src/server');
 const Application = require('../src/application');
-const Settings = require('../src/settings');
 
 const loadCommonMeta = require('../src/methods/helpers/setCommonMeta').loadSettings;
-let logger, airbrake;
+let  airbrake;
 const { Notifier } = require('@airbrake/node');
 
-const { getGifnoc } = require('boiler');
+const { getGifnoc, getReggol } = require('boiler');
+const reggol = getReggol('serverRoot');
 
 (async () => {
-  // Load settings asynchronously because we have to fetch
-  // some values from register via an http-get request.
-  const settings = await Settings.load();
-  const config = await getGifnoc();
-  //await config.init();
+  const gifnoc = await getGifnoc();
   loadCommonMeta({}); // load settings to common meta
   
 
   // Construct application
-  const app = new Application(settings);
-
+  const app = new Application();
+  await app.initiate();
+  
   // Setup Airbrake if enabled
-  const airbrakeSettings = app.settings.get('logs.airbrake').obj();
+  const airbrakeSettings = gifnoc.get('logs:airbrake');
   if (airbrakeSettings.active) {
    airbrake = new Notifier({
      projectId: airbrakeSettings.projectId, 
@@ -43,7 +40,7 @@ const { getGifnoc } = require('boiler');
 
   // Catch uncaught Exceptions
   process.on('uncaughtException', async (error) => {
-    if (logger) logger.error(error);
+    if (reggol) reggol.error(error);
     console.dir(error);
     if (airbrake != null && typeof airbrake.notify === 'function') {
       await airbrake.notify(error);
@@ -55,7 +52,7 @@ const { getGifnoc } = require('boiler');
     console.log('Server stopped.');
   });
   process.on('SIGINT', () => {
-    logger.warn('Received SIGINT. Exiting...');
+    reggol.warn('Received SIGINT. Exiting...');
     process.exit(2);
   });
 
@@ -65,7 +62,7 @@ const { getGifnoc } = require('boiler');
 })()
   .then(() => console.log('Startup sequence complete, Server is running. mode: [' + process.env.NODE_ENV + ']'))
   .catch(e => {
-    if (logger) logger.error(e);
+    if (reggol) reggol.error(e);
     console.dir(e);
     process.exit(1);
   });

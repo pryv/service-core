@@ -13,7 +13,6 @@ const bluebird = require('bluebird');
 const supertest = require('supertest');
 const assert = require('chai').assert;
 
-const Settings = require('../src/settings');
 const { getConfig } = require('components/api-server/config/Config');
 const Application = require('../src/application');
 const ErrorIds = require('components/errors/src/ErrorIds');
@@ -53,14 +52,13 @@ describe('registration: cluster', function() {
     await mongoFixtures.context.cleanEverything();
   });
   before(async function () {
-    settings = await Settings.load();
     config = getConfig();
     await config.init();
     config.set('dnsLess:isActive', false);
     config.set('openSource:isActive', false);
     regUrl = config.get('services:register:url');
 
-    app = new Application(settings);
+    app = new Application();
     await app.initiate();
 
     require('../src/methods/auth/register')(

@@ -84,9 +84,7 @@ describe("Accesses with account streams", function () {
     validation = helpers.validation;
     mongoFixtures = databaseFixture(await produceMongoConnection());
 
-    const settings = await Settings.load();
-
-    app = new Application(settings);
+    app = new Application();
     await app.initiate();
 
     // Initialize notifications dependency
