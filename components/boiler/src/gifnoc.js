@@ -222,6 +222,7 @@ class Config {
       }
     }
 
+    logger.debug('Config fully Loaded');
     return this;
   }
 
@@ -289,8 +290,8 @@ function loadFromFile(fileUrl ) {
 }
 
 
-function isFileUrl(serviceInfoUrl) {
-  return serviceInfoUrl.startsWith(FILE_PROTOCOL);
+function isFileUrl(filePath) {
+  return filePath.startsWith(FILE_PROTOCOL);
 }
 
 function isRelativePath(filePath) {

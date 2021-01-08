@@ -9,9 +9,10 @@
 // A central registry for singletons and configuration-type instances; pass this
 // to your code to give it access to app setup. 
 
+const path = require('path');
 const boiler = require('boiler').init({
-  appName: 'api-server',
-  baseConfigDir: './newconfig',
+  appName: 'api-server'  + process.pid,
+  baseConfigDir: path.resolve(__dirname, '../newconfig/'),
   extraConfigs: [{
     scope: 'serviceInfo',
     key: 'service',
@@ -19,8 +20,8 @@ const boiler = require('boiler').init({
   },{
     scope: 'defaults-data',
     file: 'defaults.js'
-  },{
-    pluginAsync: require('../config/components/systemStreams')
+  }, {
+    plugin: require('../config/components/systemStreams')
   }]
 });
 

@@ -297,7 +297,7 @@ function getDumpFilesArchive(dumpFolder) {
 }
 
 function buildCustomAccountProperties() {
-  const accountStreams = gfinoc.get('custom:systemStreams:account');
+  const accountStreams = gifnoc.get('custom:systemStreams:account');
   if (accountStreams == null) return {};
   
   const customProperties = {};

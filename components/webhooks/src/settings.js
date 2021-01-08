@@ -39,7 +39,7 @@ class Settings {
         authPassword: '',
       },
       nats: {
-        uri: NATS_CONNECTION_URI
+        uri: 'NATS_CONNECTION_URI'
       },
       service: {
         info: {

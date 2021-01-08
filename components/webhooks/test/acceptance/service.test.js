@@ -13,8 +13,10 @@ const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 const bluebird = require('bluebird');
 
-const { databaseFixture } = require('components/test-helpers');
 const { webhooksStorage } = require('../test-helpers');
+
+const { databaseFixture } = require('components/test-helpers');
+
 const userStorage = require('components/test-helpers').dependencies.storage.user.events;
 
 require('components/api-server/test/test-helpers');
@@ -154,6 +156,13 @@ describe('webhooks', function() {
           appAccessId = cuid();
           appAccessToken = cuid();
           streamId = cuid();
+        });
+
+        before(async function() {
+          webhooksApp = new WebhooksApp();
+          await webhooksApp.setup();
+          await webhooksApp.run();
+          webhooksService = webhooksApp.webhooksService;
         });
 
         before(async function() {
@@ -343,6 +352,13 @@ describe('webhooks', function() {
       appAccessToken = cuid();
       webhookId = cuid();
       streamId = cuid();
+    });
+
+    before(async function() {
+      webhooksApp = new WebhooksApp();
+      await webhooksApp.setup();
+      await webhooksApp.run();
+      webhooksService = webhooksApp.webhooksService;
     });
 
     before(async function() {

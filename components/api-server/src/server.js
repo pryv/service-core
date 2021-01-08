@@ -257,6 +257,7 @@ class Server {
         require('components/test-helpers')
           .instanceTestSetup.execute(instanceTestSetup, axonSocket);
       } catch (err) {
+        console.log(err);
         logger.warn('Error executing instance test setup instructions: ' + err.message);
       }
     }

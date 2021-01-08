@@ -303,4 +303,11 @@ config.schema = {
       doc: 'Used for tests to reverse the pub-sub init order'
     }
   },
+  updates: {
+     ignoreProtectedFields: {
+      format: Boolean,
+      default: false,
+      doc: 'To be written'
+    }
+  }
 };

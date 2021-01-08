@@ -120,6 +120,7 @@ module.exports = function (
         if (['[', '{'].includes(streamsParam.substr(0, 1))) { // we detect if it's JSON by looking at first char
           // Note: since RFC 7159 JSON can also starts with ", true, false or number - this does not apply in this case.
           try {
+            logger.debug('Failed parsing', streamsParam);
             streamsParam = JSON.parse(streamsParam);
           } catch (e) {
             throw ('Error while parsing JSON ' + e);

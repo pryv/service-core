@@ -30,7 +30,7 @@ const DEFAULT_VALUES_FOR_FIELDS = {
   isRequiredInValidation: false // if true, the field will be required in the validation
 };
 
-async function load(config: Config): Config {
+function load(config: Config): Config {
   // default system streams that should be not changed
   let defaultAccountStreams = [
     {

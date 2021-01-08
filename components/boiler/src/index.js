@@ -53,6 +53,9 @@ function init(options, fullyLoadedCallback) {
 }
 
 async function getGifnoc() {
+  if (! gifnocInitCalledWithName) {
+    throw(new Error('boiler must be initalized with init() before using getGifnoc()'));
+  };
   while(! gifnocIsInitalized) {
     await new Promise(r => setTimeout(r, 100)); // wait 100ms
   }

@@ -3,7 +3,6 @@
 // Service that receives notifications from api-server and send them to existing Webhooks.
 
 const Application = require('../src/application');
-const { getConfig } = require('components/api-server/config/Config');
 const { Notifier } = require('@airbrake/node');
 let airbrake;
 
@@ -26,8 +25,7 @@ startup();
 
 async function startup () {
   // new config has to be loadded before the application
-  const config = getConfig();
-  await config.init();
+
   const app = new Application();
   await app.setup();
 

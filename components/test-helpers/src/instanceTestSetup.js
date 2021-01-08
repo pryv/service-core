@@ -12,6 +12,8 @@
  * tests.
  */
 
+const reggol = require('boiler').getReggol('instance-test-setup');
+
 /**
  * @param {Object} settings The main configuration settings
  * @param {Object} setup Must have method `execute()` and be self-contained (i.e. no reference
@@ -58,8 +60,13 @@ function stringify(obj) {
 }
 
 function parse(str) {
-  return JSON.parse(str, function (key, value) {
-    if (typeof value !== 'string') { return value; }
-    return (value.substring(0, 8) === 'function') ? eval('(' + value + ')') : value;
-  });
+  try {
+    return JSON.parse(str, function (key, value) {
+      if (typeof value !== 'string') { return value; }
+      return (value.substring(0, 8) === 'function') ? eval('(' + value + ')') : value;
+    });
+  } catch (e) {
+    debug('Failed parsing string:', str);
+    throw e;
+  }
 }

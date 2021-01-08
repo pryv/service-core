@@ -97,8 +97,7 @@ describe('Account with system streams', function () {
   before(async function () {
     helpers = require('components/api-server/test/helpers');
     mongoFixtures = databaseFixture(await produceMongoConnection());
-    gifnoc.injectTestConfig({dnsLess: { isActive: true }})
-    config.set('dnsLess:isActive', false);
+    gifnoc.injectTestConfig({dnsLess: { isActive: true }})  
     app = new Application();
     await app.initiate();
 
@@ -145,6 +144,7 @@ describe('Account with system streams', function () {
         // create additional events for all editable streams
         const settings = _.cloneDeep(helpers.dependencies.settings);
         scope = nock(settings.services.register.url);
+        
         scope.put('/users',
           (body) => {
             serviceRegisterRequest = body;
