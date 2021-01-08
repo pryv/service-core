@@ -9,7 +9,6 @@ const { describe, before, it, after } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 const bluebird = require('bluebird');
-const Settings = require('../src/settings');
 const Application = require('../src/application');
 const { getConfig } = require('components/api-server/config/Config');
 const UsersRepository = require('components/business/src/users/repository');

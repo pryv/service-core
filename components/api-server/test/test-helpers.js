@@ -26,15 +26,15 @@ after(async () => {
 });
 
 const { Database } = require('components/storage');
-const Settings = require('components/api-server/src/settings');
+const { getGifnoc } = require('boiler');
 const NullLogger = require('components/utils/src/logging').NullLogger;
 const InfluxConnection = require('components/business/src/series/influx_connection');
 
 // Produces and returns a connection to MongoDB. 
 async function produceMongoConnection(): Promise<Database> {
-  const settings = await Settings.load();
+  const gifnoc = await getGifnoc();
   const database = new Database(
-    settings.get('database').obj(), 
+    gifnoc.get('database'), 
     new NullLogger()); 
   
   return database; 

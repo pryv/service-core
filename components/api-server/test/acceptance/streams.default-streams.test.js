@@ -12,7 +12,6 @@ const { describe, before, it } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 const ErrorIds = require('components/errors').ErrorIds;
-const Settings = require('components/api-server/src/settings');
 const Application = require('components/api-server/src/application');
 const Notifications = require('components/api-server/src/Notifications');
 const { databaseFixture } = require('components/test-helpers');

@@ -16,26 +16,19 @@ const boiler = require('boiler').init({
     scope: 'serviceInfo',
     key: 'service',
     urlFromKey: 'serviceInfoUrl'
-  },
-  {
+  },{
     scope: 'defaults-data',
     file: 'defaults.js'
-  }
-  ,
-  {
+  },{
     pluginAsync: require('../config/components/systemStreams')
-  }
-  ]
+  }]
 });
 
-const utils = require('components/utils');
 const storage = require('components/storage');
 const API = require('./API');
 const expressAppInit = require('./expressApp');
 const middleware = require('components/middleware');
 const errorsMiddlewareMod = require('./middleware/errors'); 
-
-const Settings = require('../src/settings');
 
 const { getGifnoc, getReggol } = require('boiler');
 const reggol = getReggol('application');
@@ -120,11 +113,7 @@ class Application {
     reggol.debug('Init started');
 
     this.gifnoc = await getGifnoc();
-
-    this.oldSettings = await Settings.load();
-
-
-        
+   
     this.produceStorageSubsystem(); 
     await this.createExpressApp();
     this.initiateRoutes();
@@ -175,14 +164,7 @@ class Application {
   }
 
   produceStorageSubsystem() {
-    const oldSettings = this.oldSettings;
     const gifnoc = this.gifnoc;
-    try {
-      // console.log('XXXX Settings', oldSettings.get().obj());
-    } catch (e) {
-      //console.log('XXXX Error getting settings', e);
-    }
-    // console.log('XXXX Gifnoc', gifnoc.get());
     this.database = new storage.Database(
       gifnoc.get('database'), 
       getReggol('database'));

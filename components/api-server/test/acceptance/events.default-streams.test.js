@@ -17,7 +17,6 @@ const charlatan = require('charlatan');
 const { getConfig } = require('components/api-server/config/Config');
 const ErrorIds = require('components/errors').ErrorIds;
 const ErrorMessages = require('components/errors/src/ErrorMessages');
-const Settings = require('components/api-server/src/settings');
 const Application = require('components/api-server/src/application');
 const Notifications = require('components/api-server/src/Notifications');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');

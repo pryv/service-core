@@ -13,7 +13,6 @@ const assert = require('chai').assert;
 const { describe, before, it, after } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
-const Settings = require('../src/settings');
 const Application = require('../src/application');
 const InfluxRepository = require('components/business/src/series/repository');
 const DataMatrix = require('components/business/src/series/data_matrix');

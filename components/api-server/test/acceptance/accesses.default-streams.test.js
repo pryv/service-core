@@ -16,7 +16,6 @@ const charlatan = require('charlatan');
 
 const ErrorIds = require('components/errors').ErrorIds;
 const ErrorMessages = require('components/errors/src/ErrorMessages');
-const Settings = require('components/api-server/src/settings');
 const Application = require('components/api-server/src/application');
 const Notifications = require('components/api-server/src/Notifications');
 const accessLogic = require('components/model/src/accessLogic');
