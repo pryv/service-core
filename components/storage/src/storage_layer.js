@@ -24,9 +24,6 @@ const Profile = require('./user/Profile');
 const Streams = require('./user/Streams');
 const Webhooks = require('./user/Webhooks');
 
-const { getConfig, Config } = require('components/api-server/config/Config');
-const config: Config = getConfig();
-
 class StorageLayer {
   connection: Database; 
   

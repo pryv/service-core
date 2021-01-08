@@ -26,15 +26,13 @@ const Registration = require('components/business/src/auth/registration');
 const UsersRepository = require('components/business/src/users/repository');
 const ErrorIds = require('components/errors/src/ErrorIds');
 const ErrorMessages = require('components/errors/src/ErrorMessages');
-const { getConfig } = require('components/api-server/config/Config');
-
 const assert = require('assert');
 
 const { ProjectVersion } = require('components/middleware/src/project_version');
 
 const {TypeRepository, isSeriesType} = require('components/business').types;
 
-const { getReggol } = require('boiler');
+const { getReggol, gifnoc } = require('boiler');
 
 const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
 const NATS_UPDATE_EVENT = require('components/utils').messaging
@@ -59,12 +57,11 @@ module.exports = function (
 ) {
 
   const usersRepository = new UsersRepository(userEventsStorage);
-  const config = getConfig();
 
   // initialize service-register connection
   let serviceRegisterConn = {};
-  if (!config.get('dnsLess:isActive')) {
-    serviceRegisterConn = new ServiceRegister(config.get('services:register'));
+  if (!gifnoc.get('dnsLess:isActive')) {
+    serviceRegisterConn = new ServiceRegister(gifnoc.get('services:register'));
   }
   
   // Initialise the project version as soon as we can. 
@@ -1200,7 +1197,7 @@ module.exports = function (
    * @param string accountStreamId - accountStreamId
    */
   async function sendUpdateToServiceRegister (user, event, accountStreamId) {
-    if (config.get('dnsLess:isActive')) {
+    if (gifnoc.get('dnsLess:isActive')) {
       return;
     }
     const editableAccountStreams = SystemStreamsSerializer.getEditableAccountStreams();
@@ -1457,7 +1454,7 @@ module.exports = function (
    */
   async function sendDataToServiceRegister (context, creation, editableAccountStreams) {
     // send update to service-register
-    if (config.get('dnsLess:isActive')) {
+    if (gifnoc.get('dnsLess:isActive')) {
       return;
     }
     let fieldsForUpdate = {};

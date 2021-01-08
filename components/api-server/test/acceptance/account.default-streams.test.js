@@ -16,7 +16,7 @@ const ErrorIds = require('components/errors').ErrorIds;
 const Application = require('components/api-server/src/application');
 const Notifications = require('components/api-server/src/Notifications');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const { getConfig } = require('components/api-server/config/Config');
+const { gifnoc } = require('boiler');
 
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
@@ -97,7 +97,7 @@ describe('Account with system streams', function () {
   before(async function () {
     helpers = require('components/api-server/test/helpers');
     mongoFixtures = databaseFixture(await produceMongoConnection());
-    config = getConfig();
+    gifnoc.injectTestConfig({dnsLess: { isActive: true }})
     config.set('dnsLess:isActive', false);
     app = new Application();
     await app.initiate();
@@ -133,7 +133,7 @@ describe('Account with system streams', function () {
   });
 
   after(async function () {
-    await config.resetConfig();
+    gifnoc.injectTestConfig({});
   });
 
   describe('GET /account', () => {

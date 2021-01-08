@@ -10,7 +10,7 @@ const supertest = require('supertest');
 const charlatan = require('charlatan');
 const bluebird = require('bluebird');
 const Application = require('../src/application');
-const { getConfig } = require('components/api-server/config/Config');
+const { getGifnoc } = require('boiler');
 const UsersRepository = require('components/business/src/users/repository');
 const User = require('components/business/src/users/User');
 const { databaseFixture } = require('components/test-helpers');
@@ -24,16 +24,17 @@ let request;
 let res;
 
 describe('[BMM2] registration: single-node', () => {
-  let config;
+  let gifnoc;
   before(async function () {
-    config = getConfig();
-    await config.init();
-    config.set('dnsLess:isActive', true);
-    config.set('openSource:isActive', false);
-    config.set('custom:systemStreams', null);
+    gifnoc = await getGifnoc();
+    gifnoc.injectTestConfig({
+      dnsLess: {isActive: true},
+      openSource: {isActive: false},
+      custom: { systemStreams: null}
+    });
   });
   after(async function () {
-    await config.resetConfig();
+    gifnoc.injectTestConfig({});
   });
   describe('POST /users', () => {
     before(async function() {

@@ -13,7 +13,7 @@ const bluebird = require('bluebird');
 const supertest = require('supertest');
 const assert = require('chai').assert;
 
-const { getConfig } = require('components/api-server/config/Config');
+const { getGifnoc } = require('boiler');
 const Application = require('../src/application');
 const ErrorIds = require('components/errors/src/ErrorIds');
 const ErrorMessages = require('components/errors/src/ErrorMessages');
@@ -39,7 +39,7 @@ describe('registration: cluster', function() {
   let request;
   let res;
   let settings;
-  let config;
+  let gifnoc;
   let regUrl;
   let userData;
   let serviceRegisterRequests = [];
@@ -52,11 +52,12 @@ describe('registration: cluster', function() {
     await mongoFixtures.context.cleanEverything();
   });
   before(async function () {
-    config = getConfig();
-    await config.init();
-    config.set('dnsLess:isActive', false);
-    config.set('openSource:isActive', false);
-    regUrl = config.get('services:register:url');
+    gifnoc = await getGifnoc();
+    gifnoc.injectTestConfig({
+      dnsLess: { isActive: false },
+      openSource: { isActive: false },
+    });
+    regUrl = gifnoc.get('services:register:url');
 
     app = new Application();
     await app.initiate();
@@ -73,6 +74,7 @@ describe('registration: cluster', function() {
     usersRepository = new UsersRepository(app.storageLayer.events);
   });
   after(async function () {
+    gifnoc.injectTestConfig({});
     mongoFixtures = databaseFixture(await produceMongoConnection());
     await mongoFixtures.context.cleanEverything();
   });

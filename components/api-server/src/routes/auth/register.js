@@ -10,7 +10,7 @@ const methodCallback = require('../methodCallback');
 const API = require('../../API');
 import type Application from '../../application';
 const _ = require('lodash');
-const { Config, getConfig } = require('components/api-server/config/Config');
+const { gifnoc } = require('boiler');
 
 /**
  * Routes for users
@@ -19,8 +19,7 @@ const { Config, getConfig } = require('components/api-server/config/Config');
 module.exports = function (expressApp: express$Application, app: Application) {
 
   const api: API = app.api;
-  const config: Config = getConfig();
-  const isDnsLess = config.get('dnsLess:isActive');
+  const isDnsLess = gifnoc.get('dnsLess:isActive');
 
   // POST /users: create a new user
   expressApp.post('/users', function (req: express$Request, res: express$Response, next: express$NextFunction) {
