@@ -8,8 +8,8 @@
   "scripts": {},
   "dependencies": {
     "debug": "^4.3.1",
+    "js-yaml": "^4.0.0",
     "nconf": "^0.10.0",
-    "nconf-yaml": "^1.0.2",
     "superagent": "^6.1.0",
     "winston": "^3.3.3"
   }

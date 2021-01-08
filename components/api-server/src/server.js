@@ -198,7 +198,7 @@ class Server {
     const api = application.api; 
     const storageLayer = application.storageLayer;
     const gifnoc = this.gifnoc; 
-    const customAuthStepFn = this.application.settings.getCustomAuthFunction();
+    const customAuthStepFn = application.getCustomAuthFunction('server.js');
     const isOpenSource = this.isOpenSource;
         
     const socketIOsetup = require('./socket-io');

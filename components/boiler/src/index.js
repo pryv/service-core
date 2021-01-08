@@ -5,44 +5,21 @@
  * Proprietary and confidential
  */
 
-const gifnoc  = require('./gifnoc');
+const Gifnoc  = require('./gifnoc');
 const gniggol = require('./gniggol');
+
+const gifnoc = new Gifnoc();
 
 const boiler = {
   getReggol: gniggol.getReggol, 
-  gifnoc: gifnoc, 
   getGifnoc: getGifnoc,
-  init: init
+  init: init,
+  gifnoc: gifnoc 
 }
 
 let logger;
 let gifnocIsInitalized = false;
 let gifnocInitCalledWithName = null;
-
-/**
- * @typedef ConfigFile
- * @property {string} scope - scope for nconf hierachical load
- * @property {string} file - the config file (.yaml)
- */
-
- /**
- * @typedef ConfigPlugin
- * @property {Object} plugin 
- * @property {Function} plugin.load - a function that takes the "nconf store" as argument and returns the "name" of the plugin
- */
-
-/**
- * @typedef ConfigRemoteURL
- * @property {string} scope - scope for nconf hierachical load
- * @property {string} [key] - (optional) key to load result of url. If null override 
- * @property {string} url - the url to the config definition 
- */
-/**
- * @typedef ConfigRemoteURLFromKey
- * @property {string} scope - scope for nconf hierachical load
- * @property {string} [key] - (optional) key to load result of url. If null override 
- * @property {string} urlFromKey - retrieve url from config matching this key
- */
 
 
 /**
@@ -50,8 +27,7 @@ let gifnocInitCalledWithName = null;
  * @param {Object} options
  * @param {string} options.appName - the name of the Application used by Logger and debug
  * @param {string} [options.baseConfigDir] - (optional) directory to use to look for configs
- * @param {Array<ConfigFile|ConfigPlugin>} [options.extraSync] - (optional) and array of extra files to load
- * @param {Array<ConfigRemoteURL|ConfigRemoteURLFromKey|ConfigPlugin>} [options.extraAsync] - (optional) and array of extra files to load
+ * @param {Array<ConfigFile|ConfigRemoteURL|ConfigRemoteURLFromKey|ConfigPlugin>} [options.extraConfigs] - (optional) and array of extra files to load
  * @param {Function} [fullyLoadedCallback] - (optional) called when the config is fully loaded
  */
 function init(options, fullyLoadedCallback) {
@@ -64,12 +40,10 @@ function init(options, fullyLoadedCallback) {
   gifnocInitCalledWithName = options.appName;
   gifnoc.initSync({
     baseConfigDir: options.baseConfigDir,
-    extraSync: options.extraSync
+    extras: options.extraConfigs
   }, gniggol);
 
-  gifnoc.initASync({
-    extraAsync: options.extraAsync,
-  }).then((config) => {
+  gifnoc.initASync().then((config) => {
     gifnocIsInitalized = true;
     if (fullyLoadedCallback) fullyLoadedCallback(config);
   });

@@ -210,6 +210,7 @@ module.exports = {
 // ----------------- Hide sensite data -------------------- //
 
 function inspectAndHide(o) {
+  if (typeof o === 'undefined') return o;
   return _inspectAndHide(JSON.parse(JSON.stringify(o))); // clone and remove circular
 }
 

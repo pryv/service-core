@@ -12,13 +12,18 @@
 const boiler = require('boiler').init({
   appName: 'api-server',
   baseConfigDir: './newconfig',
-  extraAsync: [{
+  extraConfigs: [{
     scope: 'serviceInfo',
     key: 'service',
     urlFromKey: 'serviceInfoUrl'
   },
   {
-    plugin: require('../config/components/systemStreams')
+    scope: 'defaults-data',
+    file: 'defaults.js'
+  }
+  ,
+  {
+    pluginAsync: require('../config/components/systemStreams')
   }
   ]
 });
@@ -34,8 +39,12 @@ const Settings = require('../src/settings');
 
 const { getGifnoc, getReggol } = require('boiler');
 const reggol = getReggol('application');
+
+const { Extension, ExtensionLoader } = require('components/utils').extension;
+
 reggol.debug('Loading app');
 
+import type { CustomAuthFunction } from 'components/model';
 import type { ConfigAccess } from './settings';
 import type { WebhooksSettingsHolder } from './methods/webhooks';
 import type { Logger } from 'components/utils';
@@ -61,7 +70,6 @@ class Application {
   // new config
   gifnoc;
   gniggol;
-
 
   initalized;
 
@@ -94,9 +102,6 @@ class Application {
           return  (typeof value !== 'undefined');
         }
         return res;
-      },
-      getCustomAuthFunction: function() {
-        return app.oldSettings.getCustomAuthFunction();
       }
     }
     
@@ -218,8 +223,49 @@ class Application {
     return getReggol(topic);
   }
 
+  
+   // Returns the custom auth function if one was configured. Otherwise returns
+  // null. 
+  // 
+  customAuthStepLoaded = false;
+  customAuthStepFn = null;
+  getCustomAuthFunction(from): ?CustomAuthFunction {
+    if (! this.customAuthStepLoaded) {
+      this.customAuthStepFn = this.loadCustomExtension();
+      this.customAuthStepLoaded = true;
+    }
+    reggol.debug('getCustomAuth from: ' + from + ' => ' + (this.customAuthStepFn !== null), this.customAuthStep);
+    return this.customAuthStepFn;
+  }
+
+  loadCustomExtension(): ?Extension {
+    const defaultFolder = this.gifnoc.get('customExtensions:defaultFolder');
+    const name = 'customAuthStepFn';
+    const customAuthStepFnPath = this.gifnoc.get('customExtensions:customAuthStepFn');
+
+    const loader = new ExtensionLoader(defaultFolder);
+  
+    let customAuthStep = null;
+    if ( customAuthStepFnPath) {
+       reggol.debug('Loading CustomAuthStepFn from ' + customAuthStepFnPath);
+       customAuthStep = loader.loadFrom(customAuthStepFnPath);
+    } else {
+      // assert: no path was configured in configuration file, try loading from 
+      // default location:
+      reggol.debug('Trying to load CustomAuthStepFn from ' + defaultFolder + '/'+ name + '.js');
+      customAuthStep = loader.load(name);
+    }
+    if (customAuthStep) {
+      reggol.debug('Loaded CustomAuthStepFn');
+      return customAuthStep.fn;
+    } else {
+      reggol.debug('No CustomAuthStepFn');
+    }
+  }
 
 }
+
+
 
 function createAirbrakeNotifierIfNeeded(config) {
   /*

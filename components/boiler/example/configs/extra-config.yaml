@@ -1,3 +1,2 @@
 ---
-foo:
-  bob: 'Hello Bob'
+extra-yaml: 'Extra YAML loaded'

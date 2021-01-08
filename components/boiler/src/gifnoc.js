@@ -4,11 +4,25 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
+/**
+ * Load configuration in the following order (1st prevails)
+ * 
+ * .1 'test' -> empty, used by test to override any other config parameter
+ * .2 'argv' -> Loaded from arguments
+ * .3 'env' -> Loaded from environement variables
+ * .4 'base' -> Loaded from ${process.env.NODE_ENV}-config.yaml (if present) or --config parameter
+ * .4 and next -> Loaded from extras 
+ * .end 
+ *  . 'default-file' -> Loaded from ${baseDir}/default-config.yaml 
+ *  . 'defaults' -> Hard coded defaults for logger
+ */
+
 const fs = require('fs');
 const path = require('path');
 
 const nconf = require('nconf');
-nconf.formats.yaml = require('nconf-yaml');
+nconf.formats.yaml = require('./lib/nconf-yaml');
 
 const superagent = require('superagent');
 
@@ -42,89 +56,122 @@ const defaults = {
 class Config {
   store;
   logger;
+  extraAsync;
+  baseConfigDir;
+
+  constructor() {
+    this.extraAsync = [];
+  }
 
   /**
    * @private
    * Init Config with Files should be called just once when starting an APP
    * @param {Object} options
    * @param {string} [options.baseConfigDir] - (optional) directory to use to look for configs
-   * @param {Array<ConfigFile|ConfigPlugin>} [options.extraSync] - (optional) and array of extra files or plugins to load (synchronously)
+   * @param {Array<ConfigFile|ConfigPlugin|ConfigRemoteURL|ConfigRemoteURLFromKey>} [options.extras] - (optional) and array of extra files or plugins to load (synchronously or async)
    * @param {Object} gniggol
    * @returns {Config} this
    */
   initSync(options, gniggol) {
-    const logger = gniggol.getReggol('config');
-    const store = new nconf.Provider();
+    const logger = this.logger = gniggol.getReggol('config');
+    const store = this.store = new nconf.Provider();
 
-    const baseConfigDir = options.baseConfigDir || 'config';
+    const baseConfigDir = this.baseConfigDir = options.baseConfigDir || process.cwd();
     logger.debug('Init with baseConfigDir: ' + baseConfigDir);
-
 
     store.use('memory');
 
-    // put a 'test' store up in the list that could be overwitten afterward and override other options
+    // 1. put a 'test' store up in the list that could be overwitten afterward and override other options
     // override 'test' store with store.add('test', {type: 'literal', store: {....}});
     store.use('test', { type: 'literal', store: {} });
 
     // get config from arguments and env variables
     // memory must come first for config.set() to work without loading config files
-    // 1. `process.env`
-    // 2. `process.argv`
-    
+    // 2. `process.env`
+    // 3. `process.argv`
     store.argv({parseValues: true}).env({parseValues: true});
     
-    // 3. Values in `config.json`
+    // 4. Values in `${NODE_ENV}-config.yaml` or from --config parameter
     let configFile;
     if (store.get('config')) {
       configFile = store.get('config')
     } else if (store.get('NODE_ENV')) {
-      configFile = path.join(baseConfigDir, store.get('NODE_ENV') + '-config.yaml');
+      configFile = store.get('NODE_ENV') + '-config.yaml';
+    } 
+    if (configFile) {
+      loadFile('base', configFile);
+    } else {
+      // book 'base' slot 
+      store.use('base', { type: 'literal', store: {} });
+      logger.debug('Booked [base] empty as no --config or NODE_ENV was set');
     }
-
-
-    function loadFile(scope, filename) {
-      if (fs.existsSync(filename)) {
-        const options = { file: filename }
-        if (filename.endsWith('.yaml')) { options.format = nconf.formats.yaml }
-        store.file(scope, options);
-        logger.debug('Loaded[' + scope + '] from file: ' + filename)
-      } else {
-        logger.debug('Cannot find: ' + filename)
-      }
-    }
-
-    // load default and custom config from configs/default-config.json
-    const defaultsFile = path.join(baseConfigDir, 'default-config.yaml');
-    loadFile('custom', configFile);
-    
 
     // load extra config files & plugins
-    if (options.extraSync) {
-      options.extraSync.forEach((extra) => { 
+    if (options.extras) {
+      for (let extra of options.extras) { 
         if (extra.file) {
           loadFile(extra.scope, extra.file);
+          continue;
         }
         if (extra.plugin) {
           const name = extra.plugin.load(store);
-          logger.debug('Loaded plugin: ' + name);
+          logger.debug('Loaded plugin: ' + name + ' ' + extra.plugin.load.then);
+          continue;
         }
-      });
+        if (extra.url || extra.urlFromKey || extra.fileAsync) {
+          // register scope in the chain to keep order of configs
+          store.use(extra.scope, { type: 'literal', store: {} });
+          logger.debug('Booked [' + extra.scope +'] for async Loading ');
+          this.extraAsync.push(extra);
+          continue;
+        }
+        if (extra.pluginAsync) {
+          logger.debug('Added 1 plugin for async Loading ');
+          this.extraAsync.push(extra);
+          continue;
+        }
+        logger.warn('Unkown extra in config init', extra);
+      }
     }
 
-    // add defaults value
-    loadFile('default', defaultsFile);
+
+    // .end-1 load default and custom config from configs/default-config.json
+    loadFile('default-file', 'default-config.yaml');
+    
+    // .end load hard coded defaults
     store.defaults(defaults);
-    this.store = store;
-    this.logger = logger;
     
     // init Logger 
     gniggol.initLoggerWithConfig(this);
     return this;
+
+    // --- helpers --/
+
+    function loadFile(scope, filename) {
+      const filePath = path.resolve(baseConfigDir, filename);
+
+      if (fs.existsSync(filePath)) {
+       
+        if (filePath.endsWith('.js')) {  // JS file
+          const conf = require(filePath);
+          store.use(scope, { type: 'literal', store: conf });
+        } else {   // JSON or YAML
+          const options = { file: filePath }
+          if (filePath.endsWith('.yaml')) { options.format = nconf.formats.yaml }
+          store.file(scope, options);
+        }
+
+        logger.debug('Loaded [' + scope + '] from file: ' + filePath)
+      } else {
+        logger.debug('Cannot find file: ' + filePath + ' for scope [' + scope + ']');
+      }
+    }
   }
 
-  async initASync(options) {
+  async initASync() {
     const store = this.store;
     const logger = this.logger;
+    const baseConfigDir = this.baseConfigDir;
 
     async function loadUrl(scope, key, url) {
       let res = null;
@@ -135,37 +182,57 @@ class Config {
       }
       const conf = key ? {[key]: res} : res;
       store.add(scope, { type: 'literal', store: conf });
-      logger.debug('Loaded URL: ' + url + (key ? ' under [' + key + ']' : ''));
+      logger.debug('Loaded [' + scope + '] from URL: ' + url + (key ? ' under [' + key + ']' : ''));
     }
 
     // load remote config files
-    if (options.extraAsync) {
-      for (let extra of options.extraAsync) { 
-        if (extra.url) {
-          await loadUrl(extra.scope, extra.key, extra.url);
-        } else if (extra.urlFromKey) {
-          const url = store.get(extra.urlFromKey);
-          await loadUrl(extra.scope, extra.key, url);
+    for (let extra of this.extraAsync) { 
+      if (extra.url) {
+        await loadUrl(extra.scope, extra.key, extra.url);
+        continue;
+      } 
+      if (extra.urlFromKey) {
+        const url = store.get(extra.urlFromKey);
+        await loadUrl(extra.scope, extra.key, url);
+        continue;
+      }
+
+      if (extra.pluginAsync) {
+        const name = await extra.pluginAsync.load(store);
+        logger.debug('Loaded async plugin: ' + name);
+        continue;
+      }
+
+      if (extra.fileAsync) {
+        const filePath = path.resolve(baseConfigDir, extra.fileAsync);
+
+        if (! fs.existsSync(filePath)) {
+          logger.warn('Cannot find file: ' + filePath + ' for scope [' + extra.scope + ']');
+          continue;
         }
-        if (extra.plugin) {
-          const name = await extra.plugin.load(store);
-          logger.debug('Loaded plugin: ' + name);
+        if (! filePath.endsWith('.js')) {
+          logger.warn('Cannot only load .js file: ' + filePath + ' for scope [' + extra.scope + ']');
+          continue;
         }
+        
+        const conf = await require(filePath)();
+        store.add(extra.scope, { type: 'literal', store: conf });
+        
+        logger.debug('Loaded in scope [' + extra.scope + ']async .js file: ' + filePath);
       }
     }
 
     return this;
   }
 
-  constructor() {
-    
-  }
+  
 
   /**
    * Retreive value
    * @param {string} key 
    */
   get(key) {
+    if (! this.store) { throw(new Error('Config not yet initialized'))}
     const value = this.store.get(key);
     if (typeof value === 'undefined') this.logger.debug('get: [' + key +'] is undefined');
     return value;
@@ -177,6 +244,7 @@ class Config {
    * @param {Object} value
    */
   set(key, value) {
+    if (! this.store) { throw(new Error('Config not yet initialized'))}
     this.store.set(key, value);
   }
 
@@ -185,15 +253,14 @@ class Config {
    * @param {Object} configObject;
    */
   injectTestConfig(configObject) {
+    if (! this.store) { throw(new Error('Config not yet initialized'))}
     this.logger.debug('Inject test config: ', configObject);
     this.store.add('test', {type: 'literal', store: configObject});
   }
 
 }
 
-const config = new Config();
-
-module.exports = config;
+module.exports = Config;
 
 // --- remote and local json ressource loader ---- //
 
@@ -215,10 +282,10 @@ function loadFromFile(fileUrl ) {
   } else {
     // absolute path, do nothing.
   }
-  const serviceInfo = JSON.parse(
+  const res = JSON.parse(
     fs.readFileSync(stripFileProtocol(fileUrl), 'utf8')
   );
-  return serviceInfo;
+  return res;
 }
 
 
@@ -234,3 +301,29 @@ function stripFileProtocol(filePath) {
   return filePath.substring(FILE_PROTOCOL_LENGTH);
 }
 
+
+
+/**
+ * @typedef ConfigFile
+ * @property {string} scope - scope for nconf hierachical load
+ * @property {string} file - the config file (.yaml, .json, .js)
+ */
+
+ /**
+ * @typedef ConfigPlugin
+ * @property {Object} plugin 
+ * @property {Function} plugin.load - a function that takes the "nconf store" as argument and returns the "name" of the plugin
+ */
+
+/**
+ * @typedef ConfigRemoteURL
+ * @property {string} scope - scope for nconf hierachical load
+ * @property {string} [key] - (optional) key to load result of url. If null override 
+ * @property {string} url - the url to the config definition 
+ */
+/**
+ * @typedef ConfigRemoteURLFromKey
+ * @property {string} scope - scope for nconf hierachical load
+ * @property {string} [key] - (optional) key to load result of url. If null override 
+ * @property {string} urlFromKey - retrieve url from config matching this key
+ */
