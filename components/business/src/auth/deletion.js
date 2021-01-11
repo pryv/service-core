@@ -37,7 +37,7 @@ class Deletion {
     result: Result,
     next: ApiCallback
   ) {
-    if(this.settings.get('auth.adminAccessKey').str() !== context.authorizationHeader) {
+    if(this.settings.get('auth:adminAccessKey') !== context.authorizationHeader) {
       return next(errors.unknownResource());
     }
     next();
@@ -64,8 +64,8 @@ class Deletion {
     next: ApiCallback
   ) {
     const paths = [
-      this.settings.get('eventFiles.attachmentsDirPath').str(),
-      this.settings.get('eventFiles.previewsDirPath').str(),
+      this.settings.get('eventFiles:attachmentsDirPath'),
+      this.settings.get('eventFiles:previewsDirPath'),
     ];
 
     const notExistingDir = findNotExistingDir(paths);
@@ -105,8 +105,8 @@ class Deletion {
     next: ApiCallback
   ) {
     const paths = [
-      this.settings.get('eventFiles.attachmentsDirPath').str(),
-      this.settings.get('eventFiles.previewsDirPath').str(),
+      this.settings.get('eventFiles:attachmentsDirPath'),
+      this.settings.get('eventFiles:previewsDirPath'),
     ];
 
     const userPaths = paths.map((p) => path.join(p, context.user.id));
@@ -129,8 +129,8 @@ class Deletion {
   ) {
     // dynamic loading , because series functionality does not exist in opensource
     const InfluxConnection = require('components/business/src/series/influx_connection');
-    const host = this.settings.get('influxdb.host').str();
-    const port = this.settings.get('influxdb.port').num();
+    const host = this.settings.get('influxdb:host');
+    const port = this.settings.get('influxdb:port');
 
     const influx = new InfluxConnection(
       { host: host, port: port },

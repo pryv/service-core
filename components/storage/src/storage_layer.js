@@ -10,7 +10,6 @@
 
 const bluebird = require('bluebird');
 
-import type { Logger } from 'components/utils';
 import type Database from './Database';
 
 const Versions = require('./Versions');
@@ -40,7 +39,7 @@ class StorageLayer {
   
   constructor(
     connection: Database, 
-    logger: Logger, 
+    logger, 
     attachmentsDirPath: string,
     previewsDirPath: string,
     passwordResetRequestMaxAge: number,

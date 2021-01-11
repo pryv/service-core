@@ -33,7 +33,7 @@ let gifnocInitCalledWithName = null;
 function init(options, fullyLoadedCallback) {
   if (gifnocInitCalledWithName) {
     logger.warn('Skipping initalization! boiler is already initialized with appName: ' + gifnocInitCalledWithName)
-    return gifnoc;
+    return boiler;
   };
 
   // append the value of process.env.PRYV_BOILER_POSTFIX if present
