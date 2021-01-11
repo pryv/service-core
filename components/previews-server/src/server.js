@@ -4,6 +4,26 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
+
+const path = require('path');
+const {getGifnoc, getReggol } = require('boiler').init({
+  appName: 'previews-server',
+  baseConfigDir: path.resolve(__dirname, '../../api-server/newconfig'), // api-server config
+  extraConfigs: [{
+    scope: 'defaults-previews',
+    file: path.resolve(__dirname, '../newconfig/defaults-config.yaml')
+  }, {
+    scope: 'serviceInfo',
+    key: 'service',
+    urlFromKey: 'serviceInfoUrl'
+  },{
+    scope: 'defaults-data',
+    file: path.resolve(__dirname, '../../api-server/newconfig/defaults.js')
+  }, {
+    plugin: require('../../api-server/config/components/systemStreams')
+  }]
+});
+
 // @flow
 const http = require('http');
 
@@ -14,7 +34,6 @@ const utils = require('components/utils');
 const ExtensionLoader = utils.extension.ExtensionLoader;
 
 const { ProjectVersion } = require('components/middleware/src/project_version');
-const { getConfig } = require('components/api-server/config/Config');
 
 import type { Extension } from 'components/utils';
 
@@ -35,28 +54,22 @@ async function start() {
    * Runs the server.
    * Launch with `node server [options]`.
    */
-  const newConfig = getConfig();
-  await newConfig.init();
 
   // load config settings
-  var config = require('./config');
-  config.printSchemaAndExitIfNeeded();
-  var settings = config.load();
+  var gifnoc = await getGifnoc();
 
-  const customAuthStepExt = loadCustomAuthStepFn(settings.customExtensions);
+  const customAuthStepExt = loadCustomAuthStepFn(gifnoc.get('customExtensions'));
 
-  const logging = utils.logging(settings.logs); 
-
-  const logger = logging.getLogger('server');
+  const reggol = getReggol('server');
 
   const database = new storage.Database(
-    settings.database, logging.getLogger('database'));
+    gifnoc.get('database'), getReggol('database'));
 
   const storageLayer = new storage.StorageLayer(
-    database, logger,
-    settings.eventFiles.attachmentsDirPath,
-    settings.eventFiles.previewsDirPath,
-    10, settings.auth.sessionMaxAge);
+    database, reggol,
+    gifnoc.get('eventFiles:attachmentsDirPath'),
+    gifnoc.get('eventFiles:previewsDirPath'),
+    10, gifnoc.get('auth:sessionMaxAge'));
 
   const initContextMiddleware = middleware.initContext(
     storageLayer,
@@ -70,12 +83,12 @@ async function start() {
 
   const { expressApp, routesDefined } = require('./expressApp')(
     middleware.commonHeaders(version), 
-    require('./middleware/errors')(logging), 
-    middleware.requestTrace(null, logging));
+    require('./middleware/errors')(reggol), 
+    middleware.requestTrace(null, reggol));
 
   // setup routes
   require('./routes/index')(expressApp);
-  require('./routes/event-previews')(expressApp, initContextMiddleware, loadAccessMiddleware, storageLayer.events, storageLayer.eventFiles, logging);
+  require('./routes/event-previews')(expressApp, initContextMiddleware, loadAccessMiddleware, storageLayer.events, storageLayer.eventFiles, reggol);
 
   // Finalize middleware stack: 
   routesDefined();
@@ -87,33 +100,33 @@ async function start() {
 
   // Go
 
-  utils.messaging.openPubSocket(settings.tcpMessaging, function (err, pubSocket) {
+  utils.messaging.openPubSocket(gifnoc.get('tcpMessaging'), function (err, pubSocket) {
     if (err) {
-      logger.error('Error setting up TCP pub socket: ' + err);
+      reggol.error('Error setting up TCP pub socket: ' + err);
       process.exit(1);
     }
-    logger.info('TCP pub socket ready on ' + settings.tcpMessaging.host + ':' +
-      settings.tcpMessaging.port);
+    reggol.info('TCP pub socket ready on ' + gifnoc.get('tcpMessaging:host') + ':' +
+      gifnoc.get('tcpMessaging:port'));
 
     database.waitForConnection(function () {
       const backlog = 512;
-      server.listen(settings.http.port, settings.http.ip, backlog, function () {
+      server.listen(gifnoc.get('previews:http:port'), gifnoc.get('previews:http:ip'), backlog, function () {
         var address = server.address();
         var protocol = server.key ? 'https' : 'http';
         server.url = protocol + '://' + address.address + ':' + address.port;
-        logger.info('Browser server v' + require('../package.json').version +
+        reggol.info('Browser server v' + require('../package.json').version +
           ' [' + expressApp.settings.env + '] listening on ' + server.url);
 
         // all right
 
-        logger.info('Server ready');
+        reggol.info('Server ready');
         pubSocket.emit('server-ready');
       });
     });
   });
 
   process.on('exit', function () {
-    logger.info('Browser server exiting.');
+    reggol.info('Browser server exiting.');
   });
 }
 

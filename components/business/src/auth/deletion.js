@@ -19,13 +19,13 @@ import type { ApiCallback } from 'components/api-server/src/API';
 const { getReggol } = require('boiler');
 
 class Deletion {
-  logger: any;
+  reggol: any;
   storageLayer: any;
   settings: any;
   usersRepository: UsersRepository;
 
   constructor(logging: any, storageLayer: any, settings: any) {
-    this.logger = getReggol('business:deletion');
+    this.reggol = getReggol('business:deletion');
     this.storageLayer = storageLayer;
     this.settings = settings;
     this.usersRepository = new UsersRepository(this.storageLayer.events);
@@ -71,7 +71,7 @@ class Deletion {
     const notExistingDir = findNotExistingDir(paths);
     if (notExistingDir) {
       const error = new Error(`Base directory '${notExistingDir}' does not exist.`);
-      this.logger.error(error);
+      this.reggol.error(error);
       return next(
         errors.unexpectedError(error)
       );
@@ -92,7 +92,7 @@ class Deletion {
       const error = new Error(
         `Directory '${inaccessibleDirectory}' is inaccessible or missing.`
       );
-      this.logger.error(error);
+      this.reggol.error(error);
       return next(errors.unexpectedError(error));
     }
     next();
@@ -134,7 +134,7 @@ class Deletion {
 
     const influx = new InfluxConnection(
       { host: host, port: port },
-      this.logger
+      this.reggol
     );
     await influx.dropDatabase(`user.${params.username}`);
     next();
@@ -178,7 +178,7 @@ class Deletion {
         )
       );
     } catch (error) {
-      this.logger.error(error);
+      this.reggol.error(error);
       return next(errors.unexpectedError(error));
     }
     next();

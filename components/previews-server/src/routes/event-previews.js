@@ -17,6 +17,8 @@ const _ = require('lodash');
 const bluebird = require('bluebird');
 const getAuth = require('../../../middleware/src/getAuth');
 
+const {getReggol} = require('boiler');
+
 // constants
 const StandardDimensions = [ 256, 512, 768, 1024 ];
 const SmallestStandardDimension = StandardDimensions[0];
@@ -182,7 +184,7 @@ module.exports = function (
 
   // CACHE CLEAN-UP
 
-  var logger = logging.getLogger('previews-cache'),
+  var logger = getReggol('previews-cache'),
       workerRunning = false;
 
   expressApp.post('/clean-up-cache', cleanUpCache);

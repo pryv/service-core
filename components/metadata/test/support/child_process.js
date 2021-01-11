@@ -6,6 +6,7 @@
  */
 // @flow
 
+require('../../../test-helpers/src/boiler-init');
 const ChildProcess = require('components/test-helpers').child_process;
 
 const Application = require('../../src/application');

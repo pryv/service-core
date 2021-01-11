@@ -16,6 +16,8 @@ const cuid = require('cuid');
 const bluebird = require('bluebird');
 const charlatan = require('charlatan');
 
+
+require('../../../../test-helpers/src/boiler-init');
 const storage = require('components/storage');
 const { databaseFixture } = require('components/test-helpers');
 const { NullLogger } = require('components/utils/src/logging');

@@ -8,6 +8,7 @@
 
 /* global describe, it, beforeEach */
 
+require('../../../test-helpers/src/boiler-init');
 const timestamp = require('unix-timestamp');
 
 const sinon = require('sinon');

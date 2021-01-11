@@ -66,7 +66,7 @@ function parse(str) {
       return (value.substring(0, 8) === 'function') ? eval('(' + value + ')') : value;
     });
   } catch (e) {
-    debug('Failed parsing string:', str);
+    reggol.debug('Failed parsing string:', str);
     throw e;
   }
 }

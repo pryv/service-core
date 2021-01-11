@@ -88,12 +88,12 @@ async function initLoggerWithConfig(config) { 
   // console
   winstonInstance = winston.createLogger({ });
   const logConsole = config.get('logs:console');
-  if (config.get('logs:console:active')) {
-    rootLogger.debug('Console active with level: ', logConsole.level);
-    const format = generateFormat(logConsole.format)
-    const myconsole = new winston.transports.Console({ format: format , level: logConsole.level});
-    winstonInstance.add(myconsole);
-  }
+  const isSilent = ! config.get('logs:console:active');
+
+  rootLogger.debug((isSilent ?  '** silent ** ' : '') + 'Console with level: ', logConsole.level);
+  const format = generateFormat(logConsole.format)
+  const myconsole = new winston.transports.Console({ format: format , level: logConsole.level, silent: isSilent});
+  winstonInstance.add(myconsole);
 
   // file
   const logFile = config.get('logs:file');

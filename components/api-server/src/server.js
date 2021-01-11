@@ -248,7 +248,7 @@ class Server {
     }
     
     // TEST: execute test setup instructions if any
-    const instanceTestSetup = gifnoc.get('instanceTestSetup'); 
+    const instanceTestSetup = gifnoc.get('instanceTestSetup') || null; // coerce to null  
     if (process.env.NODE_ENV === 'test' && instanceTestSetup !== null) {
       logger.debug('specific test setup ');
       try {

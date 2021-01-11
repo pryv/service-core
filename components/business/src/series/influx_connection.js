@@ -47,7 +47,7 @@ class InfluxConnection {
     name: string,
     dbName: string
   ): Promise<void> {
-    this.logger.debug(`Drop -> measurement: ${name} on dbName ${dbName}`);
+    this.logger.debug(`Drop -> measurement: ${name} on dbName ${dbName}`, this.logger);
     return this.conn.dropMeasurement(name, dbName);
   }
   

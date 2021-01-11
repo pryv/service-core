@@ -6,6 +6,7 @@
  */
 // @flow
 
+require('../../../test-helpers/src/boiler-init');
 const debug = require('debug')('test-helpers');
 const testHelpers = require('components/test-helpers');
 

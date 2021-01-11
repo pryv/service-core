@@ -141,9 +141,6 @@ class Application {
     this.gifnoc = await getGifnoc();
     setCommonMeta.loadSettings(this.settings);
 
-    console.log('XXXXX oldSettings', this.settings.get('services').obj());
-    console.log('XXXXX newSettings', this.settings.get('services').obj());
-
     this.logFactory = createLogFactory(this.settings);
     
     this.context = await createContext(this.settings, this.logFactory);
