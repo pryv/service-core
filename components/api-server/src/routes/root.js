@@ -24,7 +24,6 @@ import type Application from '../application';
 // Handlers for path roots at various places; handler for batch calls and 
 // access-info. 
 function root(expressApp: express$Application, app: Application) {
-  const settings = app.settings;
   const api = app.api;
   
   const customAuthStepFn = app.getCustomAuthFunction('root.js');

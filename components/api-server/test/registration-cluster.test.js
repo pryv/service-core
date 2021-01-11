@@ -66,7 +66,7 @@ describe('registration: cluster', function() {
       app.api,
       app.logging,
       app.storageLayer,
-      app.settings.get('services').obj()
+      app.gifnoc.get('services')
     );
 
     request = supertest(app.expressApp);

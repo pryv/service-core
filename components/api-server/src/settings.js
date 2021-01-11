@@ -57,8 +57,8 @@ class Settings implements ConfigAccess {
     settingsSingleton = new Settings(ourConfig);
 
     // I was not able to find a better place  -- to be changed 
-    if (ourConfig.get('dnsLess.isActive')) {
-      let publicUrl = ourConfig.get('dnsLess.publicUrl');
+    if (ourConfig.get('dnsLess:isActive')) {
+      let publicUrl = ourConfig.get('dnsLess:publicUrl');
       if (publicUrl.slice(-1) === '/') publicUrl = publicUrl.slice(0, -1);
       ourConfig.set('auth.passwordResetPageURL', publicUrl + wwwPath + '/access/reset-password.html');
     }
@@ -80,21 +80,21 @@ class Settings implements ConfigAccess {
   }
 
   maybePrint() {
-    const shouldPrintConfig = this.get('printConfig').bool();
+    const shouldPrintConfig = this.get('printConfig');
 
     if (shouldPrintConfig) {
       console.info('Configuration settings loaded', this.convict.get()); // eslint-disable-line no-console
     }
   }
   loadCustomExtension(): ?Extension {
-    const defaultFolder = this.get('customExtensions.defaultFolder').str();
+    const defaultFolder = this.get('customExtensions:defaultFolder');
     const name = 'customAuthStepFn';
-    const customAuthStepFnPath = this.get('customExtensions.customAuthStepFn');
+    const customAuthStepFnPath = this.get('customExtensions:customAuthStepFn');
 
     const loader = new ExtensionLoader(defaultFolder);
 
     if (!customAuthStepFnPath.blank())
-      return loader.loadFrom(customAuthStepFnPath.str());
+      return loader.loadFrom(customAuthStepFnPath);
 
     // assert: no path was configured in configuration file, try loading from 
     // default location:
@@ -105,7 +105,7 @@ class Settings implements ConfigAccess {
    * 
    * Example: 
    * 
-   *    settings.get('logs.console.active') //=> true
+   *    settings.get('logs.console:active') //=> true
    *
    * @return {ExistingValue} Returns the configuration value that corresponds to 
    *    `key` given. 

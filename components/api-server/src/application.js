@@ -39,9 +39,7 @@ const { Extension, ExtensionLoader } = require('components/utils').extension;
 reggol.debug('Loading app');
 
 import type { CustomAuthFunction } from 'components/model';
-import type { ConfigAccess } from './settings';
 import type { WebhooksSettingsHolder } from './methods/webhooks';
-import type { Logger } from 'components/utils';
 
 type UpdatesSettingsHolder = {
   ignoreProtectedFields: boolean,
@@ -55,12 +53,6 @@ type AirbrakeSettings = {
 // methods of its own. It is the type-safe version of DI. 
 // 
 class Application {
-  // Application settings, see ./settings
-  oldSettings: ConfigAccess; 
-
-  // Transition step
-  seetings;
-
   // new config
   gifnoc;
   gniggol;
@@ -84,21 +76,6 @@ class Application {
     this.initalized = false;
     reggol.debug('creation');
 
-    const app = this;
-    this.settings = {
-      get: function(key) {
-        const value = app.gifnoc.get(key.replace('.', ':'));
-        const res = { value: value };
-        for (let m of ['obj', 'str', 'num', 'bool']) { 
-          res[m] = function() { return value }
-        }
-        res.exists = function() {
-          return  (typeof value !== 'undefined');
-        }
-        return res;
-      }
-    }
-    
     this.api = new API(); 
     this.systemAPI = new API(); 
   
@@ -184,25 +161,19 @@ class Application {
   // Returns the settings for updating entities
   // 
   getUpdatesSettings(): UpdatesSettingsHolder {
-    const settings = this.settings;
-    
     return {
-      ignoreProtectedFields: settings.get('updates.ignoreProtectedFields').bool(),
+      ignoreProtectedFields: this.gifnoc.get('updates:ignoreProtectedFields'),
     };
   }
 
   getWebhooksSettings(): WebhooksSettingsHolder {
-    const settings = this.settings;
-    return settings.get('webhooks').obj();
+    return this.gifnoc.get('webhooks');
   }
   
-  getServiceInfoSettings(): ConfigAccess {
-    return this.settings;
-  }
 
   // Produces and returns a new logger for a given `topic`.
   // 
-  logFactory(topic: string): Logger {
+  logFactory(topic: string) {
     return getReggol(topic);
   }
 
@@ -250,7 +221,7 @@ class Application {
 
 
 
-function createAirbrakeNotifierIfNeeded(config) {
+function createAirbrakeNotifierIfNeeded(gifnoc) {
   /*
     Quick guide on how to test Airbrake notifications (under logs entry):
     1. Update configuration file with Airbrake information:
@@ -263,7 +234,7 @@ function createAirbrakeNotifierIfNeeded(config) {
         throw new Error('This is a test of Airbrake notifications');
     3. Trigger the error by running the faulty code (run a local core)
    */
-  const settings = getAirbrakeSettings(config); 
+  const settings = getAirbrakeSettings(gifnoc); 
   if (settings == null) return; 
 
   const { Notifier } = require('@airbrake/node');
@@ -276,9 +247,9 @@ function createAirbrakeNotifierIfNeeded(config) {
   return airbrakeNotifier;
 }
 
-function getAirbrakeSettings(config): ?AirbrakeSettings {
+function getAirbrakeSettings(gifnoc): ?AirbrakeSettings {
   // TODO Directly hand log settings to this class. 
-  const logSettings = config.get('logs');
+  const logSettings = gifnoc.get('logs');
   if (logSettings == null) return null; 
   
   const airbrakeSettings = logSettings.airbrake;

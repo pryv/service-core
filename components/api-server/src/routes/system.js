@@ -18,9 +18,9 @@ import type Application from '../application';
 module.exports = function system(expressApp: express$Application, app: Application) {
 
   const systemAPI = app.systemAPI;
-  const settings = app.settings;
+  const gifnoc = app.gifnoc;
   
-  const adminAccessKey = settings.get('auth.adminAccessKey').str();
+  const adminAccessKey = gifnoc.get('auth:adminAccessKey');
 
   const logger = app.logFactory('routes/system');
 

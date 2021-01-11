@@ -45,7 +45,7 @@ describe('[BMM2] registration: single-node', () => {
         app.api,
         app.logging,
         app.storageLayer,
-        app.settings.get('services').obj(),
+        app.gifnoc.get('services'),
       );
 
       // get events for a small test of valid token
@@ -59,14 +59,14 @@ describe('[BMM2] registration: single-node', () => {
         app.api,
         app.storageLayer.events,
         app.storageLayer.eventFiles,
-        app.settings.get('auth').obj(),
-        app.settings.get('service.eventTypes').str(),
+        app.gifnoc.get('auth'),
+        app.gifnoc.get('service:eventTypes'),
         notifications,
         app.logging,
-        app.settings.get('audit').obj(),
-        app.settings.get('updates').obj(),
-        app.settings.get('openSource').obj(),
-        app.settings.get('services').obj());
+        app.gifnoc.get('audit'),
+        app.gifnoc.get('updates'),
+        app.gifnoc.get('openSource'),
+        app.gifnoc.get('services'));
       
       request = supertest(app.expressApp);
       

@@ -31,13 +31,13 @@ import type Application from './../application';
  */
 module.exports = function (expressApp: express$Application, app: Application) {
 
-  const settings: ConfigAccess = app.settings;
+  const gifnoc = app.gifnoc;
   const api = app.api;
 
   const ms14days: number = 1000 * 60 * 60 * 24 * 14;
-  const sessionMaxAge: number = settings.get('auth.sessionMaxAge').num() || ms14days;
-  const ssoCookieDomain: string = settings.get('auth.ssoCookieDomain').str() || settings.get('http.ip').str();
-  const ssoCookieSignSecret: string = settings.get('auth.ssoCookieSignSecret').str() || 'Hallowed Be Thy Name, O Node';
+  const sessionMaxAge: number = gifnoc.get('auth:sessionMaxAge') || ms14days;
+  const ssoCookieDomain: string = gifnoc.get('auth:ssoCookieDomain') || gifnoc.get('http:ip');
+  const ssoCookieSignSecret: string = gifnoc.get('auth:ssoCookieSignSecret') || 'Hallowed Be Thy Name, O Node';
   const ssoCookieSecure: boolean = process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'test' ;
   const ssoHttpOnly: boolean = true ;
 

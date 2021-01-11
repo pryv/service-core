@@ -4,7 +4,7 @@
 
 const Application = require('../src/application');
 const bluebird = require('bluebird');
-let logger;
+let reggol;
 
 (async () => {
   // Load settings asynchronously because we have to fetch
@@ -14,39 +14,39 @@ let logger;
 
   // Construct application
   const app = new Application();
-  logger = app.logFactory('migration-process');
+  reggol = app.logFactory('migration-process');
 
   // This bit is useful to trace down promise rejections that aren't caught. 
   process.on('unhandledRejection', (reason, promise) => {
-    logger.warn('Unhandled promise rejection:', promise, 'reason:', reason.stack || reason); 
+    reggol.warn('Unhandled promise rejection:', promise, 'reason:', reason.stack || reason); 
   });
   process.on('exit', function () {
-    logger.info('Process exiting.');
+    reggol.info('Process exiting.');
   });
   process.on('SIGINT', () => {
-    logger.warn('Received SIGINT. Exiting...');
+    reggol.warn('Received SIGINT. Exiting...');
     process.exit(2);
   });
 
   connectAndMigrate(app)
     .then(() => {
-      logger.info('Storage migration complete.');
+      reggol.info('Storage migration complete.');
       process.exit(0);
     })
     .catch(e => {
-      logger.error(e);
+      reggol.error(e);
       process.exit(1);
     });
 })()
 
 async function connectAndMigrate(app) {
 
-  logger.info('Connecting to storage...');
+  reggol.info('Connecting to storage...');
   await app.storageLayer.waitForConnection();
   
-  logger.info('Storage connected.');
+  reggol.info('Storage connected.');
   
-  logger.info('Starting migration...');
+  reggol.info('Starting migration...');
   return await bluebird.fromCallback(
     (cb) => app.storageLayer.versions.migrateIfNeeded(cb));
 }

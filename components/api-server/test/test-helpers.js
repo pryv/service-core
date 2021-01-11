@@ -41,8 +41,8 @@ async function produceMongoConnection(): Promise<Database> {
 }
 
 function produceInfluxConnection(settings: any) {
-  const host = settings.get('influxdb.host').str(); 
-  const port = settings.get('influxdb.port').num();
+  const host = settings.get('influxdb:host'); 
+  const port = settings.get('influxdb:port');
   return new InfluxConnection(
     {host: host, port: port},
     new NullLogger()

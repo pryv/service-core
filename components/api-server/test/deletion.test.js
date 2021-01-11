@@ -62,14 +62,14 @@ describe('DELETE /users/:username', async () => {
           app.api,
           app.logging,
           app.storageLayer,
-          app.settings
+          app.gifnoc
         );
 
         require('../src/methods/auth/delete-opensource')(
           app.api,
           app.logging,
           app.storageLayer,
-          app.settings
+          app.gifnoc
         );
 
         request = supertest(app.expressApp);
@@ -77,7 +77,7 @@ describe('DELETE /users/:username', async () => {
         mongoFixtures = databaseFixture(await produceMongoConnection());
         await mongoFixtures.context.cleanEverything();
 
-        influx = produceInfluxConnection(app.settings);
+        influx = produceInfluxConnection(app.gifnoc);
         influxRepository = new InfluxRepository(influx);
 
         usersRepository = new UsersRepository(app.storageLayer.events);
