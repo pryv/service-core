@@ -17,6 +17,8 @@ const { getReggol } = require('boiler');
 
 module.exports = InstanceManager;
 
+let spawnCounter = 0;
+
 /**
  * Manages the test server instance (use as singleton).
  *
@@ -144,7 +146,7 @@ function InstanceManager(settings) {
     var options = {
       // Uncomment here if you want to see server output
      stdio: 'inherit',
-      env: process.env
+      env: {...process.env, PRYV_BOILER_POSTFIX: '-' + spawnCounter++}
     };
     serverProcess = spawn(process.argv[0], args, options);
     var serverExited = false,

@@ -69,7 +69,7 @@ class Application {
       settings: settings
     });
     this.webhooksService = service;
-    this.logger('run() done');
+    logger.info('run() done');
     // And start it.
     await service.start();
   }

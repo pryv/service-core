@@ -19,11 +19,11 @@ const { gifnoc } = require('boiler').init({
   },
   {
     scope: 'api-server-test-config',
-    file: '../../api-server/newconfig/test-config.yaml'
+    file: path.resolve(__dirname, '../../api-server/newconfig/test-config.yaml')
   },
   {
     scope: 'defaults-data',
-    file: '../../api-server/newconfig/defaults.js'
+    file: path.resolve(__dirname, '../../api-server/newconfig/defaults.js')
   },
   {
     plugin: require('../../api-server/config/components/systemStreams')
