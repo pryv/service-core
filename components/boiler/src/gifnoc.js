@@ -67,8 +67,8 @@ class Config {
    * @private
    * Init Config with Files should be called just once when starting an APP
    * @param {Object} options
-   * @param {string} [options.baseConfigDir] - (optional) directory to use to look for configs
-   * @param {Array<ConfigFile|ConfigPlugin|ConfigRemoteURL|ConfigRemoteURLFromKey>} [options.extras] - (optional) and array of extra files or plugins to load (synchronously or async)
+   * @param {string} [options.baseConfigDir] - (optional) directory to use to look for configs (default, env)
+   * @param {Array<ConfigFile|ConfigPlugin|ConfigData|ConfigRemoteURL|ConfigRemoteURLFromKey>} [options.extras] - (optional) and array of extra files or plugins to load (synchronously or async)
    * @param {Object} gniggol
    * @returns {Config} this
    */
@@ -96,7 +96,7 @@ class Config {
     if (store.get('config')) {
       configFile = store.get('config')
     } else if (store.get('NODE_ENV')) {
-      configFile = store.get('NODE_ENV') + '-config.yaml';
+      configFile = path.resolve(baseConfigDir, store.get('NODE_ENV') + '-config.yaml');
     } 
     if (configFile) {
       loadFile('base', configFile);
@@ -118,6 +118,12 @@ class Config {
           logger.debug('Loaded plugin: ' + name + ' ' + extra.plugin.load.then);
           continue;
         }
+        if (extra.data) {
+          const conf = extra.key ? {[extra.key]: extra.data} : extra.data;
+          store.use(extra.scope, { type: 'literal', store: conf });
+          logger.debug('Loaded [' + extra.scope + '] from DATA: ' + (extra.key ? ' under [' + extra.key + ']' : ''));
+          continue;
+        }
         if (extra.url || extra.urlFromKey || extra.fileAsync) {
           // register scope in the chain to keep order of configs
           store.use(extra.scope, { type: 'literal', store: {} });
@@ -136,7 +142,7 @@ class Config {
 
 
     // .end-1 load default and custom config from configs/default-config.json
-    loadFile('default-file', 'default-config.yaml');
+    loadFile('default-file', path.resolve(baseConfigDir, 'default-config.yaml'));
     
     // .end load hard coded defaults
     store.defaults(defaults);
@@ -147,8 +153,7 @@ class Config {
 
     // --- helpers --/
 
-    function loadFile(scope, filename) {
-      const filePath = path.resolve(baseConfigDir, filename);
+    function loadFile(scope, filePath) {
 
       if (fs.existsSync(filePath)) {
        
@@ -254,9 +259,18 @@ class Config {
    * @param {Object} configObject;
    */
   injectTestConfig(configObject) {
+    this.replaceScopeConfig('test', configObject);
+  }
+
+  /**
+   * Replace a scope config set
+   * @param {string} scope;
+   * @param {Object} configObject;
+   */
+  replaceScopeConfig(scope, configObject) {
     if (! this.store) { throw(new Error('Config not yet initialized'))}
-    this.logger.debug('Inject test config: ', configObject);
-    this.store.add('test', {type: 'literal', store: configObject});
+    this.logger.debug('Replace ['+ scope + '] with: ', configObject);
+    this.store.add(scope, {type: 'literal', store: configObject});
   }
 
 }
@@ -316,10 +330,17 @@ function stripFileProtocol(filePath) {
  * @property {Function} plugin.load - a function that takes the "nconf store" as argument and returns the "name" of the plugin
  */
 
+ /**
+ * @typedef ConfigData
+ * @property {string} scope - scope for nconf hierachical load
+ * @property {string} [key] - (optional) key to load result of url. If null loaded at root of the config 
+ * @property {object} data - the data to load
+
+
 /**
  * @typedef ConfigRemoteURL
  * @property {string} scope - scope for nconf hierachical load
- * @property {string} [key] - (optional) key to load result of url. If null override 
+ * @property {string} [key] - (optional) key to load result of url. If null loaded at root of the config 
  * @property {string} url - the url to the config definition 
  */
 /**

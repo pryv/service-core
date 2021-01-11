@@ -36,6 +36,9 @@ function init(options, fullyLoadedCallback) {
     return gifnoc;
   };
 
+  // append the value of process.env.PRYV_BOILER_POSTFIX if present
+  if (process.env.PRYV_BOILER_POSTFIX) options.appName += process.env.PRYV_BOILER_POSTFIX;
+
   gniggol.setGlobalName(options.appName);
   gifnocInitCalledWithName = options.appName;
   gifnoc.initSync({

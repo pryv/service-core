@@ -398,7 +398,7 @@ describe('Account with system streams', function () {
               language: newLanguage,
             })
             .set('authorization', access.token);
-          
+
           activeEmailAfter = await getActiveEvent('email');
           notActiveEmailAfter = await getNotActiveEvent('email');
           activeLanguageAfter = await getActiveEvent('language');

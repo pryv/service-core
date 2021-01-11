@@ -11,7 +11,7 @@
 
 const path = require('path');
 const boiler = require('boiler').init({
-  appName: 'api-server'  + process.pid,
+  appName: 'api-server',
   baseConfigDir: path.resolve(__dirname, '../newconfig/'),
   extraConfigs: [{
     scope: 'serviceInfo',
@@ -19,7 +19,7 @@ const boiler = require('boiler').init({
     urlFromKey: 'serviceInfoUrl'
   },{
     scope: 'defaults-data',
-    file: 'defaults.js'
+    file: path.resolve(__dirname, '../newconfig/defaults.js')
   }, {
     plugin: require('../config/components/systemStreams')
   }]

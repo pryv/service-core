@@ -18,6 +18,16 @@ const {gifnoc, getReggol, getGifnoc} = require('../src').init({
     scope: 'extra3',
     file: path.resolve(__dirname, './configs/extra-config.js')
   },{
+    scope: 'extra4',
+    data: {
+      'extra-4-data': 'extra 4 object loaded'
+    }
+  },{
+    scope: 'extra5',
+    key: 'extra-5-data',
+    data: 'extra 5 object loaded'
+  },
+  {
     scope: 'extra-js-async',
     fileAsync: path.resolve(__dirname, './configs/extra-js-async.js')
   },{
@@ -53,8 +63,13 @@ indexLogger.debug('hello index');
 indexLogger.info('extra Yaml', gifnoc.get('extra-yaml'));
 indexLogger.info('extra Json', gifnoc.get('extra-json'));
 indexLogger.info('extra Js', gifnoc.get('extra-js'));
+indexLogger.info('extra 4 data', gifnoc.get('extra-4-data'));
+indexLogger.info('extra 5 data', gifnoc.get('extra-5-data'));
 indexLogger.info('default yaml', gifnoc.get('default-yaml'));
 indexLogger.info('Default Service Name', gifnoc.get('service:name'));
+
+gifnoc.replaceScopeConfig('extra5', {'extra-5-data': 'new Extra 5 data'});
+indexLogger.info('extra 5 data', gifnoc.get('extra-5-data'));
 
 const subLogger = indexLogger.getReggol('sub');
 subLogger.debug('hello sub');
