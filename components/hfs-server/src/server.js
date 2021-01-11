@@ -31,6 +31,7 @@ const KEY_PORT = 'http.port';
 import type {Logger} from 'components/utils/src/logging';
 import type Context from './context';
 
+const { getGifnoc } = require('boiler');
 
 /**
  * HTTP server responsible for the REST api that the HFS server exposes. 
@@ -82,15 +83,17 @@ class Server {
    *    started and accepts connections.
    */
   async start(): Promise<true> {
-    this.logger.info('starting...');
-    
     const settings = this.settings;
+    const gifnoc = await getGifnoc();
+    const ip = settings.get(KEY_IP).str(); 
+    const port = settings.get(KEY_PORT).num(); 
+    this.logger.info('starting... on port: ' + port);
+    
+    
     const app = await this.setupExpress();
     
     this.expressApp = app;
     
-    const ip = settings.get(KEY_IP).str(); 
-    const port = settings.get(KEY_PORT).num(); 
     
     var server = this.server = http.createServer(app);
     

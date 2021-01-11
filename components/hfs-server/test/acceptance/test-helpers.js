@@ -6,6 +6,22 @@
  */
 // @flow
 
+
+require('boiler').init({
+  appName: 'hfs-server-tests',
+  baseConfigDir: './newconfig',
+  extraConfigs: [{
+    scope: 'serviceInfo',
+    key: 'service',
+    urlFromKey: 'serviceInfoUrl'
+  }, {
+    scope: 'defaults-data',
+    file: '../../api-server/newconfig/defaults.js'
+  }, {
+    plugin: require('../../../api-server/config/components/systemStreams')
+  }]
+});
+
 // Test helpers for all acceptance tests. 
 
 const debug = require('debug')('test-helpers');

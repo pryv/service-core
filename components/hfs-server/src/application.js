@@ -5,6 +5,21 @@
  * Proprietary and confidential
  */
 // @flow
+const {getGifnoc, boiler} = require('boiler').init({
+  appName: 'hfs-server',
+  baseConfigDir: './newconfig',
+  extraConfigs: [{
+    scope: 'serviceInfo',
+    key: 'service',
+    urlFromKey: 'serviceInfoUrl'
+  },{
+    scope: 'defaults-data',
+    file: '../../api-server/newconfig/defaults.js'
+  }, {
+    plugin: require('../../api-server/config/components/systemStreams')
+  }]
+});
+
 
 // Load configuration file, set up execution context and start the server. 
 
@@ -119,10 +134,16 @@ class Application {
   context: Context; 
     
   server: Server; 
+  gifnoc;
   
   async init(settings?: Settings) {
     this.settings = settings || await createSettings(); 
+    this.gifnoc = await getGifnoc();
     setCommonMeta.loadSettings(this.settings);
+
+    console.log('XXXXX oldSettings', this.settings.get('services').obj());
+    console.log('XXXXX newSettings', this.settings.get('services').obj());
+
     this.logFactory = createLogFactory(this.settings);
     
     this.context = await createContext(this.settings, this.logFactory);

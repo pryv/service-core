@@ -21,7 +21,7 @@ const awaiting = require('awaiting');
 const UsersRepository = require('components/business/src/users/repository');
 const User = require('components/business/src/users/User');
 
-const { getConfig } = require('components/api-server/config/Config');
+const { getGifnoc } = require('boiler');
 
 const { 
   spawnContext, produceMongoConnection, 
@@ -57,10 +57,9 @@ describe('Storing data in a HF series', function() {
 
   let database,
     pryv,
-    config;
+    gifnoc;
   before(async function () {
-    config = getConfig();
-    await config.init();
+    gifnoc = await getGifnoc();
     database = await produceMongoConnection();
     pryv = databaseFixture(database);
   });
@@ -71,7 +70,7 @@ describe('Storing data in a HF series', function() {
     before(async () => {
       debug('spawning');
       // without config.get() spawnContext does not take the right config
-      server = await spawnContext.spawn(config.get());
+      server = await spawnContext.spawn(gifnoc.get());
     });
     after(() => {
       server.stop(); 
@@ -142,6 +141,7 @@ describe('Storing data in a HF series', function() {
 
       const nowPlus1Sec = nowEvent + 1;
       const response = await storeData({ timestamp: nowPlus1Sec, value: 80.3 }, accessToken);
+      
 
       // Check if the data is really there
       const userName = userId; // identical with id here, but will be user name in general. 
@@ -248,8 +248,8 @@ describe('Storing data in a HF series', function() {
     // Spawns a server.
     before(async () => {
       debug('spawning');
-      hfServer = await spawnContext.spawn(config.get()); 
-      apiServer = await apiServerContext.spawn(config.get());
+      hfServer = await spawnContext.spawn(gifnoc.get()); 
+      apiServer = await apiServerContext.spawn(gifnoc.get());
       
     });
     after(() => {
@@ -513,7 +513,7 @@ describe('Storing data in a HF series', function() {
       describe('with auth success', function () {
         before(async () => {
           debug('spawning');
-          server = await spawnContext.spawn(config.get());
+          server = await spawnContext.spawn(gifnoc.get());
         });
         after(() => {
           server.stop(); 
@@ -694,7 +694,7 @@ describe('Storing data in a HF series', function() {
           afterEach(async () => {
             // Since we modified the test server, spawn a new one that is clean. 
             server.stop(); 
-            server = await spawnContext.spawn(config.get());
+            server = await spawnContext.spawn(gifnoc.get());
             
             rpcServer.close();
           });
@@ -717,7 +717,7 @@ describe('Storing data in a HF series', function() {
       describe('with auth failure', function () {
         before(async () => {
           debug('spawning');
-          server = await spawnContext.spawn(config.get());
+          server = await spawnContext.spawn(gifnoc.get());
         });
         after(() => {
           server.stop(); 
@@ -746,7 +746,7 @@ describe('Storing data in a HF series', function() {
       // Spawns a server.
       before(async () => {
         debug('spawning');
-        server = await spawnContext.spawn(config.get());
+        server = await spawnContext.spawn(gifnoc.get());
       });
       after(() => {
         server.stop(); 
@@ -909,7 +909,7 @@ describe('Storing data in a HF series', function() {
       // Spawns a server.
       before(async () => {
         debug('spawning');
-        server = await spawnContext.spawn(config.get());
+        server = await spawnContext.spawn(gifnoc.get());
       });
       after(() => {
         server.stop(); 
@@ -1048,7 +1048,7 @@ describe('Storing data in a HF series', function() {
       // Spawns a server.
       before(async () => {
         debug('spawning');
-        server = await spawnContext.spawn(config.get());
+        server = await spawnContext.spawn(gifnoc.get());
       });
       after(() => {
         server.stop(); 
@@ -1131,7 +1131,7 @@ describe('Storing data in a HF series', function() {
     describe('using a "create-only" permissions', () => {
 
       before(async () => {
-        server = await spawnContext.spawn(config.get());
+        server = await spawnContext.spawn(gifnoc.get());
       });
       after(() => {
         server.stop(); 
