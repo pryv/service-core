@@ -30,7 +30,7 @@ async function startup () {
   await app.setup();
 
   // Setup Airbrake if enabled
-  const airbrakeSettings = app.settings.get('logs:airbrake');
+  const airbrakeSettings = app.gifnoc.get('logs:airbrake');
   if (airbrakeSettings.active) {
     airbrake = new Notifier({
       projectId: airbrakeSettings.projectId,
