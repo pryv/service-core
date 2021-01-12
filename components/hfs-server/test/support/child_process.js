@@ -59,7 +59,6 @@ class ApplicationLauncher {
   }
 
   async launch(injectSettings = {}) {
-    console.log(new Error());
     const gifnoc = await getGifnoc(); 
     gifnoc.injectTestConfig(injectSettings);
     

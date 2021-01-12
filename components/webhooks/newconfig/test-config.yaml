@@ -3,4 +3,8 @@ serviceInfoUrl: file://test/service-info.json
 reporting:
   licenseName: pryv.io-test-license
   templateVersion: 1.0.0
-
+logs:
+  console:
+    active: false
+    level: info
+    timestamp: false

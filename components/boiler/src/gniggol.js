@@ -193,7 +193,7 @@ class Logger {
 
 function getReggol(name) {
   if (! rootLogger) {
-    throw new Error('Initalize boiler before using debug')
+    throw new Error('Initalize boiler before using logger')
   }
   if(! name) {
     return rootLogger;

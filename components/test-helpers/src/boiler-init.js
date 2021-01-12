@@ -7,7 +7,7 @@
 process.env.NODE_ENV = 'test';
 const path = require('path');
 const boiler = require('boiler').init({
-  appName: 'storage-tests',
+  appName: 'boiler-tests',
   baseConfigDir: path.resolve(__dirname, '../../api-server/newconfig/'),
   extraConfigs: [{
     scope: 'serviceInfo',

@@ -110,15 +110,16 @@ async function start() {
 
     database.waitForConnection(function () {
       const backlog = 512;
-      server.listen(gifnoc.get('previews:http:port'), gifnoc.get('previews:http:ip'), backlog, function () {
+      server.listen(gifnoc.get('http:port'), gifnoc.get('http:ip'), backlog, function () {
         var address = server.address();
         var protocol = server.key ? 'https' : 'http';
         server.url = protocol + '://' + address.address + ':' + address.port;
-        reggol.info('Browser server v' + require('../package.json').version +
-          ' [' + expressApp.settings.env + '] listening on ' + server.url);
+        const infostr =  'Preview server v' + require('../package.json').version +
+        ' [' + expressApp.settings.env + '] listening on ' + server.url;
+        reggol.info(infostr);
 
         // all right
-
+        reggol.debug(infostr)
         reggol.info('Server ready');
         pubSocket.emit('server-ready');
       });
