@@ -132,10 +132,7 @@ class Deletion {
     const host = this.settings.get('influxdb:host');
     const port = this.settings.get('influxdb:port');
 
-    const influx = new InfluxConnection(
-      { host: host, port: port },
-      this.reggol
-    );
+    const influx = new InfluxConnection({ host: host, port: port });
     await influx.dropDatabase(`user.${params.username}`);
     next();
   }

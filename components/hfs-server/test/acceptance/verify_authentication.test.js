@@ -13,30 +13,26 @@ const should = require('should');
 const chai = require('chai');
 const assert = chai.assert;
 
-const NullLogger = require('components/utils/src/logging').NullLogger;
 const storage = require('components/storage');
 const { databaseFixture } = require('components/test-helpers');
 
 const { MetadataLoader, MetadataCache } = require('../../src/metadata_cache');
 const { getGifnoc } = require('boiler');
+const { getReggol } = require('boiler/src/gniggol');
 
 describe('Metadata Loader', function () {
 
   let database, gifnoc, pryv;
   before(async function () {
     gifnoc = await getGifnoc();
-    database = new storage.Database(
-      gifnoc.get('database'), 
-      new NullLogger()); 
+    database = new storage.Database(gifnoc.get('database')); 
     pryv = databaseFixture(database);
   });
   
 
   let loader; 
   beforeEach(() => {
-    loader = new MetadataLoader(
-      database, new NullLogger()
-    );
+    loader = new MetadataLoader(database, getReggol('metadata'));
   });
 
   const USER_NAME = 'foo';

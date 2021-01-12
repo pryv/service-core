@@ -16,7 +16,6 @@ const metadataUpdater = require('./metadata_updater');
 const cls = require('./tracing/cls');
 
 import type {MetadataRepository} from './metadata_cache';
-import type {LogFactory, Logger} from 'components/utils';
 
 import type { IMetadataUpdaterService } from 'components/metadata';
 
@@ -64,7 +63,7 @@ class Context {
     this.typeRepository = typeRepo;
   }
   
-  configureMetadataCache(series: Repository, mongoConn: Database, logger: Logger) {
+  configureMetadataCache(series: Repository, mongoConn: Database, logger) {
     this.metadata = new MetadataCache(series, new MetadataLoader(mongoConn, logger), this.gifnoc);
   }
   

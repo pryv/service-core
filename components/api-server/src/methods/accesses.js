@@ -28,7 +28,6 @@ const SystemStreamsSerializer = require('components/business/src/system-streams/
 const { getReggol } = require('boiler');
 
 import type { StorageLayer } from 'components/storage';
-import type { Logger } from 'components/utils';
 import type { MethodContext } from 'components/model';
 
 import type API from '../API';

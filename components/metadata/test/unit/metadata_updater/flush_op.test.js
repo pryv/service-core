@@ -20,16 +20,16 @@ const charlatan = require('charlatan');
 require('../../../../test-helpers/src/boiler-init');
 const storage = require('components/storage');
 const { databaseFixture } = require('components/test-helpers');
-const { NullLogger } = require('components/utils/src/logging');
 
 const { PendingUpdate } = 
   require('../../../src/metadata_updater/pending_updates');
 const { Flush, UsersRepository } = require('../../../src/metadata_updater/flush');
+const { getReggol } = require('boiler/src/gniggol');
 
 describe('Flush', () => {
   const connection = produceMongoConnection();
   const db = produceStorageLayer(connection);
-  const logger = new NullLogger(); 
+  const logger = getReggol('flush'); 
 
   const now = 100000;
   const from = now - 10; 
@@ -204,9 +204,7 @@ function produceMongoConnection(): storage.Database {
     port: 27017,
     name: 'pryv-node-test',
   };
-  const database = new storage.Database(
-    settings, 
-    new NullLogger()); 
+  const database = new storage.Database(settings); 
   
   return database; 
 }
@@ -219,7 +217,7 @@ function produceStorageLayer(connection: storage.Database): storage.StorageLayer
     
   return new storage.StorageLayer(
     connection, 
-    new NullLogger(), 
+    getReggol('flush-test'), 
     'attachmentsDirPath', 'previewsDirPath', 
     passwordResetRequestMaxAge,
     sessionMaxAge);

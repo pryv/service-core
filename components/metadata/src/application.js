@@ -76,8 +76,7 @@ module.exports = Application;
 function produceStorageLayer(settings, logger) {
   logger.info(`Connecting to MongoDB (@ ${settings.host}:${settings.port}/${settings.name}) (${settings.authUser})`);
   
-  const mongoConn = new storage.Database(
-    settings, logger);
+  const mongoConn = new storage.Database(settings);
     
   // BUG These must be read from the configuration, probably. If we don't have 
   // these values, we cannot instanciate StorageLayer, even though none of these

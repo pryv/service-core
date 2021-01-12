@@ -11,6 +11,8 @@ const MongoClient = require('mongodb').MongoClient;
 const lodash = require('lodash');
 const bluebird = require('bluebird');
 
+const { getReggol } = require('boiler');
+
 import type { Db as MongoDB, Collection } from 'mongodb';
 
 
@@ -47,11 +49,11 @@ class Database {
   
   initializedCollections: { [name: string]: boolean }; 
   
-  logger; 
+  reggol; 
   
-  constructor(settings: Object, logger) {
+  constructor(settings: Object) {
     const authPart = getAuthPart(settings);
-    this.logger = logger;
+    this.reggol = getReggol('database');
 
     this.connectionString = `mongodb://${authPart}${settings.host}:${settings.port}/${settings.name}`;
     this.databaseName = settings.name; 
@@ -88,7 +90,7 @@ class Database {
     function checkConnection(checkDone: () => mixed) {
       this.ensureConnect((err) => {
         if (err != null) {
-          this.logger.warn('Cannot connect to ' + this.connectionString + ', retrying in a sec');
+          this.reggol.warn('Cannot connect to ' + this.connectionString + ', retrying in a sec');
           return setTimeout(checkDone, 1000);
         }
         connected = true;
@@ -105,14 +107,14 @@ class Database {
     if (this.db) {
       return callback();
     }
-    this.logger.debug('Connecting to ' + this.connectionString);
+    this.reggol.debug('Connecting to ' + this.connectionString);
     MongoClient.connect(this.connectionString, this.options, (err, client) => {
       if (err != null) {
-        this.logger.debug(err);
+        this.reggol.debug(err);
         return callback(err);
       }
 
-      this.logger.debug('Connected');
+      this.reggol.debug('Connected');
       this.client = client;
       this.db = client.db(this.databaseName);
 

@@ -14,13 +14,12 @@ const UserRepo = require('components/business/src/users/repository');
 const { PendingUpdate } = require('./pending_updates');
 
 import type { LRUCache } from 'lru-cache';
-import type { Logger } from 'components/utils/src/logging';
 import type { Operation } from './controller';
 
 // Operation that flushes the update to MongoDB. 
 // 
 class Flush implements Operation {
-  logger: Logger; 
+  logger; 
   
   // The update to flush when calling #run. 
   update: PendingUpdate;
@@ -31,7 +30,7 @@ class Flush implements Operation {
   // User lookup (name -> id)
   users: UsersRepository;
   
-  constructor(update: PendingUpdate, db: storage.StorageLayer, logger: Logger) {
+  constructor(update: PendingUpdate, db: storage.StorageLayer, logger) {
     this.update = update; 
     this.db = db;
     this.logger = logger; 

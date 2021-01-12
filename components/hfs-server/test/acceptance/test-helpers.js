@@ -7,7 +7,7 @@
 // @flow
 
 const path = require('path');
-const { getGifnoc } = require('boiler').init({
+const { getGifnoc, getReggol } = require('boiler').init({
   appName: 'hfs-server-tests',
   baseConfigDir: path.resolve(__dirname, '../../newconfig'),
   extraConfigs: [{
@@ -26,7 +26,6 @@ const { getGifnoc } = require('boiler').init({
 
 const debug = require('debug')('test-helpers');
 const testHelpers = require('components/test-helpers');
-const NullLogger = require('components/utils/src/logging').NullLogger;
 const storage = require('components/storage');
 const business = require('components/business');
 
@@ -35,10 +34,8 @@ const toplevelHelpers = require('../test-helpers');
 // Produces and returns a connection to InfluxDB. 
 // 
 function produceInfluxConnection(): business.series.InfluxConnection {
-  const logger = new NullLogger(); 
   
-  return new business.series.InfluxConnection(
-    {host: 'localhost'}, logger); 
+  return new business.series.InfluxConnection({host: 'localhost'}); 
 }
 exports.produceInfluxConnection = produceInfluxConnection;
 
@@ -46,9 +43,7 @@ exports.produceInfluxConnection = produceInfluxConnection;
 // 
 async function produceMongoConnection(): storage.Database {
   const gifnoc = await getGifnoc();
-  const database = new storage.Database(
-    gifnoc.get('database'), 
-    new NullLogger()); 
+  const database = new storage.Database(gifnoc.get('database')); 
   
   return database; 
 }
@@ -62,7 +57,7 @@ function produceStorageLayer(connection: storage.Database): storage.StorageLayer
   
   return new storage.StorageLayer(
     connection, 
-    new NullLogger(), 
+    getReggol('null'), 
     'attachmetsDirPath', 'previewsDirPath', 
     passwordResetRequestMaxAge,
     sessionMaxAge);

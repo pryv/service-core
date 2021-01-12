@@ -33,7 +33,7 @@ const settings = gifnoc.get('eventFiles');
 const cache = new Cache({
   rootPath: settings.previewsDirPath,
   maxAge: (settings.previewsCacheMaxAge / 1000 || 60 * 60 * 24 * 7) / 1000, // 1w
-  logger: logger
+  logger
 });
 
 logger.info('Starting clean-up in ' + settings.previewsDirPath);

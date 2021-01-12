@@ -48,11 +48,9 @@ async function createContext(
   const host = gifnoc.get('influxdb:host'); 
   const port = gifnoc.get('influxdb:port');
   
-  const influx = new business.series.InfluxConnection(
-    {host: host, port: port}, getReggol('influx')); 
+  const influx = new business.series.InfluxConnection({host: host, port: port}); 
   
-  const mongo = new storage.Database(
-    gifnoc.get('database'), getReggol('database'));
+  const mongo = new storage.Database(gifnoc.get('database'));
     
   const tracer = produceTracer(gifnoc, getReggol('jaeger'));
   const typeRepoUpdateUrl = gifnoc.get('service:eventTypes');

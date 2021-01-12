@@ -12,7 +12,6 @@ const string = require('./helpers/string');
 const timestamp = require('unix-timestamp');
 
 import type API from '../API';
-import type { Logger } from 'components/utils';
 import type { StorageLayer } from 'components/storage';
 import type { MethodContext } from 'components/model';
 import type Result from '../Result';
@@ -27,7 +26,7 @@ import type { ApiCallback } from '../API';
  */
 module.exports = function (
   api: API,
-  logger: Logger, 
+  logger, 
   storageLayer: StorageLayer
 ) {
 

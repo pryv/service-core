@@ -27,15 +27,12 @@ after(async () => {
 
 const { Database } = require('components/storage');
 const { getGifnoc } = require('boiler');
-const NullLogger = require('components/utils/src/logging').NullLogger;
 const InfluxConnection = require('components/business/src/series/influx_connection');
 
 // Produces and returns a connection to MongoDB. 
 async function produceMongoConnection(): Promise<Database> {
   const gifnoc = await getGifnoc();
-  const database = new Database(
-    gifnoc.get('database'), 
-    new NullLogger()); 
+  const database = new Database(gifnoc.get('database')); 
   
   return database; 
 }
@@ -43,10 +40,7 @@ async function produceMongoConnection(): Promise<Database> {
 function produceInfluxConnection(settings: any) {
   const host = settings.get('influxdb:host'); 
   const port = settings.get('influxdb:port');
-  return new InfluxConnection(
-    {host: host, port: port},
-    new NullLogger()
-  );
+  return new InfluxConnection({host: host, port: port});
 }
 
 module.exports = {

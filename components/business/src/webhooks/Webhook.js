@@ -14,7 +14,6 @@ const timestamp = require('unix-timestamp');
 const NatsSubscriber = require('components/api-server/src/socket-io/nats_subscriber');
 import type { MessageSink } from 'components/api-server/src/socket-io/message_sink';
 import type Repository from './repository';
-import type { Logger } from 'components/utils/src/logging';
 
 export type Run = {
   status: number,
@@ -61,7 +60,7 @@ class Webhook implements MessageSink {
   apiVersion: string;
   serial: string;
 
-  logger: Logger;
+  logger;
 
   constructor(params: {
     id?: string,
@@ -309,7 +308,7 @@ class Webhook implements MessageSink {
     this.serial = serial;
   }
 
-  setLogger(logger: Logger): void {
+  setLogger(logger): void {
     this.logger = logger;
   }
 }

@@ -15,7 +15,6 @@ const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTIO
   await commonMeta.loadSettings();
 })();
 
-import type { Logger } from 'components/utils';
 const MethodContext = require('components/model').MethodContext;
 import type API from '../API';
 
@@ -58,7 +57,7 @@ type SocketIO$Server = {
 class Manager implements MessageSink {
   contexts: Map<string, NamespaceContext>; 
   
-  logger: Logger; 
+  logger; 
   io: SocketIO$Server; 
   api: API; 
   storageLayer: StorageLayer;
@@ -66,7 +65,7 @@ class Manager implements MessageSink {
   isOpenSource: boolean;
 
   constructor(
-    logger: Logger, io: SocketIO$Server, api: API, storageLayer: StorageLayer, customAuthStepFn: Object,
+    logger, io: SocketIO$Server, api: API, storageLayer: StorageLayer, customAuthStepFn: Object,
     isOpenSource: boolean,
   ) {
     this.logger = logger; 
@@ -167,7 +166,7 @@ class NamespaceContext {
   socketNs: SocketIO$Namespace;
   api: API; 
   sink: MessageSink;
-  logger: Logger; 
+  logger; 
   
   connections: Map<SocketIO$SocketId, Connection>; 
   natsSubscriber: ?NatsSubscriber; 
@@ -177,7 +176,7 @@ class NamespaceContext {
     socketNs: SocketIO$Namespace, 
     api: API, 
     sink: MessageSink, 
-    logger: Logger,
+    logger,
     isOpenSource: Boolean
   ) {
     this.username = username; 
@@ -301,10 +300,10 @@ class Connection {
   socket: SocketIO$Socket; 
   methodContext: MethodContext;
   api: API; 
-  logger: Logger; 
+  logger; 
   
   constructor(
-    logger: Logger, 
+    logger, 
     socket: SocketIO$Socket, 
     namespaceContext: NamespaceContext,
     methodContext: MethodContext, api: API

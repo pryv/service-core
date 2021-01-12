@@ -47,7 +47,7 @@ class Server {
   
   // Logger used here.
   reggol; 
-  errorLogger: Logger; 
+  errorlogger; 
   
   // Web request context
   context: Context; 

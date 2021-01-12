@@ -27,7 +27,6 @@ const NATS_DELETE_EVENT = require('components/utils').messaging
 import type { LRUCache } from 'lru-cache';
 
 import type { TypeRepository, Repository } from 'components/business';
-import type { Logger } from 'components/utils';
 import type { MessageSink } from './message_sink';
 
 type UsernameEvent = {
@@ -194,7 +193,7 @@ class MetadataLoader {
   databaseConn: storage.Database; 
   storage: storage.StorageLayer;
   
-  constructor(databaseConn: storage.Database, logger: Logger) {
+  constructor(databaseConn: storage.Database, logger) {
     this.databaseConn = databaseConn; 
     // NOTE We pass bogus values to the last few arguments of StorageLayer - 
     // we're not using anything but the 'events' collection. Anyhow - these 

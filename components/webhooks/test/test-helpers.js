@@ -45,14 +45,11 @@ function unhandledRejection(reason, promise) {
 const { Database } = require('components/storage');
 const storage = require('components/storage');
 // FLOW __dirname can be undefined when node is run outside of file.
-const NullLogger = require('components/utils/src/logging').NullLogger;
 
 // Produces and returns a connection to MongoDB. 
 // 
 function produceMongoConnection(): Database {
-  const database = new Database(
-    gifnoc.get('database'),
-    new NullLogger());
+  const database = new Database(gifnoc.get('database'));
   return database;
 }
 

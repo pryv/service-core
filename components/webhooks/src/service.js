@@ -17,7 +17,6 @@ const WEBHOOKS_DELETE_CHANNEL: string = require('components/utils').messaging.NA
 
 import type { MessageSink } from 'components/api-server/src/socket-io/message_sink';
 import type { StorageLayer } from 'components/storage';
-import type { Logger } from 'components/utils/src/logging';
 
 const Webhook = require('components/business/src/webhooks/Webhook');
 const WebhooksRepository = require('components/business/src/webhooks/repository');
@@ -38,7 +37,7 @@ class WebhooksService implements MessageSink {
   webhooks: Map<string, Array<Webhook>>;
 
   repository: WebhooksRepository;
-  logger: Logger;
+  logger;
   NATS_CONNECTION_URI: string;
 
   apiVersion: string;
@@ -46,7 +45,7 @@ class WebhooksService implements MessageSink {
 
   constructor(params: {
     storage: StorageLayer,
-    logger: Logger,
+    logger,
   }) {
     this.logger = params.logger;
     this.repository = new WebhooksRepository(params.storage.webhooks, params.storage.events);

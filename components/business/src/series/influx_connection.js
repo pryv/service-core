@@ -7,20 +7,20 @@
 // @flow
 
 const influx = require('influx');
+const { getReggol } = require('boiler');
 
 import type {IPoint} from 'influx';
-import type {Logger} from 'components/utils/src/logging';
 
 /** Connection to the influx database. Adds error handling and logging on top
  * of our database driver. 
  */
 class InfluxConnection {
   conn: influx.InfluxDB; 
-  logger: Logger; 
+  logger; 
   
-  constructor(connectionSettings: ISingleHostConfig, logger: Logger) {
+  constructor(connectionSettings: ISingleHostConfig) {
     this.conn = new influx.InfluxDB(connectionSettings);
-    this.logger = logger; 
+    this.logger = getReggol('influx'); 
   }
   
   createDatabase(name: string): Promise<*> {

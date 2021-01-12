@@ -18,7 +18,6 @@ const { ErrorLogger } = require('./error_logger');
 const NatsPublisher = require('components/api-server/src/socket-io/nats_publisher');
 const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
 
-import type { Logger } from 'components/utils/src/logging';
 import type { IMetadataUpdaterService, IUpdateRequests, IUpdateResponse, 
   IUpdateId, IPendingUpdate } from './interface';
   
@@ -30,7 +29,7 @@ import type { StorageLayer } from 'components/storage';
 // 
 class Service implements IMetadataUpdaterService {
   db: StorageLayer;
-  logger: Logger;
+  logger;
   
   // Underlying transport and RPC dispatcher
   server: rpc.Server;
@@ -45,7 +44,7 @@ class Service implements IMetadataUpdaterService {
   // <username, natspublisher>
   socketIoNotifiers: Map<string, NatsPublisher>;
   
-  constructor(db: StorageLayer, logger: Logger) {
+  constructor(db: StorageLayer, logger) {
     this.db = db;
     this.logger = logger; 
     

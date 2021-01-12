@@ -143,9 +143,7 @@ class Application {
 
   produceStorageSubsystem() {
     const gifnoc = this.gifnoc;
-    this.database = new storage.Database(
-      gifnoc.get('database'), 
-      getReggol('database'));
+    this.database = new storage.Database(gifnoc.get('database'));
 
     // 'StorageLayer' is a component that contains all the vertical registries
     // for various database models. 

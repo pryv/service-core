@@ -9,8 +9,7 @@ var storage = require('components/storage'),
 
 const { gifnoc, getReggol } = require('boiler');
     
-const database = new storage.Database(
-  gifnoc.get('database'), getReggol('database'));
+const database = new storage.Database(gifnoc.get('database'));
 
 /**
  * Test process dependencies.

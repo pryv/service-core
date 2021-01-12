@@ -30,7 +30,7 @@ type ApiCall = {
  *
  * @param api
  */
-module.exports = function (api: API, logging: Logger, storageLayer: StorageLayer) {
+module.exports = function (api: API, logging, storageLayer: StorageLayer) {
 
   const logger = getReggol('methods:batch');
 
