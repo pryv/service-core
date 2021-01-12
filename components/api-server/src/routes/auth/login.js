@@ -21,8 +21,9 @@ declare class RequestWithContext extends express$Request {
 }
 
 
-import type { ConfigAccess } from './../settings';
 import type Application from './../application';
+
+const { gifnoc } = require('boiler');
 
 /**
  * Auth routes.
@@ -31,7 +32,6 @@ import type Application from './../application';
  */
 module.exports = function (expressApp: express$Application, app: Application) {
 
-  const gifnoc = app.gifnoc;
   const api = app.api;
 
   const ms14days: number = 1000 * 60 * 60 * 24 * 14;

@@ -105,7 +105,7 @@ class Settings implements ConfigAccess {
    * 
    * Example: 
    * 
-   *    settings.get('logs.console:active') //=> true
+   *    settings.get('logs:console:active') //=> true
    *
    * @return {ExistingValue} Returns the configuration value that corresponds to 
    *    `key` given. 

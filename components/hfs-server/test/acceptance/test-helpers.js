@@ -6,17 +6,17 @@
  */
 // @flow
 
-
-require('boiler').init({
+const path = require('path');
+const { getGifnoc } = require('boiler').init({
   appName: 'hfs-server-tests',
-  baseConfigDir: './newconfig',
+  baseConfigDir: path.resolve(__dirname, '../../newconfig'),
   extraConfigs: [{
     scope: 'serviceInfo',
     key: 'service',
     urlFromKey: 'serviceInfoUrl'
   }, {
     scope: 'defaults-data',
-    file: '../../api-server/newconfig/defaults.js'
+    file: path.resolve(__dirname, '../../../api-server/newconfig/defaults.js')
   }, {
     plugin: require('../../../api-server/config/components/systemStreams')
   }]
@@ -45,9 +45,9 @@ exports.produceInfluxConnection = produceInfluxConnection;
 // Produces and returns a connection to MongoDB. 
 // 
 async function produceMongoConnection(): storage.Database {
-  const settings = await toplevelHelpers.loadSettings();
+  const gifnoc = await getGifnoc();
   const database = new storage.Database(
-    settings.get('database').obj(), 
+    gifnoc.get('database'), 
     new NullLogger()); 
   
   return database; 
@@ -69,8 +69,6 @@ function produceStorageLayer(connection: storage.Database): storage.StorageLayer
 }
 exports.produceStorageLayer = produceStorageLayer;
 
-// Forward certain things that the top level helper defines, for convenience: 
-exports.loadSettings = toplevelHelpers.loadSettings;
 
 // --------------------------------------------------------- prespawning servers
 

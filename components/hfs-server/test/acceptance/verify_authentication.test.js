@@ -13,21 +13,20 @@ const should = require('should');
 const chai = require('chai');
 const assert = chai.assert;
 
-const { loadSettings } = require('./test-helpers');
-
 const NullLogger = require('components/utils/src/logging').NullLogger;
 const storage = require('components/storage');
 const { databaseFixture } = require('components/test-helpers');
 
 const { MetadataLoader, MetadataCache } = require('../../src/metadata_cache');
+const { getGifnoc } = require('boiler');
 
 describe('Metadata Loader', function () {
 
-  let database, settings, pryv;
+  let database, gifnoc, pryv;
   before(async function () {
-    settings = await loadSettings();
+    gifnoc = await getGifnoc();
     database = new storage.Database(
-      settings.get('database').obj(), 
+      gifnoc.get('database'), 
       new NullLogger()); 
     pryv = databaseFixture(database);
   });
@@ -71,9 +70,9 @@ describe('Metadata Loader', function () {
 
 describe('Metadata Cache', function () {
 
-  let settings;
+  let gifnoc;
   before(async function () {
-    settings = await loadSettings();
+    gifnoc = await getGifnoc();
   });
   it('[O8AE] returns loaded metadata for N minutes', async () => {
     let n = 0; 
@@ -87,7 +86,7 @@ describe('Metadata Cache', function () {
     };
     
     // FLOW stubbing the value of loader here.
-    const cache = new MetadataCache(null, loaderStub, settings);
+    const cache = new MetadataCache(null, loaderStub, gifnoc);
     
     const a = await cache.forSeries('foo', '1234', '5678');
     const b = await cache.forSeries('foo', '1234', '5678');

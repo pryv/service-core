@@ -231,7 +231,16 @@ class Config {
     return this;
   }
 
-  
+  /**
+   * Return true if key as value
+   * @param {string} key 
+   * @returns {boolean}
+   */
+  has(key) {
+    if (! this.store) { throw(new Error('Config not yet initialized'))}
+    const value = this.store.get(key);
+    return (typeof value !== 'undefined');
+  }
 
   /**
    * Retreive value

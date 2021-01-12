@@ -10,10 +10,10 @@ const debug = require('debug')('child_process');
 const bluebird = require('bluebird');
 
 const Application = require('../../src/application');
-const Settings = require('../../src/Settings');
 const { InfluxRowType, TypeRepository } = require('components/business').types;
 const ChildProcess = require('components/test-helpers').child_process;
 
+const { getGifnoc } = require('boiler');
 import type {MetadataRepository} from '../../src/metadata_cache';
 
 const typeRepo = new TypeRepository(); 
@@ -58,16 +58,14 @@ class ApplicationLauncher {
     await context.configureMetadataUpdater(endpoint);
   }
 
-  async launch(injectSettings: {}) {
-    const settings = new Settings(); 
-    await settings.loadFromFile('config/development.json');
-    await settings.loadFromObject(injectSettings);
-    
-    debug(settings.get('http.port').num());
+  async launch(injectSettings = {}) {
+    console.log(new Error());
+    const gifnoc = await getGifnoc(); 
+    gifnoc.injectTestConfig(injectSettings);
     
     const app = this.app = new Application();
     
-    await app.init(settings);
+    await app.init();
     await app.start(); 
   }
 }

@@ -6,15 +6,12 @@
  */
 /* @flow */
 
-import type Settings from './Settings';
-
 const http = require('http');
 const express = require('express');
 const bluebird = require('bluebird');
 
 const bodyParser = require('body-parser');
 const middleware = require('components/middleware');
-const logging = require('components/utils/src/logging');
 const errorsMiddleware = require('./middleware/errors');
 const tracingMiddlewareFactory = require('./tracing/middleware/trace');
 const clsWrapFactory = require('./tracing/middleware/clsWrap');
@@ -25,20 +22,19 @@ const { ProjectVersion } = require('components/middleware/src/project_version');
 const controllerFactory = require('./web/controller');
 const getAuth = require('../../middleware/src/getAuth');
 
-const KEY_IP = 'http.ip';
-const KEY_PORT = 'http.port';  
+const KEY_IP = 'http:ip';
+const KEY_PORT = 'http:port';  
 
-import type {Logger} from 'components/utils/src/logging';
 import type Context from './context';
 
-const { getGifnoc } = require('boiler');
+const { getGifnoc, getReggol } = require('boiler');
 
 /**
  * HTTP server responsible for the REST api that the HFS server exposes. 
  */
 class Server {
   // Server settings.
-  settings: Settings;
+  gifnoc;
   
   // The express application. 
   expressApp: express$Application; 
@@ -50,7 +46,7 @@ class Server {
   server: net$Server; 
   
   // Logger used here.
-  logger: Logger; 
+  reggol; 
   errorLogger: Logger; 
   
   // Web request context
@@ -58,21 +54,16 @@ class Server {
   
   
 
-  constructor(settings: Settings, context: Context) {
-    const logSettings = settings.get('logs').obj();
-    const logFactory = logging(logSettings);
-    
-    this.logger = logFactory.getLogger('hfs-server');
-    this.errorLogger = logFactory.getLogger('errors');
-    this.settings = settings; 
+  constructor(gifnoc, context: Context) {
+    this.reggol = getReggol('server');
+    this.errorLogger = this.reggol.getReggol('errors');
+    this.gifnoc = gifnoc; 
   
     this.context = context; 
     
-    const ip = settings.get(KEY_IP).str(); 
-    const port = settings.get(KEY_PORT).num(); 
-    this.baseUrl = `http://${ip}:${port}/`;
+   
     
-    this.logger.info('constructed.');
+    this.reggol.info('constructed.');
   }
 
 
@@ -83,11 +74,11 @@ class Server {
    *    started and accepts connections.
    */
   async start(): Promise<true> {
-    const settings = this.settings;
-    const gifnoc = await getGifnoc();
-    const ip = settings.get(KEY_IP).str(); 
-    const port = settings.get(KEY_PORT).num(); 
-    this.logger.info('starting... on port: ' + port);
+    await getGifnoc(); // makes sure config is loaded
+    const ip = this.gifnoc.get(KEY_IP); 
+    const port = this.gifnoc.get(KEY_PORT); 
+    this.baseUrl = `http://${ip}:${port}/`;
+    this.reggol.info('starting... on port: ' + port);
     
     
     const app = await this.setupExpress();
@@ -106,7 +97,7 @@ class Server {
    */
   logStarted(arg: any): Promise<*> {
     const addr = this.server.address(); 
-    this.logger.info(`started. (http://${addr.address}:${addr.port})`);
+    this.reggol.info(`started. (http://${addr.address}:${addr.port})`);
     
     // passthrough of our single argument
     return arg;
@@ -121,7 +112,7 @@ class Server {
   stop(): Promise<true> {
     const server = this.server;
       
-    this.logger.info('stopping...');
+    this.reggol.info('stopping...');
     
     const serverClose = bluebird.promisify(server.close, {context: server}); 
     return serverClose();
@@ -134,10 +125,9 @@ class Server {
    * @return express application.
    */
   setupExpress(): Promise<express$Application> {
-    const logger = this.logger;
-    const settings = this.settings;
-    const logSettings = settings.get('logs').obj();
-    const traceEnabled = settings.get('trace.enable').bool(); 
+    const reggol = this.reggol;
+    const gifnoc = this.gifnoc;
+    const traceEnabled = gifnoc.get('trace:enable'); 
     
     const pv = new ProjectVersion(); 
     const version = pv.version(); 
@@ -147,12 +137,12 @@ class Server {
     app.disable('x-powered-by');
     
     if (traceEnabled) {
-      logger.info('Enabling opentracing features.');
+      reggol.info('Enabling opentracing features.');
       app.use(clsWrapFactory());
       app.use(tracingMiddlewareFactory(this.context));
     }
     app.use(middleware.subdomainToPath([]));
-    app.use(middleware.requestTrace(express, logging(logSettings)));
+    app.use(middleware.requestTrace(express, reggol));
     app.use(bodyParser.json({ limit: '10mb' }));
     app.use(middleware.override);
     app.use(middleware.commonHeaders(version));

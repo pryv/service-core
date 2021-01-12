@@ -12,7 +12,6 @@ const business = require('components/business');
 
 const {MetadataLoader, MetadataCache} = require('./metadata_cache');
 const metadataUpdater = require('./metadata_updater');
-const Settings = require('./Settings');
 
 const cls = require('./tracing/cls');
 
@@ -41,18 +40,18 @@ class Context {
   tracer: Tracer; 
   
   typeRepository: business.types.TypeRepository;
-  settings: Settings;
+  gifnoc;
   
   constructor(
     influxConn: InfluxConnection, mongoConn: Database, 
     logFactory: LogFactory, tracer: Tracer, 
-    typeRepoUpdateUrl: string, settings: Settings) 
+    typeRepoUpdateUrl: string, gifnoc) 
   {
     this.series = new business.series.Repository(influxConn);
     this.metadataUpdater = new metadataUpdater.MetadataForgetter(
       logFactory('metadata.update'));    
     this.tracer = tracer;
-    this.settings = settings;
+    this.gifnoc = gifnoc;
 
     this.configureTypeRepository(typeRepoUpdateUrl); 
     this.configureMetadataCache(this.series, mongoConn, logFactory('model'));
@@ -66,7 +65,7 @@ class Context {
   }
   
   configureMetadataCache(series: Repository, mongoConn: Database, logger: Logger) {
-    this.metadata = new MetadataCache(series, new MetadataLoader(mongoConn, logger), this.settings);
+    this.metadata = new MetadataCache(series, new MetadataLoader(mongoConn, logger), this.gifnoc);
   }
   
   // Configures the metadata updater service. 

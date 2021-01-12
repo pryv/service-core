@@ -70,7 +70,7 @@ describe('Storing data in a HF series', function() {
     before(async () => {
       debug('spawning');
       // without config.get() spawnContext does not take the right config
-      server = await spawnContext.spawn(gifnoc.get());
+      server = await spawnContext.spawn();
     });
     after(() => {
       server.stop(); 
@@ -248,8 +248,8 @@ describe('Storing data in a HF series', function() {
     // Spawns a server.
     before(async () => {
       debug('spawning');
-      hfServer = await spawnContext.spawn(gifnoc.get()); 
-      apiServer = await apiServerContext.spawn(gifnoc.get());
+      hfServer = await spawnContext.spawn(); 
+      apiServer = await apiServerContext.spawn();
       
     });
     after(() => {
@@ -513,7 +513,7 @@ describe('Storing data in a HF series', function() {
       describe('with auth success', function () {
         before(async () => {
           debug('spawning');
-          server = await spawnContext.spawn(gifnoc.get());
+          server = await spawnContext.spawn();
         });
         after(() => {
           server.stop(); 
@@ -694,7 +694,7 @@ describe('Storing data in a HF series', function() {
           afterEach(async () => {
             // Since we modified the test server, spawn a new one that is clean. 
             server.stop(); 
-            server = await spawnContext.spawn(gifnoc.get());
+            server = await spawnContext.spawn();
             
             rpcServer.close();
           });
@@ -717,7 +717,7 @@ describe('Storing data in a HF series', function() {
       describe('with auth failure', function () {
         before(async () => {
           debug('spawning');
-          server = await spawnContext.spawn(gifnoc.get());
+          server = await spawnContext.spawn();
         });
         after(() => {
           server.stop(); 
@@ -746,7 +746,7 @@ describe('Storing data in a HF series', function() {
       // Spawns a server.
       before(async () => {
         debug('spawning');
-        server = await spawnContext.spawn(gifnoc.get());
+        server = await spawnContext.spawn();
       });
       after(() => {
         server.stop(); 
@@ -909,7 +909,7 @@ describe('Storing data in a HF series', function() {
       // Spawns a server.
       before(async () => {
         debug('spawning');
-        server = await spawnContext.spawn(gifnoc.get());
+        server = await spawnContext.spawn();
       });
       after(() => {
         server.stop(); 
@@ -1048,7 +1048,7 @@ describe('Storing data in a HF series', function() {
       // Spawns a server.
       before(async () => {
         debug('spawning');
-        server = await spawnContext.spawn(gifnoc.get());
+        server = await spawnContext.spawn();
       });
       after(() => {
         server.stop(); 
@@ -1131,7 +1131,7 @@ describe('Storing data in a HF series', function() {
     describe('using a "create-only" permissions', () => {
 
       before(async () => {
-        server = await spawnContext.spawn(gifnoc.get());
+        server = await spawnContext.spawn();
       });
       after(() => {
         server.stop(); 

@@ -11,7 +11,7 @@
 // Example: 
 // 
 //   var settings = Settings.load(); 
-//   var value = settings.get('logs.console.active');
+//   var value = settings.get('logs:console:active');
 //   value.bool() //=> true (or a type error)
 // 
 export interface ConfigValue {
