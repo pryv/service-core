@@ -1,5 +1,11 @@
 ## 1.6
 
+### 1.6.12
+
+Fixes:
+
+- versioning now works when trashing event
+
 ### 1.6.7
 
 New Features:
