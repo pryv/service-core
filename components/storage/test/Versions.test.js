@@ -25,6 +25,7 @@ const wrench = require('wrench');
 const _ = require('lodash');
 const buildTree = require('components/utils').treeUtils.buildTree;
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
+const { getReggol } = require('boiler');
 
 const mongoFolder = __dirname + '/../../../../var-pryv/mongodb-bin'
 
@@ -606,7 +607,7 @@ describe('Versions', function () {
     const pickedMigrations = _.pick.apply(_, pickArgs);
     return new Versions(database,
         helpers.dependencies.settings.eventFiles.attachmentsDirPath,
-        helpers.dependencies.logging.getLogger('versions'),
+        getReggol('versions'),
         pickedMigrations);
   }
 

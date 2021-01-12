@@ -4,31 +4,29 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var utils = require('components/utils'),
-    settings = utils.config.load(),
-    logging = utils.logging(settings.logs),
-    storage = require('components/storage'),
+var storage = require('components/storage'),
     _ = require('lodash');
+
+const { gifnoc, getReggol } = require('boiler');
     
 const database = new storage.Database(
-  settings.database, logging.getLogger('database'));
+  gifnoc.get('database'), getReggol('database'));
 
 /**
  * Test process dependencies.
  */
 var deps = module.exports = {
-  settings: settings,
-  logging: logging,
+  settings: gifnoc.get(),
   storage: {
     database: database,
-    versions: new storage.Versions(database, settings.eventFiles.attachmentsDirPath,
-      logging.getLogger('versions')),
+    versions: new storage.Versions(database, gifnoc.get('eventFiles:attachmentsDirPath'),
+    getReggol('versions')),
     passwordResetRequests: new storage.PasswordResetRequests(database),
     sessions: new storage.Sessions(database),
     user: {
       accesses: new storage.user.Accesses(database),
       eventFiles: new storage.user.EventFiles(
-        settings.eventFiles, logging.getLogger('eventFiles')),
+        gifnoc.get('eventFiles'), getReggol('eventFiles')),
       events: new storage.user.Events(database), 
       followedSlices: new storage.user.FollowedSlices(database),
       streams: new storage.user.Streams(database),

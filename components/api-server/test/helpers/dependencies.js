@@ -7,13 +7,13 @@
 var testHelpers = require('components/test-helpers'),
     InstanceManager = testHelpers.InstanceManager;
 
+const { gifnoc } = require('boiler');
+
 /**
  * Overrides common test dependencies with server-specific config settings.
  */
 var deps = module.exports = testHelpers.dependencies;
-deps.settings = require('../../src/config').load();
+deps.settings = gifnoc.get();
 deps.instanceManager = new InstanceManager({
   serverFilePath: __dirname + '/../../bin/server',
-  tcpMessaging: deps.settings.tcpMessaging,
-  logging: deps.logging
-});
+  tcpMessaging: deps.settings.tcpMessaging});

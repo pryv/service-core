@@ -10,7 +10,6 @@
 const _ = require('lodash');
 const fs = require('fs');
 const path = require('path');
-const { Config } = require('components/api-server/config/Config');
 const treeUtils = require('components/utils/src/treeUtils');
 const validation = require('components/api-server/src/schema/validation');
 const string = require('components/api-server/src/methods/helpers/string');
@@ -30,7 +29,7 @@ const DEFAULT_VALUES_FOR_FIELDS = {
   isRequiredInValidation: false // if true, the field will be required in the validation
 };
 
-function load(config: Config): Config {
+function load(config) {
   // default system streams that should be not changed
   let defaultAccountStreams = [
     {
@@ -197,9 +196,9 @@ function load(config: Config): Config {
    * @param {*} additionalFields
    */
   function appendSystemStreamsConfigWithAdditionalFields(
-    config: Config,
+    config,
     additionalFields
-  ): Config {
+  ) {
     let defaultConfig = config.get('systemStreams');
 
     // extend systemStreams with default values
