@@ -33,7 +33,6 @@ describe('Account with system streams', function () {
   let access;
   let user;
   let serviceRegisterRequest;
-  let config;
   
 
   async function createUser () {

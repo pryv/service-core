@@ -12,7 +12,7 @@
  * .2 'argv' -> Loaded from arguments
  * .3 'env' -> Loaded from environement variables
  * .4 'base' -> Loaded from ${process.env.NODE_ENV}-config.yaml (if present) or --config parameter
- * .4 and next -> Loaded from extras 
+ * .5 and next -> Loaded from extras 
  * .end 
  *  . 'default-file' -> Loaded from ${baseDir}/default-config.yaml 
  *  . 'defaults' -> Hard coded defaults for logger
