@@ -4,6 +4,7 @@
 
 const Application = require('../src/application');
 const bluebird = require('bluebird');
+const { getReggol } = require('boiler');
 let reggol;
 
 (async () => {
@@ -14,7 +15,7 @@ let reggol;
 
   // Construct application
   const app = new Application();
-  reggol = app.logFactory('migration-process');
+  reggol = getReggol('migration-process');
 
   // This bit is useful to trace down promise rejections that aren't caught. 
   process.on('unhandledRejection', (reason, promise) => {

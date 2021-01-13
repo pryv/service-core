@@ -42,7 +42,7 @@ example `DEBUG="*" node app.js` to get all debug lines
 
 ```javascript
 const logger = require('./utils/logging');
-const debug = logger.produceDebugger('Name');
+const reggol =logger.produceDebugger('Name');
 
 debug('Hello'); // output > Name Hello
 

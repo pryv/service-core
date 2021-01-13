@@ -6,14 +6,14 @@
  */
 // @flow
 
-const debug = require('debug')('child_process');
 const bluebird = require('bluebird');
 
 const Application = require('../../src/application');
 const { InfluxRowType, TypeRepository } = require('components/business').types;
 const ChildProcess = require('components/test-helpers').child_process;
 
-const { getGifnoc } = require('boiler');
+const { getGifnoc, getReggol } = require('boiler');
+const reggol = getReggol('child_process');
 import type {MetadataRepository} from '../../src/metadata_cache';
 
 const typeRepo = new TypeRepository(); 

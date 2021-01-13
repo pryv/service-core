@@ -24,7 +24,7 @@ const { getGifnoc, getReggol } = require('boiler').init({
 
 // Test helpers for all acceptance tests. 
 
-const debug = require('debug')('test-helpers');
+const reggol = require('boiler').getReggol('test-helpers');
 const testHelpers = require('components/test-helpers');
 const storage = require('components/storage');
 const business = require('components/business');
@@ -67,13 +67,13 @@ exports.produceStorageLayer = produceStorageLayer;
 
 // --------------------------------------------------------- prespawning servers
 
-debug('creating new spawn context');
+reggol.debug('creating new spawn context');
 const spawner = testHelpers.spawner;
 const spawnContext = new spawner.SpawnContext('test/support/child_process');
 
 /* global after */
 after(() => {
-  debug('shutting down spawn context');
+  reggol.debug('shutting down spawn context');
   spawnContext.shutdown(); 
 });
 

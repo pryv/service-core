@@ -13,7 +13,7 @@ const path = require('path');
 const fs = require('fs');
 const chai = require('chai');
 const assert = chai.assert; 
-const debug = require('debug')('compile.test');
+const reggol = require('boiler').getReggol('compile.test');
 
 const rpc = require('../../src/index.js');
 
@@ -71,7 +71,7 @@ async function assertContains(path: string, content: string) {
   if (mdIndent == null) throw new Error('AF: should not be null here.');
   
   const indent = mdIndent[0].length;
-  debug('indent is', indent);
+  reggol.debug('indent is', indent);
   
   // Now prepare to be awed by my api juggling skills. 
   const buffer = await readFile(path);

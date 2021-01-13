@@ -12,7 +12,7 @@
 // Works via the 'cls-hooked' storage, which should be initialized for every
 // request. 
 
-const debug = require('debug')('mongodb_client_tracing');
+const reggol = require('boiler').getReggol('mongodb_client_tracing');
 const { Tags } = require('opentracing');
 const shimmer = require('shimmer');
 
@@ -42,7 +42,7 @@ function nextWrapFactory (tracer: Tracer) { // called by us
         childOf: rootSpan,
       };
       
-      debug(`Operation started ${OPERATION_NAME}`, opts.tags);
+      reggol.debug(`Operation started ${OPERATION_NAME}`, opts.tags);
 
       const span = tracer.startSpan(operationName, opts);
       return original.call(this, wrapCallback(tracer, span, operationName, cb));
@@ -68,14 +68,14 @@ function wrapCallback (tracer: Tracer, span: Span, operationName: string, done: 
       
       span.setTag(Tags.ERROR, true);
 
-      debug(`Operation error captured ${operationName}`, {
+      reggol.debug(`Operation error captured ${operationName}`, {
         reason: 'Error event',
         errorMessage: err.message });
     }
 
     span.finish();
 
-    debug(`Operation finished ${operationName}`);
+    reggol.debug(`Operation finished ${operationName}`);
 
     if (done != null) {
       return done(err, res);
@@ -107,7 +107,7 @@ function wrapFactory (tracer: Tracer, command: string) {
       };
       const span: Span = tracer.startSpan(operationName, opts);
 
-      debug(`Operation started ${operationName}`, opts.tags);
+      reggol.debug(`Operation started ${operationName}`, opts.tags);
             
       // Now call through to the original function, wrapping the callback. 
       
@@ -129,7 +129,7 @@ function patch (tracer: Tracer) {
   const mongoPorcelain = require('mongodb');
   shimmer.wrap(mongoPorcelain.Cursor.prototype, 'next', nextWrapFactory(tracer));
 
-  debug('Patched');
+  reggol.debug('Patched');
 }
 
 function unpatch (mongodb: LibMongoDb) {
@@ -139,7 +139,7 @@ function unpatch (mongodb: LibMongoDb) {
   shimmer.unwrap(mongodb.Server.prototype, 'remove');
   shimmer.unwrap(mongodb.Cursor.prototype, 'next');
 
-  debug('Unpatched');
+  reggol.debug('Unpatched');
 }
 
 module.exports = {

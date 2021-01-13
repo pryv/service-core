@@ -260,8 +260,9 @@ class Registration {
     result: Result,
     next: ApiCallback
   ) {
+    
     const emailSettings = this.servicesSettings.email;
-
+   
     // Skip this step if welcome mail is deactivated
     const emailActivation = emailSettings.enabled;
     if (emailActivation?.welcome === false) {

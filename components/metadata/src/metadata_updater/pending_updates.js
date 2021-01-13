@@ -6,7 +6,7 @@
  */
 // @flow
 
-const debug = require('debug')('PUM');
+const reggol = require('boiler').getReggol('PUM');
 const Heap = require('heap');
 
 // Code related to bookkeeping for pending updates. Will probably move. 
@@ -77,13 +77,13 @@ class PendingUpdatesMap {
     const map = this.map;
     const elapsed = [];
     
-    debug(`getElapsed, heap is ${heap.size()} items.`);
+    reggol.debug(`getElapsed, heap is ${heap.size()} items.`);
     
     while (heap.size() > 0) {
       const head = heap.peek(); 
       if (head == null) throw new Error('AF: Heap is not empty, head must be an element');
       
-      debug('Peek head has deadline', head.deadline, `(and it is now ${now} o'clock)`);
+      reggol.debug('Peek head has deadline', head.deadline, `(and it is now ${now} o'clock)`);
       
       if (head.flushAt() > now) break; 
       

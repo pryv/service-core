@@ -55,7 +55,7 @@ async function createContext(
   const tracer = produceTracer(gifnoc, getReggol('jaeger'));
   const typeRepoUpdateUrl = gifnoc.get('service:eventTypes');
     
-  const context = new Context(influx, mongo, getReggol, tracer, typeRepoUpdateUrl, gifnoc);
+  const context = new Context(influx, mongo, tracer, typeRepoUpdateUrl, gifnoc);
 
   if (gifnoc.has('metadataUpdater.host')) {
     const mdHost = gifnoc.get('metadataUpdater:host'); 

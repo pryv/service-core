@@ -202,7 +202,7 @@ class Server {
         
     const socketIOsetup = require('./socket-io');
     socketIOsetup(
-      server, application.logFactory('socketIO'), 
+      server, getReggol('socketIO'), 
       notificationBus, api, 
       storageLayer, customAuthStepFn,
       isOpenSource);

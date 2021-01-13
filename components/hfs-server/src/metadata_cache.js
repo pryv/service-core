@@ -10,7 +10,7 @@ const async = require('async');
 const R = require('ramda');
 const bluebird = require('bluebird');
 const LRU = require('lru-cache');
-const debug = require('debug')('metadata_cache');
+const reggol = require('boiler').getReggol('metadata_cache');
 
 const storage = require('components/storage');
 const MethodContext = require('components/model').MethodContext;
@@ -162,7 +162,7 @@ class MetadataCache implements MetadataRepository, MessageSink {
     
     const cachedValue = cache.get(key);
     if ( cachedValue != null) {
-      debug(`Using cached credentials for ${userName} / ${eventId}.`);
+      reggol.debug(`Using cached credentials for ${userName} / ${eventId}.`);
       return cachedValue;
     }  
     const newValue = await this.loader.forSeries(userName, eventId, accessToken); 

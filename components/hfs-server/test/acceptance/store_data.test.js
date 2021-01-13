@@ -14,14 +14,13 @@ const chai = require('chai');
 const assert = chai.assert; 
 const R = require('ramda');
 const cuid = require('cuid');
-const debug = require('debug')('store_data.test');
 const bluebird = require('bluebird');
 const lodash = require('lodash');
 const awaiting = require('awaiting');
 const UsersRepository = require('components/business/src/users/repository');
 const User = require('components/business/src/users/User');
 
-const { getGifnoc } = require('boiler');
+
 
 const { 
   spawnContext, produceMongoConnection, 
@@ -32,6 +31,9 @@ const apiServerContext = require('components/api-server/test/test-helpers').cont
 
 const rpc = require('components/tprpc');
 const metadata = require('components/metadata');
+
+const { getGifnoc, getReggol } = require('boiler');
+const reggol = getReggol('store_data.test');
 
 import type { IMetadataUpdaterService } from 'components/metadata';
 
@@ -68,7 +70,7 @@ describe('Storing data in a HF series', function() {
   describe('Use Case: Store data in InfluxDB, Verification on either half', function () {
     let server; 
     before(async () => {
-      debug('spawning');
+      reggol.debug('spawning');
       // without config.get() spawnContext does not take the right config
       server = await spawnContext.spawn();
     });
@@ -93,7 +95,7 @@ describe('Storing data in a HF series', function() {
       accessToken = cuid(); 
       secondStreamToken = cuid();
       
-      debug('build fixture');
+      reggol.debug('build fixture');
       const user = await pryv.user(userId, {});
       await user.stream({id: secondStreamId});
       await user.stream({id: parentStreamId});
@@ -118,7 +120,7 @@ describe('Storing data in a HF series', function() {
     });
     
     function storeData(data: {}, token: string): any {
-      debug('storing some data', data);
+      reggol.debug('storing some data', data);
       
       // Insert some data into the events series:
       const postData = {
@@ -247,7 +249,7 @@ describe('Storing data in a HF series', function() {
     let apiServer;
     // Spawns a server.
     before(async () => {
-      debug('spawning');
+      reggol.debug('spawning');
       hfServer = await spawnContext.spawn(); 
       apiServer = await apiServerContext.spawn();
       
@@ -267,7 +269,7 @@ describe('Storing data in a HF series', function() {
       parentStreamId = cuid();
       accessToken = cuid();
 
-      debug('build fixture');
+      reggol.debug('build fixture');
       return pryv.user(userId, {}, function (user) {
         user.stream({ id: parentStreamId }, function () { });
 
@@ -309,14 +311,14 @@ describe('Storing data in a HF series', function() {
         .send(requestData);
 
       if (response.statusCode != 200) {
-        debug('Failed to store data, debug report:');
-        debug('response.body', response.body);
+        reggol.debug('Failed to store data, debug report:');
+        reggol.debug('response.body', response.body);
       }
 
-      debug('Enter these commands into influx CLI to inspect the data:');
-      debug(`  use "user.${user.id}"`);
-      debug(`  select * from "event.${event.id}"`);
-      debug(`  show field keys from "event.${event.id}"`);
+      reggol.debug('Enter these commands into influx CLI to inspect the data:');
+      reggol.debug(`  use "user.${user.id}"`);
+      reggol.debug(`  select * from "event.${event.id}"`);
+      reggol.debug(`  show field keys from "event.${event.id}"`);
 
       return {
         ok: response.statusCode === 200,
@@ -512,7 +514,7 @@ describe('Storing data in a HF series', function() {
 
       describe('with auth success', function () {
         before(async () => {
-          debug('spawning');
+          reggol.debug('spawning');
           server = await spawnContext.spawn();
         });
         after(() => {
@@ -716,7 +718,7 @@ describe('Storing data in a HF series', function() {
       });
       describe('with auth failure', function () {
         before(async () => {
-          debug('spawning');
+          reggol.debug('spawning');
           server = await spawnContext.spawn();
         });
         after(() => {
@@ -745,7 +747,7 @@ describe('Storing data in a HF series', function() {
     describe('storing data in different formats', () => {
       // Spawns a server.
       before(async () => {
-        debug('spawning');
+        reggol.debug('spawning');
         server = await spawnContext.spawn();
       });
       after(() => {
@@ -762,7 +764,7 @@ describe('Storing data in a HF series', function() {
         parentStreamId = cuid(); 
         accessToken = cuid(); 
         
-        debug('build fixture');
+        reggol.debug('build fixture');
         return pryv.user(userId, {}, function (user) {
           user.stream({id: parentStreamId}, function () {});
 
@@ -806,14 +808,14 @@ describe('Storing data in a HF series', function() {
           .send(requestData);
           
         if (response.statusCode != 200) {
-          debug('Failed to store data, debug report:'); 
-          debug('response.body', response.body);
+          reggol.debug('Failed to store data, debug report:'); 
+          reggol.debug('response.body', response.body);
         }
         
-        debug('Enter these commands into influx CLI to inspect the data:');
-        debug(`  use "user.${user.id}"`);
-        debug(`  select * from "event.${event.id}"`);
-        debug(`  show field keys from "event.${event.id}"`);
+        reggol.debug('Enter these commands into influx CLI to inspect the data:');
+        reggol.debug(`  use "user.${user.id}"`);
+        reggol.debug(`  select * from "event.${event.id}"`);
+        reggol.debug(`  show field keys from "event.${event.id}"`);
         
         return {
           ok: response.statusCode === 200, 
@@ -908,7 +910,7 @@ describe('Storing data in a HF series', function() {
     describe('complex types such as ratio/generic', () => {
       // Spawns a server.
       before(async () => {
-        debug('spawning');
+        reggol.debug('spawning');
         server = await spawnContext.spawn();
       });
       after(() => {
@@ -928,7 +930,7 @@ describe('Storing data in a HF series', function() {
         eventId = cuid(); 
         accessToken = cuid(); 
         
-        debug('build fixture');
+        reggol.debug('build fixture');
         return pryv.user(userId, {}, function (user) {
           user.stream({id: parentStreamId}, function (stream) {
             stream.event({
@@ -1047,7 +1049,7 @@ describe('Storing data in a HF series', function() {
     describe('complex types such as position/wgs84', () => {
       // Spawns a server.
       before(async () => {
-        debug('spawning');
+        reggol.debug('spawning');
         server = await spawnContext.spawn();
       });
       after(() => {
@@ -1067,7 +1069,7 @@ describe('Storing data in a HF series', function() {
         eventId = cuid(); 
         accessToken = cuid(); 
         
-        debug('build fixture');
+        reggol.debug('build fixture');
         return pryv.user(userId, {}, function (user) {
           user.stream({id: parentStreamId}, function (stream) {
             stream.event({
@@ -1147,7 +1149,7 @@ describe('Storing data in a HF series', function() {
         streamId = cuid(); 
         createOnlyToken = cuid(); 
         
-        debug('build fixture');
+        reggol.debug('build fixture');
         const user = await pryv.user(userId, {});
         user.access({
           token: createOnlyToken, 

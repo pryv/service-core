@@ -79,7 +79,7 @@ class Server {
     const port = this.gifnoc.get(KEY_PORT); 
     this.baseUrl = `http://${ip}:${port}/`;
     this.reggol.info('starting... on port: ' + port);
-    
+    this.reggol.debug('startinget on: ' + this.baseUrl);
     
     const app = await this.setupExpress();
     

@@ -7,7 +7,7 @@
 
 // @flow
 
-const debug = require('debug')('cls');
+const reggol = require('boiler').getReggol('cls');
 
 const { createNamespace } = require('cls-hooked');
 
@@ -26,13 +26,13 @@ class Cls {
     
     let roots = session.get(CLS_TRACE_SPAN); 
     if (roots == null) {
-      debug('No existing roots array, installing...');
+      reggol.debug('No existing roots array, installing...');
       
       roots = [];
       session.set(CLS_TRACE_SPAN, roots);
     }
     
-    debug('push', span.operationName);
+    reggol.debug('push', span.operationName);
     roots.push(span);
     
     hookSpanFinish(roots, span);
@@ -47,7 +47,7 @@ class Cls {
     
     // assert: roots is Array<Span>.
     const lastSpan = roots[roots.length-1];
-    debug('current root is', lastSpan && lastSpan.operationName);
+    reggol.debug('current root is', lastSpan && lastSpan.operationName);
     return lastSpan;
   }
     
@@ -77,7 +77,7 @@ function hookSpanFinish(roots: Array<Span>, span: Span) {
     // removed it already) or b) it will contain `span` at some index i. 
     const i = roots.indexOf(span);
     if (i >= 0) { // b)
-      debug('Closing span, removing from root.', 
+      reggol.debug('Closing span, removing from root.', 
         span.operationName, 
         i, roots.map(el => el.operationName));
         
@@ -95,7 +95,7 @@ function hookSpanFinish(roots: Array<Span>, span: Span) {
       }
     }
     
-    debug('oldMethod', span.operationName);
+    reggol.debug('oldMethod', span.operationName);
     oldMethod.call(span); 
   }
 }

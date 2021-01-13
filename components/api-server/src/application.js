@@ -167,13 +167,6 @@ class Application {
   getWebhooksSettings(): WebhooksSettingsHolder {
     return this.gifnoc.get('webhooks');
   }
-  
-
-  // Produces and returns a new logger for a given `topic`.
-  // 
-  logFactory(topic: string) {
-    return getReggol(topic);
-  }
 
   
    // Returns the custom auth function if one was configured. Otherwise returns

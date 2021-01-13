@@ -45,7 +45,7 @@ class WebhooksService implements MessageSink {
 
   constructor(params: {
     storage: StorageLayer,
-    logger,
+    logger: Logger
   }) {
     this.logger = params.logger;
     this.repository = new WebhooksRepository(params.storage.webhooks, params.storage.events);

@@ -21,7 +21,7 @@ const _ = require('lodash');
 const { ConditionVariable, Fuse } = require('./condition_variable');
 
 // Set DEBUG=spawner to see these messages.
-const debug = require('debug')('spawner');
+const reggol = require('boiler').getReggol('spawner');
 
 const PRESPAWN_LIMIT = 2; 
 
@@ -70,7 +70,7 @@ class SpawnContext {
     const childPath = this.childPath;
     
     while (this.pool.length < PRESPAWN_LIMIT) {
-      debug('prespawn process');
+      reggol.debug('prespawn process');
       const newArgv = process.execArgv.map((arg) => {
         if (arg.startsWith('--inspect-brk=')) {
           return '--inspect-brk=' + (Number(arg.split("=")[1]) + debugPortCount++);
@@ -82,7 +82,7 @@ class SpawnContext {
       const childProcess = child_process.fork(childPath, null, {execArgv: newArgv, env: newEnv});
       const proxy = new ProcessProxy(childProcess, this);
 
-      debug(`prespawned child pid ${childProcess.pid}`);
+      reggol.debug(`prespawned child pid ${childProcess.pid}`);
       
       this.pool.push(proxy);
     }
@@ -125,7 +125,7 @@ class SpawnContext {
     // Specialize the server we've started using the settings above.
     await process.startServer(settings);
     
-    debug(`spawned a child on port ${port}`);
+    reggol.debug(`spawned a child on port ${port}`);
     
     // Return to our caller - server should be up and answering at this point. 
     return new Server(port, process, axonPort);
@@ -162,11 +162,11 @@ class SpawnContext {
     async function tryBindPort(port: number): Promise<boolean> {
       const server = net.createServer();
       
-      debug('Trying future child port', port);
+      reggol.debug('Trying future child port', port);
       return new bluebird((res, rej) => {
         try {
           server.on('error', (err) => {
-            debug('Future child port unavailable: ', err);
+            reggol.debug('Future child port unavailable: ', err);
             server.close(); 
             res(false);
           });
@@ -179,7 +179,7 @@ class SpawnContext {
           });
         } 
         catch(err) {
-          debug('Synchronous exception while looking for a future child port: ', err);
+          reggol.debug('Synchronous exception while looking for a future child port: ', err);
           rej(err);
         }
       });
@@ -220,7 +220,7 @@ class SpawnContext {
   // Call this when you want to stop all children at the end of the test suite. 
   //
   async shutdown() {
-    debug('shutting down the context', this.pool.length);
+    reggol.debug('shutting down the context', this.pool.length);
     this.shuttingDown = true; 
     
     for (const child of this.pool) {
@@ -279,7 +279,7 @@ class ProcessProxy {
     const pendingMessages = this.pendingMessages;
     const [status, msgId, cmd, retOrErr] = msgpack.decode(wireMsg);
 
-    debug('dispatchChildMessage/msg', status, msgId, cmd, retOrErr);
+    reggol.debug('dispatchChildMessage/msg', status, msgId, cmd, retOrErr);
     
     if (! pendingMessages.has(msgId))
       throw new Error(`Received client process message (${msgId}/${cmd}) without counterpart.`);
@@ -302,10 +302,10 @@ class ProcessProxy {
   }
   
   onChildError(err: mixed) {
-    debug(err);
+    reggol.debug(err);
   }
   onChildExit() {
-    debug('child exited');
+    reggol.debug('child exited');
     this.exited.burn();
     
     this.pool.onChildExit();
@@ -319,7 +319,7 @@ class ProcessProxy {
     
     await this.sendToChild('int_startServer', settings);
     
-    debug('child started');
+    reggol.debug('child started');
     this.started.burn(); 
   }
   
@@ -330,20 +330,20 @@ class ProcessProxy {
     
     const child = this.childProcess;
 
-    debug('sending SIGTERM');
+    reggol.debug('sending SIGTERM');
     child.kill('SIGTERM');
     try {
       await this.exited.wait(1000);
     }
     catch(err) {
-      debug('sending SIGKILL');
+      reggol.debug('sending SIGKILL');
       child.kill('SIGKILL');
       
       try {
         await this.exited.wait(1000);
       }
       catch(err) {
-        debug('giving up, unkillable child');
+        reggol.debug('giving up, unkillable child');
       }
     }
   }
@@ -422,11 +422,11 @@ class Server extends EventEmitter {
   // be terminated. 
   // 
   async stop(): Promise<boolean> {
-    debug('stop called');
+    reggol.debug('stop called');
     try {
-      debug('stopping child...');
+      reggol.debug('stopping child...');
       await this.process.terminate(); 
-      debug('child stopped.');
+      reggol.debug('child stopped.');
       
       return true; 
     }

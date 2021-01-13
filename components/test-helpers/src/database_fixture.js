@@ -11,7 +11,7 @@ const R = require('ramda');
 const lodash = require('lodash');
 const Charlatan = require('charlatan');
 const generateId = require('cuid');
-const debug = require('debug')('databaseFixture');
+const reggol = require('boiler').getReggol('databaseFixture');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 
@@ -113,7 +113,7 @@ class GenericChildHolder<T: ChildResource> {
   // 
   create<U: T>(resource: U, cb?: (U) => mixed): Promise<U> {
     const name = resource.constructor.name;
-    debug('create', name, resource.attrs);
+    reggol.debug('create', name, resource.attrs);
     
     const createdResource = resource.create();
     this.pending.push(createdResource);
@@ -121,9 +121,9 @@ class GenericChildHolder<T: ChildResource> {
     return createdResource
       .then(() => {
         this.push(resource);
-        debug(name, 'entering cb');
+        reggol.debug(name, 'entering cb');
         if (cb) cb(resource);
-        debug(name, 'leaving cb, has ', this.pending.length, 'pending.');
+        reggol.debug(name, 'leaving cb, has ', this.pending.length, 'pending.');
           
         return bluebird.all(resource.childs.pending); 
       })
@@ -245,7 +245,7 @@ class FixtureUser extends FixtureTreeNode implements ChildResource {
   }
 
   event(attrs: {}): Promise<FixtureEvent> {
-    debug('event', attrs);
+    reggol.debug('event', attrs);
     const e = new FixtureEvent(this.context, attrs);
 
     return this.childs.create(e);
@@ -351,7 +351,7 @@ class FixtureStream extends FixtureTreeNode implements ChildResource {
     return this.childs.create(s, cb);
   }
   event(attrs: {}): Promise<FixtureEvent> {
-    debug('event', attrs);
+    reggol.debug('event', attrs);
     const e = new FixtureEvent(this.context, attrs, this.attrs.id); 
     
     return this.childs.create(e);

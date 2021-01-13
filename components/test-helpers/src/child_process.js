@@ -6,7 +6,7 @@
  */
 // @flow
 
-const debug = require('debug')('child_process');
+const reggol = require('boiler').getReggol('child_process');
 const msgpack = require('msgpack5')();
 
 export interface ApplicationLauncher {
@@ -43,7 +43,7 @@ class ChildProcess {
     const message = msgpack.decode(wireMessage);
     
     const [msgId, cmd, ...args] = message; 
-    debug('handleParentMessage/received ', msgId, cmd, args);
+    reggol.debug('handleParentMessage/received ', msgId, cmd, args);
     
     try {
       let ret = await this.dispatchParentMessage(cmd, ...args);
@@ -54,15 +54,15 @@ class ChildProcess {
       this.respondToParent(['ok', msgId, cmd, ret]);
     }
     catch (err) {
-      debug('handleParentMessage/catch', err.message);
+      reggol.debug('handleParentMessage/catch', err.message);
       // Using JSON.stringify as message que does nos support Object (just strings)
       this.respondToParent(['err', msgId, cmd, JSON.stringify({message: err.message, stack: err.stack})]);
     }
       
-    debug('handleParentMessage/done', cmd);
+    reggol.debug('handleParentMessage/done', cmd);
   }
   respondToParent(msg: Array<mixed>) {
-    debug('respondToParent', msg);
+    reggol.debug('respondToParent', msg);
     
     // FLOW Somehow flow-type doesn't know about process here. 
     process.send(

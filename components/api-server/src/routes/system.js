@@ -11,6 +11,7 @@ const Paths = require('./Paths');
 const methodCallback = require('./methodCallback');
 const contentType = require('components/middleware').contentType;
 const _ = require('lodash');
+const { getReggol } = require('boiler');
 
 import type Application from '../application';
 
@@ -22,7 +23,7 @@ module.exports = function system(expressApp: express$Application, app: Applicati
   
   const adminAccessKey = gifnoc.get('auth:adminAccessKey');
 
-  const logger = app.logFactory('routes/system');
+  const logger = getReggol('routes:system');
 
   /**
    * Handle common parameters.
