@@ -5,15 +5,15 @@
  * Proprietary and confidential
  */
 var fs = require('fs');
-const { getGifnoc } = require('boiler');
+const { getConfig } = require('boiler');
 
 exports.mochaHooks = {
   async beforeAll () {
-    const gifnoc = await getGifnoc();
+    const config = await getConfig();
 
     // create preview directories that would notmally be created in normal setup
-    const attachmentsDirPath = gifnoc.get('eventFiles:attachmentsDirPath');
-    const previewsDirPath = gifnoc.get('eventFiles:previewsDirPath');
+    const attachmentsDirPath = config.get('eventFiles:attachmentsDirPath');
+    const previewsDirPath = config.get('eventFiles:previewsDirPath');
 
     if (!fs.existsSync(attachmentsDirPath)) {
       fs.mkdirSync(attachmentsDirPath, { recursive: true });

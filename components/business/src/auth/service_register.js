@@ -12,14 +12,14 @@ const ErrorIds = require('components/errors').ErrorIds,
   errors = require('components/errors').factory,
   ErrorMessages = require('components/errors/src/ErrorMessages');
 
-const { getReggol } = require('boiler');
+const { getLogger } = require('boiler');
 class ServiceRegister {
   config: {}; 
   logger;
 
   constructor(config: {}) {
     this.config = config; 
-    this.logger = getReggol('service-register');
+    this.logger = getLogger('service-register');
   }
 
   async validateUser (

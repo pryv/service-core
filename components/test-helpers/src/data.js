@@ -22,8 +22,8 @@ const SystemStreamsSerializer = require('components/business/src/system-streams/
 const UsersRepository = require('components/business/src/users/repository');
 const User = require('components/business/src/users/User');
 const charlatan = require('charlatan');
-const { gifnoc, getGifnoc, getReggol } = require('boiler');
-const reggol = getReggol('test-helpers:data');
+const { config, getConfig, getLogger } = require('boiler');
+const logger = getLogger('test-helpers:data');
 
 // users
 const users = exports.users = require('./data/users');
@@ -33,8 +33,8 @@ const customAccountProperties = buildCustomAccountProperties();
 
 
 exports.resetUsers = async () => {
-  reggol.debug('resetUsers');
-  await getGifnoc(); // lock up to the time config is ready
+  logger.debug('resetUsers');
+  await getConfig(); // lock up to the time config is ready
   await bluebird.fromCallback(cb => storage.user.events.database.deleteMany(
     { name: 'events' },
     {
@@ -297,7 +297,7 @@ function getDumpFilesArchive(dumpFolder) {
 }
 
 function buildCustomAccountProperties() {
-  const accountStreams = gifnoc.get('custom:systemStreams:account');
+  const accountStreams = config.get('custom:systemStreams:account');
   if (accountStreams == null) return {};
   
   const customProperties = {};

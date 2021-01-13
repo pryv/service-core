@@ -23,11 +23,11 @@ import type Application from '../application';
 // Set up events route handling.
 module.exports = function(expressApp: express$Application, app: Application) {
   const api = app.api;
-  const gifnoc = app.gifnoc;
+  const config = app.config;
   const storage = app.storageLayer;
 
-  const attachmentsDirPath = gifnoc.get('eventFiles:attachmentsDirPath');
-  const filesReadTokenSecret = gifnoc.get('auth:filesReadTokenSecret');
+  const attachmentsDirPath = config.get('eventFiles:attachmentsDirPath');
+  const filesReadTokenSecret = config.get('auth:filesReadTokenSecret');
 
   const loadAccessMiddleware = middleware.loadAccess(storage);
 

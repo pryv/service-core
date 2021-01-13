@@ -6,7 +6,7 @@
  */
 
 const path = require('path');
-const {getGifnoc, getReggol } = require('boiler').init({
+const {getConfig, getLogger } = require('boiler').init({
   appName: 'previews-server',
   baseConfigDir: path.resolve(__dirname, '../../api-server/newconfig'), // api-server config
   extraConfigs: [{
@@ -56,20 +56,20 @@ async function start() {
    */
 
   // load config settings
-  var gifnoc = await getGifnoc();
+  var config = await getConfig();
 
-  const customAuthStepExt = loadCustomAuthStepFn(gifnoc.get('customExtensions'));
+  const customAuthStepExt = loadCustomAuthStepFn(config.get('customExtensions'));
 
-  const reggol = getReggol('server');
+  const logger = getLogger('server');
 
   const database = new storage.Database(
-    gifnoc.get('database'), getReggol('database'));
+    config.get('database'), getLogger('database'));
 
   const storageLayer = new storage.StorageLayer(
-    database, reggol,
-    gifnoc.get('eventFiles:attachmentsDirPath'),
-    gifnoc.get('eventFiles:previewsDirPath'),
-    10, gifnoc.get('auth:sessionMaxAge'));
+    database, logger,
+    config.get('eventFiles:attachmentsDirPath'),
+    config.get('eventFiles:previewsDirPath'),
+    10, config.get('auth:sessionMaxAge'));
 
   const initContextMiddleware = middleware.initContext(
     storageLayer,
@@ -83,12 +83,12 @@ async function start() {
 
   const { expressApp, routesDefined } = require('./expressApp')(
     middleware.commonHeaders(version), 
-    require('./middleware/errors')(reggol), 
-    middleware.requestTrace(null, reggol));
+    require('./middleware/errors')(logger), 
+    middleware.requestTrace(null, logger));
 
   // setup routes
   require('./routes/index')(expressApp);
-  require('./routes/event-previews')(expressApp, initContextMiddleware, loadAccessMiddleware, storageLayer.events, storageLayer.eventFiles, reggol);
+  require('./routes/event-previews')(expressApp, initContextMiddleware, loadAccessMiddleware, storageLayer.events, storageLayer.eventFiles, logger);
 
   // Finalize middleware stack: 
   routesDefined();
@@ -100,34 +100,34 @@ async function start() {
 
   // Go
 
-  utils.messaging.openPubSocket(gifnoc.get('tcpMessaging'), function (err, pubSocket) {
+  utils.messaging.openPubSocket(config.get('tcpMessaging'), function (err, pubSocket) {
     if (err) {
-      reggol.error('Error setting up TCP pub socket: ' + err);
+      logger.error('Error setting up TCP pub socket: ' + err);
       process.exit(1);
     }
-    reggol.info('TCP pub socket ready on ' + gifnoc.get('tcpMessaging:host') + ':' +
-      gifnoc.get('tcpMessaging:port'));
+    logger.info('TCP pub socket ready on ' + config.get('tcpMessaging:host') + ':' +
+      config.get('tcpMessaging:port'));
 
     database.waitForConnection(function () {
       const backlog = 512;
-      server.listen(gifnoc.get('http:port'), gifnoc.get('http:ip'), backlog, function () {
+      server.listen(config.get('http:port'), config.get('http:ip'), backlog, function () {
         var address = server.address();
         var protocol = server.key ? 'https' : 'http';
         server.url = protocol + '://' + address.address + ':' + address.port;
         const infostr =  'Preview server v' + require('../package.json').version +
         ' [' + expressApp.settings.env + '] listening on ' + server.url;
-        reggol.info(infostr);
+        logger.info(infostr);
 
         // all right
-        reggol.debug(infostr)
-        reggol.info('Server ready');
+        logger.debug(infostr)
+        logger.info('Server ready');
         pubSocket.emit('server-ready');
       });
     });
   });
 
   process.on('exit', function () {
-    reggol.info('Browser server exiting.');
+    logger.info('Browser server exiting.');
   });
 }
 

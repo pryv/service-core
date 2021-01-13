@@ -17,7 +17,7 @@ require('boiler').init({
   }]
 });
 
-const {getGifnoc, getReggol} = require('boiler');
+const {getConfig, getLogger} = require('boiler');
 
 const assert = require('assert');
 
@@ -43,10 +43,10 @@ class Application {
   }
 
   async initSettings() {
-    this.settings = await getGifnoc();
+    this.settings = await getConfig();
   }
   initLogger() {
-    this.logger = getReggol('application');
+    this.logger = getLogger('application');
   }
 
   async run() {
@@ -58,13 +58,13 @@ class Application {
     // Connect to MongoDB
     const storageLayer = produceStorageLayer(
       settings.get('database'),
-      getReggol('database')
+      getLogger('database')
     );
 
     // Construct the service
     const service = new services.WebhooksService({
       storage: storageLayer,
-      logger: getReggol('webhooks_service'),
+      logger: getLogger('webhooks_service'),
       settings: settings
     });
     this.webhooksService = service;

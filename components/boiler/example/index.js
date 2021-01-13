@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 const path = require('path');
-const {gifnoc, getReggol, getGifnoc} = require('../src').init({
+const {config, getLogger, getConfig} = require('../src').init({
   appName: 'sample',
   baseConfigDir: path.resolve(__dirname, './configs'),
   extraConfigs: [{
@@ -55,33 +55,33 @@ const {gifnoc, getReggol, getGifnoc} = require('../src').init({
 });
 
 
-const rootLogger = getReggol();
+const rootLogger = getLogger();
 rootLogger.debug('hello root');
 
-const indexLogger = getReggol('index');
+const indexLogger = getLogger('index');
 indexLogger.debug('hello index');
-indexLogger.info('extra Yaml', gifnoc.get('extra-yaml'));
-indexLogger.info('extra Json', gifnoc.get('extra-json'));
-indexLogger.info('extra Js', gifnoc.get('extra-js'));
-indexLogger.info('extra 4 data', gifnoc.get('extra-4-data'));
-indexLogger.info('extra 5 data', gifnoc.get('extra-5-data'));
-indexLogger.info('default yaml', gifnoc.get('default-yaml'));
-indexLogger.info('Default Service Name', gifnoc.get('service:name'));
+indexLogger.info('extra Yaml', config.get('extra-yaml'));
+indexLogger.info('extra Json', config.get('extra-json'));
+indexLogger.info('extra Js', config.get('extra-js'));
+indexLogger.info('extra 4 data', config.get('extra-4-data'));
+indexLogger.info('extra 5 data', config.get('extra-5-data'));
+indexLogger.info('default yaml', config.get('default-yaml'));
+indexLogger.info('Default Service Name', config.get('service:name'));
 
-gifnoc.replaceScopeConfig('extra5', {'extra-5-data': 'new Extra 5 data'});
-indexLogger.info('extra 5 data', gifnoc.get('extra-5-data'));
+config.replaceScopeConfig('extra5', {'extra-5-data': 'new Extra 5 data'});
+indexLogger.info('extra 5 data', config.get('extra-5-data'));
 
-const subLogger = indexLogger.getReggol('sub');
+const subLogger = indexLogger.getLogger('sub');
 subLogger.debug('hello sub');
-indexLogger.info('plugin sync', gifnoc.get('plugin-sync'));
+indexLogger.info('plugin sync', config.get('plugin-sync'));
 indexLogger.info('hide stuff auth=c08r0xs95xlb1xgssmp6tr7c0000gp', {password: 'toto'});
 
 (async () => { 
-  await getGifnoc();
-  indexLogger.info('pryv.li serial: ', gifnoc.get('serial'));
-  indexLogger.info('pryv.me name: ', gifnoc.get('service:name'));
-  indexLogger.info('Favicon: ', gifnoc.get('definitions:favicon:default:url'));
-  indexLogger.info('OnDisk: ', gifnoc.get('ondisk'));
-  indexLogger.info('Plugin async: ', gifnoc.get('plugin-async'));
-  indexLogger.info('Service Name', gifnoc.get('service:name'));
+  await getConfig();
+  indexLogger.info('pryv.li serial: ', config.get('serial'));
+  indexLogger.info('pryv.me name: ', config.get('service:name'));
+  indexLogger.info('Favicon: ', config.get('definitions:favicon:default:url'));
+  indexLogger.info('OnDisk: ', config.get('ondisk'));
+  indexLogger.info('Plugin async: ', config.get('plugin-async'));
+  indexLogger.info('Service Name', config.get('service:name'));
 })();

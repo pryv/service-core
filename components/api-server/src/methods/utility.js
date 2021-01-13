@@ -12,7 +12,7 @@ const methodsSchema = require('../schema/generalMethods');
 const _ = require('lodash');
 const bluebird = require('bluebird');
 
-const { getReggol } = require('boiler');
+const { getLogger } = require('boiler');
 
 import type API from '../API';
 import type { StorageLayer } from 'components/storage';
@@ -32,7 +32,7 @@ type ApiCall = {
  */
 module.exports = function (api: API, logging, storageLayer: StorageLayer) {
 
-  const logger = getReggol('methods:batch');
+  const logger = getLogger('methods:batch');
 
   api.register('getAccessInfo',
     commonFns.getParamsValidation(methodsSchema.getAccessInfo.params),

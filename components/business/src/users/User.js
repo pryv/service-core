@@ -16,7 +16,7 @@ const treeUtils = require('components/utils/src/treeUtils');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 const UsersRepository = require('components/business/src/users/repository');
 
-const { gifnoc } = require('boiler');
+const { config } = require('boiler');
 
 class User {
   // User properties that exists by default (email could not exist with specific config)
@@ -50,7 +50,7 @@ class User {
     attachedFiles: number,
   }) {
     this.events = params.events;
-    this.accountStreamsSettings = gifnoc.get('systemStreams:account');
+    this.accountStreamsSettings = config.get('systemStreams:account');
     buildAccountFields(this);
     loadAccountData(this, params);
 
@@ -115,7 +115,7 @@ class User {
    */
   getApiEndpoint () {
     if (this.apiEndpoint != null) return this.apiEndpoint;
-    const apiFormat = gifnoc.get('service:api');
+    const apiFormat = config.get('service:api');
     this.apiEndpoint = apiFormat.replace('{username}', this.username);
     if (this.token) {
       let endpointElements = this.apiEndpoint.split('//');

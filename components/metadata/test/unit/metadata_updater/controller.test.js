@@ -21,11 +21,11 @@ const { PendingUpdate, PendingUpdatesMap } =
 const { Controller } = require('../../../src/metadata_updater/controller');
 const { Flush } = require('../../../src/metadata_updater/flush');
 
-const { getReggol } = require('boiler');
+const { getLogger } = require('boiler');
 import type { StorageLayer } from 'components/storage';
 
 describe('Metadata Updater/Controller', () => {
-  const logger = getReggol('metadata'); 
+  const logger = getLogger('metadata'); 
   
   let map: PendingUpdatesMap;
   let controller: Controller; 

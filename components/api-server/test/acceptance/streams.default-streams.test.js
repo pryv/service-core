@@ -62,8 +62,8 @@ describe("System streams", function () {
       app.storageLayer.eventFiles,
       notifications,
       app.logging,
-      app.gifnoc.get('audit'),
-      app.gifnoc.get('updates'));
+      app.config.get('audit'),
+      app.config.get('updates'));
   
     request = supertest(app.expressApp);
   });

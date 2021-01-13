@@ -23,7 +23,7 @@ declare class RequestWithContext extends express$Request {
 
 import type Application from './../application';
 
-const { gifnoc } = require('boiler');
+const { config } = require('boiler');
 
 /**
  * Auth routes.
@@ -35,9 +35,9 @@ module.exports = function (expressApp: express$Application, app: Application) {
   const api = app.api;
 
   const ms14days: number = 1000 * 60 * 60 * 24 * 14;
-  const sessionMaxAge: number = gifnoc.get('auth:sessionMaxAge') || ms14days;
-  const ssoCookieDomain: string = gifnoc.get('auth:ssoCookieDomain') || gifnoc.get('http:ip');
-  const ssoCookieSignSecret: string = gifnoc.get('auth:ssoCookieSignSecret') || 'Hallowed Be Thy Name, O Node';
+  const sessionMaxAge: number = config.get('auth:sessionMaxAge') || ms14days;
+  const ssoCookieDomain: string = config.get('auth:ssoCookieDomain') || config.get('http:ip');
+  const ssoCookieSignSecret: string = config.get('auth:ssoCookieSignSecret') || 'Hallowed Be Thy Name, O Node';
   const ssoCookieSecure: boolean = process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'test' ;
   const ssoHttpOnly: boolean = true ;
 

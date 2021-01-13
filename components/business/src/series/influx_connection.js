@@ -7,7 +7,7 @@
 // @flow
 
 const influx = require('influx');
-const { getReggol } = require('boiler');
+const { getLogger } = require('boiler');
 
 import type {IPoint} from 'influx';
 
@@ -20,7 +20,7 @@ class InfluxConnection {
   
   constructor(connectionSettings: ISingleHostConfig) {
     this.conn = new influx.InfluxDB(connectionSettings);
-    this.logger = getReggol('influx'); 
+    this.logger = getLogger('influx'); 
   }
   
   createDatabase(name: string): Promise<*> {

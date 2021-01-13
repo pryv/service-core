@@ -12,8 +12,8 @@ const Application = require('../../src/application');
 const { InfluxRowType, TypeRepository } = require('components/business').types;
 const ChildProcess = require('components/test-helpers').child_process;
 
-const { getGifnoc, getReggol } = require('boiler');
-const reggol = getReggol('child_process');
+const { getConfig, getLogger } = require('boiler');
+const logger = getLogger('child_process');
 import type {MetadataRepository} from '../../src/metadata_cache';
 
 const typeRepo = new TypeRepository(); 
@@ -59,8 +59,8 @@ class ApplicationLauncher {
   }
 
   async launch(injectSettings = {}) {
-    const gifnoc = await getGifnoc(); 
-    gifnoc.injectTestConfig(injectSettings);
+    const config = await getConfig(); 
+    config.injectTestConfig(injectSettings);
     
     const app = this.app = new Application();
     

@@ -10,7 +10,7 @@ const supertest = require('supertest');
 const charlatan = require('charlatan');
 const bluebird = require('bluebird');
 const Application = require('../src/application');
-const { getGifnoc } = require('boiler');
+const { getConfig } = require('boiler');
 const UsersRepository = require('components/business/src/users/repository');
 const User = require('components/business/src/users/User');
 const { databaseFixture } = require('components/test-helpers');
@@ -24,17 +24,17 @@ let request;
 let res;
 
 describe('[BMM2] registration: single-node', () => {
-  let gifnoc;
+  let config;
   before(async function () {
-    gifnoc = await getGifnoc();
-    gifnoc.injectTestConfig({
+    config = await getConfig();
+    config.injectTestConfig({
       dnsLess: {isActive: true},
       openSource: {isActive: false},
       custom: { systemStreams: null}
     });
   });
   after(async function () {
-    gifnoc.injectTestConfig({});
+    config.injectTestConfig({});
   });
   describe('POST /users', () => {
     before(async function() {
@@ -45,7 +45,7 @@ describe('[BMM2] registration: single-node', () => {
         app.api,
         app.logging,
         app.storageLayer,
-        app.gifnoc.get('services'),
+        app.config.get('services'),
       );
 
       // get events for a small test of valid token
@@ -59,14 +59,14 @@ describe('[BMM2] registration: single-node', () => {
         app.api,
         app.storageLayer.events,
         app.storageLayer.eventFiles,
-        app.gifnoc.get('auth'),
-        app.gifnoc.get('service:eventTypes'),
+        app.config.get('auth'),
+        app.config.get('service:eventTypes'),
         notifications,
         app.logging,
-        app.gifnoc.get('audit'),
-        app.gifnoc.get('updates'),
-        app.gifnoc.get('openSource'),
-        app.gifnoc.get('services'));
+        app.config.get('audit'),
+        app.config.get('updates'),
+        app.config.get('openSource'),
+        app.config.get('services'));
       
       request = supertest(app.expressApp);
       

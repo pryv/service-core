@@ -10,7 +10,7 @@
  */
 
 const path = require('path');
-const { gifnoc, getReggol }  = require('boiler').init({
+const { config, getLogger }  = require('boiler').init({
   appName: 'previews-cache-clean',
   baseConfigDir: path.resolve(__dirname, '../../api-server/newconfig'), // api-server config
   extraConfigs: [{
@@ -27,8 +27,8 @@ const { gifnoc, getReggol }  = require('boiler').init({
 const Cache = require('./cache.js');
 const errorHandling = require('components/errors').errorHandling;
 
-const logger = getReggol('previews-cache-worker');
-const settings = gifnoc.get('eventFiles');
+const logger = getLogger('previews-cache-worker');
+const settings = config.get('eventFiles');
 
 const cache = new Cache({
   rootPath: settings.previewsDirPath,

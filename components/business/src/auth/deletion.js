@@ -16,16 +16,16 @@ const errors = require('components/errors').factory;
 import type { MethodContext } from 'components/model';
 import type { ApiCallback } from 'components/api-server/src/API';
 
-const { getReggol } = require('boiler');
+const { getLogger } = require('boiler');
 
 class Deletion {
-  reggol: any;
+  logger: any;
   storageLayer: any;
   settings: any;
   usersRepository: UsersRepository;
 
   constructor(logging: any, storageLayer: any, settings: any) {
-    this.reggol = getReggol('business:deletion');
+    this.logger = getLogger('business:deletion');
     this.storageLayer = storageLayer;
     this.settings = settings;
     this.usersRepository = new UsersRepository(this.storageLayer.events);
@@ -71,7 +71,7 @@ class Deletion {
     const notExistingDir = findNotExistingDir(paths);
     if (notExistingDir) {
       const error = new Error(`Base directory '${notExistingDir}' does not exist.`);
-      this.reggol.error(error);
+      this.logger.error(error);
       return next(
         errors.unexpectedError(error)
       );
@@ -92,7 +92,7 @@ class Deletion {
       const error = new Error(
         `Directory '${inaccessibleDirectory}' is inaccessible or missing.`
       );
-      this.reggol.error(error);
+      this.logger.error(error);
       return next(errors.unexpectedError(error));
     }
     next();
@@ -175,7 +175,7 @@ class Deletion {
         )
       );
     } catch (error) {
-      this.reggol.error(error);
+      this.logger.error(error);
       return next(errors.unexpectedError(error));
     }
     next();

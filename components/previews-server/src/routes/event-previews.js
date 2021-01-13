@@ -17,7 +17,7 @@ const _ = require('lodash');
 const bluebird = require('bluebird');
 const getAuth = require('../../../middleware/src/getAuth');
 
-const {getReggol} = require('boiler');
+const {getLogger} = require('boiler');
 
 // constants
 const StandardDimensions = [ 256, 512, 768, 1024 ];
@@ -184,7 +184,7 @@ module.exports = function (
 
   // CACHE CLEAN-UP
 
-  var logger = getReggol('previews-cache'),
+  var logger = getLogger('previews-cache'),
       workerRunning = false;
 
   expressApp.post('/clean-up-cache', cleanUpCache);

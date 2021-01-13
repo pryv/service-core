@@ -19,7 +19,7 @@ const SystemStreamsSerializer = require('components/business/src/system-streams/
 const ErrorMessages = require('../../../errors/src/ErrorMessages');
 const ErrorIds = require('../../../errors/src/ErrorIds');
 
-const { getReggol } = require('boiler');
+const { getLogger } = require('boiler');
 
 /**
  * Event streams API methods implementation.
@@ -36,7 +36,7 @@ const { getReggol } = require('boiler');
 module.exports = function (api, userStreamsStorage, userEventsStorage, userEventFilesStorage,
   notifications, logging, auditSettings, updatesSettings) {
 
-  const logger = getReggol('methods:streams');
+  const logger = getLogger('methods:streams');
   const systemStreamsSerializer = new SystemStreamsSerializer();
   // RETRIEVAL
 

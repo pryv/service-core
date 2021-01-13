@@ -14,7 +14,7 @@ const { describe, before, it } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 
-const { getGifnoc } = require('boiler');
+const { getConfig } = require('boiler');
 const ErrorIds = require('components/errors').ErrorIds;
 const ErrorMessages = require('components/errors/src/ErrorMessages');
 const Application = require('components/api-server/src/application');
@@ -24,7 +24,7 @@ const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
 
 describe("Events of system streams", () => {
-  let gifnoc;
+  let config;
   let validation;
   let app;
   let request;
@@ -86,8 +86,8 @@ describe("Events of system streams", () => {
   }
 
   before(async function () {
-    gifnoc = await getGifnoc();
-    gifnoc.injectTestConfig({
+    config = await getConfig();
+    config.injectTestConfig({
       dnsLess: { isActive: false}
     });
     const helpers = require('components/api-server/test/helpers');
@@ -109,20 +109,20 @@ describe("Events of system streams", () => {
       app.api,
       app.storageLayer.events,
       app.storageLayer.eventFiles,
-      app.gifnoc.get('auth'),
-      app.gifnoc.get('service:eventTypes'),
+      app.config.get('auth'),
+      app.config.get('service:eventTypes'),
       notifications,
       app.logging,
-      app.gifnoc.get('audit'),
-      app.gifnoc.get('updates'),
-      app.gifnoc.get('openSource'),
-      app.gifnoc.get('services'));
+      app.config.get('audit'),
+      app.config.get('updates'),
+      app.config.get('openSource'),
+      app.config.get('services'));
 
     request = supertest(app.expressApp);
   });
 
   after(async function () {
-     gifnoc.injectTestConfig({});
+     config.injectTestConfig({});
   });
 
   describe('GET /events', () => {
@@ -352,7 +352,7 @@ describe("Events of system streams", () => {
               };
 
               nock.cleanAll();
-              scope = nock(gifnoc.get('services:register:url'))
+              scope = nock(config.get('services:register:url'))
               scope.put('/users',
                 (body) => {
                   serviceRegisterRequest = body;
@@ -410,7 +410,7 @@ describe("Events of system streams", () => {
               };
   
               nock.cleanAll();
-              scope = nock(gifnoc.get('services:register:url'))
+              scope = nock(config.get('services:register:url'))
               scope.put('/users',
                 (body) => {
                 serviceRegisterRequest = body;
@@ -474,7 +474,7 @@ describe("Events of system streams", () => {
               };
   
               nock.cleanAll();
-              nock(gifnoc.get('services:register:url')).put('/users')
+              nock(config.get('services:register:url')).put('/users')
                 .reply(409, {
                   error: {
                     id: ErrorIds.ItemAlreadyExists,
@@ -511,7 +511,7 @@ describe("Events of system streams", () => {
               };
   
               nock.cleanAll();
-              nock(gifnoc.get('services:register:url')).put('/users',
+              nock(config.get('services:register:url')).put('/users',
                 (body) => {
                   serviceRegisterRequest = body;
                   return true;
@@ -579,7 +579,7 @@ describe("Events of system streams", () => {
         });
 
         nock.cleanAll();
-        scope = nock(gifnoc.get('services:register:url'))
+        scope = nock(config.get('services:register:url'))
         scope.put('/users',
           (body) => {
             serviceRegisterRequest = body;
@@ -790,7 +790,7 @@ describe("Events of system streams", () => {
               before(async function () {
                 await createUser();
                 nock.cleanAll();
-                scope = nock(gifnoc.get('services:register:url'));
+                scope = nock(config.get('services:register:url'));
                 scope.put('/users',
                   (body) => {
                     serviceRegisterRequest = body;
@@ -822,7 +822,7 @@ describe("Events of system streams", () => {
                   await createUser();
                   let streamId = SystemStreamsSerializer.addDotToStreamId('language');
                   nock.cleanAll();
-                  scope = nock(gifnoc.get('services:register:url'))
+                  scope = nock(config.get('services:register:url'))
                   scope.put('/users',
                     (body) => {
                       serviceRegisterRequest = body;
@@ -853,7 +853,7 @@ describe("Events of system streams", () => {
               before(async function () {
                 await createUser();
                 nock.cleanAll();
-                scope = nock(gifnoc.get('services:register:url'));
+                scope = nock(config.get('services:register:url'));
                 scope.put('/users',
                   (body) => {
                     serviceRegisterRequest = body;
@@ -891,7 +891,7 @@ describe("Events of system streams", () => {
             const streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamId);
             before(async function () {
               await createUser();
-              scope = nock(gifnoc.get('services:register:url'));
+              scope = nock(config.get('services:register:url'));
               scope.put('/users',
                 (body) => {
                   serviceRegisterRequest = body;
@@ -933,7 +933,7 @@ describe("Events of system streams", () => {
                 await createUser();
                 let streamId = SystemStreamsSerializer.addDotToStreamId('email');
                 nock.cleanAll();
-                scope = nock(gifnoc.get('services:register:url'))
+                scope = nock(config.get('services:register:url'))
                 scope.put('/users',
                   (body) => {
                     serviceRegisterRequest = body;
@@ -976,7 +976,7 @@ describe("Events of system streams", () => {
                   type: 'string/pryv'
                 };
                 nock.cleanAll();
-                scope = nock(gifnoc.get('services:register:url'))
+                scope = nock(config.get('services:register:url'))
                 scope.put('/users',
                   (body) => {
                     serviceRegisterRequest = body;
@@ -1030,7 +1030,7 @@ describe("Events of system streams", () => {
                   type: 'string/pryv'
                 };
                 nock.cleanAll();
-                scope = nock(gifnoc.get('services:register:url'))
+                scope = nock(config.get('services:register:url'))
                 scope.put('/users',
                   (body) => {
                     serviceRegisterRequest = body;
@@ -1160,7 +1160,7 @@ describe("Events of system streams", () => {
             let initialEvent;
             before(async function () {
               nock.cleanAll();
-              scope = nock(gifnoc.get('services:register:url'));
+              scope = nock(config.get('services:register:url'));
               scope.put('/users',
                 (body) => {
                   serviceRegisterRequest = body;
@@ -1201,7 +1201,7 @@ describe("Events of system streams", () => {
             let initialEvent;
             before(async function () {
               nock.cleanAll();
-              scope = nock(gifnoc.get('services:register:url'));
+              scope = nock(config.get('services:register:url'));
               scope.put('/users',
                 (body) => {
                   serviceRegisterRequest = body;
@@ -1249,7 +1249,7 @@ describe("Events of system streams", () => {
         let initialEvent;
         before(async function () {
           nock.cleanAll();
-          scope = nock(gifnoc.get('services:register:url'));
+          scope = nock(config.get('services:register:url'));
           scope.put('/users',
             (body) => {
               serviceRegisterRequest = body;
@@ -1279,7 +1279,7 @@ describe("Events of system streams", () => {
       let initialEvent;
       before(async function () {
         nock.cleanAll();
-        scope = nock(gifnoc.get('services:register:url'));
+        scope = nock(config.get('services:register:url'));
         scope.put('/users',
           (body) => {
             serviceRegisterRequest = body;
@@ -1309,7 +1309,7 @@ describe("Events of system streams", () => {
       let initialEvent;
       before(async function () {
         nock.cleanAll();
-        scope = nock(gifnoc.get('services:register:url'));
+        scope = nock(config.get('services:register:url'));
         scope.put('/users',
           (body) => {
             serviceRegisterRequest = body;

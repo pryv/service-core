@@ -12,7 +12,7 @@ const bluebird = require('bluebird');
 const chai = require('chai');
 const assert = chai.assert;
 
-const { getGifnoc } = require('boiler');
+const { getConfig } = require('boiler');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
 describe('[55JP] users pool', () => {
@@ -21,8 +21,8 @@ describe('[55JP] users pool', () => {
   let server;
   let mongoFixtures;
   before(async () => {
-    gifnoc = await getGifnoc();
-    adminKey = gifnoc.get('auth:adminAccessKey');
+    config = await getConfig();
+    adminKey = config.get('auth:adminAccessKey');
     ({ produceMongoConnection, context, databaseFixture } = require('components/test-helpers'));
     ({ produceMongoConnection, context } = require('../test-helpers'));
     storage = require('components/test-helpers').dependencies.storage.user.events;

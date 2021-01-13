@@ -9,7 +9,7 @@ const _ = require('lodash');
 const treeUtils = require('components/utils').treeUtils;
 
 
-const { gifnoc } = require('boiler');
+const { config } = require('boiler');
 
 const readable = 'readable-default-streams';
 const allAccountStreams = 'all-default-streams';
@@ -47,7 +47,7 @@ class SystemStreamsSerializer {
   systemStreamsList: Array<object>;
   
   constructor () {
-    this.systemStreamsSettings = gifnoc.get('systemStreams');
+    this.systemStreamsSettings = config.get('systemStreams');
     if (this.systemStreamsSettings == null) {
       throw Error("Not valid system streams settings.");
     }
@@ -60,7 +60,7 @@ class SystemStreamsSerializer {
   static getReadableAccountStreams () {
     if (!SystemStreamsSerializer.readableAccountStreams){
       SystemStreamsSerializer.readableAccountStreams = getStreamsNames(
-        gifnoc.get(accountStreamsConfigPath),
+        config.get(accountStreamsConfigPath),
         readable
       );
     }
@@ -73,7 +73,7 @@ class SystemStreamsSerializer {
    */
   static getReadableAccountStreamsForTests () {
     if (!SystemStreamsSerializer.readableAccountStreamsForTests) {
-      let streams = getStreamsNames(gifnoc.get(accountStreamsConfigPath), readable);
+      let streams = getStreamsNames(config.get(accountStreamsConfigPath), readable);
       delete streams[SystemStreamsSerializer.addDotToStreamId('storageUsed')];
       SystemStreamsSerializer.readableAccountStreamsForTests = streams;
     }
@@ -85,8 +85,8 @@ class SystemStreamsSerializer {
    */
   static getEditableAccountStreams () {
     if (!SystemStreamsSerializer.editableAccountStreams) {
-      SystemStreamsSerializer.editableAccountStreams = getStreamsNames(gifnoc.get(accountStreamsConfigPath), editableAccountStreams);
-      SystemStreamsSerializer.editableAccountStreams = getStreamsNames(gifnoc.get(accountStreamsConfigPath), editableAccountStreams);
+      SystemStreamsSerializer.editableAccountStreams = getStreamsNames(config.get(accountStreamsConfigPath), editableAccountStreams);
+      SystemStreamsSerializer.editableAccountStreams = getStreamsNames(config.get(accountStreamsConfigPath), editableAccountStreams);
     }
     return SystemStreamsSerializer.editableAccountStreams;
   }
@@ -98,7 +98,7 @@ class SystemStreamsSerializer {
    */
   static getAllAccountStreams () {
     if (!SystemStreamsSerializer.allAccountStreams) {
-      SystemStreamsSerializer.allAccountStreams = getStreamsNames(gifnoc.get(accountStreamsConfigPath), allAccountStreams);
+      SystemStreamsSerializer.allAccountStreams = getStreamsNames(config.get(accountStreamsConfigPath), allAccountStreams);
     }
     return SystemStreamsSerializer.allAccountStreams;
   }
@@ -134,7 +134,7 @@ class SystemStreamsSerializer {
   static getAllAccountStreamsLeaves () {
     if (!SystemStreamsSerializer.allAccountStreamsLeaves) {
       
-      const flatStreamsList = treeUtils.flattenTreeWithoutParents(gifnoc.get(accountStreamsConfigPath));
+      const flatStreamsList = treeUtils.flattenTreeWithoutParents(config.get(accountStreamsConfigPath));
       let flatStreamsListObj = {};
       let i;
       for (i = 0; i < flatStreamsList.length; i++) {
@@ -150,7 +150,7 @@ class SystemStreamsSerializer {
  */
   static getIndexedAccountStreamsIdsWithoutDot () {
     if (!SystemStreamsSerializer.indexedAccountStreamsIdsWithoutDot) {
-      let indexedStreamIds = Object.keys(getStreamsNames(gifnoc.get(accountStreamsConfigPath), indexedStreams));
+      let indexedStreamIds = Object.keys(getStreamsNames(config.get(accountStreamsConfigPath), indexedStreams));
       SystemStreamsSerializer.indexedAccountStreamsIdsWithoutDot = indexedStreamIds.map(
         streamId => {
           return SystemStreamsSerializer.removeDotFromStreamId(streamId)
@@ -165,7 +165,7 @@ class SystemStreamsSerializer {
  */
   static getUniqueAccountStreamsIdsWithoutDot () {
     if (!SystemStreamsSerializer.uniqueAccountStreamsIdsWithoutDot) {
-      let uniqueStreamIds = Object.keys(getStreamsNames(gifnoc.get(accountStreamsConfigPath), uniqueStreams));
+      let uniqueStreamIds = Object.keys(getStreamsNames(config.get(accountStreamsConfigPath), uniqueStreams));
       SystemStreamsSerializer.uniqueAccountStreamsIdsWithoutDot =
         uniqueStreamIds.map(streamId => {
           return SystemStreamsSerializer.removeDotFromStreamId(streamId)
@@ -234,7 +234,7 @@ class SystemStreamsSerializer {
   static getFlatAccountStreamSettings () {
     if (!SystemStreamsSerializer.flatAccountStreamSettings) {
       let accountSettings = {};
-      const flatStreamsList = treeUtils.flattenTree(gifnoc.get(accountStreamsConfigPath));
+      const flatStreamsList = treeUtils.flattenTree(config.get(accountStreamsConfigPath));
 
       // convert list to object
       let i;

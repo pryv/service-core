@@ -8,9 +8,9 @@
 const Application = require('../src/application');
 
 // new config has to be loadded before the application
-const { getGifnoc } = require('boiler');
+const { getConfig } = require('boiler');
 (async () => {
-  await getGifnoc();
+  await getConfig();
   const app = new Application();
   app.run()
     .catch(err => console.error(err)); // eslint-disable-line no-console

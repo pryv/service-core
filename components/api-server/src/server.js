@@ -17,7 +17,7 @@ const Application = require('./application');
 
 const UsersRepository = require('components/business/src/users/repository');
 
-const { getReggol, getGifnoc } = require('boiler');
+const { getLogger, getConfig } = require('boiler');
 
 
 // Server class for api-server process. To use this, you 
@@ -31,12 +31,12 @@ class Server {
   isOpenSource: boolean;
   isDnsLess: Boolean;
   logger; 
-  gifnoc;
+  config;
   
   // Axon based internal notification and messaging bus. 
   notificationBus: Notifications;
     
-  // Load gifnoc and setup base configuration. 
+  // Load config and setup base configuration. 
   //
   constructor(application: Application) {
     this.application = application;
@@ -45,15 +45,15 @@ class Server {
   // Start the server. 
   //
   async start() {
-    this.logger = getReggol('server');
+    this.logger = getLogger('server');
     this.logger.debug('start initiated');
     await this.application.initiate();
     
-    const gifnoc = await getGifnoc(); 
-    this.gifnoc = gifnoc;
+    const config = await getConfig(); 
+    this.config = config;
    
-    this.isOpenSource = gifnoc.get('openSource:isActive');
-    this.isDnsLess = gifnoc.get('dnsLess:isActive');
+    this.isOpenSource = config.get('openSource:isActive');
+    this.isDnsLess = config.get('dnsLess:isActive');
     const defaultParam = this.findDefaultParam();
     if (defaultParam != null) {
       this.logger.error(`Config parameter "${defaultParam}" has a default value, please change it`);
@@ -83,7 +83,7 @@ class Server {
 
   findDefaultParam(): ?string {
     const DEFAULT_VALUES: Array<string> = ['REPLACE_ME'];
-    if (DEFAULT_VALUES.includes(this.gifnoc.get('auth:adminAccessKey')))  return 'auth:adminAccessKey';
+    if (DEFAULT_VALUES.includes(this.config.get('auth:adminAccessKey')))  return 'auth:adminAccessKey';
     return null;
   }
   
@@ -91,12 +91,12 @@ class Server {
   // 
   registerApiMethods() {
     const application = this.application;
-    const l = (topic) => getReggol(topic);
-    const gifnoc = this.gifnoc;
+    const l = (topic) => getLogger(topic);
+    const config = this.config;
     
     require('./methods/system')(application.systemAPI,
       application.storageLayer.accesses, 
-      gifnoc.get('services'), 
+      config.get('services'), 
       application.api, 
       application.logging, 
       application.storageLayer);
@@ -107,28 +107,28 @@ class Server {
       application.storageLayer.accesses, 
       application.storageLayer.sessions, 
       application.storageLayer.events, 
-      gifnoc.get('auth'));
+      config.get('auth'));
     
     require('./methods/auth/register')(application.api, 
       application.logging, 
       application.storageLayer, 
-      gifnoc.get('services'));
+      config.get('services'));
 
     require('./methods/auth/register-dnsless')(application.api, 
       application.logging, 
       application.storageLayer, 
-      application.gifnoc.get('services'));
+      application.config.get('services'));
 
     if (this.isOpenSource) {
       require('./methods/auth/delete-opensource')(application.api,
         application.logging,
         application.storageLayer,
-        gifnoc);
+        config);
     } else {
       require('./methods/auth/delete')(application.api,
         application.logging,
         application.storageLayer,
-        gifnoc);
+        config);
     }
 
     require('./methods/accesses')(
@@ -157,8 +157,8 @@ class Server {
     require('./methods/account')(application.api, 
       application.storageLayer.events, 
       application.storageLayer.passwordResetRequests, 
-      gifnoc.get('auth'), 
-      gifnoc.get('services'), 
+      config.get('auth'), 
+      config.get('services'), 
       this.notificationBus,
       application.logging
     );
@@ -173,20 +173,20 @@ class Server {
       application.storageLayer.eventFiles, 
       this.notificationBus, 
       application.logging, 
-      gifnoc.get('audit'), 
-      gifnoc.get('updates'));
+      config.get('audit'), 
+      config.get('updates'));
 
     require('./methods/events')(application.api, 
       application.storageLayer.events, 
       application.storageLayer.eventFiles, 
-      gifnoc.get('auth'), 
-      gifnoc.get('service:eventTypes'), 
+      config.get('auth'), 
+      config.get('service:eventTypes'), 
       this.notificationBus, 
       application.logging,
-      gifnoc.get('audit'),
-      gifnoc.get('updates'), 
-      gifnoc.get('openSource'), 
-      gifnoc.get('services'));
+      config.get('audit'),
+      config.get('updates'), 
+      config.get('openSource'), 
+      config.get('services'));
 
     this.logger.debug('api method registered');
   }
@@ -196,13 +196,13 @@ class Server {
     const notificationBus = this.notificationBus;
     const api = application.api; 
     const storageLayer = application.storageLayer;
-    const gifnoc = this.gifnoc; 
+    const config = this.config; 
     const customAuthStepFn = application.getCustomAuthFunction('server.js');
     const isOpenSource = this.isOpenSource;
         
     const socketIOsetup = require('./socket-io');
     socketIOsetup(
-      server, getReggol('socketIO'), 
+      server, getLogger('socketIO'), 
       notificationBus, api, 
       storageLayer, customAuthStepFn,
       isOpenSource);
@@ -212,16 +212,16 @@ class Server {
   // Open http port and listen to incoming connections. 
   //
   async startListen(server: net$Server) {
-    const gifnoc = this.gifnoc; 
+    const config = this.config; 
     const logger = this.logger; 
     
-    const port = gifnoc.get('http:port');
-    const hostname = gifnoc.get('http:ip'); 
+    const port = config.get('http:port');
+    const hostname = config.get('http:ip'); 
     
     
     // All listen() methods can take a backlog parameter to specify the maximum
     // length of the queue of pending connections. The actual length will be
-    // determined by the OS through sysctl gifnoc such as tcp_max_syn_backlog
+    // determined by the OS through sysctl config such as tcp_max_syn_backlog
     // and somaxconn on Linux. The default value of this parameter is 511 (not
     // 512).
     const backlog = 511;
@@ -240,14 +240,14 @@ class Server {
     logger.info(`Core Server (API module) listening on ${serverUrl}`);
     
     // Warning if ignoring forbidden updates
-    if (gifnoc.get('updates:ignoreProtectedFields')) {
+    if (config.get('updates:ignoreProtectedFields')) {
       logger.warn('Server configuration has "ignoreProtectedFieldUpdates" set to true: ' +
         'This means updates to protected fields will be ignored and operations will succeed. ' +
         'We recommend turning this off, but please be aware of the implications for your code.');
     }
     
     // TEST: execute test setup instructions if any
-    const instanceTestSetup = gifnoc.get('instanceTestSetup') || null; // coerce to null  
+    const instanceTestSetup = config.get('instanceTestSetup') || null; // coerce to null  
     if (process.env.NODE_ENV === 'test' && instanceTestSetup !== null) {
       logger.debug('specific test setup ');
       try {
@@ -276,14 +276,14 @@ class Server {
   // 
   async openNotificationBus(): EventEmitter {
     const logger = this.logger; 
-    const gifnoc = this.gifnoc; 
+    const config = this.config; 
 
-    const enabled = gifnoc.get('tcpMessaging:enabled');
+    const enabled = config.get('tcpMessaging:enabled');
     if (! enabled) return new EventEmitter(); 
     
-    const tcpMessaging = gifnoc.get('tcpMessaging');
-    const host = gifnoc.get('tcpMessaging:host');
-    const port = gifnoc.get('tcpMessaging:port');
+    const tcpMessaging = config.get('tcpMessaging');
+    const host = config.get('tcpMessaging:host');
+    const port = config.get('tcpMessaging:port');
     
     try {
       const socket = await bluebird.fromCallback(
@@ -315,7 +315,7 @@ class Server {
       };
     }
 
-    const reportingSettings = this.gifnoc.get('reporting');
+    const reportingSettings = this.config.get('reporting');
     const templateVersion = reportingSettings.templateVersion;
     const reportingUrl = reportingSettings?.url;
     const optOut = reportingSettings?.optOut;

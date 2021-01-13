@@ -10,7 +10,7 @@ const async = require('async');
 const R = require('ramda');
 const bluebird = require('bluebird');
 const LRU = require('lru-cache');
-const reggol = require('boiler').getReggol('metadata_cache');
+const logger = require('boiler').getLogger('metadata_cache');
 
 const storage = require('components/storage');
 const MethodContext = require('components/model').MethodContext;
@@ -84,18 +84,18 @@ class MetadataCache implements MetadataRepository, MessageSink {
   cache: LRUCache<string, mixed>; 
   series: Repository;
 
-  gifnoc;
+  config;
 
   // nats messaging
   natsUpdateSubscriber: NatsSubscriber;
   natsDeleteSubscriber: NatsSubscriber;
   sink: MessageSink;
   
-  constructor(series: Repository, metadataLoader: MetadataRepository, gifnoc) {
+  constructor(series: Repository, metadataLoader: MetadataRepository, config) {
 
     this.loader = metadataLoader;
     this.series = series;
-    this.gifnoc = gifnoc;
+    this.config = config;
 
     const options = {
       max: LRU_CACHE_SIZE,
@@ -141,8 +141,8 @@ class MetadataCache implements MetadataRepository, MessageSink {
   }
 
   async subscribeToNotifications() {
-    this.natsUpdateSubscriber = new NatsSubscriber(this.gifnoc.get('nats:uri'), this);
-    this.natsDeleteSubscriber = new NatsSubscriber(this.gifnoc.get('nats:uri'), this);
+    this.natsUpdateSubscriber = new NatsSubscriber(this.config.get('nats:uri'), this);
+    this.natsDeleteSubscriber = new NatsSubscriber(this.config.get('nats:uri'), this);
     await this.natsUpdateSubscriber.subscribe(NATS_UPDATE_EVENT);
     await this.natsDeleteSubscriber.subscribe(NATS_DELETE_EVENT);
   }
@@ -162,7 +162,7 @@ class MetadataCache implements MetadataRepository, MessageSink {
     
     const cachedValue = cache.get(key);
     if ( cachedValue != null) {
-      reggol.debug(`Using cached credentials for ${userName} / ${eventId}.`);
+      logger.debug(`Using cached credentials for ${userName} / ${eventId}.`);
       return cachedValue;
     }  
     const newValue = await this.loader.forSeries(userName, eventId, accessToken); 

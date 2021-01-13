@@ -12,7 +12,7 @@
  * tests.
  */
 
-const reggol = require('boiler').getReggol('instance-test-setup');
+const logger = require('boiler').getLogger('instance-test-setup');
 
 /**
  * @param {Object} settings The main configuration settings
@@ -66,7 +66,7 @@ function parse(str) {
       return (value.substring(0, 8) === 'function') ? eval('(' + value + ')') : value;
     });
   } catch (e) {
-    reggol.debug('Failed parsing string:', str);
+    logger.debug('Failed parsing string:', str);
     throw e;
   }
 }

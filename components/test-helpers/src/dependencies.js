@@ -7,25 +7,25 @@
 var storage = require('components/storage'),
     _ = require('lodash');
 
-const { gifnoc, getReggol } = require('boiler');
+const { config, getLogger } = require('boiler');
     
-const database = new storage.Database(gifnoc.get('database'));
+const database = new storage.Database(config.get('database'));
 
 /**
  * Test process dependencies.
  */
 var deps = module.exports = {
-  settings: gifnoc.get(),
+  settings: config.get(),
   storage: {
     database: database,
-    versions: new storage.Versions(database, gifnoc.get('eventFiles:attachmentsDirPath'),
-    getReggol('versions')),
+    versions: new storage.Versions(database, config.get('eventFiles:attachmentsDirPath'),
+    getLogger('versions')),
     passwordResetRequests: new storage.PasswordResetRequests(database),
     sessions: new storage.Sessions(database),
     user: {
       accesses: new storage.user.Accesses(database),
       eventFiles: new storage.user.EventFiles(
-        gifnoc.get('eventFiles'), getReggol('eventFiles')),
+        config.get('eventFiles'), getLogger('eventFiles')),
       events: new storage.user.Events(database), 
       followedSlices: new storage.user.FollowedSlices(database),
       streams: new storage.user.Streams(database),

@@ -13,7 +13,7 @@ require('boiler').init({
   appName: 'metadata',
   baseConfigDir: path.resolve(__dirname, '../../hfs-server/newconfig')
 });
-const { getGifnoc, getReggol } = require('boiler');
+const { getConfig, getLogger } = require('boiler');
 
 const storage = require('components/storage');
 
@@ -22,17 +22,17 @@ const services = {
 };
 
 class Application {
-  reggol; 
-  gifnoc;
+  logger; 
+  config;
   
   metadataUpdaterService: ?services.MetadataUpdater;
   
   async setup(overrideSettings: ?Object) {
-    this.gifnoc = await getGifnoc(); 
-    this.reggol = getReggol('application');
+    this.config = await getConfig(); 
+    this.logger = getLogger('application');
 
     if (overrideSettings != null) 
-      this.gifnoc.injectTestConfig(overrideSettings);
+      this.config.injectTestConfig(overrideSettings);
 
   }
     
@@ -41,7 +41,7 @@ class Application {
   // killed. 
   // 
   async run() {    
-    const logger = this.reggol; 
+    const logger = this.logger; 
         
     logger.info('Metadata service is mounting services:');
     await this.startMetadataUpdater(); 
@@ -55,16 +55,16 @@ class Application {
    
     // Connect to MongoDB
     const storageLayer = produceStorageLayer(
-      this.gifnoc.get('database'),
-      this.reggol.getReggol('mongodb')
+      this.config.get('database'),
+      this.logger.getLogger('mongodb')
     );
     
     // Construct the service
-    const service = new services.MetadataUpdater(storageLayer, this.reggol.getReggol('metadata_updater')); 
+    const service = new services.MetadataUpdater(storageLayer, this.logger.getLogger('metadata_updater')); 
     this.metadataUpdaterService = service; 
     
-    const host = this.gifnoc.get('metadataUpdater:host'); 
-    const port = this.gifnoc.get('metadataUpdater:port'); 
+    const host = this.config.get('metadataUpdater:host'); 
+    const port = this.config.get('metadataUpdater:port'); 
     const endpoint = `${host}:${port}`;
 
     // And start it.

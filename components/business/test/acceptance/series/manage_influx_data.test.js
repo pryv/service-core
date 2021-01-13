@@ -12,7 +12,7 @@
 /* global describe, it */
 const { should } = require('../../test-helpers');
 
-const { getGifnoc } = require('boiler');
+const { getConfig } = require('boiler');
 const influx = require('influx');
 
 const series = require('../../../src/index.js').series; 
@@ -25,7 +25,7 @@ describe('Manage InfluxDB data (business.series.*)', function () {
     host: 'localhost'});
 
   before(async () => {
-    const gifnoc = await getGifnoc();
+    const config = await getConfig();
   });
   
   // TODO beforeEach delete the measurement

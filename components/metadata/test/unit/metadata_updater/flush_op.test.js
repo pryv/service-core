@@ -24,12 +24,12 @@ const { databaseFixture } = require('components/test-helpers');
 const { PendingUpdate } = 
   require('../../../src/metadata_updater/pending_updates');
 const { Flush, UsersRepository } = require('../../../src/metadata_updater/flush');
-const { getReggol } = require('boiler/src/gniggol');
+const { getLogger } = require('boiler/src/logging');
 
 describe('Flush', () => {
   const connection = produceMongoConnection();
   const db = produceStorageLayer(connection);
-  const logger = getReggol('flush'); 
+  const logger = getLogger('flush'); 
 
   const now = 100000;
   const from = now - 10; 
@@ -217,7 +217,7 @@ function produceStorageLayer(connection: storage.Database): storage.StorageLayer
     
   return new storage.StorageLayer(
     connection, 
-    getReggol('flush-test'), 
+    getLogger('flush-test'), 
     'attachmentsDirPath', 'previewsDirPath', 
     passwordResetRequestMaxAge,
     sessionMaxAge);

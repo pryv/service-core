@@ -3,7 +3,7 @@
 // Binary for nightly tasks setup. 
 
 const Application = require('../src/application');
-const { getReggol } = require('boiler');
+const { getLogger } = require('boiler');
 let logger;
 const Repository = require('components/business/src/users/repository');
 
@@ -14,7 +14,7 @@ const Repository = require('components/business/src/users/repository');
   // Construct application
   const app = new Application();
   await app.initiate();
-  logger = getReggol('nightly-tasks');
+  logger = getLogger('nightly-tasks');
 
   // Construct storage size object
   const storage = require('../../storage');

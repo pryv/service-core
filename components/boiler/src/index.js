@@ -5,21 +5,21 @@
  * Proprietary and confidential
  */
 
-const Gifnoc  = require('./gifnoc');
-const gniggol = require('./gniggol');
+const Gifnoc  = require('./config');
+const logging = require('./logging');
 
-const gifnoc = new Gifnoc();
+const config = new Gifnoc();
 
 const boiler = {
-  getReggol: gniggol.getReggol, 
-  getGifnoc: getGifnoc,
+  getLogger: logging.getLogger, 
+  getConfig: getConfig,
   init: init,
-  gifnoc: gifnoc 
+  config: config 
 }
 
 let logger;
-let gifnocIsInitalized = false;
-let gifnocInitCalledWithName = null;
+let configIsInitalized = false;
+let configInitCalledWithName = null;
 
 
 /**
@@ -31,38 +31,38 @@ let gifnocInitCalledWithName = null;
  * @param {Function} [fullyLoadedCallback] - (optional) called when the config is fully loaded
  */
 function init(options, fullyLoadedCallback) {
-  if (gifnocInitCalledWithName) {
-    logger.warn('Skipping initalization! boiler is already initialized with appName: ' + gifnocInitCalledWithName)
+  if (configInitCalledWithName) {
+    logger.warn('Skipping initalization! boiler is already initialized with appName: ' + configInitCalledWithName)
     return boiler;
   };
 
   // append the value of process.env.PRYV_BOILER_POSTFIX if present
   if (process.env.PRYV_BOILER_POSTFIX) options.appName += process.env.PRYV_BOILER_POSTFIX;
 
-  gniggol.setGlobalName(options.appName);
-  gifnocInitCalledWithName = options.appName;
-  gifnoc.initSync({
+  logging.setGlobalName(options.appName);
+  configInitCalledWithName = options.appName;
+  config.initSync({
     baseConfigDir: options.baseConfigDir,
     extras: options.extraConfigs
-  }, gniggol);
+  }, logging);
 
-  gifnoc.initASync().then((config) => {
-    gifnocIsInitalized = true;
+  config.initASync().then((config) => {
+    configIsInitalized = true;
     if (fullyLoadedCallback) fullyLoadedCallback(config);
   });
 
-  logger = gniggol.getReggol('boiler')
+  logger = logging.getLogger('boiler')
   return boiler
 }
 
-async function getGifnoc() {
-  if (! gifnocInitCalledWithName) {
-    throw(new Error('boiler must be initalized with init() before using getGifnoc()'));
+async function getConfig() {
+  if (! configInitCalledWithName) {
+    throw(new Error('boiler must be initalized with init() before using getConfig()'));
   };
-  while(! gifnocIsInitalized) {
+  while(! configIsInitalized) {
     await new Promise(r => setTimeout(r, 100)); // wait 100ms
   }
-  return gifnoc;
+  return config;
 }
 
 

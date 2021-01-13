@@ -6,7 +6,7 @@
  */
 // @flow
 const path = require('path');
-const {getGifnoc, getReggol, boiler} = require('boiler').init({
+const {getConfig, getLogger, boiler} = require('boiler').init({
   appName: 'hfs-server',
   baseConfigDir:  path.resolve(__dirname, '../newconfig'),
   extraConfigs: [{
@@ -41,28 +41,28 @@ const initTracer = require('jaeger-client').initTracer;
 const { patch } = require('./tracing/mongodb_client');
 
 async function createContext(
-  gifnoc): Promise<Context> 
+  config): Promise<Context> 
 {
-  const reggol = getReggol('setup');
+  const logger = getLogger('setup');
   
-  const host = gifnoc.get('influxdb:host'); 
-  const port = gifnoc.get('influxdb:port');
+  const host = config.get('influxdb:host'); 
+  const port = config.get('influxdb:port');
   
   const influx = new business.series.InfluxConnection({host: host, port: port}); 
   
-  const mongo = new storage.Database(gifnoc.get('database'));
+  const mongo = new storage.Database(config.get('database'));
     
-  const tracer = produceTracer(gifnoc, getReggol('jaeger'));
-  const typeRepoUpdateUrl = gifnoc.get('service:eventTypes');
+  const tracer = produceTracer(config, getLogger('jaeger'));
+  const typeRepoUpdateUrl = config.get('service:eventTypes');
     
-  const context = new Context(influx, mongo, tracer, typeRepoUpdateUrl, gifnoc);
+  const context = new Context(influx, mongo, tracer, typeRepoUpdateUrl, config);
 
-  if (gifnoc.has('metadataUpdater.host')) {
-    const mdHost = gifnoc.get('metadataUpdater:host'); 
-    const mdPort = gifnoc.get('metadataUpdater:port'); 
+  if (config.has('metadataUpdater.host')) {
+    const mdHost = config.get('metadataUpdater:host'); 
+    const mdPort = config.get('metadataUpdater:port'); 
     const metadataEndpoint = `${mdHost}:${mdPort}`;
       
-    reggol.info(`Connecting to metadata updater... (@ ${metadataEndpoint})`);
+    logger.info(`Connecting to metadata updater... (@ ${metadataEndpoint})`);
       
     await context.configureMetadataUpdater(metadataEndpoint);
   }
@@ -72,22 +72,22 @@ async function createContext(
 
 // Produce a tracer that allows creating span trees for a subset of all calls. 
 // 
-function produceTracer(gifnoc, logger) {
-  if (! gifnoc.get('trace:enable')) 
+function produceTracer(config, logger) {
+  if (! config.get('trace:enable')) 
     return new opentracing.Tracer();
     
   const traceConfig = {
     'serviceName': 'hfs-server',
     'reporter': {
       'logSpans': true,
-      'agentHost': gifnoc.get('trace:agent:host'),
-      'agentPort': gifnoc.get('trace:agent:port'), 
-      'flushIntervalMs': gifnoc.get('trace:sampler:flushIntervalMs'),
+      'agentHost': config.get('trace:agent:host'),
+      'agentPort': config.get('trace:agent:port'), 
+      'flushIntervalMs': config.get('trace:sampler:flushIntervalMs'),
     },
     'logger': logger,
     'sampler': {
-      'type': gifnoc.get('trace:sampler:type'),
-      'param': gifnoc.get('trace:sampler:param'),
+      'type': config.get('trace:sampler:type'),
+      'param': config.get('trace:sampler:param'),
     }
   };
   const tracer = initTracer(traceConfig);
@@ -106,24 +106,24 @@ function patchMongoDBDriver(tracer) {
 // together. 
 // 
 class Application {
-  reggol; 
+  logger; 
   context: Context; 
     
   server: Server; 
-  gifnoc;
+  config;
   
   async init(settings?) {
-    this.reggol = getReggol('application');
+    this.logger = getLogger('application');
     if (settings) { 
       throw(new Error('Non null settings'));
     }
-    this.gifnoc = await getGifnoc();
+    this.config = await getConfig();
     await setCommonMeta.loadSettings();
 
     
-    this.context = await createContext(this.gifnoc);
+    this.context = await createContext(this.config);
 
-    this.server = new Server(this.gifnoc, this.context);
+    this.server = new Server(this.config, this.context);
   }
   
   async start(): Promise<Application> {

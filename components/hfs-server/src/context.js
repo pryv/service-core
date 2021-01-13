@@ -25,7 +25,7 @@ type Repository = business.series.Repository;
 type InfluxConnection = business.series.InfluxConnection; 
 
 import type { Tracer, Span } from 'opentracing';
-const { getReggol } = require('boiler');
+const { getLogger } = require('boiler');
 
 // Application context object, holding references to all major subsystems. Once
 // the system is initialized, these instance references will not change  any
@@ -40,21 +40,21 @@ class Context {
   tracer: Tracer; 
   
   typeRepository: business.types.TypeRepository;
-  gifnoc;
+  config;
   
   constructor(
     influxConn: InfluxConnection, mongoConn: Database, 
     tracer: Tracer, 
-    typeRepoUpdateUrl: string, gifnoc) 
+    typeRepoUpdateUrl: string, config) 
   {
     this.series = new business.series.Repository(influxConn);
     this.metadataUpdater = new metadataUpdater.MetadataForgetter(
-      getReggol('metadata.update'));    
+      getLogger('metadata.update'));    
     this.tracer = tracer;
-    this.gifnoc = gifnoc;
+    this.config = config;
 
     this.configureTypeRepository(typeRepoUpdateUrl); 
-    this.configureMetadataCache(this.series, mongoConn, getReggol('model'));
+    this.configureMetadataCache(this.series, mongoConn, getLogger('model'));
   }
   
   configureTypeRepository(url: string) {
@@ -65,7 +65,7 @@ class Context {
   }
   
   configureMetadataCache(series: Repository, mongoConn: Database, logger) {
-    this.metadata = new MetadataCache(series, new MetadataLoader(mongoConn, logger), this.gifnoc);
+    this.metadata = new MetadataCache(series, new MetadataLoader(mongoConn, logger), this.config);
   }
   
   // Configures the metadata updater service. 

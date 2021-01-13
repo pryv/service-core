@@ -12,8 +12,8 @@ const Server = require('../../src/server');
 const Application = require('../../src/application');
 const ChildProcess = require('components/test-helpers').child_process;
 
-const { getReggol, getGifnoc} = require('boiler');
-const reggol = getReggol('child_process');
+const { getLogger, getConfig} = require('boiler');
+const logger = getLogger('child_process');
 
 
 class ApplicationLauncher {
@@ -25,11 +25,11 @@ class ApplicationLauncher {
   
   async launch(injectSettings: Object) {
     try {
-      reggol.debug('launch with settings', injectSettings);
+      logger.debug('launch with settings', injectSettings);
   
-      const gifnoc = await getGifnoc();
+      const config = await getConfig();
       // directly inject settings in nconf // to be updated to 
-      gifnoc.injectTestConfig(injectSettings);
+      config.injectTestConfig(injectSettings);
 
       const app = this.app = new Application();
       await app.initiate();

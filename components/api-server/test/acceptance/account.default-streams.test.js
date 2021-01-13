@@ -16,7 +16,7 @@ const ErrorIds = require('components/errors').ErrorIds;
 const Application = require('components/api-server/src/application');
 const Notifications = require('components/api-server/src/Notifications');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const { gifnoc } = require('boiler');
+const { config } = require('boiler');
 
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
@@ -97,7 +97,7 @@ describe('Account with system streams', function () {
   before(async function () {
     helpers = require('components/api-server/test/helpers');
     mongoFixtures = databaseFixture(await produceMongoConnection());
-    gifnoc.injectTestConfig({dnsLess: { isActive: true }})  
+    config.injectTestConfig({dnsLess: { isActive: true }})  
     app = new Application();
     await app.initiate();
 
@@ -112,27 +112,27 @@ describe('Account with system streams', function () {
       app.api,
       app.storageLayer.events,
       app.storageLayer.passwordResetRequests,
-      app.gifnoc.get('auth'),
-      app.gifnoc.get('services'),
+      app.config.get('auth'),
+      app.config.get('services'),
       notifications,
       app.logging);
     require("components/api-server/src/methods/events")(
       app.api,
       app.storageLayer.events,
       app.storageLayer.eventFiles,
-      app.gifnoc.get('auth'),
-      app.gifnoc.get('service:eventTypes'),
+      app.config.get('auth'),
+      app.config.get('service:eventTypes'),
       notifications,
       app.logging,
-      app.gifnoc.get('audit'),
-      app.gifnoc.get('updates'),
-      app.gifnoc.get('openSource'),
-      app.gifnoc.get('services'));
+      app.config.get('audit'),
+      app.config.get('updates'),
+      app.config.get('openSource'),
+      app.config.get('services'));
     request = supertest(app.expressApp);
   });
 
   after(async function () {
-    gifnoc.injectTestConfig({});
+    config.injectTestConfig({});
   });
 
   describe('GET /account', () => {

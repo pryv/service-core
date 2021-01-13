@@ -10,7 +10,7 @@ const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 const { ProjectVersion } = require('components/middleware/src/project_version');
 // cnan be overriden;
-const { getGifnoc } = require('boiler');
+const { getConfig } = require('boiler');
 
 type MetaInfo = {
   meta: {
@@ -29,7 +29,7 @@ type MetaInfo = {
 // Memoised copy of the current project version. 
 let version: string = 'n/a';
 let serial: ?string = null;
-let gifnoc = null;
+let config = null;
 
 // Initialise the project version as soon as we can. 
 const pv = new ProjectVersion(); 
@@ -40,7 +40,7 @@ version = pv.version();
  * If no parameter is provided, loads the configuration. Otherwise takes the provided loaded settings.
  */
 module.exports.loadSettings = async function (): Promise<void> {
-  gifnoc = await getGifnoc();
+  config = await getConfig();
 };
 
 /**
@@ -58,8 +58,8 @@ module.exports.setCommonMeta = function <T: Object>(result: T): T & MetaInfo {
     result.meta = {};
   }
 
-  if (serial == null && gifnoc != null) {
-    serial = gifnoc.get('service:serial');
+  if (serial == null && config != null) {
+    serial = config.get('service:serial');
   }
   
   _.extend(result.meta, {

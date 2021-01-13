@@ -16,7 +16,7 @@ const charlatan = require('charlatan');
 const Application = require('../src/application');
 const InfluxRepository = require('components/business/src/series/repository');
 const DataMatrix = require('components/business/src/series/data_matrix');
-const { getGifnoc } = require('boiler');
+const { getConfig } = require('boiler');
 const UsersRepository = require('components/business/src/users/repository');
 const { databaseFixture } = require('components/test-helpers');
 const {
@@ -43,15 +43,15 @@ describe('DELETE /users/:username', async () => {
     ['U21Z', 'K4J1', 'TIKT', 'WMMV', '9ZTM', 'T3UK', 'O73J'],
     ['TPP2', '581Z', 'Z2FH', '4IH8', '33T6', 'SQ8P', '1F2Y']];
   for (let i = 0; i < settingsToTest.length; i++) {
-    const gifnoc = await getGifnoc();
+    const config = await getConfig();
 
     // skip tests that are not in scope
-    if (gifnoc.get('openSource:isActive') !== settingsToTest[i][1]) continue;
+    if (config.get('openSource:isActive') !== settingsToTest[i][1]) continue;
 
     describe(`dnsLess:isActive = ${settingsToTest[i][0]}, openSource:isActive = ${settingsToTest[i][1]}`, function() {
       before(async function() {
         
-        gifnoc.injectTestConfig({
+        config.injectTestConfig({
           dnsLess: {isActive: settingsToTest[i][0]}
         });
         
@@ -62,14 +62,14 @@ describe('DELETE /users/:username', async () => {
           app.api,
           app.logging,
           app.storageLayer,
-          app.gifnoc
+          app.config
         );
 
         require('../src/methods/auth/delete-opensource')(
           app.api,
           app.logging,
           app.storageLayer,
-          app.gifnoc
+          app.config
         );
 
         request = supertest(app.expressApp);
@@ -77,7 +77,7 @@ describe('DELETE /users/:username', async () => {
         mongoFixtures = databaseFixture(await produceMongoConnection());
         await mongoFixtures.context.cleanEverything();
 
-        influx = produceInfluxConnection(app.gifnoc);
+        influx = produceInfluxConnection(app.config);
         influxRepository = new InfluxRepository(influx);
 
         usersRepository = new UsersRepository(app.storageLayer.events);
@@ -89,7 +89,7 @@ describe('DELETE /users/:username', async () => {
         username1 = charlatan.Internet.userName();
         username2 = charlatan.Internet.userName();
 
-        authKey = gifnoc.get('auth:adminAccessKey');
+        authKey = config.get('auth:adminAccessKey');
       });
       after(async function() {
         await mongoFixtures.context.cleanEverything();

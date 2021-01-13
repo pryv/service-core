@@ -24,10 +24,10 @@ const SystemStreamsSerializer = require('components/business/src/system-streams/
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
 
-const { getGifnoc } = require('boiler');
+const { getConfig } = require('boiler');
 
 describe("Accesses with account streams", function () {
-  let gifnoc;
+  let config;
   let app;
   let request;
   let res;
@@ -79,7 +79,7 @@ describe("Accesses with account streams", function () {
 
   before(async function () {
     const helpers = require('components/api-server/test/helpers');
-    gifnoc = await getGifnoc();
+    config = await getConfig();
     validation = helpers.validation;
     mongoFixtures = databaseFixture(await produceMongoConnection());
 
@@ -103,14 +103,14 @@ describe("Accesses with account streams", function () {
       app.api,
       app.storageLayer.events,
       app.storageLayer.eventFiles,
-      app.gifnoc.get('auth'),
-      app.gifnoc.get('service:eventTypes'),
+      app.config.get('auth'),
+      app.config.get('service:eventTypes'),
       notifications,
       app.logging,
-      app.gifnoc.get('audit'),
-      app.gifnoc.get('updates'),
-      app.gifnoc.get('openSource'),
-      app.gifnoc.get('services'));
+      app.config.get('audit'),
+      app.config.get('updates'),
+      app.config.get('openSource'),
+      app.config.get('services'));
     request = supertest(app.expressApp);
   });
 
@@ -205,7 +205,7 @@ describe("Accesses with account streams", function () {
             assert.deepEqual(accountAccessData.permissions, [{ streamId: streamId, level: permissionLevel }]);
           });
           it('[TI1X] should allow to create visible stream events', async () => {
-            scope = nock(gifnoc.get('services:register:url'));
+            scope = nock(config.get('services:register:url'));
             scope.put('/users',
               (body) => {
                 serviceRegisterRequest = body;

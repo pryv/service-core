@@ -12,7 +12,7 @@ import type { ApiCallback } from '../API';
 import type Result from '../Result';
 
 const _ = require('lodash');
-const { getGifnoc } = require('boiler');
+const { getConfig } = require('boiler');
 
 module.exports = function (api: API) {
   this.serviceInfo = null;
@@ -23,7 +23,7 @@ module.exports = function (api: API) {
 
   async function getServiceInfo(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {  
     if (! this.serviceInfo) {
-      this.serviceInfo = (await getGifnoc()).get('service');
+      this.serviceInfo = (await getConfig()).get('service');
     }
     result = _.merge(result, this.serviceInfo);
     return next();

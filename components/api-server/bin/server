@@ -9,11 +9,11 @@ const loadCommonMeta = require('../src/methods/helpers/setCommonMeta').loadSetti
 let  airbrake;
 const { Notifier } = require('@airbrake/node');
 
-const { getGifnoc, getReggol } = require('boiler');
-const reggol = getReggol('serverRoot');
+const { getConfig, getLogger } = require('boiler');
+const logger = getLogger('serverRoot');
 
 (async () => {
-  const gifnoc = await getGifnoc();
+  const config = await getConfig();
   loadCommonMeta({}); // load settings to common meta
   
 
@@ -22,7 +22,7 @@ const reggol = getReggol('serverRoot');
   await app.initiate();
   
   // Setup Airbrake if enabled
-  const airbrakeSettings = gifnoc.get('logs:airbrake');
+  const airbrakeSettings = config.get('logs:airbrake');
   if (airbrakeSettings.active) {
    airbrake = new Notifier({
      projectId: airbrakeSettings.projectId, 
@@ -38,7 +38,7 @@ const reggol = getReggol('serverRoot');
 
   // Catch uncaught Exceptions
   process.on('uncaughtExceptions', async (error) => {
-    if (reggol) reggol.error(error);
+    if (logger) logger.error(error);
     console.dir(error);
     if (airbrake != null && typeof airbrake.notify === 'function') {
       await airbrake.notify(error);
@@ -51,7 +51,7 @@ const reggol = getReggol('serverRoot');
     console.log('Server stopped.');
   });
   process.on('SIGINT', () => {
-    reggol.warn('Received SIGINT. Exiting...');
+    logger.warn('Received SIGINT. Exiting...');
     process.exit(2);
   });
 
@@ -61,7 +61,7 @@ const reggol = getReggol('serverRoot');
 })()
   .then(() => console.log('Startup sequence complete, Server is running. mode: [' + process.env.NODE_ENV + ']'))
   .catch(e => {
-    if (reggol) reggol.error(e);
+    if (logger) logger.error(e);
     console.dir(e);
     process.exit(1);
   });

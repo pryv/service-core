@@ -9,7 +9,7 @@ var errors = require('components/errors').factory,
   mailing = require('./helpers/mailing'),
   methodsSchema = require('../schema/accountMethods');
 
-const { getGifnoc } = require('boiler');
+const { getConfig } = require('boiler');
 
 const Registration = require('components/business/src/auth/registration'),
   ErrorMessages = require('components/errors/src/ErrorMessages'),
@@ -190,7 +190,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
 
   async function notifyServiceRegister (context, params, result, next) {
     // no need to update service register if it is single node setup
-    if ((await getGifnoc()).get('dnsLess:isActive') === true) {
+    if ((await getConfig()).get('dnsLess:isActive') === true) {
       return next();
     }
     try {

@@ -7,19 +7,19 @@
 // @flow
 
 require('../../../test-helpers/src/boiler-init');
-const reggol = require('boiler').getReggol('test-helpers');
+const logger = require('boiler').getLogger('test-helpers');
 const testHelpers = require('components/test-helpers');
 
 // --------------------------------------------------------- prespawning servers
 
-reggol.debug('creating new spawn context');
+logger.debug('creating new spawn context');
 const SpawnContext = testHelpers.spawner.SpawnContext;
 const spawnContext: SpawnContext = 
   new SpawnContext('test/support/child_process');
 
 /* global after */
 after(() => {
-  reggol.debug('shutting down spawn context');
+  logger.debug('shutting down spawn context');
   spawnContext.shutdown(); 
 });
 

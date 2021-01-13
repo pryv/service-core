@@ -8,11 +8,11 @@
 // @flow
 
 const morgan = require('morgan');
-const { getReggol } = require('boiler');
+const { getLogger } = require('boiler');
 
 module.exports = function (express: any) {
-  const reggol = getReggol('request-trace');
-  const morganLoggerStreamWrite = (msg: string) => reggol.info(msg);
+  const logger = getLogger('request-trace');
+  const morganLoggerStreamWrite = (msg: string) => logger.info(msg);
   
   return morgan('combined', {stream: {
     write: morganLoggerStreamWrite

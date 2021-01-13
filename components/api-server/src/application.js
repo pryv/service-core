@@ -31,12 +31,12 @@ const expressAppInit = require('./expressApp');
 const middleware = require('components/middleware');
 const errorsMiddlewareMod = require('./middleware/errors'); 
 
-const { getGifnoc, getReggol } = require('boiler');
-const reggol = getReggol('application');
+const { getConfig, getLogger } = require('boiler');
+const logger = getLogger('application');
 
 const { Extension, ExtensionLoader } = require('components/utils').extension;
 
-reggol.debug('Loading app');
+logger.debug('Loading app');
 
 import type { CustomAuthFunction } from 'components/model';
 import type { WebhooksSettingsHolder } from './methods/webhooks';
@@ -54,8 +54,8 @@ type AirbrakeSettings = {
 // 
 class Application {
   // new config
-  gifnoc;
-  gniggol;
+  config;
+  logging;
 
   initalized;
 
@@ -74,48 +74,48 @@ class Application {
 
   constructor() {
     this.initalized = false;
-    reggol.debug('creation');
+    logger.debug('creation');
 
     this.api = new API(); 
     this.systemAPI = new API(); 
   
-    reggol.debug('created');
+    logger.debug('created');
   }
 
   async initiate() {
     if (this.initalized) {
-      reggol.debug('App was already initialized, skipping');
+      logger.debug('App was already initialized, skipping');
       return this;
     }
     this.produceLogSubsystem();
-    reggol.debug('Init started');
+    logger.debug('Init started');
 
-    this.gifnoc = await getGifnoc();
+    this.config = await getConfig();
    
     this.produceStorageSubsystem(); 
     await this.createExpressApp();
     this.initiateRoutes();
     this.expressApp.use(middleware.notFound);
-    const errorsMiddleware = errorsMiddlewareMod(this.gniggol, createAirbrakeNotifierIfNeeded(this.gifnoc));
+    const errorsMiddleware = errorsMiddlewareMod(this.logging, createAirbrakeNotifierIfNeeded(this.config));
     this.expressApp.use(errorsMiddleware);
-    reggol.debug('Init done');
+    logger.debug('Init done');
     this.initalized = true;
   }
 
   async createExpressApp(): Promise<express$Application> {
 
     this.expressApp = await expressAppInit( 
-      this.gifnoc.get('dnsLess:isActive'), 
-      this.gniggol);
+      this.config.get('dnsLess:isActive'), 
+      this.logging);
   }
 
   initiateRoutes() {
-    const isOpenSource = this.gifnoc.get('openSource:isActive');
+    const isOpenSource = this.config.get('openSource:isActive');
     if (isOpenSource) {
       require('components/www')(this.expressApp, this);
       require('components/register')(this.expressApp, this);
     }
-    if (this.gifnoc.get('dnsLess:isActive')) {
+    if (this.config.get('dnsLess:isActive')) {
       require('./routes/register')(this.expressApp, this);
     }
 
@@ -138,21 +138,21 @@ class Application {
   }
   
   produceLogSubsystem() {
-    this.gniggol = getReggol('Application'); 
+    this.logging = getLogger('Application'); 
   }
 
   produceStorageSubsystem() {
-    const gifnoc = this.gifnoc;
-    this.database = new storage.Database(gifnoc.get('database'));
+    const config = this.config;
+    this.database = new storage.Database(config.get('database'));
 
     // 'StorageLayer' is a component that contains all the vertical registries
     // for various database models. 
     this.storageLayer = new storage.StorageLayer(this.database, 
-      getReggol('model'),
-      gifnoc.get('eventFiles:attachmentsDirPath'), 
-      gifnoc.get('eventFiles:previewsDirPath'), 
-      gifnoc.get('auth:passwordResetRequestMaxAge'), 
-      gifnoc.get('auth:sessionMaxAge')
+      getLogger('model'),
+      config.get('eventFiles:attachmentsDirPath'), 
+      config.get('eventFiles:previewsDirPath'), 
+      config.get('auth:passwordResetRequestMaxAge'), 
+      config.get('auth:sessionMaxAge')
     );
   }
   
@@ -160,12 +160,12 @@ class Application {
   // 
   getUpdatesSettings(): UpdatesSettingsHolder {
     return {
-      ignoreProtectedFields: this.gifnoc.get('updates:ignoreProtectedFields'),
+      ignoreProtectedFields: this.config.get('updates:ignoreProtectedFields'),
     };
   }
 
   getWebhooksSettings(): WebhooksSettingsHolder {
-    return this.gifnoc.get('webhooks');
+    return this.config.get('webhooks');
   }
 
   
@@ -179,32 +179,32 @@ class Application {
       this.customAuthStepFn = this.loadCustomExtension();
       this.customAuthStepLoaded = true;
     }
-    reggol.debug('getCustomAuth from: ' + from + ' => ' + (this.customAuthStepFn !== null), this.customAuthStep);
+    logger.debug('getCustomAuth from: ' + from + ' => ' + (this.customAuthStepFn !== null), this.customAuthStep);
     return this.customAuthStepFn;
   }
 
   loadCustomExtension(): ?Extension {
-    const defaultFolder = this.gifnoc.get('customExtensions:defaultFolder');
+    const defaultFolder = this.config.get('customExtensions:defaultFolder');
     const name = 'customAuthStepFn';
-    const customAuthStepFnPath = this.gifnoc.get('customExtensions:customAuthStepFn');
+    const customAuthStepFnPath = this.config.get('customExtensions:customAuthStepFn');
 
     const loader = new ExtensionLoader(defaultFolder);
   
     let customAuthStep = null;
     if ( customAuthStepFnPath) {
-       reggol.debug('Loading CustomAuthStepFn from ' + customAuthStepFnPath);
+       logger.debug('Loading CustomAuthStepFn from ' + customAuthStepFnPath);
        customAuthStep = loader.loadFrom(customAuthStepFnPath);
     } else {
       // assert: no path was configured in configuration file, try loading from 
       // default location:
-      reggol.debug('Trying to load CustomAuthStepFn from ' + defaultFolder + '/'+ name + '.js');
+      logger.debug('Trying to load CustomAuthStepFn from ' + defaultFolder + '/'+ name + '.js');
       customAuthStep = loader.load(name);
     }
     if (customAuthStep) {
-      reggol.debug('Loaded CustomAuthStepFn');
+      logger.debug('Loaded CustomAuthStepFn');
       return customAuthStep.fn;
     } else {
-      reggol.debug('No CustomAuthStepFn');
+      logger.debug('No CustomAuthStepFn');
     }
   }
 
@@ -212,7 +212,7 @@ class Application {
 
 
 
-function createAirbrakeNotifierIfNeeded(gifnoc) {
+function createAirbrakeNotifierIfNeeded(config) {
   /*
     Quick guide on how to test Airbrake notifications (under logs entry):
     1. Update configuration file with Airbrake information:
@@ -225,7 +225,7 @@ function createAirbrakeNotifierIfNeeded(gifnoc) {
         throw new Error('This is a test of Airbrake notifications');
     3. Trigger the error by running the faulty code (run a local core)
    */
-  const settings = getAirbrakeSettings(gifnoc); 
+  const settings = getAirbrakeSettings(config); 
   if (settings == null) return; 
 
   const { Notifier } = require('@airbrake/node');
@@ -238,9 +238,9 @@ function createAirbrakeNotifierIfNeeded(gifnoc) {
   return airbrakeNotifier;
 }
 
-function getAirbrakeSettings(gifnoc): ?AirbrakeSettings {
+function getAirbrakeSettings(config): ?AirbrakeSettings {
   // TODO Directly hand log settings to this class. 
-  const logSettings = gifnoc.get('logs');
+  const logSettings = config.get('logs');
   if (logSettings == null) return null; 
   
   const airbrakeSettings = logSettings.airbrake;

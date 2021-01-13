@@ -32,7 +32,7 @@ const { ProjectVersion } = require('components/middleware/src/project_version');
 
 const {TypeRepository, isSeriesType} = require('components/business').types;
 
-const { getReggol, gifnoc } = require('boiler');
+const { getLogger, config } = require('boiler');
 
 const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
 const NATS_UPDATE_EVENT = require('components/utils').messaging
@@ -60,8 +60,8 @@ module.exports = function (
 
   // initialize service-register connection
   let serviceRegisterConn = {};
-  if (!gifnoc.get('dnsLess:isActive')) {
-    serviceRegisterConn = new ServiceRegister(gifnoc.get('services:register'));
+  if (!config.get('dnsLess:isActive')) {
+    serviceRegisterConn = new ServiceRegister(config.get('services:register'));
   }
   
   // Initialise the project version as soon as we can. 
@@ -70,9 +70,9 @@ module.exports = function (
   
   // Update types and log error
   typeRepo.tryUpdate(eventTypesUrl, version)
-    .catch((err) => getReggol('typeRepo').warn(err));
+    .catch((err) => getLogger('typeRepo').warn(err));
     
-  const logger = getReggol('methods:events');
+  const logger = getLogger('methods:events');
   
   let natsPublisher;
   if (!openSourceSettings.isActive) {
@@ -1201,7 +1201,7 @@ module.exports = function (
    * @param string accountStreamId - accountStreamId
    */
   async function sendUpdateToServiceRegister (user, event, accountStreamId) {
-    if (gifnoc.get('dnsLess:isActive')) {
+    if (config.get('dnsLess:isActive')) {
       return;
     }
     const editableAccountStreams = SystemStreamsSerializer.getEditableAccountStreams();
@@ -1458,7 +1458,7 @@ module.exports = function (
    */
   async function sendDataToServiceRegister (context, creation, editableAccountStreams) {
     // send update to service-register
-    if (gifnoc.get('dnsLess:isActive')) {
+    if (config.get('dnsLess:isActive')) {
       return;
     }
     let fieldsForUpdate = {};

@@ -10,31 +10,31 @@ const nock = require('nock');
 const chai = require('chai');
 const assert = chai.assert;
 const charlatan = require('charlatan');
-const { getGifnoc } = require('boiler');
+const { getConfig } = require('boiler');
 const testServiceInfo = require('../../../../../test/service-info.json');
 
 describe.skip('config: serviceInfo', () => {
-  let gifnoc;
+  let config;
 
   before(async () => {
-    gifnoc = await getGifnoc();
+    config = await getConfig();
   });
 
   describe('init()', () => {
     describe('when dnsLess is active', () => {
      
       before(() => {
-        gifnoc.injectTestConfig({
+        config.injectTestConfig({
           dnsLess: { isActive: true }
         });
       });
 
       it('[O4I1] should work', async () => {
-        await getGifnoc();
+        await getConfig();
       });
       it('[KEH6] should build serviceInfo', () => {
-        const serviceInfo = gifnoc.get('service');
-        let dnsLessPublicUrl = gifnoc.get('dnsLess:publicUrl');
+        const serviceInfo = config.get('service');
+        let dnsLessPublicUrl = config.get('dnsLess:publicUrl');
         if (dnsLessPublicUrl.slice(-1) === '/') dnsLessPublicUrl = dnsLessPublicUrl.slice(0, -1);
 
         const REG_PATH = '/reg';
@@ -54,17 +54,17 @@ describe.skip('config: serviceInfo', () => {
 
     describe('when dnsLess is disabled', () => {
       before(() => {
-        gifnoc.injectTestConfig({
+        config.injectTestConfig({
           dnsLess: { isActive: false },
         });
       });
 
       describe('when "serviceInfoUrl" points to a file', () => {
         it('[WOQ8] should work', async () => {
-          await getGifnoc();
+          await getConfig();
         });
         it('[D2P7] should load serviceInfo', () => {
-          const serviceInfo = gifnoc.get('service');
+          const serviceInfo = config.get('service');
           assert.deepEqual(serviceInfo, testServiceInfo);
         });
       });
@@ -75,7 +75,7 @@ describe.skip('config: serviceInfo', () => {
         before(() => {
           const regUrl = 'https://reg.mydomain.com';
           const SERVICE_INFO_PATH = '/service/info';
-          gifnoc.set('serviceInfoUrl', regUrl + SERVICE_INFO_PATH);
+          config.set('serviceInfoUrl', regUrl + SERVICE_INFO_PATH);
 
           serviceInfo = {
             salut: 'abc',
@@ -89,10 +89,10 @@ describe.skip('config: serviceInfo', () => {
         });
 
         it('[4WYN] should work', async () => {
-          await getGifnoc();
+          await getConfig();
         });
         it('[NY3E] should load serviceInfo', () => {
-          const configServiceInfo = gifnoc.get('service');
+          const configServiceInfo = config.get('service');
           assert.deepEqual(configServiceInfo, serviceInfo);
         });
       });

@@ -17,22 +17,22 @@ const storage = require('components/storage');
 const { databaseFixture } = require('components/test-helpers');
 
 const { MetadataLoader, MetadataCache } = require('../../src/metadata_cache');
-const { getGifnoc } = require('boiler');
-const { getReggol } = require('boiler/src/gniggol');
+const { getConfig } = require('boiler');
+const { getLogger } = require('boiler/src/logging');
 
 describe('Metadata Loader', function () {
 
-  let database, gifnoc, pryv;
+  let database, config, pryv;
   before(async function () {
-    gifnoc = await getGifnoc();
-    database = new storage.Database(gifnoc.get('database')); 
+    config = await getConfig();
+    database = new storage.Database(config.get('database')); 
     pryv = databaseFixture(database);
   });
   
 
   let loader; 
   beforeEach(() => {
-    loader = new MetadataLoader(database, getReggol('metadata'));
+    loader = new MetadataLoader(database, getLogger('metadata'));
   });
 
   const USER_NAME = 'foo';
@@ -66,9 +66,9 @@ describe('Metadata Loader', function () {
 
 describe('Metadata Cache', function () {
 
-  let gifnoc;
+  let config;
   before(async function () {
-    gifnoc = await getGifnoc();
+    config = await getConfig();
   });
   it('[O8AE] returns loaded metadata for N minutes', async () => {
     let n = 0; 
@@ -82,7 +82,7 @@ describe('Metadata Cache', function () {
     };
     
     // FLOW stubbing the value of loader here.
-    const cache = new MetadataCache(null, loaderStub, gifnoc);
+    const cache = new MetadataCache(null, loaderStub, config);
     
     const a = await cache.forSeries('foo', '1234', '5678');
     const b = await cache.forSeries('foo', '1234', '5678');

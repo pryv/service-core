@@ -7,7 +7,7 @@
 // @flow
 
 const path = require('path');
-const { getGifnoc, getReggol } = require('boiler').init({
+const { getConfig, getLogger } = require('boiler').init({
   appName: 'hfs-server-tests',
   baseConfigDir: path.resolve(__dirname, '../../newconfig'),
   extraConfigs: [{
@@ -24,7 +24,7 @@ const { getGifnoc, getReggol } = require('boiler').init({
 
 // Test helpers for all acceptance tests. 
 
-const reggol = require('boiler').getReggol('test-helpers');
+const logger = require('boiler').getLogger('test-helpers');
 const testHelpers = require('components/test-helpers');
 const storage = require('components/storage');
 const business = require('components/business');
@@ -42,8 +42,8 @@ exports.produceInfluxConnection = produceInfluxConnection;
 // Produces and returns a connection to MongoDB. 
 // 
 async function produceMongoConnection(): storage.Database {
-  const gifnoc = await getGifnoc();
-  const database = new storage.Database(gifnoc.get('database')); 
+  const config = await getConfig();
+  const database = new storage.Database(config.get('database')); 
   
   return database; 
 }
@@ -57,7 +57,7 @@ function produceStorageLayer(connection: storage.Database): storage.StorageLayer
   
   return new storage.StorageLayer(
     connection, 
-    getReggol('null'), 
+    getLogger('null'), 
     'attachmetsDirPath', 'previewsDirPath', 
     passwordResetRequestMaxAge,
     sessionMaxAge);
@@ -67,13 +67,13 @@ exports.produceStorageLayer = produceStorageLayer;
 
 // --------------------------------------------------------- prespawning servers
 
-reggol.debug('creating new spawn context');
+logger.debug('creating new spawn context');
 const spawner = testHelpers.spawner;
 const spawnContext = new spawner.SpawnContext('test/support/child_process');
 
 /* global after */
 after(() => {
-  reggol.debug('shutting down spawn context');
+  logger.debug('shutting down spawn context');
   spawnContext.shutdown(); 
 });
 
