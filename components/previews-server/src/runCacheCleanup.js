@@ -9,19 +9,34 @@
  * Expects settings to be passed the same way as for the main server.
  */
 
-const Cache = require('./cache.js');
-const errorHandling = require('components/errors').errorHandling;
-const utils = require('components/utils');
-const settings = require('./config').load();
-const logger = utils.logging(settings.logs).getLogger('previews-cache-worker');
-
-const cache = new Cache({
-  rootPath: settings.eventFiles.previewsDirPath,
-  maxAge: (settings.eventFiles.previewsCacheMaxAge / 1000 || 60 * 60 * 24 * 7) / 1000, // 1w
-  logger: logger
+const path = require('path');
+const { config, getLogger }  = require('boiler').init({
+  appName: 'previews-cache-clean',
+  baseConfigDir: path.resolve(__dirname, '../../api-server/newconfig'), // api-server config
+  extraConfigs: [{
+    scope: 'defaults-previews',
+    file: path.resolve(__dirname, '../newconfig/defaults-config.yaml')
+  },{
+    scope: 'defaults-data',
+    file: path.resolve(__dirname, '../../api-server/newconfig/defaults.js')
+  }, {
+    plugin: require('../../api-server/config/components/systemStreams')
+  }]
 });
 
-logger.info('Starting clean-up in ' + settings.eventFiles.previewsDirPath);
+const Cache = require('./cache.js');
+const errorHandling = require('components/errors').errorHandling;
+
+const logger = getLogger('previews-cache-worker');
+const settings = config.get('eventFiles');
+
+const cache = new Cache({
+  rootPath: settings.previewsDirPath,
+  maxAge: (settings.previewsCacheMaxAge / 1000 || 60 * 60 * 24 * 7) / 1000, // 1w
+  logger
+});
+
+logger.info('Starting clean-up in ' + settings.previewsDirPath);
 cache.cleanUp()
   .then(() => {
     logger.info('Clean-up successful.');

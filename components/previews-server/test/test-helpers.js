@@ -9,3 +9,5 @@
 // @flow
 
 process.env.NODE_ENV = 'test';
+
+require('../../test-helpers/src/boiler-init');

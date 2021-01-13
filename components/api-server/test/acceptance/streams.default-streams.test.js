@@ -12,7 +12,6 @@ const { describe, before, it } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 const ErrorIds = require('components/errors').ErrorIds;
-const Settings = require('components/api-server/src/settings');
 const Application = require('components/api-server/src/application');
 const Notifications = require('components/api-server/src/Notifications');
 const { databaseFixture } = require('components/test-helpers');
@@ -44,9 +43,8 @@ describe("System streams", function () {
 
   before(async function () {
     mongoFixtures = databaseFixture(await produceMongoConnection());
-    const settings = await Settings.load();
-
-    app = new Application(settings);
+  
+    app = new Application();
     await app.initiate();
 
     // Initialize notifications dependency
@@ -64,8 +62,8 @@ describe("System streams", function () {
       app.storageLayer.eventFiles,
       notifications,
       app.logging,
-      app.settings.get('audit').obj(),
-      app.settings.get('updates').obj());
+      app.config.get('audit'),
+      app.config.get('updates'));
   
     request = supertest(app.expressApp);
   });

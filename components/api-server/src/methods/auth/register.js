@@ -15,6 +15,7 @@ import type { MethodContext } from 'components/model';
 import type Result from '../Result';
 import type { ApiCallback } from '../API';
 
+
 /**
  * Auth API methods implementations.
  *
@@ -26,7 +27,7 @@ import type { ApiCallback } from '../API';
 module.exports = function (api, logging, storageLayer, servicesSettings) {
   // REGISTER
   const registration: Registration = new Registration(logging, storageLayer, servicesSettings);
-  const serviceRegisterConn: ServiceRegister = new ServiceRegister(servicesSettings.register, logging.getLogger('service-register'));
+  const serviceRegisterConn: ServiceRegister = new ServiceRegister(servicesSettings.register);
 
   api.register('auth.register',
     // data validation methods        

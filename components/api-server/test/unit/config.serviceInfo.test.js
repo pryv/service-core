@@ -10,24 +10,27 @@ const nock = require('nock');
 const chai = require('chai');
 const assert = chai.assert;
 const charlatan = require('charlatan');
-const { getConfig } = require('components/api-server/config/Config');
+const { getConfig } = require('boiler');
 const testServiceInfo = require('../../../../../test/service-info.json');
 
-describe('config: serviceInfo', () => {
+describe.skip('config: serviceInfo', () => {
   let config;
 
-  before(() => {
-    config = getConfig();
+  before(async () => {
+    config = await getConfig();
   });
 
   describe('init()', () => {
     describe('when dnsLess is active', () => {
+     
       before(() => {
-        config.set('dnsLess:isActive', true);
+        config.injectTestConfig({
+          dnsLess: { isActive: true }
+        });
       });
 
       it('[O4I1] should work', async () => {
-        await config.init();
+        await getConfig();
       });
       it('[KEH6] should build serviceInfo', () => {
         const serviceInfo = config.get('service');
@@ -51,12 +54,14 @@ describe('config: serviceInfo', () => {
 
     describe('when dnsLess is disabled', () => {
       before(() => {
-        config.set('dnsLess:isActive', false);
+        config.injectTestConfig({
+          dnsLess: { isActive: false },
+        });
       });
 
       describe('when "serviceInfoUrl" points to a file', () => {
         it('[WOQ8] should work', async () => {
-          await config.init();
+          await getConfig();
         });
         it('[D2P7] should load serviceInfo', () => {
           const serviceInfo = config.get('service');
@@ -84,7 +89,7 @@ describe('config: serviceInfo', () => {
         });
 
         it('[4WYN] should work', async () => {
-          await config.init();
+          await getConfig();
         });
         it('[NY3E] should load serviceInfo', () => {
           const configServiceInfo = config.get('service');

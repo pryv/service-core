@@ -23,11 +23,11 @@ import type Application from '../application';
 // Set up events route handling.
 module.exports = function(expressApp: express$Application, app: Application) {
   const api = app.api;
-  const settings = app.settings;
+  const config = app.config;
   const storage = app.storageLayer;
 
-  const attachmentsDirPath = settings.get('eventFiles.attachmentsDirPath').str();
-  const filesReadTokenSecret = settings.get('auth.filesReadTokenSecret').str();
+  const attachmentsDirPath = config.get('eventFiles:attachmentsDirPath');
+  const filesReadTokenSecret = config.get('auth:filesReadTokenSecret');
 
   const loadAccessMiddleware = middleware.loadAccess(storage);
 

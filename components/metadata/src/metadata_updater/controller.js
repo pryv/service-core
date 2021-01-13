@@ -11,13 +11,11 @@ const storage = require('components/storage');
 const { PendingUpdate, PendingUpdatesMap } = require('./pending_updates');
 const { Flush } = require('./flush');
 
-import type { Logger } from 'components/utils/src/logging';
-
 // Controller for the metadata updates. Manages operation timing and starts 
 // actual update flush operation. 
 // 
 class Controller {
-  logger: Logger;
+  logger;
   
   // The timer set by #runEach.
   timer: ?IntervalID; 
@@ -29,7 +27,7 @@ class Controller {
   db: storage.StorageLayer;
     
   constructor(
-    db: storage.StorageLayer, map: PendingUpdatesMap, logger: Logger) 
+    db: storage.StorageLayer, map: PendingUpdatesMap, logger) 
   {
     this.logger = logger; 
     this.db = db;

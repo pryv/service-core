@@ -465,7 +465,7 @@ describe('system (ex-register)', function () {
           }
           should(data.indexOf(newUserDataExpected.passwordHash)).be.equal(-1);
           if (/passwordHash/.test(data))
-            should(data.indexOf('passwordHash=(hidden)')).be.aboveOrEqual(0);
+            should(data.indexOf('(hidden password)')).be.aboveOrEqual(0);
           callback();
         });
       }

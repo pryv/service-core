@@ -14,10 +14,9 @@ const { describe, before, it } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 
-const { getConfig } = require('components/api-server/config/Config');
+const { getConfig } = require('boiler');
 const ErrorIds = require('components/errors').ErrorIds;
 const ErrorMessages = require('components/errors/src/ErrorMessages');
-const Settings = require('components/api-server/src/settings');
 const Application = require('components/api-server/src/application');
 const Notifications = require('components/api-server/src/Notifications');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
@@ -87,14 +86,15 @@ describe("Events of system streams", () => {
   }
 
   before(async function () {
-    config = getConfig();
-    config.set('dnsLess:isActive', false);
+    config = await getConfig();
+    config.injectTestConfig({
+      dnsLess: { isActive: false}
+    });
     const helpers = require('components/api-server/test/helpers');
     validation = helpers.validation;
     mongoFixtures = databaseFixture(await produceMongoConnection());
-    const settings = await Settings.load();
-
-    app = new Application(settings);
+  
+    app = new Application();
     await app.initiate();
 
     // Initialize notifications dependency
@@ -109,20 +109,20 @@ describe("Events of system streams", () => {
       app.api,
       app.storageLayer.events,
       app.storageLayer.eventFiles,
-      app.settings.get('auth').obj(),
-      app.settings.get('service.eventTypes').str(),
+      app.config.get('auth'),
+      app.config.get('service:eventTypes'),
       notifications,
       app.logging,
-      app.settings.get('audit').obj(),
-      app.settings.get('updates').obj(),
-      app.settings.get('openSource').obj(),
-      app.settings.get('services').obj());
+      app.config.get('audit'),
+      app.config.get('updates'),
+      app.config.get('openSource'),
+      app.config.get('services'));
 
     request = supertest(app.expressApp);
   });
 
   after(async function () {
-    await config.resetConfig();
+     config.injectTestConfig({});
   });
 
   describe('GET /events', () => {

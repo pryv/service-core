@@ -13,11 +13,10 @@ const assert = require('chai').assert;
 const { describe, before, it, after } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
-const Settings = require('../src/settings');
 const Application = require('../src/application');
 const InfluxRepository = require('components/business/src/series/repository');
 const DataMatrix = require('components/business/src/series/data_matrix');
-const { getConfig } = require('components/api-server/config/Config');
+const { getConfig } = require('boiler');
 const UsersRepository = require('components/business/src/users/repository');
 const { databaseFixture } = require('components/test-helpers');
 const {
@@ -37,34 +36,40 @@ let usersRepository;
 let influx;
 let influxRepository;
 
-describe('DELETE /users/:username', () => {
+describe('DELETE /users/:username', async () => {
   const settingsToTest = [[true, false], [false, false], [true, true]];
   const testIDs = [
     ['CM4Q', 'BQXA', '4Y76', '710F', 'GUPH', 'JNVS', 'C58U'],
     ['U21Z', 'K4J1', 'TIKT', 'WMMV', '9ZTM', 'T3UK', 'O73J'],
     ['TPP2', '581Z', 'Z2FH', '4IH8', '33T6', 'SQ8P', '1F2Y']];
   for (let i = 0; i < settingsToTest.length; i++) {
+    const config = await getConfig();
+
+    // skip tests that are not in scope
+    if (config.get('openSource:isActive') !== settingsToTest[i][1]) continue;
+
     describe(`dnsLess:isActive = ${settingsToTest[i][0]}, openSource:isActive = ${settingsToTest[i][1]}`, function() {
       before(async function() {
-        const settings = await Settings.load();
-        const config = getConfig();
-        config.set('dnsLess:isActive', settingsToTest[i][0]);
-        config.set('openSource:isActive', settingsToTest[i][1]);
-        app = new Application(settings);
+        
+        config.injectTestConfig({
+          dnsLess: {isActive: settingsToTest[i][0]}
+        });
+        
+        app = new Application();
         await app.initiate();
 
         require('../src/methods/auth/delete')(
           app.api,
           app.logging,
           app.storageLayer,
-          app.settings
+          app.config
         );
 
         require('../src/methods/auth/delete-opensource')(
           app.api,
           app.logging,
           app.storageLayer,
-          app.settings
+          app.config
         );
 
         request = supertest(app.expressApp);
@@ -72,7 +77,7 @@ describe('DELETE /users/:username', () => {
         mongoFixtures = databaseFixture(await produceMongoConnection());
         await mongoFixtures.context.cleanEverything();
 
-        influx = produceInfluxConnection(settings);
+        influx = produceInfluxConnection(app.config);
         influxRepository = new InfluxRepository(influx);
 
         usersRepository = new UsersRepository(app.storageLayer.events);

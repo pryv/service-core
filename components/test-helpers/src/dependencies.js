@@ -4,31 +4,28 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var utils = require('components/utils'),
-    settings = utils.config.load(),
-    logging = utils.logging(settings.logs),
-    storage = require('components/storage'),
+var storage = require('components/storage'),
     _ = require('lodash');
+
+const { config, getLogger } = require('boiler');
     
-const database = new storage.Database(
-  settings.database, logging.getLogger('database'));
+const database = new storage.Database(config.get('database'));
 
 /**
  * Test process dependencies.
  */
 var deps = module.exports = {
-  settings: settings,
-  logging: logging,
+  settings: config.get(),
   storage: {
     database: database,
-    versions: new storage.Versions(database, settings.eventFiles.attachmentsDirPath,
-      logging.getLogger('versions')),
+    versions: new storage.Versions(database, config.get('eventFiles:attachmentsDirPath'),
+    getLogger('versions')),
     passwordResetRequests: new storage.PasswordResetRequests(database),
     sessions: new storage.Sessions(database),
     user: {
       accesses: new storage.user.Accesses(database),
       eventFiles: new storage.user.EventFiles(
-        settings.eventFiles, logging.getLogger('eventFiles')),
+        config.get('eventFiles'), getLogger('eventFiles')),
       events: new storage.user.Events(database), 
       followedSlices: new storage.user.FollowedSlices(database),
       streams: new storage.user.Streams(database),

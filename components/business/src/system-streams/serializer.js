@@ -8,9 +8,8 @@
 const _ = require('lodash');
 const treeUtils = require('components/utils').treeUtils;
 
-const getConfig: () => Config = require('components/api-server/config/Config').getConfig;
-import type { Config } from 'components/api-server/config/Config';
-const config: Config = getConfig();
+
+const { config } = require('boiler');
 
 const readable = 'readable-default-streams';
 const allAccountStreams = 'all-default-streams';
@@ -26,8 +25,8 @@ const accountStreamsConfigPath = 'systemStreams:account';
  * structure of the account info
  */
 class SystemStreamsSerializer {
-  systemStreamsSettings: Config;
-  accountStreamsSettings: Config;
+  systemStreamsSettings;
+  accountStreamsSettings;
 
   // singleton calcualted values
   // static
@@ -134,6 +133,7 @@ class SystemStreamsSerializer {
    */
   static getAllAccountStreamsLeaves () {
     if (!SystemStreamsSerializer.allAccountStreamsLeaves) {
+      
       const flatStreamsList = treeUtils.flattenTreeWithoutParents(config.get(accountStreamsConfigPath));
       let flatStreamsListObj = {};
       let i;

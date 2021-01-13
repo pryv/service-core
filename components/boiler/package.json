@@ -1,0 +1,16 @@
+{
+  "name": "boiler",
+  "version": "1.0.0",
+  "private": true,
+  "homepage": "http://pryv.com",
+  "author": "Pryv S.A. <support@pryv.com> (http://pryv.com)",
+  "main": "./src/index.js",
+  "scripts": {},
+  "dependencies": {
+    "debug": "^4.3.1",
+    "js-yaml": "^4.0.0",
+    "nconf": "^0.10.0",
+    "superagent": "^6.1.0",
+    "winston": "^3.3.3"
+  }
+}

@@ -16,10 +16,7 @@ const treeUtils = require('components/utils/src/treeUtils');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 const UsersRepository = require('components/business/src/users/repository');
 
-const getConfig: () => Config = require('components/api-server/config/Config')
-  .getConfig;
-import type { Config } from 'components/api-server/config/Config';
-const config: Config = getConfig();
+const { config } = require('boiler');
 
 class User {
   // User properties that exists by default (email could not exist with specific config)

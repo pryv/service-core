@@ -25,7 +25,6 @@ const NATS_WEBHOOKS_ACTIVATE_CHANNEL = require('components/utils').messaging.NAT
 const NATS_WEBHOOKS_DELETE_CHANNEL = require('components/utils').messaging.NATS_WEBHOOKS_DELETE;
 
 import type { StorageLayer } from 'components/storage';
-import type { Logger } from 'components/utils';
 import type { MethodContext } from 'components/model';
 
 import type API from '../API';
@@ -48,7 +47,7 @@ type Access = {
 
 module.exports = function produceWebhooksApiMethods(
   api: API,
-  logger: Logger,
+  logger,
   wehbooksSettings: WebhooksSettingsHolder,
   storageLayer: StorageLayer) {
 

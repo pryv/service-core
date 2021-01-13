@@ -8,17 +8,18 @@
 
 const urllib = require('url');
 const superagent = require('superagent');
-import type { Logger } from 'components/utils/src/logging';
 const ErrorIds = require('components/errors').ErrorIds,
   errors = require('components/errors').factory,
   ErrorMessages = require('components/errors/src/ErrorMessages');
+
+const { getLogger } = require('boiler');
 class ServiceRegister {
   config: {}; 
-  logger: Logger;
+  logger;
 
-  constructor(config: {}, logger: Logger) {
+  constructor(config: {}) {
     this.config = config; 
-    this.logger = logger;
+    this.logger = getLogger('service-register');
   }
 
   async validateUser (

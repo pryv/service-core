@@ -7,6 +7,7 @@
 const errorHandling = require('components/errors').errorHandling;
 const APIError = require('components/errors').APIError;
 const errors = require('components/errors').factory;
+const { getLogger } = require('boiler');
 
 /*jshint -W098*/
 
@@ -15,7 +16,7 @@ const errors = require('components/errors').factory;
  * TODO: (re)move that once something's been done about api-server's own errors middleware
  */
 module.exports = function (logging) {
-  const logger = logging.getLogger('routes');
+  const logger = getLogger('routes');
 
   /*eslint-disable no-unused-vars*/
   return function handleError(error, req, res, next) {

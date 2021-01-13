@@ -14,10 +14,8 @@ const { describe, before, it } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 
-const { getConfig } = require('components/api-server/config/Config');
 const ErrorIds = require('components/errors').ErrorIds;
 const ErrorMessages = require('components/errors/src/ErrorMessages');
-const Settings = require('components/api-server/src/settings');
 const Application = require('components/api-server/src/application');
 const Notifications = require('components/api-server/src/Notifications');
 const accessLogic = require('components/model/src/accessLogic');
@@ -25,6 +23,8 @@ const SystemStreamsSerializer = require('components/business/src/system-streams/
 
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
+
+const { getConfig } = require('boiler');
 
 describe("Accesses with account streams", function () {
   let config;
@@ -79,13 +79,11 @@ describe("Accesses with account streams", function () {
 
   before(async function () {
     const helpers = require('components/api-server/test/helpers');
-    config = getConfig();
+    config = await getConfig();
     validation = helpers.validation;
     mongoFixtures = databaseFixture(await produceMongoConnection());
 
-    const settings = await Settings.load();
-
-    app = new Application(settings);
+    app = new Application();
     await app.initiate();
 
     // Initialize notifications dependency
@@ -97,7 +95,6 @@ describe("Accesses with account streams", function () {
     notifications.serverReady();
     require("components/api-server/src/methods/accesses")(
       app.api,
-      app.getLogger('methods/accesses'),
       notifications,
       app.getUpdatesSettings,
       app.storageLayer);
@@ -106,14 +103,14 @@ describe("Accesses with account streams", function () {
       app.api,
       app.storageLayer.events,
       app.storageLayer.eventFiles,
-      app.settings.get('auth').obj(),
-      app.settings.get('service.eventTypes').str(),
+      app.config.get('auth'),
+      app.config.get('service:eventTypes'),
       notifications,
       app.logging,
-      app.settings.get('audit').obj(),
-      app.settings.get('updates').obj(),
-      app.settings.get('openSource').obj(),
-      app.settings.get('services').obj());
+      app.config.get('audit'),
+      app.config.get('updates'),
+      app.config.get('openSource'),
+      app.config.get('services'));
     request = supertest(app.expressApp);
   });
 

@@ -25,8 +25,9 @@ const accessSchema = require('../schema/access');
 const string = require('./helpers/string');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
 
+const { getLogger } = require('boiler');
+
 import type { StorageLayer } from 'components/storage';
-import type { Logger } from 'components/utils';
 import type { MethodContext } from 'components/model';
 
 import type API from '../API';
@@ -51,11 +52,11 @@ type UpdatesSettingsHolder = {
 
 module.exports = function produceAccessesApiMethods(
   api: API, 
-  logger: Logger, 
   notifications: Notifications, 
   updatesSettings: UpdatesSettingsHolder, 
   storageLayer: StorageLayer) 
 {
+  const logger = getLogger('methods:accesses');
   const dbFindOptions = { projection: 
     { calls: 0, deleted: 0 } };
 

@@ -20,7 +20,6 @@ const Paths = require('../routes/Paths');
 
 const ChangeNotifier = require('./change_notifier');
 
-import type { Logger } from 'components/utils';
 import type { StorageLayer } from 'components/storage';
 import type { CustomAuthFunction } from 'components/model';
 
@@ -30,7 +29,7 @@ import type { SocketIO$Handshake } from './Manager';
 // Initializes the SocketIO subsystem. 
 //
 function setupSocketIO(
-  server: net$Server, logger: Logger, 
+  server: net$Server, logger, 
   notifications: EventEmitter, api: API, 
   storageLayer: StorageLayer, 
   customAuthStepFn: ?CustomAuthFunction,

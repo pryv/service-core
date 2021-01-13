@@ -22,16 +22,19 @@ const SystemStreamsSerializer = require('components/business/src/system-streams/
 const UsersRepository = require('components/business/src/users/repository');
 const User = require('components/business/src/users/User');
 const charlatan = require('charlatan');
-const { getConfig } = require('components/api-server/config/Config');
+const { config, getConfig, getLogger } = require('boiler');
+const logger = getLogger('test-helpers:data');
 
 // users
 const users = exports.users = require('./data/users');
 const defaultUser = users[0];
-const config = getConfig();
 
 const customAccountProperties = buildCustomAccountProperties();
 
+
 exports.resetUsers = async () => {
+  logger.debug('resetUsers');
+  await getConfig(); // lock up to the time config is ready
   await bluebird.fromCallback(cb => storage.user.events.database.deleteMany(
     { name: 'events' },
     {

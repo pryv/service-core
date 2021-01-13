@@ -26,14 +26,13 @@ const Registration = require('components/business/src/auth/registration');
 const UsersRepository = require('components/business/src/users/repository');
 const ErrorIds = require('components/errors/src/ErrorIds');
 const ErrorMessages = require('components/errors/src/ErrorMessages');
-const { getConfig } = require('components/api-server/config/Config');
-
 const assert = require('assert');
 
 const { ProjectVersion } = require('components/middleware/src/project_version');
 
 const {TypeRepository, isSeriesType} = require('components/business').types;
 
+const { getLogger, config } = require('boiler');
 
 const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
 const NATS_UPDATE_EVENT = require('components/utils').messaging
@@ -58,15 +57,11 @@ module.exports = function (
 ) {
 
   const usersRepository = new UsersRepository(userEventsStorage);
-  const config = getConfig();
 
   // initialize service-register connection
   let serviceRegisterConn = {};
   if (!config.get('dnsLess:isActive')) {
-    serviceRegisterConn = new ServiceRegister(
-      config.get('services:register'),
-      logging.getLogger('service-register')
-    );
+    serviceRegisterConn = new ServiceRegister(config.get('services:register'));
   }
   
   // Initialise the project version as soon as we can. 
@@ -75,9 +70,9 @@ module.exports = function (
   
   // Update types and log error
   typeRepo.tryUpdate(eventTypesUrl, version)
-    .catch((err) => logging.getLogger('typeRepo').warn(err));
+    .catch((err) => getLogger('typeRepo').warn(err));
     
-  const logger = logging.getLogger('methods/events');
+  const logger = getLogger('methods:events');
   
   let natsPublisher;
   if (!openSourceSettings.isActive) {
@@ -125,6 +120,7 @@ module.exports = function (
         if (['[', '{'].includes(streamsParam.substr(0, 1))) { // we detect if it's JSON by looking at first char
           // Note: since RFC 7159 JSON can also starts with ", true, false or number - this does not apply in this case.
           try {
+            logger.debug('Failed parsing', streamsParam);
             streamsParam = JSON.parse(streamsParam);
           } catch (e) {
             throw ('Error while parsing JSON ' + e);
@@ -656,7 +652,7 @@ module.exports = function (
     validateEventContentAndCoerce,
     doesEventBelongToTheAccountStream,
     validateAccountStreamsEventEdition,
-    generateLogIfNeeded,
+    generateVersionIfNeeded,
     updateAttachments,
     appendAccountStreamsEventDataForUpdate,
     updateEvent,
@@ -737,19 +733,21 @@ module.exports = function (
 
   }
 
-  function generateLogIfNeeded(context, params, result, next) {
+  /**
+   * Depends on context.oldContent
+   */
+  function generateVersionIfNeeded(context, params, result, next) {
     if (!auditSettings.forceKeepHistory) {
       return next();
     }
 
-    context.oldContent = _.extend(context.oldContent, {headId: context.content.id});
+    context.oldContent = _.extend(context.oldContent, {headId: context.oldContent.id});
     delete context.oldContent.id;
 
     userEventsStorage.insertOne(context.user, context.oldContent, function (err) {
       if (err) {
         return next(errors.unexpectedError(err));
       }
-      delete context.oldContent;
       next();
     });
   }
@@ -1183,6 +1181,7 @@ module.exports = function (
     checkEventForDelete,
     doesEventBelongToTheAccountStream,
     validateAccountStreamsEventDeletion,
+    generateVersionIfNeeded,
     function (context, params, result, next) {
       if (!context.oldContent.trashed) {
         // move to trash

@@ -13,11 +13,10 @@ const { describe, before, it } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 const ErrorIds = require('components/errors').ErrorIds;
-const Settings = require('components/api-server/src/settings');
 const Application = require('components/api-server/src/application');
 const Notifications = require('components/api-server/src/Notifications');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const { getConfig } = require('components/api-server/config/Config');
+const { config } = require('boiler');
 
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
@@ -98,10 +97,8 @@ describe('Account with system streams', function () {
   before(async function () {
     helpers = require('components/api-server/test/helpers');
     mongoFixtures = databaseFixture(await produceMongoConnection());
-    const settings = await Settings.load();
-    config = getConfig();
-    config.set('dnsLess:isActive', false);
-    app = new Application(settings);
+    config.injectTestConfig({dnsLess: { isActive: true }})  
+    app = new Application();
     await app.initiate();
 
     // Initialize notifications dependency
@@ -115,27 +112,27 @@ describe('Account with system streams', function () {
       app.api,
       app.storageLayer.events,
       app.storageLayer.passwordResetRequests,
-      app.settings.get('auth').obj(),
-      app.settings.get('services').obj(),
+      app.config.get('auth'),
+      app.config.get('services'),
       notifications,
       app.logging);
     require("components/api-server/src/methods/events")(
       app.api,
       app.storageLayer.events,
       app.storageLayer.eventFiles,
-      app.settings.get('auth').obj(),
-      app.settings.get('service.eventTypes').str(),
+      app.config.get('auth'),
+      app.config.get('service:eventTypes'),
       notifications,
       app.logging,
-      app.settings.get('audit').obj(),
-      app.settings.get('updates').obj(),
-      app.settings.get('openSource').obj(),
-      app.settings.get('services').obj());
+      app.config.get('audit'),
+      app.config.get('updates'),
+      app.config.get('openSource'),
+      app.config.get('services'));
     request = supertest(app.expressApp);
   });
 
   after(async function () {
-    await config.resetConfig();
+    config.injectTestConfig({});
   });
 
   describe('GET /account', () => {
@@ -147,6 +144,7 @@ describe('Account with system streams', function () {
         // create additional events for all editable streams
         const settings = _.cloneDeep(helpers.dependencies.settings);
         scope = nock(settings.services.register.url);
+        
         scope.put('/users',
           (body) => {
             serviceRegisterRequest = body;
@@ -400,7 +398,7 @@ describe('Account with system streams', function () {
               language: newLanguage,
             })
             .set('authorization', access.token);
-          
+
           activeEmailAfter = await getActiveEvent('email');
           notActiveEmailAfter = await getNotActiveEvent('email');
           activeLanguageAfter = await getActiveEvent('language');

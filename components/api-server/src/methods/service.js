@@ -10,15 +10,12 @@ import type { MethodContext } from 'components/model';
 import type API from '../API';
 import type { ApiCallback } from '../API';
 import type Result from '../Result';
-import type { Logger } from 'components/utils';
-import type { ConfigAccess } from '../settings';
 
 const _ = require('lodash');
-const { getConfig, Config } = require('components/api-server/config/Config');
+const { getConfig } = require('boiler');
 
-module.exports = function (api: API, logger: Logger, settings: ConfigAccess) {
+module.exports = function (api: API) {
   this.serviceInfo = null;
-  const config: Config = getConfig();
 
   api.register('service.info',
     getServiceInfo
@@ -26,7 +23,7 @@ module.exports = function (api: API, logger: Logger, settings: ConfigAccess) {
 
   async function getServiceInfo(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {  
     if (! this.serviceInfo) {
-      this.serviceInfo = config.get('service');
+      this.serviceInfo = (await getConfig()).get('service');
     }
     result = _.merge(result, this.serviceInfo);
     return next();

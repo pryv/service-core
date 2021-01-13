@@ -9,9 +9,8 @@ const { describe, before, it, after } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 const bluebird = require('bluebird');
-const Settings = require('../src/settings');
 const Application = require('../src/application');
-const { getConfig } = require('components/api-server/config/Config');
+const { getConfig } = require('boiler');
 const UsersRepository = require('components/business/src/users/repository');
 const User = require('components/business/src/users/User');
 const { databaseFixture } = require('components/test-helpers');
@@ -27,26 +26,26 @@ let res;
 describe('[BMM2] registration: single-node', () => {
   let config;
   before(async function () {
-    config = getConfig();
-    await config.init();
-    config.set('dnsLess:isActive', true);
-    config.set('openSource:isActive', false);
-    config.set('custom:systemStreams', null);
+    config = await getConfig();
+    config.injectTestConfig({
+      dnsLess: {isActive: true},
+      openSource: {isActive: false},
+      custom: { systemStreams: null}
+    });
   });
   after(async function () {
-    await config.resetConfig();
+    config.injectTestConfig({});
   });
   describe('POST /users', () => {
     before(async function() {
-      const settings = await Settings.load();
-      app = new Application(settings);
+      app = new Application();
       await app.initiate();
 
       require('../src/methods/auth/register-dnsless')(
         app.api,
         app.logging,
         app.storageLayer,
-        app.settings.get('services').obj(),
+        app.config.get('services'),
       );
 
       // get events for a small test of valid token
@@ -60,14 +59,14 @@ describe('[BMM2] registration: single-node', () => {
         app.api,
         app.storageLayer.events,
         app.storageLayer.eventFiles,
-        app.settings.get('auth').obj(),
-        app.settings.get('service.eventTypes').str(),
+        app.config.get('auth'),
+        app.config.get('service:eventTypes'),
         notifications,
         app.logging,
-        app.settings.get('audit').obj(),
-        app.settings.get('updates').obj(),
-        app.settings.get('openSource').obj(),
-        app.settings.get('services').obj());
+        app.config.get('audit'),
+        app.config.get('updates'),
+        app.config.get('openSource'),
+        app.config.get('services'));
       
       request = supertest(app.expressApp);
       

@@ -28,7 +28,6 @@ module.exports = function initContext(
   ) {
     const authorizationHeader = req.headers['authorization'];
 
-
     // FLOW We should not do this, but we're doing it.
     req.context = new MethodContext(
       req.params.username,

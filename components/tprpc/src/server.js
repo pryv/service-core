@@ -8,7 +8,7 @@
 
 const bluebird = require('bluebird');
 const TChannel = require('tchannel');
-const debug = require('debug')('tprpc.server');
+const logger = require('boiler').getLogger('tprpc.server');
 const lodash = require('lodash');
 
 const Definition = require('./definition');
@@ -69,21 +69,21 @@ class Server {
 
     res.headers.as = 'raw';
     
-    debug('request to ', methodName);
+    logger.debug('request to ', methodName);
     
     try {
       if (impl == null) 
         throw new Error(`No such method '${methodName}'.`);
       
       const result = await impl.call(handler, request);
-      debug('success');
+      logger.debug('success');
       
       const encodedResult = resType.encode(result).finish();
       
       res.sendOk('result', encodedResult);
     }
     catch (err) {
-      debug('errors out', err);
+      logger.debug('errors out', err);
       res.sendNotOk('error', err.toString());
     }
   }

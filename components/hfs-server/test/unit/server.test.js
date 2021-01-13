@@ -12,8 +12,6 @@ const should = require('should');
 const superagent = require('superagent');
 const url = require('url');
 
-const { loadSettings } = require('./test-helpers');
-
 const Application = require('../../src/application');
 
 describe('Server', () => {
@@ -22,7 +20,7 @@ describe('Server', () => {
   let application, server;
   before(async () => {
     application = new Application();
-    await application.init(await loadSettings()); 
+    await application.init(); 
     server = application.server; 
   }); 
   

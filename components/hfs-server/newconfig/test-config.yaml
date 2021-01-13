@@ -1,0 +1,14 @@
+---
+serviceInfoUrl: file://test/service-info.json
+openSource:
+  isActive: false
+database:
+  host: localhost
+  name: pryv-node-test
+services:
+  register:
+    url: http://127.0.0.1:8080
+logs:
+  console:
+    active: false
+    level: warn

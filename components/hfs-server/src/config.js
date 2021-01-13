@@ -44,7 +44,7 @@ function produce() {
       host: { format: String, default: 'influxdb' }, 
       port: { format: Number, default: 8086 },
     },
-    mongodb: {
+    database: {
       // These should be the production defaults. 
       host:         { format: String, default: 'mongodb' }, 
       port:         { format: Number, default: 27017 }, 

@@ -6,15 +6,12 @@
  */
 /* @flow */
 
-import type Settings from './Settings';
-
 const http = require('http');
 const express = require('express');
 const bluebird = require('bluebird');
 
 const bodyParser = require('body-parser');
 const middleware = require('components/middleware');
-const logging = require('components/utils/src/logging');
 const errorsMiddleware = require('./middleware/errors');
 const tracingMiddlewareFactory = require('./tracing/middleware/trace');
 const clsWrapFactory = require('./tracing/middleware/clsWrap');
@@ -25,19 +22,19 @@ const { ProjectVersion } = require('components/middleware/src/project_version');
 const controllerFactory = require('./web/controller');
 const getAuth = require('../../middleware/src/getAuth');
 
-const KEY_IP = 'http.ip';
-const KEY_PORT = 'http.port';  
+const KEY_IP = 'http:ip';
+const KEY_PORT = 'http:port';  
 
-import type {Logger} from 'components/utils/src/logging';
 import type Context from './context';
 
+const { getConfig, getLogger } = require('boiler');
 
 /**
  * HTTP server responsible for the REST api that the HFS server exposes. 
  */
 class Server {
   // Server settings.
-  settings: Settings;
+  config;
   
   // The express application. 
   expressApp: express$Application; 
@@ -49,27 +46,22 @@ class Server {
   server: net$Server; 
   
   // Logger used here.
-  logger: Logger; 
-  errorLogger: Logger; 
+  logger; 
+  errorlogger; 
   
   // Web request context
   context: Context; 
   
   
 
-  constructor(settings: Settings, context: Context) {
-    const logSettings = settings.get('logs').obj();
-    const logFactory = logging(logSettings);
-    
-    this.logger = logFactory.getLogger('hfs-server');
-    this.errorLogger = logFactory.getLogger('errors');
-    this.settings = settings; 
+  constructor(config, context: Context) {
+    this.logger = getLogger('server');
+    this.errorLogger = this.logger.getLogger('errors');
+    this.config = config; 
   
     this.context = context; 
     
-    const ip = settings.get(KEY_IP).str(); 
-    const port = settings.get(KEY_PORT).num(); 
-    this.baseUrl = `http://${ip}:${port}/`;
+   
     
     this.logger.info('constructed.');
   }
@@ -82,15 +74,17 @@ class Server {
    *    started and accepts connections.
    */
   async start(): Promise<true> {
-    this.logger.info('starting...');
+    await getConfig(); // makes sure config is loaded
+    const ip = this.config.get(KEY_IP); 
+    const port = this.config.get(KEY_PORT); 
+    this.baseUrl = `http://${ip}:${port}/`;
+    this.logger.info('starting... on port: ' + port);
+    this.logger.debug('startinget on: ' + this.baseUrl);
     
-    const settings = this.settings;
     const app = await this.setupExpress();
     
     this.expressApp = app;
     
-    const ip = settings.get(KEY_IP).str(); 
-    const port = settings.get(KEY_PORT).num(); 
     
     var server = this.server = http.createServer(app);
     
@@ -132,9 +126,8 @@ class Server {
    */
   setupExpress(): Promise<express$Application> {
     const logger = this.logger;
-    const settings = this.settings;
-    const logSettings = settings.get('logs').obj();
-    const traceEnabled = settings.get('trace.enable').bool(); 
+    const config = this.config;
+    const traceEnabled = config.get('trace:enable'); 
     
     const pv = new ProjectVersion(); 
     const version = pv.version(); 
@@ -149,7 +142,7 @@ class Server {
       app.use(tracingMiddlewareFactory(this.context));
     }
     app.use(middleware.subdomainToPath([]));
-    app.use(middleware.requestTrace(express, logging(logSettings)));
+    app.use(middleware.requestTrace(express, logger));
     app.use(bodyParser.json({ limit: '10mb' }));
     app.use(middleware.override);
     app.use(middleware.commonHeaders(version));

@@ -6,46 +6,47 @@
  */
 // @flow
 
+const path = require('path');
+require('boiler').init({
+  appName: 'webhooks',
+  baseConfigDir: path.resolve(__dirname, '../newconfig/'),
+  extraConfigs: [{
+    scope: 'serviceInfo',
+    key: 'service',
+    urlFromKey: 'serviceInfoUrl'
+  }]
+});
+
+const {getConfig, getLogger} = require('boiler');
+
 const assert = require('assert');
 
-const loggingSubsystem = require('components/utils/src/logging');
 const storage = require('components/storage');
-const Settings = require('./settings');
-import type { Logger, LogFactory } from 'components/utils/src/logging';
 
 const services = {
   WebhooksService: require('components/webhooks/src/service'),
 };
 
 class Application {
-  logFactory: LogFactory;
-  logger: Logger;
-  settings: Settings;
+  logger;
+  settings;
 
   webhooksService: services.WebhooksService;
 
   async setup() {
-    this.initSettings();
+    await this.initSettings();
     this.initLogger();
 
     assert(this.logger != null);
     assert(this.settings != null);
+    this.logger.debug('setup done');
   }
 
-  initSettings() {
-    this.settings = new Settings();
+  async initSettings() {
+    this.settings = await getConfig();
   }
   initLogger() {
-    const settings = this.settings;
-    const loggerSettings = settings.get('logs');
-    const logFactory = (this.logFactory = loggingSubsystem(
-      loggerSettings
-    ).getLogger);
-
-    const logger = (this.logger = logFactory('webhooks'));
-
-    const consoleLevel = settings.get('logs.console.level');
-    logger.info(`Console logging is configured at level '${consoleLevel}'`);
+    this.logger = getLogger('application');
   }
 
   async run() {
@@ -56,18 +57,18 @@ class Application {
 
     // Connect to MongoDB
     const storageLayer = produceStorageLayer(
-      settings.get('mongodb'),
-      this.getLogger('mongodb')
+      settings.get('database'),
+      getLogger('database')
     );
 
     // Construct the service
     const service = new services.WebhooksService({
       storage: storageLayer,
-      logger: this.getLogger('webhooks_service'),
+      logger: getLogger('webhooks_service'),
       settings: settings
     });
     this.webhooksService = service;
-
+    logger.info('run() done');
     // And start it.
     await service.start();
   }
@@ -76,19 +77,13 @@ class Application {
     return this.webhooksService.stop();
   }
 
-  // Produces and returns a new logger for a given `topic`.
-  //
-  getLogger(topic: string): Logger {
-    return this.logFactory(topic);
-  }
 }
 module.exports = Application;
 
 function produceStorageLayer(settings, logger) {
   logger.info(`Connecting to MongoDB (@ ${settings.host}:${settings.port}/${settings.name}) (${settings.authUser})`);
 
-  const mongoConn = new storage.Database(
-    settings, logger);
+  const mongoConn = new storage.Database(settings);
 
   const storageLayer = new storage.StorageLayer(
     mongoConn,

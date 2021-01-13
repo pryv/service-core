@@ -11,6 +11,7 @@ const Paths = require('./Paths');
 const methodCallback = require('./methodCallback');
 const contentType = require('components/middleware').contentType;
 const _ = require('lodash');
+const { getLogger } = require('boiler');
 
 import type Application from '../application';
 
@@ -18,11 +19,11 @@ import type Application from '../application';
 module.exports = function system(expressApp: express$Application, app: Application) {
 
   const systemAPI = app.systemAPI;
-  const settings = app.settings;
+  const config = app.config;
   
-  const adminAccessKey = settings.get('auth.adminAccessKey').str();
+  const adminAccessKey = config.get('auth:adminAccessKey');
 
-  const logger = app.logFactory('routes/system');
+  const logger = getLogger('routes:system');
 
   /**
    * Handle common parameters.

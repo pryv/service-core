@@ -12,7 +12,6 @@ const rpc = require('components/tprpc');
 const metadata = require('components/metadata');
 
 import type { IMetadataUpdaterService, IUpdateResponse, IPendingUpdate } from 'components/metadata';
-import type { Logger } from 'components/utils';
 
 async function produceMetadataUpdater(endpoint: string): Promise<IMetadataUpdaterService> {
   const definition = await metadata.updater.definition;
@@ -25,9 +24,9 @@ async function produceMetadataUpdater(endpoint: string): Promise<IMetadataUpdate
 // be used - and no updates will be made. 
 // 
 class MetadataForgetter implements IMetadataUpdaterService {
-  logger: Logger; 
+  logger; 
   
-  constructor(logger: Logger) {
+  constructor(logger) {
     this.logger = logger; 
   }
   
