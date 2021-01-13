@@ -55,7 +55,8 @@ The configuration can be obtained in two ways:
 
 ```javascript
 // synchronous loading of the configuration 
-const { config } = require('boiler'); // Util the asynchronous contents such as URL are loaded, items might not be available.
+const { getConfigUnsafe } = require('boiler'); // Util the asynchronous contents such as URL are loaded, items might not be available.
+const config = await getConfigUnsafe();
 
 // promised based loading of the configuration
 const { getConfig } = require('boiler');

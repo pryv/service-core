@@ -10,7 +10,7 @@ const methodCallback = require('../methodCallback');
 const API = require('../../API');
 import type Application from '../../application';
 const _ = require('lodash');
-const { config } = require('boiler');
+const { getConfigUnsafe } = require('boiler');
 
 /**
  * Routes for users
@@ -19,7 +19,7 @@ const { config } = require('boiler');
 module.exports = function (expressApp: express$Application, app: Application) {
 
   const api: API = app.api;
-  const isDnsLess = config.get('dnsLess:isActive');
+  const isDnsLess = getConfigUnsafe().get('dnsLess:isActive');
 
   // POST /users: create a new user
   expressApp.post('/users', function (req: express$Request, res: express$Response, next: express$NextFunction) {

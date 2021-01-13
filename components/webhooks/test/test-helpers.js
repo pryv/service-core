@@ -9,7 +9,7 @@
 process.env.NODE_ENV = 'test';
 
 const path = require('path');
-const { config } = require('boiler').init({
+const { getConfigUnsafe } = require('boiler').init({
   appName: 'webhooks-test',
   baseConfigDir: path.resolve(__dirname, '../newconfig/'),
   extraConfigs: [{
@@ -49,7 +49,7 @@ const storage = require('components/storage');
 // Produces and returns a connection to MongoDB. 
 // 
 function produceMongoConnection(): Database {
-  const database = new Database(config.get('database'));
+  const database = new Database(getConfigUnsafe(true).get('database'));
   return database;
 }
 

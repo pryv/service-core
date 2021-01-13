@@ -8,14 +8,14 @@ var testHelpers = require('components/test-helpers'),
     InstanceManager = testHelpers.InstanceManager;
 
 
-  const { config } = require('boiler');
+  const { getConfigUnsafe } = require('boiler');
 
 
 /**
  * Overrides common test dependencies with server-specific config settings.
  */
 var deps = module.exports = testHelpers.dependencies;
-deps.settings = config.get();
+deps.settings = getConfigUnsafe(true).get();
 deps.instanceManager = new InstanceManager({
   serverFilePath: __dirname + '/../../src/server.js',
   tcpMessaging: deps.settings.tcpMessaging,

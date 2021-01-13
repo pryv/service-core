@@ -10,7 +10,7 @@
  */
 
 const path = require('path');
-const { config, getLogger }  = require('boiler').init({
+const { getConfigUnsafe, getLogger }  = require('boiler').init({
   appName: 'previews-cache-clean',
   baseConfigDir: path.resolve(__dirname, '../../api-server/newconfig'), // api-server config
   extraConfigs: [{
@@ -28,7 +28,7 @@ const Cache = require('./cache.js');
 const errorHandling = require('components/errors').errorHandling;
 
 const logger = getLogger('previews-cache-worker');
-const settings = config.get('eventFiles');
+const settings = getConfigUnsafe(true).get('eventFiles');
 
 const cache = new Cache({
   rootPath: settings.previewsDirPath,

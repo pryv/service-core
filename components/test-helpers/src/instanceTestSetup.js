@@ -62,6 +62,7 @@ function stringify(obj) {
 function parse(str) {
   try {
     return JSON.parse(str, function (key, value) {
+      logger.debug('eval', value);
       if (typeof value !== 'string') { return value; }
       return (value.substring(0, 8) === 'function') ? eval('(' + value + ')') : value;
     });

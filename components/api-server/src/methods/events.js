@@ -32,7 +32,7 @@ const { ProjectVersion } = require('components/middleware/src/project_version');
 
 const {TypeRepository, isSeriesType} = require('components/business').types;
 
-const { getLogger, config } = require('boiler');
+const { getLogger, getConfigUnsafe } = require('boiler');
 
 const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
 const NATS_UPDATE_EVENT = require('components/utils').messaging
@@ -60,8 +60,8 @@ module.exports = function (
 
   // initialize service-register connection
   let serviceRegisterConn = {};
-  if (!config.get('dnsLess:isActive')) {
-    serviceRegisterConn = new ServiceRegister(config.get('services:register'));
+  if (!getConfigUnsafe().get('dnsLess:isActive')) {
+    serviceRegisterConn = new ServiceRegister(getConfigUnsafe().get('services:register'));
   }
   
   // Initialise the project version as soon as we can. 
@@ -1201,7 +1201,7 @@ module.exports = function (
    * @param string accountStreamId - accountStreamId
    */
   async function sendUpdateToServiceRegister (user, event, accountStreamId) {
-    if (config.get('dnsLess:isActive')) {
+    if (getConfigUnsafe().get('dnsLess:isActive')) {
       return;
     }
     const editableAccountStreams = SystemStreamsSerializer.getEditableAccountStreams();
@@ -1458,7 +1458,7 @@ module.exports = function (
    */
   async function sendDataToServiceRegister (context, creation, editableAccountStreams) {
     // send update to service-register
-    if (config.get('dnsLess:isActive')) {
+    if (getConfigUnsafe().get('dnsLess:isActive')) {
       return;
     }
     let fieldsForUpdate = {};

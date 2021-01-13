@@ -9,7 +9,7 @@
 const methodCallback = require('../methodCallback');
 const API = require('../../API');
 import type Application from '../../application';
-const { config } = require('boiler');
+const { getConfigUnsafe } = require('boiler');
 
 /**
  * Routes for users
@@ -26,7 +26,7 @@ module.exports = function(expressApp: express$Application, app: Application) {
   ) {
     context.username = req.params.username;
     context.authorizationHeader = req.headers.authorization;
-    const isOpensource = config.get('openSource:isActive');
+    const isOpensource = getConfigUnsafe().get('openSource:isActive');
 
     if (isOpensource) {
       api.call(

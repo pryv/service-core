@@ -16,7 +16,7 @@ const ErrorIds = require('components/errors').ErrorIds;
 const Application = require('components/api-server/src/application');
 const Notifications = require('components/api-server/src/Notifications');
 const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const { config } = require('boiler');
+const { getConfig } = require('boiler');
 
 const { databaseFixture } = require('components/test-helpers');
 const { produceMongoConnection } = require('components/api-server/test/test-helpers');
@@ -33,6 +33,8 @@ describe('Account with system streams', function () {
   let access;
   let user;
   let serviceRegisterRequest;
+  let config;
+
   
 
   async function createUser () {
@@ -94,6 +96,7 @@ describe('Account with system streams', function () {
   }
 
   before(async function () {
+    config = await getConfig();
     helpers = require('components/api-server/test/helpers');
     mongoFixtures = databaseFixture(await produceMongoConnection());
     config.injectTestConfig({dnsLess: { isActive: true }})  

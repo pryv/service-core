@@ -5,16 +5,45 @@
  * Proprietary and confidential
  */
 
+ /**
+  * Pryv Boiler module.
+  * @module boiler
+  */
+
+const { Logger } = require('mongodb');
 const Gifnoc  = require('./config');
 const logging = require('./logging');
 
 const config = new Gifnoc();
 
 const boiler = {
+  /**
+   * get a Logger
+   * @param {string} name
+   * @returns {Logger}
+   */
   getLogger: logging.getLogger, 
+  /**
+   * Prefered way to get the configuration
+   * @returns {Promise}
+   */
   getConfig: getConfig,
-  init: init,
-  config: config 
+  /**
+   * get the configuration. 
+   * If the configuration is not fully iniatialized throw an error 
+   * @param {boolean} warnOnly - Only warn about potential missuse of config 
+   * @returns {Config}
+   */
+  getConfigUnsafe: getConfigUnsafe ,
+  /**
+   * Init Boiler, should be called just once when starting an APP
+   * @param {Object} options
+   * @param {string} options.appName - the name of the Application used by Logger and debug
+   * @param {string} [options.baseConfigDir] - (optional) directory to use to look for configs
+   * @param {Array<ConfigFile|ConfigRemoteURL|ConfigRemoteURLFromKey|ConfigPlugin>} [options.extraConfigs] - (optional) and array of extra files to load
+   * @param {Function} [fullyLoadedCallback] - (optional) called when the config is fully loaded
+   */
+  init: init, 
 }
 
 let logger;
@@ -22,14 +51,6 @@ let configIsInitalized = false;
 let configInitCalledWithName = null;
 
 
-/**
- * Init Boiler, should be called just once when starting an APP
- * @param {Object} options
- * @param {string} options.appName - the name of the Application used by Logger and debug
- * @param {string} [options.baseConfigDir] - (optional) directory to use to look for configs
- * @param {Array<ConfigFile|ConfigRemoteURL|ConfigRemoteURLFromKey|ConfigPlugin>} [options.extraConfigs] - (optional) and array of extra files to load
- * @param {Function} [fullyLoadedCallback] - (optional) called when the config is fully loaded
- */
 function init(options, fullyLoadedCallback) {
   if (configInitCalledWithName) {
     logger.warn('Skipping initalization! boiler is already initialized with appName: ' + configInitCalledWithName)
@@ -55,6 +76,7 @@ function init(options, fullyLoadedCallback) {
   return boiler
 }
 
+
 async function getConfig() {
   if (! configInitCalledWithName) {
     throw(new Error('boiler must be initalized with init() before using getConfig()'));
@@ -62,6 +84,21 @@ async function getConfig() {
   while(! configIsInitalized) {
     await new Promise(r => setTimeout(r, 100)); // wait 100ms
   }
+  return config;
+}
+
+
+function getConfigUnsafe(warnOnly) {
+  if (! configInitCalledWithName) {
+    throw(new Error('boiler must be initalized with init() before using getConfigUnsafe()'));
+  };
+  if (! configIsInitalized) {
+    if (warnOnly) {
+      logger.warn('Warning! config loaded before being fully initalized');
+    } else {
+      throw(new Error('Config loaded before being fully initalized'));
+    }
+  };
   return config;
 }
 

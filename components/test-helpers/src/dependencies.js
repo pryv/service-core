@@ -7,8 +7,9 @@
 var storage = require('components/storage'),
     _ = require('lodash');
 
-const { config, getLogger } = require('boiler');
-    
+const { getConfigUnsafe, getLogger } = require('boiler');
+const config = getConfigUnsafe(true);
+
 const database = new storage.Database(config.get('database'));
 
 /**

@@ -23,7 +23,7 @@ declare class RequestWithContext extends express$Request {
 
 import type Application from './../application';
 
-const { config } = require('boiler');
+const { getConfigUnsafe } = require('boiler');
 
 /**
  * Auth routes.
@@ -31,7 +31,7 @@ const { config } = require('boiler');
  * @param {Object} api The API object for registering methods
  */
 module.exports = function (expressApp: express$Application, app: Application) {
-
+  const config = getConfigUnsafe();
   const api = app.api;
 
   const ms14days: number = 1000 * 60 * 60 * 24 * 14;
