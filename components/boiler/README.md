@@ -96,6 +96,15 @@ config.get('foo'); // {bar: 'hello'}
 // Note: for 'test' scope there is a sugar function with config.injectTestConfig(object)
 ```
 
+#### Config "Learn" Mode
+In order to track unused parameters in config, a "learn" mode can be activated. All config.get() will be tracked in files. 
+
+Example when running tests
+```
+export CONFIG_LEARN_DIR="{Full Path}/service-core/learn-config" 
+yarn test
+```
+
 ### logging 
 
 All messages are prefixed by `appName` initialization value. appName can be postfixed with a string by setting the environment variable `PRYV_BOILER_POSTFIX` this is useful when spawning several concurrent processed of the same applications.

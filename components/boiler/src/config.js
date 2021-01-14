@@ -58,6 +58,8 @@ class Config {
   logger;
   extraAsync;
   baseConfigDir;
+  learnDirectory;
+  appName;
 
   constructor() {
     this.extraAsync = [];
@@ -67,12 +69,16 @@ class Config {
    * @private
    * Init Config with Files should be called just once when starting an APP
    * @param {Object} options
+   * @param {string} appName
+   * @param {string} [learnDirectory] - (optional) if set, all .get() calls will be tracked in this files in this directory
    * @param {string} [options.baseConfigDir] - (optional) directory to use to look for configs (default, env)
    * @param {Array<ConfigFile|ConfigPlugin|ConfigData|ConfigRemoteURL|ConfigRemoteURLFromKey>} [options.extras] - (optional) and array of extra files or plugins to load (synchronously or async)
    * @param {Object} logging
    * @returns {Config} this
    */
   initSync(options, logging) {
+    this.appName = options.appName;
+    this.learnDirectory = options.learnDirectory;
     const logger = this.logger = logging.getLogger('config');
     const store = this.store = new nconf.Provider();
 
@@ -253,6 +259,7 @@ class Config {
    */
   get(key) {
     if (! this.store) { throw(new Error('Config not yet initialized'))}
+    learn(this.appName, this.learnDirectory, key);
     const value = this.store.get(key);
     if (typeof value === 'undefined') this.logger.debug('get: [' + key +'] is undefined');
     return value;
@@ -330,6 +337,14 @@ function stripFileProtocol(filePath) {
   return filePath.substring(FILE_PROTOCOL_LENGTH);
 }
 
+function learn(appName, learnDirectory, key) {
+  if (learnDirectory) {
+    const caller_line = (new Error()).stack.split('\n')[3]; // get callee name and line 
+    const index = caller_line.indexOf("at ");
+    str = key + ';' + caller_line.slice(index+3, caller_line.length) + '\n';
+    fs.appendFileSync(path.join(learnDirectory, appName + '.csv'), str);
+  }
+}
 
 
 /**

@@ -64,7 +64,9 @@ function init(options, fullyLoadedCallback) {
   configInitCalledWithName = options.appName;
   config.initSync({
     baseConfigDir: options.baseConfigDir,
-    extras: options.extraConfigs
+    extras: options.extraConfigs,
+    appName: options.appName,
+    learnDirectory: process.env.CONFIG_LEARN_DIR
   }, logging);
 
   config.initASync().then((config) => {
