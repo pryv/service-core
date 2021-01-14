@@ -10,7 +10,6 @@
   * @module boiler
   */
 
-const { Logger } = require('mongodb');
 const Gifnoc  = require('./config');
 const logging = require('./logging');
 
@@ -58,6 +57,7 @@ function init(options, fullyLoadedCallback) {
   };
 
   // append the value of process.env.PRYV_BOILER_POSTFIX if present
+  options.appNameWithoutPostfix = options.appName;
   if (process.env.PRYV_BOILER_POSTFIX) options.appName += process.env.PRYV_BOILER_POSTFIX;
 
   logging.setGlobalName(options.appName);
@@ -65,7 +65,7 @@ function init(options, fullyLoadedCallback) {
   config.initSync({
     baseConfigDir: options.baseConfigDir,
     extras: options.extraConfigs,
-    appName: options.appName,
+    appName: options.appNameWithoutPostfix,
     learnDirectory: process.env.CONFIG_LEARN_DIR
   }, logging);
 
