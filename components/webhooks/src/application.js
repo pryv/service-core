@@ -14,6 +14,8 @@ require('boiler').init({
     scope: 'serviceInfo',
     key: 'service',
     urlFromKey: 'serviceInfoUrl'
+  },{
+    plugin: require('../../api-server/config/components/systemStreams')
   }]
 });
 

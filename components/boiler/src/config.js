@@ -179,6 +179,11 @@ class Config {
     const baseConfigDir = this.baseConfigDir;
 
     async function loadUrl(scope, key, url) {
+      if (typeof url === 'undefined' || url === null) {
+          logger.warn('Null or Undefined Url for [' + scope +']');
+          return;
+      }
+
       let res = null;
       if (isFileUrl(url)) {
         res = loadFromFile(url);

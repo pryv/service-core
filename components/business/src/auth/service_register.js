@@ -120,7 +120,6 @@ class ServiceRegister {
         if (err.response.body.error.id === ErrorIds.ItemAlreadyExists) {
           throw errors.itemAlreadyExists('user', err.response.body.error.data);
         } else {
-          console.log(err.response.body);
           this.logger.error(err.response.body.error);
           throw errors.unexpectedError(err.response.body.error);
         }

@@ -40,12 +40,18 @@ function generateFormat(options) {
     
     let itemStr = '';
     if (items.length > 0) {
-      if (items.length === 1 && items[0]) {
-        if (items[0].context) { 
-          items = items[0].context;
-        } 
+      let skip = false;
+      if (items.length === 1) {
+        if (typeof items[0] === 'undefined') {
+          skip = true;
+        } else {
+          if (items[0] && items[0].context) { 
+            items = items[0].context;
+          } 
+        }
       }
-      itemStr = util.inspect(items, {depth: 10, colors: true});
+      if (! skip)
+        itemStr = util.inspect(items, {depth: 10, colors: true});
     }
 
 
@@ -162,7 +168,7 @@ class Logger {
     const level = arguments[0];
     const text = '[' + this._name() + ']: ' + hideSensitiveValues(arguments[1]);
     const context = [];
-    let meta = null;
+    let meta;
     // Security measure: We do not want any sensitive value to appear in logs
     for (let i = 2; i < arguments.length; i++) {
       context.push(inspectAndHide(arguments[i]));

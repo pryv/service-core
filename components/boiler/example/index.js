@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 const path = require('path');
-const {config, getLogger, getConfig} = require('../src').init({
+const {getConfigUnsafe, getLogger, getConfig} = require('../src').init({
   appName: 'sample',
   baseConfigDir: path.resolve(__dirname, './configs'),
   extraConfigs: [{
@@ -53,6 +53,8 @@ const {config, getLogger, getConfig} = require('../src').init({
 }, function() {
   console.log('Ready');
 });
+
+const config = getConfigUnsafe(true);
 
 
 const rootLogger = getLogger();

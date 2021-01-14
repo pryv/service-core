@@ -328,7 +328,6 @@ describe('system (ex-register)', function () {
         try{
           await bluebird.fromCallback(
             (cb) => post(data, cb));
-          console.log('test passed even it should not');
           assert.isTrue(false);
         } catch (err) {
           assert.equal(err.response.status, 409)

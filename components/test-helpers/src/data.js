@@ -201,7 +201,7 @@ exports.dumpCurrent = function (mongoFolder, version, callback) {
   const mongodump = path.resolve(mongoFolder, 'bin/mongodump');
   const outputFolder = getDumpFolder(version);
 
-  console.log('Dumping current test data to ' + outputFolder);
+  logger.info('Dumping current test data to ' + outputFolder);
 
   async.series([
     clearAllData,
@@ -240,7 +240,7 @@ exports.restoreFromDump = function (versionNum, mongoFolder, callback) {
   const sourceDBFolder = getDumpDBSubfolder(sourceFolder);
   const sourceFilesArchive = getDumpFilesArchive(sourceFolder);
 
-  console.log('Restoring v' + versionNum + ' data from ' + sourceFolder);
+  logger.log('Restoring v' + versionNum + ' data from ' + sourceFolder);
 
   if (! fs.existsSync(sourceDBFolder) || ! fs.existsSync(sourceFilesArchive)) {
     throw new Error('Missing source dump or part of it at ' + sourceFolder);
@@ -262,7 +262,7 @@ exports.restoreFromDump = function (versionNum, mongoFolder, callback) {
         ' -C ' + settings.eventFiles.attachmentsDirPath)
   ], function (err) {
     if (err) { return callback(err); }
-    console.log('OK');
+    logger.info('OK');
     callback();
   });
 };

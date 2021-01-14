@@ -145,7 +145,7 @@ function InstanceManager(settings) {
     logger.debug('Starting server instance... with config ' + tempConfigPath);
     var options = {
       // Uncomment here if you want to see server output
-      // stdio: 'inherit',
+      stdio: 'inherit',
       env: {...process.env, PRYV_BOILER_POSTFIX: '-' + spawnCounter++}
     };
     serverProcess = spawn(process.argv[0], args, options);
