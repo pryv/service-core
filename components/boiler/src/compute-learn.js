@@ -23,8 +23,42 @@ for (const file of files) {
   if (file.endsWith('-calls.csv')) {
     handleCSV(path.join(learnDir, file));
   }
+}
+
+for (const file of files) {
   if (file.endsWith('-config.json')) {
-    //handleConfig(path.join(learnDir, file));
+    handleConfig(path.join(learnDir, file));
+  }
+}
+
+function handleConfig(file) {
+  const appNameSearch = /.*\/([a-zA-Z\-]*)[0-9]{1,2}-config.json/;
+  const appName = file.match(appNameSearch)[1];
+  const config = require(file).config;
+  const calls = apps[appName].calls;
+
+  checkExistsAndFlag(config, calls);
+
+  function checkExistsAndFlagX(configItem, path) { 
+    console.log(path);
+    
+    for (let key of Object.keys(configItem)) {
+      checkExistsAndFlag(configItem[key], path + ':' + key);
+    }
+  }
+
+  function checkExistsAndFlag(configItem, callsItem) {
+    if (typeof configItem !== 'object' || Array.isArray(configItem)) return;
+    for (let key of Object.keys(configItem)) {
+      if (key !== 'calls') {
+        if (typeof callsItem[key] === 'undefined') {
+          callsItem[key] = 'UNUSED';
+          //console.log(callsItem)
+        } else {
+          checkExistsAndFlag(configItem[key], callsItem[key]);
+        }
+      }
+    }
   }
 }
 
@@ -82,7 +116,6 @@ for (let appName of Object.keys(apps)) {
   const arrayOfCallsSorted = arrayOfCalls.sort((a, b) => { return b.count - a.count});
   // replace rank info
   app.rank =  arrayOfCallsSorted.slice(0, KEEP_HIGHER_N);
-  console.log(app.rank);
 }
 
 fs.writeFileSync(path.join(learnDir, 'compute.json'), JSON.stringify(apps, null, 2));
