@@ -29,7 +29,6 @@ class User {
 
   events: ?Array<{}>;
   apiEndpoint: ?string;
-  accountStreamsSettings: Array<{}>;
   accountFields: Array<string> = [];
   readableAccountFields: Array<string> = [];
   accountFieldsWithDot: Array<string> = [];
@@ -50,7 +49,6 @@ class User {
     attachedFiles: number,
   }) {
     this.events = params.events;
-    this.accountStreamsSettings = getConfigUnsafe().get('systemStreams:account');
     buildAccountFields(this);
     loadAccountData(this, params);
 
@@ -304,7 +302,7 @@ function createEvent (
  * @param User user
  */
 function buildAccountDataFromListOfEvents (user: User) {
-  const account = buildEventsTree(user.accountStreamsSettings, user.events, {});
+  const account = buildEventsTree(SystemStreamsSerializer.getAccountStreamsConfig(), user.events, {});
   Object.keys(account).forEach(param => {
     user[param] = account[param];
   });

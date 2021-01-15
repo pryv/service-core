@@ -20,6 +20,9 @@ const uniqueStreams = 'unique-default-streams';
 
 const accountStreamsConfigPath = 'systemStreams:account';
 
+
+let singleton = null;
+
 /**
  * Class that converts system->account events to the
  * Account information that matches the previous 
@@ -27,7 +30,6 @@ const accountStreamsConfigPath = 'systemStreams:account';
  */
 class SystemStreamsSerializer {
   systemStreamsSettings;
-  accountStreamsSettings;
 
   // singleton calcualted values
   // static
@@ -42,16 +44,35 @@ class SystemStreamsSerializer {
   accountStreamsIdsForbiddenForEditing: Array<String>;
   accountStreamsIdsForbiddenForReading: Array<String>;
   flatAccountStreamSettings: Array<object>;
+  accountStreamsConfig;
 
   // not static
   allSystemStreamsIds: Array<String>;
   systemStreamsList: Array<object>;
   
+
+  static getSerializer() {
+    if (singleton) return singleton;
+    singleton = new SystemStreamsSerializer();
+    return singleton;
+  }
+
   constructor () {
     this.systemStreamsSettings = getConfigUnsafe(true).get('systemStreams');
     if (this.systemStreamsSettings == null) {
       throw Error("Not valid system streams settings.");
     }
+  }
+
+  /**
+   * Get AccountStremsConfigContent
+   * cached,
+   */
+  static getAccountStreamsConfig () {
+    if (! SystemStreamsSerializer.accountStreamsConfig){
+      SystemStreamsSerializer.accountStreamsConfig =  getConfigUnsafe(true).get(accountStreamsConfigPath);
+    }
+    return SystemStreamsSerializer.accountStreamsConfig;
   }
 
   /**
@@ -61,7 +82,7 @@ class SystemStreamsSerializer {
   static getReadableAccountStreams () {
     if (!SystemStreamsSerializer.readableAccountStreams){
       SystemStreamsSerializer.readableAccountStreams = getStreamsNames(
-        getConfigUnsafe(true).get(accountStreamsConfigPath),
+        SystemStreamsSerializer.getAccountStreamsConfig(),
         readable
       );
     }
@@ -74,7 +95,7 @@ class SystemStreamsSerializer {
    */
   static getReadableAccountStreamsForTests () {
     if (!SystemStreamsSerializer.readableAccountStreamsForTests) {
-      let streams = getStreamsNames(getConfigUnsafe(true).get(accountStreamsConfigPath), readable);
+      let streams = getStreamsNames(SystemStreamsSerializer.getAccountStreamsConfig(), readable);
       delete streams[SystemStreamsSerializer.addDotToStreamId('storageUsed')];
       SystemStreamsSerializer.readableAccountStreamsForTests = streams;
     }
@@ -86,8 +107,8 @@ class SystemStreamsSerializer {
    */
   static getEditableAccountStreams () {
     if (!SystemStreamsSerializer.editableAccountStreams) {
-      SystemStreamsSerializer.editableAccountStreams = getStreamsNames(getConfigUnsafe(true).get(accountStreamsConfigPath), editableAccountStreams);
-      SystemStreamsSerializer.editableAccountStreams = getStreamsNames(getConfigUnsafe(true).get(accountStreamsConfigPath), editableAccountStreams);
+      SystemStreamsSerializer.editableAccountStreams = getStreamsNames(SystemStreamsSerializer.getAccountStreamsConfig(), editableAccountStreams);
+      SystemStreamsSerializer.editableAccountStreams = getStreamsNames(SystemStreamsSerializer.getAccountStreamsConfig(), editableAccountStreams);
     }
     return SystemStreamsSerializer.editableAccountStreams;
   }
@@ -99,7 +120,7 @@ class SystemStreamsSerializer {
    */
   static getAllAccountStreams () {
     if (!SystemStreamsSerializer.allAccountStreams) {
-      SystemStreamsSerializer.allAccountStreams = getStreamsNames(getConfigUnsafe(true).get(accountStreamsConfigPath), allAccountStreams);
+      SystemStreamsSerializer.allAccountStreams = getStreamsNames(SystemStreamsSerializer.getAccountStreamsConfig(), allAccountStreams);
     }
     return SystemStreamsSerializer.allAccountStreams;
   }
@@ -135,7 +156,7 @@ class SystemStreamsSerializer {
   static getAllAccountStreamsLeaves () {
     if (!SystemStreamsSerializer.allAccountStreamsLeaves) {
       
-      const flatStreamsList = treeUtils.flattenTreeWithoutParents(getConfigUnsafe(true).get(accountStreamsConfigPath));
+      const flatStreamsList = treeUtils.flattenTreeWithoutParents(SystemStreamsSerializer.getAccountStreamsConfig());
       let flatStreamsListObj = {};
       let i;
       for (i = 0; i < flatStreamsList.length; i++) {
@@ -151,7 +172,7 @@ class SystemStreamsSerializer {
  */
   static getIndexedAccountStreamsIdsWithoutDot () {
     if (!SystemStreamsSerializer.indexedAccountStreamsIdsWithoutDot) {
-      let indexedStreamIds = Object.keys(getStreamsNames(getConfigUnsafe(true).get(accountStreamsConfigPath), indexedStreams));
+      let indexedStreamIds = Object.keys(getStreamsNames(SystemStreamsSerializer.getAccountStreamsConfig(), indexedStreams));
       SystemStreamsSerializer.indexedAccountStreamsIdsWithoutDot = indexedStreamIds.map(
         streamId => {
           return SystemStreamsSerializer.removeDotFromStreamId(streamId)
@@ -166,7 +187,7 @@ class SystemStreamsSerializer {
  */
   static getUniqueAccountStreamsIdsWithoutDot () {
     if (!SystemStreamsSerializer.uniqueAccountStreamsIdsWithoutDot) {
-      let uniqueStreamIds = Object.keys(getStreamsNames(getConfigUnsafe(true).get(accountStreamsConfigPath), uniqueStreams));
+      let uniqueStreamIds = Object.keys(getStreamsNames(SystemStreamsSerializer.getAccountStreamsConfig(), uniqueStreams));
       SystemStreamsSerializer.uniqueAccountStreamsIdsWithoutDot =
         uniqueStreamIds.map(streamId => {
           return SystemStreamsSerializer.removeDotFromStreamId(streamId)
@@ -235,7 +256,7 @@ class SystemStreamsSerializer {
   static getFlatAccountStreamSettings () {
     if (!SystemStreamsSerializer.flatAccountStreamSettings) {
       let accountSettings = {};
-      const flatStreamsList = treeUtils.flattenTree(getConfigUnsafe(true).get(accountStreamsConfigPath));
+      const flatStreamsList = treeUtils.flattenTree(SystemStreamsSerializer.getAccountStreamsConfig());
 
       // convert list to object
       let i;

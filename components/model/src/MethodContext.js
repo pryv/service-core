@@ -76,7 +76,7 @@ class MethodContext {
     this.headers = headers;
 
     this.calledMethodId = null;
-    this.systemStreamsSerializer = new SystemStreamsSerializer();
+    this.systemStreamsSerializer = SystemStreamsSerializer.getSerializer();
     this.usersRepository = new UsersRepository(eventsStorage);
     if (auth != null) this.parseAuth(auth);
   }
