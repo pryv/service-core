@@ -66,6 +66,11 @@ function InstanceManager(settings) {
    * @param {Function} callback
    */
   this.ensureStarted = function (settings, callback) {
+    // force console settings to off is needed
+    if (typeof settings.logs === 'undefined') settings.logs = {};
+    if (typeof settings.logs.console === 'undefined') settings.logs.console = {};
+    settings.logs.console.active = false; 
+
     logger.debug('ensure started', settings);
     if (deepEqual(settings, serverSettings)) {
       if (isRunning()) {
@@ -141,7 +146,6 @@ function InstanceManager(settings) {
     }
 
     // start proc
-
     logger.debug('Starting server instance... with config ' + tempConfigPath);
     var options = {
       // Uncomment here if you want to see server output

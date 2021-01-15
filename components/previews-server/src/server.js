@@ -136,9 +136,11 @@ type ExtendedAttributesServer = net$Server & {
   url?: string,
 }
 
+const loggerLaunch = getLogger('launch');
+
 // And now:
 start()
   .catch(err => {
-    console.error(err); // eslint-disable-line no-console
+    loggerLaunch.error(err); // eslint-disable-line no-console
   });
 

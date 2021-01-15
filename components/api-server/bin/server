@@ -61,7 +61,10 @@ const logger = getLogger('serverRoot');
 })()
   .then(() => logger.info('Startup sequence complete, Server is running. mode: [' + process.env.NODE_ENV + ']'))
   .catch(e => {
-    if (logger) logger.error(e);
-    console.dir(e);
+    if (logger) {
+      logger.error(e);
+    } else {
+      console.log(e);
+    }
     process.exit(1);
   });

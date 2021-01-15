@@ -6,6 +6,9 @@ const Application = require('../src/application');
 const { Notifier } = require('@airbrake/node');
 let airbrake;
 
+const { getLogger } = require('boiler');
+const logger = getLogger('server');
+
 // Catch uncaught Promise rejections
 process.on('unhandledRejection', (reason) => {
   throw reason;
@@ -13,7 +16,7 @@ process.on('unhandledRejection', (reason) => {
 
 // Catch uncaught Exceptions
 process.on('uncaughtException', async (error) => {
-  console.dir(error);
+  logger.error('uncaughtExecption', error);
   if (airbrake != null && typeof airbrake.notify === 'function') {
     await airbrake.notify(error);
   }

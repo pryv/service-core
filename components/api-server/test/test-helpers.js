@@ -9,10 +9,13 @@ process.env.NODE_ENV = 'test';
 
 process.on('unhandledRejection', unhandledRejection);
 
+const { getLogger } = require('boiler');
+const logger = getLogger('test-helpers');
+
 // Handles promise rejections that aren't caught somewhere. This is very useful
 // for debugging. 
 function unhandledRejection(reason, promise) {
-  console.warn(                                // eslint-disable-line no-console
+  logger.warn(                                // eslint-disable-line no-console
     'Unhandled promise rejection:', promise, 
     'reason:', reason.stack || reason); 
 }

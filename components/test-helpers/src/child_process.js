@@ -34,7 +34,7 @@ class ChildProcess {
   // Handles promise rejections that aren't caught somewhere. This is very
   // useful for debugging. 
   unhandledRejection(reason: Error, promise: Promise<mixed>) {
-    console.warn(                                // eslint-disable-line no-console
+    logger.warn(                                // eslint-disable-line no-console
       'Unhandled promise rejection:', promise, 
       'reason:', reason.stack || reason); 
   }

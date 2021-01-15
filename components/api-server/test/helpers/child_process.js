@@ -38,7 +38,7 @@ class ApplicationLauncher {
       return server.start(); 
 
     } catch (e) { // this is necessary for debug process as Error is not forwarded correctly
-      console.error('Error during child_process.launch()', e);
+      logger.error('Error during child_process.launch()', e);
       throw e; // foward error
     }
   }
