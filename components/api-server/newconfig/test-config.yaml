@@ -15,6 +15,9 @@ services:
       resetPassword: false
     method: mandrill
     url: https://mandrillapp.local/api/1.0/messages/send-template.json
+    key: "doesnt-matter-in-test"
+    welcomeTemplate: welcome-email
+    resetPasswordTemplate: reset-password"
   register:
     url: http://localhost:5123
     key: test-system-key

@@ -117,7 +117,9 @@ describe('system (ex-register)', function () {
       });
       it('[FUTR] must create a new user with the sent data, sending a welcome email', async function () {
         let settings = _.cloneDeep(helpers.dependencies.settings);
-        settings.services.email.enabled = true;
+        settings.services.email.enabled = {
+          welcome: true
+        };
 
         let mailSent = false;
         
