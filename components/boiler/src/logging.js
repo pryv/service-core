@@ -94,7 +94,13 @@ async function initLoggerWithConfig(config) { 
   // console
   winstonInstance = winston.createLogger({ });
   const logConsole = config.get('logs:console');
-  const isSilent = ! config.get('logs:console:active');
+  let isSilent = ! config.get('logs:console:active');
+
+  // LOGS env var can override settings
+  if (process.env.LOGS) {
+    logConsole.level = process.env.LOGS;
+    isSilent = false;
+  } 
 
   rootLogger.debug((isSilent ?  '** silent ** ' : '') + 'Console with level: ', logConsole.level);
   const format = generateFormat(logConsole.format)
@@ -184,7 +190,7 @@ class Logger {
   info () { this.log('info', ...arguments); }
   warn () { this.log('warn', ...arguments); }
   error () { this.log('error', ...arguments); }
-  debug () { this.debugInstance(...arguments); } 
+  debug () { this.log('debug', ...arguments); this.debugInstance(...arguments); } 
 
   /**
    * get a "sub" Logger

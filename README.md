@@ -108,7 +108,7 @@ Then just `yarn setup`. **Warning** don't use `yarn install`; now using --no opt
 During development, use `yarn watch` to recompile all files after each saved change. Look out for compilation errors that might prevent the distribution from being updated.
 
 ### MongoDB
- 
+
 `./scripts/setup-dev-env.bash` installs MongoDB in the parent folder and runs `yarn install`.
 
 ## Test Running
@@ -122,13 +122,30 @@ If you want to run tests for a specific component, you can run them against the 
 
 If you want to run tests directly against the source files in `components/`, you will need to start with a command like this: 
 
-    $ NODE_ENV=test ../../node_modules/.bin/mocha --timeout 10000 'test/**/*test.js' --exit --grep="whatever"
+```shell
+$ NODE_ENV=test ../../node_modules/.bin/mocha --timeout 10000 'test/**/*test.js' --exit --grep="whatever"
+```
 
 This is something that should probably be a shell alias in your environment. I use 
 
-    $ alias pm="NODE_ENV=test ../../node_modules/.bin/mocha --timeout 10000 'test/**/*test.js' --exit"
+```shell
+$ alias pm="NODE_ENV=test ../../node_modules/.bin/mocha --timeout 10000 'test/**/*test.js' --exit"
+```
 
-### Debug in VsCode
+#### Control Output during tests
+
+- Show debug information with `DEBUG="*"` env var.
+- Display spawn instances of server with `LOGS=<level>` env var. `info` , `warn`, `error` 
+
+
+
+### VsCode
+
+#### Tools and settings
+
+- [Source maps navigator](https://marketplace.visualstudio.com/items?itemName=vlkoti.vscode-sourcemaps-navigator) navigate to the original source code directly from transpiled/generated one. Use `Ctrl/Cmd+click` on links
+
+#### Debug
 
 Launch `yarn watch`
 

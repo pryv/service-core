@@ -69,7 +69,15 @@ function InstanceManager(settings) {
     // force console settings to off is needed
     if (typeof settings.logs === 'undefined') settings.logs = {};
     if (typeof settings.logs.console === 'undefined') settings.logs.console = {};
-    settings.logs.console.active = false; 
+
+    
+    if (process.env.LOGS) {
+      settings.logs.console.active = true; 
+      settings.logs.console.level = process.env.LOGS;
+      console.log(process.env.LOGS);
+    } else {
+      settings.logs.console.active = false; 
+    }
 
     logger.debug('ensure started', settings);
     if (deepEqual(settings, serverSettings)) {
