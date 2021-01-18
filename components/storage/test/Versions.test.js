@@ -531,7 +531,10 @@ describe('Versions', function () {
         }, cb));
      
       const events = await eventsCursor.toArray();
+      // extra custom account streamIds not present in db dump
+      const streamsToIgnore = [ '.insurancenumber', '.phoneNumber']
       userAccountStreamIds.forEach(streamId => {
+        if (streamsToIgnore.includes(streamId)) return;
         const systemStream = userAccountStreams[streamId];
         const event = getEventByStreamId(events, streamId);
         assert.exists(event, 'missing ' + streamId + ' event');
@@ -581,7 +584,7 @@ describe('Versions', function () {
 
     const migratedIndexes = await bluebird.fromCallback(cb => eventsStorage.listIndexes(defaultUser, {}, cb));
     compareIndexes(newIndexes.events, migratedIndexes);
-  })
+  });
 
   function compareIndexes(expected, actual) {
     expected.forEach((index) => {

@@ -240,7 +240,7 @@ exports.restoreFromDump = function (versionNum, mongoFolder, callback) {
   const sourceDBFolder = getDumpDBSubfolder(sourceFolder);
   const sourceFilesArchive = getDumpFilesArchive(sourceFolder);
 
-  logger.log('Restoring v' + versionNum + ' data from ' + sourceFolder);
+  logger.info('Restoring v' + versionNum + ' data from ' + sourceFolder);
 
   if (! fs.existsSync(sourceDBFolder) || ! fs.existsSync(sourceFilesArchive)) {
     throw new Error('Missing source dump or part of it at ' + sourceFolder);
