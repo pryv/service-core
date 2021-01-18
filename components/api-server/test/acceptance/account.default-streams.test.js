@@ -99,7 +99,6 @@ describe('Account with system streams', function () {
     config = await getConfig();
     helpers = require('components/api-server/test/helpers');
     mongoFixtures = databaseFixture(await produceMongoConnection());
-    config.injectTestConfig({dnsLess: { isActive: true }})  
     app = new Application();
     await app.initiate();
 
