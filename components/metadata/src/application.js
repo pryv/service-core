@@ -11,7 +11,7 @@
 const path = require('path');
 require('boiler').init({
   appName: 'metadata',
-  baseConfigDir: path.resolve(__dirname, '../../hfs-server/newconfig')
+  baseConfigDir: path.resolve(__dirname, '../../hfs-server/config')
 });
 const { getConfig, getLogger } = require('boiler');
 

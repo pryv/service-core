@@ -12,14 +12,14 @@
 const path = require('path');
 const boiler = require('boiler').init({
   appName: 'api-server',
-  baseConfigDir: path.resolve(__dirname, '../newconfig/'),
+  baseConfigDir: path.resolve(__dirname, '../config/'),
   extraConfigs: [{
     scope: 'serviceInfo',
     key: 'service',
     urlFromKey: 'serviceInfoUrl'
   },{
     scope: 'defaults-data',
-    file: path.resolve(__dirname, '../newconfig/defaults.js')
+    file: path.resolve(__dirname, '../config/defaults.js')
   }, {
     plugin: require('../config/components/systemStreams')
   }]

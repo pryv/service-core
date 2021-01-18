@@ -9,14 +9,14 @@
 const path = require('path');
 const { getConfig, getLogger } = require('boiler').init({
   appName: 'hfs-server-tests',
-  baseConfigDir: path.resolve(__dirname, '../../newconfig'),
+  baseConfigDir: path.resolve(__dirname, '../../config'),
   extraConfigs: [{
     scope: 'serviceInfo',
     key: 'service',
     urlFromKey: 'serviceInfoUrl'
   }, {
     scope: 'defaults-data',
-    file: path.resolve(__dirname, '../../../api-server/newconfig/defaults.js')
+    file: path.resolve(__dirname, '../../../api-server/config/defaults.js')
   }, {
     plugin: require('../../../api-server/config/components/systemStreams')
   }]

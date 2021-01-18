@@ -8,17 +8,17 @@
 const path = require('path');
 const {getConfig, getLogger } = require('boiler').init({
   appName: 'previews-server',
-  baseConfigDir: path.resolve(__dirname, '../../api-server/newconfig'), // api-server config
+  baseConfigDir: path.resolve(__dirname, '../../api-server/config'), // api-server config
   extraConfigs: [{
     scope: 'defaults-previews',
-    file: path.resolve(__dirname, '../newconfig/defaults-config.yaml')
+    file: path.resolve(__dirname, '../config/defaults-config.yaml')
   }, {
     scope: 'serviceInfo',
     key: 'service',
     urlFromKey: 'serviceInfoUrl'
   },{
     scope: 'defaults-data',
-    file: path.resolve(__dirname, '../../api-server/newconfig/defaults.js')
+    file: path.resolve(__dirname, '../../api-server/config/defaults.js')
   }, {
     plugin: require('../../api-server/config/components/systemStreams')
   }]

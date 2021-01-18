@@ -8,14 +8,14 @@ process.env.NODE_ENV = 'test';
 const path = require('path');
 const boiler = require('boiler').init({
   appName: 'boiler-tests',
-  baseConfigDir: path.resolve(__dirname, '../../api-server/newconfig/'),
+  baseConfigDir: path.resolve(__dirname, '../../api-server/config/'),
   extraConfigs: [{
     scope: 'serviceInfo',
     key: 'service',
     urlFromKey: 'serviceInfoUrl'
   },{
     scope: 'defaults-data',
-    file: path.resolve(__dirname, '../../api-server/newconfig/defaults.js')
+    file: path.resolve(__dirname, '../../api-server/config/defaults.js')
   }, {
     plugin: require('../../api-server/config/components/systemStreams')
   }]

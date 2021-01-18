@@ -11,7 +11,7 @@ process.env.NODE_ENV = 'test';
 const path = require('path');
 const { getConfigUnsafe } = require('boiler').init({
   appName: 'webhooks-test',
-  baseConfigDir: path.resolve(__dirname, '../newconfig/'),
+  baseConfigDir: path.resolve(__dirname, '../config/'),
   extraConfigs: [{
     scope: 'serviceInfo',
     key: 'service',
@@ -19,11 +19,11 @@ const { getConfigUnsafe } = require('boiler').init({
   },
   {
     scope: 'api-server-test-config',
-    file: path.resolve(__dirname, '../../api-server/newconfig/test-config.yaml')
+    file: path.resolve(__dirname, '../../api-server/config/test-config.yaml')
   },
   {
     scope: 'defaults-data',
-    file: path.resolve(__dirname, '../../api-server/newconfig/defaults.js')
+    file: path.resolve(__dirname, '../../api-server/config/defaults.js')
   },
   {
     plugin: require('../../api-server/config/components/systemStreams')

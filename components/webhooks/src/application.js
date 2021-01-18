@@ -9,7 +9,7 @@
 const path = require('path');
 require('boiler').init({
   appName: 'webhooks',
-  baseConfigDir: path.resolve(__dirname, '../newconfig/'),
+  baseConfigDir: path.resolve(__dirname, '../config/'),
   extraConfigs: [{
     scope: 'serviceInfo',
     key: 'service',
