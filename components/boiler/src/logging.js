@@ -102,10 +102,12 @@ async function initLoggerWithConfig(config) { 
     isSilent = false;
   } 
 
-  rootLogger.debug((isSilent ?  '** silent ** ' : '') + 'Console with level: ', logConsole.level);
+
   const format = generateFormat(logConsole.format)
   const myconsole = new winston.transports.Console({ format: format , level: logConsole.level, silent: isSilent});
   winstonInstance.add(myconsole);
+  
+  rootLogger.debug((isSilent ?  '** silent ** ' : '') + 'Console with level: ', logConsole.level);
 
   // file
   const logFile = config.get('logs:file');
@@ -190,7 +192,12 @@ class Logger {
   info () { this.log('info', ...arguments); }
   warn () { this.log('warn', ...arguments); }
   error () { this.log('error', ...arguments); }
-  debug () { this.log('debug', ...arguments); this.debugInstance(...arguments); } 
+  debug () { 
+    if (winstonInstance) {
+      this.log('debug', ...arguments); 
+    }
+    this.debugInstance(...arguments); 
+  } 
 
   /**
    * get a "sub" Logger
