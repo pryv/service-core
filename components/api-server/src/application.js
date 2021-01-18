@@ -239,11 +239,7 @@ function createAirbrakeNotifierIfNeeded(config) {
 }
 
 function getAirbrakeSettings(config): ?AirbrakeSettings {
-  // TODO Directly hand log settings to this class. 
-  const logSettings = config.get('logs');
-  if (logSettings == null) return null; 
-  
-  const airbrakeSettings = logSettings.airbrake;
+  const airbrakeSettings = config.get('logs:airbrake');
   if (airbrakeSettings == null || !airbrakeSettings.active) return null; 
   
   const projectId = airbrakeSettings.projectId;

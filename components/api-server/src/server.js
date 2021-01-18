@@ -117,7 +117,7 @@ class Server {
     require('./methods/auth/register-dnsless')(application.api, 
       application.logging, 
       application.storageLayer, 
-      application.config.get('services'));
+      config.get('services'));
 
     if (this.isOpenSource) {
       require('./methods/auth/delete-opensource')(application.api,

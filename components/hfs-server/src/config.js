@@ -53,7 +53,6 @@ function produce() {
       authPassword: { format: String, default: '' }, 
     },
     logs: {
-      prefix: { default: '', format: String },
       console: {
         active: {
           doc: 'Should the server log to console?',

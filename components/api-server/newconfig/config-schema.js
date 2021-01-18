@@ -222,11 +222,6 @@ config.schema = {
     }
   },
   logs: {
-    prefix: {
-      format: String,
-      default: '',
-      doc: 'Will be prefixed to each logged message\'s context'
-    },
     console: {
       active: {
         format: Boolean,

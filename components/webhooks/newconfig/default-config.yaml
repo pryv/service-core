@@ -1,6 +1,5 @@
 ---
 logs:
-  prefix: ''
   console:
     active: true
     level: info

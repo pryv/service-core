@@ -1,6 +1,5 @@
 ---
 logs:
-  prefix: 'api::'
   console:
     active: true
     level: debug
