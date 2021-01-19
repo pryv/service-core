@@ -56,9 +56,9 @@ function init(options, fullyLoadedCallback) {
     return boiler;
   };
 
-  // append the value of process.env.PRYV_BOILER_POSTFIX if present
+  // append the value of process.env.PRYV_BOILER_SUFFIX if present
   options.appNameWithoutPostfix = options.appName;
-  if (process.env.PRYV_BOILER_POSTFIX) options.appName += process.env.PRYV_BOILER_POSTFIX;
+  if (process.env.PRYV_BOILER_SUFFIX) options.appName += process.env.PRYV_BOILER_SUFFIX;
 
   logging.setGlobalName(options.appName);
   configInitCalledWithName = options.appName;

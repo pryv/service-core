@@ -107,7 +107,7 @@ yarn test
 
 ### logging 
 
-All messages are prefixed by `appName` initialization value. appName can be postfixed with a string by setting the environment variable `PRYV_BOILER_POSTFIX` this is useful when spawning several concurrent processed of the same applications.
+All messages are prefixed by `appName` initialization value. appName can be postfixed with a string by setting the environment variable `PRYV_BOILER_SUFFIX` this is useful when spawning several concurrent processed of the same applications.
 
 #### **Logs**
 
