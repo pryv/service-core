@@ -35,7 +35,6 @@
     "license": "cd licenser ; yarn install; yarn apply"
   },
   "dependencies": {
-    "@airbrake/node": "^1.1.2",
     "api-server": "file:components/api-server",
     "async": "^2.5.0",
     "awaiting": "^3.0.0",

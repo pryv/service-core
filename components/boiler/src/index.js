@@ -10,12 +10,20 @@
   * @module boiler
   */
 
+
 const Gifnoc  = require('./config');
 const logging = require('./logging');
+const airbrake = require('./airbrake');
 
 const config = new Gifnoc();
 
 const boiler = {
+  /**
+   * notify Airbrake. 
+   * If initalize, arguments will be passed to airbrake.notify()
+   */
+  notifyAirbrake: airbrake.notifyAirbrake,
+
   /**
    * get a Logger
    * @param {string} name
@@ -69,12 +77,19 @@ function init(options, fullyLoadedCallback) {
     learnDirectory: process.env.CONFIG_LEARN_DIR
   }, logging);
 
+  logger = logging.getLogger('boiler');
+  airbrake.setUpAirbrakeIfNeeded(config, logger);
+
   config.initASync().then((config) => {
     configIsInitalized = true;
+    // airbrake config might come from async settings, so we try twice.
+    airbrake.setUpAirbrakeIfNeeded(config, logger);
     if (fullyLoadedCallback) fullyLoadedCallback(config);
   });
 
-  logger = logging.getLogger('boiler')
+  
+
+  
   return boiler
 }
 
@@ -103,6 +118,8 @@ function getConfigUnsafe(warnOnly) {
   };
   return config;
 }
+
+
 
 
 module.exports = boiler;

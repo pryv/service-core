@@ -45,10 +45,6 @@ type UpdatesSettingsHolder = {
   ignoreProtectedFields: boolean,
 }
 
-type AirbrakeSettings = {
-  projectId: string, key: string,
-};
-
 // Application is a grab bag of singletons / system services with not many 
 // methods of its own. It is the type-safe version of DI. 
 // 
@@ -96,7 +92,7 @@ class Application {
     await this.createExpressApp();
     this.initiateRoutes();
     this.expressApp.use(middleware.notFound);
-    const errorsMiddleware = errorsMiddlewareMod(this.logging, createAirbrakeNotifierIfNeeded(this.config));
+    const errorsMiddleware = errorsMiddlewareMod(this.logging);
     this.expressApp.use(errorsMiddleware);
     logger.debug('Init done');
     this.initalized = true;
@@ -208,48 +204,6 @@ class Application {
     }
   }
 
-}
-
-
-
-function createAirbrakeNotifierIfNeeded(config) {
-  /*
-    Quick guide on how to test Airbrake notifications (under logs entry):
-    1. Update configuration file with Airbrake information:
-        "airbrake": {
-         "active": true,
-         "key": "get it from pryv.airbrake.io settings",
-         "projectId": "get it from pryv.airbrake.io settings"
-       }
-    2. Throw a fake error in the code (/routes/root.js is easy to trigger):
-        throw new Error('This is a test of Airbrake notifications');
-    3. Trigger the error by running the faulty code (run a local core)
-   */
-  const settings = getAirbrakeSettings(config); 
-  if (settings == null) return; 
-
-  const { Notifier } = require('@airbrake/node');
-
-  const airbrakeNotifier = new Notifier({
-    projectId: settings.projectId,
-    projectKey: settings.key,
-    environment: 'production',
-  });
-  return airbrakeNotifier;
-}
-
-function getAirbrakeSettings(config): ?AirbrakeSettings {
-  const airbrakeSettings = config.get('logs:airbrake');
-  if (airbrakeSettings == null || !airbrakeSettings.active) return null; 
-  
-  const projectId = airbrakeSettings.projectId;
-  const key = airbrakeSettings.key;
-  if (projectId == null || key == null) return null; 
-  
-  return {
-    projectId: projectId, 
-    key: key,
-  };
 }
 
 module.exports = Application;

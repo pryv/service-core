@@ -12,7 +12,7 @@ const APIError = errors.APIError;
 const errorHandling = errors.errorHandling;
 const commonMeta = require('../methods/helpers/setCommonMeta');
 
-const { getLogger } = require('boiler');
+const { getLogger, notifyAirbrake } = require('boiler');
 
 (async () => {
   await commonMeta.loadSettings();
@@ -20,10 +20,9 @@ const { getLogger } = require('boiler');
 
 /** Error route handling.
  */
-function produceHandleErrorMiddleware(logging: any, airbrakeNotifier: any) {
+function produceHandleErrorMiddleware(logging: any) {
   const logger = logging.getLogger('error-middleware');
-  const notifier = airbrakeNotifier?.airbrakeNotifier;
-
+ 
   // NOTE next is not used, since the request is terminated on all errors. 
   /*eslint-disable no-unused-vars*/
   return function handleError(error, req: express$Request, res: express$Response, next: () => void) {
@@ -34,8 +33,8 @@ function produceHandleErrorMiddleware(logging: any, airbrakeNotifier: any) {
 
     errorHandling.logError(error, req, logger);
 
-    if (notifier != null & ! error.dontNotifyAirbrake) {
-      notifier.notify(error);
+    if (! error.dontNotifyAirbrake) {
+      notifyAirbrake(error);
     }
 
     res

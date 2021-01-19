@@ -6,8 +6,6 @@ const Server = require('../src/server');
 const Application = require('../src/application');
 
 const loadCommonMeta = require('../src/methods/helpers/setCommonMeta').loadSettings;
-let  airbrake;
-const { Notifier } = require('@airbrake/node');
 
 const { getConfig, getLogger } = require('boiler');
 const logger = getLogger('serverRoot');
@@ -16,36 +14,9 @@ const logger = getLogger('serverRoot');
   const config = await getConfig();
   loadCommonMeta({}); // load settings to common meta
   
-
   // Construct application
   const app = new Application();
   await app.initiate();
-  
-  // Setup Airbrake if enabled
-  const airbrakeSettings = config.get('logs:airbrake');
-  if (airbrakeSettings.active) {
-   airbrake = new Notifier({
-     projectId: airbrakeSettings.projectId, 
-     projectKey: airbrakeSettings.key,
-    environment: 'production',
-    });
-  }
-
-  // Catch uncaught Promise rejections
-  process.on('unhandledRejection', (reason) => {
-    throw reason;
-  });
-
-  // Catch uncaught Exceptions
-  process.on('uncaughtExceptions', async (error) => {
-    if (logger) logger.error(error);
-    logger.error('uncaughtExceptions', error);
-    if (airbrake != null && typeof airbrake.notify === 'function') {
-      await airbrake.notify(error);
-    }
-    process.exit(1);
-  });
-
 
   process.on('exit', () => {
     logger.info('Server stopped.');

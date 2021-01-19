@@ -44,6 +44,9 @@ const defaults = {
     file: {
       active: true,
       path: 'application.log'
+    },
+    airbrake: {
+      active: false
     }
   }
 };

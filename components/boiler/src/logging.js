@@ -176,6 +176,7 @@ class Logger {
     const level = arguments[0];
     const text = '[' + this._name() + ']: ' + hideSensitiveValues(arguments[1]);
     const context = [];
+
     let meta;
     // Security measure: We do not want any sensitive value to appear in logs
     for (let i = 2; i < arguments.length; i++) {
@@ -230,6 +231,7 @@ module.exports = {
 
 function inspectAndHide(o) {
   if (typeof o === 'undefined') return o;
+  if (o instanceof Error) return o;
   return _inspectAndHide(JSON.parse(JSON.stringify(o))); // clone and remove circular
 }
 
