@@ -77,7 +77,7 @@ class SpawnContext {
         }
         return arg;
       });
-      const newEnv = { ...process.env, PRYV_BOILER_POSTFIX: '#' + spawnCounter++};
+      const newEnv = { ...process.env, PRYV_BOILER_SUFFIX: '#' + spawnCounter++};
 
       const childProcess = child_process.fork(childPath, null, {execArgv: newArgv, env: newEnv});
       const proxy = new ProcessProxy(childProcess, this);

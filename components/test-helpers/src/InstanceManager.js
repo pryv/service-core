@@ -158,7 +158,7 @@ function InstanceManager(settings) {
     var options = {
       // Uncomment here if you want to see server output
       stdio: 'inherit',
-      env: {...process.env, PRYV_BOILER_POSTFIX: '-' + spawnCounter++}
+      env: {...process.env, PRYV_BOILER_SUFFIX: '-' + spawnCounter++}
     };
     serverProcess = spawn(process.argv[0], args, options);
     var serverExited = false,
