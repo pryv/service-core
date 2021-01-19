@@ -168,7 +168,7 @@ class Config {
           store.use(scope, { type: 'literal', store: conf });
         } else {   // JSON or YAML
           const options = { file: filePath }
-          if (filePath.endsWith('.yaml')) { options.format = nconf.formats.yaml }
+          if (filePath.endsWith('.yml')) { options.format = nconf.formats.yaml }
           store.file(scope, options);
         }
 
