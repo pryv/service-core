@@ -162,7 +162,7 @@ class Logger {
   constructor(name, parent) {
     this.name = name;
     this.parent = parent;
-    this.debugInstance =  debugModule(this._name());
+    this.debugInstance =  debugModule('pryv:' + this._name());
   }
   /**
    * Private
