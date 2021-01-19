@@ -112,11 +112,8 @@ class Application {
   server: Server; 
   config;
   
-  async init(settings?) {
+  async init() {
     this.logger = getLogger('application');
-    if (settings) { 
-      throw(new Error('Non null settings'));
-    }
     this.config = await getConfig();
     await setCommonMeta.loadSettings();
 

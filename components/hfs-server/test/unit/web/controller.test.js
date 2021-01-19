@@ -7,8 +7,6 @@
 const should = require('should');
 /* global describe, it */
 
-require('../test-helpers');
-
 const controllerFactory = require('../../../src/web/controller');
 const controller = controllerFactory({});
 
