@@ -14,10 +14,6 @@ const boiler = require('boiler').init({
   appName: 'api-server',
   baseConfigDir: path.resolve(__dirname, '../config/'),
   extraConfigs: [{
-    scope: 'override-file',
-    file: path.resolve(__dirname, '../config/override-config.yml')
-  },
-  {
     scope: 'serviceInfo',
     key: 'service',
     urlFromKey: 'serviceInfoUrl'
