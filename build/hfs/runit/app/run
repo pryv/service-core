@@ -1,4 +1,4 @@
 #!/bin/sh
 exec chpst -u app node /app/bin/dist/components/hfs-server/bin/server \
-    --config /app/conf/hfs.yml --http-port ${PORT_NUM}
+    --config /app/conf/hfs.yml --http:port ${PORT_NUM}
 # ${PORT_NUM} will be replaced by launching script 
