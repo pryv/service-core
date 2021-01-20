@@ -15,6 +15,7 @@ let logger;
 
   // Construct application
   const app = new Application();
+  await app.initiate();
   logger = getLogger('migration-process');
 
   // This bit is useful to trace down promise rejections that aren't caught. 
