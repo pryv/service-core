@@ -33,7 +33,7 @@ const expressAppInit = require('./expressApp');
 const middleware = require('components/middleware');
 const errorsMiddlewareMod = require('./middleware/errors'); 
 
-const { getConfig, getLogger, getConfigUnsafe } = require('boiler');
+const { getConfig, getLogger } = require('boiler');
 const logger = getLogger('application');
 
 const { Extension, ExtensionLoader } = require('components/utils').extension;
@@ -77,7 +77,6 @@ class Application {
     this.api = new API(); 
     this.systemAPI = new API(); 
   
-    this.produceStorageSubsystem(); 
     logger.debug('created');
   }
 
@@ -90,7 +89,8 @@ class Application {
     logger.debug('Init started');
 
     this.config = await getConfig();
-
+   
+    this.produceStorageSubsystem(); 
     await this.createExpressApp();
     this.initiateRoutes();
     this.expressApp.use(middleware.notFound);
@@ -140,7 +140,7 @@ class Application {
   }
 
   produceStorageSubsystem() {
-    const config = getConfigUnsafe();
+    const config = this.config;
     this.database = new storage.Database(config.get('database'));
 
     // 'StorageLayer' is a component that contains all the vertical registries
