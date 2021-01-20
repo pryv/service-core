@@ -14,15 +14,21 @@ const boiler = require('boiler').init({
   appName: 'api-server',
   baseConfigDir: path.resolve(__dirname, '../config/'),
   extraConfigs: [{
+    scope: 'override-file',
+    file: path.resolve(__dirname, '../config/override-config.yml')
+  },
+  {
     scope: 'serviceInfo',
     key: 'service',
     urlFromKey: 'serviceInfoUrl'
-  },{
+  }, {
     scope: 'defaults-data',
     file: path.resolve(__dirname, '../config/defaults.js')
-  }, {
+  },{
     plugin: require('../config/components/systemStreams')
   },{
+    plugin: require('../config/public-url')
+  }, {
     plugin: require('../config/config-validation')
   }]
 });
