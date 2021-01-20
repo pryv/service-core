@@ -19,7 +19,7 @@ const { getConfigUnsafe } = require('boiler').init({
   },
   {
     scope: 'api-server-test-config',
-    file: path.resolve(__dirname, '../../api-server/config/test-config.yaml')
+    file: path.resolve(__dirname, '../../api-server/config/test-config.yml')
   },
   {
     scope: 'defaults-data',

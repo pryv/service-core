@@ -22,6 +22,8 @@ const boiler = require('boiler').init({
     file: path.resolve(__dirname, '../config/defaults.js')
   }, {
     plugin: require('../config/components/systemStreams')
+  },{
+    plugin: require('../config/config-validation')
   }]
 });
 

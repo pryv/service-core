@@ -248,7 +248,6 @@ function _inspectAndHide(o) {
       return res;
     }
 
-
     const res = {};
     for (let key of Object.keys(o)) {
       if (['password', 'passwordHash'].includes(key)) {

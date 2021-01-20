@@ -15,7 +15,7 @@ const { getConfigUnsafe, getLogger }  = require('boiler').init({
   baseConfigDir: path.resolve(__dirname, '../../api-server/config'), // api-server config
   extraConfigs: [{
     scope: 'defaults-previews',
-    file: path.resolve(__dirname, '../config/defaults-config.yaml')
+    file: path.resolve(__dirname, '../config/defaults-config.yml')
   },{
     scope: 'defaults-data',
     file: path.resolve(__dirname, '../../api-server/config/defaults.js')

@@ -11,10 +11,10 @@
  * .1 'test' -> empty, used by test to override any other config parameter
  * .2 'argv' -> Loaded from arguments
  * .3 'env' -> Loaded from environement variables
- * .4 'base' -> Loaded from ${process.env.NODE_ENV}-config.yaml (if present) or --config parameter
+ * .4 'base' -> Loaded from ${process.env.NODE_ENV}-config.yml (if present) or --config parameter
  * .5 and next -> Loaded from extras 
  * .end 
- *  . 'default-file' -> Loaded from ${baseDir}/default-config.yaml 
+ *  . 'default-file' -> Loaded from ${baseDir}/default-config.yml 
  *  . 'defaults' -> Hard coded defaults for logger
  */
 
@@ -25,7 +25,6 @@ const nconf = require('nconf');
 nconf.formats.yaml = require('./lib/nconf-yaml');
 
 const superagent = require('superagent');
-
 
 /**
  * Default values for Logger
@@ -100,12 +99,12 @@ class Config {
     // 3. `process.argv`
     store.argv({parseValues: true}).env({parseValues: true});
     
-    // 4. Values in `${NODE_ENV}-config.yaml` or from --config parameter
+    // 4. Values in `${NODE_ENV}-config.yml` or from --config parameter
     let configFile;
     if (store.get('config')) {
       configFile = store.get('config')
     } else if (store.get('NODE_ENV')) {
-      configFile = path.resolve(baseConfigDir, store.get('NODE_ENV') + '-config.yaml');
+      configFile = path.resolve(baseConfigDir, store.get('NODE_ENV') + '-config.yml');
     } 
     if (configFile) {
       loadFile('base', configFile);
@@ -151,7 +150,7 @@ class Config {
 
 
     // .end-1 load default and custom config from configs/default-config.json
-    loadFile('default-file', path.resolve(baseConfigDir, 'default-config.yaml'));
+    loadFile('default-file', path.resolve(baseConfigDir, 'default-config.yml'));
     
     // .end load hard coded defaults
     store.defaults(defaults);
@@ -171,7 +170,7 @@ class Config {
           store.use(scope, { type: 'literal', store: conf });
         } else {   // JSON or YAML
           const options = { file: filePath }
-          if (filePath.endsWith('.yml')) { options.format = nconf.formats.yaml }
+          if (filePath.endsWith('.yml') || filePath.endsWith('.yaml')) { options.format = nconf.formats.yaml }
           store.file(scope, options);
         }
 
@@ -380,7 +379,7 @@ function saveConfig(learnDirectoryAndFilename, store) {
 /**
  * @typedef ConfigFile
  * @property {string} scope - scope for nconf hierachical load
- * @property {string} file - the config file (.yaml, .json, .js)
+ * @property {string} file - the config file (.yml, .json, .js)
  */
 
  /**

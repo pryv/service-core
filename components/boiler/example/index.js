@@ -21,7 +21,7 @@ const {getConfigUnsafe, getLogger, getConfig} = require('../src').init({
     }
   },{
     scope: 'extra1',
-    file: path.resolve(__dirname, './configs/extra-config.yaml')
+    file: path.resolve(__dirname, './configs/extra-config.yml')
   },{
     scope: 'extra2',
     file: path.resolve(__dirname, './configs/extra-config.json')
