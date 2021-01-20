@@ -98,6 +98,7 @@ indexLogger.info('hide stuff auth=c08r0xs95xlb1xgssmp6tr7c0000gp', {password: 't
   indexLogger.info('OnDisk: ', config.get('ondisk'));
   indexLogger.info('Plugin async: ', config.get('plugin-async'));
   indexLogger.info('Service Name', config.get('service:name'));
-  throw(new Error('bob'));
+  
+  indexLogger.info('Scope of foo', config.getScopeAndValue('foo'));
 
 })();
