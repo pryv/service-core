@@ -57,7 +57,6 @@ let logger;
 let configIsInitalized = false;
 let configInitCalledWithName = null;
 
-
 function init(options, fullyLoadedCallback) {
   if (configInitCalledWithName) {
     logger.warn('Skipping initalization! boiler is already initialized with appName: ' + configInitCalledWithName)

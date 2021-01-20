@@ -21,7 +21,7 @@ require('boiler').init({
 
 #### Base Config Directory structure
 
-During initialization `default-config.yaml` and `${NODE_ENV}-config.yaml` will be loaded if present in `baseConfigDir`.
+During initialization `default-config.yml` and `${NODE_ENV}-config.yml` will be loaded if present in `baseConfigDir`.
 
 #### Configuration loading order and priorities.
 
@@ -34,17 +34,17 @@ Each configuration has a is loaded under a "scope" name. This scope name can be 
 - **1- 'test'** -> empty slot reserved for tests to override any other config parameter
 - **2- 'argv'** -> Loaded from arguments
 - **3- 'env'** -> Loaded from environment variables 
-- **4- 'base'** -> Loaded from `${NODE_ENV}-config.yaml` (if present) or --config parameters
+- **4- 'base'** -> Loaded from `${NODE_ENV}-config.yml` (if present) or --config parameters
 - **5 and next** -> Loaded from extras 
 - **end** 
-  - **'default-file'** -> Loaded from `${baseConfigDir}/default-config.yaml`
+  - **'default-file'** -> Loaded from `${baseConfigDir}/default-config.yml`
   - **'defaults'** -> Hard-coded defaults for logger
 
 #### Extra configurations
 
 At initialization a list of extra configuration can be set or reserved. The `extraConfigs`parameter array can take any  of the following items:
 
-- File: `{scope: <name>, file: <path to file> }` accepts `.yaml`, `.json` and `.js` files. Note `.js` content is loaded with `require(<path to file>)` 
+- File: `{scope: <name>, file: <path to file> }` accepts `.yml`, `.json` and `.js` files. Note `.js` content is loaded with `require(<path to file>)` 
 - Data: `{scope: <name>, key: <optional key>, data: <object> }` if a `key` is provided the content of `data` will be accessible by this key otherwise the content of data is loaded at the root of the configuration.
 - RemoteUrl: `{scope: <name>, key: <optional key>, url: <URL to json content> }`  The remote content of this URL will be loaded asynchronously.
 - URLFromKey: `{scope: <name>, key: <optional key>, urlFromKey: <key> }` The url is obtained from a configuration item already available.
