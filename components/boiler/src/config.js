@@ -122,7 +122,7 @@ class Config {
           continue;
         }
         if (extra.plugin) {
-          const name = extra.plugin.load(store);
+          const name = extra.plugin.load(this);
           logger.debug('Loaded plugin: ' + name + ' ' + extra.plugin.load.then);
           continue;
         }
@@ -216,7 +216,7 @@ class Config {
       }
 
       if (extra.pluginAsync) {
-        const name = await extra.pluginAsync.load(store);
+        const name = await extra.pluginAsync.load(this);
         logger.debug('Loaded async plugin: ' + name);
         continue;
       }
@@ -266,6 +266,31 @@ class Config {
     const value = this.store.get(key);
     if (typeof value === 'undefined') this.logger.debug('get: [' + key +'] is undefined');
     return value;
+  }
+
+  /**
+   * Retreive value and store info that applies
+   * @param {string} key  
+   */
+  getScopeAndValue(key) {
+    if (! this.store) { throw(new Error('Config not yet initialized'))};
+    for (let scopeName of Object.keys(this.store.stores)) {
+      const store = this.store.stores[scopeName];
+      const value = store.get(key);
+      if (typeof value !== 'undefined') {
+        const res = {
+          value: value,
+          scope: scopeName
+        }
+        if (store.type === 'file') {
+          res.info = 'From file: ' + store.file
+        } else {
+          info = 'Type: ' + store.type
+        }
+        return res;
+      }
+    }
+    return null;
   }
 
   /**
