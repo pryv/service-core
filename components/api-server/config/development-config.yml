@@ -5,6 +5,7 @@ logs:
     level: debug
 auth:
   adminAccessKey: REPLACE_ME_WITH_SOMETHING
+  trustedApps: "*@https://pryv.github.io*, *@https://*.rec.la*"
 serviceInfoUrl: file://test/service-info.json
 services:
   email:

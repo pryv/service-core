@@ -15,7 +15,7 @@ const {getConfig, getLogger, boiler} = require('boiler').init({
     urlFromKey: 'serviceInfoUrl'
   },{
     scope: 'defaults-data',
-    file: path.resolve(__dirname, '../../api-server/config/defaults.js')
+    file: path.resolve(__dirname, '../config/default-config.yml')
   }, {
     plugin: require('../../api-server/config/components/systemStreams')
   }]

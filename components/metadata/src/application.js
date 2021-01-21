@@ -11,7 +11,15 @@
 const path = require('path');
 require('boiler').init({
   appName: 'metadata',
-  baseConfigDir: path.resolve(__dirname, '../../hfs-server/config')
+  baseConfigDir: path.resolve(__dirname, '../config'),
+  extraConfigs: [{
+    scope: 'serviceInfo',
+    key: 'service',
+    urlFromKey: 'serviceInfoUrl'
+  },{
+    scope: 'defaults-data',
+    file: path.resolve(__dirname, '../config/default-config.hjson')
+  }]
 });
 const { getConfig, getLogger } = require('boiler');
 

@@ -1,4 +1,7 @@
 ---
+http:
+  ip: localhost
+  port: 4000
 trace:
   enable: false
 logs:
@@ -7,12 +10,13 @@ logs:
     level: debug
 database:
   host: 127.0.0.1
+  name: pryv-node
 influxdb:
   host: 127.0.0.1
   port: 8086
 metadataUpdater:
   host: 127.0.0.1
-  port: 9020
+  port: 9000
 nats:
   uri: nats://127.0.0.1:4222
 services:

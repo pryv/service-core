@@ -79,7 +79,7 @@ class Server {
     const port = this.config.get(KEY_PORT); 
     this.baseUrl = `http://${ip}:${port}/`;
     this.logger.info('starting... on port: ' + port);
-    this.logger.debug('startinget on: ' + this.baseUrl);
+    this.logger.debug('starting on: ' + this.baseUrl);
     
     const app = await this.setupExpress();
     
