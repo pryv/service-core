@@ -8,11 +8,13 @@
 /**
  * Load configuration in the following order (1st prevails)
  * 
- * .1 'test' -> empty, used by test to override any other config parameter
- * .2 'argv' -> Loaded from arguments
- * .3 'env' -> Loaded from environement variables
- * .4 'base' -> Loaded from ${process.env.NODE_ENV}-config.yml (if present) or --config parameter
- * .5 and next -> Loaded from extras 
+ * .0 'memory' -> empty, use when doing 'config.set()'
+ * .1 'override-file' -> Loaded at from override-config.yml (if present)
+ * .2 'test' -> empty, used by test to override any other config parameter
+ * .3 'argv' -> Loaded from arguments
+ * .4 'env' -> Loaded from environement variables
+ * .5 'base' -> Loaded from ${process.env.NODE_ENV}-config.yml (if present) or --config parameter
+ * .6 and next -> Loaded from extras 
  * .end 
  *  . 'default-file' -> Loaded from ${baseDir}/default-config.yml 
  *  . 'defaults' -> Hard coded defaults for logger
@@ -87,19 +89,23 @@ class Config {
     const baseConfigDir = this.baseConfigDir = options.baseConfigDir || process.cwd();
     logger.debug('Init with baseConfigDir: ' + baseConfigDir);
 
+    // 0. memory at top
     store.use('memory');
 
-    // 1. put a 'test' store up in the list that could be overwitten afterward and override other options
+    // 1. eventual ovverride-config.yml
+    loadFile('override-file', path.resolve(baseConfigDir, 'override-config.yml'));
+
+    // 2. put a 'test' store up in the list that could be overwitten afterward and override other options
     // override 'test' store with store.add('test', {type: 'literal', store: {....}});
     store.use('test', { type: 'literal', store: {} });
 
     // get config from arguments and env variables
     // memory must come first for config.set() to work without loading config files
-    // 2. `process.env`
-    // 3. `process.argv`
+    // 3. `process.env`
+    // 4. `process.argv`
     store.argv({parseValues: true}).env({parseValues: true});
     
-    // 4. Values in `${NODE_ENV}-config.yml` or from --config parameter
+    // 5. Values in `${NODE_ENV}-config.yml` or from --config parameter
     let configFile;
     if (store.get('config')) {
       configFile = store.get('config')

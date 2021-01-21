@@ -17,12 +17,14 @@ const boiler = require('boiler').init({
     scope: 'serviceInfo',
     key: 'service',
     urlFromKey: 'serviceInfoUrl'
-  },{
+  }, {
     scope: 'defaults-data',
     file: path.resolve(__dirname, '../config/defaults.js')
-  }, {
+  },{
     plugin: require('../config/components/systemStreams')
   },{
+    plugin: require('../config/public-url')
+  }, {
     plugin: require('../config/config-validation')
   }]
 });

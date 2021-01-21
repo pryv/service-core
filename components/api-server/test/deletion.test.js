@@ -35,22 +35,26 @@ let mongoFixtures;
 let usersRepository;
 let influx;
 let influxRepository;
-
+let config;
+let isOpenSource = false;
 describe('DELETE /users/:username', async () => {
+  config = await getConfig();
+  isOpenSource = config.get('openSource:isActive');
+
   const settingsToTest = [[true, false], [false, false], [true, true]];
   const testIDs = [
     ['CM4Q', 'BQXA', '4Y76', '710F', 'GUPH', 'JNVS', 'C58U'],
     ['U21Z', 'K4J1', 'TIKT', 'WMMV', '9ZTM', 'T3UK', 'O73J'],
     ['TPP2', '581Z', 'Z2FH', '4IH8', '33T6', 'SQ8P', '1F2Y']];
   for (let i = 0; i < settingsToTest.length; i++) {
-    const config = await getConfig();
+    
 
     // skip tests that are not in scope
-    if (config.get('openSource:isActive') !== settingsToTest[i][1]) continue;
+    if (isOpenSource !== settingsToTest[i][1]) continue;
+   
 
     describe(`dnsLess:isActive = ${settingsToTest[i][0]}, openSource:isActive = ${settingsToTest[i][1]}`, function() {
       before(async function() {
-        
         config.injectTestConfig({
           dnsLess: {isActive: settingsToTest[i][0]}
         });
@@ -204,7 +208,8 @@ async function initiateUserWithData(username: string) {
 
   user.access({ id: charlatan.Lorem.word() });
   user.session(charlatan.Lorem.word());
-  user.webhook({ id: charlatan.Lorem.word() }, charlatan.Lorem.word());
+  if (! isOpenSource)
+    user.webhook({ id: charlatan.Lorem.word() }, charlatan.Lorem.word());
 
   const filePath = `test-file-${username}`;
   fs.writeFileSync(filePath, 'Just some text');
@@ -217,17 +222,19 @@ async function initiateUserWithData(username: string) {
       cb
     )
   );
-
-  const usersSeries = await influxRepository.get(
-    `${username}_namespace`,
-    `${username}_name`
-  );
-  const data = new DataMatrix(
-    ['deltaTime', 'value'],
-    [
-      [0, 10],
-      [1, 20],
-    ]
-  );
-  usersSeries.append(data);
+  
+  if (! isOpenSource) {
+    const usersSeries = await influxRepository.get(
+      `${username}_namespace`,
+      `${username}_name`
+    );
+    const data = new DataMatrix(
+      ['deltaTime', 'value'],
+      [
+        [0, 10],
+        [1, 20],
+      ]
+    );
+    usersSeries.append(data);
+  }
 }
