@@ -56,8 +56,8 @@ async function createContext(
   const typeRepoUpdateUrl = config.get('service:eventTypes');
     
   const context = new Context(influx, mongo, tracer, typeRepoUpdateUrl, config);
-
-  if (config.has('metadataUpdater.host')) {
+  
+  if (config.has('metadataUpdater:host')) {
     const mdHost = config.get('metadataUpdater:host'); 
     const mdPort = config.get('metadataUpdater:port'); 
     const metadataEndpoint = `${mdHost}:${mdPort}`;
