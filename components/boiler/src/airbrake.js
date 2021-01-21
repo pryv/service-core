@@ -38,7 +38,7 @@ function setUpAirbrakeIfNeeded(config, rootLogger) {
   process.on('uncaughtException', async (error) => {
     logger.error('uncaughtException', error);
     await notifyAirbrake(error);
-    process.exit(1);
+    if (process.env.NODE_ENV !== 'test') process.exit(1);
   });
 
 }
