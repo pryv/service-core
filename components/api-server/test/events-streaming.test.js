@@ -16,8 +16,10 @@ const itemDeletion = require('../src/schema/itemDeletion');
 
 const http = require('http');
 
-describe('events streaming', function () {
+const N_ITEMS = 1000;
+describe('events streaming with ' + N_ITEMS + ' entries', function () {
   this.timeout(60 * 2 * 1000);
+  
 
   let mongoFixtures;
   before(async function () {
@@ -28,6 +30,8 @@ describe('events streaming', function () {
   before(async function () {
     apiServer = await context.spawn();
   });
+
+  
 
   let user, username,
     streamId, appAccessToken;
@@ -47,7 +51,6 @@ describe('events streaming', function () {
       }]
     });
     // load 10'000 events
-    console.log('test events streaming inserting 1000 events');
     for (let i = 0; i < 1000; i++) {
       let res = await user.event({
         streamIds: [streamId],
@@ -61,7 +64,7 @@ describe('events streaming', function () {
     await apiServer.stop();
   });
 
-  it('Streams events', function (done) { 
+  it('[SE1K] Streams events', function (done) { 
     var options = {
       host: apiServer.host,
       port: apiServer.port,
@@ -70,17 +73,22 @@ describe('events streaming', function () {
     };
 
     const req = http.request(options, function (res) {
-      console.log('STATUS: ' + res.statusCode);
-      console.log('HEADERS: ' + JSON.stringify(res.headers));
+      assert.equal(res.headers['content-type', 'application/json']);
+      assert.equal(res.headers['transfer-encoding', 'chunked']);
       res.setEncoding('utf8');
       let jsonString = "";
+      let chunkCount = 0;
       res.on('data', function (chunk) {
-        console.log('BODY: ');
+        chunkCount++;
         jsonString += chunk;
       });
       res.on('end', () => {
-        console.log('DONE: ', JSON.parse(jsonString).events.length);
+        assert.equal(JSON.parse(jsonString).events.length, N_ITEMS);
+        assert.isAtLeast(chunkCount, 3, 'Should receive at least 3 chunks');
         done();
+      });
+      res.on('error', function (error) { 
+        done(error);
       });
     }).end();
 
