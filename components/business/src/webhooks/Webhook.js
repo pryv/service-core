@@ -11,9 +11,9 @@ const _ = require('lodash');
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
 
-const NatsSubscriber = require('components/api-server/src/socket-io/nats_subscriber');
-import type { MessageSink } from 'components/api-server/src/socket-io/message_sink';
-import type Repository from './repository';
+const NatsSubscriber = require('api-server/src/socket-io/nats_subscriber');
+import type { MessageSink } from 'api-server/src/socket-io/message_sink';
+import type Repository  from './repository';
 
 export type Run = {
   status: number,

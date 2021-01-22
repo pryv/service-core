@@ -15,12 +15,12 @@ const logger = require('boiler').getLogger('databaseFixture');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 
-const storage = require('components/storage');
+const storage = require('storage');
 
-const Webhook = require("components/business").webhooks.Webhook;
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const UsersRepository = require('components/business/src/users/repository');
-const User = require('components/business/src/users/User');
+const Webhook = require('business').webhooks.Webhook;
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const UsersRepository = require('business/src/users/repository');
+const User = require('business/src/users/User');
 
 class Context {
   databaseConn: storage.Database; 
@@ -503,7 +503,7 @@ class FixtureSession extends FixtureTreeNode implements ChildResource {
   }
 }
 
-import type { IndexDefinition } from 'components/storage';
+import type { IndexDefinition } from 'storage';
 
 class Sessions {
   collectionInfo: {

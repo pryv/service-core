@@ -25,7 +25,7 @@ const { getConfigUnsafe, getLogger }  = require('boiler').init({
 });
 
 const Cache = require('./cache.js');
-const errorHandling = require('components/errors').errorHandling;
+const errorHandling = require('errors').errorHandling;
 
 const logger = getLogger('previews-cache-worker');
 const settings = getConfigUnsafe(true).get('eventFiles');

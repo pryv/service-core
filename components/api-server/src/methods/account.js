@@ -4,20 +4,20 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var errors = require('components/errors').factory,
+var errors = require('errors').factory,
   commonFns = require('./helpers/commonFunctions'),
   mailing = require('./helpers/mailing'),
   methodsSchema = require('../schema/accountMethods');
 
 const { getConfig } = require('boiler');
 
-const Registration = require('components/business/src/auth/registration'),
-  ErrorMessages = require('components/errors/src/ErrorMessages'),
-  ErrorIds = require('components/errors').ErrorIds,
-  ServiceRegister = require('components/business/src/auth/service_register'),
-  UsersRepository = require('components/business/src/users/repository');
-  User = require('components/business/src/users/User'),
-  SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
+const Registration = require('business/src/auth/registration'),
+  ErrorMessages = require('errors/src/ErrorMessages'),
+  ErrorIds = require('errors').ErrorIds,
+  ServiceRegister = require('business/src/auth/service_register'),
+  UsersRepository = require('business/src/users/repository');
+  User = require('business/src/users/User'),
+  SystemStreamsSerializer = require('business/src/system-streams/serializer');
   /**
  * @param api
  * @param usersStorage

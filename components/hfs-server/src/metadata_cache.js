@@ -12,22 +12,22 @@ const bluebird = require('bluebird');
 const LRU = require('lru-cache');
 const logger = require('boiler').getLogger('metadata_cache');
 
-const storage = require('components/storage');
-const MethodContext = require('components/model').MethodContext;
-const errors = require('components/errors').factory;
-const { InfluxRowType } = require('components/business').types;
+const storage = require('storage');
+const MethodContext = require('model').MethodContext;
+const errors = require('errors').factory;
+const { InfluxRowType } = require('business').types;
 
-const NatsSubscriber = require('components/api-server/src/socket-io/nats_subscriber');
-const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
-const NATS_UPDATE_EVENT = require('components/utils').messaging
+const NatsSubscriber = require('api-server/src/socket-io/nats_subscriber');
+const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
+const NATS_UPDATE_EVENT = require('utils').messaging
   .NATS_UPDATE_EVENT;
-const NATS_DELETE_EVENT = require('components/utils').messaging
+const NATS_DELETE_EVENT = require('utils').messaging
   .NATS_DELETE_EVENT;
 
-import type { LRUCache } from 'lru-cache';
+import type { LRUCache }  from 'lru-cache';
 
-import type { TypeRepository, Repository } from 'components/business';
-import type { MessageSink } from './message_sink';
+import type { TypeRepository, Repository } from 'business';
+import type { MessageSink }  from './message_sink';
 
 type UsernameEvent = {
   username: string,

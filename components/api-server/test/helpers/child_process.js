@@ -10,7 +10,7 @@
 
 const Server = require('../../src/server');
 const Application = require('../../src/application');
-const ChildProcess = require('components/test-helpers').child_process;
+const ChildProcess = require('test-helpers').child_process;
 
 const { getLogger, getConfig} = require('boiler');
 const logger = getLogger('child_process');

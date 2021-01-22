@@ -9,7 +9,7 @@
 const R = require('ramda');
 const logger = require('boiler').getLogger('influx_row_type');
 
-import type {EventType, PropertyType, Validator, Content} from './interfaces';
+import type {EventType, PropertyType, Validator, Content}  from './interfaces';
 
 const FIELD_DELTATIME = 'deltaTime';
 const FIELD_TIMESTAMP = 'timestamp';

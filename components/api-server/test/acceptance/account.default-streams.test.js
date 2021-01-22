@@ -12,15 +12,15 @@ const assert = require('chai').assert;
 const { describe, before, it } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
-const ErrorIds = require('components/errors').ErrorIds;
-const Application = require('components/api-server/src/application');
-const Notifications = require('components/api-server/src/Notifications');
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
+const ErrorIds = require('errors').ErrorIds;
+const Application = require('api-server/src/application');
+const Notifications = require('api-server/src/Notifications');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getConfig } = require('boiler');
 
-const { databaseFixture } = require('components/test-helpers');
-const { produceMongoConnection } = require('components/api-server/test/test-helpers');
-const helpers = require('components/api-server/test/helpers');
+const { databaseFixture } = require('test-helpers');
+const { produceMongoConnection } = require('api-server/test/test-helpers');
+const helpers = require('api-server/test/helpers');
 const pwdResetReqsStorage = helpers.dependencies.storage.passwordResetRequests;
 
 describe('Account with system streams', function () {
@@ -97,7 +97,7 @@ describe('Account with system streams', function () {
 
   before(async function () {
     config = await getConfig();
-    helpers = require('components/api-server/test/helpers');
+    helpers = require('api-server/test/helpers');
     mongoFixtures = databaseFixture(await produceMongoConnection());
     app = new Application();
     await app.initiate();
@@ -109,7 +109,7 @@ describe('Account with system streams', function () {
     };
     const notifications = new Notifications(axonSocket);
     notifications.serverReady();
-    require("components/api-server/src/methods/account")(
+    require("api-server/src/methods/account")(
       app.api,
       app.storageLayer.events,
       app.storageLayer.passwordResetRequests,
@@ -117,7 +117,7 @@ describe('Account with system streams', function () {
       app.config.get('services'),
       notifications,
       app.logging);
-    require("components/api-server/src/methods/events")(
+    require("api-server/src/methods/events")(
       app.api,
       app.storageLayer.events,
       app.storageLayer.eventFiles,

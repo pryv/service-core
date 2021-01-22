@@ -11,11 +11,11 @@ const assert = require('chai').assert;
 const { describe, before, it } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
-const ErrorIds = require('components/errors').ErrorIds;
-const Application = require('components/api-server/src/application');
-const Notifications = require('components/api-server/src/Notifications');
-const { databaseFixture } = require('components/test-helpers');
-const { produceMongoConnection } = require('components/api-server/test/test-helpers');
+const ErrorIds = require('errors').ErrorIds;
+const Application = require('api-server/src/application');
+const Notifications = require('api-server/src/Notifications');
+const { databaseFixture } = require('test-helpers');
+const { produceMongoConnection } = require('api-server/test/test-helpers');
 
 describe("System streams", function () {
   let app;
@@ -55,7 +55,7 @@ describe("System streams", function () {
     const notifications = new Notifications(axonSocket);
     
     notifications.serverReady();
-    require("components/api-server/src/methods/streams")(
+    require("api-server/src/methods/streams")(
       app.api,
       app.storageLayer.streams,
       app.storageLayer.events,

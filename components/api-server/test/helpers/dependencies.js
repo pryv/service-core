@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var testHelpers = require('components/test-helpers'),
+var testHelpers = require('test-helpers'),
     InstanceManager = testHelpers.InstanceManager;
 
 const { getConfigUnsafe } = require('boiler');

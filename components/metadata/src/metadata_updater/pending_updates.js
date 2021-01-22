@@ -11,7 +11,7 @@ const Heap = require('heap');
 
 // Code related to bookkeeping for pending updates. Will probably move. 
 
-import type { IUpdateRequest, IUpdateId } from './interface';
+import type { IUpdateRequest, IUpdateId }  from './interface';
 
 type EpochTime = number; // time from epoch, in seconds
 

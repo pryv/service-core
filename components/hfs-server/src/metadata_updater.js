@@ -8,10 +8,10 @@
 
 // A client for the MetadataUpdater service in the metadata component. 
 
-const rpc = require('components/tprpc');
-const metadata = require('components/metadata');
+const rpc = require('tprpc');
+const metadata = require('metadata');
 
-import type { IMetadataUpdaterService, IUpdateResponse, IPendingUpdate } from 'components/metadata';
+import type { IMetadataUpdaterService, IUpdateResponse, IPendingUpdate } from 'metadata';
 
 async function produceMetadataUpdater(endpoint: string): Promise<IMetadataUpdaterService> {
   const definition = await metadata.updater.definition;

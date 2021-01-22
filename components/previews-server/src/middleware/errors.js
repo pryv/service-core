@@ -4,9 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const errorHandling = require('components/errors').errorHandling;
-const APIError = require('components/errors').APIError;
-const errors = require('components/errors').factory;
+const errorHandling = require('errors').errorHandling;
+const APIError = require('errors').APIError;
+const errors = require('errors').factory;
 const { getLogger } = require('boiler');
 
 /*jshint -W098*/

@@ -6,10 +6,10 @@
  */
 // @flow
 
-import type { MethodContext } from 'components/model';
-import type API from '../API';
-import type { ApiCallback } from '../API';
-import type Result from '../Result';
+import type { MethodContext } from 'model';
+import type API  from '../API';
+import type { ApiCallback }  from '../API';
+import type Result  from '../Result';
 
 const _ = require('lodash');
 const { getConfig } = require('boiler');

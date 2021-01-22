@@ -10,19 +10,19 @@
 const bluebird = require('bluebird');
 const LRU = require('lru-cache');
 
-const errors = require('components/errors').factory;
-const business = require('components/business');
+const errors = require('errors').factory;
+const business = require('business');
 
 const BatchRequest = business.series.BatchRequest;
 
 const ApiConstants = require('../api_constants');
 const TracedOperations = require('./traced_operations');
 
-const setCommonMeta = require('components/api-server/src/methods/helpers/setCommonMeta').setCommonMeta;
+const setCommonMeta = require('api-server/src/methods/helpers/setCommonMeta').setCommonMeta;
 
-import type Context from '../../context';
-import type { InfluxRowType } from 'components/business'; 
-import type { SeriesMetadata } from '../../metadata_cache';
+import type Context  from '../../context';
+import type { InfluxRowType } from 'business'; 
+import type { SeriesMetadata }  from '../../metadata_cache';
 
 // POST /:user_name/series/batch
 // 

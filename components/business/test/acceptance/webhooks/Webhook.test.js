@@ -12,16 +12,16 @@ const awaiting = require('awaiting');
 const _ = require('lodash');
 
 const Webhook = require('../../../src/webhooks/Webhook');
-const WebhooksRepository = require('components/business/src/webhooks/repository');
+const WebhooksRepository = require('business/src/webhooks/repository');
 
 const HttpServer = require('./support/httpServer');
 const PORT = 6123;
 
-//const whStorage = require('components/test-helpers').dependencies.storage.user.webhooks;
-const storage = require('components/test-helpers').dependencies.storage.user.webhooks;
-const userStorage = require('components/test-helpers').dependencies.storage.events;
+//const whStorage = require('test-helpers').dependencies.storage.user.webhooks;
+const storage = require('test-helpers').dependencies.storage.user.webhooks;
+const userStorage = require('test-helpers').dependencies.storage.events;
 
-const { ProjectVersion } = require('components/middleware/src/project_version');
+const { ProjectVersion } = require('middleware/src/project_version');
 
 describe('Webhook', () => {
 

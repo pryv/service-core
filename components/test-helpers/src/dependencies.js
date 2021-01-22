@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var storage = require('components/storage'),
+var storage = require('storage'),
     _ = require('lodash');
 
 const { getConfigUnsafe, getLogger } = require('boiler');

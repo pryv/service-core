@@ -15,7 +15,7 @@ const opentracing = require('opentracing');
 
 const cls = require('../cls');
 
-import type Context from '../../context';
+import type Context  from '../../context';
 
 function tracingMiddleware(
   ctx: Context,

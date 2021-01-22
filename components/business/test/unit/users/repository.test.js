@@ -8,13 +8,13 @@
 const chai = require('chai');
 const assert = chai.assert;
 const charlatan = require('charlatan');
-require('components/test-helpers/src/boiler-init');
-const helpers = require('components/api-server/test/helpers');
+require('test-helpers/src/boiler-init');
+const helpers = require('api-server/test/helpers');
 const eventsStorage = helpers.dependencies.storage.user.events;
-const { databaseFixture } = require('components/test-helpers');
-const { produceMongoConnection, context } = require('components/api-server/test/test-helpers');
-const UsersRepository = require('components/business/src/users/repository');
-const User = require('components/business/src/users/User');
+const { databaseFixture } = require('test-helpers');
+const { produceMongoConnection, context } = require('api-server/test/test-helpers');
+const UsersRepository = require('business/src/users/repository');
+const User = require('business/src/users/User');
 
 
 describe('Users repository', () => {

@@ -8,9 +8,9 @@
 
 const urllib = require('url');
 const superagent = require('superagent');
-const ErrorIds = require('components/errors').ErrorIds,
-  errors = require('components/errors').factory,
-  ErrorMessages = require('components/errors/src/ErrorMessages');
+const ErrorIds = require('errors').ErrorIds,
+  errors = require('errors').factory,
+  ErrorMessages = require('errors/src/ErrorMessages');
 
 const { getLogger } = require('boiler');
 class ServiceRegister {

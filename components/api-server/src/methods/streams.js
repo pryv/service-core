@@ -4,18 +4,18 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var errors = require('components/errors').factory,
+var errors = require('errors').factory,
   async = require('async'),
   commonFns = require('./helpers/commonFunctions'),
-  errorHandling = require('components/errors').errorHandling,
+  errorHandling = require('errors').errorHandling,
   methodsSchema = require('../schema/streamsMethods'),
   streamSchema = require('../schema/stream'),
   slugify = require('slug'),
   string = require('./helpers/string'),
-  utils = require('components/utils'),
+  utils = require('utils'),
   treeUtils = utils.treeUtils,
   _ = require('lodash');
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const ErrorMessages = require('../../../errors/src/ErrorMessages');
 const ErrorIds = require('../../../errors/src/ErrorIds');
 

@@ -16,5 +16,5 @@ module.exports = {
 };
 
 // Reexport the Logger interface for external declarations. 
-import type { Extension } from './extension';
+import type { Extension }  from './extension';
 export type { Extension };

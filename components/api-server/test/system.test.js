@@ -21,15 +21,15 @@ const os = require('os');
 const fs = require('fs');
 
 const helpers = require('./helpers');
-const ErrorIds = require('components/errors').ErrorIds;
+const ErrorIds = require('errors').ErrorIds;
 const server = helpers.dependencies.instanceManager;
 const methodsSchema = require('../src/schema/systemMethods');
 const validation = helpers.validation;
-const encryption = require('components/utils').encryption;
+const encryption = require('utils').encryption;
 const storage = helpers.dependencies.storage.user.events;
 const testData = helpers.data;
-const UsersRepository = require('components/business/src/users/repository');
-const { databaseFixture } = require('components/test-helpers');
+const UsersRepository = require('business/src/users/repository');
+const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 const charlatan = require('charlatan');
 

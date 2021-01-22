@@ -23,7 +23,7 @@ require('boiler').init({
 });
 const { getConfig, getLogger } = require('boiler');
 
-const storage = require('components/storage');
+const storage = require('storage');
 
 const services = {
   MetadataUpdater: require('./metadata_updater/service'),

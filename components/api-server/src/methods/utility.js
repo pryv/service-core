@@ -7,18 +7,18 @@
 // @flow
 
 const commonFns = require('./helpers/commonFunctions');
-const errorHandling = require('components/errors').errorHandling;
+const errorHandling = require('errors').errorHandling;
 const methodsSchema = require('../schema/generalMethods');
 const _ = require('lodash');
 const bluebird = require('bluebird');
 
 const { getLogger } = require('boiler');
 
-import type API from '../API';
-import type { StorageLayer } from 'components/storage';
-import type { MethodContext } from 'components/model';
-import type Result from '../Result';
-import type { ApiCallback } from '../API';
+import type API  from '../API';
+import type { StorageLayer } from 'storage';
+import type { MethodContext } from 'model';
+import type Result  from '../Result';
+import type { ApiCallback }  from '../API';
 
 type ApiCall = {
   method: string,

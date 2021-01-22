@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 const async = require('async');
-const toString = require('components/utils').toString;
+const toString = require('utils').toString;
 
 /**
  * v1.3.40:

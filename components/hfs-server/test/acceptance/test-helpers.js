@@ -25,9 +25,9 @@ const { getConfig, getLogger } = require('boiler').init({
 // Test helpers for all acceptance tests. 
 
 const logger = require('boiler').getLogger('test-helpers');
-const testHelpers = require('components/test-helpers');
-const storage = require('components/storage');
-const business = require('components/business');
+const testHelpers = require('test-helpers');
+const storage = require('storage');
+const business = require('business');
 
 
 // Produces and returns a connection to InfluxDB. 

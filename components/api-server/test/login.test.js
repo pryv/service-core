@@ -13,7 +13,7 @@ const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
 const async = require('async');
 const validation = helpers.validation;
-const ErrorIds = require('components/errors').ErrorIds;
+const ErrorIds = require('errors').ErrorIds;
 const should = require('should');
 const chai = require('chai');
 const assert = chai.assert;
@@ -23,7 +23,7 @@ const url = require('url');
 const _ = require('lodash');
 const fs = require('fs');
 const os = require('os');
-const UsersRepository = require('components/business/src/users/repository');
+const UsersRepository = require('business/src/users/repository');
 
 describe('auth', function() {
   this.timeout(5000);

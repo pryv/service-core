@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-var errors = require('components/errors').factory,
+var errors = require('errors').factory,
     async = require('async'),
     commonFns = require('./helpers/commonFunctions'),
     methodsSchema = require('../schema/profileMethods');

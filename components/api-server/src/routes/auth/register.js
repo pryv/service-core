@@ -8,7 +8,7 @@
 
 const methodCallback = require('../methodCallback');
 const API = require('../../API');
-import type Application from '../../application';
+import type Application  from '../../application';
 const _ = require('lodash');
 const { getConfigUnsafe } = require('boiler');
 

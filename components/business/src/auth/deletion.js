@@ -10,11 +10,11 @@ const bluebird = require('bluebird');
 const rimraf = require('rimraf');
 const fs = require('fs');
 const path = require('path');
-const UsersRepository = require('components/business/src/users/repository');
-const errors = require('components/errors').factory;
+const UsersRepository = require('business/src/users/repository');
+const errors = require('errors').factory;
 
-import type { MethodContext } from 'components/model';
-import type { ApiCallback } from 'components/api-server/src/API';
+import type { MethodContext } from 'model';
+import type { ApiCallback } from 'api-server/src/API';
 
 const { getLogger } = require('boiler');
 
@@ -128,7 +128,7 @@ class Deletion {
     next: ApiCallback
   ) {
     // dynamic loading , because series functionality does not exist in opensource
-    const InfluxConnection = require('components/business/src/series/influx_connection');
+    const InfluxConnection = require('business/src/series/influx_connection');
     const host = this.settings.get('influxdb:host');
     const port = this.settings.get('influxdb:port');
 

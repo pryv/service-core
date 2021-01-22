@@ -11,12 +11,12 @@ const express = require('express');
 const bluebird = require('bluebird');
 
 const bodyParser = require('body-parser');
-const middleware = require('components/middleware');
+const middleware = require('middleware');
 const errorsMiddleware = require('./middleware/errors');
 const tracingMiddlewareFactory = require('./tracing/middleware/trace');
 const clsWrapFactory = require('./tracing/middleware/clsWrap');
 
-const { ProjectVersion } = require('components/middleware/src/project_version');
+const { ProjectVersion } = require('middleware/src/project_version');
 
 
 const controllerFactory = require('./web/controller');
@@ -25,7 +25,7 @@ const getAuth = require('../../middleware/src/getAuth');
 const KEY_IP = 'http:ip';
 const KEY_PORT = 'http:port';  
 
-import type Context from './context';
+import type Context  from './context';
 
 const { getConfig, getLogger } = require('boiler');
 

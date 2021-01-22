@@ -6,7 +6,7 @@
  */
 // @flow
 
-const storage = require('components/storage');
+const storage = require('storage');
 
 const { PendingUpdate, PendingUpdatesMap } = require('./pending_updates');
 const { Flush } = require('./flush');

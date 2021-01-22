@@ -8,7 +8,7 @@
 
 require('../../../test-helpers/src/boiler-init');
 const logger = require('boiler').getLogger('test-helpers');
-const testHelpers = require('components/test-helpers');
+const testHelpers = require('test-helpers');
 
 // --------------------------------------------------------- prespawning servers
 

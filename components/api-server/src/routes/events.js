@@ -7,18 +7,18 @@
 // @flow
 
 const methodCallback = require('./methodCallback');
-const encryption = require('components/utils').encryption;
-const errors = require('components/errors').factory;
+const encryption = require('utils').encryption;
+const errors = require('errors').factory;
 const express = require('express');
 const Paths = require('./Paths');
 const tryCoerceStringValues = require('../schema/validation').tryCoerceStringValues;
 const _ = require('lodash');
 
-const middleware = require('components/middleware');
+const middleware = require('middleware');
 const hasFileUpload = require('../middleware/uploads').hasFileUpload;
 const attachmentsAccessMiddleware = require('../middleware/attachment_access');
 
-import type Application from '../application';
+import type Application  from '../application';
 
 // Set up events route handling.
 module.exports = function(expressApp: express$Application, app: Application) {

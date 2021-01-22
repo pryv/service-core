@@ -11,11 +11,11 @@ const charlatan = require('charlatan');
 const bluebird = require('bluebird');
 const Application = require('../src/application');
 const { getConfig } = require('boiler');
-const UsersRepository = require('components/business/src/users/repository');
-const User = require('components/business/src/users/User');
-const { databaseFixture } = require('components/test-helpers');
+const UsersRepository = require('business/src/users/repository');
+const User = require('business/src/users/User');
+const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('./test-helpers');
-const Notifications = require('components/api-server/src/Notifications');
+const Notifications = require('api-server/src/Notifications');
 
 
 let app;
@@ -55,7 +55,7 @@ describe('[BMM2] registration: single-node', () => {
         emit: (...args) => axonMsgs.push(args),
       };
       const notifications = new Notifications(axonSocket);
-      require("components/api-server/src/methods/events")(
+      require("api-server/src/methods/events")(
         app.api,
         app.storageLayer.events,
         app.storageLayer.eventFiles,

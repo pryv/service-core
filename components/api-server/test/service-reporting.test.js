@@ -13,7 +13,7 @@ const assert = require('chai').assert;
 const hostname = require('os').hostname;
 const cuid = require('cuid');
 
-const { databaseFixture } = require('components/test-helpers');
+const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
 let server;

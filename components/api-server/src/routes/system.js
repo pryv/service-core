@@ -6,14 +6,14 @@
  */
 // @flow
 
-const errors = require('components/errors').factory;
+const errors = require('errors').factory;
 const Paths = require('./Paths');
 const methodCallback = require('./methodCallback');
-const contentType = require('components/middleware').contentType;
+const contentType = require('middleware').contentType;
 const _ = require('lodash');
 const { getLogger } = require('boiler');
 
-import type Application from '../application';
+import type Application  from '../application';
 
 // System (e.g. registration server) calls route handling.
 module.exports = function system(expressApp: express$Application, app: Application) {

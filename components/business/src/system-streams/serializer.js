@@ -6,7 +6,7 @@
  */
 // @flow
 const _ = require('lodash');
-const treeUtils = require('components/utils').treeUtils;
+const treeUtils = require('utils').treeUtils;
 
 
 const { getConfigUnsafe } = require('boiler');

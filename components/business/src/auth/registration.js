@@ -8,19 +8,19 @@
 
 const _ = require('lodash');
 const cuid = require('cuid');
-const errors = require('components/errors').factory;
-const { errorHandling } = require('components/errors');
-const mailing = require('components/api-server/src/methods/helpers/mailing');
+const errors = require('errors').factory;
+const { errorHandling } = require('errors');
+const mailing = require('api-server/src/methods/helpers/mailing');
 const ServiceRegister = require('./service_register');
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const UsersRepository = require('components/business/src/users/repository');
-const User = require('components/business/src/users/User');
-const ErrorIds = require('components/errors').ErrorIds;
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const UsersRepository = require('business/src/users/repository');
+const User = require('business/src/users/User');
+const ErrorIds = require('errors').ErrorIds;
 
 const { getLogger } = require('boiler');
 
-import type { MethodContext } from 'components/model';
-import type { ApiCallback } from 'components/api-server/src/API';
+import type { MethodContext } from 'model';
+import type { ApiCallback } from 'api-server/src/API';
 
 /**
  * Create (register) a new user

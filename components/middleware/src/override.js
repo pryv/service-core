@@ -6,7 +6,7 @@
  */
 // @flow
 
-const errors = require('components/errors').factory;
+const errors = require('errors').factory;
     
 // NOTE Name chosen to be unwieldy, so as not to make this look too good. 
 declare class RequestWithOriginalMethodAndBody extends express$Request { 

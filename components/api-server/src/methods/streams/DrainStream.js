@@ -6,7 +6,7 @@
  */
 var Writable = require('stream').Writable,
     inherits = require('util').inherits,
-    errors = require('components/errors').factory;
+    errors = require('errors').factory;
 
 module.exports = DrainStream;
 

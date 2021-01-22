@@ -13,8 +13,8 @@ const should = require('should');
 const chai = require('chai');
 const assert = chai.assert;
 
-const storage = require('components/storage');
-const { databaseFixture } = require('components/test-helpers');
+const storage = require('storage');
+const { databaseFixture } = require('test-helpers');
 
 const { MetadataLoader, MetadataCache } = require('../../src/metadata_cache');
 const { getConfig } = require('boiler');

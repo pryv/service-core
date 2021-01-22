@@ -10,9 +10,9 @@ const bluebird = require('bluebird');
 const _ = require('lodash');
 
 const Webhook = require('./Webhook');
-const WebhooksStorage = require('components/storage').StorageLayer.webhooks;
-const UserEventsStorage = require('components/storage').StorageLayer.events;
-const UsersRepository = require('components/business/src/users/repository');
+const WebhooksStorage = require('storage').StorageLayer.webhooks;
+const UserEventsStorage = require('storage').StorageLayer.events;
+const UsersRepository = require('business/src/users/repository');
 
 /** 
  * Repository of all Webhooks in this Pryv.io instance. 

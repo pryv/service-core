@@ -16,7 +16,7 @@ const helpers = require('./helpers');
 const testData = helpers.data;
 const settings = _.cloneDeep(helpers.dependencies.settings);
 
-const { databaseFixture } = require('components/test-helpers');
+const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
 describe('permissions create-only level', () => {

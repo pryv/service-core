@@ -12,28 +12,28 @@ const _ = require('lodash');
 const timestamp = require('unix-timestamp');
 const bluebird = require('bluebird');
 
-const APIError = require('components/errors').APIError;
-const errors = require('components/errors').factory;
-const ErrorIds = require('components/errors').ErrorIds;
-const ErrorMessages = require('components/errors').ErrorMessages;
+const APIError = require('errors').APIError;
+const errors = require('errors').factory;
+const ErrorIds = require('errors').ErrorIds;
+const ErrorMessages = require('errors').ErrorMessages;
 
-const treeUtils = require('components/utils').treeUtils;
+const treeUtils = require('utils').treeUtils;
 
 const commonFns = require('./helpers/commonFunctions');
 const methodsSchema = require('../schema/accessesMethods');
 const accessSchema = require('../schema/access');
 const string = require('./helpers/string');
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 const { getLogger } = require('boiler');
 
-import type { StorageLayer } from 'components/storage';
-import type { MethodContext } from 'components/model';
+import type { StorageLayer } from 'storage';
+import type { MethodContext } from 'model';
 
-import type API from '../API';
-import type { ApiCallback } from '../API';
-import type Notifications from '../Notifications';
-import type Result from '../Result';
+import type API  from '../API';
+import type { ApiCallback }  from '../API';
+import type Notifications  from '../Notifications';
+import type Result  from '../Result';
 
 type Permission = {
   streamId: string, 

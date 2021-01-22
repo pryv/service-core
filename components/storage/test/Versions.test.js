@@ -12,7 +12,7 @@
 
 const bluebird = require('bluebird');
 require('../../test-helpers/src/boiler-init');
-const helpers = require('components/test-helpers');
+const helpers = require('test-helpers');
 const storage = helpers.dependencies.storage;
 const converters = require('../src/converters');
 const database = storage.database;
@@ -24,8 +24,8 @@ const testData = helpers.data;
 const Versions = require('../src/Versions');
 const wrench = require('wrench');
 const _ = require('lodash');
-const buildTree = require('components/utils').treeUtils.buildTree;
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
+const buildTree = require('utils').treeUtils.buildTree;
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const { getLogger } = require('boiler');
 
 const mongoFolder = __dirname + '/../../../../var-pryv/mongodb-bin'

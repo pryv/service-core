@@ -7,10 +7,10 @@
 
 // @flow
 
-import type { IPoint } from 'influx';
-import type InfluxConnection from './influx_connection';
-import type { BatchRequest } from './batch_request';
-import type Row from './row';
+import type { IPoint }  from 'influx';
+import type InfluxConnection  from './influx_connection';
+import type { BatchRequest }  from './batch_request';
+import type Row  from './row';
 
 // Type signature for a mapping function that helps convert eventIds into 
 // InfluxDB measurement names. 

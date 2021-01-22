@@ -11,7 +11,7 @@ const logger = require('boiler').getLogger('cls');
 
 const { createNamespace } = require('cls-hooked');
 
-import type { Span } from 'opentracing';
+import type { Span }  from 'opentracing';
 
 const CLS_TRACE_SPAN = 'rootSpan';
 const session = createNamespace('tracing/cls');

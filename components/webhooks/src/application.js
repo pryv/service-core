@@ -23,10 +23,10 @@ const {getConfig, getLogger} = require('boiler');
 
 const assert = require('assert');
 
-const storage = require('components/storage');
+const storage = require('storage');
 
 const services = {
-  WebhooksService: require('components/webhooks/src/service'),
+  WebhooksService: require('webhooks/src/service'),
 };
 
 class Application {

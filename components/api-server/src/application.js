@@ -29,21 +29,21 @@ const boiler = require('boiler').init({
   }]
 });
 
-const storage = require('components/storage');
+const storage = require('storage');
 const API = require('./API');
 const expressAppInit = require('./expressApp');
-const middleware = require('components/middleware');
+const middleware = require('middleware');
 const errorsMiddlewareMod = require('./middleware/errors'); 
 
 const { getConfig, getLogger } = require('boiler');
 const logger = getLogger('application');
 
-const { Extension, ExtensionLoader } = require('components/utils').extension;
+const { Extension, ExtensionLoader } = require('utils').extension;
 
 logger.debug('Loading app');
 
-import type { CustomAuthFunction } from 'components/model';
-import type { WebhooksSettingsHolder } from './methods/webhooks';
+import type { CustomAuthFunction } from 'model';
+import type { WebhooksSettingsHolder }  from './methods/webhooks';
 
 type UpdatesSettingsHolder = {
   ignoreProtectedFields: boolean,
@@ -112,8 +112,8 @@ class Application {
   initiateRoutes() {
     const isOpenSource = this.config.get('openSource:isActive');
     if (isOpenSource) {
-      require('components/www')(this.expressApp, this);
-      require('components/register')(this.expressApp, this);
+      require('www')(this.expressApp, this);
+      require('register')(this.expressApp, this);
     }
     if (this.config.get('dnsLess:isActive')) {
       require('./routes/register')(this.expressApp, this);

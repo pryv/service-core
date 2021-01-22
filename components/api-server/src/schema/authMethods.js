@@ -7,9 +7,9 @@
 /**
  * JSON Schema specification of methods data for auth.
  */
-const ErrorIds = require('components/errors/src/ErrorIds');
-const ErrorMessages = require('components/errors/src/ErrorMessages');
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
+const ErrorIds = require('errors/src/ErrorIds');
+const ErrorMessages = require('errors/src/ErrorMessages');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 var helpers = require('./helpers'),
   object = helpers.object,

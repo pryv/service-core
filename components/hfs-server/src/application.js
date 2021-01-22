@@ -24,15 +24,15 @@ const {getConfig, getLogger, boiler} = require('boiler').init({
 
 // Load configuration file, set up execution context and start the server. 
 
-const logComponent = require('components/utils').logging;
-const business = require('components/business');
-const storage = require('components/storage');
+const logComponent = require('utils').logging;
+const business = require('business');
+const storage = require('storage');
 
 const Context = require('./context');
 const Server = require('./server'); 
 
 // Initialize ProjectVersion
-const setCommonMeta = require('components/api-server/src/methods/helpers/setCommonMeta');
+const setCommonMeta = require('api-server/src/methods/helpers/setCommonMeta');
 
 // const { Tags } = require('opentracing');
 const opentracing = require('opentracing');

@@ -6,8 +6,8 @@
  */
 // @flow
 
-const errorHandling = require('components/errors').errorHandling;
-const { APIError } = require('components/errors');
+const errorHandling = require('errors').errorHandling;
+const { APIError } = require('errors');
 
 
 /** Produces a middleware function that will handle all errors and augment

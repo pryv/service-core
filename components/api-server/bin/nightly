@@ -5,7 +5,7 @@
 const Application = require('../src/application');
 const { getLogger } = require('boiler');
 let logger;
-const Repository = require('components/business/src/users/repository');
+const Repository = require('business/src/users/repository');
 
 (async () => {
   // Load settings asynchronously because we have to fetch

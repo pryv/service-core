@@ -9,7 +9,7 @@
 const influx = require('influx');
 const { getLogger } = require('boiler');
 
-import type {IPoint} from 'influx';
+import type {IPoint}  from 'influx';
 
 /** Connection to the influx database. Adds error handling and logging on top
  * of our database driver. 

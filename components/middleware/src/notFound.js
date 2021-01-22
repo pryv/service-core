@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const errors = require('components/errors').factory;
+const errors = require('errors').factory;
 
 /**
  * '404' handling to override Express' defaults. Must be set after the routes in the init sequence.

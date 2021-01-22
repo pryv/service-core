@@ -6,14 +6,14 @@
  */
 const _ = require('lodash');
 const commonFns = require('./../helpers/commonFunctions');
-const errors = require('components/errors').factory;
-const methodsSchema = require('components/api-server/src/schema/authMethods');
-const ServiceRegister = require('components/business/src/auth/service_register');
-const Registration = require('components/business/src/auth/registration');
+const errors = require('errors').factory;
+const methodsSchema = require('api-server/src/schema/authMethods');
+const ServiceRegister = require('business/src/auth/service_register');
+const Registration = require('business/src/auth/registration');
 
-import type { MethodContext } from 'components/model';
-import type Result from '../Result';
-import type { ApiCallback } from '../API';
+import type { MethodContext } from 'model';
+import type Result  from '../Result';
+import type { ApiCallback }  from '../API';
 
 
 /**

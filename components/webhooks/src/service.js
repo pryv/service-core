@@ -9,19 +9,19 @@
 const bluebird = require('bluebird');
 const _ = require('lodash');
 
-const NatsSubscriber = require('components/api-server/src/socket-io/nats_subscriber');
-const WEBHOOKS_CREATE_CHANNEL: string = require('components/utils').messaging.NATS_WEBHOOKS_CREATE;
-const WEBHOOKS_ACTIVATE_CHANNEL: string = require('components/utils').messaging.NATS_WEBHOOKS_ACTIVATE;
-const WEBHOOKS_DELETE_CHANNEL: string = require('components/utils').messaging.NATS_WEBHOOKS_DELETE;
+const NatsSubscriber = require('api-server/src/socket-io/nats_subscriber');
+const WEBHOOKS_CREATE_CHANNEL: string = require('utils').messaging.NATS_WEBHOOKS_CREATE;
+const WEBHOOKS_ACTIVATE_CHANNEL: string = require('utils').messaging.NATS_WEBHOOKS_ACTIVATE;
+const WEBHOOKS_DELETE_CHANNEL: string = require('utils').messaging.NATS_WEBHOOKS_DELETE;
 
 
-import type { MessageSink } from 'components/api-server/src/socket-io/message_sink';
-import type { StorageLayer } from 'components/storage';
+import type { MessageSink } from 'api-server/src/socket-io/message_sink';
+import type { StorageLayer } from 'storage';
 
-const Webhook = require('components/business/src/webhooks/Webhook');
-const WebhooksRepository = require('components/business/src/webhooks/repository');
+const Webhook = require('business/src/webhooks/Webhook');
+const WebhooksRepository = require('business/src/webhooks/repository');
 
-const { ProjectVersion } = require('components/middleware/src/project_version');
+const { ProjectVersion } = require('middleware/src/project_version');
 
 const BOOT_MESSAGE = require('./messages').BOOT_MESSAGE;
 

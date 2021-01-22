@@ -13,7 +13,7 @@ const async = require('async');
 const commonTests = helpers.commonTests;
 const fs = require('fs');
 const validation = helpers.validation;
-const ErrorIds = require('components/errors').ErrorIds;
+const ErrorIds = require('errors').ErrorIds;
 const eventsStorage = helpers.dependencies.storage.user.events;
 const eventFilesStorage = helpers.dependencies.storage.user.eventFiles;
 const methodsSchema = require('../src/schema/streamsMethods');
@@ -21,7 +21,7 @@ const should = require('should'); // explicit require to benefit from static fun
 const storage = helpers.dependencies.storage.user.streams;
 const testData = helpers.data;
 const timestamp = require('unix-timestamp');
-const treeUtils = require('components/utils').treeUtils;
+const treeUtils = require('utils').treeUtils;
 const _ = require('lodash');
 
 const chai = require('chai');

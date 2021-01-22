@@ -8,7 +8,7 @@
 
 require('./test-helpers');
 
-const ErrorIds = require('components/errors').ErrorIds;
+const ErrorIds = require('errors').ErrorIds;
 const url = require('url');
 const _ = require('lodash');
 const cuid = require('cuid');
@@ -21,7 +21,7 @@ const validation = helpers.validation;
 
 const {fixturePath, fixtureFile} = require('./unit/test-helper');
 
-const { databaseFixture } = require('components/test-helpers');
+const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
 require('date-utils');

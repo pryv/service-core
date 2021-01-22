@@ -10,7 +10,7 @@
 
 require('./test-helpers');
 const helpers = require('./helpers');
-const ErrorIds = require('components/errors').ErrorIds;
+const ErrorIds = require('errors').ErrorIds;
 const methodsSchema = require('../src/schema/generalMethods');
 const validation = helpers.validation;
 const timestamp = require('unix-timestamp');
@@ -21,7 +21,7 @@ const cuid = require('cuid');
 const bluebird = require('bluebird');
 const superagent = require('superagent'); // for basic auth
 
-const { databaseFixture } = require('components/test-helpers');
+const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
 describe('root', function() {

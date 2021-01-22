@@ -5,11 +5,11 @@
  * Proprietary and confidential
  */
 const _ = require('lodash');
-const Registration = require('components/business/src/auth/registration');
+const Registration = require('business/src/auth/registration');
 const commonFns = require('./../helpers/commonFunctions');
-const methodsSchema = require('components/api-server/src/schema/authMethods');
-const UsersRepository = require('components/business/src/users/repository');
-const errors = require('components/errors').factory;
+const methodsSchema = require('api-server/src/schema/authMethods');
+const UsersRepository = require('business/src/users/repository');
+const errors = require('errors').factory;
 
 /**
  * Auth API methods implementations.

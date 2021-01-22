@@ -6,8 +6,8 @@
  */
 
 var cuid = require('cuid'),
-  utils = require('components/utils'),
-  errors = require('components/errors').factory,
+  utils = require('utils'),
+  errors = require('errors').factory,
   async = require('async'),
   bluebird = require('bluebird'),
   commonFns = require('./helpers/commonFunctions'),
@@ -20,24 +20,24 @@ var cuid = require('cuid'),
   _ = require('lodash'),
   SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
 
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const ServiceRegister = require('components/business/src/auth/service_register');
-const Registration = require('components/business/src/auth/registration');
-const UsersRepository = require('components/business/src/users/repository');
-const ErrorIds = require('components/errors/src/ErrorIds');
-const ErrorMessages = require('components/errors/src/ErrorMessages');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const ServiceRegister = require('business/src/auth/service_register');
+const Registration = require('business/src/auth/registration');
+const UsersRepository = require('business/src/users/repository');
+const ErrorIds = require('errors/src/ErrorIds');
+const ErrorMessages = require('errors/src/ErrorMessages');
 const assert = require('assert');
 
-const { ProjectVersion } = require('components/middleware/src/project_version');
+const { ProjectVersion } = require('middleware/src/project_version');
 
-const {TypeRepository, isSeriesType} = require('components/business').types;
+const {TypeRepository, isSeriesType} = require('business').types;
 
 const { getLogger, getConfigUnsafe } = require('boiler');
 
-const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
-const NATS_UPDATE_EVENT = require('components/utils').messaging
+const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
+const NATS_UPDATE_EVENT = require('utils').messaging
   .NATS_UPDATE_EVENT;
-const NATS_DELETE_EVENT = require('components/utils').messaging
+const NATS_DELETE_EVENT = require('utils').messaging
   .NATS_DELETE_EVENT;
 
 const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';

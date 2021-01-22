@@ -4,9 +4,9 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const APIError = require('components/errors/src/APIError');
+const APIError = require('errors/src/APIError');
 
-var errors = require('components/errors').factory,
+var errors = require('errors').factory,
     validation = require('../../schema/validation');
 
 exports.requirePersonalAccess = function requirePersonalAccess(context, params, result, next) {

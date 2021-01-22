@@ -18,7 +18,7 @@ const sinon = require('sinon');
 const rpc = require('../../src/index.js');
 
 const { Corpus } = require('../fixtures/base');
-import type { ISearchService } from '../fixtures/base';
+import type { ISearchService }  from '../fixtures/base';
 
 describe('Base API', () => {
   const endpoint = '127.0.0.1:4020';

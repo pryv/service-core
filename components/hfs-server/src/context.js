@@ -8,23 +8,23 @@
 
 const lodash = require('lodash');
 
-const business = require('components/business');
+const business = require('business');
 
 const {MetadataLoader, MetadataCache} = require('./metadata_cache');
 const metadataUpdater = require('./metadata_updater');
 
 const cls = require('./tracing/cls');
 
-import type {MetadataRepository} from './metadata_cache';
+import type {MetadataRepository}  from './metadata_cache';
 
-import type { IMetadataUpdaterService } from 'components/metadata';
+import type { IMetadataUpdaterService } from 'metadata';
 
-import type { Database } from 'components/storage';
+import type { Database } from 'storage';
 
 type Repository = business.series.Repository;
 type InfluxConnection = business.series.InfluxConnection; 
 
-import type { Tracer, Span } from 'opentracing';
+import type { Tracer, Span }  from 'opentracing';
 const { getLogger } = require('boiler');
 
 // Application context object, holding references to all major subsystems. Once

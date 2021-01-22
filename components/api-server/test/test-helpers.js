@@ -21,16 +21,16 @@ function unhandledRejection(reason, promise) {
 }
 
 // Set up a context for spawning api-servers.
-const { SpawnContext } = require('components/test-helpers').spawner;
+const { SpawnContext } = require('test-helpers').spawner;
 const context: SpawnContext = new SpawnContext(); 
 /* global after */
 after(async () => {
   await context.shutdown(); 
 });
 
-const { Database } = require('components/storage');
+const { Database } = require('storage');
 const { getConfig } = require('boiler');
-const InfluxConnection = require('components/business/src/series/influx_connection');
+const InfluxConnection = require('business/src/series/influx_connection');
 
 // Produces and returns a connection to MongoDB. 
 async function produceMongoConnection(): Promise<Database> {

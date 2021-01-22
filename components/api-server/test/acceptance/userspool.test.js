@@ -13,7 +13,7 @@ const chai = require('chai');
 const assert = chai.assert;
 
 const { getConfig } = require('boiler');
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 describe('[55JP] users pool', () => {
   let produceMongoConnection, context, storage, database;
@@ -23,10 +23,10 @@ describe('[55JP] users pool', () => {
   before(async () => {
     config = await getConfig();
     adminKey = config.get('auth:adminAccessKey');
-    ({ produceMongoConnection, context, databaseFixture } = require('components/test-helpers'));
+    ({ produceMongoConnection, context, databaseFixture } = require('test-helpers'));
     ({ produceMongoConnection, context } = require('../test-helpers'));
-    storage = require('components/test-helpers').dependencies.storage.user.events;
-    database = require('components/test-helpers').dependencies.storage.database;
+    storage = require('test-helpers').dependencies.storage.user.events;
+    database = require('test-helpers').dependencies.storage.database;
     server = await context.spawn();
   });
   after(() => {

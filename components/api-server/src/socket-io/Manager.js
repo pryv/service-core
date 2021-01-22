@@ -6,20 +6,20 @@
  */
 // @flow
 
-const errorHandling = require('components/errors').errorHandling;
+const errorHandling = require('errors').errorHandling;
 const commonMeta = require('../methods/helpers/setCommonMeta');
 const bluebird = require('bluebird');
-const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
+const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
 
 (async () => {
   await commonMeta.loadSettings();
 })();
 
-const MethodContext = require('components/model').MethodContext;
-import type API from '../API';
+const MethodContext = require('model').MethodContext;
+import type API  from '../API';
 
-import type { MessageSink } from './message_sink';
-import type { StorageLayer } from 'components/storage';
+import type { MessageSink }  from './message_sink';
+import type { StorageLayer } from 'storage';
 
 type SocketIO$SocketId = string; 
 export type SocketIO$Handshake = {

@@ -60,7 +60,7 @@ class Definition {
   //    }
   // 
   // Note that your protobuf service description should be closed and not
-  // require external types, unless you import those from elsewhere. 
+  // require external types, unless you import those from 'elsewhere. 
   // 
   writeTypeSignature(filename: string, targetPath?: string) {
     const sigPath = targetPath || path.dirname(this.definitionPath);

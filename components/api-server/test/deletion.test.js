@@ -14,15 +14,15 @@ const { describe, before, it, after } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 const Application = require('../src/application');
-const InfluxRepository = require('components/business/src/series/repository');
-const DataMatrix = require('components/business/src/series/data_matrix');
+const InfluxRepository = require('business/src/series/repository');
+const DataMatrix = require('business/src/series/data_matrix');
 const { getConfig } = require('boiler');
-const UsersRepository = require('components/business/src/users/repository');
-const { databaseFixture } = require('components/test-helpers');
+const UsersRepository = require('business/src/users/repository');
+const { databaseFixture } = require('test-helpers');
 const {
   produceMongoConnection,
   produceInfluxConnection,
-} = require('components/api-server/test/test-helpers');
+} = require('api-server/test/test-helpers');
 const bluebird = require('bluebird');
 
 let app;

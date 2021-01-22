@@ -22,7 +22,7 @@ const { Controller } = require('../../../src/metadata_updater/controller');
 const { Flush } = require('../../../src/metadata_updater/flush');
 
 const { getLogger } = require('boiler');
-import type { StorageLayer } from 'components/storage';
+import type { StorageLayer } from 'storage';
 
 describe('Metadata Updater/Controller', () => {
   const logger = getLogger('metadata'); 

@@ -11,15 +11,15 @@ const chai = require('chai');
 const assert = chai.assert; 
 const cuid = require('cuid');
 
-const rpc = require('components/tprpc');
-const metadata = require('components/metadata');
+const rpc = require('tprpc');
+const metadata = require('metadata');
 
 const { 
   spawnContext, produceMongoConnection, 
   produceInfluxConnection } = require('./test-helpers');
-const { databaseFixture } = require('components/test-helpers');
+const { databaseFixture } = require('test-helpers');
 
-import type { IMetadataUpdaterService } from 'components/metadata';
+import type { IMetadataUpdaterService } from 'metadata';
 
 type DataValue = string | number;
 type Row = Array<DataValue>;

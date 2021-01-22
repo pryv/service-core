@@ -14,15 +14,15 @@ const { describe, before, it } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 
-const ErrorIds = require('components/errors').ErrorIds;
-const ErrorMessages = require('components/errors/src/ErrorMessages');
-const Application = require('components/api-server/src/application');
-const Notifications = require('components/api-server/src/Notifications');
-const accessLogic = require('components/model/src/accessLogic');
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
+const ErrorIds = require('errors').ErrorIds;
+const ErrorMessages = require('errors/src/ErrorMessages');
+const Application = require('api-server/src/application');
+const Notifications = require('api-server/src/Notifications');
+const accessLogic = require('model/src/accessLogic');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
-const { databaseFixture } = require('components/test-helpers');
-const { produceMongoConnection } = require('components/api-server/test/test-helpers');
+const { databaseFixture } = require('test-helpers');
+const { produceMongoConnection } = require('api-server/test/test-helpers');
 
 const { getConfig } = require('boiler');
 
@@ -78,7 +78,7 @@ describe("Accesses with account streams", function () {
   }
 
   before(async function () {
-    const helpers = require('components/api-server/test/helpers');
+    const helpers = require('api-server/test/helpers');
     config = await getConfig();
     validation = helpers.validation;
     mongoFixtures = databaseFixture(await produceMongoConnection());
@@ -93,13 +93,13 @@ describe("Accesses with account streams", function () {
     };
     const notifications = new Notifications(axonSocket);
     notifications.serverReady();
-    require("components/api-server/src/methods/accesses")(
+    require("api-server/src/methods/accesses")(
       app.api,
       notifications,
       app.getUpdatesSettings,
       app.storageLayer);
     
-    require("components/api-server/src/methods/events")(
+    require("api-server/src/methods/events")(
       app.api,
       app.storageLayer.events,
       app.storageLayer.eventFiles,

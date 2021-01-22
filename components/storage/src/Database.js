@@ -13,7 +13,7 @@ const bluebird = require('bluebird');
 
 const { getLogger } = require('boiler');
 
-import type { Db as MongoDB, Collection } from 'mongodb';
+import type { Db as MongoDB, Collection }  from 'mongodb';
 
 
 type DatabaseOptions = {

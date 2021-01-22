@@ -27,15 +27,15 @@ const {getConfig, getLogger } = require('boiler').init({
 // @flow
 const http = require('http');
 
-const middleware = require('components/middleware');
-const storage = require('components/storage');
-const utils = require('components/utils');
+const middleware = require('middleware');
+const storage = require('storage');
+const utils = require('utils');
 
 const ExtensionLoader = utils.extension.ExtensionLoader;
 
-const { ProjectVersion } = require('components/middleware/src/project_version');
+const { ProjectVersion } = require('middleware/src/project_version');
 
-import type { Extension } from 'components/utils';
+import type { Extension } from 'utils';
 
 function loadCustomAuthStepFn(customExtensions): ?Extension {
   const defaultFolder = customExtensions.defaultFolder;

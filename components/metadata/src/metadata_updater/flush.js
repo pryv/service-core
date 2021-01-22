@@ -9,12 +9,12 @@
 const LRU = require('lru-cache');
 const bluebird = require('bluebird');
 
-const storage = require('components/storage');
-const UserRepo = require('components/business/src/users/repository');
+const storage = require('storage');
+const UserRepo = require('business/src/users/repository');
 const { PendingUpdate } = require('./pending_updates');
 
-import type { LRUCache } from 'lru-cache';
-import type { Operation } from './controller';
+import type { LRUCache }  from 'lru-cache';
+import type { Operation }  from './controller';
 
 // Operation that flushes the update to MongoDB. 
 // 

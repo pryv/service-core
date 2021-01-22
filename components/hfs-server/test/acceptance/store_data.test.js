@@ -17,25 +17,25 @@ const cuid = require('cuid');
 const bluebird = require('bluebird');
 const lodash = require('lodash');
 const awaiting = require('awaiting');
-const UsersRepository = require('components/business/src/users/repository');
-const User = require('components/business/src/users/User');
+const UsersRepository = require('business/src/users/repository');
+const User = require('business/src/users/User');
 
 
 
 const { 
   spawnContext, produceMongoConnection, 
   produceInfluxConnection, produceStorageLayer } = require('./test-helpers');
-const { databaseFixture } = require('components/test-helpers');
+const { databaseFixture } = require('test-helpers');
 
-const apiServerContext = require('components/api-server/test/test-helpers').context;
+const apiServerContext = require('api-server/test/test-helpers').context;
 
-const rpc = require('components/tprpc');
-const metadata = require('components/metadata');
+const rpc = require('tprpc');
+const metadata = require('metadata');
 
 const { getConfig, getLogger } = require('boiler');
 const logger = getLogger('store_data.test');
 
-import type { IMetadataUpdaterService } from 'components/metadata';
+import type { IMetadataUpdaterService } from 'metadata';
 
 type Header = Array<string>; 
 type Rows   = Array<Row>; 

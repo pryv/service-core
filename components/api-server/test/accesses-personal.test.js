@@ -9,7 +9,7 @@
 /*global describe, before, beforeEach, it */
 require('./test-helpers'); 
 const helpers = require('./helpers');
-const ErrorIds = require('components/errors').ErrorIds;
+const ErrorIds = require('errors').ErrorIds;
 const server = helpers.dependencies.instanceManager;
 const async = require('async');
 const validation = helpers.validation;

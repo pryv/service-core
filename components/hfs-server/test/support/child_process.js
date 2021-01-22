@@ -9,12 +9,12 @@
 const bluebird = require('bluebird');
 
 const Application = require('../../src/application');
-const { InfluxRowType, TypeRepository } = require('components/business').types;
-const ChildProcess = require('components/test-helpers').child_process;
+const { InfluxRowType, TypeRepository } = require('business').types;
+const ChildProcess = require('test-helpers').child_process;
 
 const { getConfig, getLogger } = require('boiler');
 const logger = getLogger('child_process');
-import type {MetadataRepository} from '../../src/metadata_cache';
+import type {MetadataRepository}  from '../../src/metadata_cache';
 
 const typeRepo = new TypeRepository(); 
 

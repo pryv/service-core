@@ -18,8 +18,8 @@ const charlatan = require('charlatan');
 
 
 require('../../../../test-helpers/src/boiler-init');
-const storage = require('components/storage');
-const { databaseFixture } = require('components/test-helpers');
+const storage = require('storage');
+const { databaseFixture } = require('test-helpers');
 
 const { PendingUpdate } = 
   require('../../../src/metadata_updater/pending_updates');

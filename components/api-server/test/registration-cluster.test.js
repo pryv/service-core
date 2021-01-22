@@ -15,11 +15,11 @@ const assert = require('chai').assert;
 
 const { getConfig } = require('boiler');
 const Application = require('../src/application');
-const ErrorIds = require('components/errors/src/ErrorIds');
-const ErrorMessages = require('components/errors/src/ErrorMessages');
-const User = require('components/business/src/users/User');
-const UsersRepository = require('components/business/src/users/repository');
-const { databaseFixture } = require('components/test-helpers');
+const ErrorIds = require('errors/src/ErrorIds');
+const ErrorMessages = require('errors/src/ErrorMessages');
+const User = require('business/src/users/User');
+const UsersRepository = require('business/src/users/repository');
+const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('./test-helpers');
 
 function defaults() {

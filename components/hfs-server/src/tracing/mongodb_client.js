@@ -21,8 +21,8 @@ const cls = require('./cls');
 const DB_TYPE = 'mongodb';
 const OPERATION_NAME = 'mongodb';
 
-import typeof LibMongoDb from 'mongodb';
-import type { Tracer, Span } from 'opentracing';
+import typeof LibMongoDb  from 'mongodb';
+import type { Tracer, Span }  from 'opentracing';
 
 function nextWrapFactory (tracer: Tracer) { // called by us
   return function nextWrap (original) {     // called by shimmer

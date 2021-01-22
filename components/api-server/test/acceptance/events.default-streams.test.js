@@ -15,13 +15,13 @@ const supertest = require('supertest');
 const charlatan = require('charlatan');
 
 const { getConfig } = require('boiler');
-const ErrorIds = require('components/errors').ErrorIds;
-const ErrorMessages = require('components/errors/src/ErrorMessages');
-const Application = require('components/api-server/src/application');
-const Notifications = require('components/api-server/src/Notifications');
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const { databaseFixture } = require('components/test-helpers');
-const { produceMongoConnection } = require('components/api-server/test/test-helpers');
+const ErrorIds = require('errors').ErrorIds;
+const ErrorMessages = require('errors/src/ErrorMessages');
+const Application = require('api-server/src/application');
+const Notifications = require('api-server/src/Notifications');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const { databaseFixture } = require('test-helpers');
+const { produceMongoConnection } = require('api-server/test/test-helpers');
 
 describe("Events of system streams", () => {
   let config;
@@ -90,7 +90,7 @@ describe("Events of system streams", () => {
     config.injectTestConfig({
       dnsLess: { isActive: false}
     });
-    const helpers = require('components/api-server/test/helpers');
+    const helpers = require('api-server/test/helpers');
     validation = helpers.validation;
     mongoFixtures = databaseFixture(await produceMongoConnection());
   
@@ -105,7 +105,7 @@ describe("Events of system streams", () => {
     const notifications = new Notifications(axonSocket);
     
     notifications.serverReady();
-    require("components/api-server/src/methods/events")(
+    require("api-server/src/methods/events")(
       app.api,
       app.storageLayer.events,
       app.storageLayer.eventFiles,

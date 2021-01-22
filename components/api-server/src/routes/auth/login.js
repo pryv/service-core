@@ -10,8 +10,8 @@ const cookieParser = require('cookie-parser');
 const lodash = require('lodash');
 const express = require('express');
 
-const errors = require('components/errors').factory;
-const middleware = require('components/middleware');
+const errors = require('errors').factory;
+const middleware = require('middleware');
 
 const methodCallback = require('../methodCallback');
 const Paths = require('../Paths');
@@ -21,7 +21,7 @@ declare class RequestWithContext extends express$Request {
 }
 
 
-import type Application from './../application';
+import type Application  from './../application';
 
 const { getConfigUnsafe } = require('boiler');
 

@@ -6,20 +6,20 @@
  */
 // @flow
 
-const { tryCoerceStringValues } = require('components/api-server').validation;
+const { tryCoerceStringValues } = require('api-server').validation;
 
 const lodash = require('lodash');
 const timestamp = require('unix-timestamp');
 
-const errors = require('components/errors').factory;
+const errors = require('errors').factory;
 
 const SeriesResponse = require('../SeriesResponse');
 
 const AUTH_HEADER = 'authorization';
 
-import type {Query, Repository} from 'components/business';
-import type {MetadataRepository, SeriesMetadata} from '../../metadata_cache';
-import type Context from '../../context';
+import type {Query, Repository} from 'business';
+import type {MetadataRepository, SeriesMetadata}  from '../../metadata_cache';
+import type Context  from '../../context';
 
 /** GET /events/:event_id/series - Query a series for a data subset.
  *

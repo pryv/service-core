@@ -9,10 +9,10 @@
 const methodCallback = require('./methodCallback');
 const Paths = require('./Paths');
 const _ = require('lodash');
-const middleware = require('components/middleware');
+const middleware = require('middleware');
 
 const API = require('../API');
-import type Application from '../application';
+import type Application  from '../application';
 
 /**
  * Webhooks route handling.

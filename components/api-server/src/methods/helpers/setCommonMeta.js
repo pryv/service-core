@@ -8,7 +8,7 @@
 
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
-const { ProjectVersion } = require('components/middleware/src/project_version');
+const { ProjectVersion } = require('middleware/src/project_version');
 // cnan be overriden;
 const { getConfig } = require('boiler');
 

@@ -10,11 +10,11 @@ const _ = require('lodash');
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
 const bluebird = require('bluebird');
-const encryption = require('components/utils').encryption;
+const encryption = require('utils').encryption;
 
-const treeUtils = require('components/utils/src/treeUtils');
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const UsersRepository = require('components/business/src/users/repository');
+const treeUtils = require('utils/src/treeUtils');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const UsersRepository = require('business/src/users/repository');
 
 const { getConfigUnsafe } = require('boiler');
 

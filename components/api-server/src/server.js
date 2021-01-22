@@ -10,12 +10,12 @@ const http = require('http');
 const bluebird = require('bluebird');
 const EventEmitter = require('events');
 
-const utils = require('components/utils');
+const utils = require('utils');
 
 const Notifications = require('./Notifications');
 const Application = require('./application');
 
-const UsersRepository = require('components/business/src/users/repository');
+const UsersRepository = require('business/src/users/repository');
 
 const { getLogger, getConfig } = require('boiler');
 
@@ -253,7 +253,7 @@ class Server {
       try {
         const axonSocket = this.notificationBus.axonSocket;
         
-        require('components/test-helpers')
+        require('test-helpers')
           .instanceTestSetup.execute(instanceTestSetup, axonSocket);
       } catch (err) {
         logger.error(err);

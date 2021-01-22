@@ -10,11 +10,11 @@ const express = require('express');
 const _ = require('lodash');
 const bodyParser = require('body-parser');
 
-const middleware = require('components/middleware');
+const middleware = require('middleware');
 
 const Paths = require('./routes/Paths');
 
-const { ProjectVersion } = require('components/middleware/src/project_version');
+const { ProjectVersion } = require('middleware/src/project_version');
 
 // ------------------------------------------------------------ express app init
 

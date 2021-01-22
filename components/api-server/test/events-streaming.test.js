@@ -11,7 +11,7 @@ const cuid = require('cuid');
 const assert = require('chai').assert;
 
 const { produceMongoConnection, context } = require('./test-helpers');
-const { databaseFixture } = require('components/test-helpers');
+const { databaseFixture } = require('test-helpers');
 const itemDeletion = require('../src/schema/itemDeletion');
 
 const http = require('http');

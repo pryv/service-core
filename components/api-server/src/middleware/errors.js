@@ -6,7 +6,7 @@
  */
 // @flow
 
-const errors = require('components/errors');
+const errors = require('errors');
 const errorsFactory = errors.factory;
 const APIError = errors.APIError;
 const errorHandling = errors.errorHandling;

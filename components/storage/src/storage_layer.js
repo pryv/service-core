@@ -10,7 +10,7 @@
 
 const bluebird = require('bluebird');
 
-import type Database from './Database';
+import type Database  from './Database';
 
 const Versions = require('./Versions');
 const PasswordResetRequests = require('./PasswordResetRequests');

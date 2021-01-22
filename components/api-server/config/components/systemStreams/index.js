@@ -10,9 +10,9 @@
 const _ = require('lodash');
 const fs = require('fs');
 const path = require('path');
-const treeUtils = require('components/utils/src/treeUtils');
-const validation = require('components/api-server/src/schema/validation');
-const string = require('components/api-server/src/methods/helpers/string');
+const treeUtils = require('utils/src/treeUtils');
+const validation = require('api-server/src/schema/validation');
+const string = require('api-server/src/methods/helpers/string');
 const slugify = require('slug');
 const systemStreamSchema = require('./systemStreamSchema');
 

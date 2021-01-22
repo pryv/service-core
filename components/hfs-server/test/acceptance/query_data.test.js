@@ -10,7 +10,7 @@
 
 /* global describe, it, before, after */
 const timestamp = require('unix-timestamp');
-const { ErrorIds } = require('components/errors');
+const { ErrorIds } = require('errors');
 const cuid = require('cuid');
 const chai = require('chai');
 const assert = chai.assert; 
@@ -19,7 +19,7 @@ const superagent = require('superagent');
 
 const { spawnContext, produceMongoConnection } = 
   require('./test-helpers');
-const testHelpers = require('components/test-helpers');
+const testHelpers = require('test-helpers');
 const databaseFixture = testHelpers.databaseFixture;
 
 describe('Querying data from a HF series', function() {
