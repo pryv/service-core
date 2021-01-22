@@ -6,7 +6,7 @@
   "author": "Pryv S.A. <support@pryv.com> (http://pryv.com)",
   "main": "src/index.js",
   "scripts": {
-    "start": "node bin/server --config config/local.json",
+    "start": "node bin/server --config config/default-config.hjson",
     "test": "NODE_ENV=test ../../node_modules/.bin/mocha -R dot 'test/**/*.test.js' --exit"
   }
 }
