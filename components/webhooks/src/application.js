@@ -26,7 +26,7 @@ const assert = require('assert');
 const storage = require('storage');
 
 const services = {
-  WebhooksService: require('webhooks/src/service'),
+  WebhooksService: require('./service'),
 };
 
 class Application {

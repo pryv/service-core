@@ -46,8 +46,8 @@ class Service implements IMetadataUpdaterService {
   
   constructor(db: StorageLayer, logger) {
     this.db = db;
-    this.logger = logger; 
-    
+    this.logger = logger.getLogger('service'); 
+    this.logger.debug('instanciated');
     this.server = new rpc.Server(); 
 
     this.pending = new PendingUpdatesMap(); 

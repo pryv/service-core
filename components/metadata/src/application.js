@@ -68,7 +68,7 @@ class Application {
     );
     
     // Construct the service
-    const service = new services.MetadataUpdater(storageLayer, this.logger.getLogger('metadata_updater')); 
+    const service = new services.MetadataUpdater(storageLayer, this.logger.getLogger('metadata-updater')); 
     this.metadataUpdaterService = service; 
     
     const host = this.config.get('metadataUpdater:host'); 

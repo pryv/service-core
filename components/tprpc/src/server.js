@@ -8,7 +8,7 @@
 
 const bluebird = require('bluebird');
 const TChannel = require('tchannel');
-const logger = require('boiler').getLogger('tprpc.server');
+const { getLogger } = require('boiler');
 const lodash = require('lodash');
 
 const Definition = require('./definition');
@@ -20,9 +20,11 @@ type PBResponse = any;
 
 class Server {
   channel: TChannel; 
+  logger;
   
   constructor() {
     this.channel = new TChannel();
+    this.logger = getLogger('tprpc:server');
   }
   
   async listen(endpoint: string): Promise<*> {
@@ -69,21 +71,21 @@ class Server {
 
     res.headers.as = 'raw';
     
-    logger.debug('request to ', methodName);
+    this.logger.debug('request to ', methodName);
     
     try {
       if (impl == null) 
         throw new Error(`No such method '${methodName}'.`);
       
       const result = await impl.call(handler, request);
-      logger.debug('success');
+      this.logger.debug('success');
       
       const encodedResult = resType.encode(result).finish();
       
       res.sendOk('result', encodedResult);
     }
     catch (err) {
-      logger.debug('errors out', err);
+      this.logger.debug('errors out', err);
       res.sendNotOk('error', err.toString());
     }
   }

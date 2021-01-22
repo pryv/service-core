@@ -34,7 +34,6 @@ const Server = require('./server');
 // Initialize ProjectVersion
 const setCommonMeta = require('api-server/src/methods/helpers/setCommonMeta');
 
-// const { Tags } = require('opentracing');
 const opentracing = require('opentracing');
 const initTracer = require('jaeger-client').initTracer;
 
@@ -65,6 +64,8 @@ async function createContext(
     logger.info(`Connecting to metadata updater... (@ ${metadataEndpoint})`);
       
     await context.configureMetadataUpdater(metadataEndpoint);
+  } else {
+    logger.info('No Metadata Updater');
   }
   
   return context;
