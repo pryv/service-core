@@ -16,6 +16,8 @@ const cuid = require('cuid');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
+const { getConfig } = require('boiler');
+
 let server;
 let reportHttpServer;
 let infoHttpServer;
@@ -42,6 +44,7 @@ describe('service-reporting', () => {
   let mongoFixtures;
   before(async function() {
     mongoFixtures = databaseFixture(await produceMongoConnection());
+    if ((await getConfig()).get('openSource:isActive')) this.skip();
     
   });
   after(async () => {
