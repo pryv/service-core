@@ -151,8 +151,8 @@ describe('DELETE /users/:username', async () => {
             app.storageLayer.accesses,
             app.storageLayer.events,
             app.storageLayer.streams,
-            app.storageLayer.webhooks,
           ];
+          if (!isOpenSource) dbCollections.push(app.storageLayer.webhooks);
 
           const collectionsEmptyChecks = dbCollections.map(async function(
             coll
