@@ -58,6 +58,9 @@ module.exports = function (expressApp: express$Application, app: Application) {
     expressApp.post(path.join(regPath, '/username/check'), (req: express$Request, res, next) => {
       next(errors.goneResource());
     });
+    expressApp.post(path.join(regPath, '/email/check'), (req: express$Request, res, next) => {
+      next(errors.goneResource());
+    });
   }
 
 };
