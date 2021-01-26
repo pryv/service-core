@@ -183,7 +183,27 @@ module.exports = {
       },
       additionalProperties: false
     })
-  }
+  },
+  emailCheck: {
+    params: object({
+      email: helpers.email,
+    }, {
+      required: ['email'],
+      messages: {
+        email: {
+          PATTERN: {
+            message: ErrorMessages[ErrorIds.InvalidEmail],
+            code: ErrorIds.InvalidEmail
+          },
+          OBJECT_MISSING_REQUIRED_PROPERTY: {
+            message: ErrorMessages[ErrorIds.EmailRequired],
+            code: ErrorIds.EmailRequired
+          }
+        }
+      },
+      additionalProperties: false
+    })
+  },
 };
 
 /**
