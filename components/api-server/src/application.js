@@ -111,17 +111,19 @@ class Application {
 
   initiateRoutes() {
     const isOpenSource = this.config.get('openSource:isActive');
-    if (isOpenSource) {
-      require('www')(this.expressApp, this);
-      require('register')(this.expressApp, this);
-    }
+    
     if (this.config.get('dnsLess:isActive')) {
       require('./routes/register')(this.expressApp, this);
     }
 
-    // system, root, register and delete MUST come firs
+    // system, root, register and delete MUST come first
     require('./routes/auth/delete')(this.expressApp, this);
     require('./routes/auth/register')(this.expressApp, this);
+    if (isOpenSource) {
+      require('www')(this.expressApp, this);
+      require('register')(this.expressApp, this);
+    }
+    
     require('./routes/system')(this.expressApp, this);
     require('./routes/root')(this.expressApp, this);
     
@@ -134,6 +136,7 @@ class Application {
     require('./routes/service')(this.expressApp, this);
     require('./routes/streams')(this.expressApp, this);
 
+    
     if(!isOpenSource) require('./routes/webhooks')(this.expressApp, this);
   }
   
