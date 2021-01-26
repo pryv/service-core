@@ -13,16 +13,20 @@ const WWW_PATH = '/www';
 async function publicUrlToService(config) {
   const isActive = config.get('dnsLess:isActive');
   const publicUrl = config.get('dnsLess:publicUrl');
-  if (isActive && publicUrl) {
+  if (isActive && publicUrl != null) {
     config.set('service', {
-      api: path.join(publicUrl, '/{username}/'),
-      register: path.join(publicUrl, REG_PATH, '/'),
-      access: path.join(publicUrl, REG_PATH, '/access/'),
+      api: buildUrl(publicUrl, '/{username}/'),
+      register: buildUrl(publicUrl, path.join(REG_PATH, '/')),
+      access: buildUrl(publicUrl, path.join(REG_PATH, '/access/')),
       assets: {
-        definitions: path.join(publicUrl, WWW_PATH, '/assets/index.json'),
+        definitions: buildUrl(publicUrl, path.join(WWW_PATH, '/assets/index.json')),
       }
     });
   }
+}
+
+function buildUrl(url, path) {
+  return decodeURI(new URL(path, url).href);
 }
 
 module.exports = {
