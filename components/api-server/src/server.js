@@ -108,16 +108,18 @@ class Server {
       application.storageLayer.sessions, 
       application.storageLayer.events, 
       config.get('auth'));
-    
-    require('./methods/auth/register')(application.api, 
-      application.logging, 
-      application.storageLayer, 
-      config.get('services'));
-
-    require('./methods/auth/register-dnsless')(application.api, 
-      application.logging, 
-      application.storageLayer, 
-      config.get('services'));
+      
+    if (this.isDnsLess) {
+      require('./methods/auth/register-dnsless')(application.api, 
+        application.logging, 
+        application.storageLayer, 
+        config.get('services'));
+    } else {
+      require('./methods/auth/register')(application.api, 
+        application.logging, 
+        application.storageLayer, 
+        config.get('services'));
+    }
 
     if (this.isOpenSource) {
       require('./methods/auth/delete-opensource')(application.api,
