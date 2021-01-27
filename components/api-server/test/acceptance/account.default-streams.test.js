@@ -34,6 +34,7 @@ describe('Account with system streams', function () {
   let user;
   let serviceRegisterRequest;
   let config;
+  let isDnsLess;
 
   
 
@@ -97,6 +98,7 @@ describe('Account with system streams', function () {
 
   before(async function () {
     config = await getConfig();
+    isDnsLess = config.get('dnsLess:isActive');
     helpers = require('api-server/test/helpers');
     mongoFixtures = databaseFixture(await produceMongoConnection());
     app = new Application();
@@ -424,7 +426,8 @@ describe('Account with system streams', function () {
           assert.equal(activeEmailAfter.content, newEmail);
           assert.equal(activeLanguageAfter.content, newLanguage);
         });
-        it('[Y6MC] Should send a request to service-register to update its user main information and unique fields', async () => {
+        it('[Y6MC] Should send a request to service-register to update its user main information and unique fields', async function () {
+          if (isDnsLess) this.skip();
           // email is already skipped
           assert.deepEqual(serviceRegisterRequest, {
             username: user.attrs.username,
