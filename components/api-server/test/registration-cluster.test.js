@@ -35,6 +35,14 @@ function defaults() {
 }
 
 describe('registration: cluster', function() {
+
+  let isDnsLess;
+  before(async function () {
+    config = await getConfig();
+    isDnsLess = config.get('dnsLess:isActive');
+    if (isDnsLess) this.skip();
+  })
+
   let app;
   let request;
   let res;
@@ -52,7 +60,7 @@ describe('registration: cluster', function() {
     await mongoFixtures.context.cleanEverything();
   });
   before(async function () {
-    config = await getConfig();
+    
     config.injectTestConfig({
       dnsLess: { isActive: false },
       openSource: { isActive: false },
