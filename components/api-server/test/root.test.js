@@ -165,7 +165,7 @@ describe('root', function() {
 
       assert.match(
         res.headers['api-version'],
-        /^\d+\.\d+\.\d+-.*$/,
+        /^\d+\.\d+\.\d+(-.*)?$/,
         'API-Version looks like 1.2.3-432-fag343da.'
       );
       assert.notExists(res.headers['x-powered-by']);
