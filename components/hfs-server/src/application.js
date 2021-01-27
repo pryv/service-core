@@ -5,74 +5,67 @@
  * Proprietary and confidential
  */
 // @flow
+const path = require('path');
+const {getConfig, getLogger, boiler} = require('boiler').init({
+  appName: 'hfs-server',
+  baseConfigDir:  path.resolve(__dirname, '../config'),
+  extraConfigs: [{
+    scope: 'serviceInfo',
+    key: 'service',
+    urlFromKey: 'serviceInfoUrl'
+  },{
+    scope: 'defaults-data',
+    file: path.resolve(__dirname, '../config/default-config.yml')
+  }, {
+    plugin: require('../../api-server/config/components/systemStreams')
+  }]
+});
+
 
 // Load configuration file, set up execution context and start the server. 
 
-const logComponent = require('components/utils').logging;
-const business = require('components/business');
-const storage = require('components/storage');
+const logComponent = require('utils').logging;
+const business = require('business');
+const storage = require('storage');
 
 const Context = require('./context');
-const Settings = require('./Settings');
 const Server = require('./server'); 
 
 // Initialize ProjectVersion
-const setCommonMeta = require('components/api-server/src/methods/helpers/setCommonMeta');
+const setCommonMeta = require('api-server/src/methods/helpers/setCommonMeta');
 
-import type { LogFactory } from 'components/utils/src/logging';
-
-// const { Tags } = require('opentracing');
 const opentracing = require('opentracing');
 const initTracer = require('jaeger-client').initTracer;
 
 const { patch } = require('./tracing/mongodb_client');
 
-async function createSettings(): Promise<Settings> {
-  try {
-    return await Settings.load(); 
-  } catch(err) {
-    if (err.code == 'ENOENT') {
-      console.error('Configuration file not found. '     // eslint-disable-line no-console
-        + 'Default location is \'./hfs-server.json\'. '
-        + 'Use --config to modify expected location.');
-      process.exit(1);
-      // NOT REACHED
-    }
-    
-    throw err; 
-  }
-}
-function createLogFactory(settings): LogFactory {
-  const logSettings = settings.get('logs').obj();
-  return logComponent(logSettings).getLogger;
-}
 async function createContext(
-  settings: Settings, logFactory: LogFactory): Promise<Context> 
+  config): Promise<Context> 
 {
-  const logger = logFactory('setup');
+  const logger = getLogger('setup');
   
-  const host = settings.get('influxdb.host').str(); 
-  const port = settings.get('influxdb.port').num();
+  const host = config.get('influxdb:host'); 
+  const port = config.get('influxdb:port');
   
-  const influx = new business.series.InfluxConnection(
-    {host: host, port: port}, logFactory('influx')); 
+  const influx = new business.series.InfluxConnection({host: host, port: port}); 
   
-  const mongo = new storage.Database(
-    settings.get('mongodb').obj(), logFactory('database'));
+  const mongo = new storage.Database(config.get('database'));
     
-  const tracer = produceTracer(settings, logFactory('jaeger'));
-  const typeRepoUpdateUrl = settings.get('service.eventTypes').str();
+  const tracer = produceTracer(config, getLogger('jaeger'));
+  const typeRepoUpdateUrl = config.get('service:eventTypes');
     
-  const context = new Context(influx, mongo, logFactory, tracer, typeRepoUpdateUrl, settings);
-
-  if (settings.has('metadataUpdater.host')) {
-    const mdHost = settings.get('metadataUpdater.host').str(); 
-    const mdPort = settings.get('metadataUpdater.port').num(); 
+  const context = new Context(influx, mongo, tracer, typeRepoUpdateUrl, config);
+  
+  if (config.has('metadataUpdater:host')) {
+    const mdHost = config.get('metadataUpdater:host'); 
+    const mdPort = config.get('metadataUpdater:port'); 
     const metadataEndpoint = `${mdHost}:${mdPort}`;
       
     logger.info(`Connecting to metadata updater... (@ ${metadataEndpoint})`);
       
     await context.configureMetadataUpdater(metadataEndpoint);
+  } else {
+    logger.info('No Metadata Updater');
   }
   
   return context;
@@ -80,22 +73,22 @@ async function createContext(
 
 // Produce a tracer that allows creating span trees for a subset of all calls. 
 // 
-function produceTracer(settings, logger) {
-  if (! settings.get('trace.enable').bool()) 
+function produceTracer(config, logger) {
+  if (! config.get('trace:enable')) 
     return new opentracing.Tracer();
     
   const traceConfig = {
     'serviceName': 'hfs-server',
     'reporter': {
       'logSpans': true,
-      'agentHost': settings.get('trace.agent.host').str(),
-      'agentPort': settings.get('trace.agent.port').num(), 
-      'flushIntervalMs': settings.get('trace.sampler.flushIntervalMs').num(),
+      'agentHost': config.get('trace:agent:host'),
+      'agentPort': config.get('trace:agent:port'), 
+      'flushIntervalMs': config.get('trace:sampler:flushIntervalMs'),
     },
     'logger': logger,
     'sampler': {
-      'type': settings.get('trace.sampler.type').str(),
-      'param': settings.get('trace.sampler.param').num(),
+      'type': config.get('trace:sampler:type'),
+      'param': config.get('trace:sampler:param'),
     }
   };
   const tracer = initTracer(traceConfig);
@@ -114,20 +107,21 @@ function patchMongoDBDriver(tracer) {
 // together. 
 // 
 class Application {
-  settings: Settings; 
-  logFactory: LogFactory; 
+  logger; 
   context: Context; 
     
   server: Server; 
+  config;
   
-  async init(settings?: Settings) {
-    this.settings = settings || await createSettings(); 
-    setCommonMeta.loadSettings(this.settings);
-    this.logFactory = createLogFactory(this.settings);
-    
-    this.context = await createContext(this.settings, this.logFactory);
+  async init() {
+    this.logger = getLogger('application');
+    this.config = await getConfig();
+    await setCommonMeta.loadSettings();
 
-    this.server = new Server(this.settings, this.context);
+    
+    this.context = await createContext(this.config);
+
+    this.server = new Server(this.config, this.context);
   }
   
   async start(): Promise<Application> {

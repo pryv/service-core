@@ -8,6 +8,30 @@
 
 process.env.NODE_ENV = 'test';
 
+const path = require('path');
+const { getConfigUnsafe } = require('boiler').init({
+  appName: 'webhooks-test',
+  baseConfigDir: path.resolve(__dirname, '../config/'),
+  extraConfigs: [{
+    scope: 'serviceInfo',
+    key: 'service',
+    urlFromKey: 'serviceInfoUrl'
+  },
+  {
+    scope: 'api-server-test-config',
+    file: path.resolve(__dirname, '../../api-server/config/test-config.yml')
+  },
+  {
+    scope: 'defaults-data',
+    file: path.resolve(__dirname, '../../api-server/config/defaults.js')
+  },
+  {
+    plugin: require('../../api-server/config/components/systemStreams')
+  }]
+});
+
+
+
 process.on('unhandledRejection', unhandledRejection);
 
 // Handles promise rejections that aren't caught somewhere. This is very useful
@@ -18,19 +42,14 @@ function unhandledRejection(reason, promise) {
     'reason:', reason.stack || reason);
 }
 
-const { Database } = require('components/storage');
-const storage = require('components/storage');
+const { Database } = require('storage');
+const storage = require('storage');
 // FLOW __dirname can be undefined when node is run outside of file.
-const Settings = require(__dirname + '/../src/settings');
-const NullLogger = require('components/utils/src/logging').NullLogger;
 
 // Produces and returns a connection to MongoDB. 
 // 
 function produceMongoConnection(): Database {
-  const settings = new Settings();
-  const database = new Database(
-    settings.get('mongodb'),
-    new NullLogger());
+  const database = new Database(getConfigUnsafe(true).get('database'));
   return database;
 }
 

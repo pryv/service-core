@@ -5,9 +5,9 @@
  * Proprietary and confidential
  */
 const bluebird = require('bluebird');
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const UsersRepository = require('components/business/src/users/repository');
-const User = require('components/business/src/users/User');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const UsersRepository = require('business/src/users/repository');
+const User = require('business/src/users/User');
 
 /**
  * v1.6.0: Account in events

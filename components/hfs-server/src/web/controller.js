@@ -6,13 +6,13 @@
  */
 // @flow
 
-const errors = require('components/errors').factory;
-const business = require('components/business');
+const errors = require('errors').factory;
+const business = require('business');
 
 const opentracing = require('opentracing');
 const cls = require('../tracing/cls');
 
-import type Context from '../context';
+import type Context  from '../context';
 
 // ----------------------------------------------- (sync) express error handling
 

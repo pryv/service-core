@@ -6,7 +6,7 @@
  */
 var Transform = require('stream').Transform,
     inherits = require('util').inherits,
-  utils = require('components/utils');
+  utils = require('utils');
 
 module.exports = SetFileReadTokenStream;
 

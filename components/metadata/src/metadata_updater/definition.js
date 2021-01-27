@@ -7,7 +7,7 @@
 
 // @flow
 
-const rpc = require('components/tprpc');
+const rpc = require('tprpc');
 
 module.exports = {
   produce: () => rpc.load(__dirname + '/interface.proto'),

@@ -2,7 +2,7 @@
 // flow-typed version: c6154227d1/morgan_v1.x.x/flow_>=v0.104.x
 
 /* @flow */
-import type { Middleware, $Request, $Response } from "express";
+import type { Middleware, $Request, $Response } from '"express";
 
 declare module "morgan" {
   declare type FormatFn = (

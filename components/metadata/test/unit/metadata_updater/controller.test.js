@@ -20,12 +20,12 @@ const { PendingUpdate, PendingUpdatesMap } =
   require('../../../src/metadata_updater/pending_updates');
 const { Controller } = require('../../../src/metadata_updater/controller');
 const { Flush } = require('../../../src/metadata_updater/flush');
-const { NullLogger } = require('components/utils/src/logging');
 
-import type { StorageLayer } from 'components/storage';
+const { getLogger } = require('boiler');
+import type { StorageLayer } from 'storage';
 
 describe('Metadata Updater/Controller', () => {
-  const logger = new NullLogger(); 
+  const logger = getLogger('metadata'); 
   
   let map: PendingUpdatesMap;
   let controller: Controller; 

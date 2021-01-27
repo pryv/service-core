@@ -8,21 +8,20 @@
 
 // Main service class for the Metadata Updater Service. 
 
-const rpc = require('components/tprpc');
+const rpc = require('tprpc');
 
 const definitionFactory = require('./definition');
 const { PendingUpdatesMap, PendingUpdate } = require('./pending_updates');
 const { Controller } = require('./controller');
 const { ErrorLogger } = require('./error_logger');
 
-const NatsPublisher = require('components/api-server/src/socket-io/nats_publisher');
-const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
+const NatsPublisher = require('api-server/src/socket-io/nats_publisher');
+const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
 
-import type { Logger } from 'components/utils/src/logging';
 import type { IMetadataUpdaterService, IUpdateRequests, IUpdateResponse, 
   IUpdateId, IPendingUpdate } from './interface';
   
-import type { StorageLayer } from 'components/storage';
+import type { StorageLayer } from 'storage';
 
 // The metadata updater service receives 'scheduleUpdate' rpc messages on the
 // tchannel/protobuf3 interface (from the network). It then flushes these
@@ -30,7 +29,7 @@ import type { StorageLayer } from 'components/storage';
 // 
 class Service implements IMetadataUpdaterService {
   db: StorageLayer;
-  logger: Logger;
+  logger;
   
   // Underlying transport and RPC dispatcher
   server: rpc.Server;
@@ -45,10 +44,10 @@ class Service implements IMetadataUpdaterService {
   // <username, natspublisher>
   socketIoNotifiers: Map<string, NatsPublisher>;
   
-  constructor(db: StorageLayer, logger: Logger) {
+  constructor(db: StorageLayer, logger) {
     this.db = db;
-    this.logger = logger; 
-    
+    this.logger = logger.getLogger('service'); 
+    this.logger.debug('instanciated');
     this.server = new rpc.Server(); 
 
     this.pending = new PendingUpdatesMap(); 

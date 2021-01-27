@@ -7,7 +7,7 @@
 // @flow
 
 require('../test-helper');
-const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
+const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
 
 const chai = require('chai');
 const assert = chai.assert;

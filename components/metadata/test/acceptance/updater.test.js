@@ -15,10 +15,10 @@ const assert = chai.assert;
 
 const helpers = require('./test-helpers');
 
-const rpc = require('components/tprpc');
-const metadata = require('components/metadata');
+const rpc = require('tprpc');
+const metadata = require('metadata');
 
-import type { IMetadataUpdaterService } from '../../src/metadata_updater/interface';
+import type { IMetadataUpdaterService }  from '../../src/metadata_updater/interface';
 
 describe('Metadata Updater', () => {  
   // Set up the server end

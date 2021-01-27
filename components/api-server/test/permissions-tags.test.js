@@ -11,7 +11,7 @@ const chai = require('chai');
 const assert = chai.assert;
 const charlatan = require('charlatan');
 
-const { databaseFixture } = require('components/test-helpers');
+const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
 describe('Access permissions - Tags', function () {

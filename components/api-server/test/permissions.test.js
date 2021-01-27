@@ -8,7 +8,7 @@
 
 require('./test-helpers'); 
 const helpers = require('./helpers');
-const treeUtils = require('components/utils').treeUtils;
+const treeUtils = require('utils').treeUtils;
 const server = helpers.dependencies.instanceManager;
 const async = require('async');
 const fs = require('fs');

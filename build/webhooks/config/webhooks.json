@@ -5,7 +5,7 @@
     "maxRetries": 5,
     "runsSize": 20
   },
-  "mongodb": {
+  "database": {
     "host": "127.0.0.1",
     "port": 27017,
     "name": "pryv-node",

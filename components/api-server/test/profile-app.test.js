@@ -8,7 +8,7 @@
 
 require('./test-helpers'); 
 var helpers = require('./helpers'),
-    ErrorIds = require('components/errors').ErrorIds,
+    ErrorIds = require('errors').ErrorIds,
     server = helpers.dependencies.instanceManager,
     async = require('async'),
     validation = helpers.validation,

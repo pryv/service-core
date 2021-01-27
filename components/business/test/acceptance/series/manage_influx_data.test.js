@@ -12,21 +12,20 @@
 /* global describe, it */
 const { should } = require('../../test-helpers');
 
-const { getConfig } = require('components/api-server/config/Config');
+const { getConfig } = require('boiler');
 const influx = require('influx');
 
 const series = require('../../../src/index.js').series; 
 const Repository = series.Repository; 
 const DataMatrix = series.DataMatrix; 
-const userStorage = require('components/test-helpers').dependencies.storage.user.events;
+const userStorage = require('test-helpers').dependencies.storage.user.events;
 
 describe('Manage InfluxDB data (business.series.*)', function () {
   const connection = new influx.InfluxDB({
     host: 'localhost'});
 
   before(async () => {
-    const config = getConfig();
-    await config.init();
+    const config = await getConfig();
   });
   
   // TODO beforeEach delete the measurement

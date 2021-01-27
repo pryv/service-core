@@ -11,9 +11,9 @@ const _ = require('lodash');
 const timestamp = require('unix-timestamp');
 
 const User = require('./User');
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-let encryption = require('components/utils').encryption;
-const errors = require('components/errors').factory;
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+let encryption = require('utils').encryption;
+const errors = require('errors').factory;
 
 /**
  * Repository of the users
@@ -247,6 +247,7 @@ class Repository {
       
       // create all user account events
       const events = await user.getEvents();
+    
       await bluebird.fromCallback((cb) =>
         this.storage.insertMany({ id: user.id }, events, cb, { transactionSession }));
     }, this.getTransactionOptions());

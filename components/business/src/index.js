@@ -15,9 +15,9 @@ module.exports = {
   },
 };
 
-import type { Query } from './series/series';
-import type Repository from './series/repository';
+import type { Query }  from './series/series';
+import type Repository  from './series/repository';
 export type { Query, Repository };
 
-import type { TypeRepository, InfluxRowType } from './types';
+import type { TypeRepository, InfluxRowType }  from './types';
 export type { TypeRepository, InfluxRowType };

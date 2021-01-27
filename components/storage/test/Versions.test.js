@@ -11,7 +11,8 @@
 /*global describe, it */
 
 const bluebird = require('bluebird');
-const helpers = require('components/test-helpers');
+require('../../test-helpers/src/boiler-init');
+const helpers = require('test-helpers');
 const storage = helpers.dependencies.storage;
 const converters = require('../src/converters');
 const database = storage.database;
@@ -23,8 +24,9 @@ const testData = helpers.data;
 const Versions = require('../src/Versions');
 const wrench = require('wrench');
 const _ = require('lodash');
-const buildTree = require('components/utils').treeUtils.buildTree;
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
+const buildTree = require('utils').treeUtils.buildTree;
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const { getLogger } = require('boiler');
 
 const mongoFolder = __dirname + '/../../../../var-pryv/mongodb-bin'
 
@@ -529,7 +531,10 @@ describe('Versions', function () {
         }, cb));
      
       const events = await eventsCursor.toArray();
+      // extra custom account streamIds not present in db dump
+      const streamsToIgnore = [ '.insurancenumber', '.phoneNumber']
       userAccountStreamIds.forEach(streamId => {
+        if (streamsToIgnore.includes(streamId)) return;
         const systemStream = userAccountStreams[streamId];
         const event = getEventByStreamId(events, streamId);
         assert.exists(event, 'missing ' + streamId + ' event');
@@ -579,7 +584,7 @@ describe('Versions', function () {
 
     const migratedIndexes = await bluebird.fromCallback(cb => eventsStorage.listIndexes(defaultUser, {}, cb));
     compareIndexes(newIndexes.events, migratedIndexes);
-  })
+  });
 
   function compareIndexes(expected, actual) {
     expected.forEach((index) => {
@@ -606,7 +611,7 @@ describe('Versions', function () {
     const pickedMigrations = _.pick.apply(_, pickArgs);
     return new Versions(database,
         helpers.dependencies.settings.eventFiles.attachmentsDirPath,
-        helpers.dependencies.logging.getLogger('versions'),
+        getLogger('versions'),
         pickedMigrations);
   }
 

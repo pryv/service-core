@@ -8,8 +8,6 @@
 
 const assert = require('assert');
 
-import type { Logger } from 'components/utils';
-
 // Provides a static constructor '.wrap' that returns a proxy object wrapping a
 // target. All calls  made to the proxy are forwarded to the target. If the
 // target method throws an exception, it is  logged and rethrown. 
@@ -25,9 +23,9 @@ import type { Logger } from 'components/utils';
 // 
 class ErrorLogger<T: Object> {
   target: T; 
-  logger: Logger; 
+  logger; 
   
-  static wrap(target: T, logger: Logger): T {
+  static wrap(target: T, logger): T {
     // #get is expected to be invariant, but is covariant (because we're using
     // the 'class' syntax here).
     // FLOW 
@@ -37,7 +35,7 @@ class ErrorLogger<T: Object> {
     return proxy; 
   }
   
-  constructor(target: T, logger: Logger) {
+  constructor(target: T, logger) {
     this.target = target;
     this.logger = logger; 
   }

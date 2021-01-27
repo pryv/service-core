@@ -6,19 +6,20 @@
  */
 // @flow
 
-const debug = require('debug')('test-helpers');
-const testHelpers = require('components/test-helpers');
+require('../../../test-helpers/src/boiler-init');
+const logger = require('boiler').getLogger('test-helpers');
+const testHelpers = require('test-helpers');
 
 // --------------------------------------------------------- prespawning servers
 
-debug('creating new spawn context');
+logger.debug('creating new spawn context');
 const SpawnContext = testHelpers.spawner.SpawnContext;
 const spawnContext: SpawnContext = 
   new SpawnContext('test/support/child_process');
 
 /* global after */
 after(() => {
-  debug('shutting down spawn context');
+  logger.debug('shutting down spawn context');
   spawnContext.shutdown(); 
 });
 

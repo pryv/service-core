@@ -21,15 +21,15 @@ const os = require('os');
 const fs = require('fs');
 
 const helpers = require('./helpers');
-const ErrorIds = require('components/errors').ErrorIds;
+const ErrorIds = require('errors').ErrorIds;
 const server = helpers.dependencies.instanceManager;
 const methodsSchema = require('../src/schema/systemMethods');
 const validation = helpers.validation;
-const encryption = require('components/utils').encryption;
+const encryption = require('utils').encryption;
 const storage = helpers.dependencies.storage.user.events;
 const testData = helpers.data;
-const UsersRepository = require('components/business/src/users/repository');
-const { databaseFixture } = require('components/test-helpers');
+const UsersRepository = require('business/src/users/repository');
+const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 const charlatan = require('charlatan');
 
@@ -117,7 +117,9 @@ describe('system (ex-register)', function () {
       });
       it('[FUTR] must create a new user with the sent data, sending a welcome email', async function () {
         let settings = _.cloneDeep(helpers.dependencies.settings);
-        settings.services.email.enabled = true;
+        settings.services.email.enabled = {
+          welcome: true
+        };
 
         let mailSent = false;
         
@@ -328,7 +330,6 @@ describe('system (ex-register)', function () {
         try{
           await bluebird.fromCallback(
             (cb) => post(data, cb));
-          console.log('test passed even it should not');
           assert.isTrue(false);
         } catch (err) {
           assert.equal(err.response.status, 409)
@@ -465,7 +466,7 @@ describe('system (ex-register)', function () {
           }
           should(data.indexOf(newUserDataExpected.passwordHash)).be.equal(-1);
           if (/passwordHash/.test(data))
-            should(data.indexOf('passwordHash=(hidden)')).be.aboveOrEqual(0);
+            should(data.indexOf('(hidden password)')).be.aboveOrEqual(0);
           callback();
         });
       }

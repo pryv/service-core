@@ -27,16 +27,16 @@ const superagent = require('superagent');
 
 const { context } = require('./test-helpers'); 
 const helpers = require('./helpers');
-const ErrorIds = require('components/errors').ErrorIds;
+const ErrorIds = require('errors').ErrorIds;
 const server = helpers.dependencies.instanceManager;
 const streamsMethodsSchema = require('../src/schema/streamsMethods');
 const eventsMethodsSchema = require('../src/schema/eventsMethods');
 const validation = helpers.validation;
 const testData = helpers.data;
-const { databaseFixture } = require('components/test-helpers');
+const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('./test-helpers');
 
-const { ConditionVariable } = require('components/test-helpers').syncPrimitives; 
+const { ConditionVariable } = require('test-helpers').syncPrimitives; 
 
 describe('Socket.IO', function () {
 

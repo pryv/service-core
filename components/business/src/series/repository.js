@@ -9,7 +9,7 @@
 
 const Series = require('./series');
 const NamespaceBatch = require('./namespace_batch');
-import type InfluxConnection from './influx_connection';
+import type InfluxConnection  from './influx_connection';
 
 /** Repository of all series in this Pryv instance. 
  */

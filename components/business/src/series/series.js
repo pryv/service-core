@@ -6,8 +6,8 @@
  */
 // @flow
 
-import type {IResults} from 'influx';
-import type InfluxConnection from './influx_connection';
+import type {IResults}  from 'influx';
+import type InfluxConnection  from './influx_connection';
 
 const R = require('ramda');
 const {isoOrTimeToDate, formatDate} = require('influx/lib/src/grammar/times');

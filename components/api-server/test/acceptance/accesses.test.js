@@ -8,7 +8,7 @@
 
 /* global describe, it, before, after, beforeEach */
 
-const { databaseFixture } = require('components/test-helpers');
+const { databaseFixture } = require('test-helpers');
 
 const bluebird = require('bluebird');
 const lodash = require('lodash');
@@ -19,13 +19,13 @@ const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 const charlatan = require('charlatan');
 
-const { ErrorIds } = require('components/errors/src');
+const { ErrorIds } = require('errors/src');
 
 describe('accesses', () => {
 
   let storage, produceMongoConnection, context;
   before(() => {
-    storage = require('components/test-helpers').dependencies.storage.user.accesses;
+    storage = require('test-helpers').dependencies.storage.user.accesses;
     ({ produceMongoConnection, context } = require('../test-helpers'));
   });
 

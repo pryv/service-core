@@ -5,15 +5,15 @@
  * Proprietary and confidential
  */
 'use strict';
+const { getConfig } = require('boiler');
 // @flow
 
 const should = require('should');
 
 /* global describe, it */
-const { loadSettings } = require('./test-helpers');
 
 describe('Settings', function() {
   it('[KEEZ] should have been loaded for test execution', async function() {
-    should.exist(await loadSettings());
+    should.exist(await getConfig());
   });
 });

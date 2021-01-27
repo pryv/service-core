@@ -13,18 +13,20 @@ const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 const bluebird = require('bluebird');
 
-const { databaseFixture } = require('components/test-helpers');
 const { webhooksStorage } = require('../test-helpers');
-const userStorage = require('components/test-helpers').dependencies.storage.user.events;
 
-require('components/api-server/test/test-helpers');
-const { produceMongoConnection, context } = require('components/api-server/test/test-helpers');
+const { databaseFixture } = require('test-helpers');
+
+const userStorage = require('test-helpers').dependencies.storage.user.events;
+
+require('api-server/test/test-helpers');
+const { produceMongoConnection, context } = require('api-server/test/test-helpers');
 
 const WebhooksApp = require('../../src/application');
 
-const { Webhook, Repository } = require('components/business').webhooks;
+const { Webhook, Repository } = require('business').webhooks;
 const repository = new Repository(webhooksStorage, userStorage);
-const HttpServer = require('components/business/test/acceptance/webhooks/support/httpServer');
+const HttpServer = require('business/test/acceptance/webhooks/support/httpServer');
 
 const BOOT_MESSAGE = require('../../src/messages').BOOT_MESSAGE;
 
@@ -154,6 +156,13 @@ describe('webhooks', function() {
           appAccessId = cuid();
           appAccessToken = cuid();
           streamId = cuid();
+        });
+
+        before(async function() {
+          webhooksApp = new WebhooksApp();
+          await webhooksApp.setup();
+          await webhooksApp.run();
+          webhooksService = webhooksApp.webhooksService;
         });
 
         before(async function() {
@@ -343,6 +352,13 @@ describe('webhooks', function() {
       appAccessToken = cuid();
       webhookId = cuid();
       streamId = cuid();
+    });
+
+    before(async function() {
+      webhooksApp = new WebhooksApp();
+      await webhooksApp.setup();
+      await webhooksApp.run();
+      webhooksService = webhooksApp.webhooksService;
     });
 
     before(async function() {

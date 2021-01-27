@@ -9,44 +9,41 @@ process.env.NODE_ENV = 'test';
 
 process.on('unhandledRejection', unhandledRejection);
 
+const { getLogger } = require('boiler');
+const logger = getLogger('test-helpers');
+
 // Handles promise rejections that aren't caught somewhere. This is very useful
 // for debugging. 
 function unhandledRejection(reason, promise) {
-  console.warn(                                // eslint-disable-line no-console
+  logger.warn(                                // eslint-disable-line no-console
     'Unhandled promise rejection:', promise, 
     'reason:', reason.stack || reason); 
 }
 
 // Set up a context for spawning api-servers.
-const { SpawnContext } = require('components/test-helpers').spawner;
+const { SpawnContext } = require('test-helpers').spawner;
 const context: SpawnContext = new SpawnContext(); 
 /* global after */
 after(async () => {
   await context.shutdown(); 
 });
 
-const { Database } = require('components/storage');
-const Settings = require('components/api-server/src/settings');
-const NullLogger = require('components/utils/src/logging').NullLogger;
-const InfluxConnection = require('components/business/src/series/influx_connection');
+const { Database } = require('storage');
+const { getConfig } = require('boiler');
+const InfluxConnection = require('business/src/series/influx_connection');
 
 // Produces and returns a connection to MongoDB. 
 async function produceMongoConnection(): Promise<Database> {
-  const settings = await Settings.load();
-  const database = new Database(
-    settings.get('database').obj(), 
-    new NullLogger()); 
+  const config = await getConfig();
+  const database = new Database(config.get('database')); 
   
   return database; 
 }
 
 function produceInfluxConnection(settings: any) {
-  const host = settings.get('influxdb.host').str(); 
-  const port = settings.get('influxdb.port').num();
-  return new InfluxConnection(
-    {host: host, port: port},
-    new NullLogger()
-  );
+  const host = settings.get('influxdb:host'); 
+  const port = settings.get('influxdb:port');
+  return new InfluxConnection({host: host, port: port});
 }
 
 module.exports = {

@@ -18,20 +18,23 @@ const fs = require('fs');
 const path = require('path');
 const rimraf = require('rimraf');
 const _ = require('lodash');
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const UsersRepository = require('components/business/src/users/repository');
-const User = require('components/business/src/users/User');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const UsersRepository = require('business/src/users/repository');
+const User = require('business/src/users/User');
 const charlatan = require('charlatan');
-const { getConfig } = require('components/api-server/config/Config');
+const { getConfigUnsafe, getConfig, getLogger } = require('boiler');
+const logger = getLogger('test-helpers:data');
 
 // users
 const users = exports.users = require('./data/users');
 const defaultUser = users[0];
-const config = getConfig();
 
 const customAccountProperties = buildCustomAccountProperties();
 
+
 exports.resetUsers = async () => {
+  logger.debug('resetUsers');
+  await getConfig(); // lock up to the time config is ready
   await bluebird.fromCallback(cb => storage.user.events.database.deleteMany(
     { name: 'events' },
     {
@@ -198,7 +201,7 @@ exports.dumpCurrent = function (mongoFolder, version, callback) {
   const mongodump = path.resolve(mongoFolder, 'bin/mongodump');
   const outputFolder = getDumpFolder(version);
 
-  console.log('Dumping current test data to ' + outputFolder);
+  logger.info('Dumping current test data to ' + outputFolder);
 
   async.series([
     clearAllData,
@@ -237,7 +240,7 @@ exports.restoreFromDump = function (versionNum, mongoFolder, callback) {
   const sourceDBFolder = getDumpDBSubfolder(sourceFolder);
   const sourceFilesArchive = getDumpFilesArchive(sourceFolder);
 
-  console.log('Restoring v' + versionNum + ' data from ' + sourceFolder);
+  logger.info('Restoring v' + versionNum + ' data from ' + sourceFolder);
 
   if (! fs.existsSync(sourceDBFolder) || ! fs.existsSync(sourceFilesArchive)) {
     throw new Error('Missing source dump or part of it at ' + sourceFolder);
@@ -259,7 +262,7 @@ exports.restoreFromDump = function (versionNum, mongoFolder, callback) {
         ' -C ' + settings.eventFiles.attachmentsDirPath)
   ], function (err) {
     if (err) { return callback(err); }
-    console.log('OK');
+    logger.info('OK');
     callback();
   });
 };
@@ -294,7 +297,7 @@ function getDumpFilesArchive(dumpFolder) {
 }
 
 function buildCustomAccountProperties() {
-  const accountStreams = config.get('custom:systemStreams:account');
+  const accountStreams = getConfigUnsafe(true).get('custom:systemStreams:account');
   if (accountStreams == null) return {};
   
   const customProperties = {};

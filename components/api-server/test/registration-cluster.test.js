@@ -13,14 +13,13 @@ const bluebird = require('bluebird');
 const supertest = require('supertest');
 const assert = require('chai').assert;
 
-const Settings = require('../src/settings');
-const { getConfig } = require('components/api-server/config/Config');
+const { getConfig } = require('boiler');
 const Application = require('../src/application');
-const ErrorIds = require('components/errors/src/ErrorIds');
-const ErrorMessages = require('components/errors/src/ErrorMessages');
-const User = require('components/business/src/users/User');
-const UsersRepository = require('components/business/src/users/repository');
-const { databaseFixture } = require('components/test-helpers');
+const ErrorIds = require('errors/src/ErrorIds');
+const ErrorMessages = require('errors/src/ErrorMessages');
+const User = require('business/src/users/User');
+const UsersRepository = require('business/src/users/repository');
+const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('./test-helpers');
 
 function defaults() {
@@ -36,6 +35,14 @@ function defaults() {
 }
 
 describe('registration: cluster', function() {
+
+  let isDnsLess;
+  before(async function () {
+    config = await getConfig();
+    isDnsLess = config.get('dnsLess:isActive');
+    if (isDnsLess) this.skip();
+  })
+
   let app;
   let request;
   let res;
@@ -53,21 +60,21 @@ describe('registration: cluster', function() {
     await mongoFixtures.context.cleanEverything();
   });
   before(async function () {
-    settings = await Settings.load();
-    config = getConfig();
-    await config.init();
-    config.set('dnsLess:isActive', false);
-    config.set('openSource:isActive', false);
+    
+    config.injectTestConfig({
+      dnsLess: { isActive: false },
+      openSource: { isActive: false },
+    });
     regUrl = config.get('services:register:url');
 
-    app = new Application(settings);
+    app = new Application();
     await app.initiate();
 
     require('../src/methods/auth/register')(
       app.api,
       app.logging,
       app.storageLayer,
-      app.settings.get('services').obj()
+      app.config.get('services')
     );
 
     request = supertest(app.expressApp);
@@ -75,6 +82,7 @@ describe('registration: cluster', function() {
     usersRepository = new UsersRepository(app.storageLayer.events);
   });
   after(async function () {
+    config.injectTestConfig({});
     mongoFixtures = databaseFixture(await produceMongoConnection());
     await mongoFixtures.context.cleanEverything();
   });
@@ -589,77 +597,7 @@ describe('registration: cluster', function() {
     });
 
   });
-  describe('GET /:username/check', function() {
-    function path(username) {
-      return `/${username}/check_username`;
-    }
-
-    it('[7T9L] when checking a valid available username, it should respond with status 200 and {reserved:false}', async () => {
-      userData = defaults();
-      serviceRegisterRequests = [];
-
-      nock(regUrl)
-        .get(path(userData.username), (body) => {
-          serviceRegisterRequests.push(body);
-          return true;
-        })
-        .reply(200, {
-          reserved: false
-        });
-
-      const res = await request.get(path(userData.username))
-
-      const body = res.body;
-      assert.equal(res.status, 200);
-      assert.isFalse(body.reserved);
-    });
-
-    it('[153Q] when checking a valid taken username, it should respond with status 400 and the correct error', async () => {
-      userData = defaults();
-      serviceRegisterRequests = [];
-
-      nock(regUrl)
-        .get(path(userData.username), (body) => {
-          serviceRegisterRequests.push(body);
-          return true;
-        })
-        .reply(409, {
-          reserved: true
-        });
-
-      const res = await request.get(path(userData.username))
-
-      const body = res.body;
-      assert.equal(res.status, 409);
-      assert.equal(body.error.id, ErrorIds.ItemAlreadyExists);
-      assert.deepEqual(body.error.data, { username: userData.username });
-    });
-
-    it('[H09H] when checking a too short username, it should respond with status 400 and the correct error', async () => {
-      const res = await request.get(path('a'.repeat(4)));
-
-      const body = res.body;
-      assert.equal(res.status, 400);
-      assert.equal(body.error.id, ErrorIds.InvalidParametersFormat);
-      assert.isTrue(body.error.data[0].code.includes('username'));
-    });
-    it('[VFE1] when checking a too long username, it should respond with status 400 and the correct error', async () => {
-      const res = await request.get(path('a'.repeat(24)));
-
-      const body = res.body;
-      assert.equal(res.status, 400);
-      assert.equal(body.error.id, ErrorIds.InvalidParametersFormat);
-      assert.isTrue(body.error.data[0].code.includes('username'));
-    });
-    it('[FDTC] when checking a username with invalid characters, it should respond with status 400 and the correct error', async () => {
-      const res = await request.get(path('abc:def'));
-
-      const body = res.body;
-      assert.equal(res.status, 400);
-      assert.equal(body.error.id, ErrorIds.InvalidParametersFormat);
-      assert.isTrue(body.error.data[0].code.includes('username'));
-    });
-  });
+  
 
   
 });

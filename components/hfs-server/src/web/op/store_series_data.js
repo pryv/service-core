@@ -8,17 +8,17 @@
 
 //  POST /events/:event_id/series - Store data in a series. 
 
-const errors = require('components/errors').factory;
-const business = require('components/business');
+const errors = require('errors').factory;
+const business = require('business');
 
 const ApiConstants = require('../api_constants');
 const TracedOperations = require('./traced_operations');
 
-const setCommonMeta = require('components/api-server/src/methods/helpers/setCommonMeta').setCommonMeta;
+const setCommonMeta = require('api-server/src/methods/helpers/setCommonMeta').setCommonMeta;
 
-import type { TypeRepository } from 'components/business';
-import type Context from '../../context';
-import type {SeriesMetadata} from '../../metadata_cache';
+import type { TypeRepository } from 'business';
+import type Context  from '../../context';
+import type {SeriesMetadata}  from '../../metadata_cache';
 
 /** POST /events/:event_id/series - Store data in a series. 
  */

@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 var async = require('async'),
-  toString = require('components/utils').toString,
+  toString = require('utils').toString,
   _ = require('lodash'),
   isDuplicateError = require('../Database').isDuplicateError;
 

@@ -6,12 +6,12 @@
  */
 // @flow
 
-const debug = require('debug')('PUM');
+const logger = require('boiler').getLogger('PUM');
 const Heap = require('heap');
 
 // Code related to bookkeeping for pending updates. Will probably move. 
 
-import type { IUpdateRequest, IUpdateId } from './interface';
+import type { IUpdateRequest, IUpdateId }  from './interface';
 
 type EpochTime = number; // time from epoch, in seconds
 
@@ -77,13 +77,13 @@ class PendingUpdatesMap {
     const map = this.map;
     const elapsed = [];
     
-    debug(`getElapsed, heap is ${heap.size()} items.`);
+    logger.debug(`getElapsed, heap is ${heap.size()} items.`);
     
     while (heap.size() > 0) {
       const head = heap.peek(); 
       if (head == null) throw new Error('AF: Heap is not empty, head must be an element');
       
-      debug('Peek head has deadline', head.deadline, `(and it is now ${now} o'clock)`);
+      logger.debug('Peek head has deadline', head.deadline, `(and it is now ${now} o'clock)`);
       
       if (head.flushAt() > now) break; 
       

@@ -16,7 +16,15 @@ const assert = chai.assert;
 
 const {TypeRepository} = require('../../src/types');
 
+const { getConfig } = require('boiler');
+let isOpenSource = false;
+
 describe('business.types.TypeRepository', function () {
+  before(async () => {
+    isOpenSource = (await getConfig()).get('openSource:isActive');
+  });
+
+
   let repository; 
   beforeEach(() => {
     repository = new TypeRepository(); 
@@ -141,7 +149,10 @@ describe('business.types.TypeRepository', function () {
     });
   });
   describe('series types like series:mass/kg', function () {
-
+    before(function (done) {
+      if (isOpenSource) this.skip();
+      done();
+    });
     it('[SQNQ] should be known', function () {
       should(
         repository.isKnown('series:position/wgs84')

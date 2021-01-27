@@ -6,7 +6,7 @@
  */
 // @flow
 
-import type {PropertyType} from './interfaces';
+import type {PropertyType}  from './interfaces';
 
 // Type of an actual value. 
 export interface ValueType extends PropertyType { } 
