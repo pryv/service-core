@@ -34,17 +34,6 @@ module.exports = function (expressApp: express$Application, app: Application) {
       api.call('auth.register', context, req.body, methodCallback(res, next, 201));
     }
   });
-
-  /**
-   * POST /username/check_username: check the existence/validity of a given username
-   */
-  expressApp.get('/:username/check_username', (req: express$Request, res, next) => {
-    if (isDnsLess) {
-      api.call('auth.usernameCheck.dnsless', {}, req.params, methodCallback(res, next, 200));
-    } else {
-      api.call('auth.usernameCheck', {}, req.params, methodCallback(res, next, 200));
-    }
-  });
   
   if (isOpenSource) {    
     expressApp.post(path.join(regPath, '/user'), function (req: express$Request, res: express$Response, next: express$NextFunction) {
