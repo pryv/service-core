@@ -329,7 +329,7 @@ describe('[BMM2] registration: DNS-less', () => {
   });
   describe('GET /reg/:username/check', function() {
 
-    const existingUsername = charlatan.Internet.userName().toLowerCase();
+    const existingUsername = 'existing-username';
     before(async function () {
       await mongoFixtures.user({
         username: existingUsername,
