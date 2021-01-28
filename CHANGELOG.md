@@ -1,5 +1,10 @@
 ## 1.6
 
+### 1.6.13
+
+- Unify configuration into boiler
+- Fixes for Open Pryv.io
+
 ### 1.6.12
 
 Fixes:
