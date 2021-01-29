@@ -16,7 +16,7 @@ const assert = chai.assert;
 
 const {TypeRepository} = require('../../src/types');
 
-const { getConfig } = require('boiler');
+const { getConfig } = require('@pryv/boiler');
 let isOpenSource = false;
 
 describe('business.types.TypeRepository', function () {

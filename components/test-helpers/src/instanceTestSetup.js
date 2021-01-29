@@ -12,7 +12,7 @@
  * tests.
  */
 
-const logger = require('boiler').getLogger('instance-test-setup');
+const logger = require('@pryv/boiler').getLogger('instance-test-setup');
 
 /**
  * @param {Object} settings The main configuration settings

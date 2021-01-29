@@ -7,7 +7,7 @@
 // @flow
 
 const path = require('path');
-require('boiler').init({
+require('@pryv/boiler').init({
   appName: 'webhooks',
   baseConfigDir: path.resolve(__dirname, '../config/'),
   extraConfigs: [{
@@ -19,7 +19,7 @@ require('boiler').init({
   }]
 });
 
-const {getConfig, getLogger} = require('boiler');
+const {getConfig, getLogger} = require('@pryv/boiler');
 
 const assert = require('assert');
 

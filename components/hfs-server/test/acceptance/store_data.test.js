@@ -32,7 +32,7 @@ const apiServerContext = require('api-server/test/test-helpers').context;
 const rpc = require('tprpc');
 const metadata = require('metadata');
 
-const { getConfig, getLogger } = require('boiler');
+const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('store_data.test');
 
 import type { IMetadataUpdaterService } from 'metadata';

@@ -16,7 +16,7 @@ const cuid = require('cuid');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
-const { getConfig } = require('boiler');
+const { getConfig } = require('@pryv/boiler');
 
 let server;
 let reportHttpServer;

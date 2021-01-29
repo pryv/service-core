@@ -12,7 +12,7 @@ const ErrorIds = require('errors').ErrorIds,
   errors = require('errors').factory,
   ErrorMessages = require('errors/src/ErrorMessages');
 
-const { getLogger } = require('boiler');
+const { getLogger } = require('@pryv/boiler');
 class ServiceRegister {
   config: {}; 
   logger;

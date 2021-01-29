@@ -12,7 +12,7 @@ const Server = require('../../src/server');
 const Application = require('../../src/application');
 const ChildProcess = require('test-helpers').child_process;
 
-const { getLogger, getConfig} = require('boiler');
+const { getLogger, getConfig} = require('@pryv/boiler');
 const logger = getLogger('child_process');
 
 

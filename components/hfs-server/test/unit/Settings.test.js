@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 'use strict';
-const { getConfig } = require('boiler');
+const { getConfig } = require('@pryv/boiler');
 // @flow
 
 const should = require('should');

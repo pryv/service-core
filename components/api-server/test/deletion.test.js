@@ -16,7 +16,7 @@ const charlatan = require('charlatan');
 const Application = require('../src/application');
 const InfluxRepository = require('business/src/series/repository');
 const DataMatrix = require('business/src/series/data_matrix');
-const { getConfig } = require('boiler');
+const { getConfig } = require('@pryv/boiler');
 const UsersRepository = require('business/src/users/repository');
 const { databaseFixture } = require('test-helpers');
 const {

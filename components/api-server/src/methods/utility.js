@@ -12,7 +12,7 @@ const methodsSchema = require('../schema/generalMethods');
 const _ = require('lodash');
 const bluebird = require('bluebird');
 
-const { getLogger } = require('boiler');
+const { getLogger } = require('@pryv/boiler');
 
 import type API  from '../API';
 import type { StorageLayer } from 'storage';

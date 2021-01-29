@@ -16,7 +16,7 @@ const ErrorIds = require('errors').ErrorIds;
 const Application = require('api-server/src/application');
 const Notifications = require('api-server/src/Notifications');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const { getConfig } = require('boiler');
+const { getConfig } = require('@pryv/boiler');
 
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('api-server/test/test-helpers');

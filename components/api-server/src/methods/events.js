@@ -32,7 +32,7 @@ const { ProjectVersion } = require('middleware/src/project_version');
 
 const {TypeRepository, isSeriesType} = require('business').types;
 
-const { getLogger, getConfigUnsafe } = require('boiler');
+const { getLogger, getConfigUnsafe } = require('@pryv/boiler');
 
 const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
 const NATS_UPDATE_EVENT = require('utils').messaging

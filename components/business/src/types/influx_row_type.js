@@ -7,7 +7,7 @@
 // @flow
 
 const R = require('ramda');
-const logger = require('boiler').getLogger('influx_row_type');
+const logger = require('@pryv/boiler').getLogger('influx_row_type');
 
 import type {EventType, PropertyType, Validator, Content}  from './interfaces';
 

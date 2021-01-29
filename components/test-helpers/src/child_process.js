@@ -6,7 +6,7 @@
  */
 // @flow
 
-const logger = require('boiler').getLogger('child_process');
+const logger = require('@pryv/boiler').getLogger('child_process');
 const msgpack = require('msgpack5')();
 
 export interface ApplicationLauncher {

@@ -19,7 +19,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const ErrorMessages = require('../../../errors/src/ErrorMessages');
 const ErrorIds = require('../../../errors/src/ErrorIds');
 
-const { getLogger } = require('boiler');
+const { getLogger } = require('@pryv/boiler');
 const logger = getLogger('methods:streams');
 
 const systemStreamsSerializer = SystemStreamsSerializer.getSerializer();

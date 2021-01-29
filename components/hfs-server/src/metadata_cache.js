@@ -10,7 +10,7 @@ const async = require('async');
 const R = require('ramda');
 const bluebird = require('bluebird');
 const LRU = require('lru-cache');
-const logger = require('boiler').getLogger('metadata_cache');
+const logger = require('@pryv/boiler').getLogger('metadata_cache');
 
 const storage = require('storage');
 const MethodContext = require('model').MethodContext;

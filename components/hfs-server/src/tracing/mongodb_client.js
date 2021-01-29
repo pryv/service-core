@@ -12,7 +12,7 @@
 // Works via the 'cls-hooked' storage, which should be initialized for every
 // request. 
 
-const logger = require('boiler').getLogger('mongodb_client_tracing');
+const logger = require('@pryv/boiler').getLogger('mongodb_client_tracing');
 const { Tags } = require('opentracing');
 const shimmer = require('shimmer');
 

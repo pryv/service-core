@@ -16,7 +16,7 @@ const errors = require('errors').factory;
 import type { MethodContext } from 'model';
 import type { ApiCallback } from 'api-server/src/API';
 
-const { getLogger } = require('boiler');
+const { getLogger } = require('@pryv/boiler');
 
 class Deletion {
   logger: any;

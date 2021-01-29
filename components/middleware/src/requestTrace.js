@@ -8,7 +8,7 @@
 // @flow
 
 const morgan = require('morgan');
-const { getLogger } = require('boiler');
+const { getLogger } = require('@pryv/boiler');
 
 module.exports = function (express: any) {
   const logger = getLogger('request-trace');

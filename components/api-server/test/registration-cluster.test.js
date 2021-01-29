@@ -13,7 +13,7 @@ const bluebird = require('bluebird');
 const supertest = require('supertest');
 const assert = require('chai').assert;
 
-const { getConfig } = require('boiler');
+const { getConfig } = require('@pryv/boiler');
 const Application = require('../src/application');
 const ErrorIds = require('errors/src/ErrorIds');
 const ErrorMessages = require('errors/src/ErrorMessages');

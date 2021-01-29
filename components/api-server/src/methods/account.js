@@ -9,7 +9,7 @@ var errors = require('errors').factory,
   mailing = require('./helpers/mailing'),
   methodsSchema = require('../schema/accountMethods');
 
-const { getConfig } = require('boiler');
+const { getConfig } = require('@pryv/boiler');
 
 const Registration = require('business/src/auth/registration'),
   ErrorMessages = require('errors/src/ErrorMessages'),

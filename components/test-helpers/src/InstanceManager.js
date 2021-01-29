@@ -13,7 +13,7 @@ var async = require('async'),
     temp = require('temp'),
     util = require('util');
 
-const { getLogger } = require('boiler');
+const { getLogger } = require('@pryv/boiler');
 
 module.exports = InstanceManager;
 

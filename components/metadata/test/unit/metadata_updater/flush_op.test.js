@@ -24,7 +24,7 @@ const { databaseFixture } = require('test-helpers');
 const { PendingUpdate } = 
   require('../../../src/metadata_updater/pending_updates');
 const { Flush, UsersRepository } = require('../../../src/metadata_updater/flush');
-const { getLogger } = require('boiler/src/logging');
+const { getLogger } = require('@pryv/boiler');
 
 describe('Flush', () => {
   const connection = produceMongoConnection();

@@ -21,7 +21,7 @@ const { PendingUpdate, PendingUpdatesMap } =
 const { Controller } = require('../../../src/metadata_updater/controller');
 const { Flush } = require('../../../src/metadata_updater/flush');
 
-const { getLogger } = require('boiler');
+const { getLogger } = require('@pryv/boiler');
 import type { StorageLayer } from 'storage';
 
 describe('Metadata Updater/Controller', () => {

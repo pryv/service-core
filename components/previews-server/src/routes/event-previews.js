@@ -17,7 +17,7 @@ const _ = require('lodash');
 const bluebird = require('bluebird');
 const getAuth = require('../../../middleware/src/getAuth');
 
-const {getLogger} = require('boiler');
+const {getLogger} = require('@pryv/boiler');
 
 // constants
 const StandardDimensions = [ 256, 512, 768, 1024 ];

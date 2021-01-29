@@ -24,7 +24,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection } = require('api-server/test/test-helpers');
 
-const { getConfig } = require('boiler');
+const { getConfig } = require('@pryv/boiler');
 
 describe("Accesses with account streams", function () {
   let config;

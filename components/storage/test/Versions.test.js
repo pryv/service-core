@@ -26,7 +26,7 @@ const wrench = require('wrench');
 const _ = require('lodash');
 const buildTree = require('utils').treeUtils.buildTree;
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const { getLogger } = require('boiler');
+const { getLogger } = require('@pryv/boiler');
 
 const mongoFolder = __dirname + '/../../../../var-pryv/mongodb-bin'
 

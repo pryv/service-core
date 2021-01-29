@@ -27,7 +27,7 @@ const KEY_PORT = 'http:port';
 
 import type Context  from './context';
 
-const { getConfig, getLogger } = require('boiler');
+const { getConfig, getLogger } = require('@pryv/boiler');
 
 /**
  * HTTP server responsible for the REST api that the HFS server exposes. 

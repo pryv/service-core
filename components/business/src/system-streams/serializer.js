@@ -9,7 +9,7 @@ const _ = require('lodash');
 const treeUtils = require('utils').treeUtils;
 
 
-const { getConfigUnsafe } = require('boiler');
+const { getConfigUnsafe } = require('@pryv/boiler');
 
 
 const readable = 'readable-default-streams';
