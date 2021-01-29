@@ -7,7 +7,7 @@ on:
   push:
     branches:
       - master
-     
+
 jobs:
   build:
 
@@ -33,7 +33,7 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.SSH_PRYV_PRIVATE_KEY }}
 
-    - name: Install gnatsd, mongodb, influxdb
+    - name: Install & run gnatsd, mongodb, influxdb
       run: sh build/build-dev
       
     - name: Unicode npm package blacklist ips that request download too many times so it is installed before yarn install
