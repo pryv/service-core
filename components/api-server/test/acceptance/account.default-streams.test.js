@@ -12,16 +12,15 @@ const assert = require('chai').assert;
 const { describe, before, it } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
-const ErrorIds = require('components/errors').ErrorIds;
-const Settings = require('components/api-server/src/settings');
-const Application = require('components/api-server/src/application');
-const Notifications = require('components/api-server/src/Notifications');
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const { getConfig } = require('components/api-server/config/Config');
+const ErrorIds = require('errors').ErrorIds;
+const Application = require('api-server/src/application');
+const Notifications = require('api-server/src/Notifications');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const { getConfig } = require('@pryv/boiler');
 
-const { databaseFixture } = require('components/test-helpers');
-const { produceMongoConnection } = require('components/api-server/test/test-helpers');
-const helpers = require('components/api-server/test/helpers');
+const { databaseFixture } = require('test-helpers');
+const { produceMongoConnection } = require('api-server/test/test-helpers');
+const helpers = require('api-server/test/helpers');
 const pwdResetReqsStorage = helpers.dependencies.storage.passwordResetRequests;
 
 describe('Account with system streams', function () {
@@ -35,6 +34,8 @@ describe('Account with system streams', function () {
   let user;
   let serviceRegisterRequest;
   let config;
+  let isDnsLess;
+
   
 
   async function createUser () {
@@ -96,12 +97,11 @@ describe('Account with system streams', function () {
   }
 
   before(async function () {
-    helpers = require('components/api-server/test/helpers');
+    config = await getConfig();
+    isDnsLess = config.get('dnsLess:isActive');
+    helpers = require('api-server/test/helpers');
     mongoFixtures = databaseFixture(await produceMongoConnection());
-    const settings = await Settings.load();
-    config = getConfig();
-    config.set('dnsLess:isActive', false);
-    app = new Application(settings);
+    app = new Application();
     await app.initiate();
 
     // Initialize notifications dependency
@@ -111,31 +111,31 @@ describe('Account with system streams', function () {
     };
     const notifications = new Notifications(axonSocket);
     notifications.serverReady();
-    require("components/api-server/src/methods/account")(
+    require("api-server/src/methods/account")(
       app.api,
       app.storageLayer.events,
       app.storageLayer.passwordResetRequests,
-      app.settings.get('auth').obj(),
-      app.settings.get('services').obj(),
+      app.config.get('auth'),
+      app.config.get('services'),
       notifications,
       app.logging);
-    require("components/api-server/src/methods/events")(
+    require("api-server/src/methods/events")(
       app.api,
       app.storageLayer.events,
       app.storageLayer.eventFiles,
-      app.settings.get('auth').obj(),
-      app.settings.get('service.eventTypes').str(),
+      app.config.get('auth'),
+      app.config.get('service:eventTypes'),
       notifications,
       app.logging,
-      app.settings.get('audit').obj(),
-      app.settings.get('updates').obj(),
-      app.settings.get('openSource').obj(),
-      app.settings.get('services').obj());
+      app.config.get('audit'),
+      app.config.get('updates'),
+      app.config.get('openSource'),
+      app.config.get('services'));
     request = supertest(app.expressApp);
   });
 
   after(async function () {
-    await config.resetConfig();
+    config.injectTestConfig({});
   });
 
   describe('GET /account', () => {
@@ -147,6 +147,7 @@ describe('Account with system streams', function () {
         // create additional events for all editable streams
         const settings = _.cloneDeep(helpers.dependencies.settings);
         scope = nock(settings.services.register.url);
+        
         scope.put('/users',
           (body) => {
             serviceRegisterRequest = body;
@@ -400,7 +401,7 @@ describe('Account with system streams', function () {
               language: newLanguage,
             })
             .set('authorization', access.token);
-          
+
           activeEmailAfter = await getActiveEvent('email');
           notActiveEmailAfter = await getNotActiveEvent('email');
           activeLanguageAfter = await getActiveEvent('language');
@@ -425,7 +426,8 @@ describe('Account with system streams', function () {
           assert.equal(activeEmailAfter.content, newEmail);
           assert.equal(activeLanguageAfter.content, newLanguage);
         });
-        it('[Y6MC] Should send a request to service-register to update its user main information and unique fields', async () => {
+        it('[Y6MC] Should send a request to service-register to update its user main information and unique fields', async function () {
+          if (isDnsLess) this.skip();
           // email is already skipped
           assert.deepEqual(serviceRegisterRequest, {
             username: user.attrs.username,

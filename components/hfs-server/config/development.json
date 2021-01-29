@@ -9,7 +9,7 @@
       "level": "warn"
     }
   },
-  "mongodb": {
+  "database": {
     "host": "127.0.0.1"
   }, 
   "influxdb": {

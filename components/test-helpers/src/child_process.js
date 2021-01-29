@@ -6,7 +6,7 @@
  */
 // @flow
 
-const debug = require('debug')('child_process');
+const logger = require('@pryv/boiler').getLogger('child_process');
 const msgpack = require('msgpack5')();
 
 export interface ApplicationLauncher {
@@ -34,7 +34,7 @@ class ChildProcess {
   // Handles promise rejections that aren't caught somewhere. This is very
   // useful for debugging. 
   unhandledRejection(reason: Error, promise: Promise<mixed>) {
-    console.warn(                                // eslint-disable-line no-console
+    logger.warn(                                // eslint-disable-line no-console
       'Unhandled promise rejection:', promise, 
       'reason:', reason.stack || reason); 
   }
@@ -43,7 +43,7 @@ class ChildProcess {
     const message = msgpack.decode(wireMessage);
     
     const [msgId, cmd, ...args] = message; 
-    debug('handleParentMessage/received ', msgId, cmd, args);
+    logger.debug('handleParentMessage/received ', msgId, cmd, args);
     
     try {
       let ret = await this.dispatchParentMessage(cmd, ...args);
@@ -54,15 +54,15 @@ class ChildProcess {
       this.respondToParent(['ok', msgId, cmd, ret]);
     }
     catch (err) {
-      debug('handleParentMessage/catch', err.message);
+      logger.debug('handleParentMessage/catch', err.message);
       // Using JSON.stringify as message que does nos support Object (just strings)
       this.respondToParent(['err', msgId, cmd, JSON.stringify({message: err.message, stack: err.stack})]);
     }
       
-    debug('handleParentMessage/done', cmd);
+    logger.debug('handleParentMessage/done', cmd);
   }
   respondToParent(msg: Array<mixed>) {
-    debug('respondToParent', msg);
+    logger.debug('respondToParent', msg);
     
     // FLOW Somehow flow-type doesn't know about process here. 
     process.send(

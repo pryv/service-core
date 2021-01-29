@@ -8,64 +8,42 @@
 
 // Main application class. Does all the work. 
 
-const assert = require('assert');
 const path = require('path');
+require('@pryv/boiler').init({
+  appName: 'metadata',
+  baseConfigDir: path.resolve(__dirname, '../config'),
+  extraConfigs: [{
+    scope: 'serviceInfo',
+    key: 'service',
+    urlFromKey: 'serviceInfoUrl'
+  },{
+    scope: 'defaults-data',
+    file: path.resolve(__dirname, '../config/default-config.hjson')
+  }]
+});
+const { getConfig, getLogger } = require('@pryv/boiler');
 
-const yargs = require('yargs');
-
-const loggingSubsystem = require('components/utils/src/logging');
-const storage = require('components/storage');
-
-const Settings = require('./settings');
-
-import type { Logger, LogFactory } from 'components/utils/src/logging';
+const storage = require('storage');
 
 const services = {
   MetadataUpdater: require('./metadata_updater/service'),
 };
 
 class Application {
-  logFactory: LogFactory;
-  logger: Logger; 
-  settings: Settings;
+  logger; 
+  config;
   
   metadataUpdaterService: ?services.MetadataUpdater;
   
   async setup(overrideSettings: ?Object) {
-    this.initSettings(); 
-
-    await this.parseCommandLine(process.argv);
+    this.config = await getConfig(); 
+    this.logger = getLogger('application');
 
     if (overrideSettings != null) 
-      this.settings.merge(overrideSettings);
+      this.config.injectTestConfig(overrideSettings);
 
-    this.initLogger(); 
-    this.initTrace(); 
-    
-    assert(this.logger != null);
-    assert(this.settings != null);
   }
     
-  initSettings() {
-    this.settings = new Settings(); 
-  }
-  initLogger() {
-    const settings = this.settings;
-    const loggerSettings = settings.getLogSettingsObject();
-    const logFactory = this.logFactory = loggingSubsystem(loggerSettings).getLogger;
-    
-    const logger = this.logger = logFactory('application');
-    
-    const consoleLevel = settings.get('logs.console.level').str();
-    logger.info(`Console logging is configured at level '${consoleLevel}'`);
-  }
-  initTrace() {
-    // TODO
-  }
-  async parseCommandLine(argv: Array<string>) {
-    const cliArgs = new CLIArgs(this.settings); 
-    await cliArgs.parse(argv);
-  }
   
   // Runs the application. This method only ever exits once the service is 
   // killed. 
@@ -82,21 +60,19 @@ class Application {
   // HOST:PORT.  
   // 
   async startMetadataUpdater() {
-    const settings = this.settings;
-    const loggerFor = this.logFactory;
-
+   
     // Connect to MongoDB
     const storageLayer = produceStorageLayer(
-      settings.getMongodbSettings(),
-      loggerFor('mongodb')
+      this.config.get('database'),
+      this.logger.getLogger('mongodb')
     );
     
     // Construct the service
-    const service = new services.MetadataUpdater(storageLayer, loggerFor('metadata_updater')); 
+    const service = new services.MetadataUpdater(storageLayer, this.logger.getLogger('metadata-updater')); 
     this.metadataUpdaterService = service; 
     
-    const host = settings.get('metadataUpdater.host').str(); 
-    const port = settings.get('metadataUpdater.port').num(); 
+    const host = this.config.get('metadataUpdater:host'); 
+    const port = this.config.get('metadataUpdater:port'); 
     const endpoint = `${host}:${port}`;
 
     // And start it.
@@ -105,51 +81,10 @@ class Application {
 }
 module.exports = Application;
 
-// Handles command line argument parsing and help output. 
-// 
-class CLIArgs {
-  settings: Settings;
-  
-  constructor(settings: Settings) {
-    this.settings = settings;
-  }
-  
-  // Parses the configuration on the command line (arguments) and executes 
-  // actions against the `settings`.
-  // 
-  async parse(argv: Array<string>) {
-    const cli = yargs
-      .option('c', {
-        alias: 'config', 
-        type: 'string', 
-        describe: 'reads configuration file at PATH'
-      })
-      .usage('$0 [args] \n\n  starts a metadata service')
-      .help();      
-    
-    const out = cli.parse(argv);
-    
-    if (out.config != null) 
-      await this.parseConfigFile(out.config);
-  }
-  
-  async parseConfigFile(input: string) {
-    const settings = this.settings; 
-    
-    const configPath = path.resolve(input);
-    await settings.loadFromFile(configPath);
-    
-    // NOTE Done after the fact, because maybe 'info' is only visible after
-    // configuration.
-    console.info(`Using configuration file at: ${configPath}`); // eslint-disable-line no-console
-  }
-}
-
 function produceStorageLayer(settings, logger) {
   logger.info(`Connecting to MongoDB (@ ${settings.host}:${settings.port}/${settings.name}) (${settings.authUser})`);
   
-  const mongoConn = new storage.Database(
-    settings, logger);
+  const mongoConn = new storage.Database(settings);
     
   // BUG These must be read from the configuration, probably. If we don't have 
   // these values, we cannot instanciate StorageLayer, even though none of these

@@ -9,7 +9,7 @@
 const R = require('ramda');
 const assert = require('assert');
 
-import type { Element } from './data_matrix';
+import type { Element }  from './data_matrix';
 
 /** A single row of the data matrix. Stores a reference to the original 
  * matrix; this is like a pointer, not like a value. It is used during iteration

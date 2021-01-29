@@ -9,7 +9,7 @@
  * 415 error.
  */
 
-var errors = require('components/errors').factory;
+var errors = require('errors').factory;
 
 /**
  * Accepts a variable number of content types as arguments.

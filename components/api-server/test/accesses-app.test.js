@@ -9,14 +9,14 @@
 /*global describe, before, beforeEach, it */
 
 
-const ErrorIds = require('components/errors').ErrorIds;
+const ErrorIds = require('errors').ErrorIds;
 const async = require('async');
 const methodsSchema = require('../src/schema/accessesMethods');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 const should = require('should');
 
-import type Request from './helpers';
+import type Request  from './helpers';
 
 describe('accesses (app)', function () {
 

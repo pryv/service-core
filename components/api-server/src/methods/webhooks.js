@@ -9,30 +9,29 @@
 const _ = require('lodash');
 const timestamp = require('unix-timestamp');
 
-const errors = require('components/errors').factory;
+const errors = require('errors').factory;
 
 const commonFns = require('./helpers/commonFunctions');
 const webhookSchema = require('../schema/webhook');
 const methodsSchema = require('../schema/webhooksMethods');
 
-const Webhook = require('components/business').webhooks.Webhook;
-const WebhooksRepository = require('components/business').webhooks.Repository;
+const Webhook = require('business').webhooks.Webhook;
+const WebhooksRepository = require('business').webhooks.Repository;
 
 const NatsPublisher = require('../socket-io/nats_publisher');
-const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
-const NATS_WEBHOOKS_CREATE_CHANNEL = require('components/utils').messaging.NATS_WEBHOOKS_CREATE;
-const NATS_WEBHOOKS_ACTIVATE_CHANNEL = require('components/utils').messaging.NATS_WEBHOOKS_ACTIVATE;
-const NATS_WEBHOOKS_DELETE_CHANNEL = require('components/utils').messaging.NATS_WEBHOOKS_DELETE;
+const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
+const NATS_WEBHOOKS_CREATE_CHANNEL = require('utils').messaging.NATS_WEBHOOKS_CREATE;
+const NATS_WEBHOOKS_ACTIVATE_CHANNEL = require('utils').messaging.NATS_WEBHOOKS_ACTIVATE;
+const NATS_WEBHOOKS_DELETE_CHANNEL = require('utils').messaging.NATS_WEBHOOKS_DELETE;
 
-import type { StorageLayer } from 'components/storage';
-import type { Logger } from 'components/utils';
-import type { MethodContext } from 'components/model';
+import type { StorageLayer } from 'storage';
+import type { MethodContext } from 'model';
 
-import type API from '../API';
-import type { ApiCallback } from '../API';
-import type Result from '../Result';
+import type API  from '../API';
+import type { ApiCallback }  from '../API';
+import type Result  from '../Result';
 
-import type { WebhookUpdate } from 'components/business/src/webhooks/Webhook';
+import type { WebhookUpdate } from 'business/src/webhooks/Webhook';
 
 export type WebhooksSettingsHolder = {
   minIntervalMs: number,
@@ -48,7 +47,7 @@ type Access = {
 
 module.exports = function produceWebhooksApiMethods(
   api: API,
-  logger: Logger,
+  logger,
   wehbooksSettings: WebhooksSettingsHolder,
   storageLayer: StorageLayer) {
 

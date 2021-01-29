@@ -10,7 +10,7 @@ var async = require('async'),
     mkdirp = require('mkdirp'),
     path = require('path'),
     rimraf = require('rimraf'),
-    toString = require('components/utils').toString;
+    toString = require('utils').toString;
 
 module.exports = EventFiles;
 /**

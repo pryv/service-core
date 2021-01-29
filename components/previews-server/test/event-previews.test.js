@@ -11,7 +11,7 @@ require('./test-helpers');
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
 const async = require('async');
-const errors = require('components/errors');
+const errors = require('errors');
 const fs = require('fs');
 const bluebird = require('bluebird');
 const gm = require('gm');

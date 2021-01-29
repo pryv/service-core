@@ -24,7 +24,7 @@ export NODE_PATH=/app/bin/dist/
 # Migrate storage
 migrate_db() {
 	pushd /app/bin/dist/components/api-server
-	chpst -u app ./bin/migrate --config /app/conf/core.json
+	chpst -u app ./bin/migrate --config /app/conf/core.yml
 	popd
 }
 

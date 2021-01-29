@@ -14,15 +14,15 @@ const assert = chai.assert;
 const charlatan = require('charlatan');
 
 const helpers = require('./helpers');
-const { databaseFixture } = require('components/test-helpers');
+const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 const validation = helpers.validation;
 const methodsSchema = require('../src/schema/webhooksMethods');
-const HttpServer = require('components/business/test/acceptance/webhooks/support/httpServer');
+const HttpServer = require('business/test/acceptance/webhooks/support/httpServer');
 
-const { ErrorIds } = require('components/errors/src');
-const storage = require('components/test-helpers').dependencies.storage.user.webhooks;
-const { Webhook } = require('components/business').webhooks;
+const { ErrorIds } = require('errors/src');
+const storage = require('test-helpers').dependencies.storage.user.webhooks;
+const { Webhook } = require('business').webhooks;
 
 describe('webhooks', () => {
 

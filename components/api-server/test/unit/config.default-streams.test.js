@@ -8,8 +8,8 @@
 const chai = require('chai');
 const nconf = require('nconf');
 const assert = chai.assert;
-const systemStreamsConfig = require('components/api-server/config/components/systemStreams');
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
+const systemStreamsConfig = require('api-server/config/components/systemStreams');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 describe('SystemStreams config', () => {
   let store;

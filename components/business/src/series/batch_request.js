@@ -10,7 +10,7 @@
 const DataMatrix = require('./data_matrix');
 const { error, ParseFailure } = require('./errors');
 
-import type InfluxRowType from '../types/influx_row_type';
+import type InfluxRowType  from '../types/influx_row_type';
 
 type TypeResolveFunction = (eventId: string) => Promise<InfluxRowType>;
 

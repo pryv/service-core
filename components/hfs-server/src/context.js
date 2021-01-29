@@ -8,25 +8,24 @@
 
 const lodash = require('lodash');
 
-const business = require('components/business');
+const business = require('business');
 
 const {MetadataLoader, MetadataCache} = require('./metadata_cache');
 const metadataUpdater = require('./metadata_updater');
-const Settings = require('./Settings');
 
 const cls = require('./tracing/cls');
 
-import type {MetadataRepository} from './metadata_cache';
-import type {LogFactory, Logger} from 'components/utils';
+import type {MetadataRepository}  from './metadata_cache';
 
-import type { IMetadataUpdaterService } from 'components/metadata';
+import type { IMetadataUpdaterService } from 'metadata';
 
-import type { Database } from 'components/storage';
+import type { Database } from 'storage';
 
 type Repository = business.series.Repository;
 type InfluxConnection = business.series.InfluxConnection; 
 
-import type { Tracer, Span } from 'opentracing';
+import type { Tracer, Span }  from 'opentracing';
+const { getLogger } = require('@pryv/boiler');
 
 // Application context object, holding references to all major subsystems. Once
 // the system is initialized, these instance references will not change  any
@@ -41,21 +40,21 @@ class Context {
   tracer: Tracer; 
   
   typeRepository: business.types.TypeRepository;
-  settings: Settings;
+  config;
   
   constructor(
     influxConn: InfluxConnection, mongoConn: Database, 
-    logFactory: LogFactory, tracer: Tracer, 
-    typeRepoUpdateUrl: string, settings: Settings) 
+    tracer: Tracer, 
+    typeRepoUpdateUrl: string, config) 
   {
     this.series = new business.series.Repository(influxConn);
     this.metadataUpdater = new metadataUpdater.MetadataForgetter(
-      logFactory('metadata.update'));    
+      getLogger('metadata.update'));    
     this.tracer = tracer;
-    this.settings = settings;
+    this.config = config;
 
     this.configureTypeRepository(typeRepoUpdateUrl); 
-    this.configureMetadataCache(this.series, mongoConn, logFactory('model'));
+    this.configureMetadataCache(this.series, mongoConn, getLogger('model'));
   }
   
   configureTypeRepository(url: string) {
@@ -65,8 +64,8 @@ class Context {
     this.typeRepository = typeRepo;
   }
   
-  configureMetadataCache(series: Repository, mongoConn: Database, logger: Logger) {
-    this.metadata = new MetadataCache(series, new MetadataLoader(mongoConn, logger), this.settings);
+  configureMetadataCache(series: Repository, mongoConn: Database, logger) {
+    this.metadata = new MetadataCache(series, new MetadataLoader(mongoConn, logger), this.config);
   }
   
   // Configures the metadata updater service. 

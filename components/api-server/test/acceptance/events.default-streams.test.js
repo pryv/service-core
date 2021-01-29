@@ -14,15 +14,14 @@ const { describe, before, it } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 
-const { getConfig } = require('components/api-server/config/Config');
-const ErrorIds = require('components/errors').ErrorIds;
-const ErrorMessages = require('components/errors/src/ErrorMessages');
-const Settings = require('components/api-server/src/settings');
-const Application = require('components/api-server/src/application');
-const Notifications = require('components/api-server/src/Notifications');
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
-const { databaseFixture } = require('components/test-helpers');
-const { produceMongoConnection } = require('components/api-server/test/test-helpers');
+const { getConfig } = require('@pryv/boiler');
+const ErrorIds = require('errors').ErrorIds;
+const ErrorMessages = require('errors/src/ErrorMessages');
+const Application = require('api-server/src/application');
+const Notifications = require('api-server/src/Notifications');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
+const { databaseFixture } = require('test-helpers');
+const { produceMongoConnection } = require('api-server/test/test-helpers');
 
 describe("Events of system streams", () => {
   let config;
@@ -36,6 +35,7 @@ describe("Events of system streams", () => {
   let user;
   let serviceRegisterRequest;
   let scope;
+  let isDnsLess;
 
   async function createUser () {
     user = await mongoFixtures.user(charlatan.Lorem.characters(7), {
@@ -87,14 +87,13 @@ describe("Events of system streams", () => {
   }
 
   before(async function () {
-    config = getConfig();
-    config.set('dnsLess:isActive', false);
-    const helpers = require('components/api-server/test/helpers');
+    config = await getConfig();
+    isDnsLess = config.get('dnsLess:isActive');
+    const helpers = require('api-server/test/helpers');
     validation = helpers.validation;
     mongoFixtures = databaseFixture(await produceMongoConnection());
-    const settings = await Settings.load();
-
-    app = new Application(settings);
+  
+    app = new Application();
     await app.initiate();
 
     // Initialize notifications dependency
@@ -105,24 +104,23 @@ describe("Events of system streams", () => {
     const notifications = new Notifications(axonSocket);
     
     notifications.serverReady();
-    require("components/api-server/src/methods/events")(
+    require("api-server/src/methods/events")(
       app.api,
       app.storageLayer.events,
       app.storageLayer.eventFiles,
-      app.settings.get('auth').obj(),
-      app.settings.get('service.eventTypes').str(),
+      app.config.get('auth'),
+      app.config.get('service:eventTypes'),
       notifications,
       app.logging,
-      app.settings.get('audit').obj(),
-      app.settings.get('updates').obj(),
-      app.settings.get('openSource').obj(),
-      app.settings.get('services').obj());
+      app.config.get('audit'),
+      app.config.get('updates'),
+      app.config.get('openSource'),
+      app.config.get('services'));
 
     request = supertest(app.expressApp);
   });
 
   after(async function () {
-    await config.resetConfig();
   });
 
   describe('GET /events', () => {
@@ -342,8 +340,10 @@ describe("Events of system streams", () => {
             assert.deepEqual(allEvents[1].streamIds, [SystemStreamsSerializer.addDotToStreamId('phoneNumber')]);
           });
         });
-        describe('which is indexed', () => {
+        describe('which is indexed', function () {
+            
             before(async function () {
+             
               await createUser();
               eventData = {
                 streamIds: [SystemStreamsSerializer.addDotToStreamId('language')],
@@ -380,7 +380,8 @@ describe("Events of system streams", () => {
               assert.equal(allEvents[1].streamIds.includes(SystemStreamsSerializer.options.STREAM_ID_ACTIVE), false);
               assert.equal(allEvents[1].streamIds.includes(SystemStreamsSerializer.addDotToStreamId('language')), true);
             });
-            it('[199D] should notify register with the new data', () => {
+            it('[199D] should notify register with the new data', function () {
+              if (isDnsLess) this.skip();
               assert.equal(scope.isDone(), true);
 
               assert.deepEqual(serviceRegisterRequest, {
@@ -447,7 +448,8 @@ describe("Events of system streams", () => {
               assert.deepEqual(allEventsInDb[1]._id, res.body.event.id);
               assert.deepEqual(allEventsInDb[1].streamIds, [streamId, SystemStreamsSerializer.options.STREAM_ID_ACTIVE, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
             });
-            it('[D316] should notify register with the new data', () => {
+            it('[D316] should notify register with the new data', function () {
+              if (isDnsLess) this.skip();
               assert.equal(scope.isDone(), true);
               
               assert.deepEqual(serviceRegisterRequest, {
@@ -466,6 +468,7 @@ describe("Events of system streams", () => {
           });
           describe('whose content is already taken in register', () => {
             before(async function () {
+              if (isDnsLess) this.skip();
               await createUser();
               eventData = {
                 streamIds: [SystemStreamsSerializer.addDotToStreamId('email')],
@@ -604,7 +607,8 @@ describe("Events of system streams", () => {
         assert.equal(res.body.event.createdBy, sharedAccess.attrs.id);
         assert.deepEqual(res.body.event.streamIds, [streamIdWithDot, SystemStreamsSerializer.options.STREAM_ID_ACTIVE, SystemStreamsSerializer.options.STREAM_ID_UNIQUE]);
       });
-      it('[765A] should notify register with the new data', () => {
+      it('[765A] should notify register with the new data', function () {
+        if (isDnsLess) this.skip();
         assert.equal(scope.isDone(), true);
         assert.deepEqual(serviceRegisterRequest, {
           username: user.attrs.username,
@@ -783,7 +787,10 @@ describe("Events of system streams", () => {
           });
         });
 
-        describe('which is indexed', () => {
+        describe('which is indexed', function () {
+            before( function () { 
+              if (isDnsLess) this.skip();
+            });
             describe('as register is working', () => {
               const streamId = 'language';
               let streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamId);
@@ -902,7 +909,8 @@ describe("Events of system streams", () => {
             it('[4BB1] should return 200', () => {
               assert.equal(res.status, 200);
             });
-            it('[GWHU] should send a request to service-register to update the unique field', () => {
+            it('[GWHU] should send a request to service-register to update the unique field', function () {
+              if (isDnsLess) this.skip();
               assert.equal(scope.isDone(), true);
               assert.deepEqual(serviceRegisterRequest, {
                 username: user.attrs.username,
@@ -945,7 +953,8 @@ describe("Events of system streams", () => {
               it('[HJWE] should return 200', () => {
                 assert.equal(res.status, 200);
               });
-              it('[6AAT] should notify register with the updated data', () => {
+              it('[6AAT] should notify register with the updated data', function () {
+                if (isDnsLess) this.skip();
                 assert.equal(scope.isDone(), true);
                 assert.deepEqual(serviceRegisterRequest, {
                   username: user.attrs.username,
@@ -966,6 +975,7 @@ describe("Events of system streams", () => {
             describe('with a field that is not unique in register', () => {
               let streamIdWithDot;
               before(async function () {
+                  if (isDnsLess) this.skip();
                 const streamId = 'email';
                 streamIdWithDot = SystemStreamsSerializer.addDotToStreamId(streamId);
     
@@ -1001,7 +1011,8 @@ describe("Events of system streams", () => {
                 assert.equal(res.body.error.id, ErrorIds.ItemAlreadyExists);
                 assert.deepEqual(res.body.error.data, { email: eventData.content});
               });
-              it('[5A04] should notify register with the updated data', () => {
+              it('[5A04] should notify register with the updated data', function () {
+                if (isDnsLess) this.skip();
                 assert.equal(scope.isDone(), true);
     
                 assert.deepEqual(serviceRegisterRequest, {
@@ -1187,7 +1198,8 @@ describe("Events of system streams", () => {
             it('[FJK3] should not return the event\'s internal properties that enforce db uniqueness', () => { 
               assert.notEqual(res.body.event[`${streamId}__unique`], initialEvent[`${streamId}__unique`]);
             });
-            it('[F328] should notify register with the deleted data', () => { 
+            it('[F328] should notify register with the deleted data', function () {
+              if (isDnsLess) this.skip(); 
               assert.equal(scope.isDone(), true);
               assert.deepEqual(serviceRegisterRequest, {
                 username: user.attrs.username,

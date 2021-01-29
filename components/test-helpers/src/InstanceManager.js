@@ -13,7 +13,11 @@ var async = require('async'),
     temp = require('temp'),
     util = require('util');
 
+const { getLogger } = require('@pryv/boiler');
+
 module.exports = InstanceManager;
+
+let spawnCounter = 0;
 
 /**
  * Manages the test server instance (use as singleton).
@@ -36,7 +40,7 @@ function InstanceManager(settings) {
       serverProcess = null,
       serverReady = false,
       messagingSocket = axon.socket('sub-emitter'),
-      logger = settings.logging.getLogger('instance-manager');
+      logger = getLogger('instance-manager');
 
 
   // setup TCP messaging subscription
@@ -62,6 +66,20 @@ function InstanceManager(settings) {
    * @param {Function} callback
    */
   this.ensureStarted = function (settings, callback) {
+    // force console settings to off is needed
+    if (typeof settings.logs === 'undefined') settings.logs = {};
+    if (typeof settings.logs.console === 'undefined') settings.logs.console = {};
+
+    
+    if (process.env.LOGS) {
+      settings.logs.console.active = true; 
+      settings.logs.console.level = process.env.LOGS;
+      console.log(process.env.LOGS);
+    } else {
+      settings.logs.console.active = false; 
+    }
+
+    logger.debug('ensure started', settings);
     if (deepEqual(settings, serverSettings)) {
       if (isRunning()) {
         // nothing to do
@@ -116,9 +134,8 @@ function InstanceManager(settings) {
     }
 
     // write config to temp path
-    fs.writeFileSync(tempConfigPath, JSON.stringify(serverSettings));
+    fs.writeFileSync(tempConfigPath, JSON.stringify(serverSettings, null, 2));
     var args = ['--config=' + tempConfigPath];
-
     args.unshift(settings.serverFilePath);
 
     // setup debug if needed (assumes current process debug port is 5858 i.e. default)
@@ -137,12 +154,11 @@ function InstanceManager(settings) {
     }
 
     // start proc
-
-    logger.debug('Starting server instance... ');
+    logger.debug('Starting server instance... with config ' + tempConfigPath);
     var options = {
       // Uncomment here if you want to see server output
-      // stdio: 'inherit',
-      env: process.env
+      stdio: 'inherit',
+      env: {...process.env, PRYV_BOILER_SUFFIX: '-' + spawnCounter++}
     };
     serverProcess = spawn(process.argv[0], args, options);
     var serverExited = false,

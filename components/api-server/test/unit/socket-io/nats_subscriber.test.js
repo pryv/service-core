@@ -7,7 +7,7 @@
 // @flow
 
 require('../test-helper');
-const NATS_CONNECTION_URI = require('components/utils').messaging.NATS_CONNECTION_URI;
+const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
 
 const chai = require('chai');
 const assert = chai.assert;
@@ -16,12 +16,12 @@ const NATS = require('nats');
 
 /* global describe, it, beforeEach, afterEach */
 
-const { ConditionVariable } = require('components/test-helpers').syncPrimitives;
+const { ConditionVariable } = require('test-helpers').syncPrimitives;
 
 const NatsSubscriber = require('../../../src/socket-io/nats_subscriber');
 const { encode } = require('../../../src/socket-io/nats_wire_message');
 
-import type { MessageSink } from '../../../src/socket-io/message_sink';
+import type { MessageSink }  from '../../../src/socket-io/message_sink';
 
 describe('NatsSubscriber', () => {
   it('[DMMP] should construct', () => {

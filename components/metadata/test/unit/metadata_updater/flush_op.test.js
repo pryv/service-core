@@ -16,18 +16,20 @@ const cuid = require('cuid');
 const bluebird = require('bluebird');
 const charlatan = require('charlatan');
 
-const storage = require('components/storage');
-const { databaseFixture } = require('components/test-helpers');
-const { NullLogger } = require('components/utils/src/logging');
+
+require('../../../../test-helpers/src/boiler-init');
+const storage = require('storage');
+const { databaseFixture } = require('test-helpers');
 
 const { PendingUpdate } = 
   require('../../../src/metadata_updater/pending_updates');
 const { Flush, UsersRepository } = require('../../../src/metadata_updater/flush');
+const { getLogger } = require('@pryv/boiler');
 
 describe('Flush', () => {
   const connection = produceMongoConnection();
   const db = produceStorageLayer(connection);
-  const logger = new NullLogger(); 
+  const logger = getLogger('flush'); 
 
   const now = 100000;
   const from = now - 10; 
@@ -202,9 +204,7 @@ function produceMongoConnection(): storage.Database {
     port: 27017,
     name: 'pryv-node-test',
   };
-  const database = new storage.Database(
-    settings, 
-    new NullLogger()); 
+  const database = new storage.Database(settings); 
   
   return database; 
 }
@@ -217,7 +217,7 @@ function produceStorageLayer(connection: storage.Database): storage.StorageLayer
     
   return new storage.StorageLayer(
     connection, 
-    new NullLogger(), 
+    getLogger('flush-test'), 
     'attachmentsDirPath', 'previewsDirPath', 
     passwordResetRequestMaxAge,
     sessionMaxAge);

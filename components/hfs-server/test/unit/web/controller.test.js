@@ -7,13 +7,11 @@
 const should = require('should');
 /* global describe, it */
 
-require('../test-helpers');
-
 const controllerFactory = require('../../../src/web/controller');
 const controller = controllerFactory({});
 
-const APIError = require('components/errors/src/APIError');
-const ErrorIds = require('components/errors/src/ErrorIds');
+const APIError = require('errors/src/APIError');
+const ErrorIds = require('errors/src/ErrorIds');
 
 describe('Controller', () => {
 

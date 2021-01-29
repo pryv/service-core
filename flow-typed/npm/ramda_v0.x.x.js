@@ -662,7 +662,7 @@ declare module ramda {
   // To refine with filter, be sure to import the RefineFilter type, and cast
   // filter to a RefineFilter.
   // ex:
-  // import { type RefineFilter, filter } from 'ramda'
+  // import { type RefineFilter, filter }  from 'ramda'
   // const notNull = (x): bool %checks => x != null
   // const ns: Array<number> = (filter: RefineFilter)(notNull, [1, 2, null])
   declare var filter: RefineFilter & Filter;

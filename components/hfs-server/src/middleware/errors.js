@@ -6,10 +6,8 @@
  */
 // @flow
 
-const errorHandling = require('components/errors').errorHandling;
-const { APIError } = require('components/errors');
-
-import type { Logger } from 'components/utils';
+const errorHandling = require('errors').errorHandling;
+const { APIError } = require('errors');
 
 
 /** Produces a middleware function that will handle all errors and augment
@@ -22,7 +20,7 @@ import type { Logger } from 'components/utils';
  * @return {Function} express middleware function that logs errors and responds
  *    to them properly. 
  */ 
-module.exports = function produceErrorHandlingMiddleware(logger: Logger) {
+module.exports = function produceErrorHandlingMiddleware(logger) {
   /*eslint-disable no-unused-vars*/
   return function handleError(
     error: mixed, 

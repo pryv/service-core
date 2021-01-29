@@ -8,7 +8,7 @@
  * Extends the common test support object with server-specific stuff.
  */
 
-module.exports = require('components/test-helpers');
+module.exports = require('test-helpers');
 
 // override
 module.exports.dependencies = require('./dependencies');

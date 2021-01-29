@@ -9,68 +9,71 @@ const { describe, before, it, after } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 const bluebird = require('bluebird');
-const Settings = require('../src/settings');
-const Application = require('../src/application');
-const { getConfig } = require('components/api-server/config/Config');
-const UsersRepository = require('components/business/src/users/repository');
-const User = require('components/business/src/users/User');
-const { databaseFixture } = require('components/test-helpers');
-const { produceMongoConnection } = require('./test-helpers');
-const Notifications = require('components/api-server/src/Notifications');
+const Application = require('api-server/src/application');
+const { getConfig } = require('@pryv/boiler');
+const UsersRepository = require('business/src/users/repository');
+const User = require('business/src/users/User');
+const { databaseFixture } = require('test-helpers');
+const { produceMongoConnection } = require('api-server/test/test-helpers');
+const Notifications = require('api-server/src/Notifications');
+const ErrorIds = require('errors/src/ErrorIds');
 
-
-let app;
-let registerBody;
-let request;
-let res;
-
-describe('[BMM2] registration: single-node', () => {
+describe('[BMM2] registration: DNS-less', () => {
   let config;
+  let mongoFixtures;
+  let app;
+  let request;
+  let res;
   before(async function () {
-    config = getConfig();
-    await config.init();
-    config.set('dnsLess:isActive', true);
-    config.set('openSource:isActive', false);
-    config.set('custom:systemStreams', null);
+    config = await getConfig();
+    config.injectTestConfig({
+      dnsLess: {isActive: true},
+      openSource: {isActive: false},
+      custom: { systemStreams: null}
+    });
   });
   after(async function () {
-    await config.resetConfig();
+    config.injectTestConfig({});
+  });
+  before(async function() {
+    mongoFixtures = databaseFixture(await produceMongoConnection());
+    app = new Application();
+    await app.initiate();
+
+    require('api-server/src/methods/auth/register-dnsless')(
+      app.api,
+      app.logging,
+      app.storageLayer,
+      app.config.get('services'),
+    );
+
+    // get events for a small test of valid token
+    // Initialize notifications dependency
+    let axonMsgs = [];
+    const axonSocket = {
+      emit: (...args) => axonMsgs.push(args),
+    };
+    const notifications = new Notifications(axonSocket);
+    require("api-server/src/methods/events")(
+      app.api,
+      app.storageLayer.events,
+      app.storageLayer.eventFiles,
+      app.config.get('auth'),
+      app.config.get('service:eventTypes'),
+      notifications,
+      app.logging,
+      app.config.get('audit'),
+      app.config.get('updates'),
+      app.config.get('openSource'),
+      app.config.get('services'));
+    
+    request = supertest(app.expressApp);
+    
+    
   });
   describe('POST /users', () => {
-    before(async function() {
-      const settings = await Settings.load();
-      app = new Application(settings);
-      await app.initiate();
-
-      require('../src/methods/auth/register-dnsless')(
-        app.api,
-        app.logging,
-        app.storageLayer,
-        app.settings.get('services').obj(),
-      );
-
-      // get events for a small test of valid token
-      // Initialize notifications dependency
-      let axonMsgs = [];
-      const axonSocket = {
-        emit: (...args) => axonMsgs.push(args),
-      };
-      const notifications = new Notifications(axonSocket);
-      require("components/api-server/src/methods/events")(
-        app.api,
-        app.storageLayer.events,
-        app.storageLayer.eventFiles,
-        app.settings.get('auth').obj(),
-        app.settings.get('service.eventTypes').str(),
-        notifications,
-        app.logging,
-        app.settings.get('audit').obj(),
-        app.settings.get('updates').obj(),
-        app.settings.get('openSource').obj(),
-        app.settings.get('services').obj());
-      
-      request = supertest(app.expressApp);
-      
+    let registerBody;
+    before(() => {
       registerBody = {
         username: charlatan.Lorem.characters(7),
         password: charlatan.Lorem.characters(7),
@@ -80,6 +83,7 @@ describe('[BMM2] registration: single-node', () => {
         phoneNumber: charlatan.Number.number(3),
       };
     });
+    
     describe('when given valid input', function() {
       before(async function() {
         res = await request.post('/users').send(registerBody);
@@ -195,7 +199,6 @@ describe('[BMM2] registration: single-node', () => {
     describe('Property values uniqueness', function() {
       describe('username property', function() {
         before(async function () {
-          let mongoFixtures = databaseFixture(await produceMongoConnection());
           await mongoFixtures.context.cleanEverything();
           await app.database.deleteMany({ name: 'events' });
 
@@ -324,8 +327,59 @@ describe('[BMM2] registration: single-node', () => {
       };
     }
   });
-  describe('GET /:username/check_username', () => {
-    
+  describe('GET /reg/:username/check', function() {
 
+    const existingUsername = 'existing-username';
+    before(async function () {
+      await mongoFixtures.user({
+        username: existingUsername,
+      });
+    });
+
+    function path(username) {
+      return `/reg/${username}/check_username`;
+    }
+
+    it('[7T9L] when checking a valid available username, it should respond with status 200 and {reserved:false}', async () => {
+      const res = await request.get(path('unexisting-username'))
+
+      const body = res.body;
+      assert.equal(res.status, 200);
+      assert.isFalse(body.reserved);
+    });
+
+    it('[153Q] when checking a valid taken username, it should respond with status 409 and the correct error', async () => {
+      const res = await request.get(path(existingUsername))
+
+      const body = res.body;
+      assert.equal(res.status, 409);
+      assert.equal(body.error.id, ErrorIds.ItemAlreadyExists);
+      assert.deepEqual(body.error.data, { username: existingUsername });
+    });
+
+    it('[H09H] when checking a too short username, it should respond with status 400 and the correct error', async () => {
+      const res = await request.get(path('a'.repeat(4)));
+
+      const body = res.body;
+      assert.equal(res.status, 400);
+      assert.equal(body.error.id, ErrorIds.InvalidParametersFormat);
+      assert.isTrue(body.error.data[0].code.includes('username'));
+    });
+    it('[VFE1] when checking a too long username, it should respond with status 400 and the correct error', async () => {
+      const res = await request.get(path('a'.repeat(24)));
+
+      const body = res.body;
+      assert.equal(res.status, 400);
+      assert.equal(body.error.id, ErrorIds.InvalidParametersFormat);
+      assert.isTrue(body.error.data[0].code.includes('username'));
+    });
+    it('[FDTC] when checking a username with invalid characters, it should respond with status 400 and the correct error', async () => {
+      const res = await request.get(path('abc:def'));
+
+      const body = res.body;
+      assert.equal(res.status, 400);
+      assert.equal(body.error.id, ErrorIds.InvalidParametersFormat);
+      assert.isTrue(body.error.data[0].code.includes('username'));
+    });
   });
 });

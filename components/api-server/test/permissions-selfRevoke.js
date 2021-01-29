@@ -13,7 +13,7 @@ const cuid = require('cuid');
 const chai = require('chai');
 const assert = chai.assert;
 
-const { databaseFixture } = require('components/test-helpers');
+const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 
 require('date-utils');

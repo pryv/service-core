@@ -1,0 +1,23 @@
+---
+http:
+  ip: localhost
+  port: 4000
+trace:
+  enable: false
+logs:
+  console:
+    active: true
+    level: debug
+database:
+  host: 127.0.0.1
+  name: pryv-node
+influxdb:
+  host: 127.0.0.1
+  port: 8086
+nats:
+  uri: nats://127.0.0.1:4222
+services:
+  register:
+    url: http://127.0.0.1:8080
+serviceInfoUrl: file://test/service-info.json
+# including metadataUpdater:host breaks tests

@@ -6,33 +6,43 @@
  */
 // @flow
 
+const path = require('path');
+const { getConfig, getLogger } = require('@pryv/boiler').init({
+  appName: 'hfs-server-tests',
+  baseConfigDir: path.resolve(__dirname, '../../config'),
+  extraConfigs: [{
+    scope: 'serviceInfo',
+    key: 'service',
+    urlFromKey: 'serviceInfoUrl'
+  }, {
+    scope: 'defaults-data',
+    file: path.resolve(__dirname, '../../../api-server/config/defaults.js')
+  }, {
+    plugin: require('../../../api-server/config/components/systemStreams')
+  }]
+});
+
 // Test helpers for all acceptance tests. 
 
-const debug = require('debug')('test-helpers');
-const testHelpers = require('components/test-helpers');
-const NullLogger = require('components/utils/src/logging').NullLogger;
-const storage = require('components/storage');
-const business = require('components/business');
+const logger = require('@pryv/boiler').getLogger('test-helpers');
+const testHelpers = require('test-helpers');
+const storage = require('storage');
+const business = require('business');
 
-const toplevelHelpers = require('../test-helpers');
 
 // Produces and returns a connection to InfluxDB. 
 // 
 function produceInfluxConnection(): business.series.InfluxConnection {
-  const logger = new NullLogger(); 
   
-  return new business.series.InfluxConnection(
-    {host: 'localhost'}, logger); 
+  return new business.series.InfluxConnection({host: 'localhost'}); 
 }
 exports.produceInfluxConnection = produceInfluxConnection;
 
 // Produces and returns a connection to MongoDB. 
 // 
 async function produceMongoConnection(): storage.Database {
-  const settings = await toplevelHelpers.loadSettings();
-  const database = new storage.Database(
-    settings.get('mongodb').obj(), 
-    new NullLogger()); 
+  const config = await getConfig();
+  const database = new storage.Database(config.get('database')); 
   
   return database; 
 }
@@ -46,25 +56,23 @@ function produceStorageLayer(connection: storage.Database): storage.StorageLayer
   
   return new storage.StorageLayer(
     connection, 
-    new NullLogger(), 
+    getLogger('null'), 
     'attachmetsDirPath', 'previewsDirPath', 
     passwordResetRequestMaxAge,
     sessionMaxAge);
 }
 exports.produceStorageLayer = produceStorageLayer;
 
-// Forward certain things that the top level helper defines, for convenience: 
-exports.loadSettings = toplevelHelpers.loadSettings;
 
 // --------------------------------------------------------- prespawning servers
 
-debug('creating new spawn context');
+logger.debug('creating new spawn context');
 const spawner = testHelpers.spawner;
 const spawnContext = new spawner.SpawnContext('test/support/child_process');
 
 /* global after */
 after(() => {
-  debug('shutting down spawn context');
+  logger.debug('shutting down spawn context');
   spawnContext.shutdown(); 
 });
 

@@ -22,7 +22,7 @@ describe('Database', () => {
 
   let database;
   beforeEach((done) => {
-    database = new Database(connectionSettings, console);
+    database = new Database(connectionSettings);
 
     database.ensureConnect(done);
   });

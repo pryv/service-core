@@ -7,20 +7,20 @@
 // @flow
 
 const influx = require('influx');
+const { getLogger } = require('@pryv/boiler');
 
-import type {IPoint} from 'influx';
-import type {Logger} from 'components/utils/src/logging';
+import type {IPoint}  from 'influx';
 
 /** Connection to the influx database. Adds error handling and logging on top
  * of our database driver. 
  */
 class InfluxConnection {
   conn: influx.InfluxDB; 
-  logger: Logger; 
+  logger; 
   
-  constructor(connectionSettings: ISingleHostConfig, logger: Logger) {
+  constructor(connectionSettings: ISingleHostConfig) {
     this.conn = new influx.InfluxDB(connectionSettings);
-    this.logger = logger; 
+    this.logger = getLogger('influx'); 
   }
   
   createDatabase(name: string): Promise<*> {
@@ -47,7 +47,7 @@ class InfluxConnection {
     name: string,
     dbName: string
   ): Promise<void> {
-    this.logger.debug(`Drop -> measurement: ${name} on dbName ${dbName}`);
+    this.logger.debug(`Drop -> measurement: ${name} on dbName ${dbName}`, this.logger);
     return this.conn.dropMeasurement(name, dbName);
   }
   

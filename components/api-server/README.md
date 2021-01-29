@@ -23,7 +23,7 @@ This binary can be manually executed with the following command (or be setup as 
 > node dist/components/api-server/bin/nightly --config config.json
 
 The same command for a dockerized api-server would look like this:
-> docker exec -ti pryv_core_1 app/bin/dist/components/api-server/bin/nightly --config app/conf/core.json
+> docker exec -ti pryv_core_1 app/bin/dist/components/api-server/bin/nightly --config app/conf/core.yml
 
 Note that these tasks can induce a heavy load on MongoDB, especially if the computation has to iterate through a lot of users.
 

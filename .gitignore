@@ -24,6 +24,8 @@ build/release.tar
 test_results/
 coverage/
 var-pryv
+*.log
+learn-config
 
 # netbeans IDE
 nbproject/

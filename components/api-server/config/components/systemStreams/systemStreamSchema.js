@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const helpers = require('components/api-server/src/schema/helpers');
+const helpers = require('api-server/src/schema/helpers');
 const string = helpers.string;
 const boolean = helpers.boolean;
 const array = helpers.array;

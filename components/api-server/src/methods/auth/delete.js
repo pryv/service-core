@@ -6,7 +6,7 @@
  */
 
 // @flow
-const Deletion = require('components/business/src/auth/deletion');
+const Deletion = require('business/src/auth/deletion');
 
 /**
  * Auth API methods implementations.

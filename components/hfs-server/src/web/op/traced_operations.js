@@ -7,8 +7,8 @@
 
 // @flow
 
-import type Context from '../../context';
-import type { Span } from 'opentracing';
+import type Context  from '../../context';
+import type { Span }  from 'opentracing';
 
 // A small class that helps clean up the tracing code in the controller code 
 // above. 

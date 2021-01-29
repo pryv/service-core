@@ -11,9 +11,10 @@ const cuid = require('cuid');
 const helpers = require('./helpers');
 const validation = helpers.validation;
 const methodsSchema = require('../src/schema/service-infoMethods');
-const { databaseFixture } = require('components/test-helpers');
+const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 const httpServer = require('./support/httpServer');
+const { getConfig } = require('@pryv/boiler');
 
 const username = cuid();
 let server;
@@ -24,20 +25,8 @@ const infoHttpServerPort = 5123;
 describe('Service', () => {
 
   before(async () => {
-    mockInfo = {
-      access: 'https://access.pryv.me/access',
-      api: 'https://{username}.pryv.me/',
-      serial: '2019061301',
-      register: 'https://reg.pryv.me',
-      name: 'Pryv Lab',
-      home: 'https://sw.pryv.me',
-      support: 'https://pryv.com/helpdesk',
-      terms: 'https://pryv.com/terms-of-use/',
-      eventTypes: 'https://api.pryv.com/event-types/flat.json',
-      assets: {
-        definitions: 'https://pryv.github.io/assets-pryv.me/index.json'
-      }
-    };
+    const config = await getConfig();
+    mockInfo = config.get('service');
 
     infoHttpServer = new httpServer('/service/info', 200, mockInfo);
     await infoHttpServer.listen(infoHttpServerPort);

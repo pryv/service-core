@@ -8,15 +8,15 @@
  * Helper stuff for validating objects against schemas.
  */
 
-const ErrorIds = require('components/errors').ErrorIds;
+const ErrorIds = require('errors').ErrorIds;
 const Action = require('../../src/schema/Action');
-const encryption = require('components/utils').encryption;
+const encryption = require('utils').encryption;
 const Validator = require('z-schema');
 const validator = new Validator();
 const { assert, expect } = require('chai');
 const util = require('util');
 const _ = require('lodash');
-const SystemStreamsSerializer = require('components/business/src/system-streams/serializer');
+const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 /**
  * Expose common JSON schemas.

@@ -8,6 +8,9 @@
 
 /* global describe, it, before, after, beforeEach, afterEach */
 
+
+require('@pryv/boiler').init({appName: 'tprpc-test', baseConfigDir: ''});
+
 const chai = require('chai');
 const assert = chai.assert; 
 const sinon = require('sinon');
@@ -15,7 +18,7 @@ const sinon = require('sinon');
 const rpc = require('../../src/index.js');
 
 const { Corpus } = require('../fixtures/base');
-import type { ISearchService } from '../fixtures/base';
+import type { ISearchService }  from '../fixtures/base';
 
 describe('Base API', () => {
   const endpoint = '127.0.0.1:4020';

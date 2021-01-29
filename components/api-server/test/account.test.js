@@ -12,7 +12,7 @@ const assert = require('chai').assert;
 const helpers = require('./helpers');
 const server = helpers.dependencies.instanceManager;
 const async = require('async');
-const ErrorIds = require('components/errors').ErrorIds;
+const ErrorIds = require('errors').ErrorIds;
 const validation = helpers.validation;
 const methodsSchema = require('../src/schema/accountMethods');
 const pwdResetReqsStorage = helpers.dependencies.storage.passwordResetRequests;
@@ -22,7 +22,7 @@ const storageSize = helpers.dependencies.storage.size;
 const testData = helpers.data;
 const _ = require('lodash');
 const bluebird = require('bluebird');
-const UsersRepository = require('components/business/src/users/repository');
+const UsersRepository = require('business/src/users/repository');
 
 describe('account', function () {
   const user = Object.assign({}, testData.users[0]);
