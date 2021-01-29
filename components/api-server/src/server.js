@@ -309,7 +309,7 @@ class Server {
 
   async setupReporting() {
     const Reporting = require('lib-reporting');
-    const serviceInfoUrl = this.config.get('serviceInfoUrl').value;
+    const serviceInfoUrl = this.config.get('serviceInfoUrl');
     async function collectClientData() {
       return {
         userCount: await this.getUserCount(),
