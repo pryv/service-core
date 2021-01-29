@@ -86,20 +86,6 @@ describe('service-reporting', () => {
     });
   });
 
-  describe('POST opt-out and don\'t send report on service-reporting (started)', () => {
-    beforeEach(async () => {
-      reportHttpServer = new httpServer('/reports', 200);
-      await reportHttpServer.listen(REPORT_HTTP_SERVER_PORT);
-
-      customSettings.reporting.optOut = 'true';
-      server = await context.spawn(customSettings);
-    });
-
-    afterEach(async () => {
-      server.stop();
-      reportHttpServer.close();
-    });
-  });
 });
 
 async function assertServerStarted() {
