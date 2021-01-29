@@ -29,7 +29,8 @@ describe('ProjectVersion#version', () => {
     const versionFilePath = path.join(__dirname, '../../../../../', '.api-version');
 
     it('[HV40] reads .api-version and returns that constant', async () => {
-      assert.strictEqual(pv.version(), '1.2.3');
+      const versionRead = fs.readFileSync(versionFilePath, { encoding: 'utf-8'});
+      assert.strictEqual(pv.version(), versionRead);
     });
   });
 });
