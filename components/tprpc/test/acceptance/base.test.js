@@ -9,7 +9,7 @@
 /* global describe, it, before, after, beforeEach, afterEach */
 
 
-require('boiler').init({appName: 'tprpc-test', baseConfigDir: ''});
+require('@pryv/boiler').init({appName: 'tprpc-test', baseConfigDir: ''});
 
 const chai = require('chai');
 const assert = chai.assert; 

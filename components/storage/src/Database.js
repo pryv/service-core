@@ -11,7 +11,7 @@ const MongoClient = require('mongodb').MongoClient;
 const lodash = require('lodash');
 const bluebird = require('bluebird');
 
-const { getLogger } = require('boiler');
+const { getLogger } = require('@pryv/boiler');
 
 import type { Db as MongoDB, Collection }  from 'mongodb';
 

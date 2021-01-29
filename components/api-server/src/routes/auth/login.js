@@ -23,7 +23,7 @@ declare class RequestWithContext extends express$Request {
 
 import type Application  from './../application';
 
-const { getConfigUnsafe } = require('boiler');
+const { getConfigUnsafe } = require('@pryv/boiler');
 
 /**
  * Auth routes.

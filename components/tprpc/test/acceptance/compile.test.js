@@ -13,7 +13,7 @@ const path = require('path');
 const fs = require('fs');
 const chai = require('chai');
 const assert = chai.assert; 
-const logger = require('boiler').getLogger('compile.test');
+const logger = require('@pryv/boiler').getLogger('compile.test');
 
 const rpc = require('../../src/index.js');
 

@@ -12,7 +12,7 @@ const Application = require('../../src/application');
 const { InfluxRowType, TypeRepository } = require('business').types;
 const ChildProcess = require('test-helpers').child_process;
 
-const { getConfig, getLogger } = require('boiler');
+const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('child_process');
 import type {MetadataRepository}  from '../../src/metadata_cache';
 

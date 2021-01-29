@@ -6,7 +6,7 @@
  */
 process.env.NODE_ENV = 'test';
 const path = require('path');
-const boiler = require('boiler').init({
+const boiler = require('@pryv/boiler').init({
   appName: 'boiler-tests',
   baseConfigDir: path.resolve(__dirname, '../../api-server/config/'),
   extraConfigs: [{

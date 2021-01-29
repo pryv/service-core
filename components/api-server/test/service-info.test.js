@@ -14,7 +14,7 @@ const methodsSchema = require('../src/schema/service-infoMethods');
 const { databaseFixture } = require('test-helpers');
 const { produceMongoConnection, context } = require('./test-helpers');
 const httpServer = require('./support/httpServer');
-const { getConfig } = require('boiler');
+const { getConfig } = require('@pryv/boiler');
 
 const username = cuid();
 let server;

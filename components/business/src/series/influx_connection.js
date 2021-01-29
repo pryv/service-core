@@ -7,7 +7,7 @@
 // @flow
 
 const influx = require('influx');
-const { getLogger } = require('boiler');
+const { getLogger } = require('@pryv/boiler');
 
 import type {IPoint}  from 'influx';
 

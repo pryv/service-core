@@ -8,7 +8,7 @@
 
 const bluebird = require('bluebird');
 const TChannel = require('tchannel');
-const { getLogger } = require('boiler');
+const { getLogger } = require('@pryv/boiler');
 const lodash = require('lodash');
 
 const Definition = require('./definition');

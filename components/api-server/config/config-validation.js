@@ -9,7 +9,7 @@
  * Should validate (or not) the configuration and display appropriate messages
  */
 
-const { getLogger } = require('boiler');
+const { getLogger } = require('@pryv/boiler');
 let logger; // initalized at load();
 
 async function validate(config) {

@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 var fs = require('fs');
-const { getConfig } = require('boiler');
+const { getConfig } = require('@pryv/boiler');
 
 exports.mochaHooks = {
   async beforeAll () {

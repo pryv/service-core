@@ -17,7 +17,7 @@ const UsersRepository = require('business/src/users/repository');
 const User = require('business/src/users/User');
 const ErrorIds = require('errors').ErrorIds;
 
-const { getLogger } = require('boiler');
+const { getLogger } = require('@pryv/boiler');
 
 import type { MethodContext } from 'model';
 import type { ApiCallback } from 'api-server/src/API';

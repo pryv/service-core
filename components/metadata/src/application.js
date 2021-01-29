@@ -9,7 +9,7 @@
 // Main application class. Does all the work. 
 
 const path = require('path');
-require('boiler').init({
+require('@pryv/boiler').init({
   appName: 'metadata',
   baseConfigDir: path.resolve(__dirname, '../config'),
   extraConfigs: [{
@@ -21,7 +21,7 @@ require('boiler').init({
     file: path.resolve(__dirname, '../config/default-config.hjson')
   }]
 });
-const { getConfig, getLogger } = require('boiler');
+const { getConfig, getLogger } = require('@pryv/boiler');
 
 const storage = require('storage');
 

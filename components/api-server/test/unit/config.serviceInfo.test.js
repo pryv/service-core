@@ -10,7 +10,7 @@ const nock = require('nock');
 const chai = require('chai');
 const assert = chai.assert;
 const charlatan = require('charlatan');
-const { getConfig } = require('boiler');
+const { getConfig } = require('@pryv/boiler');
 const testServiceInfo = require('../../../../../test/service-info.json');
 
 describe.skip('config: serviceInfo', () => {

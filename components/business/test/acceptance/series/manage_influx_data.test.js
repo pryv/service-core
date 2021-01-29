@@ -12,7 +12,7 @@
 /* global describe, it */
 const { should } = require('../../test-helpers');
 
-const { getConfig } = require('boiler');
+const { getConfig } = require('@pryv/boiler');
 const influx = require('influx');
 
 const series = require('../../../src/index.js').series; 

@@ -17,7 +17,7 @@ const storage = require('storage');
 const { databaseFixture } = require('test-helpers');
 
 const { MetadataLoader, MetadataCache } = require('../../src/metadata_cache');
-const { getConfig } = require('boiler');
+const { getConfig } = require('@pryv/boiler');
 const { getLogger } = require('boiler/src/logging');
 
 describe('Metadata Loader', function () {

@@ -22,7 +22,7 @@ const SystemStreamsSerializer = require('business/src/system-streams/serializer'
 const UsersRepository = require('business/src/users/repository');
 const User = require('business/src/users/User');
 const charlatan = require('charlatan');
-const { getConfigUnsafe, getConfig, getLogger } = require('boiler');
+const { getConfigUnsafe, getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('test-helpers:data');
 
 // users

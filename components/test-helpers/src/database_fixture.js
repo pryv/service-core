@@ -11,7 +11,7 @@ const R = require('ramda');
 const lodash = require('lodash');
 const Charlatan = require('charlatan');
 const generateId = require('cuid');
-const logger = require('boiler').getLogger('databaseFixture');
+const logger = require('@pryv/boiler').getLogger('databaseFixture');
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 

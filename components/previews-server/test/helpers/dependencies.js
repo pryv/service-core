@@ -8,7 +8,7 @@ var testHelpers = require('test-helpers'),
     InstanceManager = testHelpers.InstanceManager;
 
 
-  const { getConfigUnsafe } = require('boiler');
+  const { getConfigUnsafe } = require('@pryv/boiler');
 
 
 /**

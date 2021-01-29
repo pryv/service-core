@@ -8,7 +8,7 @@
 const Application = require('../src/application');
 
 // new config has to be loadded before the application
-const { getConfig } = require('boiler');
+const { getConfig } = require('@pryv/boiler');
 (async () => {
   await getConfig();
   const app = new Application();

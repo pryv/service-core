@@ -7,7 +7,7 @@
 
 // @flow
 
-const logger = require('boiler').getLogger('cls');
+const logger = require('@pryv/boiler').getLogger('cls');
 
 const { createNamespace } = require('cls-hooked');
 

@@ -7,7 +7,7 @@
 var storage = require('storage'),
     _ = require('lodash');
 
-const { getConfigUnsafe, getLogger } = require('boiler');
+const { getConfigUnsafe, getLogger } = require('@pryv/boiler');
 const config = getConfigUnsafe(true);
 
 const database = new storage.Database(config.get('database'));

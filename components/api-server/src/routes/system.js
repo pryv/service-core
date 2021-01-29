@@ -11,7 +11,7 @@ const Paths = require('./Paths');
 const methodCallback = require('./methodCallback');
 const contentType = require('middleware').contentType;
 const _ = require('lodash');
-const { getLogger } = require('boiler');
+const { getLogger } = require('@pryv/boiler');
 
 import type Application  from '../application';
 

@@ -12,7 +12,7 @@ const bluebird = require('bluebird');
 const chai = require('chai');
 const assert = chai.assert;
 
-const { getConfig } = require('boiler');
+const { getConfig } = require('@pryv/boiler');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
 describe('[55JP] users pool', () => {

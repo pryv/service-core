@@ -17,7 +17,7 @@ const Application = require('./application');
 
 const UsersRepository = require('business/src/users/repository');
 
-const { getLogger, getConfig } = require('boiler');
+const { getLogger, getConfig } = require('@pryv/boiler');
 
 
 // Server class for api-server process. To use this, you 

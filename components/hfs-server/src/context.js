@@ -25,7 +25,7 @@ type Repository = business.series.Repository;
 type InfluxConnection = business.series.InfluxConnection; 
 
 import type { Tracer, Span }  from 'opentracing';
-const { getLogger } = require('boiler');
+const { getLogger } = require('@pryv/boiler');
 
 // Application context object, holding references to all major subsystems. Once
 // the system is initialized, these instance references will not change  any

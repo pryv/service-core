@@ -21,7 +21,7 @@ const _ = require('lodash');
 const { ConditionVariable, Fuse } = require('./condition_variable');
 
 // Set DEBUG=spawner to see these messages.
-const logger = require('boiler').getLogger('spawner');
+const logger = require('@pryv/boiler').getLogger('spawner');
 
 const PRESPAWN_LIMIT = 2; 
 

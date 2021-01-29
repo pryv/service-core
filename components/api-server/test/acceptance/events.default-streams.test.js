@@ -14,7 +14,7 @@ const { describe, before, it } = require('mocha');
 const supertest = require('supertest');
 const charlatan = require('charlatan');
 
-const { getConfig } = require('boiler');
+const { getConfig } = require('@pryv/boiler');
 const ErrorIds = require('errors').ErrorIds;
 const ErrorMessages = require('errors/src/ErrorMessages');
 const Application = require('api-server/src/application');

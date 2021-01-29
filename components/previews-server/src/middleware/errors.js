@@ -7,7 +7,7 @@
 const errorHandling = require('errors').errorHandling;
 const APIError = require('errors').APIError;
 const errors = require('errors').factory;
-const { getLogger } = require('boiler');
+const { getLogger } = require('@pryv/boiler');
 
 /*jshint -W098*/
 

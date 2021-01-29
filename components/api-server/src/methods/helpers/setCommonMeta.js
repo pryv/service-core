@@ -10,7 +10,7 @@ const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 const { ProjectVersion } = require('middleware/src/project_version');
 // cnan be overriden;
-const { getConfig } = require('boiler');
+const { getConfig } = require('@pryv/boiler');
 
 type MetaInfo = {
   meta: {

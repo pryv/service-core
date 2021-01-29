@@ -6,7 +6,7 @@
  */
 // @flow
 
-const logger = require('boiler').getLogger('PUM');
+const logger = require('@pryv/boiler').getLogger('PUM');
 const Heap = require('heap');
 
 // Code related to bookkeeping for pending updates. Will probably move. 

@@ -7,7 +7,7 @@
 // @flow
 
 require('../../../test-helpers/src/boiler-init');
-const logger = require('boiler').getLogger('test-helpers');
+const logger = require('@pryv/boiler').getLogger('test-helpers');
 const testHelpers = require('test-helpers');
 
 // --------------------------------------------------------- prespawning servers

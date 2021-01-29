@@ -25,7 +25,7 @@ const accessSchema = require('../schema/access');
 const string = require('./helpers/string');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 
-const { getLogger } = require('boiler');
+const { getLogger } = require('@pryv/boiler');
 
 import type { StorageLayer } from 'storage';
 import type { MethodContext } from 'model';

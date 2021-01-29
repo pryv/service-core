@@ -7,7 +7,7 @@
 var testHelpers = require('test-helpers'),
     InstanceManager = testHelpers.InstanceManager;
 
-const { getConfigUnsafe } = require('boiler');
+const { getConfigUnsafe } = require('@pryv/boiler');
 
 /**
  * Overrides common test dependencies with server-specific config settings.

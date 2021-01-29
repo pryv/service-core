@@ -8,7 +8,9 @@
     "url": "git://github.com/pryv/service-core.git"
   },
   "workspaces": {
-    "packages": ["components/*"]
+    "packages": [
+      "components/*"
+    ]
   },
   "scripts": {
     "cover": "yarn cover:clean && yarn cover:do && yarn cover:report",
@@ -38,6 +40,7 @@
     "license": "cd licenser ; yarn install; yarn apply"
   },
   "dependencies": {
+    "@pryv/boiler": "https://github.com/pryv/lib-node-boiler.git",
     "async": "^2.5.0",
     "awaiting": "^3.0.0",
     "axon": "2.0.x",

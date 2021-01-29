@@ -9,7 +9,7 @@ process.env.NODE_ENV = 'test';
 
 process.on('unhandledRejection', unhandledRejection);
 
-const { getLogger } = require('boiler');
+const { getLogger } = require('@pryv/boiler');
 const logger = getLogger('test-helpers');
 
 // Handles promise rejections that aren't caught somewhere. This is very useful
@@ -29,7 +29,7 @@ after(async () => {
 });
 
 const { Database } = require('storage');
-const { getConfig } = require('boiler');
+const { getConfig } = require('@pryv/boiler');
 const InfluxConnection = require('business/src/series/influx_connection');
 
 // Produces and returns a connection to MongoDB. 

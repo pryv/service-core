@@ -12,7 +12,7 @@ import type { ApiCallback }  from '../API';
 import type Result  from '../Result';
 
 const _ = require('lodash');
-const { getConfig } = require('boiler');
+const { getConfig } = require('@pryv/boiler');
 
 module.exports = function (api: API) {
   this.serviceInfo = null;

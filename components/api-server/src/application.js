@@ -10,7 +10,7 @@
 // to your code to give it access to app setup. 
 
 const path = require('path');
-const boiler = require('boiler').init({
+const boiler = require('@pryv/boiler').init({
   appName: 'api-server',
   baseConfigDir: path.resolve(__dirname, '../config/'),
   extraConfigs: [{
@@ -35,7 +35,7 @@ const expressAppInit = require('./expressApp');
 const middleware = require('middleware');
 const errorsMiddlewareMod = require('./middleware/errors'); 
 
-const { getConfig, getLogger } = require('boiler');
+const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('application');
 
 const { Extension, ExtensionLoader } = require('utils').extension;

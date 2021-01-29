@@ -9,7 +9,7 @@
 const methodCallback = require('../methodCallback');
 const API = require('../../API');
 import type Application  from '../../application';
-const { getConfigUnsafe } = require('boiler');
+const { getConfigUnsafe } = require('@pryv/boiler');
 
 /**
  * Routes for users
