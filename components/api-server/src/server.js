@@ -309,22 +309,23 @@ class Server {
 
   async setupReporting() {
     const Reporting = require('lib-reporting');
+    const serviceInfoUrl = this.config.get('serviceInfoUrl');
     async function collectClientData() {
       return {
-        userCount: await this.getUserCount()
+        userCount: await this.getUserCount(),
+        serviceInfoUrl: serviceInfoUrl
       };
     }
 
     const reportingSettings = this.config.get('reporting');
     const templateVersion = reportingSettings.templateVersion;
-    const reportingUrl = reportingSettings?.url;
-    const optOut = reportingSettings?.optOut;
+    const reportingUrl = (process.env.NODE_ENV === 'test') ? 'http://localhost:4001' : null ;
     const licenseName = reportingSettings.licenseName;
     const role = 'api-server';
     const mylog = function (str) {
       this.logger.info(str);
     }.bind(this);
-    new Reporting(licenseName, role, templateVersion, collectClientData.bind(this), mylog, reportingUrl, optOut);
+    new Reporting(licenseName, role, templateVersion, collectClientData.bind(this), mylog, reportingUrl);
   }
 
   async getUserCount(): Promise<Number> {
