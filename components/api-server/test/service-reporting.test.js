@@ -100,21 +100,6 @@ describe('service-reporting', () => {
       reportHttpServer.close();
     });
   });
-
-  describe('POST report on service-reporting (shut down)', function () {
-    this.timeout(5000);
-    beforeEach(async () => {
-      server = await context.spawn();
-    });
-    
-    afterEach(async () => {
-      server.stop();
-    });
-
-    it('[H55A] server must start when service-reporting is not listening', async () => {
-      await assertServerStarted();
-    });
-  });
 });
 
 async function assertServerStarted() {
