@@ -5,8 +5,6 @@
   "homepage": "http://pryv.com",
   "author": "Pryv S.A. <support@pryv.com> (http://pryv.com)",
   "main": "src/index.js",
-  "scripts": {
-  },
-  "dependencies": {
-  }
+  "scripts": {},
+  "dependencies": {}
 }
