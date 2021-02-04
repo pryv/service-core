@@ -11,47 +11,35 @@
 
 const Store = require('./Store');
 
+// -- DataStores
+const DummyStore = require('../implementations/dummy');
+const FaultyStore = require('../implementations/faulty');
+
+
 let store;
 async function getStore() {
   if (store) return store;
   store = new Store();
+  store.addSource(new DummyStore());
+  store.addSource(new FaultyStore());
   return await store.init();
 };
-
 
 
 module.exports = {
   getStore : getStore
 };
+
+
 // ---- dev mode 
 
 (async () => { 
   try {
     const s = await getStore();
-    const streams = await s.streams.get('toto', {streamIds: ['.*']});
-    console.log(streams);
+    const streams = await s.streams.get('toto', {parentIds: ['.*']});
+    //const streams = await s.events.get('toto', {streamIds: ['.*']});
+    console.log(require('util').inspect(streams, null, 10));
   } catch (e) {
     console.log(e);
   }
 })();
-
-
-const a = '.string-asdasj';
-const r = /^\.([a-z]+)/;
-
-const d = Date.now();
-for (let i = 0; i < 1; i++) {
-  const b = a.match(r)[1];
-  //assert('string' == b);
-}
-console.log(Date.now() - d);
-
-
-const d2 = Date.now();
-for (let i = 0; i < 1; i++) {
-  const b = (a.split('-')[0]);
-  //assert('.string' == b);
-}
-console.log(Date.now() - d2);
-
-

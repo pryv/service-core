@@ -1,3 +1,9 @@
+/**
+ * @license
+ * Copyright (C) 2020 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ */
 const {DataSource, UserStreams}  = require('../interfaces/DataSource');
 
 const StreamsUtils = require('./lib/StreamsUtils');
@@ -7,17 +13,20 @@ const StreamsUtils = require('./lib/StreamsUtils');
  */
 class StoreUserStreams extends UserStreams {
  
-  constructor(main) {
+  /**
+   * @param {Store} store 
+   */
+  constructor(store) {
     super();
-    this.main = main;
+    this.store = store;
   }
 
   async get(uid, params) {
     let res = [];
 
     // *** root query we just expose stores handles
-    if (! params.streamIds) { 
-      for (let source of this.main.sources) {
+    if (! params.parentIds) { 
+      for (let source of this.store.sources) {
         res.push([StreamsUtils.sourceToStream(source, {
           children: [],
           childrenHidden: true // To be discussed
@@ -28,36 +37,52 @@ class StoreUserStreams extends UserStreams {
 
     // *** forward query to included stores (parallel)
 
-    const flags = {}; 
-    let addSourceRoot = false;
+    const sourceParentIds = {}; // keep specific parentId for each store
+
+    function addSourceParentId(sourceId, parentId) {
+      if (typeof sourceParentIds[sourceId] !== 'undefined') {
+        DataSource.errorInvalidRequestStructure('parentIds should point to maximum one stream per source. [' + sourceId + '] appears more than once.', params);
+      }
+      sourceParentIds[sourceId] = parentId; // null means all
+    }
 
     // get storages involved from streamIds 
-    for (let streamId of params.streamIds) {
+    for (let streamId of params.parentIds) {
 
       if (streamId.indexOf('.') === 0) { // fatest method against startsWith or charAt() -- 10x
         
         if (streamId === '.*') {   // if '.*' add all sources
-          for (let source of this.main.sources) {
-            flags[source.id] = true;
+          for (let source of this.store.sources) {
+            addSourceParentId(source.id, null);
           }
-          addSourceRoot = true;
 
         } else {  // add streamId's corresponding source 
-          const sourceId = streamId.substr(1, streamId.indexOf('-') - 1); // fastest against regexp and split 40x
-          if (! flags[sourceId]) {
-            flags[sourceId] = true;
-            if (! this.main.sourcesMap[sourceId]) {
-              DataSource.errorUnkownRessource('DataSource [' + sourceId + '] unkown in streamIds query parameters', params);
-            } 
+          const dashPos = streamId.indexOf('-');
+          const sourceId = streamId.substr(1, (dashPos > 0) ? (dashPos - 1) : undefined); // fastest against regexp and split 40x
+          const source = this.store.sourceForId(sourceId);
+          if (! source) {
+            DataSource.errorUnkownRessource('DataSource [' + sourceId + '] unkown in parentIds query parameters', params);
+          } 
+
+          if (dashPos < 0) { // root stream of source
+            addSourceParentId(source.id, null);
+          } else { // add streamId stripped out from '.${source}-'
+            addSourceParentId(source.id, streamId.substr(dashPos + 1));
           }
         }
       }
     }
 
     const tasks = [];
-    const sourceIds = Object.keys(flags);
+    const sourceIds = Object.keys(sourceParentIds);
     for (let sourceId of sourceIds) {
-      tasks.push(this.main.sourcesMap[sourceId].streams.get(uid, params));
+      // make a copy of params and change parentId
+      const myParams = {
+        parentId: sourceParentIds[sourceId] || undefined,
+        includeDeletionsSince: params.includeDeletionsSince,
+        state: params.state
+      }
+      tasks.push(this.store.sourceForId(sourceId).streams.get(uid, myParams));
     }
 
     // call all sources
@@ -66,18 +91,18 @@ class StoreUserStreams extends UserStreams {
     // check results and eventually replace with error (non blocking unavailable ressource)
     for (let i = 0; i < sourceIds.length; i++) {
       if (sourcesRes[i].status === 'fulfilled') {
-        if (! addSourceRoot) {
+        if (sourceParentIds[sourceIds[i]] !== null) { // if null => requested root stream of source
           res.push(...sourcesRes[i].value); // add all items to res
         } else {
-          const source = this.main.sourcesMap[sourceIds[i]];
+          const source = this.store.sourcesMap[sourceIds[i]];
           res.push([StreamsUtils.sourceToStream(source, {
             children: sourcesRes[i].value
           })]);
         }
       } else {
-        const source = this.main.sourcesMap[sourceIds[i]];
+        const source = this.store.sourcesMap[sourceIds[i]];
         res.push([StreamsUtils.sourceToStream(source, {
-          unreachable: sourcesRes[i].reason
+          unreachable: sourcesRes[i].reason // change to sourcesRes[i].reason.message || sourcesRes[i].reason
         })]);
       }
     }

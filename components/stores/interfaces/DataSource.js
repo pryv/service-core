@@ -52,8 +52,12 @@ class DataSource {
   get streams() { toBeImplemented(); } 
   get events() { toBeImplemented(); } 
 
-  static errorUnkownRessource(message, data) {
+  static errorUnkownRessource(message, data) { // APIError.UnknownResource 
     console.error('unkownRessource', message, data);
+  } 
+
+  static errorInvalidRequestStructure(message, data) { // APIError.InvalidRequestStructure 
+    console.error('invalidRequestStructure', message, data);
   } 
 
 }
@@ -118,7 +122,8 @@ class UserStreams {
    * @returns null;
    */
   static applyDefaults(storeId, streams) {
-    _applyDefaults(storeId ? '.' + storeId + '-' : null, streams);
+    const rootId = storeId ? '.' + storeId : null;
+    _applyDefaults(rootId, streams, rootId);
   }
 }
 
@@ -128,15 +133,17 @@ class UserStreams {
  * @param {string} storeIdNameSpace - namespacing for streamIds
  * @param {Array<Streams>} streams 
  */
-function _applyDefaults(storeIdNameSpace, streams) {
+function _applyDefaults(storeIdNameSpace, streams, parentId) {
   for (let stream of streams) {
-    if (storeIdNameSpace) stream.id = storeIdNameSpace + stream.id;
+    if (storeIdNameSpace) stream.id = storeIdNameSpace + '-' + stream.id;
     if (typeof stream.created === 'undefined') stream.created = DataSource.UNKOWN_DATE;
     if (typeof stream.modified === 'undefined') stream.modified = DataSource.UNKOWN_DATE;
     if (typeof stream.createdBy === 'undefined') stream.createdBy = DataSource.BY_UNKOWN;
     if (typeof stream.modifiedBy === 'undefined') stream.modifiedBy = DataSource.BY_UNKOWN;
     if (! stream.children) stream.children = [];
-    if (stream.children.length > 0) _applyDefaults(storeIdNameSpace, stream.children);
+    if (stream.children.length > 0) _applyDefaults(storeIdNameSpace, stream.children, stream.id);
+    // force parentId
+    stream.parentId = parentId;
   }
 }
 
@@ -190,6 +197,26 @@ class UserEvents {
    * Add series ? do we have specific methods for series ... ? 
    */
 
+
+   /**
+   * Utility to complete a event properties with missing properties and complete streamIds.
+   * **Note** events object will be modified
+   * @property {string} storeId - to be happend to streamId with '.${storeId}-'
+   * @property {Array<Events>} events
+   * @returns null;
+   */
+  static applyDefaults(storeId, events) {
+    const storeStreamIdPrefix = storeId ? '.' + storeId + '-' : null;
+    for (let event of events) {
+      if (storeStreamIdPrefix) {
+        event.streamIds = event.streamIds.map(streamId => storeStreamIdPrefix + streamId);
+      }
+      if (typeof event.created === 'undefined') event.created = DataSource.UNKOWN_DATE;
+      if (typeof event.modified === 'undefined') event.modified = DataSource.UNKOWN_DATE;
+      if (typeof event.createdBy === 'undefined') event.createdBy = DataSource.BY_UNKOWN;
+      if (typeof event.modifiedBy === 'undefined') event.modifiedBy = DataSource.BY_UNKOWN;
+    }
+  }
 }
 
 module.exports = {

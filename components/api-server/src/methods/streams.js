@@ -59,6 +59,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
   function findAccessibleStreams(context, params, result, next) {
     // can't reuse context streams (they carry extra internal properties)
+    
     userStreamsStorage.find(context.user, {}, null, function (err, streams) {
 
       if (err) { return next(errors.unexpectedError(err)); }

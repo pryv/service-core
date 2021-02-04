@@ -5,11 +5,12 @@
  * Proprietary and confidential
  */
 /**
- * Data Source aggregator. 
- * Pack configured datasources into one
+ * Dummy Data Source. 
+ * Send predicatable static data
  */
 
 
+const { ForbiddenNoneditableAccountStreamsEdit } = require('../../../errors/src/ErrorIds');
 const {DataSource, UserStreams, UserEvents}  = require('../../interfaces/DataSource');
 
 const STORE_ID = 'dummy';
@@ -37,7 +38,8 @@ class Dummy extends DataSource {
 
 class DummyUserStreams extends UserStreams {
   async get(uid, params) {
-    const streams = [{
+    
+    let streams = [{
       id: 'uid',
       name: uid,
     }, {
@@ -53,13 +55,47 @@ class DummyUserStreams extends UserStreams {
         }
       ]
     }];
+
+    
+
     UserStreams.applyDefaults(STORE_ID, streams);
+    
+    function findStream(streamId, arrayOfStreams) {
+      for (let stream of arrayOfStreams) {
+        if (stream.id === streamId) return stream;
+        if (stream.children) {
+         const found = findStream(streamId, stream.children);
+         if (found) return found;
+        }
+      }
+      return null;
+    }
+
+    if (params.parentId) { // filter tree
+      const found = findStream('.' + STORE_ID + '-' + params.parentId, streams);
+      if (found) {
+        streams = found.children;
+      } else {
+        streams = [];
+      }
+    }
+
+    
     return streams;
   }
 }
 
 class DummyUserEvents extends UserEvents {
-  
+  async get(uid, params) {
+    const events = [{
+      id: 'dummyevent0',
+      type: 'note/txt',
+      content: 'hello',
+      time: Date.now() / 1000,
+    }];
+    UserEvents.applyDefaults(STORE_ID, events);
+    return events;
+  }
 }
 
 module.exports = Dummy;
