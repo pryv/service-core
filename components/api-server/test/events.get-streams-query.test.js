@@ -368,9 +368,9 @@ describe('events.get streams query', function () {
       const res = await server.request()
         .get(basePathEvent)
         .set('Authorization', tokenRead)
-        .query({ streams: 'A' });
+        .query({ streams: ['A'] });
 
-      console.log('EEEEEE', res.body.stores);
+      console.log('EEEEEE', res.body);
 
       assert.exists(res.body.events)
       const events = res.body.events;

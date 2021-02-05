@@ -213,8 +213,8 @@ module.exports = function (
     }
 
     if (params.streams === null) { // all streams
-      if (accessibleStreamsIds.length > 0) params.streams = [{ any: accessibleStreamsIds }];
-
+      if (accessibleStreamsIds.length > 0) 
+        params.streams = [{ any: accessibleStreamsIds, storeId: 'local' }];
       return next();
     }
 
@@ -249,14 +249,29 @@ module.exports = function (
     next();
   }
 
-  async function openEventStream(context, params, result, next) {
-
-  }
-
   async function findEventsFromStore(context, params, result, next) {
-    return next();
+    if (params.streams === null) return next();
 
-    console.log('XXXX', params.streams);
+
+    console.log(params.streams);
+    const storeQueryMap = {};
+    for (let streamQuery of params.streams) {
+      const storeId = streamQuery.storeId;
+      if (! storeId) {
+        console.error('Missing storeId' + params.streams);
+        throw(new Error("Missing storeId" + params.streams));
+      }
+      if (! storeQueryMap[storeId]) storeQueryMap[storeId] = [];
+      delete streamQuery.storeId;
+      storeQueryMap[storeId].push(streamQuery);
+    }
+
+    // set params.query to "before store states"
+    params.streamsQuery = storeQueryMap.local;
+    delete storeQueryMap.local;
+
+    console.log('XXXX', storeQueryMap, params.streamsQuery);
+    return next();
     const Stream = require('stream')
 
     const readable = new Stream.Readable({objectMode: true});
