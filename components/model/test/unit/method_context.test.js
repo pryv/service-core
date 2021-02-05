@@ -77,7 +77,8 @@ describe('MethodContext', () => {
       const result = await mc.retrieveAccessFromId(storage, 'accessId');
       
       assert.strictEqual(mc.accessToken, 'tokenFromAccess');
-      assert.strictEqual(mc.access, result);
+      delete mc.access.originalAccess;
+      assert.deepEqual(mc.access, result);
     });
   });
 });

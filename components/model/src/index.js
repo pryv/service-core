@@ -7,7 +7,7 @@
 // @flow
 
 module.exports = {
-  accessLogic: require('./accessLogic'),
+  AccessLogic: require('./AccessLogic'),
   MethodContext: require('./MethodContext')
 };
 

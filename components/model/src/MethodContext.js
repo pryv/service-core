@@ -11,7 +11,7 @@ const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 import type { Access, User, Stream } from 'storage';
 
-const accessLogic = require('./accessLogic');
+const AccessLogic = require('./AccessLogic');
 const APIError = require('errors').APIError;
 const errors = require('errors').factory;
 const treeUtils = require('utils').treeUtils;
@@ -135,10 +135,6 @@ class MethodContext {
       if (customAuthStep != null)
         await this.performCustomAuthStep(customAuthStep);
 
-      // Mix in `accessLogic` into our access object. 
-      // TODO refactor to not use a mixin; If this fails, it'll be hard to debug.
-      _.extend(this.access, accessLogic);
-
       // those 2 last are executed in callbatch for each call.
 
       // Load the streams we can access.
@@ -176,7 +172,7 @@ class MethodContext {
       throw errors.invalidAccessToken(
         'Cannot find access from token.', 403);
 
-    this.access = access;
+    this.access = new AccessLogic(access);
 
     this.checkAccessValid(this.access);
   }
@@ -205,7 +201,7 @@ class MethodContext {
     if (access == null)
       throw errors.invalidAccessToken('Cannot find access matching id.');
 
-    this.access = access;
+    this.access = new AccessLogic(access);
     this.accessToken = access.token;
 
     this.checkAccessValid(access);

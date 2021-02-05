@@ -208,7 +208,7 @@ class MetadataLoader {
   forSeries(userName: string, eventId: string, accessToken: string): Promise<SeriesMetadata> {
     const storage = this.storage; 
     
-    // Retrieve Access (including accessLogic)
+    // Retrieve Access (including AccessLogic)
     const customAuthStep = null;
     const methodContext = new MethodContext(
       userName,

@@ -55,7 +55,7 @@ module.exports = function (context, callback) {
           const accessesCursor = accessesCol.find();
           let completed = false;
           async.until(function () { return completed; }, migrateAccesss,
-            context.stepCallbackFn('migrating accesss structure', stepDone));
+            context.stepCallbackFn('migrating access structure', stepDone));
 
           function migrateAccesss(accessDone) {
             accessesCursor.next(function (err, access) {

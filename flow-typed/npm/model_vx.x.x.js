@@ -22,7 +22,7 @@ declare module 'model' {
  * require those files directly. Feel free to delete any files that aren't
  * needed.
  */
-declare module 'model/src/accessLogic' {
+declare module 'model/src/AccessLogic' {
   declare module.exports: any;
 }
 
@@ -39,8 +39,8 @@ declare module 'model/test/unit/method_context.test' {
 }
 
 // Filename aliases
-declare module 'model/src/accessLogic.js' {
-  declare module.exports: $Exports<'model/src/accessLogic'>;
+declare module 'model/src/AccessLogic.js' {
+  declare module.exports: $Exports<'model/src/AccessLogic'>;
 }
 declare module 'model/src/index' {
   declare module.exports: $Exports<'model/src'>;

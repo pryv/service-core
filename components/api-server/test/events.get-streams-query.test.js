@@ -370,8 +370,6 @@ describe('events.get streams query', function () {
         .set('Authorization', tokenRead)
         .query({ streams: ['A'] });
 
-      console.log('EEEEEE', res.body);
-
       assert.exists(res.body.events)
       const events = res.body.events;
       assert.equal(events.length, 6);

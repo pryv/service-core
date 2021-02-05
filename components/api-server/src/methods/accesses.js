@@ -160,16 +160,16 @@ module.exports = function produceAccessesApiMethods(
       ));
     }
     
+    
     const access = context.access;
     if (access == null) 
       return next(errors.unexpectedError('AF: Access must not be null here.'));
-
+      
     if (! access.canCreateAccess(params)) {
       return next(errors.forbidden(
         'Your access token has insufficient permissions ' +
         'to create this new access.'));
     }
-
     if (params.token != null) {
       params.token = slugify(params.token);
       if (string.isReservedId(params.token)) {

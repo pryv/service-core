@@ -250,7 +250,7 @@ module.exports = function (
     if (params.streams === null) return next();
 
 
-    console.log(params.streams);
+    //console.log(params.streams);
     const storeQueryMap = {};
     for (let streamQuery of params.streams) {
       const storeId = streamQuery.storeId;
