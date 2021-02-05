@@ -254,6 +254,8 @@ module.exports = function (
   }
 
   async function findEventsFromStore(context, params, result, next) {
+    return next();
+
     console.log('XXXX', params.streams);
     const Stream = require('stream')
 

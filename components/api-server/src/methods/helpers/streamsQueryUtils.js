@@ -153,8 +153,8 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expand, allAuthorizedSt
 
     // any
     if (streamQuery.any) {
-      if (streamQuery.any === '*' && allAccessibleStreams.length > 0) {
-        res.any = allAccessibleStreams;
+      if (streamQuery.any === '*' && allAccessibleStreams.length > 0) { // "*" is only for local streams
+        res.any = allAccessibleStreams.filter( streamId => (StreamsUtils.sourceIdForStreamId(streamId) === 'local'));
         containsAtLeastOneInclusion = true;
       } else {
         const expandedSet = expandSet(streamQuery.any);
