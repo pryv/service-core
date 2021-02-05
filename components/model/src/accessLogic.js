@@ -214,6 +214,45 @@ const accessLogic = module.exports = {
     return level && isHigherOrEqualLevel(level, 'manage');
   },
 
+  /*
+  * Whether events in the given stream and tags context can be read.
+  *
+  * @param streamId
+  * @param tags
+  * @returns {Boolean}
+  */
+ canReadContext: function(streamId, tags) {
+    return this.canReadStream(streamId) &&
+      (this.canReadAllTags() ||
+        _.some(tags || [], this.canReadTag.bind(this)));
+  },
+
+  /**
+   * Whether events in the given stream and tags context can be updated/deleted.
+   *
+   * @param streamId
+   * @param tags
+   * @returns {Boolean}
+   */
+  canUpdateContext: function(streamId, tags) {
+    return this.canUpdateStream(streamId) ||
+      (this.canUpdateTag('*') ||
+        _.some(tags || [], this.canUpdateTag.bind(this)));
+  },
+
+  /**
+   * Whether events in the given stream and tags context can be created/updated/deleted.
+   *
+   * @param streamId
+   * @param tags
+   * @returns {Boolean}
+   */
+  canContributeToContext: function(streamId, tags) {
+    return this.canContributeToStream(streamId) ||
+      (this.canContributeToTag('*') ||
+        _.some(tags || [], this.canContributeToTag.bind(this)));
+  },
+
   // Whether the current access delete manage the given access
   canDeleteAccess: function (access) {
     // The account owner can do everything. 

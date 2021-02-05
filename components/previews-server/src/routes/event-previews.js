@@ -61,7 +61,7 @@ module.exports = function (
       
       let canReadEvent = false;
       for (let i = 0; i < event.streamIds.length; i++) { // ok if at least one
-        if (context.canReadContext(event.streamIds[i], event.tags)) {
+        if (context.access.canReadContext(event.streamIds[i], event.tags)) {
           canReadEvent = true;
           break;
         }

@@ -84,13 +84,13 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
 
       if (! context.access.isPersonal()) {
         streams = treeUtils.filterTree(streams, true /*keep orphans*/, function (stream) {
-          return context.canListStream(stream.id);
+          return context.access.canListStream(stream.id);
         });
       }
 
       // hide inaccessible parent ids
       streams.forEach(function (stream) {
-        if (! context.canListStream(stream.parentId)) {
+        if (! context.access.canListStream(stream.parentId)) {
           delete stream.parentId;
         }
       });
@@ -131,7 +131,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   }
 
   function applyPrerequisitesForCreation(context, params, result, next) {
-    if (!context.canManageStream(params.parentId)) {
+    if (!context.access.canManageStream(params.parentId)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 
@@ -230,12 +230,12 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         )
       ));
     }
-    if (!context.canManageStream(stream.id)) {
+    if (!context.access.canManageStream(stream.id)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 
     // check target parent if needed
-    if (params.update.parentId && !context.canManageStream(params.update.parentId)) {
+    if (params.update.parentId && !context.access.canManageStream(params.update.parentId)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 
@@ -288,7 +288,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
       return process.nextTick(next.bind(null,
         errors.unknownResource('stream', params.id)));
       }
-    if (! context.canManageStream(context.stream.id)) {
+    if (! context.access.canManageStream(context.stream.id)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 

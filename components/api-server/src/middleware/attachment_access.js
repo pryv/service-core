@@ -32,7 +32,7 @@ function attachmentsAccessMiddleware(userEventsStorage, req, res, next) {
     }
     let canReadEvent = false;
     for (let i = 0; i < event.streamIds.length ; i++) {
-      if (req.context.canReadStream(event.streamIds[i])) {
+      if (req.context.access.canReadStream(event.streamIds[i])) {
         canReadEvent = true;
         break;
       }

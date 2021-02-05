@@ -411,7 +411,7 @@ module.exports = function (
 
       let canReadEvent = false;
       for (let i = 0; i < event.streamIds.length; i++) { // ok if at least one
-        if (context.canReadContext(event.streamIds[i], event.tags)) {
+        if (context.access.canReadContext(event.streamIds[i], event.tags)) {
           canReadEvent = true;
           break;
         }
@@ -533,7 +533,7 @@ module.exports = function (
 
   function verifycanContributeToContext (context, params, result, next) {
     for (let i = 0; i < context.content.streamIds.length; i++) { // refuse if any context is not accessible
-      if (! context.canContributeToContext(context.content.streamIds[i], context.content.tags)) {
+      if (! context.access.canContributeToContext(context.content.streamIds[i], context.content.tags)) {
         return next(errors.forbidden());
       }
     }
@@ -721,7 +721,7 @@ module.exports = function (
       // 1. check that have contributeContext on at least 1 existing streamId
       let canUpdateEvent = false;
       for (let i = 0; i < event.streamIds.length ; i++) {
-        if (context.canUpdateContext(event.streamIds[i], event.tags)) {
+        if (context.access.canUpdateContext(event.streamIds[i], event.tags)) {
           canUpdateEvent = true;
           break;
         }
@@ -733,7 +733,7 @@ module.exports = function (
         // 2. check that streams we add have contribute access
         const streamIdsToAdd = _.difference(eventUpdate.streamIds, event.streamIds);
         for (let i=0; i<streamIdsToAdd.length; i++) {
-          if (! context.canUpdateContext(streamIdsToAdd[i], event.tags)) {
+          if (! context.access.canUpdateContext(streamIdsToAdd[i], event.tags)) {
             return next(errors.forbidden());
           }
         }
@@ -743,7 +743,7 @@ module.exports = function (
         const streamIdsToRemove = _.difference(event.streamIds, eventUpdate.streamIds);
 
         for (let i = 0; i < streamIdsToRemove.length ; i++) {
-          if (! context.canUpdateContext(streamIdsToRemove[i], event.tags)) {
+          if (! context.access.canUpdateContext(streamIdsToRemove[i], event.tags)) {
             return next(errors.forbidden());
           }
         }
@@ -1425,7 +1425,7 @@ module.exports = function (
       let canDeleteEvent = false;
 
       for (let i = 0; i < event.streamIds.length; i++) {
-        if (context.canUpdateContext(event.streamIds[i], event.tags)) {
+        if (context.access.canUpdateContext(event.streamIds[i], event.tags)) {
           canDeleteEvent = true;
           break;
         }
