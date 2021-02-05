@@ -131,7 +131,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
   }
 
   function applyPrerequisitesForCreation(context, params, result, next) {
-    if (!context.access.canManageStream(params.parentId)) {
+    if (!context.access.canCreateSubStream(params.parentId)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 
@@ -230,12 +230,12 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         )
       ));
     }
-    if (!context.access.canManageStream(stream.id)) {
+    if (!context.access.canUpdateStream(stream.id)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 
     // check target parent if needed
-    if (params.update.parentId && !context.access.canManageStream(params.update.parentId)) {
+    if (params.update.parentId && !context.access.canCreateSubStream(params.update.parentId)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 
@@ -288,7 +288,7 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
       return process.nextTick(next.bind(null,
         errors.unknownResource('stream', params.id)));
       }
-    if (! context.access.canManageStream(context.stream.id)) {
+    if (! context.access.canDeleteStream(context.stream.id)) {
       return process.nextTick(next.bind(null, errors.forbidden()));
     }
 

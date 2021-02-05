@@ -182,7 +182,7 @@ module.exports = function (
     
   
 
-    if (! context.access.canReadAllTags()) {
+    if (! context.access.canGetEventsWithAnyTag()) {
       var accessibleTags = Object.keys(context.access.tagPermissionsMap);
       params.tags = params.tags 
         ? _.intersection(params.tags, accessibleTags) 
@@ -196,7 +196,7 @@ module.exports = function (
     const authorizedStreamsIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, true, isAuthorizedStream), 'id');
     function isAuthorizedStream(stream) {
       if (context.access.isPersonal()) return true;
-      return context.access.canReadStream(stream.id);
+      return context.access.canGetEventsOnStream(stream.id);
     }
 
     // Accessible streams are the on that authorized && correspond to the "state" param request - ie: if state=default, trashed streams are omitted
@@ -235,7 +235,7 @@ module.exports = function (
     if (nonAuthorizedStreams.length > 0) {
       // check if one is create-only and send forbidden
       for (let i = 0; i < nonAuthorizedStreams.length; i++) {
-        if (context.access.isCreateOnlyStream(nonAuthorizedStreams[i])) {
+        if (! context.access.canGetEventsOnStream(nonAuthorizedStreams[i])) {
           return next(errors.forbidden('stream [' + nonAuthorizedStreams[i] + '] has create-only permission and cannot be read'));
         }
       }
@@ -411,7 +411,7 @@ module.exports = function (
 
       let canReadEvent = false;
       for (let i = 0; i < event.streamIds.length; i++) { // ok if at least one
-        if (context.access.canReadContext(event.streamIds[i], event.tags)) {
+        if (context.access.canGetEventsOnStreamAndWithTags(event.streamIds[i], event.tags)) {
           canReadEvent = true;
           break;
         }
@@ -459,7 +459,7 @@ module.exports = function (
     validateEventContentAndCoerce,
     doesEventBelongToTheAccountStream,
     validateAccountStreamsEventCreation,
-    verifycanContributeToContext,
+    verifycanCreateEventsOnStreamAndWIthTags,
     appendAccountStreamsEventDataForCreation,
     createEvent,
     handleEventsWithActiveStreamId,
@@ -531,9 +531,9 @@ module.exports = function (
   }
 
 
-  function verifycanContributeToContext (context, params, result, next) {
+  function verifycanCreateEventsOnStreamAndWIthTags (context, params, result, next) {
     for (let i = 0; i < context.content.streamIds.length; i++) { // refuse if any context is not accessible
-      if (! context.access.canContributeToContext(context.content.streamIds[i], context.content.tags)) {
+      if (! context.access.canCreateEventsOnStreamAndWIthTags(context.content.streamIds[i], context.content.tags)) {
         return next(errors.forbidden());
       }
     }
@@ -721,7 +721,7 @@ module.exports = function (
       // 1. check that have contributeContext on at least 1 existing streamId
       let canUpdateEvent = false;
       for (let i = 0; i < event.streamIds.length ; i++) {
-        if (context.access.canUpdateContext(event.streamIds[i], event.tags)) {
+        if (context.access.canUpdateEventsOnStreamAndWIthTags(event.streamIds[i], event.tags)) {
           canUpdateEvent = true;
           break;
         }
@@ -733,7 +733,7 @@ module.exports = function (
         // 2. check that streams we add have contribute access
         const streamIdsToAdd = _.difference(eventUpdate.streamIds, event.streamIds);
         for (let i=0; i<streamIdsToAdd.length; i++) {
-          if (! context.access.canUpdateContext(streamIdsToAdd[i], event.tags)) {
+          if (! context.access.canUpdateEventsOnStreamAndWIthTags(streamIdsToAdd[i], event.tags)) {
             return next(errors.forbidden());
           }
         }
@@ -743,7 +743,7 @@ module.exports = function (
         const streamIdsToRemove = _.difference(event.streamIds, eventUpdate.streamIds);
 
         for (let i = 0; i < streamIdsToRemove.length ; i++) {
-          if (! context.access.canUpdateContext(streamIdsToRemove[i], event.tags)) {
+          if (! context.access.canUpdateEventsOnStreamAndWIthTags(streamIdsToRemove[i], event.tags)) {
             return next(errors.forbidden());
           }
         }
@@ -1425,7 +1425,7 @@ module.exports = function (
       let canDeleteEvent = false;
 
       for (let i = 0; i < event.streamIds.length; i++) {
-        if (context.access.canUpdateContext(event.streamIds[i], event.tags)) {
+        if (context.access.canUpdateEventsOnStreamAndWIthTags(event.streamIds[i], event.tags)) {
           canDeleteEvent = true;
           break;
         }
