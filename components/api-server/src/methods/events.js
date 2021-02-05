@@ -267,7 +267,7 @@ module.exports = function (
     params.streamsQuery = storeQueryMap.local;
     delete storeQueryMap.local;
 
-    console.log('XXXX', storeQueryMap, params.streamsQuery);
+    //console.log('XXXX', storeQueryMap, params.streamsQuery);
     return next();
     const Stream = require('stream')
 

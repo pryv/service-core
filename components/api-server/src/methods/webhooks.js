@@ -41,8 +41,7 @@ export type WebhooksSettingsHolder = {
 
 type Access = {
   id: string,
-  isApp(): boolean,
-  isPersonal(): boolean,
+  isApp(): Boolean
 };
 
 module.exports = function produceWebhooksApiMethods(
@@ -105,25 +104,11 @@ module.exports = function produceWebhooksApiMethods(
   // CREATION
 
   api.register('webhooks.create',
+    commonFns.basicAccessAuthorizationCheck,
     commonFns.getParamsValidation(methodsSchema.create.params),
-    forbidPersonalAccess,
     createWebhook,
     bootWebhook,
   );
-
-  function forbidPersonalAccess(context: MethodContext, params: mixed, result: Result, next: ApiCallback) {
-    const currentAccess: Access = context.access;
-
-    if (currentAccess == null) {
-      return next(new Error('AF: Access cannot be null at this point.'));
-    }
-    if (currentAccess.isPersonal()) {
-      return next(errors.forbidden(
-        'Personal Accesses cannot create Webhooks. Please use an App Access.'
-      ));
-    }
-    next();
-  }
 
   async function createWebhook(context: MethodContext, params: any, result: Result, next: ApiCallback) {
     context.initTrackingProperties(params);

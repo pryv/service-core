@@ -134,6 +134,45 @@ const accessLogic = module.exports = {
     this.tagPermissionsMap[perm.tag] = perm;
   },
 
+  /** ---------- GENERIC --------------- */
+
+  can: function(calledMethodId) {
+    switch (calledMethodId) {
+      // -- Account
+      case 'account.get':
+      case 'account.update':
+      case 'account.changePassword':
+        return this.isPersonal();
+
+      // -- Followed Slice
+      case 'followedSlices.get':
+      case 'followedSlices.create':
+      case 'followedSlices.update':
+      case 'followedSlices.delete':
+        return this.isPersonal();
+
+      // -- Accesses
+      case 'accesses.checkApp':
+        return this.isPersonal();
+      case 'accesses.get':
+      case 'accesses.create':
+        return ! this.isShared();
+
+      // -- Profile
+      case 'profile.get':
+      case 'profile.update':
+        return this.isPersonal();
+      
+      // -- Webhooks
+      case 'webhooks.create':
+        return ! this.isPersonal();
+      
+      default:
+        throw(new Error('Unkown method.id: ' + calledMethodId));
+    }
+  },
+
+  /** ----------- ACCESSES -------------- */
 
   canCreateAccessForAccountStream: function (permissionLevel) {
     return isHigherOrEqualLevel(this.PERMISSION_LEVEL_CONTRIBUTE, permissionLevel);
@@ -147,6 +186,16 @@ const accessLogic = module.exports = {
     if (level === 'create-only') return false;
     return level && isHigherOrEqualLevel(level, 'read');
   },
+
+  // -- accesses.get
+  canListAnyAccess: function() {
+    return this.isPersonal();
+  },
+
+
+
+
+  /** ------------ EVENTS --------------- */
 
   canGetEventsOnStream: function (streamId) {
     if (this.isPersonal()) return true;
