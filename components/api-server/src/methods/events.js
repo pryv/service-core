@@ -34,11 +34,14 @@ const {TypeRepository, isSeriesType} = require('business').types;
 
 const { getLogger, getConfigUnsafe } = require('@pryv/boiler');
 
+const { getStore } = require('stores');
+
 const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
 const NATS_UPDATE_EVENT = require('utils').messaging
   .NATS_UPDATE_EVENT;
 const NATS_DELETE_EVENT = require('utils').messaging
   .NATS_DELETE_EVENT;
+const { ResultError } = require('influx');
 
 const BOTH_STREAMID_STREAMIDS_ERROR = 'It is forbidden to provide both "streamId" and "streamIds", please opt for "streamIds" only.';
 
@@ -89,6 +92,7 @@ module.exports = function (
     validateStreamsQuery,
     applyDefaultsForRetrieval,
     checkStreamsPermissionsAndApplyToScope,
+    findEventsFromStore,
     findAccessibleEvents,
     includeDeletionsIfRequested);
 
@@ -241,6 +245,27 @@ module.exports = function (
         'streams',
         nonAuthorizedStreams));
     }
+
+    next();
+  }
+
+  async function openEventStream(context, params, result, next) {
+
+  }
+
+  async function findEventsFromStore(context, params, result, next) {
+    console.log('XXXX', params.streams);
+    const Stream = require('stream')
+
+    const readable = new Stream.Readable({objectMode: true});
+    result.addStream('stores', readable);
+
+    const items = [{id: 'a'}, {id: 'b'},{id: 'c'}]
+    items.forEach(item => readable.push(item))
+
+    // no more data
+    readable.push(null)
+
 
     next();
   }

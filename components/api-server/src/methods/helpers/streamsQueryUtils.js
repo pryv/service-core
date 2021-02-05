@@ -80,8 +80,12 @@ function validateStreamsQuery(arrayOfQueries) {
  * @param {StreamQuery} streamQuery 
  */
 function validateStreamsQuerySchema(arrayOfQueries, streamQuery) {
-  let store; // only one store per query
-
+  function checkStore(streamId) {
+    // queries must be grouped by store 
+    const thisStore = StreamsUtils.sourceIdForStreamId(streamId);
+    if (! streamQuery.storeId) streamQuery.storeId = thisStore;
+    if (streamQuery.storeId !== thisStore) throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" streams query: "' + objectToString(streamQuery) +'" queries must me grouped by stores.');
+  }
   if (! streamQuery.any && ! streamQuery.all) {
     throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" streams query: "' + objectToString(streamQuery) +'" must contain at least one of "any" or "all" property.');
   }
@@ -92,6 +96,7 @@ function validateStreamsQuerySchema(arrayOfQueries, streamQuery) {
   
     if (! Array.isArray(arrayOfStreamIds)) {
       if (property === 'any' && arrayOfStreamIds === '*') {
+        checkStore('*'); // will be handled as local
         continue; // stop here and go to next property
       } else {
         throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" value of : "' + property +'" must be an array. Found: "' + objectToString(arrayOfStreamIds) + '"' );
@@ -101,11 +106,7 @@ function validateStreamsQuerySchema(arrayOfQueries, streamQuery) {
     for (item of arrayOfStreamIds) {
       if (typeof item !== 'string')
         throw ('Error in "streams" parameter[' + objectToString(arrayOfQueries) + '] all items of ' + objectToString(arrayOfStreamIds) +' must be streamIds. Found: ' + objectToString(item) );
-      
-      // queries must be grouped by store 
-      const thisStore = StreamsUtils.sourceIdForStreamId(item);
-      if (! store) store = thisStore;
-      if (store !== thisStore) throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" streams query: "' + objectToString(streamQuery) +'" queries must me grouped by stores.');
+      checkStore(item);
     }
   }
 }
@@ -148,7 +149,7 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expand, allAuthorizedSt
   function expandAndTransformStreamQuery(streamQuery) {
     let containsAtLeastOneInclusion = false; 
 
-    const res = { };
+    const res = { storeId: streamQuery.storeId };
 
     // any
     if (streamQuery.any) {

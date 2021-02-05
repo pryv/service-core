@@ -100,17 +100,18 @@ describe('events.get streams query', function () {
 
       it('[D2B5] must convert strings array to expanded array inside [{any: []}]', async function () {
         const res = validateQuery(['A', 'B']);
-        assert.deepEqual(res, [{ any: ['A', 'B', 'C'] }]);
+        console.log(res);
+        assert.deepEqual(res, [{ any: ['A', 'B', 'C'], storeId: 'local' }]);
       });
 
       it('[JZWE] must convert single string "B" to [{any: ["B"]}]', async function () {
         const res = validateQuery('B');
-        assert.deepEqual(res, [{ any: ['B'] }]);
+        assert.deepEqual(res, [{ any: ['B'], storeId: 'local'  }]);
       });
 
       it('[8VV4] must convert streams query with only "any" property to expanded streams query inside array [{any: []}])', async function () {
         const res = validateQuery({ any: ['A', 'B']});
-        assert.deepEqual(res, [{ any: ['A', 'B', 'C']}]);
+        assert.deepEqual(res, [{ any: ['A', 'B', 'C'], storeId: 'local' }]);
       });
 
       it('[HFT2] must convert streams query property "all" to "and: [{any..}, {any..}]) with each containing expanded streamIds', async function () {
@@ -120,28 +121,30 @@ describe('events.get streams query', function () {
             and: [
               {any: ['D', 'E', 'F']}, 
               {any: ['F']}
-            ]
+            ], 
+            storeId: 'local' 
           }]);
       });
 
       it('[2W2K] must accept two streams queries expanding them', async function () {
         const res = validateQuery([{ any: ['A'] }, { any: ['D'] }]);
-        assert.deepEqual(res, [{ any: ['A', 'B', 'C'] }, { any: ['D', 'E', 'F'] }]);
+        assert.deepEqual(res, [{ any: ['A', 'B', 'C'], storeId: 'local'  }, { any: ['D', 'E', 'F'], storeId: 'local'  }]);
       });
 
       it('[2EF9] must convert streams query {any: "*"} to [{any: [all accessible streams]}]', async function () {
         const res = validateQuery({ any: '*' });
-        assert.deepEqual(res, [{ any: ALL_ACCESSIBLE_STREAMS }]);
+        assert.deepEqual(res, [{ any: ALL_ACCESSIBLE_STREAMS, storeId: 'local'  }]);
       });
 
       it('[TUZT] must convert streams query {any: [*], not: ["A"]} to [{any: [all accessible streams], [expanded "A"]}]', async function () {
         const res = validateQuery({ any: '*', not: ['A'] });
-        assert.deepEqual(res, [{ any: ALL_ACCESSIBLE_STREAMS, and: [ { not: [ 'A', 'B', 'C' ] } ] }]);
+        assert.deepEqual(res, [{ any: ALL_ACCESSIBLE_STREAMS, and: [ { not: [ 'A', 'B', 'C' ], storeId: 'local'  } ] }]);
       });
 
       it('[NHGF] must convert streams query {any: [*], all: ["D"], not: ["A"]} to [{any: [all accessible streams], and: [ any: [expanded "D"] , not: [expanded "A"]}]', async function () {
         const res = validateQuery({ any: '*', all: ['D'], not: ['A'] });
         assert.deepEqual(res, [{ 
+          storeId: 'local',
           any: ALL_ACCESSIBLE_STREAMS, 
           and: [ 
             { any: [ 'D', 'E', 'F' ] }, 
@@ -153,7 +156,7 @@ describe('events.get streams query', function () {
 
       it('[N3Q6] must convert {any: "*", not: ["A"]} to [{any: [all accessible streams], not: [expanded "A"]}]', async function () {
         const res = validateQuery({ any: '*', not: ['A'] });
-        assert.deepEqual(res, [{ any: ALL_ACCESSIBLE_STREAMS, and: [ { not: [ 'A', 'B', 'C' ] } ] }]);
+        assert.deepEqual(res, [{ any: ALL_ACCESSIBLE_STREAMS, and: [ { not: [ 'A', 'B', 'C' ] } ], storeId: 'local'  }]);
       });
 
 
