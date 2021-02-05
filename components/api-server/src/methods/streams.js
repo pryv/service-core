@@ -82,11 +82,9 @@ module.exports = function (api, userStreamsStorage, userEventsStorage, userEvent
         });
       }
 
-      if (! context.access.isPersonal()) {
-        streams = treeUtils.filterTree(streams, true /*keep orphans*/, function (stream) {
-          return context.access.canListStream(stream.id);
-        });
-      }
+      streams = treeUtils.filterTree(streams, true /*keep orphans*/, function (stream) {
+        return context.access.canListStream(stream.id);
+      });
 
       // hide inaccessible parent ids
       streams.forEach(function (stream) {

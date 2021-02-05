@@ -179,8 +179,6 @@ module.exports = function (
       // limit to 20 items by default
       params.limit = 20;
     }
-    
-  
 
     if (! context.access.canGetEventsWithAnyTag()) {
       var accessibleTags = Object.keys(context.access.tagPermissionsMap);
@@ -195,7 +193,6 @@ module.exports = function (
     // Get all authorized streams (the ones that could be acessed) - Pass by all the tree including childrens
     const authorizedStreamsIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, true, isAuthorizedStream), 'id');
     function isAuthorizedStream(stream) {
-      if (context.access.isPersonal()) return true;
       return context.access.canGetEventsOnStream(stream.id);
     }
 

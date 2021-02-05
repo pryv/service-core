@@ -149,6 +149,7 @@ const accessLogic = module.exports = {
   },
 
   canGetEventsOnStream: function (streamId) {
+    if (this.isPersonal()) return true;
     if (SystemStreamsSerializer.isAccountStreamId(streamId)) {
       return this.canReadAccountStream(streamId);
     }
@@ -158,6 +159,7 @@ const accessLogic = module.exports = {
   },
 
   canListStream: function (streamId) {
+    if (this.isPersonal()) return true;
     const level = this._getStreamPermissionLevel(streamId);
     return level && isHigherOrEqualLevel(level, 'read');
   },
@@ -176,17 +178,20 @@ const accessLogic = module.exports = {
 
   /** @private internal  */
   _canManageStream: function (streamId) {
+    if (this.isPersonal()) return true;
     const level = this._getStreamPermissionLevel(streamId || undefined);
     if (level === 'create-only') return false;
     return (level != null) && isHigherOrEqualLevel(level, 'manage');
   },
 
   canCreateEventsOnStream: function (streamId) {
+    if (this.isPersonal()) return true;
     const level = this._getStreamPermissionLevel(streamId);
     return level && isHigherOrEqualLevel(level, 'contribute');
   },
 
   canUpdateEventsOnStream: function (streamId) {
+    if (this.isPersonal()) return true;
     const level = this._getStreamPermissionLevel(streamId);
     if (level === 'create-only') return false;
     return this.canCreateEventsOnStream(streamId);
@@ -198,6 +203,7 @@ const accessLogic = module.exports = {
 
   /** kept private as not used elsewhere */
   _canGetEventsWithTag: function (tag) {
+    if (this.isPersonal()) return true;
     const level = this._getTagPermissionLevel(tag);
     if (level === 'create-only') return false;
     return level && isHigherOrEqualLevel(level, 'read');
@@ -205,12 +211,14 @@ const accessLogic = module.exports = {
 
   /** kept private as not used elsewhere */
   _canCreateEventsWithTag: function (tag) {
+    if (this.isPersonal()) return true;
     const level = this._getTagPermissionLevel(tag);
     return level && isHigherOrEqualLevel(level, 'contribute');
   },
 
   /** kept private as not used elsewhere */
   _canUpdateEventWithTag: function (tag) {
+    if (this.isPersonal()) return true;
     const level = this._getTagPermissionLevel(tag);
     if (level === 'create-only') return false;
     return this._canCreateEventsWithTag(tag);
@@ -224,6 +232,7 @@ const accessLogic = module.exports = {
   * @returns {Boolean}
   */
  canGetEventsOnStreamAndWithTags: function(streamId, tags) {
+  if (this.isPersonal()) return true;
     return this.canGetEventsOnStream(streamId) &&
       (this.canGetEventsWithAnyTag() ||
         _.some(tags || [], this._canGetEventsWithTag.bind(this)));
@@ -237,6 +246,7 @@ const accessLogic = module.exports = {
    * @returns {Boolean}
    */
   canUpdateEventsOnStreamAndWIthTags: function(streamId, tags) {
+    if (this.isPersonal()) return true;
     return this.canUpdateEventsOnStream(streamId) ||
       (this._canUpdateEventWithTag('*') ||
         _.some(tags || [], this._canUpdateEventWithTag.bind(this)));
@@ -250,6 +260,7 @@ const accessLogic = module.exports = {
    * @returns {Boolean}
    */
   canCreateEventsOnStreamAndWIthTags: function(streamId, tags) {
+    if (this.isPersonal()) return true;
     return this.canCreateEventsOnStream(streamId) ||
       (this._canCreateEventsWithTag('*') ||
         _.some(tags || [], this._canCreateEventsWithTag.bind(this)));
