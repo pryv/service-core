@@ -25,6 +25,9 @@ const streamsQueryUtils = require('../src/methods/helpers/streamsQueryUtils');
  * 
  * T--t (trashed stream)
  * 
+ * .account
+ *  |.account-email
+ * 
  * A,D => ad, be, fc, a, b, c, d, e, f
  * A,E => ad, be, fc, a, b, c, e
  * A,&B => be, b
@@ -32,7 +35,10 @@ const streamsQueryUtils = require('../src/methods/helpers/streamsQueryUtils');
  * T => t
  */
 
-const STREAMS = { A: {}, B: { parentId: 'A' }, C: { parentId: 'A' }, D: {}, E: { parentId: 'D' }, F: { parentId: 'D' }, T: { trashed: true } };
+const STREAMS = { 
+  A: {}, B: { parentId: 'A' }, C: { parentId: 'A' }, D: {}, E: { parentId: 'D' }, F: { parentId: 'D' }, T: { trashed: true }, 
+  '.account': {}, '.account-email': { parentId: '.account'}
+};
 const EVENTS = {
   ad: { streamIds: ['A', 'D'] },
   be: { streamIds: ['B', 'E'] },
@@ -155,6 +161,31 @@ describe('events.get streams query', function () {
         const res = validateQuery({ any: ['T'], not: ['A'] });
         assert.deepEqual(res, null);
       });
+
+      describe('with multiple stores', function () { 
+        
+        it('[U6GS] group query streamIds per store', async function () {
+          const res = streamsQueryUtils.transformArrayOfStringsToStreamsQuery(['A', '.account']);
+          assert.deepEqual(res, [{ any: ['A']},{ any: ['.account']}]);
+        });
+
+        it('[I7GF] should throw an error if two different store are mixed in a query item', async function () {
+          try {
+            const res = validateQuery([{ any: ['A', '.account'] }]);
+            assert(false);
+          } catch (e) {
+            assert.include(e, 'queries must me grouped by stores');
+          }
+        });
+
+        it('[ZUTR] should expand queries from differnt store', async function () {
+          const res = validateQuery([{ any: ['A']}, { any: ['.account'] }]);
+          console.log(res);
+        });
+
+      });
+
+
     });
 
     describe('exception and errors', function () {
@@ -331,6 +362,9 @@ describe('events.get streams query', function () {
         .get(basePathEvent)
         .set('Authorization', tokenRead)
         .query({ streams: 'A' });
+
+      console.log('EEEEEE', res.body.stores);
+
       assert.exists(res.body.events)
       const events = res.body.events;
       assert.equal(events.length, 6);

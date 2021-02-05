@@ -5,6 +5,7 @@
  * Proprietary and confidential
  */
 const { DataSource } = require('../../interfaces/DataSource');
+const LOCAL_STORE = 'local';
 
 /**
  * Create a Stream object from a DataSource 
@@ -23,7 +24,17 @@ function sourceToStream(source, extraProperties) {
   }, extraProperties);
 }
 
+/**
+ * Get the sourceId related to this stream
+ */
+function sourceIdForStreamId(streamId) {
+  if (streamId.indexOf('.') !== 0) return LOCAL_STORE;
+  const dashPos = streamId.indexOf('-');
+  return streamId.substr(1, (dashPos > 0) ? (dashPos - 1) : undefined); // fastest against regexp and split 40x
+}
+
 
 module.exports = {
-  sourceToStream: sourceToStream
+  sourceToStream: sourceToStream,
+  sourceIdForStreamId: sourceIdForStreamId
 }

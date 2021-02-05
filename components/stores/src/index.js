@@ -27,7 +27,8 @@ async function getStore() {
 
 
 module.exports = {
-  getStore : getStore
+  getStore : getStore,
+  StreamsUtils: require('./lib/StreamsUtils')
 };
 
 
@@ -42,4 +43,4 @@ module.exports = {
   } catch (e) {
     console.log(e);
   }
-})();
+});

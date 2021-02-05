@@ -13,6 +13,8 @@
  */
 const util = require('util');
 
+const { StreamsUtils } = require('stores');
+
 /**
  * @typedef {Object} StreamQueryScoped
  * @property {Array.<StreamQuery>} streamQuery - An array of streamQueries 
@@ -46,7 +48,20 @@ function transformArrayOfStringsToStreamsQuery(arrayOfQueries) {
     throw('Error in "streams" parameter: streams queries and streamIds cannot be mixed');
   }
 
-  return [{any: streamIds}];
+  // group streamIds per "store"
+  const map = {};
+  for (let streamId of streamIds) {
+    const store = StreamsUtils.sourceIdForStreamId(streamId);
+    if (! map[store]) map[store] = [];
+    map[store].push(streamId);
+  }
+
+  const res = [];
+  for (let v of Object.values(map)) {
+    res.push({any: v});
+  }
+
+  return res;
 }
 module.exports.transformArrayOfStringsToStreamsQuery = transformArrayOfStringsToStreamsQuery;
 
@@ -65,9 +80,10 @@ function validateStreamsQuery(arrayOfQueries) {
  * @param {StreamQuery} streamQuery 
  */
 function validateStreamsQuerySchema(arrayOfQueries, streamQuery) {
-  
+  let store; // only one store per query
+
   if (! streamQuery.any && ! streamQuery.all) {
-    throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" streams query: "' + objectToString(streamQuery) +'" must contain at least one of "any" or "all" property');
+    throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" streams query: "' + objectToString(streamQuery) +'" must contain at least one of "any" or "all" property.');
   }
   const res = {};
   for (const [property, arrayOfStreamIds] of Object.entries(streamQuery)) {
@@ -85,6 +101,11 @@ function validateStreamsQuerySchema(arrayOfQueries, streamQuery) {
     for (item of arrayOfStreamIds) {
       if (typeof item !== 'string')
         throw ('Error in "streams" parameter[' + objectToString(arrayOfQueries) + '] all items of ' + objectToString(arrayOfStreamIds) +' must be streamIds. Found: ' + objectToString(item) );
+      
+      // queries must be grouped by store 
+      const thisStore = StreamsUtils.sourceIdForStreamId(item);
+      if (! store) store = thisStore;
+      if (store !== thisStore) throw ('Error in "streams" parameter "' + objectToString(arrayOfQueries) + '" streams query: "' + objectToString(streamQuery) +'" queries must me grouped by stores.');
     }
   }
 }
