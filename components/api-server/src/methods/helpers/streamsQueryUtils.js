@@ -113,13 +113,26 @@ function validateStreamsQuerySchema(arrayOfQueries, streamQuery) {
 exports.validateStreamsQuery = validateStreamsQuery;
 
 /**
+ * @callback CheckStream generic callback to get stream accesibility
+ * @param {identifier} streamId
+ * @return {boolean}
+ */
+
+ /**
+ * @callback AllAccessibleStreamsForStore
+ * @param {identifier} storeId
+ * @return {Array.<StreamId>} allAccessibleStreams for local store
+ */
+
+/**
  * @param {Array.<StreamQuery>} - array of streamQUeries 
- * @param {Function} expand should return the streamId in argument and its children (or null if does not exist).
- * @param {Array.<StreamId>} allAuthorizedStreams - the list of authorized streams
- * @param {Array.<StreamId>} allAccessibleStreams - the list of "visible" streams (i.e not trashed when state = default)
+ * @param {Function} expandStream should return the streamId in argument and its children (or null if does not exist).
+ * @param {CheckStream} isAuthorizedStream - return true is this stream is Authorized
+ * @param {CheckStream} isAccessibleStream - return true id this stream is Visible
+ * @param {AllAccessibleStreamsForStore} allAccessibleStreamsForStore - the list of "visible" streams (i.e not trashed when state = default)
  * @returns {StreamQuery} 
  */
-function checkPermissionsAndApplyToScope(arrayOfQueries, expand, allAuthorizedStreams, allAccessibleStreams) {
+function checkPermissionsAndApplyToScope(arrayOfQueries, expandStream, isAuthorizedStream, isAccessibleStream, allAccessibleStreamsForStore) {
   
   // registerStream will collect all nonAuthorized streams here during streamQuery inspection
   const nonAuthorizedStreams = [];
@@ -153,9 +166,12 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expand, allAuthorizedSt
 
     // any
     if (streamQuery.any) {
-      if (streamQuery.any === '*' && allAccessibleStreams.length > 0) { // "*" is only for local streams
-        res.any = allAccessibleStreams.filter( streamId => (StreamsUtils.sourceIdForStreamId(streamId) === 'local'));
-        containsAtLeastOneInclusion = true;
+      if (streamQuery.any === '*') { 
+        const allAccessibleStreams = allAccessibleStreamsForStore(streamQuery.storeId);
+        if (allAccessibleStreams !== null && allAccessibleStreams.length > 0) {
+          res.any = allAccessibleStreams;
+          containsAtLeastOneInclusion = true;
+        }
       } else {
         const expandedSet = expandSet(streamQuery.any);
         if (expandedSet.length > 0) {
@@ -197,7 +213,7 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expand, allAuthorizedSt
         addToResult(streamId.substr(1));
       } else {
         if (registerStream(streamId)) { 
-          for (let expandedStream of expand(streamId)) { // expand can send "null" values
+          for (let expandedStream of expandStream(streamId)) { // expand can send "null" values
             if (expandedStream !== null) {
               addToResult(expandedStream)
             }
@@ -216,19 +232,15 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expand, allAuthorizedSt
     }
 
     /**
-     * uses allAuthorizedStreams and allAccessibleStreams to check if it can be used in query
      * @param {string} streamId 
-     * @returns {boolean} - true is streamId Can be used in the query
+     * @returns {boolean} - true if streamId Can be used in the query
      */
     function registerStream(streamId) {
-      const isAuthorized = allAuthorizedStreams.includes(streamId);
-      if (! isAuthorized) { 
+      if (! isAuthorizedStream(streamId)) { 
         nonAuthorizedStreams.push(streamId);
         return false;
       }
-      const isAccessible = allAccessibleStreams.includes(streamId);
-      if (! isAccessible) return false;
-      return true;
+      return isAccessibleStream(streamId);
     }
   }
 }

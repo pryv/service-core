@@ -74,7 +74,6 @@ function InstanceManager(settings) {
     if (process.env.LOGS) {
       settings.logs.console.active = true; 
       settings.logs.console.level = process.env.LOGS;
-      console.log(process.env.LOGS);
     } else {
       settings.logs.console.active = false; 
     }

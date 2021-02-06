@@ -65,7 +65,6 @@ describe('profile (personal)', function () {
 
     it('[FUJA] "private" must be forbidden to non-personal accesses', function (done) {
       request.get(basePath + '/private', testData.accesses[4].token).end(function (res) {
-        console.log(res.body);
         validation.checkErrorForbidden(res, done);
       });
     });

@@ -191,8 +191,8 @@ module.exports = function (
 
   function checkStreamsPermissionsAndApplyToScope(context, params, result, next) {
     // Get all authorized streams (the ones that could be acessed) - Pass by all the tree including childrens
-    const authorizedStreamsIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, true, isAuthorizedStream), 'id');
-    function isAuthorizedStream(stream) {
+    const authorizedStreamsIds = treeUtils.collectPluck(treeUtils.filterTree(context.streams, true, isAuthorizedStreamFilter), 'id');
+    function isAuthorizedStreamFilter(stream) {
       return context.access.canGetEventsOnStream(stream.id);
     }
 
@@ -224,8 +224,24 @@ module.exports = function (
       return treeUtils.expandIds(context.streams, [streamId]);
     }
 
+    function isAuthorizedStream(streamId) {
+       return authorizedStreamsIds.includes(streamId);
+    }
+
+    function isAccessibleStream(streamId) {
+      return accessibleStreamsIds.includes(streamId);
+    }
+
+    function allAccessibleStreamsForStore(storeId) {
+      if (storeId !== 'local') {
+        return next(errors.invalidRequestStructure('"*" stream query parameter is only supported by local storage'));
+      }
+      return accessibleStreamsIds;
+    }
+
+
     const { streamQuery, nonAuthorizedStreams } =
-      streamsQueryUtils.checkPermissionsAndApplyToScope(params.streams, expand, authorizedStreamsIds, accessibleStreamsIds);
+      streamsQueryUtils.checkPermissionsAndApplyToScope(params.streams, expand, isAuthorizedStream, isAccessibleStream, allAccessibleStreamsForStore);
 
     params.streams = streamQuery;
 

@@ -92,11 +92,26 @@ describe('events.get streams query', function () {
 
   describe('Internal query helpers', function () {
 
+    function isAuthorizedStream(streamId) {
+      return ALL_AUTHORIZED_STREAMS.includes(streamId);
+    }
+
+    function isAccessibleStream(streamId) {
+      return ALL_ACCESSIBLE_STREAMS.includes(streamId);
+    }
+
+    function allAccessibleStreamsForStore(storeId) {
+      if (storeId !== 'local') {
+        return next(errors.invalidRequestStructure('"*" stream query parameter is only supported by local storage'));
+      }
+      return ALL_ACCESSIBLE_STREAMS_LOCAL;
+    }
+
     function validateQuery(query) {
       if (! Array.isArray(query)) query = [query];
       query = streamsQueryUtils.transformArrayOfStringsToStreamsQuery(query);
       streamsQueryUtils.validateStreamsQuery(query);
-      const { streamQuery } = streamsQueryUtils.checkPermissionsAndApplyToScope(query, customExpand, ALL_AUTHORIZED_STREAMS, ALL_ACCESSIBLE_STREAMS);
+      const { streamQuery } = streamsQueryUtils.checkPermissionsAndApplyToScope(query, customExpand, isAuthorizedStream, isAccessibleStream, allAccessibleStreamsForStore);
       return streamQuery;
     }
 
@@ -104,7 +119,6 @@ describe('events.get streams query', function () {
 
       it('[D2B5] must convert strings array to expanded array inside [{any: []}]', async function () {
         const res = validateQuery(['A', 'B']);
-        console.log(res);
         assert.deepEqual(res, [{ any: ['A', 'B', 'C'], storeId: 'local' }]);
       });
 
@@ -187,7 +201,6 @@ describe('events.get streams query', function () {
 
         it('[ZUTR] should expand queries from differnt store', async function () {
           const res = validateQuery([{ any: ['A']}, { any: ['.account'] }]);
-          console.log(res);
         });
 
       });
