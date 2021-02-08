@@ -18,7 +18,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Login to github
-      uses: webfactory/ssh-agent@v0.3.0
+      uses: webfactory/ssh-agent@v0.4.1
       with:
           ssh-private-key: ${{ secrets.SSH_PRYV_PRIVATE_KEY }}
           
