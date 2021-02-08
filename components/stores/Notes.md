@@ -1,26 +1,27 @@
 
-The way it works 
-
 # Concepts 
 ### "Store Properties" 
-To be discussed, either this is exposed or we create specific error when something unsupported is done on the storage
+To be discussed, whether this is exposed or we create specific error when something unsupported is done on the storage.
+
 **preffered would be to send error messages** (for the 1st iteration)
 - supportsAttachments 'no', 'single', 'multiple'
 - supportsEventStreaming true / false
 - supportsSeries true / false
 - supportsStreamsClientData
 - supportsEventsClientData
+- supportsEventsSorting
+
 
 
 ### "StreamdIds" 
 - localStorage is unchanged
 - dynamic or "mounted" sources have a "root" stream that starts with a "." 
-- to ensure non-collision dynamic sources streamiD will be namespaced with their root id by service-core
+- to ensure non-collision dynamic sources streamiD will be named spaced with their root id by service-core
   Example ".account/email" for "email" stream exposed by "account" data source
 
 ### "Stream Lists" `streams.get`
-- To avoid exposing full stream structure or querying too often remote ressources. We might not expose other storage than localStorage stream unless expecitely specified. Then we need to provide a "discovery" mechnanism for this streams like
-  exemple: `stream.get()` could return 
+- To avoid exposing full stream structure or querying too often remote resources. We might not expose other storage than localStorage stream unless explicitly specified. Then we need to provide a "discovery" mechanism for these streams
+  example: `stream.get()` could return 
   ```
   [{
     id: '.account',
@@ -32,16 +33,16 @@ To be discussed, either this is exposed or we create specific error when somethi
    }
 
   ]
-  ``` 
+  ```
   exemple: `stream.get({parentIds: ['*', '.account']})` would return all streams and `.account` substreams
 
 #### stream.get new Parameter `parentIds`
 - In order to explore stores streams, parentIds would replace parentId:
 - It would accept ['.*', '*'] to get all `cachable` streams 
-- To avoid duplicate or stream tree consolidation, Only one streamId per scope can be specified otherwise => error
+- To avoid duplicates or stream tree consolidation, Only one streamId per scope can be specified otherwise => error
 
 
-### Event association to stores
+### Event association to stores & `events.get` 
 - Events ids will not be sufficient in a "multi-storage" set-up 
   - No way to do a "delete" or "update" without knowing the storage it applies. 
   - We then introduce 'namespacing' of event id to their store eg: id: '.account-cjhsadhasjhdajsasd' 
@@ -50,7 +51,15 @@ To be discussed, either this is exposed or we create specific error when somethi
 - Moving an event from one to the other is not possible without changing its id.. 
   - So "events.update" should either accept id updates or we just let the dev to a create / delete 
 
-### Multiple streams limitations
+- **Sorting & Limit** cannot be implemented at the short term within multiple storage query. 
+  - Doc should be updated to indicate that by default stores' events will be given in an uncontrolled when querying multiple storage. 
+  - Explicit sort: asc or desc will return an "unsupported" error on multiple store query or on stores that do not support sorting.
+  - Limit cannot be enforced if sorting is not .. 
+
+- **StreamQuery** 'blocks' will be supported on a "per storage" basis.
+  - A Query `{ any: ['.account', 'diary']}` will return an error with a message indicating that query cannot mix storage (per block). `{ any: ['.account'], {any: ['diary']}` will be valid. 
+  
+#### Multiple stream limitations
 - Multiple streams between data-source need a data-source of "reference" as the event will not be copied "twice"
   - This could be achieved if the reference store supports multiple streams and other stores supports event-references
     ex: `{event: { id: '.account-c1111', streamIds: ['.account-username', 'private'] } }`
@@ -58,13 +67,14 @@ To be discussed, either this is exposed or we create specific error when somethi
   - The proposal will induce a lot of overheads if the content of the event is not fully copied (ex fromTime toTime query)
 - At 1st step I propose to throw a new Error `multiple-streams-cross-store-not-supported`
 
-- **StreamQuery** 'blocks' will be supported on a "per storage" basis.
-  - A Query { any: ['.account', 'diary']}
+
+
+
 
 ### Streams and exploration of non cachable structures
 - Some streams structures might not be available or too big to be fully stored or cached (e.g. a file system)
-  - Add a new property to streams: 'nonCachableChildrens: true" to indicate (some) childrens cannot be cached.
-    **Alternative** add a 'containsNonCachableChildrens' item in the chidren list <= not preffered
+  - Add a new property to streams: 'nonCachableChildrens: true" to indicate (some) children cannot be cached.
+    **Alternative** add a 'containsNonCachableChildrens' item in the children list <= not preferred
   - 'nonCachable' property is added to streams that cannot be cached.
   - 'nonCachable' substreams are 'nonCachable' 
   - To be sure we can give ACR to a nonCachable stream: 
@@ -72,18 +82,18 @@ To be discussed, either this is exposed or we create specific error when somethi
     This implies that if "Documents" is moved then its id changes. 
 
 **Note:**
-  - streams.get({parentId:[...]}) should include the streamId to get the childrens.
-  - a new parameters 'includeNonCachable: true' might be introduce (could produce huge amount of data) 
+  - streams.get({parentId:[...]}) should include the streamId to get the children.
+  - a new parameters 'includeNonCachable: true' might be introduced (could produce huge amount of data) 
 
 ### Defaults and unknown values
 - For some Stores, some value are unkown for example 'createdAt' or 'modifiedBy' 
-  - in this case the value is explicitely set to 'UNKOWN' <== and we have to make it a protected word
-  - Question (what to do for numerical values) ? and for example 'modifiedSince' ? 
+  - in this case the value is explicitly set to 'UNKOWN' <== and we have to make it a protected word
+  - Question (what to do for numerical values) ? For example 'modifiedSince' ? 
 
-### "Caching permissions per access" for non cachable Streams
-Out of scope but still relevant to check that the logic can allow optimistation
+### "Caching permission per access" for non cachable Streams
+Out of scope but still relevant to check that the logic can allow optimization
 
-To have fast check of permissions per access we could cache the following table
+To have fast check of permission per access we could cache the following table.
               
 {streamid} | streams.get | streams.create | streams.update | events.get | events.create | events.update
 
@@ -114,5 +124,23 @@ getRights('.filesystem-root/User/tom/Documents');
 ### List of new errors
 
 - multiple-streams-cross-store-not-supported 
-- ressource-is-readonly: when rights has been granted to 
+- resource-is-read-only: when rights have been granted to 
 - feature-no-supported-by-store: generic error for attachments, series (could even be used for read-only) 
+
+### Change Log
+
+- Refactored `accessLogic`
+  - Made a `class` instead of js structure clone + merge so simulate inheritance
+  - StreamQueries:
+    - Add "storeId" grouping: each streamQuery is associated with a storeId
+    - Using callbacks instead of "streamId array" for isAuthorized or isAccessible to enable dev of lazy loading of ACRs 
+  - MethodContext:
+    - Removing unecessary sugar (Forwarding to accessLogic)
+  - AccessLogic:
+    - Renaming accessLogic to explicit ACR methods names
+      - canReadStream => canGetEventsOnStream
+      - canContributeToStream => canCreateSubStream & canCreateEventsOnStream
+      - canUpdateStream => canUpdateStream & canUpdateEventsOnStream
+      - ...
+    - Making sure that each context.access.{call} represents a single clear ACL
+    - When possible uses context.access.can(context.apiCallId) to authorize the call 
