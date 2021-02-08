@@ -65,7 +65,7 @@ class Server {
     await this.setupNotificationBus();
     
     // register API methods
-    this.registerApiMethods();
+    await this.registerApiMethods();
 
     // Setup HTTP and register server; setup Socket.IO.
     const server: net$Server = http.createServer(this.application.expressApp);
@@ -89,7 +89,7 @@ class Server {
   
   // Requires and registers all API methods. 
   // 
-  registerApiMethods() {
+  async registerApiMethods() {
     const application = this.application;
     const l = (topic) => getLogger(topic);
     const config = this.config;
@@ -176,7 +176,7 @@ class Server {
       config.get('audit'), 
       config.get('updates'));
 
-    require('./methods/events')(application.api, 
+    await require('./methods/events')(application.api, 
       application.storageLayer.events, 
       application.storageLayer.eventFiles, 
       config.get('auth'), 

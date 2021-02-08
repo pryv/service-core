@@ -32,7 +32,7 @@ const { ProjectVersion } = require('middleware/src/project_version');
 
 const {TypeRepository, isSeriesType} = require('business').types;
 
-const { getLogger, getConfigUnsafe } = require('@pryv/boiler');
+const { getLogger, getConfig } = require('@pryv/boiler');
 
 const { getStore } = require('stores');
 
@@ -53,18 +53,21 @@ const typeRepo = new TypeRepository();
  * Events API methods implementations.
  * @param auditSettings
  */
-module.exports = function (
+module.exports = async function (
   api, userEventsStorage, userEventFilesStorage,
   authSettings, eventTypesUrl, notifications, logging,
   auditSettings, updatesSettings, openSourceSettings
 ) {
 
+
   const usersRepository = new UsersRepository(userEventsStorage);
+  const config = await getConfig();
+  const store = await getStore();
 
   // initialize service-register connection
   let serviceRegisterConn = {};
-  if (!getConfigUnsafe().get('dnsLess:isActive')) {
-    serviceRegisterConn = new ServiceRegister(getConfigUnsafe().get('services:register'));
+  if (! config.get('dnsLess:isActive')) {
+    serviceRegisterConn = new ServiceRegister(config.get('services:register'));
   }
   
   // Initialise the project version as soon as we can. 
@@ -218,9 +221,11 @@ module.exports = function (
     /**
      * Function to be passed to streamQueryFiltering.validateQuery
      * Expand a streamId to [streamId, child1, ...]
-     * @param {Streamid} streamId 
+     * @param {identifier} streamId 
+     * @param {identifier} storeId
      */
-    function expand (streamId) {
+    function expandStream(streamId, storeId) {
+
       return treeUtils.expandIds(context.streams, [streamId]);
     }
 
@@ -241,7 +246,7 @@ module.exports = function (
 
 
     const { streamQuery, nonAuthorizedStreams } =
-      streamsQueryUtils.checkPermissionsAndApplyToScope(params.streams, expand, isAuthorizedStream, isAccessibleStream, allAccessibleStreamsForStore);
+      streamsQueryUtils.checkPermissionsAndApplyToScope(params.streams, expandStream, isAuthorizedStream, isAccessibleStream, allAccessibleStreamsForStore);
 
     params.streams = streamQuery;
 
@@ -1256,7 +1261,7 @@ module.exports = function (
    * @param string accountStreamId - accountStreamId
    */
   async function sendUpdateToServiceRegister (user, event, accountStreamId) {
-    if (getConfigUnsafe().get('dnsLess:isActive')) {
+    if (config.get('dnsLess:isActive')) {
       return;
     }
     const editableAccountStreams = SystemStreamsSerializer.getEditableAccountStreams();
@@ -1513,7 +1518,7 @@ module.exports = function (
    */
   async function sendDataToServiceRegister (context, creation, editableAccountStreams) {
     // send update to service-register
-    if (getConfigUnsafe().get('dnsLess:isActive')) {
+    if (config.get('dnsLess:isActive')) {
       return;
     }
     let fieldsForUpdate = {};

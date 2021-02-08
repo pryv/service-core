@@ -119,7 +119,7 @@ describe('Account with system streams', function () {
       app.config.get('services'),
       notifications,
       app.logging);
-    require("api-server/src/methods/events")(
+    await require("api-server/src/methods/events")(
       app.api,
       app.storageLayer.events,
       app.storageLayer.eventFiles,

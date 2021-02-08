@@ -104,7 +104,7 @@ describe("Events of system streams", () => {
     const notifications = new Notifications(axonSocket);
     
     notifications.serverReady();
-    require("api-server/src/methods/events")(
+    await require("api-server/src/methods/events")(
       app.api,
       app.storageLayer.events,
       app.storageLayer.eventFiles,

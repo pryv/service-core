@@ -54,7 +54,7 @@ describe('[BMM2] registration: DNS-less', () => {
       emit: (...args) => axonMsgs.push(args),
     };
     const notifications = new Notifications(axonSocket);
-    require("api-server/src/methods/events")(
+    await require("api-server/src/methods/events")(
       app.api,
       app.storageLayer.events,
       app.storageLayer.eventFiles,

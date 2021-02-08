@@ -60,6 +60,14 @@ class DataSource {
     console.error('invalidRequestStructure', message, data);
   } 
 
+
+  /**
+   * Uncomment and implement the following if this storage supports it
+   * @param {indentifier} streamId - the streamId to expand (should be returned in Array list)
+   * @returns {Streams<Array>|string|null> returns all children recursively for this stream OR a proprietary string to be interpreted by events.get() in the streamQuery OR null if not expandable
+   */
+  //async expandStreamForStreamQuery(streamId) { toBeImplemented(); }
+
 }
 
 DataSource.UNKOWN_DATE = 0.12345678;

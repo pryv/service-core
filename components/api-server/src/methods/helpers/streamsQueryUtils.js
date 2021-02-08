@@ -124,9 +124,17 @@ exports.validateStreamsQuery = validateStreamsQuery;
  * @return {Array.<StreamId>} allAccessibleStreams for local store
  */
 
+ /**
+ * @callback ExpandStream
+ * @param {identifier} streamId
+ * @param {identifier} storeId
+ * @return {Array.<StreamId>|string} - returns all children recursively for this stream OR a proprietary string to be interpreted by events.get() in the streamQuery OR null if not expandable
+ */
+
+
 /**
  * @param {Array.<StreamQuery>} - array of streamQUeries 
- * @param {Function} expandStream should return the streamId in argument and its children (or null if does not exist).
+ * @param {ExpandStream} expandStream returns all children recursively for this stream OR a proprietary string to be interpreted by events.get() in the streamQuery OR null if not expandable
  * @param {CheckStream} isAuthorizedStream - return true is this stream is Authorized
  * @param {CheckStream} isAccessibleStream - return true id this stream is Visible
  * @param {AllAccessibleStreamsForStore} allAccessibleStreamsForStore - the list of "visible" streams (i.e not trashed when state = default)
@@ -173,7 +181,7 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expandStream, isAuthori
           containsAtLeastOneInclusion = true;
         }
       } else {
-        const expandedSet = expandSet(streamQuery.any);
+        const expandedSet = expandSet(streamQuery.any, streamQuery.storeId);
         if (expandedSet.length > 0) {
           containsAtLeastOneInclusion = true;
           res.any = expandedSet;
@@ -185,7 +193,7 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expandStream, isAuthori
     for (const property of ['all', 'not']) {
       if (streamQuery[property]) {
         for (let streamId of streamQuery[property]) {
-          const expandedSet = expandSet([streamId]);
+          const expandedSet = expandSet([streamId], streamQuery.storeId);
           if (expandedSet.length > 0) {
             if (! res.and) res.and = [];
             let key = 'not';
@@ -204,8 +212,9 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expandStream, isAuthori
 
   /**
    * @param {Array} streamIds - an array of streamids
+   * @param {identifier} storeId - the relative storeId
    */
-  function expandSet(streamIds) {
+  function expandSet(streamIds, storeId) {
     const result = [];
 
     for (let streamId of streamIds) {
@@ -213,7 +222,7 @@ function checkPermissionsAndApplyToScope(arrayOfQueries, expandStream, isAuthori
         addToResult(streamId.substr(1));
       } else {
         if (registerStream(streamId)) { 
-          for (let expandedStream of expandStream(streamId)) { // expand can send "null" values
+          for (let expandedStream of expandStream(streamId, storeId)) { // expand can send "null" values
             if (expandedStream !== null) {
               addToResult(expandedStream)
             }

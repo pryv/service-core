@@ -99,7 +99,7 @@ describe("Accesses with account streams", function () {
       app.getUpdatesSettings,
       app.storageLayer);
     
-    require("api-server/src/methods/events")(
+    await require("api-server/src/methods/events")(
       app.api,
       app.storageLayer.events,
       app.storageLayer.eventFiles,

@@ -58,6 +58,8 @@ To be discussed, whether this is exposed or we create specific error when someth
 
 - **StreamQuery** 'blocks' will be supported on a "per storage" basis.
   - A Query `{ any: ['.account', 'diary']}` will return an error with a message indicating that query cannot mix storage (per block). `{ any: ['.account'], {any: ['diary']}` will be valid. 
+  - **ExpandStream** Expanding streams can be a complex task that might be handled directly by the storage. For example if a stores exposes a file system it will be easier to pass the query `{any:  ['$find .volume-myfolder'], {not: ['$find .volume-myfolder/private']}}`  than to get all the files in `myfolder` and its sub directories while ignoring the ones in `private` . The storage could translate this in `find --ignore=myfolder/private myfolder` .
+    - Storage can expose an `expandStream`  
   
 #### Multiple stream limitations
 - Multiple streams between data-source need a data-source of "reference" as the event will not be copied "twice"
@@ -144,3 +146,5 @@ getRights('.filesystem-root/User/tom/Documents');
       - ...
     - Making sure that each context.access.{call} represents a single clear ACL
     - When possible uses context.access.can(context.apiCallId) to authorize the call 
+- Side effects:
+  - `methods/events` is passed to async method. (this also allowed to use getConfig() instead of getConfigUsafe())
