@@ -38,8 +38,8 @@ jobs:
 
     - name: Download base image and change the tag
       run: |
-        docker pull ${{ secrets.REGISTRY_PRYV_SERVER }}/pryv/base:1.3.40
-        docker tag "${{ secrets.REGISTRY_PRYV_SERVER }}/pryv/base:1.3.40" "pryv/base:1.3.40"
+        docker pull ${{ secrets.REGISTRY_PRYV_SERVER }}/pryvio/base:1.3.40
+        docker tag "${{ secrets.REGISTRY_PRYV_SERVER }}/pryvio/base:1.3.40" "pryvio/base:1.3.40"
 
     - name: Install gnatsd, mongodb, influxdb
       run: sh build/build-dev
