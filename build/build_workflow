@@ -24,7 +24,7 @@ host='eu.gcr.io/pryvio'
 for service in core hfs webhooks preview
 do
     echo "---------------------------- building $service --------------------------------"
-    docker build --build-arg COMPONENT_NAME=$service  -f $SCRIPT_FOLDER/Dockerfile.intermediate -t pryv/intermediate-$service:latest .
+    docker build --build-arg COMPONENT_NAME=$service  -f $SCRIPT_FOLDER/Dockerfile.intermediate -t pryvio/intermediate-$service:latest .
     echo $host/$service:$version
     docker build -f $SCRIPT_FOLDER/$service/Dockerfile -t $host/$service:$version .
     docker push $host/$service:$version

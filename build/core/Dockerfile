@@ -1,4 +1,4 @@
-FROM pryv/intermediate-core:latest
+FROM pryvio/intermediate-core:latest
 
 ARG DATA_DIR="/app/data"
 
