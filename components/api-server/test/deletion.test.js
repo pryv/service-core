@@ -6,7 +6,7 @@
  */
 
 // @flow
-
+const cuid = require('cuid');
 const fs = require('fs');
 const path = require('path');
 const assert = require('chai').assert;
@@ -28,7 +28,9 @@ const bluebird = require('bluebird');
 let app;
 let authKey;
 let username1;
+let user1;
 let username2;
+let user2;
 let request;
 let res;
 let mongoFixtures;
@@ -37,13 +39,108 @@ let influx;
 let influxRepository;
 let config;
 let isOpenSource = false;
+
 describe('DELETE /users/:username', async () => {
   config = await getConfig();
+
+  before(async function() {
+    
+    app = new Application();
+    await app.initiate();
+
+    require('../src/methods/auth/delete')(
+      app.api,
+      app.logging,
+      app.storageLayer,
+      app.config
+    );
+
+    require('../src/methods/auth/delete-opensource')(
+      app.api,
+      app.logging,
+      app.storageLayer,
+      app.config
+    );
+
+    request = supertest(app.expressApp);
+
+    mongoFixtures = databaseFixture(await produceMongoConnection());
+    await mongoFixtures.context.cleanEverything();
+
+    influx = produceInfluxConnection(app.config);
+    influxRepository = new InfluxRepository(influx);
+
+    usersRepository = new UsersRepository(app.storageLayer.events);
+
+    await bluebird.fromCallback((cb) =>
+      app.storageLayer.eventFiles.removeAll(cb)
+    );
+
+    username1 = charlatan.Internet.userName();
+    username2 = charlatan.Internet.userName();
+
+    authKey = config.get('auth:adminAccessKey');
+  });
+  after(async function() {
+    config.injectTestConfig({});
+    await mongoFixtures.context.cleanEverything();
+    await bluebird.fromCallback((cb) =>
+      app.storageLayer.eventFiles.removeAll(cb)
+    );
+  });
+
+  describe('depending on "user-account:delete"  config parameter', function() {
+    let personalAccessToken;
+    beforeEach(async function () { 
+      personalAccessToken = cuid();
+      user1 = await initiateUserWithData(username1);
+      const zzz = await user1.access({
+        type: 'personal', token: personalAccessToken,
+      });
+      await user1.session(personalAccessToken);
+    });
+
+    it('[8UT7] Should accept when only "personalToken" is active and valid personal token is given',async function () { 
+      config.injectTestConfig({'user-account': {delete: ['personalToken']}});
+      res = await request.delete(`/users/${username1}`).set('Authorization', personalAccessToken);
+      assert.equal(res.status, 200);
+    });
+
+    it('[IJ5F] Should reject when only "personalToken" is active and token invalid',async function () { 
+      config.injectTestConfig({'user-account': {delete: ['personalToken']}});
+      res = await request.delete(`/users/${username1}`).set('Authorization', 'bogus');
+      assert.equal(res.status, 403); // not 404 as when option is not activated
+    });
+
+    it('[IJ5F] Should reject when only "personalToken" is active and token invalid',async function () { 
+      config.injectTestConfig({'user-account': {delete: ['personalToken']}});
+      res = await request.delete(`/users/${username1}`).set('Authorization', 'bogus');
+      assert.equal(res.status, 403); // not 404 as when option is not activated
+    });
+
+    it('[NZ6G] Should reject when only "personalToken" is active and a valid admin token is given',async function () { 
+      config.injectTestConfig({'user-account': {delete: ['personalToken']}});
+      res = await request.delete(`/users/${username1}`).set('Authorization', authKey);
+      assert.equal(res.status, 403); // not 404 as when option is not activated
+    });
+
+    it('[UK8H] Should accept when "personalToken" and "admin are active and a valid admin token is given',async function () { 
+      config.injectTestConfig({'user-account': {delete: ['personalToken', 'admin']}});
+      res = await request.delete(`/users/${username1}`).set('Authorization', authKey);
+      assert.equal(res.status, 200);
+    });
+
+  });
+
+
+
+  // ---------------- loop loop -------------- //
+
   isOpenSource = config.get('openSource:isActive');
 
   const settingsToTest = [[true, false], [false, false], [true, true]];
   const testIDs = [
-    ['CM4Q', 'BQXA', '4Y76', '710F', 'GUPH', 'JNVS', 'C58U'],
+    ['CM5Q', 'BQXA', '4Y76', '710F', 'GUPH', 'JNVS', 'C58U'],
     ['U21Z', 'K4J1', 'TIKT', 'WMMV', '9ZTM', 'T3UK', 'O73J'],
     ['TPP2', '581Z', 'Z2FH', '4IH8', '33T6', 'SQ8P', '1F2Y']];
   for (let i = 0; i < settingsToTest.length; i++) {
@@ -58,49 +155,13 @@ describe('DELETE /users/:username', async () => {
         config.injectTestConfig({
           dnsLess: {isActive: settingsToTest[i][0]}
         });
-        
-        app = new Application();
-        await app.initiate();
-
-        require('../src/methods/auth/delete')(
-          app.api,
-          app.logging,
-          app.storageLayer,
-          app.config
-        );
-
-        require('../src/methods/auth/delete-opensource')(
-          app.api,
-          app.logging,
-          app.storageLayer,
-          app.config
-        );
-
-        request = supertest(app.expressApp);
-
-        mongoFixtures = databaseFixture(await produceMongoConnection());
-        await mongoFixtures.context.cleanEverything();
-
-        influx = produceInfluxConnection(app.config);
-        influxRepository = new InfluxRepository(influx);
-
-        usersRepository = new UsersRepository(app.storageLayer.events);
-
-        await bluebird.fromCallback((cb) =>
-          app.storageLayer.eventFiles.removeAll(cb)
-        );
-
-        username1 = charlatan.Internet.userName();
-        username2 = charlatan.Internet.userName();
-
-        authKey = config.get('auth:adminAccessKey');
       });
+
       after(async function() {
-        await mongoFixtures.context.cleanEverything();
-        await bluebird.fromCallback((cb) =>
-          app.storageLayer.eventFiles.removeAll(cb)
-        );
+        config.injectTestConfig({ });
       });
+
+  
       describe('when given existing username', function() {
         before(async function() {
           await initiateUserWithData(username1);
@@ -237,4 +298,5 @@ async function initiateUserWithData(username: string) {
     );
     usersSeries.append(data);
   }
+  return user;
 }

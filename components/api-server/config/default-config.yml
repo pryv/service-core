@@ -11,3 +11,7 @@ webhooks:
 audit: 
   forceKeepHistory: false
   deletionMode: 'keep-nothing'
+
+user-account:
+  delete: # array of entities that can delete a user account
+    - 'admin' # valid entries are 'admin', 'personalToken' 
