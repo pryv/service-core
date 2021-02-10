@@ -62,11 +62,13 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
       if (err) { return next(errors.unexpectedError(err)); }
       if (sessionId) {
         result.token = sessionId;
+        result.apiEndpoint = context.user.buildApiEndpoint(sessionId);
         next();
       } else {
         sessionsStorage.generate(context.sessionData, null, function (err, sessionId) {
           if (err) { return next(errors.unexpectedError(err)); }
           result.token = sessionId;
+          result.apiEndpoint = context.user.buildApiEndpoint(sessionId);
           next();
         });
       }

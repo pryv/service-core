@@ -78,6 +78,8 @@ describe('auth', function() {
                 assert.strictEqual(res.statusCode, 200);
 
                 should.exist(res.body.token);
+                should.exist(res.body.apiEndpoint);
+                assert.include(res.body.apiEndpoint,res.body.token);
                 checkNoUnwantedCookie(res);
                 should.exist(res.body.preferredLanguage);
 
@@ -130,6 +132,7 @@ describe('auth', function() {
               .set('Authorization', personalToken)
               .end(function (err, res) {
                 assert.strictEqual(res.statusCode, 403);
+                assert.strictEqual(res.body.error.id, 'invalid-access-token');
                 assert.strictEqual(res.body.error.message, 'Access session has expired.');
                 stepDone();
               });
@@ -162,6 +165,8 @@ describe('auth', function() {
               .end(function(err, res) {
                 assert.strictEqual(res.statusCode, 200);
                 assert.strictEqual(res.body.token, originalToken);
+                assert.exists(res.body.apiEndpoint);
+                assert.include(res.body.apiEndpoint, originalToken);
                 stepDone();
               });
           },
@@ -244,6 +249,7 @@ describe('auth', function() {
         .set('Origin', trustedOrigin)
         .send(data)
         .end(function(err, res) {
+          console.log('XXXXX', res.body);
           validation.checkError(res, {
             status: 401,
             id: ErrorIds.InvalidCredentials,
