@@ -125,7 +125,7 @@ describe('DELETE /users/:username', async () => {
     });
 
     it('[UK8H] Should accept when "personalToken" and "admin are active and a valid admin token is given',async function () { 
-      config.injectTestConfig({'user-account': {delete: ['personalToken', 'admin']}});
+      config.injectTestConfig({'user-account': {delete: ['personalToken', 'adminToken']}});
       res = await request.delete(`/users/${username1}`).set('Authorization', authKey);
       assert.equal(res.status, 200);
     });
