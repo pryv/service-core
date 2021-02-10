@@ -34,8 +34,8 @@ class Deletion {
 
   /**
    * Authorization check order: 
-   * 1- is adminAcccessToken
-   * 2- config('xxx:personalTokenCanSelf')
+   * 1- is a valid admin token
+   * 2- is a valid personalToken
    */
   checkIfAuthorized(
     context: MethodContext,
@@ -44,7 +44,7 @@ class Deletion {
     next: ApiCallback
   ) {
     const canDelete = this.config.get('user-account:delete');
-    if (canDelete.includes('admin')) {
+    if (canDelete.includes('adminToken')) {
       if(this.config.get('auth:adminAccessKey') === context.authorizationHeader) {
         return next();
       }

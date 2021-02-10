@@ -118,8 +118,8 @@ describe('DELETE /users/:username', async () => {
       assert.equal(res.status, 403); // not 404 as when option is not activated
     });
 
-    it('[UK8H] Should accept when "personalToken" and "admin are active and a valid admin token is provided',async function () { 
-      config.injectTestConfig({'user-account': {delete: ['personalToken', 'admin']}});
+    it('[UK8H] Should accept when "personalToken" and "adminToken" are active and a valid admin token is provided',async function () { 
+      config.injectTestConfig({'user-account': {delete: ['personalToken', 'adminToken']}});
       res = await request.delete(`/users/${username1}`).set('Authorization', authKey);
       assert.equal(res.status, 200);
     });
@@ -133,7 +133,7 @@ describe('DELETE /users/:username', async () => {
   const settingsToTest = [[true, false], [false, false], [true, true]];
   const testIDs = [
     ['CM5Q', 'BQXA', '4Y76', '710F', 'GUPH', 'JNVS', 'C58U'],
-    ['U21Z', 'K4J1', 'TIKT', 'WMMV', '9ZTM', 'T3UK', 'O73J'],
+    ['T21Z', 'K4J1', 'TIKT', 'WMMV', '9ZTM', 'T3UK', 'O73J'],
     ['TPP2', '581Z', 'Z2FH', '4IH8', '33T6', 'SQ8P', '1F2Y']];
   for (let i = 0; i < settingsToTest.length; i++) {
     
