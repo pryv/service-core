@@ -54,7 +54,7 @@ class Deletion {
       if(context.access && context.access.isPersonal && context.access.isPersonal()) {
         return next();
       } 
-      // is personal Token is activated then error code is different
+      // If personal Token is available, then error code is different
       return next(errors.invalidAccessToken('Cannot find access from token.', 403));
     } 
     return next(errors.unknownResource());

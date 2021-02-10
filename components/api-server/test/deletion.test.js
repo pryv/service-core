@@ -94,45 +94,37 @@ describe('DELETE /users/:username', async () => {
     beforeEach(async function () { 
       personalAccessToken = cuid();
       user1 = await initiateUserWithData(username1);
-      const zzz = await user1.access({
+      await user1.access({
         type: 'personal', token: personalAccessToken,
       });
       await user1.session(personalAccessToken);
     });
 
-    it('[8UT7] Should accept when only "personalToken" is active and valid personal token is given',async function () { 
+    it('[8UT7] Should accept when "personalToken" is active and a valid personal token is provided',async function () { 
       config.injectTestConfig({'user-account': {delete: ['personalToken']}});
       res = await request.delete(`/users/${username1}`).set('Authorization', personalAccessToken);
       assert.equal(res.status, 200);
     });
 
-    it('[IJ5F] Should reject when only "personalToken" is active and token invalid',async function () { 
+    it('[IJ5F] Should reject when "personalToken" is active and an invalid token is provided',async function () { 
       config.injectTestConfig({'user-account': {delete: ['personalToken']}});
       res = await request.delete(`/users/${username1}`).set('Authorization', 'bogus');
       assert.equal(res.status, 403); // not 404 as when option is not activated
     });
 
-    it('[IJ5F] Should reject when only "personalToken" is active and token invalid',async function () { 
-      config.injectTestConfig({'user-account': {delete: ['personalToken']}});
-      res = await request.delete(`/users/${username1}`).set('Authorization', 'bogus');
-      assert.equal(res.status, 403); // not 404 as when option is not activated
-    });
-
-    it('[NZ6G] Should reject when only "personalToken" is active and a valid admin token is given',async function () { 
+    it('[NZ6G] Should reject when only "personalToken" is active and a valid admin token is provided',async function () { 
       config.injectTestConfig({'user-account': {delete: ['personalToken']}});
       res = await request.delete(`/users/${username1}`).set('Authorization', authKey);
       assert.equal(res.status, 403); // not 404 as when option is not activated
     });
 
-    it('[UK8H] Should accept when "personalToken" and "admin are active and a valid admin token is given',async function () { 
+    it('[UK8H] Should accept when "personalToken" and "admin are active and a valid admin token is provided',async function () { 
       config.injectTestConfig({'user-account': {delete: ['personalToken', 'admin']}});
       res = await request.delete(`/users/${username1}`).set('Authorization', authKey);
       assert.equal(res.status, 200);
     });
 
   });
-
-
 
   // ---------------- loop loop -------------- //
 
@@ -148,7 +140,6 @@ describe('DELETE /users/:username', async () => {
 
     // skip tests that are not in scope
     if (isOpenSource !== settingsToTest[i][1]) continue;
-   
 
     describe(`dnsLess:isActive = ${settingsToTest[i][0]}, openSource:isActive = ${settingsToTest[i][1]}`, function() {
       before(async function() {
