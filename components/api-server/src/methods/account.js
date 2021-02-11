@@ -201,7 +201,8 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
       await serviceRegisterConn.updateUserInServiceRegister(
         context.user.username,
         serviceRegisterRequest,
-        {}
+        {},
+        params.update
       );
     } catch (err) {
       return next(err);

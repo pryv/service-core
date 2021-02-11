@@ -1209,7 +1209,7 @@ module.exports = function (
     if (editableAccountStreams[accountStreamId].isUnique) {
       // send information update to service regsiter
       await serviceRegisterConn.updateUserInServiceRegister(
-        user.username, {}, { [streamIdWithoutDot]: event.content});
+        user.username, {}, { [streamIdWithoutDot]: event.content}, { [streamIdWithoutDot]: event.content});
     }
   }
   
@@ -1479,7 +1479,8 @@ module.exports = function (
     await serviceRegisterConn.updateUserInServiceRegister(
       context.user.username,
       fieldsForUpdate,
-      {}
+      {},
+      {[streamIdWithoutDot] : context.content.content}
     );
   }
 };

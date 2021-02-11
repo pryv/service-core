@@ -12,7 +12,7 @@ const ErrorIds = require('errors').ErrorIds,
   errors = require('errors').factory,
   ErrorMessages = require('errors/src/ErrorMessages');
 
-const { getLogger } = require('@pryv/boiler');
+const { getLogger, notifyAirbrake } = require('@pryv/boiler');
 class ServiceRegister {
   config: {}; 
   logger;
@@ -47,7 +47,8 @@ class ServiceRegister {
           if (err.response.body.error.id === ErrorIds.InvalidInvitationToken) {
             throw errors.invalidOperation(ErrorMessages.InvalidInvitationToken);
           } else if (err.response.body.error.id === ErrorIds.ItemAlreadyExists) {
-            throw errors.itemAlreadyExists('user', err.response.body.error.data);
+            const duplicatesSafe = ServiceRegister.safetyCleanDuplicate(err.response.body.error.data, username, uniqueFields);
+            throw errors.itemAlreadyExists('user', duplicatesSafe);
           } else {
             throw errors.unexpectedError(err.response.body.error);
           }
@@ -99,7 +100,8 @@ class ServiceRegister {
   async updateUserInServiceRegister (
     username: string,
     user: object,
-    fieldsToDelete: object): Promise<void> {
+    fieldsToDelete: object,
+    updateParams: object): Promise<void> {
     const url = buildUrl('/users', this.config.url);
     // log fact about the event
     this.logger.info(`PUT ${url} for username:${username}`);
@@ -118,7 +120,7 @@ class ServiceRegister {
     } catch (err) {
       if (((err.status == 400) || (err.status == 409)) && err.response.body.error != null) {
         if (err.response.body.error.id === ErrorIds.ItemAlreadyExists) {
-          throw errors.itemAlreadyExists('user', err.response.body.error.data);
+          throw errors.itemAlreadyExists('user', ServiceRegister.safetyCleanDuplicate(err.response.body.error.data, username, updateParams));
         } else {
           this.logger.error(err.response.body.error);
           throw errors.unexpectedError(err.response.body.error);
@@ -131,6 +133,40 @@ class ServiceRegister {
         this.logger.error(err);
         throw errors.unexpectedError(new Error(err.message || 'Unexpected error.'));
       }
+    }
+  }
+
+  /**
+   * Temporary solution to patch a nasty bug, where "random" emails are exposed during account creations 
+   * @param {object} foundDuplicates the duplicates to check
+   * @param {string} username 
+   * @param {object} params 
+   */
+  static safetyCleanDuplicate(foundDuplicates, username, params) {
+    if (! foundDuplicates) return foundDuplicates;
+    const res = {};
+    if (username && foundDuplicates.username) {
+      if (username === foundDuplicates.username) {
+        res.username = username;
+      } else {
+        notify('username');
+      }
+      delete foundDuplicates.username;
+    }
+    for (const key of Object.keys(foundDuplicates)) {
+      if (foundDuplicates[key] === params[key]) {
+        res[key] = foundDuplicates[key] ;
+      } else {
+        notify(key + ' "' + foundDuplicates[key] + '" <> "' + params[key] + '"');
+      }
+    }
+    return res;
+
+    function notify(key) {
+      const logger = getLogger('service-register'); 
+      const error = new Error('Found unmatching duplicate key: ' + key);
+      logger.error('To be investigated >> ', error);
+      notifyAirbrake(error);
     }
   }
 }
