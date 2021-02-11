@@ -249,7 +249,6 @@ describe('auth', function() {
         .set('Origin', trustedOrigin)
         .send(data)
         .end(function(err, res) {
-          console.log('XXXXX', res.body);
           validation.checkError(res, {
             status: 401,
             id: ErrorIds.InvalidCredentials,
