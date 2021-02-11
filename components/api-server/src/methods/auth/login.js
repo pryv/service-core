@@ -29,6 +29,7 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
     checkPassword,
     openSession,
     updateOrCreatePersonalAccess,
+    addApiEndpoint,
     setAdditionalInfo);
 
   function applyPrerequisitesForLogin(context, params, result, next) {
@@ -62,13 +63,11 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
       if (err) { return next(errors.unexpectedError(err)); }
       if (sessionId) {
         result.token = sessionId;
-        result.apiEndpoint = context.user.buildApiEndpoint(sessionId);
         next();
       } else {
         sessionsStorage.generate(context.sessionData, null, function (err, sessionId) {
           if (err) { return next(errors.unexpectedError(err)); }
           result.token = sessionId;
-          result.apiEndpoint = context.user.buildApiEndpoint(sessionId);
           next();
         });
       }
@@ -124,6 +123,13 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
       context.updateTrackingProperties(access, UsersRepository.options.SYSTEM_USER_ACCESS_ID);
       userAccessesStorage.updateOne(context.user, context.accessQuery, access, callback);
     }
+  }
+
+  function addApiEndpoint(context, params, result, next) {
+    if (result.token) {
+      result.apiEndpoint = context.user.buildApiEndpoint(result.token);
+    }
+    next();
   }
 
   function setAdditionalInfo(context, params, result, next) {
