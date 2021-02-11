@@ -21,26 +21,43 @@ const { getLogger } = require('@pryv/boiler');
 class Deletion {
   logger: any;
   storageLayer: any;
-  settings: any;
+  config: any;
   usersRepository: UsersRepository;
 
-  constructor(logging: any, storageLayer: any, settings: any) {
+  constructor(logging: any, storageLayer: any, config: any) {
     this.logger = getLogger('business:deletion');
     this.storageLayer = storageLayer;
-    this.settings = settings;
+    this.config = config;
     this.usersRepository = new UsersRepository(this.storageLayer.events);
   }
 
+
+  /**
+   * Authorization check order: 
+   * 1- is a valid admin token
+   * 2- is a valid personalToken
+   */
   checkIfAuthorized(
     context: MethodContext,
     params: mixed,
     result: Result,
     next: ApiCallback
   ) {
-    if(this.settings.get('auth:adminAccessKey') !== context.authorizationHeader) {
-      return next(errors.unknownResource());
+    const canDelete = this.config.get('user-account:delete');
+    if (canDelete.includes('adminToken')) {
+      if(this.config.get('auth:adminAccessKey') === context.authorizationHeader) {
+        return next();
+      }
     }
-    next();
+   
+    if (canDelete.includes('personalToken')) {
+      if(context.access && context.access.isPersonal && context.access.isPersonal()) {
+        return next();
+      } 
+      // If personal Token is available, then error code is different
+      return next(errors.invalidAccessToken('Cannot find access from token.', 403));
+    } 
+    return next(errors.unknownResource());
   }
 
   async validateUserExists(
@@ -64,8 +81,8 @@ class Deletion {
     next: ApiCallback
   ) {
     const paths = [
-      this.settings.get('eventFiles:attachmentsDirPath'),
-      this.settings.get('eventFiles:previewsDirPath'),
+      this.config.get('eventFiles:attachmentsDirPath'),
+      this.config.get('eventFiles:previewsDirPath'),
     ];
 
     const notExistingDir = findNotExistingDir(paths);
@@ -105,8 +122,8 @@ class Deletion {
     next: ApiCallback
   ) {
     const paths = [
-      this.settings.get('eventFiles:attachmentsDirPath'),
-      this.settings.get('eventFiles:previewsDirPath'),
+      this.config.get('eventFiles:attachmentsDirPath'),
+      this.config.get('eventFiles:previewsDirPath'),
     ];
 
     const userPaths = paths.map((p) => path.join(p, context.user.id));
@@ -129,8 +146,8 @@ class Deletion {
   ) {
     // dynamic loading , because series functionality does not exist in opensource
     const InfluxConnection = require('business/src/series/influx_connection');
-    const host = this.settings.get('influxdb:host');
-    const port = this.settings.get('influxdb:port');
+    const host = this.config.get('influxdb:host');
+    const port = this.config.get('influxdb:port');
 
     const influx = new InfluxConnection({ host: host, port: port });
     await influx.dropDatabase(`user.${params.username}`);
