@@ -48,7 +48,7 @@ class ServiceRegister {
           if (err.response.body.error.id === ErrorIds.InvalidInvitationToken) {
             throw errors.invalidOperation(ErrorMessages.InvalidInvitationToken);
           } else if (err.response.body.error.id === ErrorIds.ItemAlreadyExists) {
-            const duplicatesSafe = ServiceRegister.safetyCleanDuplicate(err.response.body.error.data, username, uniqueFields);
+            const duplicatesSafe = safetyCleanDuplicate(err.response.body.error.data, username, uniqueFields);
             throw errors.itemAlreadyExists('user', duplicatesSafe);
           } else {
             throw errors.unexpectedError(err.response.body.error);
@@ -137,7 +137,7 @@ class ServiceRegister {
     } catch (err) {
       if (((err.status == 400) || (err.status == 409)) && err.response.body.error != null) {
         if (err.response.body.error.id === ErrorIds.ItemAlreadyExists) {
-          throw errors.itemAlreadyExists('user', ServiceRegister.safetyCleanDuplicate(err.response.body.error.data, username, updateParams));
+          throw errors.itemAlreadyExists('user', safetyCleanDuplicate(err.response.body.error.data, username, updateParams));
         } else {
           this.logger.error(err.response.body.error);
           throw errors.unexpectedError(err.response.body.error);
@@ -153,13 +153,31 @@ class ServiceRegister {
     }
   }
 
-  /**
+ 
+}
+
+function buildUrl(path: string, url): string {
+  return new urllib.URL(path, url);
+}
+
+let serviceRegisterConn = null;
+/**
+ * @returns {ServiceRegister}
+ */
+function getServiceRegisterConn() {
+  if (! serviceRegisterConn) {
+    serviceRegisterConn = new ServiceRegister(getConfigUnsafe().get('services:register'))
+  }
+  return serviceRegisterConn;
+}
+
+ /**
    * Temporary solution to patch a nasty bug, where "random" emails are exposed during account creations 
    * @param {object} foundDuplicates the duplicates to check
    * @param {string} username 
    * @param {object} params 
    */
-  static safetyCleanDuplicate(foundDuplicates, username, params) {
+  function safetyCleanDuplicate(foundDuplicates, username, params) {
     if (! foundDuplicates) return foundDuplicates;
     const res = {};
     const newParams = Object.assign({}, params);
@@ -180,23 +198,8 @@ class ServiceRegister {
       notifyAirbrake(error);
     }
   }
-}
-
-function buildUrl(path: string, url): string {
-  return new urllib.URL(path, url);
-}
-
-let serviceRegisterConn = null;
-/**
- * @returns {ServiceRegister}
- */
-function getServiceRegisterConn() {
-  if (! serviceRegisterConn) {
-    serviceRegisterConn = new ServiceRegister(getConfigUnsafe().get('services:register'))
-  }
-  return serviceRegisterConn;
-}
 
 module.exports = {
-  getServiceRegisterConn: getServiceRegisterConn
+  getServiceRegisterConn: getServiceRegisterConn,
+  safetyCleanDuplicate: safetyCleanDuplicate
 };
