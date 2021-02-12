@@ -35,6 +35,7 @@ describe('accesses (app)', function () {
       {
         id: 'app_A',
         token: 'app_A_token',
+        apiEndpoint: 'https://app_A_token@userzero.pryv.me/',
         name: 'App access A',
         type: 'app',
         permissions: [
@@ -59,6 +60,7 @@ describe('accesses (app)', function () {
       {
         id: 'app_B',
         token: 'app_B_token',
+        apiEndpoint: 'https://app_B_token@userzero.pryv.me/',
         name: 'App access B (subset of A)',
         type: 'app',
         permissions: [
@@ -79,6 +81,7 @@ describe('accesses (app)', function () {
       {
         id: 'shared_A',
         token: 'shared_A_token',
+        apiEndpoint: 'https://shared_A_token@userzero.pryv.me/',
         name: 'Shared access A (subset of app access A)',
         type: 'shared',
         permissions: [
@@ -98,6 +101,7 @@ describe('accesses (app)', function () {
       },
       {
         id: 'root_A',
+        apiEndpoint: 'https://root_A_token@userzero.pryv.me/',
         token: 'root_A_token',
         name: 'Root token',
         type: 'app',
@@ -115,6 +119,7 @@ describe('accesses (app)', function () {
       {
         id: 'shared_B',
         token: 'shared_B_token',
+        apiEndpoint: 'https://shared_B_token@userzero.pryv.me/',
         name: 'Shared access B (with permission on unexisting stream)',
         type: 'shared',
         permissions: [
@@ -208,6 +213,7 @@ describe('accesses (app)', function () {
         const expected: {[key: string]: any} = _.cloneDeep(data);
         expected.id = res.body.access.id;
         expected.token = res.body.access.token;
+        expected.apiEndpoint = 'https://' + expected.token + '@userzero.pryv.me/';
         expected.type = 'shared';
         delete expected.permissions[0].defaultName;
         delete expected.permissions[0].name;

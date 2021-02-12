@@ -8,7 +8,7 @@ const _ = require('lodash');
 const commonFns = require('./../helpers/commonFunctions');
 const errors = require('errors').factory;
 const methodsSchema = require('api-server/src/schema/authMethods');
-const ServiceRegister = require('business/src/auth/service_register');
+const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const Registration = require('business/src/auth/registration');
 
 import type { MethodContext } from 'model';
@@ -27,7 +27,7 @@ import type { ApiCallback }  from '../API';
 module.exports = function (api, logging, storageLayer, servicesSettings) {
   // REGISTER
   const registration: Registration = new Registration(logging, storageLayer, servicesSettings);
-  const serviceRegisterConn: ServiceRegister = new ServiceRegister(servicesSettings.register);
+  const serviceRegisterConn: ServiceRegister = getServiceRegisterConn();
 
   api.register('auth.register',
     // data validation methods        

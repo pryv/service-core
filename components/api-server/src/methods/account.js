@@ -14,7 +14,7 @@ const { getConfig } = require('@pryv/boiler');
 const Registration = require('business/src/auth/registration'),
   ErrorMessages = require('errors/src/ErrorMessages'),
   ErrorIds = require('errors').ErrorIds,
-  ServiceRegister = require('business/src/auth/service_register'),
+  { getServiceRegisterConn } = require('business/src/auth/service_register'),
   UsersRepository = require('business/src/users/repository');
   User = require('business/src/users/User'),
   SystemStreamsSerializer = require('business/src/system-streams/serializer');
@@ -33,7 +33,7 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     requireTrustedAppFn = commonFns.getTrustedAppCheck(authSettings);
 
   // initialize service-register connection
-  const serviceRegisterConn = new ServiceRegister(servicesSettings.register);
+  const serviceRegisterConn = getServiceRegisterConn();
   const usersRepository = new UsersRepository(userEventsStorage);
 
   // RETRIEVAL
@@ -202,7 +202,8 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
       await serviceRegisterConn.updateUserInServiceRegister(
         context.user.username,
         serviceRegisterRequest,
-        {}
+        {},
+        params.update
       );
     } catch (err) {
       return next(err);

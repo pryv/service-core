@@ -112,15 +112,24 @@ class User {
    * Builds apiEndpoint with the token if it exists
    */
   getApiEndpoint () {
-    if (this.apiEndpoint != null) return this.apiEndpoint;
-    const apiFormat = getConfigUnsafe().get('service:api');
-    this.apiEndpoint = apiFormat.replace('{username}', this.username);
-    if (this.token) {
-      let endpointElements = this.apiEndpoint.split('//');
-      endpointElements[1] = `${this.token}@${endpointElements[1]}`;
-      this.apiEndpoint = endpointElements.join('//');
-    }
+    if (! this.apiEndpoint) this.apiEndpoint = this.buildApiEndpoint(this.token);
     return this.apiEndpoint;
+  }
+
+  /**
+   * Build apiEndPoint for this user and token
+   * @param {*} updateData 
+   * @param {*} isActive 
+   */
+  buildApiEndpoint(token) {
+    const apiFormat = getConfigUnsafe().get('service:api');
+    let apiEndpoint = apiFormat.replace('{username}', this.username);
+    if (token) {
+      let endpointElements = apiEndpoint.split('//');
+      endpointElements[1] = `${token}@${endpointElements[1]}`;
+      apiEndpoint = endpointElements.join('//');
+    }
+    return apiEndpoint;
   }
 
   /**

@@ -21,7 +21,7 @@ var cuid = require('cuid'),
   SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
 
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const ServiceRegister = require('business/src/auth/service_register');
+const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const Registration = require('business/src/auth/registration');
 const UsersRepository = require('business/src/users/repository');
 const ErrorIds = require('errors/src/ErrorIds');
@@ -1269,7 +1269,7 @@ module.exports = async function (
     if (editableAccountStreams[accountStreamId].isUnique) {
       // send information update to service regsiter
       await serviceRegisterConn.updateUserInServiceRegister(
-        user.username, {}, { [streamIdWithoutDot]: event.content});
+        user.username, {}, { [streamIdWithoutDot]: event.content}, { [streamIdWithoutDot]: event.content});
     }
   }
   
@@ -1539,7 +1539,8 @@ module.exports = async function (
     await serviceRegisterConn.updateUserInServiceRegister(
       context.user.username,
       fieldsForUpdate,
-      {}
+      {},
+      {[streamIdWithoutDot] : context.content.content}
     );
   }
 };

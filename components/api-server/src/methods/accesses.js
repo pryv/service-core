@@ -93,7 +93,12 @@ module.exports = function produceAccessesApiMethods(
 
       // Return the chain result.
       result.accesses = chain.value();
-      
+
+      // Add apiEndpoind
+      for (let i = 0; i < result.accesses.length; i++) {
+        result.accesses[i].apiEndpoint = context.user.buildApiEndpoint(result.accesses[i].token);
+      }
+
       next();
     });
     
@@ -325,6 +330,7 @@ module.exports = function produceAccessesApiMethods(
       }
 
       result.access = newAccess;
+      result.access.apiEndpoint = context.user.buildApiEndpoint(result.access.token);
       notifications.accessesChanged(context.username);
       next();
     });

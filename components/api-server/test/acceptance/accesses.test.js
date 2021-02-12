@@ -87,6 +87,15 @@ describe('accesses', () => {
           accesses = res.body.accesses;
           deletions = res.body.accessDeletions;
         });
+
+        it('[H7ZS] access should contain tokens and apiEndpoints', () => {
+          for (let access of accesses) {
+            assert.exists(access.token);
+            assert.exists(access.apiEndpoint);
+            assert.include(access.apiEndpoint, access.token);
+          }
+        });
+  
   
         it('[P12L] should contain deletions', () => {
           assert.isNotNull(deletions);
@@ -135,6 +144,12 @@ describe('accesses', () => {
   
           it('[N3Q1] should contain an access', () => {
             assert.isNotNull(createdAccess);
+          });
+
+          it('[8UOW] access should contain token and apiEndpoint', () => {
+            assert.exists(createdAccess.token);
+            assert.exists(createdAccess.apiEndpoint, 'Missing API endpoint');
+            assert.include(createdAccess.apiEndpoint, createdAccess.token);           
           });
   
           it('[J77Z] should contain the set values, but no "deleted" field in the API response', () => {

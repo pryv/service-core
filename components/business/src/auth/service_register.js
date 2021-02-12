@@ -12,7 +12,7 @@ const ErrorIds = require('errors').ErrorIds,
   errors = require('errors').factory,
   ErrorMessages = require('errors/src/ErrorMessages');
 
-const { getLogger } = require('@pryv/boiler');
+const { getLogger, getConfigUnsafe, notifyAirbrake } = require('@pryv/boiler');
 class ServiceRegister {
   config: {}; 
   logger;
@@ -20,6 +20,7 @@ class ServiceRegister {
   constructor(config: {}) {
     this.config = config; 
     this.logger = getLogger('service-register');
+    this.logger.debug('created with config', config);
   }
 
   async validateUser (
@@ -47,7 +48,8 @@ class ServiceRegister {
           if (err.response.body.error.id === ErrorIds.InvalidInvitationToken) {
             throw errors.invalidOperation(ErrorMessages.InvalidInvitationToken);
           } else if (err.response.body.error.id === ErrorIds.ItemAlreadyExists) {
-            throw errors.itemAlreadyExists('user', err.response.body.error.data);
+            const duplicatesSafe = ServiceRegister.safetyCleanDuplicate(err.response.body.error.data, username, uniqueFields);
+            throw errors.itemAlreadyExists('user', duplicatesSafe);
           } else {
             throw errors.unexpectedError(err.response.body.error);
           }
@@ -92,6 +94,22 @@ class ServiceRegister {
     }
   }
 
+  async deleteUser(username): Promise<void> {
+    const url = buildUrl('/users/' + username, this.config.url);
+    // log fact about the event
+    this.logger.info(`DELETE ${url} for username:${username}`);
+    try {
+      const res = await superagent
+        .delete(url)
+        .set('Authorization', this.config.key);     
+      return res.body;
+    } catch (err) {
+      this.logger.error(err);
+      throw new Error(err.message || 'Unexpected error.');
+    }
+  }
+
+
   /**
    * After indexed fields are updated, service-register is notified to update
    * the information
@@ -99,7 +117,8 @@ class ServiceRegister {
   async updateUserInServiceRegister (
     username: string,
     user: object,
-    fieldsToDelete: object): Promise<void> {
+    fieldsToDelete: object,
+    updateParams: object): Promise<void> {
     const url = buildUrl('/users', this.config.url);
     // log fact about the event
     this.logger.info(`PUT ${url} for username:${username}`);
@@ -118,7 +137,7 @@ class ServiceRegister {
     } catch (err) {
       if (((err.status == 400) || (err.status == 409)) && err.response.body.error != null) {
         if (err.response.body.error.id === ErrorIds.ItemAlreadyExists) {
-          throw errors.itemAlreadyExists('user', err.response.body.error.data);
+          throw errors.itemAlreadyExists('user', ServiceRegister.safetyCleanDuplicate(err.response.body.error.data, username, updateParams));
         } else {
           this.logger.error(err.response.body.error);
           throw errors.unexpectedError(err.response.body.error);
@@ -133,10 +152,51 @@ class ServiceRegister {
       }
     }
   }
+
+  /**
+   * Temporary solution to patch a nasty bug, where "random" emails are exposed during account creations 
+   * @param {object} foundDuplicates the duplicates to check
+   * @param {string} username 
+   * @param {object} params 
+   */
+  static safetyCleanDuplicate(foundDuplicates, username, params) {
+    if (! foundDuplicates) return foundDuplicates;
+    const res = {};
+    const newParams = Object.assign({}, params);
+    if (username) newParams.username = username; 
+    for (const key of Object.keys(foundDuplicates)) {
+      if (foundDuplicates[key] === newParams[key]) {
+        res[key] = foundDuplicates[key] ;
+      } else {
+        notify(key + ' "' + foundDuplicates[key] + '" <> "' + newParams[key] + '"');
+      }
+    }
+    return res;
+
+    function notify(key) {
+      const logger = getLogger('service-register'); 
+      const error = new Error('Found unmatching duplicate key: ' + key);
+      logger.error('To be investigated >> ', error);
+      notifyAirbrake(error);
+    }
+  }
 }
 
 function buildUrl(path: string, url): string {
   return new urllib.URL(path, url);
 }
 
-module.exports = ServiceRegister;
+let serviceRegisterConn = null;
+/**
+ * @returns {ServiceRegister}
+ */
+function getServiceRegisterConn() {
+  if (! serviceRegisterConn) {
+    serviceRegisterConn = new ServiceRegister(getConfigUnsafe().get('services:register'))
+  }
+  return serviceRegisterConn;
+}
+
+module.exports = {
+  getServiceRegisterConn: getServiceRegisterConn
+};

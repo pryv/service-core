@@ -151,7 +151,8 @@ module.exports = {
       additionalProperties: false
     }),
     result: object({
-      token: string()
+      token: string(),
+      apiEndpoint: string()
     }, {
       required: ['token'],
       additionalProperties: false
