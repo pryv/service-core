@@ -11,7 +11,7 @@ const cuid = require('cuid');
 const errors = require('errors').factory;
 const { errorHandling } = require('errors');
 const mailing = require('api-server/src/methods/helpers/mailing');
-const { getServiceRegisterConn } = require('./service_register');
+const { getServiceRegisterConn, safetyCleanDuplicate } = require('./service_register');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const UsersRepository = require('business/src/users/repository');
 const User = require('business/src/users/User');
@@ -309,7 +309,7 @@ class Registration {
     }
 
     if (Object.keys(uniquenessErrors).length > 0) {
-      return errors.itemAlreadyExists('user', ServiceRegister.safetyCleanDuplicate(uniquenessErrors, null, params));
+      return errors.itemAlreadyExists('user', safetyCleanDuplicate(uniquenessErrors, null, params));
     }
     // Any other error
     return errors.unexpectedError(err, message);
