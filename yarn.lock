@@ -6866,10 +6866,10 @@ sort-package-json@^1.48.1:
     is-plain-obj "2.1.0"
     sort-object-keys "^1.1.3"
 
-source-licenser@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/source-licenser/-/source-licenser-1.0.1.tgz#e678d1902630740ce42230859b2ad6d9d30909b4"
-  integrity sha512-k2VLInIWACvftHvJ0/fkZGBJSSCFvbdQKq4xBoXu6obUD94n7dLm9E9qogWxWa3D8guc/lSJSvSD2J7aJCZeNA==
+source-licenser@1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/source-licenser/-/source-licenser-1.0.2.tgz#7bc0ce61d71944e3c18b2eb5af339bff07220723"
+  integrity sha512-P1J6nwl9NIbg8Ui0NWnMcSwzna0Fq5vDs2lTb16Aw8kuTmKXXIHv6FYuqMhesiG0w+At1bYwJWh7u1uufDPEfw==
   dependencies:
     "@pryv/boiler" "git+https://github.com/pryv/lib-node-boiler.git"
     lodash "^4.17.20"

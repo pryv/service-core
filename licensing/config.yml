@@ -1,3 +1,9 @@
+---
+ignores: # If found in path contained elements will be ignored
+- node_modules
+- ".git"
+- dist/
+
 templating: ## Add your own values they will be replaced in fileSpecs and source licenseFile
   AUTHOR_NAME: "Pryv S.A"
   AUTHOR_EMAIL: info@pryv.com
