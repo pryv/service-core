@@ -5,7 +5,7 @@ ignores: # If found in path contained elements will be ignored
 - dist/
 
 templating: ## Add your own values they will be replaced in fileSpecs and source licenseFile
-  AUTHOR_NAME: "Pryv S.A"
+  AUTHOR_NAME: "Pryv S.A."
   AUTHOR_EMAIL: info@pryv.com
   AUTHOR_WEB: https://pryv.com
   DESCRIPTION: "This package is part of Pryv.io - a Pryv S.A. Software"
