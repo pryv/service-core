@@ -13,7 +13,7 @@
 const should = require('should');
 const express = require('express');
 
-const authMod = require('../../../src/routes/auth/login');
+const authMod = require('api-server/src/routes/auth/login');
 
 describe('Authentication', function() {
   

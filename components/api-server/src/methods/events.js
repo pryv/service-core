@@ -21,7 +21,7 @@ var cuid = require('cuid'),
   SetFileReadTokenStream = require('./streams/SetFileReadTokenStream');
 
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
-const ServiceRegister = require('business/src/auth/service_register');
+const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const Registration = require('business/src/auth/registration');
 const UsersRepository = require('business/src/users/repository');
 const ErrorIds = require('errors/src/ErrorIds');
@@ -61,7 +61,7 @@ module.exports = function (
   // initialize service-register connection
   let serviceRegisterConn = {};
   if (!getConfigUnsafe().get('dnsLess:isActive')) {
-    serviceRegisterConn = new ServiceRegister(getConfigUnsafe().get('services:register'));
+    serviceRegisterConn = getServiceRegisterConn();
   }
   
   // Initialise the project version as soon as we can. 
@@ -1209,7 +1209,7 @@ module.exports = function (
     if (editableAccountStreams[accountStreamId].isUnique) {
       // send information update to service regsiter
       await serviceRegisterConn.updateUserInServiceRegister(
-        user.username, {}, { [streamIdWithoutDot]: event.content});
+        user.username, {}, { [streamIdWithoutDot]: event.content}, { [streamIdWithoutDot]: event.content});
     }
   }
   
@@ -1479,7 +1479,8 @@ module.exports = function (
     await serviceRegisterConn.updateUserInServiceRegister(
       context.user.username,
       fieldsForUpdate,
-      {}
+      {},
+      {[streamIdWithoutDot] : context.content.content}
     );
   }
 };

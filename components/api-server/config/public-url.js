@@ -11,9 +11,9 @@ const REG_PATH = '/reg';
 const WWW_PATH = '/www';
 
 async function publicUrlToService(config) {
-  const isActive = config.get('dnsLess:isActive');
+  const isDnsLess = config.get('dnsLess:isActive');
   const publicUrl = config.get('dnsLess:publicUrl');
-  if (isActive && publicUrl != null) {
+  if (isDnsLess && publicUrl != null) {
     config.set('service', {
       api: buildUrl(publicUrl, '/{username}/'),
       register: buildUrl(publicUrl, path.join(REG_PATH, '/')),

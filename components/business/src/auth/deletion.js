@@ -11,6 +11,7 @@ const rimraf = require('rimraf');
 const fs = require('fs');
 const path = require('path');
 const UsersRepository = require('business/src/users/repository');
+const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const errors = require('errors').factory;
 
 import type { MethodContext } from 'model';
@@ -23,12 +24,14 @@ class Deletion {
   storageLayer: any;
   config: any;
   usersRepository: UsersRepository;
+  serviceRegisterConn: ServiceRegister;
 
   constructor(logging: any, storageLayer: any, config: any) {
     this.logger = getLogger('business:deletion');
     this.storageLayer = storageLayer;
     this.config = config;
     this.usersRepository = new UsersRepository(this.storageLayer.events);
+    this.serviceRegisterConn = getServiceRegisterConn();
   }
 
 
@@ -84,15 +87,6 @@ class Deletion {
       this.config.get('eventFiles:attachmentsDirPath'),
       this.config.get('eventFiles:previewsDirPath'),
     ];
-
-    const notExistingDir = findNotExistingDir(paths);
-    if (notExistingDir) {
-      const error = new Error(`Base directory '${notExistingDir}' does not exist.`);
-      this.logger.error(error);
-      return next(
-        errors.unexpectedError(error)
-      );
-    }
 
     // NOTE User specific paths are constructed by appending the user _id_ to the
     // `paths` constant above. I know this because I read EventFiles#getXPath(...)
@@ -197,6 +191,22 @@ class Deletion {
     }
     next();
   }
+
+  async deleteOnRegister(
+    context: MethodContext,
+    params: mixed,
+    result: Result,
+    next: ApiCallback
+  ) {
+    
+    try {
+      const res = await this.serviceRegisterConn.deleteUser(params.username);
+      this.logger.debug('on register: ' + params.username, res);
+    } catch (e) { // user might have been deleted register we do not FW error just log it
+      this.logger.error(e);
+    }
+    next();
+  };
 }
 
 function findNotExistingDir(paths: Array<string>): string {
@@ -223,7 +233,7 @@ function findNotAccessibleDir(paths: Array<string>): string {
 
       fs.accessSync(path, fs.constants.W_OK + fs.constants.X_OK);
     } catch (err) {
-      if (err.code === 'ENOENT') {
+      if (err.code === 'ENOENT') { // ignore if file does not exist
         continue;
       } else {
         notAccessibleDir = path;

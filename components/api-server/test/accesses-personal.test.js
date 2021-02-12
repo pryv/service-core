@@ -70,8 +70,10 @@ describe('accesses (personal)', function () {
       req().get(basePath).end(function (res) {
         const expected = validation
           .removeDeletions(testData.accesses)
-          .map(a => _.omit(a, 'calls'));
-
+          .map(a =>  _.omit(a, 'calls'));
+        for (let e of expected) {
+          e.apiEndpoint = 'https://'+e.token+'@userzero.pryv.me/'
+        }
         validation.check(res, {
           status: 200,
           schema: methodsSchema.get.result,
@@ -208,6 +210,7 @@ describe('accesses (personal)', function () {
               var expected = R.clone(data);
               expected.id = res.body.access.id;
               expected.token = res.body.access.token;
+              expected.apiEndpoint = 'https://'+expected.token+'@userzero.pryv.me/';
               delete expected.permissions[0].name;
               delete expected.permissions[1].defaultName;
               delete expected.permissions[2].defaultName;
@@ -290,6 +293,7 @@ describe('accesses (personal)', function () {
         var expected = R.clone(data);
         expected.id = res.body.access.id;
         expected.token = res.body.access.token;
+        expected.apiEndpoint = 'https://'+expected.token+'@userzero.pryv.me/';
         delete expected.permissions[0].defaultName;
         validation.checkObjectEquality(res.body.access, expected);
 
