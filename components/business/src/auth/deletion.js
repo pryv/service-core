@@ -88,15 +88,6 @@ class Deletion {
       this.config.get('eventFiles:previewsDirPath'),
     ];
 
-    const notExistingDir = findNotExistingDir(paths);
-    if (notExistingDir) {
-      const error = new Error(`Base directory '${notExistingDir}' does not exist.`);
-      this.logger.error(error);
-      return next(
-        errors.unexpectedError(error)
-      );
-    }
-
     // NOTE User specific paths are constructed by appending the user _id_ to the
     // `paths` constant above. I know this because I read EventFiles#getXPath(...)
     // in components/storage/src/user/EventFiles.js.
@@ -157,23 +148,6 @@ class Deletion {
     next();
   }
 
-  async deleteOnRegister(
-    context: MethodContext,
-    params: mixed,
-    result: Result,
-    next: ApiCallback
-  ) {
-    
-    try {
-      const res = await this.serviceRegisterConn.deleteUser(params.username);
-      this.logger.debug('on register: ' + params.username, res);
-    } catch (e) { // user might have been deleted register we do not FW error just log it
-      this.logger.error(e);
-    }
-    next();
-  };
-
-
   async deleteUser(
     context: MethodContext,
     params: mixed,
@@ -217,6 +191,22 @@ class Deletion {
     }
     next();
   }
+
+  async deleteOnRegister(
+    context: MethodContext,
+    params: mixed,
+    result: Result,
+    next: ApiCallback
+  ) {
+    
+    try {
+      const res = await this.serviceRegisterConn.deleteUser(params.username);
+      this.logger.debug('on register: ' + params.username, res);
+    } catch (e) { // user might have been deleted register we do not FW error just log it
+      this.logger.error(e);
+    }
+    next();
+  };
 }
 
 function findNotExistingDir(paths: Array<string>): string {
@@ -243,7 +233,7 @@ function findNotAccessibleDir(paths: Array<string>): string {
 
       fs.accessSync(path, fs.constants.W_OK + fs.constants.X_OK);
     } catch (err) {
-      if (err.code === 'ENOENT') {
+      if (err.code === 'ENOENT') { // ignore if file does not exist
         continue;
       } else {
         notAccessibleDir = path;
