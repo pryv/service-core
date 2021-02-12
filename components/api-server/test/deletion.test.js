@@ -158,10 +158,11 @@ describe('DELETE /users/:username', async () => {
   
       describe('when given existing username', function() {
         let deletedOnRegister = false;
+        let userToDelete;
         before(async function() {
-          await initiateUserWithData(username1);
+          userToDelete = await initiateUserWithData(username1);
           await initiateUserWithData(username2);
-          if (! settingsToTest[i][0]) { // isDnsLess
+          if (! settingsToTest[i][0]) { // ! isDnsLess
             nock(regUrl)
             .delete('/users/' + username1, () => {
               deletedOnRegister = true;
@@ -205,7 +206,8 @@ describe('DELETE /users/:username', async () => {
           assert(sessions === null || sessions === []);
         });
         it(`[${testIDs[i][2]}] should delete user event files`, async function() {
-          const userFileExists = fs.existsSync(path.resolve(`test-file-${username1}`));
+          const pathToUserFiles = app.storageLayer.eventFiles.getAttachmentPath(userToDelete.attrs.id);
+          const userFileExists = fs.existsSync(pathToUserFiles);
           assert.isFalse(userFileExists);
         });
         it(`[${testIDs[i][3]}] should not delete entries of other users`, async function() {
@@ -242,7 +244,7 @@ describe('DELETE /users/:username', async () => {
           assert.notEqual(totalFilesSize, 0);
         });
         it(`[${testIDs[i][7]}] should delete on register`, async function() {
-          if (settingsToTest[i][0]) this.skip();
+          if (settingsToTest[i][0]) this.skip(); // isDnsLess
           assert.isTrue(deletedOnRegister);
         });
       });
