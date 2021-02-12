@@ -11,6 +11,7 @@ const rimraf = require('rimraf');
 const fs = require('fs');
 const path = require('path');
 const UsersRepository = require('business/src/users/repository');
+const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const errors = require('errors').factory;
 
 import type { MethodContext } from 'model';
@@ -23,12 +24,14 @@ class Deletion {
   storageLayer: any;
   config: any;
   usersRepository: UsersRepository;
+  serviceRegisterConn: ServiceRegister;
 
   constructor(logging: any, storageLayer: any, config: any) {
     this.logger = getLogger('business:deletion');
     this.storageLayer = storageLayer;
     this.config = config;
     this.usersRepository = new UsersRepository(this.storageLayer.events);
+    this.serviceRegisterConn = getServiceRegisterConn();
   }
 
 
@@ -153,6 +156,23 @@ class Deletion {
     await influx.dropDatabase(`user.${params.username}`);
     next();
   }
+
+  async deleteOnRegister(
+    context: MethodContext,
+    params: mixed,
+    result: Result,
+    next: ApiCallback
+  ) {
+    
+    try {
+      const res = await this.serviceRegisterConn.deleteUser(params.username);
+      this.logger.debug('on register: ' + params.username, res);
+    } catch (e) { // user might have been deleted register we do not FW error just log it
+      this.logger.error(e);
+    }
+    next();
+  };
+
 
   async deleteUser(
     context: MethodContext,

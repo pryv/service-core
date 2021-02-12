@@ -6,6 +6,7 @@
  */
 
 // @flow
+const nock = require('nock');
 const cuid = require('cuid');
 const fs = require('fs');
 const path = require('path');
@@ -39,9 +40,11 @@ let influx;
 let influxRepository;
 let config;
 let isOpenSource = false;
+let regUrl;
 
 describe('DELETE /users/:username', async () => {
   config = await getConfig();
+  regUrl = config.get('services:register:url');
 
   before(async function() {
     
@@ -132,9 +135,9 @@ describe('DELETE /users/:username', async () => {
 
   const settingsToTest = [[true, false], [false, false], [true, true]];
   const testIDs = [
-    ['CM5Q', 'BQXA', '4Y76', '710F', 'GUPH', 'JNVS', 'C58U'],
-    ['T21Z', 'K4J1', 'TIKT', 'WMMV', '9ZTM', 'T3UK', 'O73J'],
-    ['TPP2', '581Z', 'Z2FH', '4IH8', '33T6', 'SQ8P', '1F2Y']];
+    ['CM5Q', 'BQXA', '4Y76', '710F', 'GUPH', 'JNVS', 'C58U', 'IH6T'],
+    ['T21Z', 'K4J1', 'TIKT', 'WMMV', '9ZTM', 'T3UK', 'O73J', 'N8TR'],
+    ['TPP2', '581Z', 'Z2FH', '4IH8', '33T6', 'SQ8P', '1F2Y', '7D0J']];
   for (let i = 0; i < settingsToTest.length; i++) {
     
 
@@ -154,9 +157,19 @@ describe('DELETE /users/:username', async () => {
 
   
       describe('when given existing username', function() {
+        let deletedOnRegister = false;
         before(async function() {
           await initiateUserWithData(username1);
           await initiateUserWithData(username2);
+          if (! settingsToTest[i][0]) { // isDnsLess
+            nock(regUrl)
+            .delete('/users/' + username1, () => {
+              deletedOnRegister = true;
+              return true;
+            })
+            .times(1)
+            .reply(200, { deleted: true });
+          }
           res = await request.delete(`/users/${username1}`).set('Authorization', authKey);
         });
         it(`[${testIDs[i][0]}] should respond with 200`, function () {
@@ -227,6 +240,10 @@ describe('DELETE /users/:username', async () => {
             app.storageLayer.eventFiles.getTotalSize({ id: username2 }, cb)
           );
           assert.notEqual(totalFilesSize, 0);
+        });
+        it(`[${testIDs[i][7]}] should delete on register`, async function() {
+          if (settingsToTest[i][0]) this.skip();
+          assert.isTrue(deletedOnRegister);
         });
       });
       describe('when given invalid authorization key', function() {

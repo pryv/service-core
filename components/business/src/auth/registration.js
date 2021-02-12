@@ -11,7 +11,7 @@ const cuid = require('cuid');
 const errors = require('errors').factory;
 const { errorHandling } = require('errors');
 const mailing = require('api-server/src/methods/helpers/mailing');
-const ServiceRegister = require('./service_register');
+const { getServiceRegisterConn } = require('./service_register');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const UsersRepository = require('business/src/users/repository');
 const User = require('business/src/users/User');
@@ -38,8 +38,7 @@ class Registration {
     this.storageLayer = storageLayer;
     this.servicesSettings = servicesSettings;
 
-    this.serviceRegisterConn = new ServiceRegister(
-      servicesSettings.register);
+    this.serviceRegisterConn = getServiceRegisterConn();
     this.usersRepository = new UsersRepository(
       this.storageLayer.events,
       this.storageLayer.sessions,

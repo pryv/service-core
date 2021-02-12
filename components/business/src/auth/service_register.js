@@ -12,7 +12,7 @@ const ErrorIds = require('errors').ErrorIds,
   errors = require('errors').factory,
   ErrorMessages = require('errors/src/ErrorMessages');
 
-const { getLogger } = require('@pryv/boiler');
+const { getLogger, getConfigUnsafe } = require('@pryv/boiler');
 class ServiceRegister {
   config: {}; 
   logger;
@@ -20,6 +20,7 @@ class ServiceRegister {
   constructor(config: {}) {
     this.config = config; 
     this.logger = getLogger('service-register');
+    this.logger.debug('created with config', config);
   }
 
   async validateUser (
@@ -92,6 +93,22 @@ class ServiceRegister {
     }
   }
 
+  async deleteUser(username): Promise<void> {
+    const url = buildUrl('/users/' + username, this.config.url);
+    // log fact about the event
+    this.logger.info(`DELETE ${url} for username:${username}`);
+    try {
+      const res = await superagent
+        .delete(url)
+        .set('Authorization', this.config.key);     
+      return res.body;
+    } catch (err) {
+      this.logger.error(err);
+      throw new Error(err.message || 'Unexpected error.');
+    }
+  }
+
+
   /**
    * After indexed fields are updated, service-register is notified to update
    * the information
@@ -139,4 +156,17 @@ function buildUrl(path: string, url): string {
   return new urllib.URL(path, url);
 }
 
-module.exports = ServiceRegister;
+let serviceRegisterConn = null;
+/**
+ * @returns {ServiceRegister}
+ */
+function getServiceRegisterConn() {
+  if (! serviceRegisterConn) {
+    serviceRegisterConn = new ServiceRegister(getConfigUnsafe().get('services:register'))
+  }
+  return serviceRegisterConn;
+}
+
+module.exports = {
+  getServiceRegisterConn: getServiceRegisterConn
+};
