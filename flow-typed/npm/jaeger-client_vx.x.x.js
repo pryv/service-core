@@ -1,3 +1,9 @@
+/**
+ * @license
+ * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ */
 // flow-typed signature: b9a262f8522f6a0c278971939238f72d
 // flow-typed version: <<STUB>>/jaeger-client_v^3.8.0/flow_v0.113.0
 

@@ -4,8 +4,8 @@
   "private": true,
   "description": "RPC via TChannel and protobuf3.",
   "homepage": "http://pryv.com",
-  "license": "MIT",
-  "author": "Pryv S.A. <support@pryv.com> (http://pryv.com)",
+  "license": "UNLICENSED",
+  "author": "Pryv S.A. <info@pryv.com> (https://pryv.com)",
   "main": "src/index.js",
   "scripts": {
     "test": "../../node_modules/.bin/mocha -R dot 'test/**/*.test.js' --exit"
