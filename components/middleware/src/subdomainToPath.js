@@ -27,9 +27,6 @@ module.exports = function (ignoredPaths: Array<string>) {
 
     const hostChunks = req.headers.host.split('.');
     
-    // check for subdomain, assuming we have structure '<subdomain>.<2nd level domain>.<tld>
-    if (hostChunks.length < 3) return next();
-    
     // For security reasons, don't allow inserting anything into path unless it
     // looks like a user name. 
     const firstChunk = hostChunks[0];

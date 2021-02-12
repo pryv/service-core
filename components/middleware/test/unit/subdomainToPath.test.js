@@ -10,7 +10,7 @@ const supertest = require('supertest');
 const express = require('express');
 const should = require('should');
 
-const subdomainToPath = require('../../src/subdomainToPath')([]); 
+const subdomainToPath = require('middleware/src/subdomainToPath')([]); 
 
 /* globals describe, it */
 

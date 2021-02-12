@@ -309,7 +309,7 @@ class Registration {
     }
 
     if (Object.keys(uniquenessErrors).length > 0) {
-      return errors.itemAlreadyExists('user', uniquenessErrors);
+      return errors.itemAlreadyExists('user', ServiceRegister.safetyCleanDuplicate(uniquenessErrors, null, params));
     }
     // Any other error
     return errors.unexpectedError(err, message);

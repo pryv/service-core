@@ -23,6 +23,7 @@ exports = module.exports = function (action) {
 
   var base = object({
     'token': string({minLength: 1}),
+    'apiEndpoint': string({minLength: 1}),
     'name': string({minLength: 1}),
     'permissions': permissions(action),
     'lastUsed': helpers.number()
