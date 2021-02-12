@@ -145,19 +145,13 @@ class ServiceRegister {
   static safetyCleanDuplicate(foundDuplicates, username, params) {
     if (! foundDuplicates) return foundDuplicates;
     const res = {};
-    if (username && foundDuplicates.username) {
-      if (username === foundDuplicates.username) {
-        res.username = username;
-      } else {
-        notify('username');
-      }
-      delete foundDuplicates.username;
-    }
+    const newParams = Object.assign({}, params);
+    if (username) newParams.username = username; 
     for (const key of Object.keys(foundDuplicates)) {
-      if (foundDuplicates[key] === params[key]) {
+      if (foundDuplicates[key] === newParams[key]) {
         res[key] = foundDuplicates[key] ;
       } else {
-        notify(key + ' "' + foundDuplicates[key] + '" <> "' + params[key] + '"');
+        notify(key + ' "' + foundDuplicates[key] + '" <> "' + newParams[key] + '"');
       }
     }
     return res;
