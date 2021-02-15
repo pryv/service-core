@@ -1,3 +1,9 @@
+/**
+ * @license
+ * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ */
 // flow-typed signature: 09f6daeafc2c2a067284efc3e425d3fd
 // flow-typed version: <<STUB>>/eslint-plugin-flowtype_vlatest/flow_v0.113.0
 

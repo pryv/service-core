@@ -1,3 +1,9 @@
+/**
+ * @license
+ * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ */
 // flow-typed signature: f7d238209f95ef70612e272867370738
 // flow-typed version: ae5262dc1f/lodash_v4.x.x/flow_>=v0.104.x
 

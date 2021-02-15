@@ -1,3 +1,9 @@
+/**
+ * @license
+ * Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ */
 // flow-typed signature: 9e27f1f1dd927d123862d79ad56f1ffe
 // flow-typed version: <<STUB>>/babel-plugin-transform-class-properties_v^6.24.1/flow_v0.113.0
 

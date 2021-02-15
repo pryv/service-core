@@ -4,8 +4,8 @@
   "private": true,
   "description": "Service that receives notifications from NATS and sends them to existing Webhooks",
   "homepage": "http://pryv.com",
-  "license": "none",
-  "author": "Pryv S.A. <support@pryv.com> (http://pryv.com)",
+  "license": "UNLICENSED",
+  "author": "Pryv S.A. <info@pryv.com> (https://pryv.com)",
   "main": "./src/index.js",
   "scripts": {
     "_test": "NODE_ENV=test ../../node_modules/.bin/mocha --timeout 10000 --reporter=dot --exit 'test/**/*.js'",
