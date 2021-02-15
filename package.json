@@ -1,43 +1,55 @@
 {
   "name": "pryv-service-core",
-  "description": "Pryv core server app components",
   "version": "1.2.18",
   "private": true,
+  "description": "Pryv core server app components",
+  "homepage": "https://pryv.com",
   "repository": {
     "type": "git",
     "url": "git://github.com/pryv/service-core.git"
   },
+  "license": "UNLICENSED",
+  "author": "Pryv S.A. <info@pryv.com> (https://pryv.com)",
   "workspaces": {
     "packages": [
       "components/*"
     ]
   },
   "scripts": {
+    "api": "cd dist/components/api-server && NODE_ENV=development bin/server",
+    "build-dev": "scripts/prepare_dist && node_modules/.bin/babel ./components --out-dir=dist/components --copy-files --source-maps both",
     "cover": "yarn cover:clean && yarn cover:do && yarn cover:report",
     "cover:clean": "rm -rf .nyc_output",
     "cover:do": "node scripts/components-command ../../node_modules/.bin/nyc --no-clean --temp-dir=../../../.nyc_output yarn run test",
     "cover:report": "node_modules/.bin/nyc report --reporter=html",
-    "test": "node scripts/components-command yarn test",
     "database": "scripts/start-database.sh",
-    "api": "cd dist/components/api-server && NODE_ENV=development bin/server",
-    "local": "cd dist/components/api-server && NODE_ENV=development nodemon bin/server",
-    "previews": "cd dist/components/previews-server && npm start",
-    "metadata": "cd dist/components/metadata && bin/metadata",
-    "webhooks": "cd dist/components/webhooks && bin/server",
-    "nats": "gnatsd",
-    "influx": "influxd -config /usr/local/etc/influxdb.conf",
-    "setup": "yarn install --ignore-optionals",
-    "jsdoc": "node_modules/.bin/jsdoc -c jsdoc.json",
-    "test-root": "node_modules/.bin/mocha --compilers js:babel-register --timeout 10000 --reporter=dot test/**/*.test.js",
-    "watch": "node_modules/.bin/babel --verbose --watch=./components --out-dir=dist/components --copy-files --source-maps both",
-    "build-dev": "scripts/prepare_dist && node_modules/.bin/babel ./components --out-dir=dist/components --copy-files --source-maps both",
     "flow-coverage": "node_modules/.bin/flow-coverage-report -i 'components/**/*.js' -t html",
+    "influx": "influxd -config /usr/local/etc/influxdb.conf",
     "init-test-results-repo": "scripts/test-results/init_repo.sh",
-    "tag-tests": "node scripts/test-ids.js",
+    "jsdoc": "node_modules/.bin/jsdoc -c jsdoc.json",
+    "license": "node_modules/.bin/source-licenser licensing/config.yml licensing/LICENSE.src ./",
+    "local": "cd dist/components/api-server && NODE_ENV=development nodemon bin/server",
+    "metadata": "cd dist/components/metadata && bin/metadata",
+    "nats": "gnatsd",
     "output-test-results": "node scripts/test-results/test-results.js",
-    "upload-test-results": "scripts/test-results/upload.sh",
+    "previews": "cd dist/components/previews-server && npm start",
     "release": "scripts/prepare_dist && node_modules/.bin/babel ./components --verbose --out-dir=dist/components --copy-files",
-    "license": "cd licenser ; yarn install; yarn apply"
+    "setup": "yarn install --ignore-optionals",
+    "tag-tests": "node scripts/test-ids.js",
+    "test": "node scripts/components-command yarn test",
+    "test-root": "node_modules/.bin/mocha --compilers js:babel-register --timeout 10000 --reporter=dot test/**/*.test.js",
+    "upload-test-results": "scripts/test-results/upload.sh",
+    "watch": "node_modules/.bin/babel --verbose --watch=./components --out-dir=dist/components --copy-files --source-maps both",
+    "webhooks": "cd dist/components/webhooks && bin/server"
+  },
+  "pre-commit": [
+    "license"
+  ],
+  "resolutions": {
+    "**/bl": "^2.2.1",
+    "**/ini": "^1.3.6",
+    "**/node-fetch": "^2.6.1",
+    "**/socket.io": "^2.4.0"
   },
   "dependencies": {
     "@pryv/boiler": "https://github.com/pryv/lib-node-boiler.git",
@@ -114,23 +126,14 @@
     "pre-commit": "^1.2.2",
     "should": "^11.2.0",
     "socket.io-client": "^2.3.0",
+    "source-licenser": "1.0.2",
     "supertest": "^3.0.0",
     "temp": "^0.8.3",
     "tmp": "^0.0.33",
     "wrench": "latest"
   },
-  "resolutions": {
-    "**/bl": "^2.2.1",
-    "**/node-fetch": "^2.6.1",
-    "**/ini": "^1.3.6",
-    "**/socket.io": "^2.4.0"
-  },
   "engines": {
     "node": "12.x",
     "yarn": "1.x"
-  },
-  "pre-commit": [
-    "license"
-  ],
-  "license": "UNLICENSED"
+  }
 }

@@ -1,0 +1,19 @@
+---
+ignores: # If found in path contained elements will be ignored
+- node_modules
+- ".git"
+- dist/
+
+templating: ## Add your own values they will be replaced in fileSpecs and source licenseFile
+  AUTHOR_NAME: "Pryv S.A."
+  AUTHOR_EMAIL: info@pryv.com
+  AUTHOR_WEB: https://pryv.com
+  DESCRIPTION: "This package is part of Pryv.io - a Pryv S.A. Software"
+  HOMEPAGE: https://pryv.com
+  SPDX: UNLICENSED
+
+license:
+  year: ## Year value will be computed in the template as "YEARS" if start == end it will be just start otherwise START - END
+    start: 2012
+    end: CURRENT_YEAR
+  

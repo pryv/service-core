@@ -1,9 +1,11 @@
 {
   "name": "metadata",
   "version": "1.0.0",
+  "private": true,
+  "description": "This package is part of Pryv.io - a Pryv S.A. Software",
   "homepage": "http://pryv.com",
-  "license": "MIT",
-  "author": "Pryv S.A. <support@pryv.com> (http://pryv.com)",
+  "license": "UNLICENSED",
+  "author": "Pryv S.A. <info@pryv.com> (https://pryv.com)",
   "main": "src/index.js",
   "scripts": {
     "start": "node bin/server --config config/default-config.hjson",

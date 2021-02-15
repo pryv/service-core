@@ -52,7 +52,9 @@ you can try to delete your local Influx data before running the tests again:
 cd ~/.influxdb
 rm -r data
 ```
+
+
 # License
-Copyright (C) 2020 Pryv S.A. https://pryv.com - All Rights Reserved
+Copyright (C) 2012-2021 Pryv S.A. https://pryv.com - All Rights Reserved
 Unauthorized copying of this file, via any medium is strictly prohibited
 Proprietary and confidential
