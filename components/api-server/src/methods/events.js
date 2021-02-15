@@ -67,7 +67,7 @@ module.exports = async function (
   // initialize service-register connection
   let serviceRegisterConn = {};
   if (! config.get('dnsLess:isActive')) {
-    serviceRegisterConn = new ServiceRegister(config.get('services:register'));
+    serviceRegisterConn = getServiceRegisterConn();
   }
   
   // Initialise the project version as soon as we can. 
