@@ -1,5 +1,9 @@
 ## 1.6
 
+### 1.6.15
+
+- Fix user deletion
+
 ### 1.6.14
 
 - personal token can delete an account
