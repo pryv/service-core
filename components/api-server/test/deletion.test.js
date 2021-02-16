@@ -157,7 +157,7 @@ describe('DELETE /users/:username', async () => {
           await initiateUserWithData(username2);
           if (! settingsToTest[i][0]) { // ! isDnsLess
             nock(regUrl)
-            .delete('/users/' + username1, () => {
+            .delete('/users/' + username1 + '?onlyReg=true', () => {
               deletedOnRegister = true;
               return true;
             })
