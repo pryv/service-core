@@ -138,6 +138,7 @@ class Deletion {
     result: Result,
     next: ApiCallback
   ) {
+    if (this.config.get('openSource:isActive')) return next();
     // dynamic loading , because series functionality does not exist in opensource
     const InfluxConnection = require('business/src/series/influx_connection');
     const host = this.config.get('influxdb:host');
@@ -198,7 +199,7 @@ class Deletion {
     result: Result,
     next: ApiCallback
   ) {
-    
+    if (this.config.get('openSource:isActive') || this.config.get('dnsLess:isActive')) return next();
     try {
       const res = await this.serviceRegisterConn.deleteUser(params.username);
       this.logger.debug('on register: ' + params.username, res);
