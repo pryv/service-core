@@ -190,6 +190,7 @@ class Deletion {
       this.logger.error(error);
       return next(errors.unexpectedError(error));
     }
+    result.userDeletion = { username: context.user.username };
     next();
   }
 

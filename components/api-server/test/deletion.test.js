@@ -175,6 +175,7 @@ describe('DELETE /users/:username', async () => {
         });
         it(`[${testIDs[i][0]}] should respond with 200`, function () {
           assert.equal(res.status, 200);
+          assert.equal(res.body.userDeletion.username, username1);
         });
         it(`[${testIDs[i][1]}] should delete user entries from impacted collections`, async function() {
           const user = await usersRepository.getById(username1);
