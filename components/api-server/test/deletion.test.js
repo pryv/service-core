@@ -58,13 +58,6 @@ describe('DELETE /users/:username', async () => {
       app.config
     );
 
-    require('../src/methods/auth/delete-opensource')(
-      app.api,
-      app.logging,
-      app.storageLayer,
-      app.config
-    );
-
     request = supertest(app.expressApp);
 
     mongoFixtures = databaseFixture(await produceMongoConnection());
