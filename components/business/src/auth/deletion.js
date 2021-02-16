@@ -182,7 +182,7 @@ class Deletion {
 
       await bluebird.fromCallback((cb) =>
         this.storageLayer.sessions.remove(
-          { data: { username: context.user.username } },
+          { 'data.username': { $eq: context.user.username } },
           cb
         )
       );
