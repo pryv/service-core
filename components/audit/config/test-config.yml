@@ -12,7 +12,7 @@ logger:
     active: true
     filename: test-application.log
 
-audit:
+audit: # set to false to fully deactivate
   storage:
     active: true
     path: "./test-database/"

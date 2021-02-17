@@ -15,8 +15,8 @@ const { getConfig, getLogger } = require('@pryv/boiler').init({
     key: 'service',
     urlFromKey: 'serviceInfoUrl'
   }, {
-    scope: 'defaults-data',
-    file: path.resolve(__dirname, '../../../api-server/config/defaults.js')
+    scope: 'defaults-paths',
+    file: path.resolve(__dirname, '../../../api-server/config/paths-config.js')
   }, {
     plugin: require('../../../api-server/config/components/systemStreams')
   }]

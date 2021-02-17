@@ -18,8 +18,8 @@ const boiler = require('@pryv/boiler').init({
     key: 'service',
     urlFromKey: 'serviceInfoUrl'
   }, {
-    scope: 'defaults-data',
-    file: path.resolve(__dirname, '../config/defaults.js')
+    scope: 'defaults-paths',
+    file: path.resolve(__dirname, '../config/paths-config.js')
   },{
     plugin: require('../config/components/systemStreams')
   },{
