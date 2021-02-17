@@ -138,6 +138,7 @@ class Deletion {
     result: Result,
     next: ApiCallback
   ) {
+    if (this.config.get('openSource:isActive')) return next();
     // dynamic loading , because series functionality does not exist in opensource
     const InfluxConnection = require('business/src/series/influx_connection');
     const host = this.config.get('influxdb:host');
@@ -181,7 +182,7 @@ class Deletion {
 
       await bluebird.fromCallback((cb) =>
         this.storageLayer.sessions.remove(
-          { data: { username: context.user.username } },
+          { 'data.username': { $eq: context.user.username } },
           cb
         )
       );
@@ -189,6 +190,7 @@ class Deletion {
       this.logger.error(error);
       return next(errors.unexpectedError(error));
     }
+    result.userDeletion = { username: context.user.username };
     next();
   }
 
@@ -198,7 +200,7 @@ class Deletion {
     result: Result,
     next: ApiCallback
   ) {
-    
+    if (this.config.get('openSource:isActive') || this.config.get('dnsLess:isActive')) return next();
     try {
       const res = await this.serviceRegisterConn.deleteUser(params.username);
       this.logger.debug('on register: ' + params.username, res);

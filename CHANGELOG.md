@@ -1,5 +1,15 @@
 ## 1.6
 
+### 1.6.15
+
+- Fix user deletion
+
+### 1.6.14
+
+- personal token can delete an account
+- add external licenser: pryv/app-node-licenser
+- fix security issue with users registration conflicts leaking random email addresses
+
 ### 1.6.13
 
 - Unify configuration into boiler
