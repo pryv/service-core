@@ -107,7 +107,7 @@ describe("Accesses with account streams", function () {
       app.config.get('service:eventTypes'),
       notifications,
       app.logging,
-      app.config.get('audit'),
+      app.config.get('versioning'),
       app.config.get('updates'),
       app.config.get('openSource'),
       app.config.get('services'));

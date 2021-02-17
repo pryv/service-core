@@ -62,7 +62,7 @@ describe("System streams", function () {
       app.storageLayer.eventFiles,
       notifications,
       app.logging,
-      app.config.get('audit'),
+      app.config.get('versioning'),
       app.config.get('updates'));
   
     request = supertest(app.expressApp);
