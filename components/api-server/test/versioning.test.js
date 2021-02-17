@@ -42,7 +42,7 @@ describe('Versioning', function () {
 
   before(function (done) {
     var settings = _.cloneDeep(helpers.dependencies.settings);
-    settings.audit.forceKeepHistory = true;
+    settings.versioning.forceKeepHistory = true;
     async.series([
       testData.resetUsers,
       testData.resetAccesses,
@@ -59,7 +59,7 @@ describe('Versioning', function () {
 
   after(function (done) {
     var settings = _.cloneDeep(helpers.dependencies.settings);
-    settings.audit = {
+    settings.versioning = {
       forceKeepHistory: false,
       deletionMode: 'keep-nothing'
     };
@@ -106,7 +106,7 @@ describe('Versioning', function () {
       it('[FLLW] must delete the event\'s history when deleting it with deletionMode=keep-nothing',
         function (done) {
           var settings = _.cloneDeep(helpers.dependencies.settings);
-          settings.audit.deletionMode = 'keep-nothing';
+          settings.versioning.deletionMode = 'keep-nothing';
 
           async.series([
             server.ensureStarted.bind(server, settings),
@@ -149,7 +149,7 @@ describe('Versioning', function () {
       it('[6W0B] must minimize the event\'s history when deleting it with deletionMode=keep-authors',
         function (done) {
           var settings = _.cloneDeep(helpers.dependencies.settings);
-          settings.audit.deletionMode = 'keep-authors';
+          settings.versioning.deletionMode = 'keep-authors';
 
           async.series([
             server.ensureStarted.bind(server, settings),
@@ -201,7 +201,7 @@ describe('Versioning', function () {
         'deletionMode=keep-everything',
         function (done) {
           var settings = _.cloneDeep(helpers.dependencies.settings);
-          settings.audit.deletionMode = 'keep-everything';
+          settings.versioning.deletionMode = 'keep-everything';
 
           async.series([
             server.ensureStarted.bind(server, settings),
@@ -289,7 +289,7 @@ describe('Versioning', function () {
 
       before(function (done) {
         var settings = _.cloneDeep(helpers.dependencies.settings);
-        settings.audit.forceKeepHistory = false;
+        settings.versioning.forceKeepHistory = false;
         server.ensureStarted.call(server, settings, done);
       });
 
@@ -448,7 +448,7 @@ describe('Versioning', function () {
 
       before(function (done) {
         var settings = _.cloneDeep(helpers.dependencies.settings);
-        settings.audit.forceKeepHistory = true;
+        settings.versioning.forceKeepHistory = true;
         async.series([
           server.ensureStarted.bind(server, settings)
         ], done);
@@ -551,7 +551,7 @@ describe('Versioning', function () {
 
     before(function (done) {
       var settings = _.cloneDeep(helpers.dependencies.settings);
-      settings.audit = {
+      settings.versioning = {
         forceKeepHistory: true
       };
       server.ensureStarted.call(server, settings, done);
@@ -603,7 +603,7 @@ describe('Versioning', function () {
     it('[95TJ] must delete the events\' history when their stream is deleted with ' +
     ' mergeEventsWithParents=false and deletionMode=\'keep-nothing\'', function (done) {
       var settings = _.cloneDeep(helpers.dependencies.settings);
-      settings.audit = {
+      settings.versioning = {
         deletionMode: 'keep-nothing'
       };
       async.series([
@@ -647,7 +647,7 @@ describe('Versioning', function () {
     it('[4U91] must keep the events\' minimal history when their stream is deleted with ' +
     ' mergeEventsWithParents=false and deletionMode=\'keep-authors\'', function (done) {
       var settings = _.cloneDeep(helpers.dependencies.settings);
-      settings.audit = {
+      settings.versioning = {
         deletionMode: 'keep-authors'
       };
       async.series([
@@ -701,7 +701,7 @@ describe('Versioning', function () {
     it('[D4CY] must not delete the events\' history when their stream is deleted with' +
     ' mergeEventsWithParents=false and deletionMode=\'keep-everything\'', function (done) {
       var settings = _.cloneDeep(helpers.dependencies.settings);
-      settings.audit = {
+      settings.versioning = {
         deletionMode: 'keep-everything'
       };
       async.series([

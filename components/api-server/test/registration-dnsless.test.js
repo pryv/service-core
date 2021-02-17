@@ -62,7 +62,7 @@ describe('[BMM2] registration: DNS-less', () => {
       app.config.get('service:eventTypes'),
       notifications,
       app.logging,
-      app.config.get('audit'),
+      app.config.get('versioning'),
       app.config.get('updates'),
       app.config.get('openSource'),
       app.config.get('services'));

@@ -52,7 +52,7 @@ webhooks:
   maxRetries: 5
   runsSize: 20
 
-audit: 
+versioning: 
   forceKeepHistory: false
   deletionMode: 'keep-nothing'
 
