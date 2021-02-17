@@ -1,13 +1,6 @@
 .git
-*/node_modules
-build2/build-dev
-build2/build
-build/build-dev
-build/build
 var-pryv
 docs
-nbproject
 .github
 .vscode
-dist
-Jenkinsfile
+test

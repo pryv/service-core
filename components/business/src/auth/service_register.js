@@ -95,7 +95,7 @@ class ServiceRegister {
   }
 
   async deleteUser(username): Promise<void> {
-    const url = buildUrl('/users/' + username, this.config.url);
+    const url = buildUrl('/users/' + username + '?onlyReg=true', this.config.url);
     // log fact about the event
     this.logger.info(`DELETE ${url} for username:${username}`);
     try {

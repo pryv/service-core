@@ -23,8 +23,10 @@ module.exports = function(expressApp: express$Application, app: Application) {
 
   const initContextMiddleware = middleware.initContext(app.storageLayer);
   const loadAccessMiddleware = middleware.loadAccess(app.storageLayer);
+  
 
-  expressApp.delete('/users/:username', 
+  expressApp.delete('/users/:username',
+  middleware.getAuth,
   initContextMiddleware,
   function (req, res, next) {
     loadAccessMiddleware(req, res, function (err) { 
@@ -41,20 +43,11 @@ module.exports = function(expressApp: express$Application, app: Application) {
     req.context.authorizationHeader = req.headers.authorization;
     const isOpensource = getConfigUnsafe().get('openSource:isActive');
 
-    if (isOpensource) {
-      api.call(
-        'auth.delete.opensource',
-        req.context,
-        req.params,
-        methodCallback(res, next, 200)
-      );
-    }else{
-      api.call(
-        'auth.delete',
-        req.context,
-        req.params,
-        methodCallback(res, next, 200)
-      );
-    }
+    api.call(
+      'auth.delete',
+      req.context,
+      req.params,
+      methodCallback(res, next, 200)
+    );
   });
 };

@@ -58,13 +58,6 @@ describe('DELETE /users/:username', async () => {
       app.config
     );
 
-    require('../src/methods/auth/delete-opensource')(
-      app.api,
-      app.logging,
-      app.storageLayer,
-      app.config
-    );
-
     request = supertest(app.expressApp);
 
     mongoFixtures = databaseFixture(await produceMongoConnection());
@@ -164,7 +157,7 @@ describe('DELETE /users/:username', async () => {
           await initiateUserWithData(username2);
           if (! settingsToTest[i][0]) { // ! isDnsLess
             nock(regUrl)
-            .delete('/users/' + username1, () => {
+            .delete('/users/' + username1 + '?onlyReg=true', () => {
               deletedOnRegister = true;
               return true;
             })
@@ -175,6 +168,7 @@ describe('DELETE /users/:username', async () => {
         });
         it(`[${testIDs[i][0]}] should respond with 200`, function () {
           assert.equal(res.status, 200);
+          assert.equal(res.body.userDeletion.username, username1);
         });
         it(`[${testIDs[i][1]}] should delete user entries from impacted collections`, async function() {
           const user = await usersRepository.getById(username1);

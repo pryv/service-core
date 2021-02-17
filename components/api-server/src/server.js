@@ -119,17 +119,10 @@ class Server {
       application.storageLayer, 
       config.get('services'));
 
-    if (this.isOpenSource) {
-      require('./methods/auth/delete-opensource')(application.api,
-        application.logging,
-        application.storageLayer,
-        config);
-    } else {
       require('./methods/auth/delete')(application.api,
         application.logging,
         application.storageLayer,
         config);
-    }
 
     require('./methods/accesses')(
       application.api, 
