@@ -11,6 +11,7 @@ const APIError = require('errors').APIError;
 const errors = require('errors').factory;
 const Result = require('./Result');
 const _ = require('lodash');
+const audit = require('audit');
 
 // When storing full events.get request instead of streaming it, the maximum
 // array size before returning an error.
@@ -181,12 +182,13 @@ class API {
         next(err);
       }
     }, function (err) {
+      //TODO make audit failure blocking (maybe upfront) ?
+      audit.apiCall(id, context, params, err, result);
       if (err != null) {
         return callback(err instanceof APIError ? 
           err : 
           errors.unexpectedError(err));
       }
-      
       callback(null, result);
     });
   }

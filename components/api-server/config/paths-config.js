@@ -13,5 +13,10 @@ module.exports = {
   },
   customExtensions: {
     defaultFolder: path.join(__dirname, '../../../../custom-extensions')
+  },
+  audit: {
+    storage: {
+      path: path.join(__dirname, '../../../../../service-core-files/audit')
+    }
   }
 }

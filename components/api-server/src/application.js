@@ -17,7 +17,7 @@ const boiler = require('@pryv/boiler').init({
     scope: 'serviceInfo',
     key: 'service',
     urlFromKey: 'serviceInfoUrl'
-  }, {
+  },{
     scope: 'defaults-paths',
     file: path.resolve(__dirname, '../config/paths-config.js')
   },{
@@ -37,6 +37,7 @@ const errorsMiddlewareMod = require('./middleware/errors');
 
 const { getConfig, getLogger } = require('@pryv/boiler');
 const logger = getLogger('application');
+const audit = require('audit'); // Audit is loaded to be initalized by the Application.
 
 const { Extension, ExtensionLoader } = require('utils').extension;
 
@@ -91,7 +92,7 @@ class Application {
     logger.debug('Init started');
 
     this.config = await getConfig();
-   
+    await audit.init();
     this.produceStorageSubsystem(); 
     await this.createExpressApp();
     this.initiateRoutes();
