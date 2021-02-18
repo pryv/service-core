@@ -21,6 +21,8 @@ const testData = helpers.data;
 const timestamp = require('unix-timestamp');
 const _ = require('lodash');
 const R = require('ramda');
+const { ApiEndpoint } = require('utils');
+const { getConfig } = require('@pryv/boiler');
 
 describe('accesses (personal)', function () {
 
@@ -42,6 +44,14 @@ describe('accesses (personal)', function () {
   // to verify data change notifications
   var accessesNotifCount;
   server.on('accesses-changed', function () { accessesNotifCount++; });
+
+  function buildApiEndpoint(username, token) {
+    return ApiEndpoint.build(username, token);
+  }
+
+  before(async function() {
+    await getConfig(); // needed for ApiEndpoint.build();
+  });
 
   before(function (done) {
     async.series([
@@ -72,7 +82,7 @@ describe('accesses (personal)', function () {
           .removeDeletions(testData.accesses)
           .map(a =>  _.omit(a, 'calls'));
         for (let e of expected) {
-          e.apiEndpoint = 'https://'+e.token+'@userzero.pryv.me/'
+          e.apiEndpoint = buildApiEndpoint('userzero', e.token);
         }
         validation.check(res, {
           status: 200,
@@ -210,7 +220,7 @@ describe('accesses (personal)', function () {
               var expected = R.clone(data);
               expected.id = res.body.access.id;
               expected.token = res.body.access.token;
-              expected.apiEndpoint = 'https://'+expected.token+'@userzero.pryv.me/';
+              expected.apiEndpoint = buildApiEndpoint('userzero', expected.token);
               delete expected.permissions[0].name;
               delete expected.permissions[1].defaultName;
               delete expected.permissions[2].defaultName;
@@ -293,7 +303,7 @@ describe('accesses (personal)', function () {
         var expected = R.clone(data);
         expected.id = res.body.access.id;
         expected.token = res.body.access.token;
-        expected.apiEndpoint = 'https://'+expected.token+'@userzero.pryv.me/';
+        expected.apiEndpoint = buildApiEndpoint('userzero', expected.token);
         delete expected.permissions[0].defaultName;
         validation.checkObjectEquality(res.body.access, expected);
 
