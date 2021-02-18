@@ -314,7 +314,7 @@ describe('webhooks', function() {
         /**
          * The webhook running for this test is activated by other actions and might be run more than 6 times.
          */
-        await awaiting.delay(200);
+        await awaiting.delay(300);
         res = await apiServer.request()
           .get(`/${username}/webhooks`)
           .set('Authorization', appAccessToken);
