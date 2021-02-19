@@ -10,13 +10,13 @@ const _ = require('lodash');
 const cuid = require('cuid');
 const timestamp = require('unix-timestamp');
 const bluebird = require('bluebird');
-const encryption = require('utils').encryption;
 
 const treeUtils = require('utils/src/treeUtils');
 const SystemStreamsSerializer = require('business/src/system-streams/serializer');
 const UsersRepository = require('business/src/users/repository');
 
 const { getConfigUnsafe } = require('@pryv/boiler');
+const { ApiEndpoint , encryption } = require('utils')
 
 class User {
   // User properties that exists by default (email could not exist with specific config)
@@ -122,14 +122,7 @@ class User {
    * @param {*} isActive 
    */
   buildApiEndpoint(token) {
-    const apiFormat = getConfigUnsafe().get('service:api');
-    let apiEndpoint = apiFormat.replace('{username}', this.username);
-    if (token) {
-      let endpointElements = apiEndpoint.split('//');
-      endpointElements[1] = `${token}@${endpointElements[1]}`;
-      apiEndpoint = endpointElements.join('//');
-    }
-    return apiEndpoint;
+    return ApiEndpoint.build(this.username, token);
   }
 
   /**

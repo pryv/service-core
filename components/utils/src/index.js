@@ -13,6 +13,7 @@ module.exports = {
   treeUtils: require('./treeUtils'), 
   extension: require('./extension'),
   debug: require('./debug'),
+  ApiEndpoint: require('./api-endpoint')
 };
 
 // Reexport the Logger interface for external declarations. 
