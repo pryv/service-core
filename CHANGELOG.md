@@ -1,5 +1,9 @@
 ## 1.6
 
+### 1.6.16
+
+- Fix versioning: update unique system events bug
+
 ### 1.6.15
 
 - Fix user deletion
