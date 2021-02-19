@@ -166,7 +166,7 @@ class Server {
       application.storageLayer.eventFiles, 
       this.notificationBus, 
       application.logging, 
-      config.get('audit'), 
+      config.get('versioning'), 
       config.get('updates'));
 
     require('./methods/events')(application.api, 
@@ -176,7 +176,7 @@ class Server {
       config.get('service:eventTypes'), 
       this.notificationBus, 
       application.logging,
-      config.get('audit'),
+      config.get('versioning'),
       config.get('updates'), 
       config.get('openSource'), 
       config.get('services'));

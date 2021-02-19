@@ -112,7 +112,7 @@ describe("Events of system streams", () => {
       app.config.get('service:eventTypes'),
       notifications,
       app.logging,
-      app.config.get('audit'),
+      app.config.get('versioning'),
       app.config.get('updates'),
       app.config.get('openSource'),
       app.config.get('services'));
