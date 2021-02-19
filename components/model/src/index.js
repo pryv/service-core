@@ -11,5 +11,5 @@ module.exports = {
   MethodContext: require('./MethodContext')
 };
 
-import type { CustomAuthFunction }  from './MethodContext';
-export type { CustomAuthFunction };
+import type { CustomAuthFunction, ContextSource, ContextSourceName }  from './MethodContext';
+export type { CustomAuthFunction, ContextSource, ContextSourceName };

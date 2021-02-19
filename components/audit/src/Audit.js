@@ -13,7 +13,7 @@ const { getStorage, closeStorage } = require('./storage');
 const { getSyslog } = require('./syslog');
 
 const { getConfig, getLogger} = require('@pryv/boiler');
-const logger = getLogger('Application');
+const logger = getLogger('audit');
 
 // for an unkown reason removing ".js" returns an empty object
 const validation = require('./validation.js');
@@ -64,6 +64,30 @@ class Audit {
     
     if (this.storage) 
       this.storage.forUser(userid).createEvent(event); 
+  }
+
+  async apiCall(id, context, params, err, result) {
+    if (! context.user?.id) {
+      console.log('XX> Unkown user');
+      return;
+    }
+
+    const userid = context.user.id;
+    //console.log(context);
+    if (err) {
+      console.log('XXX> Error', userid);
+    } else { 
+      const event = {
+        type: 'log/user-api',
+        streamIds: [context.access?.id],
+        content: {
+          source: context.source,
+          action: id,
+          //query: params,
+        }
+      }
+      console.log('XXXX>', userid, event.content);
+    }
   }
 
   close() {

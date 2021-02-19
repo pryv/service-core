@@ -13,6 +13,8 @@
 const socketIO = require('socket.io');
 
 const MethodContext = require('model').MethodContext;
+import type {ContextSource} from 'model';
+
 const NATS_CONNECTION_URI = require('utils').messaging.NATS_CONNECTION_URI;
 
 const Manager = require('./Manager');
@@ -59,7 +61,12 @@ function setupSocketIO(
       const userName = manager.extractUsername(nsName);
       if (userName == null) throw new Error(`Invalid resource "${nsName}".`);
       if (query.auth == null) throw new Error("Missing 'auth' parameter with a valid access token.");
+      const contextSource: ContextSource = {
+        name: 'socket.io',
+        ip:  socket.handshake.headers['x-forwarded-for'] || socket.request.connection.remoteAddress
+      }
       const context = new MethodContext(
+        contextSource,
         userName,
         query.auth,
         customAuthStepFn,

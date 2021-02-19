@@ -5,7 +5,7 @@
  * Proprietary and confidential
  */
 const { getLogger } = require('@pryv/boiler');
-const logger = getLogger('Syslog:Templates');
+const logger = getLogger('audit:syslog:templates');
 var path = require('path');
 
 class SyslogTransform {

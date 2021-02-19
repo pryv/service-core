@@ -17,19 +17,27 @@ const chai = require('chai');
 const assert = chai.assert; 
 
 const MethodContext = require('../../src/MethodContext');
+import type { ContextSource } from 'model';
+
+const contextSource: ContextSource = {
+  name: 'test',
+  ip: '127.0.0.1'
+}
 
 describe('MethodContext', () => {
   describe('#parseAuth', () => {
     const username = 'USERNAME';
     const customAuthStep = null; 
+
+    
     
     it('[ZRW8] should parse token out', () => {
-      const mc = new MethodContext(username, 'TOKEN', customAuthStep);
+      const mc = new MethodContext(contextSource, username, 'TOKEN', customAuthStep);
       assert.strictEqual(mc.accessToken, 'TOKEN');
       assert.isNull(mc.callerId);
     });
     it('[AUIY] should also parse the callerId when available', () => {
-      const mc = new MethodContext(username, 'TOKEN CALLERID', customAuthStep);
+      const mc = new MethodContext(contextSource, username, 'TOKEN CALLERID', customAuthStep);
       assert.strictEqual(mc.accessToken, 'TOKEN');
       assert.strictEqual(mc.callerId, 'CALLERID');
     });
@@ -42,7 +50,7 @@ describe('MethodContext', () => {
     let access: Object;
     let mc, findOne, storage;
     beforeEach(() => {
-      mc = new MethodContext(username, 'TOKEN CALLERID', customAuthStep);
+      mc = new MethodContext(contextSource, username, 'TOKEN CALLERID', customAuthStep);
 
       access = {
         id: 'accessIdFromAccess', 

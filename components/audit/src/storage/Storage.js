@@ -9,7 +9,7 @@ const mkdirp = require('mkdirp').sync;
 const LRU = require('lru-cache');
 const UserDatabase = require('./UserDatabase');
 const { getConfig, getLogger } = require('@pryv/boiler');
-const logger = getLogger('Storage');
+const logger = getLogger('audit:storage');
 
 const MAX_SIZE_CACHE = 500;
 

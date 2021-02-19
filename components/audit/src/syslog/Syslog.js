@@ -7,7 +7,7 @@
 const winston = require('winston');
 require('winston-syslog').Syslog; // Exposes `winston.transports.Syslog`
 const { getConfig, getLogger } = require('@pryv/boiler');
-const logger = getLogger('Syslog');
+const logger = getLogger('audit:syslog');
 
 const templates = require('./templating');
 /**

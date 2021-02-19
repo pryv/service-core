@@ -9,7 +9,7 @@ const eventSchemas = require('./schemas/events')
 const {createFTSFor } = require('./FullTextSearchDataBase');
 const events = require('./schemas/events');
 const { getLogger } = require('@pryv/boiler');
-const logger = getLogger('UserDatabse');
+const logger = getLogger('audit:user-database');
 
 const DB_OPTIONS = {
 

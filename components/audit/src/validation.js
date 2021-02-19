@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  */
-const logger = require('@pryv/boiler').getLogger('validation');
+const logger = require('@pryv/boiler').getLogger('audit:validation');
 /**
  * Utilities to validate Messages
  */
