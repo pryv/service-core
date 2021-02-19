@@ -67,16 +67,20 @@ class Audit {
   }
 
   async apiCall(id, context, params, err, result) {
-    if (! context.user?.id) {
-      console.log('XX> Unkown user');
-      return;
-    }
+    
+    if (context.skipAudit) return; // some calls .. 'system.getUsersPoolSize'
 
-    const userid = context.user.id;
-    //console.log(context);
+    const userid = context.user?.id;
+    //console.log(context.access);
+   
     if (err) {
-      console.log('XXX> Error', userid);
+      
     } else { 
+       if (! context.access?.id || ! userid || ! context.source || ! context.source.ip ) {
+          console.log('XXX> Error UserId', userid, ' accesId:', context.access?.id, ' source:', context.source);
+          console.log(new Error());
+        }
+
       const event = {
         type: 'log/user-api',
         streamIds: [context.access?.id],
@@ -86,7 +90,7 @@ class Audit {
           //query: params,
         }
       }
-      console.log('XXXX>', userid, event.content);
+      //console.log('XXXX>', userid, event.streamIds, event.content);
     }
   }
 

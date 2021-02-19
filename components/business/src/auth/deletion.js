@@ -49,6 +49,8 @@ class Deletion {
     const canDelete = this.config.get('user-account:delete');
     if (canDelete.includes('adminToken')) {
       if(this.config.get('auth:adminAccessKey') === context.authorizationHeader) {
+        if (! context.access) context.access = {};
+        if (! context.access.id) context.access.id = 'admin'; // needed by Audit
         return next();
       }
     }

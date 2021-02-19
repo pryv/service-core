@@ -13,6 +13,8 @@ const contentType = require('middleware').contentType;
 const _ = require('lodash');
 const { getLogger } = require('@pryv/boiler');
 
+import type { ContextSource } from 'model';
+
 import type Application  from '../application';
 
 // System (e.g. registration server) calls route handling.
@@ -36,28 +38,40 @@ module.exports = function system(expressApp: express$Application, app: Applicati
   // DEPRECATED: remove after all reg servers updated
   expressApp.post('/register/create-user', contentType.json, createUser);
 
-  function createUser(req: express$Request, res, next) {
+  function mockMethodContext(req, sourceId) {
+    const contextSource: ContextSource = {
+      name: 'http',
+      ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress
+    }
+    return { 
+      source: contextSource,
+      access: {
+        id: sourceId || 'admin'
+      }
+    }
+  }
 
+  function createUser(req: express$Request, res, next) {
     let params = _.extend({}, req.body); 
-    systemAPI.call('system.createUser', {}, params, methodCallback(res, next, 201));
+    systemAPI.call('system.createUser', mockMethodContext(req), params, methodCallback(res, next, 201));
   }
 
   // Specific routes for managing users pool
   expressApp.post(Paths.System + '/pool/create-user', contentType.json, createPoolUser);
 
   function createPoolUser(req: express$Request, res, next) {
-    systemAPI.call('system.createPoolUser', {}, {}, methodCallback(res, next, 201));
+    systemAPI.call('system.createPoolUser', { skipAudit: true } , {}, methodCallback(res, next, 201));
   }
 
   expressApp.get(Paths.System + '/pool/size', function (req: express$Request, res, next) {
-    systemAPI.call('system.getUsersPoolSize', {}, {}, methodCallback(res, next, 200));
+    systemAPI.call('system.getUsersPoolSize', { skipAudit: true }, {}, methodCallback(res, next, 200));
   });
 
   expressApp.get(Paths.System + '/user-info/:username', function (req: express$Request, res, next) {
     var params = {
       username: req.params.username
     };
-    systemAPI.call('system.getUserInfo', {}, params, methodCallback(res, next, 200));
+    systemAPI.call('system.getUserInfo', mockMethodContext(req), params, methodCallback(res, next, 200));
   });
 
   // Checks if `req` contains valid authorization to access the system routes. 

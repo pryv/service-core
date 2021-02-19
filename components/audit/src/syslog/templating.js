@@ -37,7 +37,6 @@ class Plugin extends SyslogTransform {
     logger.debug('Using plugin ' + this.key);
     return this.plugin(userid, event);
   }
-
 }
 
 /**
