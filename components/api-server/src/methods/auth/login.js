@@ -30,6 +30,7 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
     openSession,
     updateOrCreatePersonalAccess,
     addApiEndpoint,
+    addAuditInfo,
     setAdditionalInfo);
 
   function applyPrerequisitesForLogin(context, params, result, next) {
@@ -128,6 +129,14 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
   function addApiEndpoint(context, params, result, next) {
     if (result.token) {
       result.apiEndpoint = context.user.buildApiEndpoint(result.token);
+    }
+    next();
+  }
+
+  function addAuditInfo(context, params, result, next) {
+    if (result.token) {
+      if (! context.access)  context.access = {};
+      if (! context.access.id)  context.access.id = 'password';
     }
     next();
   }
