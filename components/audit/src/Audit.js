@@ -77,7 +77,7 @@ class Audit {
       
     } else { 
        if (! context.access?.id || ! userid || ! context.source || ! context.source.ip ) {
-          console.log('XXX> Error UserId', userid, ' accesId:', context.access?.id, ' source:', context.source);
+          console.log('XXX> ApiCall', id, ' UserId', userid, ' accesId:', context.access?.id, ' source:', context.source);
           const e = new Error();
           const stack = e.stack.split('\n').filter(l => l.indexOf('node_modules') <0 );
           console.log(stack);

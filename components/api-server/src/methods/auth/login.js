@@ -30,7 +30,7 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
     openSession,
     updateOrCreatePersonalAccess,
     addApiEndpoint,
-    addAuditInfo,
+    addAuditAccessId,
     setAdditionalInfo);
 
   function applyPrerequisitesForLogin(context, params, result, next) {
@@ -133,7 +133,7 @@ module.exports = function (api, userAccessesStorage, sessionsStorage, userEvents
     next();
   }
 
-  function addAuditInfo(context, params, result, next) {
+  function addAuditAccessId(context, params, result, next) {
     if (result.token) {
       if (! context.access)  context.access = {};
       if (! context.access.id)  context.access.id = 'password';

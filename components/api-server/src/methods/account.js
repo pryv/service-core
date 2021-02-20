@@ -90,7 +90,8 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     commonFns.getParamsValidation(methodsSchema.changePassword.params),
     verifyOldPassword,
     addNewPasswordParameter,
-    updateAccount
+    updateAccount,
+    addAuditAccessId('password')
   );
 
   async function verifyOldPassword (context, params, result, next) {
@@ -113,7 +114,8 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     commonFns.getParamsValidation(methodsSchema.requestPasswordReset.params),
     requireTrustedAppFn,
     generatePasswordResetRequest,
-    sendPasswordResetMail);
+    sendPasswordResetMail,
+    addAuditAccessId('password-reset-request'));
 
   function generatePasswordResetRequest(context, params, result, next) {
     const username = context.user.username;
@@ -227,6 +229,15 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
       ));
     }
     next();
+  }
+
+  function addAuditAccessId(accessId) {
+    return function(context, params, result, next) {
+      if (! context.access)  context.access = {};
+      if (! context.access.id)  context.access.id = accessId;
+      //console.log('XXX>', context.access);
+      next();
+    }
   }
 
   /**
