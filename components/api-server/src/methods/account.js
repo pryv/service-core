@@ -160,7 +160,8 @@ module.exports = function (api, userEventsStorage, passwordResetRequestsStorage,
     requireTrustedAppFn,
     checkResetToken,
     addNewPasswordParameter,
-    updateAccount
+    updateAccount,
+    addAuditAccessId('password-reset-token')
   );
 
   function checkResetToken(context, params, result, next) {
