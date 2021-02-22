@@ -114,15 +114,10 @@ class Server {
       application.storageLayer, 
       config.get('services'));
 
-    require('./methods/auth/register-dnsless')(application.api, 
-      application.logging, 
-      application.storageLayer, 
-      config.get('services'));
-
-      require('./methods/auth/delete')(application.api,
-        application.logging,
-        application.storageLayer,
-        config);
+    require('./methods/auth/delete')(application.api,
+      application.logging,
+      application.storageLayer,
+      config);
 
     require('./methods/accesses')(
       application.api, 

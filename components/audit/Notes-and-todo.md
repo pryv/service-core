@@ -9,3 +9,7 @@ Hard coded ids:
   - password
   - password-reset-request
   - password-reset-token
+
+
+! WTF -- api.register('auth.usernameCheck' in method / register 
+Was implemented in dnsLess=False but seems it was never used

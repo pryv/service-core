@@ -28,24 +28,20 @@ module.exports = function (expressApp: express$Application, app: Application) {
   // POST /users: create a new user
   expressApp.post('/users', function (req: express$Request, res: express$Response, next: express$NextFunction) {
     const context = { host: req.headers.host };
-    if (isDnsLess) {
-      api.call('auth.register.dnsless', context, req.body, methodCallback(res, next, 201));
-    } else {
-      api.call('auth.register', context, req.body, methodCallback(res, next, 201));
-    }
+    api.call('auth.register', context, req.body, methodCallback(res, next, 201));
   });
   
   if (isDnsLess) {    
     expressApp.post(path.join(regPath, '/user'), function (req: express$Request, res: express$Response, next: express$NextFunction) {
       const context = { host: req.headers.host };
       if (req.body) req.body.appId = req.body.appid;
-      api.call('auth.register.dnsless', context, req.body, methodCallback(res, next, 201));
+      api.call('auth.register', context, req.body, methodCallback(res, next, 201));
     });
     expressApp.get(path.join(regPath, '/:username/check_username'), (req: express$Request, res, next) => {
-      api.call('auth.usernameCheck.dnsless', {}, req.params, methodCallback(res, next, 200));
+      api.call('auth.usernameCheck', {}, req.params, methodCallback(res, next, 200));
     });
     expressApp.get(path.join(regPath, '/:email/check_email'), (req: express$Request, res, next) => {
-      api.call('auth.emailCheck.dnsless', {}, req.params, methodCallback(res, next, 200));
+      api.call('auth.emailCheck', {}, req.params, methodCallback(res, next, 200));
     });
     expressApp.post(path.join(regPath, '/username/check'), (req: express$Request, res, next) => {
       next(errors.goneResource());

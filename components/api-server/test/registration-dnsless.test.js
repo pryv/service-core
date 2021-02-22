@@ -40,7 +40,7 @@ describe('[BMM2] registration: DNS-less', () => {
     app = new Application();
     await app.initiate();
 
-    require('api-server/src/methods/auth/register-dnsless')(
+    require('api-server/src/methods/auth/register')(
       app.api,
       app.logging,
       app.storageLayer,

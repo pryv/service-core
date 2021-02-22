@@ -82,7 +82,7 @@ class Audit {
           const stack = e.stack.split('\n').filter(l => l.indexOf('node_modules') <0 );
           console.log(stack);
           console.log('XXXX> Access:', context.access);
-          throw Error();
+          //throw Error();
         }
         
 
