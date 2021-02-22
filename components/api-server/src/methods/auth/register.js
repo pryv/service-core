@@ -10,6 +10,7 @@ const errors = require('errors').factory;
 const methodsSchema = require('api-server/src/schema/authMethods');
 const { getServiceRegisterConn } = require('business/src/auth/service_register');
 const Registration = require('business/src/auth/registration');
+const UsersRepository = require('business/src/users/repository');
 
 
 const { getConfigUnsafe } = require('@pryv/boiler');
@@ -34,6 +35,7 @@ module.exports = function (api, logging, storageLayer, servicesSettings) {
   // REGISTER
   const registration: Registration = new Registration(logging, storageLayer, servicesSettings);
   const serviceRegisterConn: ServiceRegister = getServiceRegisterConn();
+  const usersRepository = new UsersRepository(storageLayer.events);
 
   function skip(context, params, result, next) { next(); }
   function ifDnsLess(ifTrue, ifFalse) {
