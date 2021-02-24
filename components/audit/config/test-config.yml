@@ -25,3 +25,12 @@ audit: # set to false to fully deactivate
       test-filtered: # for 'log/filtered' event.type
         plugin: "./config/syslog-plugins/test-filtered.js"
         level: notice # can be overriden by plugin
+
+database:
+  host: 127.0.0.1
+  port: 27017
+  name: pryv-node-test # adding -test makes that fixtures don't use the same DB
+  authUser: ''
+  authPassword: ''
+
+serviceInfoUrl: file://./test/service-info.json

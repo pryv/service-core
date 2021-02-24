@@ -74,6 +74,7 @@ class Audit {
     //console.log(context.access);
    
     if (err) {
+      // ensure that we have access to everything we need here
       
     } else { 
        if (! context.access?.id || ! userid || ! context.source || ! context.source.ip ) {

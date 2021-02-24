@@ -23,3 +23,41 @@ audit:
       default:
         template: "{userid} {type} createdBy:{createdBy} {streamIds} {content}"
         level: notice # One of notice, warning, error, critical, alert, emerg
+
+
+# Necessary for api-server 
+
+auth:
+  filesReadTokenSecret: 'some_token'
+
+database:
+  host: 127.0.0.1
+  port: 27017
+  name: pryv-node
+  authUser: ''
+  authPassword: ''
+
+eventFiles: 
+  attachmentsDirPath: 'REPLACE ME'
+
+customExtensions: 
+  defaultFolder: 'REPLACE ME'
+  customAuthStepFn: ''
+
+openSource:
+  isActive: false
+dnsLess:
+  isActive: false
+updates: 
+  ignoreProtectedFields: false
+custom:
+  systemStreams:
+    account:
+    - isIndexed: true
+      isUnique: true
+      isShown: true
+      isEditable: true
+      type: email/string
+      name: Email
+      id: email
+      isRequiredInValidation: true
