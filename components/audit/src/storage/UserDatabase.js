@@ -78,7 +78,7 @@ class UserDatabase {
     this.create.events.run(eventForDb);
   }
 
-  getLogs(params) {
+  getLogs(params = {}) {
     
     const ands = [];
 
