@@ -7,7 +7,7 @@
 
 
 const path = require('path');
-
+const _ = require('lodash');
 
 const { getStorage, closeStorage } = require('./storage');
 const { getSyslog } = require('./syslog');
@@ -52,42 +52,45 @@ class Audit {
     logger.info('Application started');
   }
 
-  async eventForUser(userid, event) {
-    logger.debug('eventForUser: ' +userid + ' ' + logger.inspect(event));
-    const valid = validation.eventForUser(userid, event);
+  async eventForUser(userId, event) {
+    logger.debug('eventForUser: ' + userId + ' ' + logger.inspect(event));
+    const valid = validation.eventForUser(userId, event);
     if ( valid !== true) {
-      throw new Error('Invalid audit eventForUser call : ' + valid, {userid: userid, event: event}); 
+      throw new Error('Invalid audit eventForUser call : ' + valid, {userId: userId, event: event}); 
     }
 
     if (this.syslog)
-      this.syslog.eventForUser(userid, event);
+      this.syslog.eventForUser(userId, event);
     
     if (this.storage) 
-      this.storage.forUser(userid).createEvent(event); 
+      this.storage.forUser(userId).createEvent(event); 
   }
 
   async apiCall(id, context, params, err, result) {
     
     if (context.skipAudit) return; // some calls .. 'system.getUsersPoolSize'
 
-    const userid = context.user?.id;
+    const userId = context.user?.id;
     //console.log(context.access);
    
+    let event = {
+      createdBy: 'system',
+    }
+
     if (err) {
       // ensure that we have access to everything we need here
       
-    } else { 
-       if (! context.access?.id || ! userid || ! context.source || ! context.source.ip ) {
-          console.log('XXX E> ApiCall', id, ' UserId', userid, ' accesId:', context.access?.id, ' source:', context.source);
-          const e = new Error();
-          const stack = e.stack.split('\n').filter(l => l.indexOf('node_modules') <0 );
-          console.log(stack);
-          console.log('XXXX> Access:', context.access);
-          //throw Error();
-        }
-        
-
-      const event = {
+    } else {
+      if (! context.access?.id || ! userId || ! context.source || ! context.source.ip ) {
+        console.log('XXX E> ApiCall', id, ' UserId', userId, ' accesId:', context.access?.id, ' source:', context.source);
+        const e = new Error();
+        const stack = e.stack.split('\n').filter(l => l.indexOf('node_modules') <0 );
+        console.log(stack);
+        console.log('XXXX> Access:', context.access);
+        //throw Error();
+      }
+      
+      event = _.extend(event, {
         type: 'log/user-api',
         streamIds: [context.access?.id],
         content: {
@@ -95,8 +98,9 @@ class Audit {
           action: id,
           //query: params,
         }
-      }
-      //console.log('XXX> ApiCall', id, ' UserId', userid, ' accesId:', context.access?.id, ' source:', context.source);
+      });
+      this.eventForUser(userId, event);
+      //console.log('XXX> ApiCall', id, ' UserId', userId, ' accesId:', context.access?.id, ' source:', context.source);
     }
   }
 
