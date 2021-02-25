@@ -71,7 +71,6 @@ class Audit {
     if (context.skipAudit) return; // some calls .. 'system.getUsersPoolSize'
 
     const userId = context.user?.id;
-    //console.log(context.access);
    
     let event = {
       createdBy: 'system',
@@ -79,17 +78,16 @@ class Audit {
       content: {
         source: context.source,
         action: id,
-        status: 200
+        status: 200,
+        query: params,
       },
     }
 
     if (err) {
       // ensure that we have access to everything we need here
-
       event = _.extend(event, {
         streamIds: [context.access?.id],
         content: {
-          query: params,
           status: 400,
           error: {
             id: err.id,
