@@ -29,6 +29,7 @@ describe('Audit', function() {
     access = access.attrs;
     await user.session(access.token);
     user = user.attrs;
+    auditStorage = audit.storage.forUser(user.id);
   });
 
   after(async function() {
@@ -39,17 +40,16 @@ describe('Audit', function() {
   describe('when making valid API calls', function () {
     let res, now;
     before(async function () {
+      now = Date.now() / 1000;
       res = await coreRequest
         .get(basePath)
         .set('Authorization', access.token);
-      now = Date.now() / 1000;
     });
 
     it('must return 200', function () {
       assert.equal(res.status, 200);
     });
     it('must log it into the database', function () {
-      auditStorage = audit.storage.forUser(user.id);
       const entries = auditStorage.getLogs();
       assert.exists(entries);
       assert.equal(entries.length, 1);
@@ -63,7 +63,40 @@ describe('Audit', function() {
     
   });
 
-  describe('when making invalid API calls', function () {
+  describe('when making invalid API calls', function() {
+    let res, now;
+    describe('invalid-request-structure', function() {
+    });
+    describe('invalid-parameters-format', function() {
+      before(async function() {
+        now = Date.now() / 1000;
+        res = await coreRequest
+          .get(basePath)
+          .set('Authorization', access.token)
+          .query({
+            fromTime: 'yo'
+          });
+        
+      });
+      it('must return 400', function() {
+        assert.equal(res.status, 400);
+      });
+      it('must log it into the database', function() {
+        const entries = auditStorage.getLogs({ fromTime: now });
+        assert.exists(entries);
+        assert.equal(entries.length, 1);
+        const log = entries[0];
+        assert.equal()
+      })
+    });
+    describe('unknown-referenced-resourc', function() {
+    });
+    describe('invalid-access-token', function() {
+    });
+    describe('forbidden', function() {
+    });
+    describe('unknown-resource', function() {
+    });
     
   });
 

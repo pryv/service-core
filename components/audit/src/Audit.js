@@ -75,11 +75,29 @@ class Audit {
    
     let event = {
       createdBy: 'system',
+      type: 'log/user-api',
+      content: {
+        source: context.source,
+        action: id,
+        status: 200
+      },
     }
 
     if (err) {
       // ensure that we have access to everything we need here
-      
+
+      event = _.extend(event, {
+        streamIds: [context.access?.id],
+        content: {
+          query: params,
+          status: 400,
+          error: {
+            id: err.id,
+            message: err.message,
+            data: err.data,
+          }
+        }
+      });
     } else {
       if (! context.access?.id || ! userId || ! context.source || ! context.source.ip ) {
         console.log('XXX E> ApiCall', id, ' UserId', userId, ' accesId:', context.access?.id, ' source:', context.source);
@@ -91,17 +109,12 @@ class Audit {
       }
       
       event = _.extend(event, {
-        type: 'log/user-api',
         streamIds: [context.access?.id],
-        content: {
-          source: context.source,
-          action: id,
-          //query: params,
-        }
+        //query: params,
       });
-      this.eventForUser(userId, event);
       //console.log('XXX> ApiCall', id, ' UserId', userId, ' accesId:', context.access?.id, ' source:', context.source);
     }
+    this.eventForUser(userId, event);
   }
 
   close() {
