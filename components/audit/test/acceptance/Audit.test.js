@@ -29,7 +29,6 @@ describe('Audit', function() {
     access = access.attrs;
     await user.session(access.token);
     user = user.attrs;
-    console.log('created', user);
   });
 
   after(async function() {
@@ -38,12 +37,12 @@ describe('Audit', function() {
   });
 
   describe('when making valid API calls', function () {
-    let res;
+    let res, now;
     before(async function () {
       res = await coreRequest
         .get(basePath)
         .set('Authorization', access.token);
-      //console.log('got', res.body)
+      now = Date.now() / 1000;
     });
 
     it('must return 200', function () {
@@ -51,9 +50,15 @@ describe('Audit', function() {
     });
     it('must log it into the database', function () {
       auditStorage = audit.storage.forUser(user.id);
-      const entries = auditStorage.getLogs({createdBy: createdBy});
-      console.log('got', entries);
+      const entries = auditStorage.getLogs();
       assert.exists(entries);
+      assert.equal(entries.length, 1);
+      const log = entries[0];
+      assert.equal(log.streamIds[0], access.id, 'stream Id of audit log is not access Id');
+      assert.equal(log.content.source.name, 'http', 'source name is wrong');
+      assert.equal(log.content.action, 'events.get', 'action is wrong');
+      assert.approximately(log.created, now, 0.5, 'created timestamp is off');
+      assert.approximately(log.modified, now, 0.5, 'modified timestamp is off');
     });
     
   });
