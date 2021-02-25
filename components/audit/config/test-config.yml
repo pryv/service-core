@@ -1,5 +1,5 @@
 ---
-logger:
+logs:
   console:
     active: true
     level: debug
