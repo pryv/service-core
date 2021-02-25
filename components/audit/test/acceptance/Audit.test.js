@@ -32,7 +32,7 @@ describe('Audit', function() {
     readAccess = await user.access({
       type: 'app',
       token: cuid(),
-      permissions: [{streamId: 'not-yo', level: 'read'}],
+      permissions: [{streamId: 'yo', level: 'read'}],
     });
     readAccess = readAccess.attrs;
     user = user.attrs;
@@ -77,9 +77,9 @@ describe('Audit', function() {
       before(async function() {
         now = Date.now() / 1000;
         res = await coreRequest
-          .post(eventsPath)
+          .get(eventsPath)
           .set('Authorization', access.token)
-          .send('{"someProperty": ”<- bad opening quote"}')
+          .query({ streams: JSON.stringify({ any:  ['A', 'Z', true] }) }); // copied from 30NV
       });
       it('must return 400', function() {
         assert.equal(res.status, 400);
@@ -153,7 +153,7 @@ describe('Audit', function() {
         assert.equal(entries.length, 1);
         const log = entries[0];
         assert.exists(log.content.error)
-        assert.equal(log.content.error.id, 'unknown-referenced-resource');
+        assert.equal(log.content.error.id, 'invalid-access-token');
       })
     });
     describe('with errorId "forbidden"', function() {
@@ -177,7 +177,7 @@ describe('Audit', function() {
         assert.equal(entries.length, 1);
         const log = entries[0];
         assert.exists(log.content.error)
-        assert.equal(log.content.error.id, 'unknown-referenced-resource');
+        assert.equal(log.content.error.id, 'forbidden');
       })
     });
     describe('with errorId "unknown-resource"', function() {
