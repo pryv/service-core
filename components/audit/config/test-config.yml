@@ -1,7 +1,7 @@
 ---
 logs:
   console:
-    active: true
+    active: false
     level: debug
     format:
       color: true

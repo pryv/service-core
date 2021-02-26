@@ -10,12 +10,12 @@ const logger = require('@pryv/boiler').getLogger('audit:validation');
  */
 
  /**
-  * @param {identifier} userid 
+  * @param {identifier} userId 
   * @param {PryvEvent} event 
   */
-function eventForUser(userid, event) {
+function eventForUser(userId, event) {
   // validate uiserid
-  if (!userid) return 'missing userid';
+  if (!userId) return 'missing userId';
   if (!event) return 'event is null';
   if (!event.type) return 'event.type is missisng';
   if (!event.createdBy) return 'event.createBy is missing';
