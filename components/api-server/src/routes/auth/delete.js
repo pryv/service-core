@@ -42,8 +42,6 @@ module.exports = function(expressApp: express$Application, app: Application) {
   ) {
     req.context.username = req.params.username;
     req.context.authorizationHeader = req.headers.authorization;
-    const isOpensource = getConfigUnsafe().get('openSource:isActive');
-
     api.call(
       'auth.delete',
       req.context,
