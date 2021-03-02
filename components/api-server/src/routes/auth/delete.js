@@ -31,6 +31,7 @@ module.exports = function(expressApp: express$Application, app: Application) {
   function (req, res, next) {
     loadAccessMiddleware(req, res, function (err) { 
       // ignore errors as a valid adminAuthentication token might be presented
+      req.context.access = { id: 'system' }
       next();
     });
   },

@@ -28,6 +28,7 @@ const METHODS_WITHOUT_USER = [
 
 const METHODS_WITHOUT_ACCESS = [
   'auth.login',
+  'account.resetPassword',
 ];
 
 /**
@@ -116,7 +117,8 @@ class Audit {
       }
       this.eventForUser(userId, event);
     } else {
-      console.log('shouldnt be here', actionId);
+      event.streamIds = ['noAuth']
+      this.eventForUser('noUser', event);
     }
   }
 
@@ -182,7 +184,7 @@ function getAllActions() {
     'account.update',
     'account.changePassword',
     'account.requestPasswordReset',
-    'account.resetPassword',
+    //'account.resetPassword',
     'followedSlices.get',
     'followedSlices.create',
     'followedSlices.update',
