@@ -110,7 +110,10 @@ class Audit {
     }
 
     if (hasUser(actionId)) {
-      if (hasAccess(actionId)) {
+      // exception: auth.delete
+      if (maybeNoUser(actionId)) {
+        event.streamIds = context?.access?.id ? [context.access.id] : ['system'];
+      } else if (hasAccess(actionId)) {
         event.streamIds = [context.access.id];
       } else {
         event.streamIds = ['auth.login'];
@@ -149,6 +152,13 @@ module.exports = Audit;
  */
 function hasUser(actionId) {
   return ! METHODS_WITHOUT_USER.includes(actionId);
+}
+
+/**
+ * 
+ */
+function maybeNoUser(actionId) {
+  return actionId === 'auth.delete';
 }
 
 /**
