@@ -73,6 +73,25 @@ describe('Audit', function() {
 
   describe('when making invalid API calls', function() {
     let res, now;
+    describe('for an unknown user', function() {
+      before(async function() {
+        now = Date.now() / 1000;
+        res = await coreRequest
+          .get('/unknown-username/events/')
+          .set('Authorization', 'doesnt-matter')
+      });
+      it('must return 400', function() {
+        assert.equal(res.status, 404);
+      });
+      it('must log it into the database', function() {
+        const entries = auditStorage.getLogs({ fromTime: now });
+        assert.exists(entries);
+        assert.equal(entries.length, 1);
+        const log = entries[0];
+        assert.exists(log.content.error)
+        assert.equal(log.content.error.id, 'unknown-resource');
+      });
+    });
     describe('with errorId "invalid-request-structure"', function() {
       before(async function() {
         now = Date.now() / 1000;
@@ -91,7 +110,7 @@ describe('Audit', function() {
         const log = entries[0];
         assert.exists(log.content.error)
         assert.equal(log.content.error.id, 'invalid-request-structure');
-      })
+      });
     });
     describe('with errorId "invalid-parameters-format"', function() {
       before(async function() {
@@ -113,7 +132,7 @@ describe('Audit', function() {
         const log = entries[0];
         assert.exists(log.content.error)
         assert.equal(log.content.error.id, 'invalid-parameters-format');
-      })
+      });
     });
     describe('with errorId "unknown-referenced-resource"', function() {
       before(async function() {
@@ -135,7 +154,7 @@ describe('Audit', function() {
         const log = entries[0];
         assert.exists(log.content.error)
         assert.equal(log.content.error.id, 'unknown-referenced-resource');
-      })
+      });
     });
     describe('with errorId "invalid-access-token"', function() {
       before(async function() {
@@ -154,7 +173,7 @@ describe('Audit', function() {
         const log = entries[0];
         assert.exists(log.content.error)
         assert.equal(log.content.error.id, 'invalid-access-token');
-      })
+      });
     });
     describe('with errorId "forbidden"', function() {
       before(async function() {
@@ -178,7 +197,7 @@ describe('Audit', function() {
         const log = entries[0];
         assert.exists(log.content.error)
         assert.equal(log.content.error.id, 'forbidden');
-      })
+      });
     });
     describe('with errorId "unknown-resource"', function() {
       before(async function() {
@@ -197,7 +216,7 @@ describe('Audit', function() {
         const log = entries[0];
         assert.exists(log.content.error)
         assert.equal(log.content.error.id, 'unknown-resource');
-      })
+      });
     });
     
   });

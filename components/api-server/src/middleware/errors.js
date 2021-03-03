@@ -33,7 +33,7 @@ function produceHandleErrorMiddleware(logging: any) {
       error = errorsFactory.invalidRequestStructure(error.message);
     }
 
-    audit.apiCall(req.context.calledMethodId, req.context, {}, error);
+    audit.errorCall(req.context, {}, error);
 
     errorHandling.logError(error, req, logger);
 

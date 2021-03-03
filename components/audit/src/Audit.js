@@ -68,66 +68,87 @@ class Audit {
     logger.info('Application started');
   }
 
-  async apiCall(actionId, context, params, err, result) {
-    
+  async errorCall(context, params, error) {
     if (context.skipAudit) return; // some calls .. 'system.getUsersPoolSize'
 
-    const userId = context.user?.id;
+    let userId = context.user?.id;
+    const calledMethodId = context.calledMethodId;
 
-    let event = {
-      createdBy: 'system',
-      type: 'log/user-api',
-      content: {
-        source: context.source,
-        action: actionId,
-        status: 200,
-        query: params,
-      },
-    }
+    const event = buildDefaultEvent(context, params);
 
-    if (err) {
-      // ensure that we have access to everything we need here
-      event = _.extend(event, {
-        content: {
-          status: 400,
-          error: {
-            id: err.id,
-            message: err.message,
-            data: err.data,
-          }
-        }
-      });
-    } else {
-      if ( context.access?.id == null || context.source == null || context.source.ip == null ) {
-        console.log('XXX E> ApiCall', actionId, ' UserId', userId, ' accesId:', context.access?.id, ' source:', context.source);
-        const e = new Error();
-        const stack = e.stack.split('\n').filter(l => l.indexOf('node_modules') <0 );
-        console.log(stack);
-        console.log('XXXX> Access:', context.access);
-        //throw Error();
-      }
-      //console.log('XXX> ApiCall', actionId, ' UserId', userId, ' accesId:', context.access?.id, ' source:', context.source);
-    }
+    event.content.error = {
+      id: error.id,
+      message: error.message,
+      data: error.data,
+    };
 
-    if (hasUser(actionId)) {
+    if (hasUser(calledMethodId)) {
+
       // exception: auth.delete
-      if (maybeNoUser(actionId)) {
-        event.streamIds = context?.access?.id ? [context.access.id] : ['system'];
-      } else if (hasAccess(actionId)) {
-        if (context.access != null) {
+      if (maybeNoUser(calledMethodId)) {
+        if (context.access != null) {
+          // assume we have a user
+          event.streamIds = [context.access.id];  
+        } else {
+          userId = 'admin';
+          event.streamIds = ['system'];
+        }
+      } else if (hasAccess(calledMethodId)) {
+        if (context.access != null) {
           event.streamIds = [context.access.id];
         } else {
-          console.log('got', err.id)
+          console.log('got', error.id)
           event.streamIds = ['invalid-access-token'];
         }
       } else {
         event.streamIds = ['auth.login'];
       }
-      this.eventForUser(userId, event);
+
+      if (userId == null) userId = 'unknownUser';
     } else {
       event.streamIds = ['noAuth']
-      this.eventForUser('noUser', event);
+      userId = 'noUser'
     }
+    this.eventForUser(userId, event);
+  }
+
+  async validCall(context, params, result) {
+    
+    if (context.skipAudit) return; // some calls .. 'system.getUsersPoolSize'
+
+    let userId = context.user?.id;
+    const calledMethodId = context.calledMethodId;
+
+    const event = buildDefaultEvent(context, params);
+
+    if ( context.access?.id == null || context.source == null || context.source.ip == null ) {
+      console.log('XXX E> ApiCall', calledMethodId, ' UserId', userId, ' accesId:', context.access?.id, ' source:', context.source);
+      const e = new Error();
+      const stack = e.stack.split('\n').filter(l => l.indexOf('node_modules') <0 );
+      console.log(stack);
+      console.log('XXXX> Access:', context.access);
+    }
+
+    if (hasUser(calledMethodId)) {
+      // exception: auth.delete
+      if (maybeNoUser(calledMethodId)) {
+        if (context.access != null) {
+          // assume we have a user
+          event.streamIds = [context.access.id];  
+        } else {
+          userId = 'admin';
+          event.streamIds = ['system'];
+        }
+      } else if (hasAccess(calledMethodId)) {
+        event.streamIds = [context.access.id];
+      } else {
+        event.streamIds = ['auth.login'];
+      }
+    } else {
+      event.streamIds = ['noAuth']
+      userId = 'noUser';
+    }
+    this.eventForUser(userId, event);
   }
 
   async eventForUser(userId, event) {
@@ -155,22 +176,35 @@ module.exports = Audit;
 /**
  * See if the action should expect a userId.
  */
-function hasUser(actionId) {
-  return ! METHODS_WITHOUT_USER.includes(actionId);
+function hasUser(calledMethodId) {
+  return ! METHODS_WITHOUT_USER.includes(calledMethodId);
 }
 
 /**
  * 
  */
-function maybeNoUser(actionId) {
-  return actionId === 'auth.delete';
+function maybeNoUser(calledMethodId) {
+  return calledMethodId === 'auth.delete';
 }
 
 /**
  * See if the action should expect an accessId
  */
-function hasAccess(actionId) {
-  return hasUser(actionId) && ! METHODS_WITHOUT_ACCESS.includes(actionId);
+function hasAccess(calledMethodId) {
+  return hasUser(calledMethodId) && ! METHODS_WITHOUT_ACCESS.includes(calledMethodId);
+}
+
+function buildDefaultEvent(context, params) {
+  return {
+    createdBy: 'system',
+    type: 'log/user-api',
+    content: {
+      source: context.source,
+      action: context.calledMethodId,
+      status: 200,
+      query: params,
+    },
+  }
 }
 
 function getAllActions() {
