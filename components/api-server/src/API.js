@@ -179,12 +179,12 @@ class API {
       }
     }, function (err) {
       //TODO make audit failure blocking (maybe upfront) ?
-      audit.apiCall(context.calledMethodId, context, params, err, result);
       if (err != null) {
         return callback(err instanceof APIError ? 
           err : 
           errors.unexpectedError(err));
       }
+      audit.apiCall(context.calledMethodId, context, params, err, result);
       callback(null, result);
     });
   }
