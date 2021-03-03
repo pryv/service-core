@@ -12,6 +12,7 @@ import type Application  from '../../application';
 const { getConfigUnsafe } = require('@pryv/boiler');
 
 const middleware = require('middleware');
+const { setCalledMethodId } = require('middleware');
 
 /**
  * Routes for users
@@ -26,26 +27,22 @@ module.exports = function(expressApp: express$Application, app: Application) {
   
 
   expressApp.delete('/users/:username',
-  middleware.getAuth,
-  initContextMiddleware,
-  function (req, res, next) {
-    loadAccessMiddleware(req, res, function (err) { 
-      // ignore errors as a valid adminAuthentication token might be presented
-      next();
-    });
-  },
-  function callMethodAuthDelete(
-    req: express$Request,
-    res: express$Response,
-    next: express$NextFunction
-  ) {
-    req.context.username = req.params.username;
-    req.context.authorizationHeader = req.headers.authorization;
-    api.call(
-      'auth.delete',
-      req.context,
-      req.params,
-      methodCallback(res, next, 200)
-    );
+    middleware.getAuth,
+    initContextMiddleware,
+    setCalledMethodId('auth.delete'),
+    function (req, res, next) {
+      loadAccessMiddleware(req, res, function (err) { 
+        // ignore errors as a valid adminAuthentication token might be presented
+        next();
+      });
+    },
+    function callMethodAuthDelete(
+      req: express$Request,
+      res: express$Response,
+      next: express$NextFunction
+    ) {
+      req.context.username = req.params.username;
+      req.context.authorizationHeader = req.headers.authorization;
+      api.call(req.context, req.params, methodCallback(res, next, 200));
   });
 };

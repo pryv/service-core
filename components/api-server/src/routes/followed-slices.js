@@ -10,6 +10,7 @@ const methodCallback = require('./methodCallback');
 const Paths = require('./Paths');
 const _ = require('lodash');
 const middleware = require('middleware');
+const { setCalledMethodId } = require('middleware');
 
 import type Application  from '../application';
 
@@ -22,22 +23,28 @@ module.exports = function (expressApp: express$Application, app: Application) {
   // Require access for all FollowedSlices API methods.
   expressApp.all(Paths.FollowedSlices + '*', loadAccessMiddleware);
 
-  expressApp.get(Paths.FollowedSlices, function (req: express$Request, res, next) {
-    api.call('followedSlices.get', req.context, req.query, methodCallback(res, next, 200));
+  expressApp.get(Paths.FollowedSlices, 
+    setCalledMethodId('followedSlices.get'),
+    function (req: express$Request, res, next) {
+    api.call(req.context, req.query, methodCallback(res, next, 200));
   });
 
-  expressApp.post(Paths.FollowedSlices, function (req: express$Request, res, next) {
-    api.call('followedSlices.create', req.context, req.body, methodCallback(res, next, 201));
+  expressApp.post(Paths.FollowedSlices,
+    setCalledMethodId('followedSlices.create'),
+    function (req: express$Request, res, next) {
+    api.call(req.context, req.body, methodCallback(res, next, 201));
   });
 
-  expressApp.put(Paths.FollowedSlices + '/:id', function (req: express$Request, res, next) {
-    api.call('followedSlices.update', req.context, { id: req.params.id, update: req.body },
-      methodCallback(res, next, 200));
+  expressApp.put(Paths.FollowedSlices + '/:id', 
+    setCalledMethodId('followedSlices.update'),
+    function (req: express$Request, res, next) {
+    api.call(req.context, { id: req.params.id, update: req.body }, methodCallback(res, next, 200));
   });
 
-  expressApp.delete(Paths.FollowedSlices + '/:id', function (req: express$Request, res, next) {
-    api.call('followedSlices.delete', req.context, _.extend({ id: req.params.id }, req.query),
-      methodCallback(res, next, 200));
+  expressApp.delete(Paths.FollowedSlices + '/:id', 
+    setCalledMethodId('followedSlices.delete'),
+    function (req: express$Request, res, next) {
+    api.call(req.context, _.extend({ id: req.params.id }, req.query), methodCallback(res, next, 200));
   });
 
 };

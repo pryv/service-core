@@ -163,16 +163,12 @@ class API {
 
   // ------------------------------------------------------------ handling calls
   
-  call(id: string, context: MethodContext, params: mixed, callback: ApiCallback) {
+  call(context: MethodContext, params: mixed, callback: ApiCallback) {
     const methodMap = this.map; 
-    const methodList = methodMap.get(id);
+    const methodList = methodMap.get(context.calledMethodId);
 
     if (methodList == null) 
-      return callback(errors.invalidMethod(id), null);
-    
-    // Instrument the context with the method that was called. 
-    if (context != null)
-      context.calledMethodId = id; 
+      return callback(errors.invalidMethod(context.calledMethodId), null);
       
     const result = new Result({arrayLimit: RESULT_TO_OBJECT_MAX_ARRAY_SIZE});
     async.forEachSeries(methodList, function (currentFn, next) {
@@ -183,7 +179,7 @@ class API {
       }
     }, function (err) {
       //TODO make audit failure blocking (maybe upfront) ?
-      audit.apiCall(id, context, params, err, result);
+      audit.apiCall(context.calledMethodId, context, params, err, result);
       if (err != null) {
         return callback(err instanceof APIError ? 
           err : 

@@ -15,6 +15,8 @@ const { getConfigUnsafe } = require('@pryv/boiler');
 const regPath = require('../Paths').Register;
 const errors = require('errors').factory;
 
+const { setCalledMethodId } = require('middleware');
+
 /**
  * Routes for users
  * @param app
@@ -26,22 +28,30 @@ module.exports = function (expressApp: express$Application, app: Application) {
   const isOpenSource = getConfigUnsafe().get('openSource:isActive');
 
   // POST /users: create a new user
-  expressApp.post('/users', function (req: express$Request, res: express$Response, next: express$NextFunction) {
-    const context = { host: req.headers.host };
-    api.call('auth.register', context, req.body, methodCallback(res, next, 201));
+  expressApp.post('/users', 
+    setCalledMethodId('auth.register'),
+    function (req: express$Request, res: express$Response, next: express$NextFunction) {
+      req.context.host = req.headers.host;
+      api.call(req.context, req.body, methodCallback(res, next, 201));
   });
   
   if (isDnsLess) {    
-    expressApp.post(path.join(regPath, '/user'), function (req: express$Request, res: express$Response, next: express$NextFunction) {
-      const context = { host: req.headers.host };
-      if (req.body) req.body.appId = req.body.appid;
-      api.call('auth.register', context, req.body, methodCallback(res, next, 201));
+    expressApp.post(path.join(regPath, '/user'), 
+      setCalledMethodId('auth.register'),
+      function (req: express$Request, res: express$Response, next: express$NextFunction) {
+        req.context.host = req.headers.host;
+        if (req.body) req.body.appId = req.body.appid;
+        api.call(req.context, req.body, methodCallback(res, next, 201));
     });
-    expressApp.get(path.join(regPath, '/:username/check_username'), (req: express$Request, res, next) => {
-      api.call('auth.usernameCheck', {}, req.params, methodCallback(res, next, 200));
+    expressApp.get(path.join(regPath, '/:username/check_username'), 
+      setCalledMethodId('auth.usernameCheck'),
+      (req: express$Request, res, next) => {
+        api.call(req.context, req.params, methodCallback(res, next, 200));
     });
-    expressApp.get(path.join(regPath, '/:email/check_email'), (req: express$Request, res, next) => {
-      api.call('auth.emailCheck', {}, req.params, methodCallback(res, next, 200));
+    expressApp.get(path.join(regPath, '/:email/check_email'), 
+      setCalledMethodId('auth.emailCheck'),
+      (req: express$Request, res, next) => {
+        api.call(req.context, req.params, methodCallback(res, next, 200));
     });
     expressApp.post(path.join(regPath, '/username/check'), (req: express$Request, res, next) => {
       next(errors.goneResource());
