@@ -114,7 +114,12 @@ class Audit {
       if (maybeNoUser(actionId)) {
         event.streamIds = context?.access?.id ? [context.access.id] : ['system'];
       } else if (hasAccess(actionId)) {
-        event.streamIds = [context.access.id];
+        if (context.access != null) {
+          event.streamIds = [context.access.id];
+        } else {
+          console.log('got', err.id)
+          event.streamIds = ['invalid-access-token'];
+        }
       } else {
         event.streamIds = ['auth.login'];
       }
