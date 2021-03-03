@@ -144,8 +144,8 @@ describe('Audit', function() {
           .get(eventsPath)
           .set('Authorization', 'invalid-token')
       });
-      it('must return 401', function() {
-        assert.equal(res.status, 401);
+      it('must return 403', function() {
+        assert.equal(res.status, 403);
       });
       it('must log it into the database', function() {
         const entries = auditStorage.getLogs({ fromTime: now });
