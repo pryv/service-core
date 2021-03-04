@@ -21,7 +21,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
   const loadAccessMiddleware = middleware.loadAccess(app.storageLayer);
 
   expressApp.get(Paths.Accesses, 
-    setCalledMethodId('accesses.get'), // put it in context.calledMethodId (see API.js)
+    setCalledMethodId('accesses.get'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
       api.call(req.context, req.query, methodCallback(res, next, 200));

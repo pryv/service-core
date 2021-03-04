@@ -130,8 +130,8 @@ class Audit {
     }
 
     if (hasUser(calledMethodId)) {
-      // exception: auth.delete
       if (maybeNoUser(calledMethodId)) {
+        // exception: auth.delete
         if (context.access != null) {
           // assume we have a user
           event.streamIds = [context.access.id];  
