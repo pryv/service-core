@@ -8,22 +8,8 @@
 /**
  * Loaded by .mocharc.js for node tests
  */
-const path = require('path');
-const {getConfig} = require('@pryv/boiler').init(
-  {
-    appName: 'AuditTests',
-    baseConfigDir: path.resolve(__dirname, '../config'),
-    extraConfigs: [
-      {
-        scope: 'serviceInfo',
-        key: 'service',
-        urlFromKey: 'serviceInfoUrl'
-      },
-      {
-        plugin: require('api-server/config/components/systemStreams')
-      }
-    ]
-  });
+require('test-helpers/src/boiler-init');
+const { getConfig } = require('@pryv/boiler');
 
 const audit = require('../src/');
 
