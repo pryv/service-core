@@ -20,11 +20,9 @@ module.exports = function (expressApp: express$Application, app: Application) {
   const api = app.api;
   const loadAccessMiddleware = middleware.loadAccess(app.storageLayer);
 
-  // Require access for all FollowedSlices API methods.
-  expressApp.all(Paths.FollowedSlices + '*', loadAccessMiddleware);
-
   expressApp.get(Paths.FollowedSlices, 
     setMethodId('followedSlices.get'),
+    loadAccessMiddleware,
     function (req: express$Request, res, next) {
       req.context.params = req.query;
       api.call(req.context, methodCallback(res, next, 200));
@@ -32,6 +30,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
 
   expressApp.post(Paths.FollowedSlices,
     setMethodId('followedSlices.create'),
+    loadAccessMiddleware,
     function (req: express$Request, res, next) {
       req.context.params = req.body;
       api.call(req.context, methodCallback(res, next, 201));
@@ -39,6 +38,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
 
   expressApp.put(Paths.FollowedSlices + '/:id', 
     setMethodId('followedSlices.update'),
+    loadAccessMiddleware,
     function (req: express$Request, res, next) {
       req.context.params = { id: req.params.id, update: req.body };
       api.call(req.context, methodCallback(res, next, 200));
@@ -46,6 +46,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
 
   expressApp.delete(Paths.FollowedSlices + '/:id', 
     setMethodId('followedSlices.delete'),
+    loadAccessMiddleware,
     function (req: express$Request, res, next) {
       req.context.params = _.extend({ id: req.params.id }, req.query);
       api.call(req.context, methodCallback(res, next, 200));

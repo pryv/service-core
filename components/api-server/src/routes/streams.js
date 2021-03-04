@@ -21,9 +21,6 @@ module.exports = function (expressApp: express$Application, app: Application) {
   const api = app.api;
   const loadAccessMiddleware = middleware.loadAccess(app.storageLayer);
 
-  // Require access for all Streams API methods.
-  expressApp.all(Paths.Streams + '*', loadAccessMiddleware);
-
   expressApp.get(Paths.Streams, 
     loadAccessMiddleware,
     setMethodId('streams.get'),
