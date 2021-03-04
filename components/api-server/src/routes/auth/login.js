@@ -88,7 +88,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
         }
         const body: Object = req.body; 
         
-        var params = {
+        req.context.params = {
           username: body.username,
           password: body.password,
           appId: body.appId,
@@ -96,7 +96,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
           origin: req.headers.origin || req.headers.referer || ''
         };
         
-        api.call(req.context, params, function (err, result) {
+        api.call(req.context, function (err, result) {
           if (err) return next(err);
           setSSOCookie({ username: req.context.username, token: result.token }, res);
           methodCallback(res, next, 200)(err, result);
@@ -108,7 +108,8 @@ module.exports = function (expressApp: express$Application, app: Application) {
       loadAccessMiddleware,
       function routeLogout(req: RequestWithContext, res, next) {
         clearSSOCookie(res);
-        api.call(req.context, {}, methodCallback(res, next, 200));
+        req.context.params = {};
+        api.call(req.context, methodCallback(res, next, 200));
       });
   }
   

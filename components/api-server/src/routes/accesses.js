@@ -24,37 +24,40 @@ module.exports = function (expressApp: express$Application, app: Application) {
     setMethodId('accesses.get'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      api.call(req.context, req.query, methodCallback(res, next, 200));
+      req.context.params = req.query;
+      api.call(req.context, methodCallback(res, next, 200));
   });
 
   expressApp.post(Paths.Accesses, 
     setMethodId('accesses.create'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      api.call(req.context, req.body, methodCallback(res, next, 201));
+      req.context.params = req.body;
+      api.call(req.context, methodCallback(res, next, 201));
   });
 
   expressApp.put(Paths.Accesses + '/:id', 
     setMethodId('accesses.update'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      var params = { id: req.params.id, update: req.body };
-      api.call(req.context, params, methodCallback(res, next, 200));
+      req.context.params = { id: req.params.id, update: req.body };
+      api.call(req.context, methodCallback(res, next, 200));
   });
 
   expressApp.delete(Paths.Accesses + '/:id',
     setMethodId('accesses.delete'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      var params = _.extend({id: req.params.id}, req.query);
-      api.call(req.context, params, methodCallback(res, next, 200));
+      req.context.params = _.extend({id: req.params.id}, req.query);
+      api.call(req.context, methodCallback(res, next, 200));
   });
   
   expressApp.post(Paths.Accesses + '/check-app',
     setMethodId('accesses.checkApp'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      api.call(req.context, req.body, methodCallback(res, next, 200));
+      req.context.params = req.body;
+      api.call(req.context, methodCallback(res, next, 200));
   });
 
 };

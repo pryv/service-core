@@ -28,37 +28,38 @@ module.exports = function (expressApp: express$Application, app: Application) {
     loadAccessMiddleware,
     setMethodId('streams.get'),
     function (req: express$Request, res, next) {
-      const params = _.extend({}, req.query);
-      tryCoerceStringValues(params, {
+      req.context.params = _.extend({}, req.query);
+      tryCoerceStringValues(req.context.params, {
         includeDeletionsSince: 'number'
       });
-      api.call(req.context, params, methodCallback(res, next, 200));
+      api.call(req.context, methodCallback(res, next, 200));
   });
 
   expressApp.post(Paths.Streams, 
     loadAccessMiddleware,
     setMethodId('streams.create'),
     function (req: express$Request, res, next) {
-      api.call(req.context, req.body, methodCallback(res, next, 201));
+      req.context.params = req.body;
+      api.call(req.context, methodCallback(res, next, 201));
   });
 
   expressApp.put(Paths.Streams + '/:id', 
     loadAccessMiddleware,
     setMethodId('streams.update'),
     function (req: express$Request, res, next) {
-      api.call(req.context, { id: req.params.id, update: req.body },
-        methodCallback(res, next, 200));
+      req.context.params = { id: req.params.id, update: req.body };
+      api.call(req.context, methodCallback(res, next, 200));
   });
 
   expressApp.delete(Paths.Streams + '/:id',
     loadAccessMiddleware,
     setMethodId('streams.delete'),
     function (req: express$Request, res, next) {
-      const params = _.extend({id: req.params.id}, req.query);
-      tryCoerceStringValues(params, {
+      req.context.params = _.extend({id: req.params.id}, req.query);
+      tryCoerceStringValues(req.context.params, {
         mergeEventsWithParent: 'boolean'
       });
-      api.call(req.context, params, methodCallback(res, next, 200));
+      api.call(req.context, methodCallback(res, next, 200));
   });
 
 };

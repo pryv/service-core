@@ -163,7 +163,7 @@ class API {
 
   // ------------------------------------------------------------ handling calls
   
-  call(context: MethodContext, params: mixed, callback: ApiCallback) {
+  call(context: MethodContext, callback: ApiCallback) {
     const methodMap = this.map; 
     const methodList = methodMap.get(context.methodId);
 
@@ -173,7 +173,7 @@ class API {
     const result = new Result({arrayLimit: RESULT_TO_OBJECT_MAX_ARRAY_SIZE});
     async.forEachSeries(methodList, function (currentFn, next) {
       try {
-        currentFn(context, params, result, next);
+        currentFn(context, context.params, result, next);
       } catch (err) {
         next(err);
       }
@@ -184,7 +184,7 @@ class API {
           err : 
           errors.unexpectedError(err));
       }
-      audit.validCall(context, params, result);
+      audit.validCall(context, context.params, result);
       callback(null, result);
     });
   }
