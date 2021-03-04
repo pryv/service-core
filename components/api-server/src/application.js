@@ -138,7 +138,10 @@ class Application {
     require('./routes/streams')(this.expressApp, this);
 
     
-    if(!isOpenSource) require('./routes/webhooks')(this.expressApp, this);
+    if(!isOpenSource) {
+      require('./routes/webhooks')(this.expressApp, this);
+      require('audit/src/routes/audit.route')(this.expressApp, this);
+    }
   }
   
   produceLogSubsystem() {

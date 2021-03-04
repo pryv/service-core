@@ -89,6 +89,9 @@ class Result {
   webhooks: Array<Webhook>;
   
   webhookDeletion: itemDeletion;
+
+  auditLogs: ?Array<{}>;
+
   constructor(params?: ResultOptions) {
     this._private = { 
       init: false, first: true, 

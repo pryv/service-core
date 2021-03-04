@@ -13,7 +13,7 @@ describe('Audit', function() {
   let createdBy = cuid();
 
   let user, username, access, readAccess;
-  let eventsPath;
+  let eventsPath, auditPath;
   let auditStorage;
   
   before(async function() {
@@ -38,6 +38,7 @@ describe('Audit', function() {
     user = user.attrs;
     auditStorage = audit.storage.forUser(user.id);
     eventsPath = '/' + username + '/events/';
+    auditPath =  '/' + username + '/audit/logs/';
   });
 
   after(async function() {
@@ -62,6 +63,21 @@ describe('Audit', function() {
       assert.exists(entries);
       assert.equal(entries.length, 1);
       const log = entries[0];
+      assert.equal(log.streamIds[0], access.id, 'stream Id of audit log is not access Id');
+      assert.equal(log.content.source.name, 'http', 'source name is wrong');
+      assert.equal(log.content.action, 'events.get', 'action is wrong');
+      assert.approximately(log.created, now, 0.5, 'created timestamp is off');
+      assert.approximately(log.modified, now, 0.5, 'modified timestamp is off');
+    });
+    it('must return logs when queried', async function() {
+      res = await coreRequest
+        .get(auditPath)
+        .set('Authorization', access.token);
+      assert.equal(res.status, 200);
+      const logs = res.body.auditLogs;
+      assert.exists(logs);
+      assert.equal(logs.length, 1);
+      const log = logs[0];
       assert.equal(log.streamIds[0], access.id, 'stream Id of audit log is not access Id');
       assert.equal(log.content.source.name, 'http', 'source name is wrong');
       assert.equal(log.content.action, 'events.get', 'action is wrong');
