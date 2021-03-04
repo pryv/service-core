@@ -7,7 +7,7 @@
 const express = require('express');
 const Paths = require('./Paths');
 const methodCallback = require('./methodCallback');
-const { setCalledMethodId } = require('middleware');
+const { setMethodId } = require('middleware');
 
 import type Application  from '../application';
 
@@ -16,7 +16,7 @@ module.exports = function(expressApp: express$Application, app: Application) {
 
   // dnsLess compatible route
   expressApp.get('/reg/service/info', 
-    setCalledMethodId('service.info'),
+    setMethodId('service.info'),
     function (req: express$Request, res, next) {
       api.call(req.context, req.query, methodCallback(res, next, 200));
   });

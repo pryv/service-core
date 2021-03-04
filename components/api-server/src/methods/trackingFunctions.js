@@ -43,7 +43,7 @@ module.exports = function (
     try {
       const access = context?.access;
       if (access) {
-        const calledMethodKey = string.toMongoKey(context.calledMethodId);
+        const calledMethodKey = string.toMongoKey(context.methodId);
         const prevCallCount = (access.calls && access.calls[calledMethodKey]) ?
           access.calls[calledMethodKey] : 
           0;

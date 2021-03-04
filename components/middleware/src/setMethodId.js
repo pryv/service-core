@@ -7,14 +7,14 @@
 // @flow
 
 /**
- * Sets the calledMethodId to the Request.context object of the Express stack
+ * Sets the methodId to the Request.context object of the Express stack
  */
-module.exports = function setCalledMethodId(calledMethodId: string) {
+module.exports = function setMethodId(methodId: string) {
   return function (
     req: express$Request, res: express$Response, next: express$NextFunction
   ) {
     if (req.context == null) req.context = {};
-    req.context.calledMethodId = calledMethodId;
+    req.context.methodId = methodId;
     next();
   };
 };

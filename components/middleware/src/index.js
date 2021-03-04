@@ -16,6 +16,6 @@ module.exports = {
   notFound: require('./notFound'),
   override: require('./override'),
   requestTrace: require('./requestTrace'),
-  setCalledMethodId: require('./setCalledMethodId'),
+  setMethodId: require('./setMethodId'),
   subdomainToPath: require('./subdomainToPath')
 };

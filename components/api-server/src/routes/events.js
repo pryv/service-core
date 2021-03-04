@@ -15,7 +15,7 @@ const tryCoerceStringValues = require('../schema/validation').tryCoerceStringVal
 const _ = require('lodash');
 
 const middleware = require('middleware');
-const { setCalledMethodId } = require('middleware');
+const { setMethodId } = require('middleware');
 const hasFileUpload = require('../middleware/uploads').hasFileUpload;
 const attachmentsAccessMiddleware = require('../middleware/attachment_access');
 
@@ -41,7 +41,7 @@ module.exports = function(expressApp: express$Application, app: Application) {
   expressApp.use(Paths.Events, events);
 
   events.get('/',
-    setCalledMethodId('events.get'),
+    setMethodId('events.get'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
       var params = _.extend({}, req.query);
@@ -61,7 +61,7 @@ module.exports = function(expressApp: express$Application, app: Application) {
     });
 
   events.get('/:id',
-    setCalledMethodId('events.getOne'),
+    setMethodId('events.getOne'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
       var params = _.extend({id: req.params.id}, req.query);
@@ -80,7 +80,7 @@ module.exports = function(expressApp: express$Application, app: Application) {
   //  will be missing upon file access. 
   // 
   expressApp.get(Paths.Events + '/:id/:fileId/:fileName?', 
-    setCalledMethodId('events.getAttachment'),
+    setMethodId('events.getAttachment'),
     retrieveAccessFromReadToken, 
     loadAccessMiddleware,
     attachmentsAccessMiddleware(storage.events), 
@@ -130,7 +130,7 @@ module.exports = function(expressApp: express$Application, app: Application) {
 
   // Create an event.
   events.post('/', 
-    setCalledMethodId('events.create'),
+    setMethodId('events.create'),
     loadAccessMiddleware,
     hasFileUpload,
     function (req: express$Request, res, next) {
@@ -147,7 +147,7 @@ module.exports = function(expressApp: express$Application, app: Application) {
     });
 
   expressApp.put(Paths.Events + '/:id',
-    setCalledMethodId('events.update'),
+    setMethodId('events.update'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
       api.call(req.context, { id: req.params.id, update: req.body }, methodCallback(res, next, 200));
@@ -160,7 +160,7 @@ module.exports = function(expressApp: express$Application, app: Application) {
   
   // Update an event
   events.post('/:id',
-    setCalledMethodId('events.update'),
+    setMethodId('events.update'),
     loadAccessMiddleware,
     hasFileUpload,
     function (req: express$Request, res, next) {
@@ -177,14 +177,14 @@ module.exports = function(expressApp: express$Application, app: Application) {
     });
 
   events.delete('/:id',
-    setCalledMethodId('events.delete'),
+    setMethodId('events.delete'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
       api.call(req.context, {id: req.params.id}, methodCallback(res, next, 200));
     });
 
   events.delete('/:id/:fileId',
-    setCalledMethodId('events.deleteAttachment'),
+    setMethodId('events.deleteAttachment'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
       api.call(req.context, {id: req.params.id, fileId: req.params.fileId}, methodCallback(res, next, 200));

@@ -54,7 +54,7 @@ class MethodContext {
   callerId: ?string;
   headers: ?object; // used in custom auth function
 
-  calledMethodId: ?string // API method id. Ex.: 'events.get'
+  methodId: ?string // API method id. Ex.: 'events.get'
   
   skipAudit: ?boolean
 
@@ -67,7 +67,7 @@ class MethodContext {
   streamIdsNotFoundList: ?Array<string>;
   systemStreamsSerializer: object;
 
-  calledMethodId: ?string;
+  methodId: ?string;
   usersRepository: UsersRepository;
 
   constructor(
@@ -93,7 +93,7 @@ class MethodContext {
     this.callerId = null;
     this.headers = headers;
 
-    this.calledMethodId = null;
+    this.methodId = null;
     this.systemStreamsSerializer = SystemStreamsSerializer.getSerializer();
     this.usersRepository = new UsersRepository(eventsStorage);
     if (auth != null) this.parseAuth(auth);

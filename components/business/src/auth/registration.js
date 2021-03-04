@@ -179,7 +179,7 @@ class Registration {
     }
 
     try {
-      const createUserWithSession = (context.calledMethodId === 'system.createPoolUser') ? false : true;
+      const createUserWithSession = (context.methodId === 'system.createPoolUser') ? false : true;
       context.user = await this.usersRepository.insertOne(context.user, createUserWithSession);
     } catch (err) {
       return next(Registration.handleUniquenessErrors(

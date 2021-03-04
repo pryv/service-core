@@ -12,7 +12,7 @@ import type Application  from '../../application';
 const { getConfigUnsafe } = require('@pryv/boiler');
 
 const middleware = require('middleware');
-const { setCalledMethodId } = require('middleware');
+const { setMethodId } = require('middleware');
 
 /**
  * Routes for users
@@ -29,7 +29,7 @@ module.exports = function(expressApp: express$Application, app: Application) {
   expressApp.delete('/users/:username',
     middleware.getAuth,
     initContextMiddleware,
-    setCalledMethodId('auth.delete'),
+    setMethodId('auth.delete'),
     function (req, res, next) {
       loadAccessMiddleware(req, res, function (err) { 
         // ignore errors as a valid adminAuthentication token might be presented

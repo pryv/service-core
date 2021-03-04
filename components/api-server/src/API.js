@@ -165,10 +165,10 @@ class API {
   
   call(context: MethodContext, params: mixed, callback: ApiCallback) {
     const methodMap = this.map; 
-    const methodList = methodMap.get(context.calledMethodId);
+    const methodList = methodMap.get(context.methodId);
 
     if (methodList == null) 
-      return callback(errors.invalidMethod(context.calledMethodId), null);
+      return callback(errors.invalidMethod(context.methodId), null);
       
     const result = new Result({arrayLimit: RESULT_TO_OBJECT_MAX_ARRAY_SIZE});
     async.forEachSeries(methodList, function (currentFn, next) {

@@ -12,7 +12,7 @@ const methodCallback = require('./methodCallback');
 const contentType = require('middleware').contentType;
 const _ = require('lodash');
 const { getLogger } = require('@pryv/boiler');
-const { setCalledMethodId } = require('middleware');
+const { setMethodId } = require('middleware');
 
 import type { ContextSource } from 'model';
 
@@ -35,12 +35,12 @@ module.exports = function system(expressApp: express$Application, app: Applicati
 
 
   expressApp.post(Paths.System + '/create-user', contentType.json,
-    setCalledMethodId('system.createUser'),
+    setMethodId('system.createUser'),
     createUser);
 
   // DEPRECATED: remove after all reg servers updated
   expressApp.post('/register/create-user', contentType.json, 
-    setCalledMethodId('system.createUser'),
+    setMethodId('system.createUser'),
     createUser);
 
   function mockMethodContext(req, sourceId) {
@@ -63,7 +63,7 @@ module.exports = function system(expressApp: express$Application, app: Applicati
 
   // Specific routes for managing users pool
   expressApp.post(Paths.System + '/pool/create-user', contentType.json, 
-    setCalledMethodId('system.createPoolUser'),
+    setMethodId('system.createPoolUser'),
     function (req: express$Request, res, next) {
       systemAPI.call(_.merge(req.context, { skipAudit: true }), {}, methodCallback(res, next, 201));
   });
@@ -71,13 +71,13 @@ module.exports = function system(expressApp: express$Application, app: Applicati
   
 
   expressApp.get(Paths.System + '/pool/size', 
-    setCalledMethodId('system.getUsersPoolSize'),
+    setMethodId('system.getUsersPoolSize'),
     function (req: express$Request, res, next) {
       systemAPI.call(_.merge(req.context, { skipAudit: true }), {}, methodCallback(res, next, 200));
   });
 
   expressApp.get(Paths.System + '/user-info/:username',
-    setCalledMethodId('system.getUserInfo'),
+    setMethodId('system.getUserInfo'),
     function (req: express$Request, res, next) {
       const params = {
         username: req.params.username

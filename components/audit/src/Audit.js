@@ -72,7 +72,7 @@ class Audit {
     if (context.skipAudit) return; // some calls .. 'system.getUsersPoolSize'
 
     let userId = context.user?.id;
-    const calledMethodId = context.calledMethodId;
+    const methodId = context.methodId;
 
     const event = buildDefaultEvent(context, params);
 
@@ -82,10 +82,10 @@ class Audit {
       data: error.data,
     };
 
-    if (hasUser(calledMethodId)) {
+    if (hasUser(methodId)) {
 
       // exception: auth.delete
-      if (maybeNoUser(calledMethodId)) {
+      if (maybeNoUser(methodId)) {
         if (context.access != null) {
           // assume we have a user
           event.streamIds = [context.access.id];  
@@ -93,7 +93,7 @@ class Audit {
           userId = 'admin';
           event.streamIds = ['system'];
         }
-      } else if (hasAccess(calledMethodId)) {
+      } else if (hasAccess(methodId)) {
         if (context.access != null) {
           event.streamIds = [context.access.id];
         } else {
@@ -117,20 +117,20 @@ class Audit {
     if (context.skipAudit) return; // some calls .. 'system.getUsersPoolSize'
 
     let userId = context.user?.id;
-    const calledMethodId = context.calledMethodId;
+    const methodId = context.methodId;
 
     const event = buildDefaultEvent(context, params);
 
     if ( context.access?.id == null || context.source == null || context.source.ip == null ) {
-      console.log('XXX E> ApiCall', calledMethodId, ' UserId', userId, ' accesId:', context.access?.id, ' source:', context.source);
+      console.log('XXX E> ApiCall', methodId, ' UserId', userId, ' accesId:', context.access?.id, ' source:', context.source);
       const e = new Error();
       const stack = e.stack.split('\n').filter(l => l.indexOf('node_modules') <0 );
       console.log(stack);
       console.log('XXXX> Access:', context.access);
     }
 
-    if (hasUser(calledMethodId)) {
-      if (maybeNoUser(calledMethodId)) {
+    if (hasUser(methodId)) {
+      if (maybeNoUser(methodId)) {
         // exception: auth.delete
         if (context.access != null) {
           // assume we have a user
@@ -139,7 +139,7 @@ class Audit {
           userId = 'admin';
           event.streamIds = ['system'];
         }
-      } else if (hasAccess(calledMethodId)) {
+      } else if (hasAccess(methodId)) {
         event.streamIds = [context.access.id];
       } else {
         event.streamIds = ['auth.login'];
@@ -176,22 +176,22 @@ module.exports = Audit;
 /**
  * See if the action should expect a userId.
  */
-function hasUser(calledMethodId) {
-  return ! METHODS_WITHOUT_USER.includes(calledMethodId);
+function hasUser(methodId) {
+  return ! METHODS_WITHOUT_USER.includes(methodId);
 }
 
 /**
  * 
  */
-function maybeNoUser(calledMethodId) {
-  return calledMethodId === 'auth.delete';
+function maybeNoUser(methodId) {
+  return methodId === 'auth.delete';
 }
 
 /**
  * See if the action should expect an accessId
  */
-function hasAccess(calledMethodId) {
-  return hasUser(calledMethodId) && ! METHODS_WITHOUT_ACCESS.includes(calledMethodId);
+function hasAccess(methodId) {
+  return hasUser(methodId) && ! METHODS_WITHOUT_ACCESS.includes(methodId);
 }
 
 function buildDefaultEvent(context, params) {
@@ -200,7 +200,7 @@ function buildDefaultEvent(context, params) {
     type: 'log/user-api',
     content: {
       source: context.source,
-      action: context.calledMethodId,
+      action: context.methodId,
       status: 200,
       query: params,
     },

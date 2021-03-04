@@ -15,7 +15,7 @@ const { getConfigUnsafe } = require('@pryv/boiler');
 const regPath = require('../Paths').Register;
 const errors = require('errors').factory;
 
-const { setCalledMethodId } = require('middleware');
+const { setMethodId } = require('middleware');
 
 /**
  * Routes for users
@@ -29,7 +29,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
 
   // POST /users: create a new user
   expressApp.post('/users', 
-    setCalledMethodId('auth.register'),
+    setMethodId('auth.register'),
     function (req: express$Request, res: express$Response, next: express$NextFunction) {
       req.context.host = req.headers.host;
       api.call(req.context, req.body, methodCallback(res, next, 201));
@@ -37,19 +37,19 @@ module.exports = function (expressApp: express$Application, app: Application) {
   
   if (isDnsLess) {    
     expressApp.post(path.join(regPath, '/user'), 
-      setCalledMethodId('auth.register'),
+      setMethodId('auth.register'),
       function (req: express$Request, res: express$Response, next: express$NextFunction) {
         req.context.host = req.headers.host;
         if (req.body) req.body.appId = req.body.appid;
         api.call(req.context, req.body, methodCallback(res, next, 201));
     });
     expressApp.get(path.join(regPath, '/:username/check_username'), 
-      setCalledMethodId('auth.usernameCheck'),
+      setMethodId('auth.usernameCheck'),
       (req: express$Request, res, next) => {
         api.call(req.context, req.params, methodCallback(res, next, 200));
     });
     expressApp.get(path.join(regPath, '/:email/check_email'), 
-      setCalledMethodId('auth.emailCheck'),
+      setMethodId('auth.emailCheck'),
       (req: express$Request, res, next) => {
         api.call(req.context, req.params, methodCallback(res, next, 200));
     });

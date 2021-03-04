@@ -9,7 +9,7 @@
 const express = require('express');
 const Paths = require('./Paths');
 const methodCallback = require('./methodCallback');
-const { setCalledMethodId } = require('middleware');
+const { setMethodId } = require('middleware');
 
 import type Application  from '../application';
 
@@ -19,7 +19,7 @@ import type Application  from '../application';
 module.exports = function(expressApp: express$Application, app: Application) {  
   const api = app.api;
   expressApp.get(Paths.Service + '/info', 
-    setCalledMethodId('service.info'),
+    setMethodId('service.info'),
     function (req: express$Request, res, next) {
       api.call(req.context, req.query, methodCallback(res, next, 200));
   });
@@ -27,7 +27,7 @@ module.exports = function(expressApp: express$Application, app: Application) {
   // Old route, we keep it for backward compatibility
   // but we should remove it
   expressApp.get(Paths.Service + '/infos',
-    setCalledMethodId('service.info'),
+    setMethodId('service.info'),
     function (req: express$Request, res, next) {
       api.call(req.context, req.query, methodCallback(res, next, 200));
   });

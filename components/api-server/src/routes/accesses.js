@@ -10,7 +10,7 @@ const methodCallback = require('./methodCallback');
 const Paths = require('./Paths');
 const _ = require('lodash');
 const middleware = require('middleware');
-const { setCalledMethodId } = require('middleware');
+const { setMethodId } = require('middleware');
 
 import type Application  from '../application';
 
@@ -21,21 +21,21 @@ module.exports = function (expressApp: express$Application, app: Application) {
   const loadAccessMiddleware = middleware.loadAccess(app.storageLayer);
 
   expressApp.get(Paths.Accesses, 
-    setCalledMethodId('accesses.get'),
+    setMethodId('accesses.get'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
       api.call(req.context, req.query, methodCallback(res, next, 200));
   });
 
   expressApp.post(Paths.Accesses, 
-    setCalledMethodId('accesses.create'),
+    setMethodId('accesses.create'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
       api.call(req.context, req.body, methodCallback(res, next, 201));
   });
 
   expressApp.put(Paths.Accesses + '/:id', 
-    setCalledMethodId('accesses.update'),
+    setMethodId('accesses.update'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
       var params = { id: req.params.id, update: req.body };
@@ -43,7 +43,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
   });
 
   expressApp.delete(Paths.Accesses + '/:id',
-    setCalledMethodId('accesses.delete'),
+    setMethodId('accesses.delete'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
       var params = _.extend({id: req.params.id}, req.query);
@@ -51,7 +51,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
   });
   
   expressApp.post(Paths.Accesses + '/check-app',
-    setCalledMethodId('accesses.checkApp'),
+    setMethodId('accesses.checkApp'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
       api.call(req.context, req.body, methodCallback(res, next, 200));

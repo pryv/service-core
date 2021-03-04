@@ -11,7 +11,7 @@ const Paths = require('./Paths');
 const tryCoerceStringValues = require('../schema/validation').tryCoerceStringValues;
 const _ = require('lodash');
 const middleware = require('middleware');
-const { setCalledMethodId } = require('middleware');
+const { setMethodId } = require('middleware');
 
 import type Application  from '../application';
 
@@ -26,7 +26,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
 
   expressApp.get(Paths.Streams, 
     loadAccessMiddleware,
-    setCalledMethodId('streams.get'),
+    setMethodId('streams.get'),
     function (req: express$Request, res, next) {
       const params = _.extend({}, req.query);
       tryCoerceStringValues(params, {
@@ -37,14 +37,14 @@ module.exports = function (expressApp: express$Application, app: Application) {
 
   expressApp.post(Paths.Streams, 
     loadAccessMiddleware,
-    setCalledMethodId('streams.create'),
+    setMethodId('streams.create'),
     function (req: express$Request, res, next) {
       api.call(req.context, req.body, methodCallback(res, next, 201));
   });
 
   expressApp.put(Paths.Streams + '/:id', 
     loadAccessMiddleware,
-    setCalledMethodId('streams.update'),
+    setMethodId('streams.update'),
     function (req: express$Request, res, next) {
       api.call(req.context, { id: req.params.id, update: req.body },
         methodCallback(res, next, 200));
@@ -52,7 +52,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
 
   expressApp.delete(Paths.Streams + '/:id',
     loadAccessMiddleware,
-    setCalledMethodId('streams.delete'),
+    setMethodId('streams.delete'),
     function (req: express$Request, res, next) {
       const params = _.extend({id: req.params.id}, req.query);
       tryCoerceStringValues(params, {

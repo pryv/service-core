@@ -12,7 +12,7 @@ const express = require('express');
 
 const errors = require('errors').factory;
 const middleware = require('middleware');
-const { setCalledMethodId } = require('middleware');
+const { setMethodId } = require('middleware');
 
 const methodCallback = require('../methodCallback');
 const Paths = require('../Paths');
@@ -80,7 +80,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
       return next(errors.goneResource());
     });
     router.post('/login', 
-      setCalledMethodId('auth.login'),
+      setMethodId('auth.login'),
       function routeLogin(req: RequestWithContext, res, next) {
         if (typeof req.body !== 'object' || req.body == null ||
           ! hasProperties(req.body, ['username', 'password', 'appId'])) {
@@ -104,7 +104,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
 
     });
     router.post('/logout',
-      setCalledMethodId('auth.logout'),
+      setMethodId('auth.logout'),
       loadAccessMiddleware,
       function routeLogout(req: RequestWithContext, res, next) {
         clearSSOCookie(res);

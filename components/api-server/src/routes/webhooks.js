@@ -10,7 +10,7 @@ const methodCallback = require('./methodCallback');
 const Paths = require('./Paths');
 const _ = require('lodash');
 const middleware = require('middleware');
-const { setCalledMethodId } = require('middleware');
+const { setMethodId } = require('middleware');
 
 const API = require('../API');
 import type Application  from '../application';
@@ -29,14 +29,14 @@ module.exports = function (expressApp: express$Application, app: Application) {
 
   expressApp.get(Paths.Webhooks, 
     loadAccessMiddleware,
-    setCalledMethodId('webhooks.get'),
+    setMethodId('webhooks.get'),
     function (req: express$Request, res: express$Response, next: express$NextFunction) {
       api.call(req.context, req.query, methodCallback(res, next, 200));
   });
 
   expressApp.get(Paths.Webhooks + '/:id', 
     loadAccessMiddleware,
-    setCalledMethodId('webhooks.getOne'),
+    setMethodId('webhooks.getOne'),
     function (req: express$Request, res: express$Response, next: express$NextFunction) {
       const params = _.extend({ id: req.params.id }, req.query);
       api.call(req.context, params, methodCallback(res, next, 200));
@@ -44,14 +44,14 @@ module.exports = function (expressApp: express$Application, app: Application) {
 
   expressApp.post(Paths.Webhooks, 
     loadAccessMiddleware,
-    setCalledMethodId('webhooks.create'),
+    setMethodId('webhooks.create'),
     function (req: express$Request, res: express$Response, next: express$NextFunction) {
       api.call(req.context, req.body, methodCallback(res, next, 201));
   });
 
   expressApp.put(Paths.Webhooks + '/:id', 
     loadAccessMiddleware,
-    setCalledMethodId('webhooks.update'),
+    setMethodId('webhooks.update'),
     function (req: express$Request, res: express$Response, next: express$NextFunction) {
       const params = { id: req.params.id, update: req.body };
       api.call(req.context, params, methodCallback(res, next, 200));
@@ -59,7 +59,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
 
   expressApp.delete(Paths.Webhooks + '/:id', 
     loadAccessMiddleware,
-    setCalledMethodId('webhooks.delete'),
+    setMethodId('webhooks.delete'),
     function (req: express$Request, res: express$Response, next: express$NextFunction) {
       const params = _.extend({ id: req.params.id }, req.query);
       api.call(req.context, params, methodCallback(res, next, 200));
@@ -67,7 +67,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
 
   expressApp.post(Paths.Webhooks + '/:id/test', 
     loadAccessMiddleware,
-    setCalledMethodId('webhooks.test'),
+    setMethodId('webhooks.test'),
     function (req: express$Request, res: express$Response, next: express$NextFunction) {
       const params = _.extend({ id: req.params.id }, req.query);
       api.call(req.context, params, methodCallback(res, next, 200));

@@ -344,7 +344,7 @@ class Connection {
 
     // Make sure that we have a callback here. 
    
-    this.methodContext.calledMethodId = apiMethod;
+    this.methodContext.methodId = apiMethod;
     
     const methodContext = this.methodContext;
 
