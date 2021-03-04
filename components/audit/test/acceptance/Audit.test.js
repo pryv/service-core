@@ -58,17 +58,6 @@ describe('Audit', function() {
     it('must return 200', function () {
       assert.equal(res.status, 200);
     });
-    it('must log it into the database', function () {
-      const entries = auditStorage.getLogs();
-      assert.exists(entries);
-      assert.equal(entries.length, 1);
-      const log = entries[0];
-      assert.equal(log.streamIds[0], access.id, 'stream Id of audit log is not access Id');
-      assert.equal(log.content.source.name, 'http', 'source name is wrong');
-      assert.equal(log.content.action, 'events.get', 'action is wrong');
-      assert.approximately(log.created, now, 0.5, 'created timestamp is off');
-      assert.approximately(log.modified, now, 0.5, 'modified timestamp is off');
-    });
     it('must return logs when queried', async function() {
       res = await coreRequest
         .get(auditPath)
@@ -99,8 +88,13 @@ describe('Audit', function() {
       it('must return 400', function() {
         assert.equal(res.status, 404);
       });
-      it('must log it into the database', function() {
-        const entries = auditStorage.getLogs({ fromTime: now });
+      it('must return logs when queried', async function() {
+        res = await coreRequest
+          .get(auditPath)
+          .set('Authorization', access.token)
+          .query({ fromTime: now });
+        assert.equal(res.status, 200);
+        const entries = res.body.auditLogs;
         assert.exists(entries);
         assert.equal(entries.length, 1);
         const log = entries[0];
@@ -119,8 +113,13 @@ describe('Audit', function() {
       it('must return 400', function() {
         assert.equal(res.status, 400);
       });
-      it('must log it into the database', function() {
-        const entries = auditStorage.getLogs({ fromTime: now });
+      it('must return logs when queried', async function() {
+        res = await coreRequest
+          .get(auditPath)
+          .set('Authorization', access.token)
+          .query({ fromTime: now });
+        assert.equal(res.status, 200);
+        const entries = res.body.auditLogs;
         assert.exists(entries);
         assert.equal(entries.length, 1);
         const log = entries[0];
@@ -141,8 +140,13 @@ describe('Audit', function() {
       it('must return 400', function() {
         assert.equal(res.status, 400);
       });
-      it('must log it into the database', function() {
-        const entries = auditStorage.getLogs({ fromTime: now });
+      it('must return logs when queried', async function() {
+        res = await coreRequest
+          .get(auditPath)
+          .set('Authorization', access.token)
+          .query({ fromTime: now });
+        assert.equal(res.status, 200);
+        const entries = res.body.auditLogs;
         assert.exists(entries);
         assert.equal(entries.length, 1);
         const log = entries[0];
@@ -163,8 +167,13 @@ describe('Audit', function() {
       it('must return 400', function() {
         assert.equal(res.status, 400);
       });
-      it('must log it into the database', function() {
-        const entries = auditStorage.getLogs({ fromTime: now });
+      it('must return logs when queried', async function() {
+        res = await coreRequest
+          .get(auditPath)
+          .set('Authorization', access.token)
+          .query({ fromTime: now });
+        assert.equal(res.status, 200);
+        const entries = res.body.auditLogs;
         assert.exists(entries);
         assert.equal(entries.length, 1);
         const log = entries[0];
@@ -182,8 +191,13 @@ describe('Audit', function() {
       it('must return 403', function() {
         assert.equal(res.status, 403);
       });
-      it('must log it into the database', function() {
-        const entries = auditStorage.getLogs({ fromTime: now });
+      it('must return logs when queried', async function() {
+        res = await coreRequest
+          .get(auditPath)
+          .set('Authorization', access.token)
+          .query({ fromTime: now });
+        assert.equal(res.status, 200);
+        const entries = res.body.auditLogs;
         assert.exists(entries);
         assert.equal(entries.length, 1);
         const log = entries[0];
@@ -206,8 +220,13 @@ describe('Audit', function() {
       it('must return 403', function() {
         assert.equal(res.status, 403);
       });
-      it('must log it into the database', function() {
-        const entries = auditStorage.getLogs({ fromTime: now });
+      it('must return logs when queried', async function() {
+        res = await coreRequest
+          .get(auditPath)
+          .set('Authorization', access.token)
+          .query({ fromTime: now });
+        assert.equal(res.status, 200);
+        const entries = res.body.auditLogs;
         assert.exists(entries);
         assert.equal(entries.length, 1);
         const log = entries[0];
@@ -225,8 +244,13 @@ describe('Audit', function() {
       it('must return 404', function() {
         assert.equal(res.status, 404);
       });
-      it('must log it into the database', function() {
-        const entries = auditStorage.getLogs({ fromTime: now });
+      it('must return logs when queried', async function() {
+        res = await coreRequest
+          .get(auditPath)
+          .set('Authorization', access.token)
+          .query({ fromTime: now });
+        assert.equal(res.status, 200);
+        const entries = res.body.auditLogs;
         assert.exists(entries);
         assert.equal(entries.length, 1);
         const log = entries[0];

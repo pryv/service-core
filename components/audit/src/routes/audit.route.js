@@ -29,12 +29,12 @@ module.exports = function (expressApp: express$Application, app: Application) {
     setMethodId('auditLogs.get'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      const params = req.body;
-      console.log('got', req.context.user.id)
+      // TODO filter params
+      const params = req.query;
       const callback = methodCallback(res, next, 200);
       try {
         const userStorage = auditStorage.forUser(req.context.user.id);
-        // TODO filter params
+        
         const result = new Result();
         result.auditLogs = userStorage.getLogs(params);
         callback(null, result);
