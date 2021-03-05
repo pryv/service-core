@@ -15,7 +15,9 @@ function SyslogWatch(stringToMatch) {
   return syslogWatch;
 
   function syslogWatch(readyCallBack, done) {
-    const child = spawn('syslog',['-w', '0']);
+    const child = process.platform === 'darwin' ? 
+        spawn('syslog',['-w', '0']):
+        spawn('sudo',['tail', '-f', '/var/log/syslog', '-n', '0']);
     let killed = false;
     let buffer = '';
     let result = null;
@@ -26,9 +28,7 @@ function SyslogWatch(stringToMatch) {
 
     function notFound() {
       if (killed) return;
-      killed = true;
-      child.kill();
-      done(new Error('Not Found'));
+      close("Not Found");
     }
 
 
@@ -42,7 +42,7 @@ function SyslogWatch(stringToMatch) {
           end = buffer.length;
         }
         result = buffer.substring(pos, end);
-        child.kill();
+        close();
       }
     }
 
@@ -56,12 +56,20 @@ function SyslogWatch(stringToMatch) {
     });
     
     child.on('exit', function (code, signal) {
+      close('child process exited with ' + `code ${code} and signal ${signal}`);
+    });
+
+    function close(msg) {
       if (killed) return;
       killed = true;
+      try {
+        child.kill();
+      } catch (e) {
+        if (e.code !== 'EPERM') throw e; // EPERM Error might haappend
+      }
       if (result) return done(null, result);
-      done(new Error('child process exited with ' +
-      `code ${code} and signal ${signal}`));
-    });
+      done(new Error(msg));
+    }
   }
 
 }

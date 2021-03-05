@@ -1,5 +1,9 @@
 # Notes and Todo 
 
+For tests on Linux .. the command to watch syslog is "sudo tail -f /var/log/syslog" 
+Make sure user user has sudo rights
+
+
 Keep track of question and tasks
 
 - Perki: For login, I set the access.id to 'password' <= to be discussed

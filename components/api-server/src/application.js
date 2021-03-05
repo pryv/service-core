@@ -18,12 +18,18 @@ const boiler = require('@pryv/boiler').init({
     key: 'service',
     urlFromKey: 'serviceInfoUrl'
   },{
-    scope: 'defaults-paths',
+    scope: 'default-paths',
     file: path.resolve(__dirname, '../config/paths-config.js')
   },{
     plugin: require('../config/components/systemStreams')
   },{
     plugin: require('../config/public-url')
+  }, {
+    scope: 'default-audit',
+    file: path.resolve(__dirname, '../../../audit/config/default-config.yml')
+  }, {
+    scope: 'default-audit-path',
+    file: path.resolve(__dirname, '../../../audit/config/default-path.js')
   }, {
     plugin: require('../config/config-validation')
   }]

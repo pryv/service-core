@@ -20,6 +20,12 @@ const boiler = require('@pryv/boiler').init({
     scope: 'audit-tests',
     file: path.resolve(__dirname, '../../audit/config/test-config.yml')
   }, {
+    scope: 'default-audit',
+    file: path.resolve(__dirname, '../../audit/config/default-config.yml')
+  }, {
+    scope: 'default-audit-path',
+    file: path.resolve(__dirname, '../../audit/config/default-path.js')
+  },{
     plugin: require('../../api-server/config/components/systemStreams')
   }]
 });
