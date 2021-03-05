@@ -97,7 +97,6 @@ class Audit {
         if (context.access != null) {
           event.streamIds = [context.access.id];
         } else {
-          console.log('got', error.id)
           event.streamIds = ['invalid-access-token'];
         }
       } else {

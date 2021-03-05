@@ -88,7 +88,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
         }
         const body: Object = req.body; 
         
-        var params = {
+        const params = {
           username: body.username,
           password: body.password,
           appId: body.appId,

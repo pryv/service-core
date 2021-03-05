@@ -38,7 +38,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
     setMethodId('accesses.update'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      var params = { id: req.params.id, update: req.body };
+      const params = { id: req.params.id, update: req.body };
       api.call(req.context, params, methodCallback(res, next, 200));
   });
 
@@ -46,7 +46,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
     setMethodId('accesses.delete'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      var params = _.extend({id: req.params.id}, req.query);
+      const params = _.extend({id: req.params.id}, req.query);
       api.call(req.context, params, methodCallback(res, next, 200));
   });
   

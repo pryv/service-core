@@ -45,7 +45,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
     setMethodId('profile.updateApp'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      var params = {update: req.body};
+      const params = {update: req.body};
       api.call(req.context, params, methodCallback(res, next, 200));
   });
 

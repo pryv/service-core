@@ -51,7 +51,7 @@ module.exports = function (expressApp: express$Application, app: Application) {
   expressApp.post(Paths.Account + '/reset-password',
     setMethodId('account.resetPassword'),
     function (req: express$Request, res, next) {
-      var params = req.body;
+      const params = req.body;
       params.origin = req.headers.origin;
       api.call(req.context, params, methodCallback(res, next, 200));
   });

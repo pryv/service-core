@@ -88,7 +88,7 @@ module.exports = function system(expressApp: express$Application, app: Applicati
   // Checks if `req` contains valid authorization to access the system routes. 
   // 
   function checkAuth(req: express$Request, res, next) {
-    var secret = req.headers.authorization;
+    const secret = req.headers.authorization;
     if (secret==null || secret !== adminAccessKey) {
       logger.warn('Unauthorized attempt to access system route', {
         url: req.url,

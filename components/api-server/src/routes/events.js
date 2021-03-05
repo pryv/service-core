@@ -44,7 +44,7 @@ module.exports = function(expressApp: express$Application, app: Application) {
     setMethodId('events.get'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      var params = _.extend({}, req.query);
+      const params = _.extend({}, req.query);
       tryCoerceStringValues(params, {
         fromTime: 'number',
         toTime: 'number',
@@ -64,7 +64,7 @@ module.exports = function(expressApp: express$Application, app: Application) {
     setMethodId('events.getOne'),
     loadAccessMiddleware,
     function (req: express$Request, res, next) {
-      var params = _.extend({id: req.params.id}, req.query);
+      const params = _.extend({id: req.params.id}, req.query);
       tryCoerceStringValues(params, {
         includeHistory: 'boolean'
       });
