@@ -184,7 +184,7 @@ class API {
           err : 
           errors.unexpectedError(err));
       }
-      audit.validCall(context, params, result);
+      audit.validApiCall(context, params, result);
       callback(null, result);
     });
   }

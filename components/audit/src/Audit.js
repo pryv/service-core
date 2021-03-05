@@ -68,7 +68,7 @@ class Audit {
     logger.info('Application started');
   }
 
-  async errorCall(context, params, error) {
+  async errorApiCall(context, params, error) {
     if (context.skipAudit) return; // some calls .. 'system.getUsersPoolSize'
 
     let userId = context.user?.id;
@@ -111,7 +111,7 @@ class Audit {
     this.eventForUser(userId, event);
   }
 
-  async validCall(context, params, result) {
+  async validApiCall(context, params, result) {
     
     if (context.skipAudit) return; // some calls .. 'system.getUsersPoolSize'
 
