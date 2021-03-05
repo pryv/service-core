@@ -69,8 +69,7 @@ class Audit {
   }
 
   async errorApiCall(context, params, error) {
-    if (context.skipAudit) return; // some calls .. 'system.getUsersPoolSize'
-
+    if (context.skipAudit) return; // some calls .. 'system.getUsersPoolSize', 'system.createPoolUser', 'service.info'
     let userId = context.user?.id;
     const methodId = context.methodId;
 
@@ -112,7 +111,6 @@ class Audit {
   }
 
   async validApiCall(context, params, result) {
-    
     if (context.skipAudit) return; // some calls .. 'system.getUsersPoolSize'
 
     let userId = context.user?.id;
